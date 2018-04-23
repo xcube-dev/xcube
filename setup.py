@@ -30,10 +30,14 @@ from setuptools import setup, find_packages
 requirements = [
     'dask',
     'matplotlib',
-    'netcdf4',
     'numpy',
+    'pandas',
+    'rasterio',
+    's3transfer',
+    'scipy',
     'tornado',
     'xarray',
+    'zarr',
 ]
 
 on_rtd = os.environ.get('READTHEDOCS') == 'True'

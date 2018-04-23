@@ -7,3 +7,5 @@ Data cubes with xarray
 
 * ftp://ftp.brockmann-consult.de/
 * user: highrocre
+* pw: H!Ghr0$1
+
