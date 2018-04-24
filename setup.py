@@ -29,6 +29,7 @@ from setuptools import setup, find_packages
 # in alphabetical oder
 requirements = [
     'dask',
+    'gdal',
     'matplotlib',
     'numpy',
     'pandas',
@@ -39,12 +40,6 @@ requirements = [
     'xarray',
     'zarr',
 ]
-
-on_rtd = os.environ.get('READTHEDOCS') == 'True'
-if on_rtd:
-    # On READTHEDOCS, all dependencies are mocked (except tornado)
-    # see doc/source/conf.py and environment-rtd.yml
-    requirements = ['tornado']
 
 packages = find_packages(exclude=["test", "test.*"])
 

@@ -6,6 +6,7 @@ dependencies:
   - python=3.6.5
   # libs
   - dask=0.17.2
+  - gdal=2.2.4
   - matplotlib=2.1.1
   - numpy=1.14.2
   - pandas=0.22.0
