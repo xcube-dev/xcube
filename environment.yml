@@ -4,7 +4,7 @@ channels:
   - defaults
 dependencies:
   - python=3.6.5
-  # libs
+  # runtime
   - dask=0.17.2
   - gdal=2.2.4
   - matplotlib=2.1.1
@@ -16,3 +16,5 @@ dependencies:
   - tornado=5.0.2
   - xarray=0.10.3
   - zarr=2.2.0
+  # development/testing
+  - pytest
