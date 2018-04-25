@@ -1,6 +1,7 @@
 import struct
 import unittest
 
+from matplotlib import pyplot as plt
 import numpy as np
 import xarray as xr
 import gdal
@@ -31,10 +32,14 @@ class WarpTest(unittest.TestCase):
         lon_max = 14.
         lat_min = 50.
         lat_max = 58.
-        write_test_dataset('test.nc', width=50, height=100,
+        write_test_dataset('test.nc', width=width, height=height,
                            lon_min=lon_min, lat_min=lat_min,
                            lon_max=lon_max, lat_max=lat_max,
                            geo_non_linearity=True)
+
+        dataset, var_datasets = open_netcdf_with_gcps('test.nc')
+        self.assertIn('iop_apig', var_datasets)
+        self.assertIn('iop_atot', var_datasets)
 
         extra = 4.
         dst_lon_0 = lon_min - extra / 2
@@ -43,10 +48,6 @@ class WarpTest(unittest.TestCase):
         dst_geo_transform = (dst_lon_0, dst_res, 0.0,
                              dst_lat_0, 0.0, dst_res)
         dst_projection = EPSG_4326
-
-        dataset, var_datasets = open_netcdf_with_gcps('test.nc')
-        self.assertIn('iop_apig', var_datasets)
-        self.assertIn('iop_atot', var_datasets)
 
         for var_name, var_dataset in var_datasets.items():
 
@@ -71,8 +72,8 @@ class WarpTest(unittest.TestCase):
 
             # resampling = gdal.GRA_Bilinear
             resampling = gdal.GRA_NearestNeighbour
-            warp_mem_limit = 1000000
-            error_threshold = 0.125  # error threshold (in degree?)
+            warp_mem_limit = 0
+            error_threshold = 0
             options = []
 
             callback_data = dict()
@@ -83,11 +84,13 @@ class WarpTest(unittest.TestCase):
                                 resampling,
                                 warp_mem_limit,
                                 error_threshold,
-                                callback,
-                                callback_data,
+                                None,  #callback,
+                                None,  #callback_data,
                                 options)  # options
 
             dst_data = dst_band.ReadAsArray()
+            plt.imshow(dst_data)
+            plt.show()
             print('dst_data min/max =', dst_data.min(), dst_data.max())
 
     def ____test_gdal(self):
@@ -192,12 +195,12 @@ def open_netcdf_with_gcps(path):
     struct_fmt = 'd' * lon_band.XSize
     gcps = []
     for y in range(lon_band.YSize):
-        lon_scanline = lon_band.ReadRaster(xoff=0, yoff=0,
+        lon_scanline = lon_band.ReadRaster(xoff=0, yoff=y,
                                            xsize=lon_band.XSize, ysize=1,
                                            buf_xsize=lon_band.XSize, buf_ysize=1,
                                            buf_type=gdal.GDT_Float64)
         lon_data = struct.unpack(struct_fmt, lon_scanline)
-        lat_scanline = lat_band.ReadRaster(xoff=0, yoff=0,
+        lat_scanline = lat_band.ReadRaster(xoff=0, yoff=y,
                                            xsize=lat_band.XSize, ysize=1,
                                            buf_xsize=lat_band.XSize, buf_ysize=1,
                                            buf_type=gdal.GDT_Float64)
@@ -206,7 +209,6 @@ def open_netcdf_with_gcps(path):
             lon, lat = lon_data[x], lat_data[x]
             gcp_id = 'GCP-%s-%s' % (x, y)
             gcps.append(gdal.GCP(lon, lat, 0.0, x, y, gcp_id, gcp_id))
-
     var_datasets = {}
     for var_name in var_names:
         var_dataset = gdal.Open(var_name)
@@ -219,6 +221,11 @@ def open_netcdf_with_gcps(path):
         var_dataset.SetGCPs(gcps, EPSG_4326)
         var_dataset.SetGeoTransform((0., 1., 0., 0., 0., 1.))
         var_datasets[var_name[var_name.rindex('/') + 1:]] = var_dataset
+
+        var_band = var_dataset.GetRasterBand(1)
+        var_min, var_max = var_band.ComputeRasterMinMax(False)
+        var_no_data_value = var_band.GetNoDataValue()
+        print(var_name, var_min, var_max, var_no_data_value)
 
     lon_dataset = None
     lat_dataset = None
@@ -237,19 +244,20 @@ def write_test_dataset(path,
     x = np.linspace(lon_min, lon_max, width)
     y = np.linspace(lat_min, lat_max, height)
     lon_data, lat_data = np.meshgrid(x, y, sparse=False)
-
     if geo_non_linearity:
-        lon_data = apply_and_norm(lon_data, np.square)
-        lat_data = apply_and_norm(lat_data, np.sqrt)
+        lon_data = apply_and_norm(lon_data, lambda a: np.square(np.square(a)))
+        lat_data = apply_and_norm(lat_data, lambda a: np.square(np.square(a)))
 
     dataset = xr.Dataset({'iop_apig': (('y', 'x'),
                                        iop_apig_data,
                                        dict(units='m^-1',
-                                            long_name='Absorption coefficient of phytoplankton pigments')),
+                                            long_name='Absorption coefficient of phytoplankton pigments',
+                                            _FillValue=-1.)),
                           'iop_atot': (('y', 'x'),
                                        iop_atot_data,
                                        dict(units='m^-1',
-                                            long_name='phytoplankton + detritus + gelbstoff absorption'))
+                                            long_name='phytoplankton + detritus + gelbstoff absorption',
+                                            _FillValue=-1.))
                           },
                          {'lat': (('y', 'x'), lat_data,
                                   dict(standard_name='latitude', long_name='latitude', units='degrees')),
