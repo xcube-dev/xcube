@@ -15,7 +15,7 @@ HIGHROC_NC = "D:\\EOData\\HIGHROC\\0001_SNS\\OLCI\\2017\\04\\O_L2_0001_SNS_20171
 
 class ReprojectTest(unittest.TestCase):
 
-    def test_reproject_to_wgs84(self):
+    def test_reproject_to_wgs84_highroc(self):
         if not os.path.isfile(HIGHROC_NC):
             print('warning: test_reproject_xarray() not executed')
 
