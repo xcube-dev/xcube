@@ -10,3 +10,6 @@ GEOGCS["WGS 84",
         AUTHORITY["EPSG","9122"]],
     AUTHORITY["EPSG","4326"]]
 """
+
+
+EARTH_GEO_BOUNDS = (-180., -90, 180., 90.)
