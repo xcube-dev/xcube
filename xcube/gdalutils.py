@@ -8,19 +8,23 @@ from .constants import CRS_WKT_EPSG_4326
 
 GeoRange = Tuple[float, float, float, float]
 
-
+# TODO: add variables to be included/excluded
+# TODO: add src and dst CRS
 def reproject_xarray(dataset: xr.Dataset,
                      dst_width: int,
                      dst_height: int,
                      region: GeoRange = None,
-                     gcp_step: int = 10) -> xr.Dataset:
+                     gcp_step: int = 10,
+                     tp_gcp_step: int = 1) -> xr.Dataset:
     assert dataset is not None
-    assert dst_width > 0
-    assert dst_height > 0
+    assert dst_width > 1
+    assert dst_height > 1
     assert gcp_step > 0
 
     lon_var = dataset.lon
     assert len(lon_var.dims) == 2
+    assert lon_var.shape[-1] >= 2
+    assert lon_var.shape[-2] >= 2
 
     lat_var = dataset.lat
     assert lat_var.shape == lon_var.shape
@@ -49,11 +53,38 @@ def reproject_xarray(dataset: xr.Dataset,
                          lat_max, 0.0, -res)
 
     gcps = []
-    for y in range(0, src_height, gcp_step):
-        for x in range(0, src_width, gcp_step):
-            lon, lat = lon_values[y, x], lat_values[y, x]
-            gcp_id = 'GCP-%s-%s' % (x, y)
-            gcps.append(gdal.GCP(lon, lat, 0.0, x, y, gcp_id, gcp_id))
+    gcp_index = 0
+    for y in np.linspace(0, src_height - 1, gcp_step, dtype=np.int32):
+        for x in np.linspace(0, src_width - 1, gcp_step, dtype=np.int32):
+            lon, lat = float(lon_values[y, x]), float(lat_values[y, x])
+            gcps.append(gdal.GCP(lon, lat, 0.0, x + 0.5, y + 0.5, '%s,%s' % (x, y), str(gcp_index)))
+            gcp_index += 1
+
+    # TODO: turn following names into parameters
+    tp_x_name = 'tp_x'
+    tp_y_name = 'tp_y'
+    tp_lon_name = 'TP_longitude'
+    tp_lat_name = 'TP_latitude'
+    if tp_x_name in dataset.sizes and tp_y_name in dataset.sizes \
+            and tp_lon_name in dataset and tp_lat_name in dataset:
+        tp_gcps = []
+        tp_width = dataset.sizes[tp_x_name]
+        tp_height = dataset.sizes[tp_y_name]
+        tp_lon_var = dataset[tp_lon_name]
+        tp_lat_var = dataset[tp_lat_name]
+        tp_lon_values = tp_lon_var.values
+        tp_lat_values = tp_lat_var.values
+        gcp_index = 0
+        for y in np.linspace(0, tp_height - 1, tp_gcp_step, dtype=np.int32):
+            for x in np.linspace(0, tp_width - 1, tp_gcp_step, dtype=np.int32):
+                lon, lat = float(tp_lon_values[y, x]), float(tp_lat_values[y, x])
+                tp_gcps.append(gdal.GCP(lon, lat, 0.0, x + 0.5, y + 0.5, '%s,%s' % (x, y), str(gcp_index)))
+                gcp_index += 1
+    else:
+        tp_gcps = None
+        tp_width = None
+        tp_height = None
+        tp_lon_var = None
 
     mem_driver = gdal.GetDriverByName("MEM")
 
@@ -86,23 +117,37 @@ def reproject_xarray(dataset: xr.Dataset,
 
         if var_name == 'lat' or var_name == 'lon':
             # Don't store lat and lon 2D vars in destination
+            # TODO: instead add lat and lon with new names, so we can validate geo-location
             continue
 
-        if src_var.dims != lon_var.dims:
+        if src_var.dims == lon_var.dims:
+
+            # TODO: collect variables of same type and size and set band_count accordingly to speed up reprojection
+            band_count = 1
+            # TODO: select the data_type based on src_var.dtype
+            data_type = gdal.GDT_Float64
+
+            src_var_dataset = mem_driver.Create('src_' + var_name, src_width, src_height, band_count, data_type, [])
+            src_var_dataset.SetGCPs(gcps, CRS_WKT_EPSG_4326)
+
+        elif tp_lon_var is not None and src_var.dims == tp_lon_var.dims:
+            if var_name == tp_lat_name or var_name == tp_lon_name:
+                # Don't store TP lat and TP lon 2D vars in destination
+                # TODO: instead add TP lat and lon with new names, so we can validate geo-location
+                continue
+
+            # TODO: collect variables of same type and size and set band_count accordingly to speed up reprojection
+            band_count = 1
+            # TODO: select the data_type based on src_var.dtype
+            data_type = gdal.GDT_Float64
+
+            src_var_dataset = mem_driver.Create('src_' + var_name, tp_width, tp_height, band_count, data_type, [])
+            src_var_dataset.SetGCPs(tp_gcps, CRS_WKT_EPSG_4326)
+        else:
             # Store any variable as-is, that does not have the lat/lon 2D dims, then continue
+            print('storeded as-is: ', var_name, src_var.sizes, src_var.min(), src_var.max())
             dst_dataset[var_name] = src_var
             continue
-
-        src_width = src_var.shape[-1]
-        src_height = src_var.shape[-2]
-
-        # TODO: collect variables of same type and set band_count accordingly to speed up reprojection from GCPs
-        band_count = 1
-        # TODO: select the data_type based on src_var.dtype
-        data_type = gdal.GDT_Float64
-
-        src_var_dataset = mem_driver.Create('src_' + var_name, src_width, src_height, band_count, data_type, [])
-        src_var_dataset.SetGCPs(gcps, CRS_WKT_EPSG_4326)
 
         dst_var_dataset = mem_driver.Create('dst_' + var_name, dst_width, dst_height, band_count, data_type, [])
         dst_var_dataset.SetProjection(CRS_WKT_EPSG_4326)
@@ -132,7 +177,7 @@ def reproject_xarray(dataset: xr.Dataset,
                             options)  # options
 
         dst_values = dst_var_dataset.GetRasterBand(1).ReadAsArray()
-        # print(var_name, dst_values.shape, dst_values.min(), dst_values.max())
+        print(var_name, dst_values.shape, dst_values.min(), dst_values.max())
 
         # TODO: set CF-1.6 attributes correctly
         # TODO: set encoding to compress and optimize output: scaling_factor, add_offset, _FillValue, chunksizes
