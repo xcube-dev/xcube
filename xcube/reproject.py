@@ -108,22 +108,22 @@ def reproject_to_wgs84(dataset: xr.Dataset,
     dst_y1 = y2 - dst_res * dst_height
 
     dst_dataset = xr.Dataset()
-    dst_dataset['lon_bnds'] = (['lon', 'bnds'],
-                               # TODO: find more elegant numpy expr for the following
-                               list(zip(np.linspace(x1, dst_x2 - dst_res, dst_width),
-                                        np.linspace(x1 + dst_res, dst_x2, dst_width))),
-                               dict(units='degrees_east'))
-    dst_dataset['lat_bnds'] = (['lat', 'bnds'],
-                               # TODO: find more elegant numpy expr for the following
-                               list(zip(np.linspace(y2, dst_y1 + dst_res, dst_height),
-                                        np.linspace(y2 - dst_res, dst_y1, dst_height))),
-                               dict(units='degrees_north'))
     dst_dataset.coords['lon'] = (['lon', ],
                                  np.linspace(x1 + dst_res / 2, dst_x2 - dst_res / 2, dst_width),
                                  dict(bounds='lon_bnds', long_name='longitude', units='degrees_east'))
     dst_dataset.coords['lat'] = (['lat', ],
                                  np.linspace(y2 - dst_res / 2, dst_y1 + dst_res / 2, dst_height),
                                  dict(bounds='lat_bnds', long_name='latitude', units='degrees_north'))
+    dst_dataset.coords['lon_bnds'] = (['lon', 'bnds'],
+                                      # TODO: find more elegant numpy expr for the following
+                                      list(zip(np.linspace(x1, dst_x2 - dst_res, dst_width),
+                                               np.linspace(x1 + dst_res, dst_x2, dst_width))),
+                                      dict(units='degrees_east'))
+    dst_dataset.coords['lat_bnds'] = (['lat', 'bnds'],
+                                      # TODO: find more elegant numpy expr for the following
+                                      list(zip(np.linspace(y2, dst_y1 + dst_res, dst_height),
+                                               np.linspace(y2 - dst_res, dst_y1, dst_height))),
+                                      dict(units='degrees_north'))
     dst_dataset.attrs = dataset.attrs
 
     for var_name in dataset.variables:
