@@ -48,6 +48,7 @@ nosetests.xml
 coverage.xml
 *.cover
 .hypothesis/
+.pytest_cache/
 
 # Translations
 *.mo
@@ -102,3 +103,7 @@ ENV/
 
 # mypy
 .mypy_cache/
+
+
+# Test data
+highroc-test-out.nc

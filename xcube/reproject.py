@@ -5,7 +5,20 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 
-from .constants import CRS_WKT_EPSG_4326, EARTH_GEO_BOUNDS
+CRS_WKT_EPSG_4326 = """
+GEOGCS["WGS 84",
+    DATUM["WGS_1984",
+        SPHEROID["WGS 84",6378137,298.257223563,
+            AUTHORITY["EPSG","7030"]],
+        AUTHORITY["EPSG","6326"]],
+    PRIMEM["Greenwich",0,
+        AUTHORITY["EPSG","8901"]],
+    UNIT["degree",0.01745329251994328,
+        AUTHORITY["EPSG","9122"]],
+    AUTHORITY["EPSG","4326"]]
+"""
+
+EARTH_GEO_COORD_RANGE = (-180., -90, 180., 90.)
 
 CoordRange = Tuple[float, float, float, float]
 
@@ -25,7 +38,26 @@ def reproject_to_wgs84(dataset: xr.Dataset,
                        included_var_names: Set[str] = None,
                        excluded_var_names: Set[str] = None,
                        include_non_spatial_vars: bool = False) -> xr.Dataset:
-    # TODO: turn following into parameters
+    """
+    Reprojection of xarray datasets with 2D geo-coding, e.g. with variables lon(y,x), lat(y, x) to
+    EPSG:4326 (WGS-84) coordinate reference system.
+
+    :param dataset:
+    :param dst_width:
+    :param dst_height:
+    :param dst_region:
+    :param src_crs_wks:
+    :param valid_region:
+    :param gcp_i_step:
+    :param gcp_j_step:
+    :param tp_gcp_i_step:
+    :param tp_gcp_j_step:
+    :param included_var_names:
+    :param excluded_var_names:
+    :param include_non_spatial_vars:
+    :return:
+    """
+    # TODO: Turn following into options. Current default values refer to BEAM/SNAP profile.
     x_name = 'lon'
     y_name = 'lat'
     tp_x_name = 'TP_longitude'
@@ -37,7 +69,7 @@ def reproject_to_wgs84(dataset: xr.Dataset,
 
     # Set defaults
     src_crs_wks = src_crs_wks or CRS_WKT_EPSG_4326
-    valid_region = valid_region or EARTH_GEO_BOUNDS
+    valid_region = valid_region or EARTH_GEO_COORD_RANGE
     gcp_j_step = gcp_i_step or gcp_j_step
     tp_gcp_j_step = tp_gcp_i_step or tp_gcp_j_step
 
@@ -125,6 +157,7 @@ def reproject_to_wgs84(dataset: xr.Dataset,
                                                np.linspace(y2 - dst_res, dst_y1, dst_height))),
                                       dict(units='degrees_north'))
     dst_dataset.attrs = dataset.attrs
+    dst_dataset.attrs['Conventions'] = 'CF-1.6'
 
     for var_name in dataset.variables:
         src_var = dataset[var_name]
@@ -142,6 +175,7 @@ def reproject_to_wgs84(dataset: xr.Dataset,
             # TODO: instead add lat and lon with new names, so we can validate geo-location
             continue
 
+        is_tp_var = False
         if src_var.dims == x_var.dims:
             # TODO: collect variables of same type and size and set band_count accordingly to speed up reprojection
             band_count = 1
@@ -154,6 +188,7 @@ def reproject_to_wgs84(dataset: xr.Dataset,
                 # Don't store TP lat and TP lon 2D vars in destination
                 # TODO: instead add TP lat and lon with new names, so we can validate geo-location
                 continue
+            is_tp_var = True
             # TODO: collect variables of same type and size and set band_count accordingly to speed up reprojection
             band_count = 1
             # TODO: select the data_type based on src_var.dtype
@@ -167,7 +202,9 @@ def reproject_to_wgs84(dataset: xr.Dataset,
         else:
             continue
 
-        dst_var_dataset = mem_driver.Create('dst_' + var_name, dst_width, dst_height, band_count, data_type, [])
+        # We use GDT_Float64 to introduce NaN as no-data-value
+        dst_data_type = gdal.GDT_Float64
+        dst_var_dataset = mem_driver.Create('dst_' + var_name, dst_width, dst_height, band_count, dst_data_type, [])
         dst_var_dataset.SetProjection(CRS_WKT_EPSG_4326)
         dst_var_dataset.SetGeoTransform(dst_geo_transform)
 
@@ -177,8 +214,7 @@ def reproject_to_wgs84(dataset: xr.Dataset,
             dst_var_dataset.GetRasterBand(band_index).SetNoDataValue(float('nan'))
 
         # TODO: configure resampling individually for each variable, make this config a parameter
-        # resampling = gdal.GRA_Bilinear
-        resampling = gdal.GRA_NearestNeighbour
+        resampling = gdal.GRA_Bilinear if is_tp_var else gdal.GRA_NearestNeighbour
         warp_mem_limit = 0
         error_threshold = 0
         # See http://www.gdal.org/structGDALWarpOptions.html
@@ -195,7 +231,7 @@ def reproject_to_wgs84(dataset: xr.Dataset,
                             options)  # options
 
         dst_values = dst_var_dataset.GetRasterBand(1).ReadAsArray()
-        print(var_name, dst_values.shape, np.nanmin(dst_values), np.nanmax(dst_values))
+        # print(var_name, dst_values.shape, np.nanmin(dst_values), np.nanmax(dst_values))
 
         # TODO: set CF-1.6 attributes correctly
         # TODO: set encoding to compress and optimize output: scaling_factor, add_offset, _FillValue, chunksizes
