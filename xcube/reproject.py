@@ -26,8 +26,7 @@ CoordRange = Tuple[float, float, float, float]
 # TODO: add src and dst CRS
 # TODO: add callback: Callable[[Optional[Any, str]], None] = None, callback_data: Any = None
 def reproject_to_wgs84(dataset: xr.Dataset,
-                       dst_width: int,
-                       dst_height: int,
+                       dst_size: Tuple[int, int],
                        dst_region: CoordRange = None,
                        src_crs_wks: str = None,
                        valid_region: CoordRange = None,
@@ -43,8 +42,7 @@ def reproject_to_wgs84(dataset: xr.Dataset,
     EPSG:4326 (WGS-84) coordinate reference system.
 
     :param dataset:
-    :param dst_width:
-    :param dst_height:
+    :param dst_size:
     :param dst_region:
     :param src_crs_wks:
     :param valid_region:
@@ -72,6 +70,8 @@ def reproject_to_wgs84(dataset: xr.Dataset,
     valid_region = valid_region or EARTH_GEO_COORD_RANGE
     gcp_j_step = gcp_i_step or gcp_j_step
     tp_gcp_j_step = tp_gcp_i_step or tp_gcp_j_step
+
+    dst_width, dst_height = dst_size
 
     # TODO: raise ValueError instead of using assert
     assert dataset is not None

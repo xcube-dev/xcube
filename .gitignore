@@ -106,4 +106,4 @@ ENV/
 
 
 # Test data
-highroc-test-out.nc
+*.nc/

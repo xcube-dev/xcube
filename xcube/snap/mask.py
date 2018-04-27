@@ -7,6 +7,7 @@ import xarray as xr
 from xcube.maskset import MaskSet
 from xcube.snap.transexpr import transpile_expr
 
+# TODO: add option to save computed mask in output dataset
 
 def mask_dataset(dataset: xr.Dataset,
                  expr_pattern: str = None,

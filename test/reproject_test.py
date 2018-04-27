@@ -18,7 +18,7 @@ class ReprojectTest(unittest.TestCase):
         dst_height = 9
 
         dataset = create_highroc_dataset()
-        proj_dataset = reproject_to_wgs84(dataset, dst_width, dst_height, gcp_i_step=1, tp_gcp_i_step=1)
+        proj_dataset = reproject_to_wgs84(dataset, (dst_width, dst_height), gcp_i_step=1, tp_gcp_i_step=1)
 
         self.assertIsNotNone(proj_dataset)
         self.assertEquals(proj_dataset.sizes, dict(lon=dst_width, lat=dst_height, time=1, bnds=2))
