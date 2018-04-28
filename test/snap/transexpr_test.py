@@ -1,6 +1,6 @@
 import unittest
 
-from xcube.snap.transexpr import transpile_expr
+from xcube.snap.transexpr import transpile_expr, tokenize_expr, Token
 
 
 class TranspileExprTest(unittest.TestCase):
@@ -74,3 +74,47 @@ class TranspileExprTest(unittest.TestCase):
         self.assertEqual(transpile_expr('a+sin(x + 2.8)'), 'a + np.sin(x + 2.8)')
         self.assertEqual(transpile_expr('a+max(1, sin(x+2.8), x**0.5)'),
                          'a + np.fmax(1, np.sin(x + 2.8), np.power(x, 0.5))')
+
+
+class TokenizeExprTest(unittest.TestCase):
+
+    def test_tokenize_expr(self):
+        self.assertEqual(list(tokenize_expr('a')),
+                         [Token('ID', 'a')])
+        self.assertEqual(list(tokenize_expr('true')),
+                         [Token('KW', 'true')])
+        self.assertEqual(list(tokenize_expr('234')),
+                         [Token('NUM', '234')])
+        self.assertEqual(list(tokenize_expr('234.2')),
+                         [Token('NUM', '234.2')])
+        self.assertEqual(list(tokenize_expr('a_2')),
+                         [Token('ID', 'a_2')])
+        self.assertEqual(list(tokenize_expr('a + b')),
+                         [Token('ID', 'a'),
+                          Token('OP', '+'),
+                          Token('ID', 'b')])
+        self.assertEqual(list(tokenize_expr('a > 0.5 AND(NOT b2 == true OR C._x != 3)')),
+                         [Token('ID', 'a'),
+                          Token('OP', '>'),
+                          Token('NUM', '0.5'),
+                          Token('KW', 'AND'),
+                          Token('PAR', '('),
+                          Token('KW', 'NOT'),
+                          Token('ID', 'b2'),
+                          Token('OP', '=='),
+                          Token('KW', 'true'),
+                          Token('KW', 'OR'),
+                          Token('ID', 'C'),
+                          Token('OP', '.'),
+                          Token('ID', '_x'),
+                          Token('OP', '!='),
+                          Token('NUM', '3'),
+                          Token('PAR', ')')])
+        self.assertEqual(list(tokenize_expr('a >= 0.0 ? a : NaN')),
+                         [Token('ID', 'a'),
+                          Token('OP', '>='),
+                          Token('NUM', '0.0'),
+                          Token('OP', '?'),
+                          Token('ID', 'a'),
+                          Token('OP', ':'),
+                          Token('KW', 'NaN')])

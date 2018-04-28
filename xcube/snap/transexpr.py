@@ -1,15 +1,19 @@
 import ast
+from typing import Generator
+
+import collections
+import re
 import warnings
 
 
-def transpile_expr(expr: str):
+def transpile_expr(expr: str, warn=False):
     """
     Transpiles a BEAM/SNAP expression into a numpy array expression.
 
     :param expr: The BEAM/SNAP expression
     :return The numpy array expression:
     """
-    return _ExprTranspiler(expr).transpile()
+    return _ExprTranspiler(expr, warn).transpile()
 
 
 # noinspection PyMethodMayBeStatic
@@ -55,8 +59,9 @@ class _ExprTranspiler:
     def get_op_info(cls, op: ast.AST):
         return cls._OP_INFOS.get(type(op), (None, None, None))
 
-    def __init__(self, expr: str):
+    def __init__(self, expr: str, warn: bool):
         self.expr = expr
+        self.warn = warn
 
     def transpile(self) -> str:
         return self._transpile(ast.parse(self.expr))
@@ -211,7 +216,8 @@ class _ExprTranspiler:
             nan_op = None
 
         if nan_op:
-            warnings.warn('Use of NaN as operand with comparison "%s" is ambiguous: "%s"' % (name, self.expr))
+            if self.warn:
+                warnings.warn('Use of NaN as operand with comparison "%s" is ambiguous: "%s"' % (name, self.expr))
             if name == '==':
                 return 'np.isnan(%s)' % nan_op
             if name == '!=':
@@ -234,3 +240,42 @@ class _ExprTranspiler:
 
     def _is_nan(self, node):
         return isinstance(node, ast.Name) and node.id == 'NaN'
+
+
+Token = collections.namedtuple('Token', ['kind', 'value'])
+
+_TOKEN_REGEX = None
+_TOKEN_KEYWORDS = None
+
+
+def get_token_regex():
+    global _TOKEN_REGEX
+    global _TOKEN_KEYWORDS
+    if _TOKEN_REGEX is None:
+        _TOKEN_KEYWORDS = {'AND', 'OR', 'NOT', 'true', 'false', 'NaN'}
+        token_specification = [
+            ('NUM', r'\d+(\.\d*)?'),  # Integer or decimal number
+            ('ID', r'[_A-Za-z][_A-Za-z0-9]*'),  # Identifiers
+            ('OP', r'\*\*|\!\=|\=\=|\>=|\<=|\<|\>|\+|\-|\*|\!|\%|\^|\.|\?|\:'),  # Operators
+            ('PAR', r'[\(\)]'),  # Parentheses
+            ('WHITE', r'[ \t\n\r]+'),  # Skip over spaces and tabs, new lines
+            ('ERR', r'.'),  # Any other character
+        ]
+        _TOKEN_REGEX = '|'.join('(?P<%s>%s)' % pair for pair in token_specification)
+        _TOKEN_REGEX = re.compile(_TOKEN_REGEX)
+    return _TOKEN_REGEX, _TOKEN_KEYWORDS
+
+
+def tokenize_expr(code: str) -> Generator[Token, None, None]:
+    token_regex, token_keywords = get_token_regex()
+    for mo in re.finditer(token_regex, code):
+        kind = mo.lastgroup
+        value = mo.group(kind)
+        if kind == 'WHITE':
+            pass
+        elif kind == 'ERR':
+            raise RuntimeError(f'{value!r} unexpected')
+        else:
+            if kind == 'ID' and value in token_keywords:
+                kind = 'KW'
+            yield Token(kind, value)

@@ -1,11 +1,12 @@
 import warnings
-from typing import Tuple, Dict
+from typing import Tuple, Dict, Generator
 
 import numpy as np
 import xarray as xr
 
 from xcube.maskset import MaskSet
-from xcube.snap.transexpr import transpile_expr
+from xcube.snap.transexpr import transpile_expr, tokenize_expr
+
 
 # TODO: add option to save computed mask in output dataset
 
@@ -66,7 +67,7 @@ def mask_dataset(dataset: xr.Dataset,
 
 
 def _compute_snap_expression(var_name, snap_expression, namespace, errors):
-    numpy_expression = _snap_expr_to_numpy_expr(snap_expression)
+    numpy_expression = _snap_expr_to_numpy_expr(snap_expression, errors)
     # print('variable "%s" uses expression %r transpiled to %r' % (var_name, snap_expression, numpy_expression))
     try:
         computed_var = eval(numpy_expression, namespace, None)
@@ -85,18 +86,28 @@ def _is_snap_expression_var(var: xr.DataArray) -> bool:
     return 'expression' in var.attrs and var.shape == ()
 
 
-def _snap_expr_to_numpy_expr(ba_expr: str) -> str:
-    # TODO: replace this poor-man's translation from SNAP/BEAM band expressions
-    #       to valid Python expressions by something more robust, e.g. regex
-    py_expr = ba_expr
-    py_expr = py_expr.replace('!=', '___not_equal___')
-    py_expr = py_expr.replace('!', ' not ')
-    py_expr = py_expr.replace('___not_equal___', '!=')
-    py_expr = py_expr.replace(' || ', ' or ')
-    py_expr = py_expr.replace(' && ', ' and ')
-    py_expr = py_expr.replace(' NOT ', ' not ')
-    py_expr = py_expr.replace(' OR ', ' or ')
-    py_expr = py_expr.replace(' AND ', ' and ')
-    py_expr = py_expr.replace('true', 'True')    # TODO: this is really too bad
-    py_expr = py_expr.replace('false', 'False')  # TODO: this is really too bad
-    return transpile_expr(py_expr)
+def _snap_expr_to_numpy_expr(snap_expr: str, errors: str) -> str:
+    py_expr = _translate_expr(snap_expr)
+    return transpile_expr(py_expr, warn=errors == 'raise' or errors == 'warn')
+
+
+def _translate_expr(ba_expr: str) -> str:
+    py_expr = ''
+    translations = {'NOT': 'not', 'AND': 'and', 'OR': 'or', 'true': 'True', 'false': 'False'}
+    last_kind = None
+    for token in tokenize_expr(ba_expr):
+        kind = token.kind
+        value = token.value
+        if kind == 'ID' or kind == 'KW' or kind == 'NUM':
+            value = translations.get(value, value)
+            if last_kind == 'ID' or last_kind == 'KW' or last_kind == 'NUM':
+                py_expr += ' '
+        elif kind == 'OP':
+            if last_kind == 'OP':
+                py_expr += ' '
+            pass
+        elif kind == 'PAR':
+            pass
+        py_expr += value
+        last_kind = token.kind
+    return py_expr
