@@ -5,6 +5,80 @@ import collections
 import re
 import warnings
 
+Token = collections.namedtuple('Token', ['kind', 'value'])
+
+_TOKEN_REGEX = None
+_KW_MAPPINGS = {'NOT': 'not', 'AND': 'and', 'OR': 'or', 'true': 'True', 'false': 'False', 'NaN': 'NaN'}
+_OP_MAPPINGS = {'?': 'if', ':': 'else', '!': 'not', '&&': 'and', '||': 'or'}
+
+
+def _get_token_regex():
+    global _TOKEN_REGEX
+    if _TOKEN_REGEX is None:
+        token_specification = [
+            ('NUM', r'\d+(\.\d*)?'),  # Integer or decimal number
+            ('ID', r'[_A-Za-z][_A-Za-z0-9]*'),  # Identifiers
+            ('OP', r'\&\&|\|\||\*\*|\!\=|\=\=|\>=|\<=|\<|\>|\+|\-|\*|\!|\%|\^|\.|\?|\:|\||\&'),  # Operators
+            ('PAR', r'[\(\)]'),  # Parentheses
+            ('WHITE', r'[ \t\n\r]+'),  # Skip over spaces and tabs, new lines
+            ('ERR', r'.'),  # Any other character
+        ]
+        _TOKEN_REGEX = '|'.join('(?P<%s>%s)' % pair for pair in token_specification)
+        _TOKEN_REGEX = re.compile(_TOKEN_REGEX)
+    return _TOKEN_REGEX
+
+
+def translate_expr(snap_expr: str) -> str:
+    """
+    Translate a SNAP band math expression to a syntactically correct Python expression.
+
+    :param snap_expr: SNAP band math expression
+    :return: Python expression
+    """
+    py_expr = ''
+    last_kind = None
+    for token in tokenize_expr(snap_expr):
+        kind = token.kind
+        value = token.value
+        if kind == 'ID' or kind == 'KW' or kind == 'NUM':
+            value = _KW_MAPPINGS.get(value, value)
+            if last_kind == 'ID' or last_kind == 'KW' or last_kind == 'NUM':
+                py_expr += ' '
+        elif kind == 'OP':
+            if last_kind == 'OP':
+                py_expr += ' '
+        elif kind == 'PAR':
+            pass
+        py_expr += value
+        last_kind = token.kind
+    return py_expr
+
+
+def tokenize_expr(expr: str) -> Generator[Token, None, None]:
+    token_regex = _get_token_regex()
+    for match in re.finditer(token_regex, expr):
+        kind = match.lastgroup
+        value = match.group(kind)
+        if kind == 'WHITE':
+            pass
+        elif kind == 'ERR':
+            raise RuntimeError(f'{value!r} unexpected in expression {expr!r}')
+        else:
+            if kind == 'ID' and value in _KW_MAPPINGS:
+                kind = 'KW'
+            elif kind == 'OP':
+                # In order to deal with SNAP conditional expr, we tokenize '?' to 'if' and ':' to 'else'
+                # so we can later build a syntactically valid Python expression. However we will need a special
+                # treatment because the semantic isn't right that way:
+                #
+                #    a ? b : c  --> a if b else c --> b if a else c
+                #
+                kw = _OP_MAPPINGS.get(value)
+                if kw is not None:
+                    kind = 'KW'
+                    value = kw
+            yield Token(kind, value)
+
 
 def transpile_expr(expr: str, warn=False):
     """
@@ -253,55 +327,3 @@ class _ExprTranspiler:
 
     def _is_nan(self, node):
         return isinstance(node, ast.Name) and node.id == 'NaN'
-
-
-Token = collections.namedtuple('Token', ['kind', 'value'])
-
-_TOKEN_REGEX = None
-_TOKEN_KEYWORDS = None
-
-
-def get_token_regex():
-    global _TOKEN_REGEX
-    global _TOKEN_KEYWORDS
-    if _TOKEN_REGEX is None:
-        _TOKEN_KEYWORDS = {'AND', 'OR', 'NOT', 'true', 'false', 'NaN'}
-        token_specification = [
-            ('NUM', r'\d+(\.\d*)?'),  # Integer or decimal number
-            ('ID', r'[_A-Za-z][_A-Za-z0-9]*'),  # Identifiers
-            ('OP', r'\*\*|\!\=|\=\=|\>=|\<=|\<|\>|\+|\-|\*|\!|\%|\^|\.|\?|\:'),  # Operators
-            ('PAR', r'[\(\)]'),  # Parentheses
-            ('WHITE', r'[ \t\n\r]+'),  # Skip over spaces and tabs, new lines
-            ('ERR', r'.'),  # Any other character
-        ]
-        _TOKEN_REGEX = '|'.join('(?P<%s>%s)' % pair for pair in token_specification)
-        _TOKEN_REGEX = re.compile(_TOKEN_REGEX)
-    return _TOKEN_REGEX, _TOKEN_KEYWORDS
-
-
-def tokenize_expr(code: str) -> Generator[Token, None, None]:
-    token_regex, token_keywords = get_token_regex()
-    for mo in re.finditer(token_regex, code):
-        kind = mo.lastgroup
-        value = mo.group(kind)
-        if kind == 'WHITE':
-            pass
-        elif kind == 'ERR':
-            raise RuntimeError(f'{value!r} unexpected')
-        else:
-            if kind == 'ID' and value in token_keywords:
-                kind = 'KW'
-            elif kind == 'OP':
-                # In order to deal with SNAP conditional expr, we tokenize '?' to 'if' and ':' to 'else'
-                # so we can later build a syntactically valid Python expression. However we will need a special
-                # treatment because the semantic isn't right that way:
-                #
-                #    a ? b : c  --> a if b else c --> b if a else c
-                #
-                if value == '?':
-                    kind = 'KW'
-                    value = 'if'
-                elif value == ':':
-                    kind = 'KW'
-                    value = 'else'
-            yield Token(kind, value)

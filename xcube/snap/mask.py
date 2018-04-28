@@ -1,11 +1,11 @@
 import warnings
-from typing import Tuple, Dict, Generator
+from typing import Tuple, Dict
 
 import numpy as np
 import xarray as xr
 
 from xcube.maskset import MaskSet
-from xcube.snap.transexpr import transpile_expr, tokenize_expr
+from xcube.snap.transexpr import transpile_expr, translate_expr
 
 
 # TODO: add option to save computed mask in output dataset
@@ -87,31 +87,5 @@ def _is_snap_expression_var(var: xr.DataArray) -> bool:
 
 
 def _snap_expr_to_numpy_expr(snap_expr: str, errors: str) -> str:
-    py_expr = _translate_expr(snap_expr)
+    py_expr = translate_expr(snap_expr)
     return transpile_expr(py_expr, warn=errors == 'raise' or errors == 'warn')
-
-
-def _translate_expr(ba_expr: str) -> str:
-    py_expr = ''
-    translations = {'NOT': 'not', 'AND': 'and', 'OR': 'or', 'true': 'True', 'false': 'False'}
-    last_kind = None
-    for token in tokenize_expr(ba_expr):
-        kind = token.kind
-        value = token.value
-        if kind == 'ID' or kind == 'KW' or kind == 'NUM':
-            value = translations.get(value, value)
-            if last_kind == 'ID' or last_kind == 'KW' or last_kind == 'NUM':
-                py_expr += ' '
-        elif kind == 'OP':
-            if value == '?':
-                py_expr += ' if'
-                last_kind == 'KW'
-
-            if last_kind == 'OP':
-                py_expr += ' '
-            pass
-        elif kind == 'PAR':
-            pass
-        py_expr += value
-        last_kind = token.kind
-    return py_expr

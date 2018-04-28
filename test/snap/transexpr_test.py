@@ -1,6 +1,6 @@
 import unittest
 
-from xcube.snap.transexpr import transpile_expr, tokenize_expr, Token
+from xcube.snap.transexpr import transpile_expr, tokenize_expr, Token, translate_expr
 
 
 class TranspileExprTest(unittest.TestCase):
@@ -84,6 +84,15 @@ class TranspileExprTest(unittest.TestCase):
         self.assertEqual(transpile_expr('a+max(1, sin(x+2.8), x**0.5)'),
                          'a + np.fmax(1, np.sin(x + 2.8), np.power(x, 0.5))')
 
+
+class TranslateExprTest(unittest.TestCase):
+    def test_translate_expr(self):
+        self.assertEqual(translate_expr('a'), 'a')
+        self.assertEqual(translate_expr('!a'), 'not a')
+        self.assertEqual(translate_expr('a && b'), 'a and b')
+        self.assertEqual(translate_expr('a || b'), 'a or b')
+        self.assertEqual(translate_expr('a & b'), 'a&b')
+        self.assertEqual(translate_expr('a | b'), 'a|b')
 
 class TokenizeExprTest(unittest.TestCase):
 
