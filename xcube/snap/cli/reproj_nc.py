@@ -51,13 +51,13 @@ def main(args: Optional[List[str]] = None):
     dst_region = arg_obj.dst_region
 
     if dst_size:
-        dst_size = dst_size.split(',').map(lambda c: int(c))
-        if len(dst_region) != 2:
+        dst_size = list(map(lambda c: int(c), dst_size.split(',')))
+        if len(dst_size) != 2:
             print('error: invalid size "%s"' % arg_obj.dst_size)
             sys.exit(10)
 
     if dst_region:
-        dst_region = dst_region.split(',').map(lambda c: float(c))
+        dst_region = list(map(lambda c: float(c), dst_region.split(',')))
         if len(dst_region) != 4:
             print('error: invalid region "%s"' % arg_obj.dst_region)
             sys.exit(10)
@@ -81,7 +81,7 @@ def main(args: Optional[List[str]] = None):
     basename = os.path.basename(input_file)
     basename, ext = basename.rsplit('.', 1) if '.' in basename else (basename, None)
 
-    output_name = output_pattern.format(INPUT=basename)
+    output_name = output_pattern.format(INPUT_FILE=basename)
     output_basename = output_name + '.' + output_format
     output_path = os.path.join(output_dir, output_basename)
 
