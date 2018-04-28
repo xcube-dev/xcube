@@ -1,3 +1,4 @@
+import warnings
 from typing import Tuple, Set, List
 
 import gdal
@@ -234,8 +235,17 @@ def reproject_to_wgs84(dataset: xr.Dataset,
         # print(var_name, dst_values.shape, np.nanmin(dst_values), np.nanmax(dst_values))
 
         # TODO: set CF-1.6 attributes correctly
-        # TODO: set encoding to compress and optimize output: scaling_factor, add_offset, _FillValue, chunksizes
         dst_var = xr.DataArray(dst_values, dims=['lat', 'lon'], name=var_name, attrs=src_var.attrs)
+        dst_var.encoding = src_var.encoding
+        if np.issubdtype(dst_var.dtype, np.floating) \
+                and np.issubdtype(src_var.encoding.get('dtype'), np.integer) \
+                and src_var.encoding.get('_FillValue') is None:
+            warnings.warn(f'variable {dst_var.name!r}: setting _FillValue=0 to replace any NaNs')
+            dst_var.encoding['_FillValue'] = 0
+        # TODO: set configured chunksizes in encoding
+        # dst_var.encoding['chunksizes'] =
+        # TODO: set configured complevel in encoding
+        # dst_var.encoding['complevel'] = 4
         dst_dataset[var_name] = dst_var
 
     if t1 or t2:
