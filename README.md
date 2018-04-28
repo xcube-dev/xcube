@@ -14,6 +14,37 @@ Then
     $ python setup.py develop
 
 
+# Tools
+
+## `reproj-snap-nc`
+
+    $ reproj-snap-nc -h
+    usage: reproj-snap-nc [-h] [--version] [--dir OUTPUT_DIR]
+                          [--pattern OUTPUT_PATTERN] [--format {nc,zarr}]
+                          [--size DST_SIZE] [--region DST_REGION]
+                          input_file
+
+    Reproject SNAP NetCDF4 product
+
+    positional arguments:
+      input_file            SNAP NetCDF4 product
+
+    optional arguments:
+      -h, --help            show this help message and exit
+      --version, -V         show program's version number and exit
+      --dir OUTPUT_DIR, -d OUTPUT_DIR
+                            Output directory
+      --pattern OUTPUT_PATTERN, -p OUTPUT_PATTERN
+                            Output filename pattern
+      --format {nc,zarr}, -f {nc,zarr}
+                            Output format
+      --size DST_SIZE, -s DST_SIZE
+                            Output size in pixels using format "<width>,<height>"
+      --region DST_REGION, -r DST_REGION
+                            Output region using format "<lon-min>,<lat-min>,<lon-
+                            max>,<lat-max>"
+
+
 # Cube generation notes
 
 ## Grid definition

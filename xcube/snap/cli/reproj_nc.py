@@ -10,8 +10,6 @@ from xcube.reproject import reproject_to_wgs84
 from xcube.snap.mask import mask_dataset
 from xcube.version import __version__ as version
 
-# TODO: turn this into a useful CLI tool
-
 DEFAULT_OUTPUT_DIR = '.'
 DEFAULT_OUTPUT_PATTERN = 'PROJ_WGS84_{INPUT_FILE}'
 DEFAULT_OUTPUT_FORMAT = 'nc'
