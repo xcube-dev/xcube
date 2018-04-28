@@ -70,15 +70,24 @@ class TranspileExprTest(unittest.TestCase):
         self.assertEqual(transpile_expr('min(x, y)'), 'np.fmin(x, y)')
         self.assertEqual(transpile_expr('max(x, y)'), 'np.fmax(x, y)')
 
+    def test_conditional(self):
+        # The following conditional expr looks wrong but this is how it looks like after translating
+        # from SNAP expression 'a >= 0.0 ? a : NaN'
+        self.assertEqual(transpile_expr('a >= 0.0 if a else NaN'),
+                         'np.where(a >= 0.0, a, NaN)')
+        self.assertEqual(transpile_expr('a >= 0.0 if a else b >= 0.0 if b else NaN'),
+                         'np.where(a >= 0.0, a, np.where(b >= 0.0, b, NaN))')
+
     def test_mixed(self):
-        self.assertEqual(transpile_expr('a+sin(x + 2.8)'), 'a + np.sin(x + 2.8)')
+        self.assertEqual(transpile_expr('a+sin(x + 2.8)'),
+                         'a + np.sin(x + 2.8)')
         self.assertEqual(transpile_expr('a+max(1, sin(x+2.8), x**0.5)'),
                          'a + np.fmax(1, np.sin(x + 2.8), np.power(x, 0.5))')
 
 
 class TokenizeExprTest(unittest.TestCase):
 
-    def test_tokenize_expr(self):
+    def test_simple(self):
         self.assertEqual(list(tokenize_expr('a')),
                          [Token('ID', 'a')])
         self.assertEqual(list(tokenize_expr('true')),
@@ -89,6 +98,8 @@ class TokenizeExprTest(unittest.TestCase):
                          [Token('NUM', '234.2')])
         self.assertEqual(list(tokenize_expr('a_2')),
                          [Token('ID', 'a_2')])
+
+    def test_composites(self):
         self.assertEqual(list(tokenize_expr('a + b')),
                          [Token('ID', 'a'),
                           Token('OP', '+'),
@@ -110,11 +121,13 @@ class TokenizeExprTest(unittest.TestCase):
                           Token('OP', '!='),
                           Token('NUM', '3'),
                           Token('PAR', ')')])
+
+    def test_conditional(self):
         self.assertEqual(list(tokenize_expr('a >= 0.0 ? a : NaN')),
                          [Token('ID', 'a'),
                           Token('OP', '>='),
                           Token('NUM', '0.0'),
-                          Token('OP', '?'),
+                          Token('KW', 'if'),
                           Token('ID', 'a'),
-                          Token('OP', ':'),
+                          Token('KW', 'else'),
                           Token('KW', 'NaN')])

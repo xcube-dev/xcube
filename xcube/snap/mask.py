@@ -103,6 +103,10 @@ def _translate_expr(ba_expr: str) -> str:
             if last_kind == 'ID' or last_kind == 'KW' or last_kind == 'NUM':
                 py_expr += ' '
         elif kind == 'OP':
+            if value == '?':
+                py_expr += ' if'
+                last_kind == 'KW'
+
             if last_kind == 'OP':
                 py_expr += ' '
             pass

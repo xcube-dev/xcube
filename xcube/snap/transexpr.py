@@ -11,6 +11,7 @@ def transpile_expr(expr: str, warn=False):
     Transpiles a BEAM/SNAP expression into a numpy array expression.
 
     :param expr: The BEAM/SNAP expression
+    :param warn: If warnings shall be emitted
     :return The numpy array expression:
     """
     return _ExprTranspiler(expr, warn).transpile()
@@ -27,6 +28,8 @@ class _ExprTranspiler:
     _KEYWORDS = {'in', 'not in', 'is', 'is not', 'and', 'or', 'not', 'True', 'False', 'None'}
 
     _OP_INFOS = {
+
+        ast.IfExp: ('if', 10, 'L'),
 
         ast.Eq: ('==', 100, 'R'),
         ast.NotEq: ('!=', 100, 'R'),
@@ -94,6 +97,12 @@ class _ExprTranspiler:
             x = self._transpile(node.left)
             y = self._transpile(node.right)
             return pat.format(x=x, y=y)
+        if isinstance(node, ast.IfExp):
+            pat = self.transform_if_exp(node.test, node.body, node.orelse)
+            x = self._transpile(node.test)
+            y = self._transpile(node.body)
+            z = self._transpile(node.orelse)
+            return pat.format(x=x, y=y, z=z)
         if isinstance(node, ast.BoolOp):
             pat = self.transform_bool_op(node.op, node.values)
             xes = {'x%s' % i: self._transpile(node.values[i]) for i in range(len(node.values))}
@@ -103,7 +112,7 @@ class _ExprTranspiler:
             xes = {'x0': self._transpile(node.left)}
             xes.update({'x%s' % (i + 1): self._transpile(node.comparators[i]) for i in range(len(node.comparators))})
             return pat.format(**xes)
-        raise ValueError('unrecognized expression node %s in "%s"' % node.__class__.__name__, self.expr)
+        raise ValueError('unrecognized expression node %s in "%s"' % (node.__class__.__name__, self.expr))
 
     def transform_name(self, name: ast.Name):
         return name.id
@@ -171,6 +180,10 @@ class _ExprTranspiler:
                 y = '({y})'
 
         return "%s %s %s" % (x, name, y)
+
+    # noinspection PyUnusedLocal
+    def transform_if_exp(self, test, body, orelse):
+        return 'np.where({y}, {x}, {z})'
 
     def transform_bool_op(self, op, values):
         name, precedence, assoc = _ExprTranspiler.get_op_info(op)
@@ -278,4 +291,17 @@ def tokenize_expr(code: str) -> Generator[Token, None, None]:
         else:
             if kind == 'ID' and value in token_keywords:
                 kind = 'KW'
+            elif kind == 'OP':
+                # In order to deal with SNAP conditional expr, we tokenize '?' to 'if' and ':' to 'else'
+                # so we can later build a syntactically valid Python expression. However we will need a special
+                # treatment because the semantic isn't right that way:
+                #
+                #    a ? b : c  --> a if b else c --> b if a else c
+                #
+                if value == '?':
+                    kind = 'KW'
+                    value = 'if'
+                elif value == ':':
+                    kind = 'KW'
+                    value = 'else'
             yield Token(kind, value)
