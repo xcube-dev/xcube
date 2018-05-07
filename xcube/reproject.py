@@ -26,6 +26,7 @@ CoordRange = Tuple[float, float, float, float]
 
 # TODO: add src and dst CRS
 # TODO: add callback: Callable[[Optional[Any, str]], None] = None, callback_data: Any = None
+# TODO: support waveband_var_names so that we can combine spectra as vectors
 def reproject_to_wgs84(dataset: xr.Dataset,
                        dst_size: Tuple[int, int],
                        dst_region: CoordRange = None,
@@ -37,6 +38,7 @@ def reproject_to_wgs84(dataset: xr.Dataset,
                        tp_gcp_j_step: int = None,
                        included_var_names: Set[str] = None,
                        excluded_var_names: Set[str] = None,
+                       waveband_var_names: Set[str] = None,
                        include_non_spatial_vars: bool = False) -> xr.Dataset:
     """
     Reprojection of xarray datasets with 2D geo-coding, e.g. with variables lon(y,x), lat(y, x) to
@@ -53,6 +55,7 @@ def reproject_to_wgs84(dataset: xr.Dataset,
     :param tp_gcp_j_step:
     :param included_var_names:
     :param excluded_var_names:
+    :param waveband_var_names:
     :param include_non_spatial_vars:
     :return:
     """
@@ -80,6 +83,7 @@ def reproject_to_wgs84(dataset: xr.Dataset,
     assert dst_height > 1
     assert gcp_i_step > 0
     assert gcp_j_step > 0
+    assert waveband_var_names is None  # not supported yet
 
     assert x_name in dataset
     assert y_name in dataset
