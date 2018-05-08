@@ -58,7 +58,7 @@ setup(
     entry_points={
         'console_scripts': [
             'xcube = xcube.cli.main:main',
-            'reproj-snap-nc = xcube.snap.cli.reproj_nc:main',
+            'reproj-snap-nc = xcube.snap.cli.reprojnc:main',
         ],
         'cate_plugins': [
         ],
