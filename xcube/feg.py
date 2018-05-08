@@ -1,10 +1,11 @@
 import math
+from typing import Optional, List
 
+from xcube.constants import EARTH_EQUATORIAL_RADIUS
+from xcube.types import CoordRange
 
 
 class FixedEarthGrid:
-
-    EARTH_EQUATORIAL_RADIUS = 63781370.
 
     def __init__(self, level_zero_res=1.0):
         self.level_zero_res = level_zero_res
@@ -34,18 +35,59 @@ class FixedEarthGrid:
         scale = 2 ** level
         return self.level_zero_grid_size_x * scale, self.level_zero_grid_size_y * scale
 
+    def adjust_bbox(self, bbox: CoordRange, res: float, units='degrees'):
+        lon_min, lat_min, lon_max, lat_max = bbox
+        level, res = self.get_level_and_res(res, units=units)
+        res_deg = self.to_degree(res, units)
+        x_min = math.floor(lon_min / res_deg)
+        y_min = math.floor(lat_min / res_deg)
+        x_max = math.ceil(lon_max / res_deg)
+        y_max = math.ceil(lat_max / res_deg)
+        return (x_min * res_deg, y_min * res_deg, x_max * res_deg, y_max * res_deg), \
+               (1 + x_max - x_min, 1 + y_max - y_min), \
+               level, res
+
     @classmethod
     def to_degree(cls, res, units):
-        if units == 'degrees':
+        if units == 'degrees' or units == 'deg':
             return res
-        if units == 'meters':
-            return (360.0 * res) / cls.EARTH_EQUATORIAL_RADIUS
+        if units == 'meters' or units == 'm':
+            return (360.0 * res) / EARTH_EQUATORIAL_RADIUS
         raise ValueError(f'unrecognized units {units!r}')
 
     @classmethod
     def from_degree(cls, res, units):
-        if units == 'degrees':
+        if units == 'degrees' or units == 'deg':
             return res
-        if units == 'meters':
-            return (res / 360.0) * cls.EARTH_EQUATORIAL_RADIUS
+        if units == 'meters' or units == 'm':
+            return (res / 360.0) * EARTH_EQUATORIAL_RADIUS
         raise ValueError(f'unrecognized units {units!r}')
+
+
+def main(args: Optional[List[str]] = None):
+    import argparse
+    import sys
+    args = args or sys.argv[1:]
+    parser = argparse.ArgumentParser(description='Fixed Earth Grid Calculator')
+    parser.add_argument('--units', '-u', default='degrees', choices=['degrees', 'deg', 'meters', 'm'],
+                        help='Resolution units')
+    parser.add_argument('--l0res', metavar='LEVEL_ZERO_RES', default=1, type=float,
+                        help='Level zero resolution in degrees')
+    parser.add_argument('lon_min',type=float,help='Minimum longitude of bounding box')
+    parser.add_argument('lat_min', type=float,help='Minimum latitude of bounding box')
+    parser.add_argument('lon_max', type=float,help='Maximum longitude of bounding box')
+    parser.add_argument('lat_max', type=float,help='Maximum latitude of bounding box')
+    parser.add_argument('res',type=float, help='Resolution in given units')
+    arg_obj = parser.parse_args(args)
+
+    feg = FixedEarthGrid(level_zero_res=arg_obj.l0res)
+    bbox = (arg_obj.lon_min, arg_obj.lat_min, arg_obj.lon_max, arg_obj.lat_max)
+    adjusted_bbox, grid_size, level, adjusted_res = feg.adjust_bbox(bbox, arg_obj.res, units=arg_obj.units)
+    print(f'adjusted bbox: {adjusted_bbox}')
+    print(f'adjusted res: {adjusted_res} {arg_obj.units}')
+    print(f'grid size: {grid_size}')
+    print(f'at level {level} with level zero resolution of {feg.level_zero_res} deg')
+
+
+if __name__ == '__main__':
+    main()

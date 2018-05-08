@@ -59,6 +59,7 @@ setup(
         'console_scripts': [
             'xcube = xcube.cli.main:main',
             'reproj-snap-nc = xcube.snap.cli.reprojnc:main',
+            'feg = xcube.feg:main',
         ],
         'cate_plugins': [
         ],
