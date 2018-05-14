@@ -1,6 +1,6 @@
 import glob
 import os
-from typing import Sequence, Callable, Tuple
+from typing import Sequence, Callable, Tuple, Set
 
 import xarray as xr
 import zarr
@@ -12,9 +12,11 @@ from xcube.snap.mask import mask_dataset
 def reproj_nc(input_files: Sequence[str],
               dst_size: Tuple[int, int],
               dst_region: Tuple[float, float, float, float],
-              output_pattern: str,
-              output_format: str,
+              dst_variables: Set[str],
               output_dir: str,
+              output_name: str,
+              output_format: str,
+              append: bool,
               monitor: Callable[..., None] = None):
     if monitor is None:
         # noinspection PyUnusedLocal
@@ -28,6 +30,11 @@ def reproj_nc(input_files: Sequence[str],
     for input_file in input_files:
         monitor('reading %s...' % input_file)
         dataset = xr.open_dataset(input_file, decode_cf=True, decode_coords=True)
+
+        if dst_variables:
+            dropped_variables = set(dataset.data_vars.keys()).difference(dst_variables)
+            if dropped_variables:
+                dataset = dataset.drop(dropped_variables)
 
         monitor('masking...')
         masked_dataset, mask_sets = mask_dataset(dataset,
@@ -45,11 +52,21 @@ def reproj_nc(input_files: Sequence[str],
         basename = os.path.basename(input_file)
         basename, ext = basename.rsplit('.', 1) if '.' in basename else (basename, None)
 
-        output_name = output_pattern.format(INPUT_FILE=basename)
+        output_name = output_name.format(INPUT_FILE=basename)
         output_basename = output_name + '.' + output_format
         output_path = os.path.join(output_dir, output_basename)
 
         _rm(output_path)
+
+        if append and os.path.exists(output_path):
+            monitor('appending to %s...' % output_path)
+            old_ds = xr.open_dataset(output_path)
+            proj_dataset = xr.concat([old_ds, proj_dataset],
+                                     dim='time',
+                                     data_vars='minimal',
+                                     coords='minimal',
+                                     compat='equals')
+            old_ds.close()
 
         monitor('writing %s...' % output_path)
 

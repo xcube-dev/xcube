@@ -19,56 +19,69 @@ Then
 ## `reproj-snap-nc`
 
     $ reproj-snap-nc -h
-    usage: reproj-snap-nc [-h] [--version] [--dir OUTPUT_DIR]
-                          [--pattern OUTPUT_PATTERN] [--format {nc,zarr}]
-                          [--size DST_SIZE] [--region DST_REGION]
-                          input_file
+    usage: reproj-snap-nc [-h] [--version] [--dir OUTPUT_DIR] [--name OUTPUT_NAME]
+                          [--format {nc,zarr}] [--size DST_SIZE]
+                          [--region DST_REGION] [--variables DST_VARIABLES]
+                          [--append]
+                          INPUT_FILES [INPUT_FILES ...]
 
     Reproject SNAP NetCDF4 product
 
     positional arguments:
-      input_file            SNAP NetCDF4 product
+      INPUT_FILES           SNAP NetCDF4 products. May contain wildcards.
 
     optional arguments:
       -h, --help            show this help message and exit
       --version, -V         show program's version number and exit
       --dir OUTPUT_DIR, -d OUTPUT_DIR
-                            Output directory
-      --pattern OUTPUT_PATTERN, -p OUTPUT_PATTERN
-                            Output filename pattern
+                            Output directory.
+      --name OUTPUT_NAME, -n OUTPUT_NAME
+                            Output filename pattern.
       --format {nc,zarr}, -f {nc,zarr}
                             Output format
       --size DST_SIZE, -s DST_SIZE
-                            Output size in pixels using format "<width>,<height>"
+                            Output size in pixels using format "<width>,<height>".
       --region DST_REGION, -r DST_REGION
                             Output region using format "<lon-min>,<lat-min>,<lon-
                             max>,<lat-max>"
+      --variables DST_VARIABLES, -v DST_VARIABLES
+                            Variables to be included in output. Comma-separated
+                            list of names.
+      --append, -a          Append successive outputs.
+
+Example:
+
+    $ reproj-snap-nc -a -s 2000,1000 -r 0,50,5,52.5 -v conc_chl,conc_tsm,kd489,c2rcc_flags,quality_flags -n hiroc-cube D:\OneDrive\BC\EOData\HIGHROC\2017\01\*.nc
 
 
 # Cube generation notes
 
 ## Grid definition
 
-DCS4COP cubes are generated for predefined regions and predefined spatial resolutions. 
+The data cubes in the DCS4COP project are generated for predefined regions and predefined spatial resolutions.
 A cube for a given region may be generated for multiple spatial resolutions.
 
-There may be a scenario in which all the region cubes for will be used together. Then
-it would be ideal, if the grids of the cubes are defined on a fixed Earth grid.
+There may be a scenario in which all the region cubes for will be used together. Then,
+in order to avoid another spatial resampling to a common grid, the grids of all cubes should be
+defined on a fixed Earth grid.
 
 This means a cube's region coordinates are taken from the corresponding cells 
 of a fixed Earth grid defined for a given spatial resolution.
 
-Therefore the `N` spatial resolutions shall be defined such that each subdivide
-180 degrees into an integer number with a sufficiently small remainder `eps`:
+Therefore the `num_levels` spatial resolutions in which data cubes are produced shall be defined such that
+the fixed Earth's grid sizes multiplied by the cell size `delta` is close to 180 degrees.
+In addition we want the actual data cubes sizes to be integer multiples of an appropriate internal
+chunk (tile) size used to compress and store the data at different resolution levels `i`:
 
-    |count[i] * delta[i] - 180| < eps, for 0 <= i < N
-    
-When given `count[0] = COUNT_MIN` at lowest resolution (with largest `delta[i]`) 
-then
+    |grid_size[i] * delta[i] - 180| < eps
+    num_chunks[i] = num_chunks[0] * power(2, i)
+    grid_size[i] = num_chunks[i] * chunk_size
 
-    count[i] = count[0] * f(i), for 1 < i < N
-    
-where for example `f(i) = 2 ^ i` is commonly used for image pyramids.
+with
+
+    0 <= i < num_levels
+    num_chunks[0] := number of chunks at lowest spatial resolution i in both spatial dimensions
+    chunk_size := size of a chunk in both spatial dimensions
 
 
 # Sample data

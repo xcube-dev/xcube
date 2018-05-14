@@ -9,6 +9,7 @@ import xarray as xr
 from .constants import CRS_WKT_EPSG_4326, EARTH_GEO_COORD_RANGE
 from .types import CoordRange
 
+
 # TODO: add src and dst CRS
 # TODO: add callback: Callable[[Optional[Any, str]], None] = None, callback_data: Any = None
 # TODO: support waveband_var_names so that we can combine spectra as vectors
@@ -21,8 +22,6 @@ def reproject_to_wgs84(dataset: xr.Dataset,
                        gcp_j_step: int = None,
                        tp_gcp_i_step: int = 4,
                        tp_gcp_j_step: int = None,
-                       included_var_names: Set[str] = None,
-                       excluded_var_names: Set[str] = None,
                        waveband_var_names: Set[str] = None,
                        include_non_spatial_vars: bool = False) -> xr.Dataset:
     """
@@ -38,11 +37,8 @@ def reproject_to_wgs84(dataset: xr.Dataset,
     :param gcp_j_step:
     :param tp_gcp_i_step:
     :param tp_gcp_j_step:
-    :param included_var_names:
-    :param excluded_var_names:
-    :param waveband_var_names:
     :param include_non_spatial_vars:
-    :return:
+    :return: the reprojected dataset
     """
     # TODO: Turn following into options. Current default values refer to BEAM/SNAP profile.
     x_name = 'lon'
@@ -68,7 +64,6 @@ def reproject_to_wgs84(dataset: xr.Dataset,
     assert dst_height > 1
     assert gcp_i_step > 0
     assert gcp_j_step > 0
-    assert waveband_var_names is None  # not supported yet
 
     assert x_name in dataset
     assert y_name in dataset
@@ -151,14 +146,6 @@ def reproject_to_wgs84(dataset: xr.Dataset,
 
     for var_name in dataset.variables:
         src_var = dataset[var_name]
-
-        # Include variables
-        if included_var_names and var_name not in included_var_names:
-            continue
-
-        # Exclude included variables
-        if excluded_var_names and var_name in excluded_var_names:
-            continue
 
         if var_name == x_name or var_name == y_name:
             # Don't store lat and lon 2D vars in destination, this will let xarray raise
@@ -244,14 +231,14 @@ def reproject_to_wgs84(dataset: xr.Dataset,
         else:
             t0 = t1 or t2
         dst_dataset = dst_dataset.assign_coords(time=[t0])
-        # TODO: correctly set time "units" attr
+        # TODO: correctly set time "units" attr (how can we know which units, actually?)
         # dst_dataset.coords['time']['units'] = 'microseconds since 1970-01-01 00:00:00'
         # dst_dataset.coords['time']['calendar'] = 'standard'
         dst_dataset.coords['time']['long_name'] = 'time'
         if t1 and t2:
             dst_dataset.coords['time']['bounds'] = 'time_bnds'
             dst_dataset = dst_dataset.assign_coords(time_bnds=(['time', 'bnds'], [[t1, t2]]))
-            # TODO: correctly set time "units" attr
+            # TODO: correctly set time "units" attr (how can we know which units, actually?)
             # dst_dataset.coords['time_bnds']['units'] = 'microseconds since 1970-01-01 00:00:00'
             # dst_dataset.coords['time_bnds']['calendar'] = 'standard'
 
