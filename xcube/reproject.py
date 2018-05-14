@@ -16,6 +16,7 @@ from .types import CoordRange
 REF_DATETIME_STR = '1970-01-01 00:00:00'
 REF_DATETIME = pd.to_datetime(REF_DATETIME_STR)
 DATETIME_UNITS = f'days since {REF_DATETIME_STR}'
+DATETIME_CALENDAR = 'gregorian'
 SECONDS_PER_DAY = 24 * 60 * 60
 MICROSECONDS_PER_DAY = 1000 * 1000 * SECONDS_PER_DAY
 
@@ -234,17 +235,23 @@ def reproject_to_wgs84(dataset: xr.Dataset,
         else:
             t_center = t1 or t2
         dst_dataset = dst_dataset.assign_coords(time=(['time'], [t_center]))
-        dst_dataset.coords['time'].attrs['units'] = DATETIME_UNITS
-        dst_dataset.coords['time'].attrs['calendar'] = 'standard'
-        dst_dataset.coords['time'].attrs['long_name'] = 'time'
-        dst_dataset.coords['time'].attrs['standard_name'] = 'time'
+        time_var = dst_dataset.coords['time']
+        time_var.attrs['long_name'] = 'time'
+        time_var.attrs['standard_name'] = 'time'
+        time_var.attrs['units'] = DATETIME_UNITS
+        time_var.attrs['calendar'] = DATETIME_CALENDAR
+        time_var.encoding['units'] = DATETIME_UNITS
+        time_var.encoding['calendar'] = DATETIME_CALENDAR
         if t1 and t2:
-            dst_dataset.coords['time'].attrs['bounds'] = 'time_bnds'
+            time_var.attrs['bounds'] = 'time_bnds'
             dst_dataset = dst_dataset.assign_coords(time_bnds=(['time', 'bnds'], [[t1, t2]]))
-            dst_dataset.coords['time_bnds'].attrs['units'] = DATETIME_UNITS
-            dst_dataset.coords['time_bnds'].attrs['calendar'] = 'standard'
-            dst_dataset.coords['time_bnds'].attrs['long_name'] = 'time'
-            dst_dataset.coords['time_bnds'].attrs['standard_name'] = 'time'
+            time_bnds_var = dst_dataset.coords['time_bnds']
+            time_bnds_var.attrs['long_name'] = 'time'
+            time_bnds_var.attrs['standard_name'] = 'time'
+            time_bnds_var.attrs['units'] = DATETIME_UNITS
+            time_bnds_var.attrs['calendar'] = DATETIME_CALENDAR
+            time_bnds_var.encoding['units'] = DATETIME_UNITS
+            time_bnds_var.encoding['calendar'] = DATETIME_CALENDAR
 
     return dst_dataset
 
