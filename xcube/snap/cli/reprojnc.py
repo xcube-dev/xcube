@@ -68,7 +68,7 @@ def main(args: Optional[List[str]] = None):
             print(f'error: invalid variables {arg_obj.dst_variables!r}')
             sys.exit(10)
 
-    from .reprojncimpl import reproj_nc
+    from xcube.snap.cli.reprojncimpl import reproj_nc
     reproj_nc(input_files,
               dst_size,
               dst_region,
