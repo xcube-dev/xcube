@@ -1,5 +1,5 @@
 import warnings
-from typing import Tuple, Set, List
+from typing import Tuple, List
 
 import gdal
 import numpy as np
@@ -9,10 +9,16 @@ import xarray as xr
 from .constants import CRS_WKT_EPSG_4326, EARTH_GEO_COORD_RANGE
 from .types import CoordRange
 
-
 # TODO: add src and dst CRS
 # TODO: add callback: Callable[[Optional[Any, str]], None] = None, callback_data: Any = None
 # TODO: support waveband_var_names so that we can combine spectra as vectors
+
+REF_DATETIME_STR = '1970-01-01 00:00:00'
+REF_DATETIME = pd.to_datetime(REF_DATETIME_STR)
+DATETIME_UNITS = f'days since {REF_DATETIME_STR}'
+SECONDS_PER_DAY = 24 * 60 * 60
+MICROSECONDS_PER_DAY = 1000 * 1000 * SECONDS_PER_DAY
+
 def reproject_to_wgs84(dataset: xr.Dataset,
                        dst_size: Tuple[int, int],
                        dst_region: CoordRange = None,
@@ -22,7 +28,6 @@ def reproject_to_wgs84(dataset: xr.Dataset,
                        gcp_j_step: int = None,
                        tp_gcp_i_step: int = 4,
                        tp_gcp_j_step: int = None,
-                       waveband_var_names: Set[str] = None,
                        include_non_spatial_vars: bool = False) -> xr.Dataset:
     """
     Reprojection of xarray datasets with 2D geo-coding, e.g. with variables lon(y,x), lat(y, x) to
@@ -110,11 +115,10 @@ def reproject_to_wgs84(dataset: xr.Dataset,
     if 'time' not in dataset:
         t1 = dataset.attrs.get(time_min_name)
         t2 = dataset.attrs.get(time_max_name)
-        datetime_options = dict(format=time_format, infer_datetime_format=True, origin='unix')
         if t1 is not None:
-            t1 = pd.to_datetime(t1, **datetime_options)
+            t1 = _get_time_in_days_since_1970(t1, format=time_format)
         if t2 is not None:
-            t2 = pd.to_datetime(t2, **datetime_options)
+            t2 = _get_time_in_days_since_1970(t2, format=time_format)
     else:
         t1 = None
         t2 = None
@@ -218,29 +222,29 @@ def reproject_to_wgs84(dataset: xr.Dataset,
                 and src_var.encoding.get('_FillValue') is None:
             warnings.warn(f'variable {dst_var.name!r}: setting _FillValue=0 to replace any NaNs')
             dst_var.encoding['_FillValue'] = 0
-        # TODO: set configured chunksizes in encoding
-        # dst_var.encoding['chunksizes'] =
-        # TODO: set configured complevel in encoding
-        # dst_var.encoding['complevel'] = 4
+        dst_var.encoding['chunksizes'] = (1, dst_var.shape[-2], dst_var.shape[-1])
+        dst_var.encoding['zlib'] = True
+        dst_var.encoding['complevel'] = 4
         dst_dataset[var_name] = dst_var
 
     if t1 or t2:
         dst_dataset = dst_dataset.expand_dims('time')
         if t1 and t2:
-            t0 = t1 + 0.5 * (t2 - t1)
+            t_center = t1 + 0.5 * (t2 - t1)
         else:
-            t0 = t1 or t2
-        dst_dataset = dst_dataset.assign_coords(time=[t0])
-        # TODO: correctly set time "units" attr (how can we know which units, actually?)
-        # dst_dataset.coords['time']['units'] = 'microseconds since 1970-01-01 00:00:00'
-        # dst_dataset.coords['time']['calendar'] = 'standard'
-        dst_dataset.coords['time']['long_name'] = 'time'
+            t_center = t1 or t2
+        dst_dataset = dst_dataset.assign_coords(time=(['time'], [t_center]))
+        dst_dataset.coords['time'].attrs['units'] = DATETIME_UNITS
+        dst_dataset.coords['time'].attrs['calendar'] = 'standard'
+        dst_dataset.coords['time'].attrs['long_name'] = 'time'
+        dst_dataset.coords['time'].attrs['standard_name'] = 'time'
         if t1 and t2:
-            dst_dataset.coords['time']['bounds'] = 'time_bnds'
+            dst_dataset.coords['time'].attrs['bounds'] = 'time_bnds'
             dst_dataset = dst_dataset.assign_coords(time_bnds=(['time', 'bnds'], [[t1, t2]]))
-            # TODO: correctly set time "units" attr (how can we know which units, actually?)
-            # dst_dataset.coords['time_bnds']['units'] = 'microseconds since 1970-01-01 00:00:00'
-            # dst_dataset.coords['time_bnds']['calendar'] = 'standard'
+            dst_dataset.coords['time_bnds'].attrs['units'] = DATETIME_UNITS
+            dst_dataset.coords['time_bnds'].attrs['calendar'] = 'standard'
+            dst_dataset.coords['time_bnds'].attrs['long_name'] = 'time'
+            dst_dataset.coords['time_bnds'].attrs['standard_name'] = 'time'
 
     return dst_dataset
 
@@ -287,3 +291,9 @@ def _get_gcps(x_var: xr.DataArray,
             gcps.append(gdal.GCP(x, y, 0.0, i + 0.5, j + 0.5, '%s,%s' % (i, j), str(gcp_id)))
             gcp_id += 1
     return gcps
+
+
+def _get_time_in_days_since_1970(t: str, format=None) -> float:
+    datetime = pd.to_datetime(t, format=format, infer_datetime_format=True)
+    timedelta = datetime - REF_DATETIME
+    return timedelta.days + timedelta.seconds / SECONDS_PER_DAY + timedelta.microseconds / MICROSECONDS_PER_DAY

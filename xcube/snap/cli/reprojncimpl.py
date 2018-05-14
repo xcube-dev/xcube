@@ -104,7 +104,7 @@ def reproj_nc(input_files: Sequence[str],
 
     for input_file in input_files:
         monitor('reading %s...' % input_file)
-        dataset = xr.open_dataset(input_file, decode_cf=True, decode_coords=True)
+        dataset = xr.open_dataset(input_file, decode_cf=True, decode_coords=True, decode_times=False)
 
         if dst_variables:
             dropped_variables = set(dataset.data_vars.keys()).difference(dst_variables)
