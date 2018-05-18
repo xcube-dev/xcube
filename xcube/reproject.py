@@ -20,6 +20,10 @@ DATETIME_CALENDAR = 'gregorian'
 SECONDS_PER_DAY = 24 * 60 * 60
 MICROSECONDS_PER_DAY = 1000 * 1000 * SECONDS_PER_DAY
 
+gdal.UseExceptions()
+gdal.PushErrorHandler('CPLQuietErrorHandler')
+
+
 def reproject_to_wgs84(dataset: xr.Dataset,
                        dst_size: Tuple[int, int],
                        dst_region: CoordRange = None,
@@ -98,6 +102,7 @@ def reproject_to_wgs84(dataset: xr.Dataset,
     gcps = _get_gcps(x_var, y_var, gcp_i_step, gcp_j_step)
 
     if tp_x_name in dataset and tp_y_name in dataset:
+        # If there are tie-point variables in the dataset
         tp_x_var = dataset[tp_x_name]
         tp_y_var = dataset[tp_y_name]
         assert len(tp_x_var.shape) == 2
@@ -106,12 +111,14 @@ def reproject_to_wgs84(dataset: xr.Dataset,
         tp_height = tp_x_var.shape[-2]
         assert tp_gcp_i_step > 0
         assert tp_gcp_j_step > 0
+        # Extract GCPs also from tie-point lon/lat 2D variables
         tp_gcps = _get_gcps(tp_x_var, tp_y_var, tp_gcp_i_step, tp_gcp_j_step)
     else:
-        tp_gcps = None
+        # No tie-point variables
+        tp_x_var = None
         tp_width = None
         tp_height = None
-        tp_x_var = None
+        tp_gcps = None
 
     if 'time' not in dataset:
         t1 = dataset.attrs.get(time_min_name)

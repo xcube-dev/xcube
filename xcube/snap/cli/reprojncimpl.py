@@ -98,12 +98,15 @@ def reproj_nc(input_files: Sequence[str],
         def monitor(*args):
             pass
 
-    input_files = [input_file for f in input_files for input_file in glob.glob(f, recursive=True)]
+    input_files = sorted([input_file for f in input_files for input_file in glob.glob(f, recursive=True)])
 
     os.makedirs(output_dir, exist_ok=True)
 
+    ds_count = len(input_files)
+    ds_index = 0
     for input_file in input_files:
-        monitor('reading %s...' % input_file)
+        monitor(f'processing dataset {ds_index + 1} of {ds_count}: {input_file!r}...')
+        monitor('reading...')
         dataset = xr.open_dataset(input_file, decode_cf=True, decode_coords=True, decode_times=False)
 
         if dst_variables:
@@ -116,13 +119,19 @@ def reproj_nc(input_files: Sequence[str],
                                                  expr_pattern='({expr}) AND !quality_flags.land',
                                                  errors='raise')
 
-        for _, mask_set in mask_sets.items():
-            monitor('mask set found: %s' % mask_set)
-
-        proj_dataset = reproject_to_wgs84(masked_dataset,
-                                          dst_size,
-                                          dst_region=dst_region,
-                                          gcp_i_step=50)
+        try:
+            proj_dataset = reproject_to_wgs84(masked_dataset,
+                                              dst_size,
+                                              dst_region=dst_region,
+                                              gcp_i_step=50)
+        except RuntimeError as e:
+            import sys
+            import traceback
+            monitor(f'ERROR: during reprojection to WGS84: {e}')
+            monitor('skipping dataset')
+            etype, value, tb = sys.exc_info()
+            traceback.print_exception(etype, value, tb)
+            continue
 
         basename = os.path.basename(input_file)
         basename, ext = basename.rsplit('.', 1) if '.' in basename else (basename, None)
@@ -132,14 +141,16 @@ def reproj_nc(input_files: Sequence[str],
         output_path = os.path.join(output_dir, output_basename)
 
         if append and os.path.exists(output_path):
-            monitor('appending to %s...' % output_path)
+            monitor('appending...')
             dataset_writer.append(proj_dataset, output_path)
         else:
             _rm(output_path)
-            monitor('writing %s...' % output_path)
+            monitor('writing ...')
             dataset_writer.create(proj_dataset, output_path)
 
         proj_dataset.close()
+
+        ds_index += 1
 
         # from matplotlib import pyplot as plt
         # for var_name in new_dataset.variables:
@@ -147,6 +158,9 @@ def reproj_nc(input_files: Sequence[str],
         #     if var.dims == ('lat', 'lon'):
         #         var.plot()
         #         plt.show()
+
+    monitor(f'{ds_index} of {ds_count} datasets processed successfully, '
+            f'{ds_count - ds_index} were dropped due to errors')
 
 
 def _rm(path):
