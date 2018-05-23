@@ -8,13 +8,13 @@ dependencies:
   - dask=0.17.2
   - gdal=2.2.4
   - matplotlib=2.1.1
-  - numpy=1.14.2
+  - numpy=1.14.3
   - pandas=0.22.0
   - rasterio=0.36.0
   - s3transfer=0.1.13
   - scipy=1.0.1
   - tornado=5.0.2
-  - xarray=0.10.3
+  - xarray=0.10.4
   - zarr=2.2.0
   # development/testing
   - pytest
