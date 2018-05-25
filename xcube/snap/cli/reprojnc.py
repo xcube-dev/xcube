@@ -23,13 +23,13 @@ def main(args: Optional[List[str]] = None):
     parser = argparse.ArgumentParser(description='Reproject SNAP NetCDF4 product')
     parser.add_argument('--version', '-V', action='version', version=version)
     parser.add_argument('--dir', '-d', dest='output_dir', default=DEFAULT_OUTPUT_DIR,
-                        help='Output directory.')
+                        help=f'Output directory. Defaults to {DEFAULT_OUTPUT_DIR!r}')
     parser.add_argument('--name', '-n', dest='output_name', default=DEFAULT_OUTPUT_PATTERN,
-                        help='Output filename pattern.')
+                        help=f'Output filename pattern. Defaults to {DEFAULT_OUTPUT_PATTERN!r}.')
     parser.add_argument('--format', '-f', dest='output_format', default=DEFAULT_OUTPUT_FORMAT, choices=['nc', 'zarr'],
-                        help='Output format')
+                        help=f'Output format. Defaults to {DEFAULT_OUTPUT_FORMAT!r}.')
     parser.add_argument('--size', '-s', dest='dst_size', default=DEFAULT_DST_SIZE,
-                        help='Output size in pixels using format "<width>,<height>".')
+                        help=f'Output size in pixels using format "<width>,<height>". Defaults to {DEFAULT_DST_SIZE!r}.')
     parser.add_argument('--region', '-r', dest='dst_region',
                         help='Output region using format "<lon-min>,<lat-min>,<lon-max>,<lat-max>"')
     parser.add_argument('--variables', '-v', dest='dst_variables',
