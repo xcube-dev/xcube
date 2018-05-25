@@ -22,8 +22,6 @@
 # SOFTWARE.
 
 
-import os
-
 from setuptools import setup, find_packages
 
 # in alphabetical oder
@@ -33,10 +31,7 @@ requirements = [
     'matplotlib',
     'numpy',
     'pandas',
-    'rasterio',
     's3transfer',
-    'scipy',
-    'tornado',
     'xarray',
     'zarr',
 ]
