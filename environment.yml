@@ -10,7 +10,6 @@ dependencies:
   - matplotlib=2.2.2
   - numpy=1.14.3
   - pandas=0.22.0
-  - s3transfer=0.1.13
   - xarray=0.10.4
   - zarr=2.2.0
   # development/testing

@@ -31,7 +31,6 @@ requirements = [
     'matplotlib',
     'numpy',
     'pandas',
-    's3transfer',
     'xarray',
     'zarr',
 ]
