@@ -31,7 +31,7 @@ def reproject_to_wgs84(dataset: xr.Dataset,
                        valid_region: CoordRange = None,
                        gcp_i_step: int = 10,
                        gcp_j_step: int = None,
-                       tp_gcp_i_step: int = 4,
+                       tp_gcp_i_step: int = 1,
                        tp_gcp_j_step: int = None,
                        include_non_spatial_vars: bool = False) -> xr.Dataset:
     """
@@ -138,21 +138,17 @@ def reproject_to_wgs84(dataset: xr.Dataset,
 
     dst_dataset = xr.Dataset()
     dst_dataset.coords['lon'] = (['lon', ],
-                                 np.linspace(x1 + dst_res / 2, dst_x2 - dst_res / 2, dst_width),
-                                 dict(bounds='lon_bnds', long_name='longitude', units='degrees_east'))
+                                 np.linspace(x1 + dst_res / 2, dst_x2 - dst_res / 2, dst_width))
     dst_dataset.coords['lat'] = (['lat', ],
-                                 np.linspace(y2 - dst_res / 2, dst_y1 + dst_res / 2, dst_height),
-                                 dict(bounds='lat_bnds', long_name='latitude', units='degrees_north'))
+                                 np.linspace(y2 - dst_res / 2, dst_y1 + dst_res / 2, dst_height))
     dst_dataset.coords['lon_bnds'] = (['lon', 'bnds'],
                                       # TODO: find more elegant numpy expr for the following
                                       list(zip(np.linspace(x1, dst_x2 - dst_res, dst_width),
-                                               np.linspace(x1 + dst_res, dst_x2, dst_width))),
-                                      dict(units='degrees_east'))
+                                               np.linspace(x1 + dst_res, dst_x2, dst_width))))
     dst_dataset.coords['lat_bnds'] = (['lat', 'bnds'],
                                       # TODO: find more elegant numpy expr for the following
                                       list(zip(np.linspace(y2, dst_y1 + dst_res, dst_height),
-                                               np.linspace(y2 - dst_res, dst_y1, dst_height))),
-                                      dict(units='degrees_north'))
+                                               np.linspace(y2 - dst_res, dst_y1, dst_height))))
     dst_dataset.attrs = dataset.attrs
     dst_dataset.attrs['Conventions'] = 'CF-1.6'
 
@@ -259,6 +255,28 @@ def reproject_to_wgs84(dataset: xr.Dataset,
             time_bnds_var.attrs['calendar'] = DATETIME_CALENDAR
             time_bnds_var.encoding['units'] = DATETIME_UNITS
             time_bnds_var.encoding['calendar'] = DATETIME_CALENDAR
+
+    lon_var = dst_dataset.coords['lon']
+    lon_var.attrs['long_name'] = 'longitude'
+    lon_var.attrs['standard_name'] = 'longitude'
+    lon_var.attrs['units'] = 'degrees_east'
+    lon_var.attrs['bounds'] = 'lon_bnds'
+
+    lat_var = dst_dataset.coords['lat']
+    lat_var.attrs['long_name'] = 'latitude'
+    lat_var.attrs['standard_name'] = 'latitude'
+    lat_var.attrs['units'] = 'degrees_north'
+    lat_var.attrs['bounds'] = 'lat_bnds'
+
+    lon_bnds_var = dst_dataset.coords['lon_bnds']
+    lon_bnds_var.attrs['long_name'] = 'longitude'
+    lon_bnds_var.attrs['standard_name'] = 'longitude'
+    lon_bnds_var.attrs['units'] = 'degrees_east'
+
+    lat_bnds_var = dst_dataset.coords['lat_bnds']
+    lat_bnds_var.attrs['long_name'] = 'latitude'
+    lat_bnds_var.attrs['standard_name'] = 'latitude'
+    lat_bnds_var.attrs['units'] = 'degrees_north'
 
     return dst_dataset
 
