@@ -4,15 +4,22 @@ Data cubes with xarray
 
 # Installation
 
-First time users:
-
+First
+    
+    $ git clone https://github.com/bcdev/xcube.git
+    $ cd xcube
     $ conda env create
     
 Then
-
+    
     $ activate xcube-dev
     $ python setup.py develop
 
+Update
+    
+    $ activate xcube-dev
+    $ git pull --force
+    $ python setup.py develop
 
 # Tools
 
@@ -24,23 +31,26 @@ Then
                           [--region DST_REGION] [--variables DST_VARIABLES]
                           [--append]
                           INPUT_FILES [INPUT_FILES ...]
-
+    
     Reproject SNAP NetCDF4 product
-
+    
     positional arguments:
-      INPUT_FILES           SNAP NetCDF4 products. May contain wildcards.
-
+      INPUT_FILES           SNAP NetCDF4 products. May contain wildcards '?', '*',
+                            and '**'.
+    
     optional arguments:
       -h, --help            show this help message and exit
       --version, -V         show program's version number and exit
       --dir OUTPUT_DIR, -d OUTPUT_DIR
-                            Output directory.
+                            Output directory. Defaults to '.'
       --name OUTPUT_NAME, -n OUTPUT_NAME
-                            Output filename pattern.
+                            Output filename pattern. Defaults to
+                            'PROJ_WGS84_{INPUT_FILE}'.
       --format {nc,zarr}, -f {nc,zarr}
-                            Output format
+                            Output format. Defaults to 'nc'.
       --size DST_SIZE, -s DST_SIZE
                             Output size in pixels using format "<width>,<height>".
+                            Defaults to '512,512'.
       --region DST_REGION, -r DST_REGION
                             Output region using format "<lon-min>,<lat-min>,<lon-
                             max>,<lat-max>"
@@ -48,6 +58,7 @@ Then
                             Variables to be included in output. Comma-separated
                             list of names.
       --append, -a          Append successive outputs.
+
 
 Example:
 
@@ -84,7 +95,7 @@ with
     chunk_size := size of a chunk in both spatial dimensions
 
 
-# Sample data
+# HIGHROC sample data
 
 * ftp://ftp.brockmann-consult.de/
 * user: highrocre

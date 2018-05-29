@@ -37,7 +37,7 @@ def main(args: Optional[List[str]] = None):
     parser.add_argument('--append', '-a', default=False, action='store_true',
                         help='Append successive outputs.')
     parser.add_argument('input_files', metavar='INPUT_FILES', nargs='+',
-                        help="SNAP NetCDF4 products. May contain wildcards.")
+                        help="SNAP NetCDF4 products. May contain wildcards '?', '*', and '**'.")
 
     arg_obj = parser.parse_args(args)
 
