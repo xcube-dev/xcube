@@ -118,6 +118,12 @@ def reproj_nc_files(input_files: Sequence[str],
         if ok:
             ds_index += 1
 
+    if append:
+        # TODO: adjust file-level CF attributes
+        # proj_dataset.attrs['Conventions'] = 'CF-1.7'
+        # proj_dataset.attrs['geospatial_lon_min'] = 'CF-1.7'
+        pass
+
     monitor(f'{ds_index} of {ds_count} datasets processed successfully, '
             f'{ds_count - ds_index} were dropped due to errors')
 
@@ -164,6 +170,10 @@ def reproj_nc_file(input_file: str,
     output_name = output_name.format(INPUT_FILE=basename)
     output_basename = output_name + '.' + dataset_writer.ext
     output_path = os.path.join(output_dir, output_basename)
+
+    if append:
+        proj_dataset.attrs.clear()
+        proj_dataset.attrs['Conventions'] = 'CF-1.7'
 
     if append and os.path.exists(output_path):
         monitor('appending...')
