@@ -12,6 +12,9 @@ dependencies:
   - pandas=0.22.0
   - xarray=0.10.4
   - zarr=2.2.0
-  # development/testing
-  - pytest=3.5.1
-  - pytest-cov=2.5.1
+  #
+  # development tools
+  #
+  - pytest =3.5.1
+  - pytest-cov =2.5.1
+  - flake8 =3.5.0
