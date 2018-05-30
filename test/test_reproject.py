@@ -5,7 +5,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 from numpy.testing import assert_array_almost_equal
 
-from test.test_data import create_highroc_dataset
+from test.sampledata import create_highroc_dataset
 from xcube.reproject import reproject_to_wgs84
 
 nan = np.nan

@@ -3,7 +3,7 @@ import unittest
 import numpy as np
 from numpy.testing import assert_array_almost_equal
 
-from test.test_data import create_highroc_dataset, create_c2rcc_flag_var
+from test.sampledata import create_highroc_dataset, create_c2rcc_flag_var
 from xcube.maskset import MaskSet
 
 
