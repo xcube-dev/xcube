@@ -2,6 +2,8 @@ import argparse
 import sys
 from typing import List, Optional
 
+import yaml
+from xcube.metadata import flatten_dict, load_yaml
 from xcube.version import __version__ as version
 
 DEFAULT_OUTPUT_DIR = '.'
@@ -32,6 +34,8 @@ def main(args: Optional[List[str]] = None):
                         help=f'Output size in pixels using format "<width>,<height>". Defaults to {DEFAULT_DST_SIZE!r}.')
     parser.add_argument('--region', '-r', dest='dst_region',
                         help='Output region using format "<lon-min>,<lat-min>,<lon-max>,<lat-max>"')
+    parser.add_argument('--meta-file', '-m', dest='dst_meta_file',
+                        help='File containing cube-level CF-compliant metadata in YAML format.')
     parser.add_argument('--variables', '-v', dest='dst_variables',
                         help='Variables to be included in output. Comma-separated list of names.')
     parser.add_argument('--append', '-a', default=False, action='store_true',
@@ -48,6 +52,7 @@ def main(args: Optional[List[str]] = None):
     dst_size = arg_obj.dst_size
     dst_region = arg_obj.dst_region
     dst_variables = arg_obj.dst_variables
+    dst_meta_file = arg_obj.dst_meta_file
     append = arg_obj.append
 
     if dst_size:
@@ -68,11 +73,23 @@ def main(args: Optional[List[str]] = None):
             print(f'error: invalid variables {arg_obj.dst_variables!r}')
             sys.exit(10)
 
+    if dst_meta_file:
+        try:
+            with open(dst_meta_file) as stream:
+                dst_metadata = load_yaml(stream)
+            print(f'loaded metadata from file {arg_obj.dst_meta_file!r}')
+        except OSError as e:
+            print(f'error: failed loading metadata file {arg_obj.dst_meta_file!r}: {e}')
+            sys.exit(10)
+    else:
+        dst_metadata = None
+
     from xcube.snap.cli.reprojncimpl import reproj_nc_files
     reproj_nc_files(input_files,
                     dst_size,
                     dst_region,
                     dst_variables,
+                    dst_metadata,
                     output_dir,
                     output_name,
                     output_format,

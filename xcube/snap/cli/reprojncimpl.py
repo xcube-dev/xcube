@@ -1,11 +1,10 @@
 import glob
 import os
 from abc import abstractmethod
-from typing import Sequence, Callable, Tuple, Set
+from typing import Sequence, Callable, Tuple, Set, Any, Dict, Optional
 
 import xarray as xr
 import zarr
-
 from xcube.reproject import reproject_to_wgs84
 from xcube.snap.mask import mask_dataset
 
@@ -81,6 +80,7 @@ def reproj_nc_files(input_files: Sequence[str],
                     dst_size: Tuple[int, int],
                     dst_region: Tuple[float, float, float, float],
                     dst_variables: Set[str],
+                    dst_metadata: Optional[Dict[str, Any]],
                     output_dir: str,
                     output_name: str,
                     output_format: str,
@@ -104,25 +104,37 @@ def reproj_nc_files(input_files: Sequence[str],
 
     ds_count = len(input_files)
     ds_index = 0
+    output_path = None
     for input_file in input_files:
         monitor(f'processing dataset {ds_index + 1} of {ds_count}: {input_file!r}...')
-        ok = reproj_nc_file(input_file,
-                            dst_size,
-                            dst_region,
-                            dst_variables,
-                            output_dir,
-                            output_name,
-                            dataset_writer,
-                            append,
-                            monitor)
+        output_path, ok = reproj_nc_file(input_file,
+                                         dst_size,
+                                         dst_region,
+                                         dst_variables,
+                                         dst_metadata,
+                                         output_dir,
+                                         output_name,
+                                         dataset_writer,
+                                         append,
+                                         monitor)
         if ok:
             ds_index += 1
 
-    if append:
-        # TODO: adjust file-level CF attributes
-        # proj_dataset.attrs['Conventions'] = 'CF-1.7'
-        # proj_dataset.attrs['geospatial_lon_min'] = 'CF-1.7'
-        pass
+    # if dst_metadata and append and output_path:
+    #     monitor(f'adding file-level metadata to {output_path!r}...')
+    #     if output_format == 'nc':
+    #         ds = xr.open_dataset(output_path)
+    #         ds.attrs.clear()
+    #         ds.attrs.update(dst_metadata)
+    #         ds.to_netcdf(output_path)
+    #         ds.close()
+    #     elif output_format == 'zarr':
+    #         ds = xr.open_zarr(output_path)
+    #         ds.attrs.clear()
+    #         ds.attrs.update(dst_metadata)
+    #         ds.to_zarr(output_path)
+    #         ds.close()
+    #     monitor(f'done adding file-level metadata.')
 
     monitor(f'{ds_index} of {ds_count} datasets processed successfully, '
             f'{ds_count - ds_index} were dropped due to errors')
@@ -132,11 +144,19 @@ def reproj_nc_file(input_file: str,
                    dst_size: Tuple[int, int],
                    dst_region: Tuple[float, float, float, float],
                    dst_variables: Set[str],
+                   dst_metadata: Dict[str, Any],
                    output_dir: str,
                    output_name: str,
                    dataset_writer: DatasetWriter,
                    append: bool,
                    monitor: Callable[..., None] = None):
+    basename = os.path.basename(input_file)
+    basename, ext = basename.rsplit('.', 1) if '.' in basename else (basename, None)
+
+    output_name = output_name.format(INPUT_FILE=basename)
+    output_basename = output_name + '.' + dataset_writer.ext
+    output_path = os.path.join(output_dir, output_basename)
+
     monitor('reading...')
     dataset = xr.open_dataset(input_file, decode_cf=True, decode_coords=True, decode_times=False)
 
@@ -154,7 +174,7 @@ def reproj_nc_file(input_file: str,
         proj_dataset = reproject_to_wgs84(masked_dataset,
                                           dst_size,
                                           dst_region=dst_region,
-                                          gcp_i_step=50)
+                                          gcp_i_step=5)
     except RuntimeError as e:
         import sys
         import traceback
@@ -162,30 +182,23 @@ def reproj_nc_file(input_file: str,
         monitor('skipping dataset')
         etype, value, tb = sys.exc_info()
         traceback.print_exception(etype, value, tb)
-        return False
+        return output_path, False
 
-    basename = os.path.basename(input_file)
-    basename, ext = basename.rsplit('.', 1) if '.' in basename else (basename, None)
-
-    output_name = output_name.format(INPUT_FILE=basename)
-    output_basename = output_name + '.' + dataset_writer.ext
-    output_path = os.path.join(output_dir, output_basename)
-
-    if append:
+    if dst_metadata:
         proj_dataset.attrs.clear()
-        proj_dataset.attrs['Conventions'] = 'CF-1.7'
+        proj_dataset.attrs.update(dst_metadata)
 
     if append and os.path.exists(output_path):
-        monitor('appending...')
+        monitor(f'appending to {output_path}...')
         dataset_writer.append(proj_dataset, output_path)
     else:
         _rm(output_path)
-        monitor('writing ...')
+        monitor(f'writing to {output_path}...')
         dataset_writer.create(proj_dataset, output_path)
 
     proj_dataset.close()
 
-    return True
+    return output_path, True
 
 
 def _rm(path):

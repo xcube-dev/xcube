@@ -4,16 +4,20 @@ channels:
   - defaults
 dependencies:
   - python=3.6.5
-  # runtime
+  #
+  # runtime dependencies
+  #
   - dask=0.17.2
   - gdal=2.2.4
   - matplotlib=2.2.2
   - numpy=1.14.3
   - pandas=0.22.0
+  - pyyaml=3.12
+  - s3fs=0.1.5
   - xarray=0.10.4
   - zarr=2.2.0
   #
-  # development tools
+  # development dependencies
   #
   - pytest =3.5.1
   - pytest-cov =2.5.1
