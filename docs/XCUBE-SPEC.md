@@ -25,7 +25,8 @@ xcube data
 * SHALL shall be easy to read, write, process, generate
 * SHALL conform to the requirements of analysis ready data (ARD)
 * SHALL be compatible with existing tools and APIs
-* SHALL conform to standards or common practices
+* SHALL conform to standards or common practices and follow a common data model
+* SHALL be formatted as self-contained datasets
 * SHALL be Cloud ready (TBD...)
 
 ARD links:
