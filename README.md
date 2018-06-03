@@ -27,10 +27,10 @@ Update
 
     $ xcube-genl2c -h
     usage: xcube-genl2c [-h] [--version] [--dir OUTPUT_DIR] [--name OUTPUT_NAME]
-                  [--format {netcdf4,zarr}] [--size OUTPUT_SIZE]
-                  [--region OUTPUT_REGION] [--meta-file OUTPUT_META_FILE]
-                  [--variables OUTPUT_VARIABLES] [--append] [--type {snap-c2rcc}]
-                  INPUT_FILES [INPUT_FILES ...]
+                        [--format {netcdf4,zarr}] [--size OUTPUT_SIZE]
+                        [--region OUTPUT_REGION] [--meta-file OUTPUT_META_FILE]
+                        [--variables OUTPUT_VARIABLES] [--append] [--type {snap-c2rcc}]
+                        INPUT_FILES [INPUT_FILES ...]
 
     Generate L2C data cube from various input files. L2C data cubes may be created
     in one go or in successively in append mode, input by input.
