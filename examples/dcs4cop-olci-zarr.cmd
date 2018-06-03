@@ -1,4 +1,4 @@
-genl2c ^
+xcube-genl2c ^
    -t snap-c2rcc ^
    -f zarr ^
    -a ^

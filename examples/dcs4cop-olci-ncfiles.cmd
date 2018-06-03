@@ -1,4 +1,4 @@
-genl2c ^
+xcube-genl2c ^
    -t snap-c2rcc ^
    -f nc ^
    -s 2000,1000 ^

@@ -23,21 +23,22 @@ Update
 
 # Tools
 
-## `reproj-snap-nc`
+## `xcube-genl2c`
 
-    $ reproj-snap-nc -h
-    usage: reproj-snap-nc [-h] [--version] [--dir OUTPUT_DIR] [--name OUTPUT_NAME]
-                          [--format {nc,zarr}] [--size DST_SIZE]
-                          [--region DST_REGION] [--variables DST_VARIABLES]
-                          [--append]
-                          INPUT_FILES [INPUT_FILES ...]
-    
-    Reproject SNAP NetCDF4 product
-    
+    $ xcube-genl2c -h
+    usage: xcube-genl2c [-h] [--version] [--dir OUTPUT_DIR] [--name OUTPUT_NAME]
+                  [--format {netcdf4,zarr}] [--size OUTPUT_SIZE]
+                  [--region OUTPUT_REGION] [--meta-file OUTPUT_META_FILE]
+                  [--variables OUTPUT_VARIABLES] [--append] [--type {snap-c2rcc}]
+                  INPUT_FILES [INPUT_FILES ...]
+
+    Generate L2C data cube from various input files. L2C data cubes may be created
+    in one go or in successively in append mode, input by input.
+
     positional arguments:
-      INPUT_FILES           SNAP NetCDF4 products. May contain wildcards '?', '*',
-                            and '**'.
-    
+      INPUT_FILES           One or more input files or a pattern that may contain
+                            wildcards '?', '*', and '**'.
+
     optional arguments:
       -h, --help            show this help message and exit
       --version, -V         show program's version number and exit
@@ -46,23 +47,35 @@ Update
       --name OUTPUT_NAME, -n OUTPUT_NAME
                             Output filename pattern. Defaults to
                             'PROJ_WGS84_{INPUT_FILE}'.
-      --format {nc,zarr}, -f {nc,zarr}
-                            Output format. Defaults to 'nc'.
-      --size DST_SIZE, -s DST_SIZE
+      --format {netcdf4,zarr}, -f {netcdf4,zarr}
+                            Output format. Defaults to 'netcdf4'.
+      --size OUTPUT_SIZE, -s OUTPUT_SIZE
                             Output size in pixels using format "<width>,<height>".
                             Defaults to '512,512'.
-      --region DST_REGION, -r DST_REGION
+      --region OUTPUT_REGION, -r OUTPUT_REGION
                             Output region using format "<lon-min>,<lat-min>,<lon-
                             max>,<lat-max>"
-      --variables DST_VARIABLES, -v DST_VARIABLES
+      --meta-file OUTPUT_META_FILE, -m OUTPUT_META_FILE
+                            File containing cube-level CF-compliant metadata in
+                            YAML format.
+      --variables OUTPUT_VARIABLES, -v OUTPUT_VARIABLES
                             Variables to be included in output. Comma-separated
                             list of names.
       --append, -a          Append successive outputs.
+      --type {snap-c2rcc}, -t {snap-c2rcc}
+                            Input type. Defaults to 'snap-c2rcc'.
+
+    output formats to be used with option --format:
+      netcdf4         (*.nc)          NetCDF-4 file format
+      zarr            (*.zarr)        Zarr file format (http://zarr.readthedocs.io)
+
+    input types to be used with option --type:
+      snap-c2rcc      (*.nc)          SNAP C2RCC NetCDF format
 
 
 Example:
 
-    $ reproj-snap-nc -a -s 2000,1000 -r 0,50,5,52.5 -v conc_chl,conc_tsm,kd489,c2rcc_flags,quality_flags -n hiroc-cube D:\OneDrive\BC\EOData\HIGHROC\2017\01\*.nc
+    $ xcube-genl2c -a -s 2000,1000 -r 0,50,5,52.5 -v conc_chl,conc_tsm,kd489,c2rcc_flags,quality_flags -n hiroc-cube -t snap-c2rcc D:\OneDrive\BC\EOData\HIGHROC\2017\01\*.nc
 
 
 # Cube generation notes

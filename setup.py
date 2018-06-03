@@ -52,8 +52,8 @@ setup(
     packages=packages,
     entry_points={
         'console_scripts': [
-            'genl2c = xcube.genl2c.cli:main',
-            'feg = xcube.feg:main',
+            'xcube-genl2c = xcube.genl2c.cli:main',
+            'xcube-feg = xcube.feg:main',
         ],
         'cate_plugins': [
         ],
