@@ -1,6 +1,6 @@
 import unittest
 
-from xcube.snap.transexpr import transpile_expr, tokenize_expr, Token, translate_expr
+from xcube.genl2c.snap.transexpr import transpile_expr, tokenize_expr, Token, translate_expr
 
 
 class TranspileExprTest(unittest.TestCase):

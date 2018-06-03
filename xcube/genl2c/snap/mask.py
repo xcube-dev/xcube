@@ -4,8 +4,8 @@ from typing import Tuple, Dict
 import numpy as np
 import xarray as xr
 
-from xcube.maskset import MaskSet
-from xcube.snap.transexpr import transpile_expr, translate_expr
+from ...maskset import MaskSet
+from .transexpr import transpile_expr, translate_expr
 
 
 # TODO: add option to save computed mask in output dataset
@@ -19,7 +19,8 @@ def mask_dataset(dataset: xr.Dataset,
     Evaluate "valid_pixel_expression" and fill-in NaN where invalid.
 
     :param dataset: xarray dataset read from netCDF produced with BEAM or SNAP.
-    :param expr_pattern: if given, valid-pixel-expression will be processed through the pattern which should contain "{expr}".
+    :param expr_pattern: if given, valid-pixel-expression will be processed through the
+           pattern which should contain "{expr}".
     :param in_place: change dataset in-plase or make shallow copy
     :param errors: "raise", "warn", or "ignore"
     :return: new dataset with masked variables

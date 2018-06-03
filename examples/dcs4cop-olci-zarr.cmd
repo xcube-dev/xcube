@@ -1,4 +1,5 @@
-reproj-snap-nc ^
+genl2c ^
+   -t snap-c2rcc ^
    -f zarr ^
    -a ^
    -s 2000,1000 ^
