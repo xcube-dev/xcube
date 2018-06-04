@@ -27,22 +27,23 @@ class SnapInputProcessor(InputProcessor, metaclass=ABCMeta):
         return masked_dataset
 
 
-class SnapC2RCCInputProcessor(SnapInputProcessor):
+# noinspection PyAbstractClass
+class SnapOlciHighrocL2InputProcessor(SnapInputProcessor):
     """
-    Input processor for SNAP L2 NetCDF inputs.
+    Input processor for SNAP Sentinel-3 OLCI HIGHROC Level-2 NetCDF inputs.
     """
-
-    @property
-    def ext(self) -> str:
-        return 'nc'
 
     def __init__(self):
         super().__init__(expr_pattern='({expr}) AND !quality_flags.land')
 
     @property
     def name(self) -> str:
-        return 'snap-c2rcc'
+        return 'snap-olci-highroc-l2'
 
     @property
     def description(self) -> str:
-        return 'SNAP C2RCC NetCDF format'
+        return 'SNAP Sentinel-3 OLCI HIGHROC Level-2 NetCDF inputs'
+
+    @property
+    def ext(self) -> str:
+        return 'nc'

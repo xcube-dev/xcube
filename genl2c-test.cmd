@@ -1,6 +1,6 @@
 xcube-genl2c ^
   -a ^
-  -t snap-c2rcc ^
+  -t snap-olci-highroc-l2 ^
   -f zarr ^
   -s 2000,1000 ^
   -r 0,50,5,52.5 ^

@@ -3,7 +3,7 @@ import sys
 from typing import List, Optional
 
 from xcube.genl2c.inputprocessor import InputProcessor
-from xcube.genl2c.snap.inputprocessor import SnapC2RCCInputProcessor
+from xcube.genl2c.snap.inputprocessor import SnapOlciHighrocL2InputProcessor
 from xcube.io import get_default_dataset_io_registry
 from xcube.metadata import load_yaml
 from xcube.version import version
@@ -23,7 +23,7 @@ def main(args: Optional[List[str]] = None):
     ds_io_registry = get_default_dataset_io_registry()
 
     # TODO: turn SnapC2RCCInputProcessor into plugin
-    ds_io_registry.register(SnapC2RCCInputProcessor())
+    ds_io_registry.register(SnapOlciHighrocL2InputProcessor())
 
     input_ds_ios = ds_io_registry.query(lambda ds_io: isinstance(ds_io, InputProcessor))
     output_ds_ios = ds_io_registry.query(lambda ds_io: 'w' in ds_io.modes)
@@ -138,8 +138,8 @@ class GenL2CHelpFormatter(argparse.HelpFormatter):
     def _format_dataset_ios(cls, dataset_ios):
         help_text = ''
         for ds_io in dataset_ios:
-            fill1 = ' ' * (16 - len(ds_io.name))
-            fill2 = ' ' * (12 - len(ds_io.ext))
+            fill1 = ' ' * (24 - len(ds_io.name))
+            fill2 = ' ' * (10 - len(ds_io.ext))
             help_text += f'  {ds_io.name}{fill1}(*.{ds_io.ext}){fill2}{ds_io.description}\n'
         return help_text
 
