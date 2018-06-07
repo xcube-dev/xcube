@@ -19,6 +19,8 @@ class CliTest(unittest.TestCase):
         self.assertEqual(2, exit_code)
 
     def test_main_with_illegal_region_option(self):
+        exit_code = main(['-r', '50,_2,55,21', 'input.nc'])
+        self.assertEqual(2, exit_code)
         exit_code = main(['-r', '50,20,55', 'input.nc'])
         self.assertEqual(2, exit_code)
 

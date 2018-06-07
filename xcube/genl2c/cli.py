@@ -120,7 +120,8 @@ def main(args: Optional[List[str]] = None):
             output_variables = set(map(lambda c: str(c).strip(), output_variables.split(',')))
         except ValueError:
             output_variables = None
-        if next(iter(True for var_name in output_variables if var_name == ''), False):
+        if output_variables is not None \
+                and next(iter(True for var_name in output_variables if var_name == ''), False):
             output_variables = None
         if output_variables is None or len(output_variables) == 0:
             print(f'error: invalid variables {arg_obj.output_variables!r}')
