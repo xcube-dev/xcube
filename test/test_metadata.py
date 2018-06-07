@@ -90,7 +90,7 @@ class MetaTest(unittest.TestCase):
         self.assertEqual(0.0025, d.get('geospatial_lon_resolution'))
         self.assertEqual(0.0025, d.get('geospatial_lat_resolution'))
         self.assertEqual('2016-10-01', d.get('time_coverage_start'))
-        self.assertEqual('2017-10-01', d.get('time_coverage_end'))
+        self.assertEqual('2017-10-01T12:00:10', d.get('time_coverage_end'))
         self.assertEqual('P1Y', d.get('time_coverage_duration'))
         self.assertEqual('1D', d.get('time_coverage_resolution'))
 
@@ -127,7 +127,7 @@ geospatial_lat:
 
 time_coverage:
   start:      2016-10-01
-  end:        2017-10-01
+  end:        2017-10-01T12:00:10
   duration:   "P1Y"
   resolution: "1D"
 """

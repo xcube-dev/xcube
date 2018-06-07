@@ -46,10 +46,10 @@ def _flatten_dict_value(value: Any,
                         result: Dict[str, Any],
                         parent_name: Optional[str],
                         concat: bool) -> Any:
-    if isinstance(value, datetime.date):
-        return datetime.date.isoformat(value)
-    elif isinstance(value, datetime.datetime):
+    if isinstance(value, datetime.datetime):
         return datetime.datetime.isoformat(value)
+    elif isinstance(value, datetime.date):
+        return datetime.date.isoformat(value)
     elif isinstance(value, _PRIMITIVE_TYPES):
         return value
 
