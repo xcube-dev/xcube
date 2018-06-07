@@ -82,9 +82,3 @@ class InputProcessor(DatasetIO, metaclass=ABCMeta):
     def post_reproject(self, dataset: xr.Dataset) -> xr.Dataset:
         """ Do any pre-processing before reprojection. """
         return dataset
-
-    def write(self, dataset: xr.Dataset, output_path: str, **kwargs):
-        raise NotImplementedError()
-
-    def append(self, dataset: xr.Dataset, output_path: str, **kwargs):
-        raise NotImplementedError()

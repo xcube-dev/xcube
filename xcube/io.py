@@ -92,17 +92,14 @@ class DatasetIO(metaclass=ABCMeta):
     def modes(self) -> Set[str]:
         pass
 
-    @abstractmethod
     def read(self, input_path: str, **kwargs) -> xr.Dataset:
-        pass
+        raise NotImplementedError()
 
-    @abstractmethod
     def write(self, dataset: xr.Dataset, output_path: str, **kwargs):
-        pass
+        raise NotImplementedError()
 
-    @abstractmethod
     def append(self, dataset: xr.Dataset, output_path: str, **kwargs):
-        pass
+        raise NotImplementedError()
 
 
 class Netcdf4DatasetIO(DatasetIO):
@@ -177,7 +174,7 @@ class ZarrDatasetIO(DatasetIO):
         dataset.to_zarr(output_path,
                         encoding=encoding)
 
-    def append(self, dataset: xr.Dataset, output_path: str):
+    def append(self, dataset: xr.Dataset, output_path: str, **kwargs):
         import zarr
         if self.root_group is None:
             self.root_group = zarr.open(output_path, mode='a')
@@ -188,6 +185,7 @@ class ZarrDatasetIO(DatasetIO):
                 var_array.append(new_var, axis=axis)
 
 
+# noinspection PyAbstractClass
 class OpendapDatasetIO(DatasetIO):
 
     @property
@@ -208,12 +206,6 @@ class OpendapDatasetIO(DatasetIO):
 
     def read(self, path: str, **kwargs) -> xr.Dataset:
         return xr.open_dataset(path, engine='pydap', **kwargs)
-
-    def write(self, dataset: xr.Dataset, output_path: str, **kwargs):
-        raise NotImplementedError()
-
-    def append(self, dataset: xr.Dataset, output_path: str, **kwargs):
-        raise NotImplementedError()
 
 
 class DatasetIORegistry:
