@@ -20,6 +20,20 @@ Update
     $ activate xcube-dev
     $ git pull --force
     $ python setup.py develop
+    
+    
+Run tests
+
+    $ pytest
+    
+with coverage
+
+    $ pytest --cov=xcube
+
+with [coverage report](https://pytest-cov.readthedocs.io/en/latest/reporting.html) in HTML
+
+    $ pytest --cov-report html --cov=xcube
+
 
 # Tools
 
