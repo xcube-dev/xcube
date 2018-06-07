@@ -20,43 +20,53 @@
 # SOFTWARE.
 
 from abc import ABCMeta
+from typing import Optional
 
 import xarray as xr
 
+from xcube.constants import CRS_WKT_EPSG_4326
 from xcube.io import get_default_dataset_io_registry
 from .mask import mask_dataset
-from ..inputprocessor import InputProcessor
+from ..inputprocessor import InputProcessor, InputInfo
 
 
-class SnapInputProcessor(InputProcessor, metaclass=ABCMeta):
+class SnapNetcdfInputProcessor(InputProcessor, metaclass=ABCMeta):
     """
     Input processor for SNAP L2 NetCDF inputs.
     """
 
-    def __init__(self, expr_pattern=None):
-        self.expr_pattern = expr_pattern
+    @property
+    def ext(self) -> str:
+        return 'nc'
+
+    @property
+    def extra_expr_pattern(self) -> Optional[str]:
+        return None
+
+    @property
+    def input_info(self) -> InputInfo:
+        return InputInfo(xy_var_names=('lon', 'lat'),
+                         xy_tp_var_names=('TP_longitude', 'TP_latitude'),
+                         xy_crs=CRS_WKT_EPSG_4326,
+                         time_range_attr_names=('start_date', 'stop_date'))
 
     def read(self, input_file: str, **kwargs) -> xr.Dataset:
         """ Read SNAP L2 NetCDF inputs. """
         return xr.open_dataset(input_file, decode_cf=True, decode_coords=True, decode_times=False)
 
-    @classmethod
-    def pre_reproject(cls, dataset: xr.Dataset) -> xr.Dataset:
+    def pre_reproject(self, dataset: xr.Dataset) -> xr.Dataset:
         """ Do any pre-processing before reprojection. """
         masked_dataset, _ = mask_dataset(dataset,
-                                         expr_pattern='({expr}) AND !quality_flags.land',
+                                         expr_pattern=self.extra_expr_pattern,
                                          errors='raise')
         return masked_dataset
 
 
 # noinspection PyAbstractClass
-class SnapOlciHighrocL2InputProcessor(SnapInputProcessor):
+class SnapOlciHighrocL2NetcdfInputProcessor(SnapNetcdfInputProcessor):
     """
     Input processor for SNAP Sentinel-3 OLCI HIGHROC Level-2 NetCDF inputs.
     """
-
-    def __init__(self):
-        super().__init__(expr_pattern='({expr}) AND !quality_flags.land')
 
     @property
     def name(self) -> str:
@@ -67,10 +77,11 @@ class SnapOlciHighrocL2InputProcessor(SnapInputProcessor):
         return 'SNAP Sentinel-3 OLCI HIGHROC Level-2 NetCDF inputs'
 
     @property
-    def ext(self) -> str:
-        return 'nc'
+    def extra_expr_pattern(self) -> Optional[str]:
+        return '({expr}) AND !quality_flags.land'
 
 
 def init_plugin():
+    """ Register a DatasetIO object: SnapOlciHighrocL2NetcdfInputProcessor() """
     ds_io_registry = get_default_dataset_io_registry()
-    ds_io_registry.register(SnapOlciHighrocL2InputProcessor())
+    ds_io_registry.register(SnapOlciHighrocL2NetcdfInputProcessor())

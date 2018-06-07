@@ -129,10 +129,17 @@ def process_input(input_file: str,
         monitor('pre-processing...')
         dataset = input_processor.pre_reproject(dataset)
         monitor('reprojecting...')
+        input_info = input_processor.input_info
         dataset = reproject_to_wgs84(dataset,
-                                     dst_size,
+                                     src_xy_var_names=input_info.xy_var_names,
+                                     src_xy_tp_var_names=input_info.xy_tp_var_names,
+                                     src_xy_crs=input_info.xy_crs,
+                                     src_time_var_name=input_info.time_var_name,
+                                     src_time_range_attr_names=input_info.time_range_attr_names,
+                                     src_time_format=input_info.time_format,
+                                     dst_size=dst_size,
                                      dst_region=dst_region,
-                                     gcp_i_step=5)
+                                     gcp_step=5)
         monitor('pos-processing...')
         dataset = input_processor.post_reproject(dataset)
     except RuntimeError as e:
