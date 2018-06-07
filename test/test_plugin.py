@@ -48,3 +48,7 @@ class PluginTest(unittest.TestCase):
     def test_load_plugins_fail_call(self):
         plugins = load_plugins([EntryPoint('test', init_plugin_but_fail)])
         self.assertEqual({}, plugins)
+
+    def test_load_plugins_not_callable(self):
+        plugins = load_plugins([EntryPoint('test', "init_plugin_and_succeed")])
+        self.assertEqual({}, plugins)
