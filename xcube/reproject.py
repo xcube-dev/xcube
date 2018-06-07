@@ -1,3 +1,24 @@
+# The MIT License (MIT)
+# Copyright (c) 2018 by the xcube development team and contributors
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy of
+# this software and associated documentation files (the "Software"), to deal in
+# the Software without restriction, including without limitation the rights to
+# use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
+# of the Software, and to permit persons to whom the Software is furnished to do
+# so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
 import warnings
 from typing import Tuple, List
 
@@ -68,23 +89,22 @@ def reproject_to_wgs84(dataset: xr.Dataset,
 
     dst_width, dst_height = dst_size
 
-    # TODO: raise ValueError instead of using assert
-    assert dataset is not None
-    assert dst_width > 1
-    assert dst_height > 1
-    assert gcp_i_step > 0
-    assert gcp_j_step > 0
+    _assert(dataset is not None)
+    _assert(dst_width > 1)
+    _assert(dst_height > 1)
+    _assert(gcp_i_step > 0)
+    _assert(gcp_j_step > 0)
 
-    assert x_name in dataset
-    assert y_name in dataset
+    _assert(x_name in dataset)
+    _assert(y_name in dataset)
 
     x_var = dataset[x_name]
-    assert len(x_var.dims) == 2
-    assert x_var.shape[-1] >= 2
-    assert x_var.shape[-2] >= 2
+    _assert(len(x_var.dims) == 2)
+    _assert(x_var.shape[-1] >= 2)
+    _assert(x_var.shape[-2] >= 2)
     y_var = dataset[y_name]
-    assert y_var.shape == x_var.shape
-    assert y_var.dims == x_var.dims
+    _assert(y_var.shape == x_var.shape)
+    _assert(y_var.dims == x_var.dims)
 
     src_width = x_var.shape[-1]
     src_height = x_var.shape[-2]
@@ -93,7 +113,7 @@ def reproject_to_wgs84(dataset: xr.Dataset,
     x1, y1, x2, y2 = dst_region
 
     dst_res = max((x2 - x1) / dst_width, (y2 - y1) / dst_height)
-    assert dst_res > 0
+    _assert(dst_res > 0)
 
     dst_geo_transform = (x1, dst_res, 0.0,
                          y2, 0.0, -dst_res)
@@ -105,12 +125,12 @@ def reproject_to_wgs84(dataset: xr.Dataset,
         # If there are tie-point variables in the dataset
         tp_x_var = dataset[tp_x_name]
         tp_y_var = dataset[tp_y_name]
-        assert len(tp_x_var.shape) == 2
-        assert tp_x_var.shape == tp_y_var.shape
+        _assert(len(tp_x_var.shape) == 2)
+        _assert(tp_x_var.shape == tp_y_var.shape)
         tp_width = tp_x_var.shape[-1]
         tp_height = tp_x_var.shape[-2]
-        assert tp_gcp_i_step > 0
-        assert tp_gcp_j_step > 0
+        _assert(tp_gcp_i_step > 0)
+        _assert(tp_gcp_j_step > 0)
         # Extract GCPs also from tie-point lon/lat 2D variables
         tp_gcps = _get_gcps(tp_x_var, tp_y_var, tp_gcp_i_step, tp_gcp_j_step)
     else:
@@ -142,11 +162,9 @@ def reproject_to_wgs84(dataset: xr.Dataset,
     dst_dataset.coords['lat'] = (['lat', ],
                                  np.linspace(y2 - dst_res / 2, dst_y1 + dst_res / 2, dst_height))
     dst_dataset.coords['lon_bnds'] = (['lon', 'bnds'],
-                                      # TODO: find more elegant numpy expr for the following
                                       list(zip(np.linspace(x1, dst_x2 - dst_res, dst_width),
                                                np.linspace(x1 + dst_res, dst_x2, dst_width))))
     dst_dataset.coords['lat_bnds'] = (['lat', 'bnds'],
-                                      # TODO: find more elegant numpy expr for the following
                                       list(zip(np.linspace(y2, dst_y1 + dst_res, dst_height),
                                                np.linspace(y2 - dst_res, dst_y1, dst_height))))
     dst_dataset.attrs = dataset.attrs
@@ -281,6 +299,11 @@ def reproject_to_wgs84(dataset: xr.Dataset,
     return dst_dataset
 
 
+def _assert(cond, text='Assertion failed'):
+    if not cond:
+        raise ValueError(text)
+
+
 def _ensure_valid_region(region: CoordRange,
                          valid_region: CoordRange,
                          x_var: xr.DataArray,
@@ -288,7 +311,7 @@ def _ensure_valid_region(region: CoordRange,
                          extra: float = 0.01):
     if region:
         # Extract region
-        assert len(region) == 4
+        _assert(len(region) == 4)
         x1, y1, x2, y2 = region
     else:
         # Determine region from full-res lon/lat 2D variables

@@ -1,12 +1,34 @@
+# The MIT License (MIT)
+# Copyright (c) 2018 by the xcube development team and contributors
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy of
+# this software and associated documentation files (the "Software"), to deal in
+# the Software without restriction, including without limitation the rights to
+# use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
+# of the Software, and to permit persons to whom the Software is furnished to do
+# so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
 import glob
 import os
+import traceback
 from typing import Sequence, Callable, Tuple, Set, Any, Dict, Optional
-
-import xarray as xr
 
 from .inputprocessor import InputProcessor
 from ..io import rimraf, get_default_dataset_io_registry, DatasetIO
 from ..reproject import reproject_to_wgs84
+
+__import__('xcube.plugin')
 
 
 def process_inputs(input_files: Sequence[str],
@@ -17,9 +39,10 @@ def process_inputs(input_files: Sequence[str],
                    dst_metadata: Optional[Dict[str, Any]],
                    output_dir: str,
                    output_name: str,
-                   output_format: str,
-                   append: bool,
-                   monitor: Callable[..., None] = None):
+                   output_format: str = 'netcdf4',
+                   append: bool = False,
+                   dry_run: bool = False,
+                   monitor: Callable[..., None] = None) -> Tuple[Optional[str], bool]:
     dataset_io_registry = get_default_dataset_io_registry()
 
     input_processor = dataset_io_registry.find(input_type)
@@ -37,45 +60,36 @@ def process_inputs(input_files: Sequence[str],
 
     input_files = sorted([input_file for f in input_files for input_file in glob.glob(f, recursive=True)])
 
-    os.makedirs(output_dir, exist_ok=True)
+    if not dry_run:
+        os.makedirs(output_dir, exist_ok=True)
+
+    output_path = None
+    status = False
 
     ds_count = len(input_files)
     ds_index = 0
     for input_file in input_files:
         monitor(f'processing dataset {ds_index + 1} of {ds_count}: {input_file!r}...')
         # noinspection PyTypeChecker
-        output_path, ok = process_input(input_file,
-                                        input_processor,
-                                        dst_size,
-                                        dst_region,
-                                        dst_variables,
-                                        dst_metadata,
-                                        output_dir,
-                                        output_name,
-                                        dataset_writer,
-                                        append,
-                                        monitor)
-        if ok:
+        output_path, status = process_input(input_file,
+                                            input_processor,
+                                            dst_size,
+                                            dst_region,
+                                            dst_variables,
+                                            dst_metadata,
+                                            output_dir,
+                                            output_name,
+                                            dataset_writer,
+                                            append,
+                                            dry_run,
+                                            monitor)
+        if status:
             ds_index += 1
-
-    # if dst_metadata and append and output_path:
-    #     monitor(f'adding file-level metadata to {output_path!r}...')
-    #     if output_format == 'nc':
-    #         ds = xr.open_dataset(output_path)
-    #         ds.attrs.clear()
-    #         ds.attrs.update(dst_metadata)
-    #         ds.to_netcdf(output_path)
-    #         ds.close()
-    #     elif output_format == 'zarr':
-    #         ds = xr.open_zarr(output_path)
-    #         ds.attrs.clear()
-    #         ds.attrs.update(dst_metadata)
-    #         ds.to_zarr(output_path)
-    #         ds.close()
-    #     monitor(f'done adding file-level metadata.')
 
     monitor(f'{ds_index} of {ds_count} datasets processed successfully, '
             f'{ds_count - ds_index} were dropped due to errors')
+
+    return output_path, status
 
 
 def process_input(input_file: str,
@@ -88,7 +102,8 @@ def process_input(input_file: str,
                   output_name: str,
                   dataset_writer: DatasetIO,
                   append: bool,
-                  monitor: Callable[..., None] = None):
+                  dry_run: bool = False,
+                  monitor: Callable[..., None] = None) -> Tuple[Optional[str], bool]:
     basename = os.path.basename(input_file)
     basename, ext = basename.rsplit('.', 1) if '.' in basename else (basename, None)
 
@@ -97,44 +112,46 @@ def process_input(input_file: str,
     output_path = os.path.join(output_dir, output_basename)
 
     monitor('reading...')
-    dataset = input_processor.read(input_file)
+    # noinspection PyBroadException
+    try:
+        dataset = input_processor.read(input_file)
+    except Exception as e:
+        monitor(f'ERROR: cannot read input: {e}: skipping...')
+        traceback.print_exc()
+        return None, False
 
     if dst_variables:
         dropped_variables = set(dataset.data_vars.keys()).difference(dst_variables)
         if dropped_variables:
             dataset = dataset.drop(dropped_variables)
 
-
     try:
         monitor('pre-processing...')
         dataset = input_processor.pre_reproject(dataset)
         monitor('reprojecting...')
         dataset = reproject_to_wgs84(dataset,
-                                          dst_size,
-                                          dst_region=dst_region,
-                                          gcp_i_step=5)
+                                     dst_size,
+                                     dst_region=dst_region,
+                                     gcp_i_step=5)
         monitor('pos-processing...')
         dataset = input_processor.post_reproject(dataset)
     except RuntimeError as e:
-        import sys
-        import traceback
-        monitor(f'ERROR: during reprojection to WGS84: {e}')
-        monitor('skipping dataset')
-        exc_type, exc_value, exc_tb = sys.exc_info()
-        traceback.print_exception(exc_type, exc_value, exc_tb)
+        monitor(f'ERROR: during reprojection to WGS84: {e}: skipping it...')
+        traceback.print_exc()
         return output_path, False
 
     if dst_metadata:
         dataset.attrs.clear()
         dataset.attrs.update(dst_metadata)
 
-    if append and os.path.exists(output_path):
-        monitor(f'appending to {output_path}...')
-        dataset_writer.append(dataset, output_path)
-    else:
-        rimraf(output_path)
-        monitor(f'writing to {output_path}...')
-        dataset_writer.write(dataset, output_path)
+    if not dry_run:
+        if append and os.path.exists(output_path):
+            monitor(f'appending to {output_path}...')
+            dataset_writer.append(dataset, output_path)
+        else:
+            rimraf(output_path)
+            monitor(f'writing to {output_path}...')
+            dataset_writer.write(dataset, output_path)
 
     dataset.close()
 

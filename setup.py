@@ -31,6 +31,7 @@ requirements = [
     'matplotlib',
     'numpy',
     'pandas',
+    'pyyaml',
     's3fs',
     'xarray',
     'zarr',
@@ -55,7 +56,8 @@ setup(
             'xcube-genl2c = xcube.genl2c.cli:main',
             'xcube-feg = xcube.feg:main',
         ],
-        'cate_plugins': [
+        'xcube_plugins': [
+            'xcube_genl2c_snap = xcube.genl2c.snap:init_plugin',
         ],
     },
     install_requires=requirements,

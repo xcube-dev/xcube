@@ -1,12 +1,35 @@
+# The MIT License (MIT)
+# Copyright (c) 2018 by the xcube development team and contributors
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy of
+# this software and associated documentation files (the "Software"), to deal in
+# the Software without restriction, including without limitation the rights to
+# use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
+# of the Software, and to permit persons to whom the Software is furnished to do
+# so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
 import argparse
 import sys
 from typing import List, Optional
 
 from xcube.genl2c.inputprocessor import InputProcessor
-from xcube.genl2c.snap.inputprocessor import SnapOlciHighrocL2InputProcessor
+# from xcube.genl2c.snap.inputprocessor import SnapOlciHighrocL2InputProcessor
 from xcube.io import get_default_dataset_io_registry
 from xcube.metadata import load_yaml
 from xcube.version import version
+
+__import__('xcube.plugin')
 
 DEFAULT_OUTPUT_DIR = '.'
 DEFAULT_OUTPUT_PATTERN = 'PROJ_WGS84_{INPUT_FILE}'
@@ -21,16 +44,11 @@ def main(args: Optional[List[str]] = None):
     Tested with HIGHROC/0001_SNS/OLCI/2017/04/O_L2_0001_SNS_2017104102450_v1.0.nc
     """
     ds_io_registry = get_default_dataset_io_registry()
-
-    # TODO: turn SnapC2RCCInputProcessor into plugin
-    ds_io_registry.register(SnapOlciHighrocL2InputProcessor())
-
     input_ds_ios = ds_io_registry.query(lambda ds_io: isinstance(ds_io, InputProcessor))
     output_ds_ios = ds_io_registry.query(lambda ds_io: 'w' in ds_io.modes)
     input_type_names = [ds_io.name for ds_io in input_ds_ios]
     output_format_names = [ds_io.name for ds_io in output_ds_ios]
 
-    # TODO: add dry-run option for testing
     parser = argparse.ArgumentParser(description='Generate L2C data cube from various input files. '
                                                  'L2C data cubes may be created in one go or in successively '
                                                  'in append mode, input by input.',
@@ -54,13 +72,18 @@ def main(args: Optional[List[str]] = None):
                         help='Variables to be included in output. Comma-separated list of names.')
     parser.add_argument('--append', '-a', default=False, action='store_true',
                         help='Append successive outputs.')
+    parser.add_argument('--dry-run', default=False, action='store_true',
+                        help='Just read and process inputs, but don\'t produce any outputs.')
     parser.add_argument('--type', '-t', dest='input_type',
                         default=input_type_names[0], choices=input_type_names,
                         help=f'Input type. Defaults to {input_type_names[0]!r}.')
     parser.add_argument('input_files', metavar='INPUT_FILES', nargs='+',
                         help="One or more input files or a pattern that may contain wildcards '?', '*', and '**'.")
 
-    arg_obj = parser.parse_args(args or sys.argv[1:])
+    try:
+        arg_obj = parser.parse_args(args or sys.argv[1:])
+    except SystemExit as e:
+        return int(str(e))
 
     input_files = arg_obj.input_files
     input_type = arg_obj.input_type
@@ -72,24 +95,36 @@ def main(args: Optional[List[str]] = None):
     output_variables = arg_obj.output_variables
     output_meta_file = arg_obj.output_meta_file
     append = arg_obj.append
+    dry_run = arg_obj.dry_run
 
     if output_size:
-        output_size = list(map(lambda c: int(c), output_size.split(',')))
-        if len(output_size) != 2:
+        try:
+            output_size = list(map(lambda c: int(c), output_size.split(',')))
+        except ValueError:
+            output_size = None
+        if output_size is None or len(output_size) != 2:
             print(f'error: invalid size {arg_obj.output_size!r}')
-            sys.exit(10)
+            return 2
 
     if output_region:
-        output_region = list(map(lambda c: float(c), output_region.split(',')))
-        if len(output_region) != 4:
+        try:
+            output_region = list(map(lambda c: float(c), output_region.split(',')))
+        except ValueError:
+            output_region = None
+        if output_region is None or len(output_region) != 4:
             print(f'error: invalid region {arg_obj.output_region!r}')
-            sys.exit(10)
+            return 2
 
     if output_variables:
-        output_variables = set(map(lambda c: str(c).strip(), output_variables.split(',')))
-        if len(output_variables) == 0:
+        try:
+            output_variables = set(map(lambda c: str(c).strip(), output_variables.split(',')))
+        except ValueError:
+            output_variables = None
+        if next(iter(True for var_name in output_variables if var_name == ''), False):
+            output_variables = None
+        if output_variables is None or len(output_variables) == 0:
             print(f'error: invalid variables {arg_obj.output_variables!r}')
-            sys.exit(10)
+            return 2
 
     if output_meta_file:
         try:
@@ -98,7 +133,7 @@ def main(args: Optional[List[str]] = None):
             print(f'loaded metadata from file {arg_obj.output_meta_file!r}')
         except OSError as e:
             print(f'error: failed loading metadata file {arg_obj.output_meta_file!r}: {e}')
-            sys.exit(10)
+            return 2
     else:
         dst_metadata = None
 
@@ -113,7 +148,9 @@ def main(args: Optional[List[str]] = None):
                    output_name,
                    output_format,
                    append,
+                   dry_run=dry_run,
                    monitor=print)
+    return 0
 
 
 class GenL2CHelpFormatter(argparse.HelpFormatter):
@@ -145,4 +182,4 @@ class GenL2CHelpFormatter(argparse.HelpFormatter):
 
 
 if __name__ == '__main__':
-    main()
+    sys.exit(status=main())
