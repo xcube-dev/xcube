@@ -139,7 +139,8 @@ def process_input(input_file: str,
                                      src_time_format=input_info.time_format,
                                      dst_size=dst_size,
                                      dst_region=dst_region,
-                                     gcp_step=5)
+                                     gcp_step=5,
+                                     include_non_spatial_vars=False)
         monitor('pos-processing...')
         dataset = input_processor.post_reproject(dataset)
     except RuntimeError as e:
