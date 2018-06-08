@@ -121,6 +121,7 @@ def process_input(input_file: str,
         return None, False
 
     if dst_variables:
+        # TODO: allow variable names to be glob patterns
         dropped_variables = set(dataset.data_vars.keys()).difference(dst_variables)
         if dropped_variables:
             dataset = dataset.drop(dropped_variables)

@@ -24,7 +24,6 @@ import sys
 from typing import List, Optional
 
 from xcube.genl2c.inputprocessor import InputProcessor
-# from xcube.genl2c.snap.inputprocessor import SnapOlciHighrocL2InputProcessor
 from xcube.io import get_default_dataset_io_registry
 from xcube.metadata import load_yaml
 from xcube.version import version
@@ -67,7 +66,8 @@ def main(args: Optional[List[str]] = None):
     parser.add_argument('--meta-file', '-m', dest='output_meta_file',
                         help='File containing cube-level CF-compliant metadata in YAML format.')
     parser.add_argument('--variables', '-v', dest='output_variables',
-                        help='Variables to be included in output. Comma-separated list of names.')
+                        help='Variables to be included in output. '
+                             'Comma-separated list of names which may contain wildcard characters "*" and "?".')
     parser.add_argument('--append', '-a', default=False, action='store_true',
                         help='Append successive outputs.')
     parser.add_argument('--dry-run', default=False, action='store_true',
