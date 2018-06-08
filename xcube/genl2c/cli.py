@@ -39,9 +39,7 @@ DEFAULT_output_size = '512,512'
 
 def main(args: Optional[List[str]] = None):
     """
-    Masks and reprojects a SNAP OLCI L2 NetCDF4 product.
-
-    Tested with HIGHROC/0001_SNS/OLCI/2017/04/O_L2_0001_SNS_2017104102450_v1.0.nc
+    Generate L2C data cubes from L2 data products.
     """
     ds_io_registry = get_default_dataset_io_registry()
     input_ds_ios = ds_io_registry.query(lambda ds_io: isinstance(ds_io, InputProcessor))
