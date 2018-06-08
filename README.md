@@ -39,20 +39,21 @@ with [coverage report](https://pytest-cov.readthedocs.io/en/latest/reporting.htm
 
 ## `xcube-genl2c`
 
-    $ xcube-genl2c -h
+    $ xcube-genl2c --help
     usage: xcube-genl2c [-h] [--version] [--dir OUTPUT_DIR] [--name OUTPUT_NAME]
                         [--format {netcdf4,zarr}] [--size OUTPUT_SIZE]
                         [--region OUTPUT_REGION] [--meta-file OUTPUT_META_FILE]
-                        [--variables OUTPUT_VARIABLES] [--append] [--type {snap-c2rcc}]
+                        [--variables OUTPUT_VARIABLES] [--append] [--dry-run]
+                        [--type {snap-olci-highroc-l2}]
                         INPUT_FILES [INPUT_FILES ...]
-
+    
     Generate L2C data cube from various input files. L2C data cubes may be created
     in one go or in successively in append mode, input by input.
-
+    
     positional arguments:
       INPUT_FILES           One or more input files or a pattern that may contain
                             wildcards '?', '*', and '**'.
-
+    
     optional arguments:
       -h, --help            show this help message and exit
       --version, -V         show program's version number and exit
@@ -76,15 +77,18 @@ with [coverage report](https://pytest-cov.readthedocs.io/en/latest/reporting.htm
                             Variables to be included in output. Comma-separated
                             list of names.
       --append, -a          Append successive outputs.
-      --type {snap-c2rcc}, -t {snap-c2rcc}
-                            Input type. Defaults to 'snap-c2rcc'.
-
+      --dry-run             Just read and process inputs, but don't produce any
+                            outputs.
+      --type {snap-olci-highroc-l2}, -t {snap-olci-highroc-l2}
+                            Input type. Defaults to 'snap-olci-highroc-l2'.
+    
     output formats to be used with option --format:
-      netcdf4         (*.nc)          NetCDF-4 file format
-      zarr            (*.zarr)        Zarr file format (http://zarr.readthedocs.io)
-
+      netcdf4                 (*.nc)        NetCDF-4 file format
+      zarr                    (*.zarr)      Zarr file format (http://zarr.readthedocs.io)
+    
     input types to be used with option --type:
-      snap-c2rcc      (*.nc)          SNAP C2RCC NetCDF format
+      snap-olci-highroc-l2    (*.nc)        SNAP Sentinel-3 OLCI HIGHROC Level-2 NetCDF inputs
+
 
 
 Example:
