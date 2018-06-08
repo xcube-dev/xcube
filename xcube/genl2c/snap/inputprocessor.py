@@ -24,11 +24,11 @@ from typing import Optional
 
 import xarray as xr
 
+from .mask import mask_dataset
+from .vectorize import vectorize_wavebands
+from ..inputprocessor import InputProcessor, InputInfo
 from ...constants import CRS_WKT_EPSG_4326
 from ...io import get_default_dataset_io_registry
-from ..inputprocessor import InputProcessor, InputInfo
-from .vectorize import vectorize_wavebands
-from .mask import mask_dataset
 
 
 class SnapNetcdfInputProcessor(InputProcessor, metaclass=ABCMeta):
@@ -60,7 +60,10 @@ class SnapNetcdfInputProcessor(InputProcessor, metaclass=ABCMeta):
         masked_dataset, _ = mask_dataset(dataset,
                                          expr_pattern=self.extra_expr_pattern,
                                          errors='raise')
-        return vectorize_wavebands(masked_dataset)
+        return masked_dataset
+
+    def post_reproject(self, dataset: xr.Dataset) -> xr.Dataset:
+        return vectorize_wavebands(dataset)
 
 
 # noinspection PyAbstractClass
