@@ -46,14 +46,14 @@ with [coverage report](https://pytest-cov.readthedocs.io/en/latest/reporting.htm
                         [--variables OUTPUT_VARIABLES] [--append] [--dry-run]
                         [--type {snap-olci-highroc-l2}]
                         INPUT_FILES [INPUT_FILES ...]
-    
+
     Generate L2C data cube from various input files. L2C data cubes may be created
     in one go or in successively in append mode, input by input.
-    
+
     positional arguments:
       INPUT_FILES           One or more input files or a pattern that may contain
                             wildcards '?', '*', and '**'.
-    
+
     optional arguments:
       -h, --help            show this help message and exit
       --version, -V         show program's version number and exit
@@ -75,17 +75,18 @@ with [coverage report](https://pytest-cov.readthedocs.io/en/latest/reporting.htm
                             YAML format.
       --variables OUTPUT_VARIABLES, -v OUTPUT_VARIABLES
                             Variables to be included in output. Comma-separated
-                            list of names.
+                            list of names which may contain wildcard characters
+                            "*" and "?".
       --append, -a          Append successive outputs.
       --dry-run             Just read and process inputs, but don't produce any
                             outputs.
       --type {snap-olci-highroc-l2}, -t {snap-olci-highroc-l2}
                             Input type. Defaults to 'snap-olci-highroc-l2'.
-    
+
     output formats to be used with option --format:
       netcdf4                 (*.nc)        NetCDF-4 file format
       zarr                    (*.zarr)      Zarr file format (http://zarr.readthedocs.io)
-    
+
     input types to be used with option --type:
       snap-olci-highroc-l2    (*.nc)        SNAP Sentinel-3 OLCI HIGHROC Level-2 NetCDF inputs
 
