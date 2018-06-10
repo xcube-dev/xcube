@@ -19,6 +19,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+import fnmatch
 import glob
 import os
 import traceback
@@ -121,8 +122,16 @@ def process_input(input_file: str,
         return None, False
 
     if dst_variables:
-        # TODO: allow variable names to be glob patterns
-        dropped_variables = set(dataset.data_vars.keys()).difference(dst_variables)
+        dst_variable_names = set()
+        for var_name_pattern in dst_variables:
+            if '*' in var_name_pattern or '?' in var_name_pattern or '[' in var_name_pattern:
+                for var_name in dataset.data_vars:
+                    if fnmatch.fnmatch(var_name, var_name_pattern):
+                        dst_variable_names.add(var_name)
+            elif var_name_pattern in dataset.data_vars:
+                dst_variable_names.add(var_name_pattern)
+
+        dropped_variables = set(dataset.data_vars.keys()).difference(dst_variable_names)
         if dropped_variables:
             dataset = dataset.drop(dropped_variables)
 
