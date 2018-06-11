@@ -22,10 +22,11 @@
 from abc import ABCMeta
 from typing import Optional
 
+import numpy as np
 import xarray as xr
 
 from .mask import mask_dataset
-from .vectorize import vectorize_wavebands
+from .vectorize import vectorize_wavebands, new_band_coord_var
 from ..inputprocessor import InputProcessor, InputInfo
 from ...constants import CRS_WKT_EPSG_4326
 from ...io import get_default_dataset_io_registry
@@ -63,7 +64,12 @@ class SnapNetcdfInputProcessor(InputProcessor, metaclass=ABCMeta):
         return masked_dataset
 
     def post_reproject(self, dataset: xr.Dataset) -> xr.Dataset:
-        return vectorize_wavebands(dataset)
+        def new_band_coord_var_ex(band_dim_name: str, band_values: np.ndarray) -> xr.DataArray:
+            # Bug in HIGHROC OLCI L2 data: both bands 20 and 21 have wavelengths at 940 nm
+            if band_values[-2] == band_values[-1] and band_values[-1] == 940.:
+                band_values[-1] = 1020.
+            return new_band_coord_var(band_dim_name, band_values)
+        return vectorize_wavebands(dataset, new_band_coord_var_ex)
 
 
 # noinspection PyAbstractClass
