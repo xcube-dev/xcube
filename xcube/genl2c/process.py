@@ -139,7 +139,7 @@ def process_input(input_file: str,
                                      dst_region=dst_region,
                                      gcp_step=5,
                                      include_non_spatial_vars=False)
-        monitor('pos-processing...')
+        monitor('post-processing...')
         dataset = input_processor.post_reproject(dataset)
     except RuntimeError as e:
         monitor(f'ERROR: during reprojection to WGS84: {e}: skipping it...')
