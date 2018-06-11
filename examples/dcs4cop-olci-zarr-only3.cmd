@@ -4,7 +4,7 @@ xcube-genl2c ^
    -a ^
    -s 2000,1000 ^
    -r 0,50,5,52.5 ^
-   -v conc_chl,conc_tsm,kd489,c2rcc_flags,quality_flags ^
+   -v conc_chl,conc_tsm,kd489,c2rcc_flags,quality_flags,rrs_?,rrs_?? ^
    -m D:\Projects\xcube\examples\metadata.yml ^
    -d D:\EOData\DCS4COP ^
    -n OLCI-SNS-RAW-CUBE-3 ^
