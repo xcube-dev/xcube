@@ -19,20 +19,28 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-EARTH_GEO_COORD_RANGE = (-180., -90, 180., 90.)
+import fnmatch
+from typing import Set
 
-EARTH_EQUATORIAL_RADIUS = 6378137.
-EARTH_SPHERE_RADIUS = 6371000.
+import xarray as xr
 
-CRS_WKT_EPSG_4326 = """
-GEOGCS["WGS 84",
-    DATUM["WGS_1984",
-        SPHEROID["WGS 84",6378137,298.257223563,
-            AUTHORITY["EPSG","7030"]],
-        AUTHORITY["EPSG","6326"]],
-    PRIMEM["Greenwich",0,
-        AUTHORITY["EPSG","8901"]],
-    UNIT["degree",0.01745329251994328,
-        AUTHORITY["EPSG","9122"]],
-    AUTHORITY["EPSG","4326"]]
-"""
+
+def select_variables(dataset: xr.Dataset, var_name_patterns: Set[str]) -> xr.Dataset:
+    if not var_name_patterns:
+        return dataset
+
+    var_names = set()
+    for var_name_pattern in var_name_patterns:
+        if '*' in var_name_pattern or '?' in var_name_pattern or '[' in var_name_pattern:
+            for var_name in dataset.data_vars:
+                if fnmatch.fnmatch(var_name, var_name_pattern):
+                    var_names.add(var_name)
+        elif var_name_pattern in dataset.data_vars:
+            var_names.add(var_name_pattern)
+
+    dropped_variables = set(dataset.data_vars.keys()).difference(var_names)
+    if not dropped_variables:
+        return dataset
+
+    return dataset.drop(dropped_variables)
+

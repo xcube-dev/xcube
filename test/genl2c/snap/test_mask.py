@@ -4,7 +4,7 @@ import numpy as np
 from numpy.testing import assert_array_almost_equal
 
 from test.sampledata import create_highroc_dataset
-from xcube.snap.mask import mask_dataset
+from xcube.genl2c.snap.mask import mask_dataset
 
 nan = np.nan
 

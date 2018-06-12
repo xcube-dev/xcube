@@ -31,31 +31,33 @@ requirements = [
     'matplotlib',
     'numpy',
     'pandas',
+    'pyyaml',
+    's3fs',
     'xarray',
     'zarr',
 ]
 
 packages = find_packages(exclude=["test", "test.*"])
 
-# Same effect as "from cate import __version__", but avoids importing cate:
-__version__ = None
+# Same effect as "from cate import version", but avoids importing cate:
+version = None
 with open('xcube/version.py') as f:
     exec(f.read())
 
 setup(
     name="xcube",
-    version=__version__,
-    description='xcube API and CLI',
+    version=version,
+    description='xcube API and CLIs',
     license='MIT',
     author='xcube Development Team',
     packages=packages,
     entry_points={
         'console_scripts': [
-            'xcube = xcube.cli.main:main',
-            'reproj-snap-nc = xcube.snap.cli.reprojnc:main',
-            'feg = xcube.feg:main',
+            'xcube-genl2c = xcube.genl2c.cli:main',
+            'xcube-feg = xcube.feg:main',
         ],
-        'cate_plugins': [
+        'xcube_plugins': [
+            'xcube_genl2c_snap = xcube.genl2c.snap:init_plugin',
         ],
     },
     install_requires=requirements,

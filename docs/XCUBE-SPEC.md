@@ -1,18 +1,29 @@
-# xcube Specification
+# xcube Specification version 1
 
-Version: 0.1 draft
-
-Date: 31.05.2018
-
-Author: Norman
 
 --------------------------------------
 
+This document provides a technical specification of the protocol and format used 
+for xcube data cubes. The key words “MUST”, “MUST NOT”, “REQUIRED”, “SHALL”,
+ “SHALL NOT”, “SHOULD”, “SHOULD NOT”, “RECOMMENDED”, “MAY”, and “OPTIONAL” in 
+ this document are to be interpreted as described in 
+ [RFC 2119](https://www.ietf.org/rfc/rfc2119.txt).
+
+## Status
+
+This is the latest version, which is still in development.
+
+Version: 1.0, draft
+
+Updated: 31.05.2018
+
+
 ## Motivation
 
-Multivariate coregistration, extraction, comparison, and analysis of 
-Earth observation data is difficult for many users when data is 
-provided at different spatio-temporal resolutions.
+For many users of Earth observation data, multivariate coregistration, 
+extraction, comparison, and analysis of different data sources is difficult,
+when data is provided in various formats and at different spatio-temporal 
+resolutions.
 
 
 ## High-level requirements

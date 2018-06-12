@@ -1,4 +1,5 @@
-reproj-snap-nc ^
+xcube-genl2c ^
+   -t snap-olci-highroc-l2 ^
    -f zarr ^
    -a ^
    -s 2000,1000 ^
