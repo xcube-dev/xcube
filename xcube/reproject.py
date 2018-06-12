@@ -156,7 +156,7 @@ def reproject_to_wgs84(src_dataset: xr.Dataset,
             time_bnds_var = src_dataset[src_time_bnds_var_name]
             _assert(tuple(*time_bnds_var.shape) == (time_var.shape[0], 2))
 
-    if time_min_name and time_max_name and 'time' not in src_dataset:
+    if time_min_name and time_max_name and (src_time_var_name is None or src_time_var_name not in src_dataset):
         t1 = src_dataset.attrs.get(time_min_name)
         t2 = src_dataset.attrs.get(time_max_name)
         if t1 is not None:
