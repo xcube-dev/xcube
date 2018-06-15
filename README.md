@@ -127,8 +127,3 @@ with
     chunk_size := size of a chunk in both spatial dimensions
 
 
-# HIGHROC sample data
-
-* ftp://ftp.brockmann-consult.de/
-* user: highrocre
-* pw: H!Ghr0$1
