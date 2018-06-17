@@ -20,7 +20,7 @@
 # SOFTWARE.
 
 from abc import ABCMeta, abstractmethod
-from typing import Tuple
+from typing import Tuple, Union
 
 import xarray as xr
 
@@ -48,12 +48,16 @@ class InputInfo:
                  xy_var_names: Tuple[str, str],
                  xy_tp_var_names: Tuple[str, str] = None,
                  xy_crs: str = None,
+                 xy_gcp_step: Union[int, Tuple[int, int]] = None,
+                 xy_tp_gcp_step: Union[int, Tuple[int, int]] = None,
                  time_var_name: str = None,
                  time_range_attr_names: Tuple[str, str] = None,
                  time_format: str = None):
         self.xy_var_names = xy_var_names
         self.xy_tp_var_names = xy_tp_var_names
         self.xy_crs = xy_crs
+        self.xy_gcp_step = xy_gcp_step
+        self.xy_tp_gcp_step = xy_tp_gcp_step
         self.time_var_name = time_var_name
         self.time_range_attr_names = time_range_attr_names
         self.time_format = time_format
