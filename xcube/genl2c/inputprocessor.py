@@ -28,21 +28,6 @@ from xcube.io import DatasetIO
 
 
 class InputInfo:
-    """
-    Characterize input datasets so we can reproject.
-
-    :param xy_var_names: Name of variable providing the spatial x-coordinates,
-           e.g. ('lon', 'lat')
-    :param xy_tp_var_names: Name of tie-point variable providing the spatial y-coordinates,
-           e.g. ('TP_longitude', 'TP_latitude')
-    :param xy_crs: Spatial reference system, e.g. 'EPSG:4326'
-    :param time_var_name: Name of variable providing time coordinates
-    :param time_range_attr_names: Name of dataset attribute providing the first observation time,
-           e.g. ('start_date', 'stop_date')
-    :param time_format: Time format pattern, e.g. '%Y-%m-%d %H:%M%:%S'.
-           None means auto-detected, e.g. in SNAP NetCDF we have values like "14-APR-2017 10:27:50.183264"
-           that can be parsed automatically.
-    """
 
     def __init__(self,
                  xy_var_names: Tuple[str, str],
@@ -53,6 +38,25 @@ class InputInfo:
                  time_var_name: str = None,
                  time_range_attr_names: Tuple[str, str] = None,
                  time_format: str = None):
+        """
+        Characterize input datasets so we can reproject.
+
+        :param xy_var_names: Name of variable providing the spatial x- and y-coordinates,
+               e.g. ('lon', 'lat')
+        :param xy_tp_var_names: Name of tie-point variable providing the spatial y- and y-coordinates,
+               e.g. ('TP_longitude', 'TP_latitude')
+        :param xy_crs: Spatial reference system, e.g. 'EPSG:4326'
+        :param xy_gcp_step: Step size for collecting ground control points from spatial
+               coordinate arrays given by **xy_tp_var_names**.
+        :param xy_tp_gcp_step: Step size for collecting ground control points from spatial
+               coordinate arrays given by **xy_var_names**.
+        :param time_var_name: Name of variable providing time coordinates
+        :param time_range_attr_names: Name of dataset attribute providing the first observation time,
+               e.g. ('start_date', 'stop_date')
+        :param time_format: Time format pattern, e.g. '%Y-%m-%d %H:%M%:%S'.
+               None means auto-detected, e.g. in SNAP NetCDF we have values like "14-APR-2017 10:27:50.183264"
+               that can be parsed automatically.
+        """
         self.xy_var_names = xy_var_names
         self.xy_tp_var_names = xy_tp_var_names
         self.xy_crs = xy_crs

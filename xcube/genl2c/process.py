@@ -137,7 +137,8 @@ def process_input(input_file: str,
                                      src_time_format=input_info.time_format,
                                      dst_size=dst_size,
                                      dst_region=dst_region,
-                                     gcp_step=5,
+                                     gcp_step=input_info.xy_gcp_step or 1,
+                                     tp_gcp_step=input_info.xy_tp_gcp_step or 1,
                                      include_non_spatial_vars=False)
         monitor('post-processing...')
         dataset = input_processor.post_reproject(dataset)

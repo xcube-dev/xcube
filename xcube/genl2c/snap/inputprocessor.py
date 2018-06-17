@@ -50,6 +50,7 @@ class SnapNetcdfInputProcessor(InputProcessor, metaclass=ABCMeta):
         return InputInfo(xy_var_names=('lon', 'lat'),
                          xy_tp_var_names=('TP_longitude', 'TP_latitude'),
                          xy_crs=CRS_WKT_EPSG_4326,
+                         xy_gcp_step=5,
                          time_range_attr_names=('start_date', 'stop_date'))
 
     def read(self, input_file: str, **kwargs) -> xr.Dataset:
