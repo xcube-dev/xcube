@@ -41,11 +41,11 @@ class RbinsSeviriInputProcessor(InputProcessor, metaclass=ABCMeta):
 
     @property
     def name(self) -> str:
-        return 'rbins-seviri-l2'
+        return 'rbins-seviri-highroc-l2'
 
     @property
     def description(self) -> str:
-        return 'RBINS SEVIRI Level-2 NetCDF inputs'
+        return 'RBINS SEVIRI HIGHROC Level-2 NetCDF inputs'
 
     @property
     def input_info(self) -> InputInfo:

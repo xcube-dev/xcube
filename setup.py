@@ -58,6 +58,7 @@ setup(
         ],
         'xcube_plugins': [
             'xcube_genl2c_snap = xcube.genl2c.snap:init_plugin',
+            'xcube_genl2c_rbins = xcube.genl2c.rbins:init_plugin',
         ],
     },
     install_requires=requirements,

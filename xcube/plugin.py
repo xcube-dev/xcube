@@ -54,10 +54,6 @@ def load_plugins(entry_points, plugins=None):
     return plugins
 
 
-#: Mapping of Cate entry point names to JSON-serializable plugin meta-information.
-_PLUGIN_REGISTRY = load_plugins(iter_entry_points(group='xcube_plugins', name=None))
-
-
 def get_plugins():
     """Get mapping of "xcube_plugins" entry point names to JSON-serializable plugin meta-information."""
     return dict(_PLUGIN_REGISTRY)
@@ -67,3 +63,7 @@ def _handle_error(entry_point, e):
     warnings.warn('Unexpected exception while loading xcube plugin '
                   f'with entry point {entry_point.name!r}: {e}')
     traceback.print_exc()
+
+
+#: Mapping of Cate entry point names to JSON-serializable plugin meta-information.
+_PLUGIN_REGISTRY = load_plugins(iter_entry_points(group='xcube_plugins', name=None))
