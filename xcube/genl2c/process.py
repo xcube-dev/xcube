@@ -27,6 +27,7 @@ from typing import Sequence, Callable, Tuple, Set, Any, Dict, Optional
 from .inputprocessor import InputProcessor
 from ..io import rimraf, get_default_dataset_io_registry, DatasetIO
 from ..reproject import reproject_to_wgs84
+from ..timedim import add_time_coords
 from ..utils import select_variables
 
 __import__('xcube.plugin')
@@ -121,27 +122,30 @@ def process_input(input_file: str,
         traceback.print_exc()
         return None, False
 
+    src_dataset = dataset
     dataset = select_variables(dataset, dst_variables)
 
     try:
         monitor('pre-processing...')
-        dataset = input_processor.pre_reproject(dataset)
-        monitor('reprojecting...')
-        input_info = input_processor.input_info
-        dataset = reproject_to_wgs84(dataset,
-                                     src_xy_var_names=input_info.xy_var_names,
-                                     src_xy_tp_var_names=input_info.xy_tp_var_names,
-                                     src_xy_crs=input_info.xy_crs,
-                                     src_time_var_name=input_info.time_var_name,
-                                     src_time_range_attr_names=input_info.time_range_attr_names,
-                                     src_time_format=input_info.time_format,
-                                     dst_size=dst_size,
-                                     dst_region=dst_region,
-                                     gcp_step=input_info.xy_gcp_step or 1,
-                                     tp_gcp_step=input_info.xy_tp_gcp_step or 1,
-                                     include_non_spatial_vars=False)
+        dataset = input_processor.pre_process(dataset)
+        reprojection_info = input_processor.get_reprojection_info(src_dataset)
+        if reprojection_info is not None:
+            monitor('reprojecting...')
+            dataset = reproject_to_wgs84(dataset,
+                                         src_xy_var_names=reprojection_info.xy_var_names,
+                                         src_xy_tp_var_names=reprojection_info.xy_tp_var_names,
+                                         src_xy_crs=reprojection_info.xy_crs,
+                                         dst_size=dst_size,
+                                         dst_region=dst_region,
+                                         gcp_step=reprojection_info.xy_gcp_step or 1,
+                                         tp_gcp_step=reprojection_info.xy_tp_gcp_step or 1,
+                                         include_non_spatial_vars=False)
+        time_range = input_processor.get_time_range(src_dataset)
+        if time_range is not None:
+            monitor('adding-time coordinates...')
+            dataset = add_time_coords(dataset, time_range)
         monitor('post-processing...')
-        dataset = input_processor.post_reproject(dataset)
+        dataset = input_processor.post_process(dataset)
     except RuntimeError as e:
         monitor(f'ERROR: during reprojection to WGS84: {e}: skipping it...')
         traceback.print_exc()

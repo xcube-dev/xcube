@@ -24,7 +24,6 @@ from typing import Tuple, List, Union
 
 import gdal
 import numpy as np
-import pandas as pd
 import xarray as xr
 
 from .constants import CRS_WKT_EPSG_4326, EARTH_GEO_COORD_RANGE
@@ -33,13 +32,6 @@ from .types import CoordRange
 # TODO: add callback: Callable[[Optional[Any, str]], None] = None, callback_data: Any = None
 # TODO: support waveband_var_names so that we can combine spectra as vectors
 
-REF_DATETIME_STR = '1970-01-01 00:00:00'
-REF_DATETIME = pd.to_datetime(REF_DATETIME_STR)
-DATETIME_UNITS = f'days since {REF_DATETIME_STR}'
-DATETIME_CALENDAR = 'gregorian'
-SECONDS_PER_DAY = 24 * 60 * 60
-MICROSECONDS_PER_DAY = 1000 * 1000 * SECONDS_PER_DAY
-
 gdal.UseExceptions()
 gdal.PushErrorHandler('CPLQuietErrorHandler')
 
@@ -47,9 +39,6 @@ gdal.PushErrorHandler('CPLQuietErrorHandler')
 def reproject_to_wgs84(src_dataset: xr.Dataset,
                        src_xy_var_names: Tuple[str, str],
                        src_xy_tp_var_names: Tuple[str, str] = None,
-                       src_time_var_name: str = None,
-                       src_time_range_attr_names: Tuple[str, str] = None,
-                       src_time_format: str = None,
                        src_xy_crs: str = None,
                        dst_size: Tuple[int, int] = None,
                        dst_region: CoordRange = None,
@@ -64,9 +53,6 @@ def reproject_to_wgs84(src_dataset: xr.Dataset,
     :param src_dataset:
     :param src_xy_var_names: 
     :param src_xy_tp_var_names: 
-    :param src_time_var_name: 
-    :param src_time_range_attr_names: 
-    :param src_time_format: 
     :param src_xy_crs:
     :param dst_size:
     :param dst_region:
@@ -78,8 +64,6 @@ def reproject_to_wgs84(src_dataset: xr.Dataset,
     """
     x_name, y_name = src_xy_var_names
     tp_x_name, tp_y_name = src_xy_tp_var_names or (None, None)
-    time_min_name, time_max_name = src_time_range_attr_names or (None, None)
-    time_format = src_time_format
 
     # Set defaults
     src_xy_crs = src_xy_crs or CRS_WKT_EPSG_4326
@@ -141,31 +125,6 @@ def reproject_to_wgs84(src_dataset: xr.Dataset,
         tp_width = None
         tp_height = None
         tp_gcps = None
-
-    # TODO: if we can find an existing time variable, copy it into destination
-    # time_var = None
-    # time_bnds_var = None
-
-    if src_time_var_name:
-        _assert(src_time_var_name in src_dataset)
-        time_var = src_dataset[src_time_var_name]
-        _assert(len(time_var.shape) == 1)
-        _assert(np.issubdtype(time_var.dtype, np.datetime64))
-        src_time_bnds_var_name = time_var.attrs.get('bounds', src_time_var_name + '_bnds')
-        if src_time_bnds_var_name in src_dataset:
-            time_bnds_var = src_dataset[src_time_bnds_var_name]
-            _assert(tuple(*time_bnds_var.shape) == (time_var.shape[0], 2))
-
-    if time_min_name and time_max_name and (src_time_var_name is None or src_time_var_name not in src_dataset):
-        t1 = src_dataset.attrs.get(time_min_name)
-        t2 = src_dataset.attrs.get(time_max_name)
-        if t1 is not None:
-            t1 = _get_time_in_days_since_1970(t1, pattern=time_format)
-        if t2 is not None:
-            t2 = _get_time_in_days_since_1970(t2, pattern=time_format)
-    else:
-        t1 = None
-        t2 = None
 
     mem_driver = gdal.GetDriverByName("MEM")
 
@@ -265,31 +224,6 @@ def reproject_to_wgs84(src_dataset: xr.Dataset,
         dst_var.encoding['complevel'] = 4
         dst_dataset[var_name] = dst_var
 
-    if t1 or t2:
-        dst_dataset = dst_dataset.expand_dims('time')
-        if t1 and t2:
-            t_center = t1 + 0.5 * (t2 - t1)
-        else:
-            t_center = t1 or t2
-        dst_dataset = dst_dataset.assign_coords(time=(['time'], [t_center]))
-        time_var = dst_dataset.coords['time']
-        time_var.attrs['long_name'] = 'time'
-        time_var.attrs['standard_name'] = 'time'
-        time_var.attrs['units'] = DATETIME_UNITS
-        time_var.attrs['calendar'] = DATETIME_CALENDAR
-        time_var.encoding['units'] = DATETIME_UNITS
-        time_var.encoding['calendar'] = DATETIME_CALENDAR
-        if t1 and t2:
-            time_var.attrs['bounds'] = 'time_bnds'
-            dst_dataset = dst_dataset.assign_coords(time_bnds=(['time', 'bnds'], [[t1, t2]]))
-            time_bnds_var = dst_dataset.coords['time_bnds']
-            time_bnds_var.attrs['long_name'] = 'time'
-            time_bnds_var.attrs['standard_name'] = 'time'
-            time_bnds_var.attrs['units'] = DATETIME_UNITS
-            time_bnds_var.attrs['calendar'] = DATETIME_CALENDAR
-            time_bnds_var.encoding['units'] = DATETIME_UNITS
-            time_bnds_var.encoding['calendar'] = DATETIME_CALENDAR
-
     lon_var = dst_dataset.coords['lon']
     lon_var.attrs['long_name'] = 'longitude'
     lon_var.attrs['standard_name'] = 'longitude'
@@ -362,9 +296,3 @@ def _get_gcps(x_var: xr.DataArray,
             gcps.append(gdal.GCP(x, y, 0.0, i + 0.5, j + 0.5, '%s,%s' % (i, j), str(gcp_id)))
             gcp_id += 1
     return gcps
-
-
-def _get_time_in_days_since_1970(t: str, pattern=None) -> float:
-    datetime = pd.to_datetime(t, format=pattern, infer_datetime_format=True)
-    timedelta = datetime - REF_DATETIME
-    return timedelta.days + timedelta.seconds / SECONDS_PER_DAY + timedelta.microseconds / MICROSECONDS_PER_DAY

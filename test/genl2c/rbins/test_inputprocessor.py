@@ -3,17 +3,8 @@ import unittest
 import numpy as np
 import xarray as xr
 
-from xcube.genl2c.rbins.inputprocessor import RbinsSeviriHighrocDailyInputProcessor, init_plugin, \
+from xcube.genl2c.rbins.inputprocessor import RbinsSeviriHighrocDailyInputProcessor, \
     RbinsSeviriHighrocSceneInputProcessor
-
-nan = np.nan
-
-
-class RbinsSeviriPluginTest(unittest.TestCase):
-
-    # noinspection PyMethodMayBeStatic
-    def test_init_plugin(self):
-        init_plugin()
 
 
 class RbinsSeviriHighrocSceneInputProcessorTest(unittest.TestCase):
@@ -26,23 +17,24 @@ class RbinsSeviriHighrocSceneInputProcessorTest(unittest.TestCase):
         self.assertEqual('RBINS SEVIRI HIGHROC single-scene Level-2 NetCDF inputs', self.processor.description)
         self.assertEqual({'r'}, self.processor.modes)
         self.assertEqual('nc', self.processor.ext)
-        self.assertIsNotNone(self.processor.input_info)
-        self.assertEqual(('lon', 'lat'), self.processor.input_info.xy_var_names)
-        self.assertEqual(1, self.processor.input_info.xy_gcp_step)
-        self.assertEqual(None, self.processor.input_info.time_var_name)
+
+    def test_reprojection_info(self):
+        reprojection_info = self.processor.get_reprojection_info(create_rbins_seviri_scene_dataset())
+        self.assertEqual(('lon', 'lat'), reprojection_info.xy_var_names)
+        self.assertEqual(1, reprojection_info.xy_gcp_step)
 
     def test_read(self):
         with self.assertRaises(OSError):
             self.processor.read('test-nc')
 
-    def test_pre_reproject(self):
+    def test_pre_process(self):
         ds1 = create_rbins_seviri_scene_dataset()
-        ds2 = self.processor.pre_reproject(ds1)
+        ds2 = self.processor.pre_process(ds1)
         self.assertIs(ds1, ds2)
 
-    def test_post_reproject(self):
+    def test_post_process(self):
         ds1 = create_rbins_seviri_scene_dataset()
-        ds2 = self.processor.post_reproject(ds1)
+        ds2 = self.processor.post_process(ds1)
         self.assertIs(ds1, ds2)
 
 
@@ -56,18 +48,19 @@ class RbinsSeviriHighrocDailyInputProcessorTest(unittest.TestCase):
         self.assertEqual('RBINS SEVIRI HIGHROC daily Level-2 NetCDF inputs', self.processor.description)
         self.assertEqual({'r'}, self.processor.modes)
         self.assertEqual('nc', self.processor.ext)
-        self.assertIsNotNone(self.processor.input_info)
-        self.assertEqual(('longitude', 'latitude'), self.processor.input_info.xy_var_names)
-        self.assertEqual(1, self.processor.input_info.xy_gcp_step)
-        self.assertEqual(None, self.processor.input_info.time_var_name)
+
+    def test_reprojection_info(self):
+        reprojection_info = self.processor.get_reprojection_info(create_rbins_seviri_daily_dataset())
+        self.assertEqual(('longitude', 'latitude'), reprojection_info.xy_var_names)
+        self.assertEqual(1, reprojection_info.xy_gcp_step)
 
     def test_read(self):
         with self.assertRaises(OSError):
             self.processor.read('test-nc')
 
-    def test_pre_reproject(self):
+    def test_pre_process(self):
         ds1 = create_rbins_seviri_daily_dataset()
-        ds2 = self.processor.pre_reproject(ds1)
+        ds2 = self.processor.pre_process(ds1)
         self.assertIsNot(ds1, ds2)
         self.assertIn('time', ds2)
         self.assertIn('latitude', ds2)
@@ -79,9 +72,9 @@ class RbinsSeviriHighrocDailyInputProcessorTest(unittest.TestCase):
         self.assertNotIn('HOUR', ds2)
         self.assertNotIn('MIN', ds2)
 
-    def test_post_reproject(self):
+    def test_post_process(self):
         ds1 = create_rbins_seviri_daily_dataset()
-        ds2 = self.processor.post_reproject(ds1)
+        ds2 = self.processor.post_process(ds1)
         self.assertIs(ds1, ds2)
 
 

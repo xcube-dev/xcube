@@ -21,11 +21,13 @@
 
 import datetime
 from abc import ABCMeta
+from typing import Tuple, Optional
 
 import numpy as np
 import xarray as xr
 
-from ..inputprocessor import InputProcessor, InputInfo
+from xcube.timedim import get_time_in_days_since_1970
+from ..inputprocessor import InputProcessor, ReprojectionInfo
 from ...constants import CRS_WKT_EPSG_4326
 from ...io import get_default_dataset_io_registry
 
@@ -47,11 +49,18 @@ class RbinsSeviriHighrocSceneInputProcessor(InputProcessor, metaclass=ABCMeta):
     def description(self) -> str:
         return 'RBINS SEVIRI HIGHROC single-scene Level-2 NetCDF inputs'
 
-    @property
-    def input_info(self) -> InputInfo:
-        return InputInfo(xy_var_names=('lon', 'lat'),
-                         xy_crs=CRS_WKT_EPSG_4326,
-                         xy_gcp_step=1)
+    def get_reprojection_info(self, dataset: xr.Dataset) -> ReprojectionInfo:
+        return ReprojectionInfo(xy_var_names=('lon', 'lat'),
+                                xy_crs=CRS_WKT_EPSG_4326,
+                                xy_gcp_step=1)
+
+    def get_time_range(self, dataset: xr.Dataset) -> Tuple[float, float]:
+        date = dataset.attrs.get('DATE')
+        if date is None:
+            raise ValueError('illegal L2 input: missing DATE attribute')
+        time = dataset.attrs.get('TIME', '1200')
+        days_since_1970 = get_time_in_days_since_1970(date + time)
+        return days_since_1970, days_since_1970
 
     def read(self, input_file: str, **kwargs) -> xr.Dataset:
         """ Read RBINS SEVIRI L2. """
@@ -75,16 +84,18 @@ class RbinsSeviriHighrocDailyInputProcessor(InputProcessor, metaclass=ABCMeta):
     def description(self) -> str:
         return 'RBINS SEVIRI HIGHROC daily Level-2 NetCDF inputs'
 
-    @property
-    def input_info(self) -> InputInfo:
-        return InputInfo(xy_var_names=('longitude', 'latitude'),
-                         xy_crs=CRS_WKT_EPSG_4326,
-                         xy_gcp_step=1)
+    def get_reprojection_info(self, dataset: xr.Dataset) -> ReprojectionInfo:
+        return ReprojectionInfo(xy_var_names=('longitude', 'latitude'),
+                                xy_crs=CRS_WKT_EPSG_4326,
+                                xy_gcp_step=1)
+
+    def get_time_range(self, dataset: xr.Dataset) -> Optional[Tuple[float, float]]:
+        raise None
 
     def read(self, input_file: str, **kwargs) -> xr.Dataset:
         return xr.open_dataset(input_file)
 
-    def pre_reproject(self, dataset: xr.Dataset) -> xr.Dataset:
+    def pre_process(self, dataset: xr.Dataset) -> xr.Dataset:
         num_times = dataset.sizes.get('t')
         time = np.ndarray(shape=num_times, dtype=np.dtype('datetime64[us]'))
         for i in range(num_times):
