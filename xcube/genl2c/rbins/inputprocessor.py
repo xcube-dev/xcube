@@ -19,8 +19,8 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-from abc import ABCMeta
 import datetime
+from abc import ABCMeta
 
 import numpy as np
 import xarray as xr
@@ -30,9 +30,9 @@ from ...constants import CRS_WKT_EPSG_4326
 from ...io import get_default_dataset_io_registry
 
 
-class RbinsSeviriInputProcessor(InputProcessor, metaclass=ABCMeta):
+class RbinsSeviriHighrocSceneInputProcessor(InputProcessor, metaclass=ABCMeta):
     """
-    Input processor for SNAP L2 NetCDF inputs.
+    Input processor for RBINS' HIGHROC single-scene Level-2 NetCDF inputs.
     """
 
     @property
@@ -41,11 +41,39 @@ class RbinsSeviriInputProcessor(InputProcessor, metaclass=ABCMeta):
 
     @property
     def name(self) -> str:
-        return 'rbins-seviri-highroc-l2'
+        return 'rbins-seviri-highroc-scene-l2'
 
     @property
     def description(self) -> str:
-        return 'RBINS SEVIRI HIGHROC Level-2 NetCDF inputs'
+        return 'RBINS SEVIRI HIGHROC single-scene Level-2 NetCDF inputs'
+
+    @property
+    def input_info(self) -> InputInfo:
+        return InputInfo(xy_var_names=('lon', 'lat'),
+                         xy_crs=CRS_WKT_EPSG_4326,
+                         xy_gcp_step=1)
+
+    def read(self, input_file: str, **kwargs) -> xr.Dataset:
+        """ Read RBINS SEVIRI L2. """
+        return xr.open_dataset(input_file)
+
+
+class RbinsSeviriHighrocDailyInputProcessor(InputProcessor, metaclass=ABCMeta):
+    """
+    Input processor for RBINS' HIGHROC daily Level-2 NetCDF inputs.
+    """
+
+    @property
+    def ext(self) -> str:
+        return 'nc'
+
+    @property
+    def name(self) -> str:
+        return 'rbins-seviri-highroc-daily-l2'
+
+    @property
+    def description(self) -> str:
+        return 'RBINS SEVIRI HIGHROC daily Level-2 NetCDF inputs'
 
     @property
     def input_info(self) -> InputInfo:
@@ -54,7 +82,6 @@ class RbinsSeviriInputProcessor(InputProcessor, metaclass=ABCMeta):
                          xy_gcp_step=1)
 
     def read(self, input_file: str, **kwargs) -> xr.Dataset:
-        """ Read RBINS SEVIRI L2. """
         return xr.open_dataset(input_file)
 
     def pre_reproject(self, dataset: xr.Dataset) -> xr.Dataset:
@@ -85,4 +112,5 @@ class RbinsSeviriInputProcessor(InputProcessor, metaclass=ABCMeta):
 def init_plugin():
     """ Register a DatasetIO object: SnapOlciHighrocL2NetcdfInputProcessor() """
     ds_io_registry = get_default_dataset_io_registry()
-    ds_io_registry.register(RbinsSeviriInputProcessor())
+    ds_io_registry.register(RbinsSeviriHighrocSceneInputProcessor())
+    ds_io_registry.register(RbinsSeviriHighrocDailyInputProcessor())

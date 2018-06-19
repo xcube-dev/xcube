@@ -1,12 +1,26 @@
 import os
 import unittest
 
-from test.genl2c.snap.helpers import get_inputdata_file, get_inputdata_files
+from test.genl2c.snap.helpers import get_inputdata_file
 from xcube.genl2c.process import process_inputs
 from xcube.io import rimraf
 
 
+def clean_up():
+    files = ['l2c-single.nc', 'l2c.nc', 'l2c.zarr']
+    for file in files:
+        rimraf(os.path.join('.', file))
+        rimraf(os.path.join('.', file + 'temp.nc'))
+
+
 class SnapProcessTest(unittest.TestCase):
+
+    def setUp(self):
+        clean_up()
+
+    def tearDown(self):
+        clean_up()
+
     # noinspection PyMethodMayBeStatic
     def test_process_inputs_single(self):
         path, status = process_inputs_wrapper(input=[get_inputdata_file('O_L2_0001_SNS_2017105100139_v1.0.nc')],
@@ -15,7 +29,6 @@ class SnapProcessTest(unittest.TestCase):
                                               append=False)
         self.assertEqual(True, status)
         self.assertEqual(os.path.join('.', 'l2c-single.nc'), path)
-        rimraf(os.path.join('.', 'l2c-single.nc'))
 
     def test_process_inputs_append_multiple_nc(self):
         path, status = process_inputs_wrapper(input=[get_inputdata_file('O_L2_0001_SNS_*_v1.0.nc')],
@@ -24,7 +37,6 @@ class SnapProcessTest(unittest.TestCase):
                                               append=True)
         self.assertEqual(True, status)
         self.assertEqual(os.path.join('.', 'l2c.nc'), path)
-        rimraf(os.path.join('.', 'l2c.nc'))
 
     def test_process_inputs_append_multiple_zarr(self):
         path, status = process_inputs_wrapper(input=[get_inputdata_file('O_L2_0001_SNS_*_v1.0.nc')],
@@ -33,8 +45,6 @@ class SnapProcessTest(unittest.TestCase):
                                               append=True)
         self.assertEqual(True, status)
         self.assertEqual(os.path.join('.', 'l2c.zarr'), path)
-        rimraf(os.path.join('.', 'l2c.zarr'))
-
 
 
 # noinspection PyShadowingBuiltins

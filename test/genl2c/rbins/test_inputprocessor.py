@@ -1,22 +1,59 @@
 import unittest
 
 import numpy as np
-from numpy.testing import assert_array_almost_equal
 import xarray as xr
 
-from xcube.genl2c.rbins.inputprocessor import RbinsSeviriInputProcessor, init_plugin
+from xcube.genl2c.rbins.inputprocessor import RbinsSeviriHighrocDailyInputProcessor, init_plugin, \
+    RbinsSeviriHighrocSceneInputProcessor
 
 nan = np.nan
 
 
-class RbinsSeviriInputProcessorTest(unittest.TestCase):
+class RbinsSeviriPluginTest(unittest.TestCase):
+
+    # noinspection PyMethodMayBeStatic
+    def test_init_plugin(self):
+        init_plugin()
+
+
+class RbinsSeviriHighrocSceneInputProcessorTest(unittest.TestCase):
 
     def setUp(self):
-        self.processor = RbinsSeviriInputProcessor()
+        self.processor = RbinsSeviriHighrocSceneInputProcessor()
 
     def test_props(self):
-        self.assertEqual('rbins-seviri-highroc-l2', self.processor.name)
-        self.assertEqual('RBINS SEVIRI HIGHROC Level-2 NetCDF inputs', self.processor.description)
+        self.assertEqual('rbins-seviri-highroc-scene-l2', self.processor.name)
+        self.assertEqual('RBINS SEVIRI HIGHROC single-scene Level-2 NetCDF inputs', self.processor.description)
+        self.assertEqual({'r'}, self.processor.modes)
+        self.assertEqual('nc', self.processor.ext)
+        self.assertIsNotNone(self.processor.input_info)
+        self.assertEqual(('lon', 'lat'), self.processor.input_info.xy_var_names)
+        self.assertEqual(1, self.processor.input_info.xy_gcp_step)
+        self.assertEqual(None, self.processor.input_info.time_var_name)
+
+    def test_read(self):
+        with self.assertRaises(OSError):
+            self.processor.read('test-nc')
+
+    def test_pre_reproject(self):
+        ds1 = create_rbins_seviri_scene_dataset()
+        ds2 = self.processor.pre_reproject(ds1)
+        self.assertIs(ds1, ds2)
+
+    def test_post_reproject(self):
+        ds1 = create_rbins_seviri_scene_dataset()
+        ds2 = self.processor.post_reproject(ds1)
+        self.assertIs(ds1, ds2)
+
+
+class RbinsSeviriHighrocDailyInputProcessorTest(unittest.TestCase):
+
+    def setUp(self):
+        self.processor = RbinsSeviriHighrocDailyInputProcessor()
+
+    def test_props(self):
+        self.assertEqual('rbins-seviri-highroc-daily-l2', self.processor.name)
+        self.assertEqual('RBINS SEVIRI HIGHROC daily Level-2 NetCDF inputs', self.processor.description)
         self.assertEqual({'r'}, self.processor.modes)
         self.assertEqual('nc', self.processor.ext)
         self.assertIsNotNone(self.processor.input_info)
@@ -29,7 +66,7 @@ class RbinsSeviriInputProcessorTest(unittest.TestCase):
             self.processor.read('test-nc')
 
     def test_pre_reproject(self):
-        ds1 = create_rbins_seviri_dataset()
+        ds1 = create_rbins_seviri_daily_dataset()
         ds2 = self.processor.pre_reproject(ds1)
         self.assertIsNot(ds1, ds2)
         self.assertIn('time', ds2)
@@ -43,15 +80,12 @@ class RbinsSeviriInputProcessorTest(unittest.TestCase):
         self.assertNotIn('MIN', ds2)
 
     def test_post_reproject(self):
-        ds1 = create_rbins_seviri_dataset()
+        ds1 = create_rbins_seviri_daily_dataset()
         ds2 = self.processor.post_reproject(ds1)
         self.assertIs(ds1, ds2)
 
-    def test_init_plugin(self):
-        init_plugin()
 
-
-def create_rbins_seviri_dataset():
+def create_rbins_seviri_scene_dataset():
     """
     Simulates a HIGHROC OLCI L2 product in NetCDF 4 format
     """
@@ -62,22 +96,11 @@ def create_rbins_seviri_dataset():
                          [55, 55.2, 55.4, 55.6],
                          [54, 54.3, 54.6, 54.9]], dtype=np.float32)
 
-    date = np.array([20170108, 20170108, 20170108, 20170108, 20170108, 20170108, 20170108,
-                     20170108, 20170108, 20170108, 20170108, 20170108, 20170108, 20170108,
-                     20170108, 20170108, 20170108, 20170108, 20170108, 20170108, 20170108,
-                     20170108, 20170108, 20170108, 20170108, 20170108, 20170108, 20170108,
-                     20170108, 20170108, 20170108, 20170108, 20170108, 20170108, 20170108,
-                     20170108], dtype=np.int32)
-    hour = np.array([7, 7, 7, 8, 8, 8, 8, 9, 9, 9, 9, 10, 10, 10, 10, 11, 11, 11,
-                     11, 12, 12, 12, 12, 13, 13, 13, 13, 14, 14, 14, 14, 15, 15, 15, 15, 16], dtype=np.int32)
-    minute = np.array([15, 30, 45, 0, 15, 30, 45, 0, 15, 30, 45, 0, 15, 30, 45, 0, 15, 30,
-                       45, 0, 15, 30, 45, 0, 15, 30, 45, 0, 15, 30, 45, 0, 15, 30, 45, 0], dtype=np.int32)
     x = 4
     y = 3
-    t = 36
-    spm = np.zeros(shape=(t, y, x), dtype=np.float32)
-    tur = np.zeros(shape=(t, y, x), dtype=np.float32)
-    ds_flags = np.zeros(shape=(t, y, x), dtype=np.int32)
+    spm = np.zeros(shape=(y, x), dtype=np.float32)
+    tur = np.zeros(shape=(y, x), dtype=np.float32)
+    ds_flags = np.zeros(shape=(y, x), dtype=np.int32)
     return xr.Dataset(
         data_vars=dict(
             longitude=(('y', 'x'), longitude, dict(
@@ -88,35 +111,56 @@ def create_rbins_seviri_dataset():
                 long_name="latitude",
                 units="degrees north",
             )),
-            DATE=(('t',), date),
-            HOUR=(('t',), hour),
-            MIN=(('t',), minute),
-            SPM=(('t', 'y', 'x'),
+            SPM=(('y', 'x'),
                  spm,
                  dict(units='mg/m3',
                       long_name='Suspended Particuate Matter',
                       algorithm='Nechad et al. 2010',
                       ds_flag='good value: FLAG = 0')),
-            TUR=(('t', 'y', 'x'),
+            TUR=(('y', 'x'),
                  tur,
                  dict(units='FNU',
                       long_name='Turbidity',
                       algorithm='Neukermans et al. 2012',
                       ds_flag='good value: FLAG = 0')),
-            DS_FLAGS=(('t', 'y', 'x'),
+            DS_FLAGS=(('y', 'x'),
                       ds_flags),
         ),
-        attrs=dict(processed_by='RBINS/DO Nature/REMSEM',
-                   generated='2017-01-08 22:23',
-                   sensor='SEVIRI',
-                   region='SNS',
-                   source='EUR',
-                   platform='MSG3',
-                   dname='QV_2013b.1')
+        attrs=dict([('file_info', 'GRIMAS export NCDF file'),
+                    ('processed_by', 'RBINS/DO Nature/REMSEM'),
+                    ('generated', '06/08/2017 09:22:58'),
+                    ('sensor', 'SEVIRI'),
+                    ('REGION', 'SNS'),
+                    ('SOURCE', 'EUR'),
+                    ('U0', 29.3),
+                    ('TU0M26', 0.98744),
+                    ('TU0M28', 0.89171),
+                    ('EPSDEF', 1.0),
+                    ('EPSEST', 1),
+                    ('RECAL', 'epsOffset'),
+                    ('CALIBRATION', 0),
+                    ('CLMMASK', 2),
+                    ('RAY', 0),
+                    ('LUTVERSION', 'DEFAULT'),
+                    ('SWIRAC', 0),
+                    ('NONLINEAR', 0),
+                    ('NONLINEAR_TA', 0),
+                    ('MEDIAN_RHOA', 0),
+                    ('DNAME', 'QV_2013b.1'),
+                    ('DATE', '20170806'),
+                    ('TIME', '0700'),
+                    ('SIGMA', 6.09),
+                    ('EPS', 0.90903175),
+                    ('EPSOFF', -0.0026553879),
+                    ('PLATFORM', 'MSG3'),
+                    ('DEPSOFF', 0.014735364),
+                    ('DEPS', 0.0018116904),
+                    ('NEPS', 1615),
+                    ('ANCILLARY', 'defaults used')])
     )
 
 
-def create_rbins_seviri_dataset_1d():
+def create_rbins_seviri_daily_dataset():
     """
     Simulates a HIGHROC OLCI L2 product in NetCDF 4 format
     """
