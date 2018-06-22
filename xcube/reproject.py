@@ -201,7 +201,7 @@ def reproject_to_wgs84(src_dataset: xr.Dataset,
             dst_var_dataset.GetRasterBand(band_index).SetNoDataValue(float('nan'))
 
         resample_alg = get_gdal_resample_alg(src_var, dst_var_names_to_resample_algs,
-                                             default=gdal.GRA_Bilinear if is_tp_var else gdal.GRA_NearestNeighbour)
+                                             default='Bilinear' if is_tp_var else 'NN')
         warp_mem_limit = 0
         error_threshold = 0
         # See http://www.gdal.org/structGDALWarpOptions.html
@@ -258,13 +258,15 @@ def reproject_to_wgs84(src_dataset: xr.Dataset,
 
 
 _NUMPY_TO_GDAL_DTYPE_MAPPING = {
-    np.int16: gdal.GDT_Int16,
-    np.int32: gdal.GDT_Int32,
-    np.uint16: gdal.GDT_UInt16,
-    np.uint32: gdal.GDT_UInt32,
-    np.float16: gdal.GDT_Float32,
-    np.float32: gdal.GDT_Float32,
-    np.float64: gdal.GDT_Float64,
+    np.dtype(np.int8): gdal.GDT_Int16,
+    np.dtype(np.int16): gdal.GDT_Int16,
+    np.dtype(np.int32): gdal.GDT_Int32,
+    np.dtype(np.uint8): gdal.GDT_Byte,
+    np.dtype(np.uint16): gdal.GDT_UInt16,
+    np.dtype(np.uint32): gdal.GDT_UInt32,
+    np.dtype(np.float16): gdal.GDT_Float32,
+    np.dtype(np.float32): gdal.GDT_Float32,
+    np.dtype(np.float64): gdal.GDT_Float64,
 }
 
 
@@ -297,13 +299,20 @@ NAME_TO_GDAL_RESAMPLE_ALG: Dict[str, Any] = dict(
 
 def get_gdal_resample_alg(var: xr.DataArray,
                           var_name_to_resample_alg: Dict[str, str] = None,
-                          default=None):
+                          default='NN'):
+    resample_alg_name = _get_gdal_resample_alg_name(var, var_name_to_resample_alg, default=default)
+    return _NAME_TO_GDAL_RESAMPLE_ALG.get(resample_alg_name, gdal.GRA_NearestNeighbour)
+
+
+def _get_gdal_resample_alg_name(var: xr.DataArray,
+                                var_name_to_resample_alg: Dict[str, str],
+                                default):
     if var_name_to_resample_alg:
         if var.name in var_name_to_resample_alg:
             return var_name_to_resample_alg[var.name]
         if '*' in var_name_to_resample_alg:
             return var_name_to_resample_alg['*']
-    return default if default is not None else gdal.GRA_NearestNeighbour
+    return default if default is not None else 'NN'
 
 
 def _assert(cond, text='Assertion failed'):
