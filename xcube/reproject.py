@@ -20,7 +20,7 @@
 # SOFTWARE.
 
 import warnings
-from typing import Tuple, List, Union
+from typing import Tuple, List, Union, Dict, Optional
 
 import gdal
 import numpy as np
@@ -30,7 +30,6 @@ from .constants import CRS_WKT_EPSG_4326, EARTH_GEO_COORD_RANGE
 from .types import CoordRange
 
 # TODO: add callback: Callable[[Optional[Any, str]], None] = None, callback_data: Any = None
-# TODO: support waveband_var_names so that we can combine spectra as vectors
 
 gdal.UseExceptions()
 gdal.PushErrorHandler('CPLQuietErrorHandler')
@@ -45,7 +44,9 @@ def reproject_to_wgs84(src_dataset: xr.Dataset,
                        valid_region: CoordRange = None,
                        gcp_step: Union[int, Tuple[int, int]] = 10,
                        tp_gcp_step: Union[int, Tuple[int, int]] = 1,
-                       include_non_spatial_vars: bool = False) -> xr.Dataset:
+                       dst_var_names_to_resample_algs: Dict[str, str] = None,
+                       include_non_spatial_vars: bool = False,
+                       include_xy_vars: bool = False) -> xr.Dataset:
     """
     Reprojection of xarray datasets with 2D geo-coding, e.g. with variables lon(y,x), lat(y, x) to
     EPSG:4326 (WGS-84) coordinate reference system.
@@ -59,7 +60,12 @@ def reproject_to_wgs84(src_dataset: xr.Dataset,
     :param valid_region:
     :param gcp_step:
     :param tp_gcp_step:
+    :param dst_var_names_to_resample_algs: A dictionary that uses variable names as keys and
+           GDAL resampling algorithm names as values.
+           The key "*" provides the default resampling algorithm.
     :param include_non_spatial_vars:
+    :param include_xy_vars: Whether to include the variables given by *src_xy_var_names*.
+           Useful for projection-validation.
     :return: the reprojected dataset
     """
     x_name, y_name = src_xy_var_names
@@ -148,29 +154,32 @@ def reproject_to_wgs84(src_dataset: xr.Dataset,
     for var_name in src_dataset.variables:
         src_var = src_dataset[var_name]
 
-        if var_name == x_name or var_name == y_name:
-            # Don't store lat and lon 2D vars in destination, this will let xarray raise
-            # TODO: instead add lat and lon with new names, so we can validate geo-location
-            continue
-
-        is_tp_var = False
         if src_var.dims == x_var.dims:
-            # TODO: collect variables of same type and size and set band_count accordingly to speed up reprojection
+            is_tp_var = False
+            if var_name == x_name or var_name == y_name:
+                if not include_xy_vars:
+                    # Don't store lat and lon 2D vars in destination
+                    continue
+                dst_var_name = 'src_' + var_name
+            else:
+                dst_var_name = var_name
+            # PERF: collect variables of same type and size and set band_count accordingly to speed up reprojection
             band_count = 1
-            # TODO: select the data_type based on src_var.dtype
-            data_type = gdal.GDT_Float64
+            data_type = numpy_to_gdal_dtype(src_var.dtype)
             src_var_dataset = mem_driver.Create('src_' + var_name, src_width, src_height, band_count, data_type, [])
             src_var_dataset.SetGCPs(gcps, src_xy_crs)
         elif tp_x_var is not None and src_var.dims == tp_x_var.dims:
-            if var_name == tp_y_name or var_name == tp_x_name:
-                # Don't store TP lat and TP lon 2D vars in destination
-                # TODO: instead add TP lat and lon with new names, so we can validate geo-location
-                continue
             is_tp_var = True
-            # TODO: collect variables of same type and size and set band_count accordingly to speed up reprojection
+            if var_name == tp_x_name or var_name == tp_y_name:
+                if not include_xy_vars:
+                    # Don't store lat and lon 2D vars in destination
+                    continue
+                dst_var_name = 'src_' + var_name
+            else:
+                dst_var_name = var_name
+            # PERF: collect variables of same type and size and set band_count accordingly to speed up reprojection
             band_count = 1
-            # TODO: select the data_type based on src_var.dtype
-            data_type = gdal.GDT_Float64
+            data_type = numpy_to_gdal_dtype(src_var.dtype)
             src_var_dataset = mem_driver.Create('src_' + var_name, tp_width, tp_height, band_count, data_type, [])
             src_var_dataset.SetGCPs(tp_gcps, src_xy_crs)
         elif include_non_spatial_vars:
@@ -191,8 +200,8 @@ def reproject_to_wgs84(src_dataset: xr.Dataset,
             src_var_dataset.GetRasterBand(band_index).WriteArray(src_var.values)
             dst_var_dataset.GetRasterBand(band_index).SetNoDataValue(float('nan'))
 
-        # TODO: configure resampling individually for each variable, make this config a parameter
-        resampling = gdal.GRA_Bilinear if is_tp_var else gdal.GRA_NearestNeighbour
+        resample_alg = get_gdal_resample_alg(src_var, dst_var_names_to_resample_algs,
+                                             default=gdal.GRA_Bilinear if is_tp_var else gdal.GRA_NearestNeighbour)
         warp_mem_limit = 0
         error_threshold = 0
         # See http://www.gdal.org/structGDALWarpOptions.html
@@ -201,7 +210,7 @@ def reproject_to_wgs84(src_dataset: xr.Dataset,
                             dst_var_dataset,
                             None,
                             None,
-                            resampling,
+                            resample_alg,
                             warp_mem_limit,
                             error_threshold,
                             None,  # callback,
@@ -211,8 +220,7 @@ def reproject_to_wgs84(src_dataset: xr.Dataset,
         dst_values = dst_var_dataset.GetRasterBand(1).ReadAsArray()
         # print(var_name, dst_values.shape, np.nanmin(dst_values), np.nanmax(dst_values))
 
-        # TODO: set CF-1.6 attributes correctly
-        dst_var = xr.DataArray(dst_values, dims=['lat', 'lon'], name=var_name, attrs=src_var.attrs)
+        dst_var = xr.DataArray(dst_values, dims=['lat', 'lon'], name=dst_var_name, attrs=src_var.attrs)
         dst_var.encoding = src_var.encoding
         if np.issubdtype(dst_var.dtype, np.floating) \
                 and np.issubdtype(src_var.encoding.get('dtype'), np.integer) \
@@ -222,7 +230,7 @@ def reproject_to_wgs84(src_dataset: xr.Dataset,
         dst_var.encoding['chunksizes'] = (1, dst_var.shape[-2], dst_var.shape[-1])
         dst_var.encoding['zlib'] = True
         dst_var.encoding['complevel'] = 4
-        dst_dataset[var_name] = dst_var
+        dst_dataset[dst_var_name] = dst_var
 
     lon_var = dst_dataset.coords['lon']
     lon_var.attrs['long_name'] = 'longitude'
@@ -247,6 +255,55 @@ def reproject_to_wgs84(src_dataset: xr.Dataset,
     lat_bnds_var.attrs['units'] = 'degrees_north'
 
     return dst_dataset
+
+
+_NUMPY_TO_GDAL_DTYPE_MAPPING = {
+    np.int16: gdal.GDT_Int16,
+    np.int32: gdal.GDT_Int32,
+    np.uint16: gdal.GDT_UInt16,
+    np.uint32: gdal.GDT_UInt32,
+    np.float16: gdal.GDT_Float32,
+    np.float32: gdal.GDT_Float32,
+    np.float64: gdal.GDT_Float64,
+}
+
+
+def numpy_to_gdal_dtype(np_dtype):
+    if np_dtype in _NUMPY_TO_GDAL_DTYPE_MAPPING:
+        return _NUMPY_TO_GDAL_DTYPE_MAPPING[np_dtype]
+    warnings.warn(f'unhandled numpy dtype {np_dtype}, using float64 instead')
+    return gdal.GDT_Float64
+
+
+_NAME_TO_GDAL_RESAMPLE_ALG = dict(
+
+    # Up-sampling
+    NearestNeighbour=gdal.GRA_NearestNeighbour,
+    Bilinear=gdal.GRA_Bilinear,
+    Cubic=gdal.GRA_Cubic,
+    CubicSpline=gdal.GRA_CubicSpline,
+    Lanczos=gdal.GRA_Lanczos,
+
+    # Down-sampling
+    Average=gdal.GRA_Average,
+    Min=gdal.GRA_Min,
+    Max=gdal.GRA_Max,
+    Median=gdal.GRA_Med,
+    Mode=gdal.GRA_Mode,
+    Q1=gdal.GRA_Q1,
+    Q3=gdal.GRA_Q3,
+)
+
+
+def get_gdal_resample_alg(var: xr.DataArray,
+                          var_name_to_resample_alg: Dict[str, str] = None,
+                          default=None):
+    if var_name_to_resample_alg:
+        if var.name in var_name_to_resample_alg:
+            return var_name_to_resample_alg[var.name]
+        if '*' in var_name_to_resample_alg:
+            return var_name_to_resample_alg['*']
+    return default if default is not None else gdal.GRA_NearestNeighbour
 
 
 def _assert(cond, text='Assertion failed'):

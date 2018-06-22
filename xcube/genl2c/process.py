@@ -37,7 +37,8 @@ def process_inputs(input_files: Sequence[str],
                    input_type: str,
                    dst_size: Tuple[int, int],
                    dst_region: Tuple[float, float, float, float],
-                   dst_variables: Set[str],
+                   dst_var_names: Set[str],
+                   dst_var_names_to_resample_algs: Optional[Dict[str, str]],
                    dst_metadata: Optional[Dict[str, Any]],
                    output_dir: str,
                    output_name: str,
@@ -77,7 +78,8 @@ def process_inputs(input_files: Sequence[str],
                                             input_processor,
                                             dst_size,
                                             dst_region,
-                                            dst_variables,
+                                            dst_var_names,
+                                            dst_var_names_to_resample_algs,
                                             dst_metadata,
                                             output_dir,
                                             output_name,
@@ -98,8 +100,9 @@ def process_input(input_file: str,
                   input_processor: InputProcessor,
                   dst_size: Tuple[int, int],
                   dst_region: Tuple[float, float, float, float],
-                  dst_variables: Set[str],
-                  dst_metadata: Dict[str, Any],
+                  dst_var_names: Set[str],
+                  dst_var_names_to_resample_algs: Optional[Dict[str, str]],
+                  dst_metadata: Optional[Dict[str, Any]],
                   output_dir: str,
                   output_name: str,
                   dataset_writer: DatasetIO,
@@ -123,7 +126,7 @@ def process_input(input_file: str,
         return None, False
 
     src_dataset = dataset
-    dataset = select_variables(dataset, dst_variables)
+    dataset = select_variables(dataset, dst_var_names)
 
     try:
         monitor('pre-processing...')
@@ -139,6 +142,7 @@ def process_input(input_file: str,
                                          dst_region=dst_region,
                                          gcp_step=reprojection_info.xy_gcp_step or 1,
                                          tp_gcp_step=reprojection_info.xy_tp_gcp_step or 1,
+                                         dst_var_names_to_resample_algs=dst_var_names_to_resample_algs,
                                          include_non_spatial_vars=False)
         time_range = input_processor.get_time_range(src_dataset)
         if time_range is not None:

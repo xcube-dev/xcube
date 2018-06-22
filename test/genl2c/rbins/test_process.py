@@ -59,6 +59,7 @@ def process_inputs_wrapper(input=None, name=None, format='netcdf4', append=False
                           (-4., 47., 12., 56.),
                           None,
                           None,
+                          None,
                           '.',
                           name,
                           output_format=format,

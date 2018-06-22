@@ -34,6 +34,7 @@ from .transexpr import transpile_expr, translate_expr
 def mask_dataset(dataset: xr.Dataset,
                  expr_pattern: str = None,
                  in_place: bool = False,
+                 add_masks: bool = False,
                  errors: str = None) -> Tuple[xr.Dataset, Dict[str, MaskSet]]:
     """
     BEAM/SNAP specific dataset masking.
@@ -54,7 +55,6 @@ def mask_dataset(dataset: xr.Dataset,
     for var_name in dataset.variables:
         var = dataset[var_name]
         if not _is_snap_expression_var(var):
-            # TODO: only add spatial variables, exclude tie point grids
             namespace[var_name] = var
 
     # Add to namespace all SNAP flag bands as mask sets, where each mask set has a mask for each flag
@@ -92,6 +92,7 @@ def _compute_snap_expression(var_name, snap_expression, namespace, errors):
     numpy_expression = _snap_expr_to_numpy_expr(snap_expression, errors)
     # print('variable "%s" uses expression %r transpiled to %r' % (var_name, snap_expression, numpy_expression))
     try:
+        # PERF: test perf. against numexpr
         computed_var = eval(numpy_expression, namespace, None)
     except Exception as e:
         computed_var = None

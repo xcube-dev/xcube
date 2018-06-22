@@ -125,6 +125,8 @@ def main(args: Optional[List[str]] = None):
             print(f'error: invalid variables {arg_obj.output_variables!r}')
             return 2
 
+    output_variables_to_resample_algs = dict()
+
     if output_meta_file:
         try:
             with open(output_meta_file) as stream:
@@ -142,6 +144,7 @@ def main(args: Optional[List[str]] = None):
                    output_size,
                    output_region,
                    output_variables,
+                   output_variables_to_resample_algs,
                    dst_metadata,
                    output_dir,
                    output_name,

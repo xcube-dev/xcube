@@ -54,6 +54,7 @@ def process_inputs_wrapper(input=None, name=None, format='netcdf4', append=False
                           (2000, 1000),
                           (0., 50., 5., 52.5),
                           {'conc_chl', 'conc_tsm', 'kd489', 'c2rcc_flags', 'quality_flags'},
+                          {'c2rcc_flags': 'NearestNeighbor', '*': 'Bilinear'},
                           None,
                           '.',
                           name,
