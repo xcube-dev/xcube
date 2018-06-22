@@ -20,6 +20,7 @@
 # SOFTWARE.
 
 import warnings
+from typing import Tuple, List, Union, Dict
 from typing import Tuple, List, Union, Dict, Optional, Any
 
 import gdal
@@ -296,12 +297,16 @@ NAME_TO_GDAL_RESAMPLE_ALG: Dict[str, Any] = dict(
     Q3=gdal.GRA_Q3,
 )
 
+DEFAULT_RESAMPLE_ALG_NAME = 'NearestNeighbour'
+
 
 def get_gdal_resample_alg(var: xr.DataArray,
                           var_name_to_resample_alg: Dict[str, str] = None,
-                          default='NN'):
+                          default=DEFAULT_RESAMPLE_ALG_NAME):
     resample_alg_name = _get_gdal_resample_alg_name(var, var_name_to_resample_alg, default=default)
-    return _NAME_TO_GDAL_RESAMPLE_ALG.get(resample_alg_name, gdal.GRA_NearestNeighbour)
+    if resample_alg_name not in _NAME_TO_GDAL_RESAMPLE_ALG:
+        raise ValueError(f'{resample_alg_name!r} is not a name of known resampling algorithms')
+    return _NAME_TO_GDAL_RESAMPLE_ALG[resample_alg_name]
 
 
 def _get_gdal_resample_alg_name(var: xr.DataArray,
@@ -312,7 +317,7 @@ def _get_gdal_resample_alg_name(var: xr.DataArray,
             return var_name_to_resample_alg[var.name]
         if '*' in var_name_to_resample_alg:
             return var_name_to_resample_alg['*']
-    return default if default is not None else 'NN'
+    return default if default is not None else DEFAULT_RESAMPLE_ALG_NAME
 
 
 def _assert(cond, text='Assertion failed'):
