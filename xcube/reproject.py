@@ -39,29 +39,51 @@ def reproject_to_wgs84(src_dataset: xr.Dataset,
                        src_xy_var_names: Tuple[str, str],
                        src_xy_tp_var_names: Tuple[str, str] = None,
                        src_xy_crs: str = None,
+                       src_xy_gcp_step: Union[int, Tuple[int, int]] = 10,
+                       src_xy_tp_gcp_step: Union[int, Tuple[int, int]] = 1,
                        dst_size: Tuple[int, int] = None,
                        dst_region: CoordRange = None,
-                       valid_region: CoordRange = None,
-                       gcp_step: Union[int, Tuple[int, int]] = 10,
-                       tp_gcp_step: Union[int, Tuple[int, int]] = 1,
-                       dst_var_names_to_resample_algs: Dict[str, str] = None,
-                       include_non_spatial_vars: bool = False,
-                       include_xy_vars: bool = False) -> xr.Dataset:
+                       dst_resample_alg_name: str = None,
+                       dst_vars: Dict[str, Dict[str, Any]] = None,
+                       include_xy_vars: bool = False,
+                       include_non_spatial_vars: bool = False) -> xr.Dataset:
     """
     Reprojection of xarray datasets with 2D geo-coding, e.g. with variables lon(y,x), lat(y, x) to
     EPSG:4326 (WGS-84) coordinate reference system.
+
+    *dst_vars* is dictionary that provides a mapping from variable names to variable attributes.
+    The ``resampling`` attribute is used in the reprojection.
+
+    For up-sampling it can have the following values:
+
+    * ``Nearest``
+    * ``Bilinear``
+    * ``Cubic``
+    * ``CubicSpline``
+    * ``Lanczos``
+
+    For down-sampling the following values are useful:
+
+    * ``Average``
+    * ``Min``
+    * ``Max``
+    * ``Median``
+    * ``Mode``
+    * ``Q1``
+    * ``Q3``
+
+    Other attributes are assigned to variable "as-is".
 
     :param src_dataset:
     :param src_xy_var_names: 
     :param src_xy_tp_var_names: 
     :param src_xy_crs:
+    :param src_xy_gcp_step:
+    :param src_xy_tp_gcp_step:
     :param dst_size:
     :param dst_region:
-    :param valid_region:
-    :param gcp_step:
-    :param tp_gcp_step:
-    :param dst_var_names_to_resample_algs: A dictionary that uses variable names as keys and
-           GDAL resampling algorithm names as values.
+    :param dst_vars: A dictionary that uses variable names as key and attribute dictionaries as values.
+           The following attributes will be used to encode the value.
            The key "*" provides the default resampling algorithm.
     :param include_non_spatial_vars:
     :param include_xy_vars: Whether to include the variables given by *src_xy_var_names*.
@@ -73,11 +95,11 @@ def reproject_to_wgs84(src_dataset: xr.Dataset,
 
     # Set defaults
     src_xy_crs = src_xy_crs or CRS_WKT_EPSG_4326
-    valid_region = valid_region or EARTH_GEO_COORD_RANGE
-    gcp_i_step, gcp_j_step = (gcp_step, gcp_step) if isinstance(gcp_step, int) \
-        else gcp_step
-    tp_gcp_i_step, tp_gcp_j_step = (tp_gcp_step, tp_gcp_step) if tp_gcp_step is None or isinstance(tp_gcp_step, int) \
-        else tp_gcp_step
+    gcp_i_step, gcp_j_step = (src_xy_gcp_step, src_xy_gcp_step) if isinstance(src_xy_gcp_step, int) \
+        else src_xy_gcp_step
+    tp_gcp_i_step, tp_gcp_j_step = (src_xy_tp_gcp_step, src_xy_tp_gcp_step) if src_xy_tp_gcp_step is None or isinstance(
+        src_xy_tp_gcp_step, int) \
+        else src_xy_tp_gcp_step
 
     dst_width, dst_height = dst_size
 
@@ -101,7 +123,7 @@ def reproject_to_wgs84(src_dataset: xr.Dataset,
     src_width = x_var.shape[-1]
     src_height = x_var.shape[-2]
 
-    dst_region = _ensure_valid_region(dst_region, valid_region, x_var, y_var)
+    dst_region = _ensure_valid_region(dst_region, EARTH_GEO_COORD_RANGE, x_var, y_var)
     x1, y1, x2, y2 = dst_region
 
     dst_res = max((x2 - x1) / dst_width, (y2 - y1) / dst_height)
@@ -149,7 +171,7 @@ def reproject_to_wgs84(src_dataset: xr.Dataset,
                                       list(zip(np.linspace(y2, dst_y1 + dst_res, dst_height),
                                                np.linspace(y2 - dst_res, dst_y1, dst_height))))
     dst_dataset.attrs = src_dataset.attrs
-    dst_dataset.attrs['Conventions'] = 'CF-1.6'
+    dst_dataset.attrs['Conventions'] = 'CF-1.7'
 
     for var_name in src_dataset.variables:
         src_var = src_dataset[var_name]
@@ -200,8 +222,19 @@ def reproject_to_wgs84(src_dataset: xr.Dataset,
             src_var_dataset.GetRasterBand(band_index).WriteArray(src_var.values)
             dst_var_dataset.GetRasterBand(band_index).SetNoDataValue(float('nan'))
 
-        resample_alg = get_gdal_resample_alg(src_var, dst_var_names_to_resample_algs,
-                                             default='Bilinear' if is_tp_var else 'Nearest')
+        if dst_vars:
+            dst_var_attrs = dst_vars.get(src_var.name)
+        else:
+            dst_var_attrs = {}
+
+        resample_alg_name = dst_resample_alg_name or ('Bilinear' if is_tp_var else 'Nearest')
+        if dst_var_attrs and 'resample_alg' in dst_var_attrs:
+            resample_alg_name = dst_var_attrs.get('resample_alg')
+        if resample_alg_name not in NAME_TO_GDAL_RESAMPLE_ALG:
+            raise ValueError(f'{resample_alg_name!r} is not a name of known resampling algorithm')
+
+        resample_alg = NAME_TO_GDAL_RESAMPLE_ALG[resample_alg_name]
+
         warp_mem_limit = 0
         error_threshold = 0
         # See http://www.gdal.org/structGDALWarpOptions.html
@@ -220,7 +253,8 @@ def reproject_to_wgs84(src_dataset: xr.Dataset,
         dst_values = dst_var_dataset.GetRasterBand(1).ReadAsArray()
         # print(var_name, dst_values.shape, np.nanmin(dst_values), np.nanmax(dst_values))
 
-        dst_var = xr.DataArray(dst_values, dims=['lat', 'lon'], name=dst_var_name, attrs=src_var.attrs)
+        dst_var_attrs = dict(**src_var.attrs, **dst_var_attrs)
+        dst_var = xr.DataArray(dst_values, dims=['lat', 'lon'], name=dst_var_name, attrs=dst_var_attrs)
         dst_var.encoding = src_var.encoding
         if np.issubdtype(dst_var.dtype, np.floating) \
                 and np.issubdtype(src_var.encoding.get('dtype'), np.integer) \
@@ -295,28 +329,6 @@ NAME_TO_GDAL_RESAMPLE_ALG: Dict[str, Any] = dict(
     Q1=gdal.GRA_Q1,
     Q3=gdal.GRA_Q3,
 )
-
-DEFAULT_RESAMPLE_ALG_NAME = 'Nearest'
-
-
-def get_gdal_resample_alg(var: xr.DataArray,
-                          var_name_to_resample_alg: Dict[str, str] = None,
-                          default=DEFAULT_RESAMPLE_ALG_NAME):
-    resample_alg_name = _get_gdal_resample_alg_name(var, var_name_to_resample_alg, default=default)
-    if resample_alg_name not in NAME_TO_GDAL_RESAMPLE_ALG:
-        raise ValueError(f'{resample_alg_name!r} is not a name of known resampling algorithms')
-    return NAME_TO_GDAL_RESAMPLE_ALG[resample_alg_name]
-
-
-def _get_gdal_resample_alg_name(var: xr.DataArray,
-                                var_name_to_resample_alg: Dict[str, str],
-                                default):
-    if var_name_to_resample_alg:
-        if var.name in var_name_to_resample_alg:
-            return var_name_to_resample_alg[var.name]
-        if '*' in var_name_to_resample_alg:
-            return var_name_to_resample_alg['*']
-    return default if default is not None else DEFAULT_RESAMPLE_ALG_NAME
 
 
 def _assert(cond, text='Assertion failed'):

@@ -59,8 +59,10 @@ def process_inputs_wrapper(input=None, name=None, format='netcdf4', append=False
                           (-4., 47., 12., 56.),
                           None,
                           None,
-                          None,
+                          'Nearest',
                           '.',
                           name,
-                          output_format=format,
-                          append=append, dry_run=False, monitor=None)
+                          dst_format=format,
+                          dst_append=append,
+                          dry_run=False,
+                          monitor=None)

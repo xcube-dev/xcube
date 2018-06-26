@@ -34,6 +34,7 @@ __import__('xcube.plugin')
 DEFAULT_OUTPUT_DIR = '.'
 DEFAULT_OUTPUT_PATTERN = 'PROJ_WGS84_{INPUT_FILE}'
 DEFAULT_OUTPUT_FORMAT = 'nc'
+DEFAULT_OUTPUT_RESAMPLING = 'Nearest'
 DEFAULT_output_size = '512,512'
 
 
@@ -68,10 +69,11 @@ def main(args: Optional[List[str]] = None):
     parser.add_argument('--variables', '-v', dest='output_variables',
                         help='Variables to be included in output. '
                              'Comma-separated list of names which may contain wildcard characters "*" and "?".')
-    parser.add_argument('--resampling', dest='resampling_alg', choices=resampling_algs,
-                        help='Default resampling algorithm to be used for all variables.')
+    parser.add_argument('--resampling', dest='output_resampling', choices=resampling_algs,
+                        help='Fallback resampling algorithm to be used for all variables.'
+                             f'Defaults to {DEFAULT_OUTPUT_RESAMPLING!r}.')
     parser.add_argument('--meta-file', '-m', dest='output_meta_file',
-                        help='File containing cube-level CF-compliant metadata in YAML format.')
+                        help='File containing cube-level, CF-compliant metadata in YAML format.')
     parser.add_argument('--append', '-a', default=False, action='store_true',
                         help='Append successive outputs.')
     parser.add_argument('--dry-run', default=False, action='store_true',
@@ -95,6 +97,7 @@ def main(args: Optional[List[str]] = None):
     output_size = arg_obj.output_size
     output_region = arg_obj.output_region
     output_variables = arg_obj.output_variables
+    output_resampling = arg_obj.output_resampling or DEFAULT_OUTPUT_RESAMPLING
     output_meta_file = arg_obj.output_meta_file
     append = arg_obj.append
     dry_run = arg_obj.dry_run
@@ -129,18 +132,16 @@ def main(args: Optional[List[str]] = None):
             print(f'error: invalid variables {arg_obj.output_variables!r}')
             return 2
 
-    output_variables_to_resample_algs = dict()
-
     if output_meta_file:
         try:
             with open(output_meta_file) as stream:
-                dst_metadata = load_yaml(stream)
+                output_metadata = load_yaml(stream)
             print(f'loaded metadata from file {arg_obj.output_meta_file!r}')
         except OSError as e:
             print(f'error: failed loading metadata file {arg_obj.output_meta_file!r}: {e}')
             return 2
     else:
-        dst_metadata = None
+        output_metadata = None
 
     from xcube.genl2c.process import process_inputs
     process_inputs(input_files,
@@ -148,8 +149,8 @@ def main(args: Optional[List[str]] = None):
                    output_size,
                    output_region,
                    output_variables,
-                   output_variables_to_resample_algs,
-                   dst_metadata,
+                   output_metadata,
+                   output_resampling,
                    output_dir,
                    output_name,
                    output_format,

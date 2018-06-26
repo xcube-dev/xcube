@@ -33,93 +33,93 @@ from ..utils import select_variables
 __import__('xcube.plugin')
 
 
-def process_inputs(input_files: Sequence[str],
-                   input_type: str,
+def process_inputs(src_files: Sequence[str],
+                   src_type: str,
                    dst_size: Tuple[int, int],
                    dst_region: Tuple[float, float, float, float],
-                   dst_var_names: Set[str],
-                   dst_var_names_to_resample_algs: Optional[Dict[str, str]],
+                   dst_var_names: Optional[Set[str]],
                    dst_metadata: Optional[Dict[str, Any]],
-                   output_dir: str,
-                   output_name: str,
-                   output_format: str = 'netcdf4',
-                   append: bool = False,
+                   dst_resample_alg_name: str,
+                   dst_dir: str,
+                   dst_name: str,
+                   dst_format: str = 'netcdf4',
+                   dst_append: bool = False,
                    dry_run: bool = False,
                    monitor: Callable[..., None] = None) -> Tuple[Optional[str], bool]:
     dataset_io_registry = get_default_dataset_io_registry()
 
-    input_processor = dataset_io_registry.find(input_type)
+    input_processor = dataset_io_registry.find(src_type)
     if not input_processor:
-        raise ValueError(f'unknown input type {input_type!r}')
+        raise ValueError(f'unknown input type {src_type!r}')
 
-    dataset_writer = dataset_io_registry.find(output_format, modes={'w', 'a'} if append else {'w'})
-    if not dataset_writer:
-        raise ValueError(f'unknown output format {output_format!r}')
+    output_writer = dataset_io_registry.find(dst_format, modes={'w', 'a'} if dst_append else {'w'})
+    if not output_writer:
+        raise ValueError(f'unknown output format {dst_format!r}')
 
     if monitor is None:
         # noinspection PyUnusedLocal
         def monitor(*args):
             pass
 
-    input_files = sorted([input_file for f in input_files for input_file in glob.glob(f, recursive=True)])
+    src_files = sorted([input_file for f in src_files for input_file in glob.glob(f, recursive=True)])
 
     if not dry_run:
-        os.makedirs(output_dir, exist_ok=True)
+        os.makedirs(dst_dir, exist_ok=True)
 
-    output_path = None
+    dst_path = None
     status = False
 
-    ds_count = len(input_files)
+    ds_count = len(src_files)
     ds_index = 0
-    for input_file in input_files:
-        monitor(f'processing dataset {ds_index + 1} of {ds_count}: {input_file!r}...')
+    for src_file in src_files:
+        monitor(f'processing dataset {ds_index + 1} of {ds_count}: {src_file!r}...')
         # noinspection PyTypeChecker
-        output_path, status = process_input(input_file,
-                                            input_processor,
-                                            dst_size,
-                                            dst_region,
-                                            dst_var_names,
-                                            dst_var_names_to_resample_algs,
-                                            dst_metadata,
-                                            output_dir,
-                                            output_name,
-                                            dataset_writer,
-                                            append,
-                                            dry_run,
-                                            monitor)
+        dst_path, status = _process_input(input_processor,
+                                          output_writer,
+                                          src_file,
+                                          dst_size,
+                                          dst_region,
+                                          dst_var_names,
+                                          dst_metadata,
+                                          dst_resample_alg_name,
+                                          dst_dir,
+                                          dst_name,
+                                          dst_append,
+                                          dry_run,
+                                          monitor)
         if status:
             ds_index += 1
 
     monitor(f'{ds_index} of {ds_count} datasets processed successfully, '
             f'{ds_count - ds_index} were dropped due to errors')
 
-    return output_path, status
+    return dst_path, status
 
 
-def process_input(input_file: str,
-                  input_processor: InputProcessor,
-                  dst_size: Tuple[int, int],
-                  dst_region: Tuple[float, float, float, float],
-                  dst_var_names: Set[str],
-                  dst_var_names_to_resample_algs: Optional[Dict[str, str]],
-                  dst_metadata: Optional[Dict[str, Any]],
-                  output_dir: str,
-                  output_name: str,
-                  dataset_writer: DatasetIO,
-                  append: bool,
-                  dry_run: bool = False,
-                  monitor: Callable[..., None] = None) -> Tuple[Optional[str], bool]:
-    basename = os.path.basename(input_file)
+def _process_input(input_processor: InputProcessor,
+                   output_writer: DatasetIO,
+                   src_file: str,
+                   dst_size: Tuple[int, int],
+                   dst_region: Tuple[float, float, float, float],
+                   dst_var_names: Set[str],
+                   dst_metadata: Optional[Dict[str, Any]],
+                   dst_resample_alg_name: str,
+                   dst_dir: str,
+                   dst_name: str,
+                   dst_append: bool,
+                   dry_run: bool = False,
+                   monitor: Callable[..., None] = None) -> Tuple[Optional[str], bool]:
+    basename = os.path.basename(src_file)
     basename, ext = basename.rsplit('.', 1) if '.' in basename else (basename, None)
 
-    output_name = output_name.format(INPUT_FILE=basename)
-    output_basename = output_name + '.' + dataset_writer.ext
-    output_path = os.path.join(output_dir, output_basename)
+    dst_name = dst_name.format(INPUT_FILE=basename)
+    output_basename = dst_name + '.' + output_writer.ext
+    output_path = os.path.join(dst_dir, output_basename)
 
     monitor('reading...')
     # noinspection PyBroadException
     try:
-        dataset = input_processor.read(input_file)
+        dataset = input_processor.read(src_file)
     except Exception as e:
         monitor(f'ERROR: cannot read input: {e}: skipping...')
         traceback.print_exc()
@@ -127,6 +127,11 @@ def process_input(input_file: str,
 
     src_dataset = dataset
     dataset = select_variables(dataset, dst_var_names)
+
+    if dst_metadata and 'data_variables' in dst_metadata:
+        dst_vars = dst_metadata['data_variables']
+    else:
+        dst_vars = {}
 
     try:
         monitor('pre-processing...')
@@ -138,11 +143,12 @@ def process_input(input_file: str,
                                          src_xy_var_names=reprojection_info.xy_var_names,
                                          src_xy_tp_var_names=reprojection_info.xy_tp_var_names,
                                          src_xy_crs=reprojection_info.xy_crs,
+                                         src_xy_gcp_step=reprojection_info.xy_gcp_step or 1,
+                                         src_xy_tp_gcp_step=reprojection_info.xy_tp_gcp_step or 1,
                                          dst_size=dst_size,
                                          dst_region=dst_region,
-                                         gcp_step=reprojection_info.xy_gcp_step or 1,
-                                         tp_gcp_step=reprojection_info.xy_tp_gcp_step or 1,
-                                         dst_var_names_to_resample_algs=dst_var_names_to_resample_algs,
+                                         dst_vars=dst_vars,
+                                         dst_resample_alg_name=dst_resample_alg_name,
                                          include_non_spatial_vars=False)
         time_range = input_processor.get_time_range(src_dataset)
         if time_range is not None:
@@ -155,18 +161,19 @@ def process_input(input_file: str,
         traceback.print_exc()
         return output_path, False
 
-    if dst_metadata:
+    if dst_metadata and 'global_attributes' in dst_metadata:
+        global_attributes = dst_metadata['global_attributes']
         dataset.attrs.clear()
-        dataset.attrs.update(dst_metadata)
+        dataset.attrs.update(global_attributes)
 
     if not dry_run:
-        if append and os.path.exists(output_path):
+        if dst_append and os.path.exists(output_path):
             monitor(f'appending to {output_path}...')
-            dataset_writer.append(dataset, output_path)
+            output_writer.append(dataset, output_path)
         else:
             rimraf(output_path)
             monitor(f'writing to {output_path}...')
-            dataset_writer.write(dataset, output_path)
+            output_writer.write(dataset, output_path)
 
     dataset.close()
 

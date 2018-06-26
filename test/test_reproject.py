@@ -21,8 +21,9 @@ class ReprojectTest(unittest.TestCase):
         proj_dataset = reproject_to_wgs84(dataset,
                                           src_xy_var_names=('lon', 'lat'),
                                           src_xy_tp_var_names=('TP_longitude', 'TP_latitude'),
-                                          dst_size=(dst_width, dst_height),
-                                          gcp_step=1, tp_gcp_step=1)
+                                          src_xy_gcp_step=1,
+                                          src_xy_tp_gcp_step=1,
+                                          dst_size=(dst_width, dst_height))
 
         self.assertIsNotNone(proj_dataset)
         self.assertEquals(proj_dataset.sizes, dict(lon=dst_width, lat=dst_height, bnds=2))
