@@ -26,6 +26,7 @@ from typing import List, Optional
 from xcube.genl2c.inputprocessor import InputProcessor
 from xcube.io import get_default_dataset_io_registry
 from xcube.metadata import load_yaml
+from xcube.reproject import NAME_TO_GDAL_RESAMPLE_ALG
 from xcube.version import version
 
 __import__('xcube.plugin')
@@ -45,6 +46,7 @@ def main(args: Optional[List[str]] = None):
     output_ds_ios = ds_io_registry.query(lambda ds_io: 'w' in ds_io.modes)
     input_type_names = [ds_io.name for ds_io in input_ds_ios]
     output_format_names = [ds_io.name for ds_io in output_ds_ios]
+    resampling_algs = NAME_TO_GDAL_RESAMPLE_ALG.keys()
 
     parser = argparse.ArgumentParser(description='Generate L2C data cube from various input files. '
                                                  'L2C data cubes may be created in one go or in successively '
@@ -63,11 +65,13 @@ def main(args: Optional[List[str]] = None):
                              f'Defaults to {DEFAULT_output_size!r}.')
     parser.add_argument('--region', '-r', dest='output_region',
                         help='Output region using format "<lon-min>,<lat-min>,<lon-max>,<lat-max>"')
-    parser.add_argument('--meta-file', '-m', dest='output_meta_file',
-                        help='File containing cube-level CF-compliant metadata in YAML format.')
     parser.add_argument('--variables', '-v', dest='output_variables',
                         help='Variables to be included in output. '
                              'Comma-separated list of names which may contain wildcard characters "*" and "?".')
+    parser.add_argument('--resampling', dest='resampling_alg', choices=resampling_algs,
+                        help='Default resampling algorithm to be used for all variables.')
+    parser.add_argument('--meta-file', '-m', dest='output_meta_file',
+                        help='File containing cube-level CF-compliant metadata in YAML format.')
     parser.add_argument('--append', '-a', default=False, action='store_true',
                         help='Append successive outputs.')
     parser.add_argument('--dry-run', default=False, action='store_true',

@@ -20,7 +20,7 @@
 # SOFTWARE.
 
 import warnings
-from typing import Tuple, List, Union, Dict, Optional
+from typing import Tuple, List, Union, Dict, Optional, Any
 
 import gdal
 import numpy as np
@@ -275,10 +275,10 @@ def numpy_to_gdal_dtype(np_dtype):
     return gdal.GDT_Float64
 
 
-_NAME_TO_GDAL_RESAMPLE_ALG = dict(
+NAME_TO_GDAL_RESAMPLE_ALG: Dict[str, Any] = dict(
 
     # Up-sampling
-    NearestNeighbour=gdal.GRA_NearestNeighbour,
+    Nearest=gdal.GRA_NearestNeighbour,
     Bilinear=gdal.GRA_Bilinear,
     Cubic=gdal.GRA_Cubic,
     CubicSpline=gdal.GRA_CubicSpline,
