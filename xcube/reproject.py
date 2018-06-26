@@ -20,8 +20,7 @@
 # SOFTWARE.
 
 import warnings
-from typing import Tuple, List, Union, Dict
-from typing import Tuple, List, Union, Dict, Optional, Any
+from typing import Tuple, List, Union, Dict, Any
 
 import gdal
 import numpy as np
@@ -202,7 +201,7 @@ def reproject_to_wgs84(src_dataset: xr.Dataset,
             dst_var_dataset.GetRasterBand(band_index).SetNoDataValue(float('nan'))
 
         resample_alg = get_gdal_resample_alg(src_var, dst_var_names_to_resample_algs,
-                                             default='Bilinear' if is_tp_var else 'NN')
+                                             default='Bilinear' if is_tp_var else 'Nearest')
         warp_mem_limit = 0
         error_threshold = 0
         # See http://www.gdal.org/structGDALWarpOptions.html
@@ -297,16 +296,16 @@ NAME_TO_GDAL_RESAMPLE_ALG: Dict[str, Any] = dict(
     Q3=gdal.GRA_Q3,
 )
 
-DEFAULT_RESAMPLE_ALG_NAME = 'NearestNeighbour'
+DEFAULT_RESAMPLE_ALG_NAME = 'Nearest'
 
 
 def get_gdal_resample_alg(var: xr.DataArray,
                           var_name_to_resample_alg: Dict[str, str] = None,
                           default=DEFAULT_RESAMPLE_ALG_NAME):
     resample_alg_name = _get_gdal_resample_alg_name(var, var_name_to_resample_alg, default=default)
-    if resample_alg_name not in _NAME_TO_GDAL_RESAMPLE_ALG:
+    if resample_alg_name not in NAME_TO_GDAL_RESAMPLE_ALG:
         raise ValueError(f'{resample_alg_name!r} is not a name of known resampling algorithms')
-    return _NAME_TO_GDAL_RESAMPLE_ALG[resample_alg_name]
+    return NAME_TO_GDAL_RESAMPLE_ALG[resample_alg_name]
 
 
 def _get_gdal_resample_alg_name(var: xr.DataArray,
