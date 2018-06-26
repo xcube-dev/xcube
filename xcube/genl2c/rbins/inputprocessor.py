@@ -90,7 +90,7 @@ class RbinsSeviriHighrocDailyInputProcessor(InputProcessor, metaclass=ABCMeta):
                                 xy_gcp_step=1)
 
     def get_time_range(self, dataset: xr.Dataset) -> Optional[Tuple[float, float]]:
-        raise None
+        return None
 
     def read(self, input_file: str, **kwargs) -> xr.Dataset:
         return xr.open_dataset(input_file)
