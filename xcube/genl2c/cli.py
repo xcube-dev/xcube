@@ -25,7 +25,7 @@ from typing import List, Optional
 
 from xcube.genl2c.inputprocessor import InputProcessor
 from xcube.io import get_default_dataset_io_registry
-from xcube.metadata import load_yaml
+from xcube.metadata import load_metadata_yaml
 from xcube.reproject import NAME_TO_GDAL_RESAMPLE_ALG
 from xcube.version import version
 
@@ -135,7 +135,7 @@ def main(args: Optional[List[str]] = None):
     if output_meta_file:
         try:
             with open(output_meta_file) as stream:
-                output_metadata = load_yaml(stream)
+                output_metadata = load_metadata_yaml(stream)
             print(f'loaded metadata from file {arg_obj.output_meta_file!r}')
         except OSError as e:
             print(f'error: failed loading metadata file {arg_obj.output_meta_file!r}: {e}')

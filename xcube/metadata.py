@@ -25,9 +25,12 @@ from typing import Any, Dict, Optional
 import yaml
 
 
-def load_yaml(stream):
-    hierarchical_metadata = yaml.load(stream)
-    return flatten_dict(hierarchical_metadata)
+def load_metadata_yaml(stream):
+    metadata = yaml.load(stream)
+    if 'global_attributes' in metadata:
+        global_attributes = metadata['global_attributes']
+        metadata['global_attributes'] = flatten_dict(global_attributes)
+    return metadata
 
 
 def flatten_dict(d: Dict[str, Any]) -> Dict[str, Any]:

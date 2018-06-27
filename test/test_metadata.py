@@ -3,7 +3,7 @@ import unittest
 from io import StringIO
 
 import yaml
-from xcube.metadata import flatten_dict, load_yaml
+from xcube.metadata import flatten_dict, load_metadata_yaml
 
 
 class MetaTest(unittest.TestCase):
@@ -69,9 +69,8 @@ class MetaTest(unittest.TestCase):
 
     def test_load_yaml(self):
         stream = StringIO(TEST_JSON)
-        d = load_yaml(stream)
-
-        d = flatten_dict(d)
+        d = load_metadata_yaml(stream)
+        d = d['global_attributes']
         self.assertEqual(17, len(d))
         self.assertEqual('DCS4COP Sentinel-3 OLCI L2C Data Cube',
                          d.get('title'))
@@ -96,38 +95,39 @@ class MetaTest(unittest.TestCase):
 
 
 TEST_JSON = """
-# CF: A succinct description of what is in the dataset.
-title: "DCS4COP Sentinel-3 OLCI L2C Data Cube"
-
-# The data creator's name, URL, and email.
-# The "institution" attribute will be used if the "creator_name" attribute does not exist.
-creator:
-  - name: "Brockmann Consult GmbH"
-    url: "https://www.brockmann-consult.de"
-  - name: "Royal Belgian Institute for Natural Sciences (RBINS)"
-    url: "http://odnature.naturalsciences.be/remsem/"
-
-date:
-  # The date on which the data was created.
-  created:  "2018-05-30"
-  # The date on which this data was formally issued.
-  issued:   "2018-06-01"
-
-geospatial_lon:
-  min:  0.0
-  max:  5.0
-  units: "degrees east"
-  resolution: 0.0025
-
-geospatial_lat:
-  min: 50.0
-  max: 52.5
-  units: "degrees north"
-  resolution: 0.0025
-
-time_coverage:
-  start:      2016-10-01
-  end:        2017-10-01T12:00:10
-  duration:   "P1Y"
-  resolution: "1D"
+global_attributes:
+  # CF: A succinct description of what is in the dataset.
+  title: "DCS4COP Sentinel-3 OLCI L2C Data Cube"
+  
+  # The data creator's name, URL, and email.
+  # The "institution" attribute will be used if the "creator_name" attribute does not exist.
+  creator:
+    - name: "Brockmann Consult GmbH"
+      url: "https://www.brockmann-consult.de"
+    - name: "Royal Belgian Institute for Natural Sciences (RBINS)"
+      url: "http://odnature.naturalsciences.be/remsem/"
+  
+  date:
+    # The date on which the data was created.
+    created:  "2018-05-30"
+    # The date on which this data was formally issued.
+    issued:   "2018-06-01"
+  
+  geospatial_lon:
+    min:  0.0
+    max:  5.0
+    units: "degrees east"
+    resolution: 0.0025
+  
+  geospatial_lat:
+    min: 50.0
+    max: 52.5
+    units: "degrees north"
+    resolution: 0.0025
+  
+  time_coverage:
+    start:      2016-10-01
+    end:        2017-10-01T12:00:10
+    duration:   "P1Y"
+    resolution: "1D"
 """
