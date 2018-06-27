@@ -19,8 +19,6 @@ global_attributes:
   # If it is observational, source should characterize it (e.g., "surface observation" or "radiosonde").
   source: "Sentinel-3 OLCI L2 surface observation"
 
-
-
   # Describe the restrictions to data access and distribution.
   license: "terms and conditions of the DCS4COP data distribution"
 
@@ -85,8 +83,8 @@ global_attributes:
 data_variables:
 
   conc_chl:
-    resampling: Nearest
+    resample_alg: Nearest
 
   conc_tsm:
-    resampling: Nearest
+    resample_alg: Nearest
 
