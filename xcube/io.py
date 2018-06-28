@@ -170,7 +170,9 @@ class ZarrDatasetIO(DatasetIO):
         encoding = dict()
         for var_name in dataset.data_vars:
             new_var = dataset[var_name]
-            encoding[var_name] = {'compressor': compressor, 'chunks': new_var.shape}
+            # TODO: get chunks from configuration
+            chunks = new_var.shape
+            encoding[var_name] = {'compressor': compressor, 'chunks': chunks}
         dataset.to_zarr(output_path,
                         encoding=encoding)
 
