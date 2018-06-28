@@ -98,11 +98,11 @@ def create_rbins_seviri_scene_dataset():
         data_vars=dict(
             longitude=(('y', 'x'), longitude, dict(
                 long_name="longitude",
-                units="degrees east",
+                units="degrees_east",
             )),
             latitude=(('y', 'x'), latitude, dict(
                 long_name="latitude",
-                units="degrees north",
+                units="degrees_north",
             )),
             SPM=(('y', 'x'),
                  spm,
@@ -184,11 +184,11 @@ def create_rbins_seviri_daily_dataset():
         data_vars=dict(
             longitude=(('y', 'x'), longitude, dict(
                 long_name="longitude",
-                units="degrees east",
+                units="degrees_east",
             )),
             latitude=(('y', 'x'), latitude, dict(
                 long_name="latitude",
-                units="degrees north",
+                units="degrees_north",
             )),
             DATE=(('t',), date),
             HOUR=(('t',), hour),

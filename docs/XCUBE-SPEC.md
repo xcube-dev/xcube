@@ -85,9 +85,9 @@ ARD links:
 * Spatial coordinate variables: 
   * SHALL use WGS84 (EPSG:4326) CRS.
   * SHALL have `lat[lat]` that provides observation or average latitude of *cell centers*
-    with attributes: `standard_name="latitude"` `units="degrees north"`.
+    with attributes: `standard_name="latitude"` `units="degrees_north"`.
   * SHALL have `lon[lon]` that provides observation or average longitude of *cell centers* 
-    with attributes: `standard_name="longitude"` and `units="degrees east"` 
+    with attributes: `standard_name="longitude"` and `units="degrees_east"` 
   * SHOULD HAVE `lat_bnds[lat, bnds]`, `lon_bnds[lon, bnds]`: provide geodetic observation or integration coordinates of *cell boundaries*. 
 * Cube variables: 
   * SHALL have shape `[time, ..., lat, lon]`. 
@@ -102,9 +102,9 @@ ARD links:
     *  Attributes: `standard_name`, `units`, other units describe the CRS / projections, see CF.
   * `y_bnds[y, bnds]`, `x_bnds[x, bnds]`: provide spatial observation or integration coordinates of *cell boundaries*.
   * MAY have `lat[y,x]`: latitude of *cell centers*. 
-    *  Attributes: `standard_name="latitude"`, `units="degrees north"`.
+    *  Attributes: `standard_name="latitude"`, `units="degrees_north"`.
   * `lon[y,x]`: longitude of *cell centers*. 
-    *  Attributes: `standard_name="longitude"`, `units="degrees east"`.
+    *  Attributes: `standard_name="longitude"`, `units="degrees_east"`.
 * Cube variables: 
   * MUST have shape `[time, ..., y, x]`. 
 

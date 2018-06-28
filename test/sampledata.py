@@ -31,11 +31,11 @@ def create_highroc_dataset(no_spectra=False):
             c2rcc_flags=create_c2rcc_flag_var(),
             lon=(('y', 'x'), lon, dict(
                 long_name="longitude",
-                units="degrees east",
+                units="degrees_east",
             )),
             lat=(('y', 'x'), lat, dict(
                 long_name="latitude",
-                units="degrees north",
+                units="degrees_north",
             )),
             **rtoa_vars,
             **rrs_vars,

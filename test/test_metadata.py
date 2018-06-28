@@ -84,8 +84,8 @@ class MetaTest(unittest.TestCase):
         self.assertEqual(5.0, d.get('geospatial_lon_max'))
         self.assertEqual(50.0, d.get('geospatial_lat_min'))
         self.assertEqual(52.5, d.get('geospatial_lat_max'))
-        self.assertEqual('degrees east', d.get('geospatial_lon_units'))
-        self.assertEqual('degrees north', d.get('geospatial_lat_units'))
+        self.assertEqual('degrees_east', d.get('geospatial_lon_units'))
+        self.assertEqual('degrees_north', d.get('geospatial_lat_units'))
         self.assertEqual(0.0025, d.get('geospatial_lon_resolution'))
         self.assertEqual(0.0025, d.get('geospatial_lat_resolution'))
         self.assertEqual('2016-10-01', d.get('time_coverage_start'))
@@ -116,13 +116,13 @@ global_attributes:
   geospatial_lon:
     min:  0.0
     max:  5.0
-    units: "degrees east"
+    units: "degrees_east"
     resolution: 0.0025
   
   geospatial_lat:
     min: 50.0
     max: 52.5
-    units: "degrees north"
+    units: "degrees_north"
     resolution: 0.0025
   
   time_coverage:
