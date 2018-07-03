@@ -1,7 +1,5 @@
-#!/usr/bin/env python3
-
 # The MIT License (MIT)
-# Copyright (c) 2018 by Brockmann Consult GmbH
+# Copyright (c) 2018 by the xcube development team and contributors
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of
 # this software and associated documentation files (the "Software"), to deal in
@@ -20,47 +18,3 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-
-
-from setuptools import setup, find_packages
-
-# in alphabetical oder
-requirements = [
-    'dask',
-    'gdal',
-    'matplotlib',
-    'numpy',
-    'pandas',
-    'pyyaml',
-    's3fs',
-    'xarray',
-    'zarr',
-]
-
-packages = find_packages(exclude=["test", "test.*"])
-
-# Same effect as "from cate import version", but avoids importing cate:
-version = None
-with open('xcube/version.py') as f:
-    exec(f.read())
-
-setup(
-    name="xcube",
-    version=version,
-    description='xcube API and CLIs',
-    license='MIT',
-    author='xcube Development Team',
-    packages=packages,
-    entry_points={
-        'console_scripts': [
-            'xcube-genl2c = xcube.genl2c.cli:main',
-            'xcube-genl3 = xcube.genl3.cli:main',
-            'xcube-feg = xcube.feg:main',
-        ],
-        'xcube_plugins': [
-            'xcube_genl2c_snap = xcube.genl2c.snap:init_plugin',
-            'xcube_genl2c_rbins = xcube.genl2c.rbins:init_plugin',
-        ],
-    },
-    install_requires=requirements,
-)
