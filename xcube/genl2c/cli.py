@@ -143,20 +143,20 @@ def main(args: Optional[List[str]] = None):
     else:
         output_metadata = None
 
-    from xcube.genl2c.process import process_inputs
-    process_inputs(input_files,
-                   input_type,
-                   output_size,
-                   output_region,
-                   output_variables,
-                   output_metadata,
-                   output_resampling,
-                   output_dir,
-                   output_name,
-                   output_format,
-                   append,
-                   dry_run=dry_run,
-                   monitor=print)
+    from xcube.genl2c.process import generate_l2c_cube
+    generate_l2c_cube(input_files,
+                      input_type,
+                      output_size,
+                      output_region,
+                      output_variables,
+                      output_metadata,
+                      output_resampling,
+                      output_dir,
+                      output_name,
+                      output_format,
+                      append,
+                      dry_run=dry_run,
+                      monitor=print)
     return 0
 
 

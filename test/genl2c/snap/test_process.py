@@ -2,7 +2,7 @@ import os
 import unittest
 
 from test.genl2c.snap.helpers import get_inputdata_file
-from xcube.genl2c.process import process_inputs
+from xcube.genl2c.process import generate_l2c_cube
 from xcube.io import rimraf
 
 
@@ -49,16 +49,16 @@ class SnapProcessTest(unittest.TestCase):
 
 # noinspection PyShadowingBuiltins
 def process_inputs_wrapper(input=None, name=None, format='netcdf4', append=False):
-    return process_inputs(input,
+    return generate_l2c_cube(input,
                           'snap-olci-highroc-l2',
-                          (2000, 1000),
-                          (0., 50., 5., 52.5),
-                          {'conc_chl', 'conc_tsm', 'kd489', 'c2rcc_flags', 'quality_flags'},
-                          None,
+                             (2000, 1000),
+                             (0., 50., 5., 52.5),
+                             {'conc_chl', 'conc_tsm', 'kd489', 'c2rcc_flags', 'quality_flags'},
+                             None,
                           'Nearest',
                           '.',
-                          name,
-                          dst_format=format,
-                          dst_append=append,
-                          dry_run=False,
-                          monitor=None)
+                             name,
+                             dst_format=format,
+                             dst_append=append,
+                             dry_run=False,
+                             monitor=None)

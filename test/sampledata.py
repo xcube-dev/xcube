@@ -1,5 +1,28 @@
 import numpy as np
+import pandas as pd
 import xarray as xr
+
+
+def new_test_dataset(time, height=180, **indexers):
+    time = [time] if isinstance(time, str) else time
+    width = height * 2
+    num_times = len(time)
+    res = 180 / height
+    shape = (1, height, width)
+    data_vars = dict()
+    for name, value in indexers.items():
+        try:
+            values = list(value)
+        except TypeError:
+            values = [value] * num_times
+        if len(values) != num_times:
+            raise ValueError()
+        data_vars[name] = (['time', 'lat', 'lon'],
+                           np.concatenate(tuple(np.full(shape, values[i]) for i in range(num_times))))
+    return xr.Dataset(data_vars,
+                      coords=dict(time=(['time'], pd.to_datetime(time)),
+                                  lat=(['lat'], np.linspace(-90 + res, +90 - res, height)),
+                                  lon=(['lon'], np.linspace(-180 + res, +180 - res, width))))
 
 
 def create_highroc_dataset(no_spectra=False):

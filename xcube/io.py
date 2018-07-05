@@ -21,7 +21,7 @@
 
 import glob
 from abc import abstractmethod, ABCMeta
-from typing import Set, Callable, List, Optional
+from typing import Set, Callable, List, Optional, Dict
 
 import s3fs
 import xarray as xr
@@ -100,6 +100,46 @@ class DatasetIO(metaclass=ABCMeta):
 
     def append(self, dataset: xr.Dataset, output_path: str, **kwargs):
         raise NotImplementedError()
+
+
+class MemDatasetIO(DatasetIO):
+    def __init__(self, datasets: Dict[str, xr.Dataset] = None):
+        self.datasets = datasets or {}
+
+    @property
+    def name(self) -> str:
+        return 'mem'
+
+    @property
+    def description(self) -> str:
+        return 'In-memory dataset I/O'
+
+    @property
+    def ext(self) -> str:
+        return 'mem'
+
+    @property
+    def modes(self) -> Set[str]:
+        return {'r', 'w', 'a'}
+
+    def read(self, path: str, **kwargs) -> xr.Dataset:
+        if path in self.datasets:
+            return self.datasets[path]
+        raise FileNotFoundError(path)
+
+    def write(self, dataset: xr.Dataset, path: str, **kwargs):
+        self.datasets[path] = dataset
+
+    def append(self, dataset: xr.Dataset, path: str, **kwargs):
+        if path in self.datasets:
+            old_ds = self.datasets[path]
+            self.datasets[path] = xr.concat([old_ds, dataset],
+                                            dim='time',
+                                            data_vars='minimal',
+                                            coords='minimal',
+                                            compat='equals')
+        else:
+            self.datasets[path] = dataset.copy()
 
 
 class Netcdf4DatasetIO(DatasetIO):

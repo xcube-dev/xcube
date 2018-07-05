@@ -33,19 +33,19 @@ from ..utils import select_variables
 __import__('xcube.plugin')
 
 
-def process_inputs(src_files: Sequence[str],
-                   src_type: str,
-                   dst_size: Tuple[int, int],
-                   dst_region: Tuple[float, float, float, float],
-                   dst_var_names: Optional[Set[str]],
-                   dst_metadata: Optional[Dict[str, Any]],
-                   dst_resample_alg_name: str,
-                   dst_dir: str,
-                   dst_name: str,
-                   dst_format: str = 'netcdf4',
-                   dst_append: bool = False,
-                   dry_run: bool = False,
-                   monitor: Callable[..., None] = None) -> Tuple[Optional[str], bool]:
+def generate_l2c_cube(src_files: Sequence[str],
+                      src_type: str,
+                      dst_size: Tuple[int, int],
+                      dst_region: Tuple[float, float, float, float],
+                      dst_var_names: Optional[Set[str]],
+                      dst_metadata: Optional[Dict[str, Any]],
+                      dst_resample_alg_name: str,
+                      dst_dir: str,
+                      dst_name: str,
+                      dst_format: str = 'netcdf4',
+                      dst_append: bool = False,
+                      dry_run: bool = False,
+                      monitor: Callable[..., None] = None) -> Tuple[Optional[str], bool]:
     dataset_io_registry = get_default_dataset_io_registry()
 
     input_processor = dataset_io_registry.find(src_type)
@@ -74,19 +74,19 @@ def process_inputs(src_files: Sequence[str],
     for src_file in src_files:
         monitor(f'processing dataset {ds_index + 1} of {ds_count}: {src_file!r}...')
         # noinspection PyTypeChecker
-        dst_path, status = _process_input(input_processor,
-                                          output_writer,
-                                          src_file,
-                                          dst_size,
-                                          dst_region,
-                                          dst_var_names,
-                                          dst_metadata,
-                                          dst_resample_alg_name,
-                                          dst_dir,
-                                          dst_name,
-                                          dst_append,
-                                          dry_run,
-                                          monitor)
+        dst_path, status = _process_l2_input(input_processor,
+                                             output_writer,
+                                             src_file,
+                                             dst_size,
+                                             dst_region,
+                                             dst_var_names,
+                                             dst_metadata,
+                                             dst_resample_alg_name,
+                                             dst_dir,
+                                             dst_name,
+                                             dst_append,
+                                             dry_run,
+                                             monitor)
         if status:
             ds_index += 1
 
@@ -96,19 +96,19 @@ def process_inputs(src_files: Sequence[str],
     return dst_path, status
 
 
-def _process_input(input_processor: InputProcessor,
-                   output_writer: DatasetIO,
-                   src_file: str,
-                   dst_size: Tuple[int, int],
-                   dst_region: Tuple[float, float, float, float],
-                   dst_var_names: Set[str],
-                   dst_metadata: Optional[Dict[str, Any]],
-                   dst_resample_alg_name: str,
-                   dst_dir: str,
-                   dst_name: str,
-                   dst_append: bool,
-                   dry_run: bool = False,
-                   monitor: Callable[..., None] = None) -> Tuple[Optional[str], bool]:
+def _process_l2_input(input_processor: InputProcessor,
+                      output_writer: DatasetIO,
+                      src_file: str,
+                      dst_size: Tuple[int, int],
+                      dst_region: Tuple[float, float, float, float],
+                      dst_var_names: Set[str],
+                      dst_metadata: Optional[Dict[str, Any]],
+                      dst_resample_alg_name: str,
+                      dst_dir: str,
+                      dst_name: str,
+                      dst_append: bool,
+                      dry_run: bool = False,
+                      monitor: Callable[..., None] = None) -> Tuple[Optional[str], bool]:
     basename = os.path.basename(src_file)
     basename, ext = basename.rsplit('.', 1) if '.' in basename else (basename, None)
 

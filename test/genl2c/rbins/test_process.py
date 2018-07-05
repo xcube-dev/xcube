@@ -2,7 +2,7 @@ import os
 import unittest
 
 from test.genl2c.rbins.helpers import get_inputdata_path
-from xcube.genl2c.process import process_inputs
+from xcube.genl2c.process import generate_l2c_cube
 from xcube.io import rimraf
 
 
@@ -53,16 +53,16 @@ class RbinsProcessTest(unittest.TestCase):
 
 # noinspection PyShadowingBuiltins
 def process_inputs_wrapper(input=None, name=None, format='netcdf4', append=False):
-    return process_inputs(input,
+    return generate_l2c_cube(input,
                           'rbins-seviri-highroc-scene-l2',
-                          (320, 180),
-                          (-4., 47., 12., 56.),
-                          None,
-                          None,
+                             (320, 180),
+                             (-4., 47., 12., 56.),
+                             None,
+                             None,
                           'Nearest',
                           '.',
-                          name,
-                          dst_format=format,
-                          dst_append=append,
-                          dry_run=False,
-                          monitor=None)
+                             name,
+                             dst_format=format,
+                             dst_append=append,
+                             dry_run=False,
+                             monitor=None)
