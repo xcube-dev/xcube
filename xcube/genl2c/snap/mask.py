@@ -19,14 +19,14 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-import warnings
 from typing import Tuple, Dict
 
 import numpy as np
 import xarray as xr
 
+from .transexpr import translate_snap_expr
+from ...expression import transpile_expr, compute_expr
 from ...maskset import MaskSet
-from .transexpr import transpile_expr, translate_expr
 
 
 # TODO: add option to save computed mask in output dataset
@@ -90,19 +90,7 @@ def mask_dataset(dataset: xr.Dataset,
 
 def _compute_snap_expression(var_name, snap_expression, namespace, errors):
     numpy_expression = _snap_expr_to_numpy_expr(snap_expression, errors)
-    # print('variable "%s" uses expression %r transpiled to %r' % (var_name, snap_expression, numpy_expression))
-    try:
-        # PERF: test perf. against numexpr
-        computed_var = eval(numpy_expression, namespace, None)
-    except Exception as e:
-        computed_var = None
-        msg = 'error evaluating variable "%s" with expression "%s" transpiled from SNAP expression "%s": ' \
-              '%s' % (var_name, numpy_expression, snap_expression, e)
-        if errors == 'raise':
-            raise RuntimeError(msg) from e
-        elif errors == 'warn':
-            warnings.warn(msg)
-    return computed_var
+    return compute_expr(numpy_expression, namespace=namespace, errors=errors, result_name=var_name)
 
 
 def _is_snap_expression_var(var: xr.DataArray) -> bool:
@@ -110,5 +98,5 @@ def _is_snap_expression_var(var: xr.DataArray) -> bool:
 
 
 def _snap_expr_to_numpy_expr(snap_expr: str, errors: str) -> str:
-    py_expr = translate_expr(snap_expr)
+    py_expr = translate_snap_expr(snap_expr)
     return transpile_expr(py_expr, warn=errors == 'raise' or errors == 'warn')

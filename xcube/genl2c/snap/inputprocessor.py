@@ -24,9 +24,9 @@ from typing import Optional, Tuple
 
 import numpy as np
 import xarray as xr
-
 from xcube.timedim import get_time_in_days_since_1970
-from .mask import mask_dataset
+
+from xcube.genl2c.snap.mask import mask_dataset
 from .vectorize import vectorize_wavebands, new_band_coord_var
 from ..inputprocessor import InputProcessor, ReprojectionInfo
 from ...constants import CRS_WKT_EPSG_4326
@@ -101,7 +101,23 @@ class SnapOlciHighrocL2InputProcessor(SnapNetcdfInputProcessor):
         return '({expr}) AND !quality_flags.land'
 
 
+# noinspection PyAbstractClass
+class SnapOlciCyanoAlertL2InputProcessor(SnapNetcdfInputProcessor):
+    """
+    Input processor for SNAP Sentinel-3 OLCI HIGHROC Level-2 NetCDF inputs.
+    """
+
+    @property
+    def name(self) -> str:
+        return 'snap-olci-cyanoalert-l2'
+
+    @property
+    def description(self) -> str:
+        return 'SNAP Sentinel-3 OLCI CyanoAlert Level-2 NetCDF inputs'
+
+
 def init_plugin():
     """ Register a DatasetIO object: SnapOlciHighrocL2NetcdfInputProcessor() """
     ds_io_registry = get_default_dataset_io_registry()
     ds_io_registry.register(SnapOlciHighrocL2InputProcessor())
+    ds_io_registry.register(SnapOlciCyanoAlertL2InputProcessor())
