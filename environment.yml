@@ -7,6 +7,8 @@ dependencies:
   #
   # runtime dependencies
   #
+  - boto3 =1.7.51
+  - botocore =1.10.51
   - dask=0.17.2
   - gdal=2.2.4
   - matplotlib=2.2.2
