@@ -223,7 +223,7 @@ def reproject_to_wgs84(src_dataset: xr.Dataset,
             dst_var_dataset.GetRasterBand(band_index).SetNoDataValue(float('nan'))
 
         if dst_vars:
-            dst_var_attrs = dst_vars.get(src_var.name)
+            dst_var_attrs = dst_vars.get(src_var.name, {})
         else:
             dst_var_attrs = {}
 
@@ -231,7 +231,7 @@ def reproject_to_wgs84(src_dataset: xr.Dataset,
         if dst_var_attrs and 'resample_alg' in dst_var_attrs:
             resample_alg_name = dst_var_attrs.get('resample_alg')
         if resample_alg_name not in NAME_TO_GDAL_RESAMPLE_ALG:
-            raise ValueError(f'{resample_alg_name!r} is not a name of known resampling algorithm')
+            raise ValueError(f'{resample_alg_name!r} is not a name of a known resampling algorithm')
 
         resample_alg = NAME_TO_GDAL_RESAMPLE_ALG[resample_alg_name]
 
