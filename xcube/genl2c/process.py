@@ -22,17 +22,15 @@
 import glob
 import os
 import traceback
-from typing import Sequence, Callable, Tuple, Any, Dict, Optional, List, Union
+from typing import Sequence, Callable, Tuple, Optional
 
 from .defaults import DEFAULT_OUTPUT_DIR, DEFAULT_OUTPUT_NAME, DEFAULT_OUTPUT_SIZE, \
     DEFAULT_OUTPUT_RESAMPLING, DEFAULT_OUTPUT_FORMAT
 from .inputprocessor import InputProcessor
-from ..expression import compute_dataset
-from ..config import flatten_dict
-from ..io import rimraf, get_default_dataset_io_registry, DatasetIO
+from ..config import NameAnyDict, NameDictPairList, to_resolved_name_dict_pairs
+from ..dsio import rimraf, get_default_dataset_io_registry, DatasetIO
+from ..dsutil import compute_dataset, select_variables, update_variable_props, add_time_coords
 from ..reproject import reproject_to_wgs84
-from ..timedim import add_time_coords
-from ..utils import select_variables, update_variable_props
 
 __import__('xcube.plugin')
 
@@ -45,9 +43,9 @@ def generate_l2c_cube(input_files: Sequence[str] = None,
                       output_dir: str = DEFAULT_OUTPUT_DIR,
                       output_name: str = DEFAULT_OUTPUT_NAME,
                       output_format: str = DEFAULT_OUTPUT_FORMAT,
-                      output_metadata: Dict[str, Any] = None,
-                      output_variables: List[Union[str, Dict[str, str], Dict[str, Dict[str, Any]]]] = None,
-                      processed_variables: List[Union[str, Dict[str, Dict[str, Any]]]] = None,
+                      output_metadata: NameAnyDict = None,
+                      output_variables: NameDictPairList = None,
+                      processed_variables: NameDictPairList = None,
                       append_mode: bool = False,
                       dry_run: bool = False,
                       monitor: Callable[..., None] = None) -> Tuple[Optional[str], bool]:
@@ -110,9 +108,9 @@ def _process_l2_input(input_processor: InputProcessor,
                       output_resampling: str,
                       output_dir: str,
                       output_name: str,
-                      output_metadata: Dict[str, Any] = None,
-                      output_variables: List[Union[str, Dict[str, str], Dict[str, Dict[str, Any]]]] = None,
-                      processed_variables: List[Union[str, Dict[str, Dict[str, Any]]]] = None,
+                      output_metadata: NameAnyDict = None,
+                      output_variables: NameDictPairList = None,
+                      processed_variables: NameDictPairList = None,
                       append_mode: bool = False,
                       dry_run: bool = False,
                       monitor: Callable[..., None] = None) -> Tuple[Optional[str], bool]:
@@ -135,11 +133,16 @@ def _process_l2_input(input_processor: InputProcessor,
     reprojection_info = input_processor.get_reprojection_info(input_dataset)
     time_range = input_processor.get_time_range(input_dataset)
 
-    selected_variables = list(output_variables)
+    if output_variables:
+        output_variables = to_resolved_name_dict_pairs(output_variables, input_dataset)
+    else:
+        output_variables = [(var_name, None) for var_name in input_dataset.data_vars]
+
+    selected_variables = set([var_name for var_name, _ in output_variables])
     if reprojection_info.xy_var_names:
-        selected_variables.extend(reprojection_info.xy_var_names)
+        selected_variables.update(reprojection_info.xy_var_names)
     if reprojection_info.xy_tp_var_names:
-        selected_variables.extend(reprojection_info.xy_tp_var_names)
+        selected_variables.update(reprojection_info.xy_tp_var_names)
 
     try:
         monitor('pre-processing dataset...')
@@ -175,7 +178,7 @@ def _process_l2_input(input_processor: InputProcessor,
         return output_path, False
 
     if output_metadata:
-        post_processed_dataset.attrs.update(flatten_dict(output_metadata))
+        post_processed_dataset.attrs.update(output_metadata)
 
     if not dry_run:
         if append_mode and os.path.exists(output_path):

@@ -2,8 +2,8 @@ import os
 import unittest
 
 from test.genl2c.snap.helpers import get_inputdata_file
+from xcube.dsio import rimraf
 from xcube.genl2c.process import generate_l2c_cube
-from xcube.io import rimraf
 
 
 def clean_up():
@@ -56,8 +56,7 @@ def process_inputs_wrapper(input_files=None,
                              input_type='snap-olci-highroc-l2',
                              output_size=(2000, 1000),
                              output_region=(0., 50., 5., 52.5),
-                             processed_variables=['c2rcc_flags'],
-                             output_variables=['conc_chl', 'conc_tsm', 'kd489'],
+                             output_variables=[('conc_chl', None), ('conc_tsm', None), ('kd489', None)],
                              output_resampling='Nearest',
                              output_dir='.',
                              output_name=output_name,

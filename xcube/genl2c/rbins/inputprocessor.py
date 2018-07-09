@@ -26,10 +26,10 @@ from typing import Tuple, Optional
 import numpy as np
 import xarray as xr
 
-from xcube.timedim import get_time_in_days_since_1970
 from ..inputprocessor import InputProcessor, ReprojectionInfo
 from ...constants import CRS_WKT_EPSG_4326
-from ...io import get_default_dataset_io_registry
+from ...dsio import get_default_dataset_io_registry
+from ...dsutil import get_time_in_days_since_1970
 
 
 class RbinsSeviriHighrocSceneInputProcessor(InputProcessor, metaclass=ABCMeta):

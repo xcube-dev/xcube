@@ -20,18 +20,17 @@
 # SOFTWARE.
 
 from abc import ABCMeta
-from typing import Optional, Tuple
+from typing import Tuple
 
 import numpy as np
 import xarray as xr
 
-from xcube.genl2c.snap.transexpr import translate_snap_expr_attributes
-from xcube.timedim import get_time_in_days_since_1970
-
+from .transexpr import translate_snap_expr_attributes
 from .vectorize import vectorize_wavebands, new_band_coord_var
 from ..inputprocessor import InputProcessor, ReprojectionInfo
 from ...constants import CRS_WKT_EPSG_4326
-from ...io import get_default_dataset_io_registry
+from ...dsio import get_default_dataset_io_registry
+from ...dsutil import get_time_in_days_since_1970
 
 
 class SnapNetcdfInputProcessor(InputProcessor, metaclass=ABCMeta):

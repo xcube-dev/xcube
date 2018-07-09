@@ -21,6 +21,8 @@
 
 import yaml
 
+from xcube.config import to_name_dict_pairs, flatten_dict
+
 
 def get_config_dict(config_obj, open_function):
     """
@@ -97,5 +99,17 @@ def get_config_dict(config_obj, open_function):
         if any([var_name == '' for var_name in output_variables]):
             raise ValueError('all names in output_variables must be non-empty')
         config['output_variables'] = output_variables
+
+    processed_variables = config.get('processed_variables')
+    if processed_variables:
+        config['processed_variables'] = to_name_dict_pairs(processed_variables)
+
+    output_variables = config.get('output_variables')
+    if output_variables:
+        config['output_variables'] = to_name_dict_pairs(output_variables, default_key='name')
+
+    output_metadata = config.get('output_metadata')
+    if output_metadata:
+        config['output_metadata'] = flatten_dict(output_metadata)
 
     return config

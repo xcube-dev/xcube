@@ -28,7 +28,7 @@ from xcube.genl2c.config import get_config_dict
 from xcube.genl2c.defaults import DEFAULT_OUTPUT_DIR, DEFAULT_OUTPUT_NAME, DEFAULT_OUTPUT_SIZE, \
     DEFAULT_OUTPUT_RESAMPLING, DEFAULT_OUTPUT_FORMAT
 from xcube.genl2c.inputprocessor import InputProcessor
-from xcube.io import get_default_dataset_io_registry
+from xcube.dsio import get_default_dataset_io_registry
 from xcube.reproject import NAME_TO_GDAL_RESAMPLE_ALG
 from xcube.version import version
 

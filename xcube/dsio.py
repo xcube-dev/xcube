@@ -133,6 +133,7 @@ class MemDatasetIO(DatasetIO):
     def append(self, dataset: xr.Dataset, path: str, **kwargs):
         if path in self.datasets:
             old_ds = self.datasets[path]
+            # noinspection PyTypeChecker
             self.datasets[path] = xr.concat([old_ds, dataset],
                                             dim='time',
                                             data_vars='minimal',

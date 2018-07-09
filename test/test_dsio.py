@@ -6,7 +6,7 @@ import pandas as pd
 import xarray as xr
 
 from test.sampledata import new_test_dataset
-from xcube.io import DatasetIO, MemDatasetIO
+from xcube.dsio import DatasetIO, MemDatasetIO
 
 
 # noinspection PyAbstractClass

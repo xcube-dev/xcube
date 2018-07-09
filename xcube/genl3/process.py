@@ -27,7 +27,7 @@ import xarray as xr
 
 from xcube.genl3.defaults import DEFAULT_OUTPUT_DIR, DEFAULT_OUTPUT_PATTERN, DEFAULT_OUTPUT_FORMAT, \
     DEFAULT_OUTPUT_RESAMPLING_METHOD, DEFAULT_OUTPUT_FREQUENCY
-from xcube.utils import select_variables
+from xcube.dsutil import select_variables
 
 OUTPUT_FORMAT_NAMES = ['zarr', 'nc']
 RESAMPLING_METHODS = ['all', 'any', 'argmin', 'argmax', 'count', 'first', 'last', 'max', 'mean', 'median', 'min',

@@ -20,103 +20,8 @@
 # SOFTWARE.
 
 import ast
-import math
 import warnings
-from typing import Dict, Any, List, Union
-
-import numpy as np
-import xarray as xr
-
-from xcube.utils import get_valid_variable_names, iter_variables
-from .maskset import MaskSet
-
-
-def compute_dataset(dataset: xr.Dataset,
-                    processed_variables: List[Union[str, Dict[str, Dict[str, Any]]]] = None,
-                    errors: str = 'raise') -> xr.Dataset:
-    """
-    Compute a dataset from another dataset and return it.
-
-    :param dataset: xarray dataset.
-    :param processed_variables: Optional list of variables that will be loaded or computed in the order given.
-           Each variable is either identified by name or by a name to variable attributes mapping.
-    :param errors: How to deal with errors while evaluating expressions.
-           May be be one of "raise", "warn", or "ignore".
-    :return: new dataset with computed variables
-    """
-
-    # noinspection PyShadowingNames
-    def get_key(var_name: str):
-        # noinspection SpellCheckingInspection
-        attrs = dataset[var_name].attrs
-        a1 = attrs.get('expression')
-        a2 = attrs.get('valid_pixel_expression')
-        v1 = 10 * len(a1) if a1 is not None else 0
-        v2 = 100 * len(a2) if a2 is not None else 0
-        return v1 + v2
-
-    if processed_variables is None:
-        all_var_names = list(dataset.data_vars)
-        processed_variables = sorted(all_var_names, key=get_key)
-    else:
-        referred_var_names = list(get_valid_variable_names(dataset, processed_variables))
-        non_referred_var_names = set(dataset.data_vars).difference(referred_var_names)
-        if non_referred_var_names:
-            processed_variables = processed_variables + sorted(non_referred_var_names, key=get_key)
-
-    # Initialize namespace with some constants and modules
-    namespace = dict(NaN=np.nan, PI=math.pi, np=np, xr=xr)
-    # Now add all mask sets and variables
-    for var_name in dataset.data_vars:
-        var = dataset[var_name]
-        if MaskSet.is_flag_var(var):
-            namespace[var_name] = MaskSet(var)
-        else:
-            namespace[var_name] = var
-
-    # noinspection PyUnusedLocal,PyShadowingNames
-    def update_namespace(ds, var_name, var_props, var_name_pattern):
-
-        # noinspection PyShadowingNames
-        var = dataset[var_name]
-        if var_props:
-            var_props = dict(**var.attrs, **var_props)
-        else:
-            var_props = var.attrs
-
-        expression = var_props.get('expression')
-        if expression:
-            var = compute_array_expr(expression,
-                                     namespace=namespace,
-                                     result_name=var_name,
-                                     errors=errors)
-            if var is not None:
-                if hasattr(var, 'attrs'):
-                    var.attrs['expression'] = expression
-                namespace[var_name] = var
-
-        valid_pixel_expression = var_props.get('valid_pixel_expression')
-        if valid_pixel_expression:
-            if var is None:
-                raise ValueError(f'missing variable {var_name!r}')
-            valid_mask = compute_array_expr(valid_pixel_expression,
-                                            namespace=namespace,
-                                            result_name=var_name,
-                                            errors=errors)
-            if valid_mask is not None:
-                masked_var = var.where(valid_mask)
-                if hasattr(masked_var, 'attrs'):
-                    masked_var.attrs['valid_pixel_expression'] = valid_pixel_expression
-                namespace[var_name] = masked_var
-
-    iter_variables(dataset, processed_variables, update_namespace)
-
-    computed_dataset = dataset.copy()
-    for name, value in namespace.items():
-        if isinstance(value, xr.DataArray):
-            computed_dataset[name] = value
-
-    return computed_dataset
+from typing import Dict, Any
 
 
 def compute_array_expr(expr: str,
@@ -403,11 +308,3 @@ class _ExprTranspiler:
 
     def _is_nan(self, node):
         return isinstance(node, ast.Name) and node.id == 'NaN'
-
-
-def is_expression_var(var: xr.DataArray) -> bool:
-    return var.ndim == 0 and 'expression' in var.attrs
-
-
-def is_valid_pixel_expression_var(var: xr.DataArray) -> bool:
-    return var.ndim >= 2 and 'valid_pixel_expression' in var.attrs

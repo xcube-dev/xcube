@@ -76,7 +76,7 @@ class GetConfigDictTest(unittest.TestCase):
         self.assertIsNotNone(config)
         self.assertEqual([2000, 1000], config['output_size'])
         self.assertEqual([0, 20, 20, 30], config['output_region'])
-        self.assertEqual(['x', 'y', 'z*'], config['output_variables'])
+        self.assertEqual([('x', None), ('y', None), ('z*', None)], config['output_variables'])
 
     def test_config_file_overwritten_by_config_obj(self):
         config_obj = get_config_obj(config_file=CONFIG_1_FILE,
@@ -145,7 +145,8 @@ class GetConfigDictTest(unittest.TestCase):
         config_obj = get_config_obj(output_variables='hanni, nanni, pfanni')
         config = get_config_dict(config_obj, _test_open)
         self.assertIn('output_variables', config)
-        self.assertEqual(['hanni', 'nanni', 'pfanni'], config['output_variables'])
+        self.assertEqual([('hanni', None), ('nanni', None), ('pfanni', None)],
+                         config['output_variables'])
 
         config_obj = get_config_obj(output_variables='')
         with self.assertRaises(ValueError) as cm:

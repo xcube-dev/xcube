@@ -1,9 +1,9 @@
 import unittest
 
-from xcube.feg import FixedEarthGrid
+from xcube.feg import FixedEarthGrid, main
 
 
-class MaskSetTest(unittest.TestCase):
+class FixedEarthGridTest(unittest.TestCase):
     def test_get_res(self):
         feg = FixedEarthGrid()
         self.assertEqual(feg.get_res(0), 1)
@@ -65,3 +65,10 @@ class MaskSetTest(unittest.TestCase):
         self.assertEqual(feg.get_grid_size(0), (1440, 720))
         self.assertEqual(feg.get_grid_size(1), (2880, 1440))
         self.assertEqual(feg.get_grid_size(5), (46080, 23040))
+
+
+class MainTest(unittest.TestCase):
+    def test_main(self):
+        # Simple smoke test
+        self.assertEqual(0, main(['--help']))
+        self.assertEqual(0, main(['--units', 'm', '0', '52', '5', '54', '0.03']))

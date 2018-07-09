@@ -3,7 +3,7 @@ import unittest
 
 from test.genl2c.rbins.helpers import get_inputdata_path
 from xcube.genl2c.process import generate_l2c_cube
-from xcube.io import rimraf
+from xcube.dsio import rimraf
 
 
 def clean_up():
@@ -61,7 +61,7 @@ def process_inputs_wrapper(input_files=None,
                              output_size=(320, 180),
                              output_region=(-4., 47., 12., 56.),
                              output_resampling='Nearest',
-                             output_variables=['KPAR', 'SPM', 'TUR'],
+                             output_variables=[('KPAR', None), ('SPM', None), ('TUR', None)],
                              output_dir='.',
                              output_name=output_name,
                              output_format=output_format,

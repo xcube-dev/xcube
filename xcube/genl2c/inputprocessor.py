@@ -24,7 +24,7 @@ from typing import Tuple, Union, Optional
 
 import xarray as xr
 
-from ..io import DatasetIO
+from ..dsio import DatasetIO
 
 
 class ReprojectionInfo:

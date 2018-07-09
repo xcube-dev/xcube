@@ -2,10 +2,99 @@ import unittest
 from io import StringIO
 
 import yaml
-from xcube.config import flatten_dict
+
+from xcube.config import flatten_dict, to_name_dict_pair, to_name_dict_pairs, to_resolved_name_dict_pairs
 
 
-class ConfigTest(unittest.TestCase):
+class ToResolvedNameDictPairsTest(unittest.TestCase):
+    def test_to_resolved_name_dict_pairs(self):
+        container = ['a', 'a1', 'a2', 'b1', 'b2', 'x_c', 'y_c', 'd', 'e', 'e1', 'e_1', 'e_12', 'e_AB']
+        resolved = to_resolved_name_dict_pairs([('a*', None),
+                                                ('b', {'name': 'B'}),
+                                                ('*_c', {'marker': True, 'name': 'C'}),
+                                                ('d', {'name': 'D'}),
+                                                ('e_??', {'marker': True})],
+                                               container)
+        self.assertEqual([('a', None),
+                          ('a1', None),
+                          ('a2', None),
+                          ('x_c', {'marker': True, 'name': 'C'}),
+                          ('y_c', {'marker': True, 'name': 'C'}),
+                          ('d', {'name': 'D'}),
+                          ('e_12', {'marker': True}),
+                          ('e_AB', {'marker': True})],
+                         resolved)
+
+
+class ToNameDictPairsTest(unittest.TestCase):
+    def test_to_name_dict_pairs_from_list(self):
+        parent = ['a*',
+                  ('b', 'B'),
+                  ('*_c', {'marker': True, 'name': 'C'}),
+                  {'d': 'D'},
+                  {'e_??': {'marker': True}}]
+        pairs = to_name_dict_pairs(parent, default_key='name')
+        self.assertEqual([('a*', None),
+                          ('b', {'name': 'B'}),
+                          ('*_c', {'marker': True, 'name': 'C'}),
+                          ('d', {'name': 'D'}),
+                          ('e_??', {'marker': True})],
+                         pairs)
+
+    def test_to_name_dict_pairs_from_dict(self):
+        parent = {'a*': None,
+                  'b': 'B',
+                  '*_c': {'marker': True, 'name': 'C'},
+                  'd': 'D',
+                  'e_??': {'marker': True}}
+        pairs = to_name_dict_pairs(parent, default_key='name')
+        self.assertEqual([('a*', None),
+                          ('b', {'name': 'B'}),
+                          ('*_c', {'marker': True, 'name': 'C'}),
+                          ('d', {'name': 'D'}),
+                          ('e_??', {'marker': True})],
+                         pairs)
+
+
+class ToNameDictPairTest(unittest.TestCase):
+    def test_name_only(self):
+        pair = to_name_dict_pair('a', default_key='name')
+        self.assertEqual(('a', None), pair)
+        pair = to_name_dict_pair('a?', default_key='name')
+        self.assertEqual(('a?', None), pair)
+
+        with self.assertRaises(ValueError) as cm:
+            to_name_dict_pair(12, default_key='name')
+        self.assertEqual('name must be a string', f'{cm.exception}')
+
+    def test_tuple(self):
+        pair = to_name_dict_pair(('a', 'udu'), default_key='name')
+        self.assertEqual(('a', dict(name='udu')), pair)
+        pair = to_name_dict_pair(('a*', 'udu'), default_key='name')
+        self.assertEqual(('a*', dict(name='udu')), pair)
+        pair = to_name_dict_pair(('a*', {'name': 'udu'}))
+        self.assertEqual(('a*', dict(name='udu')), pair)
+        pair = to_name_dict_pair(('a*', {'marker': True, 'name': 'udu'}))
+        self.assertEqual(('a*', dict(marker=True, name='udu')), pair)
+
+        with self.assertRaises(ValueError) as cm:
+            to_name_dict_pair(('a', 5))
+        self.assertEqual("value of 'a' must be a dictionary", f'{cm.exception}')
+
+    def test_dict(self):
+        pair = to_name_dict_pair('a', parent=dict(a='udu'), default_key='name')
+        self.assertEqual(('a', dict(name='udu')), pair)
+        pair = to_name_dict_pair('a*', parent={'a*': 'udu'}, default_key='name')
+        self.assertEqual(('a*', dict(name='udu')), pair)
+
+    def test_mapping(self):
+        pair = to_name_dict_pair({'a': 'udu'}, default_key='name')
+        self.assertEqual(('a', dict(name='udu')), pair)
+        pair = to_name_dict_pair({'a*': dict(name='udu')})
+        self.assertEqual(('a*', dict(name='udu')), pair)
+
+
+class FlattenDictTest(unittest.TestCase):
 
     def test_flatten_dict(self):
         with self.assertRaises(ValueError):
