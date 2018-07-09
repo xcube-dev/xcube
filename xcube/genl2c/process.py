@@ -135,13 +135,19 @@ def _process_l2_input(input_processor: InputProcessor,
     reprojection_info = input_processor.get_reprojection_info(input_dataset)
     time_range = input_processor.get_time_range(input_dataset)
 
+    selected_variables = list(output_variables)
+    if reprojection_info.xy_var_names:
+        selected_variables.extend(reprojection_info.xy_var_names)
+    if reprojection_info.xy_tp_var_names:
+        selected_variables.extend(reprojection_info.xy_tp_var_names)
+
     try:
         monitor('pre-processing dataset...')
         preprocessed_dataset = input_processor.pre_process(input_dataset)
         monitor('computing variables...')
         computed_dataset = compute_dataset(preprocessed_dataset, processed_variables=processed_variables)
         monitor('selecting variables...')
-        subset_dataset = select_variables(computed_dataset, output_variables)
+        subset_dataset = select_variables(computed_dataset, selected_variables)
         if reprojection_info is not None:
             monitor('reprojecting dataset...')
             reprojected_dataset = reproject_to_wgs84(subset_dataset,
@@ -174,11 +180,11 @@ def _process_l2_input(input_processor: InputProcessor,
     if not dry_run:
         if append_mode and os.path.exists(output_path):
             monitor(f'appending to {output_path}...')
-            output_writer.append(input_dataset, output_path)
+            output_writer.append(post_processed_dataset, output_path)
         else:
             rimraf(output_path)
             monitor(f'writing to {output_path}...')
-            output_writer.write(input_dataset, output_path)
+            output_writer.write(post_processed_dataset, output_path)
 
     input_dataset.close()
 

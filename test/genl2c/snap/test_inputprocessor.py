@@ -14,7 +14,6 @@ class SnapOlciHighrocL2InputProcessorTest(unittest.TestCase):
         self.assertEqual('SNAP Sentinel-3 OLCI HIGHROC Level-2 NetCDF inputs', self.processor.description)
         self.assertEqual({'r'}, self.processor.modes)
         self.assertEqual('nc', self.processor.ext)
-        self.assertEqual('({expr}) AND !quality_flags.land', self.processor.extra_expr_pattern)
 
     def test_reprojection_info(self):
         reprojection_info = self.processor.get_reprojection_info(create_highroc_dataset())

@@ -23,33 +23,36 @@ class SnapProcessTest(unittest.TestCase):
 
     # noinspection PyMethodMayBeStatic
     def test_process_inputs_single(self):
-        path, status = process_inputs_wrapper(input=[get_inputdata_file('O_L2_0001_SNS_2017105100139_v1.0.nc')],
-                                              name='l2c-single',
-                                              format='netcdf4',
-                                              append=False)
+        path, status = process_inputs_wrapper(input_files=[get_inputdata_file('O_L2_0001_SNS_2017105100139_v1.0.nc')],
+                                              output_name='l2c-single',
+                                              output_format='netcdf4',
+                                              append_mode=False)
         self.assertEqual(True, status)
         self.assertEqual(os.path.join('.', 'l2c-single.nc'), path)
 
     def test_process_inputs_append_multiple_nc(self):
-        path, status = process_inputs_wrapper(input=[get_inputdata_file('O_L2_0001_SNS_*_v1.0.nc')],
-                                              name='l2c',
-                                              format='netcdf4',
-                                              append=True)
+        path, status = process_inputs_wrapper(input_files=[get_inputdata_file('O_L2_0001_SNS_*_v1.0.nc')],
+                                              output_name='l2c',
+                                              output_format='netcdf4',
+                                              append_mode=True)
         self.assertEqual(True, status)
         self.assertEqual(os.path.join('.', 'l2c.nc'), path)
 
     def test_process_inputs_append_multiple_zarr(self):
-        path, status = process_inputs_wrapper(input=[get_inputdata_file('O_L2_0001_SNS_*_v1.0.nc')],
-                                              name='l2c',
-                                              format='zarr',
-                                              append=True)
+        path, status = process_inputs_wrapper(input_files=[get_inputdata_file('O_L2_0001_SNS_*_v1.0.nc')],
+                                              output_name='l2c',
+                                              output_format='zarr',
+                                              append_mode=True)
         self.assertEqual(True, status)
         self.assertEqual(os.path.join('.', 'l2c.zarr'), path)
 
 
 # noinspection PyShadowingBuiltins
-def process_inputs_wrapper(input=None, name=None, format='netcdf4', append=False):
-    return generate_l2c_cube(input_files=input,
+def process_inputs_wrapper(input_files=None,
+                           output_name=None,
+                           output_format='netcdf4',
+                           append_mode=False):
+    return generate_l2c_cube(input_files=input_files,
                              input_type='snap-olci-highroc-l2',
                              output_size=(2000, 1000),
                              output_region=(0., 50., 5., 52.5),
@@ -57,8 +60,8 @@ def process_inputs_wrapper(input=None, name=None, format='netcdf4', append=False
                              output_variables=['conc_chl', 'conc_tsm', 'kd489'],
                              output_resampling='Nearest',
                              output_dir='.',
-                             output_name=name,
-                             output_format=format,
-                             append_mode=append,
+                             output_name=output_name,
+                             output_format=output_format,
+                             append_mode=append_mode,
                              dry_run=False,
                              monitor=None)

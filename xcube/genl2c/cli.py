@@ -21,8 +21,10 @@
 
 import argparse
 import sys
+import traceback
 from typing import List, Optional
 
+from xcube.genl2c.config import get_config_dict
 from xcube.genl2c.defaults import DEFAULT_OUTPUT_DIR, DEFAULT_OUTPUT_NAME, DEFAULT_OUTPUT_SIZE, \
     DEFAULT_OUTPUT_RESAMPLING, DEFAULT_OUTPUT_FORMAT
 from xcube.genl2c.inputprocessor import InputProcessor
@@ -87,82 +89,14 @@ def main(args: Optional[List[str]] = None):
     except SystemExit as e:
         return int(str(e))
 
-    config_file = arg_obj.config_file
-    input_files = arg_obj.input_files
-    input_type = arg_obj.input_type
-    output_dir = arg_obj.output_dir
-    output_name = arg_obj.output_name
-    output_format = arg_obj.output_format
-    output_size = arg_obj.output_size
-    output_region = arg_obj.output_region
-    output_variables = arg_obj.output_variables
-    output_resampling = arg_obj.output_resampling
     traceback_mode = arg_obj.traceback_mode
     append_mode = arg_obj.append_mode
     dry_run = arg_obj.dry_run
 
-    if config_file:
-        import yaml
-        try:
-            with open(config_file) as stream:
-                config = yaml.load(stream)
-            print(f'loaded configuration from {arg_obj.output_meta_file!r}')
-        except OSError as e:
-            print(f'error: failed loading configuration from {config_file!r}: {e}')
-            return 2
-    else:
-        config = {}
-
-    if input_files:
-        config['input_files'] = input_files
-
-    if input_type:
-        config['input_type'] = input_type
-
-    if output_dir:
-        config['output_dir'] = output_dir
-
-    if output_name:
-        config['output_name'] = output_name
-
-    if output_format:
-        config['output_format'] = output_format
-
-    if output_resampling:
-        config['output_resampling'] = output_resampling
-
-    if output_size:
-        try:
-            output_size = list(map(lambda c: int(c), output_size.split(',')))
-        except ValueError:
-            output_size = None
-        if output_size is None or len(output_size) != 2:
-            print(f'error: invalid size {arg_obj.output_size!r}')
-            return 2
-        config['output_size'] = output_size
-
-    if output_region:
-        try:
-            output_region = list(map(lambda c: float(c), output_region.split(',')))
-        except ValueError:
-            output_region = None
-        if output_region is None or len(output_region) != 4:
-            print(f'error: invalid region {arg_obj.output_region!r}')
-            return 2
-        config['output_region'] = output_region
-
-    if output_variables:
-        try:
-            output_variables = set(map(lambda c: str(c).strip(), output_variables.split(',')))
-        except ValueError:
-            output_variables = None
-        if output_variables is not None \
-                and next(iter(True for var_name in output_variables if var_name == ''), False):
-            output_variables = None
-        if output_variables is None or len(output_variables) == 0:
-            print(f'error: invalid variables {arg_obj.output_variables!r}')
-            return 2
-        config['output_variables'] = output_variables
+    try:
+        config = get_config_dict(arg_obj, open)
+    except ValueError as e:
+        return _handle_error(e, traceback_mode)
 
     # Only now import process module with all dependencies
     from xcube.genl2c.process import generate_l2c_cube
@@ -173,13 +107,16 @@ def main(args: Optional[List[str]] = None):
                           monitor=print,
                           **config)
     except Exception as e:
-        print(f'error: {e}')
-        if traceback_mode:
-            import traceback
-            traceback.print_exc()
-        return 2
+        return _handle_error(e, traceback_mode)
 
     return 0
+
+
+def _handle_error(e, traceback_mode):
+    print(f'error: : {e}')
+    if traceback_mode:
+        traceback.print_exc()
+    return 2
 
 
 class GenL2CHelpFormatter(argparse.HelpFormatter):
