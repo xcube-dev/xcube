@@ -24,7 +24,7 @@ from typing import Tuple, Union, Optional
 
 import xarray as xr
 
-from xcube.io import DatasetIO
+from ..io import DatasetIO
 
 
 class ReprojectionInfo:

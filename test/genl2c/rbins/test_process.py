@@ -53,16 +53,14 @@ class RbinsProcessTest(unittest.TestCase):
 
 # noinspection PyShadowingBuiltins
 def process_inputs_wrapper(input=None, name=None, format='netcdf4', append=False):
-    return generate_l2c_cube(input,
-                          'rbins-seviri-highroc-scene-l2',
-                             (320, 180),
-                             (-4., 47., 12., 56.),
-                             None,
-                             None,
-                          'Nearest',
-                          '.',
-                             name,
-                             dst_format=format,
-                             dst_append=append,
+    return generate_l2c_cube(input_files=input,
+                             input_type='rbins-seviri-highroc-scene-l2',
+                             output_size=(320, 180),
+                             output_region=(-4., 47., 12., 56.),
+                             output_resampling='Nearest',
+                             output_dir='.',
+                             output_name=name,
+                             output_format=format,
+                             append_mode=append,
                              dry_run=False,
                              monitor=None)

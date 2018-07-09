@@ -68,6 +68,11 @@ class MaskSet:
         self._masks = {}
 
     @classmethod
+    def is_flag_var(cls, var: xr.DataArray) -> bool:
+        return 'flag_meanings' in var.attrs \
+               and ('flag_masks' in var.attrs or 'flag_values' in var.attrs)
+
+    @classmethod
     def get_mask_sets(cls, dataset: xr.Dataset) -> Dict[str, 'MaskSet']:
         """
         For each "flag" variable in given *dataset*, turn it into a ``MaskSet``, store it in a dictionary.
@@ -78,7 +83,7 @@ class MaskSet:
         masks = {}
         for var_name in dataset.variables:
             var = dataset[var_name]
-            if 'flag_masks' in var.attrs and 'flag_meanings' in var.attrs:
+            if cls.is_flag_var(var):
                 masks[var_name] = MaskSet(var)
         return masks
 

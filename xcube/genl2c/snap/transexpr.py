@@ -23,11 +23,24 @@ import collections
 import re
 from typing import Generator
 
+import xarray as xr
+
 Token = collections.namedtuple('Token', ['kind', 'value'])
 
 _TOKEN_REGEX = None
 _KW_MAPPINGS = {'NOT': 'not', 'AND': 'and', 'OR': 'or', 'true': 'True', 'false': 'False', 'NaN': 'NaN'}
 _OP_MAPPINGS = {'?': 'if', ':': 'else', '!': 'not', '&&': 'and', '||': 'or'}
+
+
+def translate_snap_expr_attributes(dataset: xr.Dataset) -> xr.Dataset:
+    dataset = dataset.copy()
+    for var_name in dataset.variables:
+        var = dataset[var_name]
+        if 'expression' in var.attrs:
+            var.attrs['expression'] = translate_snap_expr(var.attrs['expression'])
+        if 'valid_pixel_expression' in var.attrs:
+            var.attrs['valid_pixel_expression'] = translate_snap_expr(var.attrs['valid_pixel_expression'])
+    return dataset
 
 
 def _get_token_regex():

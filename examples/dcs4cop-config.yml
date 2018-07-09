@@ -1,12 +1,17 @@
-# xcube file metadata
+input_type: snap-olci-highroc-l2
+
+output_size: 2000, 1000
+output_region: 0, 50, 5, 52.5
+
+
+# xcube global dataset metadata
 #
 # * NetCDF Attribute Convention for Dataset Discovery (as used by THREDDS data server catalogue)
 #   https://www.unidata.ucar.edu/software/thredds/current/netcdf-java/metadata/DataDiscoveryAttConvention.html
 # * CF Conventions
 #   http://cfconventions.org/Data/cf-conventions/cf-conventions-1.7/cf-conventions.html#description-of-file-contents
 #
-
-global_attributes:
+output_metadata:
   # CF: A succinct description of what is in the dataset.
   title: "DCS4COP Sentinel-3 OLCI L2C Data Cube"
 
@@ -87,16 +92,17 @@ global_attributes:
   geospatial_lon:
     min:  0.0
     max:  5.0
-    units: "degrees east"
+    units: "degrees_east"
     resolution: 0.0025
 
   geospatial_lat:
     min: 50.0
     max: 52.2
-    units: "degrees north"
+    units: "degrees_north"
     resolution: 0.0025
 
   # Describes the temporal coverage of the data as a time range.
+  # Only provide it here, if you don't want it to be computed.
 
   time_coverage:
     start:      2016-10-01
@@ -105,60 +111,20 @@ global_attributes:
     resolution: "1D"
 
 
-computed_data_variables:
-  valid_mask_c2rcc:
-    expression: >
-                c2rcc_flags.Rtosa_OOR == 0
-                and c2rcc_flags.Cloud_risk == 0
-                and c2rcc_flags.Iop_OOR == 0
-                and c2rcc_flags.Valid_PE == 1
-                and conc_chl > 0.01
-                and pixel_classif_flags.IDEPIX_CLOUD == 0
-                and pixel_classif_flags.IDEPIX_CLOUD_AMBIGUOUS == 0
-                and pixel_classif_flags.IDEPIX_CLOUD_BUFFER == 0
-                and pixel_classif_flags.IDEPIX_CLOUD_SHADOW == 0
-                and pixel_classif_flags.IDEPIX_SNOW_ICE == 0
-                and quality_flags.bright == 0
-                and quality_flags.invalid == 0
-                and floating_vegetation == 0
-                and c2rcc_flags.Rhow_OOR == 0
+processed_variables:
+  - quality_flags
 
-  valid_mask_mph:
-    expression: >
-                chl > 0.01
-                and pixel_classif_flags.IDEPIX_CLOUD = 0
-                and pixel_classif_flags.IDEPIX_CLOUD_AMBIGUOUS = 0
-                and pixel_classif_flags.IDEPIX_CLOUD_BUFFER = 0
-                and pixel_classif_flags.IDEPIX_CLOUD_SHADOW = 0
-                and pixel_classif_flags.IDEPIX_SNOW_ICE = 0
-                and quality_flags.invalid = 0
-                and quality_flags.bright = 0
-                and floating_vegetation = 0
+  - conc_chl:
+      valid_pixel_expression: quality_flags.land
 
-data_variables:
-  chl:
-    valid_pixel_expression: valid_mask_mph
-    name: chl_mph
+  - conc_tsm:
+      valid_pixel_expression: quality_flags.land
 
-  conc_chl:
-    valid_pixel_expression: valid_mask_c2rcc
-    name: chl_c2rcc
 
-  conc_tsm:
-    valid_pixel_expression: valid_mask_c2rcc
-    name: tsm_c2rcc
+output_variables:
 
-  iop_adg:
-    valid_pixel_expression: valid_mask_c2rcc
+  - conc_chl:
+      resampling: Nearest
 
-  iop_agelb:
-    valid_pixel_expression: valid_mask_c2rcc
-
-  kd_z90max:
-    valid_pixel_expression: valid_mask_c2rcc
-
-  tur_nechad_665:
-    valid_pixel_expression: valid_mask_c2rcc
-
-  tur_nechad_865:
-    valid_pixel_expression: valid_mask_c2rcc
+  - conc_tsm:
+      resampling: Nearest

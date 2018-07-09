@@ -1,6 +1,48 @@
 import unittest
+import numpy as np
+import xarray as xr
+from xcube.expression import transpile_expr, compute_dataset
 
-from xcube.expression import transpile_expr
+nan = float('nan')
+
+
+class ComputeDatasetTest(unittest.TestCase):
+    def test_compute_dataset(self):
+        dataset = xr.Dataset(dict(a=(('y', 'x'), [[0.1, 0.2, 0.4, 0.1], [0.5, 0.1, 0.2, 0.3]]),
+                                  b=(('y', 'x'), [[0.4, 0.3, 0.2, 0.4], [0.1, 0.2, 0.5, 0.1]],
+                                     dict(valid_pixel_expression='a >= 0.2')),
+                                  c=((), 1.0),
+                                  d=((), 1.0, dict(expression='a * b'))),
+                             coords=dict(x=(('x',), [1, 2, 3, 4]), y=(('y',), [1, 2])),
+                             attrs=dict(title='test_compute_dataset'))
+        computed_dataset = compute_dataset(dataset, processed_variables=['a',
+                                                                         'b',
+                                                                         {'c': dict(expression='a + b')},
+                                                                         {'d': dict(valid_pixel_expression='c > 0.4')}])
+        self.assertIsNot(computed_dataset, dataset)
+        self.assertIn('x', computed_dataset)
+        self.assertIn('y', computed_dataset)
+        self.assertIn('a', computed_dataset)
+        self.assertIn('b', computed_dataset)
+        self.assertIn('c', computed_dataset)
+        self.assertIn('d', computed_dataset)
+        self.assertIn('x', computed_dataset.coords)
+        self.assertIn('y', computed_dataset.coords)
+        self.assertIn('title', computed_dataset.attrs)
+        self.assertEqual((2, 4), computed_dataset.a.shape)
+        self.assertEqual((2, 4), computed_dataset.b.shape)
+        self.assertEqual((2, 4), computed_dataset.c.shape)
+        self.assertIn('expression', computed_dataset.c.attrs)
+        self.assertEqual((2, 4), computed_dataset.d.shape)
+        self.assertIn('expression', computed_dataset.d.attrs)
+        np.testing.assert_array_almost_equal(computed_dataset.a.values,
+                                             np.array([[0.1, 0.2, 0.4, 0.1], [0.5, 0.1, 0.2, 0.3]]))
+        np.testing.assert_array_almost_equal(computed_dataset.b.values,
+                                             np.array([[nan, 0.3, 0.2, nan], [0.1, nan, 0.5, 0.1]]))
+        np.testing.assert_array_almost_equal(computed_dataset.c.values,
+                                             np.array([[nan, 0.5, 0.6, nan], [0.6, nan, 0.7, 0.4]]))
+        np.testing.assert_array_almost_equal(computed_dataset.d.values,
+                                             np.array([[nan, 0.06, 0.08, nan], [0.05, nan, 0.1, nan]]))
 
 
 class TranspileExprTest(unittest.TestCase):
@@ -83,5 +125,3 @@ class TranspileExprTest(unittest.TestCase):
                          'a + np.sin(x + 2.8)')
         self.assertEqual(transpile_expr('a+max(1, sin(x+2.8), x**0.5)'),
                          'a + np.fmax(1, np.sin(x + 2.8), np.power(x, 0.5))')
-
-

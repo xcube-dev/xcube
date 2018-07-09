@@ -24,10 +24,11 @@ import sys
 import traceback
 from typing import List, Optional
 
-from xcube.genl3.process import generate_l3_cube, DEFAULT_OUTPUT_DIR, DEFAULT_OUTPUT_PATTERN, \
-    DEFAULT_OUTPUT_RESAMPLING_METHOD, \
-    DEFAULT_OUTPUT_FORMAT, OUTPUT_FORMAT_NAMES, RESAMPLING_METHODS, DEFAULT_OUTPUT_FREQUENCY
-from xcube.metadata import load_metadata_yaml
+import yaml
+
+from xcube.genl3.defaults import DEFAULT_OUTPUT_DIR, DEFAULT_OUTPUT_PATTERN, DEFAULT_OUTPUT_FORMAT, \
+    DEFAULT_OUTPUT_RESAMPLING_METHOD, DEFAULT_OUTPUT_FREQUENCY
+from xcube.genl3.process import generate_l3_cube, OUTPUT_FORMAT_NAMES, RESAMPLING_METHODS
 from xcube.version import version
 
 __import__('xcube.plugin')
@@ -61,7 +62,7 @@ def main(args: Optional[List[str]] = None):
                         help='File containing cube-level, CF-compliant metadata in YAML format.')
     parser.add_argument('--dry-run', default=False, action='store_true',
                         help='Just read and process inputs, but don\'t produce any outputs.')
-    parser.add_argument('--traceback', dest='print_traceback', default=False, action='store_true',
+    parser.add_argument('--traceback', dest='traceback_mode', default=False, action='store_true',
                         help='On error, print Python traceback.')
     parser.add_argument('input_file', metavar='INPUT_FILE',
                         help="The input file or directory which must be a Level-2C cube.")
@@ -71,6 +72,7 @@ def main(args: Optional[List[str]] = None):
     except SystemExit as e:
         return int(str(e))
 
+    config_file = arg_obj.output_meta_file
     input_file = arg_obj.input_file
     output_dir = arg_obj.output_dir or DEFAULT_OUTPUT_DIR
     output_name = arg_obj.output_name or DEFAULT_OUTPUT_PATTERN
@@ -78,10 +80,34 @@ def main(args: Optional[List[str]] = None):
     output_variables = arg_obj.output_variables
     output_resampling = arg_obj.output_resampling or DEFAULT_OUTPUT_RESAMPLING_METHOD
     output_frequency = arg_obj.output_frequency or DEFAULT_OUTPUT_FREQUENCY
-    output_meta_file = arg_obj.output_meta_file
-    print_traceback = arg_obj.print_traceback
+    traceback_mode = arg_obj.traceback_mode
     dry_run = arg_obj.dry_run
 
+    if config_file:
+        try:
+            with open(config_file) as stream:
+                config = yaml.load(stream)
+            print(f'loaded configuration from {config_file!r}')
+        except OSError as e:
+            print(f'error: failed loading configuration from {config_file!r}: {e}')
+            if traceback_mode:
+                traceback.print_exc()
+            return 2
+    else:
+        config = {}
+
+    if input_file:
+        config['input_file'] = input_file
+    if output_dir:
+        config['output_dir'] = output_dir
+    if output_name:
+        config['output_name'] = output_name
+    if output_format:
+        config['output_format'] = output_format
+    if output_resampling:
+        config['output_resampling'] = output_resampling
+    if output_frequency:
+        config['output_frequency'] = output_frequency
     if output_variables:
         try:
             output_variables = set(map(lambda c: str(c).strip(), output_variables.split(',')))
@@ -93,34 +119,17 @@ def main(args: Optional[List[str]] = None):
         if output_variables is None or len(output_variables) == 0:
             print(f'error: invalid variables {arg_obj.output_variables!r}')
             return 2
+        # TODO: instead filter list from config
+        config['output_variables'] = output_variables
 
-    if output_meta_file:
-        try:
-            with open(output_meta_file) as stream:
-                output_metadata = load_metadata_yaml(stream)
-            print(f'loaded metadata from file {arg_obj.output_meta_file!r}')
-        except OSError as e:
-            print(f'error: failed loading metadata file {arg_obj.output_meta_file!r}: {e}')
-            if print_traceback:
-                traceback.print_exc()
-            return 2
-    else:
-        output_metadata = None
-
+    # noinspection PyBroadException
     try:
-        generate_l3_cube(input_file,
-                         output_variables,
-                         output_metadata,
-                         output_dir,
-                         output_name,
-                         output_format,
-                         output_resampling,
-                         output_frequency,
+        generate_l3_cube(*config,
                          dry_run=dry_run,
                          monitor=print)
     except BaseException as e:
         print(f'error: {e}')
-        if print_traceback:
+        if traceback_mode:
             traceback.print_exc()
         return 2
 

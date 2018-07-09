@@ -49,16 +49,16 @@ class SnapProcessTest(unittest.TestCase):
 
 # noinspection PyShadowingBuiltins
 def process_inputs_wrapper(input=None, name=None, format='netcdf4', append=False):
-    return generate_l2c_cube(input,
-                          'snap-olci-highroc-l2',
-                             (2000, 1000),
-                             (0., 50., 5., 52.5),
-                             {'conc_chl', 'conc_tsm', 'kd489', 'c2rcc_flags', 'quality_flags'},
-                             None,
-                          'Nearest',
-                          '.',
-                             name,
-                             dst_format=format,
-                             dst_append=append,
+    return generate_l2c_cube(input_files=input,
+                             input_type='snap-olci-highroc-l2',
+                             output_size=(2000, 1000),
+                             output_region=(0., 50., 5., 52.5),
+                             processed_variables=['c2rcc_flags'],
+                             output_variables=['conc_chl', 'conc_tsm', 'kd489'],
+                             output_resampling='Nearest',
+                             output_dir='.',
+                             output_name=name,
+                             output_format=format,
+                             append_mode=append,
                              dry_run=False,
                              monitor=None)

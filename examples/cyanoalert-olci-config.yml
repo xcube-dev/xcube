@@ -1,3 +1,9 @@
+input_type: snap-olci-cyanoalert-l2
+
+output_size: 1000, 410
+
+output_region: 9.4, 53.5, 11.4, 54.72
+
 # xcube file metadata
 #
 # * NetCDF Attribute Convention for Dataset Discovery (as used by THREDDS data server catalogue)
@@ -5,8 +11,7 @@
 # * CF Conventions
 #   http://cfconventions.org/Data/cf-conventions/cf-conventions-1.7/cf-conventions.html#description-of-file-contents
 #
-
-global_attributes:
+output_metadata:
   # CF: A succinct description of what is in the dataset.
   title: "DCS4COP Sentinel-3 OLCI L2C Data Cube"
 
@@ -104,12 +109,81 @@ global_attributes:
     duration:   "P1Y"
     resolution: "1D"
 
-data_variables:
-  conc_chl:
-    resample_alg: Nearest
 
-  conc_chl:
-    resample_alg: Nearest
+processed_variables:
+  - c2rcc_flags
+  - conc_chl
+  - pixel_classif_flags
+  - quality_flags
+  - floating_vegetation
 
-  conc_*:
-    resample_alg: Nearest
+  - valid_mask_c2rcc:
+      expression: >
+                  c2rcc_flags.Rtosa_OOR == 0
+                  and c2rcc_flags.Cloud_risk == 0
+                  and c2rcc_flags.Iop_OOR == 0
+                  and c2rcc_flags.Valid_PE == 1
+                  and conc_chl > 0.01
+                  and pixel_classif_flags.IDEPIX_CLOUD == 0
+                  and pixel_classif_flags.IDEPIX_CLOUD_AMBIGUOUS == 0
+                  and pixel_classif_flags.IDEPIX_CLOUD_BUFFER == 0
+                  and pixel_classif_flags.IDEPIX_CLOUD_SHADOW == 0
+                  and pixel_classif_flags.IDEPIX_SNOW_ICE == 0
+                  and quality_flags.bright == 0
+                  and quality_flags.invalid == 0
+                  and floating_vegetation == 0
+                  and c2rcc_flags.Rhow_OOR == 0
+
+  - chl
+
+  - valid_mask_mph:
+      expression: >
+                  chl > 0.01
+                  and pixel_classif_flags.IDEPIX_CLOUD = 0
+                  and pixel_classif_flags.IDEPIX_CLOUD_AMBIGUOUS = 0
+                  and pixel_classif_flags.IDEPIX_CLOUD_BUFFER = 0
+                  and pixel_classif_flags.IDEPIX_CLOUD_SHADOW = 0
+                  and pixel_classif_flags.IDEPIX_SNOW_ICE = 0
+                  and quality_flags.invalid = 0
+                  and quality_flags.bright = 0
+                  and floating_vegetation = 0
+
+  - chl:
+      valid_pixel_expression: valid_mask_mph
+
+  - conc_chl:
+      valid_pixel_expression: valid_mask_c2rcc
+
+  - conc_tsm:
+      valid_pixel_expression: valid_mask_c2rcc
+
+  - iop_adg:
+      valid_pixel_expression: valid_mask_c2rcc
+
+  - iop_agelb:
+      valid_pixel_expression: valid_mask_c2rcc
+
+  - kd_z90max:
+      valid_pixel_expression: valid_mask_c2rcc
+
+  - tur_nechad_665:
+      valid_pixel_expression: valid_mask_c2rcc
+
+  - tur_nechad_865:
+      valid_pixel_expression: valid_mask_c2rcc
+
+
+output_resampling: Nearest
+
+output_variables:
+  - chl: chl_mph
+  - conc_chl: chl_c2rcc
+  - conc_tsm: 
+      name: tsm_c2rcc
+      resampling: Nearest
+  - iop_adg
+  - iop_agelb
+  - kd_z90max
+  - tur_nechad_665
+  - tur_nechad_865
+

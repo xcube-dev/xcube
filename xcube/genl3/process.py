@@ -21,21 +21,17 @@
 
 import glob
 import os
-from typing import Sequence, Dict, Any, Set
+from typing import Dict, Any, Set
 
 import xarray as xr
 
+from xcube.genl3.defaults import DEFAULT_OUTPUT_DIR, DEFAULT_OUTPUT_PATTERN, DEFAULT_OUTPUT_FORMAT, \
+    DEFAULT_OUTPUT_RESAMPLING_METHOD, DEFAULT_OUTPUT_FREQUENCY
 from xcube.utils import select_variables
 
 OUTPUT_FORMAT_NAMES = ['zarr', 'nc']
 RESAMPLING_METHODS = ['all', 'any', 'argmin', 'argmax', 'count', 'first', 'last', 'max', 'mean', 'median', 'min',
                       'backfill', 'bfill', 'ffill', 'interpolate', 'nearest', 'pad']
-
-DEFAULT_OUTPUT_DIR = '.'
-DEFAULT_OUTPUT_PATTERN = 'L3_{INPUT_FILE}'
-DEFAULT_OUTPUT_FORMAT = 'zarr'
-DEFAULT_OUTPUT_RESAMPLING_METHOD = 'nearest'
-DEFAULT_OUTPUT_FREQUENCY = '1D'
 
 
 def generate_l3_cube(input_file: str,
@@ -73,10 +69,10 @@ def resample(ds: xr.Dataset,
         ds = select_variables(ds, var_name_patterns)
 
     resampler = ds.resample(skipna=True,
-                               closed='left',
-                               label='left',
-                               keep_attrs=True,
-                               time=frequency)
+                            closed='left',
+                            label='left',
+                            keep_attrs=True,
+                            time=frequency)
 
     resampling_method = getattr(resampler, resampling)
     resampled_ds = resampling_method('time')

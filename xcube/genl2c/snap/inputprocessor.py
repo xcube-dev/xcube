@@ -24,9 +24,10 @@ from typing import Optional, Tuple
 
 import numpy as np
 import xarray as xr
+
+from xcube.genl2c.snap.transexpr import translate_snap_expr_attributes
 from xcube.timedim import get_time_in_days_since_1970
 
-from xcube.genl2c.snap.mask import mask_dataset
 from .vectorize import vectorize_wavebands, new_band_coord_var
 from ..inputprocessor import InputProcessor, ReprojectionInfo
 from ...constants import CRS_WKT_EPSG_4326
@@ -42,9 +43,9 @@ class SnapNetcdfInputProcessor(InputProcessor, metaclass=ABCMeta):
     def ext(self) -> str:
         return 'nc'
 
-    @property
-    def extra_expr_pattern(self) -> Optional[str]:
-        return None
+    def read(self, input_file: str, **kwargs) -> xr.Dataset:
+        """ Read SNAP L2 NetCDF inputs. """
+        return xr.open_dataset(input_file, decode_cf=True, decode_coords=True, decode_times=False)
 
     def get_reprojection_info(self, dataset: xr.Dataset) -> ReprojectionInfo:
         return ReprojectionInfo(xy_var_names=('lon', 'lat'),
@@ -61,16 +62,9 @@ class SnapNetcdfInputProcessor(InputProcessor, metaclass=ABCMeta):
         t2 = get_time_in_days_since_1970(t2)
         return t1, t2
 
-    def read(self, input_file: str, **kwargs) -> xr.Dataset:
-        """ Read SNAP L2 NetCDF inputs. """
-        return xr.open_dataset(input_file, decode_cf=True, decode_coords=True, decode_times=False)
-
     def pre_process(self, dataset: xr.Dataset) -> xr.Dataset:
         """ Do any pre-processing before reprojection. """
-        masked_dataset, _ = mask_dataset(dataset,
-                                         expr_pattern=self.extra_expr_pattern,
-                                         errors='raise')
-        return masked_dataset
+        return translate_snap_expr_attributes(dataset)
 
     def post_process(self, dataset: xr.Dataset) -> xr.Dataset:
         def new_band_coord_var_ex(band_dim_name: str, band_values: np.ndarray) -> xr.DataArray:
@@ -95,10 +89,6 @@ class SnapOlciHighrocL2InputProcessor(SnapNetcdfInputProcessor):
     @property
     def description(self) -> str:
         return 'SNAP Sentinel-3 OLCI HIGHROC Level-2 NetCDF inputs'
-
-    @property
-    def extra_expr_pattern(self) -> Optional[str]:
-        return '({expr}) AND !quality_flags.land'
 
 
 # noinspection PyAbstractClass

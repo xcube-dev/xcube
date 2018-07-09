@@ -1,6 +1,14 @@
 import unittest
 
-from xcube.genl2c.snap.transexpr import tokenize_expr, Token, translate_snap_expr
+from test.sampledata import create_highroc_dataset
+from xcube.genl2c.snap.transexpr import tokenize_expr, Token, translate_snap_expr, translate_snap_expr_attributes
+
+
+class TranslateExpressionAttributesTest(unittest.TestCase):
+    def test_it(self):
+        ds1 = create_highroc_dataset()
+        ds2 = translate_snap_expr_attributes(ds1)
+        self.assertIsNot(ds1, ds2)
 
 
 class TranslateExprTest(unittest.TestCase):

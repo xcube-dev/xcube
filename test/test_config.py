@@ -1,24 +1,27 @@
-import datetime
 import unittest
 from io import StringIO
 
 import yaml
-from xcube.metadata import flatten_dict, load_metadata_yaml
+from xcube.config import flatten_dict
 
 
-class MetaTest(unittest.TestCase):
+class ConfigTest(unittest.TestCase):
 
     def test_flatten_dict(self):
         with self.assertRaises(ValueError):
+            # noinspection PyTypeChecker
             flatten_dict(None)
 
         with self.assertRaises(ValueError):
+            # noinspection PyTypeChecker
             flatten_dict(673)
 
         with self.assertRaises(ValueError):
+            # noinspection PyTypeChecker
             flatten_dict("?")
 
         with self.assertRaises(ValueError):
+            # noinspection PyTypeChecker
             flatten_dict({0: ""})
 
         self.assertEqual({}, flatten_dict({}))
@@ -67,10 +70,10 @@ class MetaTest(unittest.TestCase):
                                             }
                                        ]}))
 
-    def test_load_yaml(self):
+    def test_from_yaml(self):
         stream = StringIO(TEST_JSON)
-        d = load_metadata_yaml(stream)
-        d = d['global_attributes']
+        d = yaml.load(stream)
+        d = flatten_dict(d['output_metadata'])
         self.assertEqual(17, len(d))
         self.assertEqual('DCS4COP Sentinel-3 OLCI L2C Data Cube',
                          d.get('title'))
@@ -95,7 +98,7 @@ class MetaTest(unittest.TestCase):
 
 
 TEST_JSON = """
-global_attributes:
+output_metadata:
   # CF: A succinct description of what is in the dataset.
   title: "DCS4COP Sentinel-3 OLCI L2C Data Cube"
   

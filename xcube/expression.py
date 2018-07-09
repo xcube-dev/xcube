@@ -22,84 +22,94 @@
 import ast
 import math
 import warnings
-from typing import Dict, Any
+from typing import Dict, Any, List, Union
 
 import numpy as np
 import xarray as xr
 
+from xcube.utils import get_valid_variable_names, iter_variables
 from .maskset import MaskSet
 
 
 def compute_dataset(dataset: xr.Dataset,
-                    global_expression: str = None,
-                    global_valid_pixel_expression: str = None,
+                    processed_variables: List[Union[str, Dict[str, Dict[str, Any]]]] = None,
                     errors: str = 'raise') -> xr.Dataset:
     """
     Compute a dataset from another dataset and return it.
 
-    The resulting dataset computed as follows:
-
-    1. A copy of *dataset* is made.
-    2. For any scalar variable in the copy that has an attribute named "expression", treat the value of the
-       attribute named "expression" as Python expression and evaluate it in the context of *dataset*.
-       Replace the scalar variable by the result of the expression computation.
-    3. For any non-scalar variable in the copy that has an attribute named "valid_pixel_expression",
-       treat the value of the attribute named "valid_pixel_expression" as a (logical) Python expression
-       and evaluate it in the context of *dataset*. Then replace the variable where pixels are used from the original
-       value only where "valid_pixel_expression" returned a non-zero value, otherwise NaN is used.
-
-    :param dataset: xarray dataset read from netCDF produced with BEAM or SNAP.
-    :param global_expression: if given, all "expression" attribute values will be processed through the
-           pattern which must contain "{expr}".
-    :param global_valid_pixel_expression: if given, all attribute "valid_pixel_expression" values
-           will be processed through the pattern which must contain "{expr}".
-    :param errors: How to deal with errors while evaluating expressions. May be be one of "raise", "warn", or "ignore".
-    :return: new dataset with masked variables
+    :param dataset: xarray dataset.
+    :param processed_variables: Optional list of variables that will be loaded or computed in the order given.
+           Each variable is either identified by name or by a name to variable attributes mapping.
+    :param errors: How to deal with errors while evaluating expressions.
+           May be be one of "raise", "warn", or "ignore".
+    :return: new dataset with computed variables
     """
-    template_param = '{expr}'
-    if global_expression and template_param not in global_expression:
-        raise ValueError(f'missing {template_param!r} in global_expression')
-    if global_valid_pixel_expression and template_param not in global_valid_pixel_expression:
-        raise ValueError(f'missing {template_param!r} in global_valid_pixel_expression')
+
+    # noinspection PyShadowingNames
+    def get_key(var_name: str):
+        # noinspection SpellCheckingInspection
+        attrs = dataset[var_name].attrs
+        a1 = attrs.get('expression')
+        a2 = attrs.get('valid_pixel_expression')
+        v1 = 10 * len(a1) if a1 is not None else 0
+        v2 = 100 * len(a2) if a2 is not None else 0
+        return v1 + v2
+
+    if processed_variables is None:
+        all_var_names = list(dataset.data_vars)
+        processed_variables = sorted(all_var_names, key=get_key)
+    else:
+        referred_var_names = list(get_valid_variable_names(dataset, processed_variables))
+        non_referred_var_names = set(dataset.data_vars).difference(referred_var_names)
+        if non_referred_var_names:
+            processed_variables = processed_variables + sorted(non_referred_var_names, key=get_key)
 
     # Initialize namespace with some constants and modules
     namespace = dict(NaN=np.nan, PI=math.pi, np=np, xr=xr)
-    # Add all variables to namespace that are not expression variables
-    for var_name in dataset.variables:
+    # Now add all mask sets and variables
+    for var_name in dataset.data_vars:
         var = dataset[var_name]
-        if not is_expression_var(var):
+        if MaskSet.is_flag_var(var):
+            namespace[var_name] = MaskSet(var)
+        else:
             namespace[var_name] = var
 
-    # Add to namespace all SNAP flag bands as mask sets, where each mask set has a mask for each flag
-    mask_sets = MaskSet.get_mask_sets(dataset)
-    # for mask_name, mask_set in mask_sets.items():
-    #     print(mask_name, mask_set)
-    namespace.update(mask_sets)
+    # noinspection PyUnusedLocal,PyShadowingNames
+    def update_namespace(ds, var_name, var_props, var_name_pattern):
 
-    # Evaluate all expression variables
-    for var_name in dataset.variables:
+        # noinspection PyShadowingNames
         var = dataset[var_name]
-        if is_expression_var(var):
-            expression = var.attrs['expression']
-            if global_expression:
-                expression = global_expression.format(expr=expression)
-            computed_var = compute_expr(expression, namespace=namespace, result_name=var_name, errors=errors)
-            if computed_var is not None:
-                computed_var.attrs['expression'] = expression
-                namespace[var_name] = computed_var
+        if var_props:
+            var_props = dict(**var.attrs, **var_props)
+        else:
+            var_props = var.attrs
 
-    # Now that the namespace is ready, evaluate and apply valid_pixel_expression masks
-    for var_name in dataset.variables:
-        var = dataset[var_name]
-        if is_valid_pixel_expression_var(var):
-            expression = var.attrs['valid_pixel_expression']
-            if global_valid_pixel_expression:
-                expression = global_valid_pixel_expression.format(expr=expression)
-            valid_mask = compute_expr(expression, namespace=namespace, result_name=var_name, errors=errors)
+        expression = var_props.get('expression')
+        if expression:
+            var = compute_array_expr(expression,
+                                     namespace=namespace,
+                                     result_name=var_name,
+                                     errors=errors)
+            if var is not None:
+                if hasattr(var, 'attrs'):
+                    var.attrs['expression'] = expression
+                namespace[var_name] = var
+
+        valid_pixel_expression = var_props.get('valid_pixel_expression')
+        if valid_pixel_expression:
+            if var is None:
+                raise ValueError(f'missing variable {var_name!r}')
+            valid_mask = compute_array_expr(valid_pixel_expression,
+                                            namespace=namespace,
+                                            result_name=var_name,
+                                            errors=errors)
             if valid_mask is not None:
                 masked_var = var.where(valid_mask)
-                masked_var.attrs['valid_pixel_expression'] = expression
+                if hasattr(masked_var, 'attrs'):
+                    masked_var.attrs['valid_pixel_expression'] = valid_pixel_expression
                 namespace[var_name] = masked_var
+
+    iter_variables(dataset, processed_variables, update_namespace)
 
     computed_dataset = dataset.copy()
     for name, value in namespace.items():
@@ -109,14 +119,22 @@ def compute_dataset(dataset: xr.Dataset,
     return computed_dataset
 
 
-def compute_expr(expression: str,
+def compute_array_expr(expr: str,
+                       namespace: Dict[str, Any] = None,
+                       errors: str = 'raise',
+                       result_name: str = None):
+    expr = transpile_expr(expr, warn=errors == 'warn')
+    return compute_expr(expr, namespace=namespace, errors=errors, result_name=result_name)
+
+
+def compute_expr(expr: str,
                  namespace: Dict[str, Any] = None,
                  errors: str = 'raise',
                  result_name: str = None):
     """
     Compute a Python expression and return the result.
 
-    :param expression: A valid Python expression.
+    :param expr: A valid Python expression.
     :param namespace: A dictionary that represents the namespace for the computation.
     :param result_name: Name of the result (used for error messages only)
     :param errors: How to deal with errors raised when computing the expression. May be one of "raise" or "warn".
@@ -124,13 +142,13 @@ def compute_expr(expression: str,
     """
     try:
         # PERF: test perf. against numexpr
-        result = eval(expression, namespace, None)
+        result = eval(expr, namespace, None)
     except Exception as e:
         result = None
         if result_name:
-            msg = f'failed computing {result_name!r} from expression {expression!r}: {e}'
+            msg = f'failed computing {result_name!r} from expr {expr!r}: {e}'
         else:
-            msg = f'failed computing expression {expression!r}: {e}'
+            msg = f'failed computing expr {expr!r}: {e}'
         if errors == 'raise':
             raise RuntimeError(msg) from e
         if errors == 'warn':
