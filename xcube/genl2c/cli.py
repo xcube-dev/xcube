@@ -78,9 +78,8 @@ def main(args: Optional[List[str]] = None):
                         help='Append successive outputs.')
     parser.add_argument('--dry-run', default=False, action='store_true',
                         help='Just read and process inputs, but don\'t produce any outputs.')
-    parser.add_argument('--type', '-t', dest='input_type',
-                        default=input_type_names[0], choices=input_type_names,
-                        help=f'Input type. Defaults to {input_type_names[0]!r}.')
+    parser.add_argument('--type', '-t', dest='input_type', choices=input_type_names,
+                        help=f'Input type.')
     parser.add_argument('input_files', metavar='INPUT_FILES', nargs='+',
                         help="One or more input files or a pattern that may contain wildcards '?', '*', and '**'.")
 
