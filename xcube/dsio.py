@@ -21,7 +21,7 @@
 
 import glob
 from abc import abstractmethod, ABCMeta
-from typing import Set, Callable, List, Optional, Dict, Sequence
+from typing import Set, Callable, List, Optional, Dict, Iterable
 
 import s3fs
 import xarray as xr
@@ -109,7 +109,7 @@ def register_dataset_io(dataset_io: DatasetIO):
     get_obj_registry().put(dataset_io.name, dataset_io, type=DatasetIO)
 
 
-def find_dataset_io(format_name: str, modes: Sequence[str] = None, default: DatasetIO = None) -> Optional[DatasetIO]:
+def find_dataset_io(format_name: str, modes: Iterable[str] = None, default: DatasetIO = None) -> Optional[DatasetIO]:
     modes = set(modes) if modes else None
     format_name = format_name.lower()
     dataset_ios = get_obj_registry().get_all(type=DatasetIO)
