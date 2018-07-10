@@ -24,12 +24,12 @@ import sys
 import traceback
 from typing import List, Optional
 
+from xcube.dsio import query_dataset_io
 from xcube.genl2c.config import get_config_dict
 from xcube.genl2c.defaults import DEFAULT_OUTPUT_DIR, DEFAULT_OUTPUT_NAME, \
     DEFAULT_OUTPUT_RESAMPLING, DEFAULT_OUTPUT_WRITER
 from xcube.genl2c.inputprocessor import InputProcessor
 from xcube.genl2c.process import generate_l2c_cube
-from xcube.dsio import query_dataset_io
 from xcube.objreg import get_obj_registry
 from xcube.reproject import NAME_TO_GDAL_RESAMPLE_ALG
 from xcube.version import version
@@ -105,9 +105,9 @@ def main(args: Optional[List[str]] = None):
 
 
 def _handle_error(e, traceback_mode):
-    print(f'error: : {e}')
+    print(f'error: {e}', file=sys.stderr)
     if traceback_mode:
-        traceback.print_exc()
+        traceback.print_exc(file=sys.stderr)
     return 2
 
 
