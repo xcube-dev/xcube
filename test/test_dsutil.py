@@ -54,7 +54,7 @@ class ComputeDatasetTest(unittest.TestCase):
         dataset = self.get_test_dataset()
         computed_dataset = compute_dataset(dataset,
                                            processed_variables=[('a', None),
-                                                                ('b', None),
+                                                                ('b', dict(valid_pixel_expression=None)),
                                                                 ('c', dict(expression='a + b')),
                                                                 ('d', dict(valid_pixel_expression='c > 0.4'))])
         self.assertIsNot(computed_dataset, dataset)
@@ -76,11 +76,11 @@ class ComputeDatasetTest(unittest.TestCase):
         np.testing.assert_array_almost_equal(computed_dataset.a.values,
                                              np.array([[0.1, 0.2, 0.4, 0.1], [0.5, 0.1, 0.2, 0.3]]))
         np.testing.assert_array_almost_equal(computed_dataset.b.values,
-                                             np.array([[nan, 0.3, 0.2, nan], [0.1, nan, 0.5, 0.1]]))
+                                             np.array([[0.4, 0.3, 0.2, 0.4], [0.1, 0.2, 0.5, 0.1]]))
         np.testing.assert_array_almost_equal(computed_dataset.c.values,
-                                             np.array([[nan, 0.5, 0.6, nan], [0.6, nan, 0.7, 0.4]]))
+                                             np.array([[0.5, 0.5, 0.6, 0.5], [0.6, 0.3, 0.7, 0.4]]))
         np.testing.assert_array_almost_equal(computed_dataset.d.values,
-                                             np.array([[nan, 0.06, 0.08, nan], [0.05, nan, 0.1, nan]]))
+                                             np.array([[0.04, 0.06, 0.08, 0.04], [0.05, nan, 0.1, nan]]))
 
 
 class SelectVariablesTest(unittest.TestCase):
@@ -88,6 +88,8 @@ class SelectVariablesTest(unittest.TestCase):
         ds1 = create_highroc_dataset()
         # noinspection PyTypeChecker
         ds2 = select_variables(ds1, None)
+        self.assertIs(ds2, ds1)
+        ds2 = select_variables(ds1, ds1.data_vars.keys())
         self.assertIs(ds2, ds1)
 
     def test_select_none(self):

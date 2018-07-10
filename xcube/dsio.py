@@ -21,7 +21,7 @@
 
 import glob
 from abc import abstractmethod, ABCMeta
-from typing import Set, Callable, List, Optional, Dict
+from typing import Set, Callable, List, Optional, Dict, Sequence
 
 import s3fs
 import xarray as xr
@@ -109,7 +109,8 @@ def register_dataset_io(dataset_io: DatasetIO):
     get_obj_registry().put(dataset_io.name, dataset_io, type=DatasetIO)
 
 
-def find_dataset_io(format_name: str, modes: Set[str] = None, default: DatasetIO = None) -> Optional[DatasetIO]:
+def find_dataset_io(format_name: str, modes: Sequence[str] = None, default: DatasetIO = None) -> Optional[DatasetIO]:
+    modes = set(modes) if modes else None
     format_name = format_name.lower()
     dataset_ios = get_obj_registry().get_all(type=DatasetIO)
     for dataset_io in dataset_ios:
@@ -129,7 +130,7 @@ def find_dataset_io(format_name: str, modes: Set[str] = None, default: DatasetIO
 
 def query_dataset_io(filter_fn: Callable[[DatasetIO], bool] = None) -> List[DatasetIO]:
     dataset_ios = get_obj_registry().get_all(type=DatasetIO)
-    if filter is None:
+    if filter_fn is None:
         return dataset_ios
     return list(filter(filter_fn, dataset_ios))
 
@@ -260,33 +261,9 @@ class ZarrDatasetIO(DatasetIO):
                 var_array.append(new_var, axis=axis)
 
 
-# noinspection PyAbstractClass
-class OpendapDatasetIO(DatasetIO):
-
-    @property
-    def name(self) -> str:
-        return 'opendap'
-
-    @property
-    def description(self) -> str:
-        return 'OPeNDAP protocol'
-
-    @property
-    def ext(self) -> str:
-        return 'nc'
-
-    @property
-    def modes(self) -> Set[str]:
-        return {'r'}
-
-    def read(self, path: str, **kwargs) -> xr.Dataset:
-        return xr.open_dataset(path, engine='pydap', **kwargs)
-
-
 register_dataset_io(MemDatasetIO())
 register_dataset_io(Netcdf4DatasetIO())
 register_dataset_io(ZarrDatasetIO())
-register_dataset_io(OpendapDatasetIO())
 
 
 def rimraf(path):

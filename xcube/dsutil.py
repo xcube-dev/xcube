@@ -73,9 +73,11 @@ def compute_dataset(dataset: xr.Dataset,
     for var_name, var_props in processed_variables:
         var = dataset[var_name]
         if var_props:
-            var_props = dict(**var.attrs, **var_props)
+            var_props_temp = var_props
+            var_props = dict(var.attrs)
+            var_props.update(var_props_temp)
         else:
-            var_props = var.attrs
+            var_props = dict(var.attrs)
 
         expression = var_props.get('expression')
         if expression:
@@ -90,8 +92,6 @@ def compute_dataset(dataset: xr.Dataset,
 
         valid_pixel_expression = var_props.get('valid_pixel_expression')
         if valid_pixel_expression:
-            if var is None:
-                raise ValueError(f'missing variable {var_name!r}')
             valid_mask = compute_array_expr(valid_pixel_expression,
                                             namespace=namespace,
                                             result_name=var_name,
