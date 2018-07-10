@@ -3,5 +3,5 @@ xcube-genl2c ^
    -w zarr ^
    -a ^
    -d D:\EOData\CyanoAlert ^
-   -n OLCI-DE-L2C-CUBE-v2 ^
-   D:\EOData\CyanoAlert\*.nc
+   -n OLCI-DE-L2C-CUBE-v1 ^
+   D:\EOData\CyanoAlert\inputs\*.nc

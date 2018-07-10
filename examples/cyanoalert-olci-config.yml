@@ -30,34 +30,41 @@ processed_variables:
   - chl:
       valid_pixel_expression: ~
 
+  - pixel_classif_flags_invalid:
+      expression: >
+                  pixel_classif_flags.IDEPIX_CLOUD
+                  or pixel_classif_flags.IDEPIX_CLOUD_AMBIGUOUS
+                  or pixel_classif_flags.IDEPIX_CLOUD_BUFFER
+                  or pixel_classif_flags.IDEPIX_CLOUD_SHADOW
+                  or pixel_classif_flags.IDEPIX_SNOW_ICE
+
+  - quality_flags_invalid:
+      expression: >
+                  quality_flags.bright
+                  or quality_flags.invalid
+
+  - chl_invalid:
+      expression: >
+                  pixel_classif_flags_invalid
+                  or quality_flags_invalid
+                  or floating_vegetation
+
+  - c2rcc_flags_invalid:
+      expression: >
+                  c2rcc_flags.Rtosa_OOR
+                  or c2rcc_flags.Cloud_risk
+                  or c2rcc_flags.Iop_OOR
+                  or c2rcc_flags.Rhow_OOR
+
   - valid_mask_c2rcc:
       expression: >
-                  c2rcc_flags.Rtosa_OOR == 0
-                  and c2rcc_flags.Cloud_risk == 0
-                  and c2rcc_flags.Iop_OOR == 0
-                  and c2rcc_flags.Valid_PE == 1
-                  and conc_chl > 0.01
-                  and pixel_classif_flags.IDEPIX_CLOUD == 0
-                  and pixel_classif_flags.IDEPIX_CLOUD_AMBIGUOUS == 0
-                  and pixel_classif_flags.IDEPIX_CLOUD_BUFFER == 0
-                  and pixel_classif_flags.IDEPIX_CLOUD_SHADOW == 0
-                  and pixel_classif_flags.IDEPIX_SNOW_ICE == 0
-                  and quality_flags.bright == 0
-                  and quality_flags.invalid == 0
-                  and floating_vegetation == 0
-                  and c2rcc_flags.Rhow_OOR == 0
+                  conc_chl > 0.01
+                  and c2rcc_flags.Valid_PE
+                  and not c2rcc_flags_invalid
+                  and not chl_invalid
 
   - valid_mask_mph:
-      expression: >
-                  chl > 0.01
-                  and pixel_classif_flags.IDEPIX_CLOUD = 0
-                  and pixel_classif_flags.IDEPIX_CLOUD_AMBIGUOUS = 0
-                  and pixel_classif_flags.IDEPIX_CLOUD_BUFFER = 0
-                  and pixel_classif_flags.IDEPIX_CLOUD_SHADOW = 0
-                  and pixel_classif_flags.IDEPIX_SNOW_ICE = 0
-                  and quality_flags.invalid = 0
-                  and quality_flags.bright = 0
-                  and floating_vegetation = 0
+      expression: chl > 0.01 and not chl_invalid
 
   - chl:
       valid_pixel_expression: valid_mask_mph
