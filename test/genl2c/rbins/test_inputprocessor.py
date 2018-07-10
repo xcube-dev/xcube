@@ -15,17 +15,12 @@ class RbinsSeviriHighrocSceneInputProcessorTest(unittest.TestCase):
     def test_props(self):
         self.assertEqual('rbins-seviri-highroc-scene-l2', self.processor.name)
         self.assertEqual('RBINS SEVIRI HIGHROC single-scene Level-2 NetCDF inputs', self.processor.description)
-        self.assertEqual({'r'}, self.processor.modes)
-        self.assertEqual('nc', self.processor.ext)
+        self.assertEqual('netcdf4', self.processor.input_reader)
 
     def test_reprojection_info(self):
         reprojection_info = self.processor.get_reprojection_info(create_rbins_seviri_scene_dataset())
         self.assertEqual(('lon', 'lat'), reprojection_info.xy_var_names)
         self.assertEqual(1, reprojection_info.xy_gcp_step)
-
-    def test_read(self):
-        with self.assertRaises(OSError):
-            self.processor.read('test-nc')
 
     def test_pre_process(self):
         ds1 = create_rbins_seviri_scene_dataset()
@@ -46,17 +41,12 @@ class RbinsSeviriHighrocDailyInputProcessorTest(unittest.TestCase):
     def test_props(self):
         self.assertEqual('rbins-seviri-highroc-daily-l2', self.processor.name)
         self.assertEqual('RBINS SEVIRI HIGHROC daily Level-2 NetCDF inputs', self.processor.description)
-        self.assertEqual({'r'}, self.processor.modes)
-        self.assertEqual('nc', self.processor.ext)
+        self.assertEqual('netcdf4', self.processor.input_reader)
 
     def test_reprojection_info(self):
         reprojection_info = self.processor.get_reprojection_info(create_rbins_seviri_daily_dataset())
         self.assertEqual(('longitude', 'latitude'), reprojection_info.xy_var_names)
         self.assertEqual(1, reprojection_info.xy_gcp_step)
-
-    def test_read(self):
-        with self.assertRaises(OSError):
-            self.processor.read('test-nc')
 
     def test_pre_process(self):
         ds1 = create_rbins_seviri_daily_dataset()

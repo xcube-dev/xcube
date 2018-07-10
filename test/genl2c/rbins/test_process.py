@@ -26,7 +26,7 @@ class RbinsProcessTest(unittest.TestCase):
         path, status = process_inputs_wrapper(
             input_files=[get_inputdata_path('SEVIRI_SNS_EUR_201708060700_QV_2013b.1.nc.gz')],
             output_name='l2c-single',
-            output_format='netcdf4',
+            output_writer='netcdf4',
             append_mode=False)
         self.assertEqual(True, status)
         self.assertEqual(os.path.join('.', 'l2c-single.nc'), path)
@@ -36,7 +36,7 @@ class RbinsProcessTest(unittest.TestCase):
         path, status = process_inputs_wrapper(
             input_files=[get_inputdata_path('SEVIRI_SNS_EUR_20170806????_QV_2013b.1.nc.gz')],
             output_name='l2c',
-            output_format='netcdf4',
+            output_writer='netcdf4',
             append_mode=True)
         self.assertEqual(True, status)
         self.assertEqual(os.path.join('.', 'l2c.nc'), path)
@@ -45,7 +45,7 @@ class RbinsProcessTest(unittest.TestCase):
         path, status = process_inputs_wrapper(
             input_files=[get_inputdata_path('SEVIRI_SNS_EUR_20170806????_QV_2013b.1.nc.gz')],
             output_name='l2c',
-            output_format='zarr',
+            output_writer='zarr',
             append_mode=True)
         self.assertEqual(True, status)
         self.assertEqual(os.path.join('.', 'l2c.zarr'), path)
@@ -54,17 +54,17 @@ class RbinsProcessTest(unittest.TestCase):
 # noinspection PyShadowingBuiltins
 def process_inputs_wrapper(input_files=None,
                            output_name=None,
-                           output_format='netcdf4',
+                           output_writer='netcdf4',
                            append_mode=False):
     return generate_l2c_cube(input_files=input_files,
-                             input_type='rbins-seviri-highroc-scene-l2',
+                             input_processor='rbins-seviri-highroc-scene-l2',
                              output_size=(320, 180),
                              output_region=(-4., 47., 12., 56.),
                              output_resampling='Nearest',
                              output_variables=[('KPAR', None), ('SPM', None), ('TUR', None)],
                              output_dir='.',
                              output_name=output_name,
-                             output_format=output_format,
+                             output_writer=output_writer,
                              append_mode=append_mode,
                              dry_run=False,
                              monitor=None)

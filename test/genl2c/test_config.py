@@ -7,10 +7,10 @@ from xcube.genl2c.config import get_config_dict
 ConfigObj = namedtuple('ConfigObj',
                        ['config_file',
                         'input_files',
-                        'input_type',
+                        'input_processor',
                         'output_dir',
                         'output_name',
-                        'output_format',
+                        'output_writer',
                         'output_size',
                         'output_region',
                         'output_variables',
@@ -19,20 +19,20 @@ ConfigObj = namedtuple('ConfigObj',
 
 def get_config_obj(config_file=None,
                    input_files=None,
-                   input_type=None,
+                   input_processor=None,
                    output_dir=None,
                    output_name=None,
-                   output_format=None,
+                   output_writer=None,
                    output_size=None,
                    output_region=None,
                    output_variables=None,
                    output_resampling=None) -> ConfigObj:
     return ConfigObj(config_file=config_file,
                      input_files=input_files,
-                     input_type=input_type,
+                     input_processor=input_processor,
                      output_dir=output_dir,
                      output_name=output_name,
-                     output_format=output_format,
+                     output_writer=output_writer,
                      output_size=output_size,
                      output_region=output_region,
                      output_variables=output_variables,
@@ -96,16 +96,7 @@ class GetConfigDictTest(unittest.TestCase):
                          f'{cm.exception}')
 
     def test_config_file_does_not_exist(self):
-        config_obj = ConfigObj(config_file='bibo.yaml',
-                               input_files=None,
-                               input_type=None,
-                               output_dir=None,
-                               output_name=None,
-                               output_format=None,
-                               output_size=None,
-                               output_region=None,
-                               output_variables=None,
-                               output_resampling=None)
+        config_obj = get_config_obj(config_file='bibo.yaml')
         with self.assertRaises(ValueError) as cm:
             get_config_dict(config_obj, _test_open)
         self.assertEqual("cannot load configuration from 'bibo.yaml': file not found",

@@ -25,7 +25,7 @@ class SnapProcessTest(unittest.TestCase):
     def test_process_inputs_single(self):
         path, status = process_inputs_wrapper(input_files=[get_inputdata_file('O_L2_0001_SNS_2017105100139_v1.0.nc')],
                                               output_name='l2c-single',
-                                              output_format='netcdf4',
+                                              output_writer='netcdf4',
                                               append_mode=False)
         self.assertEqual(True, status)
         self.assertEqual(os.path.join('.', 'l2c-single.nc'), path)
@@ -33,7 +33,7 @@ class SnapProcessTest(unittest.TestCase):
     def test_process_inputs_append_multiple_nc(self):
         path, status = process_inputs_wrapper(input_files=[get_inputdata_file('O_L2_0001_SNS_*_v1.0.nc')],
                                               output_name='l2c',
-                                              output_format='netcdf4',
+                                              output_writer='netcdf4',
                                               append_mode=True)
         self.assertEqual(True, status)
         self.assertEqual(os.path.join('.', 'l2c.nc'), path)
@@ -41,7 +41,7 @@ class SnapProcessTest(unittest.TestCase):
     def test_process_inputs_append_multiple_zarr(self):
         path, status = process_inputs_wrapper(input_files=[get_inputdata_file('O_L2_0001_SNS_*_v1.0.nc')],
                                               output_name='l2c',
-                                              output_format='zarr',
+                                              output_writer='zarr',
                                               append_mode=True)
         self.assertEqual(True, status)
         self.assertEqual(os.path.join('.', 'l2c.zarr'), path)
@@ -50,17 +50,17 @@ class SnapProcessTest(unittest.TestCase):
 # noinspection PyShadowingBuiltins
 def process_inputs_wrapper(input_files=None,
                            output_name=None,
-                           output_format='netcdf4',
+                           output_writer='netcdf4',
                            append_mode=False):
     return generate_l2c_cube(input_files=input_files,
-                             input_type='snap-olci-highroc-l2',
+                             input_processor='snap-olci-highroc-l2',
                              output_size=(2000, 1000),
                              output_region=(0., 50., 5., 52.5),
                              output_variables=[('conc_chl', None), ('conc_tsm', None), ('kd489', None)],
                              output_resampling='Nearest',
                              output_dir='.',
                              output_name=output_name,
-                             output_format=output_format,
+                             output_writer=output_writer,
                              append_mode=append_mode,
                              dry_run=False,
                              monitor=None)

@@ -25,10 +25,10 @@ import traceback
 from typing import Sequence, Callable, Tuple, Optional
 
 from .defaults import DEFAULT_OUTPUT_DIR, DEFAULT_OUTPUT_NAME, DEFAULT_OUTPUT_SIZE, \
-    DEFAULT_OUTPUT_RESAMPLING, DEFAULT_OUTPUT_FORMAT
-from .inputprocessor import InputProcessor
+    DEFAULT_OUTPUT_RESAMPLING, DEFAULT_OUTPUT_WRITER
+from .inputprocessor import InputProcessor, get_input_processor
 from ..config import NameAnyDict, NameDictPairList, to_resolved_name_dict_pairs
-from ..dsio import rimraf, get_default_dataset_io_registry, DatasetIO
+from ..dsio import rimraf, DatasetIO, find_dataset_io
 from ..dsutil import compute_dataset, select_variables, update_variable_props, add_time_coords
 from ..reproject import reproject_to_wgs84
 
@@ -36,28 +36,32 @@ __import__('xcube.plugin')
 
 
 def generate_l2c_cube(input_files: Sequence[str] = None,
-                      input_type: str = None,
+                      input_processor: str = None,
+                      input_reader: str = None,
                       output_region: Tuple[float, float, float, float] = None,
                       output_size: Tuple[int, int] = DEFAULT_OUTPUT_SIZE,
                       output_resampling: str = DEFAULT_OUTPUT_RESAMPLING,
                       output_dir: str = DEFAULT_OUTPUT_DIR,
                       output_name: str = DEFAULT_OUTPUT_NAME,
-                      output_format: str = DEFAULT_OUTPUT_FORMAT,
+                      output_writer: str = DEFAULT_OUTPUT_WRITER,
                       output_metadata: NameAnyDict = None,
                       output_variables: NameDictPairList = None,
                       processed_variables: NameDictPairList = None,
                       append_mode: bool = False,
                       dry_run: bool = False,
                       monitor: Callable[..., None] = None) -> Tuple[Optional[str], bool]:
-    dataset_io_registry = get_default_dataset_io_registry()
 
-    input_processor = dataset_io_registry.find(input_type)
+    input_processor = get_input_processor(input_processor)
     if not input_processor:
-        raise ValueError(f'unknown input type {input_type!r}')
+        raise ValueError(f'unknown input_processor {input_processor!r}')
 
-    output_writer = dataset_io_registry.find(output_format, modes={'w', 'a'} if append_mode else {'w'})
+    input_reader = find_dataset_io(input_reader or input_processor.input_reader)
+    if not input_reader:
+        raise ValueError(f'unknown input_reader {input_reader!r}')
+
+    output_writer = find_dataset_io(output_writer or 'netcdf4', modes={'w', 'a'} if append_mode else {'w'})
     if not output_writer:
-        raise ValueError(f'unknown output format {output_format!r}')
+        raise ValueError(f'unknown output_writer {output_writer!r}')
 
     if monitor is None:
         # noinspection PyUnusedLocal
@@ -78,6 +82,7 @@ def generate_l2c_cube(input_files: Sequence[str] = None,
         monitor(f'processing dataset {ds_index + 1} of {ds_count}: {input_file!r}...')
         # noinspection PyTypeChecker
         output_path, status = _process_l2_input(input_processor,
+                                                input_reader,
                                                 output_writer,
                                                 input_file,
                                                 output_size,
@@ -101,6 +106,7 @@ def generate_l2c_cube(input_files: Sequence[str] = None,
 
 
 def _process_l2_input(input_processor: InputProcessor,
+                      input_reader: DatasetIO,
                       output_writer: DatasetIO,
                       input_file: str,
                       output_size: Tuple[int, int],
@@ -124,7 +130,7 @@ def _process_l2_input(input_processor: InputProcessor,
     monitor('reading dataset...')
     # noinspection PyBroadException
     try:
-        input_dataset = input_processor.read(input_file)
+        input_dataset = input_reader.read(input_file, **input_processor.input_reader_params)
     except Exception as e:
         monitor(f'ERROR: cannot read input: {e}: skipping...')
         traceback.print_exc()

@@ -1,4 +1,4 @@
-input_type: snap-olci-cyanoalert-l2
+input_processor: snap-olci-cyanoalert-l2
 
 output_size: [1000, 410]
 

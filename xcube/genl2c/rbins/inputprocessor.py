@@ -26,9 +26,8 @@ from typing import Tuple, Optional
 import numpy as np
 import xarray as xr
 
-from ..inputprocessor import InputProcessor, ReprojectionInfo
+from ..inputprocessor import InputProcessor, ReprojectionInfo, register_input_processor
 from ...constants import CRS_WKT_EPSG_4326
-from ...dsio import get_default_dataset_io_registry
 from ...dsutil import get_time_in_days_since_1970
 
 
@@ -38,16 +37,16 @@ class RbinsSeviriHighrocSceneInputProcessor(InputProcessor, metaclass=ABCMeta):
     """
 
     @property
-    def ext(self) -> str:
-        return 'nc'
-
-    @property
     def name(self) -> str:
         return 'rbins-seviri-highroc-scene-l2'
 
     @property
     def description(self) -> str:
         return 'RBINS SEVIRI HIGHROC single-scene Level-2 NetCDF inputs'
+
+    @property
+    def input_reader(self) -> str:
+        return 'netcdf4'
 
     def get_reprojection_info(self, dataset: xr.Dataset) -> ReprojectionInfo:
         return ReprojectionInfo(xy_var_names=('lon', 'lat'),
@@ -62,19 +61,11 @@ class RbinsSeviriHighrocSceneInputProcessor(InputProcessor, metaclass=ABCMeta):
         days_since_1970 = get_time_in_days_since_1970(date + time)
         return days_since_1970, days_since_1970
 
-    def read(self, input_file: str, **kwargs) -> xr.Dataset:
-        """ Read RBINS SEVIRI L2. """
-        return xr.open_dataset(input_file)
-
 
 class RbinsSeviriHighrocDailyInputProcessor(InputProcessor, metaclass=ABCMeta):
     """
     Input processor for RBINS' HIGHROC daily Level-2 NetCDF inputs.
     """
-
-    @property
-    def ext(self) -> str:
-        return 'nc'
 
     @property
     def name(self) -> str:
@@ -84,6 +75,10 @@ class RbinsSeviriHighrocDailyInputProcessor(InputProcessor, metaclass=ABCMeta):
     def description(self) -> str:
         return 'RBINS SEVIRI HIGHROC daily Level-2 NetCDF inputs'
 
+    @property
+    def input_reader(self) -> str:
+        return 'netcdf4'
+
     def get_reprojection_info(self, dataset: xr.Dataset) -> ReprojectionInfo:
         return ReprojectionInfo(xy_var_names=('longitude', 'latitude'),
                                 xy_crs=CRS_WKT_EPSG_4326,
@@ -91,9 +86,6 @@ class RbinsSeviriHighrocDailyInputProcessor(InputProcessor, metaclass=ABCMeta):
 
     def get_time_range(self, dataset: xr.Dataset) -> Optional[Tuple[float, float]]:
         return None
-
-    def read(self, input_file: str, **kwargs) -> xr.Dataset:
-        return xr.open_dataset(input_file)
 
     def pre_process(self, dataset: xr.Dataset) -> xr.Dataset:
         num_times = dataset.sizes.get('t')
@@ -122,6 +114,5 @@ class RbinsSeviriHighrocDailyInputProcessor(InputProcessor, metaclass=ABCMeta):
 
 def init_plugin():
     """ Register a DatasetIO object: SnapOlciHighrocL2NetcdfInputProcessor() """
-    ds_io_registry = get_default_dataset_io_registry()
-    ds_io_registry.register(RbinsSeviriHighrocSceneInputProcessor())
-    ds_io_registry.register(RbinsSeviriHighrocDailyInputProcessor())
+    register_input_processor(RbinsSeviriHighrocSceneInputProcessor())
+    register_input_processor(RbinsSeviriHighrocDailyInputProcessor())

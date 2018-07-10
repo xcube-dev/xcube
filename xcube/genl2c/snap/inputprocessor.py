@@ -27,9 +27,8 @@ import xarray as xr
 
 from .transexpr import translate_snap_expr_attributes
 from .vectorize import vectorize_wavebands, new_band_coord_var
-from ..inputprocessor import InputProcessor, ReprojectionInfo
+from ..inputprocessor import InputProcessor, ReprojectionInfo, register_input_processor
 from ...constants import CRS_WKT_EPSG_4326
-from ...dsio import get_default_dataset_io_registry
 from ...dsutil import get_time_in_days_since_1970
 
 
@@ -39,12 +38,12 @@ class SnapNetcdfInputProcessor(InputProcessor, metaclass=ABCMeta):
     """
 
     @property
-    def ext(self) -> str:
-        return 'nc'
+    def input_reader(self) -> str:
+        return 'netcdf4'
 
-    def read(self, input_file: str, **kwargs) -> xr.Dataset:
-        """ Read SNAP L2 NetCDF inputs. """
-        return xr.open_dataset(input_file, decode_cf=True, decode_coords=True, decode_times=False)
+    @property
+    def input_reader_params(self) -> dict:
+        return dict(decode_cf=True, decode_coords=True, decode_times=False)
 
     def get_reprojection_info(self, dataset: xr.Dataset) -> ReprojectionInfo:
         return ReprojectionInfo(xy_var_names=('lon', 'lat'),
@@ -107,6 +106,5 @@ class SnapOlciCyanoAlertL2InputProcessor(SnapNetcdfInputProcessor):
 
 def init_plugin():
     """ Register a DatasetIO object: SnapOlciHighrocL2NetcdfInputProcessor() """
-    ds_io_registry = get_default_dataset_io_registry()
-    ds_io_registry.register(SnapOlciHighrocL2InputProcessor())
-    ds_io_registry.register(SnapOlciCyanoAlertL2InputProcessor())
+    register_input_processor(SnapOlciHighrocL2InputProcessor())
+    register_input_processor(SnapOlciCyanoAlertL2InputProcessor())

@@ -1,7 +1,30 @@
-input_type: snap-olci-highroc-l2
+input_processor: snap-olci-highroc-l2
 
-output_size: 2000, 1000
-output_region: 0, 50, 5, 52.5
+output_size: [2000, 1000]
+output_region: [0, 50, 5, 52.5]
+
+output_variables:
+
+  - conc_chl:
+      resampling: Nearest
+
+  - conc_tsm:
+      resampling: Nearest
+
+  - kd489:
+      resampling: Nearest
+
+
+processed_variables:
+  - quality_flags
+  - c2rcc_flags
+
+  - conc_chl:
+      valid_pixel_expression: quality_flags.land
+
+  - conc_tsm:
+      valid_pixel_expression: quality_flags.land
+
 
 
 # xcube global dataset metadata
@@ -111,20 +134,3 @@ output_metadata:
     resolution: "1D"
 
 
-processed_variables:
-  - quality_flags
-
-  - conc_chl:
-      valid_pixel_expression: quality_flags.land
-
-  - conc_tsm:
-      valid_pixel_expression: quality_flags.land
-
-
-output_variables:
-
-  - conc_chl:
-      resampling: Nearest
-
-  - conc_tsm:
-      resampling: Nearest

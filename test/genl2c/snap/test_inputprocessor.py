@@ -12,17 +12,12 @@ class SnapOlciHighrocL2InputProcessorTest(unittest.TestCase):
     def test_props(self):
         self.assertEqual('snap-olci-highroc-l2', self.processor.name)
         self.assertEqual('SNAP Sentinel-3 OLCI HIGHROC Level-2 NetCDF inputs', self.processor.description)
-        self.assertEqual({'r'}, self.processor.modes)
-        self.assertEqual('nc', self.processor.ext)
+        self.assertEqual('netcdf4', self.processor.input_reader)
 
     def test_reprojection_info(self):
         reprojection_info = self.processor.get_reprojection_info(create_highroc_dataset())
         self.assertEqual(('lon', 'lat'), reprojection_info.xy_var_names)
         self.assertEqual(5, reprojection_info.xy_gcp_step)
-
-    def test_read(self):
-        with self.assertRaises(OSError):
-            self.processor.read('test-nc')
 
     def _test_pre_process(self):
         # FIXME: this test raises because create_highroc_dataset() does not return compatible SNAP L2 DS.

@@ -24,7 +24,7 @@ from typing import Tuple, Union, Optional
 
 import xarray as xr
 
-from ..dsio import DatasetIO
+from xcube.objreg import get_obj_registry
 
 
 class ReprojectionInfo:
@@ -55,14 +55,28 @@ class ReprojectionInfo:
         self.xy_tp_gcp_step = xy_tp_gcp_step
 
 
-class InputProcessor(DatasetIO, metaclass=ABCMeta):
+class InputProcessor(metaclass=ABCMeta):
     """
     Read and process inputs for the genl2c tool.
     """
+    @property
+    @abstractmethod
+    def name(self) -> str:
+        pass
 
     @property
-    def modes(self):
-        return {'r'}
+    @abstractmethod
+    def description(self) -> str:
+        pass
+
+    @property
+    @abstractmethod
+    def input_reader(self) -> str:
+        pass
+
+    @property
+    def input_reader_params(self) -> dict:
+        return dict()
 
     @abstractmethod
     def get_reprojection_info(self, dataset: xr.Dataset) -> Optional[ReprojectionInfo]:
@@ -88,3 +102,11 @@ class InputProcessor(DatasetIO, metaclass=ABCMeta):
     def post_process(self, dataset: xr.Dataset) -> xr.Dataset:
         """ Do any pre-processing before reprojection. """
         return dataset
+
+
+def register_input_processor(input_processor: InputProcessor):
+    get_obj_registry().put(input_processor.name, input_processor, type=InputProcessor)
+
+
+def get_input_processor(name: str):
+    return get_obj_registry().get(name, type=InputProcessor)

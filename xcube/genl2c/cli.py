@@ -25,25 +25,23 @@ import traceback
 from typing import List, Optional
 
 from xcube.genl2c.config import get_config_dict
-from xcube.genl2c.defaults import DEFAULT_OUTPUT_DIR, DEFAULT_OUTPUT_NAME, DEFAULT_OUTPUT_SIZE, \
-    DEFAULT_OUTPUT_RESAMPLING, DEFAULT_OUTPUT_FORMAT
+from xcube.genl2c.defaults import DEFAULT_OUTPUT_DIR, DEFAULT_OUTPUT_NAME, \
+    DEFAULT_OUTPUT_RESAMPLING, DEFAULT_OUTPUT_WRITER
 from xcube.genl2c.inputprocessor import InputProcessor
-from xcube.dsio import get_default_dataset_io_registry
+from xcube.genl2c.process import generate_l2c_cube
+from xcube.dsio import query_dataset_io
+from xcube.objreg import get_obj_registry
 from xcube.reproject import NAME_TO_GDAL_RESAMPLE_ALG
 from xcube.version import version
-
-__import__('xcube.plugin')
 
 
 def main(args: Optional[List[str]] = None):
     """
     Generate L2C data cubes from L2 data products.
     """
-    ds_io_registry = get_default_dataset_io_registry()
-    input_ds_ios = ds_io_registry.query(lambda ds_io: isinstance(ds_io, InputProcessor))
-    output_ds_ios = ds_io_registry.query(lambda ds_io: 'w' in ds_io.modes)
-    input_type_names = [ds_io.name for ds_io in input_ds_ios]
-    output_format_names = [ds_io.name for ds_io in output_ds_ios]
+    input_processor_names = [input_processor.name
+                             for input_processor in get_obj_registry().get_all(type=InputProcessor)]
+    output_writer_names = [ds_io.name for ds_io in query_dataset_io(lambda ds_io: 'w' in ds_io.modes)]
     resampling_algs = NAME_TO_GDAL_RESAMPLE_ALG.keys()
 
     parser = argparse.ArgumentParser(description='Generate L2C data cube from various input files. '
@@ -51,25 +49,24 @@ def main(args: Optional[List[str]] = None):
                                                  'in append mode, input by input.',
                                      formatter_class=GenL2CHelpFormatter)
     parser.add_argument('--version', '-V', action='version', version=version)
+    parser.add_argument('--proc', '-p', dest='input_processor', choices=input_processor_names,
+                        help=f'Input processor type name.')
     parser.add_argument('--config', '-c', dest='config_file',
                         help='Data cube configuration file in YAML format.')
-    parser.add_argument('--dir', '-d', dest='output_dir', default=DEFAULT_OUTPUT_DIR,
+    parser.add_argument('--dir', '-d', dest='output_dir',
                         help=f'Output directory. Defaults to {DEFAULT_OUTPUT_DIR!r}')
-    parser.add_argument('--name', '-n', dest='output_name', default=DEFAULT_OUTPUT_NAME,
+    parser.add_argument('--name', '-n', dest='output_name',
                         help=f'Output filename pattern. Defaults to {DEFAULT_OUTPUT_NAME!r}.')
-    parser.add_argument('--format', '-f', dest='output_format',
-                        default=DEFAULT_OUTPUT_FORMAT, choices=output_format_names,
-                        help=f'Output format. Defaults to {DEFAULT_OUTPUT_FORMAT!r}.')
+    parser.add_argument('--writer', '-w', dest='output_writer', choices=output_writer_names,
+                        help=f'Output writer type name. Defaults to {DEFAULT_OUTPUT_WRITER!r}.')
     parser.add_argument('--size', '-s', dest='output_size',
-                        default=f'{DEFAULT_OUTPUT_SIZE[0]},{DEFAULT_OUTPUT_SIZE[1]}',
-                        help='Output size in pixels using format "<width>,<height>". '
-                             f'Defaults to {DEFAULT_OUTPUT_SIZE!r}.')
+                        help='Output size in pixels using format "<width>,<height>".')
     parser.add_argument('--region', '-r', dest='output_region',
                         help='Output region using format "<lon-min>,<lat-min>,<lon-max>,<lat-max>"')
-    parser.add_argument('--variables', '-v', dest='output_variables',
+    parser.add_argument('--vars', '-v', dest='output_variables',
                         help='Variables to be included in output. '
                              'Comma-separated list of names which may contain wildcard characters "*" and "?".')
-    parser.add_argument('--resampling', dest='output_resampling', choices=resampling_algs,
+    parser.add_argument('--resamp', dest='output_resampling', choices=resampling_algs,
                         help='Fallback spatial resampling algorithm to be used for all variables.'
                              f'Defaults to {DEFAULT_OUTPUT_RESAMPLING!r}.')
     parser.add_argument('--traceback', dest='traceback_mode', default=False, action='store_true',
@@ -78,8 +75,6 @@ def main(args: Optional[List[str]] = None):
                         help='Append successive outputs.')
     parser.add_argument('--dry-run', default=False, action='store_true',
                         help='Just read and process inputs, but don\'t produce any outputs.')
-    parser.add_argument('--type', '-t', dest='input_type', choices=input_type_names,
-                        help=f'Input type.')
     parser.add_argument('input_files', metavar='INPUT_FILES', nargs='+',
                         help="One or more input files or a pattern that may contain wildcards '?', '*', and '**'.")
 
@@ -97,8 +92,6 @@ def main(args: Optional[List[str]] = None):
     except ValueError as e:
         return _handle_error(e, traceback_mode)
 
-    # Only now import process module with all dependencies
-    from xcube.genl2c.process import generate_l2c_cube
     # noinspection PyBroadException
     try:
         generate_l2c_cube(append_mode=append_mode,
@@ -124,16 +117,23 @@ class GenL2CHelpFormatter(argparse.HelpFormatter):
         # noinspection PyUnresolvedReferences
         help_text = super().format_help()
 
-        ds_io_registry = get_default_dataset_io_registry()
+        input_processors = get_obj_registry().get_all(type=InputProcessor)
+        output_writers = query_dataset_io(lambda ds_io: 'w' in ds_io.modes)
 
-        input_ds_ios = ds_io_registry.query(lambda ds_io: isinstance(ds_io, InputProcessor))
-        output_ds_ios = ds_io_registry.query(lambda ds_io: 'w' in ds_io.modes)
+        help_text += '\ninput processors to be used with option --proc:\n'
+        help_text += self._format_input_processors(input_processors)
+        help_text += '\noutput formats to be used with option --writer:\n'
+        help_text += self._format_dataset_ios(output_writers)
+        help_text += '\n'
 
-        help_text += '\noutput formats to be used with option --format:\n'
-        help_text += self._format_dataset_ios(output_ds_ios)
-        help_text += '\ninput types to be used with option --type:\n'
-        help_text += self._format_dataset_ios(input_ds_ios)
+        return help_text
 
+    @classmethod
+    def _format_input_processors(cls, input_processors):
+        help_text = ''
+        for input_processor in input_processors:
+            fill = ' ' * (28 - len(input_processor.name))
+            help_text += f'  {input_processor.name}{fill}{input_processor.description}\n'
         return help_text
 
     @classmethod

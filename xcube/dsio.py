@@ -27,6 +27,8 @@ import s3fs
 import xarray as xr
 import zarr
 
+from xcube.objreg import get_obj_registry
+
 
 def open_from_fs(paths: str, recursive: bool = False, **kwargs):
     """
@@ -100,6 +102,36 @@ class DatasetIO(metaclass=ABCMeta):
 
     def append(self, dataset: xr.Dataset, output_path: str, **kwargs):
         raise NotImplementedError()
+
+
+def register_dataset_io(dataset_io: DatasetIO):
+    # noinspection PyTypeChecker
+    get_obj_registry().put(dataset_io.name, dataset_io, type=DatasetIO)
+
+
+def find_dataset_io(format_name: str, modes: Set[str] = None, default: DatasetIO = None) -> Optional[DatasetIO]:
+    format_name = format_name.lower()
+    dataset_ios = get_obj_registry().get_all(type=DatasetIO)
+    for dataset_io in dataset_ios:
+        # noinspection PyUnresolvedReferences
+        if format_name == dataset_io.name.lower():
+            # noinspection PyTypeChecker
+            if not modes or modes.issubset(dataset_io.modes):
+                return dataset_io
+    for dataset_io in dataset_ios:
+        # noinspection PyUnresolvedReferences
+        if format_name == dataset_io.ext.lower():
+            # noinspection PyTypeChecker
+            if not modes or modes.issubset(dataset_io.modes):
+                return dataset_io
+    return default
+
+
+def query_dataset_io(filter_fn: Callable[[DatasetIO], bool] = None) -> List[DatasetIO]:
+    dataset_ios = get_obj_registry().get_all(type=DatasetIO)
+    if filter is None:
+        return dataset_ios
+    return list(filter(filter_fn, dataset_ios))
 
 
 class MemDatasetIO(DatasetIO):
@@ -251,44 +283,10 @@ class OpendapDatasetIO(DatasetIO):
         return xr.open_dataset(path, engine='pydap', **kwargs)
 
 
-class DatasetIORegistry:
-
-    def __init__(self, registrations):
-        self._registrations = list(registrations)
-
-    def register(self, dataset_io: DatasetIO):
-        # noinspection PyTypeChecker
-        self._registrations.append(dataset_io)
-
-    def find(self, format_name: str, modes: Set[str] = None, default: DatasetIO = None) -> Optional[DatasetIO]:
-        registrations = list(self._registrations)
-        format_name = format_name.lower()
-        for dataset_io in registrations:
-            # noinspection PyUnresolvedReferences
-            if format_name == dataset_io.name.lower():
-                # noinspection PyTypeChecker
-                if not modes or modes.issubset(dataset_io.modes):
-                    return dataset_io
-        for dataset_io in registrations:
-            # noinspection PyUnresolvedReferences
-            if format_name == dataset_io.ext.lower():
-                # noinspection PyTypeChecker
-                if not modes or modes.issubset(dataset_io.modes):
-                    return dataset_io
-        return default
-
-    def query(self, filter_fn: Callable[[DatasetIO], bool] = None) -> List[DatasetIO]:
-        registrations = list(self._registrations)
-        if filter is None:
-            return registrations
-        return list(filter(filter_fn, registrations))
-
-
-_DATASET_IO_REGISTRY = DatasetIORegistry([Netcdf4DatasetIO(), ZarrDatasetIO(), OpendapDatasetIO()])
-
-
-def get_default_dataset_io_registry() -> DatasetIORegistry:
-    return _DATASET_IO_REGISTRY
+register_dataset_io(MemDatasetIO())
+register_dataset_io(Netcdf4DatasetIO())
+register_dataset_io(ZarrDatasetIO())
+register_dataset_io(OpendapDatasetIO())
 
 
 def rimraf(path):

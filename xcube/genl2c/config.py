@@ -35,10 +35,10 @@ def get_config_dict(config_obj, open_function):
     """
     config_file = config_obj.config_file
     input_files = config_obj.input_files
-    input_type = config_obj.input_type
+    input_processor = config_obj.input_processor
     output_dir = config_obj.output_dir
     output_name = config_obj.output_name
-    output_format = config_obj.output_format
+    output_writer = config_obj.output_writer
     output_size = config_obj.output_size
     output_region = config_obj.output_region
     output_variables = config_obj.output_variables
@@ -59,8 +59,8 @@ def get_config_dict(config_obj, open_function):
     if input_files is not None:
         config['input_files'] = input_files
 
-    if input_type is not None:
-        config['input_type'] = input_type
+    if input_processor is not None:
+        config['input_processor'] = input_processor
 
     if output_dir is not None:
         config['output_dir'] = output_dir
@@ -68,8 +68,8 @@ def get_config_dict(config_obj, open_function):
     if output_name is not None:
         config['output_name'] = output_name
 
-    if output_format is not None:
-        config['output_format'] = output_format
+    if output_writer is not None:
+        config['output_writer'] = output_writer
 
     if output_resampling is not None:
         config['output_resampling'] = output_resampling
