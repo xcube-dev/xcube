@@ -77,6 +77,7 @@ def generate_l2c_cube(input_files: Sequence[str] = None,
     status = False
 
     ds_count = len(input_files)
+    ds_count_ok = 0
     ds_index = 0
     for input_file in input_files:
         monitor(f'processing dataset {ds_index + 1} of {ds_count}: {input_file!r}...')
@@ -96,11 +97,12 @@ def generate_l2c_cube(input_files: Sequence[str] = None,
                                                 append_mode,
                                                 dry_run,
                                                 monitor)
+        ds_index += 1
         if status:
-            ds_index += 1
+            ds_count_ok += 1
 
-    monitor(f'{ds_index} of {ds_count} datasets processed successfully, '
-            f'{ds_count - ds_index} were dropped due to errors')
+    monitor(f'{ds_count_ok} of {ds_count} datasets processed successfully, '
+            f'{ds_count - ds_count_ok} were dropped due to errors')
 
     return output_path, status
 
