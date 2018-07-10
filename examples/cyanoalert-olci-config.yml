@@ -58,8 +58,7 @@ processed_variables:
 
   - valid_mask_c2rcc:
       expression: >
-                  conc_chl > 0.01
-                  and c2rcc_flags.Valid_PE
+                  c2rcc_flags.Valid_PE
                   and not c2rcc_flags_invalid
                   and not chl_invalid
 
