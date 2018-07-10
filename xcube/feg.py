@@ -85,6 +85,30 @@ class FixedEarthGrid:
         raise ValueError(f'unrecognized units {units!r}')
 
 
+# TODO: select tile_count from tile_counts_and_sizes list using following criteria:
+#       1. tile_size as large as possible
+#       2. tile_count with highest divisibility by 2
+
+
+def get_tile_counts_and_sizes(res: float, tile_size_max=720):
+    tile_size_min = tile_size_max // 2 + 1
+
+    height = int(round(180 / res))
+    if height <= tile_size_min:
+        return [(1, height)]
+
+    tile_counts = []
+    for tile_size in reversed(range(tile_size_min, tile_size_max + 1)):
+        tile_count = height // tile_size
+        if tile_count * tile_size == height:
+            tile_counts.append((tile_count, tile_size))
+
+    if not tile_counts:
+        return [(1, height)]
+
+    return tile_counts
+
+
 def main(args: Optional[List[str]] = None):
     import argparse
     import sys

@@ -1,6 +1,6 @@
 import unittest
 
-from xcube.feg import FixedEarthGrid, main
+from xcube.feg import FixedEarthGrid, main, get_tile_counts_and_sizes
 
 
 class FixedEarthGridTest(unittest.TestCase):
@@ -72,3 +72,51 @@ class MainTest(unittest.TestCase):
         # Simple smoke test
         self.assertEqual(0, main(['--help']))
         self.assertEqual(0, main(['--units', 'm', '0', '52', '5', '54', '0.03']))
+
+
+class GetTileCountsAndSizesTest(unittest.TestCase):
+
+    def test_tile_counts_and_sizes(self):
+        resolutions_and_expected_tile_counts_and_sizes = [
+            (1 / 1,
+             [(1, 180)]),
+            (1 / 2,
+             [(1, 360)]),
+            (1 / 4,
+             [(1, 720)]),
+            (1 / 5,
+             [(2, 450)]),
+            (1 / 8,
+             [(2, 720), (3, 480)]),
+            (1 / 10,
+             [(3, 600), (4, 450)]),
+            (1 / 20,
+             [(5, 720), (6, 600), (8, 450), (9, 400)]),
+            (1 / 25,
+             [(9, 500), (10, 450), (12, 375)]),
+            (1 / 50,
+             [(15, 600), (18, 500), (20, 450), (24, 375)]),
+            (1 / 100,
+             [(25, 720), (30, 600), (36, 500), (40, 450), (45, 400), (48, 375)]),
+            (1 / 200,
+             [(50, 720), (60, 600), (72, 500), (75, 480), (80, 450), (90, 400), (96, 375)]),
+            (1 / 250,
+             [(72, 625), (75, 600), (90, 500), (100, 450), (120, 375)]),
+            (1 / 500,
+             [(125, 720), (144, 625), (150, 600), (180, 500), (200, 450), (225, 400), (240, 375)]),
+            (1 / 1000,
+             [(250, 720), (288, 625), (300, 600), (360, 500), (375, 480), (400, 450), (450, 400), (480, 375)]),
+            (1 / 2000,
+             [(500, 720), (576, 625), (600, 600), (625, 576), (720, 500), (750, 480), (800, 450), (900, 400), (
+                 960, 375)]),
+            (1 / 2500,
+             [(625, 720), (720, 625), (750, 600), (900, 500), (1000, 450), (1125, 400), (1200, 375)]),
+            (1 / 5000,
+             [(1250, 720), (1440, 625), (1500, 600), (1800, 500), (1875, 480), (2000, 450), (2250, 400), (2400, 375)]),
+            (1 / 10000,
+             [(2500, 720), (2880, 625), (3000, 600), (3125, 576), (3600, 500), (3750, 480), (4000, 450), (
+                 4500, 400), (4800, 375)]),
+        ]
+        for res, expected_tile_counts_and_sizes in resolutions_and_expected_tile_counts_and_sizes:
+            actual_tile_counts_and_sizes = get_tile_counts_and_sizes(res)
+            self.assertEqual(expected_tile_counts_and_sizes, actual_tile_counts_and_sizes)
