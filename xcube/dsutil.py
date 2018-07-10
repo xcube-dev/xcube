@@ -54,7 +54,7 @@ def compute_dataset(dataset: xr.Dataset,
     """
 
     if processed_variables:
-        processed_variables = to_resolved_name_dict_pairs(processed_variables, dataset)
+        processed_variables = to_resolved_name_dict_pairs(processed_variables, dataset, keep=True)
     else:
         var_names = list(dataset.data_vars)
         var_names = sorted(var_names, key=functools.partial(get_var_sort_key, dataset))
@@ -71,27 +71,39 @@ def compute_dataset(dataset: xr.Dataset,
             namespace[var_name] = var
 
     for var_name, var_props in processed_variables:
-        var = dataset[var_name]
-        if var_props:
-            var_props_temp = var_props
-            var_props = dict(var.attrs)
-            var_props.update(var_props_temp)
+        if var_name in dataset.data_vars:
+            # Existing variable
+            var = dataset[var_name]
+            if var_props:
+                var_props_temp = var_props
+                var_props = dict(var.attrs)
+                var_props.update(var_props_temp)
+            else:
+                var_props = dict(var.attrs)
         else:
-            var_props = dict(var.attrs)
+            # Computed variable
+            var = None
+            if var_props is None:
+                var_props = dict()
 
         expression = var_props.get('expression')
         if expression:
+            # Compute new variable
             computed_array = compute_array_expr(expression,
                                                 namespace=namespace,
                                                 result_name=f'{var_name!r}',
                                                 errors=errors)
             if computed_array is not None:
                 if hasattr(computed_array, 'attrs'):
-                    computed_array.attrs['expression'] = expression
+                    var = computed_array
+                    var.attrs.update(var_props)
                 namespace[var_name] = computed_array
 
         valid_pixel_expression = var_props.get('valid_pixel_expression')
         if valid_pixel_expression:
+            # Compute new mask for existing variable
+            if var is None:
+                raise ValueError(f'undefined variable {var_name!r}')
             valid_mask = compute_array_expr(valid_pixel_expression,
                                             namespace=namespace,
                                             result_name=f'valid mask for {var_name!r}',
@@ -99,7 +111,7 @@ def compute_dataset(dataset: xr.Dataset,
             if valid_mask is not None:
                 masked_var = var.where(valid_mask)
                 if hasattr(masked_var, 'attrs'):
-                    masked_var.attrs['valid_pixel_expression'] = valid_pixel_expression
+                    masked_var.attrs.update(var_props)
                 namespace[var_name] = masked_var
 
     computed_dataset = dataset.copy()
