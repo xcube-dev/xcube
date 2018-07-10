@@ -81,20 +81,20 @@ def compute_dataset(dataset: xr.Dataset,
 
         expression = var_props.get('expression')
         if expression:
-            var = compute_array_expr(expression,
-                                     namespace=namespace,
-                                     result_name=var_name,
-                                     errors=errors)
-            if var is not None:
-                if hasattr(var, 'attrs'):
-                    var.attrs['expression'] = expression
-                namespace[var_name] = var
+            computed_array = compute_array_expr(expression,
+                                                namespace=namespace,
+                                                result_name=f'{var_name!r}',
+                                                errors=errors)
+            if computed_array is not None:
+                if hasattr(computed_array, 'attrs'):
+                    computed_array.attrs['expression'] = expression
+                namespace[var_name] = computed_array
 
         valid_pixel_expression = var_props.get('valid_pixel_expression')
         if valid_pixel_expression:
             valid_mask = compute_array_expr(valid_pixel_expression,
                                             namespace=namespace,
-                                            result_name=var_name,
+                                            result_name=f'valid mask for {var_name!r}',
                                             errors=errors)
             if valid_mask is not None:
                 masked_var = var.where(valid_mask)
