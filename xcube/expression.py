@@ -46,16 +46,15 @@ def compute_expr(expr: str,
     :return: The result computed from the expression.
     """
     try:
-        # PERF: test perf. against numexpr
         result = eval(expr, namespace, None)
     except Exception as e:
         result = None
         if result_name:
-            msg = f'failed computing {result_name!r} from expr {expr!r}: {e}'
+            msg = f'failed computing {result_name} from expression {expr!r}: {e}'
         else:
-            msg = f'failed computing expr {expr!r}: {e}'
+            msg = f'failed computing expression {expr!r}: {e}'
         if errors == 'raise':
-            raise RuntimeError(msg) from e
+            raise ValueError(msg) from e
         if errors == 'warn':
             warnings.warn(msg)
     return result

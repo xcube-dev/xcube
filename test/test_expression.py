@@ -1,6 +1,78 @@
 import unittest
 
-from xcube.expression import transpile_expr
+import numpy as np
+
+from xcube.expression import transpile_expr, compute_expr, compute_array_expr
+
+
+class ComputeArrayExprTest(unittest.TestCase):
+    def test_valid_exprs(self):
+        namespace = dict(a=np.array([0.1, 0.3, 0.1, 0.7, 0.4, 0.9]),
+                         b=np.array([0.2, 0.1, 0.3, 0.2, 0.4, 0.8]),
+                         np=np)
+
+        value = compute_array_expr('a + 1', namespace=namespace)
+        np.testing.assert_array_almost_equal(value,
+                                             np.array([1.1, 1.3, 1.1, 1.7, 1.4, 1.9]))
+
+        value = compute_array_expr('a * b', namespace=namespace)
+        np.testing.assert_array_almost_equal(value,
+                                             np.array([0.02, 0.03, 0.03, 0.14, 0.16, 0.72]))
+
+        value = compute_array_expr('max(a, b)', namespace=namespace)
+        np.testing.assert_array_almost_equal(value,
+                                             np.array([0.2, 0.3, 0.3, 0.7, 0.4, 0.9]))
+
+        value = compute_array_expr('a > b', namespace=namespace)
+        np.testing.assert_equal(value,
+                                np.array([False, True, False, True, False, True]))
+
+        value = compute_array_expr('a == b', namespace=namespace)
+        np.testing.assert_equal(value,
+                                np.array([False, False, False, False, True, False]))
+
+    def test_invalid_exprs(self):
+        with self.assertRaises(ValueError) as cm:
+            compute_expr('20. -')
+        self.assertEqual("failed computing expression '20. -': unexpected EOF while parsing (<string>, line 1)",
+                         f'{cm.exception}')
+
+        with self.assertRaises(ValueError) as cm:
+            compute_expr('2 - a')
+        self.assertEqual("failed computing expression '2 - a': name 'a' is not defined",
+                         f'{cm.exception}')
+
+        with self.assertRaises(ValueError) as cm:
+            compute_expr('b < 1', result_name="mask of 'CHL'")
+        self.assertEqual("failed computing mask of 'CHL' from expression 'b < 1': name 'b' is not defined",
+                         f'{cm.exception}')
+
+
+class ComputeExprTest(unittest.TestCase):
+    def test_valid_exprs(self):
+        namespace = dict(a=3)
+        self.assertEqual(2, compute_expr('2'))
+        self.assertEqual("u", compute_expr('"u"'))
+        self.assertEqual(3, compute_expr('a', namespace=namespace))
+        self.assertEqual(True, compute_expr('True'))
+        self.assertEqual(True, compute_expr('a == 3', namespace=namespace))
+        self.assertEqual(5, compute_expr('a + 2', namespace=namespace))
+
+    def test_invalid_exprs(self):
+        with self.assertRaises(ValueError) as cm:
+            compute_expr('20. -')
+        self.assertEqual("failed computing expression '20. -': unexpected EOF while parsing (<string>, line 1)",
+                         f'{cm.exception}')
+
+        with self.assertRaises(ValueError) as cm:
+            compute_expr('2 - a')
+        self.assertEqual("failed computing expression '2 - a': name 'a' is not defined",
+                         f'{cm.exception}')
+
+        with self.assertRaises(ValueError) as cm:
+            compute_expr('b < 1', result_name="mask of 'CHL'")
+        self.assertEqual("failed computing mask of 'CHL' from expression 'b < 1': name 'b' is not defined",
+                         f'{cm.exception}')
 
 
 class TranspileExprTest(unittest.TestCase):
