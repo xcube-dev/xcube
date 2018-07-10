@@ -30,14 +30,14 @@ NameAnyDict = Dict[str, Any]
 NameDictPairList = List[Tuple[str, Optional[NameAnyDict]]]
 
 
-def to_resolved_name_dict_pairs(name_dict_pairs: NameDictPairList, container) -> NameDictPairList:
+def to_resolved_name_dict_pairs(name_dict_pairs: NameDictPairList, container, keep=False) -> NameDictPairList:
     resolved_pairs = []
     for name, value in name_dict_pairs:
         if '*' in name or '?' in name or '[' in name:
             for resolved_name in container:
                 if fnmatch.fnmatch(resolved_name, name):
                     resolved_pairs.append((resolved_name, value))
-        elif name in container:
+        elif name in container or keep:
             resolved_pairs.append((name, value))
     return resolved_pairs
 

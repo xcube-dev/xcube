@@ -7,7 +7,7 @@ from xcube.config import flatten_dict, to_name_dict_pair, to_name_dict_pairs, to
 
 
 class ToResolvedNameDictPairsTest(unittest.TestCase):
-    def test_to_resolved_name_dict_pairs(self):
+    def test_to_resolved_name_dict_pairs_and_reject(self):
         container = ['a', 'a1', 'a2', 'b1', 'b2', 'x_c', 'y_c', 'd', 'e', 'e1', 'e_1', 'e_12', 'e_AB']
         resolved = to_resolved_name_dict_pairs([('a*', None),
                                                 ('b', {'name': 'B'}),
@@ -18,6 +18,27 @@ class ToResolvedNameDictPairsTest(unittest.TestCase):
         self.assertEqual([('a', None),
                           ('a1', None),
                           ('a2', None),
+                          # ('b', {'name': 'B'}),  # 'b' is rejected!
+                          ('x_c', {'marker': True, 'name': 'C'}),
+                          ('y_c', {'marker': True, 'name': 'C'}),
+                          ('d', {'name': 'D'}),
+                          ('e_12', {'marker': True}),
+                          ('e_AB', {'marker': True})],
+                         resolved)
+
+    def test_to_resolved_name_dict_pairs_and_keep(self):
+        container = ['a', 'a1', 'a2', 'b1', 'b2', 'x_c', 'y_c', 'd', 'e', 'e1', 'e_1', 'e_12', 'e_AB']
+        resolved = to_resolved_name_dict_pairs([('a*', None),
+                                                ('b', {'name': 'B'}),
+                                                ('*_c', {'marker': True, 'name': 'C'}),
+                                                ('d', {'name': 'D'}),
+                                                ('e_??', {'marker': True})],
+                                               container,
+                                               keep=True)
+        self.assertEqual([('a', None),
+                          ('a1', None),
+                          ('a2', None),
+                          ('b', {'name': 'B'}),  # 'b' is kept!
                           ('x_c', {'marker': True, 'name': 'C'}),
                           ('y_c', {'marker': True, 'name': 'C'}),
                           ('d', {'name': 'D'}),
