@@ -147,4 +147,4 @@ class GenL2CHelpFormatter(argparse.HelpFormatter):
 
 
 if __name__ == '__main__':
-    sys.exit(status=main())
+    sys.exit(main())
