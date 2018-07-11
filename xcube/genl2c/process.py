@@ -19,8 +19,12 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+import cProfile
 import glob
+import io
 import os
+import pstats
+import time
 import traceback
 from typing import Sequence, Callable, Tuple, Optional
 
@@ -33,6 +37,8 @@ from ..dsutil import compute_dataset, select_variables, update_variable_props, a
 from ..reproject import reproject_to_wgs84
 
 __import__('xcube.plugin')
+
+_PROFILING_ON = False
 
 
 def generate_l2c_cube(input_files: Sequence[str] = None,
@@ -50,7 +56,6 @@ def generate_l2c_cube(input_files: Sequence[str] = None,
                       append_mode: bool = False,
                       dry_run: bool = False,
                       monitor: Callable[..., None] = None) -> Tuple[Optional[str], bool]:
-
     input_processor = get_input_processor(input_processor)
     if not input_processor:
         raise ValueError(f'unknown input_processor {input_processor!r}')
@@ -152,51 +157,116 @@ def _process_l2_input(input_processor: InputProcessor,
     if reprojection_info.xy_tp_var_names:
         selected_variables.update(reprojection_info.xy_tp_var_names)
 
-    try:
-        monitor('pre-processing dataset...')
-        preprocessed_dataset = input_processor.pre_process(input_dataset)
-        monitor('computing variables...')
-        computed_dataset = compute_dataset(preprocessed_dataset, processed_variables=processed_variables)
-        monitor('selecting variables...')
-        subset_dataset = select_variables(computed_dataset, selected_variables)
-        if reprojection_info is not None:
-            monitor('reprojecting dataset...')
-            reprojected_dataset = reproject_to_wgs84(subset_dataset,
-                                                     src_xy_var_names=reprojection_info.xy_var_names,
-                                                     src_xy_tp_var_names=reprojection_info.xy_tp_var_names,
-                                                     src_xy_crs=reprojection_info.xy_crs,
-                                                     src_xy_gcp_step=reprojection_info.xy_gcp_step or 1,
-                                                     src_xy_tp_gcp_step=reprojection_info.xy_tp_gcp_step or 1,
-                                                     dst_size=output_size,
-                                                     dst_region=output_region,
-                                                     dst_resampling=output_resampling,
-                                                     include_non_spatial_vars=False)
+    steps = []
+
+    # noinspection PyShadowingNames
+    def step1(dataset):
+        return input_processor.pre_process(dataset)
+
+    steps.append((step1, 'pre-processing dataset'))
+
+    # noinspection PyShadowingNames
+    def step2(dataset):
+        return compute_dataset(dataset, processed_variables=processed_variables)
+
+    steps.append((step2, 'computing variables'))
+
+    # noinspection PyShadowingNames
+    def step3(dataset):
+        return select_variables(dataset, selected_variables)
+
+    steps.append((step3, 'selecting variables'))
+
+    if reprojection_info is not None:
+        # noinspection PyShadowingNames
+        def step4(dataset):
+            return reproject_to_wgs84(dataset,
+                                      src_xy_var_names=reprojection_info.xy_var_names,
+                                      src_xy_tp_var_names=reprojection_info.xy_tp_var_names,
+                                      src_xy_crs=reprojection_info.xy_crs,
+                                      src_xy_gcp_step=reprojection_info.xy_gcp_step or 1,
+                                      src_xy_tp_gcp_step=reprojection_info.xy_tp_gcp_step or 1,
+                                      dst_size=output_size,
+                                      dst_region=output_region,
+                                      dst_resampling=output_resampling,
+                                      include_non_spatial_vars=False)
+
+        steps.append((step4, 'reprojecting dataset'))
+
+    if time_range is not None:
+        # noinspection PyShadowingNames
+        def step5(dataset):
+            return add_time_coords(dataset, time_range)
+
+        steps.append((step5, 'adding time coordinates'))
+
+    # noinspection PyShadowingNames
+    def step6(dataset):
+        return update_variable_props(dataset, output_variables)
+
+    steps.append((step6, 'updating variable properties'))
+
+    # noinspection PyShadowingNames
+    def step7(dataset):
+        return input_processor.post_process(dataset)
+
+    steps.append((step7, 'post-processing dataset'))
+
+    if output_metadata:
+        # noinspection PyShadowingNames
+        def step8(dataset):
+            dataset.attrs.update(output_metadata)
+            return dataset
+
+        steps.append((step8, 'updating dataset attributes'))
+
+    if not dry_run:
+        if append_mode and os.path.exists(output_path):
+            # noinspection PyShadowingNames
+            def step9(dataset):
+                output_writer.append(dataset, output_path)
+                return dataset
+
+            steps.append((step9, f'appending to {output_path}'))
         else:
-            reprojected_dataset = subset_dataset
-        if time_range is not None:
-            monitor('adding time coordinates...')
-            reprojected_dataset = add_time_coords(reprojected_dataset, time_range)
-        monitor('updating variable properties...')
-        reprojected_dataset = update_variable_props(reprojected_dataset, output_variables)
-        monitor('post-processing dataset...')
-        post_processed_dataset = input_processor.post_process(reprojected_dataset)
+            # noinspection PyShadowingNames
+            def step9(dataset):
+                rimraf(output_path)
+                output_writer.write(dataset, output_path)
+                return dataset
+
+            steps.append((step9, f'writing to {output_path}'))
+
+    if _PROFILING_ON:
+        pr = cProfile.Profile()
+        pr.enable()
+
+    try:
+        num_steps = len(steps)
+        dataset = input_dataset
+        total_t1 = time.clock()
+        for step_index in range(num_steps):
+            transform, label = steps[step_index]
+            step_t1 = time.clock()
+            monitor(f'step {step_index + 1} of {num_steps}: {label}...')
+            dataset = transform(dataset)
+            step_t2 = time.clock()
+            monitor(f'  {label} completed in {step_t2 - step_t1} seconds')
+        total_t2 = time.clock()
+        monitor(f'{num_steps} steps took {total_t2 - total_t1} seconds to complete')
     except RuntimeError as e:
         monitor(f'ERROR: during reprojection to WGS84: {e}: skipping it...')
         traceback.print_exc()
         return output_path, False
+    finally:
+        input_dataset.close()
 
-    if output_metadata:
-        post_processed_dataset.attrs.update(output_metadata)
-
-    if not dry_run:
-        if append_mode and os.path.exists(output_path):
-            monitor(f'appending to {output_path}...')
-            output_writer.append(post_processed_dataset, output_path)
-        else:
-            rimraf(output_path)
-            monitor(f'writing to {output_path}...')
-            output_writer.write(post_processed_dataset, output_path)
-
-    input_dataset.close()
+    if _PROFILING_ON:
+        # noinspection PyUnboundLocalVariable
+        pr.disable()
+        s = io.StringIO()
+        ps = pstats.Stats(pr, stream=s).sort_stats('cumtime')
+        ps.print_stats()
+        print(s.getvalue())
 
     return output_path, True
