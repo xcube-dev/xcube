@@ -168,8 +168,6 @@ def reproject_to_wgs84(src_dataset: xr.Dataset,
     dst_dataset.coords['lat_bnds'] = (['lat', 'bnds'],
                                       list(zip(np.linspace(y2, dst_y1 + dst_res, dst_height),
                                                np.linspace(y2 - dst_res, dst_y1, dst_height))))
-    dst_dataset.attrs = src_dataset.attrs
-    dst_dataset.attrs['Conventions'] = 'CF-1.7'
 
     if dst_resampling is None:
         dst_resampling = {}
