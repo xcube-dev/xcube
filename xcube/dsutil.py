@@ -238,17 +238,27 @@ def update_global_attributes(dataset: xr.Dataset, output_metadata: Dict[str, Any
             if coord_bnds_name in dataset:
                 coord_bnds = dataset[coord_bnds_name]
             if coord_bnds is not None and coord_bnds.ndim == 2 and coord_bnds.shape[0] > 1 and coord_bnds.shape[1] == 2:
-                coord_res = coord_bnds[0][1] - coord_bnds[0][0]
-                dataset.attrs[coord_min_attr_name] = cast(coord_bnds[0][0].values)
-                dataset.attrs[coord_max_attr_name] = cast(coord_bnds[-1][1].values)
+                coord_v1 = coord_bnds[0][0]
+                coord_v2 = coord_bnds[-1][1]
+                coord_res = (coord_v2 - coord_v1) / coord_bnds.shape[0]
+                coord_res = float(coord_res.values)
+                coord_min, coord_max = (coord_v1, coord_v2) if coord_res > 0 else (coord_v2, coord_v1)
+                dataset.attrs[coord_min_attr_name] = cast(coord_min.values)
+                dataset.attrs[coord_max_attr_name] = cast(coord_max.values)
             elif coord is not None and coord.ndim == 1 and coord.shape[0] > 1:
-                coord_res = coord[1] - coord[0]
-                dataset.attrs[coord_min_attr_name] = cast((coord[0] - coord_res / 2).values)
-                dataset.attrs[coord_max_attr_name] = cast((coord[-1] + coord_res / 2).values)
+                coord_v1 = coord[0]
+                coord_v2 = coord[-1]
+                coord_res = (coord_v2 - coord_v1) / (coord.shape[0] - 1)
+                coord_v1 -= coord_res / 2
+                coord_v2 += coord_res / 2
+                coord_res = float(coord_res.values)
+                coord_min, coord_max = (coord_v1, coord_v2) if coord_res > 0 else (coord_v2, coord_v1)
+                dataset.attrs[coord_min_attr_name] = cast(coord_min.values)
+                dataset.attrs[coord_max_attr_name] = cast(coord_max.values)
             if coord_units_attr_name is not None and coord_units is not None:
                 dataset.attrs[coord_units_attr_name] = coord_units
             if coord_res_attr_name is not None and coord_res is not None:
-                dataset.attrs[coord_res_attr_name] = cast(coord_res.values)
+                dataset.attrs[coord_res_attr_name] = coord_res if coord_res > 0 else -coord_res
 
     dataset.attrs['date_modified'] = datetime.datetime.now().isoformat()
 
