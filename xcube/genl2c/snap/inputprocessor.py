@@ -43,7 +43,7 @@ class SnapNetcdfInputProcessor(InputProcessor, metaclass=ABCMeta):
 
     @property
     def input_reader_params(self) -> dict:
-        return dict(decode_cf=True, decode_coords=True, decode_times=False, chunks={})
+        return dict(decode_cf=True, decode_coords=True, decode_times=False)
 
     def get_reprojection_info(self, dataset: xr.Dataset) -> ReprojectionInfo:
         return ReprojectionInfo(xy_var_names=('lon', 'lat'),
