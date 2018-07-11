@@ -19,9 +19,10 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+import datetime
 import functools
 import math
-from typing import Tuple
+from typing import Tuple, Any, Dict
 
 import numpy as np
 import pandas as pd
@@ -212,3 +213,43 @@ def get_time_in_days_since_1970(time_str: str, pattern=None) -> float:
     datetime = pd.to_datetime(time_str, format=pattern, infer_datetime_format=True)
     timedelta = datetime - REF_DATETIME
     return timedelta.days + timedelta.seconds / SECONDS_PER_DAY + timedelta.microseconds / MICROSECONDS_PER_DAY
+
+
+def update_global_attributes(dataset: xr.Dataset, output_metadata: Dict[str, Any] = None) -> xr.Dataset:
+    dataset = dataset.copy()
+    if output_metadata:
+        dataset.attrs.update(output_metadata)
+
+    data = [('lon', 'lon_bnds', 'degrees_east', ('geospatial_lon_min', 'geospatial_lon_max',
+                                                 'geospatial_lon_units', 'geospatial_lon_resolution'), float),
+            ('lat', 'lat_bnds', 'degrees_north', ('geospatial_lat_min', 'geospatial_lat_max',
+                                                  'geospatial_lat_units', 'geospatial_lat_resolution'), float),
+            ('time', 'time_bnds', None, ('time_coverage_start', 'time_coverage_end',
+                                         None, None), str)]
+    for coord_name, coord_bnds_name, coord_units, coord_attr_names, cast in data:
+        coord_min_attr_name, coord_max_attr_name, coord_units_attr_name, coord_res_attr_name = coord_attr_names
+        if coord_min_attr_name not in dataset.attrs or coord_max_attr_name not in dataset.attrs:
+            coord = None
+            coord_bnds = None
+            coord_res = None
+            if coord_name in dataset:
+                coord = dataset[coord_name]
+                coord_bnds_name = coord.attrs.get('bounds', coord_bnds_name)
+            if coord_bnds_name in dataset:
+                coord_bnds = dataset[coord_bnds_name]
+            if coord_bnds is not None and coord_bnds.ndim == 2 and coord_bnds.shape[0] > 1 and coord_bnds.shape[1] == 2:
+                coord_res = coord_bnds[0][1] - coord_bnds[0][0]
+                dataset.attrs[coord_min_attr_name] = cast(coord_bnds[0][0].values)
+                dataset.attrs[coord_max_attr_name] = cast(coord_bnds[-1][1].values)
+            elif coord is not None and coord.ndim == 1 and coord.shape[0] > 1:
+                coord_res = coord[1] - coord[0]
+                dataset.attrs[coord_min_attr_name] = cast((coord[0] - coord_res / 2).values)
+                dataset.attrs[coord_max_attr_name] = cast((coord[-1] + coord_res / 2).values)
+            if coord_units_attr_name is not None and coord_units is not None:
+                dataset.attrs[coord_units_attr_name] = coord_units
+            if coord_res_attr_name is not None and coord_res is not None:
+                dataset.attrs[coord_res_attr_name] = cast(coord_res.values)
+
+    dataset.attrs['date_modified'] = datetime.datetime.now().isoformat()
+
+    return dataset

@@ -33,7 +33,7 @@ from .defaults import DEFAULT_OUTPUT_DIR, DEFAULT_OUTPUT_NAME, DEFAULT_OUTPUT_SI
 from .inputprocessor import InputProcessor, get_input_processor
 from ..config import NameAnyDict, NameDictPairList, to_resolved_name_dict_pairs
 from ..dsio import rimraf, DatasetIO, find_dataset_io
-from ..dsutil import compute_dataset, select_variables, update_variable_props, add_time_coords
+from ..dsutil import compute_dataset, select_variables, update_variable_props, add_time_coords, update_global_attributes
 from ..reproject import reproject_to_wgs84
 
 __import__('xcube.plugin')
@@ -212,13 +212,11 @@ def _process_l2_input(input_processor: InputProcessor,
 
     steps.append((step7, 'post-processing dataset'))
 
-    if output_metadata:
-        # noinspection PyShadowingNames
-        def step8(dataset):
-            dataset.attrs.update(output_metadata)
-            return dataset
+    # noinspection PyShadowingNames
+    def step8(dataset):
+        return update_global_attributes(dataset, output_metadata=output_metadata)
 
-        steps.append((step8, 'updating dataset attributes'))
+    steps.append((step8, 'updating dataset attributes'))
 
     if not dry_run:
         if append_mode and os.path.exists(output_path):
