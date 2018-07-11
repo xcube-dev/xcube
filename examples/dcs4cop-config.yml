@@ -102,35 +102,35 @@ output_metadata:
     - name: ""
       role: ""
 
-  date:
-    # The date on which the data was created.
-    created:  2018-05-30
-    # The date on which this data was last modified.
-    modified: 2018-05-30
-    # The date on which this data was formally issued.
-    issued:   2018-06-01
+  #  date:
+  #    # The date on which the data was created.
+  #    created:  2018-05-30
+  #    # The date on which this data was last modified.
+  #    modified: 2018-05-30
+  #    # The date on which this data was formally issued.
+  #    issued:   2018-06-01
 
   # Describes a simple latitude, longitude, and vertical bounding box units and resolution attributes.
 
-  geospatial_lon:
-    min:  0.0
-    max:  5.0
-    units: "degrees_east"
-    resolution: 0.0025
-
-  geospatial_lat:
-    min: 50.0
-    max: 52.2
-    units: "degrees_north"
-    resolution: 0.0025
+  #  geospatial_lon:
+  #    min:  0.0
+  #    max:  5.0
+  #    units: "degrees_east"
+  #    resolution: 0.0025
+  #
+  #  geospatial_lat:
+  #    min: 50.0
+  #    max: 52.2
+  #    units: "degrees_north"
+  #    resolution: 0.0025
 
   # Describes the temporal coverage of the data as a time range.
   # Only provide it here, if you don't want it to be computed.
 
-  time_coverage:
-    start:      2016-10-01
-    end:        2017-10-01
-    duration:   "P1Y"
-    resolution: "1D"
+  #  time_coverage:
+  #    start:      2016-10-01
+  #    end:        2017-10-01
+  #    duration:   "P1Y"
+  #    resolution: "1D"
 
 
