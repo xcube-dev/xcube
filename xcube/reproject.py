@@ -109,7 +109,7 @@ def reproject_to_wgs84(src_dataset: xr.Dataset,
 
     _assert(x_name in src_dataset)
     _assert(y_name in src_dataset)
-
+    print(x_name)
     x_var = src_dataset[x_name]
     _assert(len(x_var.dims) == 2)
     _assert(x_var.shape[-1] >= 2)
