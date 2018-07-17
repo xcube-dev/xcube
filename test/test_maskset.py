@@ -12,7 +12,7 @@ class MaskSetTest(unittest.TestCase):
         flag_var = create_c2rcc_flag_var()
         mask_set = MaskSet(flag_var)
 
-        self.assertEqual(str(mask_set), 'c2rcc_flags(F1=1, F2=2, F3=4, F4=8)')
+        self.assertEqual(str(mask_set), 'c2rcc_flags(F1=(1, None), F2=(2, None), F3=(4, None), F4=(8, None))')
 
         mask_f1 = mask_set.F1
         self.assertIs(mask_f1, mask_set.F1)
@@ -53,3 +53,5 @@ class MaskSetTest(unittest.TestCase):
         self.assertIn('c2rcc_flags', mask_sets)
         mask_set = mask_sets['c2rcc_flags']
         self.assertIsInstance(mask_set, MaskSet)
+
+# TODO: add tests according to http://cfconventions.org/Data/cf-conventions/cf-conventions-1.7/build/ch03s05.html

@@ -20,74 +20,84 @@
 # SOFTWARE.
 
 import warnings
-from typing import Tuple, List, Union
+from typing import Tuple, List, Union, Dict, Any
 
 import gdal
 import numpy as np
-import pandas as pd
 import xarray as xr
 
 from .constants import CRS_WKT_EPSG_4326, EARTH_GEO_COORD_RANGE
 from .types import CoordRange
 
-# TODO: add callback: Callable[[Optional[Any, str]], None] = None, callback_data: Any = None
-# TODO: support waveband_var_names so that we can combine spectra as vectors
-
-REF_DATETIME_STR = '1970-01-01 00:00:00'
-REF_DATETIME = pd.to_datetime(REF_DATETIME_STR)
-DATETIME_UNITS = f'days since {REF_DATETIME_STR}'
-DATETIME_CALENDAR = 'gregorian'
-SECONDS_PER_DAY = 24 * 60 * 60
-MICROSECONDS_PER_DAY = 1000 * 1000 * SECONDS_PER_DAY
-
 gdal.UseExceptions()
 gdal.PushErrorHandler('CPLQuietErrorHandler')
+
+DEFAULT_RESAMPLING = 'Nearest'
+DEFAULT_TP_RESAMPLING = 'Bilinear'
 
 
 def reproject_to_wgs84(src_dataset: xr.Dataset,
                        src_xy_var_names: Tuple[str, str],
                        src_xy_tp_var_names: Tuple[str, str] = None,
-                       src_time_var_name: str = None,
-                       src_time_range_attr_names: Tuple[str, str] = None,
-                       src_time_format: str = None,
                        src_xy_crs: str = None,
+                       src_xy_gcp_step: Union[int, Tuple[int, int]] = 10,
+                       src_xy_tp_gcp_step: Union[int, Tuple[int, int]] = 1,
                        dst_size: Tuple[int, int] = None,
                        dst_region: CoordRange = None,
-                       valid_region: CoordRange = None,
-                       gcp_step: Union[int, Tuple[int, int]] = 10,
-                       tp_gcp_step: Union[int, Tuple[int, int]] = 1,
+                       dst_resampling: Union[str, Dict[str, str]] = DEFAULT_RESAMPLING,
+                       include_xy_vars: bool = False,
                        include_non_spatial_vars: bool = False) -> xr.Dataset:
     """
     Reprojection of xarray datasets with 2D geo-coding, e.g. with variables lon(y,x), lat(y, x) to
     EPSG:4326 (WGS-84) coordinate reference system.
 
+    If *dst_resampling* is a string, it provides the default resampling for all variables.
+    If *dst_resampling* is a dictionary, it provides a mapping from variable names to the desired
+    resampling for that variable.
+
+    The resampling may be one of the following up-sampling algorithms:
+
+    * ``Nearest``
+    * ``Bilinear``
+    * ``Cubic``
+    * ``CubicSpline``
+    * ``Lanczos``
+
+    Or one of the down-sampling algorithms:
+
+    * ``Average``
+    * ``Min``
+    * ``Max``
+    * ``Median``
+    * ``Mode``
+    * ``Q1``
+    * ``Q3``
+
     :param src_dataset:
     :param src_xy_var_names: 
     :param src_xy_tp_var_names: 
-    :param src_time_var_name: 
-    :param src_time_range_attr_names: 
-    :param src_time_format: 
     :param src_xy_crs:
+    :param src_xy_gcp_step:
+    :param src_xy_tp_gcp_step:
     :param dst_size:
     :param dst_region:
-    :param valid_region:
-    :param gcp_step:
-    :param tp_gcp_step:
+    :param dst_resampling: The spatial resampling algorithm. Either a string that provides the default resampling
+           algorithm name or a dictionary that maps variable names to per-variable resampling algorithm names.
     :param include_non_spatial_vars:
+    :param include_xy_vars: Whether to include the variables given by *src_xy_var_names*.
+           Useful for projection-validation.
     :return: the reprojected dataset
     """
     x_name, y_name = src_xy_var_names
     tp_x_name, tp_y_name = src_xy_tp_var_names or (None, None)
-    time_min_name, time_max_name = src_time_range_attr_names or (None, None)
-    time_format = src_time_format
 
     # Set defaults
     src_xy_crs = src_xy_crs or CRS_WKT_EPSG_4326
-    valid_region = valid_region or EARTH_GEO_COORD_RANGE
-    gcp_i_step, gcp_j_step = (gcp_step, gcp_step) if isinstance(gcp_step, int) \
-        else gcp_step
-    tp_gcp_i_step, tp_gcp_j_step = (tp_gcp_step, tp_gcp_step) if tp_gcp_step is None or isinstance(tp_gcp_step, int) \
-        else tp_gcp_step
+    gcp_i_step, gcp_j_step = (src_xy_gcp_step, src_xy_gcp_step) if isinstance(src_xy_gcp_step, int) \
+        else src_xy_gcp_step
+    tp_gcp_i_step, tp_gcp_j_step = (src_xy_tp_gcp_step, src_xy_tp_gcp_step) if src_xy_tp_gcp_step is None or isinstance(
+        src_xy_tp_gcp_step, int) \
+        else src_xy_tp_gcp_step
 
     dst_width, dst_height = dst_size
 
@@ -111,7 +121,7 @@ def reproject_to_wgs84(src_dataset: xr.Dataset,
     src_width = x_var.shape[-1]
     src_height = x_var.shape[-2]
 
-    dst_region = _ensure_valid_region(dst_region, valid_region, x_var, y_var)
+    dst_region = _ensure_valid_region(dst_region, EARTH_GEO_COORD_RANGE, x_var, y_var)
     x1, y1, x2, y2 = dst_region
 
     dst_res = max((x2 - x1) / dst_width, (y2 - y1) / dst_height)
@@ -142,31 +152,6 @@ def reproject_to_wgs84(src_dataset: xr.Dataset,
         tp_height = None
         tp_gcps = None
 
-    # TODO: if we can find an existing time variable, copy it into destination
-    # time_var = None
-    # time_bnds_var = None
-
-    if src_time_var_name:
-        _assert(src_time_var_name in src_dataset)
-        time_var = src_dataset[src_time_var_name]
-        _assert(len(time_var.shape) == 1)
-        _assert(np.issubdtype(time_var.dtype, np.datetime64))
-        src_time_bnds_var_name = time_var.attrs.get('bounds', src_time_var_name + '_bnds')
-        if src_time_bnds_var_name in src_dataset:
-            time_bnds_var = src_dataset[src_time_bnds_var_name]
-            _assert(tuple(*time_bnds_var.shape) == (time_var.shape[0], 2))
-
-    if time_min_name and time_max_name and (src_time_var_name is None or src_time_var_name not in src_dataset):
-        t1 = src_dataset.attrs.get(time_min_name)
-        t2 = src_dataset.attrs.get(time_max_name)
-        if t1 is not None:
-            t1 = _get_time_in_days_since_1970(t1, pattern=time_format)
-        if t2 is not None:
-            t2 = _get_time_in_days_since_1970(t2, pattern=time_format)
-    else:
-        t1 = None
-        t2 = None
-
     mem_driver = gdal.GetDriverByName("MEM")
 
     dst_x2 = x1 + dst_res * dst_width
@@ -183,35 +168,41 @@ def reproject_to_wgs84(src_dataset: xr.Dataset,
     dst_dataset.coords['lat_bnds'] = (['lat', 'bnds'],
                                       list(zip(np.linspace(y2, dst_y1 + dst_res, dst_height),
                                                np.linspace(y2 - dst_res, dst_y1, dst_height))))
-    dst_dataset.attrs = src_dataset.attrs
-    dst_dataset.attrs['Conventions'] = 'CF-1.6'
+
+    if dst_resampling is None:
+        dst_resampling = {}
+    if isinstance(dst_resampling, str):
+        dst_resampling = {var_name: dst_resampling for var_name in src_dataset.variables}
 
     for var_name in src_dataset.variables:
         src_var = src_dataset[var_name]
 
-        if var_name == x_name or var_name == y_name:
-            # Don't store lat and lon 2D vars in destination, this will let xarray raise
-            # TODO: instead add lat and lon with new names, so we can validate geo-location
-            continue
-
-        is_tp_var = False
         if src_var.dims == x_var.dims:
-            # TODO: collect variables of same type and size and set band_count accordingly to speed up reprojection
+            is_tp_var = False
+            if var_name == x_name or var_name == y_name:
+                if not include_xy_vars:
+                    # Don't store lat and lon 2D vars in destination
+                    continue
+                dst_var_name = 'src_' + var_name
+            else:
+                dst_var_name = var_name
+            # PERF: collect variables of same type and size and set band_count accordingly to speed up reprojection
             band_count = 1
-            # TODO: select the data_type based on src_var.dtype
-            data_type = gdal.GDT_Float64
+            data_type = numpy_to_gdal_dtype(src_var.dtype)
             src_var_dataset = mem_driver.Create('src_' + var_name, src_width, src_height, band_count, data_type, [])
             src_var_dataset.SetGCPs(gcps, src_xy_crs)
         elif tp_x_var is not None and src_var.dims == tp_x_var.dims:
-            if var_name == tp_y_name or var_name == tp_x_name:
-                # Don't store TP lat and TP lon 2D vars in destination
-                # TODO: instead add TP lat and lon with new names, so we can validate geo-location
-                continue
             is_tp_var = True
-            # TODO: collect variables of same type and size and set band_count accordingly to speed up reprojection
+            if var_name == tp_x_name or var_name == tp_y_name:
+                if not include_xy_vars:
+                    # Don't store lat and lon 2D vars in destination
+                    continue
+                dst_var_name = 'src_' + var_name
+            else:
+                dst_var_name = var_name
+            # PERF: collect variables of same type and size and set band_count accordingly to speed up reprojection
             band_count = 1
-            # TODO: select the data_type based on src_var.dtype
-            data_type = gdal.GDT_Float64
+            data_type = numpy_to_gdal_dtype(src_var.dtype)
             src_var_dataset = mem_driver.Create('src_' + var_name, tp_width, tp_height, band_count, data_type, [])
             src_var_dataset.SetGCPs(tp_gcps, src_xy_crs)
         elif include_non_spatial_vars:
@@ -232,8 +223,12 @@ def reproject_to_wgs84(src_dataset: xr.Dataset,
             src_var_dataset.GetRasterBand(band_index).WriteArray(src_var.values)
             dst_var_dataset.GetRasterBand(band_index).SetNoDataValue(float('nan'))
 
-        # TODO: configure resampling individually for each variable, make this config a parameter
-        resampling = gdal.GRA_Bilinear if is_tp_var else gdal.GRA_NearestNeighbour
+        resample_alg_name = dst_resampling.get(src_var.name,
+                                               DEFAULT_TP_RESAMPLING if is_tp_var else DEFAULT_RESAMPLING)
+        if resample_alg_name not in NAME_TO_GDAL_RESAMPLE_ALG:
+            raise ValueError(f'{resample_alg_name!r} is not a name of a known resampling algorithm')
+        resample_alg = NAME_TO_GDAL_RESAMPLE_ALG[resample_alg_name]
+
         warp_mem_limit = 0
         error_threshold = 0
         # See http://www.gdal.org/structGDALWarpOptions.html
@@ -242,7 +237,7 @@ def reproject_to_wgs84(src_dataset: xr.Dataset,
                             dst_var_dataset,
                             None,
                             None,
-                            resampling,
+                            resample_alg,
                             warp_mem_limit,
                             error_threshold,
                             None,  # callback,
@@ -252,8 +247,8 @@ def reproject_to_wgs84(src_dataset: xr.Dataset,
         dst_values = dst_var_dataset.GetRasterBand(1).ReadAsArray()
         # print(var_name, dst_values.shape, np.nanmin(dst_values), np.nanmax(dst_values))
 
-        # TODO: set CF-1.6 attributes correctly
-        dst_var = xr.DataArray(dst_values, dims=['lat', 'lon'], name=var_name, attrs=src_var.attrs)
+        dst_var_attrs = dict(**src_var.attrs, spatial_resampling=resample_alg_name)
+        dst_var = xr.DataArray(dst_values, dims=['lat', 'lon'], name=dst_var_name, attrs=dst_var_attrs)
         dst_var.encoding = src_var.encoding
         if np.issubdtype(dst_var.dtype, np.floating) \
                 and np.issubdtype(src_var.encoding.get('dtype'), np.integer) \
@@ -263,32 +258,7 @@ def reproject_to_wgs84(src_dataset: xr.Dataset,
         dst_var.encoding['chunksizes'] = (1, dst_var.shape[-2], dst_var.shape[-1])
         dst_var.encoding['zlib'] = True
         dst_var.encoding['complevel'] = 4
-        dst_dataset[var_name] = dst_var
-
-    if t1 or t2:
-        dst_dataset = dst_dataset.expand_dims('time')
-        if t1 and t2:
-            t_center = t1 + 0.5 * (t2 - t1)
-        else:
-            t_center = t1 or t2
-        dst_dataset = dst_dataset.assign_coords(time=(['time'], [t_center]))
-        time_var = dst_dataset.coords['time']
-        time_var.attrs['long_name'] = 'time'
-        time_var.attrs['standard_name'] = 'time'
-        time_var.attrs['units'] = DATETIME_UNITS
-        time_var.attrs['calendar'] = DATETIME_CALENDAR
-        time_var.encoding['units'] = DATETIME_UNITS
-        time_var.encoding['calendar'] = DATETIME_CALENDAR
-        if t1 and t2:
-            time_var.attrs['bounds'] = 'time_bnds'
-            dst_dataset = dst_dataset.assign_coords(time_bnds=(['time', 'bnds'], [[t1, t2]]))
-            time_bnds_var = dst_dataset.coords['time_bnds']
-            time_bnds_var.attrs['long_name'] = 'time'
-            time_bnds_var.attrs['standard_name'] = 'time'
-            time_bnds_var.attrs['units'] = DATETIME_UNITS
-            time_bnds_var.attrs['calendar'] = DATETIME_CALENDAR
-            time_bnds_var.encoding['units'] = DATETIME_UNITS
-            time_bnds_var.encoding['calendar'] = DATETIME_CALENDAR
+        dst_dataset[dst_var_name] = dst_var
 
     lon_var = dst_dataset.coords['lon']
     lon_var.attrs['long_name'] = 'longitude'
@@ -313,6 +283,46 @@ def reproject_to_wgs84(src_dataset: xr.Dataset,
     lat_bnds_var.attrs['units'] = 'degrees_north'
 
     return dst_dataset
+
+
+_NUMPY_TO_GDAL_DTYPE_MAPPING = {
+    np.dtype(np.int8): gdal.GDT_Int16,
+    np.dtype(np.int16): gdal.GDT_Int16,
+    np.dtype(np.int32): gdal.GDT_Int32,
+    np.dtype(np.uint8): gdal.GDT_Byte,
+    np.dtype(np.uint16): gdal.GDT_UInt16,
+    np.dtype(np.uint32): gdal.GDT_UInt32,
+    np.dtype(np.float16): gdal.GDT_Float32,
+    np.dtype(np.float32): gdal.GDT_Float32,
+    np.dtype(np.float64): gdal.GDT_Float64,
+}
+
+
+def numpy_to_gdal_dtype(np_dtype):
+    if np_dtype in _NUMPY_TO_GDAL_DTYPE_MAPPING:
+        return _NUMPY_TO_GDAL_DTYPE_MAPPING[np_dtype]
+    warnings.warn(f'unhandled numpy dtype {np_dtype}, using float64 instead')
+    return gdal.GDT_Float64
+
+
+NAME_TO_GDAL_RESAMPLE_ALG: Dict[str, Any] = dict(
+
+    # Up-sampling
+    Nearest=gdal.GRA_NearestNeighbour,
+    Bilinear=gdal.GRA_Bilinear,
+    Cubic=gdal.GRA_Cubic,
+    CubicSpline=gdal.GRA_CubicSpline,
+    Lanczos=gdal.GRA_Lanczos,
+
+    # Down-sampling
+    Average=gdal.GRA_Average,
+    Min=gdal.GRA_Min,
+    Max=gdal.GRA_Max,
+    Median=gdal.GRA_Med,
+    Mode=gdal.GRA_Mode,
+    Q1=gdal.GRA_Q1,
+    Q3=gdal.GRA_Q3,
+)
 
 
 def _assert(cond, text='Assertion failed'):
@@ -362,9 +372,3 @@ def _get_gcps(x_var: xr.DataArray,
             gcps.append(gdal.GCP(x, y, 0.0, i + 0.5, j + 0.5, '%s,%s' % (i, j), str(gcp_id)))
             gcp_id += 1
     return gcps
-
-
-def _get_time_in_days_since_1970(t: str, pattern=None) -> float:
-    datetime = pd.to_datetime(t, format=pattern, infer_datetime_format=True)
-    timedelta = datetime - REF_DATETIME
-    return timedelta.days + timedelta.seconds / SECONDS_PER_DAY + timedelta.microseconds / MICROSECONDS_PER_DAY

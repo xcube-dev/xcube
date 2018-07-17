@@ -7,14 +7,16 @@ dependencies:
   #
   # runtime dependencies
   #
+  - boto3 =1.7.51
+  - botocore =1.10.51
   - dask=0.17.2
   - gdal=2.2.4
   - matplotlib=2.2.2
   - numpy=1.14.3
-  - pandas=0.22.0
+  - pandas=0.23.1
   - pyyaml=3.12
   - s3fs=0.1.5
-  - xarray=0.10.4
+  - xarray=0.10.7
   - zarr=2.2.0
   #
   # development dependencies

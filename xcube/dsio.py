@@ -21,11 +21,13 @@
 
 import glob
 from abc import abstractmethod, ABCMeta
-from typing import Set, Callable, List, Optional
+from typing import Set, Callable, List, Optional, Dict, Iterable
 
 import s3fs
 import xarray as xr
 import zarr
+
+from xcube.objreg import get_obj_registry
 
 
 def open_from_fs(paths: str, recursive: bool = False, **kwargs):
@@ -102,6 +104,78 @@ class DatasetIO(metaclass=ABCMeta):
         raise NotImplementedError()
 
 
+def register_dataset_io(dataset_io: DatasetIO):
+    # noinspection PyTypeChecker
+    get_obj_registry().put(dataset_io.name, dataset_io, type=DatasetIO)
+
+
+def find_dataset_io(format_name: str, modes: Iterable[str] = None, default: DatasetIO = None) -> Optional[DatasetIO]:
+    modes = set(modes) if modes else None
+    format_name = format_name.lower()
+    dataset_ios = get_obj_registry().get_all(type=DatasetIO)
+    for dataset_io in dataset_ios:
+        # noinspection PyUnresolvedReferences
+        if format_name == dataset_io.name.lower():
+            # noinspection PyTypeChecker
+            if not modes or modes.issubset(dataset_io.modes):
+                return dataset_io
+    for dataset_io in dataset_ios:
+        # noinspection PyUnresolvedReferences
+        if format_name == dataset_io.ext.lower():
+            # noinspection PyTypeChecker
+            if not modes or modes.issubset(dataset_io.modes):
+                return dataset_io
+    return default
+
+
+def query_dataset_io(filter_fn: Callable[[DatasetIO], bool] = None) -> List[DatasetIO]:
+    dataset_ios = get_obj_registry().get_all(type=DatasetIO)
+    if filter_fn is None:
+        return dataset_ios
+    return list(filter(filter_fn, dataset_ios))
+
+
+class MemDatasetIO(DatasetIO):
+    def __init__(self, datasets: Dict[str, xr.Dataset] = None):
+        self.datasets = datasets or {}
+
+    @property
+    def name(self) -> str:
+        return 'mem'
+
+    @property
+    def description(self) -> str:
+        return 'In-memory dataset I/O'
+
+    @property
+    def ext(self) -> str:
+        return 'mem'
+
+    @property
+    def modes(self) -> Set[str]:
+        return {'r', 'w', 'a'}
+
+    def read(self, path: str, **kwargs) -> xr.Dataset:
+        if path in self.datasets:
+            return self.datasets[path]
+        raise FileNotFoundError(path)
+
+    def write(self, dataset: xr.Dataset, path: str, **kwargs):
+        self.datasets[path] = dataset
+
+    def append(self, dataset: xr.Dataset, path: str, **kwargs):
+        if path in self.datasets:
+            old_ds = self.datasets[path]
+            # noinspection PyTypeChecker
+            self.datasets[path] = xr.concat([old_ds, dataset],
+                                            dim='time',
+                                            data_vars='minimal',
+                                            coords='minimal',
+                                            compat='equals')
+        else:
+            self.datasets[path] = dataset.copy()
+
+
 class Netcdf4DatasetIO(DatasetIO):
 
     @property
@@ -170,7 +244,9 @@ class ZarrDatasetIO(DatasetIO):
         encoding = dict()
         for var_name in dataset.data_vars:
             new_var = dataset[var_name]
-            encoding[var_name] = {'compressor': compressor, 'chunks': new_var.shape}
+            # TODO: get chunks from configuration
+            chunks = new_var.shape
+            encoding[var_name] = {'compressor': compressor, 'chunks': chunks}
         dataset.to_zarr(output_path,
                         encoding=encoding)
 
@@ -185,67 +261,9 @@ class ZarrDatasetIO(DatasetIO):
                 var_array.append(new_var, axis=axis)
 
 
-# noinspection PyAbstractClass
-class OpendapDatasetIO(DatasetIO):
-
-    @property
-    def name(self) -> str:
-        return 'opendap'
-
-    @property
-    def description(self) -> str:
-        return 'OPeNDAP protocol'
-
-    @property
-    def ext(self) -> str:
-        return 'nc'
-
-    @property
-    def modes(self) -> Set[str]:
-        return {'r'}
-
-    def read(self, path: str, **kwargs) -> xr.Dataset:
-        return xr.open_dataset(path, engine='pydap', **kwargs)
-
-
-class DatasetIORegistry:
-
-    def __init__(self, registrations):
-        self._registrations = list(registrations)
-
-    def register(self, dataset_io: DatasetIO):
-        # noinspection PyTypeChecker
-        self._registrations.append(dataset_io)
-
-    def find(self, format_name: str, modes: Set[str] = None, default: DatasetIO = None) -> Optional[DatasetIO]:
-        registrations = list(self._registrations)
-        format_name = format_name.lower()
-        for dataset_io in registrations:
-            # noinspection PyUnresolvedReferences
-            if format_name == dataset_io.name.lower():
-                # noinspection PyTypeChecker
-                if not modes or modes.issubset(dataset_io.modes):
-                    return dataset_io
-        for dataset_io in registrations:
-            # noinspection PyUnresolvedReferences
-            if format_name == dataset_io.ext.lower():
-                # noinspection PyTypeChecker
-                if not modes or modes.issubset(dataset_io.modes):
-                    return dataset_io
-        return default
-
-    def query(self, filter_fn: Callable[[DatasetIO], bool] = None) -> List[DatasetIO]:
-        registrations = list(self._registrations)
-        if filter is None:
-            return registrations
-        return list(filter(filter_fn, registrations))
-
-
-_DATASET_IO_REGISTRY = DatasetIORegistry([Netcdf4DatasetIO(), ZarrDatasetIO(), OpendapDatasetIO()])
-
-
-def get_default_dataset_io_registry() -> DatasetIORegistry:
-    return _DATASET_IO_REGISTRY
+register_dataset_io(MemDatasetIO())
+register_dataset_io(Netcdf4DatasetIO())
+register_dataset_io(ZarrDatasetIO())
 
 
 def rimraf(path):

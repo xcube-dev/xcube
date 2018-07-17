@@ -21,60 +21,60 @@
 
 import argparse
 import sys
+import traceback
 from typing import List, Optional
 
+from xcube.dsio import query_dataset_io
+from xcube.genl2c.config import get_config_dict
+from xcube.genl2c.defaults import DEFAULT_OUTPUT_DIR, DEFAULT_OUTPUT_NAME, \
+    DEFAULT_OUTPUT_RESAMPLING, DEFAULT_OUTPUT_WRITER
 from xcube.genl2c.inputprocessor import InputProcessor
-from xcube.io import get_default_dataset_io_registry
-from xcube.metadata import load_yaml
+from xcube.genl2c.process import generate_l2c_cube
+from xcube.objreg import get_obj_registry
+from xcube.reproject import NAME_TO_GDAL_RESAMPLE_ALG
 from xcube.version import version
-
-__import__('xcube.plugin')
-
-DEFAULT_OUTPUT_DIR = '.'
-DEFAULT_OUTPUT_PATTERN = 'PROJ_WGS84_{INPUT_FILE}'
-DEFAULT_OUTPUT_FORMAT = 'nc'
-DEFAULT_output_size = '512,512'
 
 
 def main(args: Optional[List[str]] = None):
     """
     Generate L2C data cubes from L2 data products.
     """
-    ds_io_registry = get_default_dataset_io_registry()
-    input_ds_ios = ds_io_registry.query(lambda ds_io: isinstance(ds_io, InputProcessor))
-    output_ds_ios = ds_io_registry.query(lambda ds_io: 'w' in ds_io.modes)
-    input_type_names = [ds_io.name for ds_io in input_ds_ios]
-    output_format_names = [ds_io.name for ds_io in output_ds_ios]
+    input_processor_names = [input_processor.name
+                             for input_processor in get_obj_registry().get_all(type=InputProcessor)]
+    output_writer_names = [ds_io.name for ds_io in query_dataset_io(lambda ds_io: 'w' in ds_io.modes)]
+    resampling_algs = NAME_TO_GDAL_RESAMPLE_ALG.keys()
 
     parser = argparse.ArgumentParser(description='Generate L2C data cube from various input files. '
                                                  'L2C data cubes may be created in one go or in successively '
                                                  'in append mode, input by input.',
                                      formatter_class=GenL2CHelpFormatter)
     parser.add_argument('--version', '-V', action='version', version=version)
-    parser.add_argument('--dir', '-d', dest='output_dir', default=DEFAULT_OUTPUT_DIR,
+    parser.add_argument('--proc', '-p', dest='input_processor', choices=input_processor_names,
+                        help=f'Input processor type name.')
+    parser.add_argument('--config', '-c', dest='config_file',
+                        help='Data cube configuration file in YAML format.')
+    parser.add_argument('--dir', '-d', dest='output_dir',
                         help=f'Output directory. Defaults to {DEFAULT_OUTPUT_DIR!r}')
-    parser.add_argument('--name', '-n', dest='output_name', default=DEFAULT_OUTPUT_PATTERN,
-                        help=f'Output filename pattern. Defaults to {DEFAULT_OUTPUT_PATTERN!r}.')
-    parser.add_argument('--format', '-f', dest='output_format',
-                        default=output_format_names[0], choices=output_format_names,
-                        help=f'Output format. Defaults to {output_format_names[0]!r}.')
-    parser.add_argument('--size', '-s', dest='output_size', default=DEFAULT_output_size,
-                        help='Output size in pixels using format "<width>,<height>". '
-                             f'Defaults to {DEFAULT_output_size!r}.')
+    parser.add_argument('--name', '-n', dest='output_name',
+                        help=f'Output filename pattern. Defaults to {DEFAULT_OUTPUT_NAME!r}.')
+    parser.add_argument('--writer', '-w', dest='output_writer', choices=output_writer_names,
+                        help=f'Output writer type name. Defaults to {DEFAULT_OUTPUT_WRITER!r}.')
+    parser.add_argument('--size', '-s', dest='output_size',
+                        help='Output size in pixels using format "<width>,<height>".')
     parser.add_argument('--region', '-r', dest='output_region',
                         help='Output region using format "<lon-min>,<lat-min>,<lon-max>,<lat-max>"')
-    parser.add_argument('--meta-file', '-m', dest='output_meta_file',
-                        help='File containing cube-level CF-compliant metadata in YAML format.')
-    parser.add_argument('--variables', '-v', dest='output_variables',
+    parser.add_argument('--vars', '-v', dest='output_variables',
                         help='Variables to be included in output. '
                              'Comma-separated list of names which may contain wildcard characters "*" and "?".')
-    parser.add_argument('--append', '-a', default=False, action='store_true',
+    parser.add_argument('--resamp', dest='output_resampling', choices=resampling_algs,
+                        help='Fallback spatial resampling algorithm to be used for all variables.'
+                             f'Defaults to {DEFAULT_OUTPUT_RESAMPLING!r}.')
+    parser.add_argument('--traceback', dest='traceback_mode', default=False, action='store_true',
+                        help='On error, print Python traceback.')
+    parser.add_argument('--append', '-a', dest='append_mode', default=False, action='store_true',
                         help='Append successive outputs.')
     parser.add_argument('--dry-run', default=False, action='store_true',
                         help='Just read and process inputs, but don\'t produce any outputs.')
-    parser.add_argument('--type', '-t', dest='input_type',
-                        default=input_type_names[0], choices=input_type_names,
-                        help=f'Input type. Defaults to {input_type_names[0]!r}.')
     parser.add_argument('input_files', metavar='INPUT_FILES', nargs='+',
                         help="One or more input files or a pattern that may contain wildcards '?', '*', and '**'.")
 
@@ -83,73 +83,32 @@ def main(args: Optional[List[str]] = None):
     except SystemExit as e:
         return int(str(e))
 
-    input_files = arg_obj.input_files
-    input_type = arg_obj.input_type
-    output_dir = arg_obj.output_dir or DEFAULT_OUTPUT_DIR
-    output_name = arg_obj.output_name or DEFAULT_OUTPUT_PATTERN
-    output_format = arg_obj.output_format or DEFAULT_OUTPUT_FORMAT
-    output_size = arg_obj.output_size
-    output_region = arg_obj.output_region
-    output_variables = arg_obj.output_variables
-    output_meta_file = arg_obj.output_meta_file
-    append = arg_obj.append
+    traceback_mode = arg_obj.traceback_mode
+    append_mode = arg_obj.append_mode
     dry_run = arg_obj.dry_run
 
-    if output_size:
-        try:
-            output_size = list(map(lambda c: int(c), output_size.split(',')))
-        except ValueError:
-            output_size = None
-        if output_size is None or len(output_size) != 2:
-            print(f'error: invalid size {arg_obj.output_size!r}')
-            return 2
+    try:
+        config = get_config_dict(arg_obj, open)
+    except ValueError as e:
+        return _handle_error(e, traceback_mode)
 
-    if output_region:
-        try:
-            output_region = list(map(lambda c: float(c), output_region.split(',')))
-        except ValueError:
-            output_region = None
-        if output_region is None or len(output_region) != 4:
-            print(f'error: invalid region {arg_obj.output_region!r}')
-            return 2
+    # noinspection PyBroadException
+    try:
+        generate_l2c_cube(append_mode=append_mode,
+                          dry_run=dry_run,
+                          monitor=print,
+                          **config)
+    except Exception as e:
+        return _handle_error(e, traceback_mode)
 
-    if output_variables:
-        try:
-            output_variables = set(map(lambda c: str(c).strip(), output_variables.split(',')))
-        except ValueError:
-            output_variables = None
-        if output_variables is not None \
-                and next(iter(True for var_name in output_variables if var_name == ''), False):
-            output_variables = None
-        if output_variables is None or len(output_variables) == 0:
-            print(f'error: invalid variables {arg_obj.output_variables!r}')
-            return 2
-
-    if output_meta_file:
-        try:
-            with open(output_meta_file) as stream:
-                dst_metadata = load_yaml(stream)
-            print(f'loaded metadata from file {arg_obj.output_meta_file!r}')
-        except OSError as e:
-            print(f'error: failed loading metadata file {arg_obj.output_meta_file!r}: {e}')
-            return 2
-    else:
-        dst_metadata = None
-
-    from xcube.genl2c.process import process_inputs
-    process_inputs(input_files,
-                   input_type,
-                   output_size,
-                   output_region,
-                   output_variables,
-                   dst_metadata,
-                   output_dir,
-                   output_name,
-                   output_format,
-                   append,
-                   dry_run=dry_run,
-                   monitor=print)
     return 0
+
+
+def _handle_error(e, traceback_mode):
+    print(f'error: {e}', file=sys.stderr)
+    if traceback_mode:
+        traceback.print_exc(file=sys.stderr)
+    return 2
 
 
 class GenL2CHelpFormatter(argparse.HelpFormatter):
@@ -158,16 +117,23 @@ class GenL2CHelpFormatter(argparse.HelpFormatter):
         # noinspection PyUnresolvedReferences
         help_text = super().format_help()
 
-        ds_io_registry = get_default_dataset_io_registry()
+        input_processors = get_obj_registry().get_all(type=InputProcessor)
+        output_writers = query_dataset_io(lambda ds_io: 'w' in ds_io.modes)
 
-        input_ds_ios = ds_io_registry.query(lambda ds_io: isinstance(ds_io, InputProcessor))
-        output_ds_ios = ds_io_registry.query(lambda ds_io: 'w' in ds_io.modes)
+        help_text += '\ninput processors to be used with option --proc:\n'
+        help_text += self._format_input_processors(input_processors)
+        help_text += '\noutput formats to be used with option --writer:\n'
+        help_text += self._format_dataset_ios(output_writers)
+        help_text += '\n'
 
-        help_text += '\noutput formats to be used with option --format:\n'
-        help_text += self._format_dataset_ios(output_ds_ios)
-        help_text += '\ninput types to be used with option --type:\n'
-        help_text += self._format_dataset_ios(input_ds_ios)
+        return help_text
 
+    @classmethod
+    def _format_input_processors(cls, input_processors):
+        help_text = ''
+        for input_processor in input_processors:
+            fill = ' ' * (28 - len(input_processor.name))
+            help_text += f'  {input_processor.name}{fill}{input_processor.description}\n'
         return help_text
 
     @classmethod
@@ -181,4 +147,4 @@ class GenL2CHelpFormatter(argparse.HelpFormatter):
 
 
 if __name__ == '__main__':
-    sys.exit(status=main())
+    sys.exit(main())

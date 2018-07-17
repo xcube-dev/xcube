@@ -7,10 +7,11 @@ BandCoordVarFactory = Callable[[str, np.ndarray], xr.DataArray]
 
 
 def new_band_coord_var(band_dim_name: str, band_values: np.ndarray) -> xr.DataArray:
-    return xr.DataArray(name=band_dim_name,
-                        data=band_values,
-                        dims=[band_dim_name],
+    return xr.DataArray(band_values,
+                        name=band_dim_name,
+                        dims=band_dim_name,
                         attrs=dict(units='nm',
+                                   standard_name='sensor_band_central_radiation_wavelength',
                                    long_name='band_wavelength'))
 
 
@@ -68,12 +69,12 @@ def vectorize_wavebands(dataset: xr.Dataset,
     for band_values, band_dim_index, spectrum_name, spectrum_variables in band_list:
         band_dim_name = 'band' if band_dim_count == 0 else 'band' + str(band_dim_index + 1)
         band_coord_var = band_coord_var_factory(band_dim_name, band_values)
-        dataset = dataset.assign_coords(**{band_dim_name: band_coord_var})
         spectrum_variable = xr.concat(spectrum_variables, dim=band_dim_name)
         time_coord_size = spectrum_variable.sizes.get('time', 0)
         if time_coord_size == 1 and spectrum_variable.dims[0] != 'time':
             spectrum_variable = spectrum_variable.squeeze('time')
             spectrum_variable = spectrum_variable.expand_dims('time')
         dataset[spectrum_name] = spectrum_variable
+        dataset = dataset.assign_coords(**{band_dim_name: band_coord_var})
 
     return dataset

@@ -20,14 +20,69 @@
 # SOFTWARE.
 
 import datetime
-from typing import Any, Dict, Optional
+import fnmatch
+from typing import Any, Dict, Optional, Iterable, Tuple, List
 
-import yaml
+UNDEFINED = object()
+PRIMITIVE_TYPES = (int, float, str, type(None))
+
+NameAnyDict = Dict[str, Any]
+NameDictPairList = List[Tuple[str, Optional[NameAnyDict]]]
 
 
-def load_yaml(stream):
-    hierarchical_metadata = yaml.load(stream)
-    return flatten_dict(hierarchical_metadata)
+def to_resolved_name_dict_pairs(name_dict_pairs: NameDictPairList, container, keep=False) -> NameDictPairList:
+    resolved_pairs = []
+    for name, value in name_dict_pairs:
+        if '*' in name or '?' in name or '[' in name:
+            for resolved_name in container:
+                if fnmatch.fnmatch(resolved_name, name):
+                    resolved_pairs.append((resolved_name, value))
+        elif name in container or keep:
+            resolved_pairs.append((name, value))
+    return resolved_pairs
+
+
+def to_name_dict_pairs(iterable: Iterable[Any], default_key=None) -> NameDictPairList:
+    return [to_name_dict_pair(item, parent=iterable, default_key=default_key)
+            for item in iterable]
+
+
+def to_name_dict_pair(name: Any, parent: Any = None, default_key=None):
+    value = None
+
+    if isinstance(name, str):
+        try:
+            # is key of parent?
+            value = parent[name]
+        except (KeyError, TypeError, ValueError):
+            pass
+    else:
+        # key = (key, value)?
+        try:
+            name, value = name
+        except (TypeError, ValueError):
+            # key = {key: value}?
+            try:
+                name, value = dict(name).popitem()
+            except (TypeError, ValueError, AttributeError, KeyError):
+                pass
+
+    if not isinstance(name, str):
+        raise ValueError(f'name must be a string')
+
+    if value is None:
+        return name, None
+
+    try:
+        # noinspection PyUnresolvedReferences
+        value.items()
+    except AttributeError as e:
+        if default_key:
+            value = {default_key: value}
+        else:
+            raise ValueError(f'value of {name!r} must be a dictionary') from e
+
+    return name, value
 
 
 def flatten_dict(d: Dict[str, Any]) -> Dict[str, Any]:
@@ -39,9 +94,6 @@ def flatten_dict(d: Dict[str, Any]) -> Dict[str, Any]:
     return result
 
 
-_PRIMITIVE_TYPES = (int, float, str, type(None))
-
-
 def _flatten_dict_value(value: Any,
                         result: Dict[str, Any],
                         parent_name: Optional[str],
@@ -50,7 +102,7 @@ def _flatten_dict_value(value: Any,
         return datetime.datetime.isoformat(value)
     elif isinstance(value, datetime.date):
         return datetime.date.isoformat(value)
-    elif isinstance(value, _PRIMITIVE_TYPES):
+    elif isinstance(value, PRIMITIVE_TYPES):
         return value
 
     try:

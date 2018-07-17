@@ -12,7 +12,9 @@ class CliTest(unittest.TestCase):
 
     def test_main_with_missing_args(self):
         exit_code = main([])
+        # exit_code==0 when run from PyCharm, exit_code==2 else
         self.assertEqual(2, exit_code)
+        #self.assertTrue(exit_code in [0, 2])
 
     def test_main_with_illegal_size_option(self):
         exit_code = main(['-s', '120,abc', 'input.nc'])
@@ -28,13 +30,13 @@ class CliTest(unittest.TestCase):
         exit_code = main(['-v', ' ', 'input.nc'])
         self.assertEqual(2, exit_code)
 
-    def test_main_with_illegal_metadata_option(self):
-        exit_code = main(['-m', 'nonono.yml', 'input.nc'])
+    def test_main_with_illegal_config_option(self):
+        exit_code = main(['-c', 'nonono.yml', 'input.nc'])
         self.assertEqual(2, exit_code)
 
     def test_main_with_illegal_options(self):
         exit_code = main(['input.nc'])
-        self.assertEqual(0, exit_code)
+        self.assertEqual(2, exit_code)
 
 
 class GenL2CHelpFormatterTest(unittest.TestCase):

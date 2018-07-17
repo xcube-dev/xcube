@@ -85,9 +85,9 @@ ARD links:
 * Spatial coordinate variables: 
   * SHALL use WGS84 (EPSG:4326) CRS.
   * SHALL have `lat[lat]` that provides observation or average latitude of *cell centers*
-    with attributes: `standard_name="latitude"` `units="degrees north"`.
+    with attributes: `standard_name="latitude"` `units="degrees_north"`.
   * SHALL have `lon[lon]` that provides observation or average longitude of *cell centers* 
-    with attributes: `standard_name="longitude"` and `units="degrees east"` 
+    with attributes: `standard_name="longitude"` and `units="degrees_east"` 
   * SHOULD HAVE `lat_bnds[lat, bnds]`, `lon_bnds[lon, bnds]`: provide geodetic observation or integration coordinates of *cell boundaries*. 
 * Cube variables: 
   * SHALL have shape `[time, ..., lat, lon]`. 
@@ -102,9 +102,9 @@ ARD links:
     *  Attributes: `standard_name`, `units`, other units describe the CRS / projections, see CF.
   * `y_bnds[y, bnds]`, `x_bnds[x, bnds]`: provide spatial observation or integration coordinates of *cell boundaries*.
   * MAY have `lat[y,x]`: latitude of *cell centers*. 
-    *  Attributes: `standard_name="latitude"`, `units="degrees north"`.
+    *  Attributes: `standard_name="latitude"`, `units="degrees_north"`.
   * `lon[y,x]`: longitude of *cell centers*. 
-    *  Attributes: `standard_name="longitude"`, `units="degrees east"`.
+    *  Attributes: `standard_name="longitude"`, `units="degrees_east"`.
 * Cube variables: 
   * MUST have shape `[time, ..., y, x]`. 
 
@@ -156,4 +156,33 @@ Chunking of data has a very high impact on processing performance:
 
 * If xcubes are served by a tile map server, tile sizes shall be aligned with chunk sizes
 * xcube spatial image size shall be integer divisible by chunk sizes 
+
+
+The data cubes in the DCS4COP project should be generated for predefined 
+regions and predefined spatial resolutions. A cube for a given region may be 
+generated for multiple spatial resolutions.
+
+There may be a scenario in which all the region cubes for will be used together. Then,
+in order to avoid another spatial resampling to a common grid, the grids of all cubes should be
+defined on a fixed Earth grid.
+
+This means a cube's region coordinates are taken from the corresponding cells 
+of a fixed Earth grid defined for a given spatial resolution.
+
+Therefore the `num_levels` spatial resolutions in which data cubes are produced shall be defined such that
+the fixed Earth's grid sizes multiplied by the cell size `delta` is close to 180 degrees.
+In addition we want the actual data cubes sizes to be integer multiples of an appropriate internal
+chunk (tile) size used to compress and store the data at different resolution levels `i`:
+
+    |grid_size[i] * delta[i] - 180| < eps
+    num_chunks[i] = num_chunks[0] * power(2, i)
+    grid_size[i] = num_chunks[i] * chunk_size
+
+with
+
+    0 <= i < num_levels
+    num_chunks[0] := number of chunks at lowest spatial resolution i in both spatial dimensions
+    chunk_size := size of a chunk in both spatial dimensions
+
+
 

@@ -29,16 +29,16 @@ from xcube.types import CoordRange
 class FixedEarthGrid:
 
     def __init__(self, level_zero_res=1.0):
-        self.level_zero_res = level_zero_res
-        level_zero_grid_size_x = 360. / level_zero_res
-        level_zero_grid_size_y = 180. / level_zero_res
-        msg = '%s divided by level_zero_res must be an integer division'
+        level_zero_grid_size_x = int(360. / level_zero_res)
+        level_zero_grid_size_y = int(180. / level_zero_res)
+        msg = 'level_zero_res must divide %s by an integer number'
         if level_zero_grid_size_x * level_zero_res != 360.:
             raise ValueError(msg % 360)
         if level_zero_grid_size_y * level_zero_res != 180.:
             raise ValueError(msg % 180)
-        self.level_zero_grid_size_x = int(level_zero_grid_size_x)
-        self.level_zero_grid_size_y = int(level_zero_grid_size_y)
+        self.level_zero_res = level_zero_res
+        self.level_zero_grid_size_x = level_zero_grid_size_x
+        self.level_zero_grid_size_y = level_zero_grid_size_y
 
     def get_res(self, level: int, units='degrees'):
         return self.from_degree(self.level_zero_res / (2 ** level), units=units)
@@ -52,7 +52,7 @@ class FixedEarthGrid:
         level = self.get_level(res, units=units)
         return level, self.from_degree(self.get_res(level), units=units)
 
-    def get_grid_size(self, level):
+    def get_grid_size(self, level: int):
         scale = 2 ** level
         return self.level_zero_grid_size_x * scale, self.level_zero_grid_size_y * scale
 
@@ -85,6 +85,30 @@ class FixedEarthGrid:
         raise ValueError(f'unrecognized units {units!r}')
 
 
+# TODO: select tile_count from tile_counts_and_sizes list using following criteria:
+#       1. tile_size as large as possible
+#       2. tile_count with highest divisibility by 2
+
+
+def get_tile_counts_and_sizes(res: float, tile_size_max=720):
+    tile_size_min = tile_size_max // 2 + 1
+
+    height = int(round(180 / res))
+    if height <= tile_size_min:
+        return [(1, height)]
+
+    tile_counts = []
+    for tile_size in reversed(range(tile_size_min, tile_size_max + 1)):
+        tile_count = height // tile_size
+        if tile_count * tile_size == height:
+            tile_counts.append((tile_count, tile_size))
+
+    if not tile_counts:
+        return [(1, height)]
+
+    return tile_counts
+
+
 def main(args: Optional[List[str]] = None):
     import argparse
     import sys
@@ -94,20 +118,33 @@ def main(args: Optional[List[str]] = None):
                         help='Resolution units')
     parser.add_argument('--l0res', metavar='LEVEL_ZERO_RES', default=1, type=float,
                         help='Level zero resolution in degrees')
-    parser.add_argument('lon_min',type=float,help='Minimum longitude of bounding box')
-    parser.add_argument('lat_min', type=float,help='Minimum latitude of bounding box')
-    parser.add_argument('lon_max', type=float,help='Maximum longitude of bounding box')
-    parser.add_argument('lat_max', type=float,help='Maximum latitude of bounding box')
-    parser.add_argument('res',type=float, help='Resolution in given units')
-    arg_obj = parser.parse_args(args)
+    parser.add_argument('lon_min', type=float, help='Minimum longitude of bounding box')
+    parser.add_argument('lat_min', type=float, help='Minimum latitude of bounding box')
+    parser.add_argument('lon_max', type=float, help='Maximum longitude of bounding box')
+    parser.add_argument('lat_max', type=float, help='Maximum latitude of bounding box')
+    parser.add_argument('res', type=float, help='Output resolution in given units')
+
+    try:
+        arg_obj = parser.parse_args(args)
+    except SystemExit as e:
+        return int(str(e))
+
+    lon_min = arg_obj.lon_min
+    lat_min = arg_obj.lat_min
+    lon_max = arg_obj.lon_max
+    lat_max = arg_obj.lat_max
+    res = arg_obj.res
+    units = arg_obj.units
+
+    bbox = (lon_min, lat_min, lon_max, lat_max)
 
     feg = FixedEarthGrid(level_zero_res=arg_obj.l0res)
-    bbox = (arg_obj.lon_min, arg_obj.lat_min, arg_obj.lon_max, arg_obj.lat_max)
-    adjusted_bbox, grid_size, level, adjusted_res = feg.adjust_bbox(bbox, arg_obj.res, units=arg_obj.units)
+    adjusted_bbox, grid_size, level, adjusted_res = feg.adjust_bbox(bbox, res, units=units)
     print(f'adjusted bbox: {adjusted_bbox}')
-    print(f'adjusted res: {adjusted_res} {arg_obj.units}')
+    print(f'adjusted res: {adjusted_res} {units}')
     print(f'grid size: {grid_size}')
     print(f'at level {level} with level zero resolution of {feg.level_zero_res} deg')
+    return 0
 
 
 if __name__ == '__main__':

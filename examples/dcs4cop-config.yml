@@ -1,0 +1,136 @@
+input_processor: snap-olci-highroc-l2
+
+output_size: [2000, 1000]
+output_region: [0, 50, 5, 52.5]
+
+output_variables:
+
+  - conc_chl:
+      resampling: Nearest
+
+  - conc_tsm:
+      resampling: Nearest
+
+  - kd489:
+      resampling: Nearest
+
+
+processed_variables:
+  - quality_flags
+  - c2rcc_flags
+
+  - conc_chl:
+      valid_pixel_expression: quality_flags.land
+
+  - conc_tsm:
+      valid_pixel_expression: quality_flags.land
+
+
+
+# xcube global dataset metadata
+#
+# * NetCDF Attribute Convention for Dataset Discovery (as used by THREDDS data server catalogue)
+#   https://www.unidata.ucar.edu/software/thredds/current/netcdf-java/metadata/DataDiscoveryAttConvention.html
+# * CF Conventions
+#   http://cfconventions.org/Data/cf-conventions/cf-conventions-1.7/cf-conventions.html#description-of-file-contents
+#
+output_metadata:
+  # CF: A succinct description of what is in the dataset.
+  title: "DCS4COP Sentinel-3 OLCI L2C Data Cube"
+
+  # CF: The method of production of the original data.
+  # If it was model-generated, source should name the model and its version, as specifically as could be useful.
+  # If it is observational, source should characterize it (e.g., "surface observation" or "radiosonde").
+  source: "Sentinel-3 OLCI L2 surface observation"
+
+
+  # CF: Published or web-based references that describe the data or methods used to produce it.
+  references: "https://cordis.europa.eu/project/rcn/212442_en.html http://www.highroc.eu/"
+
+  # CF: Miscellaneous information about the data or methods used to produce it.
+  comment: ""
+
+  # A paragraph describing the dataset.
+  summary: ""
+
+  # A comma separated list of key words and phrases.
+  keywords: ""
+
+  # The combination of the "naming authority" and the "id" should be a globally unique identifier for the dataset.
+  id: "dcs4cop-olci-l2c-sns-b298-34a7-df87-98fe"
+  naming_authority: "bc"
+
+  # The scientific project that produced the data.
+  project: "DCS4COP"
+
+  # A textual description of the processing (or quality control) level of the data.
+  processing_level: "L2C"
+
+  # A place to acknowledge various type of support for the project that produced this data.
+  acknowledgment: "ESA Sentinel-3 OLCI data, EU HIGHROC project"
+
+  # The name of the controlled vocabulary from which variable standard names are taken.
+  standard_name_vocabulary: ""
+
+  # Describe the restrictions to data access and distribution.
+  license: "terms and conditions of the DCS4COP data distribution"
+
+  # CF: Provides an audit trail for modifications to the original data.
+  # Well-behaved generic netCDF filters will automatically append their name and the
+  # parameters with which they were invoked to the global history attribute of an input netCDF file.
+  # We recommend that each line begin with a timestamp indicating the date and time of day
+  # that the program was executed.
+  history: "xcube/reproj-snap-nc"
+
+  # CF: Specifies where the original data was produced.
+  institution: "Brockmann Consult GmbH"
+
+  # The data creator's name, URL, and email.
+  # The "institution" attribute will be used if the "creator_name" attribute does not exist.
+  creator:
+    - name: "Brockmann Consult GmbH"
+      url: "https://www.brockmann-consult.de"
+      email: "info@brockmann-consult.de"
+
+  publisher:
+    - name:  "Brockmann Consult GmbH"
+      url:   "https://www.brockmann-consult.de"
+      email: "info@brockmann-consult.de"
+
+  # The name and role of any individuals or institutions that contributed to the creation of this data.
+  contributor:
+    - name: ""
+      role: ""
+
+  #  date:
+  #    # The date on which the data was created.
+  #    created:  2018-05-30
+  #    # The date on which this data was last modified.
+  #    modified: 2018-05-30
+  #    # The date on which this data was formally issued.
+  #    issued:   2018-06-01
+
+  # Describes a simple latitude, longitude, and vertical bounding box units and resolution attributes.
+
+  #  geospatial_lon:
+  #    min:  0.0
+  #    max:  5.0
+  #    units: "degrees_east"
+  #    resolution: 0.0025
+  #
+  #  geospatial_lat:
+  #    min: 50.0
+  #    max: 52.2
+  #    units: "degrees_north"
+  #    resolution: 0.0025
+
+  # Describes the temporal coverage of the data as a time range.
+  # Only provide it here, if you don't want it to be computed.
+
+  #  time_coverage:
+  #    start:      2016-10-01
+  #    end:        2017-10-01
+  #    duration:   "P1Y"
+  #    resolution: "1D"
+
+
