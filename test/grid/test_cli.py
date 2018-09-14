@@ -1,6 +1,6 @@
 import unittest
 
-from xcube.feg import FixedEarthGrid, main, get_tile_counts_and_sizes
+from xcube.grid.feg import FixedEarthGrid, main, get_tile_counts_and_sizes
 
 
 class FixedEarthGridTest(unittest.TestCase):
