@@ -21,7 +21,7 @@
 
 from typing import Optional, List, Tuple
 
-from xcube.constants import EARTH_EQUATORIAL_RADIUS
+from xcube.constants import EARTH_EQUATORIAL_PERIMETER
 from xcube.types import CoordRange
 
 import math
@@ -41,10 +41,9 @@ def get_adjusted_res(res: float) -> float:
 def get_adjusted_bbox(bbox: CoordRange, res: float, size: Tuple[int, int]) -> CoordRange:
     width, height = size
     x_min, y_min, x_max, y_max = bbox
-    return round(x_min / res) * res, \
-           round(y_min / res) * res, \
-           x_min + res * width, \
-           y_min + res * height
+    x_min = res * round(x_min / res)
+    y_min = res * round(y_min / res)
+    return x_min, y_min, x_min + res * width, y_min + res * height
 
 
 def compute_grid_layout(bbox: CoordRange, res: float, size: Tuple[int, int], units='degrees'):
@@ -85,11 +84,11 @@ def compute_grid_layout(bbox: CoordRange, res: float, size: Tuple[int, int], uni
 
 
 def meters_to_degrees(res):
-    return (360.0 * res) / EARTH_EQUATORIAL_RADIUS
+    return (360.0 * res) / EARTH_EQUATORIAL_PERIMETER
 
 
 def degrees_to_meters(res):
-    return (res / 360.0) * EARTH_EQUATORIAL_RADIUS
+    return (res / 360.0) * EARTH_EQUATORIAL_PERIMETER
 
 
 def identity(x):
@@ -133,7 +132,7 @@ def main(args: Optional[List[str]] = None):
     if arg_obj.size is not None:
         size = tuple(map(lambda s: int(s.strip()), arg_obj.size.split(',')))
 
-    if res is None and bbox is None and size is None:
+    if not ((res and bbox) or (res and size) or (bbox and size)):
         print('error: two of the three parameters resolution, bounding box, and size must be given')
         return 2
 
@@ -142,17 +141,13 @@ def main(args: Optional[List[str]] = None):
     bbox = grid_layout['bbox']
     cov = grid_layout['cov']
     size = grid_layout['size']
-    print(f'Resolution in degrees: {res}')
-    print(f'Resolution in meters:  {degrees_to_meters(res)}')
-    print(f'Image size in pixels:  {size[0]},{size[1]}')
-    print(f'Image size in degrees: {cov[0]},{cov[1]}')
-    print(f'Image size in meters:  {degrees_to_meters(cov[0])},{degrees_to_meters(cov[1])}')
+    print(f'Resolution in degrees:   {res}')
+    print(f'Resolution in meters:    {degrees_to_meters(res)}')
+    print(f'Image size in pixels:    {size[0]},{size[1]}')
+    print(f'Image size in degrees:   {cov[0]},{cov[1]}')
+    print(f'Image size in meters:    {degrees_to_meters(cov[0])},{degrees_to_meters(cov[1])}')
     if bbox is not None:
-        print(f'Bounding box in degrees: '
-              f'{degrees_to_meters(bbox[0])},'
-              f'{degrees_to_meters(bbox[1])},'
-              f'{degrees_to_meters(bbox[2])},'
-              f'{degrees_to_meters(bbox[3])}')
+        print(f'Bounding box in degrees: {bbox[0]},{bbox[1]},{bbox[2]},{bbox[3]}')
 
     return 0
 
