@@ -44,8 +44,8 @@ def main(args: Optional[List[str]] = None):
     output_writer_names = [ds_io.name for ds_io in query_dataset_io(lambda ds_io: 'w' in ds_io.modes)]
     resampling_algs = NAME_TO_GDAL_RESAMPLE_ALG.keys()
 
-    parser = argparse.ArgumentParser(description='Generate L2C data cube from various input files. '
-                                                 'L2C data cubes may be created in one go or in successively '
+    parser = argparse.ArgumentParser(description='Generate or extend a Level-2C data cube from Level-2 input files. '
+                                                 'Level-2C data cubes may be created in one go or in successively '
                                                  'in append mode, input by input.',
                                      formatter_class=GenL2CHelpFormatter)
     parser.add_argument('--version', '-V', action='version', version=version)
