@@ -52,8 +52,8 @@ ARD links:
 ### Basic Schema
 
 * Attributes metadata convention 
-  * SHALL be CF >= 1.6 
-  * SHOULD adhere to THREDDS data server catalogue metadata 
+  * SHALL be [CF](http://cfconventions.org/) >= 1.7 
+  * SHOULD adhere to [Attribute Convention for Data Discovery](http://wiki.esipfed.org/index.php/Attribute_Convention_for_Data_Discovery) 
 * Dimensions: 
   * SHALL be at least `time`, `bnds`, and MAY be any others.
   * SHALL all be greater than zero, but `bnds` must always be two. 
