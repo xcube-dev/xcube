@@ -9,8 +9,8 @@
 - Save Xcube(s) (save changed variables instead of whole Cube, zarr might handle that via it's persistancy already)
 - Move Xcube(s) (e.g. to remote (object) storage)
 - Delete Xcube(s)
-- Cast Xcube
-- Cast Xcube Variables
+- Type Cast Xcube
+- Type Cast Xcube Variables
 
 # Manipulate Xcubes
 
