@@ -19,11 +19,14 @@
 - Add Variable(s)
 - Remove Variable(s)
 - Purge Variables (delete all variables)
-- Resize Xcube (e.g. extend time frame)
+- Resize/Reshape Xcube (e.g. extend time frame)
 - Manage Attributes of XCube
 - Manage Attributes of Variables
 - Apply Arithmetic Operations
-- Transpose?
+- Rechunk
+- Shift (e.g. shift the cube by 0.5deg lat)
+- Resample
+- ...
 
 # Query Operations
 
