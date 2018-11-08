@@ -26,6 +26,7 @@
 - Rechunk
 - Shift (e.g. shift the cube by 0.5deg lat)
 - Resample
+- Rename Variable
 - ...
 
 # Query Operations
