@@ -132,7 +132,7 @@ class GenL2CHelpFormatter(argparse.HelpFormatter):
     def _format_input_processors(cls, input_processors):
         help_text = ''
         for input_processor in input_processors:
-            fill = ' ' * (28 - len(input_processor.name))
+            fill = ' ' * (34 - len(input_processor.name))
             help_text += f'  {input_processor.name}{fill}{input_processor.description}\n'
         return help_text
 
