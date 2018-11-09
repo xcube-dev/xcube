@@ -152,10 +152,11 @@ def _process_l2_input(input_processor: InputProcessor,
         output_variables = [(var_name, None) for var_name in input_dataset.data_vars]
 
     selected_variables = set([var_name for var_name, _ in output_variables])
-    if reprojection_info.xy_var_names:
-        selected_variables.update(reprojection_info.xy_var_names)
-    if reprojection_info.xy_tp_var_names:
-        selected_variables.update(reprojection_info.xy_tp_var_names)
+    if reprojection_info is not None:
+        if reprojection_info.xy_var_names:
+            selected_variables.update(reprojection_info.xy_var_names)
+        if reprojection_info.xy_tp_var_names:
+            selected_variables.update(reprojection_info.xy_tp_var_names)
 
     steps = []
 
