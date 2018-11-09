@@ -23,7 +23,6 @@ from abc import ABCMeta, abstractmethod
 from typing import Tuple, Union, Optional
 
 import xarray as xr
-
 from xcube.objreg import get_obj_registry
 
 
@@ -59,6 +58,7 @@ class InputProcessor(metaclass=ABCMeta):
     """
     Read and process inputs for the genl2c tool.
     """
+
     @property
     @abstractmethod
     def name(self) -> str:
@@ -98,9 +98,8 @@ class InputProcessor(metaclass=ABCMeta):
         """ Do any pre-processing before reprojection. """
         return dataset
 
-    # noinspection PyMethodMayBeStatic
     def post_process(self, dataset: xr.Dataset) -> xr.Dataset:
-        """ Do any pre-processing before reprojection. """
+        """ Do any pre-processing after reprojection. """
         return dataset
 
 
