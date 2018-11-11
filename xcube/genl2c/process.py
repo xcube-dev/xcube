@@ -26,7 +26,7 @@ import os
 import pstats
 import time
 import traceback
-from typing import Sequence, Callable, Tuple, Optional
+from typing import Sequence, Callable, Tuple, Optional, Dict
 
 from .defaults import DEFAULT_OUTPUT_DIR, DEFAULT_OUTPUT_NAME, DEFAULT_OUTPUT_SIZE, \
     DEFAULT_OUTPUT_RESAMPLING, DEFAULT_OUTPUT_WRITER
@@ -43,6 +43,7 @@ _PROFILING_ON = False
 
 def generate_l2c_cube(input_files: Sequence[str] = None,
                       input_processor: str = None,
+                      input_processor_params: Dict = None,
                       input_reader: str = None,
                       output_region: Tuple[float, float, float, float] = None,
                       output_size: Tuple[int, int] = DEFAULT_OUTPUT_SIZE,
@@ -59,6 +60,12 @@ def generate_l2c_cube(input_files: Sequence[str] = None,
     input_processor = get_input_processor(input_processor)
     if not input_processor:
         raise ValueError(f'unknown input_processor {input_processor!r}')
+
+    if input_processor_params:
+        try:
+            input_processor.configure(**input_processor_params)
+        except TypeError as e:
+            raise ValueError(f'invalid input_processor_params {input_processor_params!r}') from e
 
     input_reader = find_dataset_io(input_reader or input_processor.input_reader)
     if not input_reader:
