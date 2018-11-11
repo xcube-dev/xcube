@@ -23,6 +23,7 @@ from abc import ABCMeta, abstractmethod
 from typing import Tuple, Union, Optional
 
 import xarray as xr
+
 from xcube.objreg import get_obj_registry
 
 
@@ -62,44 +63,74 @@ class InputProcessor(metaclass=ABCMeta):
     @property
     @abstractmethod
     def name(self) -> str:
-        pass
+        """
+        :return: The name of this input processor
+        """
 
     @property
     @abstractmethod
     def description(self) -> str:
-        pass
+        """
+        :return: The description of this input processor
+        """
+
+    def configure(self, **parameters):
+        """
+        Configure this input processor.
+        :param parameters: The configuration parameters.
+        :return: The description of this input processor
+        """
+        if parameters:
+            raise TypeError(f"got an unexpected input processor parameters {parameters!r}")
 
     @property
     @abstractmethod
     def input_reader(self) -> str:
-        pass
+        """
+        :return: The input reader for this input processor.
+        """
 
     @property
     def input_reader_params(self) -> dict:
+        """
+        :return: The input reader parameters for this input processor.
+        """
         return dict()
 
     @abstractmethod
     def get_reprojection_info(self, dataset: xr.Dataset) -> Optional[ReprojectionInfo]:
         """
-        Information about special fields in input datasets.
-        May return None.
+        Information about special fields in input datasets used for reprojection.
+        :param dataset: The dataset.
+        :return: The reprojection information of the dataset or None.
         """
-        pass
 
     @abstractmethod
     def get_time_range(self, dataset: xr.Dataset) -> Optional[Tuple[float, float]]:
         """
         Return a tuple of two floats representing start/stop time (which may be same) in days since 1970.
-        May return None.
+        :param dataset: The dataset.
+        :return: The time-range tuple of the dataset or None.
         """
-        pass
 
     def pre_process(self, dataset: xr.Dataset) -> xr.Dataset:
-        """ Do any pre-processing before reprojection. """
+        """
+        Do any pre-processing before reprojection.
+        For example, perform dataset validation, masking, and/or filtering using provided configuration parameters.
+        The default implementation returns the unchanged *dataset*.
+        :param dataset: The dataset.
+        :return: The pre-processed dataset or the original one.
+        """
         return dataset
 
     def post_process(self, dataset: xr.Dataset) -> xr.Dataset:
-        """ Do any pre-processing after reprojection. """
+        """
+        Do any post-processing after reprojection.
+        For example, generate new "wavelength" dimension for variables whose name follow a certain pattern.
+        The default implementation returns the unchanged *dataset*.
+        :param dataset: The dataset.
+        :return: The post-processed dataset or the original one.
+        """
         return dataset
 
 
