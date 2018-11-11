@@ -26,7 +26,8 @@ class ReprojectTest(unittest.TestCase):
                                           dst_size=(dst_width, dst_height))
 
         self.assertIsNotNone(proj_dataset)
-        self.assertEquals(proj_dataset.sizes, dict(lon=dst_width, lat=dst_height, bnds=2))
+        self.assertEqual(dict(lon=dst_width, lat=dst_height, bnds=2),
+                         proj_dataset.sizes)
 
         self.assertIn('lon', proj_dataset)
         self.assertEqual(proj_dataset.lon.shape, (dst_width,))
