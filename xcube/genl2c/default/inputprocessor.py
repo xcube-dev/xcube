@@ -20,7 +20,7 @@
 # SOFTWARE.
 
 from abc import ABCMeta
-from typing import Tuple, List
+from typing import Tuple
 
 import xarray as xr
 
@@ -43,13 +43,11 @@ class DefaultInputProcessor(InputProcessor, metaclass=ABCMeta):
 
     The default input processor can be configured by the following parameters:
 
-    * ``input_reader`` the input reader identifier, default is "netcdf4";
-    * ``variables`` the subset of variables to be processed.
+    * ``input_reader`` the input reader identifier, default is "netcdf4".
 
     """
 
     def __init__(self):
-        self._variables = None
         self._input_reader = 'netcdf4'
 
     @property
@@ -60,8 +58,7 @@ class DefaultInputProcessor(InputProcessor, metaclass=ABCMeta):
     def description(self) -> str:
         return 'Single-scene NetCDF inputs in xcube standard format'
 
-    def configure(self, variables: List[str] = None, input_reader: str = 'netcdf4'):
-        self._variables = variables
+    def configure(self, input_reader: str = 'netcdf4'):
         self._input_reader = input_reader
 
     @property
@@ -70,29 +67,7 @@ class DefaultInputProcessor(InputProcessor, metaclass=ABCMeta):
 
     def pre_process(self, dataset: xr.Dataset) -> xr.Dataset:
         self._validate(dataset)
-
-        var_names = [v for v in dataset.data_vars if not self._variables or v in self._variables]
-
-        if "time" in dataset.dims:
-            required_dims = ("time", "lat", "lon")
-        else:
-            required_dims = ("lat", "lon")
-
-        required_dim_set = set(required_dims)
-
-        var_names_to_drop = []
-        for var_name in dataset.data_vars:
-            var = dataset.data_vars[var_name]
-            if not self._variables or var_name in self._variables:
-                if set(var.dims) == required_dim_set:
-                    if var.dims != required_dims:
-                        raise ValueError(f'variable "{var_name}"" must have dimension order {required_dims!r}')
-                else:
-                    var_names_to_drop.append(var_name)
-            else:
-                var_names_to_drop.append(var_name)
-
-        return dataset.drop(var_names_to_drop) if var_names_to_drop else dataset
+        return dataset
 
     def get_reprojection_info(self, dataset: xr.Dataset) -> ReprojectionInfo:
         return ReprojectionInfo(xy_var_names=('lon', 'lat'),
@@ -140,8 +115,18 @@ class DefaultInputProcessor(InputProcessor, metaclass=ABCMeta):
     def _validate(self, dataset):
         self._check_coordinate_var(dataset, "lon")
         self._check_coordinate_var(dataset, "lat")
-        if "time" in dataset.coords:
+        if "time" in dataset.dims:
             self._check_coordinate_var(dataset, "time")
+            required_dims = ("time", "lat", "lon")
+        else:
+            required_dims = ("lat", "lon")
+        count = 0
+        for var_name in dataset.data_vars:
+            var = dataset.data_vars[var_name]
+            if var.dims == required_dims:
+                count += 1
+        if count == 0:
+            raise ValueError(f"dataset has no variables with required dimensions {required_dims!r}")
 
     def _check_coordinate_var(self, dataset, coord_var_name):
         if coord_var_name not in dataset.coords:
