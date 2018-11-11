@@ -20,11 +20,12 @@
 # SOFTWARE.
 
 from abc import ABCMeta
-from typing import Tuple
+from typing import Tuple, List
 
 import xarray as xr
 
-from ..inputprocessor import InputProcessor, register_input_processor
+from xcube.constants import CRS_WKT_EPSG_4326
+from ..inputprocessor import InputProcessor, register_input_processor, ReprojectionInfo
 from ...dsutil import get_time_in_days_since_1970
 
 
@@ -34,10 +35,22 @@ class DefaultInputProcessor(InputProcessor, metaclass=ABCMeta):
 
     * Have dimensions ``lat``, ``lon``, optionally ``time`` of length 1;
     * have coordinate variables ``lat[lat]``, ``lon[lat]``, ``time[time]`` (opt.), ``time_bnds[time, 2]`` (opt.);
+    * have coordinate variables ``lat[lat]``, ``lon[lat]`` as decimal degrees on WGS84 ellipsoid, both linearly increasing with same constant delta;
+    * have coordinate variable ``time[time]`` representing a date+time values with defined CF "units" attribute;
     * have any data variables of form ``<var>[time, lat, lon]``;
-    * have global attribute pairs ``time_coverage_start``, ``time_coverage_end`` if ``time`` coordinate is missing.
+    * have global attribute pairs (``time_coverage_start``, ``time_coverage_end``), or (``start_time``, ``stop_time``)
+      if ``time`` coordinate is missing.
+
+    The default input processor can be configured by the following parameters:
+
+    * ``input_reader`` the input reader identifier, default is "netcdf4";
+    * ``variables`` the subset of variables to be processed.
 
     """
+
+    def __init__(self):
+        self._variables = None
+        self._input_reader = 'netcdf4'
 
     @property
     def name(self) -> str:
@@ -47,41 +60,60 @@ class DefaultInputProcessor(InputProcessor, metaclass=ABCMeta):
     def description(self) -> str:
         return 'Single-scene NetCDF inputs in xcube standard format'
 
+    def configure(self, variables: List[str] = None, input_reader: str = 'netcdf4'):
+        self._variables = variables
+        self._input_reader = input_reader
+
     @property
     def input_reader(self) -> str:
-        return 'netcdf4'
+        return self._input_reader
 
     def pre_process(self, dataset: xr.Dataset) -> xr.Dataset:
-        has_time_coords = "time" in dataset.dims
+        self._validate(dataset)
+
+        var_names = [v for v in dataset.data_vars if not self._variables or v in self._variables]
+
+        if "time" in dataset.dims:
+            required_dims = ("time", "lat", "lon")
+        else:
+            required_dims = ("lat", "lon")
+
+        required_dim_set = set(required_dims)
+
         var_names_to_drop = []
         for var_name in dataset.data_vars:
             var = dataset.data_vars[var_name]
-            if has_time_coords:
-                use_var = var.dims == ("time", "lat", "lon")
+            if not self._variables or var_name in self._variables:
+                if set(var.dims) == required_dim_set:
+                    if var.dims != required_dims:
+                        raise ValueError(f'variable "{var_name}"" must have dimension order {required_dims!r}')
+                else:
+                    var_names_to_drop.append(var_name)
             else:
-                use_var = var.dims == ("lat", "lon")
-            if not use_var:
                 var_names_to_drop.append(var_name)
+
         return dataset.drop(var_names_to_drop) if var_names_to_drop else dataset
 
-    def get_reprojection_info(self, dataset: xr.Dataset) -> None:
-        return None
+    def get_reprojection_info(self, dataset: xr.Dataset) -> ReprojectionInfo:
+        return ReprojectionInfo(xy_var_names=('lon', 'lat'),
+                                xy_crs=CRS_WKT_EPSG_4326,
+                                xy_gcp_step=1)
 
     def get_time_range(self, dataset: xr.Dataset) -> Tuple[float, float]:
         time_coverage_start, time_coverage_end = None, None
         if "time" in dataset:
             time = dataset["time"]
-            time_bnds_name = time.attrs("bounds", "time_bnds")
+            time_bnds_name = time.attrs.get("bounds", "time_bnds")
             if time_bnds_name in dataset:
                 time_bnds = dataset[time_bnds_name]
                 if time_bnds.shape == (1, 2):
-                    time_coverage_start = str(time_bnds[0][0])
-                    time_coverage_end = str(time_bnds[0][1])
+                    time_coverage_start = str(time_bnds[0][0].data)
+                    time_coverage_end = str(time_bnds[0][1].data)
             if time_coverage_start is None or time_coverage_end is None:
                 time_coverage_start, time_coverage_end = self.get_time_range_from_attrs(dataset)
             if time_coverage_start is None or time_coverage_end is None:
                 if time.shape == (1,):
-                    time_coverage_start = str(time[0])
+                    time_coverage_start = str(time[0].data)
                     time_coverage_end = time_coverage_start
         if time_coverage_start is None or time_coverage_end is None:
             time_coverage_start, time_coverage_end = self.get_time_range_from_attrs(dataset)
@@ -104,6 +136,27 @@ class DefaultInputProcessor(InputProcessor, metaclass=ABCMeta):
             time_start = str(dataset.attrs["start_time"])
             time_stop = str(dataset.attrs.get("stop_time", dataset.attrs.get("end_time", time_start)))
         return time_start, time_stop
+
+    def _validate(self, dataset):
+        self._check_coordinate_var(dataset, "lon")
+        self._check_coordinate_var(dataset, "lat")
+        if "time" in dataset.coords:
+            self._check_coordinate_var(dataset, "time")
+
+    def _check_coordinate_var(self, dataset, coord_var_name):
+        if coord_var_name not in dataset.coords:
+            raise ValueError(f'missing coordinate variable "{coord_var_name}"')
+        coord_var = dataset.coords[coord_var_name]
+        if len(coord_var.shape) != 1:
+            raise ValueError('coordinate variable "lon" must be 1D')
+        coord_var_bnds_name = coord_var.attrs.get("bounds", coord_var_name + "_bnds")
+        if coord_var_bnds_name in dataset:
+            coord_bnds_var = dataset[coord_var_bnds_name]
+            expected_shape = (len(coord_var), 2)
+            if coord_bnds_var.shape != expected_shape:
+                raise ValueError(f'coordinate bounds variable "{coord_bnds_var}" must have shape {expected_shape!r}')
+        elif len(coord_var) < 2:
+            raise ValueError(f'coordinate variable "{coord_var_name}" must have at least 2 values')
 
 
 def init_plugin():
