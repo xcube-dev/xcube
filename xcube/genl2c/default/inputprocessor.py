@@ -67,12 +67,15 @@ class DefaultInputProcessor(InputProcessor, metaclass=ABCMeta):
 
     def pre_process(self, dataset: xr.Dataset) -> xr.Dataset:
         self._validate(dataset)
+        if "time" in dataset:
+            return dataset.squeeze("time")
         return dataset
 
     def get_reprojection_info(self, dataset: xr.Dataset) -> ReprojectionInfo:
         return ReprojectionInfo(xy_var_names=('lon', 'lat'),
                                 xy_crs=CRS_WKT_EPSG_4326,
-                                xy_gcp_step=1)
+                                xy_gcp_step=(max(1, len(dataset.lon) // 4),
+                                             max(1, len(dataset.lat) // 4)))
 
     def get_time_range(self, dataset: xr.Dataset) -> Tuple[float, float]:
         time_coverage_start, time_coverage_end = None, None
@@ -113,10 +116,10 @@ class DefaultInputProcessor(InputProcessor, metaclass=ABCMeta):
         return time_start, time_stop
 
     def _validate(self, dataset):
-        self._check_coordinate_var(dataset, "lon", 2)
-        self._check_coordinate_var(dataset, "lat", 2)
+        self._check_coordinate_var(dataset, "lon", min_length=2)
+        self._check_coordinate_var(dataset, "lat", min_length=2)
         if "time" in dataset.dims:
-            self._check_coordinate_var(dataset, "time", 1)
+            self._check_coordinate_var(dataset, "time", max_length=1)
             required_dims = ("time", "lat", "lon")
         else:
             required_dims = ("lat", "lon")
@@ -128,7 +131,8 @@ class DefaultInputProcessor(InputProcessor, metaclass=ABCMeta):
         if count == 0:
             raise ValueError(f"dataset has no variables with required dimensions {required_dims!r}")
 
-    def _check_coordinate_var(self, dataset: xr.Dataset, coord_var_name: str, min_length: int):
+    def _check_coordinate_var(self, dataset: xr.Dataset, coord_var_name: str,
+                              min_length: int = None, max_length: int = None):
         if coord_var_name not in dataset.coords:
             raise ValueError(f'missing coordinate variable "{coord_var_name}"')
         coord_var = dataset.coords[coord_var_name]
@@ -140,8 +144,11 @@ class DefaultInputProcessor(InputProcessor, metaclass=ABCMeta):
             expected_shape = (len(coord_var), 2)
             if coord_bnds_var.shape != expected_shape:
                 raise ValueError(f'coordinate bounds variable "{coord_bnds_var}" must have shape {expected_shape!r}')
-        elif len(coord_var) < min_length:
-            raise ValueError(f'coordinate variable "{coord_var_name}" must have at least {min_length} value(s)')
+        else:
+            if min_length is not None and len(coord_var) < min_length:
+                raise ValueError(f'coordinate variable "{coord_var_name}" must have at least {min_length} value(s)')
+            if max_length is not None and len(coord_var) > max_length:
+                raise ValueError(f'coordinate variable "{coord_var_name}" must have no more than {max_length} value(s)')
 
 
 def init_plugin():
