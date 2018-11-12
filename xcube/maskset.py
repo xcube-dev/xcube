@@ -48,8 +48,10 @@ class MaskSet:
         flag_values = flag_var.attrs.get('flag_values')
         if flag_masks is None and flag_values is None:
             raise ValueError("flag_var must either have one of the attributes 'flag_meanings' or 'flag_values' or both")
-        _check_flag_var_attribute_value(flag_masks, 'flag_masks')
-        _check_flag_var_attribute_value(flag_values, 'flag_values')
+        if flag_masks is not None:
+            flag_masks = _convert_flag_var_attribute_value(flag_masks, 'flag_masks', flag_var.dtype)
+        if flag_values is not None:
+            flag_values = _convert_flag_var_attribute_value(flag_values, 'flag_values', flag_var.dtype)
         flag_meanings = flag_var.attrs.get('flag_meanings')
         if not isinstance(flag_meanings, str):
             raise TypeError("attribute 'flag_meanings' of flag_var must be a string")
@@ -118,21 +120,65 @@ class MaskSet:
 
         mask_var = xr.DataArray(np.ones(flag_var.shape, dtype=np.uint8), dims=flag_var.dims, name=flag_name)
         if flag_mask is not None:
+            if flag_var.dtype != flag_mask.dtype:
+                flag_var = flag_var.astype(flag_mask.dtype)
             if flag_value is not None:
                 mask_var = mask_var.where((flag_var & flag_mask) == flag_value, 0)
             else:
                 mask_var = mask_var.where((flag_var & flag_mask) != 0, 0)
         else:
+            if flag_var.dtype != flag_value.dtype:
+                flag_var = flag_var.astype(flag_value.dtype)
             mask_var = mask_var.where(flag_var == flag_value, 0)
 
         self._masks[flag_name] = mask_var
         return mask_var
 
 
-def _check_flag_var_attribute_value(attr_value, attr_name):
-    if attr_value is None:
-        return
-    if not (hasattr(attr_value, 'dtype')
-            and hasattr(attr_value, 'shape')
-            and np.issubdtype(attr_value.dtype, np.integer)):
-        raise TypeError(f'attribute {attr_name!r} of flag_var must be an integer array')
+_MASK_DTYPES = (
+    (2 ** 8, np.uint8), (2 ** 16, np.uint16), (2 ** 32, np.uint32), (2 ** 64, np.uint64)
+)
+
+
+def _convert_flag_var_attribute_value(attr_value, attr_name, dtype):
+    if isinstance(attr_value, str):
+        err_msg = f'Invalid bit expression in value for {attr_name}: "{attr_value}"'
+        masks = []
+        max_mask = 0
+        for s in attr_value.split(","):
+            s = s.strip()
+            pair = s.split('-')
+            if len(pair) == 1:
+                try:
+                    mask = (1 << int(s[0:-1])) if s.endswith("b") else int(s)
+                except ValueError as e:
+                    raise ValueError(err_msg) from e
+            elif len(pair) == 2:
+                s1, s2 = pair
+                if not s1.endswith("b") or not s2.endswith("b"):
+                    raise ValueError(err_msg)
+                try:
+                    b1 = int(s1[0:-1])
+                    b2 = int(s2[0:-1])
+                except ValueError as e:
+                    raise ValueError(err_msg) from e
+                if b1 > b2:
+                    raise ValueError(err_msg)
+                mask = 0
+                for b in range(b1, b2 + 1):
+                    mask |= 1 << b
+            else:
+                raise ValueError(err_msg)
+            masks.append(mask)
+            max_mask = max(max_mask, mask)
+
+        for limit, dtype in _MASK_DTYPES:
+            if max_mask <= limit:
+                return np.array(masks, dtype)
+
+        raise ValueError(err_msg)
+
+    if not (hasattr(attr_value, 'dtype') and hasattr(attr_value, 'shape')):
+        raise TypeError(f'attribute {attr_name!r} must be an integer array')
+
+    return attr_value

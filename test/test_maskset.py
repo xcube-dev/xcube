@@ -3,16 +3,55 @@ import unittest
 import numpy as np
 from numpy.testing import assert_array_almost_equal
 
-from test.sampledata import create_highroc_dataset, create_c2rcc_flag_var
+from test.sampledata import create_highroc_dataset, create_c2rcc_flag_var, create_cmems_sst_flag_var
 from xcube.maskset import MaskSet
 
 
 class MaskSetTest(unittest.TestCase):
-    def test_mask_set(self):
+    def test_mask_set_with_flag_mask_str(self):
+        flag_var = create_cmems_sst_flag_var()
+        mask_set = MaskSet(flag_var)
+
+        self.assertEqual('mask(sea=(1, None), land=(2, None), lake=(4, None), ice=(8, None))',
+                         str(mask_set))
+
+        mask_f1 = mask_set.sea
+        self.assertIs(mask_f1, mask_set.sea)
+        mask_f2 = mask_set.land
+        self.assertIs(mask_f2, mask_set.land)
+        mask_f3 = mask_set.lake
+        self.assertIs(mask_f3, mask_set.lake)
+        mask_f4 = mask_set.ice
+        self.assertIs(mask_f4, mask_set.ice)
+
+        validation_data = ((0, 'sea', mask_f1, np.array([[[1, 0, 0, 0],
+                                                          [1, 1, 0, 0],
+                                                          [1, 1, 1, 0]]],
+                                                        dtype=np.uint8)),
+                           (1, 'land', mask_f2, np.array([[[0, 1, 0, 0],
+                                                           [0, 0, 1, 1],
+                                                           [0, 0, 0, 1]]],
+                                                         dtype=np.uint8)),
+                           (2, 'lake', mask_f3, np.array([[[0, 0, 1, 1],
+                                                           [0, 0, 0, 0],
+                                                           [0, 0, 0, 0]]],
+                                                         dtype=np.uint8)),
+                           (3, 'ice', mask_f4, np.array([[[1, 1, 1, 0],
+                                                          [1, 0, 0, 0],
+                                                          [0, 0, 0, 0]]],
+                                                        dtype=np.uint8)))
+
+        for index, name, mask, data in validation_data:
+            self.assertIs(mask, mask_set[index])
+            self.assertIs(mask, mask_set[name])
+            assert_array_almost_equal(mask.values, data, err_msg=f'{index}, {name}, {mask.name}')
+
+    def test_mask_set_with_flag_mask_int_array(self):
         flag_var = create_c2rcc_flag_var()
         mask_set = MaskSet(flag_var)
 
-        self.assertEqual(str(mask_set), 'c2rcc_flags(F1=(1, None), F2=(2, None), F3=(4, None), F4=(8, None))')
+        self.assertEqual('c2rcc_flags(F1=(1, None), F2=(2, None), F3=(4, None), F4=(8, None))',
+                         str(mask_set))
 
         mask_f1 = mask_set.F1
         self.assertIs(mask_f1, mask_set.F1)

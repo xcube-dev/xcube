@@ -98,7 +98,7 @@ def create_conc_chl():
 def create_c2rcc_flag_var():
     data = np.array([[1, 1, 1, 1],
                      [1, 4, 1, 2],
-                     [8, 1, 1, 1]], dtype=np.uint8)
+                     [8, 1, 1, 1]], dtype=np.uint32)
     return xr.DataArray(data, dims=('y', 'x'), name='c2rcc_flags', attrs=dict(
         long_name="C2RCC quality flags",
         _Unsigned="true",
@@ -106,4 +106,21 @@ def create_c2rcc_flag_var():
         flag_masks=np.array([1, 2, 4, 8], np.int32),
         flag_coding_name="c2rcc_flags",
         flag_descriptions="D1 D2 D3 D4",
+    ))
+
+
+def create_cmems_sst_flag_var():
+    sea = 1
+    land = 2
+    lake = 4
+    ice = 8
+    data = np.array([[[sea + ice, land + ice, lake + ice, lake],
+                      [sea + ice, sea, land, land],
+                      [sea, sea, sea, land]]], dtype=np.float32)
+    return xr.DataArray(data, dims=('time', 'lat', 'lon'), name='mask', attrs=dict(
+        long_name="land sea ice lake bit mask",
+        flag_masks="0b, 1b, 2b, 3b",
+        flag_meanings="sea land lake ice",
+        valid_min=0,
+        valid_max=12,
     ))
