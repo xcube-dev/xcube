@@ -113,10 +113,10 @@ class DefaultInputProcessor(InputProcessor, metaclass=ABCMeta):
         return time_start, time_stop
 
     def _validate(self, dataset):
-        self._check_coordinate_var(dataset, "lon")
-        self._check_coordinate_var(dataset, "lat")
+        self._check_coordinate_var(dataset, "lon", 2)
+        self._check_coordinate_var(dataset, "lat", 2)
         if "time" in dataset.dims:
-            self._check_coordinate_var(dataset, "time")
+            self._check_coordinate_var(dataset, "time", 1)
             required_dims = ("time", "lat", "lon")
         else:
             required_dims = ("lat", "lon")
@@ -128,7 +128,7 @@ class DefaultInputProcessor(InputProcessor, metaclass=ABCMeta):
         if count == 0:
             raise ValueError(f"dataset has no variables with required dimensions {required_dims!r}")
 
-    def _check_coordinate_var(self, dataset, coord_var_name):
+    def _check_coordinate_var(self, dataset: xr.Dataset, coord_var_name: str, min_length: int):
         if coord_var_name not in dataset.coords:
             raise ValueError(f'missing coordinate variable "{coord_var_name}"')
         coord_var = dataset.coords[coord_var_name]
@@ -140,8 +140,8 @@ class DefaultInputProcessor(InputProcessor, metaclass=ABCMeta):
             expected_shape = (len(coord_var), 2)
             if coord_bnds_var.shape != expected_shape:
                 raise ValueError(f'coordinate bounds variable "{coord_bnds_var}" must have shape {expected_shape!r}')
-        elif len(coord_var) < 2:
-            raise ValueError(f'coordinate variable "{coord_var_name}" must have at least 2 values')
+        elif len(coord_var) < min_length:
+            raise ValueError(f'coordinate variable "{coord_var_name}" must have at least {min_length} value(s)')
 
 
 def init_plugin():
