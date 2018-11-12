@@ -49,7 +49,16 @@ class DefaultInputProcessorTest(unittest.TestCase):
         self.assertEqual("invalid input: missing time coverage information in dataset", f"{cm.exception}")
 
     def test_pre_process(self):
-        ds1 = create_default_dataset()
+        ds1 = create_default_dataset(time_mode="time")
+        ds2 = self.processor.pre_process(ds1)
+        self.assertIsNot(ds1, ds2)
+        ds1 = create_default_dataset(time_mode="time_bnds")
+        ds2 = self.processor.pre_process(ds1)
+        self.assertIsNot(ds1, ds2)
+        ds1 = create_default_dataset(time_mode="time_coverage")
+        ds2 = self.processor.pre_process(ds1)
+        self.assertIs(ds1, ds2)
+        ds1 = create_default_dataset(time_mode="start_stop_time")
         ds2 = self.processor.pre_process(ds1)
         self.assertIs(ds1, ds2)
 
