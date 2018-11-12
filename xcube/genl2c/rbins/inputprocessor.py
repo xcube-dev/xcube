@@ -31,7 +31,7 @@ from ...constants import CRS_WKT_EPSG_4326
 from ...dsutil import get_time_in_days_since_1970
 
 
-class RbinsSeviriHighrocSceneInputProcessor(InputProcessor, metaclass=ABCMeta):
+class RbinsSeviriHighrocSceneInputProcessor(InputProcessor):
     """
     Input processor for RBINS' HIGHROC single-scene Level-2 NetCDF inputs.
     """
@@ -62,7 +62,7 @@ class RbinsSeviriHighrocSceneInputProcessor(InputProcessor, metaclass=ABCMeta):
         return days_since_1970, days_since_1970
 
 
-class RbinsSeviriHighrocDailyInputProcessor(InputProcessor, metaclass=ABCMeta):
+class RbinsSeviriHighrocDailyInputProcessor(InputProcessor):
     """
     Input processor for RBINS' HIGHROC daily Level-2 NetCDF inputs.
     """

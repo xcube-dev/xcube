@@ -29,7 +29,7 @@ from ..inputprocessor import InputProcessor, register_input_processor, Reproject
 from ...dsutil import get_time_in_days_since_1970
 
 
-class DefaultInputProcessor(InputProcessor, metaclass=ABCMeta):
+class DefaultInputProcessor(InputProcessor):
     """
     Default input processor that expects input datasets to have the xcube standard format:
 
