@@ -115,7 +115,7 @@ class InputProcessor(metaclass=ABCMeta):
 
     def pre_process(self, dataset: xr.Dataset) -> xr.Dataset:
         """
-        Do any pre-processing before reprojection.
+        Do any pre-processing before reprojection. The output must be a 2D array.
         For example, perform dataset validation, masking, and/or filtering using provided configuration parameters.
         The default implementation returns the unchanged *dataset*.
         :param dataset: The dataset.
@@ -125,7 +125,7 @@ class InputProcessor(metaclass=ABCMeta):
 
     def post_process(self, dataset: xr.Dataset) -> xr.Dataset:
         """
-        Do any post-processing after reprojection.
+        Do any post-processing after reprojection. The input is a 3D array with dimensions ("time", "lat", "lon").
         For example, generate new "wavelength" dimension for variables whose name follow a certain pattern.
         The default implementation returns the unchanged *dataset*.
         :param dataset: The dataset.
