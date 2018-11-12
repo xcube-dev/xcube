@@ -110,12 +110,14 @@ def reproject_to_wgs84(src_dataset: xr.Dataset,
     _assert(x_name in src_dataset)
     _assert(y_name in src_dataset)
     x_var = src_dataset[x_name]
+    y_var = src_dataset[y_name]
+    if len(x_var.dims) == 1 and len(y_var.dims) == 1:
+        y_var, x_var = xr.broadcast(y_var, x_var)
     _assert(len(x_var.dims) == 2)
+    _assert(y_var.dims == x_var.dims)
     _assert(x_var.shape[-1] >= 2)
     _assert(x_var.shape[-2] >= 2)
-    y_var = src_dataset[y_name]
     _assert(y_var.shape == x_var.shape)
-    _assert(y_var.dims == x_var.dims)
 
     src_width = x_var.shape[-1]
     src_height = x_var.shape[-2]
