@@ -153,6 +153,31 @@ Example:
 
 ## `xcube-grid`
 
+
+When defining a spatial cube resolution, the following criteria should be considered:
+
+* The resolution shall be compatible with a maximum of other spatial data sources, that is,
+  the resampling operation to make it compatible with other data sources should be as simple as possible.
+* When applied to global scope, 180 degrees divided by the selected resolution in degrees
+  should exactly yield the vertical number of cells H of a global cube, `res = 180 / H`.
+* The vertical number of cube cells H, should be divisible by a factor of two without remainder
+  as often as possible, `H = T * 2 ^ N`, where `T` would be a tile size.
+* The resolution in degrees should be comprehensible, i.e. it should be a rational number, `res = 1 / M`.
+
+Once the resolution is defined, the bounding box for a regional data cube should then be defined
+by the boundaries of tiles from a suitable level `L` of a pyramid, `T * 2 ^ L`, with `L = 0` to `N`.
+
+For example, if `res = 1 / 360` degrees, that is approx. `309.22` meters(1), with `H = 129600 = T * 2 ^ 6`,
+with `T = 2025` ...
+
+
+
+(1) Using the mean earth radius definition of the WGS-84 ellipsoid `R = 6378137` meters.
+
+
+
+
+
     $xcube-grid --help
     usage: xcube-grid [-h] [--units {degrees,deg,meters,m}] [--res RES]
                       [--bbox BBOX] [--size SIZE]
