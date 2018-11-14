@@ -4,12 +4,13 @@
 ## Dataset Operations
 
 - Init Xcube
+- Validate Xcube
+- Md5
 - List Xcubes
 - Load Xcube(s) (e.g. from remote (object) storage)
 - Save Xcube(s) (save changed variables instead of whole Cube, zarr might handle that via it's persistancy already)
 - Move Xcube(s) (e.g. to remote (object) storage)
 - Delete Xcube(s)
-- Md5
 - Type Cast Xcube
 - Type Cast Xcube Variables
 
