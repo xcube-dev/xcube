@@ -1,7 +1,7 @@
-# Xcube Operation Definions
+# Xcube Operation Definitions
 
 
-## Dataset Operations
+## Operations for local and remote Xcube Repositories 
 
 - Init Xcube
 - Validate Xcube
@@ -14,8 +14,9 @@
 - Type Cast Xcube
 - Type Cast Xcube Variables
 
-# Manipulate Xcubes
+# Operations for individual Xcubes
 
+- Create empty Xcube
 - Merge Xcubes
 - Copy/Clone Xcube
 - Add Variable(s)
