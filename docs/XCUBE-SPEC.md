@@ -165,22 +165,20 @@ When defining a spatial cube resolution, the following criteria should be consid
 * The resolution shall be compatible with a maximum of other spatial data sources, that is,
   the resampling operation to make it compatible with other data sources should be as simple as possible.
 * When applied to global scope, 180 degrees divided by the selected resolution in degrees
-  should exactly yield the vertical number of cells `H` of a global cube, that is, `H = 180 / res` 
-  must be an integer number.
-* `H`, should be divisible by two without remainder as often as possible, `H = T * 2^N`, 
-  where the integer `N > 0` and the integer `T` is a possible tile or chunk size.
-* Finally, the resolution in degrees should be comprehensible, i.e. it should be a rational number, 
-  `res = 1 / M`.
+  should exactly yield the vertical number of cells `HEIGHT` of a global cube, that is, 
+  `HEIGHT = 180 / RES` must be an integer number.
+* `HEIGHT`, should be divisible by two without remainder as often as possible, 
+  `HEIGHT = TILE * 2 ^ LEVEL`, 
+  where the integer `LEVEL > 0` and the integer `TILE` is a possible tile or chunk size.
+* Finally, the resolution in degrees should be comprehensible, 
+  i.e. it should be a rational number, `RES = 1 / INV_RES`.
 
-We therefore need to find a `T0` and an `N0` for which `M0 = T0 * 2^N0 / H`, the lowest resolution of of an
-image pyramid, is an integer number.
-The image pyramid resolutions are then given by `M = M0 * 2^L` with the integer `L >= 0`  
-being a pyramid's level. 
-We then pick an `L` from `M = M0 * 2^L` so that `1 / M` is close to the desired resolution 
-and the number of resolution levels `L` is sufficiently high.
+We therefore need to find a `TILE`, `LEVEL` that is sufficiently high, 
+and `RES` that is close to the desired resolution, and where
+`HEIGHT = 180 / RES = TILE * 2 ^ LEVEL` is an integer number.
   
 Example: The desired resolution should be 300 meters. We find the best resolutions at 
-289.9 meters or 1/3 degrees at `L=7` with `T=270` and `N=1`. This is not the closest resolution, 
+289.9 meters or 1/3 degrees at `LEVEL=8` with `TILE=270`. This is not the closest resolution, 
 but it is the one that provides a maximum number of image pyramid levels.
-A closer one is 302.5 meters or 1/23 degrees at `L=4` with `T=1035` and `N=2`. 
+A closer one is 302.5 meters or 1/23 degrees at `LEVEL=6` with `TILE=1035`. 
 
