@@ -1,9 +1,95 @@
+import fractions
+import math
 import unittest
 from typing import List
 
 import click.testing
 
-from xcube.grid.cli import cli, factor_out_two, get_adjusted_box, get_levels, find_close_resolutions, meters_to_degrees
+from xcube.grid.cli import cli, factor_out_two, get_adjusted_box, get_levels, find_close_resolutions, meters_to_degrees, \
+    degrees_to_meters
+
+
+def find_stuff(target_res, delta_res, min_level=0):
+    if target_res <= 0.0:
+        raise ValueError('illegal target_res')
+    if delta_res < 0.0 or delta_res >= target_res:
+        raise ValueError('illegal delta_res')
+    if min_level < 0.0:
+        raise ValueError('illegal min_level')
+    res_1 = target_res - delta_res
+    res_2 = target_res + delta_res
+    h_1 = 180 / res_1
+    h_2 = 180 / res_2
+    if h_2 < h_1:
+        h_1, h_2 = h_2, h_1
+    h_1 = int(math.floor(h_1))
+    h_2 = int(math.ceil(h_2))
+    results = []
+    for h in range(h_1, h_2 + 1):
+        res = fractions.Fraction(180, h)
+        res_f = float(res)
+        delta = res_f - target_res
+        if abs(delta) <= delta_res:
+            cov = res * h
+            if int(cov) == 180 and int(cov) == float(cov):
+                h0, level = factor_out_two(h)
+                if level >= min_level:
+                    delta_p = 100 * delta / target_res
+                    delta_p = round(10 * delta_p) / 10
+                    res_m = degrees_to_meters(res_f)
+                    results.append((delta_p, res.numerator, res.denominator, res_f, res_m, h, h0, level))
+    return sorted(results, key=lambda item: abs(item[0]))
+
+
+import pprint
+
+
+class GridToolsTest(unittest.TestCase):
+    def test_find_stuff(self):
+        target_res = 0.0833333
+        delta_res = 0.025 * target_res
+        results = find_stuff(target_res, delta_res, min_level=3)
+        pprint.pprint(results)
+        print()
+
+    def test_factor_out_two(self):
+        with self.assertRaises(ValueError):
+            factor_out_two(-1)
+        self.assertEqual((0, 0), factor_out_two(0))
+        self.assertEqual((1, 0), factor_out_two(1))
+        self.assertEqual((1, 1), factor_out_two(2))
+        self.assertEqual((3, 0), factor_out_two(3))
+        self.assertEqual((1, 2), factor_out_two(4))
+        self.assertEqual((83743, 0), factor_out_two(83743))
+        self.assertEqual((2617, 5), factor_out_two(83744))
+        self.assertEqual(83744, 2617 * 2 ** 5)
+
+    def test_get_adjusted_box(self):
+        self.assertEqual((0.0, 49.21875, 5.625, 53.4375),
+                         get_adjusted_box(0.0, 50.0, 5.0, 52.5, 540 / 384))
+
+    def test_get_levels(self):
+        results = get_levels(3, 4)
+        self.assertEqual(5, len(results))
+        self.assertEqual([0, 1, 2, 3, 4],
+                         [row[0] for row in results])
+        self.assertEqual([540, 1080, 2160, 4320, 8640],
+                         [row[1] for row in results])
+        self.assertEqual([3, 6, 12, 24, 48],
+                         [row[2] for row in results])
+
+    def test_find_close_resolutions(self):
+        target_res = meters_to_degrees(300)
+        results = find_close_resolutions(target_res, target_res * 5 / 100)
+        self.assertEqual(9, len(results))
+        self.assertEqual([540, 4140, 8100, 8460, 16020, 16380, 16740, 17100, 17460],
+                         [row[0] for row in results])
+        self.assertEqual([7, 4, 3, 3, 2, 2, 2, 2, 2],
+                         [row[1] for row in results])
+        self.assertEqual([69120, 66240, 64800, 67680, 64080, 65520, 66960, 68400, 69840],
+                         [row[2] for row in results])
+        self.assertEqual([384, 368, 360, 376, 356, 364, 372, 380, 388],
+                         [row[3] for row in results])
 
 
 class GridCliTest(unittest.TestCase):
@@ -61,44 +147,3 @@ class GridCliTest(unittest.TestCase):
                           "  RES (m)   = 289.89450727414993\n"),
                          result.output)
         self.assertEqual(0, result.exit_code)
-
-
-class GridToolsTest(unittest.TestCase):
-    def test_factor_out_two(self):
-        with self.assertRaises(ValueError):
-            factor_out_two(-1)
-        self.assertEqual((0, 0), factor_out_two(0))
-        self.assertEqual((1, 0), factor_out_two(1))
-        self.assertEqual((1, 1), factor_out_two(2))
-        self.assertEqual((3, 0), factor_out_two(3))
-        self.assertEqual((1, 2), factor_out_two(4))
-        self.assertEqual((83743, 0), factor_out_two(83743))
-        self.assertEqual((2617, 5), factor_out_two(83744))
-        self.assertEqual(83744, 2617 * 2 ** 5)
-
-    def test_get_adjusted_box(self):
-        self.assertEqual((0.0, 49.21875, 5.625, 53.4375),
-                         get_adjusted_box(0.0, 50.0, 5.0, 52.5, 540 / 384))
-
-    def test_get_levels(self):
-        results = get_levels(3, 4)
-        self.assertEqual(5, len(results))
-        self.assertEqual([0, 1, 2, 3, 4],
-                         [row[0] for row in results])
-        self.assertEqual([540, 1080, 2160, 4320, 8640],
-                         [row[1] for row in results])
-        self.assertEqual([3, 6, 12, 24, 48],
-                         [row[2] for row in results])
-
-    def test_find_close_resolutions(self):
-        target_res = meters_to_degrees(300)
-        results = find_close_resolutions(target_res, target_res * 5 / 100)
-        self.assertEqual(9, len(results))
-        self.assertEqual([540, 4140, 8100, 8460, 16020, 16380, 16740, 17100, 17460],
-                         [row[0] for row in results])
-        self.assertEqual([7, 4, 3, 3, 2, 2, 2, 2, 2],
-                         [row[1] for row in results])
-        self.assertEqual([69120, 66240, 64800, 67680, 64080, 65520, 66960, 68400, 69840],
-                         [row[2] for row in results])
-        self.assertEqual([384, 368, 360, 376, 356, 364, 372, 380, 388],
-                         [row[3] for row in results])

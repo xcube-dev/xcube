@@ -18,6 +18,8 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+
+import fractions
 import math
 from typing import Tuple
 
@@ -27,8 +29,46 @@ from xcube.constants import EARTH_EQUATORIAL_PERIMETER
 from xcube.version import version
 
 LEVEL_MAX = 15
-TILE_MIN = 180
+TILE_MIN = 128
 INV_RES_MAX = 100
+
+DEFAULT_MIN_LEVEL = 0
+DEFAULT_MAX_TILE = 2500
+DEFAULT_RES_DELTA = "2.5%"
+
+
+def find_close_resolutions(target_res,
+                           delta_res,
+                           max_tile=DEFAULT_MAX_TILE,
+                           min_level=DEFAULT_MIN_LEVEL):
+    if target_res <= 0.0:
+        raise ValueError('illegal target_res')
+    if delta_res < 0.0 or delta_res >= target_res:
+        raise ValueError('illegal delta_res')
+    if min_level < 0.0:
+        raise ValueError('illegal min_level')
+    res_1 = target_res - delta_res
+    res_2 = target_res + delta_res
+    h_1 = 180 / res_1
+    h_2 = 180 / res_2
+    if h_2 < h_1:
+        h_1, h_2 = h_2, h_1
+    h_1 = int(math.floor(h_1))
+    h_2 = int(math.ceil(h_2))
+    results = []
+    for h in range(h_1, h_2 + 1):
+        res = fractions.Fraction(180, h)
+        res_f = float(res)
+        delta = res_f - target_res
+        if abs(delta) <= delta_res:
+            cov = res * h
+            if int(cov) == 180 and int(cov) == float(cov):
+                tile, level = factor_out_two(h)
+                if tile <= max_tile and level >= min_level:
+                    delta_p = _round(100 * delta / target_res, 1000)
+                    res_m = _round(degrees_to_meters(res_f), 10)
+                    results.append((delta_p, res.numerator, res.denominator, res_f, res_m, h, tile, level))
+    return sorted(results, key=lambda item: abs(item[0]))
 
 
 def get_adjusted_box(x1: float, y1: float, x2: float, y2: float, res: float) \
@@ -46,6 +86,10 @@ def meters_to_degrees(res):
 
 def degrees_to_meters(res):
     return (res / 360.0) * EARTH_EQUATORIAL_PERIMETER
+
+
+def _round(x: float, n: int) -> float:
+    return round(n * x) / n
 
 
 def factor_out_two(x: int) -> Tuple[int, int]:
@@ -68,40 +112,28 @@ def get_levels(inv_res_0: int, max_level: int) -> Tuple:
         height = f * tile_size
         inv_res = f * inv_res_0
         res = 1.0 / inv_res
-        res_m = round(10 * degrees_to_meters(res)) / 10
+        res_m = _round(degrees_to_meters(res), 10)
         results.append((level, height, inv_res, res, res_m))
         f *= 2
     return tuple(results)
 
 
-def find_close_resolutions(target_res: float, delta_res: float) -> Tuple:
-    results = []
-    seen_inv_res = set()
-    for inv_res_0 in range(1, INV_RES_MAX + 1):
-        f = 1
-        for level in range(0, LEVEL_MAX + 1):
-            inv_res = f * inv_res_0
-            res = 1.0 / inv_res
-            if abs(target_res - res) <= delta_res and inv_res not in seen_inv_res:
-                tile_size = TILE_MIN * inv_res_0
-                height = TILE_MIN * inv_res
-                delta = round(1000 * (res - target_res) / target_res) / 10
-                res_m = round(10 * degrees_to_meters(res)) / 10
-                results.append((tile_size, level, height, inv_res, res, res_m, delta))
-                seen_inv_res.add(inv_res)
-            f *= 2
-    return tuple(results)
-
-
 @click.command(name="res")
 @click.argument('target_res', metavar="TARGET_RES")
-@click.option('--delta_res', '-d', metavar='DELTA_RES', default='5%',
-              help='Maximum resolution delta. Defaults to "5%".')
-@click.option('--sep', '-s', metavar='SEP', default='\t',
+@click.option('--delta_res', '-d', metavar='DELTA_RES', default=DEFAULT_RES_DELTA,
+              help=f'Maximum resolution delta. Defaults to {DEFAULT_RES_DELTA}.')
+@click.option('--tile_max', '-t', metavar='TILE_MAX', default=DEFAULT_MAX_TILE, type=int,
+              help=f'Maximum tile size. Defaults to {DEFAULT_MAX_TILE}.')
+@click.option('--level_min', '-l', metavar='LEVEL_MIN', default=DEFAULT_MIN_LEVEL, type=int,
+              help=f'Minimum resolution level. Defaults to {DEFAULT_MIN_LEVEL}.')
+@click.option('--sort_by', '-s', metavar='SORT_BY',
+              type=click.Choice(['R_D', 'R_NOM', 'R_DEN', 'R', 'H', 'H0', 'L']), default='R_D',
+              help='Sort output by column name.')
+@click.option('--sep', metavar='SEP', default='\t',
               help='Column separator for the output. Defaults to TAB.')
-def list_resolutions(target_res: str, delta_res: str, sep: str):
+def list_resolutions(target_res: str, delta_res: str, tile_max: int, level_min: int, sep: str):
     """
-    List resolutions close to a target resolution.
+    List resolutions close to target resolution.
 
     Lists possible resolutions of a fixed Earth grid that are close to a given target
     resolution TARGET_RES within a maximum allowed deviation DELTA_RES.
@@ -109,9 +141,8 @@ def list_resolutions(target_res: str, delta_res: str, sep: str):
     Both TARGET_RES and DELTA_RES can be suffixed by a "m" to indicate meter units.
     DELTA_RES can also be suffixed by a "%" to indicate deviation from TARGET_RES in percent.
 
-    Close resolutions are computed as RES = 1 / INV_RES = 180 / HEIGHT, where HEIGHT is the vertical number of
-    grid cells of a global grid, such that HEIGHT = TILE * 2 ^ LEVEL, with LEVEL being the level number
-    of a multi-resolution pyramid and TILE being the tile (or chunk) size at LEVEL zero.
+    If LEVEL_MIN is provided and greater zero, only resolutions are listed whose
+    HEIGHT is larger than TILE * 2 ^ LEVEL_MIN.
     """
     if target_res.endswith("m"):
         target_res = meters_to_degrees(float(target_res[0: -1]))
@@ -126,10 +157,10 @@ def list_resolutions(target_res: str, delta_res: str, sep: str):
 
     sep = '\t' if sep.upper() == "TAB" else sep
 
-    results = find_close_resolutions(target_res, delta_res)
+    results = find_close_resolutions(target_res, delta_res, max_tile=tile_max, min_level=level_min)
 
     click.echo()
-    click.echo(sep.join(("TILE", "LEVEL", "HEIGHT", "INV_RES", "RES (deg)", "RES (m), DELTA_RES (%)")))
+    click.echo(sep.join(("R_D(%)", "R_NOM", "R_DEN", "R(degrees)", "R(m)", "H", "H0", "L")))
     for result in results:
         click.echo(sep.join(map(str, result)))
 
@@ -138,7 +169,7 @@ def list_resolutions(target_res: str, delta_res: str, sep: str):
 @click.argument('inv_res', metavar="INV_RES", type=int)
 @click.option('--more-levels', '-m', metavar="MORE_LEVELS", type=int, default=0,
               help="Number of additional levels to list.")
-@click.option('--sep', '-s', metavar='SEP', default='\t',
+@click.option('--sep', metavar='SEP', default='\t',
               help='Column separator for the output. Defaults to TAB.')
 def list_levels(inv_res: int, more_levels: int, sep: str):
     """
