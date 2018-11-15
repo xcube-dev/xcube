@@ -26,11 +26,9 @@ import click
 from xcube.constants import EARTH_EQUATORIAL_PERIMETER
 from xcube.version import version
 
-SEP = ";"
-L_MAX = 15
-M_MAX = 25
-T_MIN = 180
-T_MAX = M_MAX * T_MIN
+LEVEL_MAX = 15
+TILE_MIN = 180
+INV_RES_MAX = 100
 
 
 def get_adjusted_box(x1: float, y1: float, x2: float, y2: float, res: float) \
@@ -50,26 +48,28 @@ def degrees_to_meters(res):
     return (res / 360.0) * EARTH_EQUATORIAL_PERIMETER
 
 
-def subdivide_inv_res(inv_res: int, target_level: int = None) -> Tuple[int, int]:
-    height = inv_res * T_MIN
-    tile_size = height
-    level = 0
-    while tile_size % 2 == 0 and (tile_size // 2) % T_MIN == 0:
-        tile_size //= 2
-        level += 1
-        if level == target_level:
-            break
-    return tile_size, level
+def factor_out_two(x: int) -> Tuple[int, int]:
+    if x < 0:
+        raise ValueError("x must not be negative")
+    if x == 0:
+        return 0, 0
+    e = 0
+    while x % 2 == 0:
+        x >>= 1
+        e += 1
+    return x, e
 
 
-def list_resolutions(tile_size: int, max_level: int) -> Tuple:
+def get_levels(inv_res_0: int, max_level: int) -> Tuple:
     results = []
     f = 1
+    tile_size = TILE_MIN * inv_res_0
     for level in range(0, max_level + 1):
         height = f * tile_size
-        inv_res = height // T_MIN
+        inv_res = f * inv_res_0
         res = 1.0 / inv_res
-        results.append((level, height, inv_res, res, degrees_to_meters(res)))
+        res_m = round(10 * degrees_to_meters(res)) / 10
+        results.append((level, height, inv_res, res, res_m))
         f *= 2
     return tuple(results)
 
@@ -77,32 +77,37 @@ def list_resolutions(tile_size: int, max_level: int) -> Tuple:
 def find_close_resolutions(target_res: float, delta_res: float) -> Tuple:
     results = []
     seen_inv_res = set()
-    for tile_size in range(T_MIN, T_MAX + 1):
+    for inv_res_0 in range(1, INV_RES_MAX + 1):
         f = 1
-        for level in range(0, L_MAX + 1):
-            height = tile_size * f
-            if height % T_MIN == 0:
-                inv_res = height // T_MIN
-                if inv_res not in seen_inv_res:
-                    res = 1.0 / inv_res
-                    if abs(target_res - res) <= delta_res:
-                        results.append((tile_size, level, height, inv_res, res, degrees_to_meters(res)))
-                        seen_inv_res.add(inv_res)
+        for level in range(0, LEVEL_MAX + 1):
+            inv_res = f * inv_res_0
+            res = 1.0 / inv_res
+            if abs(target_res - res) <= delta_res and inv_res not in seen_inv_res:
+                tile_size = TILE_MIN * inv_res_0
+                height = TILE_MIN * inv_res
+                delta = round(1000 * (res - target_res) / target_res) / 10
+                res_m = round(10 * degrees_to_meters(res)) / 10
+                results.append((tile_size, level, height, inv_res, res, res_m, delta))
+                seen_inv_res.add(inv_res)
             f *= 2
     return tuple(results)
 
 
-@click.command(name="fres")
+@click.command(name="res")
 @click.argument('target_res', metavar="TARGET_RES")
-@click.option('--delta_res', '-d', metavar='DELTA_RES', default='10m',
-              help='Maximum resolution delta. Defaults to "10m".')
+@click.option('--delta_res', '-d', metavar='DELTA_RES', default='5%',
+              help='Maximum resolution delta. Defaults to "5%".')
 @click.option('--sep', '-s', metavar='SEP', default='\t',
               help='Column separator for the output. Defaults to TAB.')
-def find_resolutions(target_res: str, delta_res: str, sep: str):
+def list_resolutions(target_res: str, delta_res: str, sep: str):
     """
-    Find close resolutions to a given target resolution TARGET_RES within a DELTA_RES.
+    List resolutions close to a target resolution.
+
+    Lists possible resolutions of a fixed Earth grid that are close to a given target
+    resolution TARGET_RES within a maximum allowed deviation DELTA_RES.
 
     Both TARGET_RES and DELTA_RES can be suffixed by a "m" to indicate meter units.
+    DELTA_RES can also be suffixed by a "%" to indicate deviation from TARGET_RES in percent.
 
     Close resolutions are computed as RES = 1 / INV_RES = 180 / HEIGHT, where HEIGHT is the vertical number of
     grid cells of a global grid, such that HEIGHT = TILE * 2 ^ LEVEL, with LEVEL being the level number
@@ -114,6 +119,8 @@ def find_resolutions(target_res: str, delta_res: str, sep: str):
         target_res = float(target_res)
     if delta_res.endswith("m"):
         delta_res = meters_to_degrees(float(delta_res[0: -1]))
+    elif delta_res.endswith("%"):
+        delta_res = float(delta_res[0: -1]) * target_res / 100
     else:
         delta_res = float(delta_res)
 
@@ -122,68 +129,50 @@ def find_resolutions(target_res: str, delta_res: str, sep: str):
     results = find_close_resolutions(target_res, delta_res)
 
     click.echo()
-    click.echo(sep.join(("TILE", "LEVEL", "HEIGHT", "INV_RES", "RES (deg)", "RES (m)")))
+    click.echo(sep.join(("TILE", "LEVEL", "HEIGHT", "INV_RES", "RES (deg)", "RES (m), DELTA_RES (%)")))
     for result in results:
         click.echo(sep.join(map(str, result)))
 
 
-@click.command(name="lres")
+@click.command(name="levels")
 @click.argument('inv_res', metavar="INV_RES", type=int)
-@click.option('--max-level', '-m', metavar="MAX_LEVEL", type=int, help="Maximum level to list.")
+@click.option('--more-levels', '-m', metavar="MORE_LEVELS", type=int, default=0,
+              help="Number of additional levels to list.")
 @click.option('--sep', '-s', metavar='SEP', default='\t',
               help='Column separator for the output. Defaults to TAB.')
-def list_resolutions(inv_res: int, max_level: int, sep: str):
+def list_levels(inv_res: int, more_levels: int, sep: str):
     """
-    List up to MAX_LEVEL resolutions for a given target resolution INV_RES.
+    List levels for target resolution.
 
-    Close resolutions are computed as RES = 1 / INV_RES = 180 / HEIGHT, where HEIGHT is the vertical number of
-    grid cells of a global grid, such that HEIGHT = TILE * 2 ^ LEVEL, with LEVEL being the level number
-    of a multi-resolution pyramid and TILE being the tile (or chunk) size at LEVEL zero.
+    Lists all levels and their resolutions for a given target resolution INV_RES
+    which defines a fixed Earth grid.
     """
     if inv_res <= 0:
         raise click.ClickException(f"Invalid INV_RES: {inv_res}")
 
-    target_inv_res = inv_res
-    target_res = 1.0 / target_inv_res
     sep = '\t' if sep.upper() == "TAB" else sep
 
-    tile_size, target_level = subdivide_inv_res(inv_res, target_level=max_level)
-    max_level = max(max_level, target_level) if max_level is not None else target_level
-    results = list_resolutions(tile_size, max_level)
+    inv_res_0, target_level = factor_out_two(inv_res)
+    results = get_levels(inv_res_0, target_level + more_levels)
 
     click.echo()
     click.echo(sep.join(("LEVEL", "HEIGHT", "INV_RES", "RES (deg)", "RES (m)")))
     for result in results:
         click.echo(sep.join(map(str, result)))
-    click.echo()
-    click.echo("Actual:")
-    click.echo(f"  TILE    = {tile_size}")
-    click.echo(f"  LEVEL   = {target_level}")
-    click.echo(f"  INV_RES = {target_inv_res}")
-    click.echo(f"  RES     = {target_res}")
-    click.echo(f"  RES (m) = {degrees_to_meters(target_res)}")
 
 
 @click.command(name="abox")
 @click.argument('geom', metavar="GEOM")
 @click.argument('inv_res', metavar="INV_RES", type=int)
-@click.option('--level', '-l', metavar="LEVEL", type=int, help="Target level.")
-def adjust_box(geom: str, inv_res: int, level: int):
+def adjust_box(geom: str, inv_res: int):
     """
-    Adjust bounding box of the given geometry GEOM for a given
-    inverse resolution INV_RES in 1/degree units which must be an integer number.
+    Adjust a bounding box to a fixed Earth grid.
+
+    Adjusts a bounding box given by GEOM  to a fixed Earth grid by the
+    inverse resolution INV_RES in degrees^-1 units, which must be an integer number.
 
     GEOM is a bounding box given as x1,y1,x2,y2 in decimal degrees.
     (Geometry WKT and GeoJSON support may be added later.)
-
-    The new coordinates are adjusted on a graticule given by
-
-        LON(I) = -180 + I * RES * TILE, LAT(J) = -90 + J * RES * TILE.
-
-    The global grid size is given by WIDTH and HEIGHT as
-
-        WIDTH = 2 * HEIGHT, HEIGHT = 180 * INV_RES = TILE * 2 ^ LEVEL.
-
     """
     try:
         x1, y1, x2, y2 = [float(c) for c in geom.split(",")]
@@ -192,7 +181,9 @@ def adjust_box(geom: str, inv_res: int, level: int):
     if inv_res <= 0:
         raise click.ClickException(f"Invalid INV_RES: {inv_res}")
 
-    tile_size, level = subdivide_inv_res(inv_res, target_level=level)
+    inv_res_0, level = factor_out_two(inv_res)
+
+    tile_size = TILE_MIN * inv_res_0
 
     res = 1 / inv_res
     tile_cov = tile_size * res
@@ -203,8 +194,16 @@ def adjust_box(geom: str, inv_res: int, level: int):
     width = round((adj_x2 - adj_x1) / res)
     height = round((adj_y2 - adj_y1) / res)
 
-    click.echo(f'Box coord. = {adj_x1},{adj_y1},{adj_x2},{adj_y2}')
-    click.echo(f'Box WKT    = POLYGON (('
+    click.echo()
+    click.echo(f'Orig. box coord. = {x1},{y1},{x2},{y2}')
+    click.echo(f'Adj. box coord.  = {adj_x1},{adj_y1},{adj_x2},{adj_y2}')
+    click.echo(f'Orig. box WKT    = POLYGON (('
+               f'{x1} {y1},'
+               f' {x2} {y1},'
+               f' {x2} {y2},'
+               f' {x1} {y2},'
+               f' {x1} {y1}))')
+    click.echo(f'Adj. box WKT     = POLYGON (('
                f'{adj_x1} {adj_y1},'
                f' {adj_x2} {adj_y1},'
                f' {adj_x2} {adj_y2},'
@@ -214,6 +213,7 @@ def adjust_box(geom: str, inv_res: int, level: int):
     click.echo('with')
     click.echo(f'  TILE      = {tile_size}')
     click.echo(f'  LEVEL     = {level}')
+    click.echo(f'  INV_RES   = {inv_res}')
     click.echo(f'  RES (deg) = {res}')
     click.echo(f'  RES (m)   = {degrees_to_meters(res)}')
 
@@ -222,10 +222,33 @@ def adjust_box(geom: str, inv_res: int, level: int):
 @click.version_option(version)
 def cli():
     """
-    Grid tool.
-    """
+    The Xcube grid tool is used to find suitable spatial data cube resolutions and to
+    adjust bounding boxes to that resolutions.
+
+    We find resolutions with respect to a fixed Earth grid and adjust regional spatial
+    subsets to that fixed Earth grid. We also try to select the resolutions such
+    that they are taken from a certain level of a multi-resolution pyramid whose
+    level resolutions increase by a factor of two.
+
+    The graticule on the fixed Earth grid is given by
+
+    \b
+        LON(I) = -180 + I * TILE / INV_RES
+        LAT(J) =  -90 + J * TILE / INV_RES
+
+    With
+
+    \b
+        INV_RES:  An integer number greater zero.
+        RES:      1 / INV_RES, the spatial grid resolution in degrees.
+        TILE:     Number of grid cells of a global grid at lowest resolution level.
+
+    Let WIDTH and HEIGHT be the number of horizontal and vertical grid cells
+    of a global grid at a certain LEVEL with WIDTH * RES = 360 and HEIGHT * RES = 180, then
+    we also force HEIGHT = TILE * 2 ^ LEVEL.
+   """
 
 
-cli.add_command(find_resolutions)
 cli.add_command(list_resolutions)
+cli.add_command(list_levels)
 cli.add_command(adjust_box)

@@ -169,16 +169,18 @@ When defining a spatial cube resolution, the following criteria should be consid
   `HEIGHT = 180 / RES` must be an integer number.
 * `HEIGHT`, should be divisible by two without remainder as often as possible, 
   `HEIGHT = TILE * 2 ^ LEVEL`, 
-  where the integer `LEVEL > 0` and the integer `TILE` is a possible tile or chunk size.
+  where the integer `TILE` is a possible tile or chunk size 
+  that is divisible by 180 without remainder and `LEVEL > 0`.
 * Finally, the resolution in degrees should be comprehensible, 
-  i.e. it should be a rational number, `RES = 1 / INV_RES`.
+  i.e. `INV_RES = 1 / RES` should be an integer number.
 
-We therefore need to find a `TILE`, `LEVEL` that is sufficiently high, 
-and `RES` that is close to the desired resolution, and where
-`HEIGHT = 180 / RES = TILE * 2 ^ LEVEL` is an integer number.
-  
+We therefore need to find values for `TILE`, `LEVEL`, and `RES` so that
+`HEIGHT = 180 / RES = TILE * 2 ^ LEVEL` are all integer numbers.
+The best `RES` values are the ones that are close to the desired resolution but that 
+also have highest possible `LEVEL` values.
+   
 Example: The desired resolution should be 300 meters. We find the best resolutions at 
-289.9 meters or 1/3 degrees at `LEVEL=8` with `TILE=270`. This is not the closest resolution, 
+289.9 meters or 1/3 degrees at `LEVEL=7` with `TILE=540`. This is not the closest resolution, 
 but it is the one that provides a maximum number of image pyramid levels.
-A closer one is 302.5 meters or 1/23 degrees at `LEVEL=6` with `TILE=1035`. 
+A closer one is 302.5 meters or 1/23 degrees at `LEVEL=5` with `TILE=2070`. 
 
