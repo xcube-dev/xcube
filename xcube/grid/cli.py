@@ -288,10 +288,10 @@ def adjust_box(geom: str, res: Optional[str], height: Optional[int], coverage: s
 
     # coverage is height_0 in degrees
     res = coverage / fractions.Fraction(height, 1)
-    coverage = height_0 * float(res)
+    coverage_0 = height_0 * float(res)
 
     # Adjust along tile boundaries
-    adj_x1, adj_y1, adj_x2, adj_y2 = get_adjusted_box(x1, y1, x2, y2, coverage)
+    adj_x1, adj_y1, adj_x2, adj_y2 = get_adjusted_box(x1, y1, x2, y2, coverage_0)
 
     reg_width = round((adj_x2 - adj_x1) / float(res))
     reg_height = round((adj_y2 - adj_y1) / float(res))
@@ -315,10 +315,11 @@ def adjust_box(geom: str, res: Optional[str], height: Optional[int], coverage: s
     click.echo(f'Combined WKT     = MULTIPOLYGON ({orig_coords}, {adj_coords})')
     click.echo(f'Box grid size    = {reg_width} x {reg_height} cells')
     click.echo('Grid defined by')
-    click.echo(f'  H0      = {height_0}')
-    click.echo(f'  L       = {level}')
-    click.echo(f'  R (deg) = {res}')
-    click.echo(f'  R (m)   = {_round(degrees_to_meters(res), 100)}')
+    click.echo(f'  H0       = {height_0}')
+    click.echo(f'  C0 (deg) = {coverage_0}')
+    click.echo(f'  L        = {level}')
+    click.echo(f'  R (deg)  = {res}')
+    click.echo(f'  R (m)    = {_round(degrees_to_meters(res), 100)}')
 
 
 def _fetch_height_and_coverage_from_options(res_str: Optional[str],
