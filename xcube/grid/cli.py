@@ -21,7 +21,7 @@
 
 import fractions
 import math
-from typing import Tuple
+from typing import Tuple, List
 
 import click
 
@@ -37,16 +37,47 @@ DEFAULT_MAX_TILE = 2500
 DEFAULT_RES_DELTA = "2.5%"
 
 
-def find_close_resolutions(target_res,
-                           delta_res,
-                           max_tile=DEFAULT_MAX_TILE,
-                           min_level=DEFAULT_MIN_LEVEL):
+def find_close_resolutions(target_res: float,
+                           delta_res: float,
+                           max_tile: int = DEFAULT_MAX_TILE,
+                           min_level: int = DEFAULT_MIN_LEVEL,
+                           int_inv_res: bool = False,
+                           sort_by: str = "R_D") -> List[Tuple]:
     if target_res <= 0.0:
         raise ValueError('illegal target_res')
     if delta_res < 0.0 or delta_res >= target_res:
         raise ValueError('illegal delta_res')
     if min_level < 0.0:
         raise ValueError('illegal min_level')
+    header = ("R_D(%)", "R_NOM", "R_DEN", "R(degrees)", "R(m)", "H", "H0", "L")
+    reverse_sort = False
+    if sort_by.startswith("+") or sort_by.startswith("-"):
+        reverse_sort = sort_by[0] == "-"
+        sort_by = sort_by[1:]
+    if sort_by == "R_D":
+        def sort_key(item):
+            return abs(item[0])
+    elif sort_by == "R_NOM":
+        def sort_key(item):
+            return item[1]
+    elif sort_by == "R_DEN":
+        def sort_key(item):
+            return item[2]
+    elif sort_by == "R":
+        def sort_key(item):
+            return item[3]
+    elif sort_by == "H":
+        def sort_key(item):
+            return item[5]
+    elif sort_by == "H0":
+        def sort_key(item):
+            return item[6]
+    elif sort_by == "L":
+        def sort_key(item):
+            return item[7]
+    else:
+        raise ValueError(f'illegal sort key: {sort_by}')
+    # Compute h_1, h_2, the range of possible integer heights
     res_1 = target_res - delta_res
     res_2 = target_res + delta_res
     h_1 = 180 / res_1
@@ -55,20 +86,27 @@ def find_close_resolutions(target_res,
         h_1, h_2 = h_2, h_1
     h_1 = int(math.floor(h_1))
     h_2 = int(math.ceil(h_2))
-    results = []
+    # Collect resolutions all possible integer heights
+    data = []
     for h in range(h_1, h_2 + 1):
         res = fractions.Fraction(180, h)
-        res_f = float(res)
-        delta = res_f - target_res
-        if abs(delta) <= delta_res:
-            cov = res * h
-            if int(cov) == 180 and int(cov) == float(cov):
-                tile, level = factor_out_two(h)
-                if tile <= max_tile and level >= min_level:
-                    delta_p = _round(100 * delta / target_res, 1000)
-                    res_m = _round(degrees_to_meters(res_f), 10)
-                    results.append((delta_p, res.numerator, res.denominator, res_f, res_m, h, tile, level))
-    return sorted(results, key=lambda item: abs(item[0]))
+        # We may only want resolutions whose inverse is integer, e.g. 1/12 degree
+        if not int_inv_res or res.numerator == 1:
+            res_f = float(res)
+            delta = res_f - target_res
+            # Only if we are within delta_res
+            if abs(delta) <= delta_res:
+                cov = res * h
+                # Only if res * h = 180 and integer
+                if cov.numerator == 180 and cov.denominator == 1:
+                    tile, level = factor_out_two(h)
+                    # Only if tile size falls below max and level exceeds min
+                    if tile <= max_tile and level >= min_level:
+                        delta_p = _round(100 * delta / target_res, 1000)
+                        res_m = _round(degrees_to_meters(res_f), 10)
+                        data.append((delta_p, res.numerator, res.denominator, res_f, res_m, h, tile, level))
+    data = sorted(data, key=sort_key, reverse=reverse_sort)
+    return [header] + data
 
 
 def get_adjusted_box(x1: float, y1: float, x2: float, y2: float, res: float) \
@@ -117,6 +155,11 @@ def get_levels(inv_res_0: int, max_level: int) -> Tuple:
         f *= 2
     return tuple(results)
 
+_SORT_BY_KEYS_0 = ['R_D', 'R_NOM', 'R_DEN', 'R', 'H', 'H0', 'L']
+_SORT_BY_KEYS_P = ["+" + k for k in _SORT_BY_KEYS_0]
+_SORT_BY_KEYS_M = ["-" + k for k in _SORT_BY_KEYS_0]
+_SORT_BY_KEYS = _SORT_BY_KEYS_0 + _SORT_BY_KEYS_P + _SORT_BY_KEYS_M
+
 
 @click.command(name="res")
 @click.argument('target_res', metavar="TARGET_RES")
@@ -126,12 +169,20 @@ def get_levels(inv_res_0: int, max_level: int) -> Tuple:
               help=f'Maximum tile size. Defaults to {DEFAULT_MAX_TILE}.')
 @click.option('--level_min', '-l', metavar='LEVEL_MIN', default=DEFAULT_MIN_LEVEL, type=int,
               help=f'Minimum resolution level. Defaults to {DEFAULT_MIN_LEVEL}.')
+@click.option('--int_inv_res', '-i', metavar='INT_INV_RES', is_flag=True,
+              help=f'Find only resolutions whose inverse are integers.')
 @click.option('--sort_by', '-s', metavar='SORT_BY',
-              type=click.Choice(['R_D', 'R_NOM', 'R_DEN', 'R', 'H', 'H0', 'L']), default='R_D',
+              type=click.Choice(_SORT_BY_KEYS), default='R_D',
               help='Sort output by column name.')
 @click.option('--sep', metavar='SEP', default='\t',
               help='Column separator for the output. Defaults to TAB.')
-def list_resolutions(target_res: str, delta_res: str, tile_max: int, level_min: int, sep: str):
+def list_resolutions(target_res: str,
+                     delta_res: str,
+                     tile_max: int,
+                     level_min: int,
+                     int_inv_res: bool,
+                     sort_by: str,
+                     sep: str):
     """
     List resolutions close to target resolution.
 
@@ -157,10 +208,13 @@ def list_resolutions(target_res: str, delta_res: str, tile_max: int, level_min: 
 
     sep = '\t' if sep.upper() == "TAB" else sep
 
-    results = find_close_resolutions(target_res, delta_res, max_tile=tile_max, min_level=level_min)
+    results = find_close_resolutions(target_res, delta_res,
+                                     max_tile=tile_max,
+                                     min_level=level_min,
+                                     int_inv_res=int_inv_res,
+                                     sort_by=sort_by)
 
     click.echo()
-    click.echo(sep.join(("R_D(%)", "R_NOM", "R_DEN", "R(degrees)", "R(m)", "H", "H0", "L")))
     for result in results:
         click.echo(sep.join(map(str, result)))
 
