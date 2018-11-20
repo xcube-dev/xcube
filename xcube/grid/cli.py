@@ -21,7 +21,7 @@
 
 import fractions
 import math
-from typing import Tuple, List, Optional
+from typing import Tuple, List, Optional, Union
 
 import click
 
@@ -32,6 +32,7 @@ _DEFAULT_MIN_LEVEL = 0
 _DEFAULT_MAX_TILE = 2500
 _DEFAULT_RES_DELTA = "2.5%"
 _DEFAULT_SORT_BY = "R_D"
+_DEFAULT_NUM_RESULTS = 10
 _DEFAULT_LAT_COVERAGE = fractions.Fraction(180, 1)
 
 _SORT_BY_KEYS_0 = ['R_D', 'R_NOM', 'R_DEN', 'R', 'H', 'H0', 'L']
@@ -42,7 +43,7 @@ _SORT_BY_KEYS = _SORT_BY_KEYS_0 + _SORT_BY_KEYS_P + _SORT_BY_KEYS_M
 
 def find_close_resolutions(target_res: float,
                            delta_res: float,
-                           coverage: fractions.Fraction,
+                           coverage: Union[int, fractions.Fraction],
                            max_height_0: int = _DEFAULT_MAX_TILE,
                            min_level: int = _DEFAULT_MIN_LEVEL,
                            int_inv_res: bool = False,
@@ -53,7 +54,7 @@ def find_close_resolutions(target_res: float,
         raise ValueError('illegal delta_res')
     if min_level < 0.0:
         raise ValueError('illegal min_level')
-    header = ("R_D(%)", "R_NOM", "R_DEN", "R(degrees)", "R(m)", "H", "H0", "L")
+    header = ("R_D (%)", "R_NOM", "R_DEN", "R (deg)", "R (m)", "H", "H0", "L")
     reverse_sort = False
     if sort_by.startswith("+") or sort_by.startswith("-"):
         reverse_sort = sort_by[0] == "-"
@@ -81,38 +82,34 @@ def find_close_resolutions(target_res: float,
             return item[7]
     else:
         raise ValueError(f'illegal sort key: {sort_by}')
-    # Compute h_1, h_2, the range of possible integer heights
-    res_1 = target_res - delta_res
-    res_2 = target_res + delta_res
-    h_1 = coverage / res_1
-    h_2 = coverage / res_2
-    if h_2 < h_1:
-        h_1, h_2 = h_2, h_1
-    h_1 = int(math.floor(h_1))
-    h_2 = int(math.ceil(h_2))
+    # Compute h_min, h_max, the range of possible integer heights
+    h_min = int(math.floor(coverage / (target_res + delta_res)))
+    h_max = int(math.ceil(coverage / (target_res - delta_res)))
     # Collect resolutions all possible integer heights
     data = []
-    for height in range(h_1, h_2 + 1):
+    for height in range(h_min, h_max + 1):
         res = coverage / fractions.Fraction(height, 1)
         # We may only want resolutions whose inverse is integer, e.g. 1/12 degree
         if not int_inv_res or res.numerator == 1:
-            res_f = float(res)
-            delta = res_f - target_res
+            res_d = float(res)
+            delta = res_d - target_res
             # Only if we are within delta_res
             if abs(delta) <= delta_res:
-                # Only if res * h = coverage
+                # Only if res * height = coverage
                 if res * height == coverage:
                     height_0, level = factor_out_two(height)
                     # Only if tile size falls below max and level exceeds min
                     if height_0 <= max_height_0 and level >= min_level:
                         delta_p = _round(100 * delta / target_res, 1000)
-                        res_m = _round(degrees_to_meters(res_f), 10)
-                        data.append((delta_p, res.numerator, res.denominator, res_f, res_m, height, height_0, level))
+                        res_m = _round(degrees_to_meters(res_d), 100)
+                        data.append((delta_p, res.numerator, res.denominator, res_d, res_m, height, height_0, level))
     data = sorted(data, key=sort_key, reverse=reverse_sort)
     return [header] + data
 
 
-def get_levels(height: int, coverage: fractions.Fraction, level_min: int) -> List[Tuple]:
+def get_levels(height: int,
+               coverage: Union[int, fractions.Fraction],
+               level_min: int = None) -> List[Tuple]:
     res = coverage / fractions.Fraction(height)
     height_0, level = factor_out_two(height)
     data = []
@@ -121,14 +118,17 @@ def get_levels(height: int, coverage: fractions.Fraction, level_min: int) -> Lis
     for i in range(0, max(level, level_min or level) + 1):
         height_i = height_0 * f
         res_i = res_0 / f
-        data.append((i, height_i, res_i.numerator, res_i.denominator, float(res_i)))
+        res_i_d = float(res_i)
+        res_i_m = _round(degrees_to_meters(res_i_d), 100)
+        data.append((i, height_i, res_i, res_i_d, res_i_m))
         f *= 2
-    header = ("L", "H", "R_NUM", "R_DEN", "R")
+    header = ("L", "H", "R", "R (deg)", "R (m)")
     return [header] + data
 
 
 def get_adjusted_box(x1: float, y1: float, x2: float, y2: float, res: float) \
         -> Tuple[float, float, float, float]:
+    # TODO: clamp values
     adj_x1 = res * math.floor(x1 / res)
     adj_y1 = res * math.floor(y1 / res)
     adj_x2 = res * math.ceil(x2 / res)
@@ -179,6 +179,9 @@ def factor_out_two(x: int) -> Tuple[int, int]:
 @click.option('--sort_by', '-s', metavar='SORT_BY',
               type=click.Choice(_SORT_BY_KEYS), default=_DEFAULT_SORT_BY,
               help='Sort output by column name.')
+@click.option('--num_results', '-n', metavar='NUM_RESULTS',
+              type=int, default=_DEFAULT_NUM_RESULTS,
+              help=f'Maximum number of results to list. Defaults to {_DEFAULT_NUM_RESULTS}')
 @click.option('--sep', metavar='SEP', default='\t',
               help='Column separator for the output. Defaults to TAB.')
 def list_resolutions(target_res: str,
@@ -188,6 +191,7 @@ def list_resolutions(target_res: str,
                      level_min: int,
                      int_inv_res: bool,
                      sort_by: str,
+                     num_results: int,
                      sep: str):
     """
     List resolutions close to target resolution.
@@ -226,8 +230,13 @@ def list_resolutions(target_res: str,
                                      sort_by=sort_by)
 
     click.echo()
-    for result in results:
-        click.echo(sep.join(map(str, result)))
+    if len(results) <= num_results:
+        for result in results:
+            click.echo(sep.join(map(str, result)))
+    else:
+        for result in results[0: num_results]:
+            click.echo(sep.join(map(str, result)))
+        click.echo(f"{len(results) - num_results} more...")
 
 
 @click.command(name="levels")
@@ -262,12 +271,15 @@ def list_levels(res: str, height: int, coverage: str, level_min: Optional[int], 
 @click.command(name="abox")
 @click.argument('geom', metavar="GEOM")
 @click.option('--res', '-r', metavar="RES",
-              help='Resolution in degrees. Can also be a rational number of form RES_NOM/RES_DEN.')
+              help='The parent grid\'s resolution in degrees. Can also be a rational number of form A/B.')
 @click.option('--height', '-h', metavar="HEIGHT", type=int,
-              help='Height in grid cells.')
+              help='The parent grid\'s height in grid cells.')
 @click.option('--coverage', '-c', metavar="COVERAGE", default=str(_DEFAULT_LAT_COVERAGE),
-              help=f'The vertical coverage in degrees. Defaults to {_DEFAULT_LAT_COVERAGE} degrees.')
-def adjust_box(geom: str, res: Optional[str], height: Optional[int], coverage: str):
+              help=f'The parent grid\'s coverage in degrees. Defaults to {_DEFAULT_LAT_COVERAGE} degrees.')
+@click.option('--tile_factor', '-t', metavar="TILE_FACTOR", type=int, default=1,
+              help='A tile factor to compute tile sizes from height at level zero: TILE = TILE_FACTOR * HEIGHT_0.'
+                   'Usually TILE_FACTOR = 2^N. If not given, TILE = 1.')
+def adjust_box(geom: str, res: Optional[str], height: Optional[int], coverage: str, tile_factor: int):
     """
     Adjust a bounding box to a fixed Earth grid.
 
@@ -289,8 +301,14 @@ def adjust_box(geom: str, res: Optional[str], height: Optional[int], coverage: s
     res = coverage / fractions.Fraction(height, 1)
     res_0 = res * 2 ** level
 
+    if tile_factor is not None:
+        tile_size = tile_factor * height_0
+    else:
+        tile_size = 1
+    graticule_dist = res_0 * tile_size
+
     # Adjust along tile boundaries
-    adj_x1, adj_y1, adj_x2, adj_y2 = get_adjusted_box(x1, y1, x2, y2, float(res_0))
+    adj_x1, adj_y1, adj_x2, adj_y2 = get_adjusted_box(x1, y1, x2, y2, float(graticule_dist))
 
     reg_width = round((adj_x2 - adj_x1) / float(res))
     reg_height = round((adj_y2 - adj_y1) / float(res))
@@ -313,12 +331,13 @@ def adjust_box(geom: str, res: Optional[str], height: Optional[int], coverage: s
     click.echo(f'Adj. box WKT     = POLYGON {adj_coords}')
     click.echo(f'Combined WKT     = MULTIPOLYGON ({orig_coords}, {adj_coords})')
     click.echo(f'Box grid size    = {reg_width} x {reg_height} cells')
-    click.echo('Grid defined by')
-    click.echo(f'  H0       = {height_0}')
-    click.echo(f'  L        = {level}')
-    click.echo(f'  R0 (deg) = {res_0}')
-    click.echo(f'  R (deg)  = {res}')
-    click.echo(f'  R (m)    = {_round(degrees_to_meters(res), 100)}')
+    click.echo(f'Graticule dist.  = {graticule_dist} degrees')
+    click.echo(f'Tile size        = {tile_size} cells')
+    click.echo(f'Granularity      = {height_0} cells')
+    click.echo(f'Level            = {level}')
+    click.echo(f'Res. at level 0  = {res_0} degrees')
+    click.echo(f'Resolution       = {res} degrees')
+    click.echo(f'                 = {_round(degrees_to_meters(res), 100)} meters')
 
 
 def _fetch_height_and_coverage_from_options(res_str: Optional[str],
