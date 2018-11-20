@@ -55,7 +55,7 @@ setup(
         'console_scripts': [
             'xcube-genl2c = xcube.genl2c.cli:main',
             'xcube-genl3 = xcube.genl3.cli:main',
-            'xcube-grid = xcube.grid.cli:main',
+            'xcube-grid = xcube.grid.main:main',
         ],
         'xcube_plugins': [
             'xcube_genl2c_default = xcube.genl2c.default:init_plugin',

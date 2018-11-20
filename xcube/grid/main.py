@@ -18,3 +18,13 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+
+from xcube.grid.cli import cli
+
+
+def main(args=None):
+    cli.main(args=args)
+
+
+if __name__ == '__main__':
+    main()

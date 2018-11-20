@@ -152,37 +152,35 @@ For multiple regional cubes that "belong together" (e.g. one project)
 use common resolutions and regions that snap on a Fixed Earth grid, which has been
 been defined with respect to ideal tile / chunk sizes. 
 
-Chunking of data has a very high impact on processing performance:
-
-* If xcubes are served by a tile map server, tile sizes shall be aligned with chunk sizes
-* xcube spatial image size shall be integer divisible by chunk sizes 
-
-
-The data cubes in the DCS4COP project should be generated for predefined 
-regions and predefined spatial resolutions. A cube for a given region may be 
-generated for multiple spatial resolutions.
+Chunking of data has a very high impact on processing performance, e.g. if 
+Xcubes are served by a tile map server, tile sizes shall be aligned with chunk sizes.
 
 There may be a scenario in which all the region cubes for will be used together. Then,
 in order to avoid another spatial resampling to a common grid, the grids of all cubes should be
-defined on a fixed Earth grid.
+defined on a fixed Earth grid. In addition, to ease combination Xcubes 
+of different resolutions, the resolutions shall ideally differ by a factor of two. 
 
-This means a cube's region coordinates are taken from the corresponding cells 
-of a fixed Earth grid defined for a given spatial resolution.
+When defining a spatial cube resolution, the following criteria should be considered:
 
-Therefore the `num_levels` spatial resolutions in which data cubes are produced shall be defined such that
-the fixed Earth's grid sizes multiplied by the cell size `delta` is close to 180 degrees.
-In addition we want the actual data cubes sizes to be integer multiples of an appropriate internal
-chunk (tile) size used to compress and store the data at different resolution levels `i`:
+* The resolution shall be compatible with a maximum of other spatial data sources, that is,
+  the resampling operation to make it compatible with other data sources should be as simple as possible.
+* When applied to global scope, 180 degrees divided by the selected resolution in degrees
+  should exactly yield the vertical number of cells `HEIGHT` of a global cube, that is, 
+  `HEIGHT = 180 / RES` must be an integer number.
+* `HEIGHT`, should be divisible by two without remainder as often as possible, 
+  `HEIGHT = TILE * 2 ^ LEVEL`, 
+  where the integer `TILE` is a possible tile or chunk size 
+  that is divisible by 180 without remainder and `LEVEL > 0`.
+* Finally, the resolution in degrees should be comprehensible, 
+  i.e. `INV_RES = 1 / RES` should be an integer number.
 
-    |grid_size[i] * delta[i] - 180| < eps
-    num_chunks[i] = num_chunks[0] * power(2, i)
-    grid_size[i] = num_chunks[i] * chunk_size
-
-with
-
-    0 <= i < num_levels
-    num_chunks[0] := number of chunks at lowest spatial resolution i in both spatial dimensions
-    chunk_size := size of a chunk in both spatial dimensions
-
-
+We therefore need to find values for `TILE`, `LEVEL`, and `RES` so that
+`HEIGHT = 180 / RES = TILE * 2 ^ LEVEL` are all integer numbers.
+The best `RES` values are the ones that are close to the desired resolution but that 
+also have highest possible `LEVEL` values.
+   
+Example: The desired resolution should be 300 meters. We find the best resolutions at 
+289.9 meters or 1/3 degrees at `LEVEL=7` with `TILE=540`. This is not the closest resolution, 
+but it is the one that provides a maximum number of image pyramid levels.
+A closer one is 302.5 meters or 1/23 degrees at `LEVEL=5` with `TILE=2070`. 
 
