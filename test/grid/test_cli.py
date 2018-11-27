@@ -109,13 +109,13 @@ R_D (%)	R_NOM	R_DEN	R (deg)	R (m)	H	H0	L
         result = self.invoke_cli(['abox', "0,50,5,52.5", "-r", "1/384"])
         self.assertEqual(("""
 Orig. box coord. = 0.0,50.0,5.0,52.5
-Adj. box coord.  = 0.0,0.0,180.0,180.0
+Adj. box coord.  = 0.0,49.33333333333333,5.333333333333333,53.33333333333333
 Orig. box WKT    = POLYGON ((0.0 50.0, 5.0 50.0, 5.0 52.5, 0.0 52.5, 0.0 50.0))
-Adj. box WKT     = POLYGON ((0.0 0.0, 180.0 0.0, 180.0 180.0, 0.0 180.0, 0.0 0.0))
-Combined WKT     = MULTIPOLYGON (((0.0 50.0, 5.0 50.0, 5.0 52.5, 0.0 52.5, 0.0 50.0)), ((0.0 0.0, 180.0 0.0, 180.0 180.0, 0.0 180.0, 0.0 0.0)))
-Box grid size    = 69120 x 69120 cells
-Graticule dist.  = 180 degrees
-Tile size        = 135 cells
+Adj. box WKT     = POLYGON ((0.0 49.33333333333333, 5.333333333333333 49.33333333333333, 5.333333333333333 53.33333333333333, 0.0 53.33333333333333, 0.0 49.33333333333333))
+Combined WKT     = MULTIPOLYGON (((0.0 50.0, 5.0 50.0, 5.0 52.5, 0.0 52.5, 0.0 50.0)), ((0.0 49.33333333333333, 5.333333333333333 49.33333333333333, 5.333333333333333 53.33333333333333, 0.0 53.33333333333333, 0.0 49.33333333333333)))
+Box grid size    = 2048 x 1536 cells
+Graticule dist.  = 4/3 degrees
+Tile size        = 1 cells
 Granularity      = 135 cells
 Level            = 9
 Res. at level 0  = 4/3 degrees

@@ -268,7 +268,7 @@ def list_levels(res: str, height: int, coverage: str, level_min: Optional[int], 
         click.echo(sep.join(map(str, row)))
 
 
-@click.command(name="abox")
+@click.command(name="abox", context_settings={"ignore_unknown_options":True})
 @click.argument('geom', metavar="GEOM")
 @click.option('--res', '-r', metavar="RES",
               help='The parent grid\'s resolution in degrees. Can also be a rational number of form A/B.')
@@ -276,10 +276,10 @@ def list_levels(res: str, height: int, coverage: str, level_min: Optional[int], 
               help='The parent grid\'s height in grid cells.')
 @click.option('--coverage', '-c', metavar="COVERAGE", default=str(_DEFAULT_LAT_COVERAGE),
               help=f'The parent grid\'s coverage in degrees. Defaults to {_DEFAULT_LAT_COVERAGE} degrees.')
-@click.option('--tile_factor', '-t', metavar="TILE_FACTOR", type=int, default=1,
+@click.option('--tile_factor', '-t', metavar="TILE_FACTOR", type=int,
               help='A tile factor to compute tile sizes from height at level zero: TILE = TILE_FACTOR * HEIGHT_0.'
                    'Usually TILE_FACTOR = 2^N. If not given, TILE = 1.')
-def adjust_box(geom: str, res: Optional[str], height: Optional[int], coverage: str, tile_factor: int):
+def adjust_box(geom: str, res: Optional[str], height: Optional[int], coverage: str, tile_factor: Optional[int]):
     """
     Adjust a bounding box to a fixed Earth grid.
 
