@@ -33,16 +33,16 @@ def get_config_dict(config_obj, open_function):
     :return: Configuration dictionary
     :raise OSError, ValueError
     """
-    config_file = config_obj.config_file
-    input_files = config_obj.input_files
-    input_processor = config_obj.input_processor
-    output_dir = config_obj.output_dir
-    output_name = config_obj.output_name
-    output_writer = config_obj.output_writer
-    output_size = config_obj.output_size
-    output_region = config_obj.output_region
-    output_variables = config_obj.output_variables
-    output_resampling = config_obj.output_resampling
+    config_file = config_obj['config']
+    input_files = config_obj['input_files']
+    input_processor = config_obj['proc']
+    output_dir = config_obj['dir']
+    output_name = config_obj['name']
+    output_writer = config_obj['writer']
+    output_size = config_obj['size']
+    output_region = config_obj['region']
+    output_variables = config_obj['vars']
+    output_resampling = config_obj['resamp']
 
     if config_file is not None:
         try:

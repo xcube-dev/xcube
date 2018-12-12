@@ -19,8 +19,12 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-DEFAULT_OUTPUT_DIR = '.'
-DEFAULT_OUTPUT_NAME = 'PROJ_WGS84_{INPUT_FILE}'
-DEFAULT_OUTPUT_WRITER = 'netcdf4'
-DEFAULT_OUTPUT_RESAMPLING = 'Nearest'
-DEFAULT_OUTPUT_SIZE = [512, 512]
+from xcube.genl2c.cli import cli
+
+
+def main(args=None):
+    cli.main(args=args)
+
+
+if __name__ == '__main__':
+    main()
