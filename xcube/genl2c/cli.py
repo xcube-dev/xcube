@@ -43,16 +43,16 @@ resampling_algs = NAME_TO_GDAL_RESAMPLE_ALG.keys()
 
 @click.command(context_settings={"ignore_unknown_options":True})
 @click.argument('input_files', metavar='INPUT_FILES', nargs=-1)
-@click.option('--proc', '-p', metavar='INPUT_PROCESSOR', type = click.Choice(input_processor_names),
+@click.option('--proc', '-p', metavar='INPUT_PROCESSOR', type=click.Choice(input_processor_names),
               help=f'Input processor type name. ')
 @click.option('--config', '-c', metavar='CONFIG_FILE',
               help='Data cube configuration file in YAML format.')
-@click.option('--dir', '-d', metavar='OUTPUT_DIR', default = {DEFAULT_OUTPUT_DIR},
+@click.option('--dir', '-d', metavar='OUTPUT_DIR', default={DEFAULT_OUTPUT_DIR},
               help=f'Output directory. Defaults to {DEFAULT_OUTPUT_DIR!r}')
-@click.option('--name', '-n', metavar='OUTPUT_NAME', default = {DEFAULT_OUTPUT_NAME},
+@click.option('--name', '-n', metavar='OUTPUT_NAME', default={DEFAULT_OUTPUT_NAME},
               help=f'Output filename pattern. Defaults to {DEFAULT_OUTPUT_NAME!r}.')
-@click.option('--writer', '-w', metavar='OUTPUT_WRITER', type = click.Choice(output_writer_names),
-              default = DEFAULT_OUTPUT_WRITER, help=f'Output writer type name. Defaults to {DEFAULT_OUTPUT_WRITER!r}.')
+@click.option('--writer', '-w', metavar='OUTPUT_WRITER', type=click.Choice(output_writer_names),
+              default=DEFAULT_OUTPUT_WRITER, help=f'Output writer type name. Defaults to {DEFAULT_OUTPUT_WRITER!r}.')
 @click.option('--size', '-s', metavar='OUTPUT_SIZE',
               help='Output size in pixels using format "<width>,<height>".')
 @click.option('--region', '-r', metavar='OUTPUT_REGION',
@@ -60,16 +60,28 @@ resampling_algs = NAME_TO_GDAL_RESAMPLE_ALG.keys()
 @click.option('--vars', '-v', metavar='OUTPUT_VARIABLES',
               help='Variables to be included in output. '
                    'Comma-separated list of names which may contain wildcard characters "*" and "?".')
-@click.option('--resamp', metavar='OUTPUT_RESAMPLING', type = click.Choice(resampling_algs),
+@click.option('--resamp', metavar='OUTPUT_RESAMPLING', type=click.Choice(resampling_algs),
               help='Fallback spatial resampling algorithm to be used for all variables.'
               f'Defaults to {DEFAULT_OUTPUT_RESAMPLING!r}.')
-@click.option('--traceback', metavar='TRACEBACK_MODE', default=False, is_flag = True,
+@click.option('--traceback', metavar='TRACEBACK_MODE', default=False, is_flag=True,
               help='On error, print Python traceback.')
-@click.option('--append', '-a', metavar='APPEND_MODE', default=False, is_flag = True,
+@click.option('--append', '-a', metavar='APPEND_MODE', default=False, is_flag=True,
               help='Append successive outputs.')
-@click.option('--dry_run', metavar = 'DRY_RUN', default=False, is_flag = True,
+@click.option('--dry_run', metavar='DRY_RUN', default=False, is_flag=True,
               help='Just read and process inputs, but don\'t produce any outputs.')
-def create_xcube(input_files: str,  proc: str, config: str, dir: str, name: str, writer: str, size: str , region: str, vars: str, resamp: str, traceback: bool, append: bool, dry_run: bool):
+def create_xcube(input_files: str,
+                 proc: str,
+                 config: str,
+                 dir: str,
+                 name: str,
+                 writer: str,
+                 size: str ,
+                 region: str,
+                 vars: str,
+                 resamp: str,
+                 traceback: bool,
+                 append: bool,
+                 dry_run: bool):
     """
     Generate or extend a Level-2C data cube from Level-2 input files.
     Level-2C data cubes may be created in one go or in successively
@@ -77,34 +89,31 @@ def create_xcube(input_files: str,  proc: str, config: str, dir: str, name: str,
 
     The input may be one or more input files or a pattern that may contain wildcards '?', '*', and '**'.
     """
-    # pass
-    click.echo(locals())
-    # click.echo('The outputdir is %s' % dir)
-
-
+    traceback_mode = traceback
+    append_mode = append
+    dry_run = dry_run
     try:
         config = get_config_dict(locals(), open)
     except ValueError as e:
-        return _handle_error(e, traceback)
+        return _handle_error(e, traceback_mode)
 
-    click.echo(config)
+    traceback_mode = traceback
     # noinspection PyBroadException
     try:
-        generate_l2c_cube(append_mode=append,
+        generate_l2c_cube(append_mode=append_mode,
                           dry_run=dry_run,
                           monitor=print,
                           **config)
 
     except Exception as e:
-        return _handle_error(e, traceback)
-    click.echo()
-    click.echo(f'The xcube was saved to {config.output_dir}')
+        return _handle_error(e, traceback_mode)
+
     return 0
 
 
-def _handle_error(e, traceback):
+def _handle_error(e, traceback_mode):
     print(f'error: {e}', file=sys.stderr)
-    if traceback:
+    if traceback_mode:
         traceback.print_exc(file=sys.stderr)
     return 2
 
