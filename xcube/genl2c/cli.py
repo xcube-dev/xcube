@@ -38,7 +38,6 @@ input_processor_names = [input_processor.name
 output_writer_names = [ds_io.name for ds_io in query_dataset_io(lambda ds_io: 'w' in ds_io.modes)]
 resampling_algs = NAME_TO_GDAL_RESAMPLE_ALG.keys()
 
-
 @click.command(context_settings={"ignore_unknown_options":True})
 @click.argument('input_files', metavar='INPUT_FILES', nargs=-1)
 @click.option('--proc', '-p', metavar='INPUT_PROCESSOR', type=click.Choice(input_processor_names),
@@ -90,6 +89,8 @@ def create_xcube(input_files: str,
 
     The input may be one or more input files or a pattern that may contain wildcards '?', '*', and '**'.
     """
+
+
     traceback_mode = traceback
     append_mode = append
     dry_run = dry_run
