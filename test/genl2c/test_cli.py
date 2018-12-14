@@ -6,7 +6,6 @@ import click
 import click.testing
 
 from xcube.genl2c.cli import cli
-from xcube.genl2c.cli import create_xcube
 
 
 class CliTest(unittest.TestCase):
@@ -17,8 +16,6 @@ class CliTest(unittest.TestCase):
         return runner.invoke(cli, args)
 
     def test_main_with_option_help(self):
-        # exit_code = cli(['-h'])
-        # self.assertEqual(0, exit_code)
         result = self.invoke_cli(['--help'])
         self.assertEqual(0, result.exit_code)
 
