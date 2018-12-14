@@ -38,11 +38,11 @@ def get_config_dict(config_obj, open_function):
     input_processor = config_obj['proc']
     output_dir = config_obj['dir']
     output_name = config_obj['name']
-    output_writer = config_obj['writer']
+    output_writer = config_obj['format']
     output_size = config_obj['size']
     output_region = config_obj['region']
-    output_variables = config_obj['vars']
-    output_resampling = config_obj['resamp']
+    output_variables = config_obj['variables']
+    output_resampling = config_obj['resampling']
 
     if config_file is not None:
         try:

@@ -54,7 +54,7 @@ setup(
     entry_points={
         'console_scripts': [
             'xcube-genl2c = xcube.genl2c.main:main',
-            'xcube-genl3 = xcube.genl3.cli:main',
+            'xcube-genl3 = xcube.genl3.main:main',
             'xcube-grid = xcube.grid.main:main',
         ],
         'xcube_plugins': [

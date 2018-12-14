@@ -19,10 +19,8 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-import argparse
 import sys
 import traceback
-from typing import List, Optional
 import click
 
 from xcube.dsio import query_dataset_io
@@ -44,25 +42,28 @@ resampling_algs = NAME_TO_GDAL_RESAMPLE_ALG.keys()
 @click.command(context_settings={"ignore_unknown_options":True})
 @click.argument('input_files', metavar='INPUT_FILES', nargs=-1)
 @click.option('--proc', '-p', metavar='INPUT_PROCESSOR', type=click.Choice(input_processor_names),
-              help=f'Input processor type name. ')
+              help=f'Input processor type name. '
+              f'The choices as input processor are: {input_processor_names}')
 @click.option('--config', '-c', metavar='CONFIG_FILE',
               help='Data cube configuration file in YAML format.')
-@click.option('--dir', '-d', metavar='OUTPUT_DIR', default={DEFAULT_OUTPUT_DIR},
+@click.option('--dir', '-d', metavar='OUTPUT_DIR', default=str(DEFAULT_OUTPUT_DIR),
               help=f'Output directory. Defaults to {DEFAULT_OUTPUT_DIR!r}')
-@click.option('--name', '-n', metavar='OUTPUT_NAME', default={DEFAULT_OUTPUT_NAME},
+@click.option('--name', '-n', metavar='OUTPUT_NAME', default=str(DEFAULT_OUTPUT_NAME),
               help=f'Output filename pattern. Defaults to {DEFAULT_OUTPUT_NAME!r}.')
-@click.option('--writer', '-w', metavar='OUTPUT_WRITER', type=click.Choice(output_writer_names),
-              default=DEFAULT_OUTPUT_WRITER, help=f'Output writer type name. Defaults to {DEFAULT_OUTPUT_WRITER!r}.')
+@click.option('--format', '-f', metavar='OUTPUT_FORMAT', type=click.Choice(output_writer_names),
+              default={DEFAULT_OUTPUT_WRITER}, help=f'Output writer type name. Defaults to {DEFAULT_OUTPUT_WRITER!r}. '
+              f'The choices for the output format are: {output_writer_names}')
 @click.option('--size', '-s', metavar='OUTPUT_SIZE',
               help='Output size in pixels using format "<width>,<height>".')
 @click.option('--region', '-r', metavar='OUTPUT_REGION',
               help='Output region using format "<lon-min>,<lat-min>,<lon-max>,<lat-max>"')
-@click.option('--vars', '-v', metavar='OUTPUT_VARIABLES',
+@click.option('--variables', '-v', metavar='OUTPUT_VARIABLES',
               help='Variables to be included in output. '
                    'Comma-separated list of names which may contain wildcard characters "*" and "?".')
-@click.option('--resamp', metavar='OUTPUT_RESAMPLING', type=click.Choice(resampling_algs),
-              help='Fallback spatial resampling algorithm to be used for all variables.'
-              f'Defaults to {DEFAULT_OUTPUT_RESAMPLING!r}.')
+@click.option('--resampling', metavar='OUTPUT_RESAMPLING', type=click.Choice(resampling_algs),
+              help='Fallback spatial resampling algorithm to be used for all variables. '
+              f'Defaults to {DEFAULT_OUTPUT_RESAMPLING!r}. '
+              f'The choices for the resampling algorithm are: {resampling_algs}')
 @click.option('--traceback', metavar='TRACEBACK_MODE', default=False, is_flag=True,
               help='On error, print Python traceback.')
 @click.option('--append', '-a', metavar='APPEND_MODE', default=False, is_flag=True,
@@ -74,11 +75,11 @@ def create_xcube(input_files: str,
                  config: str,
                  dir: str,
                  name: str,
-                 writer: str,
+                 format: str,
                  size: str ,
                  region: str,
-                 vars: str,
-                 resamp: str,
+                 variables: str,
+                 resampling: str,
                  traceback: bool,
                  append: bool,
                  dry_run: bool):

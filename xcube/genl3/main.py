@@ -19,8 +19,12 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-DEFAULT_OUTPUT_DIR = '.'
-DEFAULT_OUTPUT_PATTERN = 'L3_{input_files}'
-DEFAULT_OUTPUT_FORMAT = 'zarr'
-DEFAULT_OUTPUT_RESAMPLING_METHOD = 'nearest'
-DEFAULT_OUTPUT_FREQUENCY = '1D'
+from xcube.genl3.cli import cli
+
+
+def main(args=None):
+    cli.main(args=args)
+
+
+if __name__ == '__main__':
+    main()

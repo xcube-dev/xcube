@@ -21,8 +21,7 @@
 
 import glob
 import os
-from typing import Dict, Any, Set
-
+from typing import Dict, Any, Set, Sequence
 import xarray as xr
 
 from xcube.genl3.defaults import DEFAULT_OUTPUT_DIR, DEFAULT_OUTPUT_PATTERN, DEFAULT_OUTPUT_FORMAT, \
@@ -32,7 +31,7 @@ from xcube.dsutil import select_variables
 OUTPUT_FORMAT_NAMES = ['zarr', 'nc']
 RESAMPLING_METHODS = ['all', 'any', 'argmin', 'argmax', 'count', 'first', 'last', 'max', 'mean', 'median', 'min',
                       'backfill', 'bfill', 'ffill', 'interpolate', 'nearest', 'pad']
-
+FREQUENCY_CHOICES = ['1H', '1D', '1W', '1M', '1Q', '1Y']
 
 def generate_l3_cube(input_file: str,
                      output_variables=None,
