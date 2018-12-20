@@ -20,7 +20,6 @@
 # SOFTWARE.
 
 import sys
-import traceback
 import click
 
 from xcube.dsio import query_dataset_io
@@ -38,7 +37,10 @@ input_processor_names = [input_processor.name
 output_writer_names = [ds_io.name for ds_io in query_dataset_io(lambda ds_io: 'w' in ds_io.modes)]
 resampling_algs = NAME_TO_GDAL_RESAMPLE_ALG.keys()
 
-@click.command(context_settings={"ignore_unknown_options":True})
+
+# noinspection PyShadowingBuiltins
+@click.command(context_settings={"ignore_unknown_options": True})
+@click.version_option(version)
 @click.argument('input_files', metavar='INPUT_FILES', nargs=-1)
 @click.option('--proc', '-p', metavar='INPUT_PROCESSOR', type=click.Choice(input_processor_names),
               help=f'Input processor type name. '
@@ -50,7 +52,8 @@ resampling_algs = NAME_TO_GDAL_RESAMPLE_ALG.keys()
 @click.option('--name', '-n', metavar='OUTPUT_NAME', default=str(DEFAULT_OUTPUT_NAME),
               help=f'Output filename pattern. Defaults to {DEFAULT_OUTPUT_NAME!r}.')
 @click.option('--format', '-f', metavar='OUTPUT_FORMAT', type=click.Choice(output_writer_names),
-              default={DEFAULT_OUTPUT_WRITER}, help=f'Output writer type name. Defaults to {DEFAULT_OUTPUT_WRITER!r}. '
+              default={DEFAULT_OUTPUT_WRITER},
+              help=f'Output writer type name. Defaults to {DEFAULT_OUTPUT_WRITER!r}. '
               f'The choices for the output format are: {output_writer_names}')
 @click.option('--size', '-s', metavar='OUTPUT_SIZE',
               help='Output size in pixels using format "<width>,<height>".')
@@ -69,19 +72,19 @@ resampling_algs = NAME_TO_GDAL_RESAMPLE_ALG.keys()
               help='Append successive outputs.')
 @click.option('--dry_run', metavar='DRY_RUN', default=False, is_flag=True,
               help='Just read and process inputs, but don\'t produce any outputs.')
-def create_xcube(input_files: str,
-                 proc: str,
-                 config: str,
-                 dir: str,
-                 name: str,
-                 format: str,
-                 size: str ,
-                 region: str,
-                 variables: str,
-                 resampling: str,
-                 traceback: bool,
-                 append: bool,
-                 dry_run: bool):
+def cli(input_files: str,
+        proc: str,
+        config: str,
+        dir: str,
+        name: str,
+        format: str,
+        size: str,
+        region: str,
+        variables: str,
+        resampling: str,
+        traceback: bool,
+        append: bool,
+        dry_run: bool):
     """
     Generate or extend a Level-2C data cube from Level-2 input files.
     Level-2C data cubes may be created in one go or in successively
@@ -89,7 +92,6 @@ def create_xcube(input_files: str,
 
     The input may be one or more input files or a pattern that may contain wildcards '?', '*', and '**'.
     """
-
 
     traceback_mode = traceback
     append_mode = append
@@ -116,17 +118,6 @@ def create_xcube(input_files: str,
 def _handle_error(e, traceback_mode):
     print(f'error: {e}', file=sys.stderr)
     if traceback_mode:
+        import traceback
         traceback.print_exc(file=sys.stderr)
     return 2
-
-@click.group()
-@click.version_option(version)
-def cli():
-    """
-    Generate or extend a Level-2C data cube from Level-2 input files.
-    Level-2C data cubes may be created in one go or in successively in append mode, input by input.
-   """
-
-
-cli.add_command(create_xcube)
-

@@ -3,12 +3,13 @@ channels:
   - conda-forge
   - defaults
 dependencies:
-  - python=3.6.5
+  - python=3.6.6
   #
   # runtime dependencies
   #
-  - boto3 =1.7.51
-  - botocore =1.10.51
+  - boto3=1.7.51
+  - botocore=1.10.51
+  - click=7.0
   - dask=0.17.2
   - gdal=2.2.4
   - matplotlib=2.2.2
@@ -21,6 +22,6 @@ dependencies:
   #
   # development dependencies
   #
-  - pytest =3.5.1
-  - pytest-cov =2.5.1
-  - flake8 =3.5.0
+  - pytest=3.5.1
+  - pytest-cov=2.5.1
+  - flake8=3.5.0

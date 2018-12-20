@@ -19,9 +19,6 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-import sys
-import traceback
-from typing import List, Optional
 import click
 import yaml
 
@@ -33,21 +30,23 @@ from xcube.version import version
 __import__('xcube.plugin')
 
 
-@click.command(context_settings={"ignore_unknown_options":True})
+@click.command(context_settings={"ignore_unknown_options": True})
+@click.version_option(version)
 @click.argument('input_files', metavar='INPUT_FILES', nargs=-1)
 @click.option('--dir', '-d', metavar='OUTPUT_DIR', default={DEFAULT_OUTPUT_DIR},
               help=f'Output directory. Defaults to {DEFAULT_OUTPUT_DIR!r}')
 @click.option('--name', '-n', metavar='OUTPUT_NAME', default={DEFAULT_OUTPUT_PATTERN},
               help=f'Output filename pattern. Defaults to {DEFAULT_OUTPUT_PATTERN!r}.')
-@click.option('--format', '-f', metavar='OUTPUT_FORMAT',default={DEFAULT_OUTPUT_FORMAT},
-              type=click.Choice(OUTPUT_FORMAT_NAMES), help=f'Output format. Defaults to {DEFAULT_OUTPUT_FORMAT!r}. '
+@click.option('--format', '-f', metavar='OUTPUT_FORMAT', default={DEFAULT_OUTPUT_FORMAT},
+              type=click.Choice(OUTPUT_FORMAT_NAMES),
+              help=f'Output format. Defaults to {DEFAULT_OUTPUT_FORMAT!r}. '
               f'The choices as output format are: {OUTPUT_FORMAT_NAMES}')
 @click.option('--variables', '-v', metavar='OUTPUT_VARIABLES',
               help='Variables to be included in output. '
                    'Comma-separated list of names which may contain wildcard characters "*" and "?".')
 @click.option('--resampling', metavar='OUTPUT_RESAMPLING', type=click.Choice(RESAMPLING_METHODS),
               help='Temporal resampling method. Use format "<count><offset>"'
-                   'where <offset> is one of {H, D, W, M, Q, Y}. '               
+                   'where <offset> is one of {H, D, W, M, Q, Y}. '
               f'Defaults to {DEFAULT_OUTPUT_RESAMPLING_METHOD!r}. '
               f'The choices for the resampling method are: {RESAMPLING_METHODS}')
 @click.option('--frequency', metavar='OUTPUT_FREQUENCY', type=click.Choice(FREQUENCY_CHOICES),
@@ -60,16 +59,16 @@ __import__('xcube.plugin')
               help='Just read and process inputs, but don\'t produce any outputs.')
 @click.option('--traceback', metavar='TRACEBACK_MODE', default=False, is_flag=True,
               help='On error, print Python traceback.')
-def create_xcube_3(input_files: str,
-                 dir: str,
-                 name: str,
-                 format: str,
-                 variables: str,
-                 resampling: str,
-                 frequency: str,
-                 meta_file: str,
-                 traceback: bool,
-                 dry_run: bool):
+def cli(input_files: str,
+        dir: str,
+        name: str,
+        format: str,
+        variables: str,
+        resampling: str,
+        frequency: str,
+        meta_file: str,
+        traceback: bool,
+        dry_run: bool):
     """
     Generate L2C data cubes from L2 data products.
     """
@@ -93,6 +92,7 @@ def create_xcube_3(input_files: str,
         except OSError as e:
             print(f'error: failed loading configuration from {config_file!r}: {e}')
             if traceback_mode:
+                import traceback
                 traceback.print_exc()
             return 2
     else:
@@ -132,23 +132,11 @@ def create_xcube_3(input_files: str,
     except BaseException as e:
         print(f'error: {e}')
         if traceback_mode:
+            import traceback
             traceback.print_exc()
         return 2
 
     return 0
-
-
-
-@click.group()
-@click.version_option(version)
-def cli():
-    """
-    Generate Level-3 data cube from Level-2C data cube.
-    The input file or directory which must be a Level-2C cube.
-   """
-
-cli.add_command(create_xcube_3)
-
 
 # def main(args: Optional[List[str]] = None):
 #     """

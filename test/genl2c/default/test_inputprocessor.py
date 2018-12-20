@@ -68,11 +68,14 @@ class DefaultInputProcessorTest(unittest.TestCase):
         self.assertIs(ds1, ds2)
 
 
-def create_default_dataset(time_mode: str = "time_bnds"):
+def create_default_dataset(time_mode: str = "time_bnds", gen_360_lons=False):
     w = 7200
     h = 3600
     res = 180. / h
-    lon = np.linspace(-180 + 0.5 * res, 180 - 0.5 * res, w)
+    if gen_360_lons:
+        lon = np.linspace(0.5 * res, 360 - 0.5 * res, w)
+    else:
+        lon = np.linspace(-180 + 0.5 * res, 180 - 0.5 * res, w)
     lat = np.linspace(-90 + 0.5 * res, 90 - 0.5 * res, h)
     time = np.array([pd.to_datetime("20100301T120000Z")])
     time_bnds = np.array([[pd.to_datetime("20100301T000000Z"), pd.to_datetime("20100301T235959Z")]])
