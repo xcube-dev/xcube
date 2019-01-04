@@ -51,5 +51,7 @@ class CliTest(unittest.TestCase):
         result = self.invoke_cli(['--version'])
         print(result.output)
         print(result.exit_code)
-        self.assertEqual(
-        f'{prog!r}, version 0.1.0.dev1', result.output)
+        self.assertEqual(("""cli, version 0.1.0.dev1
+"""),
+                         result.output)
+        self.assertEqual(0, result.exit_code)

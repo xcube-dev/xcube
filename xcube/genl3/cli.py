@@ -32,7 +32,7 @@ __import__('xcube.plugin')
 
 @click.command(context_settings={"ignore_unknown_options": True})
 @click.version_option(version)
-@click.argument('input_files', metavar='INPUT_FILES', nargs=-1)
+@click.argument('input_files', metavar='INPUT_FILES')
 @click.option('--dir', '-d', metavar='OUTPUT_DIR', default={DEFAULT_OUTPUT_DIR},
               help=f'Output directory. Defaults to {DEFAULT_OUTPUT_DIR!r}')
 @click.option('--name', '-n', metavar='OUTPUT_NAME', default={DEFAULT_OUTPUT_PATTERN},
@@ -126,7 +126,7 @@ def cli(input_files: str,
     # noinspection PyBroadException
 
     try:
-        generate_l3_cube(*config,
+        generate_l3_cube(**config,
                          dry_run=dry_run,
                          monitor=print)
     except BaseException as e:
