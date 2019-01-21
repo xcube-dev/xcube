@@ -123,6 +123,7 @@ class ZarrDatasetIOTest(unittest.TestCase):
 
 
 class FindDatasetIOTest(unittest.TestCase):
+
     def test_find_by_name(self):
         ds_io = find_dataset_io('netcdf4')
         self.assertIsInstance(ds_io, Netcdf4DatasetIO)
@@ -139,7 +140,6 @@ class FindDatasetIOTest(unittest.TestCase):
 
         ds_io = find_dataset_io('bibo', default=MemDatasetIO())
         self.assertIsInstance(ds_io, MemDatasetIO)
-
 
     def test_find_by_ext(self):
         ds_io = find_dataset_io('nc')
