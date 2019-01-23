@@ -4,12 +4,13 @@ import unittest
 from abc import ABCMeta
 from typing import List
 
+import click
+import click.testing
 import numpy as np
 import pandas as pd
 import xarray as xr
-from click.testing import CliRunner
 
-from xcube.cli import cli
+from xcube.cli import cli, _parse_kwargs
 
 TEST_NC_FILE = "test.nc"
 TEST_ZARR_DIR = "test.zarr"
@@ -18,8 +19,8 @@ TEST_ZARR_DIR = "test.zarr"
 class CliTest(unittest.TestCase, metaclass=ABCMeta):
 
     def invoke_cli(self, args: List[str]):
-        self.runner = CliRunner()
-        return self.runner.invoke(cli, args)
+        self.runner = click.testing.CliRunner()
+        return self.runner.invoke(cli, args, catch_exceptions=False)
 
     def setUp(self):
         super().setUp()
@@ -57,22 +58,51 @@ class DumpTest(CliTest):
 
 class ChunkTest(CliTest):
 
-    def test_chunk_it(self):
+    def test_chunk_zarr(self):
+        output_path = "test-chunked.zarr"
+        result = self.invoke_cli(["chunk",
+                                  TEST_ZARR_DIR,
+                                  output_path,
+                                  "-c", "time=1,lat=20,lon=40"])
+        self.assertEqual("", result.output)
+        self.assertEqual(0, result.exit_code)
+        self.assertTrue(os.path.isdir(output_path))
+        try:
+            ds = xr.open_zarr(output_path)
+            self.assertIn("precipitation", ds)
+            precipitation = ds["precipitation"]
+            self.assertTrue(hasattr(precipitation, "encoding"))
+            self.assertIn("chunks", precipitation.encoding)
+            self.assertEqual(precipitation.encoding["chunks"], (1, 20, 40))
+        finally:
+            shutil.rmtree(output_path, ignore_errors=True)
+
+    def test_chunk_nc(self):
+        output_path = "test-chunked.nc"
         result = self.invoke_cli(["chunk",
                                   TEST_NC_FILE,
-                                  "test-chunked.zarr",
-                                  "-c", "time=1,lat=40,lon=20"])
-        self.assertEqual("",
-                         result.output)
-        self.assertEqual(-1, result.exit_code)
+                                  output_path,
+                                  "-c", "time=1,lat=20,lon=40"])
+        self.assertEqual("", result.output)
+        self.assertEqual(0, result.exit_code)
+        self.assertTrue(os.path.isdir(output_path))
+        try:
+            ds = xr.open_zarr(output_path)
+            self.assertIn("precipitation", ds)
+            precipitation = ds["precipitation"]
+            self.assertTrue(hasattr(precipitation, "encoding"))
+            self.assertIn("chunksizes", precipitation.encoding)
+            self.assertEqual(precipitation.encoding["chunksizes"], (1, 20, 40))
+        finally:
+            os.remove(output_path)
 
     def test_chunk_size_syntax(self):
         result = self.invoke_cli(["chunk",
                                   TEST_NC_FILE,
                                   "test-chunked.zarr",
                                   "-c", "time=1,lat!gnnn,lon=40"])
-        self.assertEqual("Error: Invalid value for option 'chunks':"
-                         " time=1,lat!gnnn,lon=40\n",
+        self.assertEqual("Error: Invalid value for <chunks>:"
+                         " 'time=1,lat!gnnn,lon=40'\n",
                          result.output)
         self.assertEqual(1, result.exit_code)
 
@@ -81,7 +111,7 @@ class ChunkTest(CliTest):
                                   TEST_NC_FILE,
                                   "test-chunked.zarr",
                                   "-c", "time=1,lat=20.3,lon=40"])
-        self.assertEqual("Error: Invalid value for option 'chunks',"
+        self.assertEqual("Error: Invalid value for <chunks>,"
                          " chunk sizes must be positive integers:"
                          " time=1,lat=20.3,lon=40\n",
                          result.output)
@@ -92,11 +122,30 @@ class ChunkTest(CliTest):
                                   TEST_NC_FILE,
                                   "test-chunked.zarr",
                                   "-c", "time=1,lati=20,lon=40"])
-        self.assertEqual("Error: Invalid value for option 'chunks',"
+        self.assertEqual("Error: Invalid value for <chunks>,"
                          " 'lati' is not the name of any dimension:"
                          " time=1,lati=20,lon=40\n",
                          result.output)
         self.assertEqual(1, result.exit_code)
+
+
+class ParseTest(unittest.TestCase):
+
+    def test_parse_kwargs(self):
+        self.assertEqual(dict(),
+                         _parse_kwargs("", metavar="<chunks>"))
+        self.assertEqual(dict(time=1, lat=256, lon=512),
+                         _parse_kwargs("time=1, lat=256, lon=512", metavar="<chunks>"))
+
+        with self.assertRaises(click.ClickException) as cm:
+            _parse_kwargs("45 * 'A'", metavar="<chunks>")
+        self.assertEqual("Invalid value for <chunks>: \"45 * 'A'\"",
+                         f"{cm.exception}")
+
+        with self.assertRaises(click.ClickException) as cm:
+            _parse_kwargs("9==2")
+        self.assertEqual("Invalid value: '9==2'",
+                         f"{cm.exception}")
 
 
 def create_test_dataset(size=100, periods=5):

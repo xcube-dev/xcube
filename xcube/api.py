@@ -65,6 +65,8 @@ def write_dataset(ds: xr.Dataset,
     format_name = format_name if format_name is not None else guess_dataset_format(output_path)
     # TODO (forman): allow writing to URLs too
     if format_name == FORMAT_NAME_ZARR:
+        if "mode" not in kwargs:
+            kwargs["mode"] = "w"
         ds = ds.to_zarr(output_path, **kwargs)
     else:
         ds = ds.to_netcdf(output_path, **kwargs)
@@ -121,10 +123,12 @@ def dump_dataset(ds: xr.Dataset,
     if not variable_names:
         print(ds)
         if show_var_encoding:
-            for var_name in ds.variables:
-                var = ds[var_name]
+            for var_name, var in ds.coords.items():
                 if var.encoding:
-                    dump_var_encoding(var, header=f"Encoding for variable {var_name!r}:")
+                    dump_var_encoding(var, header=f"Encoding for coordinate variable {var_name!r}:")
+            for var_name, var in ds.data_vars.items():
+                if var.encoding:
+                    dump_var_encoding(var, header=f"Encoding for data variable {var_name!r}:")
     else:
         for var_name in variable_names:
             var = ds[var_name]
