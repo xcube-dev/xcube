@@ -1,10 +1,14 @@
 import os
 import unittest
 
+import numpy as np
+
 from test.sampledata import new_test_cube, new_test_dataset
-from xcube.api import open_dataset, read_dataset, write_dataset, dump_dataset, chunk_dataset
+from xcube.api import open_dataset, read_dataset, write_dataset, dump_dataset, chunk_dataset, validate_cube, assert_cube
 
 TEST_NC_FILE = "test.nc"
+
+import xarray as xr
 
 
 class OpenReadWriteDatasetTest(unittest.TestCase):
@@ -80,6 +84,8 @@ class DumpDatasetTest(unittest.TestCase):
         for var in dataset.variables.values():
             var.encoding.update({"_FillValue": 999.0})
 
+        print(dataset.dims)
+
         text = dump_dataset(dataset)
         self.assertIn("<xarray.Dataset>", text)
         self.assertIn("Dimensions:        (lat: 180, lon: 360, time: 5)\n", text)
@@ -111,3 +117,22 @@ class DumpDatasetTest(unittest.TestCase):
         self.assertIn("<xarray.DataArray 'precipitation' (time: 5, lat: 180, lon: 360)>\n", text)
         self.assertIn("Encoding:\n", text)
         self.assertIn("    _FillValue:  999.0", text)
+
+
+class AssertAndValidateCubeTest(unittest.TestCase):
+
+    def test_assert_cube(self):
+        cube = new_test_cube()
+        cube["chl"] = xr.DataArray(np.random.rand(cube.dims["lat"], cube.dims["lon"]),
+                                   dims=("lat", "lon"),
+                                   coords=dict(lat=cube.lat, lon=cube.lon))
+        with self.assertRaises(ValueError) as cm:
+            assert_cube(cube)
+        self.assertEqual("Dataset is not a valid data cube, because:\n"
+                         "-  dimensions of data variable 'chl' must be ('time', ..., 'lat', 'lon'),"
+                         " but were ('lat', 'lon').",
+                         f"{cm.exception}")
+
+    def test_validate_cube(self):
+        cube = new_test_cube()
+        self.assertEqual([], validate_cube(cube))

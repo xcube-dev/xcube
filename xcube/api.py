@@ -1,6 +1,7 @@
 from contextlib import contextmanager
-from typing import Dict
+from typing import Dict, List
 
+import numpy as np
 import xarray as xr
 
 from xcube.dsio import find_dataset_io, guess_dataset_format, FORMAT_NAME_ZARR, FORMAT_NAME_NETCDF4
@@ -153,3 +154,92 @@ def dump_var_encoding(var: xr.DataArray, header="Encoding:", indent=4) -> str:
         tab_spaces = (2 + max_len - len(k)) * " "
         lines.append(f"{indent_spaces}{k}:{tab_spaces}{v!r}")
     return "\n".join(lines)
+
+
+def assert_cube(dataset: xr.Dataset, name=None):
+    """
+    Assert that the given *dataset* is a valid data cube.
+
+    :param dataset: The dataset to be validated.
+    :param name: Optional parameter name.
+    :raise: ValueError, if dataset is not a valid data cube
+    """
+    report = validate_cube(dataset)
+    if report:
+        message = f"Dataset" + (name + " " if name else " ")
+        message += "is not a valid data cube, because:\n"
+        message += "-  " + ";\n-  ".join(report) + "."
+        raise ValueError(message)
+
+
+def validate_cube(dataset: xr.Dataset) -> List[str]:
+    """
+    Validate the given *dataset* with respect to a valid data cube.
+
+    Returns a list of issues, which is empty if *dataset* is a valid data cube.
+
+    :param dataset: A dataset to be validated.
+    :return: List of issues or empty list.
+    """
+    report = []
+    _check_dim(dataset, "time", report)
+    _check_dim(dataset, "lat", report)
+    _check_dim(dataset, "lon", report)
+    _check_time(dataset, "time", report)
+    _check_lon_or_lat(dataset, "lat", -90, 90, report)
+    _check_lon_or_lat(dataset, "lon", -180, 180, report)
+    for name in dataset.data_vars:
+        _check_data_var(dataset, name, report)
+    return report
+
+
+def _check_dim(dataset, name, report):
+    if name not in dataset.dims:
+        report.append(f"missing dimension {name!r}")
+    if dataset.dims[name] < 0:
+        report.append(f"size of dimension {name!r} must be a positive integer")
+
+
+def _check_data_var(dataset, name, report):
+    var = dataset[name]
+    if len(var.dims) < 3 or var.dims[0] != "time" or var.dims[-2] != "lat" or var.dims[-1] != "lon":
+        report.append(f"dimensions of data variable {name!r} must be ('time', ..., 'lat', 'lon'),"
+                      f" but were {var.dims!r}")
+
+
+def _check_coord_var(dataset, name, report):
+    if name not in dataset.coords:
+        report.append(f"missing coordinate variable {name!r}")
+        return None
+
+    var = dataset.coords[name]
+    if var.dims != (name,):
+        report.append(f"coordinate variable {name!r} must have a single dimension {name!r}")
+        return None
+
+    if var.size == 0:
+        report.append(f"coordinate variable {name!r} must not be empty")
+        return None
+
+    return var
+
+
+def _check_lon_or_lat(dataset, name, min_value, max_value, report):
+    var = _check_coord_var(dataset, name, report)
+    if var is None:
+        return
+    if not np.all(np.isfinite(var)):
+        report.append(f"values of coordinate variable {name!r} must be finite")
+    if np.min(var) < min_value or np.max(var) > max_value:
+        report.append(f"values of coordinate variable {name!r}"
+                      f" must be in the range {min_value} to {max_value}")
+
+
+def _check_time(dataset, name, report):
+    var = _check_coord_var(dataset, name, report)
+    if var is None:
+        return
+    if not np.issubdtype(var.dtype, np.datetime64):
+        report.append(f"type of coordinate variable {name!r} must be datetime64")
+    if not np.all(np.diff(var.astype(np.float64)) > 0):
+        report.append(f"values of coordinate variable {name!r} must be monotonically increasing")
