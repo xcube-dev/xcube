@@ -76,7 +76,8 @@ def dump(dataset, variable, encoding):
     """
     from .api import open_dataset, dump_dataset
     with open_dataset(dataset) as ds:
-        dump_dataset(ds, variable_names=variable, show_var_encoding=encoding)
+        text = dump_dataset(ds, variable_names=variable, show_var_encoding=encoding)
+        print(text)
 
 
 # noinspection PyShadowingBuiltins

@@ -34,6 +34,20 @@ def new_test_dataset(time, height=180, **indexers):
                                   lon=(['lon'], np.linspace(-180 + res, +180 - res, width))))
 
 
+def new_test_cube(size=100, periods=5):
+    dims = ("time", "lat", "lon")
+    w = 2 * size
+    h = size
+    time = pd.date_range('2010-01-01', periods=periods)
+    lon = np.linspace(0, 4, w)
+    lat = np.linspace(50, 52, h)
+    precipitation_var = xr.DataArray(np.random.rand(periods, h, w), coords=(time, lat, lon), dims=dims)
+    temperature_var = xr.DataArray(np.random.rand(periods, h, w), coords=(time, lat, lon), dims=dims)
+    ds = xr.Dataset({"precipitation": precipitation_var, "temperature": temperature_var})
+    ds.attrs.update(dict(time_coverage_start=str(time[0]), time_coverage_end=str(time[-1])))
+    return ds
+
+
 def create_highroc_dataset(no_spectra=False):
     """
     Simulates a HIGHROC OLCI L2 product in NetCDF 4 format

@@ -28,6 +28,9 @@ class MyDatasetIO(DatasetIO):
     def modes(self) -> Set[str]:
         return set()
 
+    def fitness(self, input_path: str, path_type: str = None) -> float:
+        return 0.0
+
 
 class DatasetIOTest(unittest.TestCase):
 
@@ -57,6 +60,25 @@ class MemDatasetIOTest(unittest.TestCase):
         self.assertEqual('mem', ds_io.ext)
         self.assertEqual('In-memory dataset I/O', ds_io.description)
         self.assertEqual({'r', 'w', 'a'}, ds_io.modes)
+
+    def test_fitness(self):
+        ds_io = MemDatasetIO()
+
+        self.assertEqual(0.75, ds_io.fitness("test.mem", path_type=None))
+        self.assertEqual(0.75, ds_io.fitness("test.mem", path_type="file"))
+        self.assertEqual(0.75, ds_io.fitness("test.mem", path_type="dir"))
+        self.assertEqual(0.75, ds_io.fitness("http://dsio/test.mem", path_type="url"))
+
+        self.assertEqual(0.0, ds_io.fitness("test.png", path_type=None))
+        self.assertEqual(0.0, ds_io.fitness("test.png", path_type="file"))
+        self.assertEqual(0.0, ds_io.fitness("test.png", path_type="dir"))
+        self.assertEqual(0.0, ds_io.fitness("http://dsio/test.png", path_type="url"))
+
+        ds_io.write(xr.Dataset(), "bibo.odod")
+        self.assertEqual(1.0, ds_io.fitness("bibo.odod", path_type=None))
+        self.assertEqual(1.0, ds_io.fitness("bibo.odod", path_type="file"))
+        self.assertEqual(1.0, ds_io.fitness("bibo.odod", path_type="dir"))
+        self.assertEqual(1.0, ds_io.fitness("bibo.odod", path_type="url"))
 
     def test_read(self):
         ds_io = MemDatasetIO()
@@ -101,6 +123,30 @@ class Netcdf4DatasetIOTest(unittest.TestCase):
         self.assertEqual('NetCDF-4 file format', ds_io.description)
         self.assertEqual({'a', 'r', 'w'}, ds_io.modes)
 
+    def test_fitness(self):
+        ds_io = Netcdf4DatasetIO()
+
+        self.assertEqual(0.875, ds_io.fitness("test.nc", path_type=None))
+        self.assertEqual(0.875, ds_io.fitness("test.hdf", path_type=None))
+        self.assertEqual(0.875, ds_io.fitness("test.h5", path_type=None))
+
+        self.assertEqual(1.0, ds_io.fitness("test.nc", path_type="file"))
+        self.assertEqual(1.0, ds_io.fitness("test.hdf", path_type="file"))
+        self.assertEqual(1.0, ds_io.fitness("test.h5", path_type="file"))
+
+        self.assertEqual(0.0, ds_io.fitness("test.nc", path_type="dir"))
+        self.assertEqual(0.0, ds_io.fitness("test.hdf", path_type="dir"))
+        self.assertEqual(0.0, ds_io.fitness("test.h5", path_type="dir"))
+
+        self.assertEqual(0.0, ds_io.fitness("https://dsio/test.nc", path_type="url"))
+        self.assertEqual(0.0, ds_io.fitness("https://dsio/test.hdf", path_type="url"))
+        self.assertEqual(0.0, ds_io.fitness("https://dsio/test.h5", path_type="url"))
+
+        self.assertEqual(0.125, ds_io.fitness("test.tif", path_type=None))
+        self.assertEqual(0.25, ds_io.fitness("test.tif", path_type="file"))
+        self.assertEqual(0.0, ds_io.fitness("test.tif", path_type="dir"))
+        self.assertEqual(0.0, ds_io.fitness("https://dsio/test.tif", path_type="url"))
+
     def test_read(self):
         ds_io = Netcdf4DatasetIO()
         with self.assertRaises(FileNotFoundError):
@@ -115,6 +161,24 @@ class ZarrDatasetIOTest(unittest.TestCase):
         self.assertEqual('zarr', ds_io.ext)
         self.assertEqual('Zarr file format (http://zarr.readthedocs.io)', ds_io.description)
         self.assertEqual({'a', 'r', 'w'}, ds_io.modes)
+
+    def test_fitness(self):
+        ds_io = ZarrDatasetIO()
+
+        self.assertEqual(0.875, ds_io.fitness("test.zarr", path_type=None))
+        self.assertEqual(0.0, ds_io.fitness("test.zarr", path_type="file"))
+        self.assertEqual(1.0, ds_io.fitness("test.zarr", path_type="dir"))
+        self.assertEqual(0.875, ds_io.fitness("http://dsio/test.zarr", path_type="url"))
+
+        self.assertEqual(0.875, ds_io.fitness("test.zarr.zip", path_type=None))
+        self.assertEqual(1.0, ds_io.fitness("test.zarr.zip", path_type="file"))
+        self.assertEqual(0.0, ds_io.fitness("test.zarr.zip", path_type="dir"))
+        self.assertEqual(0.0, ds_io.fitness("http://dsio/test.zarr.zip", path_type="url"))
+
+        self.assertEqual(0.0, ds_io.fitness("test.png", path_type=None))
+        self.assertEqual(0.0, ds_io.fitness("test.png", path_type="file"))
+        self.assertEqual(0.25, ds_io.fitness("test.png", path_type="dir"))
+        self.assertEqual(0.125, ds_io.fitness("http://dsio/test.png", path_type="url"))
 
     def test_read(self):
         ds_io = ZarrDatasetIO()
@@ -139,7 +203,6 @@ class FindDatasetIOTest(unittest.TestCase):
 
         ds_io = find_dataset_io('bibo', default=MemDatasetIO())
         self.assertIsInstance(ds_io, MemDatasetIO)
-
 
     def test_find_by_ext(self):
         ds_io = find_dataset_io('nc')

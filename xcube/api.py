@@ -1,12 +1,9 @@
-import os
-from typing import Dict, Optional
+from contextlib import contextmanager
+from typing import Dict
 
 import xarray as xr
 
-FORMAT_NAME_ZARR = "zarr"
-FORMAT_NAME_NETCDF = "netcdf"
-
-from contextlib import contextmanager
+from xcube.dsio import find_dataset_io, guess_dataset_format, FORMAT_NAME_ZARR, FORMAT_NAME_NETCDF4
 
 
 @contextmanager
@@ -21,11 +18,11 @@ def open_dataset(input_path: str,
     :param kwargs: format-specific keyword arguments
     :return: dataset object
     """
-    ds = read_dataset(input_path, format_name, **kwargs)
+    dataset = read_dataset(input_path, format_name, **kwargs)
     try:
-        yield ds
+        yield dataset
     finally:
-        ds.close()
+        dataset.close()
 
 
 def read_dataset(input_path: str,
@@ -39,60 +36,59 @@ def read_dataset(input_path: str,
     :param kwargs: format-specific keyword arguments
     :return: dataset object
     """
-    format_name = format_name if format_name is not None else guess_dataset_format(input_path)
-    # TODO (forman): allow opening from URLs too
-    if format_name == FORMAT_NAME_ZARR:
-        ds = xr.open_zarr(input_path, **kwargs)
-    else:
-        ds = xr.open_dataset(input_path, **kwargs)
-    return ds
+    format_name = format_name if format_name else guess_dataset_format(input_path)
+    if format_name is None:
+        raise ValueError("Unknown input format")
+    dataset_io = find_dataset_io(format_name, modes=["r"])
+    if dataset_io is None:
+        raise ValueError(f"Unknown input format {format_name!r} for {input_path}")
+
+    return dataset_io.read(input_path, **kwargs)
 
 
-def write_dataset(ds: xr.Dataset,
+def write_dataset(dataset: xr.Dataset,
                   output_path: str,
                   format_name: str = None,
                   **kwargs) -> xr.Dataset:
     """
     Write dataset.
 
-    :param ds: input dataset
+    :param dataset: Dataset to be written.
     :param output_path: output path
     :param format_name: format, e.g. "zarr" or "netcdf4"
     :param kwargs: format-specific keyword arguments
     :return: the input dataset
     """
-    _validate_dataset_format(format_name)
-    format_name = format_name if format_name is not None else guess_dataset_format(output_path)
-    # TODO (forman): allow writing to URLs too
-    if format_name == FORMAT_NAME_ZARR:
-        if "mode" not in kwargs:
-            kwargs["mode"] = "w"
-        ds = ds.to_zarr(output_path, **kwargs)
-    else:
-        ds = ds.to_netcdf(output_path, **kwargs)
-    return ds
+    format_name = format_name if format_name else guess_dataset_format(output_path)
+    if format_name is None:
+        raise ValueError("Unknown output format")
+    dataset_io = find_dataset_io(format_name, modes=["w"])
+    if dataset_io is None:
+        raise ValueError(f"Unknown output format {format_name!r} for {output_path}")
+
+    dataset_io.write(dataset, output_path, **kwargs)
+
+    return dataset
 
 
-def chunk_dataset(ds: xr.Dataset,
+def chunk_dataset(dataset: xr.Dataset,
                   chunk_sizes: Dict[str, int] = None,
                   format_name: str = None) -> xr.Dataset:
     """
     Chunk dataset and update encodings for given format.
 
-    :param ds: input dataset
+    :param dataset: input dataset
     :param chunk_sizes: mapping from dimension name to new chunk size
     :param format_name: format, e.g. "zarr" or "netcdf4"
     :return: the re-chunked dataset
     """
-    _validate_dataset_format(format_name)
-
-    chunked_ds = ds.chunk(chunks=chunk_sizes)
+    chunked_ds = dataset.chunk(chunks=chunk_sizes)
 
     # Update encoding so writing of chunked_ds recognizes new chunks
     chunk_sizes_attr_name = None
     if format_name == FORMAT_NAME_ZARR:
         chunk_sizes_attr_name = "chunks"
-    if format_name == FORMAT_NAME_NETCDF:
+    if format_name == FORMAT_NAME_NETCDF4:
         chunk_sizes_attr_name = "chunksizes"
     if chunk_sizes_attr_name:
         for var_name in chunked_ds.variables:
@@ -109,64 +105,51 @@ def chunk_dataset(ds: xr.Dataset,
     return chunked_ds
 
 
-def dump_dataset(ds: xr.Dataset,
+def dump_dataset(dataset: xr.Dataset,
                  variable_names=None,
-                 show_var_encoding=False) -> xr.Dataset:
+                 show_var_encoding=False) -> str:
     """
-    Dumps a dataset or variables contained in it to stdout.
+    Dumps a dataset or variables into a text string.
 
-    :param ds: input dataset
+    :param dataset: input dataset
     :param variable_names: names of variables to be dumped
     :param show_var_encoding: also dump variable encodings?
-    :return: the input dataset
+    :return: the dataset dump
     """
+    lines = []
     if not variable_names:
-        print(ds)
+        lines.append(str(dataset))
         if show_var_encoding:
-            for var_name, var in ds.coords.items():
+            for var_name, var in dataset.coords.items():
                 if var.encoding:
-                    dump_var_encoding(var, header=f"Encoding for coordinate variable {var_name!r}:")
-            for var_name, var in ds.data_vars.items():
+                    lines.append(dump_var_encoding(var, header=f"Encoding for coordinate variable {var_name!r}:"))
+            for var_name, var in dataset.data_vars.items():
                 if var.encoding:
-                    dump_var_encoding(var, header=f"Encoding for data variable {var_name!r}:")
+                    lines.append(dump_var_encoding(var, header=f"Encoding for data variable {var_name!r}:"))
     else:
         for var_name in variable_names:
-            var = ds[var_name]
-            print(var)
+            var = dataset[var_name]
+            lines.append(str(var))
             if show_var_encoding and var.encoding:
-                dump_var_encoding(var)
+                lines.append(dump_var_encoding(var))
+    return "\n".join(lines)
 
-    return ds
 
-
-def dump_var_encoding(var: xr.DataArray, header="Encoding:", indent=4):
+def dump_var_encoding(var: xr.DataArray, header="Encoding:", indent=4) -> str:
     """
-    Dump the encoding information of a variable to stdout.
+    Dump the encoding information of a variable into a text string.
 
     :param var: Dataset variable.
     :param header: Title/header string.
     :param indent: Indention in spaces.
+    :return: the variable dump
     """
-    print(header)
+    lines = [header]
     max_len = 0
     for k in var.encoding:
         max_len = max(max_len, len(k))
     indent_spaces = indent * " "
     for k, v in var.encoding.items():
         tab_spaces = (2 + max_len - len(k)) * " "
-        print(f"{indent_spaces}{k}:{tab_spaces}{v!r}")
-
-
-def guess_dataset_format(path: str) -> Optional[str]:
-    _, ext = os.path.splitext(path)
-    ext = ext.lower()
-    if ext in {'.zarr', '.zarr.zip'}:
-        return FORMAT_NAME_ZARR
-    if ext in {'.nc', '.hdf', '.h5'}:
-        return FORMAT_NAME_NETCDF
-    return None
-
-
-def _validate_dataset_format(format_name: str = None):
-    if format_name not in {None, FORMAT_NAME_ZARR, FORMAT_NAME_NETCDF}:
-        raise ValueError('Invalid format: {format!r}')
+        lines.append(f"{indent_spaces}{k}:{tab_spaces}{v!r}")
+    return "\n".join(lines)
