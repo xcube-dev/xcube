@@ -1,7 +1,8 @@
 from contextlib import contextmanager
-from typing import Dict, List
+from typing import Dict, List, Union, Tuple, Any, Optional
 
 import numpy as np
+import pandas as pd
 import xarray as xr
 
 from xcube.dsio import find_dataset_io, guess_dataset_format, FORMAT_NAME_ZARR, FORMAT_NAME_NETCDF4
@@ -156,6 +157,154 @@ def dump_var_encoding(var: xr.DataArray, header="Encoding:", indent=4) -> str:
     return "\n".join(lines)
 
 
+def get_cube_values(cube: xr.Dataset,
+                    indexes: pd.DataFrame,
+                    cube_asserted: bool = False):
+    if not cube_asserted:
+        assert_cube(cube)
+
+    row_indexes = np.stack([indexes[c] for c in indexes], axis=-1)
+
+    num_rows = len(row_indexes)
+
+    vars = [cube[var_name] for var_name in cube.data_vars]
+    var_names = [var_name for var_name in cube.data_vars]
+    var_values = [np.ndarray((num_rows,), dtype=cube[var_name].dtype) for var_name in cube.data_vars]
+    num_vars = len(var_names)
+
+    for i in range(num_rows):
+        row_index = tuple(row_indexes[i])
+        if -1 in row_index:
+            for j in range(num_vars):
+                var_values[j][i] = np.nan
+        else:
+            for j in range(num_vars):
+                var = vars[j]
+                print(row_index, var)
+                var_values[j][i] = var[row_index]
+
+    return pd.DataFrame({var_names[j]: var_values[j] for j in range(num_vars)})
+
+
+def get_cube_point_values(cube: xr.Dataset,
+                          points: Union[pd.DataFrame, Any],
+                          cube_asserted: bool = False):
+    """
+    Extract values for *points* from *cube*.
+
+    :param cube: The cube dataset.
+    :param points: Dictionary that maps dimension name to coordinate arrays.
+    :param cube_asserted: If False, *cube* will be validated, otherwise it is expected to be a valid cube.
+    :return:
+    """
+    if not cube_asserted:
+        assert_cube(cube)
+    indexes = get_cube_point_indexes(cube, points, cube_asserted=True)
+    return get_cube_values(cube, indexes, cube_asserted=True)
+
+
+def get_cube_point_indexes(cube: xr.Dataset,
+                           points: Union[pd.DataFrame, Any],
+                           dim_name_mapping: Dict[str, str] = None,
+                           cube_asserted: bool = False) -> pd.DataFrame:
+    """
+    Get indexes of given point coordinates *points* into the given *dataset*.
+
+    :param cube: The cube dataset.
+    :param points: A pandas data frame or object that can be converted into a Pandas DataFrame.
+    :param dim_name_mapping: A mapping from dimension names in *cube* to column names in *points*.
+    :param cube_asserted: If False, *cube* will be validated, otherwise it is expected to be a valid cube.
+    :return: A dictionary that maps dimension names to integer index arrays.
+    """
+    if not cube_asserted:
+        assert_cube(cube)
+
+    if not isinstance(points, pd.DataFrame):
+        points = pd.DataFrame(points)
+
+    dim_names = _get_cube_data_var_dims(cube)
+
+    first_col_name = None
+    indexes = []
+    for dim_name in dim_names:
+        if dim_name not in cube.coords:
+            raise ValueError(f"missing coordinate variable for dimension {dim_name!r}")
+        col_name = dim_name_mapping[dim_name] if dim_name_mapping and dim_name in dim_name_mapping else dim_name
+        if col_name not in points:
+            raise ValueError(f"column {col_name!r} not found in points")
+        dim_col = points[col_name]
+        if first_col_name is None:
+            first_col_name = col_name
+        else:
+            first_col_size = len(points[first_col_name])
+            col_size = len(dim_col)
+            if first_col_size != col_size:
+                raise ValueError("number of point coordinates must be same for all columns,"
+                                 f" but found {first_col_size} for column {first_col_name!r}"
+                                 f" and {col_size} for column {col_name!r}")
+
+        indexes.append((dim_name, _get_coord_index(cube, dim_name, dim_col.values)))
+
+    return pd.DataFrame(dict(indexes))
+
+
+def _get_cube_data_var_dims(cube: xr.Dataset) -> Tuple[str, ...]:
+    for var in cube.data_vars.values():
+        return var.dims
+    raise ValueError("cube dataset is empty")
+
+
+def _get_coord_index(cube: xr.Dataset,
+                     coord_var_name: str,
+                     coord_value, dtype=np.int64) -> np.ndarray:
+    coord_var = cube[coord_var_name]
+    n1 = coord_var.size
+    n2 = n1 + 1
+
+    coord_bounds_var = _get_bounds_var(cube, coord_var_name)
+    if coord_bounds_var is not None:
+        coords = np.zeros(n2, dtype=coord_var.dtype)
+        coords[0:-2] = coord_bounds_var[:, 0]
+        coords[-1] = coord_bounds_var[-1, 1]
+        if np.issubdtype(coords.dtype, np.datetime64):
+            coords = coords.astype(np.uint64)
+    elif coord_var.size > 1:
+        center_coords = coord_var.values
+        if np.issubdtype(center_coords.dtype, np.datetime64):
+            center_coords = center_coords.astype(np.uint64)
+        deltas = np.zeros(n2, dtype=center_coords.dtype)
+        deltas[0:-2] = np.diff(center_coords)
+        deltas[-2] = deltas[-3]
+        deltas[-1] = deltas[-3]
+        coords = np.zeros(n2, dtype=center_coords.dtype)
+        coords[0:-1] = center_coords
+        coords[-1] = coords[-2] + deltas[-1]
+        coords -= deltas // 2
+    else:
+        raise ValueError(f"cannot determine cell boundaries for"
+                         f" coordinate variable {coord_var_name!r} of size {coord_var.size}")
+
+    if np.issubdtype(coords.dtype, np.datetime64):
+        coords = coord_bounds_var.astype(np.uint64)
+    if np.issubdtype(coord_value.dtype, np.datetime64):
+        coord_value = coord_value.astype(np.uint64)
+    x = np.linspace(0.0, n1, n2, dtype=np.float64)
+    index = np.interp(coord_value, coords, x, left=-1, right=-1).astype(dtype)
+    index[index >= n1] = n1 - 1
+    return index
+
+
+def _get_bounds_var(dataset: xr.Dataset, var_name: str) -> Optional[xr.DataArray]:
+    var = dataset[var_name]
+    if len(var.shape) == 1:
+        bounds_var_name = var.attrs.get("bounds", var_name + "_bnds")
+        if bounds_var_name in dataset:
+            bounds_var = dataset[bounds_var_name]
+            if bounds_var.dtype == var.dtype and bounds_var.shape == (var.size, 2):
+                return bounds_var
+    return None
+
+
 def assert_cube(dataset: xr.Dataset, name=None):
     """
     Assert that the given *dataset* is a valid data cube.
@@ -168,13 +317,13 @@ def assert_cube(dataset: xr.Dataset, name=None):
     if report:
         message = f"Dataset" + (name + " " if name else " ")
         message += "is not a valid data cube, because:\n"
-        message += "-  " + ";\n-  ".join(report) + "."
+        message += "- " + ";\n- ".join(report) + "."
         raise ValueError(message)
 
 
 def validate_cube(dataset: xr.Dataset) -> List[str]:
     """
-    Validate the given *dataset* with respect to a valid data cube.
+    Validate the given *dataset* for being a valid data cube.
 
     Returns a list of issues, which is empty if *dataset* is a valid data cube.
 
@@ -188,23 +337,46 @@ def validate_cube(dataset: xr.Dataset) -> List[str]:
     _check_time(dataset, "time", report)
     _check_lon_or_lat(dataset, "lat", -90, 90, report)
     _check_lon_or_lat(dataset, "lon", -180, 180, report)
-    for name in dataset.data_vars:
-        _check_data_var(dataset, name, report)
+    _check_data_variables(dataset, report)
     return report
+
+
+def _check_data_variables(dataset, report):
+    first_var = None
+    first_dims = None
+    first_chunks = None
+    for var_name, var in dataset.data_vars.items():
+        dims = var.dims
+        chunks = var.data.chunks if hasattr(var.data, "chunks") else None
+
+        if len(dims) < 3 or dims[0] != "time" or dims[-2] != "lat" or dims[-1] != "lon":
+            report.append(f"dimensions of data variable {var_name!r}"
+                          f" must be ('time', ..., 'lat', 'lon'),"
+                          f" but were {dims!r} for {var_name!r}")
+
+        if first_var is None:
+            first_var = var
+            first_dims = dims
+            first_chunks = chunks
+            continue
+
+        if first_dims != dims:
+            report.append("dimensions of all data variables must be same,"
+                          f" but found {first_dims!r} for {first_var.name!r} "
+                          f"and {dims!r} for {var_name!r}")
+
+        if first_chunks != chunks:
+            report.append("all data variables must have same chunk sizes,"
+                          f" but found {first_chunks!r} for {first_var.name!r} "
+                          f"and {chunks!r} for {var_name!r}")
 
 
 def _check_dim(dataset, name, report):
     if name not in dataset.dims:
         report.append(f"missing dimension {name!r}")
+
     if dataset.dims[name] < 0:
         report.append(f"size of dimension {name!r} must be a positive integer")
-
-
-def _check_data_var(dataset, name, report):
-    var = dataset[name]
-    if len(var.dims) < 3 or var.dims[0] != "time" or var.dims[-2] != "lat" or var.dims[-1] != "lon":
-        report.append(f"dimensions of data variable {name!r} must be ('time', ..., 'lat', 'lon'),"
-                      f" but were {var.dims!r}")
 
 
 def _check_coord_var(dataset, name, report):
@@ -228,18 +400,25 @@ def _check_lon_or_lat(dataset, name, min_value, max_value, report):
     var = _check_coord_var(dataset, name, report)
     if var is None:
         return
+
     if not np.all(np.isfinite(var)):
         report.append(f"values of coordinate variable {name!r} must be finite")
+
     if np.min(var) < min_value or np.max(var) > max_value:
         report.append(f"values of coordinate variable {name!r}"
                       f" must be in the range {min_value} to {max_value}")
+
+    if not np.all(np.diff(var.astype(np.float64)) > 0):
+        report.append(f"values of coordinate variable {name!r} must be monotonically increasing")
 
 
 def _check_time(dataset, name, report):
     var = _check_coord_var(dataset, name, report)
     if var is None:
         return
+
     if not np.issubdtype(var.dtype, np.datetime64):
         report.append(f"type of coordinate variable {name!r} must be datetime64")
+
     if not np.all(np.diff(var.astype(np.float64)) > 0):
         report.append(f"values of coordinate variable {name!r} must be monotonically increasing")

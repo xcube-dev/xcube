@@ -2,13 +2,13 @@ import os
 import unittest
 
 import numpy as np
+import xarray as xr
 
 from test.sampledata import new_test_cube, new_test_dataset
-from xcube.api import open_dataset, read_dataset, write_dataset, dump_dataset, chunk_dataset, validate_cube, assert_cube
+from xcube.api import open_dataset, read_dataset, write_dataset, dump_dataset, chunk_dataset, validate_cube, \
+    assert_cube, get_cube_point_indexes, get_cube_point_values
 
 TEST_NC_FILE = "test.nc"
-
-import xarray as xr
 
 
 class OpenReadWriteDatasetTest(unittest.TestCase):
@@ -129,10 +129,52 @@ class AssertAndValidateCubeTest(unittest.TestCase):
         with self.assertRaises(ValueError) as cm:
             assert_cube(cube)
         self.assertEqual("Dataset is not a valid data cube, because:\n"
-                         "-  dimensions of data variable 'chl' must be ('time', ..., 'lat', 'lon'),"
-                         " but were ('lat', 'lon').",
+                         "- dimensions of data variable 'chl' must be"
+                         " ('time', ..., 'lat', 'lon'), but were ('lat', 'lon') for 'chl';\n"
+                         "- dimensions of all data variables must be same,"
+                         " but found ('time', 'lat', 'lon') for 'precipitation'"
+                         " and ('lat', 'lon') for 'chl'.",
                          f"{cm.exception}")
 
     def test_validate_cube(self):
         cube = new_test_cube()
         self.assertEqual([], validate_cube(cube))
+
+
+class ExtractPointsTest(unittest.TestCase):
+    def test_get_cube_point_values(self):
+        cube = new_test_cube()
+        values = get_cube_point_values(cube,
+                                       dict(time=np.array(["2010-01-04", "2010-01-02",
+                                                           "2010-01-08", "2010-01-02",
+                                                           "2010-01-02", "2010-01-01",
+                                                           "2010-01-05", "2010-01-03",
+                                                           ], dtype="datetime64[ns]"),
+                                            lat=np.array([50.0, 51.3, 49.7, 50.1, 51.9, 50.8, 50.2, 52.0]),
+                                            lon=np.array([0.0, 0.1, 0.4, 2.9, 1.6, 0.7, -0.5, 4.0]),
+                                            ))
+        print(values)
+
+    def test_get_cube_point_indexes(self):
+        cube = new_test_cube()
+        indexes = get_cube_point_indexes(cube,
+                                         dict(time=np.array(["2010-01-04", "2010-01-02",
+                                                             "2010-01-08", "2010-01-02",
+                                                             "2010-01-02", "2010-01-01",
+                                                             "2010-01-05", "2010-01-03",
+                                                             ], dtype="datetime64[ns]"),
+                                              lat=np.array([50.0, 51.3, 49.7, 50.1, 51.9, 50.8, 50.2, 52.0]),
+                                              lon=np.array([0.0, 0.1, 0.4, 2.9, 1.6, 0.7, -0.5, 4.0]),
+                                              ))
+
+        self.assertEqual(["time", "lat", "lon"], [c for c in indexes])
+        np.testing.assert_array_equal(
+            np.array([[3, 0, 0],
+                      [1, 64, 4],
+                      [-1, -1, 19],
+                      [1, 4, 144],
+                      [1, 94, 79],
+                      [0, 39, 34],
+                      [4, 9, -1],
+                      [2, 99, 199]]),
+            np.stack([indexes[c] for c in indexes], axis=-1))
