@@ -4,37 +4,55 @@ import unittest
 import numpy as np
 import xarray as xr
 
-from test.sampledata import new_test_cube, new_test_dataset
-from xcube.api import open_dataset, read_dataset, write_dataset, dump_dataset, chunk_dataset, validate_cube, \
-    assert_cube, get_cube_point_indexes, get_cube_point_values
+from test.sampledata import new_test_dataset
+from xcube.api import open_dataset, read_dataset, write_dataset, dump_dataset, chunk_dataset, verify_cube, \
+    assert_cube, get_cube_point_indexes, get_cube_point_values, new_cube
 
 TEST_NC_FILE = "test.nc"
+
+
+class NewCubeTest(unittest.TestCase):
+
+    def test_new_cube(self):
+        cube = new_cube()
+        self.assertEqual({'lon': 360, 'lat': 180, 'time': 5, 'bnds': 2}, cube.dims)
+        self.assertEqual([], verify_cube(cube))
+        cube = new_cube(drop_bounds=True)
+        self.assertEqual({'lon': 360, 'lat': 180, 'time': 5}, cube.dims)
+        self.assertEqual([], verify_cube(cube))
 
 
 class OpenReadWriteDatasetTest(unittest.TestCase):
     def setUp(self):
         super().setUp()
-        dataset = new_test_cube()
-        dataset.to_netcdf(TEST_NC_FILE, mode="w")
-        dataset.close()
+        self.dataset = new_cube(variables=dict(precipitation=0.2, temperature=279.1))
+        self.dataset.to_netcdf(TEST_NC_FILE, mode="w")
+        self.dataset.close()
 
     def tearDown(self):
+        self.dataset = None
         os.remove(TEST_NC_FILE)
         super().tearDown()
 
     def test_open_dataset(self):
         with open_dataset(TEST_NC_FILE) as ds:
             self.assertIsNotNone(ds)
+            np.testing.assert_array_equal(ds.time.values, self.dataset.time.values)
+            np.testing.assert_array_equal(ds.lat.values, self.dataset.lat.values)
+            np.testing.assert_array_equal(ds.lon.values, self.dataset.lon.values)
 
     def test_read_dataset(self):
         ds = read_dataset(TEST_NC_FILE)
         self.assertIsNotNone(ds)
+        np.testing.assert_array_equal(ds.time.values, self.dataset.time.values)
+        np.testing.assert_array_equal(ds.lat.values, self.dataset.lat.values)
+        np.testing.assert_array_equal(ds.lon.values, self.dataset.lon.values)
         ds.close()
 
     def test_write_dataset(self):
         TEST_NC_FILE_2 = "test-2.nc"
 
-        dataset = new_test_cube()
+        dataset = new_cube()
         try:
             write_dataset(dataset, TEST_NC_FILE_2)
             self.assertTrue(os.path.isfile(TEST_NC_FILE_2))
@@ -119,10 +137,10 @@ class DumpDatasetTest(unittest.TestCase):
         self.assertIn("    _FillValue:  999.0", text)
 
 
-class AssertAndValidateCubeTest(unittest.TestCase):
+class AssertAndVerifyCubeTest(unittest.TestCase):
 
     def test_assert_cube(self):
-        cube = new_test_cube()
+        cube = new_cube(variables=dict(precipitation=0.5))
         cube["chl"] = xr.DataArray(np.random.rand(cube.dims["lat"], cube.dims["lon"]),
                                    dims=("lat", "lon"),
                                    coords=dict(lat=cube.lat, lon=cube.lon))
@@ -136,14 +154,29 @@ class AssertAndValidateCubeTest(unittest.TestCase):
                          " and ('lat', 'lon') for 'chl'.",
                          f"{cm.exception}")
 
-    def test_validate_cube(self):
-        cube = new_test_cube()
-        self.assertEqual([], validate_cube(cube))
+    def test_verify_cube(self):
+        cube = new_cube()
+        self.assertEqual([], verify_cube(cube))
+        ds = cube.drop("time")
+        self.assertEqual(["missing coordinate variable 'time'"], verify_cube(ds))
+        ds = ds.drop("lat")
+        self.assertEqual(["missing coordinate variable 'time'",
+                          "missing coordinate variable 'lat'"], verify_cube(ds))
 
 
 class ExtractPointsTest(unittest.TestCase):
+    def _new_test_cube(self):
+        return new_cube(width=200,
+                        height=100,
+                        lon_start=0.0,
+                        lat_start=50.0,
+                        spatial_res=2.0 / 100,
+                        time_start="2010-01-01",
+                        time_periods=5,
+                        variables=dict(precipitation=0.6, temperature=276.2))
+
     def test_get_cube_point_values(self):
-        cube = new_test_cube()
+        cube = self._new_test_cube()
         values = get_cube_point_values(cube,
                                        dict(time=np.array(["2010-01-04", "2010-01-02",
                                                            "2010-01-08", "2010-01-02",
@@ -156,10 +189,10 @@ class ExtractPointsTest(unittest.TestCase):
         print(values)
 
     def test_get_cube_point_indexes(self):
-        cube = new_test_cube()
+        cube = self._new_test_cube()
         indexes = get_cube_point_indexes(cube,
                                          dict(time=np.array(["2010-01-04", "2010-01-02",
-                                                             "2010-01-08", "2010-01-02",
+                                                             "2010-01-08", "2010-01-06",
                                                              "2010-01-02", "2010-01-01",
                                                              "2010-01-05", "2010-01-03",
                                                              ], dtype="datetime64[ns]"),
@@ -167,14 +200,12 @@ class ExtractPointsTest(unittest.TestCase):
                                               lon=np.array([0.0, 0.1, 0.4, 2.9, 1.6, 0.7, -0.5, 4.0]),
                                               ))
 
+        self.assertEqual(8, len(indexes))
+        self.assertEqual(3, len(indexes.columns))
         self.assertEqual(["time", "lat", "lon"], [c for c in indexes])
-        np.testing.assert_array_equal(
-            np.array([[3, 0, 0],
-                      [1, 64, 4],
-                      [-1, -1, 19],
-                      [1, 4, 144],
-                      [1, 94, 79],
-                      [0, 39, 34],
-                      [4, 9, -1],
-                      [2, 99, 199]]),
-            np.stack([indexes[c] for c in indexes], axis=-1))
+        np.testing.assert_array_equal(np.array([3, 1, -1, 4, 1, 0, 4, 2], dtype=np.int64),
+                                      indexes["time"].values)
+        np.testing.assert_array_equal(np.array([0, 65, -1, 5, 95, 40, 10, 99], dtype=np.int64),
+                                      indexes["lat"].values)
+        np.testing.assert_array_equal(np.array([0, 5, 20, 145, 80, 34, -1, 199], dtype=np.int64),
+                                      indexes["lon"].values)

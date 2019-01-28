@@ -6,11 +6,9 @@ from typing import List
 
 import click
 import click.testing
-import numpy as np
-import pandas as pd
 import xarray as xr
 
-from test.sampledata import new_test_cube
+from xcube.api import new_cube
 from xcube.cli import cli, _parse_kwargs
 
 TEST_NC_FILE = "test.nc"
@@ -25,7 +23,7 @@ class CliTest(unittest.TestCase, metaclass=ABCMeta):
 
     def setUp(self):
         super().setUp()
-        dataset = new_test_cube()
+        dataset = new_cube(variables=dict(precipitation=0.4, temperature=275.2))
         dataset.to_netcdf(TEST_NC_FILE, mode="w")
         dataset.to_zarr(TEST_ZARR_DIR, mode="w")
 
@@ -40,20 +38,17 @@ class DumpTest(CliTest):
 
     def test_dump_ds(self):
         result = self.invoke_cli(["dump", TEST_NC_FILE])
-        self.assertEqual((
-            "<xarray.Dataset>\n"
-            "Dimensions:        (lat: 100, lon: 200, time: 5)\n"
-            "Coordinates:\n"
-            "  * time           (time) datetime64[ns] 2010-01-01 2010-01-02 2010-01-03 ...\n"
-            "  * lat            (lat) float64 50.0 50.02 50.04 50.06 50.08 50.1 50.12 ...\n"
-            "  * lon            (lon) float64 0.0 0.0201 0.0402 0.0603 0.0804 0.1005 ...\n"
-            "Data variables:\n"
-            "    precipitation  (time, lat, lon) float64 ...\n"
-            "    temperature    (time, lat, lon) float64 ...\n"
-            "Attributes:\n"
-            "    time_coverage_start:  2010-01-01 00:00:00\n"
-            "    time_coverage_end:    2010-01-05 00:00:00\n"
-        ), result.output)
+        self.assertIn("<xarray.Dataset>\n", result.output)
+        self.assertIn("Dimensions: ", result.output)
+        self.assertIn("Dimensions without coordinates: bnds\n", result.output)
+        self.assertIn("Coordinates:\n", result.output)
+        self.assertIn("Data variables:\n", result.output)
+        self.assertIn("Attributes:\n", result.output)
+        self.assertIn("  * lat ", result.output)
+        self.assertIn("(lat) float64 -89.5 -88.5 -87.5", result.output)
+        self.assertIn("    lat_bnds ", result.output)
+        self.assertIn("(time) datetime64[ns] 2010-01-01T12:00:00", result.output)
+        self.assertIn("    time_coverage_start:   2010-01-01 00:00:00\n", result.output)
         self.assertEqual(0, result.exit_code)
 
 
@@ -151,6 +146,3 @@ class ParseTest(unittest.TestCase):
             _parse_kwargs("9==2")
         self.assertEqual("Invalid value: '9==2'",
                          f"{cm.exception}")
-
-
-
