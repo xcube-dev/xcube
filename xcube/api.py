@@ -56,7 +56,7 @@ def new_cube(title="Test Cube",
     lat = xr.DataArray(lat_data, dims="lat")
     lat.attrs["units"] = "degrees_north"
 
-    time_data_2 = pd.date_range(time_start, periods=time_periods + 1, freq=time_freq).values
+    time_data_2 = pd.date_range(start=time_start, periods=time_periods + 1, freq=time_freq).values
     time_data_2 = time_data_2.astype(dtype=_TIME_DTYPE)
     time_delta = time_data_2[1] - time_data_2[0]
     time_data = time_data_2[0:-1] + time_delta // 2
@@ -406,15 +406,22 @@ def get_coord_indexes(dataset: xr.Dataset,
 
     coord_bounds_var = _get_bounds_var(dataset, coord_var_name)
     if coord_bounds_var is not None:
+        coord_bounds = coord_bounds_var.values
+        if np.issubdtype(coord_bounds.dtype, np.datetime64):
+            coord_bounds = coord_bounds.astype(np.uint64)
+        is_reversed = (coord_bounds[0, 1] - coord_bounds[0, 0]) < 0
+        if is_reversed:
+            coord_bounds = coord_bounds[::-1, ::-1]
         coords = np.zeros(n2, dtype=coord_var.dtype)
-        coords[0:-1] = coord_bounds_var[:, 0]
-        coords[-1] = coord_bounds_var[-1, 1].values
-        if np.issubdtype(coords.dtype, np.datetime64):
-            coords = coords.astype(np.uint64)
+        coords[0:-1] = coord_bounds[:, 0]
+        coords[-1] = coord_bounds[-1, 1]
     elif coord_var.size > 1:
         center_coords = coord_var.values
         if np.issubdtype(center_coords.dtype, np.datetime64):
             center_coords = center_coords.astype(np.uint64)
+        is_reversed = (center_coords[-1] - center_coords[0]) < 0
+        if is_reversed:
+            center_coords = center_coords[::-1]
         deltas = np.zeros(n2, dtype=center_coords.dtype)
         deltas[0:-2] = np.diff(center_coords)
         deltas[-2] = deltas[-3]
@@ -440,7 +447,12 @@ def get_coord_indexes(dataset: xr.Dataset,
     if ret_fractions:
         fractions = result - indexes
         fractions[upper_bound_hit] = 1.0
+        if is_reversed:
+            indexes = indexes[::-1]
+            fractions = fractions[::-1]
         return indexes, fractions
+    if is_reversed:
+        indexes = indexes[::-1]
     return indexes
 
 
@@ -558,9 +570,10 @@ def _check_lon_or_lat(dataset, name, min_value, max_value, report):
         report.append(f"values of coordinate variable {name!r}"
                       f" must be in the range {min_value} to {max_value}")
 
-    # TODO (forman): the following check is not valid if a cube covers the antimeridian
-    if not np.all(np.diff(var.astype(np.float64)) > 0):
-        report.append(f"values of coordinate variable {name!r} must be monotonic increasing")
+    # TODO (forman): the following check is not valid for "lat" because we currently use wrong lat-order
+    # TODO (forman): the following check is not valid for "lon" if a cube covers the antimeridian
+    #if not np.all(np.diff(var.astype(np.float64)) > 0):
+    #    report.append(f"values of coordinate variable {name!r} must be monotonic increasing")
 
 
 def _check_time(dataset, name, report):

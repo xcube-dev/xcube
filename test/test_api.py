@@ -3,7 +3,6 @@ import unittest
 
 import numpy as np
 import xarray as xr
-
 from test.sampledata import new_test_dataset
 from xcube.api import open_dataset, read_dataset, write_dataset, dump_dataset, chunk_dataset, verify_cube, \
     assert_cube, get_cube_point_indexes, get_cube_point_values, new_cube, get_coord_indexes
@@ -229,28 +228,58 @@ class ExtractPointsTest(unittest.TestCase):
 # noinspection PyMethodMayBeStatic
 class CoordIndexTest(unittest.TestCase):
 
+    def test_get_coord_index_for_single_cell(self):
+        dataset = new_cube(width=360, height=180, drop_bounds=True)
+        cell = dataset.isel(time=2, lat=20, lon=30)
+        with self.assertRaises(ValueError) as cm:
+            get_coord_indexes(cell, "lon", np.array([-149.5]))
+        self.assertEqual("cannot determine cell boundaries for coordinate variable 'lon' of size 1",
+                         f"{cm.exception}")
+
     def test_get_coord_index_with_bounds(self):
         dataset = new_cube(width=360, height=180, drop_bounds=False)
-        self._assert_ok(dataset)
+        self._assert_get_coord_index(dataset)
 
     def test_get_coord_index_without_bounds(self):
         dataset = new_cube(width=360, height=180, drop_bounds=True)
-        self._assert_ok(dataset)
+        self._assert_get_coord_index(dataset)
 
-    def _assert_ok(self, dataset):
-        indexes = get_coord_indexes(
-            dataset, "lon",
-            np.array([-190, -180., -179, -10.4, 0., 10.4, 179., 180.0, 190]))
-        np.testing.assert_array_equal(
-            indexes,
-            np.array([-1, 0, 1, 169, 180, 190, 359, 359, -1], dtype=np.int64))
+    def test_get_coord_index_with_bounds_reverse_lat(self):
+        dataset = new_cube(width=360, height=180, drop_bounds=False)
+        lat = dataset.lat.values[::-1]
+        lat_bnds = dataset.lat_bnds.values[::-1, ::-1]
+        dataset.coords["lat"] = xr.DataArray(lat, dims=("lat",))
+        dataset.coords["lat_bnds"] = xr.DataArray(lat_bnds, dims=("lat", "bnds"))
+        self._assert_get_coord_index(dataset, reverse_lat=True)
 
-        indexes, fractions = get_coord_indexes(
-            dataset, "lon",
-            np.array([-190, -180., -179, -10.4, 0., 10.4, 179., 180.0, 190]), ret_fractions=True)
-        np.testing.assert_array_equal(
-            indexes,
-            np.array([-1, 0, 1, 169, 180, 190, 359, 359, -1], dtype=np.int64))
-        np.testing.assert_array_almost_equal(
-            fractions,
-            np.array([0., 0., 0., 0.6, 0., 0.4, 0., 1., 0.], dtype=np.float64))
+    def test_get_coord_index_without_bounds_reverse_lat(self):
+        dataset = new_cube(width=360, height=180, drop_bounds=True)
+        lat = dataset.lat.values[::-1]
+        dataset.coords["lat"] = xr.DataArray(lat, dims=("lat",))
+        self._assert_get_coord_index(dataset, reverse_lat=True)
+
+    def _assert_get_coord_index(self, dataset, reverse_lat=False):
+        lon_coords = np.array([-190, -180., -179, -10.4, 0., 10.4, 179., 180.0, 190])
+        expected_lon_indexes = np.array([-1, 0, 1, 169, 180, 190, 359, 359, -1], dtype=np.int64)
+        expected_lon_fractions = np.array([0., 0., 0., 0.6, 0., 0.4, 0., 1., 0.], dtype=np.float64)
+
+        lat_coords = np.array([-100, -90., -89, -10.4, 0., 10.4, 89., 90.0, 100])
+        expected_lat_indexes = np.array([-1, 0, 1, 79, 90, 100, 179, 179, -1], dtype=np.int64)
+        expected_lat_fractions = np.array([0., 0., 0., 0.6, 0., 0.4, 0., 1., 0.], dtype=np.float64)
+        if reverse_lat:
+            expected_lat_indexes = expected_lat_indexes[::-1]
+            expected_lat_fractions = expected_lat_fractions[::-1]
+
+        indexes = get_coord_indexes(dataset, "lon", lon_coords)
+        np.testing.assert_array_equal(indexes, expected_lon_indexes)
+
+        indexes = get_coord_indexes(dataset, "lat", lat_coords)
+        np.testing.assert_array_equal(indexes, expected_lat_indexes)
+
+        indexes, fractions = get_coord_indexes(dataset, "lon", lon_coords, ret_fractions=True)
+        np.testing.assert_array_equal(indexes, expected_lon_indexes)
+        np.testing.assert_array_almost_equal(fractions, expected_lon_fractions)
+
+        indexes, fractions = get_coord_indexes(dataset, "lat", lat_coords, ret_fractions=True)
+        np.testing.assert_array_equal(indexes, expected_lat_indexes)
+        np.testing.assert_array_almost_equal(fractions, expected_lat_fractions)
