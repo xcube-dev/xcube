@@ -56,7 +56,7 @@ class DefaultInputProcessor(InputProcessor):
 
     @property
     def description(self) -> str:
-        return 'Single-scene NetCDF inputs in xcube standard format'
+        return 'Single-scene NetCDF/CF inputs in xcube standard format'
 
     def configure(self, input_reader: str = 'netcdf4'):
         self._input_reader = input_reader
