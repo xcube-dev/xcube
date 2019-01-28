@@ -276,6 +276,14 @@ def dump_var_encoding(var: xr.DataArray, header="Encoding:", indent=4) -> str:
 def get_cube_values(cube: xr.Dataset,
                     indexes: pd.DataFrame,
                     cube_asserted: bool = False):
+    """
+    Get values from the *cube* at given *indexes*.
+
+    :param cube: A cube dataset.
+    :param indexes: A Pandas data frame that contains the indexes for all cube dimensions.
+    :param cube_asserted: If False, *cube* will be verified, otherwise it is expected to be a valid cube.
+    :return: A new data frame whose columns are values from *cube* variables at given *indexes*.
+    """
     if not cube_asserted:
         assert_cube(cube)
 
@@ -304,14 +312,14 @@ def get_cube_values(cube: xr.Dataset,
 
 def get_cube_point_values(cube: xr.Dataset,
                           points: Union[pd.DataFrame, Any],
-                          cube_asserted: bool = False):
+                          cube_asserted: bool = False) -> pd.DataFrame:
     """
-    Extract values for *points* from *cube*.
+    Extract values from *cube* variables at given coordinates in *points*.
 
     :param cube: The cube dataset.
     :param points: Dictionary that maps dimension name to coordinate arrays.
-    :param cube_asserted: If False, *cube* will be validated, otherwise it is expected to be a valid cube.
-    :return:
+    :param cube_asserted: If False, *cube* will be verified, otherwise it is expected to be a valid cube.
+    :return: A new data frame whose columns are values from *cube* variables at given *points*.
     """
     if not cube_asserted:
         assert_cube(cube)
@@ -329,7 +337,7 @@ def get_cube_point_indexes(cube: xr.Dataset,
     :param cube: The cube dataset.
     :param points: A pandas data frame or object that can be converted into a Pandas DataFrame.
     :param dim_name_mapping: A mapping from dimension names in *cube* to column names in *points*.
-    :param cube_asserted: If False, *cube* will be validated, otherwise it is expected to be a valid cube.
+    :param cube_asserted: If False, *cube* will be verified, otherwise it is expected to be a valid cube.
     :return: A dictionary that maps dimension names to integer index arrays.
     """
     if not cube_asserted:
@@ -359,7 +367,7 @@ def get_cube_point_indexes(cube: xr.Dataset,
                                  f" but found {first_col_size} for column {first_col_name!r}"
                                  f" and {col_size} for column {col_name!r}")
 
-        indexes.append((dim_name, _get_coord_index(cube, dim_name, dim_col.values)))
+        indexes.append((dim_name, get_coord_indexes(cube, dim_name, dim_col.values)))
 
     return pd.DataFrame(dict(indexes))
 
@@ -370,14 +378,33 @@ def _get_cube_data_var_dims(cube: xr.Dataset) -> Tuple[str, ...]:
     raise ValueError("cube dataset is empty")
 
 
-def _get_coord_index(cube: xr.Dataset,
-                     coord_var_name: str,
-                     coord_value, dtype=np.int64) -> np.ndarray:
-    coord_var = cube[coord_var_name]
+def get_coord_indexes(dataset: xr.Dataset,
+                      coord_var_name: str,
+                      coord_values,
+                      ret_fractions = False) -> Union[np.ndarray, Tuple[np.ndarray, np.ndarray]]:
+    """
+    Compute the indexes into a coordinate variable *coord_var_name* of a *dataset*
+    for the given coordinate values *coord_values*.
+
+    The coordinate variable's labels must be monotonic increasing, otherwise the result will be nonsense.
+
+    For any value in *coord_values* that is out of the bounds of the coordinate variable's values,
+    the index -1 will be returned.
+
+    Returns the computed indexes as int64 array. If *ret_fractions* is True,
+    a tuple of the indexes and their fractions of type float64 will be returned.
+
+    :param dataset: A cube dataset.
+    :param coord_var_name: Name of a coordinate variable.
+    :param coord_values: Array-like coordinate values.
+    :param ret_fractions: If true.
+    :return: a numpy array of type *dtype*.
+    """
+    coord_var = dataset[coord_var_name]
     n1 = coord_var.size
     n2 = n1 + 1
 
-    coord_bounds_var = _get_bounds_var(cube, coord_var_name)
+    coord_bounds_var = _get_bounds_var(dataset, coord_var_name)
     if coord_bounds_var is not None:
         coords = np.zeros(n2, dtype=coord_var.dtype)
         coords[0:-1] = coord_bounds_var[:, 0]
@@ -395,17 +422,26 @@ def _get_coord_index(cube: xr.Dataset,
         coords = np.zeros(n2, dtype=center_coords.dtype)
         coords[0:-1] = center_coords
         coords[-1] = coords[-2] + deltas[-1]
-        coords -= deltas // 2
+        if np.issubdtype(deltas.dtype, np.int):
+            coords -= deltas // 2
+        else:
+            coords -= 0.5 * deltas
     else:
         raise ValueError(f"cannot determine cell boundaries for"
                          f" coordinate variable {coord_var_name!r} of size {coord_var.size}")
 
-    if np.issubdtype(coord_value.dtype, np.datetime64):
-        coord_value = coord_value.astype(np.uint64)
+    if np.issubdtype(coord_values.dtype, np.datetime64):
+        coord_values = coord_values.astype(np.uint64)
     x = np.linspace(0.0, n1, n2, dtype=np.float64)
-    index = np.interp(coord_value, coords, x, left=-1, right=-1).astype(dtype)
-    index[index >= n1] = n1 - 1
-    return index
+    result = np.interp(coord_values, coords, x, left=-1, right=-1)
+    indexes = result.astype(np.int64)
+    upper_bound_hit = indexes >= n1
+    indexes[upper_bound_hit] = n1 - 1
+    if ret_fractions:
+        fractions = result - indexes
+        fractions[upper_bound_hit] = 1.0
+        return indexes, fractions
+    return indexes
 
 
 def _get_bounds_var(dataset: xr.Dataset, var_name: str) -> Optional[xr.DataArray]:
@@ -441,7 +477,7 @@ def verify_cube(dataset: xr.Dataset) -> List[str]:
 
     Returns a list of issues, which is empty if *dataset* is a valid data cube.
 
-    :param dataset: A dataset to be validated.
+    :param dataset: A dataset to be verified.
     :return: List of issues or empty list.
     """
     report = []

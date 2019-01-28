@@ -6,20 +6,35 @@ import xarray as xr
 
 from test.sampledata import new_test_dataset
 from xcube.api import open_dataset, read_dataset, write_dataset, dump_dataset, chunk_dataset, verify_cube, \
-    assert_cube, get_cube_point_indexes, get_cube_point_values, new_cube
+    assert_cube, get_cube_point_indexes, get_cube_point_values, new_cube, get_coord_indexes
 
 TEST_NC_FILE = "test.nc"
 
 
 class NewCubeTest(unittest.TestCase):
 
-    def test_new_cube(self):
+    def test_new_cube_with_bounds(self):
         cube = new_cube()
         self.assertEqual({'lon': 360, 'lat': 180, 'time': 5, 'bnds': 2}, cube.dims)
-        self.assertEqual([], verify_cube(cube))
+        self.assertEqual(-179.5, float(cube.lon[0]))
+        self.assertEqual(179.5, float(cube.lon[-1]))
+        self.assertEqual(-89.5, float(cube.lat[0]))
+        self.assertEqual(89.5, float(cube.lat[-1]))
+        self.assertEqual(-180., float(cube.lon_bnds[0, 0]))
+        self.assertEqual(-179., float(cube.lon_bnds[0, 1]))
+        self.assertEqual(179., float(cube.lon_bnds[-1, 0]))
+        self.assertEqual(180., float(cube.lon_bnds[-1, 1]))
+        self.assertEqual(-90., float(cube.lat_bnds[0, 0]))
+        self.assertEqual(-89., float(cube.lat_bnds[0, 1]))
+        self.assertEqual(89., float(cube.lat_bnds[-1, 0]))
+        self.assertEqual(90., float(cube.lat_bnds[-1, 1]))
+
+    def test_new_cube_without_bounds(self):
         cube = new_cube(drop_bounds=True)
         self.assertEqual({'lon': 360, 'lat': 180, 'time': 5}, cube.dims)
-        self.assertEqual([], verify_cube(cube))
+
+
+TEST_NC_FILE_2 = "test-2.nc"
 
 
 class OpenReadWriteDatasetTest(unittest.TestCase):
@@ -50,7 +65,6 @@ class OpenReadWriteDatasetTest(unittest.TestCase):
         ds.close()
 
     def test_write_dataset(self):
-        TEST_NC_FILE_2 = "test-2.nc"
 
         dataset = new_cube()
         try:
@@ -164,6 +178,7 @@ class AssertAndVerifyCubeTest(unittest.TestCase):
                           "missing coordinate variable 'lat'"], verify_cube(ds))
 
 
+# noinspection PyMethodMayBeStatic
 class ExtractPointsTest(unittest.TestCase):
     def _new_test_cube(self):
         return new_cube(width=200,
@@ -209,3 +224,33 @@ class ExtractPointsTest(unittest.TestCase):
                                       indexes["lat"].values)
         np.testing.assert_array_equal(np.array([0, 5, 20, 145, 80, 34, -1, 199], dtype=np.int64),
                                       indexes["lon"].values)
+
+
+# noinspection PyMethodMayBeStatic
+class CoordIndexTest(unittest.TestCase):
+
+    def test_get_coord_index_with_bounds(self):
+        dataset = new_cube(width=360, height=180, drop_bounds=False)
+        self._assert_ok(dataset)
+
+    def test_get_coord_index_without_bounds(self):
+        dataset = new_cube(width=360, height=180, drop_bounds=True)
+        self._assert_ok(dataset)
+
+    def _assert_ok(self, dataset):
+        indexes = get_coord_indexes(
+            dataset, "lon",
+            np.array([-190, -180., -179, -10.4, 0., 10.4, 179., 180.0, 190]))
+        np.testing.assert_array_equal(
+            indexes,
+            np.array([-1, 0, 1, 169, 180, 190, 359, 359, -1], dtype=np.int64))
+
+        indexes, fractions = get_coord_indexes(
+            dataset, "lon",
+            np.array([-190, -180., -179, -10.4, 0., 10.4, 179., 180.0, 190]), ret_fractions=True)
+        np.testing.assert_array_equal(
+            indexes,
+            np.array([-1, 0, 1, 169, 180, 190, 359, 359, -1], dtype=np.int64))
+        np.testing.assert_array_almost_equal(
+            fractions,
+            np.array([0., 0., 0., 0.6, 0., 0.4, 0., 1., 0.], dtype=np.float64))
