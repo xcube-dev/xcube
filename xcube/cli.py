@@ -2,10 +2,11 @@ from typing import Any, Dict
 
 import click
 
+from .api import open_dataset, get_cube_point_indexes, get_cube_values
 from .version import version
 
 
-def _parse_kwargs(value: str, metavar: str=None) -> Dict[str, Any]:
+def _parse_kwargs(value: str, metavar: str = None) -> Dict[str, Any]:
     if value:
         try:
             return eval(f"dict({value})", {}, {})
@@ -17,6 +18,31 @@ def _parse_kwargs(value: str, metavar: str=None) -> Dict[str, Any]:
             raise click.ClickException(message)
     else:
         return dict()
+
+
+# noinspection PyShadowingBuiltins
+@click.command(name="points")
+@click.argument('cube', metavar='<cube>')
+@click.argument('coords', metavar='<coords>')
+@click.option('--output', '-o', metavar='<output>',
+              help="Output file.")
+@click.option('--format', '-f', metavar='<format>', type=click.Choice(['csv', 'stdout']),
+              help="Format of the output. If not given, guessed from <output>, otherwise <stdout> is used.")
+@click.option('--params', '-p', metavar='<params>',
+              help="Parameters specific for the output format."
+                   " Comma-separated list of <key>=<value> pairs.")
+def points(cube, coords, output=None, format=None, params=None):
+    """
+    Extract data from <cube> at points given by coordinates <coords>.
+    """
+    import pandas as pd
+
+    coords_df = pd.read_csv(coords, parse_dates=["time"], infer_datetime_format=True)
+    print(coords_df, [coords_df[c].values.dtype for c in coords_df])
+    with open_dataset(cube) as cube_dataset:
+        indexes = get_cube_point_indexes(cube_dataset, coords_df)
+        print(indexes)
+        return get_cube_values(cube_dataset, indexes, cube_asserted=True)
 
 
 # noinspection PyShadowingBuiltins
@@ -89,6 +115,7 @@ def cli():
     """
 
 
+cli.add_command(points)
 cli.add_command(chunk)
 cli.add_command(dump)
 
