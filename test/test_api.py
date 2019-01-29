@@ -3,6 +3,7 @@ import unittest
 
 import numpy as np
 import xarray as xr
+
 from test.sampledata import new_test_dataset
 from xcube.api import open_dataset, read_dataset, write_dataset, dump_dataset, chunk_dataset, verify_cube, \
     assert_cube, get_cube_point_indexes, get_cube_point_values, new_cube, get_coord_indexes
@@ -283,3 +284,41 @@ class CoordIndexTest(unittest.TestCase):
         indexes, fractions = get_coord_indexes(dataset, "lat", lat_coords, ret_fractions=True)
         np.testing.assert_array_equal(indexes, expected_lat_indexes)
         np.testing.assert_array_almost_equal(fractions, expected_lat_fractions)
+
+
+class ChunksTest(unittest.TestCase):
+
+    def test_chunks(self):
+        chunks = ((1, 1, 1), (375, 375, 375, 375), (509, 509, 509, 509))
+
+        coords = []
+        indexes = []
+        for dim_chunks in chunks:
+            n = len(dim_chunks)
+            dim_indexes = np.zeros(n + 1, np.int64)
+            for i in range(n):
+                dim_indexes[i + 1] = dim_indexes[i] + dim_chunks[i]
+            coords.append(dim_indexes)
+            indexes.append(np.linspace(0, n, num=n + 1, dtype=np.int64))
+
+        coords = tuple(coords)
+        np.testing.assert_array_equal(coords[0], np.array([0, 1, 2, 3]))
+        np.testing.assert_array_equal(coords[1], np.array([0, 375, 750, 1125, 1500]))
+        np.testing.assert_array_equal(coords[2], np.array([0, 509, 1018, 1527, 2036]))
+
+        indexes = tuple(indexes)
+        np.testing.assert_array_equal(indexes[0], np.array([0, 1, 2, 3]))
+        np.testing.assert_array_equal(indexes[1], np.array([0, 1, 2, 3, 4]))
+        np.testing.assert_array_equal(indexes[2], np.array([0, 1, 2, 3, 4]))
+
+        result = np.interp([-1, 0, 1, 2, 3, 4],
+                           coords[0], indexes[0], left=-1, right=-1).astype(dtype=np.int64)
+        np.testing.assert_array_equal(result, np.array([-1, 0, 1, 2, 3, -1]))
+
+        result = np.interp([-1, 0, 1, 374, 375, 376, 749, 750, 751, 1124, 1125, 1126, 1499, 1500, 1501],
+                           coords[1], indexes[1], left=-1, right=-1).astype(dtype=np.int64)
+        np.testing.assert_array_equal(result, np.array([-1,  0,  0,  0,  1,  1,  1,  2,  2,  2,  3,  3,  3,  4, -1]))
+
+        result = np.interp([0, 509, 1018, 1527, 2036],
+                           coords[2], indexes[2], left=-1, right=-1).astype(dtype=np.int64)
+        np.testing.assert_array_equal(result, np.array([0, 1, 2, 3, 4]))

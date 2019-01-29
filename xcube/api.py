@@ -275,26 +275,65 @@ def dump_var_encoding(var: xr.DataArray, header="Encoding:", indent=4) -> str:
 
 def get_cube_values(cube: xr.Dataset,
                     indexes: pd.DataFrame,
-                    cube_asserted: bool = False):
+                    include_indexes: bool = False,
+                    cube_asserted: bool = False) -> pd.DataFrame:
     """
     Get values from the *cube* at given *indexes*.
 
     :param cube: A cube dataset.
     :param indexes: A Pandas data frame that contains the indexes for all cube dimensions.
+    :param include_indexes: If True, include indexes in returned data frame.
     :param cube_asserted: If False, *cube* will be verified, otherwise it is expected to be a valid cube.
     :return: A new data frame whose columns are values from *cube* variables at given *indexes*.
     """
     if not cube_asserted:
         assert_cube(cube)
 
-    row_indexes = np.stack([indexes[c] for c in indexes], axis=-1)
+    dims = get_cube_dims(cube)
+    num_dims = len(dims)
+    for i in range(num_dims):
+        dim_name = dims[i]
+        if dim_name not in indexes:
+            raise ValueError(f"missing dimension {dim_name!r} in indexes")
+
+    chunks = get_cube_chunks(cube)
+    # print(chunks)
+    chunks = None
+
+    index_arrays = []
+    if chunks is not None:
+        if len(chunks) != num_dims:
+            raise ValueError("inconsistent cube")
+        interp_arrays = _get_chunk_interp_arrays(chunks)
+        chunk_index_arrays = []
+        for i in range(num_dims):
+            dim_name = dims[i]
+            index_values = indexes[dim_name].values
+            chunk_index_array = np.interp(index_values,
+                                          interp_arrays[0],
+                                          interp_arrays[1], left=-1, right=-1).astype(dtype=np.int64)
+            chunk_index_arrays.append(chunk_index_array)
+            index_arrays.append(index_values)
+        # TODO (forman): sort  index_arrays by chunk_index_arrays
+    else:
+        for i in range(num_dims):
+            dim_name = dims[i]
+            index_arrays.append(indexes[dim_name].values)
+
+    row_indexes = np.stack(index_arrays, axis=-1)
+    # print(row_indexes)
 
     num_rows = len(row_indexes)
 
     vars = [cube[var_name] for var_name in cube.data_vars]
     var_names = [var_name for var_name in cube.data_vars]
     var_values = [np.ndarray((num_rows,), dtype=cube[var_name].dtype) for var_name in cube.data_vars]
+
     num_vars = len(var_names)
+
+    # TODO (forman): the following loop is very slow (up to 0.5 seconds each cycle).
+    # We may optimize by loading data chunk-wise and then extracting points from the loaded sub-arrays.
+    # chunks = _get_var_chunks(cube)
 
     for i in range(num_rows):
         row_index = tuple(row_indexes[i])
@@ -303,28 +342,34 @@ def get_cube_values(cube: xr.Dataset,
                 var_values[j][i] = np.nan
         else:
             for j in range(num_vars):
-                var = vars[j]
-                print(row_index, var)
-                var_values[j][i] = var[row_index]
+                var_data = vars[j].data
+                var_values[j][i] = var_data[row_index]
 
-    return pd.DataFrame({var_names[j]: var_values[j] for j in range(num_vars)})
+    values = pd.DataFrame({var_names[j]: var_values[j] for j in range(num_vars)})
+
+    if include_indexes:
+        values = pd.concat(values, indexes)
+
+    return values
 
 
 def get_cube_point_values(cube: xr.Dataset,
                           points: Union[pd.DataFrame, Any],
+                          include_indexes: bool = False,
                           cube_asserted: bool = False) -> pd.DataFrame:
     """
     Extract values from *cube* variables at given coordinates in *points*.
 
     :param cube: The cube dataset.
     :param points: Dictionary that maps dimension name to coordinate arrays.
+    :param include_indexes: If True, include indexes in returned data frame.
     :param cube_asserted: If False, *cube* will be verified, otherwise it is expected to be a valid cube.
     :return: A new data frame whose columns are values from *cube* variables at given *points*.
     """
     if not cube_asserted:
         assert_cube(cube)
     indexes = get_cube_point_indexes(cube, points, cube_asserted=True)
-    return get_cube_values(cube, indexes, cube_asserted=True)
+    return get_cube_values(cube, indexes, include_indexes=include_indexes, cube_asserted=True)
 
 
 def get_cube_point_indexes(cube: xr.Dataset,
@@ -381,7 +426,7 @@ def _get_cube_data_var_dims(cube: xr.Dataset) -> Tuple[str, ...]:
 def get_coord_indexes(dataset: xr.Dataset,
                       coord_var_name: str,
                       coord_values,
-                      ret_fractions = False) -> Union[np.ndarray, Tuple[np.ndarray, np.ndarray]]:
+                      ret_fractions=False) -> Union[np.ndarray, Tuple[np.ndarray, np.ndarray]]:
     """
     Compute the indexes into a coordinate variable *coord_var_name* of a *dataset*
     for the given coordinate values *coord_values*.
@@ -412,7 +457,7 @@ def get_coord_indexes(dataset: xr.Dataset,
         is_reversed = (coord_bounds[0, 1] - coord_bounds[0, 0]) < 0
         if is_reversed:
             coord_bounds = coord_bounds[::-1, ::-1]
-        coords = np.zeros(n2, dtype=coord_var.dtype)
+        coords = np.zeros(n2, dtype=coord_bounds.dtype)
         coords[0:-1] = coord_bounds[:, 0]
         coords[-1] = coord_bounds[-1, 1]
     elif coord_var.size > 1:
@@ -454,6 +499,48 @@ def get_coord_indexes(dataset: xr.Dataset,
     if is_reversed:
         indexes = indexes[::-1]
     return indexes
+
+
+def _get_chunk_interp_arrays(chunks: Tuple[Tuple[int, ...], ...]) -> Tuple[Tuple[np.ndarray, np.ndarray], ...]:
+    coords = []
+    for dim_chunks in chunks:
+        n = len(dim_chunks)
+        dim_indexes = np.zeros(n + 1, np.int64)
+        for i in range(n):
+            dim_indexes[i + 1] = dim_indexes[i] + dim_chunks[i]
+        coords.append((dim_indexes, np.linspace(0, n, num=n + 1, dtype=np.int64)))
+    return tuple(coords)
+
+
+def get_cube_chunks(cube: xr.Dataset) -> Optional[Tuple[Tuple[int, ...], ...]]:
+    """
+    Get chunk sizes of the given *cube* dataset.
+
+    The function returns the chunks of the first data variable, if any,
+    because all data variables in a cube are expected to have same chunk sizes.
+
+    :param cube: A cube dataset
+    :return: A tuple of cube sizes for each cube dimension.
+    """
+    for var_name in cube.data_vars:
+        var_data = cube[var_name].data
+        return var_data.chunks if hasattr(var_data, "chunks") else None
+    return None
+
+
+def get_cube_dims(cube: xr.Dataset) -> Optional[Tuple[str]]:
+    """
+    Get dimension names of the given *cube* dataset.
+
+    The function returns the dimensions of the first data variable, if any,
+    because all data variables in a cube are expected to have same dimensions.
+
+    :param cube: A cube dataset
+    :return: A tuple of dimension names or None if the cube has no data variables.
+    """
+    for var_name in cube.data_vars:
+        return cube[var_name].dims
+    return None
 
 
 def _get_bounds_var(dataset: xr.Dataset, var_name: str) -> Optional[xr.DataArray]:
@@ -572,7 +659,7 @@ def _check_lon_or_lat(dataset, name, min_value, max_value, report):
 
     # TODO (forman): the following check is not valid for "lat" because we currently use wrong lat-order
     # TODO (forman): the following check is not valid for "lon" if a cube covers the antimeridian
-    #if not np.all(np.diff(var.astype(np.float64)) > 0):
+    # if not np.all(np.diff(var.astype(np.float64)) > 0):
     #    report.append(f"values of coordinate variable {name!r} must be monotonic increasing")
 
 
