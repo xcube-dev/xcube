@@ -2,7 +2,7 @@ from typing import Any, Dict
 
 import click
 
-from .api import open_dataset, get_cube_point_indexes, get_cube_values
+from .api import open_dataset, get_cube_point_indexes, get_cube_values, get_cube_point_values
 from .version import version
 
 
@@ -24,6 +24,8 @@ def _parse_kwargs(value: str, metavar: str = None) -> Dict[str, Any]:
 @click.command(name="points")
 @click.argument('cube', metavar='<cube>')
 @click.argument('coords', metavar='<coords>')
+@click.option('--indexes', '-i', is_flag=True,
+              help="Include indexes in output.")
 @click.option('--output', '-o', metavar='<output>',
               help="Output file.")
 @click.option('--format', '-f', metavar='<format>', type=click.Choice(['csv', 'stdout']),
@@ -31,18 +33,25 @@ def _parse_kwargs(value: str, metavar: str = None) -> Dict[str, Any]:
 @click.option('--params', '-p', metavar='<params>',
               help="Parameters specific for the output format."
                    " Comma-separated list of <key>=<value> pairs.")
-def points(cube, coords, output=None, format=None, params=None):
+def points(cube, coords, indexes=False, output=None, format=None, params=None):
     """
     Extract data from <cube> at points given by coordinates <coords>.
     """
     import pandas as pd
 
-    coords_df = pd.read_csv(coords, parse_dates=["time"], infer_datetime_format=True)
-    print(coords_df, [coords_df[c].values.dtype for c in coords_df])
-    with open_dataset(cube) as cube_dataset:
-        indexes = get_cube_point_indexes(cube_dataset, coords_df)
-        print(indexes)
-        return get_cube_values(cube_dataset, indexes, cube_asserted=True)
+    cube_path = cube
+    coords_path = coords
+    output_path = output
+    include_indexes = indexes
+
+    coords = pd.read_csv(coords_path, parse_dates=["time"], infer_datetime_format=True)
+    print(coords, [coords[c].values.dtype for c in coords])
+    with open_dataset(cube_path) as cube:
+        values = get_cube_point_values(cube, coords, include_indexes=include_indexes)
+        if output_path:
+            values.to_csv(output_path)
+        else:
+            print(values)
 
 
 # noinspection PyShadowingBuiltins
