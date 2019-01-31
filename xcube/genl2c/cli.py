@@ -39,7 +39,7 @@ resampling_algs = NAME_TO_GDAL_RESAMPLE_ALG.keys()
 
 
 # noinspection PyShadowingBuiltins
-@click.command(context_settings={"ignore_unknown_options": True})
+@click.command(name='xcube-genl2c', context_settings={"ignore_unknown_options": True})
 @click.version_option(version)
 @click.argument('input_files', metavar='INPUT_FILES', nargs=-1)
 @click.option('--proc', '-p', metavar='INPUT_PROCESSOR', type=click.Choice(input_processor_names),
