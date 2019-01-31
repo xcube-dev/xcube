@@ -275,6 +275,7 @@ def dump_var_encoding(var: xr.DataArray, header="Encoding:", indent=4) -> str:
 
 def get_cube_values(cube: xr.Dataset,
                     indexes: pd.DataFrame,
+                    var_names: str = None,
                     include_indexes: bool = False,
                     cube_asserted: bool = False) -> pd.DataFrame:
     """
@@ -282,73 +283,115 @@ def get_cube_values(cube: xr.Dataset,
 
     :param cube: A cube dataset.
     :param indexes: A Pandas data frame that contains the indexes for all cube dimensions.
+    :param var_names: An optional list of names of data variables in *cube* whose values shall be extracted.
     :param include_indexes: If True, include indexes in returned data frame.
     :param cube_asserted: If False, *cube* will be verified, otherwise it is expected to be a valid cube.
     :return: A new data frame whose columns are values from *cube* variables at given *indexes*.
     """
+    # TODO
+    if include_indexes:
+        raise NotImplementedError("keyword 'include_indexes' not supported yet")
+
     if not cube_asserted:
         assert_cube(cube)
 
-    dims = get_cube_dims(cube)
-    num_dims = len(dims)
+    all_var_names = tuple(cube.data_vars.keys())
+    if len(all_var_names) == 0:
+        raise ValueError("cube is empty")
+
+    if var_names is not None:
+        if len(var_names) == 0:
+            return indexes if include_indexes else pd.DataFrame()
+        for var_name in var_names:
+            if var_name not in cube.data_vars:
+                raise ValueError(f"variable {var_name!r} not found in cube")
+    else:
+        var_names = all_var_names
+
+    # Get and verify dimension names
+    dim_names = cube[var_names[0]].dims
+    num_dims = len(dim_names)
     for i in range(num_dims):
-        dim_name = dims[i]
+        dim_name = dim_names[i]
         if dim_name not in indexes:
             raise ValueError(f"missing dimension {dim_name!r} in indexes")
 
+    # Get and verify chunks
     chunks = get_cube_chunks(cube)
-    # print(chunks)
-    chunks = None
+    if chunks is None:
+        cube = cube.chunk(dict.fromkeys(dim_names, "auto"))
+        chunks = get_cube_chunks(cube)
+        if chunks is None:
+            raise ValueError("failed to chunk cube")
 
-    index_arrays = []
-    if chunks is not None:
-        if len(chunks) != num_dims:
-            raise ValueError("inconsistent cube")
-        interp_arrays = _get_chunk_interp_arrays(chunks)
-        chunk_index_arrays = []
-        for i in range(num_dims):
-            dim_name = dims[i]
-            index_values = indexes[dim_name].values
-            chunk_index_array = np.interp(index_values,
-                                          interp_arrays[0],
-                                          interp_arrays[1], left=-1, right=-1).astype(dtype=np.int64)
-            chunk_index_arrays.append(chunk_index_array)
-            index_arrays.append(index_values)
-        # TODO (forman): sort  index_arrays by chunk_index_arrays
-    else:
-        for i in range(num_dims):
-            dim_name = dims[i]
-            index_arrays.append(indexes[dim_name].values)
+    if len(chunks) != num_dims:
+        raise ValueError("inconsistent cube")
 
-    row_indexes = np.stack(index_arrays, axis=-1)
-    # print(row_indexes)
+    # Collect cell indexes, compute block indexes
+    chunk_interp_arrays = tuple(_get_block_interp_arrays(chunks))
+    cell_indexes_list = []
+    block_indexes_list = []
+    for i in range(num_dims):
+        dim_name = dim_names[i]
+        cell_indexes = indexes[dim_name].values
+        block_indexes = np.interp(cell_indexes,
+                                  chunk_interp_arrays[i][0],
+                                  chunk_interp_arrays[i][1], left=-1, right=-1).astype(dtype=np.int64)
+        cell_indexes_list.append(cell_indexes)
+        block_indexes_list.append(block_indexes)
 
-    num_rows = len(row_indexes)
+    num_points = len(cell_indexes_list[0])
 
-    vars = [cube[var_name] for var_name in cube.data_vars]
-    var_names = [var_name for var_name in cube.data_vars]
-    var_values = [np.ndarray((num_rows,), dtype=cube[var_name].dtype) for var_name in cube.data_vars]
+    # Collect the cell indexes for each block
+    block_index_to_cell_indexes = {}
+    for i in range(num_points):
+        block_index = tuple(int(block_indexes_list[j][i]) for j in range(num_dims))
+        if -1 not in block_index:
+            cell_indexes = block_index_to_cell_indexes.get(block_index)
+            if cell_indexes is None:
+                block_index_to_cell_indexes[block_index] = [i]
+            else:
+                cell_indexes.append(i)
+
+    # Convert block_index_to_cell_indexes to list of tuples sorted by block_index
+    block_index_and_cell_indexes = list(block_index_to_cell_indexes.items())
+    sorted(block_index_and_cell_indexes, key=lambda item: item[0])
 
     num_vars = len(var_names)
+    variables = [cube[var_name] for var_name in var_names]
+    var_cell_values = [np.full((num_points,), np.nan, dtype=cube[var_name].dtype) for var_name in var_names]
 
-    # TODO (forman): the following loop is very slow (up to 0.5 seconds each cycle).
-    # We may optimize by loading data chunk-wise and then extracting points from the loaded sub-arrays.
-    # chunks = _get_var_chunks(cube)
+    # TODO: the following look could actually run in parallel with help of dask,
+    # but there seems to be no way to perform arbitrary computations performed in parallel
+    # on dask blocks. Neither dask.map_blocks() or dask.apply_gufunc() perform as required here.
 
-    for i in range(num_rows):
-        row_index = tuple(row_indexes[i])
-        if -1 in row_index:
-            for j in range(num_vars):
-                var_values[j][i] = np.nan
-        else:
-            for j in range(num_vars):
-                var_data = vars[j].data
-                var_values[j][i] = var_data[row_index]
+    # For each block in given variables, extract variable values at cell indexes
+    for block_index, cell_indexes in block_index_and_cell_indexes:
+        block_cell_start = tuple(int(chunk_interp_arrays[u][0][block_index[u]])
+                                 for u in range(num_dims))
+        block_cell_stop = tuple(int(chunk_interp_arrays[u][0][block_index[u] + 1])
+                                for u in range(num_dims))
+        block_slice = tuple(slice(*x) for x in zip(block_cell_start, block_cell_stop))
 
-    values = pd.DataFrame({var_names[j]: var_values[j] for j in range(num_vars)})
+        # Compute relative cell indexes into block
+        block_cell_indexes = {}
+        for i in cell_indexes:
+            block_cell_indexes[i] = tuple(int(cell_indexes_list[j][i]) - block_cell_start[j]
+                                          for j in range(num_dims))
 
+        # For each variable, load block and for each cell index extract and store cell values
+        for l in range(num_vars):
+            var_data_block = variables[l].data[block_slice]
+            for i in cell_indexes:
+                block_cell_index = block_cell_indexes[i]
+                var_cell_value = var_data_block[block_cell_index]
+                var_cell_values[l][i] = var_cell_value
+
+    values = pd.DataFrame({var_names[j]: var_cell_values[j] for j in range(num_vars)})
     if include_indexes:
-        values = pd.concat(values, indexes)
+        # TODO
+        # values = pd.concat([values, indexes])
+        pass
 
     return values
 
@@ -501,15 +544,13 @@ def get_coord_indexes(dataset: xr.Dataset,
     return indexes
 
 
-def _get_chunk_interp_arrays(chunks: Tuple[Tuple[int, ...], ...]) -> Tuple[Tuple[np.ndarray, np.ndarray], ...]:
-    coords = []
+def _get_block_interp_arrays(chunks: Tuple[Tuple[int, ...], ...]) -> Tuple[Tuple[np.ndarray, np.ndarray], ...]:
     for dim_chunks in chunks:
-        n = len(dim_chunks)
-        dim_indexes = np.zeros(n + 1, np.int64)
-        for i in range(n):
+        num_blocks = len(dim_chunks)
+        dim_indexes = np.zeros(num_blocks + 1, np.int64)
+        for i in range(num_blocks):
             dim_indexes[i + 1] = dim_indexes[i] + dim_chunks[i]
-        coords.append((dim_indexes, np.linspace(0, n, num=n + 1, dtype=np.int64)))
-    return tuple(coords)
+        yield dim_indexes, np.linspace(0, num_blocks, num=num_blocks + 1, dtype=np.int64)
 
 
 def get_cube_chunks(cube: xr.Dataset) -> Optional[Tuple[Tuple[int, ...], ...]]:

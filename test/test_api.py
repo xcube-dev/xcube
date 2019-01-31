@@ -6,7 +6,7 @@ import xarray as xr
 
 from test.sampledata import new_test_dataset
 from xcube.api import open_dataset, read_dataset, write_dataset, dump_dataset, chunk_dataset, verify_cube, \
-    assert_cube, get_cube_point_indexes, get_cube_point_values, new_cube, get_coord_indexes
+    assert_cube, get_cube_point_indexes, get_cube_point_values, new_cube, get_coord_indexes, _get_block_interp_arrays
 
 TEST_NC_FILE = "test.nc"
 
@@ -181,13 +181,13 @@ class AssertAndVerifyCubeTest(unittest.TestCase):
 # noinspection PyMethodMayBeStatic
 class ExtractPointsTest(unittest.TestCase):
     def _new_test_cube(self):
-        return new_cube(width=200,
-                        height=100,
+        return new_cube(width=2000,
+                        height=1000,
                         lon_start=0.0,
                         lat_start=50.0,
-                        spatial_res=2.0 / 100,
+                        spatial_res=4.0 / 2000,
                         time_start="2010-01-01",
-                        time_periods=5,
+                        time_periods=20,
                         variables=dict(precipitation=0.6, temperature=276.2))
 
     def test_get_cube_point_values(self):
@@ -288,25 +288,15 @@ class CoordIndexTest(unittest.TestCase):
 
 class ChunksTest(unittest.TestCase):
 
-    def test_chunks(self):
+    def test_get_block_interp_arrays(self):
         chunks = ((1, 1, 1), (375, 375, 375, 375), (509, 509, 509, 509))
+        coords_indexes = _get_block_interp_arrays(chunks)
+        coords, indexes = zip(*coords_indexes)
 
-        coords = []
-        indexes = []
-        for dim_chunks in chunks:
-            n = len(dim_chunks)
-            dim_indexes = np.zeros(n + 1, np.int64)
-            for i in range(n):
-                dim_indexes[i + 1] = dim_indexes[i] + dim_chunks[i]
-            coords.append(dim_indexes)
-            indexes.append(np.linspace(0, n, num=n + 1, dtype=np.int64))
-
-        coords = tuple(coords)
         np.testing.assert_array_equal(coords[0], np.array([0, 1, 2, 3]))
         np.testing.assert_array_equal(coords[1], np.array([0, 375, 750, 1125, 1500]))
         np.testing.assert_array_equal(coords[2], np.array([0, 509, 1018, 1527, 2036]))
 
-        indexes = tuple(indexes)
         np.testing.assert_array_equal(indexes[0], np.array([0, 1, 2, 3]))
         np.testing.assert_array_equal(indexes[1], np.array([0, 1, 2, 3, 4]))
         np.testing.assert_array_equal(indexes[2], np.array([0, 1, 2, 3, 4]))
@@ -317,8 +307,39 @@ class ChunksTest(unittest.TestCase):
 
         result = np.interp([-1, 0, 1, 374, 375, 376, 749, 750, 751, 1124, 1125, 1126, 1499, 1500, 1501],
                            coords[1], indexes[1], left=-1, right=-1).astype(dtype=np.int64)
-        np.testing.assert_array_equal(result, np.array([-1,  0,  0,  0,  1,  1,  1,  2,  2,  2,  3,  3,  3,  4, -1]))
+        np.testing.assert_array_equal(result, np.array([-1, 0, 0, 0, 1, 1, 1, 2, 2, 2, 3, 3, 3, 4, -1]))
 
         result = np.interp([0, 509, 1018, 1527, 2036],
                            coords[2], indexes[2], left=-1, right=-1).astype(dtype=np.int64)
         np.testing.assert_array_equal(result, np.array([0, 1, 2, 3, 4]))
+
+        block_indexes = tuple(tuple((c[i], c[i + 1]) for i in range(len(c) - 1)) for c in coords)
+        print(block_indexes)
+
+        import itertools
+        block_dim_slices = tuple(itertools.product(*block_indexes))
+        for dim_slices in block_dim_slices:
+            print(dim_slices)
+
+        block_dim_slices = np.array(block_dim_slices, dtype=np.int32)
+        for dim_slices in block_dim_slices:
+            print(dim_slices[:, 0], dim_slices[:, 1])
+
+    def test_apply_ufunc(self):
+
+        cube = new_cube(variables=dict(a=6.1, b=8.2))
+        cube = cube.chunk(chunks=90)
+
+        stuff = []
+
+        def my_func(x: np.ndarray, **kwargs):
+            stuff.append((type(x), x.shape, x.strides, x.strides, kwargs))
+            return x
+
+        cube2 = xr.apply_ufunc(my_func,
+                               cube,
+                               dask="parallelized",
+                               output_dtypes=[np.float64],
+                               kwargs=dict(urgs=8.1))
+        # print(cube2.a.load())
+        # print(stuff)
