@@ -25,7 +25,7 @@ import click
 from xcube.dsio import query_dataset_io
 from xcube.genl2c.config import get_config_dict
 from xcube.genl2c.defaults import DEFAULT_OUTPUT_DIR, DEFAULT_OUTPUT_NAME, \
-    DEFAULT_OUTPUT_RESAMPLING, DEFAULT_OUTPUT_WRITER
+    DEFAULT_OUTPUT_RESAMPLING, DEFAULT_OUTPUT_FORMAT
 from xcube.genl2c.inputprocessor import InputProcessor
 from xcube.genl2c.process import generate_l2c_cube
 from xcube.objreg import get_obj_registry
@@ -47,13 +47,13 @@ resampling_algs = NAME_TO_GDAL_RESAMPLE_ALG.keys()
               f'The choices as input processor are: {input_processor_names}')
 @click.option('--config', '-c', metavar='CONFIG_FILE',
               help='Data cube configuration file in YAML format.')
-@click.option('--dir', '-d', metavar='OUTPUT_DIR', default=(DEFAULT_OUTPUT_DIR),
+@click.option('--dir', '-d', metavar='OUTPUT_DIR', default=DEFAULT_OUTPUT_DIR,
               help=f'Output directory. Defaults to {DEFAULT_OUTPUT_DIR!r}')
-@click.option('--name', '-n', metavar='OUTPUT_NAME', default=(DEFAULT_OUTPUT_NAME),
+@click.option('--name', '-n', metavar='OUTPUT_NAME', default=DEFAULT_OUTPUT_NAME,
               help=f'Output filename pattern. Defaults to {DEFAULT_OUTPUT_NAME!r}.')
 @click.option('--format', '-f', metavar='OUTPUT_FORMAT', type=click.Choice(output_writer_names),
-              default=(DEFAULT_OUTPUT_WRITER),
-              help=f'Output writer type name. Defaults to {DEFAULT_OUTPUT_WRITER!r}. '
+              default=DEFAULT_OUTPUT_FORMAT,
+              help=f'Output writer type name. Defaults to {DEFAULT_OUTPUT_FORMAT!r}. '
               f'The choices for the output format are: {output_writer_names}')
 @click.option('--size', '-s', metavar='OUTPUT_SIZE',
               help='Output size in pixels using format "<width>,<height>".')
@@ -63,7 +63,7 @@ resampling_algs = NAME_TO_GDAL_RESAMPLE_ALG.keys()
               help='Variables to be included in output. '
                    'Comma-separated list of names which may contain wildcard characters "*" and "?".')
 @click.option('--resampling', metavar='OUTPUT_RESAMPLING', type=click.Choice(resampling_algs),
-              default=(DEFAULT_OUTPUT_RESAMPLING),
+              default=DEFAULT_OUTPUT_RESAMPLING,
               help='Fallback spatial resampling algorithm to be used for all variables. '
               f'Defaults to {DEFAULT_OUTPUT_RESAMPLING!r}. '
               f'The choices for the resampling algorithm are: {resampling_algs}')

@@ -22,7 +22,7 @@
 import click
 import yaml
 
-from xcube.genl3.defaults import DEFAULT_OUTPUT_DIR, DEFAULT_OUTPUT_PATTERN, DEFAULT_OUTPUT_FORMAT, \
+from xcube.genl3.defaults import DEFAULT_OUTPUT_DIR, DEFAULT_OUTPUT_NAME, DEFAULT_OUTPUT_FORMAT, \
     DEFAULT_OUTPUT_RESAMPLING_METHOD, DEFAULT_OUTPUT_FREQUENCY
 from xcube.genl3.process import generate_l3_cube, OUTPUT_FORMAT_NAMES, RESAMPLING_METHODS, FREQUENCY_CHOICES
 from xcube.version import version
@@ -33,11 +33,11 @@ __import__('xcube.plugin')
 @click.command(context_settings={"ignore_unknown_options": True})
 @click.version_option(version)
 @click.argument('input_files', metavar='INPUT_FILES', nargs=-1)
-@click.option('--dir', '-d', metavar='OUTPUT_DIR', default={DEFAULT_OUTPUT_DIR},
+@click.option('--dir', '-d', metavar='OUTPUT_DIR', default=DEFAULT_OUTPUT_DIR,
               help=f'Output directory. Defaults to {DEFAULT_OUTPUT_DIR!r}')
-@click.option('--name', '-n', metavar='OUTPUT_NAME', default={DEFAULT_OUTPUT_PATTERN},
-              help=f'Output filename pattern. Defaults to {DEFAULT_OUTPUT_PATTERN!r}.')
-@click.option('--format', '-f', metavar='OUTPUT_FORMAT', default={DEFAULT_OUTPUT_FORMAT},
+@click.option('--name', '-n', metavar='OUTPUT_NAME', default=DEFAULT_OUTPUT_NAME,
+              help=f'Output filename pattern. Defaults to {DEFAULT_OUTPUT_NAME!r}.')
+@click.option('--format', '-f', metavar='OUTPUT_FORMAT', default=DEFAULT_OUTPUT_FORMAT,
               type=click.Choice(OUTPUT_FORMAT_NAMES),
               help=f'Output format. Defaults to {DEFAULT_OUTPUT_FORMAT!r}. '
               f'The choices as output format are: {OUTPUT_FORMAT_NAMES}')
@@ -45,11 +45,13 @@ __import__('xcube.plugin')
               help='Variables to be included in output. '
                    'Comma-separated list of names which may contain wildcard characters "*" and "?".')
 @click.option('--resampling', metavar='OUTPUT_RESAMPLING', type=click.Choice(RESAMPLING_METHODS),
+              default=DEFAULT_OUTPUT_RESAMPLING_METHOD,
               help='Temporal resampling method. Use format "<count><offset>"'
                    'where <offset> is one of {H, D, W, M, Q, Y}. '
               f'Defaults to {DEFAULT_OUTPUT_RESAMPLING_METHOD!r}. '
               f'The choices for the resampling method are: {RESAMPLING_METHODS}')
 @click.option('--frequency', metavar='OUTPUT_FREQUENCY', type=click.Choice(FREQUENCY_CHOICES),
+              default=DEFAULT_OUTPUT_FREQUENCY,
               help='Temporal aggregation frequency.'
               f'Defaults to {DEFAULT_OUTPUT_FREQUENCY!r}.'
               f'The choices for the frequency are: {FREQUENCY_CHOICES}')
@@ -76,7 +78,7 @@ def cli(input_files: str,
     config_file = meta_file
     input_file = input_files
     output_dir = dir or DEFAULT_OUTPUT_DIR
-    output_name = name or DEFAULT_OUTPUT_PATTERN
+    output_name = name or DEFAULT_OUTPUT_NAME
     output_format = format or DEFAULT_OUTPUT_FORMAT
     output_variables = variables
     output_resampling = resampling or DEFAULT_OUTPUT_RESAMPLING_METHOD

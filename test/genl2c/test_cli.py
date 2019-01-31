@@ -58,8 +58,8 @@ class CliTest(unittest.TestCase):
 # Keeping this test until the problem is isolved (issue #19 on GitHub) - it is commented because of hardcoded paths
 #     def test_missing_output_name(self):
 #         result = self.invoke_cli(['--dir', '/home/alicja/Desktop/DCS4COP/Testing_naming_of_xcube_genl2/',
-#                                   '--region', '4.0,48.0,5.333333333333333,49.33333333333333',
-#                                   '--size', '512,512', '--proc', 'default', '--append', '-f', 'zarr',
-#                                   '/home/alicja/Desktop/DCS4COP/CMEMS_SST_201701_coords_arranged/2017010*.nc'])
+#                                   '--region', '4.0,48.0,5.333333333333333,49.33333333333333', '--name', 'testcube',
+#                                   '--size', '512,512', '--proc', 'default', '--append', '-f', 'netcdf4',
+#                                   '/home/alicja/Desktop/Data/DCS4COP_OLCI_for_cube/*2016050*.nc'])
 #         print(result.output)
 #         print(result.exit_code)

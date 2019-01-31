@@ -24,7 +24,7 @@ import os
 from typing import Dict, Any, Set, Sequence
 import xarray as xr
 
-from xcube.genl3.defaults import DEFAULT_OUTPUT_DIR, DEFAULT_OUTPUT_PATTERN, DEFAULT_OUTPUT_FORMAT, \
+from xcube.genl3.defaults import DEFAULT_OUTPUT_DIR, DEFAULT_OUTPUT_NAME, DEFAULT_OUTPUT_FORMAT, \
     DEFAULT_OUTPUT_RESAMPLING_METHOD, DEFAULT_OUTPUT_FREQUENCY
 from xcube.dsutil import select_variables
 
@@ -37,7 +37,7 @@ def generate_l3_cube(input_file: str,
                      output_variables=None,
                      output_metadata=None,
                      output_dir=DEFAULT_OUTPUT_DIR,
-                     output_name=DEFAULT_OUTPUT_PATTERN,
+                     output_name=DEFAULT_OUTPUT_NAME,
                      output_format=DEFAULT_OUTPUT_FORMAT,
                      output_resampling=DEFAULT_OUTPUT_RESAMPLING_METHOD,
                      output_frequency=DEFAULT_OUTPUT_FREQUENCY,

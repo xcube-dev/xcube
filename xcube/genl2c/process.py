@@ -29,7 +29,7 @@ import traceback
 from typing import Sequence, Callable, Tuple, Optional, Dict
 
 from .defaults import DEFAULT_OUTPUT_DIR, DEFAULT_OUTPUT_NAME, DEFAULT_OUTPUT_SIZE, \
-    DEFAULT_OUTPUT_RESAMPLING, DEFAULT_OUTPUT_WRITER
+    DEFAULT_OUTPUT_RESAMPLING, DEFAULT_OUTPUT_FORMAT
 from .inputprocessor import InputProcessor, get_input_processor
 from ..config import NameAnyDict, NameDictPairList, to_resolved_name_dict_pairs
 from ..dsio import rimraf, DatasetIO, find_dataset_io
@@ -50,7 +50,7 @@ def generate_l2c_cube(input_files: Sequence[str] = None,
                       output_resampling: str = DEFAULT_OUTPUT_RESAMPLING,
                       output_dir: str = DEFAULT_OUTPUT_DIR,
                       output_name: str = DEFAULT_OUTPUT_NAME,
-                      output_writer: str = DEFAULT_OUTPUT_WRITER,
+                      output_writer: str = DEFAULT_OUTPUT_FORMAT,
                       output_metadata: NameAnyDict = None,
                       output_variables: NameDictPairList = None,
                       processed_variables: NameDictPairList = None,
