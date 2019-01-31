@@ -47,12 +47,12 @@ resampling_algs = NAME_TO_GDAL_RESAMPLE_ALG.keys()
               f'The choices as input processor are: {input_processor_names}')
 @click.option('--config', '-c', metavar='CONFIG_FILE',
               help='Data cube configuration file in YAML format.')
-@click.option('--dir', '-d', metavar='OUTPUT_DIR', default=str(DEFAULT_OUTPUT_DIR),
+@click.option('--dir', '-d', metavar='OUTPUT_DIR', default=(DEFAULT_OUTPUT_DIR),
               help=f'Output directory. Defaults to {DEFAULT_OUTPUT_DIR!r}')
-@click.option('--name', '-n', metavar='OUTPUT_NAME', default=str(DEFAULT_OUTPUT_NAME),
+@click.option('--name', '-n', metavar='OUTPUT_NAME', default=(DEFAULT_OUTPUT_NAME),
               help=f'Output filename pattern. Defaults to {DEFAULT_OUTPUT_NAME!r}.')
 @click.option('--format', '-f', metavar='OUTPUT_FORMAT', type=click.Choice(output_writer_names),
-              default={DEFAULT_OUTPUT_WRITER},
+              default=(DEFAULT_OUTPUT_WRITER),
               help=f'Output writer type name. Defaults to {DEFAULT_OUTPUT_WRITER!r}. '
               f'The choices for the output format are: {output_writer_names}')
 @click.option('--size', '-s', metavar='OUTPUT_SIZE',
@@ -63,6 +63,7 @@ resampling_algs = NAME_TO_GDAL_RESAMPLE_ALG.keys()
               help='Variables to be included in output. '
                    'Comma-separated list of names which may contain wildcard characters "*" and "?".')
 @click.option('--resampling', metavar='OUTPUT_RESAMPLING', type=click.Choice(resampling_algs),
+              default=(DEFAULT_OUTPUT_RESAMPLING),
               help='Fallback spatial resampling algorithm to be used for all variables. '
               f'Defaults to {DEFAULT_OUTPUT_RESAMPLING!r}. '
               f'The choices for the resampling algorithm are: {resampling_algs}')
