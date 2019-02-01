@@ -2,7 +2,7 @@ from typing import Any, Dict
 
 import click
 
-from .api import open_dataset, get_cube_point_indexes, get_cube_values, get_cube_point_values
+from .api import open_dataset, get_cube_values_for_points
 from .version import version
 
 
@@ -47,7 +47,7 @@ def points(cube, coords, indexes=False, output=None, format=None, params=None):
     coords = pd.read_csv(coords_path, parse_dates=["time"], infer_datetime_format=True)
     print(coords, [coords[c].values.dtype for c in coords])
     with open_dataset(cube_path) as cube:
-        values = get_cube_point_values(cube, coords, include_indexes=include_indexes)
+        values = get_cube_values_for_points(cube, coords, include_indexes=include_indexes)
         if output_path:
             values.to_csv(output_path)
         else:

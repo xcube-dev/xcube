@@ -6,7 +6,8 @@ import xarray as xr
 
 from test.sampledata import new_test_dataset
 from xcube.api import open_dataset, read_dataset, write_dataset, dump_dataset, chunk_dataset, verify_cube, \
-    assert_cube, get_cube_point_indexes, get_cube_point_values, new_cube, get_coord_indexes, _get_block_interp_arrays
+    assert_cube, get_cube_point_indexes, get_cube_values_for_points, new_cube, get_dataset_indexes, \
+    _get_block_interp_arrays
 
 TEST_NC_FILE = "test.nc"
 
@@ -192,38 +193,48 @@ class ExtractPointsTest(unittest.TestCase):
 
     def test_get_cube_point_values(self):
         cube = self._new_test_cube()
-        values = get_cube_point_values(cube,
-                                       dict(time=np.array(["2010-01-04", "2010-01-02",
-                                                           "2010-01-08", "2010-01-02",
-                                                           "2010-01-02", "2010-01-01",
-                                                           "2010-01-05", "2010-01-03",
-                                                           ], dtype="datetime64[ns]"),
-                                            lat=np.array([50.0, 51.3, 49.7, 50.1, 51.9, 50.8, 50.2, 52.0]),
-                                            lon=np.array([0.0, 0.1, 0.4, 2.9, 1.6, 0.7, -0.5, 4.0]),
-                                            ))
+        values = get_cube_values_for_points(cube,
+                                            dict(time=np.array(["2010-01-04", "2010-01-02",
+                                                                "2010-01-08", "2010-01-02",
+                                                                "2010-01-02", "2010-01-01",
+                                                                "2010-01-05", "2010-01-03",
+                                                                ], dtype="datetime64[ns]"),
+                                                 lat=np.array([50.0, 51.3, 49.7, 50.1, 51.9, 50.8, 50.2, 52.0]),
+                                                 lon=np.array([0.0, 0.1, 0.4, 2.9, 1.6, 0.7, -0.5, 4.0]),
+                                                 ))
         print(values)
 
     def test_get_cube_point_indexes(self):
         cube = self._new_test_cube()
         indexes = get_cube_point_indexes(cube,
-                                         dict(time=np.array(["2010-01-04", "2010-01-02",
+                                         dict(time=np.array(["2010-01-04", "2009-11-23",
                                                              "2010-01-08", "2010-01-06",
-                                                             "2010-01-02", "2010-01-01",
+                                                             "2010-01-20", "2010-01-01",
                                                              "2010-01-05", "2010-01-03",
                                                              ], dtype="datetime64[ns]"),
                                               lat=np.array([50.0, 51.3, 49.7, 50.1, 51.9, 50.8, 50.2, 52.0]),
                                               lon=np.array([0.0, 0.1, 0.4, 2.9, 1.6, 0.7, -0.5, 4.0]),
-                                              ))
+                                              ),
+                                         include_fractions=True)
 
         self.assertEqual(8, len(indexes))
-        self.assertEqual(3, len(indexes.columns))
-        self.assertEqual(["time", "lat", "lon"], [c for c in indexes])
-        np.testing.assert_array_equal(np.array([3, 1, -1, 4, 1, 0, 4, 2], dtype=np.int64),
-                                      indexes["time"].values)
-        np.testing.assert_array_equal(np.array([0, 65, -1, 5, 95, 40, 10, 99], dtype=np.int64),
-                                      indexes["lat"].values)
-        np.testing.assert_array_equal(np.array([0, 5, 20, 145, 80, 34, -1, 199], dtype=np.int64),
-                                      indexes["lon"].values)
+        self.assertEqual(6, len(indexes.columns))
+        self.assertEqual(['time_index', 'time_fraction',
+                          'lat_index', 'lat_fraction',
+                          'lon_index', 'lon_fraction'],
+                         [c for c in indexes])
+        np.testing.assert_array_equal(np.array([3, -1, 7, 5, 19, 0, 4, 2], dtype=np.int64),
+                                      indexes["time_index"].values)
+        np.testing.assert_array_equal(np.array([0., np.nan, 0., 0., 0., 0., 0., 0.], dtype=np.float64),
+                                      indexes["time_fraction"].values)
+        np.testing.assert_array_equal(np.array([0, 650, -1, 50, 950, 400, 100, 999], dtype=np.int64),
+                                      indexes["lat_index"].values)
+        np.testing.assert_array_equal(np.array([0., 0., np.nan, 0., 0., 0., 0., 1.], dtype=np.float64),
+                                      indexes["lat_fraction"].values)
+        np.testing.assert_array_equal(np.array([0, 50, 200, 1450, 800, 349, -1, 1999], dtype=np.int64),
+                                      indexes["lon_index"].values)
+        np.testing.assert_array_equal(np.array([0., 0., 0., 0., 0., 1., np.nan, 1.], dtype=np.float64),
+                                      indexes["lon_fraction"].values)
 
 
 # noinspection PyMethodMayBeStatic
@@ -233,7 +244,7 @@ class CoordIndexTest(unittest.TestCase):
         dataset = new_cube(width=360, height=180, drop_bounds=True)
         cell = dataset.isel(time=2, lat=20, lon=30)
         with self.assertRaises(ValueError) as cm:
-            get_coord_indexes(cell, "lon", np.array([-149.5]))
+            get_dataset_indexes(cell, "lon", np.array([-149.5]))
         self.assertEqual("cannot determine cell boundaries for coordinate variable 'lon' of size 1",
                          f"{cm.exception}")
 
@@ -262,28 +273,32 @@ class CoordIndexTest(unittest.TestCase):
     def _assert_get_coord_index(self, dataset, reverse_lat=False):
         lon_coords = np.array([-190, -180., -179, -10.4, 0., 10.4, 179., 180.0, 190])
         expected_lon_indexes = np.array([-1, 0, 1, 169, 180, 190, 359, 359, -1], dtype=np.int64)
-        expected_lon_fractions = np.array([0., 0., 0., 0.6, 0., 0.4, 0., 1., 0.], dtype=np.float64)
+        expected_lon_fractions = np.array([np.nan, 0., 0., 0.6, 0., 0.4, 0., 1., np.nan], dtype=np.float64)
 
         lat_coords = np.array([-100, -90., -89, -10.4, 0., 10.4, 89., 90.0, 100])
         expected_lat_indexes = np.array([-1, 0, 1, 79, 90, 100, 179, 179, -1], dtype=np.int64)
-        expected_lat_fractions = np.array([0., 0., 0., 0.6, 0., 0.4, 0., 1., 0.], dtype=np.float64)
+        expected_lat_fractions = np.array([np.nan, 0., 0., 0.6, 0., 0.4, 0., 1., np.nan], dtype=np.float64)
         if reverse_lat:
             expected_lat_indexes = expected_lat_indexes[::-1]
             expected_lat_fractions = expected_lat_fractions[::-1]
 
-        indexes = get_coord_indexes(dataset, "lon", lon_coords)
-        np.testing.assert_array_equal(indexes, expected_lon_indexes)
+        time_coords = np.array(
+            ["2010-01-03", "2010-01-02T23:15", "2010-05-15", "2010-01-01T12:00", "2010-01-05", "2009-12-07"],
+            dtype="datetime64[ns]")
+        expected_time_indexes = np.array([2, 1, -1, 0, 4, -1], dtype=np.int64)
+        expected_time_fractions = np.array([0., 0.96875, np.nan, 0.5, 0., np.nan], dtype=np.float64)
 
-        indexes = get_coord_indexes(dataset, "lat", lat_coords)
-        np.testing.assert_array_equal(indexes, expected_lat_indexes)
-
-        indexes, fractions = get_coord_indexes(dataset, "lon", lon_coords, ret_fractions=True)
+        indexes, fractions = get_dataset_indexes(dataset, "lon", lon_coords)
         np.testing.assert_array_equal(indexes, expected_lon_indexes)
         np.testing.assert_array_almost_equal(fractions, expected_lon_fractions)
 
-        indexes, fractions = get_coord_indexes(dataset, "lat", lat_coords, ret_fractions=True)
+        indexes, fractions = get_dataset_indexes(dataset, "lat", lat_coords)
         np.testing.assert_array_equal(indexes, expected_lat_indexes)
         np.testing.assert_array_almost_equal(fractions, expected_lat_fractions)
+
+        indexes, fractions = get_dataset_indexes(dataset, "time", time_coords)
+        np.testing.assert_array_equal(indexes, expected_time_indexes)
+        np.testing.assert_array_almost_equal(fractions, expected_time_fractions)
 
 
 class ChunksTest(unittest.TestCase):

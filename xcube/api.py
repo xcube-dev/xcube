@@ -11,6 +11,9 @@ _TIME_DTYPE = "datetime64[s]"
 _TIME_UNITS = "seconds since 1970-01-01T00:00:00"
 _TIME_CALENDAR = "proleptic_gregorian"
 
+INDEX_NAME_PATTERN = '{name}_index'
+FRACTION_NAME_PATTERN = '{name}_fraction'
+
 
 def new_cube(title="Test Cube",
              width=360,
@@ -127,16 +130,20 @@ def new_cube(title="Test Cube",
 @contextmanager
 def open_dataset(input_path: str,
                  format_name: str = None,
+                 is_cube: bool = False,
                  **kwargs) -> xr.Dataset:
     """
     The ``read_dataset`` function as context manager that auto-closes the dataset read.
 
     :param input_path: input path
     :param format_name: format, e.g. "zarr" or "netcdf4"
+    :param is_cube: Weather a ValueError will be raised, if the dataset read from *input_path* is not a data cube.
     :param kwargs: format-specific keyword arguments
     :return: dataset object
     """
     dataset = read_dataset(input_path, format_name, **kwargs)
+    if is_cube:
+        assert_cube(dataset)
     try:
         yield dataset
     finally:
@@ -273,24 +280,72 @@ def dump_var_encoding(var: xr.DataArray, header="Encoding:", indent=4) -> str:
     return "\n".join(lines)
 
 
-def get_cube_values(cube: xr.Dataset,
-                    indexes: pd.DataFrame,
-                    var_names: str = None,
-                    include_indexes: bool = False,
-                    cube_asserted: bool = False) -> pd.DataFrame:
+def get_cube_values_for_points(cube: xr.Dataset,
+                               points: Union[pd.DataFrame, Any],
+                               include_indexes: bool = False,
+                               include_fractions: bool = False,
+                               index_name_pattern: str = INDEX_NAME_PATTERN,
+                               fraction_name_pattern: str = FRACTION_NAME_PATTERN,
+                               cube_asserted: bool = False) -> pd.DataFrame:
+    """
+    Extract values from *cube* variables at given coordinates in *points*.
+
+    :param cube: The cube dataset.
+    :param points: Dictionary that maps dimension name to coordinate arrays.
+    :param include_indexes:  Weather to include indexes in the returned data frame.
+    :param include_fractions: Weather to include fractions in the returned data frame.
+    :param index_name_pattern: A naming pattern for the computed indexes columns.
+           Must include "{name}" which will be replaced by the dimension name.
+    :param fraction_name_pattern: A naming pattern for the computed fraction columns, if *include_fractions* is True.
+           Must include "{name}" which will be replaced by the dimension name.
+    :param cube_asserted: If False, *cube* will be verified, otherwise it is expected to be a valid cube.
+    :return: A new data frame whose columns are values from *cube* variables at given *points*.
+    """
+    if not cube_asserted:
+        assert_cube(cube)
+    indexes = get_cube_point_indexes(cube,
+                                     points,
+                                     include_fractions=include_fractions,
+                                     index_name_pattern=index_name_pattern,
+                                     fraction_name_pattern=fraction_name_pattern,
+                                     cube_asserted=True)
+    return get_cube_values_for_indexes(cube,
+                                       indexes,
+                                       include_indexes=include_indexes,
+                                       include_fractions=include_fractions,
+                                       index_name_pattern=index_name_pattern,
+                                       fraction_name_pattern=fraction_name_pattern,
+                                       cube_asserted=True)
+
+
+def get_cube_values_for_indexes(cube: xr.Dataset,
+                                indexes: pd.DataFrame,
+                                var_names: str = None,
+                                include_indexes: bool = False,
+                                include_fractions: bool = False,
+                                index_name_pattern: str = INDEX_NAME_PATTERN,
+                                fraction_name_pattern: str = FRACTION_NAME_PATTERN,
+                                cube_asserted: bool = False) -> pd.DataFrame:
     """
     Get values from the *cube* at given *indexes*.
 
     :param cube: A cube dataset.
     :param indexes: A Pandas data frame that contains the indexes for all cube dimensions.
     :param var_names: An optional list of names of data variables in *cube* whose values shall be extracted.
-    :param include_indexes: If True, include indexes in returned data frame.
+    :param include_indexes:  Weather to include indexes in the returned data frame.
+    :param include_fractions: Weather to include fractions in the returned data frame.
+    :param index_name_pattern: A naming pattern for the computed indexes columns.
+           Must include "{name}" which will be replaced by the dimension name.
+    :param fraction_name_pattern: A naming pattern for the computed fraction columns, if *include_fractions* is True.
+           Must include "{name}" which will be replaced by the dimension name.
     :param cube_asserted: If False, *cube* will be verified, otherwise it is expected to be a valid cube.
     :return: A new data frame whose columns are values from *cube* variables at given *indexes*.
     """
-    # TODO
+    # TODO (forman): remove following checks once include_indexes, include_fractions are used
     if include_indexes:
         raise NotImplementedError("keyword 'include_indexes' not supported yet")
+    if include_fractions:
+        raise NotImplementedError("keyword 'include_fractions' not supported yet")
 
     if not cube_asserted:
         assert_cube(cube)
@@ -301,7 +356,7 @@ def get_cube_values(cube: xr.Dataset,
 
     if var_names is not None:
         if len(var_names) == 0:
-            return indexes if include_indexes else pd.DataFrame()
+            return pd.DataFrame(indexes) if include_indexes else pd.DataFrame()
         for var_name in var_names:
             if var_name not in cube.data_vars:
                 raise ValueError(f"variable {var_name!r} not found in cube")
@@ -310,11 +365,12 @@ def get_cube_values(cube: xr.Dataset,
 
     # Get and verify dimension names
     dim_names = cube[var_names[0]].dims
+    index_names = [index_name_pattern.format(name=dim_name) for dim_name in dim_names]
+    fraction_names = [fraction_name_pattern.format(name=dim_name) for dim_name in dim_names]
     num_dims = len(dim_names)
-    for i in range(num_dims):
-        dim_name = dim_names[i]
-        if dim_name not in indexes:
-            raise ValueError(f"missing dimension {dim_name!r} in indexes")
+    for index_name in index_names:
+        if index_name not in indexes:
+            raise ValueError(f"missing column {index_name!r} in indexes")
 
     # Get and verify chunks
     chunks = get_cube_chunks(cube)
@@ -332,8 +388,8 @@ def get_cube_values(cube: xr.Dataset,
     cell_indexes_list = []
     block_indexes_list = []
     for i in range(num_dims):
-        dim_name = dim_names[i]
-        cell_indexes = indexes[dim_name].values
+        index_name = index_names[i]
+        cell_indexes = indexes[index_name].values
         block_indexes = np.interp(cell_indexes,
                                   chunk_interp_arrays[i][0],
                                   chunk_interp_arrays[i][1], left=-1, right=-1).astype(dtype=np.int64)
@@ -389,35 +445,21 @@ def get_cube_values(cube: xr.Dataset,
 
     values = pd.DataFrame({var_names[j]: var_cell_values[j] for j in range(num_vars)})
     if include_indexes:
-        # TODO
-        # values = pd.concat([values, indexes])
+        # TODO (forman): implement
+        pass
+    if include_fractions:
+        # TODO (forman): implement
         pass
 
     return values
 
 
-def get_cube_point_values(cube: xr.Dataset,
-                          points: Union[pd.DataFrame, Any],
-                          include_indexes: bool = False,
-                          cube_asserted: bool = False) -> pd.DataFrame:
-    """
-    Extract values from *cube* variables at given coordinates in *points*.
-
-    :param cube: The cube dataset.
-    :param points: Dictionary that maps dimension name to coordinate arrays.
-    :param include_indexes: If True, include indexes in returned data frame.
-    :param cube_asserted: If False, *cube* will be verified, otherwise it is expected to be a valid cube.
-    :return: A new data frame whose columns are values from *cube* variables at given *points*.
-    """
-    if not cube_asserted:
-        assert_cube(cube)
-    indexes = get_cube_point_indexes(cube, points, cube_asserted=True)
-    return get_cube_values(cube, indexes, include_indexes=include_indexes, cube_asserted=True)
-
-
 def get_cube_point_indexes(cube: xr.Dataset,
                            points: Union[pd.DataFrame, Any],
                            dim_name_mapping: Dict[str, str] = None,
+                           include_fractions: bool = False,
+                           index_name_pattern: str = INDEX_NAME_PATTERN,
+                           fraction_name_pattern: str = FRACTION_NAME_PATTERN,
                            cube_asserted: bool = False) -> pd.DataFrame:
     """
     Get indexes of given point coordinates *points* into the given *dataset*.
@@ -425,6 +467,11 @@ def get_cube_point_indexes(cube: xr.Dataset,
     :param cube: The cube dataset.
     :param points: A pandas data frame or object that can be converted into a Pandas DataFrame.
     :param dim_name_mapping: A mapping from dimension names in *cube* to column names in *points*.
+    :param include_fractions: Weather to include fractions in the returned data frame.
+    :param index_name_pattern: A naming pattern for the computed indexes columns.
+           Must include "{name}" which will be replaced by the dimension name.
+    :param fraction_name_pattern: A naming pattern for the computed fraction columns, if *include_fractions* is True.
+           Must include "{name}" which will be replaced by the dimension name.
     :param cube_asserted: If False, *cube* will be verified, otherwise it is expected to be a valid cube.
     :return: A dictionary that maps dimension names to integer index arrays.
     """
@@ -455,7 +502,11 @@ def get_cube_point_indexes(cube: xr.Dataset,
                                  f" but found {first_col_size} for column {first_col_name!r}"
                                  f" and {col_size} for column {col_name!r}")
 
-        indexes.append((dim_name, get_coord_indexes(cube, dim_name, dim_col.values)))
+        coord_indexes, coord_fractions = get_dataset_indexes(cube, dim_name, dim_col.values)
+
+        indexes.append((index_name_pattern.format(name=dim_name), coord_indexes))
+        if include_fractions:
+            indexes.append((fraction_name_pattern.format(name=dim_name), coord_fractions))
 
     return pd.DataFrame(dict(indexes))
 
@@ -466,27 +517,25 @@ def _get_cube_data_var_dims(cube: xr.Dataset) -> Tuple[str, ...]:
     raise ValueError("cube dataset is empty")
 
 
-def get_coord_indexes(dataset: xr.Dataset,
-                      coord_var_name: str,
-                      coord_values,
-                      ret_fractions=False) -> Union[np.ndarray, Tuple[np.ndarray, np.ndarray]]:
+def get_dataset_indexes(dataset: xr.Dataset,
+                        coord_var_name: str,
+                        coord_values) -> Tuple[np.ndarray, np.ndarray]:
     """
-    Compute the indexes into a coordinate variable *coord_var_name* of a *dataset*
+    Compute the indexes and their fractions into a coordinate variable *coord_var_name* of a *dataset*
     for the given coordinate values *coord_values*.
 
-    The coordinate variable's labels must be monotonic increasing, otherwise the result will be nonsense.
+    The coordinate variable's labels must be monotonic increasing or decreasing,
+    otherwise the result will be nonsense.
 
     For any value in *coord_values* that is out of the bounds of the coordinate variable's values,
-    the index -1 will be returned.
+    the index will be -1 and the fraction will be NaN.
 
-    Returns the computed indexes as int64 array. If *ret_fractions* is True,
-    a tuple of the indexes and their fractions of type float64 will be returned.
+    Returns a tuple of indexes as int64 array and fractions as float64 array.
 
     :param dataset: A cube dataset.
     :param coord_var_name: Name of a coordinate variable.
     :param coord_values: Array-like coordinate values.
-    :param ret_fractions: If true.
-    :return: a numpy array of type *dtype*.
+    :return: The indexes and their fractions as a tuple of numpy int64 and float64 arrays.
     """
     coord_var = dataset[coord_var_name]
     n1 = coord_var.size
@@ -517,7 +566,7 @@ def get_coord_indexes(dataset: xr.Dataset,
         coords = np.zeros(n2, dtype=center_coords.dtype)
         coords[0:-1] = center_coords
         coords[-1] = coords[-2] + deltas[-1]
-        if np.issubdtype(deltas.dtype, np.int):
+        if np.issubdtype(deltas.dtype, np.integer):
             coords -= deltas // 2
         else:
             coords -= 0.5 * deltas
@@ -532,16 +581,13 @@ def get_coord_indexes(dataset: xr.Dataset,
     indexes = result.astype(np.int64)
     upper_bound_hit = indexes >= n1
     indexes[upper_bound_hit] = n1 - 1
-    if ret_fractions:
-        fractions = result - indexes
-        fractions[upper_bound_hit] = 1.0
-        if is_reversed:
-            indexes = indexes[::-1]
-            fractions = fractions[::-1]
-        return indexes, fractions
+    fractions = result - indexes
+    fractions[upper_bound_hit] = 1.0
+    fractions[indexes == -1] = np.nan
     if is_reversed:
         indexes = indexes[::-1]
-    return indexes
+        fractions = fractions[::-1]
+    return indexes, fractions
 
 
 def _get_block_interp_arrays(chunks: Tuple[Tuple[int, ...], ...]) -> Tuple[Tuple[np.ndarray, np.ndarray], ...]:
