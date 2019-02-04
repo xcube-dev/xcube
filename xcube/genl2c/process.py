@@ -261,15 +261,15 @@ def _process_l2_input(input_processor: InputProcessor,
     try:
         num_steps = len(steps)
         dataset = input_dataset
-        total_t1 = time.clock()
+        total_t1 = time.perf_counter()
         for step_index in range(num_steps):
             transform, label = steps[step_index]
-            step_t1 = time.clock()
+            step_t1 = time.perf_counter()
             monitor(f'step {step_index + 1} of {num_steps}: {label}...')
             dataset = transform(dataset)
-            step_t2 = time.clock()
+            step_t2 = time.perf_counter()
             monitor(f'  {label} completed in {step_t2 - step_t1} seconds')
-        total_t2 = time.clock()
+        total_t2 = time.perf_counter()
         monitor(f'{num_steps} steps took {total_t2 - total_t1} seconds to complete')
     except RuntimeError as e:
         monitor(f'ERROR: during reprojection to WGS84: {e}: skipping it...')
