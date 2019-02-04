@@ -8,7 +8,7 @@ import click
 import click.testing
 import xarray as xr
 
-from xcube.api import new_cube
+from xcube.api.new import new_cube
 from xcube.cli import cli, _parse_kwargs
 
 TEST_NC_FILE = "test.nc"

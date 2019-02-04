@@ -2,7 +2,6 @@ from typing import Any, Dict
 
 import click
 
-from .api import open_dataset, get_cube_values_for_points
 from .version import version
 
 
@@ -44,6 +43,8 @@ def points(cube, coords, indexes=False, output=None, format=None, params=None):
     output_path = output
     include_indexes = indexes
 
+    from xcube.api import open_dataset, get_cube_values_for_points
+
     coords = pd.read_csv(coords_path, parse_dates=["time"], infer_datetime_format=True)
     print(coords, [coords[c].values.dtype for c in coords])
     with open_dataset(cube_path) as cube:
@@ -83,10 +84,10 @@ def chunk(input, output, format=None, params=None, chunks=None):
     if params:
         write_kwargs = _parse_kwargs(params, metavar="<params>")
 
-    from .api import guess_dataset_format
+    from xcube.dsio import guess_dataset_format
     format_name = format if format else guess_dataset_format(output)
 
-    from .api import open_dataset, chunk_dataset, write_dataset
+    from xcube.api import open_dataset, chunk_dataset, write_dataset
 
     with open_dataset(input_path=input) as ds:
         if chunk_sizes:
@@ -109,7 +110,7 @@ def dump(dataset, variable, encoding):
     """
     Dump contents of dataset.
     """
-    from .api import open_dataset, dump_dataset
+    from xcube.api import open_dataset, dump_dataset
     with open_dataset(dataset) as ds:
         text = dump_dataset(ds, variable_names=variable, show_var_encoding=encoding)
         print(text)

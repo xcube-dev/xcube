@@ -24,15 +24,18 @@ import os
 from abc import abstractmethod, ABCMeta
 from typing import Set, Callable, List, Optional, Dict, Iterable, Tuple
 
+import pandas as pd
 import s3fs
 import xarray as xr
 import zarr
 
 from xcube.objreg import get_obj_registry
 
+FORMAT_NAME_EXCEL = "excel"
+FORMAT_NAME_CSV = "csv"
 FORMAT_NAME_MEM = "mem"
-FORMAT_NAME_ZARR = "zarr"
 FORMAT_NAME_NETCDF4 = "netcdf4"
+FORMAT_NAME_ZARR = "zarr"
 
 
 def open_from_fs(paths: str, recursive: bool = False, **kwargs):
@@ -79,31 +82,42 @@ def open_from_obs(path: str, endpoint_url: str = None, max_cache_size: int = 2 *
 
 
 class DatasetIO(metaclass=ABCMeta):
+    """
+    An abstract base class that represents dataset input/output.
+    """
+
     @property
     @abstractmethod
     def name(self) -> str:
+        """Name of this dataset I/O."""
         pass
 
     @property
     @abstractmethod
     def description(self) -> str:
+        """A description for this dataset I/O."""
         pass
 
     @property
     @abstractmethod
     def ext(self) -> str:
+        """The primary filename extension used by this dataset I/O."""
         pass
 
     @property
     @abstractmethod
     def modes(self) -> Set[str]:
+        """
+        A set describing the modes of this dataset I/O.
+        Must be one or more of "r" (read), "w" (write), and "a" (append).
+        """
         pass
 
     @abstractmethod
     def fitness(self, path: str, path_type: str = None) -> float:
         """
-        Compute a fitness in the interval [0 to 1] for reading/writing from/to
-        the given *path*.
+        Compute a fitness of this dataset I/O in the interval [0 to 1]
+        for reading/writing from/to the given *path*.
 
         :param path: The path or URL.
         :param path_type: Either "file", "dir", "url", or None.
@@ -112,12 +126,15 @@ class DatasetIO(metaclass=ABCMeta):
         return 0.0
 
     def read(self, input_path: str, **kwargs) -> xr.Dataset:
+        """Read a dataset from *input_path* using format-specific read parameters *kwargs*."""
         raise NotImplementedError()
 
     def write(self, dataset: xr.Dataset, output_path: str, **kwargs):
+        """"Write *dataset* to *output_path* using format-specific write parameters *kwargs*."""
         raise NotImplementedError()
 
     def append(self, dataset: xr.Dataset, output_path: str, **kwargs):
+        """"Append *dataset* to existing *output_path* using format-specific write parameters *kwargs*."""
         raise NotImplementedError()
 
 
@@ -204,6 +221,12 @@ def query_dataset_io(filter_fn: Callable[[DatasetIO], bool] = None) -> List[Data
 
 
 class MemDatasetIO(DatasetIO):
+    """
+    An in-memory  dataset I/O. Keeps all datasets in a dictionary.
+
+    :param datasets: The initial datasets as a path to dataset mapping.
+    """
+
     def __init__(self, datasets: Dict[str, xr.Dataset] = None):
         self.datasets = datasets or {}
 
@@ -252,6 +275,9 @@ class MemDatasetIO(DatasetIO):
 
 
 class Netcdf4DatasetIO(DatasetIO):
+    """
+    A dataset I/O that reads from / writes to NetCDF files.
+    """
 
     @property
     def name(self) -> str:
@@ -304,6 +330,10 @@ class Netcdf4DatasetIO(DatasetIO):
 
 
 class ZarrDatasetIO(DatasetIO):
+    """
+    A dataset I/O that reads from / writes to Zarr directories or archives.
+    """
+
     def __init__(self):
         self.root_group = None
 
@@ -393,6 +423,46 @@ class ZarrDatasetIO(DatasetIO):
                 var_array.append(new_var, axis=axis)
 
 
+class CsvDatasetIO(DatasetIO):
+    """
+    A dataset I/O that reads from / writes to CSV files.
+    """
+
+    def __init__(self):
+        self.root_group = None
+
+    @property
+    def name(self) -> str:
+        return FORMAT_NAME_CSV
+
+    @property
+    def description(self) -> str:
+        return 'CSV file format'
+
+    @property
+    def ext(self) -> str:
+        return 'csv'
+
+    @property
+    def modes(self) -> Set[str]:
+        return {'r', 'w'}
+
+    def fitness(self, path: str, path_type: str = None) -> float:
+        if path_type == "dir":
+            return 0.0
+        ext = _get_ext(path)
+        ext_value = {".csv": 1.0, ".txt": 0.5, ".dat": 0.2}.get(ext, 0.1)
+        type_value = {"file": 1.0, "url": 0.5, None: 0.5}.get(path_type, 0.0)
+        return (3 * ext_value + type_value) / 4
+
+    def read(self, path: str, **kwargs) -> xr.Dataset:
+        return xr.Dataset.from_dataframe(pd.read_csv(path, **kwargs))
+
+    def write(self, dataset: xr.Dataset, output_path: str, **kwargs):
+        dataset.to_dataframe().to_csv(output_path, **kwargs)
+
+
+register_dataset_io(CsvDatasetIO())
 register_dataset_io(MemDatasetIO())
 register_dataset_io(Netcdf4DatasetIO())
 register_dataset_io(ZarrDatasetIO())
