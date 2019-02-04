@@ -20,14 +20,19 @@
 # SOFTWARE.
 
 import glob
+import os
 from abc import abstractmethod, ABCMeta
-from typing import Set, Callable, List, Optional, Dict, Iterable
+from typing import Set, Callable, List, Optional, Dict, Iterable, Tuple
 
 import s3fs
 import xarray as xr
 import zarr
 
 from xcube.objreg import get_obj_registry
+
+FORMAT_NAME_MEM = "mem"
+FORMAT_NAME_ZARR = "zarr"
+FORMAT_NAME_NETCDF4 = "netcdf4"
 
 
 def open_from_fs(paths: str, recursive: bool = False, **kwargs):
@@ -94,6 +99,18 @@ class DatasetIO(metaclass=ABCMeta):
     def modes(self) -> Set[str]:
         pass
 
+    @abstractmethod
+    def fitness(self, path: str, path_type: str = None) -> float:
+        """
+        Compute a fitness in the interval [0 to 1] for reading/writing from/to
+        the given *path*.
+
+        :param path: The path or URL.
+        :param path_type: Either "file", "dir", "url", or None.
+        :return: the chance in range [0 to 1]
+        """
+        return 0.0
+
     def read(self, input_path: str, **kwargs) -> xr.Dataset:
         raise NotImplementedError()
 
@@ -128,6 +145,57 @@ def find_dataset_io(format_name: str, modes: Iterable[str] = None, default: Data
     return default
 
 
+def guess_dataset_format(path: str) -> Optional[str]:
+    """
+    Guess a dataset format for a file system path or URL given by *path*.
+
+    :param path: A file system path or URL.
+    :return: The name of a dataset format guessed from *path*.
+    """
+    dataset_io_fitness_list = guess_dataset_ios(path)
+    if dataset_io_fitness_list:
+        return dataset_io_fitness_list[0][0].name
+    return None
+
+
+def guess_dataset_ios(path: str) -> List[Tuple[DatasetIO, float]]:
+    """
+    Guess suitable DatasetIO objects for a file system path or URL given by *path*.
+
+    Returns a list of (DatasetIO, fitness) tuples, sorted by descending fitness values.
+    Fitness values are in the interval (0, 1].
+
+    The first entry is the most appropriate DatasetIO object.
+
+    :param path: A file system path or URL.
+    :return: A list of (DatasetIO, fitness) tuples.
+    """
+    if os.path.isfile(path):
+        input_type = "file"
+    elif os.path.isdir(path):
+        input_type = "dir"
+    elif path.find("://") > 0:
+        input_type = "url"
+    else:
+        input_type = None
+
+    dataset_ios = get_obj_registry().get_all(type=DatasetIO)
+
+    dataset_io_fitness_list = []
+    for dataset_io in dataset_ios:
+        fitness = dataset_io.fitness(path, path_type=input_type)
+        if fitness > 0.0:
+            dataset_io_fitness_list.append((dataset_io, fitness))
+
+    dataset_io_fitness_list.sort(key=lambda item: -item[1])
+    return dataset_io_fitness_list
+
+
+def _get_ext(path: str) -> Optional[str]:
+    _, ext = os.path.splitext(path)
+    return ext.lower()
+
+
 def query_dataset_io(filter_fn: Callable[[DatasetIO], bool] = None) -> List[DatasetIO]:
     dataset_ios = get_obj_registry().get_all(type=DatasetIO)
     if filter_fn is None:
@@ -141,7 +209,7 @@ class MemDatasetIO(DatasetIO):
 
     @property
     def name(self) -> str:
-        return 'mem'
+        return FORMAT_NAME_MEM
 
     @property
     def description(self) -> str:
@@ -154,6 +222,13 @@ class MemDatasetIO(DatasetIO):
     @property
     def modes(self) -> Set[str]:
         return {'r', 'w', 'a'}
+
+    def fitness(self, path: str, path_type: str = None) -> float:
+        if path in self.datasets:
+            return 1.0
+        ext_value = _get_ext(path) == ".mem"
+        type_value = 0.0
+        return (3 * ext_value + type_value) / 4
 
     def read(self, path: str, **kwargs) -> xr.Dataset:
         if path in self.datasets:
@@ -180,7 +255,7 @@ class Netcdf4DatasetIO(DatasetIO):
 
     @property
     def name(self) -> str:
-        return 'netcdf4'
+        return FORMAT_NAME_NETCDF4
 
     @property
     def description(self) -> str:
@@ -193,6 +268,18 @@ class Netcdf4DatasetIO(DatasetIO):
     @property
     def modes(self) -> Set[str]:
         return {'r', 'w', 'a'}
+
+    def fitness(self, path: str, path_type: str = None) -> float:
+        ext = _get_ext(path)
+        ext_value = ext in {'.nc', '.hdf', '.h5'}
+        type_value = 0.0
+        if path_type is "file":
+            type_value = 1.0
+        elif path_type is None:
+            type_value = 0.5
+        else:
+            ext_value = 0.0
+        return (3 * ext_value + type_value) / 4
 
     def read(self, input_path: str, **kwargs) -> xr.Dataset:
         return xr.open_dataset(input_path, **kwargs)
@@ -222,7 +309,7 @@ class ZarrDatasetIO(DatasetIO):
 
     @property
     def name(self) -> str:
-        return 'zarr'
+        return FORMAT_NAME_ZARR
 
     @property
     def description(self) -> str:
@@ -236,19 +323,64 @@ class ZarrDatasetIO(DatasetIO):
     def modes(self) -> Set[str]:
         return {'r', 'w', 'a'}
 
+    def fitness(self, path: str, path_type: str = None) -> float:
+        ext = _get_ext(path)
+        ext_value = 0.0
+        type_value = 0.0
+        if ext == ".zarr":
+            ext_value = 1.0
+            if path_type is "dir":
+                type_value = 1.0
+            elif path_type == "url" or path_type is None:
+                type_value = 0.5
+            else:
+                ext_value = 0.0
+        else:
+            lower_path = path.lower()
+            if lower_path.endswith(".zarr.zip"):
+                ext_value = 1.0
+                if path_type == "file":
+                    type_value = 1.0
+                elif path_type is None:
+                    type_value = 0.5
+                else:
+                    ext_value = 0.0
+            else:
+                if path_type is "dir":
+                    type_value = 1.0
+                elif path_type == "url":
+                    type_value = 0.5
+        return (3 * ext_value + type_value) / 4
+
     def read(self, path: str, **kwargs) -> xr.Dataset:
         return xr.open_zarr(path, **kwargs)
 
-    def write(self, dataset: xr.Dataset, output_path: str, **kwargs):
-        compressor = zarr.Blosc(cname='zstd', clevel=3, shuffle=2)
-        encoding = dict()
-        for var_name in dataset.data_vars:
-            new_var = dataset[var_name]
-            # TODO: get chunks from configuration
-            chunks = new_var.shape
-            encoding[var_name] = {'compressor': compressor, 'chunks': chunks}
-        dataset.to_zarr(output_path,
-                        encoding=encoding)
+    def write(self, dataset: xr.Dataset, output_path: str,
+              compress=True,
+              cname=None, clevel=None, shuffle=None, blocksize=None,
+              chunksizes=None):
+
+        encoding = {}
+        if compress:
+            blosc_kwargs = dict(cname=cname, clevel=clevel, shuffle=shuffle, blocksize=blocksize)
+            for k in list(blosc_kwargs.keys()):
+                if blosc_kwargs[k] is None:
+                    del blosc_kwargs[k]
+            encoding["compressor"] = zarr.Blosc(**blosc_kwargs)
+
+        if chunksizes:
+            chunks = []
+            for dim_name, dim_size in dataset.dims.items():
+                if dim_name in chunksizes:
+                    chunks.append(chunksizes[dim_name])
+                else:
+                    chunks.append(dim_size)
+            encoding["chunks"] = tuple(chunks)
+
+        # Apply encodings to all variables
+        var_encodings = {var_name: encoding for var_name in dataset.data_vars}
+
+        dataset.to_zarr(output_path, mode="w", encoding=var_encodings)
 
     def append(self, dataset: xr.Dataset, output_path: str, **kwargs):
         import zarr

@@ -26,6 +26,7 @@ from setuptools import setup, find_packages
 
 # in alphabetical oder
 requirements = [
+    'click',
     'dask',
     'gdal',
     'matplotlib',
@@ -53,6 +54,7 @@ setup(
     packages=packages,
     entry_points={
         'console_scripts': [
+            'xcube = xcube.cli:main',
             'xcube-genl2c = xcube.genl2c.cli:main',
             'xcube-genl3 = xcube.genl3.cli:main',
             'xcube-grid = xcube.grid.main:main',
