@@ -26,7 +26,7 @@ import os
 import pstats
 import time
 import traceback
-from typing import Sequence, Callable, Tuple, Optional, Dict
+from typing import Sequence, Callable, Tuple, Optional, Dict, Any
 
 from .defaults import DEFAULT_OUTPUT_DIR, DEFAULT_OUTPUT_NAME, DEFAULT_OUTPUT_SIZE, \
     DEFAULT_OUTPUT_RESAMPLING, DEFAULT_OUTPUT_WRITER
@@ -45,12 +45,14 @@ def generate_l2c_cube(input_files: Sequence[str] = None,
                       input_processor: str = None,
                       input_processor_params: Dict = None,
                       input_reader: str = None,
+                      input_reader_params: Dict[str, Any] = None,
                       output_region: Tuple[float, float, float, float] = None,
                       output_size: Tuple[int, int] = DEFAULT_OUTPUT_SIZE,
                       output_resampling: str = DEFAULT_OUTPUT_RESAMPLING,
                       output_dir: str = DEFAULT_OUTPUT_DIR,
                       output_name: str = DEFAULT_OUTPUT_NAME,
                       output_writer: str = DEFAULT_OUTPUT_WRITER,
+                      output_writer_params: Dict[str, Any] = None,
                       output_metadata: NameAnyDict = None,
                       output_variables: NameDictPairList = None,
                       processed_variables: NameDictPairList = None,
@@ -85,6 +87,11 @@ def generate_l2c_cube(input_files: Sequence[str] = None,
     if not dry_run:
         os.makedirs(output_dir, exist_ok=True)
 
+    effective_input_reader_params = dict(input_processor.input_reader_params or {})
+    effective_input_reader_params.update(input_reader_params or {})
+
+    effective_output_writer_params = output_writer_params or {}
+
     output_path = None
     status = False
 
@@ -96,7 +103,9 @@ def generate_l2c_cube(input_files: Sequence[str] = None,
         # noinspection PyTypeChecker
         output_path, status = _process_l2_input(input_processor,
                                                 input_reader,
+                                                effective_input_reader_params,
                                                 output_writer,
+                                                effective_output_writer_params,
                                                 input_file,
                                                 output_size,
                                                 output_region,
@@ -121,7 +130,9 @@ def generate_l2c_cube(input_files: Sequence[str] = None,
 
 def _process_l2_input(input_processor: InputProcessor,
                       input_reader: DatasetIO,
+                      input_reader_params: Dict[str, Any],
                       output_writer: DatasetIO,
+                      output_writer_params: Dict[str, Any],
                       input_file: str,
                       output_size: Tuple[int, int],
                       output_region: Tuple[float, float, float, float],
@@ -144,7 +155,7 @@ def _process_l2_input(input_processor: InputProcessor,
     monitor('reading dataset...')
     # noinspection PyBroadException
     try:
-        input_dataset = input_reader.read(input_file, **input_processor.input_reader_params)
+        input_dataset = input_reader.read(input_file, **input_reader_params)
     except Exception as e:
         monitor(f'ERROR: cannot read input: {e}: skipping...')
         traceback.print_exc()
@@ -230,7 +241,7 @@ def _process_l2_input(input_processor: InputProcessor,
         if append_mode and os.path.exists(output_path):
             # noinspection PyShadowingNames
             def step9(dataset):
-                output_writer.append(dataset, output_path)
+                output_writer.append(dataset, output_path, **output_writer_params)
                 return dataset
 
             steps.append((step9, f'appending to {output_path}'))
@@ -238,7 +249,7 @@ def _process_l2_input(input_processor: InputProcessor,
             # noinspection PyShadowingNames
             def step9(dataset):
                 rimraf(output_path)
-                output_writer.write(dataset, output_path)
+                output_writer.write(dataset, output_path, **output_writer_params)
                 return dataset
 
             steps.append((step9, f'writing to {output_path}'))

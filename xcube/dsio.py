@@ -355,11 +355,32 @@ class ZarrDatasetIO(DatasetIO):
     def read(self, path: str, **kwargs) -> xr.Dataset:
         return xr.open_zarr(path, **kwargs)
 
-    def write(self, dataset: xr.Dataset, output_path: str, **kwargs):
-        if "mode" not in kwargs:
-            # Overwrite zarr's default "w-" (= fail if exists)
-            kwargs["mode"] = "w"
-        dataset.to_zarr(output_path, **kwargs)
+    def write(self, dataset: xr.Dataset, output_path: str,
+              compress=True,
+              cname=None, clevel=None, shuffle=None, blocksize=None,
+              chunksizes=None):
+
+        encoding = {}
+        if compress:
+            blosc_kwargs = dict(cname=cname, clevel=clevel, shuffle=shuffle, blocksize=blocksize)
+            for k in list(blosc_kwargs.keys()):
+                if blosc_kwargs[k] is None:
+                    del blosc_kwargs[k]
+            encoding["compressor"] = zarr.Blosc(**blosc_kwargs)
+
+        if chunksizes:
+            chunks = []
+            for dim_name, dim_size in dataset.dims.items():
+                if dim_name in chunksizes:
+                    chunks.append(chunksizes[dim_name])
+                else:
+                    chunks.append(dim_size)
+            encoding["chunks"] = tuple(chunks)
+
+        # Apply encodings to all variables
+        var_encodings = {var_name: encoding for var_name in dataset.data_vars}
+
+        dataset.to_zarr(output_path, mode="w", encoding=var_encodings)
 
     def append(self, dataset: xr.Dataset, output_path: str, **kwargs):
         import zarr
