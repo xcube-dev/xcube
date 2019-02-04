@@ -1,5 +1,5 @@
 from contextlib import contextmanager
-from typing import Dict, List, Union, Tuple, Any, Optional
+from typing import Dict, List, Union, Tuple, Any, Optional, Mapping, Sequence
 
 import numpy as np
 import pandas as pd
@@ -13,6 +13,7 @@ _TIME_CALENDAR = "proleptic_gregorian"
 
 INDEX_NAME_PATTERN = '{name}_index'
 FRACTION_NAME_PATTERN = '{name}_fraction'
+INDEX_DIM_NAME = "idx"
 
 
 def new_cube(title="Test Cube",
@@ -281,74 +282,72 @@ def dump_var_encoding(var: xr.DataArray, header="Encoding:", indent=4) -> str:
 
 
 def get_cube_values_for_points(cube: xr.Dataset,
-                               points: Union[pd.DataFrame, Any],
-                               include_indexes: bool = False,
-                               include_fractions: bool = False,
+                               points: Union[xr.Dataset, pd.DataFrame, Mapping[str, Any]],
+                               var_names: Sequence[str] = None,
                                index_name_pattern: str = INDEX_NAME_PATTERN,
-                               fraction_name_pattern: str = FRACTION_NAME_PATTERN,
-                               cube_asserted: bool = False) -> pd.DataFrame:
+                               include_indexes: bool = False,
+                               method: str = "nearest",
+                               cube_asserted: bool = False) -> xr.Dataset:
     """
     Extract values from *cube* variables at given coordinates in *points*.
 
     :param cube: The cube dataset.
     :param points: Dictionary that maps dimension name to coordinate arrays.
-    :param include_indexes:  Weather to include indexes in the returned data frame.
-    :param include_fractions: Weather to include fractions in the returned data frame.
+    :param var_names: An optional list of names of data variables in *cube* whose values shall be extracted.
     :param index_name_pattern: A naming pattern for the computed indexes columns.
            Must include "{name}" which will be replaced by the dimension name.
-    :param fraction_name_pattern: A naming pattern for the computed fraction columns, if *include_fractions* is True.
-           Must include "{name}" which will be replaced by the dimension name.
+    :param include_indexes: Weather to include computed indexes in return value.
+    :param method: "nearest" or "linear".
     :param cube_asserted: If False, *cube* will be verified, otherwise it is expected to be a valid cube.
     :return: A new data frame whose columns are values from *cube* variables at given *points*.
     """
     if not cube_asserted:
         assert_cube(cube)
-    indexes = get_cube_point_indexes(cube,
-                                     points,
-                                     include_fractions=include_fractions,
-                                     index_name_pattern=index_name_pattern,
-                                     fraction_name_pattern=fraction_name_pattern,
-                                     cube_asserted=True)
-    return get_cube_values_for_indexes(cube,
-                                       indexes,
-                                       include_indexes=include_indexes,
-                                       include_fractions=include_fractions,
-                                       index_name_pattern=index_name_pattern,
-                                       fraction_name_pattern=fraction_name_pattern,
-                                       cube_asserted=True)
+
+    point_indexes = get_cube_point_indexes(cube,
+                                           points,
+                                           index_name_pattern=index_name_pattern,
+                                           dtype=np.int64 if method == "nearest" else np.float64,
+                                           cube_asserted=True)
+
+    cube_values = get_cube_values_for_indexes(cube,
+                                              point_indexes,
+                                              var_names=var_names,
+                                              index_name_pattern=index_name_pattern,
+                                              method=method,
+                                              cube_asserted=True)
+
+    if include_indexes:
+        cube_values.update(point_indexes, inplace=True)
+
+    return cube_values
 
 
 def get_cube_values_for_indexes(cube: xr.Dataset,
-                                indexes: pd.DataFrame,
-                                var_names: str = None,
-                                include_indexes: bool = False,
-                                include_fractions: bool = False,
+                                indexes: Union[xr.Dataset, pd.DataFrame, Mapping[str, Any]],
+                                var_names: Sequence[str] = None,
                                 index_name_pattern: str = INDEX_NAME_PATTERN,
-                                fraction_name_pattern: str = FRACTION_NAME_PATTERN,
-                                cube_asserted: bool = False) -> pd.DataFrame:
+                                method: str = "nearest",
+                                cube_asserted: bool = False) -> xr.Dataset:
     """
     Get values from the *cube* at given *indexes*.
 
     :param cube: A cube dataset.
-    :param indexes: A Pandas data frame that contains the indexes for all cube dimensions.
+    :param indexes: A mapping from column names to index and fraction arrays for all cube dimensions.
     :param var_names: An optional list of names of data variables in *cube* whose values shall be extracted.
-    :param include_indexes:  Weather to include indexes in the returned data frame.
-    :param include_fractions: Weather to include fractions in the returned data frame.
     :param index_name_pattern: A naming pattern for the computed indexes columns.
            Must include "{name}" which will be replaced by the dimension name.
-    :param fraction_name_pattern: A naming pattern for the computed fraction columns, if *include_fractions* is True.
-           Must include "{name}" which will be replaced by the dimension name.
+    :param method: "nearest" or "linear".
     :param cube_asserted: If False, *cube* will be verified, otherwise it is expected to be a valid cube.
     :return: A new data frame whose columns are values from *cube* variables at given *indexes*.
     """
-    # TODO (forman): remove following checks once include_indexes, include_fractions are used
-    if include_indexes:
-        raise NotImplementedError("keyword 'include_indexes' not supported yet")
-    if include_fractions:
-        raise NotImplementedError("keyword 'include_fractions' not supported yet")
-
     if not cube_asserted:
         assert_cube(cube)
+
+    if method not in {"nearest", "linear"}:
+        raise ValueError(f"invalid method {method!r}")
+    if method != "nearest":
+        raise NotImplementedError(f"method {method!r} not yet implemented")
 
     all_var_names = tuple(cube.data_vars.keys())
     if len(all_var_names) == 0:
@@ -356,159 +355,156 @@ def get_cube_values_for_indexes(cube: xr.Dataset,
 
     if var_names is not None:
         if len(var_names) == 0:
-            return pd.DataFrame(indexes) if include_indexes else pd.DataFrame()
+            return xr.Dataset(coords=indexes.coords if hasattr(indexes, "coords") else None)
         for var_name in var_names:
             if var_name not in cube.data_vars:
                 raise ValueError(f"variable {var_name!r} not found in cube")
     else:
         var_names = all_var_names
 
-    # Get and verify dimension names
     dim_names = cube[var_names[0]].dims
-    index_names = [index_name_pattern.format(name=dim_name) for dim_name in dim_names]
-    fraction_names = [fraction_name_pattern.format(name=dim_name) for dim_name in dim_names]
     num_dims = len(dim_names)
+    index_names = [index_name_pattern.format(name=dim_name) for dim_name in dim_names]
+    num_points = _validate_points(indexes, index_names, param_name="indexes")
+    indexes = _normalize_points(indexes)
+
+    # Flatten any coordinate bounds variables
+    cube = xr.Dataset({var_name: cube[var_name] for var_name in var_names}, coords=cube.coords)
+    bounds_var_names = _get_coord_bounds_var_names(cube)
+    new_vars = {}
+    for var_name, bnds_var_name in bounds_var_names.items():
+        bnds_var = cube[bnds_var_name]
+        new_vars[var_name + "_start"] = bnds_var[:, 0]
+        new_vars[var_name + "_end"] = bnds_var[:, 1]
+    cube = cube.drop(list(bounds_var_names.keys()))
+    cube = cube.assign_coords(**new_vars)
+
+    # Generate a validation condition so we can filter out invalid rows (where any index == -1)
+    is_valid_point = None
     for index_name in index_names:
-        if index_name not in indexes:
-            raise ValueError(f"missing column {index_name!r} in indexes")
+        col = indexes[index_name]
+        condition = col >= 0 if np.issubdtype(col.dtype, np.integer) else np.isnan(col)
+        if is_valid_point is None:
+            is_valid_point = condition
+        else:
+            is_valid_point = np.logical_and(is_valid_point, condition)
 
-    # Get and verify chunks
-    chunks = get_cube_chunks(cube)
-    if chunks is None:
-        cube = cube.chunk(dict.fromkeys(dim_names, "auto"))
-        chunks = get_cube_chunks(cube)
-        if chunks is None:
-            raise ValueError("failed to chunk cube")
+    num_valid_points = np.count_nonzero(is_valid_point)
+    if num_valid_points == num_points:
+        # All indexes valid
+        cube_selector = {dim_names[i]: indexes[index_names[i]] for i in range(num_dims)}
+        cube_values = cube.isel(cube_selector)
+    elif num_valid_points == 0:
+        # All indexes are invalid
+        new_vars = {}
+        for var_name in var_names:
+            new_vars[var_name] = _empty_points_var(cube[var_name], num_points)
+        cube_values = xr.Dataset(new_vars)
+    else:
+        # Some invalid indexes
+        idx = np.arange(num_points)
+        good_idx = idx[is_valid_point.values]
+        idx_dim_name = indexes[index_names[0]].dims[0]
+        good_indexes = indexes.isel({idx_dim_name: good_idx})
 
-    if len(chunks) != num_dims:
-        raise ValueError("inconsistent cube")
+        cube_selector = {dim_names[i]: good_indexes[index_names[i]] for i in range(num_dims)}
+        cube_values = cube.isel(cube_selector)
 
-    # Collect cell indexes, compute block indexes
-    chunk_interp_arrays = tuple(_get_block_interp_arrays(chunks))
-    cell_indexes_list = []
-    block_indexes_list = []
-    for i in range(num_dims):
-        index_name = index_names[i]
-        cell_indexes = indexes[index_name].values
-        block_indexes = np.interp(cell_indexes,
-                                  chunk_interp_arrays[i][0],
-                                  chunk_interp_arrays[i][1], left=-1, right=-1).astype(dtype=np.int64)
-        cell_indexes_list.append(cell_indexes)
-        block_indexes_list.append(block_indexes)
+        new_vars = {}
+        for var_name in var_names:
+            var = cube_values[var_name]
+            new_var = _empty_points_var(var, num_points)
+            new_var[good_idx] = var
+            new_vars[var_name] = new_var
 
-    num_points = len(cell_indexes_list[0])
+        cube_values = xr.Dataset(new_vars)
 
-    # Collect the cell indexes for each block
-    block_index_to_cell_indexes = {}
-    for i in range(num_points):
-        block_index = tuple(int(block_indexes_list[j][i]) for j in range(num_dims))
-        if -1 not in block_index:
-            cell_indexes = block_index_to_cell_indexes.get(block_index)
-            if cell_indexes is None:
-                block_index_to_cell_indexes[block_index] = [i]
-            else:
-                cell_indexes.append(i)
+    return cube_values
 
-    # Convert block_index_to_cell_indexes to list of tuples sorted by block_index
-    block_index_and_cell_indexes = list(block_index_to_cell_indexes.items())
-    sorted(block_index_and_cell_indexes, key=lambda item: item[0])
 
-    num_vars = len(var_names)
-    variables = [cube[var_name] for var_name in var_names]
-    var_cell_values = [np.full((num_points,), np.nan, dtype=cube[var_name].dtype) for var_name in var_names]
+def _empty_points_var(var: xr.DataArray, num_points):
+    fill_value = 0 if np.issubdtype(var.dtype, np.integer) else np.nan
+    return xr.DataArray(np.full(num_points, fill_value, dtype=var.dtype),
+                        dims=[INDEX_DIM_NAME], attrs=var.attrs)
 
-    # TODO: the following look could actually run in parallel with help of dask,
-    # but there seems to be no way to perform arbitrary computations performed in parallel
-    # on dask blocks. Neither dask.map_blocks() or dask.apply_gufunc() perform as required here.
 
-    # For each block in given variables, extract variable values at cell indexes
-    for block_index, cell_indexes in block_index_and_cell_indexes:
-        block_cell_start = tuple(int(chunk_interp_arrays[u][0][block_index[u]])
-                                 for u in range(num_dims))
-        block_cell_stop = tuple(int(chunk_interp_arrays[u][0][block_index[u] + 1])
-                                for u in range(num_dims))
-        block_slice = tuple(slice(*x) for x in zip(block_cell_start, block_cell_stop))
+def _normalize_points(points: Union[xr.Dataset, pd.DataFrame, Mapping[str, Any]]) -> xr.Dataset:
+    if isinstance(points, pd.DataFrame):
+        points = xr.Dataset.from_dataframe(points)
+    elif not isinstance(points, xr.DataArray):
+        points = xr.Dataset(points)
+    return points
 
-        # Compute relative cell indexes into block
-        block_cell_indexes = {}
-        for i in cell_indexes:
-            block_cell_indexes[i] = tuple(int(cell_indexes_list[j][i]) - block_cell_start[j]
-                                          for j in range(num_dims))
 
-        # For each variable, load block and for each cell index extract and store cell values
-        for l in range(num_vars):
-            var_data_block = variables[l].data[block_slice]
-            for i in cell_indexes:
-                block_cell_index = block_cell_indexes[i]
-                var_cell_value = var_data_block[block_cell_index]
-                var_cell_values[l][i] = var_cell_value
-
-    values = pd.DataFrame({var_names[j]: var_cell_values[j] for j in range(num_vars)})
-    if include_indexes:
-        # TODO (forman): implement
-        pass
-    if include_fractions:
-        # TODO (forman): implement
-        pass
-
-    return values
+def _validate_points(points: Union[xr.Dataset, pd.DataFrame, Mapping[str, Any]],
+                     col_names: Sequence[str],
+                     param_name="points") -> Optional[int]:
+    num_points = None
+    for col_name in col_names:
+        if col_name not in points:
+            raise ValueError(f"column {col_name!r} not found in {param_name}")
+        col = points[col_name]
+        if len(col.shape) != 1:
+            raise ValueError(
+                f"column {col_name!r} in {param_name} must be one-dimensional, but has shape {col.shape!r}")
+        if num_points is None:
+            num_points = len(col)
+        elif num_points != len(col):
+            raise ValueError(f"column sizes in {param_name} must be all the same,"
+                             f" but found {len(points[col_names[0]])} for column {col_names[0]!r}"
+                             f" and {num_points} for column {col_name!r}")
+    return num_points
 
 
 def get_cube_point_indexes(cube: xr.Dataset,
-                           points: Union[pd.DataFrame, Any],
-                           dim_name_mapping: Dict[str, str] = None,
-                           include_fractions: bool = False,
+                           points: Union[xr.Dataset, pd.DataFrame, Mapping[str, Any]],
+                           dim_name_mapping: Mapping[str, str] = None,
                            index_name_pattern: str = INDEX_NAME_PATTERN,
-                           fraction_name_pattern: str = FRACTION_NAME_PATTERN,
-                           cube_asserted: bool = False) -> pd.DataFrame:
+                           dtype=np.float64,
+                           cube_asserted: bool = False) -> xr.Dataset:
     """
     Get indexes of given point coordinates *points* into the given *dataset*.
 
     :param cube: The cube dataset.
-    :param points: A pandas data frame or object that can be converted into a Pandas DataFrame.
+    :param points: A mapping from column names to column data arrays, which must all have the same length.
     :param dim_name_mapping: A mapping from dimension names in *cube* to column names in *points*.
-    :param include_fractions: Weather to include fractions in the returned data frame.
     :param index_name_pattern: A naming pattern for the computed indexes columns.
            Must include "{name}" which will be replaced by the dimension name.
-    :param fraction_name_pattern: A naming pattern for the computed fraction columns, if *include_fractions* is True.
-           Must include "{name}" which will be replaced by the dimension name.
     :param cube_asserted: If False, *cube* will be verified, otherwise it is expected to be a valid cube.
-    :return: A dictionary that maps dimension names to integer index arrays.
+    :param dtype: Numpy data type for the indexes. If it is floating point type (default),
+           then *indexes* contain fractions, which may be used for interpolation. If *dtype* is an integer
+           type out-of-range coordinates are indicated by index -1, and NaN if it is is a floating point type.
+    :return: A dataset containing the index columns.
     """
     if not cube_asserted:
         assert_cube(cube)
 
-    if not isinstance(points, pd.DataFrame):
-        points = pd.DataFrame(points)
-
+    dim_name_mapping = dim_name_mapping if dim_name_mapping is not None else {}
     dim_names = _get_cube_data_var_dims(cube)
+    col_names = [dim_name_mapping.get(dim_name, dim_name) for dim_name in dim_names]
 
-    first_col_name = None
+    _validate_points(points, col_names, param_name="points")
+
     indexes = []
-    for dim_name in dim_names:
-        if dim_name not in cube.coords:
-            raise ValueError(f"missing coordinate variable for dimension {dim_name!r}")
-        col_name = dim_name_mapping[dim_name] if dim_name_mapping and dim_name in dim_name_mapping else dim_name
-        if col_name not in points:
-            raise ValueError(f"column {col_name!r} not found in points")
-        dim_col = points[col_name]
-        if first_col_name is None:
-            first_col_name = col_name
-        else:
-            first_col_size = len(points[first_col_name])
-            col_size = len(dim_col)
-            if first_col_size != col_size:
-                raise ValueError("number of point coordinates must be same for all columns,"
-                                 f" but found {first_col_size} for column {first_col_name!r}"
-                                 f" and {col_size} for column {col_name!r}")
+    for dim_name, col_name in zip(dim_names, col_names):
+        col = points[col_name]
+        coord_indexes = get_dataset_indexes(cube, dim_name, col, dtype=dtype)
+        indexes.append((index_name_pattern.format(name=dim_name),
+                        xr.DataArray(coord_indexes, dims=[INDEX_DIM_NAME])))
 
-        coord_indexes, coord_fractions = get_dataset_indexes(cube, dim_name, dim_col.values)
+    return xr.Dataset(dict(indexes))
 
-        indexes.append((index_name_pattern.format(name=dim_name), coord_indexes))
-        if include_fractions:
-            indexes.append((fraction_name_pattern.format(name=dim_name), coord_fractions))
 
-    return pd.DataFrame(dict(indexes))
+def _get_coord_bounds_var_names(dataset: xr.Dataset) -> Dict[str, str]:
+    bnds_var_names = {}
+    for var_name in dataset.coords:
+        var = dataset[var_name]
+        bnds_var_name = var.attrs.get("bounds", var_name + "_bnds")
+        if bnds_var_name not in bnds_var_names and bnds_var_name in dataset:
+            bnds_var = dataset[bnds_var_name]
+            if bnds_var.shape == (var.shape[0], 2):
+                bnds_var_names[var_name] = bnds_var_name
+    return bnds_var_names
 
 
 def _get_cube_data_var_dims(cube: xr.Dataset) -> Tuple[str, ...]:
@@ -519,7 +515,8 @@ def _get_cube_data_var_dims(cube: xr.Dataset) -> Tuple[str, ...]:
 
 def get_dataset_indexes(dataset: xr.Dataset,
                         coord_var_name: str,
-                        coord_values) -> Tuple[np.ndarray, np.ndarray]:
+                        coord_values: Union[xr.DataArray, np.ndarray],
+                        dtype=np.float64) -> Union[xr.DataArray, np.ndarray]:
     """
     Compute the indexes and their fractions into a coordinate variable *coord_var_name* of a *dataset*
     for the given coordinate values *coord_values*.
@@ -535,6 +532,9 @@ def get_dataset_indexes(dataset: xr.Dataset,
     :param dataset: A cube dataset.
     :param coord_var_name: Name of a coordinate variable.
     :param coord_values: Array-like coordinate values.
+    :param dtype: Numpy data type for the indexes. If it is floating point type (default),
+           then *indexes* contain fractions, which may be used for interpolation. If *dtype* is an integer
+           type out-of-range coordinates are indicated by index -1, and NaN if it is is a floating point type.
     :return: The indexes and their fractions as a tuple of numpy int64 and float64 arrays.
     """
     coord_var = dataset[coord_var_name]
@@ -576,27 +576,20 @@ def get_dataset_indexes(dataset: xr.Dataset,
 
     if np.issubdtype(coord_values.dtype, np.datetime64):
         coord_values = coord_values.astype(np.uint64)
-    x = np.linspace(0.0, n1, n2, dtype=np.float64)
-    result = np.interp(coord_values, coords, x, left=-1, right=-1)
-    indexes = result.astype(np.int64)
-    upper_bound_hit = indexes >= n1
-    indexes[upper_bound_hit] = n1 - 1
-    fractions = result - indexes
-    fractions[upper_bound_hit] = 1.0
-    fractions[indexes == -1] = np.nan
+
+    indexes = np.linspace(0.0, n1, n2, dtype=np.float64)
+    interp_indexes = np.interp(coord_values, coords, indexes, left=-1, right=-1)
+    if np.issubdtype(dtype, np.integer):
+        interp_indexes = interp_indexes.astype(dtype)
+        interp_indexes[interp_indexes >= n1] = n1 - 1
+    else:
+        interp_indexes[interp_indexes >= n1] = n1 - 1e-9
+        interp_indexes[interp_indexes < 0] = np.nan
+
     if is_reversed:
-        indexes = indexes[::-1]
-        fractions = fractions[::-1]
-    return indexes, fractions
+        interp_indexes = interp_indexes[::-1]
 
-
-def _get_block_interp_arrays(chunks: Tuple[Tuple[int, ...], ...]) -> Tuple[Tuple[np.ndarray, np.ndarray], ...]:
-    for dim_chunks in chunks:
-        num_blocks = len(dim_chunks)
-        dim_indexes = np.zeros(num_blocks + 1, np.int64)
-        for i in range(num_blocks):
-            dim_indexes[i + 1] = dim_indexes[i] + dim_chunks[i]
-        yield dim_indexes, np.linspace(0, num_blocks, num=num_blocks + 1, dtype=np.int64)
+    return interp_indexes
 
 
 def get_cube_chunks(cube: xr.Dataset) -> Optional[Tuple[Tuple[int, ...], ...]]:
