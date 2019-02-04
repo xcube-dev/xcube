@@ -187,6 +187,7 @@ class ZarrDatasetIOTest(unittest.TestCase):
 
 
 class FindDatasetIOTest(unittest.TestCase):
+
     def test_find_by_name(self):
         ds_io = find_dataset_io('netcdf4')
         self.assertIsInstance(ds_io, Netcdf4DatasetIO)
