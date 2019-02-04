@@ -239,16 +239,32 @@ class ZarrDatasetIO(DatasetIO):
     def read(self, path: str, **kwargs) -> xr.Dataset:
         return xr.open_zarr(path, **kwargs)
 
-    def write(self, dataset: xr.Dataset, output_path: str, **kwargs):
-        compressor = zarr.Blosc(cname='zstd', clevel=3, shuffle=2)
-        encoding = dict()
-        for var_name in dataset.data_vars:
-            new_var = dataset[var_name]
-            # TODO: get chunks from configuration
-            chunks = new_var.shape
-            encoding[var_name] = {'compressor': compressor, 'chunks': chunks}
-        dataset.to_zarr(output_path,
-                        encoding=encoding)
+    def write(self, dataset: xr.Dataset, output_path: str,
+              compress=True,
+              cname=None, clevel=None, shuffle=None, blocksize=None,
+              chunksizes=None):
+
+        encoding = {}
+        if compress:
+            blosc_kwargs = dict(cname=cname, clevel=clevel, shuffle=shuffle, blocksize=blocksize)
+            for k in list(blosc_kwargs.keys()):
+                if blosc_kwargs[k] is None:
+                    del blosc_kwargs[k]
+            encoding["compressor"] = zarr.Blosc(**blosc_kwargs)
+
+        if chunksizes:
+            chunks = []
+            for dim_name, dim_size in dataset.dims.items():
+                if dim_name in chunksizes:
+                    chunks.append(chunksizes[dim_name])
+                else:
+                    chunks.append(dim_size)
+            encoding["chunks"] = tuple(chunks)
+
+        # Apply encodings to all variables
+        var_encodings = {var_name: encoding for var_name in dataset.data_vars}
+
+        dataset.to_zarr(output_path, mode="w", encoding=var_encodings)
 
     def append(self, dataset: xr.Dataset, output_path: str, **kwargs):
         import zarr
