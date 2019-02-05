@@ -1,5 +1,5 @@
 # The MIT License (MIT)
-# Copyright (c) 2018 by the xcube development team and contributors
+# Copyright (c) 2019 by the xcube development team and contributors
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of
 # this software and associated documentation files (the "Software"), to deal in
@@ -25,7 +25,7 @@ from typing import Tuple, List, Optional, Union
 
 import click
 
-from xcube.constants import EARTH_EQUATORIAL_PERIMETER
+from xcube.util.constants import EARTH_EQUATORIAL_PERIMETER
 
 _DEFAULT_MIN_LEVEL = 0
 _DEFAULT_MAX_TILE = 2500

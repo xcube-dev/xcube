@@ -2,7 +2,7 @@ from typing import Dict
 
 import xarray as xr
 
-from ..dsio import FORMAT_NAME_ZARR, FORMAT_NAME_NETCDF4
+from xcube.util.dsio import FORMAT_NAME_ZARR, FORMAT_NAME_NETCDF4
 
 
 def chunk_dataset(dataset: xr.Dataset,

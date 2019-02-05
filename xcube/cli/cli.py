@@ -21,7 +21,7 @@ def _parse_kwargs(value: str, metavar: str = None) -> Dict[str, Any]:
 
 
 # noinspection PyShadowingBuiltins
-@click.command(name="points")
+@click.command(name="point")
 @click.argument('cube', metavar='<cube>')
 @click.argument('coords', metavar='<coords>')
 @click.option('--indexes', '-i', is_flag=True,
@@ -33,7 +33,7 @@ def _parse_kwargs(value: str, metavar: str = None) -> Dict[str, Any]:
 @click.option('--params', '-p', metavar='<params>',
               help="Parameters specific for the output format."
                    " Comma-separated list of <key>=<value> pairs.")
-def points(cube, coords, indexes=False, output=None, format=None, params=None):
+def point(cube, coords, indexes=False, output=None, format=None, params=None):
     """
     Extract data from <cube> at points given by coordinates <coords>.
     """
@@ -85,7 +85,7 @@ def chunk(input, output, format=None, params=None, chunks=None):
     if params:
         write_kwargs = _parse_kwargs(params, metavar="<params>")
 
-    from xcube.dsio import guess_dataset_format
+    from xcube.util.dsio import guess_dataset_format
     format_name = format if format else guess_dataset_format(output)
 
     from xcube.api import open_dataset, chunk_dataset, write_dataset

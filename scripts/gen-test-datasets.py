@@ -1,5 +1,5 @@
 """
-This script is used to generate the test dataset in `test/genl2c/snap/inputdata`.
+This script is used to generate the test dataset in `test/gen/snap/inputdata`.
 """
 
 import glob
