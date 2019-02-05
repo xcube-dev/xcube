@@ -5,7 +5,7 @@ import click
 from .version import version
 
 
-def _parse_kwargs(value: str, metavar: str=None) -> Dict[str, Any]:
+def _parse_kwargs(value: str, metavar: str = None) -> Dict[str, Any]:
     if value:
         try:
             return eval(f"dict({value})", {}, {})
@@ -17,6 +17,42 @@ def _parse_kwargs(value: str, metavar: str=None) -> Dict[str, Any]:
             raise click.ClickException(message)
     else:
         return dict()
+
+
+# noinspection PyShadowingBuiltins
+@click.command(name="points")
+@click.argument('cube', metavar='<cube>')
+@click.argument('coords', metavar='<coords>')
+@click.option('--indexes', '-i', is_flag=True,
+              help="Include indexes in output.")
+@click.option('--output', '-o', metavar='<output>',
+              help="Output file.")
+@click.option('--format', '-f', metavar='<format>', type=click.Choice(['csv', 'stdout']),
+              help="Format of the output. If not given, guessed from <output>, otherwise <stdout> is used.")
+@click.option('--params', '-p', metavar='<params>',
+              help="Parameters specific for the output format."
+                   " Comma-separated list of <key>=<value> pairs.")
+def points(cube, coords, indexes=False, output=None, format=None, params=None):
+    """
+    Extract data from <cube> at points given by coordinates <coords>.
+    """
+    import pandas as pd
+
+    cube_path = cube
+    coords_path = coords
+    output_path = output
+    include_indexes = indexes
+
+    from xcube.api import open_dataset, get_cube_values_for_points
+
+    coords = pd.read_csv(coords_path, parse_dates=["time"], infer_datetime_format=True)
+    print(coords, [coords[c].values.dtype for c in coords])
+    with open_dataset(cube_path) as cube:
+        values = get_cube_values_for_points(cube, coords, include_indexes=include_indexes)
+        if output_path:
+            values.to_csv(output_path)
+        else:
+            print(values)
 
 
 # noinspection PyShadowingBuiltins
@@ -48,10 +84,10 @@ def chunk(input, output, format=None, params=None, chunks=None):
     if params:
         write_kwargs = _parse_kwargs(params, metavar="<params>")
 
-    from .api import guess_dataset_format
+    from xcube.dsio import guess_dataset_format
     format_name = format if format else guess_dataset_format(output)
 
-    from .api import open_dataset, chunk_dataset, write_dataset
+    from xcube.api import open_dataset, chunk_dataset, write_dataset
 
     with open_dataset(input_path=input) as ds:
         if chunk_sizes:
@@ -74,7 +110,7 @@ def dump(dataset, variable, encoding):
     """
     Dump contents of dataset.
     """
-    from .api import open_dataset, dump_dataset
+    from xcube.api import open_dataset, dump_dataset
     with open_dataset(dataset) as ds:
         text = dump_dataset(ds, variable_names=variable, show_var_encoding=encoding)
         print(text)
@@ -89,6 +125,7 @@ def cli():
     """
 
 
+cli.add_command(points)
 cli.add_command(chunk)
 cli.add_command(dump)
 

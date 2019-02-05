@@ -13,6 +13,7 @@ def new_test_dataset(time, height=180, **indexers):
            Value may be a scalar or a vector of same length as *time*.
     :return: test dataset
     """
+    # TODO (forman): get rid of this code here, utilise xcube.api.new_cube() instead
     time = [time] if isinstance(time, str) else time
     width = height * 2
     num_times = len(time)
@@ -32,20 +33,6 @@ def new_test_dataset(time, height=180, **indexers):
                       coords=dict(time=(['time'], pd.to_datetime(time)),
                                   lat=(['lat'], np.linspace(-90 + res, +90 - res, height)),
                                   lon=(['lon'], np.linspace(-180 + res, +180 - res, width))))
-
-
-def new_test_cube(size=100, periods=5):
-    dims = ("time", "lat", "lon")
-    w = 2 * size
-    h = size
-    time = pd.date_range('2010-01-01', periods=periods)
-    lon = np.linspace(0, 4, w)
-    lat = np.linspace(50, 52, h)
-    precipitation_var = xr.DataArray(np.random.rand(periods, h, w), coords=(time, lat, lon), dims=dims)
-    temperature_var = xr.DataArray(np.random.rand(periods, h, w), coords=(time, lat, lon), dims=dims)
-    ds = xr.Dataset({"precipitation": precipitation_var, "temperature": temperature_var})
-    ds.attrs.update(dict(time_coverage_start=str(time[0]), time_coverage_end=str(time[-1])))
-    return ds
 
 
 def create_highroc_dataset(no_spectra=False):

@@ -15,7 +15,7 @@ class DefaultInputProcessorTest(unittest.TestCase):
 
     def test_props(self):
         self.assertEqual('default', self.processor.name)
-        self.assertEqual('Single-scene NetCDF inputs in xcube standard format', self.processor.description)
+        self.assertEqual('Single-scene NetCDF/CF inputs in xcube standard format', self.processor.description)
         self.assertEqual('netcdf4', self.processor.input_reader)
 
         self.processor.configure(input_reader="zarr")

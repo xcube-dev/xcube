@@ -1,12 +1,5 @@
 import unittest
-from typing import Set
 
-import numpy as np
-import pandas as pd
-import xarray as xr
-
-from test.sampledata import new_test_dataset
-from xcube.dsio import DatasetIO, MemDatasetIO
 from xcube.objreg import ObjRegistry, get_obj_registry, ObjRegistration
 
 

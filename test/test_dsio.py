@@ -6,7 +6,8 @@ import pandas as pd
 import xarray as xr
 
 from test.sampledata import new_test_dataset
-from xcube.dsio import DatasetIO, MemDatasetIO, Netcdf4DatasetIO, ZarrDatasetIO, find_dataset_io, query_dataset_io
+from xcube.dsio import DatasetIO, MemDatasetIO, Netcdf4DatasetIO, ZarrDatasetIO, find_dataset_io, query_dataset_io, \
+    CsvDatasetIO
 
 
 # noinspection PyAbstractClass
@@ -186,6 +187,28 @@ class ZarrDatasetIOTest(unittest.TestCase):
             ds_io.read('test.zarr')
 
 
+class CsvDatasetIOTest(unittest.TestCase):
+
+    def test_props(self):
+        ds_io = CsvDatasetIO()
+        self.assertEqual('csv', ds_io.name)
+        self.assertEqual('csv', ds_io.ext)
+        self.assertEqual('CSV file format', ds_io.description)
+        self.assertEqual({'r', 'w'}, ds_io.modes)
+
+    def test_fitness(self):
+        ds_io = CsvDatasetIO()
+        self.assertEqual(0.875, ds_io.fitness("test.csv", path_type=None))
+        self.assertEqual(1.0, ds_io.fitness("test.csv", path_type="file"))
+        self.assertEqual(0.0, ds_io.fitness("test.csv", path_type="dir"))
+        self.assertEqual(0.875, ds_io.fitness("http://dsio/test.csv", path_type="url"))
+
+    def test_read(self):
+        ds_io = CsvDatasetIO()
+        with self.assertRaises(FileNotFoundError):
+            ds_io.read('test.csv')
+
+
 class FindDatasetIOTest(unittest.TestCase):
 
     def test_find_by_name(self):
@@ -213,7 +236,7 @@ class FindDatasetIOTest(unittest.TestCase):
 class QueryDatasetIOsTest(unittest.TestCase):
     def test_query_dataset_io(self):
         ds_ios = query_dataset_io()
-        self.assertEqual(3, len(ds_ios))
+        self.assertEqual(4, len(ds_ios))
 
     def test_query_dataset_io_with_fn(self):
         ds_ios = query_dataset_io(lambda ds_io: ds_io.name == 'mem')
