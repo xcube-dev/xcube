@@ -3,25 +3,27 @@ channels:
   - conda-forge
   - defaults
 dependencies:
-  - python=3.6.5
+  - python=3.7.1
   #
   # runtime dependencies
   #
-  - boto3 =1.7.51
-  - botocore =1.10.51
-  - click =6.7
-  - dask=0.17.2
-  - gdal=2.2.4
-  - matplotlib=2.2.2
-  - numpy=1.14.3
-  - pandas=0.23.1
-  - pyyaml=3.12
-  - s3fs=0.1.5
-  - xarray=0.10.7
-  - zarr=2.2.0
+  - boto3 =1.9.86
+  - botocore =1.12.86
+  - click =7.0
+  - dask =1.1.1
+  - gdal =2.3.3
+  - matplotlib =3.0.2
+  - netcdf4 =1.4.2
+  - numpy =1.15.4
+  - pandas =0.24.1
+  - pyyaml =3.13
+  - s3fs =0.2.0
+  - scipy =1.1.0
+  - xarray =0.11.3
+  - zarr =2.2.0
   #
   # development dependencies
   #
-  - pytest =3.5.1
-  - pytest-cov =2.5.1
-  - flake8 =3.5.0
+  - pytest =4.2.0
+  - pytest-cov =2.6.1
+  - flake8 =3.7.1

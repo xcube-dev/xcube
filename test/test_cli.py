@@ -38,17 +38,20 @@ class DumpTest(CliTest):
 
     def test_dump_ds(self):
         result = self.invoke_cli(["dump", TEST_NC_FILE])
-        self.assertIn("<xarray.Dataset>\n", result.output)
-        self.assertIn("Dimensions: ", result.output)
-        self.assertIn("Dimensions without coordinates: bnds\n", result.output)
-        self.assertIn("Coordinates:\n", result.output)
-        self.assertIn("Data variables:\n", result.output)
-        self.assertIn("Attributes:\n", result.output)
-        self.assertIn("  * lat ", result.output)
-        self.assertIn("(lat) float64 -89.5 -88.5 -87.5", result.output)
-        self.assertIn("    lat_bnds ", result.output)
-        self.assertIn("(time) datetime64[ns] 2010-01-01T12:00:00", result.output)
-        self.assertIn("    time_coverage_start:   2010-01-01 00:00:00\n", result.output)
+        self.assertEqual((
+            '<xarray.Dataset>\n'
+            'Dimensions:        (lat: 100, lon: 200, time: 5)\n'
+            'Coordinates:\n'
+            '  * time           (time) datetime64[ns] 2010-01-01 2010-01-02 ... 2010-01-05\n'
+            '  * lat            (lat) float64 50.0 50.02 50.04 50.06 ... 51.96 51.98 52.0\n'
+            '  * lon            (lon) float64 0.0 0.0201 0.0402 0.0603 ... 3.94 3.96 3.98 4.0\n'
+            'Data variables:\n'
+            '    precipitation  (time, lat, lon) float64 ...\n'
+            '    temperature    (time, lat, lon) float64 ...\n'
+            'Attributes:\n'
+            '    time_coverage_start:  2010-01-01 00:00:00\n'
+            '    time_coverage_end:    2010-01-05 00:00:00\n'
+        ), result.output)
         self.assertEqual(0, result.exit_code)
 
 
@@ -146,3 +149,6 @@ class ParseTest(unittest.TestCase):
             _parse_kwargs("9==2")
         self.assertEqual("Invalid value: '9==2'",
                          f"{cm.exception}")
+
+
+
