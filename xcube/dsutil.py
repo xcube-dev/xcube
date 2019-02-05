@@ -33,7 +33,7 @@ from .expression import compute_array_expr
 from .maskset import MaskSet
 
 REF_DATETIME_STR = '1970-01-01 00:00:00'
-REF_DATETIME = pd.to_datetime(REF_DATETIME_STR)
+REF_DATETIME = pd.to_datetime(REF_DATETIME_STR, utc=True)
 DATETIME_UNITS = f'days since {REF_DATETIME_STR}'
 DATETIME_CALENDAR = 'gregorian'
 SECONDS_PER_DAY = 24 * 60 * 60
@@ -210,7 +210,7 @@ def add_time_coords(dataset: xr.Dataset, time_range: Tuple[float, float]) -> xr.
 
 
 def get_time_in_days_since_1970(time_str: str, pattern=None) -> float:
-    datetime = pd.to_datetime(time_str, format=pattern, infer_datetime_format=True)
+    datetime = pd.to_datetime(time_str, format=pattern, infer_datetime_format=True, utc=True)
     timedelta = datetime - REF_DATETIME
     return timedelta.days + timedelta.seconds / SECONDS_PER_DAY + timedelta.microseconds / MICROSECONDS_PER_DAY
 
