@@ -2,7 +2,8 @@ from typing import Any, Dict
 
 import click
 
-from .version import version
+from xcube.cli.grid import grid
+from xcube.version import version
 
 
 def _parse_kwargs(value: str, metavar: str = None) -> Dict[str, Any]:
@@ -128,6 +129,7 @@ def cli():
 cli.add_command(points)
 cli.add_command(chunk)
 cli.add_command(dump)
+cli.add_command(grid)
 
 
 def main(args=None):

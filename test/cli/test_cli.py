@@ -9,7 +9,7 @@ import click.testing
 import xarray as xr
 
 from xcube.api.new import new_cube
-from xcube.cli import cli, _parse_kwargs
+from xcube.cli.cli import cli, _parse_kwargs
 
 TEST_NC_FILE = "test.nc"
 TEST_ZARR_DIR = "test.zarr"

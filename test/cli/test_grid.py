@@ -5,8 +5,8 @@ from typing import List
 import click
 import click.testing
 
-from xcube.grid.cli import cli
-from xcube.grid.cli import factor_out_two, get_adjusted_box, get_levels, meters_to_degrees, find_close_resolutions
+from xcube.cli.grid import grid as cli
+from xcube.cli.grid import factor_out_two, get_adjusted_box, get_levels, meters_to_degrees, find_close_resolutions
 
 
 class GridToolsTest(unittest.TestCase):

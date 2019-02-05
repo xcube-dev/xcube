@@ -26,7 +26,6 @@ from typing import Tuple, List, Optional, Union
 import click
 
 from xcube.constants import EARTH_EQUATORIAL_PERIMETER
-from xcube.version import version
 
 _DEFAULT_MIN_LEVEL = 0
 _DEFAULT_MAX_TILE = 2500
@@ -104,6 +103,7 @@ def find_close_resolutions(target_res: float,
                         res_m = _round(degrees_to_meters(res_d), 100)
                         data.append((delta_p, res.numerator, res.denominator, res_d, res_m, height, height_0, level))
     data = sorted(data, key=sort_key, reverse=reverse_sort)
+    # noinspection PyTypeChecker
     return [header] + data
 
 
@@ -123,6 +123,7 @@ def get_levels(height: int,
         data.append((i, height_i, res_i, res_i_d, res_i_m))
         f *= 2
     header = ("L", "H", "R", "R (deg)", "R (m)")
+    # noinspection PyTypeChecker
     return [header] + data
 
 
@@ -268,7 +269,7 @@ def list_levels(res: str, height: int, coverage: str, level_min: Optional[int], 
         click.echo(sep.join(map(str, row)))
 
 
-@click.command(name="abox", context_settings={"ignore_unknown_options":True})
+@click.command(name="abox", context_settings={"ignore_unknown_options": True})
 @click.argument('geom', metavar="GEOM")
 @click.option('--res', '-r', metavar="RES",
               help='The parent grid\'s resolution in degrees. Can also be a rational number of form A/B.')
@@ -374,10 +375,9 @@ def _fetch_coverage_from_option(coverage_str: str) -> fractions.Fraction:
 
 
 @click.group()
-@click.version_option(version)
-def cli():
+def grid():
     """
-    The Xcube grid tool is used to find suitable spatial data cube resolutions and to
+    Find suitable spatial data cube resolutions and to
     adjust bounding boxes to that resolutions.
 
     We find resolutions with respect to a possibly regional fixed Earth grid and adjust regional spatial
@@ -406,6 +406,6 @@ def cli():
    """
 
 
-cli.add_command(list_resolutions)
-cli.add_command(list_levels)
-cli.add_command(adjust_box)
+grid.add_command(list_resolutions)
+grid.add_command(list_levels)
+grid.add_command(adjust_box)
