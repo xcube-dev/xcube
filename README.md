@@ -1,3 +1,6 @@
+[![Build Status](https://travis-ci.com/dcs4cop/xcube.svg?branch=master)](https://travis-ci.com/dcs4cop/xcube)
+
+
 # xcube
 
 Data cubes with xarray
