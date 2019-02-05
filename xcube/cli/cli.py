@@ -126,7 +126,7 @@ def cli():
     """
 
 
-cli.add_command(points)
+cli.add_command(point)
 cli.add_command(chunk)
 cli.add_command(dump)
 cli.add_command(grid)
