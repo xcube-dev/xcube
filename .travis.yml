@@ -24,9 +24,12 @@ install:
   - conda info -a
 
   - conda env create --file environment.yml
-  - conda activate xcube-dev
+  - conda init bash
+  - source activate xcube-dev
   - conda list
   - python setup.py install 
+  
+  - pytest
   - py.test -v --cov=xcube
 
 after_success:
