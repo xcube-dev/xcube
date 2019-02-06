@@ -4,8 +4,8 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 
-from xcube.util.dsutil import get_time_in_days_since_1970
 from xcube.api.gen.default.iproc import DefaultInputProcessor
+from xcube.util.timecoord import get_time_in_days_since_1970
 
 
 class DefaultInputProcessorTest(unittest.TestCase):

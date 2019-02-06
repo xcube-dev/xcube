@@ -4,7 +4,7 @@ import numpy as np
 import xarray as xr
 
 from xcube.api.new import new_cube
-from xcube.api.point import get_cube_point_indexes, get_cube_values_for_points, get_dataset_indexes
+from xcube.api.extract import get_cube_point_indexes, get_cube_values_for_points, get_dataset_indexes
 
 
 # noinspection PyMethodMayBeStatic

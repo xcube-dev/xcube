@@ -29,7 +29,7 @@ from typing import List, Optional
 import xarray as xr
 import yaml
 
-from xcube.api.restime import resample_in_time, RESAMPLING_METHODS
+from xcube.api.resample import resample_in_time, RESAMPLING_METHODS
 from xcube.version import version
 
 # TODO (forman): use DatasetIO registry!

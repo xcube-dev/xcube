@@ -18,5 +18,8 @@ class XCubeAPITest(unittest.TestCase):
     def test_new(self):
         self.assertIsInstance(xr.Dataset.xcube.new(), xr.Dataset)
 
+    def test_select_vars(self):
+        self.assertIsInstance(xr.Dataset().xcube.select_vars(), xr.Dataset)
+
     def test_dump(self):
         self.assertIsInstance(xr.Dataset().xcube.dump(), str)

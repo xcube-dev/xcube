@@ -25,8 +25,8 @@ from typing import Tuple, Optional
 import numpy as np
 import xarray as xr
 
-from xcube.util.dsutil import get_time_in_days_since_1970
 from xcube.util.constants import CRS_WKT_EPSG_4326
+from xcube.util.timecoord import get_time_in_days_since_1970
 from ..iproc import InputProcessor, ReprojectionInfo, register_input_processor
 
 

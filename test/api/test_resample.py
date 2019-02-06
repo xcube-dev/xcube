@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 
 from test.sampledata import new_test_dataset
-from xcube.api.restime import resample_in_time
+from xcube.api.resample import resample_in_time
 
 
 class GenerateL3CubeTest(unittest.TestCase):

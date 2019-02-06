@@ -23,7 +23,7 @@ from typing import Dict, Any, Sequence
 
 import xarray as xr
 
-from xcube.util.dsutil import select_variables
+from xcube.api.select import select_vars
 
 RESAMPLING_METHODS = ['all', 'any', 'argmin', 'argmax', 'count', 'first', 'last', 'max', 'mean', 'median', 'min',
                       'backfill', 'bfill', 'ffill', 'interpolate', 'nearest', 'pad']
@@ -45,7 +45,7 @@ def resample_in_time(cube: xr.Dataset,
     :return: A new data cube resampled in time.
     """
     if var_names:
-        cube = select_variables(cube, var_names)
+        cube = select_vars(cube, var_names)
 
     resampler = cube.resample(skipna=True,
                               closed='left',

@@ -28,13 +28,16 @@ import time
 import traceback
 from typing import Sequence, Callable, Tuple, Optional, Dict, Any
 
+from xcube.api.compute import compute_dataset
+from xcube.api.select import select_vars
+from xcube.api.update import update_var_props, update_global_attrs
+from xcube.util.config import NameAnyDict, NameDictPairList, to_resolved_name_dict_pairs
+from xcube.util.dsio import rimraf, DatasetIO, find_dataset_io
+from xcube.util.reproject import reproject_to_wgs84
+from xcube.util.timecoord import add_time_coords
 from .defaults import DEFAULT_OUTPUT_DIR, DEFAULT_OUTPUT_NAME, DEFAULT_OUTPUT_SIZE, \
     DEFAULT_OUTPUT_RESAMPLING, DEFAULT_OUTPUT_WRITER
 from .iproc import InputProcessor, get_input_processor
-from xcube.util.config import NameAnyDict, NameDictPairList, to_resolved_name_dict_pairs
-from xcube.util.dsio import rimraf, DatasetIO, find_dataset_io
-from xcube.util.dsutil import compute_dataset, select_variables, update_variable_props, add_time_coords, update_global_attributes
-from xcube.util.reproject import reproject_to_wgs84
 
 __import__('xcube.util.plugin')
 
@@ -216,7 +219,7 @@ def _process_l2_input(input_processor: InputProcessor,
 
     # noinspection PyShadowingNames
     def step3(dataset):
-        return select_variables(dataset, selected_variables)
+        return select_vars(dataset, selected_variables)
 
     steps.append((step3, 'selecting variables'))
 
@@ -245,7 +248,7 @@ def _process_l2_input(input_processor: InputProcessor,
 
     # noinspection PyShadowingNames
     def step6(dataset):
-        return update_variable_props(dataset, output_variables)
+        return update_var_props(dataset, output_variables)
 
     steps.append((step6, 'updating variable properties'))
 
@@ -257,7 +260,7 @@ def _process_l2_input(input_processor: InputProcessor,
 
     # noinspection PyShadowingNames
     def step8(dataset):
-        return update_global_attributes(dataset, output_metadata=output_metadata)
+        return update_global_attrs(dataset, output_metadata=output_metadata)
 
     steps.append((step8, 'updating dataset attributes'))
 

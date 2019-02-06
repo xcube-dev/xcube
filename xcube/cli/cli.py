@@ -21,7 +21,7 @@ def _parse_kwargs(value: str, metavar: str = None) -> Dict[str, Any]:
 
 
 # noinspection PyShadowingBuiltins
-@click.command(name="point")
+@click.command(name="extract")
 @click.argument('cube', metavar='<cube>')
 @click.argument('coords', metavar='<coords>')
 @click.option('--indexes', '-i', is_flag=True,
@@ -33,7 +33,7 @@ def _parse_kwargs(value: str, metavar: str = None) -> Dict[str, Any]:
 @click.option('--params', '-p', metavar='<params>',
               help="Parameters specific for the output format."
                    " Comma-separated list of <key>=<value> pairs.")
-def point(cube, coords, indexes=False, output=None, format=None, params=None):
+def extract(cube, coords, indexes=False, output=None, format=None, params=None):
     """
     Extract data from <cube> at points given by coordinates <coords>.
     """
@@ -126,9 +126,9 @@ def cli():
     """
 
 
-cli.add_command(point)
 cli.add_command(chunk)
 cli.add_command(dump)
+cli.add_command(extract)
 cli.add_command(grid)
 
 
