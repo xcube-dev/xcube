@@ -54,15 +54,14 @@ setup(
     packages=packages,
     entry_points={
         'console_scripts': [
-            'xcube = xcube.cli:main',
-            'xcube-genl2c = xcube.genl2c.cli:main',
-            'xcube-genl3 = xcube.genl3.cli:main',
-            'xcube-grid = xcube.grid.main:main',
+            'xcube = xcube.cli.cli:main',
+            'xcube-gen = xcube.cli.gen:main',
+            'xcube-restime = xcube.cli.restime:main',
         ],
         'xcube_plugins': [
-            'xcube_genl2c_default = xcube.genl2c.default:init_plugin',
-            'xcube_genl2c_snap = xcube.genl2c.snap:init_plugin',
-            'xcube_genl2c_rbins = xcube.genl2c.rbins:init_plugin',
+            'xcube_genl2c_default = xcube.api.gen.default:init_plugin',
+            'xcube_genl2c_snap = xcube.api.gen.snap:init_plugin',
+            'xcube_genl2c_rbins = xcube.api.gen.rbins:init_plugin',
         ],
     },
     install_requires=requirements,

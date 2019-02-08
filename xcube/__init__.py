@@ -1,5 +1,5 @@
 # The MIT License (MIT)
-# Copyright (c) 2018 by the xcube development team and contributors
+# Copyright (c) 2019 by the xcube development team and contributors
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of
 # this software and associated documentation files (the "Software"), to deal in
@@ -20,5 +20,5 @@
 # SOFTWARE.
 
 from .version import version as __version__
-from .dsio import open_from_obs, open_from_fs
+from xcube.util.dsio import open_from_obs, open_from_fs
 

@@ -8,9 +8,10 @@ import xarray as xr
 from .chunk import chunk_dataset
 from .dump import dump_dataset
 from .new import new_cube
-from .point import get_cube_values_for_points, get_cube_point_indexes, get_cube_values_for_indexes, \
+from .extract import get_cube_values_for_points, get_cube_point_indexes, get_cube_values_for_indexes, \
     get_dataset_indexes, INDEX_NAME_PATTERN
 from .readwrite import read_cube, open_cube, write_cube
+from .select import select_vars
 from .verify import verify_cube
 
 
@@ -245,3 +246,13 @@ class XCubeAPI:
         :return: List of issues or empty list.
         """
         return verify_cube(self._dataset)
+
+    def select_vars(self, var_names: Sequence[str] = None):
+        """
+        Select data variable from given *dataset* and create new dataset.
+
+        :param dataset: The dataset from which to select variables.
+        :param var_names: The names of data variables to select.
+        :return: A new dataset. It is empty, if *var_names* is empty. It is *dataset*, if *var_names* is None.
+        """
+        return select_vars(self._dataset, var_names)

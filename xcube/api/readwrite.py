@@ -3,7 +3,7 @@ from contextlib import contextmanager
 import xarray as xr
 
 from .verify import assert_cube
-from ..dsio import find_dataset_io, guess_dataset_format
+from xcube.util.dsio import find_dataset_io, guess_dataset_format
 
 
 @contextmanager
