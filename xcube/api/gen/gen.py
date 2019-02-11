@@ -36,7 +36,7 @@ from xcube.util.dsio import rimraf, DatasetIO, find_dataset_io
 from xcube.util.reproject import reproject_to_wgs84
 from xcube.util.timecoord import add_time_coords
 from .defaults import DEFAULT_OUTPUT_DIR, DEFAULT_OUTPUT_NAME, DEFAULT_OUTPUT_SIZE, \
-    DEFAULT_OUTPUT_RESAMPLING, DEFAULT_OUTPUT_WRITER
+    DEFAULT_OUTPUT_RESAMPLING, DEFAULT_OUTPUT_FORMAT
 from .iproc import InputProcessor, get_input_processor
 
 __import__('xcube.util.plugin')
@@ -54,7 +54,7 @@ def gen_cube(input_files: Sequence[str] = None,
              output_resampling: str = DEFAULT_OUTPUT_RESAMPLING,
              output_dir: str = DEFAULT_OUTPUT_DIR,
              output_name: str = DEFAULT_OUTPUT_NAME,
-             output_writer: str = DEFAULT_OUTPUT_WRITER,
+             output_writer: str = DEFAULT_OUTPUT_FORMAT,
              output_writer_params: Dict[str, Any] = None,
              output_metadata: NameAnyDict = None,
              output_variables: NameDictPairList = None,
