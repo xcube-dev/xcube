@@ -90,12 +90,17 @@ def generate_cube(input_files: str,
     Level-2C data cubes may be created in one go or successively in append mode, input by input.
     The input may be one or more input files or a pattern that may contain wildcards '?', '*', and '**'.
     """
+    try:
+        arg_obj = locals()
+    except SystemExit as e:
+        return int(str(e))
+
     traceback_mode = traceback
     append_mode = append
     dry_run = dry_run
 
     try:
-        config = get_config_dict(locals(), open)
+        config = get_config_dict(arg_obj, open)
     except ValueError as e:
         return _handle_error(e, traceback_mode)
 
