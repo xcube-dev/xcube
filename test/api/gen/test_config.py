@@ -1,6 +1,7 @@
 import unittest
 from collections import namedtuple
 from io import StringIO
+from typing import Dict
 
 from xcube.api.gen.config import get_config_dict
 
@@ -26,17 +27,17 @@ def get_config_obj(config_file=None,
                    output_size=None,
                    output_region=None,
                    output_variables=None,
-                   output_resampling=None) -> ConfigObj:
-    return ConfigObj(config_file=config_file,
-                     input_files=input_files,
-                     input_processor=input_processor,
-                     output_dir=output_dir,
-                     output_name=output_name,
-                     output_writer=output_writer,
-                     output_size=output_size,
-                     output_region=output_region,
-                     output_variables=output_variables,
-                     output_resampling=output_resampling)
+                   output_resampling=None) -> Dict:
+    return dict(config_file=config_file,
+                input_files=input_files,
+                input_processor=input_processor,
+                output_dir=output_dir,
+                output_name=output_name,
+                output_writer=output_writer,
+                output_size=output_size,
+                output_region=output_region,
+                output_variables=output_variables,
+                output_resampling=output_resampling)
 
 
 CONFIG_1_FILE = 'config_1.json'

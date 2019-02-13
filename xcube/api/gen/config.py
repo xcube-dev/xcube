@@ -18,13 +18,14 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+from typing import Dict, Union
 
 import yaml
 
 from xcube.util.config import to_name_dict_pairs, flatten_dict
 
 
-def get_config_dict(config_obj, open_function):
+def get_config_dict(config_obj: Dict[str, Union[str, bool, int, float, list, dict]], open_function):
     """
     Get configuration dictionary.
 
@@ -33,16 +34,17 @@ def get_config_dict(config_obj, open_function):
     :return: Configuration dictionary
     :raise OSError, ValueError
     """
-    config_file = config_obj.config_file
-    input_files = config_obj.input_files
-    input_processor = config_obj.input_processor
-    output_dir = config_obj.output_dir
-    output_name = config_obj.output_name
-    output_writer = config_obj.output_writer
-    output_size = config_obj.output_size
-    output_region = config_obj.output_region
-    output_variables = config_obj.output_variables
-    output_resampling = config_obj.output_resampling
+    print(config_obj)
+    config_file = config_obj.get("config_file")
+    input_files = config_obj.get("input_files")
+    input_processor = config_obj.get("input_processor")
+    output_dir = config_obj.get("output_dir")
+    output_name = config_obj.get("output_name")
+    output_writer = config_obj.get("output_writer")
+    output_size = config_obj.get("output_size")
+    output_region = config_obj.get("output_region")
+    output_variables = config_obj.get("output_variables")
+    output_resampling = config_obj.get("output_resampling")
 
     if config_file is not None:
         try:
@@ -55,7 +57,7 @@ def get_config_dict(config_obj, open_function):
             raise ValueError(f'cannot load configuration from {config_file!r}: {e}') from e
     else:
         config = {}
-
+    # Overwrite current configuration by cli arguments
     if input_files is not None:
         config['input_files'] = input_files
 
@@ -80,7 +82,7 @@ def get_config_dict(config_obj, open_function):
         except ValueError:
             output_size = None
         if output_size is None or len(output_size) != 2:
-            raise ValueError(f'invalid output_size {config_obj.output_size!r}')
+            raise ValueError(f'invalid output_size {config_obj.get("output_size")!r}')
         config['output_size'] = output_size
 
     if output_region is not None:
@@ -89,7 +91,7 @@ def get_config_dict(config_obj, open_function):
         except ValueError:
             output_region = None
         if output_region is None or len(output_region) != 4:
-            raise ValueError(f'invalid output_region {config_obj.output_region!r}')
+            raise ValueError(f'invalid output_region {config_obj.get("output_region")!r}')
         config['output_region'] = output_region
 
     if output_variables is not None:

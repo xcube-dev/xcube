@@ -58,7 +58,7 @@ resampling_algs = NAME_TO_GDAL_RESAMPLE_ALG.keys()
               default=DEFAULT_OUTPUT_FORMAT,
               help=f'Output writer type name. Defaults to {DEFAULT_OUTPUT_FORMAT!r}. '
               f'The choices for the output format are: {output_writer_names}.'
-              ' Additional information about output formats can be accessed by calling ' 
+              ' Additional information about output formats can be accessed by calling '
               'xcube info --format')
 @click.option('--size', '-s', metavar='OUTPUT_SIZE',
               help='Output size in pixels using format "<width>,<height>".')
@@ -95,13 +95,20 @@ def generate_cube(input_files: str,
     Level-2C data cubes may be created in one go or successively in append mode, input by input.
     The input may be one or more input files or a pattern that may contain wildcards '?', '*', and '**'.
     """
-
+    input_files = input_files
+    input_processor = proc
+    config_file = config
+    output_dir = dir
+    output_name = name
+    output_writer = format
+    output_size = size
+    output_region = region
+    output_variables = variables
+    output_resampling = resampling
     traceback_mode = traceback
     append_mode = append
     dry_run = dry_run
-
     try:
-        # locals() is used for getting all parameters passed via the command line-is there a better solution?
         config = get_config_dict(locals(), open)
     except ValueError as e:
         return _handle_error(e, traceback_mode)
