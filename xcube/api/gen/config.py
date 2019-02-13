@@ -44,7 +44,6 @@ def get_config_dict(config_obj: Dict[str, Union[str, bool, int, float, list, dic
     output_region = config_obj.get("output_region")
     output_variables = config_obj.get("output_variables")
     output_resampling = config_obj.get("output_resampling")
-    info_mode = config_obj.get("info_mode")
 
     if config_file is not None:
         try:

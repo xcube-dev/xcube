@@ -1,12 +1,9 @@
 import unittest
 from typing import List
-from abc import ABCMeta
 import click
 import click.testing
 
 from xcube.cli.gen import generate_cube as cli
-# TODO AliceBalfanz: extended help section, reason for keeping code for GenL2CHelpFormatter
-# from xcube.cli.gen import main, GenL2CHelpFormatter
 
 
 class CliTest(unittest.TestCase):
@@ -50,9 +47,3 @@ class CliTest(unittest.TestCase):
     def test_info_true(self):
         result = self.invoke_cli(['--info'])
         self.assertEqual(0, result.exit_code)
-
-# class GenL2CHelpFormatterTest(unittest.TestCase):
-#     def test_custom_help(self):
-#         help_text = GenL2CHelpFormatter('xcube').format_help()
-#         self.assertIn(' netcdf4 ', help_text)
-#         self.assertIn(' zarr ', help_text)

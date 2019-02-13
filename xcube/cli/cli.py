@@ -133,6 +133,7 @@ cli.add_command(extract)
 cli.add_command(grid)
 cli.add_command(generate_cube)
 
+
 def main(args=None):
     cli.main(args=args)
 
