@@ -47,6 +47,9 @@ class CliTest(unittest.TestCase):
         result = self.invoke_cli(['input.nc'])
         self.assertEqual(1, result.exit_code)
 
+    def test_info_true(self):
+        result = self.invoke_cli(['--info'])
+        self.assertEqual(0, result.exit_code)
 
 # class GenL2CHelpFormatterTest(unittest.TestCase):
 #     def test_custom_help(self):
