@@ -113,6 +113,10 @@ def generate_cube(input_files: str,
     dry_run = dry_run
     info_mode = info
 
+    if info_mode:
+        print(_format_info())
+        return 0
+
     try:
         config = get_config_dict(locals(), open)
     except ValueError as e:
@@ -135,3 +139,34 @@ def _handle_error(e, traceback_mode):
         traceback.print_exc(file=sys.stderr)
     return 2
 
+
+def _format_info():
+    # noinspection PyUnresolvedReferences
+    input_processors = get_obj_registry().get_all(type=InputProcessor)
+    output_writers = query_dataset_io(lambda ds_io: 'w' in ds_io.modes)
+
+    help_text = '\ninput processors to be used with option --proc:\n'
+    help_text += _format_input_processors(input_processors)
+    help_text += '\n'
+    help_text += '\noutput formats to be used with option --format:\n'
+    help_text += _format_dataset_ios(output_writers)
+    help_text += '\n'
+
+    return help_text
+
+
+def _format_input_processors(input_processors):
+    help_text = ''
+    for input_processor in input_processors:
+        fill = ' ' * (34 - len(input_processor.name))
+        help_text += f'  {input_processor.name}{fill}{input_processor.description}\n'
+    return help_text
+
+
+def _format_dataset_ios(dataset_ios):
+    help_text = ''
+    for ds_io in dataset_ios:
+        fill1 = ' ' * (24 - len(ds_io.name))
+        fill2 = ' ' * (10 - len(ds_io.ext))
+        help_text += f'  {ds_io.name}{fill1}(*.{ds_io.ext}){fill2}{ds_io.description}\n'
+    return help_text
