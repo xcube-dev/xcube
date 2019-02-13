@@ -26,8 +26,8 @@ class CliTest(unittest.TestCase):
         self.assertEqual(1, result.exit_code)
 
     def test_main_with_illegal_size_option(self):
-        exit_code = self.invoke_cli(['-s', '120,abc', 'input.nc'])
-        self.assertEqual(1, exit_code.exit_code)
+        result = self.invoke_cli(['-s', '120,abc', 'input.nc'])
+        self.assertEqual(1, result.exit_code)
 
     def test_main_with_illegal_region_option(self):
         result = self.invoke_cli(['-r', '50,_2,55,21', 'input.nc'])

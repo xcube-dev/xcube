@@ -44,9 +44,12 @@ resampling_algs = NAME_TO_GDAL_RESAMPLE_ALG.keys()
 @click.argument('input_files', metavar='INPUT_FILES', nargs=-1)
 @click.option('--proc', '-p', metavar='INPUT_PROCESSOR', type=click.Choice(input_processor_names),
               help=f'Input processor type name. '
-              f'The choices as input processor are: {input_processor_names}')
-@click.option('--config', '-c', metavar='CONFIG_FILE',
-              help='Data cube configuration file in YAML format.')
+              f'The choices as input processor are: {input_processor_names}. '
+              ' Additional information about input processors can be accessed by calling '
+              'xcube info --proc')
+@click.option('--config', '-c', metavar='CONFIG_FILE', multiple=True,
+              help='Data cube configuration file in YAML format. More than one config input file is allowed.'
+                   'When passing several config files, they are merged considering the order passed via command line.')
 @click.option('--dir', '-d', metavar='OUTPUT_DIR', default=DEFAULT_OUTPUT_DIR,
               help=f'Output directory. Defaults to {DEFAULT_OUTPUT_DIR!r}')
 @click.option('--name', '-n', metavar='OUTPUT_NAME', default=DEFAULT_OUTPUT_NAME,
@@ -54,7 +57,9 @@ resampling_algs = NAME_TO_GDAL_RESAMPLE_ALG.keys()
 @click.option('--format', '-f', metavar='OUTPUT_FORMAT', type=click.Choice(output_writer_names),
               default=DEFAULT_OUTPUT_FORMAT,
               help=f'Output writer type name. Defaults to {DEFAULT_OUTPUT_FORMAT!r}. '
-              f'The choices for the output format are: {output_writer_names}')
+              f'The choices for the output format are: {output_writer_names}.'
+              ' Additional information about output formats can be accessed by calling ' 
+              'xcube info --format')
 @click.option('--size', '-s', metavar='OUTPUT_SIZE',
               help='Output size in pixels using format "<width>,<height>".')
 @click.option('--region', '-r', metavar='OUTPUT_REGION',
@@ -90,17 +95,14 @@ def generate_cube(input_files: str,
     Level-2C data cubes may be created in one go or successively in append mode, input by input.
     The input may be one or more input files or a pattern that may contain wildcards '?', '*', and '**'.
     """
-    try:
-        arg_obj = locals()
-    except SystemExit as e:
-        return int(str(e))
 
     traceback_mode = traceback
     append_mode = append
     dry_run = dry_run
 
     try:
-        config = get_config_dict(arg_obj, open)
+        # locals() is used for getting all parameters passed via the command line-is there a better solution?
+        config = get_config_dict(locals(), open)
     except ValueError as e:
         return _handle_error(e, traceback_mode)
 
@@ -121,40 +123,53 @@ def _handle_error(e, traceback_mode):
         traceback.print_exc(file=sys.stderr)
     return 2
 
-#  TODO: Alicebalfanz add extended help section
-# Keeping code below for integrating extended help function in the future. This link might be helpful as well:
-# https://stackoverflow.com/questions/47437472/in-python-click-how-do-i-see-help-for-subcommands-whose-parents-have-required
 
-# class GenL2CHelpFormatter(argparse.HelpFormatter):
-#
-#     def format_help(self):
-#         # noinspection PyUnresolvedReferences
-#         help_text = super().format_help()
-#
-#         input_processors = get_obj_registry().get_all(type=InputProcessor)
-#         output_writers = query_dataset_io(lambda ds_io: 'w' in ds_io.modes)
-#
-#         help_text += '\ninput processors to be used with option --proc:\n'
-#         help_text += self._format_input_processors(input_processors)
-#         help_text += '\noutput formats to be used with option --writer:\n'
-#         help_text += self._format_dataset_ios(output_writers)
-#         help_text += '\n'
-#
-#         return help_text
-#
-#     @classmethod
-#     def _format_input_processors(cls, input_processors):
-#         help_text = ''
-#         for input_processor in input_processors:
-#             fill = ' ' * (34 - len(input_processor.name))
-#             help_text += f'  {input_processor.name}{fill}{input_processor.description}\n'
-#         return help_text
-#
-#     @classmethod
-#     def _format_dataset_ios(cls, dataset_ios):
-#         help_text = ''
-#         for ds_io in dataset_ios:
-#             fill1 = ' ' * (24 - len(ds_io.name))
-#             fill2 = ' ' * (10 - len(ds_io.ext))
-#             help_text += f'  {ds_io.name}{fill1}(*.{ds_io.ext}){fill2}{ds_io.description}\n'
-#         return help_text
+@click.command()
+@click.option('--format', '-f', metavar='OUTPUT_FORMAT', default=False, is_flag=True,
+              help='Additional help information about formats. '
+              f'The choices for the output format are: {output_writer_names}')
+@click.option('--proc', '-p', metavar='INPUT_PROCESSOR', default=False, is_flag=True,
+              help="Additional help information about input processors. "
+              f'The choices as input processor are: {input_processor_names}')
+def info(format: str, proc: str):
+    """
+    Displays additional information about format options or about input processors.
+    """
+    if format is True:
+        click.echo(format_help('format'))
+    if proc is True:
+        click.echo(format_help('proc'))
+
+
+def format_help(info_input):
+    # noinspection PyUnresolvedReferences
+    input_processors = get_obj_registry().get_all(type=InputProcessor)
+    output_writers = query_dataset_io(lambda ds_io: 'w' in ds_io.modes)
+
+    if info_input is 'proc':
+        help_text = '\ninput processors to be used with option --proc:\n'
+        help_text += _format_input_processors(input_processors)
+        help_text += '\n'
+    if info_input is 'format':
+        help_text = '\noutput formats to be used with option --writer:\n'
+        help_text += _format_dataset_ios(output_writers)
+        help_text += '\n'
+
+    return help_text
+
+
+def _format_input_processors(input_processors):
+    help_text = ''
+    for input_processor in input_processors:
+        fill = ' ' * (34 - len(input_processor.name))
+        help_text += f'  {input_processor.name}{fill}{input_processor.description}\n'
+    return help_text
+
+
+def _format_dataset_ios(dataset_ios):
+    help_text = ''
+    for ds_io in dataset_ios:
+        fill1 = ' ' * (24 - len(ds_io.name))
+        fill2 = ' ' * (10 - len(ds_io.ext))
+        help_text += f'  {ds_io.name}{fill1}(*.{ds_io.ext}){fill2}{ds_io.description}\n'
+    return help_text
