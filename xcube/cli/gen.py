@@ -131,7 +131,7 @@ def _handle_error(e, traceback_mode):
 @click.option('--proc', '-p', metavar='INPUT_PROCESSOR', default=False, is_flag=True,
               help="Additional help information about input processors. "
               f'The choices as input processor are: {input_processor_names}')
-def info(format: str, proc: str):
+def info(format: bool, proc: bool):
     """
     Displays additional information about format options or about input processors.
     """
