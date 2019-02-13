@@ -34,7 +34,6 @@ def get_config_dict(config_obj: Dict[str, Union[str, bool, int, float, list, dic
     :return: Configuration dictionary
     :raise OSError, ValueError
     """
-    print(config_obj)
     config_file = config_obj.get("config_file")
     input_files = config_obj.get("input_files")
     input_processor = config_obj.get("input_processor")
