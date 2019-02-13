@@ -2,7 +2,7 @@ from typing import Any, Dict
 
 import click
 
-from xcube.cli.gen import generate_cube, info
+from xcube.cli.gen import generate_cube
 from xcube.cli.grid import grid
 from xcube.version import version
 
@@ -132,8 +132,6 @@ cli.add_command(dump)
 cli.add_command(extract)
 cli.add_command(grid)
 cli.add_command(generate_cube)
-cli.add_command(info)
-
 
 def main(args=None):
     cli.main(args=args)

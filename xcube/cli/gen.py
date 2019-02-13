@@ -46,7 +46,7 @@ resampling_algs = NAME_TO_GDAL_RESAMPLE_ALG.keys()
               help=f'Input processor type name. '
               f'The choices as input processor are: {input_processor_names}. '
               ' Additional information about input processors can be accessed by calling '
-              'xcube info --proc')
+              'xcube generate_cube --info')
 @click.option('--config', '-c', metavar='CONFIG_FILE', multiple=True,
               help='Data cube configuration file in YAML format. More than one config input file is allowed.'
                    'When passing several config files, they are merged considering the order passed via command line.')
@@ -59,7 +59,7 @@ resampling_algs = NAME_TO_GDAL_RESAMPLE_ALG.keys()
               help=f'Output writer type name. Defaults to {DEFAULT_OUTPUT_FORMAT!r}. '
               f'The choices for the output format are: {output_writer_names}.'
               ' Additional information about output formats can be accessed by calling '
-              'xcube info --format')
+              'xcube generate_cube --info')
 @click.option('--size', '-s', metavar='OUTPUT_SIZE',
               help='Output size in pixels using format "<width>,<height>".')
 @click.option('--region', '-r', metavar='OUTPUT_REGION',
@@ -72,12 +72,14 @@ resampling_algs = NAME_TO_GDAL_RESAMPLE_ALG.keys()
               help='Fallback spatial resampling algorithm to be used for all variables. '
               f'Defaults to {DEFAULT_OUTPUT_RESAMPLING!r}. '
               f'The choices for the resampling algorithm are: {resampling_algs}')
-@click.option('--traceback', metavar='TRACEBACK_MODE', default=False, is_flag=True,
+@click.option('--traceback', default=False, is_flag=True,
               help='On error, print Python traceback.')
-@click.option('--append', '-a', metavar='APPEND_MODE', default=False, is_flag=True,
+@click.option('--append', '-a', default=False, is_flag=True,
               help='Append successive outputs.')
-@click.option('--dry_run', metavar='DRY_RUN', default=False, is_flag=True,
+@click.option('--dry_run', default=False, is_flag=True,
               help='Just read and process inputs, but don\'t produce any outputs.')
+@click.option('--info', '-i', default=False, is_flag=True,
+              help='Displays additional information about format options or about input processors.')
 def generate_cube(input_files: str,
                   proc: str,
                   config: str,
@@ -90,7 +92,8 @@ def generate_cube(input_files: str,
                   resampling: str,
                   traceback: bool,
                   append: bool,
-                  dry_run: bool):
+                  dry_run: bool,
+                  info: bool):
     """
     Level-2C data cubes may be created in one go or successively in append mode, input by input.
     The input may be one or more input files or a pattern that may contain wildcards '?', '*', and '**'.
@@ -108,6 +111,8 @@ def generate_cube(input_files: str,
     traceback_mode = traceback
     append_mode = append
     dry_run = dry_run
+    info_mode = info
+
     try:
         config = get_config_dict(locals(), open)
     except ValueError as e:
@@ -130,53 +135,3 @@ def _handle_error(e, traceback_mode):
         traceback.print_exc(file=sys.stderr)
     return 2
 
-
-@click.command()
-@click.option('--format', '-f', metavar='OUTPUT_FORMAT', default=False, is_flag=True,
-              help='Additional help information about formats. '
-              f'The choices for the output format are: {output_writer_names}')
-@click.option('--proc', '-p', metavar='INPUT_PROCESSOR', default=False, is_flag=True,
-              help="Additional help information about input processors. "
-              f'The choices as input processor are: {input_processor_names}')
-def info(format: bool, proc: bool):
-    """
-    Displays additional information about format options or about input processors.
-    """
-    if format is True:
-        click.echo(format_help('format'))
-    if proc is True:
-        click.echo(format_help('proc'))
-
-
-def format_help(info_input):
-    # noinspection PyUnresolvedReferences
-    input_processors = get_obj_registry().get_all(type=InputProcessor)
-    output_writers = query_dataset_io(lambda ds_io: 'w' in ds_io.modes)
-
-    if info_input is 'proc':
-        help_text = '\ninput processors to be used with option --proc:\n'
-        help_text += _format_input_processors(input_processors)
-        help_text += '\n'
-    if info_input is 'format':
-        help_text = '\noutput formats to be used with option --writer:\n'
-        help_text += _format_dataset_ios(output_writers)
-        help_text += '\n'
-
-    return help_text
-
-
-def _format_input_processors(input_processors):
-    help_text = ''
-    for input_processor in input_processors:
-        fill = ' ' * (34 - len(input_processor.name))
-        help_text += f'  {input_processor.name}{fill}{input_processor.description}\n'
-    return help_text
-
-
-def _format_dataset_ios(dataset_ios):
-    help_text = ''
-    for ds_io in dataset_ios:
-        fill1 = ' ' * (24 - len(ds_io.name))
-        fill2 = ' ' * (10 - len(ds_io.ext))
-        help_text += f'  {ds_io.name}{fill1}(*.{ds_io.ext}){fill2}{ds_io.description}\n'
-    return help_text

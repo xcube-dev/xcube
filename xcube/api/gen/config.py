@@ -23,7 +23,41 @@ from typing import Dict, Union
 import yaml
 
 from xcube.util.config import to_name_dict_pairs, flatten_dict
+from xcube.util.dsio import query_dataset_io
+from xcube.api.gen.iproc import InputProcessor
+from xcube.util.objreg import get_obj_registry
 
+
+def format_help():
+    # noinspection PyUnresolvedReferences
+    input_processors = get_obj_registry().get_all(type=InputProcessor)
+    output_writers = query_dataset_io(lambda ds_io: 'w' in ds_io.modes)
+
+    help_text = '\ninput processors to be used with option --proc:\n'
+    help_text += _format_input_processors(input_processors)
+    help_text += '\n'
+    help_text += '\noutput formats to be used with option --format:\n'
+    help_text += _format_dataset_ios(output_writers)
+    help_text += '\n'
+
+    return help_text
+
+
+def _format_input_processors(input_processors):
+    help_text = ''
+    for input_processor in input_processors:
+        fill = ' ' * (34 - len(input_processor.name))
+        help_text += f'  {input_processor.name}{fill}{input_processor.description}\n'
+    return help_text
+
+
+def _format_dataset_ios(dataset_ios):
+    help_text = ''
+    for ds_io in dataset_ios:
+        fill1 = ' ' * (24 - len(ds_io.name))
+        fill2 = ' ' * (10 - len(ds_io.ext))
+        help_text += f'  {ds_io.name}{fill1}(*.{ds_io.ext}){fill2}{ds_io.description}\n'
+    return help_text
 
 def get_config_dict(config_obj: Dict[str, Union[str, bool, int, float, list, dict]], open_function):
     """
@@ -44,6 +78,13 @@ def get_config_dict(config_obj: Dict[str, Union[str, bool, int, float, list, dic
     output_region = config_obj.get("output_region")
     output_variables = config_obj.get("output_variables")
     output_resampling = config_obj.get("output_resampling")
+    info_mode = config_obj.get("info_mode")
+
+    print(info_mode)
+
+    if info_mode is True:
+        print(format_help())
+        raise SystemExit
 
     if config_file is not None:
         try:
