@@ -22,15 +22,14 @@ from typing import Dict, Union
 
 import yaml
 
-from xcube.util.config import to_name_dict_pairs, flatten_dict
+from xcube.util.config import to_name_dict_pairs, flatten_dict, merge_config
 
 
-def get_config_dict(config_obj: Dict[str, Union[str, bool, int, float, list, dict]], open_function):
+def get_config_dict(config_obj: Dict[str, Union[str, bool, int, float, list, dict]]):
     """
     Get configuration dictionary.
 
     :param config_obj: A configuration object.
-    :param open_function: Function used to open YAML configuration file.
     :return: Configuration dictionary
     :raise OSError, ValueError
     """
@@ -46,14 +45,13 @@ def get_config_dict(config_obj: Dict[str, Union[str, bool, int, float, list, dic
     output_resampling = config_obj.get("output_resampling")
 
     if config_file is not None:
-        try:
-            with open_function(config_file) as stream:
+        config_paths = config_file
+        config_dicts = []
+        for config_path in config_paths:
+            with open(config_path) as fp:
+                config_dicts.append(yaml.load(fp))
+        config = merge_config(*config_dicts)
 
-                config = yaml.load(stream)
-        except yaml.YAMLError as e:
-            raise ValueError(f'YAML in {config_file!r} is invalid: {e}') from e
-        except OSError as e:
-            raise ValueError(f'cannot load configuration from {config_file!r}: {e}') from e
     else:
         config = {}
     # Overwrite current configuration by cli arguments
@@ -63,16 +61,16 @@ def get_config_dict(config_obj: Dict[str, Union[str, bool, int, float, list, dic
     if input_processor is not None:
         config['input_processor'] = input_processor
 
-    if output_dir is not None:
+    if output_dir is not None and config.get('output_dir') is None:
         config['output_dir'] = output_dir
 
-    if output_name is not None:
+    if output_name is not None and config.get('output_name') is None:
         config['output_name'] = output_name
 
-    if output_writer is not None:
+    if output_writer is not None and config.get('output_writer') is None:
         config['output_writer'] = output_writer
 
-    if output_resampling is not None:
+    if output_resampling is not None and config.get('output_resampling') is None:
         config['output_resampling'] = output_resampling
 
     if output_size is not None:
@@ -112,5 +110,4 @@ def get_config_dict(config_obj: Dict[str, Union[str, bool, int, float, list, dic
     output_metadata = config.get('output_metadata')
     if output_metadata:
         config['output_metadata'] = flatten_dict(output_metadata)
-
     return config

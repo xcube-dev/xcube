@@ -3,7 +3,8 @@ from io import StringIO
 
 import yaml
 
-from xcube.util.config import flatten_dict, to_name_dict_pair, to_name_dict_pairs, to_resolved_name_dict_pairs
+from xcube.util.config import flatten_dict, to_name_dict_pair, to_name_dict_pairs, to_resolved_name_dict_pairs, \
+    merge_config
 
 
 class ToResolvedNameDictPairsTest(unittest.TestCase):
@@ -244,3 +245,42 @@ output_metadata:
     duration:   "P1Y"
     resolution: "1D"
 """
+
+
+class MergeDictsTest(unittest.TestCase):
+    def test_single_dict(self):
+        first_dict = {}
+        actual_dict = merge_config(first_dict)
+        self.assertIs(first_dict, actual_dict)
+
+    def test_two_dicts(self):
+        first_dict = {'a': 'name'}
+        second_dict = {'b': 'age'}
+        actual_dict = merge_config(first_dict, second_dict)
+        self.assertEqual({'a': 'name', 'b': 'age'}, actual_dict)
+
+    def test_three_dicts(self):
+        first_dict = {'a': 'name'}
+        second_dict = {'b': 'age'}
+        third_dict = {'c': 'hair'}
+        actual_dict = merge_config(first_dict, second_dict, third_dict)
+        self.assertEqual({'a': 'name', 'b': 'age', 'c': 'hair'}, actual_dict)
+
+    def test_order_matters(self):
+        first_dict = {'a': 'name', 'b': 42}
+        sec_dict = {'a': 'age'}
+        third_dict = {'b': 15}
+        actual_dict = merge_config(first_dict, sec_dict, third_dict)
+        self.assertEqual({'a': 'age', 'b': 15}, actual_dict)
+
+    def test_merge_deep(self):
+        first_dict = {'a': dict(b=42, c=15), 'o': 105}
+        second_dict = {'a': dict(c=25)}
+        actual_dict = merge_config(first_dict, second_dict)
+        self.assertEqual({'a': dict(b=42, c=25), 'o': 105}, actual_dict)
+
+    def test_merge_dict_value(self):
+        first_dict = {'o': 105}
+        second_dict = {'a': dict(c=25)}
+        actual_dict = merge_config(first_dict, second_dict)
+        self.assertEqual({'a': dict(c=25), 'o': 105}, actual_dict)
