@@ -118,7 +118,7 @@ def generate_cube(input_files: str,
         return 0
 
     try:
-        config = get_config_dict(locals(), open)
+        config = get_config_dict(locals())
     except ValueError as e:
         return _handle_error(e, traceback_mode)
 
