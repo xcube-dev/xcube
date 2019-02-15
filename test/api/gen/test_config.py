@@ -70,9 +70,9 @@ def _create_temp_yaml(temp_path_for_yaml, config_file_name, config_yaml):
 class GetConfigDictTest(unittest.TestCase):
     def test_config_file_alone(self):
         try:
-            yaml_path = _create_temp_yaml(TEMP_PATH_FOR_YAML, CONFIG_1_FILE_2, CONFIG_1_YAML)
+            _create_temp_yaml(TEMP_PATH_FOR_YAML, CONFIG_1_FILE_2, CONFIG_1_YAML)
             config_obj = get_config_obj(config_file=CONFIG_1_FILE_LIST)
-            yaml_path_2 = _create_temp_yaml(TEMP_PATH_FOR_YAML, CONFIG_1_FILE, config_obj)
+            _create_temp_yaml(TEMP_PATH_FOR_YAML, CONFIG_1_FILE, config_obj)
 
             config = get_config_dict(config_obj)
             self.assertIsNotNone(config)
@@ -82,21 +82,21 @@ class GetConfigDictTest(unittest.TestCase):
         finally:
             if os.path.exists(os.path.join(os.path.expanduser('~'), TEMP_PATH_FOR_YAML)):
                 shutil.rmtree(os.path.join(os.path.expanduser('~'), TEMP_PATH_FOR_YAML))
-                print('Sucessfully removed folder')
+                print('Successfully removed folder')
 
     def test_config_file_overwritten_by_config_obj(self):
         try:
-            yaml_path = _create_temp_yaml(TEMP_PATH_FOR_YAML, CONFIG_1_FILE_2, CONFIG_1_YAML)
+            _create_temp_yaml(TEMP_PATH_FOR_YAML, CONFIG_1_FILE_2, CONFIG_1_YAML)
             config_obj = get_config_obj(config_file=CONFIG_1_FILE_LIST,
                                         output_variables='a,b')
-            yaml_path_2 = _create_temp_yaml(TEMP_PATH_FOR_YAML, CONFIG_1_FILE, config_obj)
+            _create_temp_yaml(TEMP_PATH_FOR_YAML, CONFIG_1_FILE, config_obj)
             config = get_config_dict(config_obj)
             self.assertIn('output_variables', config)
             self.assertIsNotNone(['a', 'b'], config['output_variables'])
         finally:
             if os.path.exists(os.path.join(os.path.expanduser('~'), TEMP_PATH_FOR_YAML)):
                 shutil.rmtree(os.path.join(os.path.expanduser('~'), TEMP_PATH_FOR_YAML))
-                print('Sucessfully removed folder')
+                print('Successfully removed folder')
 
     def test_config_file_does_not_exist(self):
         config_obj = get_config_obj(config_file=['bibo.yaml', ])
