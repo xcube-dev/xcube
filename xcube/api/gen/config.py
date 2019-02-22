@@ -77,18 +77,23 @@ def get_config_dict(config_obj: Dict[str, Union[str, bool, int, float, list, dic
         try:
             output_size = list(map(lambda c: int(c), output_size.split(',')))
         except ValueError:
-            output_size = None
-        if output_size is None or len(output_size) != 2:
-            raise ValueError(f'invalid output_size {config_obj.get("output_size")!r}')
+            raise ValueError(
+                f'Invalid output size was given. Only integers are accepted. The given output size was: '
+                f'{config_obj.get("output_size")!r}')
+        if len(output_size) != 2:
+            raise ValueError(f'The length of the output size is not 2. The given length for output size is: '
+                             f'{config_obj.get("output_size")!r}')
         config['output_size'] = output_size
 
     if output_region is not None:
         try:
             output_region = list(map(lambda c: float(c), output_region.split(',')))
         except ValueError:
-            output_region = None
-        if output_region is None or len(output_region) != 4:
-            raise ValueError(f'invalid output_region {config_obj.get("output_region")!r}')
+            raise ValueError(f'Invalid output region was given. Only floats are accepted. The given output region was: '
+                             f'{config_obj.get("output_region")!r}')
+        if len(output_region) != 4:
+            raise ValueError(f'The length of the output region is not 4.The given output region was: '
+                             f'{config_obj.get("output_region")!r}')
         config['output_region'] = output_region
 
     if output_variables is not None:
