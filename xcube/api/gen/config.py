@@ -92,7 +92,7 @@ def get_config_dict(config_obj: Dict[str, Union[str, bool, int, float, list, dic
             raise ValueError(f'Invalid output region was given. Only floats are accepted. The given output region was: '
                              f'{config_obj.get("output_region")!r}')
         if len(output_region) != 4:
-            raise ValueError(f'The length of the output region is not 4.The given output region was: '
+            raise ValueError(f'The length of the output region is not 4. The given output region was: '
                              f'{config_obj.get("output_region")!r}')
         config['output_region'] = output_region
 
