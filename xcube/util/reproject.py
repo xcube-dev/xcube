@@ -37,17 +37,17 @@ DEFAULT_TP_RESAMPLING = 'Bilinear'
 CoordRange = Tuple[float, float, float, float]
 
 
-def reproject_to_wgs84(src_dataset: xr.Dataset,
-                       src_xy_var_names: Tuple[str, str],
-                       src_xy_tp_var_names: Tuple[str, str] = None,
-                       src_xy_crs: str = None,
-                       src_xy_gcp_step: Union[int, Tuple[int, int]] = 10,
-                       src_xy_tp_gcp_step: Union[int, Tuple[int, int]] = 1,
-                       dst_size: Tuple[int, int] = None,
-                       dst_region: CoordRange = None,
-                       dst_resampling: Union[str, Dict[str, str]] = DEFAULT_RESAMPLING,
-                       include_xy_vars: bool = False,
-                       include_non_spatial_vars: bool = False) -> xr.Dataset:
+def reproject_xy_to_wgs84(src_dataset: xr.Dataset,
+                          src_xy_var_names: Tuple[str, str],
+                          src_xy_tp_var_names: Tuple[str, str] = None,
+                          src_xy_crs: str = None,
+                          src_xy_gcp_step: Union[int, Tuple[int, int]] = 10,
+                          src_xy_tp_gcp_step: Union[int, Tuple[int, int]] = 1,
+                          dst_size: Tuple[int, int] = None,
+                          dst_region: CoordRange = None,
+                          dst_resampling: Union[str, Dict[str, str]] = DEFAULT_RESAMPLING,
+                          include_xy_vars: bool = False,
+                          include_non_spatial_vars: bool = False) -> xr.Dataset:
     """
     Reprojection of xarray datasets with 2D geo-coding, e.g. with variables lon(y,x), lat(y, x) to
     EPSG:4326 (WGS-84) coordinate reference system.

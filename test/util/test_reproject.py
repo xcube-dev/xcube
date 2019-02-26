@@ -6,7 +6,7 @@ from matplotlib import pyplot as plt
 from numpy.testing import assert_array_almost_equal
 
 from test.sampledata import create_highroc_dataset
-from xcube.util.reproject import reproject_to_wgs84
+from xcube.util.reproject import reproject_xy_to_wgs84
 
 nan = np.nan
 
@@ -18,12 +18,12 @@ class ReprojectTest(unittest.TestCase):
         dst_height = 9
 
         dataset = create_highroc_dataset()
-        proj_dataset = reproject_to_wgs84(dataset,
-                                          src_xy_var_names=('lon', 'lat'),
-                                          src_xy_tp_var_names=('TP_longitude', 'TP_latitude'),
-                                          src_xy_gcp_step=1,
-                                          src_xy_tp_gcp_step=1,
-                                          dst_size=(dst_width, dst_height))
+        proj_dataset = reproject_xy_to_wgs84(dataset,
+                                             src_xy_var_names=('lon', 'lat'),
+                                             src_xy_tp_var_names=('TP_longitude', 'TP_latitude'),
+                                             src_xy_gcp_step=1,
+                                             src_xy_tp_gcp_step=1,
+                                             dst_size=(dst_width, dst_height))
 
         self.assertIsNotNone(proj_dataset)
         self.assertEqual(dict(lon=dst_width, lat=dst_height, bnds=2),
