@@ -81,7 +81,7 @@ def get_config_dict(config_obj: Dict[str, Union[str, bool, int, float, list, dic
                 f'Invalid output size was given. Only integers are accepted. The given output size was: '
                 f'{config_obj.get("output_size")!r}')
         if len(output_size) != 2:
-            raise ValueError(f'The length of the output size is not 2. The given length for output size is: '
+            raise ValueError(f'The output size must be given as pair <width>,<height>, but was: '
                              f'{config_obj.get("output_size")!r}')
         config['output_size'] = output_size
 
