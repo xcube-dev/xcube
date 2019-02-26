@@ -49,14 +49,15 @@ def get_config_dict(config_obj: Dict[str, Union[str, bool, int, float, list, dic
         config_dicts = []
         for config_path in config_paths:
             with open(config_path) as fp:
-            config_dict = yaml.load(fp)
-        except yaml.YAMLError as e:
-            raise ValueError(f'YAML in {config_file!r} is invalid: {e}') from e
-        except OSError as e:
-            raise ValueError(f'cannot load configuration from {config_file!r}: {e}') from e
-        if not isinstance(config_dict, dict):
-            raise ValueError(f'invalid configuration format in {config_file!r}: dictionary expected')
-        config_dicts.append(config_dict)
+                try:
+                    config_dict = yaml.load(fp)
+                except yaml.YAMLError as e:
+                    raise ValueError(f'YAML in {config_path!r} is invalid: {e}') from e
+                except OSError as e:
+                        raise ValueError(f'cannot load configuration from {config_path!r}: {e}') from e
+                if not isinstance(config_dict, dict):
+                    raise ValueError(f'invalid configuration format in {config_path!r}: dictionary expected')
+                config_dicts.append(config_dict)
         config = merge_config(*config_dicts)
 
     else:
@@ -99,8 +100,8 @@ def get_config_dict(config_obj: Dict[str, Union[str, bool, int, float, list, dic
             raise ValueError(f'Invalid output region was given. Only floats are accepted. The given output region was: '
                              f'{config_obj.get("output_region")!r}')
         if len(output_region) != 4:
-            raise ValueError(f'The length of the output region is not 4. The given output region was: '
-                             f'{config_obj.get("output_region")!r}')
+            raise ValueError(f'The output region must be given as 4 values: <lon_min>,<lat_min>,<lon_max>,<lat_max>, '
+                             f'but was: {config_obj.get("output_region")!r}')
         config['output_region'] = output_region
 
     if output_variables is not None:

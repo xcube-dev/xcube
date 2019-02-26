@@ -5,6 +5,7 @@ import os
 from typing import Dict
 
 import yaml
+# from yaml.parser import ParserError # needs to be kept for last test, which is still not working properly
 
 from xcube.api.gen.config import get_config_dict
 from xcube.util.config import flatten_dict, to_name_dict_pair, to_name_dict_pairs, to_resolved_name_dict_pairs, \
@@ -327,6 +328,16 @@ output_variables:
   - z*
 """
 
+CONFIG_3_NAME = 'config_3.json'
+CONFIG_4_NAME = 'config_4.json'
+CONFIG_2_FILE_LIST = [(os.path.join(TEMP_PATH_FOR_YAML, CONFIG_3_NAME)),
+                      (os.path.join(TEMP_PATH_FOR_YAML, CONFIG_4_NAME))]
+CONFIG_2_YAML = """
+: output_variables: 
+  - x
+ 6--
+"""
+
 
 def _create_temp_yaml(temp_path_for_yaml, config_file_name, config_yaml):
     if not os.path.exists(TEMP_PATH_FOR_YAML):
@@ -416,7 +427,8 @@ class GetConfigDictTest(unittest.TestCase):
         config_obj = _get_config_obj(output_region='50, 20, 55')
         with self.assertRaises(ValueError) as cm:
             get_config_dict(config_obj)
-        self.assertEqual("The length of the output region is not 4.The given output region was: '50, 20, 55'",
+        self.assertEqual("The output region must be given as 4 values: <lon_min>,<lat_min>,<lon_max>,<lat_max>, "
+                         "but was: '50, 20, 55'",
                          f'{cm.exception}')
 
     def test_output_variables_option(self):
@@ -437,3 +449,22 @@ class GetConfigDictTest(unittest.TestCase):
             get_config_dict(config_obj)
         self.assertEqual("all names in output_variables must be non-empty",
                          f'{cm.exception}')
+
+    # This test is still not running correcly, needs to be fixed. TODO: AliceBalfanz
+    # def test_config_file_with_invalid_yaml(self):
+    #     try:
+    #         _create_temp_yaml(TEMP_PATH_FOR_YAML, CONFIG_4_NAME, CONFIG_2_YAML)
+    #         config_obj = _get_config_obj(config_file=CONFIG_2_FILE_LIST)
+    #         _create_temp_yaml(TEMP_PATH_FOR_YAML, CONFIG_3_NAME, config_obj)
+    #
+    #         with self.assertRaises(ParserError) as cm:
+    #             get_config_dict(config_obj)
+    #         self.assertEqual('YAML in \'config_2.json\' is invalid: '
+    #                          'while parsing a block mapping\n'
+    #                          'expected <block end>, but found \':\'\n'
+    #                          '  in "<file>", line 2, column 1',
+    #                          f'{cm.exception}')
+    #     finally:
+    #         if os.path.exists(TEMP_PATH_FOR_YAML):
+    #             shutil.rmtree(TEMP_PATH_FOR_YAML)
+    #             print('Successfully removed folder')
