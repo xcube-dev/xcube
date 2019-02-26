@@ -54,7 +54,7 @@ def get_config_dict(config_obj: Dict[str, Union[str, bool, int, float, list, dic
                 except yaml.YAMLError as e:
                     raise ValueError(f'YAML in {config_path!r} is invalid: {e}') from e
                 except OSError as e:
-                        raise ValueError(f'cannot load configuration from {config_path!r}: {e}') from e
+                    raise ValueError(f'cannot load configuration from {config_path!r}: {e}') from e
                 if not isinstance(config_dict, dict):
                     raise ValueError(f'invalid configuration format in {config_path!r}: dictionary expected')
                 config_dicts.append(config_dict)
