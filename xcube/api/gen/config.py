@@ -49,7 +49,14 @@ def get_config_dict(config_obj: Dict[str, Union[str, bool, int, float, list, dic
         config_dicts = []
         for config_path in config_paths:
             with open(config_path) as fp:
-                config_dicts.append(yaml.load(fp))
+            config_dict = yaml.load(fp)
+        except yaml.YAMLError as e:
+            raise ValueError(f'YAML in {config_file!r} is invalid: {e}') from e
+        except OSError as e:
+            raise ValueError(f'cannot load configuration from {config_file!r}: {e}') from e
+        if not isinstance(config_dict, dict):
+            raise ValueError(f'invalid configuration format in {config_file!r}: dictionary expected')
+        config_dicts.append(config_dict)
         config = merge_config(*config_dicts)
 
     else:
