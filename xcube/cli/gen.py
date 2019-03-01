@@ -39,7 +39,7 @@ output_writer_names = [ds_io.name for ds_io in query_dataset_io(lambda ds_io: 'w
 resampling_algs = NAME_TO_GDAL_RESAMPLE_ALG.keys()
 
 
-@click.command(name='generate_cube', context_settings={"ignore_unknown_options": True})
+@click.command(name='gen', context_settings={"ignore_unknown_options": True})
 @click.version_option(version)
 @click.argument('input_files', metavar='INPUT_FILES', nargs=-1)
 @click.option('--proc', '-p', metavar='INPUT_PROCESSOR', type=click.Choice(input_processor_names),
