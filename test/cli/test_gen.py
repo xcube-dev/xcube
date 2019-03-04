@@ -3,7 +3,7 @@ from typing import List
 import click
 import click.testing
 
-from xcube.cli.gen import generate_cube as cli
+from xcube.cli.gen import gen as cli
 
 
 class CliTest(unittest.TestCase):

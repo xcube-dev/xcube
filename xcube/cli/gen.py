@@ -39,7 +39,7 @@ output_writer_names = [ds_io.name for ds_io in query_dataset_io(lambda ds_io: 'w
 resampling_algs = NAME_TO_GDAL_RESAMPLE_ALG.keys()
 
 
-@click.command(name='generate_cube', context_settings={"ignore_unknown_options": True})
+@click.command(name='gen', context_settings={"ignore_unknown_options": True})
 @click.version_option(version)
 @click.argument('input_files', metavar='INPUT_FILES', nargs=-1)
 @click.option('--proc', '-p', metavar='INPUT_PROCESSOR', type=click.Choice(input_processor_names),
@@ -80,20 +80,20 @@ resampling_algs = NAME_TO_GDAL_RESAMPLE_ALG.keys()
               help='Just read and process inputs, but don\'t produce any outputs.')
 @click.option('--info', '-i', default=False, is_flag=True,
               help='Displays additional information about format options or about input processors.')
-def generate_cube(input_files: str,
-                  proc: str,
-                  config: str,
-                  dir: str,
-                  name: str,
-                  format: str,
-                  size: str,
-                  region: str,
-                  variables: str,
-                  resampling: str,
-                  traceback: bool,
-                  append: bool,
-                  dry_run: bool,
-                  info: bool):
+def gen(input_files: str,
+        proc: str,
+        config: str,
+        dir: str,
+        name: str,
+        format: str,
+        size: str,
+        region: str,
+        variables: str,
+        resampling: str,
+        traceback: bool,
+        append: bool,
+        dry_run: bool,
+        info: bool):
     """
     Level-2C data cubes may be created in one go or successively in append mode, input by input.
     The input may be one or more input files or a pattern that may contain wildcards '?', '*', and '**'.
