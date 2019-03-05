@@ -18,14 +18,14 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-from typing import Dict, Union
+from typing import Dict, Union, Tuple
 
 import yaml
 
 from xcube.util.config import to_name_dict_pairs, flatten_dict, merge_config
 
 
-def get_config_dict(config_obj: Dict[str, Union[str, bool, int, float, list, dict]]):
+def get_config_dict(config_obj: Dict[str, Union[str, bool, int, float, list, dict, tuple]]):
     """
     Get configuration dictionary.
 
@@ -44,7 +44,9 @@ def get_config_dict(config_obj: Dict[str, Union[str, bool, int, float, list, dic
     output_variables = config_obj.get("output_variables")
     output_resampling = config_obj.get("output_resampling")
 
-    if config_file is not None:
+    if len(config_file) == 0:
+        config = {}
+    else:
         config_paths = config_file
         config_dicts = []
         for config_path in config_paths:
@@ -60,8 +62,6 @@ def get_config_dict(config_obj: Dict[str, Union[str, bool, int, float, list, dic
                 config_dicts.append(config_dict)
         config = merge_config(*config_dicts)
 
-    else:
-        config = {}
     # Overwrite current configuration by cli arguments
     if input_files is not None:
         config['input_files'] = input_files

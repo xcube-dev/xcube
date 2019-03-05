@@ -2,7 +2,7 @@ import shutil
 import unittest
 from io import StringIO
 import os
-from typing import Dict
+from typing import Dict, Tuple
 
 import yaml
 # from yaml.parser import ParserError # needs to be kept for last test, which is still not working properly
@@ -291,7 +291,7 @@ class MergeDictsTest(unittest.TestCase):
         self.assertEqual({'a': dict(c=25), 'o': 105}, actual_dict)
 
 
-def _get_config_obj(config_file=None,
+def _get_config_obj(config_file: Tuple[str, str] = (),
                     input_files=None,
                     input_processor=None,
                     output_dir=None,
