@@ -1,9 +1,9 @@
-from typing import Sequence
+from typing import Collection
 
 import xarray as xr
 
 
-def select_vars(dataset: xr.Dataset, var_names: Sequence[str] = None) -> xr.Dataset:
+def select_vars(dataset: xr.Dataset, var_names: Collection[str] = None) -> xr.Dataset:
     """
     Select data variable from given *dataset* and create new dataset.
 
