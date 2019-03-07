@@ -18,14 +18,14 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-from typing import Dict, Union
+from typing import Dict, Union, Tuple
 
 import yaml
 
 from xcube.util.config import to_name_dict_pairs, flatten_dict, merge_config
 
 
-def get_config_dict(config_obj: Dict[str, Union[str, bool, int, float, list, dict]]):
+def get_config_dict(config_obj: Dict[str, Union[str, bool, int, float, list, dict, tuple]]):
     """
     Get configuration dictionary.
 
@@ -44,16 +44,24 @@ def get_config_dict(config_obj: Dict[str, Union[str, bool, int, float, list, dic
     output_variables = config_obj.get("output_variables")
     output_resampling = config_obj.get("output_resampling")
 
-    if config_file is not None:
+    if len(config_file) == 0:
+        config = {}
+    else:
         config_paths = config_file
         config_dicts = []
         for config_path in config_paths:
             with open(config_path) as fp:
-                config_dicts.append(yaml.load(fp))
+                try:
+                    config_dict = yaml.load(fp)
+                except yaml.YAMLError as e:
+                    raise ValueError(f'YAML in {config_path!r} is invalid: {e}') from e
+                except OSError as e:
+                    raise ValueError(f'cannot load configuration from {config_path!r}: {e}') from e
+                if not isinstance(config_dict, dict):
+                    raise ValueError(f'invalid configuration format in {config_path!r}: dictionary expected')
+                config_dicts.append(config_dict)
         config = merge_config(*config_dicts)
 
-    else:
-        config = {}
     # Overwrite current configuration by cli arguments
     if input_files is not None:
         config['input_files'] = input_files
@@ -81,7 +89,7 @@ def get_config_dict(config_obj: Dict[str, Union[str, bool, int, float, list, dic
                 f'Invalid output size was given. Only integers are accepted. The given output size was: '
                 f'{config_obj.get("output_size")!r}')
         if len(output_size) != 2:
-            raise ValueError(f'The length of the output size is not 2. The given length for output size is: '
+            raise ValueError(f'The output size must be given as pair <width>,<height>, but was: '
                              f'{config_obj.get("output_size")!r}')
         config['output_size'] = output_size
 
@@ -92,8 +100,8 @@ def get_config_dict(config_obj: Dict[str, Union[str, bool, int, float, list, dic
             raise ValueError(f'Invalid output region was given. Only floats are accepted. The given output region was: '
                              f'{config_obj.get("output_region")!r}')
         if len(output_region) != 4:
-            raise ValueError(f'The length of the output region is not 4.The given output region was: '
-                             f'{config_obj.get("output_region")!r}')
+            raise ValueError(f'The output region must be given as 4 values: <lon_min>,<lat_min>,<lon_max>,<lat_max>, '
+                             f'but was: {config_obj.get("output_region")!r}')
         config['output_region'] = output_region
 
     if output_variables is not None:

@@ -80,20 +80,24 @@ resampling_algs = NAME_TO_GDAL_RESAMPLE_ALG.keys()
               help='Just read and process inputs, but don\'t produce any outputs.')
 @click.option('--info', '-i', default=False, is_flag=True,
               help='Displays additional information about format options or about input processors.')
-def generate_cube(input_files: str,
-                  proc: str,
-                  config: str,
-                  dir: str,
-                  name: str,
-                  format: str,
-                  size: str,
-                  region: str,
-                  variables: str,
-                  resampling: str,
-                  traceback: bool,
-                  append: bool,
-                  dry_run: bool,
-                  info: bool):
+@click.option('--sort', default=False, is_flag=True,
+              help='The input file list will be sorted before creating the data cube. '
+                   'If --sort parameter is not passed, order of input list will be kept.')
+def gen(input_files: str,
+        proc: str,
+        config: tuple,
+        dir: str,
+        name: str,
+        format: str,
+        size: str,
+        region: str,
+        variables: str,
+        resampling: str,
+        traceback: bool,
+        append: bool,
+        dry_run: bool,
+        info: bool,
+        sort: bool):
     """
     Level-2C data cubes may be created in one go or successively in append mode, input by input.
     The input may be one or more input files or a pattern that may contain wildcards '?', '*', and '**'.
@@ -112,6 +116,7 @@ def generate_cube(input_files: str,
     append_mode = append
     dry_run = dry_run
     info_mode = info
+    sort_mode = sort
 
     if info_mode:
         print(_format_info())
@@ -126,6 +131,7 @@ def generate_cube(input_files: str,
         gen_cube(append_mode=append_mode,
                  dry_run=dry_run,
                  monitor=print,
+                 sort_mode=sort_mode,
                  **config)
     except Exception as e:
         return _handle_error(e, traceback_mode)

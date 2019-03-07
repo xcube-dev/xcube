@@ -43,27 +43,19 @@ __import__('xcube.util.plugin')
 _PROFILING_ON = False
 
 
-def gen_cube(input_files: Sequence[str] = None,
-             input_processor: str = None,
-             input_processor_params: Dict = None,
-             input_reader: str = None,
-             input_reader_params: Dict[str, Any] = None,
+def gen_cube(input_files: Sequence[str] = None, input_processor: str = None, input_processor_params: Dict = None,
+             input_reader: str = None, input_reader_params: Dict[str, Any] = None,
              output_region: Tuple[float, float, float, float] = None,
-             output_size: Tuple[int, int] = DEFAULT_OUTPUT_SIZE,
-             output_resampling: str = DEFAULT_OUTPUT_RESAMPLING,
-             output_dir: str = DEFAULT_OUTPUT_DIR,
-             output_name: str = DEFAULT_OUTPUT_NAME,
-             output_writer: str = DEFAULT_OUTPUT_FORMAT,
-             output_writer_params: Dict[str, Any] = None,
-             output_metadata: NameAnyDict = None,
-             output_variables: NameDictPairList = None,
-             processed_variables: NameDictPairList = None,
-             append_mode: bool = False,
-             dry_run: bool = False,
-             monitor: Callable[..., None] = None) -> Tuple[Optional[str], bool]:
+             output_size: Tuple[int, int] = DEFAULT_OUTPUT_SIZE, output_resampling: str = DEFAULT_OUTPUT_RESAMPLING,
+             output_dir: str = DEFAULT_OUTPUT_DIR, output_name: str = DEFAULT_OUTPUT_NAME,
+             output_writer: str = DEFAULT_OUTPUT_FORMAT, output_writer_params: Dict[str, Any] = None,
+             output_metadata: NameAnyDict = None, output_variables: NameDictPairList = None,
+             processed_variables: NameDictPairList = None, append_mode: bool = False, dry_run: bool = False,
+             monitor: Callable[..., None] = None, sort_mode: bool = False) -> Tuple[Optional[str], bool]:
     """
     Generate a data cube from one or more input files.
 
+    :param sort_mode:
     :param input_files: The input files.
     :param input_processor: Name of a registered input processor (xcube.api.gen.inputprocessor.InputProcessor)
            to be used to transform the inputs
@@ -108,7 +100,10 @@ def gen_cube(input_files: Sequence[str] = None,
         def monitor(*args):
             pass
 
-    input_files = sorted([input_file for f in input_files for input_file in glob.glob(f, recursive=True)])
+    if sort_mode is True:
+        input_files = sorted([input_file for f in input_files for input_file in glob.glob(f, recursive=True)])
+    else:
+        input_files = [input_file for f in input_files for input_file in glob.glob(f, recursive=True)]
 
     if not dry_run:
         os.makedirs(output_dir, exist_ok=True)
