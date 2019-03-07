@@ -82,7 +82,7 @@ class InputProcessor(metaclass=ABCMeta):
         :return: The description of this input processor
         """
         if parameters:
-            raise TypeError(f"got an unexpected input processor parameters {parameters!r}")
+            raise TypeError(f"got unexpected input processor parameters {parameters!r}")
 
     @property
     @abstractmethod
@@ -108,8 +108,9 @@ class InputProcessor(metaclass=ABCMeta):
 
     def get_extra_vars(self, dataset: xr.Dataset) -> Optional[Collection[str]]:
         """
-        Get a set of variables names that are required for the pre-processing and reprojection steps and should
-        therefore not be dropped. However, the reprojection or post-processing steps may later remove them.
+        Get a set of names of variables that are required as input for the pre-processing and processing
+        steps and should therefore not be dropped.
+        However, the processing or post-processing steps may later remove them.
 
         Returns ``None`` by default.
 
@@ -120,39 +121,49 @@ class InputProcessor(metaclass=ABCMeta):
 
     def pre_process(self, dataset: xr.Dataset) -> xr.Dataset:
         """
-        Do any pre-processing before reprojection. All variables of the output must be 2D arrays.
+        Do any pre-processing before reprojection.
+        All variables in the output dataset must be 2D arrays with dimensions "lat" and "lon", in this order.
         For example, perform dataset validation, masking, and/or filtering using provided configuration parameters.
+
         The default implementation returns the unchanged *dataset*.
+
         :param dataset: The dataset.
-        :return: The pre-processed dataset or the original one.
+        :return: The pre-processed dataset or the original one, if no pre-processing is required.
         """
         return dataset
 
     @abstractmethod
-    def reproject(self,
-                  dataset: xr.Dataset,
-                  dst_size: Tuple[int, int],
-                  dst_region: Tuple[float, float, float, float],
-                  dst_resampling: str,
-                  include_non_spatial_vars=False) -> xr.Dataset:
+    def process(self,
+                dataset: xr.Dataset,
+                dst_size: Tuple[int, int],
+                dst_region: Tuple[float, float, float, float],
+                dst_resampling: str,
+                include_non_spatial_vars=False) -> xr.Dataset:
         """
-        Perform reprojection. The output must be a 2D array.
+        Perform spatial transformation into the cube's WGS84 SRS such that all variables in the output dataset
+        * must be 2D arrays with dimensions "lat" and "lon", in this order, and
+        * must have shape (*dst_size[-1]*, *dst_size[-2]*), and
+        * must have *dst_region* as their bounding box in geographic coordinates.
+
         :param dataset: The input dataset.
         :param dst_size: The output size in pixels as tuple (width ,height).
         :param dst_region: The output region in coordinates of the target CRS. A tuple (x_min, y_min, x_max, y_max).
-        :param dst_resampling: The resampling method.
+        :param dst_resampling: The spatial resampling method.
         :param include_non_spatial_vars: Whether to include non-spatial variables in the output.
-        :return: The reprojected output dataset or the original one.
+        :return: The transformed output dataset or the original one, if no transformation is required.
         """
         raise NotImplementedError()
 
     def post_process(self, dataset: xr.Dataset) -> xr.Dataset:
         """
-        Do any post-processing after reprojection. The input is a 3D array with dimensions ("time", "lat", "lon").
-        For example, generate new "wavelength" dimension for variables whose name follow a certain pattern.
+        Do any post-processing transformation. The input is a 3D array with dimensions ("time", "lat", "lon").
+        Post-processing may, for example, generate new "wavelength" dimension for variables whose name follow
+        a certain pattern.
+
         The default implementation returns the unchanged *dataset*.
+
         :param dataset: The dataset.
-        :return: The post-processed dataset or the original one.
+        :return: The post-processed dataset or the original one, if no post-processing is required.
         """
         return dataset
 
@@ -185,12 +196,12 @@ class XYInputProcessor(InputProcessor, metaclass=ABCMeta):
             extra_vars.update(reprojection_info.xy_tp_var_names)
         return extra_vars
 
-    def reproject(self,
-                  dataset: xr.Dataset,
-                  dst_size: Tuple[int, int],
-                  dst_region: Tuple[float, float, float, float],
-                  dst_resampling: str,
-                  include_non_spatial_vars=False) -> xr.Dataset:
+    def process(self,
+                dataset: xr.Dataset,
+                dst_size: Tuple[int, int],
+                dst_region: Tuple[float, float, float, float],
+                dst_resampling: str,
+                include_non_spatial_vars=False) -> xr.Dataset:
         """
         Perform reprojection using tie-points / ground control points.
         """

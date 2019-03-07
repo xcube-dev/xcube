@@ -19,23 +19,24 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-from typing import Tuple
+from typing import Tuple, Optional, Collection
 
 import xarray as xr
 
+from xcube.api.gen.default.iproc import DefaultInputProcessor
 from xcube.util.reproject import reproject_crs_to_wgs84, get_projection_wkt
 from xcube.util.timecoord import get_time_in_days_since_1970
 from ..iproc import InputProcessor, register_input_processor
 
 
-class S2PlusInputProcessor(InputProcessor):
+class VitoS2PlusInputProcessor(InputProcessor):
     """
     Input processor for VITO's Sentinel-2 Plus Level-2 NetCDF inputs.
     """
 
     @property
     def name(self) -> str:
-        return 'vito-s2-plus-l2'
+        return 'vito-s2plus-l2'
 
     @property
     def description(self) -> str:
@@ -46,19 +47,17 @@ class S2PlusInputProcessor(InputProcessor):
         return 'netcdf4'
 
     def get_time_range(self, dataset: xr.Dataset) -> Tuple[float, float]:
-        date = dataset.attrs.get('DATE')
-        if date is None:
-            raise ValueError('illegal L2 input: missing DATE attribute')
-        time = dataset.attrs.get('TIME', '1200')
-        days_since_1970 = get_time_in_days_since_1970(date + time)
-        return days_since_1970, days_since_1970
+        return DefaultInputProcessor().get_time_range(dataset)
 
-    def reproject(self,
-                  dataset: xr.Dataset,
-                  dst_size: Tuple[int, int],
-                  dst_region: Tuple[float, float, float, float],
-                  dst_resampling: str,
-                  include_non_spatial_vars=False) -> xr.Dataset:
+    def get_extra_vars(self, dataset: xr.Dataset) -> Optional[Collection[str]]:
+        return ["transverse_mercator"]
+
+    def process(self,
+                dataset: xr.Dataset,
+                dst_size: Tuple[int, int],
+                dst_region: Tuple[float, float, float, float],
+                dst_resampling: str,
+                include_non_spatial_vars=False) -> xr.Dataset:
         return reproject_crs_to_wgs84(dataset,
                                       self.get_dataset_crs(dataset),
                                       dst_size,
@@ -87,4 +86,4 @@ class S2PlusInputProcessor(InputProcessor):
 
 def init_plugin():
     """ Register plugin. """
-    register_input_processor(S2PlusInputProcessor())
+    register_input_processor(VitoS2PlusInputProcessor())

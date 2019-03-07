@@ -58,52 +58,39 @@ def reproject_crs_to_wgs84(src_dataset: xr.Dataset,
     src_x2 = float(src_var.x[-1])
     src_y1 = float(src_var.y[0])
     src_y2 = float(src_var.y[-1])
-    src_res = (src_x2 - src_x1) / (src_width - 1)
-    src_geo_transform = (src_x1, src_res, 0.0,
-                         src_y2, 0.0, -src_res)
+    src_x_res = abs(src_x2 - src_x1) / (src_width - 1)
+    src_y_res = abs(src_y2 - src_y1) / (src_height - 1)
+    src_geo_transform = (src_x1, src_x_res, 0.0,
+                         src_y2, 0.0, -src_y_res)
 
-    if dst_region is None:
-        dst_x1_0 = float(src_var.lon[0][0])
-        dst_x2_0 = float(src_var.lon[0][-1])
-        dst_y1_0 = float(src_var.lat[0][0])
-        dst_y2_0 = float(src_var.lat[-1][0])
-        dst_x1 = min(dst_x1_0, dst_x2_0)
-        dst_x2 = max(dst_x1_0, dst_x2_0)
-        dst_y1 = min(dst_y1_0, dst_y2_0)
-        dst_y2 = max(dst_y1_0, dst_y2_0)
-    else:
-        dst_x1, dst_y1, dst_x2, dst_y2 = dst_region
+    dst_x1, dst_y1, dst_x2, dst_y2 = dst_region
+    dst_width, dst_height = dst_size
 
-    print(dst_x1, dst_x2, dst_y1, dst_y2)
+    dst_res_x = (dst_x2 - dst_x1) / dst_width
+    dst_res_y = (dst_y2 - dst_y1) / dst_height
+    dst_res = min(dst_res_x, dst_res_y)
 
-    if dst_size is None:
-        dst_res_x = (dst_x2 - dst_x1) / (src_width - 1)
-        dst_res_y = (dst_y2 - dst_y1) / (src_height - 1)
-        dst_res = min(dst_res_x, dst_res_y)
-        dst_res *= 10  # !!!!
-        print(dst_res_x, dst_res_y, dst_y1, dst_res)
-        dst_width = int((dst_x2 - dst_x1) / dst_res + 0.5)
-        dst_res = (dst_x2 - dst_x1) / dst_width
-        dst_height = int((dst_y2 - dst_y1) / dst_res + 0.5)
-    else:
-        dst_width, dst_height = dst_size
-        dst_res_x = (dst_x2 - dst_x1) / dst_width
-        dst_res_y = (dst_y2 - dst_y1) / dst_height
-        dst_res = min(dst_res_x, dst_res_y)
-
-    print(dst_width, dst_height, dst_res)
-
-    dst_geo_transform = (dst_x1 - dst_res / 2, dst_res, 0.0,
-                         dst_y1 - dst_res / 2, 0.0, -dst_res)
-    print(dst_geo_transform)
     # correct actual
-    dst_x2 = dst_x1 + dst_res * (dst_width - 1)
-    dst_y2 = dst_y1 + dst_res * (dst_height - 1)
+    dst_x2 = dst_x1 + dst_res * dst_width
+    dst_y2 = dst_y1 + dst_res * dst_height
+
+    dst_geo_transform = (dst_x1 + dst_res / 2, dst_res, 0.0,
+                         dst_y1 + dst_res / 2, 0.0, -dst_res)
+
+    print("src_geo_transform: ", src_geo_transform)
+    print("dst_bbox: ", dst_x1, dst_y1, dst_x2, dst_y2)
+    print("dst_size:", dst_width, dst_height)
+    print("dst_res:", dst_res_x, dst_res_y, dst_res)
+    print("dst_geo_transform:", dst_geo_transform)
 
     dst_dataset = _new_dst_dataset(dst_width, dst_height, dst_res, dst_x1, dst_y1, dst_x2, dst_y2)
+    dst_variables = {}
 
-    for var_name in src_dataset.variables:
+    for var_name in src_dataset.data_vars:
         src_var = src_dataset[var_name]
+
+        if len(src_var.shape) != 2:
+            continue
 
         src_ds = mem_driver.Create(f'src_{var_name}', src_width, src_height, 1, gdal.GDT_Float32, [])
         src_ds.SetProjection(src_projection)
@@ -135,14 +122,14 @@ def reproject_crs_to_wgs84(src_dataset: xr.Dataset,
                             options)
 
         dst_values = dst_ds.GetRasterBand(1).ReadAsArray()
+        dst_coords = dict(lat=dst_dataset.lat, lon=dst_dataset.lon)
+        dst_attrs = dict(**src_var.attrs, spatial_resampling=resample_alg_name)
+        if "grid_mapping" in dst_attrs:
+            del dst_attrs["grid_mapping"]
 
-        dst_var = xr.DataArray(dst_values,
-                               dims=['lat', 'lon'],
-                               attrs=dict(**src_var.attrs, spatial_resampling=resample_alg_name),
-                               coords=dict(lat=np.linspace(dst_y1, dst_y2 + dst_res, dst_height),
-                                           lon=np.linspace(dst_x1, dst_x2 + dst_res, dst_width)))
+        dst_variables[var_name] = xr.DataArray(dst_values, dims=['lat', 'lon'], coords=dst_coords, attrs=dst_attrs)
 
-        dst_dataset[src_var.name] = dst_var
+    dst_dataset = dst_dataset.assign(variables=dst_variables)
 
     return dst_dataset
 
@@ -481,13 +468,13 @@ def _get_gcps(x_var: xr.DataArray,
 
 def get_projection_wkt(name: str,
                        proj_name: str,
-                       latitude_of_origin: float,
-                       central_meridian: float,
-                       scale_factor: float,
-                       false_easting: float,
-                       false_northing: float):
+                       latitude_of_origin: float = 0.0,
+                       central_meridian: float = 0.0,
+                       scale_factor: float = 1.0,
+                       false_easting: float = 0.0,
+                       false_northing: float = 0.0):
     return (
-        f'PROJCS[("{name}",'
+        f'PROJCS["{name}",'
         f'  GEOGCS["WGS 84",'
         f'    DATUM["WGS_1984",'
         f'      SPHEROID["WGS 84", 6378137, 298.257223563,'

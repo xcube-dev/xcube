@@ -220,13 +220,13 @@ def _process_l2_input(input_processor: InputProcessor,
 
     # noinspection PyShadowingNames
     def step4(dataset):
-        return input_processor.reproject(dataset,
-                                         dst_size=output_size,
-                                         dst_region=output_region,
-                                         dst_resampling=output_resampling,
-                                         include_non_spatial_vars=False)
+        return input_processor.process(dataset,
+                                       dst_size=output_size,
+                                       dst_region=output_region,
+                                       dst_resampling=output_resampling,
+                                       include_non_spatial_vars=False)
 
-    steps.append((step4, 'reprojecting dataset'))
+    steps.append((step4, 'transforming dataset'))
 
     if time_range is not None:
         # noinspection PyShadowingNames
