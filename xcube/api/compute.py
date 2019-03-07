@@ -121,5 +121,3 @@ def _get_var_sort_key(dataset: xr.Dataset, var_name: str):
     v1 = 10 * len(a1) if a1 is not None else 0
     v2 = 100 * len(a2) if a2 is not None else 0
     return v1 + v2
-
-

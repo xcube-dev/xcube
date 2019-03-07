@@ -42,162 +42,109 @@ with [coverage report](https://pytest-cov.readthedocs.io/en/latest/reporting.htm
 
 
 # Tools
+## `xcube chunk`
 
-## `xcube-genl2c`
-
-    $ xcube-genl2c --help
-    usage: xcube-genl2c [-h] [--version]
-                        [--proc {rbins-seviri-highroc-scene-l2,rbins-seviri-highroc-daily-l2,snap-olci-highroc-l2,snap-olci-cyanoalert-l2}]
-                        [--config CONFIG_FILE] [--dir OUTPUT_DIR]
-                        [--name OUTPUT_NAME] [--writer {mem,netcdf4,zarr}]
-                        [--size OUTPUT_SIZE] [--region OUTPUT_REGION]
-                        [--vars OUTPUT_VARIABLES]
-                        [--resamp {Nearest,Bilinear,Cubic,CubicSpline,Lanczos,Average,Min,Max,Median,Mode,Q1,Q3}]
-                        [--traceback] [--append] [--dry-run]
-                        INPUT_FILES [INPUT_FILES ...]
+    $ xcube chunk --help
+    Usage: xcube chunk [OPTIONS] <input> <output>
     
-    Generate or extend a Level-2C data cube from Level-2 input files. Level-2C
-    data cubes may be created in one go or in successively in append mode, input
-    by input.
+    Write a new dataset with identical data and compression but with new chunk sizes.
     
     positional arguments:
-      INPUT_FILES           One or more input files or a pattern that may contain
-                            wildcards '?', '*', and '**'.
+      <input>           One data set in data cube format which needs to be chunked differently.
+      <output>          Output name of rechunked data cube. 
+    optional arguments:
+      --help                Show this help message and exit
+      --format, -f          Format of the output. If not given, guessed from <output>.
+      --params, -p          Parameters specific for the output format. Comma-separated 
+                            list of <key>=<value> pairs.
+      --chunks, -c          Chunk sizes for each dimension. Comma-separated list
+                            of <dim>=<size> pairs, e.g. "time=1,lat=270,lon=270"
+
+Example:
+
+    $ xcube chunk input_not_chunked.zarr output_rechunked.zarr --chunks "time=1,lat=270,lon=270"
+
+## `xcube dump`
+
+    $ xcube dump --help
+    Usage: xcube dump [OPTIONS] <path>
+    
+    Dump contents of dataset.
     
     optional arguments:
-      -h, --help            show this help message and exit
-      --version, -V         show program's version number and exit
-      --proc {rbins-seviri-highroc-scene-l2,rbins-seviri-highroc-daily-l2,snap-olci-highroc-l2,snap-olci-cyanoalert-l2}, -p {rbins-seviri-highroc-scene-l2,rbins-seviri-highroc-daily-l2,snap-olci-highroc-l2,snap-olci-cyanoalert-l2}
-                            Input processor type name.
-      --config CONFIG_FILE, -c CONFIG_FILE
-                            Data cube configuration file in YAML format.
-      --dir OUTPUT_DIR, -d OUTPUT_DIR
-                            Output directory. Defaults to '.'
-      --name OUTPUT_NAME, -n OUTPUT_NAME
-                            Output filename pattern. Defaults to
-                            'PROJ_WGS84_{INPUT_FILE}'.
-      --writer {mem,netcdf4,zarr}, -w {mem,netcdf4,zarr}
-                            Output writer type name. Defaults to 'nc'.
-      --size OUTPUT_SIZE, -s OUTPUT_SIZE
-                            Output size in pixels using format "<width>,<height>".
-      --region OUTPUT_REGION, -r OUTPUT_REGION
-                            Output region using format "<lon-min>,<lat-min>,<lon-
-                            max>,<lat-max>"
-      --vars OUTPUT_VARIABLES, -v OUTPUT_VARIABLES
-                            Variables to be included in output. Comma-separated
-                            list of names which may contain wildcard characters
-                            "*" and "?".
-      --resamp {Nearest,Bilinear,Cubic,CubicSpline,Lanczos,Average,Min,Max,Median,Mode,Q1,Q3}
-                            Fallback spatial resampling algorithm to be used for
-                            all variables.Defaults to 'Nearest'.
-      --traceback           On error, print Python traceback.
-      --append, -a          Append successive outputs.
-      --dry-run             Just read and process inputs, but don't produce any
-                            outputs.
-    
-    input processors to be used with option --proc:
-      rbins-seviri-highroc-scene-l2RBINS SEVIRI HIGHROC single-scene Level-2 NetCDF inputs
-      rbins-seviri-highroc-daily-l2RBINS SEVIRI HIGHROC daily Level-2 NetCDF inputs
-      snap-olci-highroc-l2        SNAP Sentinel-3 OLCI HIGHROC Level-2 NetCDF inputs
-      snap-olci-cyanoalert-l2     SNAP Sentinel-3 OLCI CyanoAlert Level-2 NetCDF inputs
-    
-    output formats to be used with option --writer:
-      mem                     (*.mem)       In-memory dataset I/O
-      netcdf4                 (*.nc)        NetCDF-4 file format
-      zarr                    (*.zarr)      Zarr file format (http://zarr.readthedocs.io)
-
+      --help                Show this help message and exit
+      --variable, -v        Name of a variable (multiple allowed).
+      --encoding, -e        Dump also variable encoding information.
 
 
 Example:
 
-    $ xcube-genl2c -a -s 2000,1000 -r 0,50,5,52.5 -v conc_chl,conc_tsm,kd489,c2rcc_flags,quality_flags -n hiroc-cube -t snap-c2rcc D:\OneDrive\BC\EOData\HIGHROC\2017\01\*.nc
+    $ xcube dump xcube_cube.zarr 
 
+## `xcube extract`
 
-## `xcube-genl3`
-
-    $ xcube-genl3 --help
-    usage: xcube-genl3 [-h] [--version] [--dir OUTPUT_DIR] [--name OUTPUT_NAME]
-                       [--format {zarr,nc}] [--variables OUTPUT_VARIABLES]
-                       [--resampling {all,any,argmin,argmax,count,first,last,max,mean,median,min,backfill,bfill,ffill,interpolate,nearest,pad}]
-                       [--frequency OUTPUT_FREQUENCY]
-                       [--meta-file OUTPUT_META_FILE] [--dry-run] [--traceback]
-                       INPUT_FILE
+    $ xcube dump --help
+    Usage: xcube extract [OPTIONS] <cube> <coords>
     
-    Generate Level-3 data cube from Level-2C data cube.
-    
-    positional arguments:
-      INPUT_FILE            The input file or directory which must be a Level-2C
-                            cube.
+    Extract data from <cube> at points given by coordinates <coords>.
     
     optional arguments:
-      -h, --help            show this help message and exit
-      --version, -V         show program's version number and exit
-      --dir OUTPUT_DIR, -d OUTPUT_DIR
-                            Output directory. Defaults to '.'
-      --name OUTPUT_NAME, -n OUTPUT_NAME
-                            Output filename pattern. Defaults to
-                            'L3_{INPUT_FILE}'.
-      --format {zarr,nc}, -f {zarr,nc}
-                            Output format. Defaults to 'zarr'.
-      --variables OUTPUT_VARIABLES, -v OUTPUT_VARIABLES
-                            Variables to be included in output. Comma-separated
-                            list of names which may contain wildcard characters
-                            "*" and "?".
-      --resampling {all,any,argmin,argmax,count,first,last,max,mean,median,min,backfill,bfill,ffill,interpolate,nearest,pad}
-                            Temporal resampling method. Use format
-                            "<count><offset>"where <offset> is one of {H, D, W, M,
-                            Q, Y}Defaults to 'nearest'.
-      --frequency OUTPUT_FREQUENCY
-                            Temporal aggregation frequency.Defaults to '1D'.
-      --meta-file OUTPUT_META_FILE, -m OUTPUT_META_FILE
-                            File containing cube-level, CF-compliant metadata in
-                            YAML format.
-      --dry-run             Just read and process inputs, but don't produce any
-                            outputs.
-      --traceback           On error, print Python traceback.
+    --help                 Show this message and exit.
+    --indexes, -i          Include indexes in output.
+    --output, -o <output>  Output file.
+    --format, -f <format>  Format of the output. If not given, guessed from
+                           <output>, otherwise <stdout> is used.
+    --params <params>, -p  Parameters specific for the output format. Comma-
+                           separated list of <key>=<value> pairs.
 
+Example: # TODO: Help is needed here - how are the coords passed by the user? 
+    
+    $ xcube extract xcube_cube.zarr 
 
-## xcube-grid
+## xcube grid
 
-    $ xcube-grid --help
+    $ xcube grid --help
     Usage: xcube-grid [OPTIONS] COMMAND [ARGS]...
     
-      The Xcube grid tool is used to find suitable spatial data cube resolutions
-      and to adjust bounding boxes to that resolutions.
+    Find suitable spatial data cube resolutions and to adjust bounding boxes
+    to that resolutions.
     
-      We find resolutions with respect to a fixed Earth grid and adjust regional
-      spatial subsets to that fixed Earth grid. We also try to select the
-      resolutions such that they are taken from a certain level of a multi-
-      resolution pyramid whose level resolutions increase by a factor of two.
+    We find resolutions with respect to a possibly regional fixed Earth grid
+    and adjust regional spatial subsets to that grid. We also try to select
+    the resolutions such that they are taken from a certain level of a multi-
+    resolution pyramid whose level resolutions increase by a factor of two.
+
     
-      The graticule on the fixed Earth grid is given by
+    The graticule at a given resolution level L within the grid is given by
     
-          LON(I) = -180 + I * TILE / INV_RES
-          LAT(J) =  -90 + J * TILE / INV_RES
+      RES(L) = COVERAGE * HEIGHT(L)
+      HEIGHT(L) = HEIGHT_0 * 2 ^ L
+      LON(L, I) = LON_MIN + I * HEIGHT_0 * RES(L)
+      LAT(L, J) = LAT_MIN + J * HEIGHT_0 * RES(L)
     
-      With
+    With
     
-          INV_RES:  An integer number greater zero.
-          RES:      1 / INV_RES, the spatial grid resolution in degrees.
-          TILE:     Number of grid cells of a global grid at lowest resolution level.
+      RES:      Grid resolution in degrees.
+      HEIGHT:   Number of vertical grid cells for given level
+      HEIGHT_0: Number of vertical grid cells at lowest resolution level.
+
     
-      Let WIDTH and HEIGHT be the number of horizontal and vertical grid cells
-      of a global grid at a certain LEVEL with WIDTH * RES = 360 and HEIGHT *
-      RES = 180, then we also force HEIGHT = TILE * 2 ^ LEVEL.
+    Let WIDTH and HEIGHT be the number of horizontal and vertical grid cells
+    of a global grid at a certain LEVEL with WIDTH * RES = 360 and HEIGHT *
+    RES = 180, then we also force HEIGHT = TILE * 2 ^ LEVEL.
     
     Options:
-      --version  Show the version and exit.
       --help     Show this message and exit.
     
     Commands:
       abox    Adjust a bounding box to a fixed Earth grid.
       levels  List levels for target resolution.
-      res     List resolutions close to a target...
+      res     List resolutions close to target resolution.
     
 Example: Find suitable target resolution for a ~300m (Sentinel 3 OLCI FR resolution) 
 fixed Earth grid within a deviation of 5%.
 
-    $ xcube-grid res 300m -d 5%
+    $ xcube grid res 300m -d 5%
     
     TILE    LEVEL   HEIGHT  INV_RES RES (deg)       RES (m), DELTA_RES (%)
     540     7       69120   384     0.0026041666666666665   289.9   -3.4
@@ -211,7 +158,7 @@ which is the fixed Earth grid identifier.
 We want to see if the resolution pyramid also supports a resolution close to 10m 
 (Sentinel 2 MSI resolution).
 
-    $ xcube-grid levels 384 -m 6
+    $ xcube grid levels 384 -m 6
     LEVEL   HEIGHT  INV_RES RES (deg)       RES (m)
     0       540     3       0.3333333333333333      37106.5
     1       1080    6       0.16666666666666666     18553.2
@@ -227,7 +174,7 @@ Lets assume we have data cube region with longitude from 0 to 5 degrees
 and latitudes from 50 to 52.5 degrees. What is the adjusted bounding box 
 on a fixed Earth grid with the inverse resolution 384?
 
-    $ xcube-grid abox  0,50,5,52.5  384
+    $ xcube grid abox  0,50,5,52.5  384
      
     Orig. box coord. = 0.0,50.0,5.0,52.5
     Adj. box coord.  = 0.0,49.21875,5.625,53.4375
@@ -244,3 +191,85 @@ on a fixed Earth grid with the inverse resolution 384?
     
 Note, to check bounding box WKTs, you can use the 
 handy tool [Wicket](https://arthur-e.github.io/Wicket/sandbox-gmaps3.html).
+     
+## `xcube gen`
+
+    $ xcube gen --help
+    usage: xcube gen [OPTIONS] INPUT_FILES
+    
+     Level-2C data cubes may be created in one go or successively in append
+     mode, input by input. The input may be one or more input files or a
+     pattern that may contain wildcards '?', '*', and '**'.
+    
+    optional arguments:
+      --version                       Show the version and exit.
+      -p, --proc INPUT_PROCESSOR      Input processor type name. The choices as
+                                      input processor are: ['default', 'rbins-
+                                      seviri-highroc-scene-l2', 'rbins-seviri-
+                                      highroc-daily-l2', 'snap-olci-highroc-l2',
+                                      'snap-olci-cyanoalert-l2'].  Additional
+                                      information about input processors can be
+                                      accessed by calling xcube generate_cube
+                                      --info
+      -c, --config CONFIG_FILE        Data cube configuration file in YAML format.
+                                      More than one config input file is
+                                      allowed.When passing several config files,
+                                      they are merged considering the order passed
+                                      via command line.
+      -d, --dir OUTPUT_DIR            Output directory. Defaults to '.'
+      -n, --name OUTPUT_NAME          Output filename pattern. Defaults to
+                                      'PROJ_WGS84_{INPUT_FILE}'.
+      -f, --format OUTPUT_FORMAT      Output writer type name. Defaults to 'zarr'.
+                                      The choices for the output format are:
+                                      ['csv', 'mem', 'netcdf4', 'zarr'].
+                                      Additional information about output formats
+                                      can be accessed by calling xcube
+                                      generate_cube --info
+      -s, --size OUTPUT_SIZE          Output size in pixels using format
+                                      "<width>,<height>".
+      -r, --region OUTPUT_REGION      Output region using format "<lon-min>,<lat-
+                                      min>,<lon-max>,<lat-max>"
+      -v, --variables OUTPUT_VARIABLES
+                                      Variables to be included in output. Comma-
+                                      separated list of names which may contain
+                                      wildcard characters "*" and "?".
+      --resampling OUTPUT_RESAMPLING  Fallback spatial resampling algorithm to be
+                                      used for all variables. Defaults to
+                                      'Nearest'. The choices for the resampling
+                                      algorithm are: dict_keys(['Nearest',
+                                      'Bilinear', 'Cubic', 'CubicSpline',
+                                      'Lanczos', 'Average', 'Min', 'Max',
+                                      'Median', 'Mode', 'Q1', 'Q3'])
+      --traceback                     On error, print Python traceback.
+      -a, --append                    Append successive outputs.
+      --dry_run                       Just read and process inputs, but don't
+                                      produce any outputs.
+      -i, --info                      Displays additional information about format
+                                      options or about input processors.
+      --help                          Show this message and exit.
+
+    $ xcube gen --info
+    input processors to be used with option --proc:
+      default                           Single-scene NetCDF/CF inputs in xcube standard format
+      rbins-seviri-highroc-scene-l2     RBINS SEVIRI HIGHROC single-scene Level-2 NetCDF inputs
+      rbins-seviri-highroc-daily-l2     RBINS SEVIRI HIGHROC daily Level-2 NetCDF inputs
+      snap-olci-highroc-l2              SNAP Sentinel-3 OLCI HIGHROC Level-2 NetCDF inputs
+      snap-olci-cyanoalert-l2           SNAP Sentinel-3 OLCI CyanoAlert Level-2 NetCDF inputs
+    
+    
+    output formats to be used with option --format:
+      csv                     (*.csv)       CSV file format
+      mem                     (*.mem)       In-memory dataset I/O
+      netcdf4                 (*.nc)        NetCDF-4 file format
+      zarr                    (*.zarr)      Zarr file format (http://zarr.readthedocs.io)
+
+
+
+
+Example:
+
+    $ xcube gen -a -s 2000,1000 -r 0,50,5,52.5 -v conc_chl,conc_tsm,kd489,c2rcc_flags,quality_flags -n hiroc-cube -t snap-c2rcc D:\OneDrive\BC\EOData\HIGHROC\2017\01\*.nc
+
+
+
+
