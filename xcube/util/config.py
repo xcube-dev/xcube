@@ -126,3 +126,16 @@ def _flatten_dict_value(value: Any,
         _flatten_dict_value(e, result, parent_name, True)
 
     return result
+
+
+def merge_config(first_dict: Dict, *more_dicts):
+    if not more_dicts:
+        output_dict = first_dict
+    else:
+        output_dict = dict(first_dict)
+        for d in more_dicts:
+            for k, v in d.items():
+                if k in output_dict and isinstance(output_dict[k], dict) and isinstance(v, dict):
+                    v = merge_config(output_dict[k], v)
+                output_dict[k] = v
+    return output_dict
