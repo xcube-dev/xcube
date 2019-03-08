@@ -26,6 +26,7 @@ import os
 import pstats
 import time
 import traceback
+import pandas as pd
 from typing import Sequence, Callable, Tuple, Optional, Dict, Any
 
 from xcube.api.compute import compute_dataset
@@ -150,6 +151,15 @@ def gen_cube(input_files: Sequence[str] = None, input_processor: str = None, inp
     return output_path, status
 
 
+def _check_time_valid(time_range, input_file):
+    if time_range[0] > time_range[1]:
+        print(f"illegal time range: file {input_file}:"
+              f" {pd.to_datetime(time_range[0])} > {pd.to_datetime(time_range[1])} ")
+        raise NotImplementedError()
+    else:
+        return time_range
+
+
 def _process_l2_input(input_processor: InputProcessor,
                       input_reader: DatasetIO,
                       input_reader_params: Dict[str, Any],
@@ -184,7 +194,14 @@ def _process_l2_input(input_processor: InputProcessor,
         return None, False
 
     reprojection_info = input_processor.get_reprojection_info(input_dataset)
+
     time_range = input_processor.get_time_range(input_dataset)
+    try:
+        time_range = _check_time_valid(time_range, input_file)
+    except Exception as e:
+        monitor(f'ERROR: time range not valid of file: {e}: skipping...')
+        traceback.print_exc()
+        return None, False
 
     if output_variables:
         output_variables = to_resolved_name_dict_pairs(output_variables, input_dataset)
