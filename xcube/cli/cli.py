@@ -102,6 +102,27 @@ def chunk(input, output, format=None, params=None, chunks=None):
         write_dataset(chunked_dataset, output_path=output, format_name=format_name, **write_kwargs)
 
 
+@click.command(name="pyram")
+@click.argument('input', metavar='<input>')
+@click.argument('output', metavar='<output>')
+def pyram(input, output):
+    """
+    Convert a dataset stored in <input> to its representation as a spatial image pyramid in directory <output>.
+    """
+    import time
+    from xcube.api.pyramid import write_pyramid_levels
+
+    start_time = t0 = time.perf_counter()
+
+    def progress_monitor(dataset, index, num_levels):
+        nonlocal t0
+        print(f"level {index} of {num_levels} written after {t0 - time.perf_counter()} seconds")
+        t0 = time.perf_counter()
+
+    levels = write_pyramid_levels(output, input_path=input, progress_monitor=progress_monitor)
+    print(f"{len(levels)} levels written after {start_time - time.perf_counter()} seconds")
+
+
 @click.command(name="dump")
 @click.argument('dataset', metavar='<path>')
 @click.option('--variable', '-v', metavar='<variable>', multiple=True,
@@ -132,6 +153,7 @@ cli.add_command(dump)
 cli.add_command(extract)
 cli.add_command(grid)
 cli.add_command(gen)
+cli.add_command(pyram)
 
 
 def main(args=None):
