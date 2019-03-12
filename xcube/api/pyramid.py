@@ -3,6 +3,8 @@ from typing import List, Callable, Sequence, Optional
 
 import xarray as xr
 
+from .readwrite import read_dataset
+
 PyramidLevelCallback = Callable[[xr.Dataset, int, int], Optional[xr.Dataset]]
 
 
@@ -51,11 +53,11 @@ def compute_pyramid_levels(dataset: xr.Dataset,
     if not var_names or shape is None:
         raise ValueError("Cannot pyramidize because no suitable variables were found.")
 
-    if len(shape) != len(chunks):
-        raise ValueError("Cannot pyramidize because of inconsistent chunking.")
-
     if chunks is None:
-        raise ValueError("Cannot pyramidize because chunk sizes were not given and could not be found.")
+        raise ValueError("Cannot pyramidize because chunk sizes were not given and none could be found.")
+
+    if shape and chunks and len(shape) != len(chunks):
+        raise ValueError("Cannot pyramidize because of inconsistent chunking.")
 
     def chunk_to_int(chunk):
         return chunk if isinstance(chunk, int) else max(chunk)
@@ -110,17 +112,25 @@ def compute_pyramid_levels(dataset: xr.Dataset,
 def write_pyramid_levels(output_path: str,
                          dataset: xr.Dataset = None,
                          input_path: str = None,
+                         link_input: bool = False,
                          progress_monitor: PyramidLevelCallback = None,
                          **kwargs):
     if dataset is None and input_path is None:
         raise ValueError("at least one of dataset or input_path must be given")
+
+    if link_input and input_path is None:
+        raise ValueError("input_path must be provided to link input")
 
     _post_process_level = kwargs.pop("post_process_level") if "post_process_level" in kwargs else None
 
     def post_process_level(level_dataset, index, num_levels):
         if _post_process_level is not None:
             level_dataset = _post_process_level(level_dataset, index, num_levels)
-        if index > 0 or input_path is None:
+
+        if index == 0 and link_input:
+            with open(os.path.join(output_path, f"{index}.link"), "w") as fp:
+                fp.write(input_path)
+        else:
             path = os.path.join(output_path, f"{index}.zarr")
             level_dataset.to_zarr(path)
             level_dataset.close()
@@ -131,15 +141,11 @@ def write_pyramid_levels(output_path: str,
 
         return level_dataset
 
-    if dataset is None:
-        dataset = xr.open_zarr(input_path)
-
     if not os.path.exists(output_path):
         os.makedirs(output_path)
 
-    if input_path is not None:
-        with open(os.path.join(output_path, "0.link"), "w") as fp:
-            fp.write(input_path)
+    if dataset is None:
+        dataset = read_dataset(input_path)
 
     return compute_pyramid_levels(dataset, post_process_level=post_process_level, **kwargs)
 

@@ -106,7 +106,9 @@ def chunk(input, output, format=None, params=None, chunks=None):
 @click.argument('input', metavar='<input>')
 @click.option('--output', '-o', metavar='<output>',
               help='Output directory. If omitted, "<input>.levels" will be used.')
-def pyram(input, output=None):
+@click.option('--link', '-l', is_flag=True, flag_value=True,
+              help='Link the <input> instead of converting it to a level zero dataset.')
+def pyram(input, output, link):
     """
     Convert a dataset stored in <input> to its representation as a spatial image pyramid in directory <output>.
     """
@@ -116,9 +118,11 @@ def pyram(input, output=None):
 
     input_path = input
     output_path = output
+    link_input = link
 
     start_time = t0 = time.perf_counter()
 
+    # noinspection PyUnusedLocal
     def progress_monitor(dataset, index, num_levels):
         nonlocal t0
         print(f"level {index} of {num_levels} written after {time.perf_counter() - t0} seconds")
@@ -131,7 +135,10 @@ def pyram(input, output=None):
     if os.path.exists(output_path):
         raise click.ClickException(f"output {output_path!r} already exists")
 
-    levels = write_pyramid_levels(output_path, input_path=input_path, progress_monitor=progress_monitor)
+    levels = write_pyramid_levels(output_path,
+                                  input_path=input_path,
+                                  link_input=link_input,
+                                  progress_monitor=progress_monitor)
     print(f"{len(levels)} levels written into {output_path} after {time.perf_counter() - start_time} seconds")
 
 
