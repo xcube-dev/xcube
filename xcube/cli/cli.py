@@ -6,6 +6,8 @@ from xcube.cli.gen import gen
 from xcube.cli.grid import grid
 from xcube.version import version
 
+DEFAULT_TILE_SIZE = 512
+
 
 def _parse_kwargs(value: str, metavar: str = None) -> Dict[str, Any]:
     if value:
@@ -107,8 +109,15 @@ def chunk(input, output, format=None, params=None, chunks=None):
 @click.option('--output', '-o', metavar='<output>',
               help='Output directory. If omitted, "<input>.levels" will be used.')
 @click.option('--link', '-l', is_flag=True, flag_value=True,
-              help='Link the <input> instead of converting it to a level zero dataset.')
-def pyram(input, output, link):
+              help='Link the <input> instead of converting it to a level zero dataset. '
+                   'Use with care, as the <input>\'s internal spatial chunk sizes may be inappropriate '
+                   'for imaging purposes.')
+@click.option('--tile-size', '-t', metavar='<tile-size>',
+              help=f'Tile size, given as single integer number or as <tile-width>,<tile-height>. '
+              f'If omitted, the tile size will be derived from the <input>\'s '
+              f'internal spatial chunk sizes. '
+              f'If the <input> is not chunked, tile size will be {DEFAULT_TILE_SIZE}.')
+def pyram(input, output, link, tile_size):
     """
     Convert a dataset stored in <input> to its representation as a spatial image pyramid in directory <output>.
     """
@@ -135,10 +144,24 @@ def pyram(input, output, link):
     if os.path.exists(output_path):
         raise click.ClickException(f"output {output_path!r} already exists")
 
+    spatial_tile_shape = None
+    if tile_size is not None:
+        try:
+            tile_size = int(tile_size)
+            tile_size = tile_size, tile_size
+        except ValueError:
+            tile_size = map(int, tile_size.split(","))
+            if tile_size != 2:
+                raise click.ClickException("Expected a pair of positive integers <tile-width>,<tile-height>")
+        if tile_size[0] < 1 or tile_size[1] < 1:
+            raise click.ClickException("Tile sizes must be a positive integers")
+        spatial_tile_shape = tile_size[1], tile_size[0]
+
     levels = write_pyramid_levels(output_path,
                                   input_path=input_path,
                                   link_input=link_input,
-                                  progress_monitor=progress_monitor)
+                                  progress_monitor=progress_monitor,
+                                  spatial_tile_shape=spatial_tile_shape)
     print(f"{len(levels)} levels written into {output_path} after {time.perf_counter() - start_time} seconds")
 
 

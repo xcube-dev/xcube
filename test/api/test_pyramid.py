@@ -31,7 +31,6 @@ class PyramidizeTest(unittest.TestCase):
         levels = compute_pyramid_levels(dataset)
 
         self._assert_levels_ok(levels)
-        self.assertIs(dataset, levels[0])
 
     def test_write_read_pyramid_levels(self):
         input_path = get_path("pyramid-input.zarr")
@@ -53,7 +52,6 @@ class PyramidizeTest(unittest.TestCase):
             print(f"write time total: ", time.perf_counter() - t0)
 
             self._assert_levels_ok(levels)
-            self.assertIs(dataset, levels[0])
 
             t0 = time.perf_counter()
 
