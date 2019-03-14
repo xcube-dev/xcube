@@ -19,17 +19,18 @@ def compute_pyramid_levels(dataset: xr.Dataset,
     """
     Compute the pyramid level datasets for a given *dataset*.
 
-    It is assumed that the datasets data variables
+    It is assumed that the spatial dimensions of each variable are the inner-most, that is, the last two elements
+    of a variable's shape provide the spatial dimension sizes.
 
-    :param dataset:
-    :param spatial_dims:
-    :param spatial_shape:
-    :param spatial_tile_shape:
-    :param var_names:
-    :param max_num_levels:
-    :param post_process_level:
-    :param progress_monitor:
-    :return:
+    :param dataset: The input dataset to pyramidized.
+    :param spatial_dims: If given, only variables are considered whose last to dimension elements match the given *spatial_dims*.
+    :param spatial_shape: If given, only variables are considered whose last to shape elements match the given *spatial_shape*.
+    :param spatial_tile_shape: If given, chunking will match the provided *spatial_tile_shape*.
+    :param var_names: Variables to consider. If None, all variables with at least two dimensions are considered.
+    :param max_num_levels: If given, the maximum number of pyramid levels.
+    :param post_process_level: If given, the function will be called for each level and must return a dataset.
+    :param progress_monitor: If given, the function will be called for each level.
+    :return: A list containing all generated pyramid levels.
     """
     if var_names:
         var_names = set(var_names)
@@ -119,7 +120,7 @@ def compute_pyramid_levels(dataset: xr.Dataset,
             chunked_var = var.chunk(chunks=dask_chunks)
             chunked_var.encoding.update(chunks=zarr_chunks)
             chunked_vars[var_name] = chunked_var
-        level_dataset = level_dataset.assign(chunked_vars)
+        level_dataset = level_dataset.assign(variables=chunked_vars)
 
         # Apply post processor, if any
         if post_process_level is not None:
