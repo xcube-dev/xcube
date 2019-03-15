@@ -111,12 +111,22 @@ def compute_pyramid_levels(dataset: xr.Dataset,
 
         # Chunk variables in level dataset according to spatial_tile_shape
         chunked_vars = {}
+        # Chunk data variables according to tile size
         for var_name in level_dataset.data_vars:
             var = level_dataset.data_vars[var_name]
             height, width = var.shape[-2:]
             zarr_chunks = (1,) * (var.ndim - 2) + (tile_height,) + (tile_width,)
             dask_chunks = (1,) * (var.ndim - 2) + (_tile_chunk(height, tile_height),) + (_tile_chunk(width, tile_width),)
             dask_chunks = {var.dims[i]: dask_chunks[i] for i in range(var.ndim)}
+            chunked_var = var.chunk(chunks=dask_chunks)
+            chunked_var.encoding.update(chunks=zarr_chunks)
+            chunked_vars[var_name] = chunked_var
+        # Make coordinate variable chunks equal to their shape
+        # TODO (forman): find out if chunking the spatial coordinates according to tile size improves performance
+        for var_name in level_dataset.coords:
+            var = level_dataset.coords[var_name]
+            zarr_chunks = var.shape
+            dask_chunks = {var.dims[i]: var.shape[i] for i in range(var.ndim)}
             chunked_var = var.chunk(chunks=dask_chunks)
             chunked_var.encoding.update(chunks=zarr_chunks)
             chunked_vars[var_name] = chunked_var
