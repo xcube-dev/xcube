@@ -33,71 +33,22 @@ def compute_levels(dataset: xr.Dataset,
     :param progress_monitor: If given, the function will be called for each level.
     :return: A list containing all generated pyramid levels.
     """
-    if var_names:
-        var_names = set(var_names)
-        dropped_vars = list(set(dataset.data_vars).difference(var_names))
-    else:
-        var_names = set(dataset.data_vars)
-        dropped_vars = []
-
-    # Collect data variables to be dropped, derive missing information from spatial data variables
-    for var_name in var_names:
-
-        if var_name not in dataset.data_vars:
-            raise ValueError(f"variable {var_name} not found")
-
-        var = dataset[var_name]
-
-        if var.ndim < 2:
-            # Must have at least the two spatial dimensions
-            dropped_vars.append(var_name)
-            continue
-
-        if spatial_dims is None:
-            spatial_dims = var.dims[-2:]
-        elif spatial_dims != var.dims[-2:]:
-            # Spatial dimensions don't fit
-            dropped_vars.append(var_name)
-            continue
-
-        if spatial_shape is None:
-            spatial_shape = var.shape[-2:]
-        elif spatial_shape != var.shape[-2:]:
-            # Spatial dimension sizes don't fit
-            dropped_vars.append(var_name)
-            continue
-
-        if spatial_tile_shape is None and var.chunks is not None:
-            def chunk_to_int(chunk):
-                return chunk if isinstance(chunk, int) else max(chunk)
-
-            spatial_tile_shape = tuple(map(chunk_to_int, var.chunks[-2:]))
-
+    dropped_vars, spatial_shape, spatial_tile_shape = _filter_level_source_dataset(dataset, var_names, spatial_dims,
+                                                                                   spatial_shape, spatial_tile_shape)
     if dropped_vars:
         dataset = dataset.drop(dropped_vars)
 
     if not tuple(dataset.data_vars):
-        raise ValueError("Cannot pyramidize because no suitable variables were found.")
+        raise ValueError("cannot compute pyramid levels because no suitable data variables were found")
 
     if spatial_tile_shape is None:
         spatial_tile_shape = min(spatial_shape[0], 512), min(spatial_shape[1], 512)
 
-    tile_height, tile_width = spatial_tile_shape
-
     # Count num_levels
-    height, width = spatial_shape
-    num_levels = 0
-    while True:
-        num_levels += 1
-
-        width = (width + 1) // 2
-        height = (height + 1) // 2
-        if width < tile_width or height < tile_height \
-                or (max_num_levels is not None and max_num_levels == num_levels):
-            break
+    level_shapes = _compute_level_shapes(spatial_shape, spatial_tile_shape, max_num_levels=max_num_levels)
+    num_levels = len(level_shapes)
 
     # Compute levels
-    height, width = spatial_shape
     level_dataset = dataset
     level_datasets = []
     for level in range(num_levels):
@@ -107,31 +58,15 @@ def compute_levels(dataset: xr.Dataset,
             for var_name in level_dataset.data_vars:
                 var = level_dataset.data_vars[var_name]
                 # For time being, we use the simplest and likely fastest downsampling I can think of
-                downsampled_vars[var_name] = var[..., ::2, ::2]
+                downsampled_var = var[..., ::2, ::2]
+                if downsampled_var.shape[-2:] != level_shapes[level]:
+                    import warnings
+                    warnings.warn(f"unexpected spatial shape for down-sampled variable {var_name!r}:"
+                                  f" expected {level_shapes[level]}, but found {downsampled_var.shape[-2:]}")
+                downsampled_vars[var_name] = downsampled_var
             level_dataset = xr.Dataset(downsampled_vars, attrs=level_dataset.attrs)
 
-        # Chunk variables in level dataset according to spatial_tile_shape
-        chunked_vars = {}
-        # Chunk data variables according to tile size
-        for var_name in level_dataset.data_vars:
-            var = level_dataset.data_vars[var_name]
-            height, width = var.shape[-2:]
-            zarr_chunks = (1,) * (var.ndim - 2) + (tile_height,) + (tile_width,)
-            dask_chunks = (1,) * (var.ndim - 2) + (_tile_chunk(height, tile_height),) + (_tile_chunk(width, tile_width),)
-            dask_chunks = {var.dims[i]: dask_chunks[i] for i in range(var.ndim)}
-            chunked_var = var.chunk(chunks=dask_chunks)
-            chunked_var.encoding.update(chunks=zarr_chunks)
-            chunked_vars[var_name] = chunked_var
-        # Make coordinate variable chunks equal to their shape
-        # TODO (forman): find out if chunking the spatial coordinates according to tile size improves performance
-        for var_name in level_dataset.coords:
-            var = level_dataset.coords[var_name]
-            zarr_chunks = var.shape
-            dask_chunks = {var.dims[i]: var.shape[i] for i in range(var.ndim)}
-            chunked_var = var.chunk(chunks=dask_chunks)
-            chunked_var.encoding.update(chunks=zarr_chunks)
-            chunked_vars[var_name] = chunked_var
-        level_dataset = level_dataset.assign(variables=chunked_vars)
+        level_dataset = _tile_level_dataset(level_dataset, spatial_tile_shape)
 
         # Apply post processor, if any
         if post_process_level is not None:
@@ -143,10 +78,6 @@ def compute_levels(dataset: xr.Dataset,
 
         # Collect level dataset
         level_datasets.append(level_dataset)
-
-        # Compute new size
-        width = (width + 1) // 2
-        height = (height + 1) // 2
 
     return level_datasets
 
@@ -233,3 +164,95 @@ def _tile_chunk(size, tile_size):
     if last_tile_size != 0:
         return (tile_size,) * (size // tile_size) + (last_tile_size,)
     return tile_size
+
+
+def _tile_level_dataset(level_dataset, spatial_tile_shape):
+    tile_height, tile_width = spatial_tile_shape
+
+    # Chunk variables in level dataset according to spatial_tile_shape
+    chunked_vars = {}
+
+    # Chunk data variables according to tile size
+    for var_name in level_dataset.data_vars:
+        var = level_dataset.data_vars[var_name]
+        height, width = var.shape[-2:]
+        zarr_chunks = (1,) * (var.ndim - 2) + (tile_height,) + (tile_width,)
+        dask_chunks = (1,) * (var.ndim - 2) + (_tile_chunk(height, tile_height),) + (_tile_chunk(width, tile_width),)
+        dask_chunks = {var.dims[i]: dask_chunks[i] for i in range(var.ndim)}
+        chunked_var = var.chunk(chunks=dask_chunks)
+        chunked_var.encoding.update(chunks=zarr_chunks)
+        chunked_vars[var_name] = chunked_var
+
+    # Make coordinate variable chunks equal to their shape
+    # TODO (forman): find out if chunking the spatial coordinates according to tile size improves performance
+    for var_name in level_dataset.coords:
+        var = level_dataset.coords[var_name]
+        zarr_chunks = var.shape
+        dask_chunks = {var.dims[i]: var.shape[i] for i in range(var.ndim)}
+        chunked_var = var.chunk(chunks=dask_chunks)
+        chunked_var.encoding.update(chunks=zarr_chunks)
+        chunked_vars[var_name] = chunked_var
+
+    return level_dataset.assign(variables=chunked_vars)
+
+
+def _compute_level_shapes(spatial_shape, spatial_tile_shape, max_num_levels=None) -> List[Tuple[int, int]]:
+    height, width = spatial_shape
+    tile_height, tile_width = spatial_tile_shape
+    max_num_levels = max_num_levels or -1
+    level_shapes = [(height, width)]
+    while True:
+        width = (width + 1) // 2
+        height = (height + 1) // 2
+        if width < tile_width or height < tile_height or max_num_levels == len(level_shapes):
+            break
+        level_shapes.append((height, width))
+    return level_shapes
+
+
+def _filter_level_source_dataset(dataset,
+                                 var_names=None,
+                                 spatial_dims=None,
+                                 spatial_shape=None,
+                                 spatial_tile_shape=None):
+    if var_names:
+        var_names = set(var_names)
+        dropped_vars = list(set(dataset.data_vars).difference(var_names))
+    else:
+        var_names = set(dataset.data_vars)
+        dropped_vars = []
+
+    # Collect data variables to be dropped, derive missing information from spatial data variables
+    for var_name in var_names:
+
+        if var_name not in dataset.data_vars:
+            raise ValueError(f"variable {var_name} not found")
+
+        var = dataset[var_name]
+
+        if var.ndim < 2:
+            # Must have at least the two spatial dimensions
+            dropped_vars.append(var_name)
+            continue
+
+        if spatial_dims is None:
+            spatial_dims = var.dims[-2:]
+        elif spatial_dims != var.dims[-2:]:
+            # Spatial dimensions don't fit
+            dropped_vars.append(var_name)
+            continue
+
+        if spatial_shape is None:
+            spatial_shape = var.shape[-2:]
+        elif spatial_shape != var.shape[-2:]:
+            # Spatial dimension sizes don't fit
+            dropped_vars.append(var_name)
+            continue
+
+        if spatial_tile_shape is None and var.chunks is not None:
+            def chunk_to_int(chunk):
+                return chunk if isinstance(chunk, int) else max(chunk)
+
+            spatial_tile_shape = tuple(map(chunk_to_int, var.chunks[-2:]))
+
+    return dropped_vars, spatial_shape, spatial_tile_shape
