@@ -50,8 +50,19 @@ def reproject_crs_to_wgs84(src_dataset: xr.Dataset,
 
     mem_driver = gdal.GetDriverByName("MEM")
 
-    # We assume all data vars have same size and that that the dims are [..., "y", "x"]
-    src_var = src_dataset[list(src_dataset.data_vars)[0]]
+    if "y" not in src_dataset.coords or "x"  not in src_dataset.coords:
+        raise ValueError("dataset is lacking spatial coordinates variables 'y' and 'x'")
+
+    # We assume all data vars have same size and that that the dims are (..., "y", "x")
+    src_var = None
+    for var_name in src_dataset.data_vars:
+        var = src_dataset[var_name]
+        if var.ndim >= 2 and tuple(var.dims[-2:]) == ("y", "x"):
+            src_var = var
+            break
+    if src_var is None:
+        raise ValueError("no variable found with spatial dimensions 'y' and 'x'")
+
     src_width = src_var.shape[-1]
     src_height = src_var.shape[-2]
     src_x1 = float(src_var.x[0])
