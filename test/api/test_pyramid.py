@@ -5,7 +5,7 @@ import unittest
 import numpy as np
 import xarray as xr
 
-from xcube.api.pyramid import compute_pyramid_levels, write_pyramid_levels, read_pyramid_levels
+from xcube.api.pyramid import compute_levels, write_levels, read_pyramid_levels
 from xcube.util.dsio import rimraf
 
 
@@ -13,7 +13,7 @@ def get_path(filename):
     return os.path.join(os.path.dirname(__file__), filename)
 
 
-class PyramidizeTest(unittest.TestCase):
+class PyramidTest(unittest.TestCase):
     @classmethod
     def create_test_dataset(cls, shape, chunks=None):
         size = int(np.prod(shape))
@@ -29,9 +29,9 @@ class PyramidizeTest(unittest.TestCase):
         else:
             return xr.Dataset(dict(a=a, b=b))
 
-    def test_compute_pyramid_levels(self):
+    def test_compute_levels(self):
         dataset = self.create_test_dataset(shape=(5, 200, 400), chunks=(1, 25, 25))
-        levels = compute_pyramid_levels(dataset)
+        levels = compute_levels(dataset)
         self._assert_levels_ok(levels,
                                expected_num_levels=4,
                                expected_shapes=[
@@ -47,7 +47,7 @@ class PyramidizeTest(unittest.TestCase):
                                    ((1,) * 5, (25,) * 1, (25,) * 2),
                                ])
 
-    def test_write_read_pyramid_levels_with_even_sizes(self):
+    def test_write_read_levels_with_even_sizes(self):
         shape = (5, 200, 400)
         tile_shape = (25, 25)
         expected_num_levels = 4
@@ -65,7 +65,7 @@ class PyramidizeTest(unittest.TestCase):
         ]
         self._assert_io_ok(shape, tile_shape, expected_num_levels, expected_shapes, expected_chunks)
 
-    def test_write_read_pyramid_levels_with_odd_sizes(self):
+    def test_write_read_levels_with_odd_sizes(self):
         shape = (5, 203, 405)
         tile_shape = (37, 38)
         expected_num_levels = 3
@@ -95,10 +95,10 @@ class PyramidizeTest(unittest.TestCase):
 
             t0 = time.perf_counter()
 
-            levels = write_pyramid_levels(output_path,
-                                          dataset=dataset,
-                                          spatial_tile_shape=tile_shape,
-                                          input_path=input_path)
+            levels = write_levels(output_path,
+                                  dataset=dataset,
+                                  spatial_tile_shape=tile_shape,
+                                  input_path=input_path)
 
             print(f"write time total: ", time.perf_counter() - t0)
 

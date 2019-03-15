@@ -104,7 +104,7 @@ def chunk(input, output, format=None, params=None, chunks=None):
         write_dataset(chunked_dataset, output_path=output, format_name=format_name, **write_kwargs)
 
 
-@click.command(name="pyram")
+@click.command(name="level")
 @click.argument('input', metavar='<input>')
 @click.option('--output', '-o', metavar='<output>',
               help='Output directory. If omitted, "<input>.levels" will be used.')
@@ -114,16 +114,17 @@ def chunk(input, output, format=None, params=None, chunks=None):
                    'for imaging purposes.')
 @click.option('--tile-size', '-t', metavar='<tile-size>',
               help=f'Tile size, given as single integer number or as <tile-width>,<tile-height>. '
-              f'If omitted, the tile size will be derived from the <input>\'s '
-              f'internal spatial chunk sizes. '
-              f'If the <input> is not chunked, tile size will be {DEFAULT_TILE_SIZE}.')
-def pyram(input, output, link, tile_size):
+                   f'If omitted, the tile size will be derived from the <input>\'s '
+                   f'internal spatial chunk sizes. '
+                   f'If the <input> is not chunked, tile size will be {DEFAULT_TILE_SIZE}.')
+def level(input, output, link, tile_size):
     """
-    Convert a dataset stored in <input> to its representation as a spatial image pyramid in directory <output>.
+    Transform the given dataset by <input> into the levels of a multi-level pyramid with spatial resolution
+    decreasing by a factor of two in both spatial dimensions and write the result to directory <output>.
     """
     import time
-    import os.path
-    from xcube.api.pyramid import write_pyramid_levels
+    import os
+    from xcube.api.pyramid import write_levels
 
     input_path = input
     output_path = output
@@ -134,7 +135,7 @@ def pyram(input, output, link, tile_size):
     # noinspection PyUnusedLocal
     def progress_monitor(dataset, index, num_levels):
         nonlocal t0
-        print(f"level {index} of {num_levels} written after {time.perf_counter() - t0} seconds")
+        print(f"level {index + 1} of {num_levels} written after {time.perf_counter() - t0} seconds")
         t0 = time.perf_counter()
 
     if not output_path:
@@ -157,11 +158,11 @@ def pyram(input, output, link, tile_size):
             raise click.ClickException("Tile sizes must be a positive integers")
         spatial_tile_shape = tile_size[1], tile_size[0]
 
-    levels = write_pyramid_levels(output_path,
-                                  input_path=input_path,
-                                  link_input=link_input,
-                                  progress_monitor=progress_monitor,
-                                  spatial_tile_shape=spatial_tile_shape)
+    levels = write_levels(output_path,
+                          input_path=input_path,
+                          link_input=link_input,
+                          progress_monitor=progress_monitor,
+                          spatial_tile_shape=spatial_tile_shape)
     print(f"{len(levels)} levels written into {output_path} after {time.perf_counter() - start_time} seconds")
 
 
@@ -195,7 +196,7 @@ cli.add_command(dump)
 cli.add_command(extract)
 cli.add_command(grid)
 cli.add_command(gen)
-cli.add_command(pyram)
+cli.add_command(level)
 
 
 def main(args=None):

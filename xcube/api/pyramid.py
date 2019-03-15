@@ -8,21 +8,22 @@ from .readwrite import read_dataset
 PyramidLevelCallback = Callable[[xr.Dataset, int, int], Optional[xr.Dataset]]
 
 
-def compute_pyramid_levels(dataset: xr.Dataset,
-                           spatial_dims: Tuple[str, str] = None,
-                           spatial_shape: Tuple[int, int] = None,
-                           spatial_tile_shape: Tuple[int, int] = None,
-                           var_names: Sequence[str] = None,
-                           max_num_levels: int = None,
-                           post_process_level: PyramidLevelCallback = None,
-                           progress_monitor: PyramidLevelCallback = None) -> List[xr.Dataset]:
+def compute_levels(dataset: xr.Dataset,
+                   spatial_dims: Tuple[str, str] = None,
+                   spatial_shape: Tuple[int, int] = None,
+                   spatial_tile_shape: Tuple[int, int] = None,
+                   var_names: Sequence[str] = None,
+                   max_num_levels: int = None,
+                   post_process_level: PyramidLevelCallback = None,
+                   progress_monitor: PyramidLevelCallback = None) -> List[xr.Dataset]:
     """
-    Compute the pyramid level datasets for a given *dataset*.
+    Transform the given *dataset* into the levels of a multi-level pyramid with spatial resolution
+    decreasing by a factor of two in both spatial dimensions.
 
     It is assumed that the spatial dimensions of each variable are the inner-most, that is, the last two elements
     of a variable's shape provide the spatial dimension sizes.
 
-    :param dataset: The input dataset to pyramidized.
+    :param dataset: The input dataset to be turned into a multi-level pyramid.
     :param spatial_dims: If given, only variables are considered whose last to dimension elements match the given *spatial_dims*.
     :param spatial_shape: If given, only variables are considered whose last to shape elements match the given *spatial_shape*.
     :param spatial_tile_shape: If given, chunking will match the provided *spatial_tile_shape*.
@@ -150,12 +151,12 @@ def compute_pyramid_levels(dataset: xr.Dataset,
     return level_datasets
 
 
-def write_pyramid_levels(output_path: str,
-                         dataset: xr.Dataset = None,
-                         input_path: str = None,
-                         link_input: bool = False,
-                         progress_monitor: PyramidLevelCallback = None,
-                         **kwargs):
+def write_levels(output_path: str,
+                 dataset: xr.Dataset = None,
+                 input_path: str = None,
+                 link_input: bool = False,
+                 progress_monitor: PyramidLevelCallback = None,
+                 **kwargs):
     if dataset is None and input_path is None:
         raise ValueError("at least one of dataset or input_path must be given")
 
@@ -188,7 +189,7 @@ def write_pyramid_levels(output_path: str,
     if dataset is None:
         dataset = read_dataset(input_path)
 
-    return compute_pyramid_levels(dataset, post_process_level=post_process_level, **kwargs)
+    return compute_levels(dataset, post_process_level=post_process_level, **kwargs)
 
 
 def read_pyramid_levels(dir_path: str,
