@@ -48,9 +48,7 @@ def reproject_crs_to_wgs84(src_dataset: xr.Dataset,
     if isinstance(dst_resampling, str):
         dst_resampling = {var_name: dst_resampling for var_name in src_dataset.variables}
 
-    mem_driver = gdal.GetDriverByName("MEM")
-
-    if "y" not in src_dataset.coords or "x"  not in src_dataset.coords:
+    if "y" not in src_dataset.coords or "x" not in src_dataset.coords:
         raise ValueError("dataset is lacking spatial coordinates variables 'y' and 'x'")
 
     # We assume all data vars have same size and that that the dims are (..., "y", "x")
@@ -66,27 +64,28 @@ def reproject_crs_to_wgs84(src_dataset: xr.Dataset,
     src_width = src_var.shape[-1]
     src_height = src_var.shape[-2]
     src_x1 = float(src_var.x[0])
-    src_x2 = float(src_var.x[-1])
     src_y1 = float(src_var.y[0])
+    src_x2 = float(src_var.x[-1])
     src_y2 = float(src_var.y[-1])
-    src_x_res = abs(src_x2 - src_x1) / (src_width - 1)
-    src_y_res = abs(src_y2 - src_y1) / (src_height - 1)
+    src_x_res = (src_x2 - src_x1) / (src_width - 1)
+    src_y_res = (src_y2 - src_y1) / (src_height - 1)
     src_geo_transform = (src_x1, src_x_res, 0.0,
-                         src_y2, 0.0, -src_y_res)
+                         src_y1, 0.0, src_y_res)
 
     dst_x1, dst_y1, dst_x2, dst_y2 = dst_region
     dst_width, dst_height = dst_size
 
     dst_res_x = (dst_x2 - dst_x1) / dst_width
     dst_res_y = (dst_y2 - dst_y1) / dst_height
-    dst_res = min(dst_res_x, dst_res_y)
+    # We use max() to make sure we fully cover dst_region
+    dst_res = max(dst_res_x, dst_res_y)
 
     # correct actual
     dst_x2 = dst_x1 + dst_res * dst_width
     dst_y2 = dst_y1 + dst_res * dst_height
 
     dst_geo_transform = (dst_x1 + dst_res / 2, dst_res, 0.0,
-                         dst_y1 + dst_res / 2, 0.0, -dst_res)
+                         dst_y2 - dst_res / 2, 0.0, -dst_res)
 
     print("src_geo_transform: ", src_geo_transform)
     print("dst_bbox: ", dst_x1, dst_y1, dst_x2, dst_y2)
@@ -94,13 +93,20 @@ def reproject_crs_to_wgs84(src_dataset: xr.Dataset,
     print("dst_res:", dst_res_x, dst_res_y, dst_res)
     print("dst_geo_transform:", dst_geo_transform)
 
+    mem_driver = gdal.GetDriverByName("MEM")
+
     dst_dataset = _new_dst_dataset(dst_width, dst_height, dst_res, dst_x1, dst_y1, dst_x2, dst_y2)
     dst_variables = {}
 
+    src_var_0 = src_var
     for var_name in src_dataset.data_vars:
         src_var = src_dataset[var_name]
 
-        if len(src_var.shape) != 2:
+        if len(src_var.shape) != 2 \
+                or src_var.dims[-2:] != ("y", "x") \
+                or src_var.shape[-2:] != src_var_0.shape[-2:]:
+            if include_non_spatial_vars:
+                dst_variables[var_name] = src_var
             continue
 
         src_ds = mem_driver.Create(f'src_{var_name}', src_width, src_height, 1, gdal.GDT_Float32, [])

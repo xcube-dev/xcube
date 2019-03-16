@@ -50,14 +50,14 @@ class ReprojectTest(unittest.TestCase):
         self.assertEqual(proj_dataset.lat_bnds.shape, (dst_height, 2))
 
         expected_rrs_665 = np.array([[0.025002, 0.019001, 0.019001, 0.008999, 0.012001, 0.012001],
-                                     [0.028, 0.021, 0.021, 0.009998, 0.009998, 0.008999],
-                                     [0.036999, 0.022999, 0.022999, 0.007999, 0.007999, 0.008999],
-                                     [0.041, 0.022999, 0.022999, 0.007, 0.007, 0.009998]],
-                                    dtype=np.float64)
+                                     [0.028, 0.021, 0.021, 0.009998, 0.008999, 0.008999],
+                                     [0.036999, 0.022999, 0.022999, 0.007, 0.009998, 0.009998],
+                                     [0.033001, 0.018002, 0.018002, 0.007999, 0.008999, 0.008999]],
+                                    dtype=np.float32)
         self.assertIn('rrs_665', proj_dataset)
         self.assertEqual((dst_height, dst_width), proj_dataset.rrs_665.shape)
         self.assertEqual(np.float32, proj_dataset.rrs_665.dtype)
-        assert_array_almost_equal(proj_dataset.rrs_665, expected_rrs_665)
+        assert_array_almost_equal(expected_rrs_665, proj_dataset.rrs_665)
 
     def test_reproject_xy_to_wgs84_highroc(self):
         dst_width = 12
