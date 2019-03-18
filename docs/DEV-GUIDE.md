@@ -1,5 +1,9 @@
 # Xcube Developer Guide
 
+Version 0.1, draft
+
+*IMPORTANT NOTE: Any changes to this doc must be reviewed by dev-team through pull requests.* 
+
 ## Index
 
 TODO
