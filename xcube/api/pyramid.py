@@ -31,7 +31,7 @@ def compute_levels(dataset: xr.Dataset,
     :param max_num_levels: If given, the maximum number of pyramid levels.
     :param post_process_level: If given, the function will be called for each level and must return a dataset.
     :param progress_monitor: If given, the function will be called for each level.
-    :return: A list containing all generated pyramid levels.
+    :return: A list of dataset instances representing the multi-level pyramid.
     """
     dropped_vars, spatial_shape, spatial_tile_shape = _filter_level_source_dataset(dataset, var_names, spatial_dims,
                                                                                    spatial_shape, spatial_tile_shape)
@@ -87,7 +87,22 @@ def write_levels(output_path: str,
                  input_path: str = None,
                  link_input: bool = False,
                  progress_monitor: PyramidLevelCallback = None,
-                 **kwargs):
+                 **kwargs) -> List[xr.Dataset]:
+    """
+    Transform the given dataset given by a *dataset* instance or *input_path* string
+    into the levels of a multi-level pyramid with spatial resolution
+    decreasing by a factor of two in both spatial dimensions and write them to *output_path*.
+
+    One of *dataset* and *input_path* must be given.
+
+    :param output_path: Output path
+    :param dataset: Dataset to be converted and written as levels.
+    :param input_path: Input path to a dataset to be transformed and written as levels.
+    :param link_input: Just link the dataset at level zero instead of writing it.
+    :param progress_monitor: An optional progress monitor.
+    :param kwargs: Keyword-arguments accepted by the ``compute_levels()`` function.
+    :return: A list of dataset instances representing the multi-level pyramid.
+    """
     if dataset is None and input_path is None:
         raise ValueError("at least one of dataset or input_path must be given")
 
@@ -123,8 +138,16 @@ def write_levels(output_path: str,
     return compute_levels(dataset, post_process_level=post_process_level, **kwargs)
 
 
-def read_pyramid_levels(dir_path: str,
-                        progress_monitor: PyramidLevelCallback = None) -> List[xr.Dataset]:
+def read_levels(dir_path: str,
+                progress_monitor: PyramidLevelCallback = None) -> List[xr.Dataset]:
+    """
+    Read the of a multi-level pyramid with spatial resolution
+    decreasing by a factor of two in both spatial dimensions.
+
+    :param dir_path: The directory path.
+    :param progress_monitor: An optional progress monitor.
+    :return: A list of dataset instances representing the multi-level pyramid.
+    """
     file_paths = os.listdir(dir_path)
     level_paths = {}
     num_levels = -1

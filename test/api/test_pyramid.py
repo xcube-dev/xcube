@@ -5,7 +5,7 @@ import unittest
 import numpy as np
 import xarray as xr
 
-from xcube.api.pyramid import compute_levels, write_levels, read_pyramid_levels
+from xcube.api.pyramid import compute_levels, write_levels, read_levels
 from xcube.util.dsio import rimraf
 
 
@@ -106,7 +106,7 @@ class PyramidTest(unittest.TestCase):
 
             t0 = time.perf_counter()
 
-            levels = read_pyramid_levels(output_path)
+            levels = read_levels(output_path)
 
             print(f"read time total: ", time.perf_counter() - t0)
 
