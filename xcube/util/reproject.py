@@ -25,7 +25,6 @@ from typing import Tuple, List, Union, Dict, Any
 import gdal
 import numpy as np
 import xarray as xr
-
 from xcube.util.constants import CRS_WKT_EPSG_4326, EARTH_GEO_COORD_RANGE
 
 gdal.UseExceptions()
@@ -87,11 +86,11 @@ def reproject_crs_to_wgs84(src_dataset: xr.Dataset,
     dst_geo_transform = (dst_x1 + dst_res / 2, dst_res, 0.0,
                          dst_y2 - dst_res / 2, 0.0, -dst_res)
 
-    print("src_geo_transform: ", src_geo_transform)
-    print("dst_bbox: ", dst_x1, dst_y1, dst_x2, dst_y2)
-    print("dst_size:", dst_width, dst_height)
-    print("dst_res:", dst_res_x, dst_res_y, dst_res)
-    print("dst_geo_transform:", dst_geo_transform)
+    # print("src_geo_transform: ", src_geo_transform)
+    # print("dst_bbox: ", dst_x1, dst_y1, dst_x2, dst_y2)
+    # print("dst_size:", dst_width, dst_height)
+    # print("dst_res:", dst_res_x, dst_res_y, dst_res)
+    # print("dst_geo_transform:", dst_geo_transform)
 
     mem_driver = gdal.GetDriverByName("MEM")
 
@@ -109,11 +108,18 @@ def reproject_crs_to_wgs84(src_dataset: xr.Dataset,
                 dst_variables[var_name] = src_var
             continue
 
-        src_ds = mem_driver.Create(f'src_{var_name}', src_width, src_height, 1, gdal.GDT_Float32, [])
+        src_data_type = numpy_to_gdal_dtype(src_var.dtype)
+
+        # TODO (forman): PERFORMANCE: stack multiple variables of same src_data_type
+        #                to perform the reprojection only once per stack
+
+        src_ds = mem_driver.Create(f'src_{var_name}', src_width, src_height, 1, src_data_type, [])
         src_ds.SetProjection(src_projection)
         src_ds.SetGeoTransform(src_geo_transform)
         src_ds.GetRasterBand(1).SetNoDataValue(float('nan'))
         src_ds.GetRasterBand(1).WriteArray(src_var.values)
+
+        # TODO (forman): CODE-DUPLICATION: refactor out common code block in reproject_xy_to_wgs84()
 
         dst_ds = mem_driver.Create(f'dst_{var_name}', dst_width, dst_height, 1, gdal.GDT_Float32, [])
         dst_ds.SetProjection(CRS_WKT_EPSG_4326)
@@ -139,12 +145,8 @@ def reproject_crs_to_wgs84(src_dataset: xr.Dataset,
                             options)
 
         dst_values = dst_ds.GetRasterBand(1).ReadAsArray()
-        dst_coords = dict(lat=dst_dataset.lat, lon=dst_dataset.lon)
-        dst_attrs = dict(**src_var.attrs, spatial_resampling=resample_alg_name)
-        if "grid_mapping" in dst_attrs:
-            del dst_attrs["grid_mapping"]
 
-        dst_variables[var_name] = xr.DataArray(dst_values, dims=['lat', 'lon'], coords=dst_coords, attrs=dst_attrs)
+        dst_variables[var_name] = _new_dst_variable(src_var, dst_values, resample_alg_name)
 
     dst_dataset = dst_dataset.assign(variables=dst_variables)
 
@@ -161,7 +163,8 @@ def reproject_xy_to_wgs84(src_dataset: xr.Dataset,
                           dst_region: CoordRange = None,
                           dst_resampling: Union[str, Dict[str, str]] = DEFAULT_RESAMPLING,
                           include_xy_vars: bool = False,
-                          include_non_spatial_vars: bool = False) -> xr.Dataset:
+                          include_non_spatial_vars: bool = False,
+                          precision: int = 64) -> xr.Dataset:
     """
     Reprojection of xarray datasets with 2D geo-coding, e.g. with variables lon(y,x), lat(y, x) to
     EPSG:4326 (WGS-84) coordinate reference system.
@@ -324,6 +327,11 @@ def reproject_xy_to_wgs84(src_dataset: xr.Dataset,
         dst_var_dataset.SetProjection(CRS_WKT_EPSG_4326)
         dst_var_dataset.SetGeoTransform(dst_geo_transform)
 
+        # TODO (forman): PERFORMANCE: stack multiple variables of same src_data_type
+        #                to perform the reprojection only once per stack
+
+        # TODO (forman): CODE-DUPLICATION: refactor out common code block in reproject_crs_to_wgs84()
+
         for band_index in range(1, band_count + 1):
             src_var_dataset.GetRasterBand(band_index).SetNoDataValue(float('nan'))
             src_var_dataset.GetRasterBand(band_index).WriteArray(src_var.values)
@@ -351,17 +359,25 @@ def reproject_xy_to_wgs84(src_dataset: xr.Dataset,
         dst_values = dst_var_dataset.GetRasterBand(1).ReadAsArray()
         # print(var_name, dst_values.shape, np.nanmin(dst_values), np.nanmax(dst_values))
 
-        dst_var_attrs = dict(**src_var.attrs, spatial_resampling=resample_alg_name)
-        dst_var = xr.DataArray(dst_values, dims=['lat', 'lon'], name=dst_var_name, attrs=dst_var_attrs)
-        dst_var.encoding = src_var.encoding
-        if np.issubdtype(dst_var.dtype, np.floating) \
-                and np.issubdtype(src_var.encoding.get('dtype'), np.integer) \
-                and src_var.encoding.get('_FillValue') is None:
-            warnings.warn(f'variable {dst_var.name!r}: setting _FillValue=0 to replace any NaNs')
-            dst_var.encoding['_FillValue'] = 0
-        dst_dataset[dst_var_name] = dst_var
+        dst_dataset[dst_var_name] = _new_dst_variable(src_var, dst_values, resample_alg_name)
 
     return dst_dataset
+
+
+def _new_dst_variable(src_var, dst_values, resample_alg_name):
+    dst_var_attrs = dict(**src_var.attrs, spatial_resampling=resample_alg_name)
+    dst_attrs = dict(**src_var.attrs, spatial_resampling=resample_alg_name)
+    if "grid_mapping" in dst_attrs:
+        del dst_attrs["grid_mapping"]
+
+    dst_var = xr.DataArray(dst_values, dims=['lat', 'lon'], attrs=dst_var_attrs)
+    dst_var.encoding = src_var.encoding
+    if np.issubdtype(dst_var.dtype, np.floating) \
+            and np.issubdtype(src_var.encoding.get('dtype'), np.integer) \
+            and src_var.encoding.get('_FillValue') is None:
+        warnings.warn(f'variable {dst_var.name!r}: setting _FillValue=0 to replace any NaNs')
+        dst_var.encoding['_FillValue'] = 0
+    return dst_var
 
 
 def _new_dst_dataset(dst_width, dst_height, dst_res, dst_x1, dst_y1, dst_x2, dst_y2):
