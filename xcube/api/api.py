@@ -4,12 +4,13 @@ from typing import Dict, List, Mapping, Any, Union, Sequence
 import numpy as np
 import pandas as pd
 import xarray as xr
+from xcube.api.levels import compute_levels
 
 from .chunk import chunk_dataset
 from .dump import dump_dataset
-from .new import new_cube
 from .extract import get_cube_values_for_points, get_cube_point_indexes, get_cube_values_for_indexes, \
     get_dataset_indexes, INDEX_NAME_PATTERN
+from .new import new_cube
 from .readwrite import read_cube, open_cube, write_cube
 from .select import select_vars
 from .verify import verify_cube
@@ -256,3 +257,22 @@ class XCubeAPI:
         :return: A new dataset. It is empty, if *var_names* is empty. It is *dataset*, if *var_names* is None.
         """
         return select_vars(self._dataset, var_names)
+
+    def levels(self, **kwargs) -> List[xr.Dataset]:
+        """
+        Transform this dataset into the levels of a multi-level pyramid with spatial resolution
+        decreasing by a factor of two in both spatial dimensions.
+
+        It is assumed that the spatial dimensions of each variable are the inner-most, that is, the last two elements
+        of a variable's shape provide the spatial dimension sizes.
+
+        :param spatial_dims: If given, only variables are considered whose last to dimension elements match the given *spatial_dims*.
+        :param spatial_shape: If given, only variables are considered whose last to shape elements match the given *spatial_shape*.
+        :param spatial_tile_shape: If given, chunking will match the provided *spatial_tile_shape*.
+        :param var_names: Variables to consider. If None, all variables with at least two dimensions are considered.
+        :param max_num_levels: If given, the maximum number of pyramid levels.
+        :param post_process_level: If given, the function will be called for each level and must return a dataset.
+        :param progress_monitor: If given, the function will be called for each level.
+        :return: A list of dataset instances representing the multi-level pyramid.
+        """
+        return compute_levels(self._dataset, **kwargs)

@@ -124,7 +124,7 @@ def level(input, output, link, tile_size):
     """
     import time
     import os
-    from xcube.api.pyramid import write_levels
+    from xcube.api.levels import write_levels
 
     input_path = input
     output_path = output
