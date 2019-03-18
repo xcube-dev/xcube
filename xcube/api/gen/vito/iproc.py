@@ -22,10 +22,9 @@
 from typing import Tuple, Optional, Collection
 
 import xarray as xr
-
 from xcube.api.gen.default.iproc import DefaultInputProcessor
 from xcube.util.reproject import reproject_crs_to_wgs84, get_projection_wkt
-from xcube.util.timecoord import get_time_in_days_since_1970
+
 from ..iproc import InputProcessor, register_input_processor
 
 
@@ -51,6 +50,10 @@ class VitoS2PlusInputProcessor(InputProcessor):
 
     def get_extra_vars(self, dataset: xr.Dataset) -> Optional[Collection[str]]:
         return ["transverse_mercator"]
+
+    def pre_process(self, dataset: xr.Dataset) -> xr.Dataset:
+        # TODO (forman): clarify with VITO how to correctly mask the S2+ variables
+        return super().pre_process(dataset)
 
     def process(self,
                 dataset: xr.Dataset,
