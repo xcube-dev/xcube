@@ -13,7 +13,7 @@ def compute_levels(dataset: xr.Dataset,
                    spatial_shape: Tuple[int, int] = None,
                    spatial_tile_shape: Tuple[int, int] = None,
                    var_names: Sequence[str] = None,
-                   max_num_levels: int = None,
+                   num_levels_max: int = None,
                    post_process_level: PyramidLevelCallback = None,
                    progress_monitor: PyramidLevelCallback = None) -> List[xr.Dataset]:
     """
@@ -28,7 +28,7 @@ def compute_levels(dataset: xr.Dataset,
     :param spatial_shape: If given, only variables are considered whose last to shape elements match the given *spatial_shape*.
     :param spatial_tile_shape: If given, chunking will match the provided *spatial_tile_shape*.
     :param var_names: Variables to consider. If None, all variables with at least two dimensions are considered.
-    :param max_num_levels: If given, the maximum number of pyramid levels.
+    :param num_levels_max: If given, the maximum number of pyramid levels.
     :param post_process_level: If given, the function will be called for each level and must return a dataset.
     :param progress_monitor: If given, the function will be called for each level.
     :return: A list of dataset instances representing the multi-level pyramid.
@@ -45,7 +45,7 @@ def compute_levels(dataset: xr.Dataset,
         spatial_tile_shape = min(spatial_shape[0], 512), min(spatial_shape[1], 512)
 
     # Count num_levels
-    level_shapes = _compute_level_shapes(spatial_shape, spatial_tile_shape, max_num_levels=max_num_levels)
+    level_shapes = _compute_level_shapes(spatial_shape, spatial_tile_shape, num_levels_max=num_levels_max)
     num_levels = len(level_shapes)
 
     # Compute levels
@@ -219,15 +219,15 @@ def _tile_level_dataset(level_dataset, spatial_tile_shape):
     return level_dataset.assign(variables=chunked_vars)
 
 
-def _compute_level_shapes(spatial_shape, spatial_tile_shape, max_num_levels=None) -> List[Tuple[int, int]]:
+def _compute_level_shapes(spatial_shape, spatial_tile_shape, num_levels_max=None) -> List[Tuple[int, int]]:
     height, width = spatial_shape
     tile_height, tile_width = spatial_tile_shape
-    max_num_levels = max_num_levels or -1
+    num_levels_max = num_levels_max or -1
     level_shapes = [(height, width)]
     while True:
         width = (width + 1) // 2
         height = (height + 1) // 2
-        if width < tile_width or height < tile_height or max_num_levels == len(level_shapes):
+        if width < tile_width or height < tile_height or num_levels_max == len(level_shapes):
             break
         level_shapes.append((height, width))
     return level_shapes

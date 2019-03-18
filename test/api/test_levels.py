@@ -47,6 +47,22 @@ class PyramidTest(unittest.TestCase):
                                    ((1,) * 5, (25,) * 1, (25,) * 2),
                                ])
 
+    def test_compute_levels_with_max_levels(self):
+        dataset = self.create_test_dataset(shape=(5, 200, 400), chunks=(1, 25, 25))
+        levels = compute_levels(dataset, num_levels_max=3)
+        self._assert_levels_ok(levels,
+                               expected_num_levels=3,
+                               expected_shapes=[
+                                   (5, 200, 400),
+                                   (5, 100, 200),
+                                   (5, 50, 100),
+                               ],
+                               expected_chunks=[
+                                   ((1,) * 5, (25,) * 8, (25,) * 16),
+                                   ((1,) * 5, (25,) * 4, (25,) * 8),
+                                   ((1,) * 5, (25,) * 2, (25,) * 4),
+                               ])
+
     def test_write_read_levels_with_even_sizes(self):
         shape = (5, 200, 400)
         tile_shape = (25, 25)

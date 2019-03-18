@@ -186,7 +186,18 @@ class LevelTest(CliTest):
         self.assertTrue(os.path.isdir(LevelTest.TEST_OUTPUT))
         self.assertEqual(['0.link', '1.zarr', '2.zarr'], os.listdir(LevelTest.TEST_OUTPUT))
 
-    def test_tile_size_syntax(self):
+    def test_level_with_zarr_num_levels_max(self):
+        result = self.invoke_cli(["level",
+                                  "-t", "45",
+                                  "-n", "2",
+                                  "-o", LevelTest.TEST_OUTPUT,
+                                  TEST_ZARR_DIR,
+                                  ])
+        self.assertEqual(0, result.exit_code)
+        self.assertTrue(os.path.isdir(LevelTest.TEST_OUTPUT))
+        self.assertEqual(['0.zarr', '1.zarr'], os.listdir(LevelTest.TEST_OUTPUT))
+
+    def test_invalid_inputs(self):
         result = self.invoke_cli(["level",
                                   "-t", "a45",
                                   "-o", LevelTest.TEST_OUTPUT,
@@ -197,10 +208,27 @@ class LevelTest(CliTest):
         self.assertEqual(1, result.exit_code)
 
         result = self.invoke_cli(["level",
+                                  "-t", "-3",
+                                  "-o", LevelTest.TEST_OUTPUT,
+                                  TEST_NC_FILE,
+                                  ])
+        self.assertEqual("Error: <tile-size> must comprise positive integers\n",
+                         result.output)
+        self.assertEqual(1, result.exit_code)
+
+        result = self.invoke_cli(["level",
                                   "-t", "45,45,45",
                                   "-o", LevelTest.TEST_OUTPUT,
                                   TEST_NC_FILE])
         self.assertEqual("Error: Expected a pair of positive integers <tile-width>,<tile-height>\n",
+                         result.output)
+        self.assertEqual(1, result.exit_code)
+
+        result = self.invoke_cli(["level",
+                                  "-n", "0",
+                                  "-o", LevelTest.TEST_OUTPUT,
+                                  TEST_NC_FILE])
+        self.assertEqual("Error: <num-levels-max> must be a positive integer\n",
                          result.output)
         self.assertEqual(1, result.exit_code)
 

@@ -1,7 +1,6 @@
 from typing import Any, Dict
 
 import click
-
 from xcube.cli.gen import gen
 from xcube.cli.grid import grid
 from xcube.version import version
@@ -114,10 +113,14 @@ def chunk(input, output, format=None, params=None, chunks=None):
                    'for imaging purposes.')
 @click.option('--tile-size', '-t', metavar='<tile-size>',
               help=f'Tile size, given as single integer number or as <tile-width>,<tile-height>. '
-                   f'If omitted, the tile size will be derived from the <input>\'s '
-                   f'internal spatial chunk sizes. '
-                   f'If the <input> is not chunked, tile size will be {DEFAULT_TILE_SIZE}.')
-def level(input, output, link, tile_size):
+              f'If omitted, the tile size will be derived from the <input>\'s '
+              f'internal spatial chunk sizes. '
+              f'If the <input> is not chunked, tile size will be {DEFAULT_TILE_SIZE}.')
+@click.option('--num-levels-max', '-n', metavar='<num-levels-max>', type=int,
+              help=f'Maximum number of levels to generate. '
+              f'If not given, the number of levels will be derived from '
+              f'spatial dimension and tile sizes.')
+def level(input, output, link, tile_size, num_levels_max):
     """
     Transform the given dataset by <input> into the levels of a multi-level pyramid with spatial resolution
     decreasing by a factor of two in both spatial dimensions and write the result to directory <output>.
@@ -130,13 +133,8 @@ def level(input, output, link, tile_size):
     output_path = output
     link_input = link
 
-    start_time = t0 = time.perf_counter()
-
-    # noinspection PyUnusedLocal
-    def progress_monitor(dataset, index, num_levels):
-        nonlocal t0
-        print(f"level {index + 1} of {num_levels} written after {time.perf_counter() - t0} seconds")
-        t0 = time.perf_counter()
+    if num_levels_max is not None and num_levels_max < 1:
+        raise click.ClickException(f"<num-levels-max> must be a positive integer")
 
     if not output_path:
         basename, ext = os.path.splitext(input_path)
@@ -155,15 +153,24 @@ def level(input, output, link, tile_size):
             if tile_size != 2:
                 raise click.ClickException("Expected a pair of positive integers <tile-width>,<tile-height>")
         if tile_size[0] < 1 or tile_size[1] < 1:
-            raise click.ClickException("Tile sizes must be a positive integers")
+            raise click.ClickException("<tile-size> must comprise positive integers")
         spatial_tile_shape = tile_size[1], tile_size[0]
+
+    start_time = t0 = time.perf_counter()
+
+    # noinspection PyUnusedLocal
+    def progress_monitor(dataset, index, num_levels):
+        nonlocal t0
+        print(f"level {index + 1} of {num_levels} written after {time.perf_counter() - t0} seconds")
+        t0 = time.perf_counter()
 
     levels = write_levels(output_path,
                           input_path=input_path,
                           link_input=link_input,
                           progress_monitor=progress_monitor,
-                          spatial_tile_shape=spatial_tile_shape)
-    print(f"{len(levels)} levels written into {output_path} after {time.perf_counter() - start_time} seconds")
+                          spatial_tile_shape=spatial_tile_shape,
+                          num_levels_max=num_levels_max)
+    print(f"{len(levels)} level(s) written into {output_path} after {time.perf_counter() - start_time} seconds")
 
 
 @click.command(name="dump")
@@ -178,7 +185,7 @@ def dump(dataset, variable, encoding):
     """
     from xcube.api import open_dataset, dump_dataset
     with open_dataset(dataset) as ds:
-        text = dump_dataset(ds, variable_names=variable, show_var_encoding=encoding)
+        text = dump_dataset(ds, var_names=variable, show_var_encoding=encoding)
         print(text)
 
 
