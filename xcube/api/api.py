@@ -5,6 +5,7 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 
+from .vars_to_dim import vars_to_dim
 from .chunk import chunk_dataset
 from .dump import dump_dataset
 from .new import new_cube
@@ -223,6 +224,15 @@ class XCubeAPI:
                              chunk_sizes=chunk_sizes,
                              format_name=format_name)
 
+    def vars_to_dim(self, dim_name: str = 'newdim'):
+        """
+        Convert data variables into a dimension
+
+        :param dim_name: The name of the new dimension ['vars']
+        :return: A new data cube with the new dimension.
+        """
+        return vars_to_dim(self._dataset, dim_name)
+
     def dump(self,
              variable_names=None,
              show_var_encoding=False) -> str:
@@ -251,7 +261,6 @@ class XCubeAPI:
         """
         Select data variable from given *dataset* and create new dataset.
 
-        :param dataset: The dataset from which to select variables.
         :param var_names: The names of data variables to select.
         :return: A new dataset. It is empty, if *var_names* is empty. It is *dataset*, if *var_names* is None.
         """
