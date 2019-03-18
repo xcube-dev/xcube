@@ -225,17 +225,17 @@ class XCubeAPI:
                              format_name=format_name)
 
     def dump(self,
-             variable_names=None,
+             var_names=None,
              show_var_encoding=False) -> str:
         """
         Dump this dataset or its variables into a text string.
 
-        :param variable_names: names of variables to be dumped
+        :param var_names: names of variables to be dumped
         :param show_var_encoding: also dump variable encodings?
         :return: the dataset dump
         """
         return dump_dataset(self._dataset,
-                            variable_names=variable_names,
+                            var_names=var_names,
                             show_var_encoding=show_var_encoding)
 
     def verify(self) -> List[str]:
