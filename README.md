@@ -12,7 +12,7 @@ Data cubes with xarray
 
 First
     
-    $ git clone https://github.com/bcdev/xcube.git
+    $ git clone https://github.com/dcs4cop/xcube.git
     $ cd xcube
     $ conda env create
     
