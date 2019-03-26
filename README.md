@@ -40,6 +40,10 @@ with [coverage report](https://pytest-cov.readthedocs.io/en/latest/reporting.htm
 
     $ pytest --cov-report html --cov=xcube
 
+# Developer Guide
+
+...is [here](docs/DEV-GUIDE.md).
+
 
 # Tools
 ## `xcube chunk`
