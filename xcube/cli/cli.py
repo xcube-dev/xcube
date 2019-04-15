@@ -190,6 +190,42 @@ def dump(dataset, variable, encoding):
 
 
 # noinspection PyShadowingBuiltins
+@click.command(name="vars2dim")
+@click.argument('cube', metavar='<cube>')
+@click.option('--dim_name', '-d', metavar='<dimension name>', help="Name of the new dimension ['var']")
+@click.option('--output', '-o', metavar='<output>',
+              help="Output file.")
+@click.option('--format', '-f', metavar='<format>', type=click.Choice(['zarr', 'netcdf']),
+              help="Format of the output. If not given, guessed from <output>.")
+def vars2dim(cube, dim_name, output=None, format=None):
+    """
+    Write a new dataset with identical data and compression but with new chunk sizes.
+    """
+
+    from xcube.util.dsio import guess_dataset_format
+    import os
+
+    if not dim_name:
+        dim_name = 'newdim'
+
+    if not output:
+        basename = os.path.splitext(cube)[0]
+        ext = os.path.splitext(cube)[1]
+
+        output = basename + '_converted' + ext
+
+    format_name = format if format else guess_dataset_format(output)
+
+    from xcube.api import open_dataset, vars_to_dim, write_dataset
+
+    with open_dataset(input_path=cube) as ds:
+
+        converted_dataset = vars_to_dim(ds, dim_name=dim_name)
+
+        write_dataset(converted_dataset, output_path=output, format_name=format_name)
+
+
+# noinspection PyShadowingBuiltins
 @click.group()
 @click.version_option(version)
 def cli():
@@ -202,6 +238,7 @@ cli.add_command(chunk)
 cli.add_command(dump)
 cli.add_command(extract)
 cli.add_command(grid)
+cli.add_command(vars2dim)
 cli.add_command(gen)
 cli.add_command(level)
 

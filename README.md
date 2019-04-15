@@ -12,7 +12,7 @@ Data cubes with xarray
 
 First
     
-    $ git clone https://github.com/bcdev/xcube.git
+    $ git clone https://github.com/dcs4cop/xcube.git
     $ cd xcube
     $ conda env create
     
@@ -39,6 +39,10 @@ with coverage
 with [coverage report](https://pytest-cov.readthedocs.io/en/latest/reporting.html) in HTML
 
     $ pytest --cov-report html --cov=xcube
+
+# Developer Guide
+
+...is [here](docs/DEV-GUIDE.md).
 
 
 # Tools

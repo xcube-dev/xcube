@@ -6,6 +6,8 @@ from typing import List
 import click
 import click.testing
 import xarray as xr
+
+from test.sampledata import new_test_dataset
 from xcube.api.new import new_cube
 from xcube.cli.cli import cli, _parse_kwargs
 from xcube.util.dsio import rimraf
@@ -68,6 +70,29 @@ class DumpTest(CliTest):
             "    geospatial_lat_units:  degrees_north\n"
         ), result.output)
         self.assertEqual(0, result.exit_code)
+
+
+class Vars2DimTest(CliTest):
+
+    def test_vars2dim(self):
+        dataset = new_test_dataset(["2010-01-01", "2010-01-02", "2010-01-03", "2010-01-04", "2010-01-05"],
+                                   precipitation=0.4, temperature=275.2)
+        dataset.to_zarr('tt.zarr')
+        output_path = "tt_converted.zarr"
+        result = self.invoke_cli(["vars2dim",
+                                  'tt.zarr'])
+
+        self.assertEqual(0, result.exit_code)
+        self.assertTrue(os.path.isdir(output_path))
+        try:
+            ds = xr.open_zarr(output_path)
+            self.assertIn("newdim_vars", ds.variables)
+            newdim_vars = ds["newdim_vars"]
+            self.assertTrue(hasattr(newdim_vars, "encoding"))
+        finally:
+            print('hello')
+            shutil.rmtree(output_path, ignore_errors=True)
+            shutil.rmtree('tt.zarr', ignore_errors=True)
 
 
 class ChunkTest(CliTest):

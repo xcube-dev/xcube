@@ -25,10 +25,10 @@ import xarray as xr
 
 from xcube.util.constants import CRS_WKT_EPSG_4326
 from xcube.util.timecoord import get_time_in_days_since_1970
-from ..iproc import InputProcessor, register_input_processor, ReprojectionInfo
+from ..iproc import XYInputProcessor, register_input_processor, ReprojectionInfo
 
 
-class DefaultInputProcessor(InputProcessor):
+class DefaultInputProcessor(XYInputProcessor):
     """
     Default input processor that expects input datasets to have the xcube standard format:
 

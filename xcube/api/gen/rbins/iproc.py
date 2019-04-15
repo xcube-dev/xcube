@@ -27,10 +27,10 @@ import xarray as xr
 
 from xcube.util.constants import CRS_WKT_EPSG_4326
 from xcube.util.timecoord import get_time_in_days_since_1970
-from ..iproc import InputProcessor, ReprojectionInfo, register_input_processor
+from ..iproc import XYInputProcessor, ReprojectionInfo, register_input_processor
 
 
-class RbinsSeviriHighrocSceneInputProcessor(InputProcessor):
+class RbinsSeviriHighrocSceneInputProcessor(XYInputProcessor):
     """
     Input processor for RBINS' HIGHROC single-scene Level-2 NetCDF inputs.
     """
@@ -61,7 +61,7 @@ class RbinsSeviriHighrocSceneInputProcessor(InputProcessor):
         return days_since_1970, days_since_1970
 
 
-class RbinsSeviriHighrocDailyInputProcessor(InputProcessor):
+class RbinsSeviriHighrocDailyInputProcessor(XYInputProcessor):
     """
     Input processor for RBINS' HIGHROC daily Level-2 NetCDF inputs.
     """
