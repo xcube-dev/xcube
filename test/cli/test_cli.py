@@ -6,7 +6,6 @@ from typing import List
 import click
 import click.testing
 import xarray as xr
-
 from xcube.api.new import new_cube
 from xcube.cli.cli import cli, _parse_kwargs
 from xcube.util.dsio import rimraf
@@ -191,7 +190,7 @@ class LevelTest(CliTest):
                                   ])
         self.assertEqual(0, result.exit_code)
         self.assertTrue(os.path.isdir(LevelTest.TEST_OUTPUT))
-        self.assertEqual(['0.zarr', '1.zarr', '2.zarr'], os.listdir(LevelTest.TEST_OUTPUT))
+        self.assertEqual({'0.zarr', '1.zarr', '2.zarr'}, set(os.listdir(LevelTest.TEST_OUTPUT)))
 
     def test_level_with_zarr(self):
         result = self.invoke_cli(["level",
@@ -201,7 +200,7 @@ class LevelTest(CliTest):
                                   ])
         self.assertEqual(0, result.exit_code)
         self.assertTrue(os.path.isdir(LevelTest.TEST_OUTPUT))
-        self.assertEqual(['0.zarr', '1.zarr', '2.zarr'], os.listdir(LevelTest.TEST_OUTPUT))
+        self.assertEqual({'0.zarr', '1.zarr', '2.zarr'}, set(os.listdir(LevelTest.TEST_OUTPUT)))
 
     def test_level_with_zarr_link(self):
         result = self.invoke_cli(["level",
@@ -212,7 +211,7 @@ class LevelTest(CliTest):
                                   ])
         self.assertEqual(0, result.exit_code)
         self.assertTrue(os.path.isdir(LevelTest.TEST_OUTPUT))
-        self.assertEqual(['0.link', '1.zarr', '2.zarr'], os.listdir(LevelTest.TEST_OUTPUT))
+        self.assertEqual({'0.link', '1.zarr', '2.zarr'}, set(os.listdir(LevelTest.TEST_OUTPUT)))
 
     def test_level_with_zarr_num_levels_max(self):
         result = self.invoke_cli(["level",
@@ -223,7 +222,7 @@ class LevelTest(CliTest):
                                   ])
         self.assertEqual(0, result.exit_code)
         self.assertTrue(os.path.isdir(LevelTest.TEST_OUTPUT))
-        self.assertEqual(['0.zarr', '1.zarr'], os.listdir(LevelTest.TEST_OUTPUT))
+        self.assertEqual({'0.zarr', '1.zarr'}, set(os.listdir(LevelTest.TEST_OUTPUT)))
 
     def test_invalid_inputs(self):
         result = self.invoke_cli(["level",
