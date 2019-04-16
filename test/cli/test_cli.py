@@ -7,7 +7,6 @@ import click
 import click.testing
 import xarray as xr
 
-from test.sampledata import new_test_dataset
 from xcube.api.new import new_cube
 from xcube.cli.cli import cli, _parse_kwargs
 from xcube.util.dsio import rimraf
@@ -73,33 +72,37 @@ class DumpTest(CliTest):
 
 
 class Vars2DimTest(CliTest):
+    TEST_OUTPUT = "test-vars2dim.zarr"
+
+    def outputs(self):
+        return [self.TEST_OUTPUT]
 
     def test_vars2dim(self):
-        dataset = new_test_dataset(["2010-01-01", "2010-01-02", "2010-01-03", "2010-01-04", "2010-01-05"],
-                                   precipitation=0.4, temperature=275.2)
-        dataset.to_zarr('tt.zarr')
-        output_path = "tt_converted.zarr"
-        result = self.invoke_cli(["vars2dim",
-                                  'tt.zarr'])
+        result = self.invoke_cli(["vars2dim", TEST_ZARR_DIR])
 
+        output_path = self.TEST_OUTPUT
         self.assertEqual(0, result.exit_code)
         self.assertTrue(os.path.isdir(output_path))
-        try:
-            ds = xr.open_zarr(output_path)
-            self.assertIn("newdim_vars", ds.variables)
-            newdim_vars = ds["newdim_vars"]
-            self.assertTrue(hasattr(newdim_vars, "encoding"))
-        finally:
-            print('hello')
-            shutil.rmtree(output_path, ignore_errors=True)
-            shutil.rmtree('tt.zarr', ignore_errors=True)
+
+        ds = xr.open_zarr(output_path)
+        self.assertIn("var", ds.dims)
+        self.assertEqual(2, ds.dims["var"])
+        self.assertIn("var", ds.coords)
+        self.assertIn("data", ds.data_vars)
+        var_names = ds["var"]
+        self.assertEqual(("var",), var_names.dims)
+        self.assertTrue(hasattr(var_names, "encoding"))
+        self.assertEqual("object", str(var_names.dtype))
+        self.assertEqual(2, len(var_names))
+        self.assertIn("precipitation", str(var_names[0]))
+        self.assertIn("temperature", str(var_names[1]))
 
 
 class ChunkTest(CliTest):
     TEST_OUTPUT = "test-chunked.zarr"
 
     def outputs(self):
-        return [ChunkTest.TEST_OUTPUT]
+        return [self.TEST_OUTPUT]
 
     def test_chunk_zarr(self):
         output_path = ChunkTest.TEST_OUTPUT

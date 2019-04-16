@@ -1,6 +1,7 @@
 from typing import Any, Dict
 
 import click
+
 from xcube.cli.gen import gen
 from xcube.cli.grid import grid
 from xcube.version import version
@@ -192,36 +193,35 @@ def dump(dataset, variable, encoding):
 # noinspection PyShadowingBuiltins
 @click.command(name="vars2dim")
 @click.argument('cube', metavar='<cube>')
-@click.option('--dim_name', '-d', metavar='<dimension name>', help="Name of the new dimension ['var']")
+@click.option('--dim_name', '-d', metavar='<dim-name>',
+              default='var',
+              help='Name of the new dimension into variables. Defaults to "var".')
+@click.option('--var_name', '-v', metavar='<var-name>',
+              default='data',
+              help='Name of the new variable that includes all variables. Defaults to "data".')
 @click.option('--output', '-o', metavar='<output>',
               help="Output file.")
 @click.option('--format', '-f', metavar='<format>', type=click.Choice(['zarr', 'netcdf']),
               help="Format of the output. If not given, guessed from <output>.")
-def vars2dim(cube, dim_name, output=None, format=None):
+def vars2dim(cube, var_name, dim_name, output=None, format=None):
     """
     Write a new dataset with identical data and compression but with new chunk sizes.
     """
 
     from xcube.util.dsio import guess_dataset_format
+    from xcube.api import open_dataset, vars_to_dim, write_dataset
     import os
 
-    if not dim_name:
-        dim_name = 'newdim'
-
     if not output:
-        basename = os.path.splitext(cube)[0]
-        ext = os.path.splitext(cube)[1]
-
-        output = basename + '_converted' + ext
+        dirname = os.path.dirname(cube)
+        basename = os.path.basename(cube)
+        basename, ext = os.path.splitext(basename)
+        output = os.path.join(dirname, basename + '-vars2dim' + ext)
 
     format_name = format if format else guess_dataset_format(output)
 
-    from xcube.api import open_dataset, vars_to_dim, write_dataset
-
     with open_dataset(input_path=cube) as ds:
-
-        converted_dataset = vars_to_dim(ds, dim_name=dim_name)
-
+        converted_dataset = vars_to_dim(ds, dim_name=dim_name, var_name=var_name)
         write_dataset(converted_dataset, output_path=output, format_name=format_name)
 
 
