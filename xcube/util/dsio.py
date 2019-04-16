@@ -21,6 +21,8 @@
 
 import glob
 import os
+import shutil
+import warnings
 from abc import abstractmethod, ABCMeta
 from typing import Set, Callable, List, Optional, Dict, Iterable, Tuple
 
@@ -28,7 +30,6 @@ import pandas as pd
 import s3fs
 import xarray as xr
 import zarr
-
 from xcube.util.objreg import get_obj_registry
 
 FORMAT_NAME_EXCEL = "excel"
@@ -485,12 +486,14 @@ def rimraf(path):
 
     :param path:  directory or single file
     """
-    import os
     if os.path.isdir(path):
-        import shutil
-        shutil.rmtree(path, ignore_errors=True)
+        try:
+            shutil.rmtree(path, ignore_errors=False)
+        except OSError:
+            warnings.warn(f"failed to remove file {path}")
     elif os.path.isfile(path):
         try:
             os.remove(path)
         except OSError:
+            warnings.warn(f"failed to remove file {path}")
             pass
