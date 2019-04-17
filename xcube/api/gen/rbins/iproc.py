@@ -52,7 +52,7 @@ class RbinsSeviriHighrocSceneInputProcessor(XYInputProcessor):
                                 xy_crs=CRS_WKT_EPSG_4326,
                                 xy_gcp_step=1)
 
-    def get_time_range(self, dataset: xr.Dataset) -> Tuple[float, float]:
+    def get_time_range_v1(self, dataset: xr.Dataset) -> Tuple[float, float]:
         date = dataset.attrs.get('DATE')
         if date is None:
             raise ValueError('illegal L2 input: missing DATE attribute')
@@ -60,6 +60,42 @@ class RbinsSeviriHighrocSceneInputProcessor(XYInputProcessor):
         days_since_1970 = get_time_in_days_since_1970(date + time)
         return days_since_1970, days_since_1970
 
+    def get_time_range(self, dataset: xr.Dataset) -> Tuple[float, float]:
+        time_coverage_start, time_coverage_end = None, None
+        if "time" in dataset:
+            time = dataset["time"]
+            time_bnds_name = time.attrs.get("bounds", "time_bnds")
+            if time_bnds_name in dataset:
+                time_bnds = dataset[time_bnds_name]
+                if time_bnds.shape == (1, 2):
+                    time_coverage_start = str(time_bnds[0][0].data)
+                    time_coverage_end = str(time_bnds[0][1].data)
+            if time_coverage_start is None or time_coverage_end is None:
+                time_coverage_start, time_coverage_end = self.get_time_range_from_attrs(dataset)
+            if time_coverage_start is None or time_coverage_end is None:
+                if time.shape == (1,):
+                    time_coverage_start = str(time[0].data)
+                    time_coverage_end = time_coverage_start
+        if time_coverage_start is None or time_coverage_end is None:
+            time_coverage_start, time_coverage_end = self.get_time_range_from_attrs(dataset)
+        if time_coverage_start is None or time_coverage_end is None:
+            raise ValueError("invalid input: missing time coverage information in dataset")
+
+        return get_time_in_days_since_1970(time_coverage_start), get_time_in_days_since_1970(time_coverage_end)
+
+    @classmethod
+    def get_time_range_from_attrs(cls, dataset: xr.Dataset) -> Tuple[str, str]:
+        time_start = time_stop = None
+        if "time_coverage_start" in dataset.attrs:
+            time_start = str(dataset.attrs["time_coverage_start"])
+            time_stop = str(dataset.attrs.get("time_coverage_end", time_start))
+        elif "time_start" in dataset.attrs:
+            time_start = str(dataset.attrs["time_start"])
+            time_stop = str(dataset.attrs.get("time_stop", dataset.attrs.get("time_end", time_start)))
+        elif "start_time" in dataset.attrs:
+            time_start = str(dataset.attrs["start_time"])
+            time_stop = str(dataset.attrs.get("stop_time", dataset.attrs.get("end_time", time_start)))
+        return time_start, time_stop
 
 class RbinsSeviriHighrocDailyInputProcessor(XYInputProcessor):
     """

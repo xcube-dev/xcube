@@ -52,8 +52,13 @@ class SnapNetcdfInputProcessor(XYInputProcessor, metaclass=ABCMeta):
                                 xy_gcp_step=5)
 
     def get_time_range(self, dataset: xr.Dataset) -> Tuple[float, float]:
-        t1 = dataset.attrs.get('start_date')
-        t2 = dataset.attrs.get('stop_date') or t1
+
+        if "time_coverage_start" in dataset.attrs:
+            t1 = str(dataset.attrs["time_coverage_start"])
+            t2 = str(dataset.attrs.get("time_coverage_end", t1))
+        else:
+            t1 = dataset.attrs.get('start_date')
+            t2 = dataset.attrs.get('stop_date') or t1
         if t1 is None or t2 is None:
             raise ValueError('illegal L2 input: missing start/stop time')
         t1 = get_time_in_days_since_1970(t1)
