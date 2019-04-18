@@ -1,13 +1,14 @@
 import os
 import unittest
-
+import xarray as xr
+import numpy as np
 from xcube.util.dsio import rimraf
 from xcube.api.gen.gen import gen_cube
 from .helpers import get_inputdata_path
 
 
 def clean_up():
-    files = ['l2c-single.nc', 'l2c.nc', 'l2c.zarr']
+    files = ['l2c-single.nc', 'l2c.nc', 'l2c.zarr', 'l2c-single.zarr']
     for file in files:
         rimraf(os.path.join('.', file))
         rimraf(os.path.join('.', file + 'temp.nc'))
@@ -50,6 +51,17 @@ class DefaultProcessTest(unittest.TestCase):
         self.assertEqual(True, status)
         self.assertEqual(os.path.join('.', 'l2c.zarr'), path)
 
+    def test_handle_360_lon(self):
+        path, status = process_inputs_wrapper(
+            input_files=[get_inputdata_path('20170101120000-UKMO-L4_GHRSST-SSTfnd-OSTIAanom-GLOB-v02.0-fv02.0.nc')],
+            output_name='l2c-single',
+            output_writer='zarr',
+            append_mode=True)
+        self.assertEqual(True, status)
+        self.assertEqual(os.path.join('.', 'l2c-single.zarr'), path)
+        lon_360 = _check_output_for_360(os.path.join('.', 'l2c-single.zarr'))
+        self.assertEqual(False, lon_360)
+
 
 # noinspection PyShadowingBuiltins
 def process_inputs_wrapper(input_files=None,
@@ -68,3 +80,15 @@ def process_inputs_wrapper(input_files=None,
                     append_mode=append_mode,
                     dry_run=False,
                     monitor=None)
+
+
+def _check_output_for_360(output):
+    ds = xr.open_zarr(output)
+    lon_var = ds.coords['lon']
+    lon_size = lon_var.shape[0]
+    lon_size_05 = lon_size // 2
+    lon_values = lon_var.values
+    lon_360 = True
+    if not np.any(lon_values[lon_size_05:] > 180.):
+        lon_360 = False
+    return lon_360

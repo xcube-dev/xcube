@@ -25,7 +25,6 @@ from typing import Tuple, List, Union, Dict, Any
 import gdal
 import numpy as np
 import xarray as xr
-
 from xcube.util.constants import CRS_WKT_EPSG_4326, EARTH_GEO_COORD_RANGE
 
 gdal.UseExceptions()
@@ -37,17 +36,135 @@ DEFAULT_TP_RESAMPLING = 'Bilinear'
 CoordRange = Tuple[float, float, float, float]
 
 
-def reproject_to_wgs84(src_dataset: xr.Dataset,
-                       src_xy_var_names: Tuple[str, str],
-                       src_xy_tp_var_names: Tuple[str, str] = None,
-                       src_xy_crs: str = None,
-                       src_xy_gcp_step: Union[int, Tuple[int, int]] = 10,
-                       src_xy_tp_gcp_step: Union[int, Tuple[int, int]] = 1,
-                       dst_size: Tuple[int, int] = None,
-                       dst_region: CoordRange = None,
-                       dst_resampling: Union[str, Dict[str, str]] = DEFAULT_RESAMPLING,
-                       include_xy_vars: bool = False,
-                       include_non_spatial_vars: bool = False) -> xr.Dataset:
+def reproject_crs_to_wgs84(src_dataset: xr.Dataset,
+                           src_projection: str,
+                           dst_size: Tuple[int, int],
+                           dst_region: CoordRange = None,
+                           dst_resampling: Union[str, Dict[str, str]] = DEFAULT_RESAMPLING,
+                           include_non_spatial_vars: bool = False):
+    if dst_resampling is None:
+        dst_resampling = {}
+    if isinstance(dst_resampling, str):
+        dst_resampling = {var_name: dst_resampling for var_name in src_dataset.variables}
+
+    if "y" not in src_dataset.coords or "x" not in src_dataset.coords:
+        raise ValueError("dataset is lacking spatial coordinates variables 'y' and 'x'")
+
+    # We assume all data vars have same size and that that the dims are (..., "y", "x")
+    src_var = None
+    for var_name in src_dataset.data_vars:
+        var = src_dataset[var_name]
+        if var.ndim >= 2 and tuple(var.dims[-2:]) == ("y", "x"):
+            src_var = var
+            break
+    if src_var is None:
+        raise ValueError("no variable found with spatial dimensions 'y' and 'x'")
+
+    src_width = src_var.shape[-1]
+    src_height = src_var.shape[-2]
+    src_x1 = float(src_var.x[0])
+    src_y1 = float(src_var.y[0])
+    src_x2 = float(src_var.x[-1])
+    src_y2 = float(src_var.y[-1])
+    src_x_res = (src_x2 - src_x1) / (src_width - 1)
+    src_y_res = (src_y2 - src_y1) / (src_height - 1)
+    src_geo_transform = (src_x1, src_x_res, 0.0,
+                         src_y1, 0.0, src_y_res)
+
+    dst_x1, dst_y1, dst_x2, dst_y2 = dst_region
+    dst_width, dst_height = dst_size
+
+    dst_res_x = (dst_x2 - dst_x1) / dst_width
+    dst_res_y = (dst_y2 - dst_y1) / dst_height
+    # We use max() to make sure we fully cover dst_region
+    dst_res = max(dst_res_x, dst_res_y)
+
+    # correct actual
+    dst_x2 = dst_x1 + dst_res * dst_width
+    dst_y2 = dst_y1 + dst_res * dst_height
+
+    dst_geo_transform = (dst_x1 + dst_res / 2, dst_res, 0.0,
+                         dst_y2 - dst_res / 2, 0.0, -dst_res)
+
+    # print("src_geo_transform: ", src_geo_transform)
+    # print("dst_bbox: ", dst_x1, dst_y1, dst_x2, dst_y2)
+    # print("dst_size:", dst_width, dst_height)
+    # print("dst_res:", dst_res_x, dst_res_y, dst_res)
+    # print("dst_geo_transform:", dst_geo_transform)
+
+    mem_driver = gdal.GetDriverByName("MEM")
+
+    dst_dataset = _new_dst_dataset(dst_width, dst_height, dst_res, dst_x1, dst_y1, dst_x2, dst_y2)
+    dst_variables = {}
+
+    src_var_0 = src_var
+    for var_name in src_dataset.data_vars:
+        src_var = src_dataset[var_name]
+
+        if len(src_var.shape) != 2 \
+                or src_var.dims[-2:] != ("y", "x") \
+                or src_var.shape[-2:] != src_var_0.shape[-2:]:
+            if include_non_spatial_vars:
+                dst_variables[var_name] = src_var
+            continue
+
+        src_data_type = numpy_to_gdal_dtype(src_var.dtype)
+
+        # TODO (forman): PERFORMANCE: stack multiple variables of same src_data_type
+        #                to perform the reprojection only once per stack
+
+        src_ds = mem_driver.Create(f'src_{var_name}', src_width, src_height, 1, src_data_type, [])
+        src_ds.SetProjection(src_projection)
+        src_ds.SetGeoTransform(src_geo_transform)
+        src_ds.GetRasterBand(1).SetNoDataValue(float('nan'))
+        src_ds.GetRasterBand(1).WriteArray(src_var.values)
+
+        # TODO (forman): CODE-DUPLICATION: refactor out common code block in reproject_xy_to_wgs84()
+
+        dst_ds = mem_driver.Create(f'dst_{var_name}', dst_width, dst_height, 1, gdal.GDT_Float32, [])
+        dst_ds.SetProjection(CRS_WKT_EPSG_4326)
+        dst_ds.SetGeoTransform(dst_geo_transform)
+        dst_ds.GetRasterBand(1).SetNoDataValue(float('nan'))
+
+        resample_alg, resample_alg_name = _get_resample_alg(dst_resampling,
+                                                            var_name,
+                                                            default=DEFAULT_RESAMPLING)
+
+        warp_mem_limit = 0
+        error_threshold = 0
+        options = ['INIT_DEST=NO_DATA']
+        gdal.ReprojectImage(src_ds,
+                            dst_ds,
+                            None,  # src_wkt
+                            None,  # dst_wkt
+                            resample_alg,
+                            warp_mem_limit,
+                            error_threshold,
+                            None,  # callback,
+                            None,  # callback_data,
+                            options)
+
+        dst_values = dst_ds.GetRasterBand(1).ReadAsArray()
+
+        dst_variables[var_name] = _new_dst_variable(src_var, dst_values, resample_alg_name)
+
+    dst_dataset = dst_dataset.assign(variables=dst_variables)
+
+    return dst_dataset
+
+
+def reproject_xy_to_wgs84(src_dataset: xr.Dataset,
+                          src_xy_var_names: Tuple[str, str],
+                          src_xy_tp_var_names: Tuple[str, str] = None,
+                          src_xy_crs: str = None,
+                          src_xy_gcp_step: Union[int, Tuple[int, int]] = 10,
+                          src_xy_tp_gcp_step: Union[int, Tuple[int, int]] = 1,
+                          dst_size: Tuple[int, int] = None,
+                          dst_region: CoordRange = None,
+                          dst_resampling: Union[str, Dict[str, str]] = DEFAULT_RESAMPLING,
+                          include_xy_vars: bool = False,
+                          include_non_spatial_vars: bool = False,
+                          precision: int = 64) -> xr.Dataset:
     """
     Reprojection of xarray datasets with 2D geo-coding, e.g. with variables lon(y,x), lat(y, x) to
     EPSG:4326 (WGS-84) coordinate reference system.
@@ -124,13 +241,13 @@ def reproject_to_wgs84(src_dataset: xr.Dataset,
     src_height = x_var.shape[-2]
 
     dst_region = _ensure_valid_region(dst_region, EARTH_GEO_COORD_RANGE, x_var, y_var)
-    x1, y1, x2, y2 = dst_region
+    dst_x1, dst_y1, dst_x2, dst_y2 = dst_region
 
-    dst_res = max((x2 - x1) / dst_width, (y2 - y1) / dst_height)
+    dst_res = max((dst_x2 - dst_x1) / dst_width, (dst_y2 - dst_y1) / dst_height)
     _assert(dst_res > 0)
 
-    dst_geo_transform = (x1, dst_res, 0.0,
-                         y2, 0.0, -dst_res)
+    dst_geo_transform = (dst_x1, dst_res, 0.0,
+                         dst_y2, 0.0, -dst_res)
 
     # Extract GCPs from full-res lon/lat 2D variables
     gcps = _get_gcps(x_var, y_var, gcp_i_step, gcp_j_step)
@@ -156,20 +273,10 @@ def reproject_to_wgs84(src_dataset: xr.Dataset,
 
     mem_driver = gdal.GetDriverByName("MEM")
 
-    dst_x2 = x1 + dst_res * dst_width
-    dst_y1 = y2 - dst_res * dst_height
+    dst_x2 = dst_x1 + dst_res * dst_width
+    dst_y1 = dst_y2 - dst_res * dst_height
 
-    dst_dataset = xr.Dataset()
-    dst_dataset.coords['lon'] = (['lon', ],
-                                 np.linspace(x1 + dst_res / 2, dst_x2 - dst_res / 2, dst_width))
-    dst_dataset.coords['lat'] = (['lat', ],
-                                 np.linspace(y2 - dst_res / 2, dst_y1 + dst_res / 2, dst_height))
-    dst_dataset.coords['lon_bnds'] = (['lon', 'bnds'],
-                                      list(zip(np.linspace(x1, dst_x2 - dst_res, dst_width),
-                                               np.linspace(x1 + dst_res, dst_x2, dst_width))))
-    dst_dataset.coords['lat_bnds'] = (['lat', 'bnds'],
-                                      list(zip(np.linspace(y2, dst_y1 + dst_res, dst_height),
-                                               np.linspace(y2 - dst_res, dst_y1, dst_height))))
+    dst_dataset = _new_dst_dataset(dst_width, dst_height, dst_res, dst_x1, dst_y1, dst_x2, dst_y2)
 
     if dst_resampling is None:
         dst_resampling = {}
@@ -191,7 +298,7 @@ def reproject_to_wgs84(src_dataset: xr.Dataset,
             # PERF: collect variables of same type and size and set band_count accordingly to speed up reprojection
             band_count = 1
             data_type = numpy_to_gdal_dtype(src_var.dtype)
-            src_var_dataset = mem_driver.Create('src_' + var_name, src_width, src_height, band_count, data_type, [])
+            src_var_dataset = mem_driver.Create(f'src_{var_name}', src_width, src_height, band_count, data_type, [])
             src_var_dataset.SetGCPs(gcps, src_xy_crs)
         elif tp_x_var is not None and src_var.dims == tp_x_var.dims:
             is_tp_var = True
@@ -205,7 +312,7 @@ def reproject_to_wgs84(src_dataset: xr.Dataset,
             # PERF: collect variables of same type and size and set band_count accordingly to speed up reprojection
             band_count = 1
             data_type = numpy_to_gdal_dtype(src_var.dtype)
-            src_var_dataset = mem_driver.Create('src_' + var_name, tp_width, tp_height, band_count, data_type, [])
+            src_var_dataset = mem_driver.Create(f'src_{var_name}', tp_width, tp_height, band_count, data_type, [])
             src_var_dataset.SetGCPs(tp_gcps, src_xy_crs)
         elif include_non_spatial_vars:
             # Store any variable as-is, that does not have the lat/lon 2D dims, then continue
@@ -216,20 +323,23 @@ def reproject_to_wgs84(src_dataset: xr.Dataset,
 
         # We use GDT_Float64 to introduce NaN as no-data-value
         dst_data_type = gdal.GDT_Float64
-        dst_var_dataset = mem_driver.Create('dst_' + var_name, dst_width, dst_height, band_count, dst_data_type, [])
+        dst_var_dataset = mem_driver.Create(f'dst_{var_name}', dst_width, dst_height, band_count, dst_data_type, [])
         dst_var_dataset.SetProjection(CRS_WKT_EPSG_4326)
         dst_var_dataset.SetGeoTransform(dst_geo_transform)
+
+        # TODO (forman): PERFORMANCE: stack multiple variables of same src_data_type
+        #                to perform the reprojection only once per stack
+
+        # TODO (forman): CODE-DUPLICATION: refactor out common code block in reproject_crs_to_wgs84()
 
         for band_index in range(1, band_count + 1):
             src_var_dataset.GetRasterBand(band_index).SetNoDataValue(float('nan'))
             src_var_dataset.GetRasterBand(band_index).WriteArray(src_var.values)
             dst_var_dataset.GetRasterBand(band_index).SetNoDataValue(float('nan'))
 
-        resample_alg_name = dst_resampling.get(src_var.name,
-                                               DEFAULT_TP_RESAMPLING if is_tp_var else DEFAULT_RESAMPLING)
-        if resample_alg_name not in NAME_TO_GDAL_RESAMPLE_ALG:
-            raise ValueError(f'{resample_alg_name!r} is not a name of a known resampling algorithm')
-        resample_alg = NAME_TO_GDAL_RESAMPLE_ALG[resample_alg_name]
+        resample_alg, resample_alg_name = _get_resample_alg(dst_resampling,
+                                                            var_name,
+                                                            default=DEFAULT_TP_RESAMPLING if is_tp_var else DEFAULT_RESAMPLING)
 
         warp_mem_limit = 0
         error_threshold = 0
@@ -249,43 +359,48 @@ def reproject_to_wgs84(src_dataset: xr.Dataset,
         dst_values = dst_var_dataset.GetRasterBand(1).ReadAsArray()
         # print(var_name, dst_values.shape, np.nanmin(dst_values), np.nanmax(dst_values))
 
-        dst_var_attrs = dict(**src_var.attrs, spatial_resampling=resample_alg_name)
-        dst_var = xr.DataArray(dst_values, dims=['lat', 'lon'], name=dst_var_name, attrs=dst_var_attrs)
-        dst_var.encoding = src_var.encoding
-        if np.issubdtype(dst_var.dtype, np.floating) \
-                and np.issubdtype(src_var.encoding.get('dtype'), np.integer) \
-                and src_var.encoding.get('_FillValue') is None:
-            warnings.warn(f'variable {dst_var.name!r}: setting _FillValue=0 to replace any NaNs')
-            dst_var.encoding['_FillValue'] = 0
-        dst_var.encoding['chunksizes'] = (1, dst_var.shape[-2], dst_var.shape[-1])
-        dst_var.encoding['zlib'] = True
-        dst_var.encoding['complevel'] = 4
-        dst_dataset[dst_var_name] = dst_var
-
-    lon_var = dst_dataset.coords['lon']
-    lon_var.attrs['long_name'] = 'longitude'
-    lon_var.attrs['standard_name'] = 'longitude'
-    lon_var.attrs['units'] = 'degrees_east'
-    lon_var.attrs['bounds'] = 'lon_bnds'
-
-    lat_var = dst_dataset.coords['lat']
-    lat_var.attrs['long_name'] = 'latitude'
-    lat_var.attrs['standard_name'] = 'latitude'
-    lat_var.attrs['units'] = 'degrees_north'
-    lat_var.attrs['bounds'] = 'lat_bnds'
-
-    lon_bnds_var = dst_dataset.coords['lon_bnds']
-    lon_bnds_var.attrs['long_name'] = 'longitude'
-    lon_bnds_var.attrs['standard_name'] = 'longitude'
-    lon_bnds_var.attrs['units'] = 'degrees_east'
-
-    lat_bnds_var = dst_dataset.coords['lat_bnds']
-    lat_bnds_var.attrs['long_name'] = 'latitude'
-    lat_bnds_var.attrs['standard_name'] = 'latitude'
-    lat_bnds_var.attrs['units'] = 'degrees_north'
+        dst_dataset[dst_var_name] = _new_dst_variable(src_var, dst_values, resample_alg_name)
 
     return dst_dataset
 
+
+def _new_dst_variable(src_var, dst_values, resample_alg_name):
+    dst_var_attrs = dict(**src_var.attrs, spatial_resampling=resample_alg_name)
+    dst_attrs = dict(**src_var.attrs, spatial_resampling=resample_alg_name)
+    if "grid_mapping" in dst_attrs:
+        del dst_attrs["grid_mapping"]
+
+    dst_var = xr.DataArray(dst_values, dims=['lat', 'lon'], attrs=dst_var_attrs)
+    dst_var.encoding = src_var.encoding
+    if np.issubdtype(dst_var.dtype, np.floating) \
+            and np.issubdtype(src_var.encoding.get('dtype'), np.integer) \
+            and src_var.encoding.get('_FillValue') is None:
+        warnings.warn(f'variable {dst_var.name!r}: setting _FillValue=0 to replace any NaNs')
+        dst_var.encoding['_FillValue'] = 0
+    return dst_var
+
+
+def _new_dst_dataset(dst_width, dst_height, dst_res, dst_x1, dst_y1, dst_x2, dst_y2):
+    return xr.Dataset(coords=dict(
+        lon=xr.DataArray(np.linspace(dst_x1 + dst_res / 2, dst_x2 - dst_res / 2, dst_width),
+                         dims=['lon', ],
+                         attrs=dict(**_LON_ATTRS, bounds='lon_bnds')),
+        lat=xr.DataArray(np.linspace(dst_y2 - dst_res / 2, dst_y1 + dst_res / 2, dst_height),
+                         dims=['lat', ],
+                         attrs=dict(**_LAT_ATTRS, bounds='lat_bnds')),
+        lon_bnds=xr.DataArray(list(zip(np.linspace(dst_x1, dst_x2 - dst_res, dst_width),
+                                       np.linspace(dst_x1 + dst_res, dst_x2, dst_width))),
+                              dims=['lon', 'bnds'],
+                              attrs=_LON_ATTRS),
+        lat_bnds=xr.DataArray(list(zip(np.linspace(dst_y2, dst_y1 + dst_res, dst_height),
+                                       np.linspace(dst_y2 - dst_res, dst_y1, dst_height))),
+                              dims=['lat', 'bnds'],
+                              attrs=_LAT_ATTRS)
+    ))
+
+
+_LON_ATTRS = dict(long_name='longitude', standard_name='longitude', units='degrees_east')
+_LAT_ATTRS = dict(long_name='latitude', standard_name='latitude', units='degrees_north')
 
 _NUMPY_TO_GDAL_DTYPE_MAPPING = {
     np.dtype(np.int8): gdal.GDT_Int16,
@@ -305,6 +420,14 @@ def numpy_to_gdal_dtype(np_dtype):
         return _NUMPY_TO_GDAL_DTYPE_MAPPING[np_dtype]
     warnings.warn(f'unhandled numpy dtype {np_dtype}, using float64 instead')
     return gdal.GDT_Float64
+
+
+def _get_resample_alg(dst_resampling, var_name, default):
+    resample_alg_name = dst_resampling.get(var_name, default)
+    if resample_alg_name not in NAME_TO_GDAL_RESAMPLE_ALG:
+        raise ValueError(f'{resample_alg_name!r} is not a name of a known resampling algorithm')
+    resample_alg = NAME_TO_GDAL_RESAMPLE_ALG[resample_alg_name]
+    return resample_alg, resample_alg_name
 
 
 NAME_TO_GDAL_RESAMPLE_ALG: Dict[str, Any] = dict(
@@ -374,3 +497,33 @@ def _get_gcps(x_var: xr.DataArray,
             gcps.append(gdal.GCP(x, y, 0.0, i + 0.5, j + 0.5, '%s,%s' % (i, j), str(gcp_id)))
             gcp_id += 1
     return gcps
+
+
+def get_projection_wkt(name: str,
+                       proj_name: str,
+                       latitude_of_origin: float = 0.0,
+                       central_meridian: float = 0.0,
+                       scale_factor: float = 1.0,
+                       false_easting: float = 0.0,
+                       false_northing: float = 0.0):
+    return (
+        f'PROJCS["{name}",'
+        f'  GEOGCS["WGS 84",'
+        f'    DATUM["WGS_1984",'
+        f'      SPHEROID["WGS 84", 6378137, 298.257223563,'
+        f'        AUTHORITY["EPSG", 7030]],'
+        f'      TOWGS84[0,0,0,0,0,0,0],'
+        f'      AUTHORITY["EPSG", 6326]],'
+        f'    PRIMEM["Greenwich", 0, AUTHORITY["EPSG",8901]],'
+        f'    UNIT["DMSH",0.0174532925199433,AUTHORITY["EPSG",9108]],'
+        f'    AXIS["Lat", NORTH],'
+        f'    AXIS["Long", EAST],'
+        f'    AUTHORITY["EPSG", 4326]],'
+        f'  PROJECTION["{proj_name}"],'
+        f'  PARAMETER["latitude_of_origin", {latitude_of_origin}],'
+        f'  PARAMETER["central_meridian", {central_meridian}],'
+        f'  PARAMETER["scale_factor", {scale_factor}],'
+        f'  PARAMETER["false_easting", {false_easting}],'
+        f'  PARAMETER["false_northing", {false_northing}]'
+        f']'
+    )

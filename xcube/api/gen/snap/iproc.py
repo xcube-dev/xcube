@@ -29,10 +29,10 @@ from xcube.util.constants import CRS_WKT_EPSG_4326
 from xcube.util.timecoord import get_time_in_days_since_1970
 from .transexpr import translate_snap_expr_attributes
 from .vectorize import vectorize_wavebands, new_band_coord_var
-from ..iproc import InputProcessor, ReprojectionInfo, register_input_processor
+from ..iproc import XYInputProcessor, ReprojectionInfo, register_input_processor
 
 
-class SnapNetcdfInputProcessor(InputProcessor, metaclass=ABCMeta):
+class SnapNetcdfInputProcessor(XYInputProcessor, metaclass=ABCMeta):
     """
     Input processor for SNAP L2 NetCDF inputs.
     """

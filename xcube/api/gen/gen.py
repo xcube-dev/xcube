@@ -34,7 +34,6 @@ from xcube.api.select import select_vars
 from xcube.api.update import update_var_props, update_global_attrs
 from xcube.util.config import NameAnyDict, NameDictPairList, to_resolved_name_dict_pairs
 from xcube.util.dsio import rimraf, DatasetIO, find_dataset_io
-from xcube.util.reproject import reproject_to_wgs84
 from xcube.util.timecoord import add_time_coords
 from .defaults import DEFAULT_OUTPUT_DIR, DEFAULT_OUTPUT_NAME, DEFAULT_OUTPUT_SIZE, \
     DEFAULT_OUTPUT_RESAMPLING, DEFAULT_OUTPUT_FORMAT
@@ -151,15 +150,6 @@ def gen_cube(input_files: Sequence[str] = None, input_processor: str = None, inp
     return output_path, status
 
 
-def _check_time_valid(time_range, input_file):
-    if time_range[0] > time_range[1]:
-        print(f"illegal time range: file {input_file}:"
-              f" {pd.to_datetime(time_range[0])} > {pd.to_datetime(time_range[1])} ")
-        raise NotImplementedError()
-    else:
-        return time_range
-
-
 def _process_l2_input(input_processor: InputProcessor,
                       input_reader: DatasetIO,
                       input_reader_params: Dict[str, Any],
@@ -188,32 +178,21 @@ def _process_l2_input(input_processor: InputProcessor,
     # noinspection PyBroadException
     try:
         input_dataset = input_reader.read(input_file, **input_reader_params)
+        monitor(f'Dataset read:\n{input_dataset}')
     except Exception as e:
         monitor(f'ERROR: cannot read input: {e}: skipping...')
         traceback.print_exc()
         return None, False
 
-    reprojection_info = input_processor.get_reprojection_info(input_dataset)
-
     time_range = input_processor.get_time_range(input_dataset)
-    try:
-        time_range = _check_time_valid(time_range, input_file)
-    except Exception as e:
-        monitor(f'ERROR: time range not valid of file: {e}: skipping...')
-        traceback.print_exc()
+    if time_range[0] > time_range[1]:
+        monitor('ERROR: start time is greater than end time: skipping...')
         return None, False
 
     if output_variables:
         output_variables = to_resolved_name_dict_pairs(output_variables, input_dataset)
     else:
         output_variables = [(var_name, None) for var_name in input_dataset.data_vars]
-
-    selected_variables = set([var_name for var_name, _ in output_variables])
-    if reprojection_info is not None:
-        if reprojection_info.xy_var_names:
-            selected_variables.update(reprojection_info.xy_var_names)
-        if reprojection_info.xy_tp_var_names:
-            selected_variables.update(reprojection_info.xy_tp_var_names)
 
     steps = []
 
@@ -231,25 +210,22 @@ def _process_l2_input(input_processor: InputProcessor,
 
     # noinspection PyShadowingNames
     def step3(dataset):
+        extra_vars = input_processor.get_extra_vars(dataset)
+        selected_variables = set([var_name for var_name, _ in output_variables])
+        selected_variables.update(extra_vars or set())
         return select_vars(dataset, selected_variables)
 
     steps.append((step3, 'selecting variables'))
 
-    if reprojection_info is not None:
-        # noinspection PyShadowingNames
-        def step4(dataset):
-            return reproject_to_wgs84(dataset,
-                                      src_xy_var_names=reprojection_info.xy_var_names,
-                                      src_xy_tp_var_names=reprojection_info.xy_tp_var_names,
-                                      src_xy_crs=reprojection_info.xy_crs,
-                                      src_xy_gcp_step=reprojection_info.xy_gcp_step or 1,
-                                      src_xy_tp_gcp_step=reprojection_info.xy_tp_gcp_step or 1,
-                                      dst_size=output_size,
-                                      dst_region=output_region,
-                                      dst_resampling=output_resampling,
-                                      include_non_spatial_vars=False)
+    # noinspection PyShadowingNames
+    def step4(dataset):
+        return input_processor.process(dataset,
+                                       dst_size=output_size,
+                                       dst_region=output_region,
+                                       dst_resampling=output_resampling,
+                                       include_non_spatial_vars=False)
 
-        steps.append((step4, 'reprojecting dataset'))
+    steps.append((step4, 'transforming dataset'))
 
     if time_range is not None:
         # noinspection PyShadowingNames
