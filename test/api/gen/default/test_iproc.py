@@ -1,11 +1,14 @@
+import os
 import unittest
 
 import numpy as np
 import pandas as pd
 import xarray as xr
 
+from test.api.gen.default.test_gen import process_inputs_wrapper
 from xcube.api.gen.default.iproc import DefaultInputProcessor
 from xcube.util.timecoord import get_time_in_days_since_1970
+from .helpers import get_inputdata_path
 
 
 class DefaultInputProcessorTest(unittest.TestCase):
