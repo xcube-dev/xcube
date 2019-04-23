@@ -58,7 +58,7 @@ class SnapNetcdfInputProcessor(XYInputProcessor, metaclass=ABCMeta):
             t2 = str(dataset.attrs.get("time_coverage_end", t1))
         else:
             t1 = dataset.attrs.get('start_date')
-            t2 = dataset.attrs.get('stop_date') or t1
+            t2 = dataset.attrs.get('stop_date', t1)
         if t1 is None or t2 is None:
             raise ValueError('illegal L2 input: missing start/stop time')
         t1 = get_time_in_days_since_1970(t1)

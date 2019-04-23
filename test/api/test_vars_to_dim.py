@@ -17,6 +17,6 @@ class VarsToDimTest(unittest.TestCase):
         self.assertIn("newdim_vars", ds.variables)
         newdim_vars = ds["newdim_vars"]
         self.assertTrue(hasattr(newdim_vars, "encoding"))
-        self.assertEquals(len(dataset.dims), 3)
+        self.assertEqual(len(dataset.dims), 3)
 
         self.assertRaises(ValueError, vars_to_dim, xr.Dataset())

@@ -7,23 +7,23 @@ dependencies:
   #
   # runtime dependencies
   #
-  - boto3
-  - botocore
-  - click
-  - dask
-  - gdal
-  - matplotlib
-  - netcdf4
-  - numpy
-  - pandas
-  - pyyaml
-  - s3fs
-  - scipy
-  - xarray
-  - zarr
+  - boto3 =1.9.86
+  - botocore =1.12.86
+  - click =7.0
+  - dask =1.1.1
+  - gdal =2.3.3
+  - matplotlib =3.0.2
+  - netcdf4 =1.4.2
+  - numpy =1.15.4
+  - pandas =0.24.1
+  - pyyaml =3.13
+  - s3fs =0.2.0
+  - scipy =1.1.0
+  - xarray =0.11.3
+  - zarr =2.2.0
   #
   # development dependencies
   #
-  - pytest
-  - pytest-cov
-  - flake8
+  - pytest =4.2.0
+  - pytest-cov =2.6.1
+  - flake8 =3.7.1

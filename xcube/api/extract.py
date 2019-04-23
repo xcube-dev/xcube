@@ -52,7 +52,7 @@ def get_cube_values_for_points(cube: xr.Dataset,
                                               cube_asserted=True)
 
     if include_indexes:
-        cube_values.update(point_indexes, inplace=True)
+        cube_values.update(point_indexes)
 
     return cube_values
 

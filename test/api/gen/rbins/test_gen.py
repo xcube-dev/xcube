@@ -24,7 +24,7 @@ class RbinsProcessTest(unittest.TestCase):
     # noinspection PyMethodMayBeStatic
     def test_process_inputs_single(self):
         path, status = process_inputs_wrapper(
-            input_files=[get_inputdata_path('SEVIRI_SNS_EUR_201708060700_QV_2013b.1.nc.gz')],
+            input_files=[get_inputdata_path('SEVIRI_SNS_EUR_201708060700_QV_2013b.1_v02.nc')],
             output_name='l2c-single',
             output_writer='netcdf4',
             append_mode=False)
@@ -32,9 +32,8 @@ class RbinsProcessTest(unittest.TestCase):
         self.assertEqual(os.path.join('.', 'l2c-single.nc'), path)
 
     def _test_process_inputs_append_multiple_nc(self):
-        # FIXME: this test still fails
         path, status = process_inputs_wrapper(
-            input_files=[get_inputdata_path('SEVIRI_SNS_EUR_20170806????_QV_2013b.1.nc.gz')],
+            input_files=[get_inputdata_path('SEVIRI_SNS_EUR_201708060715_QV_2013b.1_v02.nc')],
             output_name='l2c',
             output_writer='netcdf4',
             append_mode=True)
@@ -43,7 +42,7 @@ class RbinsProcessTest(unittest.TestCase):
 
     def test_process_inputs_append_multiple_zarr(self):
         path, status = process_inputs_wrapper(
-            input_files=[get_inputdata_path('SEVIRI_SNS_EUR_20170806????_QV_2013b.1.nc.gz')],
+            input_files=[get_inputdata_path('SEVIRI_SNS_EUR_201708060730_QV_2013b.1_v02.nc')],
             output_name='l2c',
             output_writer='zarr',
             append_mode=True)
