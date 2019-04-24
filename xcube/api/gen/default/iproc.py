@@ -20,15 +20,16 @@
 # SOFTWARE.
 
 from typing import Tuple
+import numpy as np
 
 import xarray as xr
 
 from xcube.util.constants import CRS_WKT_EPSG_4326
 from xcube.util.timecoord import get_time_in_days_since_1970
-from ..iproc import InputProcessor, register_input_processor, ReprojectionInfo
+from ..iproc import XYInputProcessor, register_input_processor, ReprojectionInfo
 
 
-class DefaultInputProcessor(InputProcessor):
+class DefaultInputProcessor(XYInputProcessor):
     """
     Default input processor that expects input datasets to have the xcube standard format:
 
@@ -67,9 +68,12 @@ class DefaultInputProcessor(InputProcessor):
 
     def pre_process(self, dataset: xr.Dataset) -> xr.Dataset:
         self._validate(dataset)
+
         if "time" in dataset:
-            return dataset.squeeze("time")
-        return dataset
+            # Remove time dimension of length 1.
+            dataset = dataset.squeeze("time")
+
+        return _normalize_lon_360(dataset)
 
     def get_reprojection_info(self, dataset: xr.Dataset) -> ReprojectionInfo:
         return ReprojectionInfo(xy_var_names=('lon', 'lat'),
@@ -149,6 +153,37 @@ class DefaultInputProcessor(InputProcessor):
                 raise ValueError(f'coordinate variable "{coord_var_name}" must have at least {min_length} value(s)')
             if max_length is not None and len(coord_var) > max_length:
                 raise ValueError(f'coordinate variable "{coord_var_name}" must have no more than {max_length} value(s)')
+
+
+def _normalize_lon_360(dataset: xr.Dataset) -> xr.Dataset:
+    """
+    Fix the longitude of the given dataset ``dataset`` so that it ranges from -180 to +180 degrees.
+
+    :param dataset: The dataset whose longitudes may be given in the range 0 to 360.
+    :return: The fixed dataset or the original dataset.
+    """
+
+    if 'lon' not in dataset.coords:
+        return dataset
+
+    lon_var = dataset.coords['lon']
+
+    if len(lon_var.shape) != 1:
+        return dataset
+
+    lon_size = lon_var.shape[0]
+    if lon_size < 2:
+        return dataset
+
+    lon_size_05 = lon_size // 2
+    lon_values = lon_var.values
+    if not np.any(lon_values[lon_size_05:] > 180.):
+        return dataset
+
+    dataset = dataset.roll(lon=lon_size_05)
+    dataset = dataset.assign_coords(lon=(((dataset.lon + 180) % 360) - 180))
+
+    return dataset
 
 
 def init_plugin():

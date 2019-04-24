@@ -12,7 +12,7 @@ Data cubes with xarray
 
 First
     
-    $ git clone https://github.com/bcdev/xcube.git
+    $ git clone https://github.com/dcs4cop/xcube.git
     $ cd xcube
     $ conda env create
     
@@ -23,7 +23,7 @@ Then
 
 Update
     
-    $ activate xcube-dev
+    $ activate xcube
     $ git pull --force
     $ python setup.py develop
     
@@ -40,8 +40,13 @@ with [coverage report](https://pytest-cov.readthedocs.io/en/latest/reporting.htm
 
     $ pytest --cov-report html --cov=xcube
 
+# Developer Guide
+
+...is [here](docs/DEV-GUIDE.md).
+
 
 # Tools
+
 ## `xcube chunk`
 
     $ xcube chunk --help
@@ -271,5 +276,36 @@ Example:
     $ xcube gen -a -s 2000,1000 -r 0,50,5,52.5 -v conc_chl,conc_tsm,kd489,c2rcc_flags,quality_flags -n hiroc-cube -t snap-c2rcc D:\OneDrive\BC\EOData\HIGHROC\2017\01\*.nc
 
 
+## `xcube level`
 
+    $ xcube level --help
 
+    Usage: xcube level [OPTIONS] <input>
+    
+      Transform the given dataset by <input> into the levels of a multi-level
+      pyramid with spatial resolution decreasing by a factor of two in both
+      spatial dimensions and write the result to directory <output>.
+    
+    Options:
+      -o, --output <output>           Output directory. If omitted,
+                                      "<input>.levels" will be used.
+      -l, --link                      Link the <input> instead of converting it to
+                                      a level zero dataset. Use with care, as the
+                                      <input>'s internal spatial chunk sizes may
+                                      be inappropriate for imaging purposes.
+      -t, --tile-size <tile-size>     Tile size, given as single integer number or
+                                      as <tile-width>,<tile-height>. If omitted,
+                                      the tile size will be derived from the
+                                      <input>'s internal spatial chunk sizes. If
+                                      the <input> is not chunked, tile size will
+                                      be 512.
+      -n, --num-levels-max <num-levels-max>
+                                      Maximum number of levels to generate. If not
+                                      given, the number of levels will be derived
+                                      from spatial dimension and tile sizes.
+      --help                          Show this message and exit.
+
+    
+Example:
+
+    $ xcube level -l -t 720 data/cubes/test-cube.zarr
