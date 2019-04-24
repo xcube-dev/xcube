@@ -23,7 +23,7 @@ Then
 
 Update
     
-    $ activate xcube-dev
+    $ activate xcube
     $ git pull --force
     $ python setup.py develop
     

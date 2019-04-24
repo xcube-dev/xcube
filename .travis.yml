@@ -25,7 +25,7 @@ install:
 
   - conda env create --file environment.yml
   - conda init bash
-  - source activate xcube-dev
+  - source activate xcube
   - conda list
   - python setup.py install 
   
