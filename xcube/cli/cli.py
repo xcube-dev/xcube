@@ -242,6 +242,12 @@ cli.add_command(vars2dim)
 cli.add_command(gen)
 cli.add_command(level)
 
+try:
+    from xcube_server.cli import run_server
+    cli.add_command(run_server)
+except ImportError:
+    pass
+
 
 def main(args=None):
     cli.main(args=args)
