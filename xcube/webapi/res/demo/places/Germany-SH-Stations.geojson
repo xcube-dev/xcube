@@ -1,0 +1,1069 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          9.968720364,
+          54.3031328
+        ]
+      },
+      "properties": {
+        "Name": "Ahrensee, tiefste Stelle",
+        "ID": "adcbd0a2004b42ff8697447bbb2ad665"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          9.487582229,
+          54.53819031
+        ]
+      },
+      "properties": {
+        "Name": "Arenholzer See, tiefste Stelle",
+        "ID": "50a9ec17aff547fa832f28397e180eef"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.64437122,
+          54.08364183
+        ]
+      },
+      "properties": {
+        "Name": "Barkauer_See_Nordostufer",
+        "ID": "0a92388f81924db9bc9ba7d8d1daed8b"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.64692432,
+          54.08209676
+        ]
+      },
+      "properties": {
+        "Name": "Barkauer See, tiefste Stelle",
+        "ID": "6cf54fc4071d489fbf112b806f93cea4"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.67927225,
+          53.7006488
+        ]
+      },
+      "properties": {
+        "Name": "Behlendorfer See, tiefste Stelle",
+        "ID": "7bb9e198f8524d0c8039d275e69b40cd"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.47387771,
+          54.16638991
+        ]
+      },
+      "properties": {
+        "Name": "Behler See, tiefste Stelle",
+        "ID": "fa9fe4b542404acdb07a376f0118245b"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.25078334,
+          54.09981113
+        ]
+      },
+      "properties": {
+        "Name": "Belauer See, tiefste Stelle",
+        "ID": "a3c84cbe43024348842384ccc338e696"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          9.688438912,
+          54.3896853
+        ]
+      },
+      "properties": {
+        "Name": "Bistensee, tiefste Stelle",
+        "ID": "c447809a61e942d1b4eb3513bf6b69e1"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.02045107,
+          54.17321598
+        ]
+      },
+      "properties": {
+        "Name": "Bordesholmer See, tiefste Stelle",
+        "ID": "80e91ca552264b4dbb076b7568ea8afc"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.24448829,
+          54.07957151
+        ]
+      },
+      "properties": {
+        "Name": "Bornhoeveder See, tiefste Stelle",
+        "ID": "3bf29f5f39ca4c5e9faff2bc4a8a6039"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.12324962,
+          54.1913201
+        ]
+      },
+      "properties": {
+        "Name": "Bothkamper_See_oestl_Bissee",
+        "ID": "4aba1a39a1354ad1a8f8c1f3fcc8aa76"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.13430277,
+          54.20708065
+        ]
+      },
+      "properties": {
+        "Name": "Bothkamper See, tiefste Stelle",
+        "ID": "2a408780762743c9a8f6d4795fdf08ca"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          9.909108485,
+          54.20548496
+        ]
+      },
+      "properties": {
+        "Name": "Brahmsee, tiefste Stelle",
+        "ID": "71fc7634f0af4abd9a8d140c17a79b63"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.50749605,
+          54.16707933
+        ]
+      },
+      "properties": {
+        "Name": "Dieksee_westl_Teil, tiefste Stelle",
+        "ID": "eb0a33b981e24ab1aeb938dda96c4422"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.3178923,
+          54.31756575
+        ]
+      },
+      "properties": {
+        "Name": "Dobersdorfer_See_vor_Schlesen, tiefste Stelle",
+        "ID": "7d9f2060d862449182b58dc862d95f84"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.71663646,
+          53.59466156
+        ]
+      },
+      "properties": {
+        "Name": "Druesensee, tiefste Stelle",
+        "ID": "b8359193f389419582ac2a2d25e926db"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.00343999,
+          54.13879063
+        ]
+      },
+      "properties": {
+        "Name": "Einfelder See, Suedteil, tiefste Stelle",
+        "ID": "d18b15cd2cd3483fb2b9c7e78e3a180f"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.76228802,
+          53.6890011
+        ]
+      },
+      "properties": {
+        "Name": "Gr. Kuechensee, tiefste Stelle",
+        "ID": "df4c227853ad42079586b2a8db348139"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.35720961,
+          53.62764893
+        ]
+      },
+      "properties": {
+        "Name": "Grossensee, tiefste Stelle",
+        "ID": "6ea05ac0a1be4ca2b2bf7fa474162ac0"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.634024,
+          54.3245738
+        ]
+      },
+      "properties": {
+        "Name": "Grosser_Binnensee, tiefste Stelle",
+        "ID": "a4f2fcbb2b5e4519ab19360ec912beeb"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.6328811,
+          54.14335871
+        ]
+      },
+      "properties": {
+        "Name": "Grosser Eutiner See, tiefste Stelle",
+        "ID": "816e5736372e4d39b99d426fb1fad235"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.35900749,
+          54.13511293
+        ]
+      },
+      "properties": {
+        "Name": "Grosser Ploener See, Ascheberger Becken, tiefste Stelle",
+        "ID": "e63716fd9c71498fbc2b16325a73db86"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.40619118,
+          54.09559645
+        ]
+      },
+      "properties": {
+        "Name": "Grosser_Ploener_See_Suedteil, tiefste Stelle",
+        "ID": "7769f9d22cf047589f9878c252294208"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.69485166,
+          54.03031925
+        ]
+      },
+      "properties": {
+        "Name": "Grosser_Poenitzer See, tiefste Stelle",
+        "ID": "26feacf72615463fa8a53ae7029a0d0e"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.32006464,
+          53.94321728
+        ]
+      },
+      "properties": {
+        "Name": "Grosser_Segeberger See, tiefste Stelle",
+        "ID": "1c3698eb86a74cc3a90cb6f2f5d2b22d"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.76590913,
+          53.55068535
+        ]
+      },
+      "properties": {
+        "Name": "Gudower See, tiefste Stelle",
+        "ID": "caf72ca98a7349efae9c9475a47ba0db"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          9.885623955,
+          54.48901632
+        ]
+      },
+      "properties": {
+        "Name": "Hemmelmarker See, tiefste Stelle",
+        "ID": "1bb813c3146a4aaa863c5006684cf06f"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.78372989,
+          53.96604555
+        ]
+      },
+      "properties": {
+        "Name": "Hemmelsdorfer_See",
+        "ID": "79089a5423a640da8a66583cd7fc5484"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.7772953,
+          53.95061639
+        ]
+      },
+      "properties": {
+        "Name": "Hemmelsdorfer See, tiefste Stelle",
+        "ID": "bc630a75c77746069f204ecae7e5d269"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          9.475316428,
+          54.30428852
+        ]
+      },
+      "properties": {
+        "Name": "Hohner See, tiefste Stelle",
+        "ID": "c0954132c1dd45d69993727c379658cc"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.60198602,
+          54.17113568
+        ]
+      },
+      "properties": {
+        "Name": "Kellersee, Suedteil, tiefste Stelle",
+        "ID": "1e6d0db117a840f9b3779a2b0a98d6a6"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.39777328,
+          54.16084363
+        ]
+      },
+      "properties": {
+        "Name": "Kleiner Ploener See, tiefste Stelle",
+        "ID": "5999e4f5b5594f33b9d1a94c15182e9d"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          9.539317962,
+          54.57137621
+        ]
+      },
+      "properties": {
+        "Name": "Langsee, flaches Becken",
+        "ID": "78707fd2c6bc4d93b39a8345606de593"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          9.589082172,
+          54.58010445
+        ]
+      },
+      "properties": {
+        "Name": "Langsee, SL, tiefste Stelle",
+        "ID": "fef1d43aa8e942d5b5fcf7a2ef58755c"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.30133071,
+          54.20094307
+        ]
+      },
+      "properties": {
+        "Name": "Lanker See, flaches Becken, Seemitte",
+        "ID": "cafeb99ea7b74ddca4b5f417defa8b0b"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.3018992,
+          54.21463515
+        ]
+      },
+      "properties": {
+        "Name": "Lanker See, tiefste Stelle",
+        "ID": "d10bf1fdd92b469fa3c8fed1444caa75"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.24634537,
+          53.91179843
+        ]
+      },
+      "properties": {
+        "Name": "Moezener See, tiefste Stelle",
+        "ID": "7069f1edc2d84d22a0b43a84c1670399"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.81182972,
+          54.11285094
+        ]
+      },
+      "properties": {
+        "Name": "Neustaedter Binnensee Ost, tiefste Stelle",
+        "ID": "f537df50ecc84ae882bc9a5c36d3039b"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.28168695,
+          53.86820837
+        ]
+      },
+      "properties": {
+        "Name": "Neversdorfer See, tiefste Stelle",
+        "ID": "d7f3b100f5254343ac2c0ba72703b85c"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.31693685,
+          54.34492721
+        ]
+      },
+      "properties": {
+        "Name": "Passader See, tiefste Stelle",
+        "ID": "58ba77c2c51e41848dd51db19a118c4f"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.25965462,
+          54.23648527
+        ]
+      },
+      "properties": {
+        "Name": "Postsee, Bucht vor Preetz",
+        "ID": "7e32f393a86f43a8be502def9160181d"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.23233017,
+          54.22474151
+        ]
+      },
+      "properties": {
+        "Name": "Postsee, suedwestl. Teil, tiefste Stelle",
+        "ID": "62ece6fff5f74e55b97033ae8245c5d3"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.75303566,
+          53.746967
+        ]
+      },
+      "properties": {
+        "Name": "Ratzeburger See, Nordteil Hoehe Pogeez",
+        "ID": "4857bf05f0de41a2ad99e7eb7e904dde"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.75940647,
+          53.71505048
+        ]
+      },
+      "properties": {
+        "Name": "Ratzeburger See, Suedteil Hoehe Einhaus",
+        "ID": "f994c82e7fd1424eb0204d29a6be8ae8"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          9.428095772,
+          54.71107491
+        ]
+      },
+      "properties": {
+        "Name": "Sankelmarker See, tiefste Stelle",
+        "ID": "719ad9f35e1d4a05980082c2ef670f4d"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.94524765,
+          53.6506404
+        ]
+      },
+      "properties": {
+        "Name": "Schaalsee, Niendorfer Binnensee",
+        "ID": "3282555573864df9aabf53ed554d5f62"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.4649101,
+          54.18571692
+        ]
+      },
+      "properties": {
+        "Name": "Schluensee, tiefste Stelle",
+        "ID": "d84497b9b13e44599d2f2dcbf0b2b578"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.25506926,
+          54.08575351
+        ]
+      },
+      "properties": {
+        "Name": "Schmalensee, tiefste Stelle",
+        "ID": "cdb79ea3cc414002ad10c24cd88fe405"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.43590322,
+          54.16461058
+        ]
+      },
+      "properties": {
+        "Name": "Schoehsee, tiefste Stelle",
+        "ID": "4a8e0baa960c4d15b929db47b17d16e4"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.02150602,
+          54.6157925
+        ]
+      },
+      "properties": {
+        "Name": "Schwansener See, Steg am Schoepfwerk",
+        "ID": "f65af62e3bda42dfbb1a859bde271cd4"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.01934955,
+          54.6100587
+        ]
+      },
+      "properties": {
+        "Name": "Schwansener See, tiefste Stelle",
+        "ID": "4147b15f23f344c6ba33c00cff9f04b1"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.40399127,
+          54.05535302
+        ]
+      },
+      "properties": {
+        "Name": "Seedorfer See, tiefste Stelle",
+        "ID": "7fe7c5ac9fc543429e0cf8cb7a0a46fd"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.68205505,
+          54.30703289
+        ]
+      },
+      "properties": {
+        "Name": "Sehlendorfer Binnensee, tiefste Stelle",
+        "ID": "90feb3ea6af04984b7104e27caf9bde8"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.4975451,
+          54.29733956
+        ]
+      },
+      "properties": {
+        "Name": "Selenter See, Bucht vor Seekrug",
+        "ID": "2cd7de7e1d25463c848ace370175e862"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.49433965,
+          54.3127855
+        ]
+      },
+      "properties": {
+        "Name": "Selenter See, Giekauer Bucht",
+        "ID": "b4d7288845cb4b1887fcfda3c41b9a54"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.44088597,
+          54.30170606
+        ]
+      },
+      "properties": {
+        "Name": "Selenter See, Hoehe Selent, tiefste Stelle",
+        "ID": "96bd3b512ff2409e8a631c738e8c423b"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.64826637,
+          54.15565253
+        ]
+      },
+      "properties": {
+        "Name": "Sibbersdorfer See, tiefste Stelle",
+        "ID": "47f8e30aa1bd420c84e6da3708f2a5ac"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.70568235,
+          54.16497428
+        ]
+      },
+      "properties": {
+        "Name": "Stendorfer See, tiefste Stelle",
+        "ID": "8e3a1b12b1284f2db088ac1fe3edfec7"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.36554341,
+          54.09136362
+        ]
+      },
+      "properties": {
+        "Name": "Stocksee, nordoestl. Becken, tiefste Stelle",
+        "ID": "a775ea80f332485b8ae0fe5cbb71283e"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.34774649,
+          54.08573972
+        ]
+      },
+      "properties": {
+        "Name": "Stocksee_suedwestl_Becken, tiefste Stelle",
+        "ID": "6c542d77c7484b26b49dc1588749b0ea"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.23601519,
+          54.1282682
+        ]
+      },
+      "properties": {
+        "Name": "Stolper See, tiefste Stelle",
+        "ID": "19c6b6633364490a8339ff73cf427f86"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          9.656596739,
+          54.70770703
+        ]
+      },
+      "properties": {
+        "Name": "Suedensee, tiefste Stelle",
+        "ID": "1f9539a95c85467aa803748131d441e5"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.46995066,
+          54.14722027
+        ]
+      },
+      "properties": {
+        "Name": "Suhrer See, tiefste Stelle",
+        "ID": "90d69b3165004e4785208af51cc7cfec"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.73620352,
+          54.0743691
+        ]
+      },
+      "properties": {
+        "Name": "Sueseler See, tiefste Stelle",
+        "ID": "086dc974f54a454cb5136365be97346b"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.40951748,
+          54.16975816
+        ]
+      },
+      "properties": {
+        "Name": "Trammer See, tiefste Stelle",
+        "ID": "289fd64fc62246319714f27420d4305d"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.47172041,
+          54.2264239
+        ]
+      },
+      "properties": {
+        "Name": "Tresdorfer See, tiefste Stelle",
+        "ID": "1824b3eb538f40068e541f0e235470e4"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.44076237,
+          54.12149719
+        ]
+      },
+      "properties": {
+        "Name": "Vierer See, tiefste Stelle",
+        "ID": "07b974fc344940a09908b5de5de9c4a1"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.41641063,
+          53.97625028
+        ]
+      },
+      "properties": {
+        "Name": "Wardersee, Seemitte im mittleren Becken",
+        "ID": "33ad0cadf06441a382d0e7dce0b9dc10"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.45024252,
+          53.9647095
+        ]
+      },
+      "properties": {
+        "Name": "Wardersee, Seemitte im suedoestl. Becken",
+        "ID": "97f4ed4b9810439f85c04ff13f272c79"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.37695325,
+          53.98381005
+        ]
+      },
+      "properties": {
+        "Name": "Wardersee, tiefste Stelle_westl_Becken",
+        "ID": "e7e16cad04ab4b73a76f19fabcf4f081"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          9.8808251,
+          54.21071032
+        ]
+      },
+      "properties": {
+        "Name": "Wardersee RD, tiefste Stelle",
+        "ID": "31ea0deec9c54a7da270acb5178ed3da"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          9.93102867,
+          54.28707172
+        ]
+      },
+      "properties": {
+        "Name": "Westensee, tiefste Stelle",
+        "ID": "0912d443067c4bcb9fb0d94ed3d67076"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          9.952277741,
+          54.28188158
+        ]
+      },
+      "properties": {
+        "Name": "Westensee, Messstelle vor Wrohe",
+        "ID": "c8dc82a0d2dd40c2bb9ca884a3150e26"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          9.807880971,
+          54.48359315
+        ]
+      },
+      "properties": {
+        "Name": "Windebyer Noor,, tiefste Stelle",
+        "ID": "d449af05710c456bbd5b8f04bdf97478"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          9.772328919,
+          54.39323129
+        ]
+      },
+      "properties": {
+        "Name": "Wittensee, nordoestl. Seeteil",
+        "ID": "2331c1d0ae874196a0d26ed4df45a775"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          9.755714938,
+          54.38173343
+        ]
+      },
+      "properties": {
+        "Name": "Wittensee,, tiefste Stelle",
+        "ID": "b084da33ef374bb39c97ba67838ecfe2"
+      }
+    }
+  ]
+}

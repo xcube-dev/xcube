@@ -1,0 +1,60 @@
+Datasets:
+  - Identifier: s2p
+    Title: "Sentinel 2 Plus SNS"
+    FileSystem: "local"
+    Path: "D:\\EOData\\DCS4COP\\S2Plus-GUC.zarr"
+    Format: zarr
+    Style: default
+
+  - Identifier: cmems_sst_sns
+    Title: "CMEMS SST SNS"
+    BoundingBox: [0.0, 50, 5.0, 52.5]
+    Endpoint: "http://obs.eu-de.otc.t-systems.com"
+    Path: "dcs4cop-obs-01/dcs4cop-bc-sst-sns-l2c-v1.zarr"
+    FileSystem: "obs"
+    Region: "eu-de"
+    Style: default
+
+Styles:
+  - Identifier: default
+    ColorMappings:
+      CHL_GILERSON2010_GLOBAL:
+        ColorBar: "plasma"
+        ValueRange: [0., 24.]
+      rrs_490:
+        ColorBar: "gray"
+        ValueRange: [0., 0.05]
+      analysed_sst:
+        ColorBar: "jet"
+        ValueRange: [270, 290]
+      conc_chl:
+        ColorBar: "plasma"
+        ValueRange: [0., 24.]
+      chl_c2rcc:
+        ColorBar: "plasma"
+        ValueRange: [0., 24.]
+      conc_tsm:
+        ColorBar: "PuBuGn"
+        ValueRange: [0., 100.]
+      kd489:
+        ColorBar: "jet"
+        ValueRange: [0., 6.]
+
+ServiceProvider:
+  ProviderName: "Brockmann Consult GmbH"
+  ProviderSite: "https://www.brockmann-consult.de"
+  ServiceContact:
+    IndividualName: "Norman Fomferra"
+    PositionName: "Senior Software Engineer"
+    ContactInfo:
+      Phone:
+        Voice: "+49 4152 889 303"
+        Facsimile: "+49 4152 889 330"
+      Address:
+        DeliveryPoint: "HZG / GITZ"
+        City: "Geesthacht"
+        AdministrativeArea: "Herzogtum Lauenburg"
+        PostalCode: "21502"
+        Country: "Germany"
+        ElectronicMailAddress: "norman.fomferra@brockmann-consult.de"
+
