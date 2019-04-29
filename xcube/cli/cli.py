@@ -3,6 +3,7 @@ from typing import Any, Dict
 import click
 
 from xcube.cli.gen import gen
+from xcube.cli.server import run_server
 from xcube.cli.grid import grid
 from xcube.version import version
 
@@ -241,12 +242,7 @@ cli.add_command(grid)
 cli.add_command(vars2dim)
 cli.add_command(gen)
 cli.add_command(level)
-
-try:
-    from xcube_server.cli import run_server
-    cli.add_command(run_server)
-except ImportError:
-    pass
+cli.add_command(run_server)
 
 
 def main(args=None):

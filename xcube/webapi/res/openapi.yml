@@ -1,0 +1,1004 @@
+openapi: 3.0.0
+
+servers:
+  - description: CyanoAlert Development API
+    url: http://www.brockmann-consult.de/cyanoalert-dev/api/0.1.0.dev6
+  - description: DCS4COP Development API
+    url: http://xcube.dcs4cop.eu/dcs4cop-dev/api/0.1.0.dev6
+  - description: SwaggerHub API Auto Mocking
+    url: https://virtserver.swaggerhub.com/forman/xcube-server/1.0.0
+
+info:
+  description: |
+    A light-weight web server that provides
+    various services based on xarray-enabled datasets.
+  version: "0.1.0.dev6"
+  title: XCube Server API
+  contact:
+    email: bcdev@brockmann-consult.de
+  license:
+    name: MIT
+    url: 'https://opensource.org/licenses/MIT'
+
+tags:
+  - name: wmts
+    description: WMTS 1.0.0 API
+  - name: catalogue
+    description: Catalogue API
+  - name: tiles
+    description: Tiles API
+  - name: time-series
+    description: Time-series API
+  - name: places
+    description: Places API
+
+paths:
+
+  ########################################################################################
+  # WMTS 1.0
+  ########################################################################################
+
+  '/wmts/1.0.0/WMTSCapabilities.xml':
+    get:
+      tags:
+        - wmts
+      summary: Get WMTS capabilities
+      operationId: getWMTSCapabilities
+      responses:
+        default:
+          description: WMTS capabilities XML doc
+          content:
+            application/xml:
+              schema:
+                type: string
+
+  '/wmts/1.0.0/tile/{dataset}/{variable}/{z}/{y}/{x}.png':
+    get:
+      tags:
+        - wmts
+      summary: Get tile
+      operationId: getTile
+      description: |
+        Get an image tile for a variable of a given dataset
+        at resolution level z and spatial tile coordinate x, y.
+      parameters:
+        - $ref: '#/components/parameters/dataset'
+        - $ref: '#/components/parameters/variable'
+        - $ref: '#/components/parameters/z'
+        - $ref: '#/components/parameters/y'
+        - $ref: '#/components/parameters/x'
+      responses:
+        '200':
+          description: Image tile.
+          content:
+            'image/png':
+                  schema:
+                    type: string
+                    format: binary
+        '404':
+          description: Resource not found.
+
+  '/wmts/kvp':
+    get:
+      tags:
+        - wmts
+      summary: Key-value pair API
+      operationId: getTile
+      description: |
+        Get an image tile for a variable of a given dataset
+        at resolution level z and spatial tile coordinate x, y.
+      parameters:
+        - $ref: '#/components/parameters/dataset'
+        - $ref: '#/components/parameters/variable'
+        - $ref: '#/components/parameters/z'
+        - $ref: '#/components/parameters/y'
+        - $ref: '#/components/parameters/x'
+      responses:
+        '200':
+          description: Image tile.
+          content:
+            'image/png':
+                  schema:
+                    type: string
+                    format: binary
+        '404':
+          description: Resource not found.
+
+  ########################################################################################
+  # Catalogue
+  ########################################################################################
+
+  '/datasets':
+    get:
+      tags:
+        - catalogue
+      summary: Get all datasets
+      operationId: getDatasets
+      description: |
+        Get a list of all available datasets.
+        If "details" is set, all returned objects are fully loaded, including their dimensions, variables,
+        and place groups. This will take considerably more time.
+      parameters:
+        - $ref: '#/components/parameters/datasetDetails'
+        - $ref: '#/components/parameters/tileClient'
+      responses:
+        '200':
+          description: Dataset list.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DatasetsRefs'
+
+  '/datasets/{dataset}':
+    get:
+      tags:
+        - catalogue
+      summary: Get dataset details
+      operationId: getDataset
+      parameters:
+        - $ref: '#/components/parameters/dataset'
+        - $ref: '#/components/parameters/tileClient'
+      description: |
+        Get full dataset information including dimensions, variables, and place groups.
+      responses:
+        '200':
+          description: Dataset information object.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DatasetInfo'
+
+  '/datasets/{dataset}/coords/{dim}':
+    get:
+      tags:
+        - catalogue
+      summary: Get coordinates
+      operationId: getDatasetCoordinates
+      parameters:
+        - $ref: '#/components/parameters/dataset'
+        - $ref: '#/components/parameters/dim'
+      description: |
+        Get the coordinates of a given dimension of a given dataset.
+        Coordinates are returned as an array of values whose length is
+        the size of the given dimension.
+      responses:
+        '200':
+          description: Coordinates information object.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DimensionInfo'
+
+  ########################################################################################
+  # Tiles
+  ########################################################################################
+
+  '/datasets/{dataset}/vars/{variable}/tiles/{z}/{x}/{y}.png':
+    get:
+      tags:
+        - tiles
+      summary: Get tile
+      operationId: getDatasetVariableTile
+      description: |
+        Get an image tile for a variable of a given dataset
+        at resolution level z and spatial tile coordinate x, y.
+      parameters:
+        - $ref: '#/components/parameters/dataset'
+        - $ref: '#/components/parameters/variable'
+        - $ref: '#/components/parameters/z'
+        - $ref: '#/components/parameters/x'
+        - $ref: '#/components/parameters/y'
+      responses:
+        '200':
+          description: Image tile.
+          content:
+            'image/png':
+                  schema:
+                    type: string
+                    format: binary
+        '404':
+          description: Resource not found.
+
+  '/datasets/{dataset}/vars/{variable}/tilegrid':
+    get:
+      tags:
+        - tiles
+      summary: Get tiling schema
+      operationId: getDatasetVariableTileGrid
+      description: |
+        Get a tile grid description compatible with
+        JS tile clients such as OpenLayers or Cesium.
+      parameters:
+        - $ref: '#/components/parameters/dataset'
+        - $ref: '#/components/parameters/variable'
+        - $ref: '#/components/parameters/tileClient'
+      responses:
+        '200':
+          description: Tile schema for OL4.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/OL4TileSchema'
+                  - $ref: '#/components/schemas/CesiumTileGrid'
+        '404':
+          description: Resource not found.
+
+  '/datasets/{dataset}/vars/{variable}/legend.png':
+    get:
+      tags:
+        - tiles
+      summary: Get legend for layer
+      description: |
+        Get a legend image for a layer given by a variable of a dataset.
+        The legend is returned as a PNG image.
+      operationId: getDatasetVariableLegend
+      parameters:
+        - $ref: '#/components/parameters/dataset'
+        - $ref: '#/components/parameters/variable'
+      responses:
+        '200':
+          description: Legend image.
+          content:
+            'image/png':
+                  schema:
+                    type: string
+                    format: binary
+        '404':
+          description: Resource not found.
+
+  ########################################################################################
+  # Color Bars
+  ########################################################################################
+
+  '/colorbars':
+    get:
+      tags:
+        - catalogue
+      summary: Get available color bars
+      operationId: getColorBars
+      description: |
+        Retrieve all available color maps.
+        For each color map its name, description
+        and base64-encoded image is provided.
+      responses:
+        '200':
+          description: Color bars.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: array
+                  items:
+                    type: object
+        '404':
+          description: Resource not found.
+
+  ########################################################################################
+  # Time-Series (PRELIMINARY & UNSTABLE - will be revised soon)
+  ########################################################################################
+
+  '/ts':
+    get:
+      tags:
+        - time-series
+      operationId: getTimeSeriesInfo
+      summary: List time stamps for variables
+      description: Returns for each variable the times in UTC format for which data is available.
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TimeSeriesInfo'
+        '500':
+          description: Unexpected error.
+
+  '/ts/{dataset}/{variable}/point':
+    get:
+      tags:
+        - time-series
+      operationId: getTimeSeriesForPoint
+      summary: Compute time-series for point
+      description: Compute a time series given a coordinate and a product.
+      parameters:
+        - $ref: '#/components/parameters/dataset'
+        - $ref: '#/components/parameters/variable'
+        - $ref: '#/components/parameters/lat'
+        - $ref: '#/components/parameters/lon'
+        - $ref: '#/components/parameters/startDate'
+        - $ref: '#/components/parameters/endDate'
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TimeSeries'
+        '400':
+          description: Invalid query parameters
+        '500':
+          description: Unexpected error.
+
+  '/ts/{dataset}/{variable}/geometry':
+    post:
+      tags:
+        - time-series
+      operationId: getTimeSeriesForGeometry
+      summary: Compute time-series for geometry
+      description: Compute a time series given a GeoJSON geometry object.
+      parameters:
+        - $ref: '#/components/parameters/dataset'
+        - $ref: '#/components/parameters/variable'
+        - $ref: '#/components/parameters/startDate'
+        - $ref: '#/components/parameters/endDate'
+      requestBody:
+        $ref: '#/components/requestBodies/GeoJsonGeometry'
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TimeSeries'
+        '400':
+          description: Invalid query parameters
+        '500':
+          description: Unexpected error.
+
+  '/ts/{dataset}/{variable}/geometries':
+    post:
+      tags:
+        - time-series
+      operationId: getTimeSeriesForGeometries
+      summary: Compute time-series for geometries
+      description: Compute a time series given a GeoJSON geometry collection object.
+      parameters:
+        - $ref: '#/components/parameters/dataset'
+        - $ref: '#/components/parameters/variable'
+        - $ref: '#/components/parameters/startDate'
+        - $ref: '#/components/parameters/endDate'
+      requestBody:
+        $ref: '#/components/requestBodies/GeoJsonGeometryCollection'
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TimeSeries'
+        '400':
+          description: Invalid query parameters
+        '500':
+          description: Unexpected error.
+
+  '/ts/{dataset}/{variable}/features':
+    post:
+      tags:
+        - time-series
+      operationId: getTimeSeriesForFeature
+      summary: Compute time-series for feature collection
+      description: Compute a time series given a GeoJSON feature collection object.
+      parameters:
+        - $ref: '#/components/parameters/dataset'
+        - $ref: '#/components/parameters/variable'
+        - $ref: '#/components/parameters/startDate'
+        - $ref: '#/components/parameters/endDate'
+      requestBody:
+        $ref: '#/components/requestBodies/GeoJsonFeatureCollection'
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TimeSeries'
+        '400':
+          description: Invalid query parameters
+        '500':
+          description: Unexpected error.
+
+  ########################################################################################
+  # Places (PRELIMINARY & UNSTABLE - will be revised soon)
+  ########################################################################################
+
+  '/places':
+    get:
+      tags:
+        - places
+      summary: Get all place groups
+      operationId: getPlaceGroups
+      description: |
+        Gets a list of references to all available place groups.
+      responses:
+        '200':
+          $ref: '#/components/responses/PlaceGroupInfos'
+
+  '/places/{collection}':
+    get:
+      tags:
+        - places
+      summary: Find places
+      operationId: findPlaces
+      description: |
+        Find all places in given collection matching the given geometry and/or query expression.
+        The collection named "all" represents all available places.
+        Only one of "bounds" or "geom" parameters may be given to specify the query geometry.
+        Returns a GeoJSON FeatureCollection which may be empty.
+
+      parameters:
+        - $ref: '#/components/parameters/collection'
+        - $ref: '#/components/parameters/bounds'
+        - $ref: '#/components/parameters/geom'
+        - $ref: '#/components/parameters/expr'
+        - $ref: '#/components/parameters/comb'
+      responses:
+        '200':
+          $ref: '#/components/responses/GeoJsonFeatureCollection'
+        '404':
+          description: Resource not found.
+    post:
+      tags:
+        - places
+      summary: Find places
+      operationId: findPlacesForGeoJSON
+      description: |
+        Find places in given collection matching the query expression and/or the geometry passed as a GeoJSON request.
+        The collection named "all" represents all available places.
+        If a GeoJSON FeatureCollection object is passed, only the first feature's geometry is used.
+        Only one of "bounds" or "geom" parameters may be given to specify the query geometry.
+        Returns a GeoJSON FeatureCollection which may be empty.
+      parameters:
+        - $ref: '#/components/parameters/collection'
+        - $ref: '#/components/parameters/expr'
+        - $ref: '#/components/parameters/comb'
+      requestBody:
+        $ref: '#/components/requestBodies/GeoJsonObject'
+      responses:
+        '200':
+          $ref: '#/components/responses/GeoJsonFeatureCollection'
+
+  '/places/{collection}/{dataset}':
+    get:
+      tags:
+        - places
+      summary: Find places for dataset
+      operationId: findPlacesForDataset
+      description: |
+        Find all places in given collection matching the given geometry and/or query expression.
+        The collection named "all" represents all available places.
+        Only one of "bounds" or "geom" parameters may be given to specify the query geometry.
+        Returns a FeatureCollection which may be empty.
+
+      parameters:
+        - $ref: '#/components/parameters/collection'
+        - $ref: '#/components/parameters/dataset'
+        - $ref: '#/components/parameters/expr'
+        - $ref: '#/components/parameters/comb'
+      responses:
+        '200':
+          $ref: '#/components/responses/GeoJsonFeatureCollection'
+        '404':
+          description: Resource not found.
+
+components:
+  parameters:
+    collection:
+      name: collection
+      in: path
+      description: Place collection name.
+      required: true
+      schema:
+        type: string
+    dataset:
+      name: dataset
+      in: path
+      description: Dataset name.
+      required: true
+      schema:
+        type: string
+    variable:
+      name: variable
+      in: path
+      description: Variable name.
+      required: true
+      schema:
+        type: string
+    dim:
+      name: dim
+      in: path
+      description: Dimension name.
+      required: true
+      schema:
+        type: string
+    z:
+      name: z
+      in: path
+      description: Resolution level.
+      required: true
+      schema:
+        type: number
+        format: int32
+    y:
+      name: y
+      in: path
+      description: Spatial tile index in vertical direction.
+      required: true
+      schema:
+        type: number
+        format: int32
+    x:
+      name: x
+      in: path
+      description: Spatial tile index in horizontal direction.
+      required: true
+      schema:
+        type: number
+        format: int32
+    expr:
+      name: expr
+      in: query
+      description: |
+        Query expression. May comprise any search terms.
+        To search for specific fields, use the filed name as prefix followed by a colon, e.g. "NAME:*Lake".
+      required: false
+      schema:
+        type: string
+    bounds:
+      name: bounds
+      in: query
+      description: Bounding box given as xmin,ymin,xmax,ymax.
+      required: false
+      schema:
+        type: array
+        minItems: 4
+        maxItems: 4
+        items:
+          type: number
+    geom:
+      name: geom
+      in: query
+      description: Geometry WKT string.
+      required: false
+      schema:
+        type: string
+    comb:
+      name: comb
+      in: query
+      description: Combination operation to be applied if multiple search criteria are given.
+      required: false
+      schema:
+        type: string
+        default: "and"
+        enum: ["and", "or"]
+    lat:
+      name: lat
+      in: query
+      description: A latitude.
+      required: true
+      schema:
+        type: number
+        format: double
+        minimum: -90.0
+        maximum: 90.0
+    lon:
+      name: lon
+      in: query
+      description: A longitude.
+      required: true
+      schema:
+        type: number
+        format: double
+        minimum: -180.0
+        maximum: 180.0
+    startDate:
+      name: startDate
+      in: query
+      description: minimum date of the time series, following schema yyyy-MM-dd (inclusive).
+      required: false
+      schema:
+        type: string
+      example: 1970-01-01
+    endDate:
+      name: endDate
+      in: query
+      description: maximum date of the time series, following schema yyyy-MM-dd (inclusive).
+      required: false
+      schema:
+        type: string
+      example: 2099-01-01
+    datasetDetails:
+      name: details
+      in: query
+      description: Wheather to load also the details of a dataset, which usually takes more time.
+      required: false
+      schema:
+        type: boolean
+      example: 1
+    tileClient:
+      name: tiles
+      in: query
+      description: |
+          Controls, how the tile grid is described w.r.t. the target tile client.
+          May be "ol4" for OpenLayers 4.x or "cesium" for the Cesium 3D Globe client.
+      required: false
+      schema:
+        type: string
+      example: ol4
+  schemas:
+    PlaceGroupInfo:
+      type: object
+      required:
+        - name
+        - title
+      properties:
+        name:
+          type: string
+        title:
+          type: string
+        bbox:
+          $ref: '#/components/schemas/BoundingBox'
+    PlaceGroups:
+      type: array
+      required:
+        - name
+        - title
+      properties:
+        name:
+          type: string
+        title:
+          type: string
+        bbox:
+          $ref: '#/components/schemas/GeoJsonFeatureCollection'
+    DatasetInfo:
+      type: object
+      required:
+        - name
+        - title
+      properties:
+        name:
+          type: string
+        title:
+          type: string
+        bbox:
+          $ref: '#/components/schemas/BoundingBox'
+        variables:
+          type: array
+          items:
+            $ref: '#/components/schemas/VariableInfo'
+        dimensions:
+          type: array
+          items:
+            $ref: '#/components/schemas/DimensionInfo'
+        placeGroups:
+          type: array
+          items:
+            $ref: '#/components/schemas/PlaceGroups'
+    VariableInfo:
+      type: object
+      required:
+        - id
+        - name
+        - dims
+        - shape
+        - dtype
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        title:
+          type: string
+        dtype:
+          type: string
+        units:
+          type: string
+        dims:
+          type: array
+          items:
+            type: string
+        shape:
+          type: array
+          items:
+            type: number
+        tileSourceOptions:
+          oneOf:
+            - $ref: '#/components/schemas/OL4TileSchema'
+            - $ref: '#/components/schemas/CesiumTileGrid'
+    DimensionInfo:
+      type: object
+      required:
+        - name
+        - size
+        - dtype
+        - coordinates
+      properties:
+        name:
+          type: string
+        size:
+          type: integer
+        dtype:
+          type: string
+        units:
+          type: string
+        coordinates:
+          type: array
+          items:
+            type: number
+    DatasetsRefs:
+      type: object
+      properties:
+        datasets:
+          type: array
+          items:
+            $ref: '#/components/schemas/DatasetRef'
+    DatasetRef:
+      type: object
+      properties:
+        name:
+          type: string
+        title:
+          type: string
+    CesiumTileGrid:
+      type: object
+      properties:
+        url:
+          type: string
+        rectangle:
+          $ref: '#/components/schemas/CesiumRectangle'
+        minimumLevel:
+          type: number
+        maximumLevel:
+          type: number
+        tileWidth:
+          type: number
+        tileHeight:
+          type: number
+        tilingScheme:
+          $ref: '#/components/schemas/CesiumTilingScheme'
+    CesiumTilingScheme:
+      type: object
+      properties:
+        rectangle:
+          $ref: '#/components/schemas/CesiumRectangle'
+        numberOfLevelZeroTilesX:
+          type: number
+        numberOfLevelZeroTilesY:
+          type: number
+    CesiumRectangle:
+      type: object
+      properties:
+        west:
+          type: number
+        south:
+          type: number
+        east:
+          type: number
+        north:
+          type: number
+    OL4TileSchema:
+      type: object
+      properties:
+        url:
+          type: string
+        projection:
+          type: string
+        minZoom:
+          type: number
+        maxZoom:
+          type: number
+        tileGrid:
+          $ref: '#/components/schemas/OL4TileGrid'
+    OL4TileGrid:
+      type: object
+      properties:
+        extent:
+          type: array
+          minItems: 4
+          maxItems: 4
+          items:
+            type: number
+            format: float64
+        origin:
+          type: array
+          minItems: 2
+          maxItems: 2
+          items:
+            type: number
+            format: float64
+        tileSize:
+          type: array
+          minItems: 2
+          maxItems: 2
+          items:
+            type: number
+            format: int32
+        resolutions:
+          type: array
+          minItems: 1
+          items:
+            type: number
+            format: float64
+    BoundingBox:
+      description: "Bounding box given as [lon_min, lat_min, lon_max, lat_max]"
+      type: array
+      minItems: 4
+      maxItems: 4
+      items:
+        type: number
+    GeoJsonObject:
+      description: "GeoJSON object according to RFC 7946 Section 3"
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          type: string
+        bbox:
+          $ref: '#/components/schemas/BoundingBox'
+      additionalProperties: true
+    GeoJsonGeometry:
+      description: "GeoJSON geometry object according to RFC 7946 Section 3.1"
+      allOf:
+      - $ref: '#/components/schemas/GeoJsonObject'
+      - type: object
+        required:
+          - type
+        properties:
+          type:
+            type: string
+            enum: ["Point", "MultiPoint", "LineString", "MultiLineString", "Polygon", "MultiPolygon", "GeometryCollection"]
+    GeoJsonGeometryCollection:
+      description: "GeoJSON geometry collection object according to RFC 7946 Section 3.1.8"
+      allOf:
+      - $ref: '#/components/schemas/GeoJsonGeometry'
+      - type: object
+        required:
+          - type
+          - geometries
+        properties:
+          type:
+            type: string
+            enum: ["GeometryCollection"]
+          geometries:
+            type: array
+            items:
+              $ref: '#/components/schemas/GeoJsonGeometry'
+    GeoJsonFeature:
+      description: "GeoJSON feature collection according to RFC 7946 Section 3.2"
+      allOf:
+      - $ref: '#/components/schemas/GeoJsonObject'
+      - type: object
+        required:
+          - type
+          - geometry
+        properties:
+          type:
+            type: string
+            enum: ["Feature"]
+          geometry:
+            $ref: '#/components/schemas/GeoJsonGeometry'
+    GeoJsonFeatureCollection:
+      description: "GeoJSON feature collection according to RFC 7946 Section 3.3"
+      allOf:
+      - $ref: '#/components/schemas/GeoJsonObject'
+      - type: object
+        required:
+          - type
+          - features
+        properties:
+          type:
+            type: string
+            enum: ["FeatureCollection"]
+          features:
+            type: array
+            minItems: 0
+            items:
+              $ref: '#/components/schemas/GeoJsonFeature'
+    TimeSeriesInfo:
+      type: object
+      properties:
+        layers:
+          type: array
+          items:
+            $ref: '#/components/schemas/TimeSeriesVariableInfo'
+    TimeSeriesVariableInfo:
+      type: object
+      properties:
+        name:
+          type: string
+        dates:
+          type: array
+          items:
+            type: string
+        bounds:
+          type: object
+          properties:
+            xmin:
+              type: number
+              format: double
+            ymin:
+              type: number
+              format: double
+            xmax:
+              type: number
+              format: double
+            ymax:
+              type: number
+              format: double
+    TimeSeries:
+      type: object
+      properties:
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/TimeSeriesEntry'
+    TimeSeriesEntry:
+      type: object
+      properties:
+        result:
+          $ref: '#/components/schemas/ArithmeticMean'
+        date:
+          type: string
+    ArithmeticMean:
+      type: object
+      properties:
+        totalCount:
+          type: integer
+          format: int32
+          minimum: 0
+        validCount:
+          type: integer
+          format: int32
+          minimum: 0
+        average:
+          type: number
+          format: double
+  requestBodies:
+    GeoJsonObject:
+      description: GeoJSON FeatureCollection
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/GeoJsonObject'
+    GeoJsonGeometry:
+      description: GeoJSON Geometry
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/GeoJsonGeometry'
+    GeoJsonGeometryCollection:
+      description: GeoJSON Geometry Collection
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/GeoJsonGeometryCollection'
+    GeoJsonFeature:
+      description: GeoJSON Feature
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/GeoJsonFeature'
+    GeoJsonFeatureCollection:
+      description: GeoJSON Feature Collection
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/GeoJsonFeatureCollection'
+  responses:
+    PlaceGroupInfos:
+      description: Meta-information for each place group
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              $ref: '#/components/schemas/PlaceGroupInfo'
+    GeoJsonFeatureCollection:
+      description: GeoJSON FeatureCollection
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/GeoJsonFeatureCollection'
