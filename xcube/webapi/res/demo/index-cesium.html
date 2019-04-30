@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
+    <meta http-equiv="Pragma" content="no-cache"/>
+    <meta http-equiv="Expires" content="0"/>
+    <!-- Tell IE to use the latest, best version. -->
+    <meta http-equiv<="X-UA-Compatible" content="IE=edge">
+    <!-- Make the application on mobile take up the full browser screen and disable user scaling. -->
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no">
+    <title>xcube Tile Server Demo</title>
+    <script src="../../../Cesium-1.45/Build/Cesium/Cesium.js"></script>
+    <style>
+      @import url(../../../Cesium-1.45/Build/Cesium/Widgets/widgets.css);
+      html, body, #globe {
+          width: 100%; height: 100%; margin: 0; padding: 0; overflow: hidden;
+      }
+    </style>
+</head>
+<body>
+<div id="globe"></div>
+<script>
+
+    function getXCubeImageryProvider(url) {
+        return fetch(url)
+                .then(response => response.json())
+                .then(options => {
+                    console.log('options =', options)
+                    var rectangle = Cesium.Rectangle.fromDegrees(options.rectangle.west, options.rectangle.south,
+                                                                 options.rectangle.east, options.rectangle.north);
+                    console.log('rectangle =', rectangle)
+                    var tilingScheme = new Cesium.GeographicTilingScheme({
+                        rectangle: rectangle,
+                        numberOfLevelZeroTilesX: options.tilingScheme.numLevelZeroTilesX,
+                        numberOfLevelZeroTilesY: options.tilingScheme.numLevelZeroTilesY
+                    });
+                    console.log('tilingScheme =', tilingScheme)
+                    return new Cesium.UrlTemplateImageryProvider({
+                        url: options.url,
+                        rectangle: rectangle,
+                        minimumLevel: options.minimumLevel,
+                        maximumLevel: options.maximumLevel,
+                        tileWidth: options.tileWidth,
+                        tileHeight: options.tileHeight,
+                        tilingScheme: tilingScheme
+                    });
+                });
+    }
+
+    var viewer = new Cesium.Viewer('globe');
+
+    getXCubeImageryProvider('http://localhost:8080/xcube/api/0.1.0.dev5/tilegrid/local/conc_tsm/cesium')
+    .then(imageryProvider => {
+        var imageryLayer = viewer.imageryLayers.addImageryProvider(imageryProvider);
+        imageryLayer.minificationFilter = Cesium.TextureMinificationFilter.NEAREST;
+        imageryLayer.magnificationFilter = Cesium.TextureMagnificationFilter.NEAREST;
+    });
+
+</script>
+</body>
+</html>

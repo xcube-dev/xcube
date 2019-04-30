@@ -24,18 +24,35 @@
 
 from setuptools import setup, find_packages
 
-# in alphabetical oder
 requirements = [
-    'click',
-    'dask',
-    'gdal',
-    'matplotlib',
-    'numpy',
-    'pandas',
-    'pyyaml',
-    's3fs',
-    'xarray',
-    'zarr',
+    #
+    # xcube requirements are given in file ./environment.yml.
+    #
+    # All packages here have been commented out, because otherwise setuptools will install
+    # additional pip packages although conda packages with same name are already available
+    # in the conda environment defined by file ./environment.yml.
+    #
+    # 'affine',
+    # 'click',
+    # 'cmocean',
+    # 'dask',
+    # 'fiona',
+    # 'gdal',
+    # 'matplotlib',
+    # 'netcdf4',
+    # 'numba',
+    # 'numpy',
+    # 'pandas',
+    # 'pillow',
+    # 'proj4',
+    # 'pyyaml',
+    # 'rasterio',
+    # 's3fs',
+    # 'setuptools',
+    # 'shapely',
+    # 'tornado',
+    # 'xarray',
+    # 'zarr',
 ]
 
 packages = find_packages(exclude=["test", "test.*"])

@@ -26,6 +26,7 @@ import os
 import pstats
 import time
 import traceback
+import pandas as pd
 from typing import Sequence, Callable, Tuple, Optional, Dict, Any
 
 from xcube.api.compute import compute_dataset
@@ -184,6 +185,9 @@ def _process_l2_input(input_processor: InputProcessor,
         return None, False
 
     time_range = input_processor.get_time_range(input_dataset)
+    if time_range[0] > time_range[1]:
+        monitor('ERROR: start time is greater than end time: skipping...')
+        return None, False
 
     if output_variables:
         output_variables = to_resolved_name_dict_pairs(output_variables, input_dataset)

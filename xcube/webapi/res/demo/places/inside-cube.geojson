@@ -1,0 +1,53 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          1.5,
+          52.1
+        ]
+      },
+      "properties": {
+        "Name": "Station 1",
+        "ID": "1",
+        "Sub_Region_Name": "Inside",
+        "Region_Name": "Belgium"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          2.5,
+          51.5
+        ]
+      },
+      "properties": {
+        "Name": "Station 2",
+        "ID": "2",
+        "Sub_Region_Name": "Inside",
+        "Region_Name": "Belgium"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.5,
+          50.9
+        ]
+      },
+      "properties": {
+        "Name": "Station 3",
+        "ID": "3",
+        "Sub_Region_Name": "Inside",
+        "Region_Name": "Belgium"
+      }
+    }
+  ]
+}

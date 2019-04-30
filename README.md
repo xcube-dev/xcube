@@ -23,7 +23,7 @@ Then
 
 Update
     
-    $ activate xcube-dev
+    $ activate xcube
     $ git pull --force
     $ python setup.py develop
     
@@ -45,7 +45,26 @@ with [coverage report](https://pytest-cov.readthedocs.io/en/latest/reporting.htm
 ...is [here](docs/DEV-GUIDE.md).
 
 
+# Docker
+
+To start a demo using docker use the following commands
+
+    $ docker build -t [your name] .
+    $ docker run -d -p [host port]:8000 [your name]
+    
+**Example:**
+
+    $  docker build -t xcube:0.1.0dev6 .
+    $  docker run -d -p 8001:8000 xcube:0.1.0dev6
+    $  docker ps
+
+**TODO:** 
+
+The idea is to have the container automatically build on quay.io 
+and then used in a xcube-services ```docker-compose.yml``` configuration.
+
 # Tools
+
 ## `xcube chunk`
 
     $ xcube chunk --help
@@ -275,5 +294,188 @@ Example:
     $ xcube gen -a -s 2000,1000 -r 0,50,5,52.5 -v conc_chl,conc_tsm,kd489,c2rcc_flags,quality_flags -n hiroc-cube -t snap-c2rcc D:\OneDrive\BC\EOData\HIGHROC\2017\01\*.nc
 
 
+## `xcube level`
 
+    $ xcube level --help
+
+    Usage: xcube level [OPTIONS] <input>
+    
+      Transform the given dataset by <input> into the levels of a multi-level
+      pyramid with spatial resolution decreasing by a factor of two in both
+      spatial dimensions and write the result to directory <output>.
+    
+    Options:
+      -o, --output <output>           Output directory. If omitted,
+                                      "<input>.levels" will be used.
+      -l, --link                      Link the <input> instead of converting it to
+                                      a level zero dataset. Use with care, as the
+                                      <input>'s internal spatial chunk sizes may
+                                      be inappropriate for imaging purposes.
+      -t, --tile-size <tile-size>     Tile size, given as single integer number or
+                                      as <tile-width>,<tile-height>. If omitted,
+                                      the tile size will be derived from the
+                                      <input>'s internal spatial chunk sizes. If
+                                      the <input> is not chunked, tile size will
+                                      be 512.
+      -n, --num-levels-max <num-levels-max>
+                                      Maximum number of levels to generate. If not
+                                      given, the number of levels will be derived
+                                      from spatial dimension and tile sizes.
+      --help                          Show this message and exit.
+
+    
+Example:
+
+    $ xcube level -l -t 720 data/cubes/test-cube.zarr
+
+
+
+## `xcube server`
+
+    $ xcube server --help
+    Usage: xcube server [OPTIONS]
+    
+      Run an Xcube server.
+    
+    Options:
+      --version              Show the version and exit.
+      -n, --name NAME        Service name. Defaults to 'xcube'.
+      -a, --address ADDRESS  Service address. Defaults to 'localhost'.
+      -p, --port PORT        Port number where the service will listen on.
+                             Defaults to 8080.
+      -u, --update PERIOD    Service will update after given seconds of
+                             inactivity. Zero or a negative value will disable
+                             update checks. Defaults to 2.0.
+      -c, --config FILE      Datasets configuration file. Defaults to
+                             'D:\\Projects\\xcube\\xcube_server.yml'.
+      --tilecache SIZE       In-memory tile cache size in bytes. Unit suffixes
+                             'K', 'M', 'G' may be used. Defaults to '512M'. The
+                             special value 'OFF' disables tile caching.
+      --tilemode MODE        Tile computation mode. This is an internal option
+                             used to switch between different tile computation
+                             implementations. Defaults to 0.
+      -v, --verbose          Delegate logging to the console (stderr).
+      --traceperf            Print performance diagnostics (stdout).
+      --help                 Show this message and exit.
+
+
+### Objective
+
+The Xcube server is a light-weight web server that provides various services based on 
+Xcube datasets:
+
+* Catalogue services to query for datasets and their variables and dimensions, and feature collections. 
+* Tile map service, with some OGC WMTS 1.0 compatibility (REST and KVP APIs)
+* Dataset services to extract subsets like time-series and profiles for e.g. JS clients 
+
+Find its API description [here](https://app.swaggerhub.com/apis-docs/bcdev/xcube-server). 
+
+xcube datasets are any datasets that 
+
+* that comply to [Unidata's CDM](https://www.unidata.ucar.edu/software/thredds/v4.3/netcdf-java/CDM/) and to the [CF Conventions](http://cfconventions.org/); 
+* that can be opened with the [xarray](https://xarray.pydata.org/en/stable/) Python library;
+* that have variables that have at least the dimensions and shape (`time`, `lat`, `lon`), in exactly this order; 
+* that have 1D-coordinate variables corresponding to the dimensions;
+* that have their spatial grid defined in the WGS84 (`EPSG:4326`) coordinate reference system.
+
+The Xcube server supports local NetCDF files or local or remote [Zarr](https://zarr.readthedocs.io/en/stable/) directories.
+Remote Zarr directories must be stored in publicly accessible, AWS S3 compatible 
+object storage (OBS).
+
+As an example, here is the [configuration of the demo server](https://github.com/bcdev/xcube-server/blob/master/xcube_server/res/demo/config.yml).
+
+### OGC WMTS compatibility
+
+The Xcube server implements the RESTful and KVP architectural styles
+of the [OGC WMTS 1.0.0 specification](http://www.opengeospatial.org/standards/wmts).
+
+The following operations are supported:
+
+* **GetCapabilities**: `/xcube/wmts/1.0.0/WMTSCapabilities.xml`
+* **GetTile**: `/xcube/wmts/1.0.0/tile/{DatasetName}/{VarName}/{TileMatrix}/{TileCol}/{TileRow}.png`
+* **GetFeatureInfo**: *in progress*
+
+### Explore API of existing xcube-servers
+
+To explore the API of existing xcube-servers go to the [SwaggerHub of bcdev](https://app.swaggerhub.com/apis/bcdev/xcube-server/0.1.0.dev6).
+The SwaggerHub allows to choose the xcube-server project and therefore the datasets which are used for the exploration. 
+
+### Run the demo
+
+#### Server
+
+To run the server on default port 8080:
+
+    $ xcube server -v -c xcube_server/res/demo/config.yml
+
+
+Test it:
+
+* Datasets (Data Cubes):
+    * [Get datasets](http://localhost:8080/xcube/api/0.1.0.dev6/datasets)
+    * [Get dataset details](http://localhost:8080/xcube/api/0.1.0.dev6/datasets/local)
+    * [Get dataset coordinates](http://localhost:8080/xcube/api/0.1.0.dev6/datasets/local/coords/time)
+* Color bars:
+    * [Get color bars](http://localhost:8080/xcube/api/0.1.0.dev6/colorbars)
+    * [Get color bars (HTML)](http://localhost:8080/xcube/api/0.1.0.dev6/colorbars.html)
+* WMTS:
+    * [Get WMTS KVP Capabilities (XML)](http://localhost:8080/xcube/api/0.1.0.dev6/wmts/kvp?Service=WMTS&Request=GetCapabilities)
+    * [Get WMTS KVP local tile (PNG)](http://localhost:8080/xcube/api/0.1.0.dev6/wmts/kvp?Service=WMTS&Request=GetTile&Version=1.0.0&Layer=local.conc_chl&TileMatrix=0&TileRow=0&TileCol=0&Format=image/png)
+    * [Get WMTS KVP remote tile (PNG)](http://localhost:8080/xcube/api/0.1.0.dev6/wmts/kvp?Service=WMTS&Request=GetTile&Version=1.0.0&Layer=remote.conc_chl&TileMatrix=0&TileRow=0&TileCol=0&Format=image/png)
+    * [Get WMTS REST Capabilities (XML)](http://localhost:8080/xcube/api/0.1.0.dev6/wmts/1.0.0/WMTSCapabilities.xml)
+    * [Get WMTS REST local tile (PNG)](http://localhost:8080/xcube/api/0.1.0.dev6/wmts/1.0.0/tile/local/conc_chl/0/0/1.png)
+    * [Get WMTS REST remote tile (PNG)](http://localhost:8080/xcube/api/0.1.0.dev6/wmts/1.0.0/tile/remote/conc_chl/0/0/1.png)
+* Tiles
+    * [Get tile (PNG)](http://localhost:8080/xcube/api/0.1.0.dev6/datasets/local/vars/conc_chl/tiles/0/1/0.png)
+    * [Get tile grid for OpenLayers 4.x](http://localhost:8080/xcube/api/0.1.0.dev6/datasets/local/vars/conc_chl/tilegrid?tiles=ol4)
+    * [Get tile grid for Cesium 1.x](http://localhost:8080/xcube/api/0.1.0.dev6/datasets/local/vars/conc_chl/tilegrid?tiles=cesium)
+    * [Get legend for layer (PNG)](http://localhost:8080/xcube/api/0.1.0.dev6/datasets/local/vars/conc_chl/legend.png)
+* Time series service (preliminary & unstable, will likely change soon)
+    * [Get time stamps per dataset](http://localhost:8080/xcube/api/0.1.0.dev6/ts)
+    * [Get time series for single point](http://localhost:8080/xcube/api/0.1.0.dev6/ts/local/conc_chl/point?lat=51.4&lon=2.1&startDate=2017-01-15&endDate=2017-01-29)
+* Places service (preliminary & unstable, will likely change soon)
+    * [Get all features](http://localhost:8080/xcube/api/0.1.0.dev6/places/all)
+    * [Get all features of collection "inside-cube"](http://localhost:8080/xcube/api/0.1.0.dev6/features/inside-cube)
+    * [Get all features for dataset "local"](http://localhost:8080/xcube/api/0.1.0.dev6/places/all/local)
+    * [Get all features of collection "inside-cube" for dataset "local"](http://localhost:8080/xcube/api/0.1.0.dev6/places/inside-cube/local)
+
+
+#### Clients
+
+There are example HTML pages for some tile server clients. They need to be run in 
+a web server. If you don't have one, you can use the Node `httpserver`:
+
+    $ npm install -g httpserver
+    
+After starting both the xcube-server and web server, e.g. on port 9090
+
+    $ httpserver -d -p 9090
+
+you can run the client demos by following their links given below.
+    
+   
+##### OpenLayers
+
+[OpenLayers 4 Demo](http://localhost:9090/xcube_server/res/demo/index-ol4.html)
+[OpenLayers 4 Demo with WMTS](http://localhost:9090/xcube_server/res/demo/index-ol4-wmts.html)
+
+##### Cesium
+
+To run the [Cesium Demo](http://localhost:9090/xcube_server/res/demo/index-cesium.html) first
+[download Cesium](https://cesiumjs.org/downloads/) and unpack the zip
+into the `xcube-server` source directory so that there exists an 
+`./Cesium-<version>` sub-directory. You may have to adapt the Cesium version number 
+in the [demo's HTML file](https://github.com/dcs4cop/xcube-server/blob/master/xcube_server/res/demo/index-cesium.html).
+
+### Xcube server TODOs:
+
+* Bug/Performance: ServiceContext.dataset_cache uses dataset names as ID, but actually, caching of *open* datasets 
+  should be based on *same* dataset sources, namely given the local file path or the remote URL.
+  There may be different identifiers that have the same path!
+* Bug/Performance: /xcube/wmts/1.0.0/WMTSCapabilities.xml slow for ZARR data cubes in OTC's object storage.
+  15 seconds for first call - investigate and e.g. cache.
+* Performance: After some period check if datasets haven't been used for a long time - close them and remove from cache.
+* Feature: WMTS GetFeatureInfo
+* Feature: collect Path entry of any Dataset and observe if the file are modified, if so remove dataset from cache
+  to force its reopening.
 

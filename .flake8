@@ -1,0 +1,13 @@
+[flake8]
+ignore =
+    # continuation line unaligned for hanging indent
+    E131,
+    # module level import not at top of file
+    E402,
+    # line too long
+    E501,
+    # invalid escape sequence
+    W605
+
+#  __init__ contain a huge amount of unused imports
+exclude= __init__.py, build/

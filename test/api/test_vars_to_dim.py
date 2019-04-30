@@ -1,22 +1,22 @@
 import unittest
-import xarray as xr
 
-from test.sampledata import new_test_dataset
+from xcube.api import new_cube
 from xcube.api.vars_to_dim import vars_to_dim
 
 
 class VarsToDimTest(unittest.TestCase):
     def test_vars_to_dim(self):
-        dataset = new_test_dataset(["2010-01-01", "2010-01-02", "2010-01-03", "2010-01-04", "2010-01-05"],
-                                   precipitation=0.4, temperature=275.2)
-
-        print(dataset.dims)
+        dataset = new_cube(variables=dict(precipitation=0.4, temperature=275.2))
 
         ds = vars_to_dim(dataset)
 
-        self.assertIn("newdim_vars", ds.variables)
-        newdim_vars = ds["newdim_vars"]
-        self.assertTrue(hasattr(newdim_vars, "encoding"))
-        self.assertEqual(len(dataset.dims), 3)
-
-        self.assertRaises(ValueError, vars_to_dim, xr.Dataset())
+        self.assertIn("var", ds.dims)
+        self.assertEqual(2, ds.dims["var"])
+        self.assertIn("var", ds.coords)
+        self.assertIn("data", ds.data_vars)
+        var_names = ds["var"]
+        self.assertEqual(("var",), var_names.dims)
+        self.assertTrue(hasattr(var_names, "encoding"))
+        self.assertEqual(2, len(var_names))
+        self.assertIn("precipitation", str(var_names[0]))
+        self.assertIn("temperature", str(var_names[1]))

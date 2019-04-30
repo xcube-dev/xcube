@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+    <!-- The MIT License (MIT) -->
+<!-- Copyright (c) 2018 by the xcube development team and contributors -->
+<!-- -->
+<!-- Permission is hereby granted, free of charge, to any person obtaining a copy of -->
+<!-- this software and associated documentation files (the "Software"), to deal in -->
+<!-- the Software without restriction, including without limitation the rights to -->
+<!-- use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies -->
+<!-- of the Software, and to permit persons to whom the Software is furnished to do -->
+<!-- so, subject to the following conditions: -->
+<!-- -->
+<!-- The above copyright notice and this permission notice shall be included in all -->
+<!-- copies or substantial portions of the Software. -->
+<!-- -->
+<!-- THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR -->
+<!-- IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, -->
+<!-- FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE -->
+<!-- AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER -->
+<!-- LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, -->
+<!-- OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE -->
+<!-- SOFTWARE. -->
+<!-- -->
+
+<TileMap version="1.0.0" tilemapservice="http://tms.osgeo.org/1.0.0">
+      <Title>Natural Earth 2</Title>
+      <Abstract></Abstract>
+      <SRS>EPSG:4326</SRS>
+      <BoundingBox minx="-90.00000000000000" miny="-180.00000000000000" maxx="90.00000000000000" maxy="180.00000000000000"/>
+      <Origin x="-90.00000000000000" y="-180.00000000000000"/>
+      <TileFormat width="256" height="256" mime-type="image/jpg" extension="jpg"/>
+      <TileSets profile="geodetic">
+        <TileSet href="0" units-per-pixel="0.70312500000000" order="0"/>
+        <TileSet href="1" units-per-pixel="0.35156250000000" order="1"/>
+        <TileSet href="2" units-per-pixel="0.17578125000000" order="2"/>
+      </TileSets>
+    </TileMap>
+    
