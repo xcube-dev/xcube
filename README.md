@@ -58,30 +58,52 @@ To start a demo using docker use the following commands
     $  docker run -d -p 8001:8000 xcube:0.1.0dev6
     $  docker ps
 
-**TODO:** 
+**Docker TODOs:** 
 
-The idea is to have the container automatically build on quay.io 
-and then used in a xcube-services ```docker-compose.yml``` configuration.
+* automatically build images on quay.io 
+  and then use a xcube-services ```docker-compose.yml``` configuration.
 
 # Tools
 
+## `xcube` Command Line Interface
+
+    $ xcube --help
+    Usage: xcube [OPTIONS] COMMAND [ARGS]...
+    
+      Xcube Toolkit
+    
+    Options:
+      --version  Show the version and exit.
+      --help     Show this message and exit.
+    
+    Commands:
+      chunk     (Re-)chunk dataset.
+      dump      Dump contents of a dataset.
+      extract   Extract cube time series.
+      gen       Generate data cube.
+      grid      Find spatial data cube resolutions and adjust bounding boxes.
+      level     Generate multi-resolution levels.
+      server    Serve data cubes via web service.
+      vars2dim  Convert cube variables into new dimension.
+
+
 ## `xcube chunk`
 
-    $ xcube chunk --help
+    $ $ xcube chunk --help
     Usage: xcube chunk [OPTIONS] <input> <output>
     
-    Write a new dataset with identical data and compression but with new chunk sizes.
+      (Re-)chunk dataset. Changes the external chunking of all variables of
+      <input> according to <chunks> and writes the result to <output>.
     
-    positional arguments:
-      <input>           One data set in data cube format which needs to be chunked differently.
-      <output>          Output name of rechunked data cube. 
-    optional arguments:
-      --help                Show this help message and exit
-      --format, -f          Format of the output. If not given, guessed from <output>.
-      --params, -p          Parameters specific for the output format. Comma-separated 
-                            list of <key>=<value> pairs.
-      --chunks, -c          Chunk sizes for each dimension. Comma-separated list
-                            of <dim>=<size> pairs, e.g. "time=1,lat=270,lon=270"
+    Options:
+      -f, --format <format>  Format of the output. If not given, guessed from
+                             <output>.
+      -p, --params <params>  Parameters specific for the output format. Comma-
+                             separated list of <key>=<value> pairs.
+      -c, --chunks <chunks>  Chunk sizes for each dimension. Comma-separated list
+                             of <dim>=<size> pairs, e.g. "time=1,lat=270,lon=270"
+      --help                 Show this message and exit.
+
 
 Example:
 
@@ -92,7 +114,7 @@ Example:
     $ xcube dump --help
     Usage: xcube dump [OPTIONS] <path>
     
-    Dump contents of dataset.
+    Dump contents of a dataset.
     
     optional arguments:
       --help                Show this help message and exit
@@ -109,60 +131,60 @@ Example:
     $ xcube dump --help
     Usage: xcube extract [OPTIONS] <cube> <coords>
     
-    Extract data from <cube> at points given by coordinates <coords>.
+      Extract cube time series. Extracts data from <cube> at points given by
+      coordinates <coords> and writes the resulting time series to <output>.
     
-    optional arguments:
-    --help                 Show this message and exit.
-    --indexes, -i          Include indexes in output.
-    --output, -o <output>  Output file.
-    --format, -f <format>  Format of the output. If not given, guessed from
-                           <output>, otherwise <stdout> is used.
-    --params <params>, -p  Parameters specific for the output format. Comma-
-                           separated list of <key>=<value> pairs.
+    Options:
+      -i, --indexes          Include indexes in output.
+      -o, --output <output>  Output file.
+      -f, --format <format>  Format of the output. If not given, guessed from
+                             <output>, otherwise <stdout> is used.
+      -p, --params <params>  Parameters specific for the output format. Comma-
+                             separated list of <key>=<value> pairs.
+      --help                 Show this message and exit.
 
 Example: # TODO: Help is needed here - how are the coords passed by the user? 
     
     $ xcube extract xcube_cube.zarr 
 
-## xcube grid
+## `xcube grid`
 
     $ xcube grid --help
-    Usage: xcube-grid [OPTIONS] COMMAND [ARGS]...
+    Usage: xcube grid [OPTIONS] COMMAND [ARGS]...
     
-    Find suitable spatial data cube resolutions and to adjust bounding boxes
-    to that resolutions.
+      Find spatial data cube resolutions and adjust bounding boxes.
     
-    We find resolutions with respect to a possibly regional fixed Earth grid
-    and adjust regional spatial subsets to that grid. We also try to select
-    the resolutions such that they are taken from a certain level of a multi-
-    resolution pyramid whose level resolutions increase by a factor of two.
-
+      We find suitable resolutions with respect to a possibly regional fixed
+      Earth grid and adjust regional spatial bounding boxes to that grid. We
+      also try to select the resolutions such that they are taken from a certain
+      level of a multi-resolution pyramid whose level resolutions increase by a
+      factor of two.
     
-    The graticule at a given resolution level L within the grid is given by
+      The graticule at a given resolution level L within the grid is given by
     
-      RES(L) = COVERAGE * HEIGHT(L)
-      HEIGHT(L) = HEIGHT_0 * 2 ^ L
-      LON(L, I) = LON_MIN + I * HEIGHT_0 * RES(L)
-      LAT(L, J) = LAT_MIN + J * HEIGHT_0 * RES(L)
+          RES(L) = COVERAGE * HEIGHT(L)
+          HEIGHT(L) = HEIGHT_0 * 2 ^ L
+          LON(L, I) = LON_MIN + I * HEIGHT_0 * RES(L)
+          LAT(L, J) = LAT_MIN + J * HEIGHT_0 * RES(L)
     
-    With
+      With
     
-      RES:      Grid resolution in degrees.
-      HEIGHT:   Number of vertical grid cells for given level
-      HEIGHT_0: Number of vertical grid cells at lowest resolution level.
-
+          RES:      Grid resolution in degrees.
+          HEIGHT:   Number of vertical grid cells for given level
+          HEIGHT_0: Number of vertical grid cells at lowest resolution level.
     
-    Let WIDTH and HEIGHT be the number of horizontal and vertical grid cells
-    of a global grid at a certain LEVEL with WIDTH * RES = 360 and HEIGHT *
-    RES = 180, then we also force HEIGHT = TILE * 2 ^ LEVEL.
+      Let WIDTH and HEIGHT be the number of horizontal and vertical grid cells
+      of a global grid at a certain LEVEL with WIDTH * RES = 360 and HEIGHT *
+      RES = 180, then we also force HEIGHT = TILE * 2 ^ LEVEL.
     
     Options:
-      --help     Show this message and exit.
+      --help  Show this message and exit.
     
     Commands:
       abox    Adjust a bounding box to a fixed Earth grid.
-      levels  List levels for target resolution.
-      res     List resolutions close to target resolution.
+      levels  List levels for a resolution or a tile size.
+      res     List resolutions close to a target resolution.
+
     
 Example: Find suitable target resolution for a ~300m (Sentinel 3 OLCI FR resolution) 
 fixed Earth grid within a deviation of 5%.
@@ -218,22 +240,22 @@ handy tool [Wicket](https://arthur-e.github.io/Wicket/sandbox-gmaps3.html).
 ## `xcube gen`
 
     $ xcube gen --help
-    usage: xcube gen [OPTIONS] INPUT_FILES
+    Usage: xcube gen [OPTIONS] INPUT_FILES
     
-     Level-2C data cubes may be created in one go or successively in append
-     mode, input by input. The input may be one or more input files or a
-     pattern that may contain wildcards '?', '*', and '**'.
+      Generate data cube. Data cubes may be created in one go or successively in
+      append mode, input by input. The input may be one or more input files or a
+      pattern that may contain wildcards '?', '*', and '**'.
     
-    optional arguments:
+    Options:
       --version                       Show the version and exit.
       -p, --proc INPUT_PROCESSOR      Input processor type name. The choices as
                                       input processor are: ['default', 'rbins-
                                       seviri-highroc-scene-l2', 'rbins-seviri-
                                       highroc-daily-l2', 'snap-olci-highroc-l2',
-                                      'snap-olci-cyanoalert-l2'].  Additional
-                                      information about input processors can be
-                                      accessed by calling xcube generate_cube
-                                      --info
+                                      'snap-olci-cyanoalert-l2',
+                                      'vito-s2plus-l2'].  Additional information
+                                      about input processors can be accessed by
+                                      calling xcube generate_cube --info
       -c, --config CONFIG_FILE        Data cube configuration file in YAML format.
                                       More than one config input file is
                                       allowed.When passing several config files,
@@ -269,6 +291,10 @@ handy tool [Wicket](https://arthur-e.github.io/Wicket/sandbox-gmaps3.html).
                                       produce any outputs.
       -i, --info                      Displays additional information about format
                                       options or about input processors.
+      --sort                          The input file list will be sorted before
+                                      creating the data cube. If --sort parameter
+                                      is not passed, order of input list will be
+                                      kept.
       --help                          Show this message and exit.
 
     $ xcube gen --info
@@ -278,6 +304,7 @@ handy tool [Wicket](https://arthur-e.github.io/Wicket/sandbox-gmaps3.html).
       rbins-seviri-highroc-daily-l2     RBINS SEVIRI HIGHROC daily Level-2 NetCDF inputs
       snap-olci-highroc-l2              SNAP Sentinel-3 OLCI HIGHROC Level-2 NetCDF inputs
       snap-olci-cyanoalert-l2           SNAP Sentinel-3 OLCI CyanoAlert Level-2 NetCDF inputs
+      vito-s2plus-l2                    VITO Sentinel-2 Plus Level 2 NetCDF inputs
     
     
     output formats to be used with option --format:
@@ -285,6 +312,8 @@ handy tool [Wicket](https://arthur-e.github.io/Wicket/sandbox-gmaps3.html).
       mem                     (*.mem)       In-memory dataset I/O
       netcdf4                 (*.nc)        NetCDF-4 file format
       zarr                    (*.zarr)      Zarr file format (http://zarr.readthedocs.io)
+    
+
 
 
 
@@ -297,12 +326,12 @@ Example:
 ## `xcube level`
 
     $ xcube level --help
-
     Usage: xcube level [OPTIONS] <input>
     
-      Transform the given dataset by <input> into the levels of a multi-level
-      pyramid with spatial resolution decreasing by a factor of two in both
-      spatial dimensions and write the result to directory <output>.
+      Generate multi-resolution levels. Transform the given dataset by <input>
+      into the levels of a multi-level pyramid with spatial resolution
+      decreasing by a factor of two in both spatial dimensions and write the
+      result to directory <output>.
     
     Options:
       -o, --output <output>           Output directory. If omitted,
@@ -329,13 +358,37 @@ Example:
     $ xcube level -l -t 720 data/cubes/test-cube.zarr
 
 
+## `xcube vars2dim`
+
+    $ xcube vars2dim --help
+    Usage: xcube vars2dim [OPTIONS] <cube>
+    
+      Convert cube variables into new dimension. Moves all variables of <cube>
+      into into a single new variable <var-name> with a new dimension <dim-name>
+      and writes the results to <output>.
+    
+    Options:
+      -d, --dim_name <dim-name>  Name of the new dimension into variables.
+                                 Defaults to "var".
+      -v, --var_name <var-name>  Name of the new variable that includes all
+                                 variables. Defaults to "data".
+      -o, --output <output>      Output file.
+      -f, --format <format>      Format of the output. If not given, guessed from
+                                 <output>.
+      --help                     Show this message and exit.
+
+
 
 ## `xcube server`
 
     $ xcube server --help
     Usage: xcube server [OPTIONS]
     
-      Run an Xcube server.
+      Serve data cubes via web service.
+    
+      Serves data cubes by a RESTful API and a OGC WMTS 1.0 RESTful and KVP
+      interface. The RESTful API documentation can be found at
+      https://app.swaggerhub.com/apis/bcdev/xcube-server.
     
     Options:
       --version              Show the version and exit.
