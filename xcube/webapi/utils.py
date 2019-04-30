@@ -1,3 +1,4 @@
+import datetime
 from typing import Optional, Tuple, Union, Dict, Any, List
 
 import affine
@@ -83,7 +84,7 @@ def get_geometry_mask(width: int, height: int,
                                            invert=True)
 
 
-def timestamp_to_iso_string(time: np.datetime64, freq='S'):
+def timestamp_to_iso_string(time: Union[np.datetime64, datetime.datetime], freq='S'):
     """
     Convert a UTC timestamp given as nanos, millis, seconds, etc. since 1970-01-01 00:00:00
     to an ISO-format string.

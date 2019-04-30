@@ -19,10 +19,12 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+import datetime
 import json
 
 from tornado.ioloop import IOLoop
 
+from xcube.webapi.utils import timestamp_to_iso_string
 from . import __version__, __description__
 from .controllers.catalogue import get_datasets, get_dataset_coordinates, get_color_bars, get_dataset
 from .controllers.places import find_places, find_dataset_places
@@ -301,10 +303,16 @@ class FindDatasetPlacesHandler(ServiceRequestHandler):
 class InfoHandler(ServiceRequestHandler):
 
     def get(self):
+        config_time = timestamp_to_iso_string(datetime.datetime.fromtimestamp(self.service_context.config_mtime),
+                                              freq="ms")
+        server_time = timestamp_to_iso_string(datetime.datetime.now(), freq="ms")
         self.set_header('Content-Type', 'application/json')
         self.write(json.dumps(dict(name='xcube_server',
                                    description=__description__,
-                                   version=__version__), indent=2))
+                                   version=__version__,
+                                   configTime=config_time,
+                                   serverTime=server_time),
+                              indent=2))
 
 
 # noinspection PyAbstractClass

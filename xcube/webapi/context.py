@@ -64,6 +64,7 @@ class ServiceContext:
         self._name = name
         self._base_dir = os.path.abspath(base_dir or '')
         self._config = config if config is not None else dict()
+        self._config_mtime = 0.0
         self._place_group_cache = dict()
         self._feature_index = 0
         self._tile_comp_mode = tile_comp_mode
@@ -102,6 +103,14 @@ class ServiceContext:
                     self._tile_cache.clear()
 
         self._config = config
+
+    @property
+    def config_mtime(self) -> float:
+        return self._config_mtime
+
+    @config_mtime.setter
+    def config_mtime(self, value: float):
+        self._config_mtime = value
 
     @property
     def base_dir(self) -> str:

@@ -98,7 +98,6 @@ class Service:
         tile_cache_config = parse_tile_cache_config(tile_cache_size)
 
         self.config_file = os.path.abspath(config_file) if config_file else None
-        self.config_mtime = None
         self.update_period = update_period
         self.update_timer = None
         self.config_error = None
@@ -187,8 +186,8 @@ class Service:
                 _LOG.error(f'configuration file {config_file!r}: {e}')
                 self.config_error = e
             return
-        if self.config_mtime != stat.st_mtime:
-            self.config_mtime = stat.st_mtime
+        if self.context.config_mtime != stat.st_mtime:
+            self.context.config_mtime = stat.st_mtime
             try:
                 with open(config_file) as stream:
                     self.context.config = yaml.safe_load(stream)
