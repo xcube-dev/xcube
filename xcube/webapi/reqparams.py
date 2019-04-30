@@ -25,7 +25,7 @@ from typing import Optional
 import numpy as np
 
 from .errors import ServiceBadRequestError
-from .undefined import UNDEFINED
+from ..util.undefined import UNDEFINED
 
 
 class RequestParams(metaclass=ABCMeta):

@@ -43,7 +43,7 @@ from .defaults import DEFAULT_ADDRESS, DEFAULT_PORT, DEFAULT_CONFIG_FILE, DEFAUL
     DEFAULT_TILE_CACHE_SIZE, DEFAULT_NAME, DEFAULT_TRACE_PERF, DEFAULT_TILE_COMP_MODE
 from .errors import ServiceBadRequestError
 from .reqparams import RequestParams
-from .undefined import UNDEFINED
+from ..util.undefined import UNDEFINED
 
 __author__ = "Norman Fomferra (Brockmann Consult GmbH)"
 

@@ -1,6 +1,6 @@
 from unittest import TestCase
 
-from xcube.webapi.undefined import UNDEFINED
+from xcube.util.undefined import UNDEFINED
 
 
 class UndefinedTest(TestCase):

@@ -6,7 +6,7 @@ import yaml
 from xcube.webapi.context import ServiceContext
 from xcube.webapi.errors import ServiceBadRequestError
 from xcube.webapi.reqparams import RequestParams
-from xcube.webapi.undefined import UNDEFINED
+from xcube.util.undefined import UNDEFINED
 
 
 def new_test_service_context() -> ServiceContext:
