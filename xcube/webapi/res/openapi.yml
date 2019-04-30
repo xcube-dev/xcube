@@ -83,10 +83,9 @@ paths:
       tags:
         - wmts
       summary: Key-value pair API
-      operationId: getTile
+      operationId: performWMTSMethod
       description: |
-        Get an image tile for a variable of a given dataset
-        at resolution level z and spatial tile coordinate x, y.
+        Provide the WMTS 1.0 key-value-pair (KVP) architectural style.
       parameters:
         - $ref: '#/components/parameters/dataset'
         - $ref: '#/components/parameters/variable'
