@@ -109,9 +109,9 @@ class Service:
 
         self.context = ServiceContext(name=name,
                                       base_dir=os.path.dirname(self.config_file or os.path.abspath('')),
-                                      tile_comp_mode=tile_comp_mode,
                                       trace_perf=trace_perf,
-                                      mem_tile_cache_capacity=tile_cache_config.get("capacity"))
+                                      tile_comp_mode=tile_comp_mode,
+                                      tile_cache_capacity=tile_cache_config.get("capacity"))
         self._maybe_load_config()
 
         application.service_context = self.context

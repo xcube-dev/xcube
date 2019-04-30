@@ -33,11 +33,9 @@ import s3fs
 import xarray as xr
 import zarr
 
-from . import __version__
-from .cache import MemoryCacheStore, Cache, FileCacheStore
+from .cache import MemoryCacheStore, Cache
 from .defaults import DEFAULT_CMAP_CBAR, DEFAULT_CMAP_VMIN, \
-    DEFAULT_CMAP_VMAX, FILE_TILE_CACHE_PATH, \
-    API_PREFIX, DEFAULT_NAME, DEFAULT_TRACE_PERF
+    DEFAULT_CMAP_VMAX, API_PREFIX, DEFAULT_NAME, DEFAULT_TRACE_PERF
 from .errors import ServiceConfigError, ServiceError, ServiceBadRequestError, ServiceResourceNotFoundError
 from .im import TileGrid
 from .mldataset import FileStorageMultiLevelDataset, BaseMultiLevelDataset, MultiLevelDataset, \
@@ -62,35 +60,23 @@ class ServiceContext:
                  config: Config = None,
                  trace_perf: bool = DEFAULT_TRACE_PERF,
                  tile_comp_mode: int = None,
-                 mem_tile_cache_capacity: int = None,
-                 file_tile_cache_capacity: int = None):
+                 tile_cache_capacity: int = None):
         self._name = name
-        self.base_dir = os.path.abspath(base_dir or '')
+        self._base_dir = os.path.abspath(base_dir or '')
         self._config = config if config is not None else dict()
         self._place_group_cache = dict()
         self._feature_index = 0
         self._tile_comp_mode = tile_comp_mode
         self._trace_perf = trace_perf
         self._lock = threading.RLock()
-
-        self.dataset_cache = dict()  # contains tuples of form (MultiLevelDataset, ds_descriptor)
-        # TODO by forman: move pyramid_cache, mem_tile_cache, rgb_tile_cache into dataset_cache values
-        self.image_cache = dict()
-
-        if mem_tile_cache_capacity and mem_tile_cache_capacity > 0:
-            self.mem_tile_cache = Cache(MemoryCacheStore(),
-                                        capacity=mem_tile_cache_capacity,
-                                        threshold=0.75)
+        self._dataset_cache = dict()  # contains tuples of form (MultiLevelDataset, ds_descriptor)
+        self._image_cache = dict()
+        if tile_cache_capacity and tile_cache_capacity > 0:
+            self._tile_cache = Cache(MemoryCacheStore(),
+                                     capacity=tile_cache_capacity,
+                                     threshold=0.75)
         else:
-            self.mem_tile_cache = None
-
-        if file_tile_cache_capacity and file_tile_cache_capacity > 0:
-            tile_cache_dir = os.path.join(FILE_TILE_CACHE_PATH, 'v%s' % __version__, 'tiles')
-            self.rgb_tile_cache = Cache(FileCacheStore(tile_cache_dir, ".png"),
-                                        capacity=file_tile_cache_capacity,
-                                        threshold=0.75)
-        else:
-            self.rgb_tile_cache = None
+            self._tile_cache = None
 
     @property
     def config(self) -> Config:
@@ -99,35 +85,43 @@ class ServiceContext:
     @config.setter
     def config(self, config: Config):
         if self._config:
-            old_dataset_descriptors = self._config.get('Datasets')
-            new_dataset_descriptors = config.get('Datasets')
-
-            clean_image_caches = False
-
-            if not new_dataset_descriptors:
-                for ml_dataset, _ in self.dataset_cache.values():
-                    ml_dataset.close()
-                self.dataset_cache.clear()
-
-            if new_dataset_descriptors and old_dataset_descriptors:
-                ds_names = list(self.dataset_cache.keys())
-                for ds_name in ds_names:
-                    dataset_descriptor = self.find_dataset_descriptor(new_dataset_descriptors, ds_name)
-                    if dataset_descriptor is None:
-                        ml_dataset, _ = self.dataset_cache[ds_name]
+            with self._lock:
+                # Close all datasets
+                for ml_dataset, _ in self._dataset_cache.values():
+                    # noinspection PyBroadException
+                    try:
                         ml_dataset.close()
-                        del self.dataset_cache[ds_name]
-
-            if clean_image_caches:
-                self.image_cache.clear()
-                if self.rgb_tile_cache is not None:
-                    self.rgb_tile_cache.clear()
+                    except Exception:
+                        pass
+                # Clear all caches
+                if self._dataset_cache:
+                    self._dataset_cache.clear()
+                if self._image_cache:
+                    self._image_cache.clear()
+                if self._tile_cache:
+                    self._tile_cache.clear()
 
         self._config = config
 
     @property
+    def base_dir(self) -> str:
+        return self._base_dir
+
+    @property
     def tile_comp_mode(self) -> int:
         return self._tile_comp_mode
+
+    @property
+    def dataset_cache(self) -> Dict[str, Tuple[MultiLevelDataset, Dict[str, Any]]]:
+        return self._dataset_cache
+
+    @property
+    def image_cache(self) -> Dict[str, Any]:
+        return self._image_cache
+
+    @property
+    def tile_cache(self) -> Dict[str, Any]:
+        return self._tile_cache
 
     @property
     def trace_perf(self) -> bool:
@@ -158,7 +152,7 @@ class ServiceContext:
         return dataset[var_name]
 
     def get_dataset_descriptors(self):
-        dataset_descriptors = self.config.get('Datasets')
+        dataset_descriptors = self._config.get('Datasets')
         if not dataset_descriptors:
             raise ServiceConfigError(f"No datasets configured")
         return dataset_descriptors
@@ -179,7 +173,7 @@ class ServiceContext:
     def get_color_mapping(self, ds_id: str, var_name: str):
         dataset_descriptor = self.get_dataset_descriptor(ds_id)
         style_name = dataset_descriptor.get('Style', 'default')
-        styles = self.config.get('Styles')
+        styles = self._config.get('Styles')
         if styles:
             style = None
             for s in styles:
@@ -199,10 +193,10 @@ class ServiceContext:
         return DEFAULT_CMAP_CBAR, DEFAULT_CMAP_VMIN, DEFAULT_CMAP_VMAX
 
     def _get_dataset_entry(self, ds_id: str) -> Tuple[MultiLevelDataset, Dict[str, Any]]:
-        if ds_id not in self.dataset_cache:
+        if ds_id not in self._dataset_cache:
             with self._lock:
-                self.dataset_cache[ds_id] = self._create_dataset_entry(ds_id)
-        return self.dataset_cache[ds_id]
+                self._dataset_cache[ds_id] = self._create_dataset_entry(ds_id)
+        return self._dataset_cache[ds_id]
 
     def _create_dataset_entry(self, ds_id: str) -> Tuple[MultiLevelDataset, Dict[str, Any]]:
 
@@ -237,7 +231,7 @@ class ServiceContext:
                 raise ServiceConfigError(f"Invalid format={data_format!r} in dataset descriptor {ds_id!r}")
         elif fs_type == 'local':
             if not os.path.isabs(path):
-                path = os.path.join(self.base_dir, path)
+                path = os.path.join(self._base_dir, path)
 
             data_format = dataset_descriptor.get('Format', 'nc')
             if data_format == 'nc':
@@ -255,7 +249,7 @@ class ServiceContext:
                 raise ServiceConfigError(f"Invalid format={data_format!r} in dataset descriptor {ds_id!r}")
         elif fs_type == 'memory':
             if not os.path.isabs(path):
-                path = os.path.join(self.base_dir, path)
+                path = os.path.join(self._base_dir, path)
 
             callable_name = dataset_descriptor.get('Function', COMPUTE_DATASET)
             input_dataset_ids = dataset_descriptor.get('InputDatasets', [])
@@ -281,7 +275,7 @@ class ServiceContext:
 
         t2 = time.perf_counter()
 
-        if self.config.get("trace_perf", False):
+        if self._config.get("trace_perf", False):
             _LOG.info(f'Opening {ds_id!r} took {t2 - t1} seconds')
 
         return ml_dataset, dataset_descriptor
@@ -370,7 +364,7 @@ class ServiceContext:
         if not place_path_wc:
             raise ServiceError("Missing 'Path' entry in a 'PlaceGroups' item")
         if not os.path.isabs(place_path_wc):
-            place_path_wc = os.path.join(self.base_dir, place_path_wc)
+            place_path_wc = os.path.join(self._base_dir, place_path_wc)
 
         property_mapping = place_group_config.get("PropertyMapping")
         character_encoding = place_group_config.get("CharacterEncoding", "utf-8")
@@ -454,5 +448,5 @@ class ServiceContext:
     def find_dataset_descriptor(cls,
                                 dataset_descriptors: List[Dict[str, Any]],
                                 ds_name: str) -> Optional[Dict[str, Any]]:
-        # TODO: optimize by dict/key lookup
+        # Note: can be optimized by dict/key lookup
         return next((dsd for dsd in dataset_descriptors if dsd['Identifier'] == ds_name), None)

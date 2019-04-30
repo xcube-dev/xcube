@@ -20,21 +20,17 @@ class ServiceContextTest(unittest.TestCase):
             dict(Identifier='demo2',
                  Path="../../../../xcube/webapi/res/demo/cube.nc"),
         ])
-        self.assertIn('demo', ctx.dataset_cache)
+        self.assertNotIn('demo', ctx.dataset_cache)
         self.assertNotIn('demo2', ctx.dataset_cache)
 
         ctx.get_dataset('demo2')
-        self.assertIn('demo', ctx.dataset_cache)
+        self.assertNotIn('demo', ctx.dataset_cache)
         self.assertIn('demo2', ctx.dataset_cache)
 
         ctx.config = dict(Datasets=[
             dict(Identifier='demo2',
                  Path="../../../../xcube/webapi/res/demo/cube.nc"),
         ])
-        self.assertNotIn('demo', ctx.dataset_cache)
-        self.assertIn('demo2', ctx.dataset_cache)
-
-        ctx.config = dict()
         self.assertNotIn('demo', ctx.dataset_cache)
         self.assertNotIn('demo2', ctx.dataset_cache)
 

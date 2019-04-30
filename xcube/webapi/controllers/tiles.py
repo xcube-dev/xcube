@@ -89,7 +89,7 @@ def get_dataset_tile(ctx: ServiceContext,
             image = NdarrayImage(array,
                                  image_id=f'ndai-{image_id}',
                                  tile_size=tile_grid.tile_size,
-                                 # tile_cache=ctx.mem_tile_cache,
+                                 # tile_cache=ctx.tile_cache,
                                  trace_perf=trace_perf)
             image = TransformArrayImage(image,
                                         image_id=f'tai-{image_id}',
@@ -97,7 +97,7 @@ def get_dataset_tile(ctx: ServiceContext,
                                         force_masked=True,
                                         no_data_value=no_data_value,
                                         valid_range=valid_range,
-                                        # tile_cache=ctx.mem_tile_cache,
+                                        # tile_cache=ctx.tile_cache,
                                         trace_perf=trace_perf)
             image = ColorMappedRgbaImage(image,
                                          image_id=f'rgb-{image_id}',
@@ -105,7 +105,7 @@ def get_dataset_tile(ctx: ServiceContext,
                                          cmap_name=cmap_cbar,
                                          encode=True,
                                          format='PNG',
-                                         tile_cache=ctx.mem_tile_cache,
+                                         tile_cache=ctx.tile_cache,
                                          trace_perf=trace_perf)
         else:
             image = ColorMappedRgbaImage2(array,
@@ -118,7 +118,7 @@ def get_dataset_tile(ctx: ServiceContext,
                                           flip_y=tile_grid.inv_y,
                                           no_data_value=no_data_value,
                                           valid_range=valid_range,
-                                          tile_cache=ctx.mem_tile_cache,
+                                          tile_cache=ctx.tile_cache,
                                           trace_perf=trace_perf)
 
         ctx.image_cache[image_id] = image
