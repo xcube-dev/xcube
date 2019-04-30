@@ -67,7 +67,10 @@ def run_server(name: str,
                verbose: bool,
                traceperf: bool):
     """
-    Run an Xcube server.
+    Serve data cubes via web service.
+
+    Serves data cubes by a RESTful API and a OGC WMTS 1.0 RESTful and KVP interface.
+    The RESTful API documentation can be found at https://app.swaggerhub.com/apis/bcdev/xcube-server.
     """
 
     from xcube.webapi.app import new_application

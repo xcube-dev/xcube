@@ -99,7 +99,8 @@ def gen(input_files: str,
         info: bool,
         sort: bool):
     """
-    Level-2C data cubes may be created in one go or successively in append mode, input by input.
+    Generate data cube.
+    Data cubes may be created in one go or successively in append mode, input by input.
     The input may be one or more input files or a pattern that may contain wildcards '?', '*', and '**'.
     """
     input_files = input_files

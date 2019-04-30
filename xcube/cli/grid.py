@@ -195,7 +195,7 @@ def list_resolutions(target_res: str,
                      num_results: int,
                      sep: str):
     """
-    List resolutions close to target resolution.
+    List resolutions close to a target resolution.
 
     Lists possible resolutions of a fixed Earth grid that are close to a given target
     resolution TARGET_RES within a maximum allowed deviation DELTA_RES.
@@ -253,7 +253,7 @@ def list_resolutions(target_res: str,
               help='Column separator for the output. Defaults to TAB.')
 def list_levels(res: str, height: int, coverage: str, level_min: Optional[int], sep: str):
     """
-    List levels for resolution or tile size.
+    List levels for a resolution or a tile size.
 
     Lists the given number of LEVELS for given resolution RES or given height in grid cells HEIGHT.
     which can both be used to define a fixed Earth grid.
@@ -377,11 +377,10 @@ def _fetch_coverage_from_option(coverage_str: str) -> fractions.Fraction:
 @click.group()
 def grid():
     """
-    Find suitable spatial data cube resolutions and to
-    adjust bounding boxes to that resolutions.
+    Find spatial data cube resolutions and adjust bounding boxes.
 
-    We find resolutions with respect to a possibly regional fixed Earth grid and adjust regional spatial
-    subsets to that grid. We also try to select the resolutions such
+    We find suitable resolutions with respect to a possibly regional fixed Earth grid and adjust regional spatial
+    bounding boxes to that grid. We also try to select the resolutions such
     that they are taken from a certain level of a multi-resolution pyramid whose
     level resolutions increase by a factor of two.
 

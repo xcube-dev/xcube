@@ -32,7 +32,8 @@ import yaml
 from xcube.api.resample import resample_in_time, RESAMPLING_METHODS
 from xcube.version import version
 
-# TODO (forman): use DatasetIO registry!
+
+# TODO (forman): use DatasetIO registry
 OUTPUT_FORMAT_NAMES = ['zarr', 'nc']
 
 DEFAULT_OUTPUT_DIR = '.'
@@ -42,9 +43,10 @@ DEFAULT_OUTPUT_RESAMPLING_METHOD = 'nearest'
 DEFAULT_OUTPUT_FREQUENCY = '1D'
 
 
+# TODO (forman): make CLI use click
 def main(args: Optional[List[str]] = None):
     """
-    Data cube resampling in time.
+    Resample in time.
     """
 
     parser = argparse.ArgumentParser(description='Data cube resampling in time.')

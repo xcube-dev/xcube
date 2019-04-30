@@ -39,7 +39,9 @@ def _parse_kwargs(value: str, metavar: str = None) -> Dict[str, Any]:
                    " Comma-separated list of <key>=<value> pairs.")
 def extract(cube, coords, indexes=False, output=None, format=None, params=None):
     """
-    Extract data from <cube> at points given by coordinates <coords>.
+    Extract cube time series.
+    Extracts data from <cube> at points given by coordinates <coords> and writes the resulting
+    time series to <output>.
     """
     import pandas as pd
 
@@ -75,7 +77,9 @@ def extract(cube, coords, indexes=False, output=None, format=None, params=None):
                    ' e.g. "time=1,lat=270,lon=270"')
 def chunk(input, output, format=None, params=None, chunks=None):
     """
-    Write a new dataset with identical data and compression but with new chunk sizes.
+    (Re-)chunk dataset.
+    Changes the external chunking of all variables of <input> according to <chunks> and writes
+    the result to <output>.
     """
     chunk_sizes = None
     if chunks:
@@ -124,6 +128,7 @@ def chunk(input, output, format=None, params=None, chunks=None):
               f'spatial dimension and tile sizes.')
 def level(input, output, link, tile_size, num_levels_max):
     """
+    Generate multi-resolution levels.
     Transform the given dataset by <input> into the levels of a multi-level pyramid with spatial resolution
     decreasing by a factor of two in both spatial dimensions and write the result to directory <output>.
     """
@@ -183,7 +188,7 @@ def level(input, output, link, tile_size, num_levels_max):
               help="Dump also variable encoding information.")
 def dump(dataset, variable, encoding):
     """
-    Dump contents of dataset.
+    Dump contents of a dataset.
     """
     from xcube.api import open_dataset, dump_dataset
     with open_dataset(dataset) as ds:
@@ -206,7 +211,9 @@ def dump(dataset, variable, encoding):
               help="Format of the output. If not given, guessed from <output>.")
 def vars2dim(cube, var_name, dim_name, output=None, format=None):
     """
-    Write a new dataset with identical data and compression but with new chunk sizes.
+    Convert cube variables into new dimension.
+    Moves all variables of <cube> into into a single new variable <var-name>
+    with a new dimension <dim-name> and writes the results to <output>.
     """
 
     from xcube.util.dsio import guess_dataset_format
