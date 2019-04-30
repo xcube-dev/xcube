@@ -140,9 +140,9 @@ def get_wmts_capabilities_xml(ctx: ServiceContext, base_url: str):
             # supported_crs = "http://www.opengis.net/def/crs/EPSG/9.5.3/4326"
 
             if tile_grid is not None:
+                tile_size_x, tile_size_y = tile_grid.tile_size
+                lon1, lat1, lon2, lat2 = tile_grid.geo_extent
                 if not tile_grid_written:
-                    tile_size_x, tile_size_y = tile_grid.tile_size
-                    lon1, lat1, lon2, lat2 = tile_grid.geo_extent
                     tile_span_y = (lat2 - lat1) / tile_grid.num_level_zero_tiles_y
                     pixel_span = tile_span_y / tile_size_y
                     scale_denominator_0 = pixel_span * _WGS84_METERS_PER_DEGREE / _STD_PIXEL_SIZE_IN_METERS

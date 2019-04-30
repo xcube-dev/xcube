@@ -24,6 +24,7 @@ __author__ = "Norman Fomferra (Brockmann Consult GmbH)"
 import numpy as np
 
 
+# noinspection PyUnusedLocal
 def aggregate_ndarray_first(a1, a2, a3, a4):
     return a1
 
@@ -61,20 +62,3 @@ def downsample_ndarray(a, aggregator=aggregate_ndarray_mean):
         a4 = a[..., 1::2, 1::2]
         return aggregator(a1, a2, a3, a4)
 
-
-def get_chunk_size(array):
-    chunk_size = None
-    try:
-        # xarray DataArray with dask, returns the size of each individual tile
-        chunk_size = array.chunks
-        if chunk_size:
-            chunk_size = tuple([c[0] if isinstance(c, tuple) else c for c in chunk_size])
-    except Exception:
-        pass
-    if not chunk_size:
-        try:
-            # netcdf 4
-            chunk_size = array.encoding['chunksizes']
-        except Exception:
-            pass
-    return chunk_size

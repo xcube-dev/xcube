@@ -163,8 +163,7 @@ def reproject_xy_to_wgs84(src_dataset: xr.Dataset,
                           dst_region: CoordRange = None,
                           dst_resampling: Union[str, Dict[str, str]] = DEFAULT_RESAMPLING,
                           include_xy_vars: bool = False,
-                          include_non_spatial_vars: bool = False,
-                          precision: int = 64) -> xr.Dataset:
+                          include_non_spatial_vars: bool = False) -> xr.Dataset:
     """
     Reprojection of xarray datasets with 2D geo-coding, e.g. with variables lon(y,x), lat(y, x) to
     EPSG:4326 (WGS-84) coordinate reference system.

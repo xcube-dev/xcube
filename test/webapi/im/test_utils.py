@@ -39,24 +39,3 @@ class ArrayTest(TestCase):
                                              [1.1, 1.1, 1.1],
                                              [1.1, 1.1, nan]]))
 
-
-class GetChunkSizeTest(TestCase):
-    def test_any_obj(self):
-        any_obj = object()
-        self.assertEqual(utils.get_chunk_size(any_obj), None)
-
-    def test_xarray_var(self):
-        class X:
-            pass
-
-        xarray_var = X()
-        xarray_var.encoding = dict(chunksizes=(1, 256, 256))
-        self.assertEqual(utils.get_chunk_size(xarray_var), (1, 256, 256))
-
-    def test_netcdf4_var(self):
-        class X:
-            pass
-
-        netcdf4_var = X()
-        netcdf4_var.chunks = (1, 900, 1800)
-        self.assertEqual(utils.get_chunk_size(netcdf4_var), (1, 900, 1800))

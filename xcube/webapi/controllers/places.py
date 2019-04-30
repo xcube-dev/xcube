@@ -76,6 +76,8 @@ def __find_places(ctx: ServiceContext,
                   query_geometry: shapely.geometry.base.BaseGeometry = None,
                   query_expr: Any = None,
                   comb_op: str = "and") -> GeoJsonFeatureCollection:
+    if comb_op is not None and comb_op != "and":
+        raise NotImplementedError("comb_op not yet supported")
     place_group = ctx.get_place_group(collection_name)
     if query_geometry is None:
         if query_expr is None:

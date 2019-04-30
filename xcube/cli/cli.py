@@ -32,12 +32,14 @@ def _parse_kwargs(value: str, metavar: str = None) -> Dict[str, Any]:
               help="Include indexes in output.")
 @click.option('--output', '-o', metavar='<output>',
               help="Output file.")
-@click.option('--format', '-f', metavar='<format>', type=click.Choice(['csv', 'stdout']),
-              help="Format of the output. If not given, guessed from <output>, otherwise <stdout> is used.")
-@click.option('--params', '-p', metavar='<params>',
-              help="Parameters specific for the output format."
-                   " Comma-separated list of <key>=<value> pairs.")
-def extract(cube, coords, indexes=False, output=None, format=None, params=None):
+# @click.option('--format', '-f', metavar='<format>', type=click.Choice(['csv', 'stdout']),
+#               help="Format of the output. If not given, guessed from <output>, otherwise <stdout> is used.")
+# @click.option('--params', '-p', metavar='<params>',
+#               help="Parameters specific for the output format."
+#                    " Comma-separated list of <key>=<value> pairs.")
+def extract(cube, coords, indexes=False, output=None,
+            # format=None, params=None
+            ):
     """
     Extract cube time series.
     Extracts data from <cube> at points given by coordinates <coords> and writes the resulting

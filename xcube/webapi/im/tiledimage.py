@@ -429,7 +429,7 @@ class ColorMappedRgbaImage(DecoratorImage):
     :param encode: Whether to create tiles that are encoded image bytes according to *format*.
     :param format: Image format, e.g. "JPEG", "PNG"
     :param tile_cache: optional tile cache
-    :param log_perf: whether to log runtime performance information
+    :param trace_perf: whether to log runtime performance information
     """
 
     def __init__(self,
@@ -517,7 +517,7 @@ class ColorMappedRgbaImage2(OpImage):
 
     :param image_id: optional unique image identifier
     :param no_data_value: optional no-data value for mask creation
-    :param value_range: The display value range.
+    :param cmap_range: The display value range.
     :param cmap_name: A Matplotlib color map name
     :param num_colors: Number of colors
     :param no_data_value: No-data value

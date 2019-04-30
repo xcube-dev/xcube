@@ -49,9 +49,9 @@ class MaskSet:
         if flag_masks is None and flag_values is None:
             raise ValueError("flag_var must either have one of the attributes 'flag_meanings' or 'flag_values' or both")
         if flag_masks is not None:
-            flag_masks = _convert_flag_var_attribute_value(flag_masks, 'flag_masks', flag_var.dtype)
+            flag_masks = _convert_flag_var_attribute_value(flag_masks, 'flag_masks')
         if flag_values is not None:
-            flag_values = _convert_flag_var_attribute_value(flag_values, 'flag_values', flag_var.dtype)
+            flag_values = _convert_flag_var_attribute_value(flag_values, 'flag_values')
         flag_meanings = flag_var.attrs.get('flag_meanings')
         if not isinstance(flag_meanings, str):
             raise TypeError("attribute 'flag_meanings' of flag_var must be a string")
@@ -140,7 +140,7 @@ _MASK_DTYPES = (
 )
 
 
-def _convert_flag_var_attribute_value(attr_value, attr_name, dtype):
+def _convert_flag_var_attribute_value(attr_value, attr_name):
     if isinstance(attr_value, str):
         err_msg = f'Invalid bit expression in value for {attr_name}: "{attr_value}"'
         masks = []
