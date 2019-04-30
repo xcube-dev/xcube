@@ -8,8 +8,8 @@ import xarray as xr
 import zarr
 
 from .im import TileGrid
-from .perf import measure_time
 from .utils import get_dataset_bounds
+from ..util.perf import measure_time
 
 
 class MultiLevelDataset(metaclass=ABCMeta):

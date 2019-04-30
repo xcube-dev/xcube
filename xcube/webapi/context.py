@@ -42,8 +42,8 @@ from .errors import ServiceConfigError, ServiceError, ServiceBadRequestError, Se
 from .im import TileGrid
 from .mldataset import FileStorageMultiLevelDataset, BaseMultiLevelDataset, MultiLevelDataset, \
     ComputedMultiLevelDataset, ObjectStorageMultiLevelDataset
-from .perf import measure_time
 from .reqparams import RequestParams
+from ..util.perf import measure_time
 
 COMPUTE_DATASET = 'compute_dataset'
 ALL_PLACES = "all"

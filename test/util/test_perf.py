@@ -1,7 +1,7 @@
 import time
 from unittest import TestCase
 
-from xcube.webapi.perf import measure_time_cm
+from xcube.util.perf import measure_time_cm
 
 
 class MeasureTimeTest(TestCase):

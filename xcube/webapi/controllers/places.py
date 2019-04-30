@@ -7,8 +7,8 @@ from shapely.errors import WKTReadingError
 
 from ..context import ServiceContext
 from ..errors import ServiceBadRequestError
-from ..perf import measure_time
 from ..utils import get_dataset_geometry, get_box_split_bounds_geometry
+from ...util.perf import measure_time
 
 _LOG = logging.getLogger('xcube')
 

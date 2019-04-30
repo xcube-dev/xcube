@@ -33,7 +33,7 @@ from .cmaps import ensure_cmaps_loaded
 from .tilegrid import TileGrid, GeoExtent, GLOBAL_GEO_EXTENT
 from .utils import downsample_ndarray, aggregate_ndarray_first
 from ..cache import Cache
-from ..perf import measure_time_cm
+from ...util.perf import measure_time_cm
 
 __author__ = "Norman Fomferra (Brockmann Consult GmbH)"
 
