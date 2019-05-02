@@ -1,6 +1,6 @@
 import unittest
 
-from xcube.cli.server import main
+from xcube.cli.serve import main
 
 
 class ServerCliSmokeTest(unittest.TestCase):

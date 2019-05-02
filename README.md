@@ -379,10 +379,10 @@ Example:
 
 
 
-## `xcube server`
+## `xcube serve`
 
-    $ xcube server --help
-    Usage: xcube server [OPTIONS]
+    $ xcube serve --help
+    Usage: xcube serve [OPTIONS]
     
       Serve data cubes via web service.
     

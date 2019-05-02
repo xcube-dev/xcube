@@ -28,7 +28,7 @@ from xcube.webapi.defaults import DEFAULT_PORT, DEFAULT_NAME, DEFAULT_ADDRESS, D
 __author__ = "Norman Fomferra (Brockmann Consult GmbH)"
 
 
-@click.command(name='server')
+@click.command(name='serve')
 @click.version_option(__version__)
 @click.option('--name', '-n', metavar='NAME', default=DEFAULT_NAME,
               help=f'Service name. Defaults to {DEFAULT_NAME!r}.')
@@ -57,15 +57,15 @@ __author__ = "Norman Fomferra (Brockmann Consult GmbH)"
               help="Delegate logging to the console (stderr).")
 @click.option('--traceperf', is_flag=True,
               help="Print performance diagnostics (stdout).")
-def run_server(name: str,
-               address: str,
-               port: int,
-               update: float,
-               config: str,
-               tilecache: str,
-               tilemode: int,
-               verbose: bool,
-               traceperf: bool):
+def serve(name: str,
+          address: str,
+          port: int,
+          update: float,
+          config: str,
+          tilecache: str,
+          tilemode: int,
+          verbose: bool,
+          traceperf: bool):
     """
     Serve data cubes via web service.
 
@@ -96,7 +96,7 @@ def run_server(name: str,
 
 
 def main(args=None):
-    run_server.main(args=args)
+    serve.main(args=args)
 
 
 if __name__ == '__main__':
