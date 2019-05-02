@@ -24,7 +24,6 @@ import json
 
 from tornado.ioloop import IOLoop
 
-from xcube.webapi.utils import timestamp_to_iso_string
 from . import __version__, __description__
 from .controllers.catalogue import get_datasets, get_dataset_coordinates, get_color_bars, get_dataset
 from .controllers.places import find_places, find_dataset_places
@@ -34,6 +33,7 @@ from .controllers.time_series import get_time_series_info, get_time_series_for_p
 from .controllers.wmts import get_wmts_capabilities_xml
 from .errors import ServiceBadRequestError
 from .service import ServiceRequestHandler
+from .utils import timestamp_to_iso_string
 
 __author__ = "Norman Fomferra (Brockmann Consult GmbH)"
 
