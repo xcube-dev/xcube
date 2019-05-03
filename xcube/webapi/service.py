@@ -226,7 +226,8 @@ class ServiceRequestHandler(RequestHandler):
         self.set_header('Access-Control-Allow-Headers',
                         'x-requested-with,access-control-allow-origin,authorization,content-type')
 
-    def options(self):
+    # noinspection PyUnusedLocal
+    def options(self, *args, **kwargs):
         self.set_status(204)
         self.finish()
 
