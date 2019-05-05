@@ -19,9 +19,9 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-import math
 from typing import Dict, List
 
+import math
 import numpy as np
 import shapely.geometry
 import xarray as xr
@@ -128,7 +128,6 @@ def _get_time_series_for_point(dataset: xr.Dataset,
         return {'results': []}
 
     point_subset = variable.sel(lon=point.x, lat=point.y, method='Nearest')
-    # noinspection PyTypeChecker
     time_subset = point_subset.sel(time=slice(start_date, end_date))
     time_series = []
     for entry in time_subset:
@@ -142,6 +141,25 @@ def _get_time_series_for_point(dataset: xr.Dataset,
             statistics['average'] = item
         result = {'result': statistics, 'date': timestamp_to_iso_string(entry.time.data)}
         time_series.append(result)
+
+    if variable.name:
+        num_points = len(time_series)
+        for uncert_type in ("stdev", "uncert", "error"):
+            uncert_var_name = f"{variable.name}_{uncert_type}"
+            if uncert_var_name in dataset.data_vars:
+                uncert_variable = dataset.data_vars[uncert_var_name]
+                uncert_point_subset = uncert_variable.sel(lon=point.x, lat=point.y, method='Nearest')
+                uncert_time_subset = uncert_point_subset.sel(time=slice(start_date, end_date))
+                if len(uncert_time_subset) == num_points:
+                    for index, entry in zip(range(num_points), uncert_time_subset):
+                        result = time_series[index]
+                        statistics = result['result']
+                        uncert_item = entry.values.item()
+                        if np.isnan(uncert_item):
+                            statistics[uncert_type] = None
+                        else:
+                            statistics[uncert_type] = uncert_item
+
     return {'results': time_series}
 
 

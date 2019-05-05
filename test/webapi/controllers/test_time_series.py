@@ -119,6 +119,8 @@ class TimeSeriesControllerTest(unittest.TestCase):
         self.assertEqual(expected_dict, time_series)
 
     def test_get_time_series_info(self):
+        self.maxDiff = None
+
         ctx = new_test_service_context()
         info = get_time_series_info(ctx)
 
@@ -138,5 +140,8 @@ class TimeSeriesControllerTest(unittest.TestCase):
         demo1w_times = ['2017-01-22T00:00:00Z', '2017-01-29T00:00:00Z', '2017-02-05T00:00:00Z']
         for demo_variable in demo_variables:
             dict_variable = {'name': f'demo-1w.{demo_variable}', 'dates': demo1w_times, 'bounds': bounds}
+            expected_dict['layers'].append(dict_variable)
+        for demo_variable in demo_variables:
+            dict_variable = {'name': f'demo-1w.{demo_variable}_stdev', 'dates': demo1w_times, 'bounds': bounds}
             expected_dict['layers'].append(dict_variable)
         return expected_dict

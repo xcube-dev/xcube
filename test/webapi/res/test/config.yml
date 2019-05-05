@@ -11,6 +11,7 @@ Datasets:
     InputDatasets: ["demo"]
     InputParameters:
       period: "1W"
+      incl_stdev: True
     Style: default
 
 PlaceGroups:
