@@ -102,6 +102,7 @@ TODO
 
 TODO
 
+
 ## Maintaining existing functionality
 
 TODO
@@ -119,3 +120,25 @@ Before the release, we remote it.
 
 We try adhering to [PEP-8](https://www.python.org/dev/peps/pep-0008/).
 
+## Checklist
+
+TODO
+
+## Process
+
+1. Make sure there is an issue ticket for your work item
+1. Select issue, priorities are as follows 
+   1. "urgend" and ("important" and "bug")
+   1. "urgend" and ("important" or "bug")
+   1. "urgend"
+   1. "important" and "bug"
+   1. "important" or "bug"
+   1. others
+1. Make sure issue is assigned to you
+1. Add label "in progress"
+1. Create branch named "<developer>-<issue#>-<title>"
+1. Develop, having in mind what has been said above.
+   In your first commit, refer the issue so it will appear as link in the issue history
+   Push to the remote branch.
+1. When done, see checklist above, create PR, assign the team for review, agree who is to merge. 
+   Reviewers must have checklist in mind. 
