@@ -152,7 +152,7 @@ def _get_time_series_for_point(dataset: xr.Dataset,
             for index, entry in zip(range(num_time_steps), ancillary_time_subset):
                 ancillary_value = entry.values.item()
                 statistics = time_series[index]['result']
-                statistics[ancillary_field_name] = None if np.isnan(ancillary_value) else float(ancillary_value)
+                statistics[ancillary_field_name] = None if np.isnan(ancillary_value) else ancillary_value
 
     return {'results': time_series}
 
@@ -219,10 +219,10 @@ def _get_time_series_for_geometry(dataset: xr.Dataset,
         for time_index in range(num_times):
             ancillary_slice = ancillary_variable.isel(time=time_index)
             ancillary_masked = ancillary_slice.where(mask)
-            ancillary_mean = ancillary_masked.mean(["lat", "lon"]).values.item()
+            ancillary_mean = ancillary_masked.mean(["lat", "lon"])
             ancillary_value = ancillary_mean.values.item()
             statistics = time_series[time_index]["result"]
-            statistics[ancillary_field_name] = None if np.isnan(ancillary_value) else float(ancillary_value)
+            statistics[ancillary_field_name] = None if np.isnan(ancillary_value) else ancillary_value
 
     return {'results': time_series}
 
