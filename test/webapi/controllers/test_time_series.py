@@ -3,7 +3,7 @@ import unittest
 import numpy as np
 
 from xcube.webapi.controllers.time_series import get_time_series_info, get_time_series_for_point, \
-    get_time_series_for_geometry, get_time_series_for_geometry_collection
+    get_time_series_for_geometry, get_time_series_for_geometry_collection, _find_ancillary_var_name
 from ..helpers import new_test_service_context
 
 
@@ -175,6 +175,51 @@ class TimeSeriesControllerTest(unittest.TestCase):
              'date': '2017-01-30T10:46:34Z'}]]}
 
         self.assertEqual(expected_dict, time_series)
+
+    def test_find_ancillary_var_name(self):
+        import xarray as xr
+        import numpy as np
+
+        # Find using attribute ancillary_variables and prefix "<name> standard_error"
+        ds = xr.Dataset(data_vars=dict(
+            analysed_sst=xr.DataArray(np.random.rand(8, 100, 200),
+                                      dims=("time", "lat", "lon"),
+                                      attrs=dict(standard_name='sea_water_temperature',
+                                                 ancillary_variables="analysis_error mask")),
+            analysis_error=xr.DataArray(0.01 * np.random.rand(8, 100, 200),
+                                        dims=("time", "lat", "lon"),
+                                        attrs=dict(standard_name='sea_water_temperature standard_error')),
+        ))
+        self.assertEqual(('analysis_error', 'error'), _find_ancillary_var_name(ds, ds.analysed_sst))
+
+        # Find using standard_name prefix "<name> standard_error"
+        ds = xr.Dataset(data_vars=dict(
+            analysed_sst=xr.DataArray(np.random.rand(8, 100, 200),
+                                      dims=("time", "lat", "lon"),
+                                      attrs=dict(standard_name='sea_water_temperature')),
+            analysis_error=xr.DataArray(0.01 * np.random.rand(8, 100, 200),
+                                        dims=("time", "lat", "lon"),
+                                        attrs=dict(standard_name='sea_water_temperature standard_error')),
+        ))
+        self.assertEqual(('analysis_error', 'error'), _find_ancillary_var_name(ds, ds.analysed_sst))
+
+        # Find via prefix <name>_stdev
+        ds = xr.Dataset(data_vars=dict(
+            analysed_sst=xr.DataArray(np.random.rand(8, 100, 200),
+                                      dims=("time", "lat", "lon")),
+            analysed_sst_stdev=xr.DataArray(0.01 * np.random.rand(8, 100, 200),
+                                            dims=("time", "lat", "lon")),
+        ))
+        self.assertEqual(('analysed_sst_stdev', 'stdev'), _find_ancillary_var_name(ds, ds.analysed_sst))
+
+        # Don't find anything
+        ds = xr.Dataset(data_vars=dict(
+            analysed_sst=xr.DataArray(np.random.rand(8, 100, 200),
+                                      dims=("time", "lat", "lon")),
+            analysis_error=xr.DataArray(0.01 * np.random.rand(8, 100, 200),
+                                        dims=("time", "lat", "lon")),
+        ))
+        self.assertEqual((None, None), _find_ancillary_var_name(ds, ds.analysed_sst))
 
     def test_get_time_series_info(self):
         self.maxDiff = None

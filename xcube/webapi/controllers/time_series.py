@@ -252,6 +252,7 @@ ANCILLARY_FIELD_NAMES = set([ANCILLARY_CF_NAMES_TO_FIELD_NAMES[name] for name in
 
 
 def _find_ancillary_var_name(dataset, variable) -> Union[Tuple[str, str], Tuple[None, None]]:
+
     # Check for CF compatibility according to
     # http://cfconventions.org/Data/cf-conventions/cf-conventions-1.7/cf-conventions.html#ancillary-data
     #
@@ -263,9 +264,20 @@ def _find_ancillary_var_name(dataset, variable) -> Union[Tuple[str, str], Tuple[
                 if variable.shape == ancillary_var.shape and variable.dims == variable.dims:
                     if "standard_name" in ancillary_var.attrs:
                         ancillary_var_std_name = ancillary_var.attrs["standard_name"]
-                        name_appendix = ancillary_var_std_name.split(" ")[-1]
-                        if name_appendix in ANCILLARY_CF_NAMES_TO_FIELD_NAMES:
-                            return ancillary_var_name, ANCILLARY_CF_NAMES_TO_FIELD_NAMES[name_appendix]
+                        ancillary_cf_name = ancillary_var_std_name.split(" ")[-1]
+                        if ancillary_cf_name in ANCILLARY_CF_NAMES_TO_FIELD_NAMES:
+                            return ancillary_var_name, ANCILLARY_CF_NAMES_TO_FIELD_NAMES[ancillary_cf_name]
+
+    # Check for less strict CF compatibility
+    #
+    if "standard_name" in variable.attrs:
+        standard_name = variable.attrs["standard_name"]
+        for ancillary_var_name, ancillary_var in dataset.data_vars.items():
+            if ancillary_var is variable:
+                continue
+            for ancillary_cf_name in ANCILLARY_CF_NAMES:
+                if ancillary_var.attrs.get("standard_name") == f"{standard_name} {ancillary_cf_name}":
+                    return ancillary_var_name, ANCILLARY_CF_NAMES_TO_FIELD_NAMES[ancillary_cf_name]
 
     # Search for variables with xcube-specific prefixes that indicate uncertainty:
     #
