@@ -136,7 +136,7 @@ TODO
    1. others
 1. Make sure issue is assigned to you
 1. Add label "in progress"
-1. Create branch named "<developer>-<issue#>-<title>"
+1. Create branch named "developer-issue#-title"
 1. Develop, having in mind what has been said above.
    In your first commit, refer the issue so it will appear as link in the issue history
    Push to the remote branch.
