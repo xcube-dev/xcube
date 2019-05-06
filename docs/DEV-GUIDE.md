@@ -128,9 +128,9 @@ TODO
 
 1. Make sure there is an issue ticket for your work item
 1. Select issue, priorities are as follows 
-   1. "urgend" and ("important" and "bug")
-   1. "urgend" and ("important" or "bug")
-   1. "urgend"
+   1. "urgent" and ("important" and "bug")
+   1. "urgent" and ("important" or "bug")
+   1. "urgent"
    1. "important" and "bug"
    1. "important" or "bug"
    1. others
