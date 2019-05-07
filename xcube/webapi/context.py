@@ -50,7 +50,7 @@ _LOG = logging.getLogger('xcube')
 Config = Dict[str, Any]
 DatasetDescriptor = Dict[str, Any]
 
-MultiLevelDatasetLoader = Callable[["ServiceContext", DatasetDescriptor], MultiLevelDataset]
+MultiLevelDatasetOpener = Callable[["ServiceContext", DatasetDescriptor], MultiLevelDataset]
 
 
 # noinspection PyMethodMayBeStatic
@@ -63,14 +63,14 @@ class ServiceContext:
                  trace_perf: bool = DEFAULT_TRACE_PERF,
                  tile_comp_mode: int = None,
                  tile_cache_capacity: int = None,
-                 ml_dataset_loader: MultiLevelDatasetLoader = None):
+                 ml_dataset_openers: Dict[str, MultiLevelDatasetOpener] = None):
         self._name = name
         self._base_dir = os.path.abspath(base_dir or '')
         self._config = config if config is not None else dict()
         self._config_mtime = 0.0
         self._place_group_cache = dict()
         self._feature_index = 0
-        self._ml_dataset_loader = ml_dataset_loader
+        self._ml_dataset_openers = ml_dataset_openers
         self._tile_comp_mode = tile_comp_mode
         self._trace_perf = trace_perf
         self._lock = threading.RLock()
@@ -213,85 +213,19 @@ class ServiceContext:
 
     def _create_dataset_entry(self, ds_id: str) -> Tuple[MultiLevelDataset, Dict[str, Any]]:
         dataset_descriptor = self.get_dataset_descriptor(ds_id)
-        if self._ml_dataset_loader:
-            ml_dataset = self._ml_dataset_loader(self, dataset_descriptor)
-        else:
-            ml_dataset = self._load_ml_dataset(dataset_descriptor)
+        ml_dataset = self._open_ml_dataset(dataset_descriptor)
         return ml_dataset, dataset_descriptor
 
-    def _load_ml_dataset(self, dataset_descriptor: DatasetDescriptor) -> MultiLevelDataset:
-
-        ds_id = dataset_descriptor.get('Identifier')
-
-        path = dataset_descriptor.get('Path')
-        if not path:
-            raise ServiceConfigError(f"Missing 'path' entry in dataset descriptor {ds_id}")
-
+    def _open_ml_dataset(self, dataset_descriptor: DatasetDescriptor) -> MultiLevelDataset:
         fs_type = dataset_descriptor.get('FileSystem', 'local')
-        if fs_type == 'obs':
-            data_format = dataset_descriptor.get('Format', 'zarr')
-            s3_client_kwargs = {}
-            if 'Endpoint' in dataset_descriptor:
-                s3_client_kwargs['endpoint_url'] = dataset_descriptor['Endpoint']
-            if 'Region' in dataset_descriptor:
-                s3_client_kwargs['region_name'] = dataset_descriptor['Region']
-            obs_file_system = s3fs.S3FileSystem(anon=True, client_kwargs=s3_client_kwargs)
-
-            if data_format == 'zarr':
-                store = s3fs.S3Map(root=path, s3=obs_file_system, check=False)
-                cached_store = zarr.LRUStoreCache(store, max_size=2 ** 28)
-                with measure_time(tag=f"opened remote zarr dataset {path}"):
-                    ds = xr.open_zarr(cached_store)
-                return BaseMultiLevelDataset(ds)
-
-            if data_format == 'levels':
-                with measure_time(tag=f"opened remote levels dataset {path}"):
-                    return ObjectStorageMultiLevelDataset(ds_id, obs_file_system, path,
-                                                          exception_type=ServiceConfigError)
-
-        elif fs_type == 'local':
-            if not os.path.isabs(path):
-                path = os.path.join(self._base_dir, path)
-
-            data_format = dataset_descriptor.get('Format', 'nc')
-            if data_format == 'nc':
-                with measure_time(tag=f"opened local NetCDF dataset {path}"):
-                    ds = xr.open_dataset(path)
-                    return BaseMultiLevelDataset(ds)
-
-            if data_format == 'zarr':
-                with measure_time(tag=f"opened local zarr dataset {path}"):
-                    ds = xr.open_zarr(path)
-                    return BaseMultiLevelDataset(ds)
-
-            if data_format == 'levels':
-                with measure_time(tag=f"opened local levels dataset {path}"):
-                    return FileStorageMultiLevelDataset(path)
-
-        elif fs_type == 'memory':
-            if not os.path.isabs(path):
-                path = os.path.join(self._base_dir, path)
-
-            callable_name = dataset_descriptor.get('Function', COMPUTE_DATASET)
-            input_dataset_ids = dataset_descriptor.get('InputDatasets', [])
-            input_parameters = dataset_descriptor.get('InputParameters', {})
-
-            for input_dataset_id in input_dataset_ids:
-                if not self.get_dataset_descriptor(input_dataset_id):
-                    raise ServiceConfigError(f"Invalid dataset descriptor {ds_id!r}: "
-                                             f"Input dataset {input_dataset_id!r} of callable {callable_name!r} "
-                                             f"must reference another dataset")
-
-            with measure_time(tag=f"opened memory dataset {path}"):
-                return ComputedMultiLevelDataset(ds_id,
-                                                 path,
-                                                 callable_name,
-                                                 input_dataset_ids,
-                                                 self.get_ml_dataset,
-                                                 input_parameters,
-                                                 exception_type=ServiceConfigError)
-
-        raise ServiceConfigError(f"Invalid fs={fs_type!r} in dataset descriptor {ds_id!r}")
+        if self._ml_dataset_openers and fs_type in self._ml_dataset_openers:
+            ml_dataset_opener = self._ml_dataset_openers[fs_type]
+        elif fs_type in _DEFAULT_MULTI_LEVEL_DATASET_OPENERS:
+            ml_dataset_opener = _DEFAULT_MULTI_LEVEL_DATASET_OPENERS[fs_type]
+        else:
+            ds_id = dataset_descriptor.get('Identifier')
+            raise ServiceConfigError(f"Invalid fs={fs_type!r} in dataset descriptor {ds_id!r}")
+        return ml_dataset_opener(self, dataset_descriptor)
 
     def get_legend_label(self, ds_name: str, var_name: str):
         dataset = self.get_dataset(ds_name)
@@ -463,3 +397,98 @@ class ServiceContext:
                                 ds_name: str) -> Optional[Dict[str, Any]]:
         # Note: can be optimized by dict/key lookup
         return next((dsd for dsd in dataset_descriptors if dsd['Identifier'] == ds_name), None)
+
+
+# noinspection PyUnusedLocal
+def open_ml_dataset_from_object_storage(ctx: ServiceContext,
+                                        dataset_descriptor: DatasetDescriptor) -> MultiLevelDataset:
+    ds_id = dataset_descriptor.get('Identifier')
+
+    path = dataset_descriptor.get('Path')
+    if not path:
+        raise ServiceConfigError(f"Missing 'path' entry in dataset descriptor {ds_id}")
+
+    data_format = dataset_descriptor.get('Format', 'zarr')
+
+    s3_client_kwargs = {}
+    if 'Endpoint' in dataset_descriptor:
+        s3_client_kwargs['endpoint_url'] = dataset_descriptor['Endpoint']
+    if 'Region' in dataset_descriptor:
+        s3_client_kwargs['region_name'] = dataset_descriptor['Region']
+    obs_file_system = s3fs.S3FileSystem(anon=True, client_kwargs=s3_client_kwargs)
+
+    if data_format == 'zarr':
+        store = s3fs.S3Map(root=path, s3=obs_file_system, check=False)
+        cached_store = zarr.LRUStoreCache(store, max_size=2 ** 28)
+        with measure_time(tag=f"opened remote zarr dataset {path}"):
+            ds = xr.open_zarr(cached_store)
+        return BaseMultiLevelDataset(ds)
+
+    if data_format == 'levels':
+        with measure_time(tag=f"opened remote levels dataset {path}"):
+            return ObjectStorageMultiLevelDataset(ds_id, obs_file_system, path,
+                                                  exception_type=ServiceConfigError)
+
+
+def open_ml_dataset_from_local_fs(ctx: ServiceContext, dataset_descriptor: DatasetDescriptor) -> MultiLevelDataset:
+    ds_id = dataset_descriptor.get('Identifier')
+
+    path = dataset_descriptor.get('Path')
+    if not path:
+        raise ServiceConfigError(f"Missing 'path' entry in dataset descriptor {ds_id}")
+
+    if not os.path.isabs(path):
+        path = os.path.join(ctx.base_dir, path)
+
+    data_format = dataset_descriptor.get('Format', 'nc')
+
+    if data_format == 'nc':
+        with measure_time(tag=f"opened local NetCDF dataset {path}"):
+            ds = xr.open_dataset(path)
+            return BaseMultiLevelDataset(ds)
+
+    if data_format == 'zarr':
+        with measure_time(tag=f"opened local zarr dataset {path}"):
+            ds = xr.open_zarr(path)
+            return BaseMultiLevelDataset(ds)
+
+    if data_format == 'levels':
+        with measure_time(tag=f"opened local levels dataset {path}"):
+            return FileStorageMultiLevelDataset(path)
+
+
+def open_ml_dataset_from_python_code(ctx: ServiceContext, dataset_descriptor: DatasetDescriptor) -> MultiLevelDataset:
+    ds_id = dataset_descriptor.get('Identifier')
+
+    path = dataset_descriptor.get('Path')
+    if not path:
+        raise ServiceConfigError(f"Missing 'path' entry in dataset descriptor {ds_id}")
+
+    if not os.path.isabs(path):
+        path = os.path.join(ctx.base_dir, path)
+
+    callable_name = dataset_descriptor.get('Function', COMPUTE_DATASET)
+    input_dataset_ids = dataset_descriptor.get('InputDatasets', [])
+    input_parameters = dataset_descriptor.get('InputParameters', {})
+
+    for input_dataset_id in input_dataset_ids:
+        if not ctx.get_dataset_descriptor(input_dataset_id):
+            raise ServiceConfigError(f"Invalid dataset descriptor {ds_id!r}: "
+                                     f"Input dataset {input_dataset_id!r} of callable {callable_name!r} "
+                                     f"must reference another dataset")
+
+    with measure_time(tag=f"opened memory dataset {path}"):
+        return ComputedMultiLevelDataset(ds_id,
+                                         path,
+                                         callable_name,
+                                         input_dataset_ids,
+                                         ctx.get_ml_dataset,
+                                         input_parameters,
+                                         exception_type=ServiceConfigError)
+
+
+_DEFAULT_MULTI_LEVEL_DATASET_OPENERS = {
+    "obs": open_ml_dataset_from_object_storage,
+    "local": open_ml_dataset_from_local_fs,
+    "memory": open_ml_dataset_from_python_code,
+}
