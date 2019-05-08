@@ -10,26 +10,64 @@ TODO (how?)
 
 ## How to change xcube's code base
 
-### Checklist
+### Where to put what?
 
-1. Add or modify API function (package `xarray/api`). Make sure that the change
-   - is covered by unit-tests (package `test/api`); 
-   - is covered by API documentation;
-   - follows existing xcube API conventions;
-   - is reflected in CLI and WebAPI.
-2. Add or modify CLI function (package `xarray/cli`). Make sure that the change
-   - is covered by unit-tests (package `test/api`); 
-   - is covered by API documentation;
-   - follows existing xcube API conventions;
-   - is reflected in CLI and WebAPI.
-2. Add or modify WebAPI function (package `xarray/webapi`), unit-tests (package `test/webapi`) and documentation. Respect existing xcube WebAPI conventions. 
-   - is covered by unit-tests (package `test/api`); 
-   - is covered by API documentation;
-   - follows existing xcube API conventions;
-   - is reflected in CLI and WebAPI.
-3. Add or modify xarray extension (class `xarray/api/api.py`), unit-tests (class `test/api/test_api.py`) and documentation
-4. Update tools documentation if required (currently in README.md) 
-5. Update CHANGES.md
+* `xcube.cli` - Here live CLI commands that are required by someone. 
+  CLI command implementations should be lightweight. 
+  Move implementation code either into `api` or `util`.  
+  CLI commands must be maintained w.r.t. backward compatibility.
+  Therefore think twice before adding new or change existing CLI commands. 
+* `xcube.api` - Here live API functions that are required by someone or that exists because a CLI 
+  command is implemented here. 
+  API code must be maintained w.r.t. backward compatibility.
+  Therefore think twice before adding new or change existing API. 
+* `xcube.webapi` - Here live Web API functions that are required by someone. 
+  Web API command implementations should be lightweight.
+  Move implementation code either into `api` or `util`.  
+  Web API interface must be maintained w.r.t. backward compatibility.
+  Therefore think twice before adding new or change existing API.
+* `xcube.util` - Mainly implementation helpers. 
+  Comprises classes and functions that are used by `cli`, `api`, `webapi` 
+  in order to maximize modularisation and testability but to minimize code duplication.  
+  The code in here must not be dependent on any of `cli`, `api`, `webapi`.
+  The code in here may change often and in any way as desired by code 
+  implementing the `cli`, `api`, `webapi` packages.    
+
+The following checklists will guide you through changing xcube's code base.
+
+
+### Checklist: Add or modify CLI in `xarray/cli`
+
+Make sure your change
+
+1. is covered by unit-tests (package `test/api`); 
+1. is reflected by the CLI's doc-strings and tools documentation (currently in `README.md`);
+1. follows existing xcube CLI conventions;
+1. is reflected in API and WebAPI, if desired.
+1. is reflected in `CHANGES.md`.
+
+### Checklist: Add or modify API in `xarray/api`
+
+Make sure your change
+
+1. is covered by unit-tests (package `test/api`); 
+1. is covered by API documentation;
+1. follows existing xcube API conventions;
+1. is reflected in xarray extension class `xarray.api.api.API`;
+1. is reflected in CLI and WebAPI if desired.
+1. is reflected in `CHANGES.md`.
+
+
+### Checklist: Add or modify Web API in `xarray/webapi`
+
+Make sure your change
+
+1. is covered by unit-tests (package `test/webapi`); 
+1. is covered by Web API specification and documentation (currently in `webapi/res/openapi.yml`);
+1. follows existing xcube Web API conventions;
+1. is reflected in CLI and API, if desired;
+1. is reflected in `CHANGES.md`.
+
 
 ### New API
 
@@ -109,14 +147,13 @@ You don't need to print stack traces from your code.
 
 ### New xarray Extension
 
-TODO
+If `import xcube` is used in client code, any `xarray.Dataset` object will have
+an extra property `xcube` whose interface is defined by the class 
+`xcube.api.XCubeAPI`. This class is an 
+[xarray extension](http://xarray.pydata.org/en/stable/internals.html#extending-xarray) that is 
+used to reflect `xcube.api` functions and make it directly applicable to the `xarray.Dataset` object.
 
-### Updating documentation
-
-TODO
-
-
-
+Therefore any xcube API shall be reflected in this extension class.
 
 ## Versioning
 
