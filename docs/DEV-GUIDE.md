@@ -6,16 +6,29 @@ Version 0.1, draft
 
 ## Index
 
-TODO
+TODO (how?)
 
-## Adding new functionality
+## How to change xcube's code base
 
-Checklist:
+### Checklist
 
-1. Add API function, unit-tests and documentation
-2. Add CLI function, unit-tests and documentation
-3. Add xarray extension, unit-tests and documentation
-4. Update tools documentation in README.md 
+1. Add or modify API function (package `xarray/api`). Make sure that the change
+   - is covered by unit-tests (package `test/api`); 
+   - is covered by API documentation;
+   - follows existing xcube API conventions;
+   - is reflected in CLI and WebAPI.
+2. Add or modify CLI function (package `xarray/cli`). Make sure that the change
+   - is covered by unit-tests (package `test/api`); 
+   - is covered by API documentation;
+   - follows existing xcube API conventions;
+   - is reflected in CLI and WebAPI.
+2. Add or modify WebAPI function (package `xarray/webapi`), unit-tests (package `test/webapi`) and documentation. Respect existing xcube WebAPI conventions. 
+   - is covered by unit-tests (package `test/api`); 
+   - is covered by API documentation;
+   - follows existing xcube API conventions;
+   - is reflected in CLI and WebAPI.
+3. Add or modify xarray extension (class `xarray/api/api.py`), unit-tests (class `test/api/test_api.py`) and documentation
+4. Update tools documentation if required (currently in README.md) 
 5. Update CHANGES.md
 
 ### New API
@@ -103,9 +116,7 @@ TODO
 TODO
 
 
-## Maintaining existing functionality
 
-TODO
 
 ## Versioning
 
@@ -122,7 +133,7 @@ We try adhering to [PEP-8](https://www.python.org/dev/peps/pep-0008/).
 
 ## Checklist
 
-TODO
+1. 
 
 ## Process
 
@@ -138,7 +149,12 @@ TODO
 1. Add label "in progress"
 1. Create branch named "developer-issue#-title"
 1. Develop, having in mind what has been said above.
-   In your first commit, refer the issue so it will appear as link in the issue history
-   Push to the remote branch.
+   - In your first commit, refer the issue so it will appear as link in the issue history
+   - Push to the remote branch. 
+   - In your last commit, make sure to update `CHANGES.md`. 
+     (You can include the line "closes #<issue>" in your commit to auto-close the issue 
+     once the PR is merged.)
 1. When done, see checklist above, create PR, assign the team for review, agree who is to merge. 
    Reviewers must have checklist in mind. 
+1. Merge the PR.
+1. Delete the development branch
