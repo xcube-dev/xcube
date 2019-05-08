@@ -4,9 +4,15 @@ Version 0.1, draft
 
 *IMPORTANT NOTE: Any changes to this doc must be reviewed by dev-team through pull requests.* 
 
-## Index
+## Table of Contents
 
-TODO (how?)
+- [Versioning](#versioning)
+- [Coding Style](#coding-style)
+- [Main Packages](#main-packages)
+    - [`xarray/cli`](#package-xarray-cli)
+    - [`xarray/api`](#package-xarray-api)
+    - [`xarray/webapi`](#package-xarray-webapi)
+- [Development Process](#development-process)
 
 ## Versioning
 
@@ -17,7 +23,7 @@ The current software version is in `xcube/version.py`.
 While developing a version, we append version suffix `.dev<N>`.
 Before the release, we remove the suffix.
 
-## Coding style
+## Coding Style
 
 We try adhering to [PEP-8](https://www.python.org/dev/peps/pep-0008/).
 
@@ -47,9 +53,9 @@ We try adhering to [PEP-8](https://www.python.org/dev/peps/pep-0008/).
 The following sections will guide you through extending or changing the main packages that form
 xcube's public interface.
 
-## `xarray/cli`
+### `xarray/cli`
 
-### Checklist
+#### Checklist
 
 Make sure your change
 
@@ -60,7 +66,7 @@ Make sure your change
 1. is reflected in API and WebAPI, if desired;
 1. is reflected in `CHANGES.md`.
 
-### Hints
+#### Hints
 
 Make sure your new CLI command is in line with the others commands regarding 
 command name, option names, as well as metavar arguments names. 
@@ -112,9 +118,9 @@ to developers, not CLI users.
 There is a global option `--traceback` flag that user can set to dump stack traces. 
 You don't need to print stack traces from your code.  
 
-## `xarray/api`
+### `xarray/api`
 
-### Checklist
+#### Checklist
 
 Make sure your change
 
@@ -126,7 +132,7 @@ Make sure your change
 1. is reflected in CLI and WebAPI if desired;
 1. is reflected in `CHANGES.md`.
 
-### Hints
+#### Hints
 
 Create new module in `xcube.api` and add your functions.
 For any functions added make sure naming is in line with other API.
@@ -159,9 +165,9 @@ used to reflect `xcube.api` functions and make it directly applicable to the `xa
 Therefore any xcube API shall be reflected in this extension class.
 
 
-## `xarray/webapi`
+### `xarray/webapi`
 
-### Checklist
+#### Checklist
 
 Make sure your change
 
