@@ -4,6 +4,7 @@
 
 * Restructured and clarified code base (#27)
 * Moved to Python 3.7 (#25)
+* Completed version 1 of an xcube developer guide.
 * Added `xcube serve` command (#43) 
 * `xcube serve`: Time-series web API now also returns "uncertainty" (#48)
 * Added `xcube level` command to allow for creating spatial pyramid levels (#38)
