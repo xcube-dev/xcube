@@ -28,6 +28,7 @@ import xarray as xr
 from xcube.util.constants import CRS_WKT_EPSG_4326
 from xcube.util.timecoord import get_time_in_days_since_1970
 from ..iproc import XYInputProcessor, ReprojectionInfo, register_input_processor
+from ..default.iproc import DefaultInputProcessor
 
 
 class RbinsSeviriHighrocSceneInputProcessor(XYInputProcessor):
@@ -53,12 +54,8 @@ class RbinsSeviriHighrocSceneInputProcessor(XYInputProcessor):
                                 xy_gcp_step=1)
 
     def get_time_range(self, dataset: xr.Dataset) -> Tuple[float, float]:
-        date = dataset.attrs.get('DATE')
-        if date is None:
-            raise ValueError('illegal L2 input: missing DATE attribute')
-        time = dataset.attrs.get('TIME', '1200')
-        days_since_1970 = get_time_in_days_since_1970(date + time)
-        return days_since_1970, days_since_1970
+        return DefaultInputProcessor().get_time_range(dataset)
+
 
 
 class RbinsSeviriHighrocDailyInputProcessor(XYInputProcessor):
