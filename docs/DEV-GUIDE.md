@@ -9,9 +9,9 @@ Version 0.1, draft
 - [Versioning](#versioning)
 - [Coding Style](#coding-style)
 - [Main Packages](#main-packages)
-  - [Package `xcube.cli`](#package-xcube-cli)
-  - [Package `xcube.api`](#package-xcube-api)
-  - [Package `xcube.webapi`](#package-xcube-webapi)
+  - [Package `xcube.cli`](#package-xcubecli)
+  - [Package `xcube.api`](#package-xcubeapi)
+  - [Package `xcube.webapi`](#package-xcubewebapi)
 - [Development Process](#development-process)
 
 ## Versioning
