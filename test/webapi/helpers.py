@@ -1,24 +1,24 @@
 import os
-from typing import Optional
+from typing import Optional, Dict
 
 import yaml
 
-from xcube.webapi.context import ServiceContext
+from xcube.util.undefined import UNDEFINED
+from xcube.webapi.context import ServiceContext, MultiLevelDatasetOpener
 from xcube.webapi.errors import ServiceBadRequestError
 from xcube.webapi.reqparams import RequestParams
-from xcube.util.undefined import UNDEFINED
 
 
-def new_test_service_context() -> ServiceContext:
-    ctx = ServiceContext(base_dir=get_res_test_dir())
+def new_test_service_context(ml_dataset_openers: Dict[str, MultiLevelDatasetOpener] = None) -> ServiceContext:
+    ctx = ServiceContext(base_dir=get_res_test_dir(), ml_dataset_openers=ml_dataset_openers)
     config_file = os.path.join(ctx.base_dir, 'config.yml')
     with open(config_file) as fp:
         ctx.config = yaml.safe_load(fp)
     return ctx
 
 
-def new_demo_service_context() -> ServiceContext:
-    ctx = ServiceContext(base_dir=get_res_demo_dir())
+def new_demo_service_context(ml_dataset_openers: Dict[str, MultiLevelDatasetOpener] = None) -> ServiceContext:
+    ctx = ServiceContext(base_dir=get_res_demo_dir(), ml_dataset_openers=ml_dataset_openers)
     config_file = os.path.join(ctx.base_dir, 'config.yml')
     with open(config_file) as fp:
         ctx.config = yaml.safe_load(fp)

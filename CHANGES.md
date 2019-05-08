@@ -6,6 +6,7 @@
 * Moved to Python 3.7 (#25)
 * Added global `xcube --scheduler <scheduler>` option for Dask distributed computing (#58)
 * Added global `xcube --traceback` option, removed local `xcube gen --traceback` option
+* Completed version 1 of an xcube developer guide.
 * Added `xcube serve` command (#43) 
 * `xcube serve`: Time-series web API now also returns "uncertainty" (#48)
 * Added `xcube level` command to allow for creating spatial pyramid levels (#38)

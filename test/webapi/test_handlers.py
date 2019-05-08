@@ -5,12 +5,24 @@ from xcube.webapi.app import new_application
 from xcube.webapi.defaults import API_PREFIX, DEFAULT_NAME
 from .helpers import new_test_service_context
 
+CTX = new_test_service_context()
+
+# Preload datasets, so we don't run into timeout during testing
+
+_ds = CTX.get_dataset("demo")
+for name, var in _ds.coords.items():
+    values = var.values
+
+_ds = CTX.get_dataset("demo-1w")
+for name, var in _ds.coords.items():
+    values = var.values
+
 
 class HandlersTest(AsyncHTTPTestCase):
 
     def get_app(self):
         application = new_application()
-        application.service_context = new_test_service_context()
+        application.service_context = CTX
         return application
 
     def assertResponseOK(self, response):
