@@ -1,30 +1,17 @@
-from typing import Any, Dict
+import sys
 
 import click
 
 from xcube.cli.gen import gen
-from xcube.cli.serve import serve
 from xcube.cli.grid import grid
+from xcube.cli.serve import serve
+from xcube.util.cliutil import parse_cli_kwargs, new_cli_ctx_obj, handle_cli_exception, cli_option_traceback, \
+    cli_option_scheduler
 from xcube.version import version
 
 DEFAULT_TILE_SIZE = 512
 
 
-def _parse_kwargs(value: str, metavar: str = None) -> Dict[str, Any]:
-    if value:
-        try:
-            return eval(f"dict({value})", {}, {})
-        except Exception:
-            if metavar:
-                message = f"Invalid value for {metavar}: {value!r}"
-            else:
-                message = f"Invalid value: {value!r}"
-            raise click.ClickException(message)
-    else:
-        return dict()
-
-
-# noinspection PyShadowingBuiltins
 @click.command(name="extract")
 @click.argument('cube', metavar='<cube>')
 @click.argument('coords', metavar='<coords>')
@@ -85,7 +72,7 @@ def chunk(input, output, format=None, params=None, chunks=None):
     """
     chunk_sizes = None
     if chunks:
-        chunk_sizes = _parse_kwargs(chunks, metavar="<chunks>")
+        chunk_sizes = parse_cli_kwargs(chunks, metavar="<chunks>")
         for k, v in chunk_sizes.items():
             if not isinstance(v, int) or v <= 0:
                 raise click.ClickException("Invalid value for <chunks>, "
@@ -93,7 +80,7 @@ def chunk(input, output, format=None, params=None, chunks=None):
 
     write_kwargs = dict()
     if params:
-        write_kwargs = _parse_kwargs(params, metavar="<params>")
+        write_kwargs = parse_cli_kwargs(params, metavar="<params>")
 
     from xcube.util.dsio import guess_dataset_format
     format_name = format if format else guess_dataset_format(output)
@@ -111,6 +98,7 @@ def chunk(input, output, format=None, params=None, chunks=None):
         write_dataset(chunked_dataset, output_path=output, format_name=format_name, **write_kwargs)
 
 
+# noinspection PyShadowingBuiltins
 @click.command(name="level")
 @click.argument('input', metavar='<input>')
 @click.option('--output', '-o', metavar='<output>',
@@ -198,15 +186,15 @@ def dump(dataset, variable, encoding):
         print(text)
 
 
-# noinspection PyShadowingBuiltins
+# noinspection PyShadowingBuiltins,PyUnusedLocal
 @click.command(name="vars2dim")
 @click.argument('cube', metavar='<cube>')
-@click.option('--dim_name', '-d', metavar='<dim-name>',
-              default='var',
-              help='Name of the new dimension into variables. Defaults to "var".')
 @click.option('--var_name', '-v', metavar='<var-name>',
               default='data',
               help='Name of the new variable that includes all variables. Defaults to "data".')
+@click.option('--dim_name', '-d', metavar='<dim-name>',
+              default='var',
+              help='Name of the new dimension into variables. Defaults to "var".')
 @click.option('--output', '-o', metavar='<output>',
               help="Output file.")
 @click.option('--format', '-f', metavar='<format>', type=click.Choice(['zarr', 'netcdf']),
@@ -235,10 +223,12 @@ def vars2dim(cube, var_name, dim_name, output=None, format=None):
         write_dataset(converted_dataset, output_path=output, format_name=format_name)
 
 
-# noinspection PyShadowingBuiltins
+# noinspection PyShadowingBuiltins,PyUnusedLocal
 @click.group()
 @click.version_option(version)
-def cli():
+@cli_option_traceback
+@cli_option_scheduler
+def cli(traceback=False, scheduler=None):
     """
     Xcube Toolkit
     """
@@ -255,7 +245,13 @@ cli.add_command(serve)
 
 
 def main(args=None):
-    cli.main(args=args)
+    # noinspection PyBroadException
+    ctx_obj = new_cli_ctx_obj()
+    try:
+        exit_code = cli.main(args=args, obj=ctx_obj, standalone_mode=False)
+    except Exception as e:
+        exit_code = handle_cli_exception(e, traceback_mode=ctx_obj.get("traceback", False))
+    sys.exit(exit_code)
 
 
 if __name__ == '__main__':
