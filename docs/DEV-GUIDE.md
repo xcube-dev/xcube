@@ -72,7 +72,7 @@ Make sure your new CLI command is in line with the others commands regarding
 command name, option names, as well as metavar arguments names. 
 The CLI command name shall ideally be a verb.
 
-Avoid introducing new option arguments if similar options already in use 
+Avoid introducing new option arguments if similar options are already in use 
 for existing commands.
 
 In the following common arguments and options are listed.
