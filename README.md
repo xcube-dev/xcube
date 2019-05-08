@@ -103,6 +103,16 @@ To start a demo using docker use the following commands
                                html#distributed.Client
       --help                   Show this message and exit.
 
+    Commands:
+      chunk     (Re-)chunk dataset.
+      dump      Dump contents of a dataset.
+      extract   Extract cube time series.
+      gen       Generate data cube.
+      grid      Find spatial data cube resolutions and adjust bounding boxes.
+      level     Generate multi-resolution levels.
+      serve     Serve data cubes via web service.
+      vars2dim  Convert cube variables into new dimension.
+    
 
 
 ## `xcube chunk`
