@@ -30,6 +30,7 @@ Datasets:
     InputDatasets: ["local"]
     InputParameters:
       period: "1W"
+      incl_stdev: True
     Style: default
     PlaceGroups:
       - PlaceGroupRef: inside-cube
@@ -44,6 +45,7 @@ Datasets:
     InputDatasets: ["remote"]
     InputParameters:
       period: "1W"
+      incl_stdev: True
     Style: default
     PlaceGroups:
       - PlaceGroupRef: inside-cube
