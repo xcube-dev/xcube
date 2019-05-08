@@ -9,9 +9,9 @@ Version 0.1, draft
 - [Versioning](#versioning)
 - [Coding Style](#coding-style)
 - [Main Packages](#main-packages)
-    - [`xarray/cli`](#package-xarray-cli)
-    - [`xarray/api`](#package-xarray-api)
-    - [`xarray/webapi`](#package-xarray-webapi)
+    - [xarray.cli](#package-xarray-cli)
+    - [xarray.api](#package-xarray-api)
+    - [xarray.webapi](#package-xarray-webapi)
 - [Development Process](#development-process)
 
 ## Versioning
@@ -53,7 +53,7 @@ We try adhering to [PEP-8](https://www.python.org/dev/peps/pep-0008/).
 The following sections will guide you through extending or changing the main packages that form
 xcube's public interface.
 
-### `xarray/cli`
+### `xarray.cli`
 
 #### Checklist
 
@@ -118,7 +118,7 @@ to developers, not CLI users.
 There is a global option `--traceback` flag that user can set to dump stack traces. 
 You don't need to print stack traces from your code.  
 
-### `xarray/api`
+### `xarray.api`
 
 #### Checklist
 
@@ -165,7 +165,7 @@ used to reflect `xcube.api` functions and make it directly applicable to the `xa
 Therefore any xcube API shall be reflected in this extension class.
 
 
-### `xarray/webapi`
+### `xarray.webapi`
 
 #### Checklist
 
