@@ -8,9 +8,20 @@ Version 0.1, draft
 
 TODO (how?)
 
-## How to change xcube's code base
+## Versioning
 
-### Where to put what?
+We adhere to [PEP-440](https://www.python.org/dev/peps/pep-0440/).
+
+The current software version is in `xcube/version.py`.
+
+While developing a version, we append version suffix `.dev<N>`.
+Before the release, we remove the suffix.
+
+## Coding style
+
+We try adhering to [PEP-8](https://www.python.org/dev/peps/pep-0008/).
+
+## Main Packages
 
 * `xcube.cli` - Here live CLI commands that are required by someone. 
   CLI command implementations should be lightweight. 
@@ -33,67 +44,23 @@ TODO (how?)
   The code in here may change often and in any way as desired by code 
   implementing the `cli`, `api`, `webapi` packages.    
 
-The following checklists will guide you through changing xcube's code base.
+The following sections will guide you through extending or changing the main packages that form
+xcube's public interface.
 
+## `xarray/cli`
 
-### Checklist: Add or modify CLI in `xarray/cli`
+### Checklist
 
 Make sure your change
 
 1. is covered by unit-tests (package `test/api`); 
 1. is reflected by the CLI's doc-strings and tools documentation (currently in `README.md`);
 1. follows existing xcube CLI conventions;
-1. is reflected in API and WebAPI, if desired.
+1. follows PEP8 conventions;
+1. is reflected in API and WebAPI, if desired;
 1. is reflected in `CHANGES.md`.
 
-### Checklist: Add or modify API in `xarray/api`
-
-Make sure your change
-
-1. is covered by unit-tests (package `test/api`); 
-1. is covered by API documentation;
-1. follows existing xcube API conventions;
-1. is reflected in xarray extension class `xarray.api.api.API`;
-1. is reflected in CLI and WebAPI if desired.
-1. is reflected in `CHANGES.md`.
-
-
-### Checklist: Add or modify Web API in `xarray/webapi`
-
-Make sure your change
-
-1. is covered by unit-tests (package `test/webapi`); 
-1. is covered by Web API specification and documentation (currently in `webapi/res/openapi.yml`);
-1. follows existing xcube Web API conventions;
-1. is reflected in CLI and API, if desired;
-1. is reflected in `CHANGES.md`.
-
-
-### New API
-
-Create new module in `xcube.api` and add your functions.
-For any functions added make sure naming is in line with other API.
-Add clear doc-string to the new API. Use Sphinx RST format.
-
-Decide if your API methods requires cubes as inputs, 
-if so, name the primary dataset argument `cube` and add a 
-keyword parameter `cube_asserted: bool = False`. 
-Otherwise name the primary dataset argument `dataset`.
-
-In the implementation, if not `cube_asserted`, 
-we must assert the `cube` is a cube. 
-Pass `True` to `cube_asserted` argument of other API called later on: 
-    
-    from .verify import assert_cube
-
-    def frombosify_cube(cube: xr.Dataset, ..., cube_asserted: bool = False):  
-        if not cube_asserted:
-            assert_cube(cube)
-        ...
-        result = bibosify_cube(cube, ..., cube_asserted=True)
-        ...
-
-### New CLI
+### Hints
 
 Make sure your new CLI command is in line with the others commands regarding 
 command name, option names, as well as metavar arguments names. 
@@ -145,7 +112,43 @@ to developers, not CLI users.
 There is a global option `--traceback` flag that user can set to dump stack traces. 
 You don't need to print stack traces from your code.  
 
-### New xarray Extension
+## `xarray/api`
+
+### Checklist
+
+Make sure your change
+
+1. is covered by unit-tests (package `test/api`); 
+1. is covered by API documentation;
+1. follows existing xcube API conventions;
+1. follows PEP8 conventions;
+1. is reflected in xarray extension class `xarray.api.api.API`;
+1. is reflected in CLI and WebAPI if desired;
+1. is reflected in `CHANGES.md`.
+
+### Hints
+
+Create new module in `xcube.api` and add your functions.
+For any functions added make sure naming is in line with other API.
+Add clear doc-string to the new API. Use Sphinx RST format.
+
+Decide if your API methods requires cubes as inputs, 
+if so, name the primary dataset argument `cube` and add a 
+keyword parameter `cube_asserted: bool = False`. 
+Otherwise name the primary dataset argument `dataset`.
+
+In the implementation, if not `cube_asserted`, 
+we must assert the `cube` is a cube. 
+Pass `True` to `cube_asserted` argument of other API called later on: 
+    
+    from .verify import assert_cube
+
+    def frombosify_cube(cube: xr.Dataset, ..., cube_asserted: bool = False):  
+        if not cube_asserted:
+            assert_cube(cube)
+        ...
+        result = bibosify_cube(cube, ..., cube_asserted=True)
+        ...
 
 If `import xcube` is used in client code, any `xarray.Dataset` object will have
 an extra property `xcube` whose interface is defined by the class 
@@ -155,26 +158,29 @@ used to reflect `xcube.api` functions and make it directly applicable to the `xa
 
 Therefore any xcube API shall be reflected in this extension class.
 
-## Versioning
 
-We adhere to [PEP-440](https://www.python.org/dev/peps/pep-0440/).
+## `xarray/webapi`
 
-The current software version is in `xcube/version.py`.
+### Checklist
 
-While developing a version, we append version suffix `.dev<N>`.
-Before the release, we remote it.
+Make sure your change
 
-## Code style
+1. is covered by unit-tests (package `test/webapi`); 
+1. is covered by Web API specification and documentation (currently in `webapi/res/openapi.yml`);
+1. follows existing xcube Web API conventions;
+1. follows PEP8 conventions;
+1. is reflected in CLI and API, if desired;
+1. is reflected in `CHANGES.md`.
 
-We try adhering to [PEP-8](https://www.python.org/dev/peps/pep-0008/).
+### Hints
 
-## Checklist
+* The Web API is defined in `webapi.app` which defines mapping from resource URLs to handlers
+* All handlers are implemented in `webapi.handlers`. Handler code just delegates to dedicated controllers.
+* All controllers are implemented in `webapi.controllers.*`. They might further delegate into `api.*`
 
-1. 
+## Development Process
 
-## Process
-
-1. Make sure there is an issue ticket for your work item
+1. Make sure there is an issue ticket for your code change work item
 1. Select issue, priorities are as follows 
    1. "urgent" and ("important" and "bug")
    1. "urgent" and ("important" or "bug")
@@ -182,16 +188,18 @@ We try adhering to [PEP-8](https://www.python.org/dev/peps/pep-0008/).
    1. "important" and "bug"
    1. "important" or "bug"
    1. others
-1. Make sure issue is assigned to you
-1. Add label "in progress"
-1. Create branch named "developer-issue#-title"
-1. Develop, having in mind what has been said above.
-   - In your first commit, refer the issue so it will appear as link in the issue history
-   - Push to the remote branch. 
-   - In your last commit, make sure to update `CHANGES.md`. 
-     (You can include the line "closes #<issue>" in your commit to auto-close the issue 
-     once the PR is merged.)
-1. When done, see checklist above, create PR, assign the team for review, agree who is to merge. 
-   Reviewers must have checklist in mind. 
-1. Merge the PR.
-1. Delete the development branch
+1. Make sure issue is assigned to you, if unclear agree with team first.
+1. Add issue label "in progress".
+1. Create development branch named "developer-issue#-title".
+1. Develop, having in mind the checklists and implementation hints above.
+   1. In your first commit, refer the issue so it will appear as link in the issue history
+   1. Develop, test, and push to the remote branch as desired. 
+   1. In your last commit, utilize checklists above. 
+      (You can include the line "closes #<issue>" in your commit message to auto-close the issue 
+      once the PR is merged.)
+1. Create PR if build servers succeed on your branch. If not, fix issue first.  
+   For the PR assign the team for review, agree who is to merge. 
+   Also reviewers must have checklist in mind! 
+1. Merge PR after all reviewers are accepted your change. Otherwise go back. 
+1. Remove issue label "in progress".
+1. Delete the development branch "developer-issue#-title".
