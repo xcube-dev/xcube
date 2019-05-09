@@ -24,8 +24,8 @@ from typing import Tuple, Union, Optional, Collection
 
 import xarray as xr
 
-from xcube.util.objreg import get_obj_registry
-from xcube.util.reproject import reproject_xy_to_wgs84
+from ...util.objreg import get_obj_registry
+from ...util.reproject import reproject_xy_to_wgs84
 
 
 class ReprojectionInfo:
