@@ -6,8 +6,9 @@ from typing import List
 import click
 import click.testing
 import xarray as xr
+
 from xcube.api.new import new_cube
-from xcube.cli.cli import cli, _parse_kwargs
+from xcube.cli.cli import cli
 from xcube.util.dsio import rimraf
 
 TEST_NC_FILE = "test.nc"
@@ -258,22 +259,3 @@ class LevelTest(CliTest):
         self.assertEqual("Error: <num-levels-max> must be a positive integer\n",
                          result.output)
         self.assertEqual(1, result.exit_code)
-
-
-class ParseTest(unittest.TestCase):
-
-    def test_parse_kwargs(self):
-        self.assertEqual(dict(),
-                         _parse_kwargs("", metavar="<chunks>"))
-        self.assertEqual(dict(time=1, lat=256, lon=512),
-                         _parse_kwargs("time=1, lat=256, lon=512", metavar="<chunks>"))
-
-        with self.assertRaises(click.ClickException) as cm:
-            _parse_kwargs("45 * 'A'", metavar="<chunks>")
-        self.assertEqual("Invalid value for <chunks>: \"45 * 'A'\"",
-                         f"{cm.exception}")
-
-        with self.assertRaises(click.ClickException) as cm:
-            _parse_kwargs("9==2")
-        self.assertEqual("Invalid value: '9==2'",
-                         f"{cm.exception}")
