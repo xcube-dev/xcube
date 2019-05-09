@@ -72,7 +72,9 @@ class ObjRegistry:
         return self._registrations[type][name].obj
 
     def get_all(self, type: Type = object) -> List[Any]:
-        return [v.obj for v in self._registrations[type].values()]
+        if type in self._registrations:
+            return [v.obj for v in self._registrations[type].values()]
+        return []
 
     def put(self, name: str, obj: Any, type: Type = object) -> ObjRegistration:
         if type in self._registrations:

@@ -111,6 +111,9 @@ def gen(input_files: str,
     info_mode = info
     sort_mode = sort
 
+    # Force loading of plugins
+    __import__('xcube.util.plugin')
+
     if info_mode:
         print(_format_info())
         return 0

@@ -22,7 +22,7 @@ from typing import Dict, Union
 
 import yaml
 
-from xcube.util.config import to_name_dict_pairs, flatten_dict, merge_config
+from ...util.config import to_name_dict_pairs, flatten_dict, merge_config
 
 
 def get_config_dict(config_obj: Dict[str, Union[str, bool, int, float, list, dict, tuple]]):
