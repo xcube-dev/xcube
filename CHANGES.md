@@ -1,5 +1,3 @@
-# xcube server changes
-
 ## Changes in 0.2.0 (in dev)
 
 * Restructured and clarified code base (#27)
