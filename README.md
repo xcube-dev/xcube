@@ -2,11 +2,24 @@
 [![codecov](https://codecov.io/gh/dcs4cop/xcube/branch/master/graph/badge.svg)](https://codecov.io/gh/dcs4cop/xcube)
 
 
-
-
 # xcube
 
-Data cubes with xarray
+Data cubes with [xarray](http://xarray.pydata.org/).
+
+# Table of Contents
+
+- [Installation](#installation)
+- [Developer Guide](#developer-guide)
+- [Docker](#docker)
+- [Tools](#tools)
+  - [`xcube` Command Line Interface](#xcube-command-line-interface)
+  - [`xcube gen`](#xcube-gen)
+  - [`xcube serve`](#xcube-serve)
+  - [`xcube dump`](#xcube-dump)
+  - [`xcube chunk`](#xcube-chunk)
+  - [`xcube grid`](#xcube-grid)
+  - [`xcube level`](#xcube-level)
+  - [`xcube extract`](#xcube-extract)
 
 # Installation
 
