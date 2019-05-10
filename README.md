@@ -487,7 +487,7 @@ The SwaggerHub allows to choose the xcube-server project and therefore the datas
 
 To run the server on default port 8080:
 
-    $ xcube server -v -c xcube_server/res/demo/config.yml
+    $ xcube serve -v -c xcube/webapi/res/demo/config.yml
 
 
 Test it:

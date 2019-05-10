@@ -13,6 +13,7 @@
 * Added `xcube vars2dim` command to make variables a cube dimension (#31)
 * Added `xcube serve` option `--traceperf` that allows switching on performance diagnostics.
 * Fixed error in plugins when importing `xcube.api.gen` (#62)
+* Fixed import of plugins only when executing `xcube.cli` (#66)
 
 
 ## Changes in 0.1.0

@@ -75,6 +75,9 @@ def gen_cube(input_files: Sequence[str] = None, input_processor: str = None, inp
     :param monitor: A progress monitor.
     :return: A tuple (output_path, status). If status is True, output_path will be the path to the output.
     """
+    # Force loading of plugins
+    __import__('xcube.util.plugin')
+
     input_processor = get_input_processor(input_processor)
     if not input_processor:
         raise ValueError(f'unknown input_processor {input_processor!r}')
