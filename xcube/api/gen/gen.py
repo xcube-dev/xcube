@@ -26,20 +26,17 @@ import os
 import pstats
 import time
 import traceback
-import pandas as pd
 from typing import Sequence, Callable, Tuple, Optional, Dict, Any
 
-from xcube.api.compute import compute_dataset
-from xcube.api.select import select_vars
-from xcube.api.update import update_var_props, update_global_attrs
-from xcube.util.config import NameAnyDict, NameDictPairList, to_resolved_name_dict_pairs
-from xcube.util.dsio import rimraf, DatasetIO, find_dataset_io
-from xcube.util.timecoord import add_time_coords
 from .defaults import DEFAULT_OUTPUT_DIR, DEFAULT_OUTPUT_NAME, DEFAULT_OUTPUT_SIZE, \
     DEFAULT_OUTPUT_RESAMPLING, DEFAULT_OUTPUT_FORMAT
 from .iproc import InputProcessor, get_input_processor
-
-__import__('xcube.util.plugin')
+from ..compute import compute_dataset
+from ..select import select_vars
+from ..update import update_var_props, update_global_attrs
+from ...util.config import NameAnyDict, NameDictPairList, to_resolved_name_dict_pairs
+from ...util.dsio import rimraf, DatasetIO, find_dataset_io
+from ...util.timecoord import add_time_coords
 
 _PROFILING_ON = False
 

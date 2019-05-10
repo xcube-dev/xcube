@@ -1,5 +1,3 @@
-# xcube server changes
-
 ## Changes in 0.2.0 (in dev)
 
 * Restructured and clarified code base (#27)
@@ -14,6 +12,7 @@
 * Added `xcube gen` option `--sort` when input data list should be sorted (#33)    
 * Added `xcube vars2dim` command to make variables a cube dimension (#31)
 * Added `xcube serve` option `--traceperf` that allows switching on performance diagnostics.
+* Fixed error in plugins when importing `xcube.api.gen` (#62)
 
 
 ## Changes in 0.1.0
