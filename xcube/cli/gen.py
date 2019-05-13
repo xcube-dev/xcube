@@ -20,18 +20,15 @@
 # SOFTWARE.
 
 import click
-import sys
-import traceback
 
-from xcube.util.dsio import query_dataset_io
 from xcube.api.gen.config import get_config_dict
 from xcube.api.gen.defaults import DEFAULT_OUTPUT_DIR, DEFAULT_OUTPUT_NAME, \
     DEFAULT_OUTPUT_RESAMPLING, DEFAULT_OUTPUT_FORMAT
-from xcube.api.gen.iproc import InputProcessor
 from xcube.api.gen.gen import gen_cube
+from xcube.api.gen.iproc import InputProcessor
+from xcube.util.dsio import query_dataset_io
 from xcube.util.objreg import get_obj_registry
 from xcube.util.reproject import NAME_TO_GDAL_RESAMPLE_ALG
-from xcube.version import version
 
 input_processor_names = [input_processor.name
                          for input_processor in get_obj_registry().get_all(type=InputProcessor)]
@@ -40,7 +37,6 @@ resampling_algs = NAME_TO_GDAL_RESAMPLE_ALG.keys()
 
 
 @click.command(name='gen', context_settings={"ignore_unknown_options": True})
-@click.version_option(version)
 @click.argument('input_files', metavar='INPUT_FILES', nargs=-1)
 @click.option('--proc', '-p', metavar='INPUT_PROCESSOR', type=click.Choice(input_processor_names),
               help=f'Input processor type name. '
@@ -72,8 +68,6 @@ resampling_algs = NAME_TO_GDAL_RESAMPLE_ALG.keys()
               help='Fallback spatial resampling algorithm to be used for all variables. '
               f'Defaults to {DEFAULT_OUTPUT_RESAMPLING!r}. '
               f'The choices for the resampling algorithm are: {resampling_algs}')
-@click.option('--traceback', default=False, is_flag=True,
-              help='On error, print Python traceback.')
 @click.option('--append', '-a', default=False, is_flag=True,
               help='Append successive outputs.')
 @click.option('--dry_run', default=False, is_flag=True,
@@ -93,7 +87,6 @@ def gen(input_files: str,
         region: str,
         variables: str,
         resampling: str,
-        traceback: bool,
         append: bool,
         dry_run: bool,
         info: bool,
@@ -113,38 +106,27 @@ def gen(input_files: str,
     output_region = region
     output_variables = variables
     output_resampling = resampling
-    traceback_mode = traceback
     append_mode = append
     dry_run = dry_run
     info_mode = info
     sort_mode = sort
 
+    # Force loading of plugins
+    __import__('xcube.util.plugin')
+
     if info_mode:
         print(_format_info())
         return 0
 
-    try:
-        config = get_config_dict(locals())
-    except ValueError as e:
-        return _handle_error(e, traceback_mode)
+    config = get_config_dict(locals())
 
-    try:
-        gen_cube(append_mode=append_mode,
-                 dry_run=dry_run,
-                 monitor=print,
-                 sort_mode=sort_mode,
-                 **config)
-    except Exception as e:
-        return _handle_error(e, traceback_mode)
+    gen_cube(append_mode=append_mode,
+             dry_run=dry_run,
+             monitor=print,
+             sort_mode=sort_mode,
+             **config)
 
     return 0
-
-
-def _handle_error(e, traceback_mode):
-    print(f'error: {e}', file=sys.stderr)
-    if traceback_mode:
-        traceback.print_exc(file=sys.stderr)
-    return 2
 
 
 def _format_info():

@@ -19,9 +19,9 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-import math
-from typing import Dict, List
+from typing import Dict, List, Tuple, Union
 
+import math
 import numpy as np
 import shapely.geometry
 import xarray as xr
@@ -128,7 +128,6 @@ def _get_time_series_for_point(dataset: xr.Dataset,
         return {'results': []}
 
     point_subset = variable.sel(lon=point.x, lat=point.y, method='Nearest')
-    # noinspection PyTypeChecker
     time_subset = point_subset.sel(time=slice(start_date, end_date))
     time_series = []
     for entry in time_subset:
@@ -142,6 +141,19 @@ def _get_time_series_for_point(dataset: xr.Dataset,
             statistics['average'] = item
         result = {'result': statistics, 'date': timestamp_to_iso_string(entry.time.data)}
         time_series.append(result)
+
+    ancillary_var_name, ancillary_field_name = _find_ancillary_var_name(dataset, variable)
+    if ancillary_var_name is not None:
+        ancillary_variable = dataset.data_vars[ancillary_var_name]
+        ancillary_point_subset = ancillary_variable.sel(lon=point.x, lat=point.y, method='Nearest')
+        ancillary_time_subset = ancillary_point_subset.sel(time=slice(start_date, end_date))
+        num_time_steps = len(time_series)
+        if len(ancillary_time_subset) == num_time_steps:
+            for index, entry in zip(range(num_time_steps), ancillary_time_subset):
+                ancillary_value = entry.values.item()
+                statistics = time_series[index]['result']
+                statistics[ancillary_field_name] = None if np.isnan(ancillary_value) else ancillary_value
+
     return {'results': time_series}
 
 
@@ -187,10 +199,9 @@ def _get_time_series_for_geometry(dataset: xr.Dataset,
     time_series = []
     for time_index in range(num_times):
         variable_slice = variable.isel(time=time_index)
-
         masked_var = variable_slice.where(mask)
         valid_count = len(np.where(np.isfinite(masked_var))[0])
-        mean_ts_var = variable_slice.mean(["lat", "lon"]).values.item()
+        mean_ts_var = masked_var.mean(["lat", "lon"]).values.item()
 
         statistics = {'totalCount': total_count}
         if np.isnan(mean_ts_var):
@@ -201,6 +212,17 @@ def _get_time_series_for_geometry(dataset: xr.Dataset,
             statistics['average'] = float(mean_ts_var)
         result = {'result': statistics, 'date': timestamp_to_iso_string(variable_slice.time.data)}
         time_series.append(result)
+
+    ancillary_var_name, ancillary_field_name = _find_ancillary_var_name(ds_subset, subset_variable)
+    if ancillary_var_name is not None:
+        ancillary_variable = ds_subset.data_vars[ancillary_var_name]
+        for time_index in range(num_times):
+            ancillary_slice = ancillary_variable.isel(time=time_index)
+            ancillary_masked = ancillary_slice.where(mask)
+            ancillary_mean = ancillary_masked.mean(["lat", "lon"])
+            ancillary_value = ancillary_mean.values.item()
+            statistics = time_series[time_index]["result"]
+            statistics[ancillary_field_name] = None if np.isnan(ancillary_value) else ancillary_value
 
     return {'results': time_series}
 
@@ -217,6 +239,55 @@ def _get_time_series_for_geometries(dataset: xr.Dataset,
                                                start_date=start_date, end_date=end_date)
         time_series.append(result["results"])
     return {'results': time_series}
+
+
+ANCILLARY_CF_NAMES_TO_FIELD_NAMES = {
+    "standard_deviation": "stdev",
+    "standard_error": "error",
+    "uncertainty": "uncertainty",
+}
+
+ANCILLARY_CF_NAMES = set(ANCILLARY_CF_NAMES_TO_FIELD_NAMES.keys())
+ANCILLARY_FIELD_NAMES = set([ANCILLARY_CF_NAMES_TO_FIELD_NAMES[name] for name in ANCILLARY_CF_NAMES_TO_FIELD_NAMES])
+
+
+def _find_ancillary_var_name(dataset, variable) -> Union[Tuple[str, str], Tuple[None, None]]:
+
+    # Check for CF compatibility according to
+    # http://cfconventions.org/Data/cf-conventions/cf-conventions-1.7/cf-conventions.html#ancillary-data
+    #
+    if "ancillary_variables" in variable.attrs:
+        ancillary_var_names = variable.attrs["ancillary_variables"].split(" ")
+        for ancillary_var_name in ancillary_var_names:
+            if ancillary_var_name in dataset.data_vars:
+                ancillary_var = dataset.data_vars[ancillary_var_name]
+                if variable.shape == ancillary_var.shape and variable.dims == variable.dims:
+                    if "standard_name" in ancillary_var.attrs:
+                        ancillary_var_std_name = ancillary_var.attrs["standard_name"]
+                        ancillary_cf_name = ancillary_var_std_name.split(" ")[-1]
+                        if ancillary_cf_name in ANCILLARY_CF_NAMES_TO_FIELD_NAMES:
+                            return ancillary_var_name, ANCILLARY_CF_NAMES_TO_FIELD_NAMES[ancillary_cf_name]
+
+    # Check for less strict CF compatibility
+    #
+    if "standard_name" in variable.attrs:
+        standard_name = variable.attrs["standard_name"]
+        for ancillary_var_name, ancillary_var in dataset.data_vars.items():
+            if ancillary_var is variable:
+                continue
+            for ancillary_cf_name in ANCILLARY_CF_NAMES:
+                if ancillary_var.attrs.get("standard_name") == f"{standard_name} {ancillary_cf_name}":
+                    return ancillary_var_name, ANCILLARY_CF_NAMES_TO_FIELD_NAMES[ancillary_cf_name]
+
+    # Search for variables with xcube-specific prefixes that indicate uncertainty:
+    #
+    if variable.name:
+        for ancillary_field_name in ANCILLARY_FIELD_NAMES:
+            ancillary_var_name = f"{variable.name}_{ancillary_field_name}"
+            if ancillary_var_name in dataset.data_vars:
+                return ancillary_var_name, ancillary_field_name
+
+    return None, None
 
 
 def _clamp(x, x1, x2):
