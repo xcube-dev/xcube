@@ -3,6 +3,8 @@ import sys
 import click
 
 from xcube.cli.gen import gen
+from xcube.cli.apply import apply
+from xcube.cli.timeit import timeit
 from xcube.cli.grid import grid
 from xcube.cli.serve import serve
 from xcube.util.cliutil import parse_cli_kwargs, new_cli_ctx_obj, handle_cli_exception, cli_option_traceback, \
@@ -241,6 +243,7 @@ cli.add_command(grid)
 cli.add_command(vars2dim)
 cli.add_command(gen)
 cli.add_command(level)
+cli.add_command(apply)
 cli.add_command(serve)
 
 
