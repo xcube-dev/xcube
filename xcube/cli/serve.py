@@ -30,7 +30,7 @@ __author__ = "Norman Fomferra (Brockmann Consult GmbH)"
 
 
 @click.command(name='serve')
-@click.argument('cubes', metavar='CUBES', nargs=-1)
+@click.argument('cubes', metavar='CUBE...', nargs=-1)
 @click.version_option(__version__)
 @click.option('--name', '-n', metavar='NAME', default=DEFAULT_NAME,
               help=f'Service name. Defaults to {DEFAULT_NAME!r}.')

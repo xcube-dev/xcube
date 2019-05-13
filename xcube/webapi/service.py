@@ -43,6 +43,7 @@ from .defaults import DEFAULT_ADDRESS, DEFAULT_PORT, DEFAULT_UPDATE_PERIOD, DEFA
     DEFAULT_TILE_CACHE_SIZE, DEFAULT_NAME, DEFAULT_TRACE_PERF, DEFAULT_TILE_COMP_MODE
 from .errors import ServiceBadRequestError
 from .reqparams import RequestParams
+from ..util.dsio import guess_dataset_format
 from ..util.undefined import UNDEFINED
 
 __author__ = "Norman Fomferra (Brockmann Consult GmbH)"
@@ -111,6 +112,7 @@ class Service:
                     raise OSError("Dataset not found: " + cube_path)
                 dataset_list.append(dict(Identifier=f"dataset_{index + 1}",
                                          Title=f"Dataset #{index + 1}",
+                                         Format=guess_dataset_format(cube_path),
                                          Path=cube_path,
                                          FileSystem='local'))
                 index += 1
