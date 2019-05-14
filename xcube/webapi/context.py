@@ -184,6 +184,7 @@ class ServiceContext:
         return ml_dataset.tile_grid
 
     def get_color_mapping(self, ds_id: str, var_name: str):
+        cmap_cbar, cmap_vmin, cmap_vmax = DEFAULT_CMAP_CBAR, DEFAULT_CMAP_VMIN, DEFAULT_CMAP_VMAX
         dataset_descriptor = self.get_dataset_descriptor(ds_id)
         style_name = dataset_descriptor.get('Style', 'default')
         styles = self._config.get('Styles')
@@ -192,6 +193,7 @@ class ServiceContext:
             for s in styles:
                 if style_name == s['Identifier']:
                     style = s
+                    break
             # TODO: check color_mappings is not None
             if style:
                 color_mappings = style.get('ColorMappings')
@@ -199,11 +201,17 @@ class ServiceContext:
                     # TODO: check color_mappings is not None
                     color_mapping = color_mappings.get(var_name)
                     if color_mapping:
-                        cmap_cbar = color_mapping.get('ColorBar', DEFAULT_CMAP_CBAR)
-                        cmap_vmin, cmap_vmax = color_mapping.get('ValueRange', (DEFAULT_CMAP_VMIN, DEFAULT_CMAP_VMAX))
+                        cmap_cbar = color_mapping.get('ColorBar', cmap_cbar)
+                        cmap_vmin, cmap_vmax = color_mapping.get('ValueRange', (cmap_vmin, cmap_vmax))
                         return cmap_cbar, cmap_vmin, cmap_vmax
+            else:
+                ds, var = self.get_dataset_and_variable(ds_id, var_name)
+                cmap_cbar = var.attrs.get('color_bar_name', cmap_cbar)
+                cmap_vmin = var.attrs.get('color_value_min', cmap_vmin)
+                cmap_vmax = var.attrs.get('color_value_max', cmap_vmax)
+
         _LOG.warning(f'color mapping for variable {var_name!r} of dataset {ds_id!r} undefined: using defaults')
-        return DEFAULT_CMAP_CBAR, DEFAULT_CMAP_VMIN, DEFAULT_CMAP_VMAX
+        return cmap_cbar, cmap_vmin, cmap_vmax
 
     def _get_dataset_entry(self, ds_id: str) -> Tuple[MultiLevelDataset, Dict[str, Any]]:
         if ds_id not in self._dataset_cache:

@@ -76,6 +76,16 @@ ARD links:
     * `[time, ..., lat, lon]` (see WGS84 schema) or 
     * `[time, ..., y, x]` (see Generic schema) 
   * MAY have extra dimensions, e.g. `layer` (of the atmosphere), `band` (of a spectrum).
+  * SHALL specify the `units` metadata attribute.
+  * SHOULD specify metadata attributes that are used to identify missing values, namely
+    `_FillValue` and / or `valid_min`, `valid_max`, see notes in CF conventions on these attributes.
+  * MAY specify metadata attributes that can be used to visualise the data:
+    * `color_bar_name`: Name of a predefined colour mapping. The colour bar is applied
+       between a minimum and a maximum value. 
+    * `color_value_min`, `color_value_max`: Minimum and maximum value for applying the colour bar.
+       If not provided, minimum and maximum default to `valid_min`, `valid_max`. If neither 
+       these are provided, minimum and maximum default to `0` and `1`.
+
 
 
 ### WGS84 Schema (extends Basic)

@@ -12,6 +12,9 @@ class ClickUtilTest(unittest.TestCase):
                          parse_cli_kwargs("", metavar="<chunks>"))
         self.assertEqual(dict(time=1, lat=256, lon=512),
                          parse_cli_kwargs("time=1, lat=256, lon=512", metavar="<chunks>"))
+        self.assertEqual(dict(chl_conc=(0, 20, 'greens'), chl_tsm=(0, 15, 'viridis')),
+                         parse_cli_kwargs("chl_conc=(0,20,'greens'),chl_tsm=(0,15,'viridis')",
+                                          metavar="<styles>"))
 
         with self.assertRaises(click.ClickException) as cm:
             parse_cli_kwargs("45 * 'A'", metavar="<chunks>")

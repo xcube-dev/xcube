@@ -29,7 +29,7 @@ import time
 import traceback
 from datetime import datetime
 from json import JSONDecodeError
-from typing import Optional, Any, Dict, List
+from typing import Optional, Any, Dict, List, Tuple
 
 import tornado.escape
 import tornado.options
@@ -62,6 +62,7 @@ class Service:
                  address: str = DEFAULT_ADDRESS,
                  port: int = DEFAULT_PORT,
                  cube_paths: List[str] = None,
+                 styles: Dict[str, Tuple] = None,
                  config_file: Optional[str] = None,
                  tile_cache_size: Optional[str] = DEFAULT_TILE_CACHE_SIZE,
                  tile_comp_mode: int = DEFAULT_TILE_COMP_MODE,
@@ -90,7 +91,9 @@ class Service:
         :return: service information dictionary
         """
         if config_file and cube_paths:
-            raise ValueError("config_file and cube_paths cannot both be given")
+            raise ValueError("config_file and cube_paths cannot be given both")
+        if config_file and styles:
+            raise ValueError("config_file and styles cannot be given both")
 
         log_dir = os.path.dirname(log_file_prefix)
         if log_dir and not os.path.isdir(log_dir):
@@ -105,18 +108,7 @@ class Service:
 
         config = None
         if cube_paths:
-            dataset_list = list()
-            index = 0
-            for cube_path in cube_paths:
-                if not os.path.exists(cube_path):
-                    raise OSError("Dataset not found: " + cube_path)
-                dataset_list.append(dict(Identifier=f"dataset_{index + 1}",
-                                         Title=f"Dataset #{index + 1}",
-                                         Format=guess_dataset_format(cube_path),
-                                         Path=cube_path,
-                                         FileSystem='local'))
-                index += 1
-            config = dict(Datasets=dataset_list)
+            config = new_default_config(cube_paths, styles)
 
         self.config_file = os.path.abspath(config_file) if config_file else None
         self.update_period = update_period
@@ -392,3 +384,31 @@ def parse_tile_cache_config(tile_cache_size: str) -> Dict[str, Any]:
         elif capacity < 0:
             raise ValueError(f"negative tile cache size: {tile_cache_size!r}")
     return dict(no_cache=True)
+
+
+def new_default_config(cube_paths: List[str], styles: Dict[str, Tuple] = None):
+    dataset_list = list()
+    index = 0
+    for cube_path in cube_paths:
+        dataset_list.append(dict(Identifier=f"dataset_{index + 1}",
+                                 Title=f"Dataset #{index + 1}",
+                                 Format=guess_dataset_format(cube_path),
+                                 Path=cube_path,
+                                 FileSystem='local'))
+        index += 1
+    config = dict(Datasets=dataset_list)
+    if styles:
+        color_mappings = {}
+        for var_name, style_data in styles.items():
+            try:
+                value_min, value_max, color_bar_name = style_data
+                style = dict(ValueRange=[value_min, value_max], ColorBar=color_bar_name)
+            except (TypeError, ValueError):
+                try:
+                    value_min, value_max = style_data
+                    style = dict(ValueRange=[value_min, value_max])
+                except (TypeError, ValueError):
+                    raise ValueError(f"illegal style: {var_name}={style_data!r}")
+            color_mappings[var_name] = style
+        config["Styles"] = [dict(Identifier="default", ColorMappings=color_mappings)]
+    return config
