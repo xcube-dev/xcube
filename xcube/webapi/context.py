@@ -450,7 +450,7 @@ def open_ml_dataset_from_local_fs(ctx: ServiceContext, dataset_descriptor: Datas
 
     data_format = dataset_descriptor.get('Format', 'nc')
 
-    if data_format == 'nc':
+    if data_format == 'netcdf4':
         with measure_time(tag=f"opened local NetCDF dataset {path}"):
             ds = xr.open_dataset(path)
             return BaseMultiLevelDataset(ds)
@@ -463,6 +463,8 @@ def open_ml_dataset_from_local_fs(ctx: ServiceContext, dataset_descriptor: Datas
     if data_format == 'levels':
         with measure_time(tag=f"opened local levels dataset {path}"):
             return FileStorageMultiLevelDataset(path)
+
+    raise ServiceConfigError(f"Illegal data format {data_format!r} for dataset {ds_id}")
 
 
 def open_ml_dataset_from_python_code(ctx: ServiceContext, dataset_descriptor: DatasetDescriptor) -> MultiLevelDataset:
