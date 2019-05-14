@@ -27,7 +27,7 @@ import shapely.geometry
 import xarray as xr
 
 from ..context import ServiceContext
-from ..errors import ServiceBadRequestError
+from ..errors import ServiceBadRequestError, ServiceResourceNotFoundError
 from ..utils import get_dataset_bounds, get_dataset_geometry, get_box_split_bounds_geometry, get_geometry_mask, \
     GeoJSON, timestamp_to_iso_string
 
@@ -58,7 +58,7 @@ def get_time_series_for_point(ctx: ServiceContext,
                               lon: float, lat: float,
                               start_date: np.datetime64 = None,
                               end_date: np.datetime64 = None) -> Dict:
-    dataset, variable = ctx.get_dataset_and_variable(ds_name, var_name)
+    dataset, variable = get_dataset_and_variable(ctx, ds_name, var_name)
     return _get_time_series_for_point(dataset, variable,
                                       shapely.geometry.Point(lon, lat),
                                       start_date=start_date, end_date=end_date)
@@ -69,7 +69,7 @@ def get_time_series_for_geometry(ctx: ServiceContext,
                                  geometry: Dict,
                                  start_date: np.datetime64 = None,
                                  end_date: np.datetime64 = None) -> Dict:
-    dataset, variable = ctx.get_dataset_and_variable(ds_name, var_name)
+    dataset, variable = get_dataset_and_variable(ctx, ds_name, var_name)
     if not GeoJSON.is_geometry(geometry):
         raise ServiceBadRequestError("Invalid GeoJSON geometry")
     if isinstance(geometry, dict):
@@ -84,7 +84,7 @@ def get_time_series_for_geometry_collection(ctx: ServiceContext,
                                             geometry_collection: Dict,
                                             start_date: np.datetime64 = None,
                                             end_date: np.datetime64 = None) -> Dict:
-    dataset, variable = ctx.get_dataset_and_variable(ds_name, var_name)
+    dataset, variable = get_dataset_and_variable(ctx, ds_name, var_name)
     geometries = GeoJSON.get_geometry_collection_geometries(geometry_collection)
     if geometries is None:
         raise ServiceBadRequestError("Invalid GeoJSON geometry collection")
@@ -103,7 +103,7 @@ def get_time_series_for_feature_collection(ctx: ServiceContext,
                                            feature_collection: Dict,
                                            start_date: np.datetime64 = None,
                                            end_date: np.datetime64 = None) -> Dict:
-    dataset, variable = ctx.get_dataset_and_variable(ds_name, var_name)
+    dataset, variable = get_dataset_and_variable(ctx, ds_name, var_name)
     features = GeoJSON.get_feature_collection_features(feature_collection)
     if features is None:
         raise ServiceBadRequestError("Invalid GeoJSON feature collection")
@@ -296,3 +296,10 @@ def _clamp(x, x1, x2):
     if x > x2:
         return x2
     return x
+
+
+def get_dataset_and_variable(ctx: ServiceContext, ds_id: str, var_name: str) -> Tuple[xr.Dataset, xr.DataArray]:
+    dataset = ctx.get_dataset(ds_id)
+    if var_name in dataset:
+        return dataset, dataset[var_name]
+    raise ServiceResourceNotFoundError(f'Variable "{var_name}" not found in dataset "{ds_id}"')

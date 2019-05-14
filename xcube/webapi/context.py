@@ -151,12 +151,6 @@ class ServiceContext:
         ml_dataset, _ = self._get_dataset_entry(ds_id)
         return ml_dataset.base_dataset
 
-    def get_dataset_and_variable(self, ds_id: str, var_name: str) -> Tuple[xr.Dataset, xr.DataArray]:
-        dataset = self.get_dataset(ds_id)
-        if var_name in dataset:
-            return dataset, dataset[var_name]
-        raise ServiceResourceNotFoundError(f'Variable "{var_name}" not found in dataset "{ds_id}"')
-
     def get_variable_for_z(self, ds_id: str, var_name: str, z_index: int) -> xr.DataArray:
         ml_dataset = self.get_ml_dataset(ds_id)
         dataset = ml_dataset.get_dataset(ml_dataset.num_levels - 1 - z_index)

@@ -1,9 +1,12 @@
 import unittest
 
 import numpy as np
+import xarray as xr
 
 from xcube.webapi.controllers.time_series import get_time_series_info, get_time_series_for_point, \
-    get_time_series_for_geometry, get_time_series_for_geometry_collection, _find_ancillary_var_name
+    get_time_series_for_geometry, get_time_series_for_geometry_collection, _find_ancillary_var_name, \
+    get_dataset_and_variable
+from xcube.webapi.errors import ServiceResourceNotFoundError
 from ..helpers import new_test_service_context
 
 
@@ -177,8 +180,6 @@ class TimeSeriesControllerTest(unittest.TestCase):
         self.assertEqual(expected_dict, time_series)
 
     def test_find_ancillary_var_name(self):
-        import xarray as xr
-        import numpy as np
 
         # Find using attribute ancillary_variables and prefix "<name> standard_error"
         ds = xr.Dataset(data_vars=dict(
@@ -229,6 +230,22 @@ class TimeSeriesControllerTest(unittest.TestCase):
 
         expected_dict = self._get_expected_info_dict()
         self.assertEqual(expected_dict, info)
+
+    def test_get_dataset_and_variable(self):
+        ctx = new_test_service_context()
+        ds, var = get_dataset_and_variable(ctx, 'demo', 'conc_tsm')
+        self.assertIsInstance(ds, xr.Dataset)
+        self.assertIsInstance(var, xr.DataArray)
+
+        with self.assertRaises(ServiceResourceNotFoundError) as cm:
+            get_dataset_and_variable(ctx, 'demox', 'conc_ys')
+        self.assertEqual(404, cm.exception.status_code)
+        self.assertEqual('Dataset "demox" not found', cm.exception.reason)
+
+        with self.assertRaises(ServiceResourceNotFoundError) as cm:
+            get_dataset_and_variable(ctx, 'demo', 'conc_ys')
+        self.assertEqual(404, cm.exception.status_code)
+        self.assertEqual('Variable "conc_ys" not found in dataset "demo"', cm.exception.reason)
 
     @staticmethod
     def _get_expected_info_dict():
