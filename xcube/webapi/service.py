@@ -119,9 +119,10 @@ class Service:
                                  started=datetime.now().isoformat(sep=' '),
                                  pid=os.getpid())
 
+        base_dir = os.path.dirname(self.config_file) if self.config_file else os.path.abspath('')
         self.context = ServiceContext(name=name,
                                       config=config,
-                                      base_dir=os.path.dirname(self.config_file or os.path.abspath('')),
+                                      base_dir=base_dir,
                                       trace_perf=trace_perf,
                                       tile_comp_mode=tile_comp_mode,
                                       tile_cache_capacity=tile_cache_config.get("capacity"))
