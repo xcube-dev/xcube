@@ -38,12 +38,11 @@ from tornado.ioloop import IOLoop
 from tornado.log import enable_pretty_logging
 from tornado.web import RequestHandler, Application
 
-from .context import ServiceContext
+from .context import ServiceContext, guess_cube_format
 from .defaults import DEFAULT_ADDRESS, DEFAULT_PORT, DEFAULT_UPDATE_PERIOD, DEFAULT_LOG_PREFIX, \
     DEFAULT_TILE_CACHE_SIZE, DEFAULT_NAME, DEFAULT_TRACE_PERF, DEFAULT_TILE_COMP_MODE
 from .errors import ServiceBadRequestError
 from .reqparams import RequestParams
-from ..util.dsio import guess_dataset_format
 from ..util.undefined import UNDEFINED
 
 __author__ = "Norman Fomferra (Brockmann Consult GmbH)"
@@ -393,7 +392,7 @@ def new_default_config(cube_paths: List[str], styles: Dict[str, Tuple] = None):
     for cube_path in cube_paths:
         dataset_list.append(dict(Identifier=f"dataset_{index + 1}",
                                  Title=f"Dataset #{index + 1}",
-                                 Format=guess_dataset_format(cube_path),
+                                 Format=guess_cube_format(cube_path),
                                  Path=cube_path,
                                  FileSystem='local'))
         index += 1
