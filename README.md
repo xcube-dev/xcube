@@ -272,7 +272,8 @@ handy tool [Wicket](https://arthur-e.github.io/Wicket/sandbox-gmaps3.html).
     
       Generate data cube. Data cubes may be created in one go or successively in
       append mode, input by input. The input may be one or more input files or a
-      pattern that may contain wildcards '?', '*', and '**'.
+      pattern that may contain wildcards '?', '*', and '**'. The input files can 
+      be passed as a txt-file containing the paths of the input files, as well.
     
     Options:
       --version                       Show the version and exit.
