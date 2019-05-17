@@ -2,6 +2,9 @@
 
 * Restructured and clarified code base (#27)
 * Moved to Python 3.7 (#25)
+* `xcube serve` can now be run with data cube paths and styling information given via the CLI rather 
+  than a configuration file. For example `xcube serve --styles conc_chl=(0,20,"viridis") /path/to/my/chl-cube.zarr`.
+  This allows for quick inspection of newly generated cubes via `xcube gen`.
 * Added global `xcube --scheduler <scheduler>` option for Dask distributed computing (#58)
 * Added global `xcube --traceback` option, removed local `xcube gen --traceback` option
 * Completed version 1 of an xcube developer guide.
