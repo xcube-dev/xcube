@@ -18,17 +18,20 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+from typing import List
 
 import click
 
+from xcube.util.cliutil import parse_cli_kwargs
 from xcube.webapi import __version__, __description__
 from xcube.webapi.defaults import DEFAULT_PORT, DEFAULT_NAME, DEFAULT_ADDRESS, DEFAULT_UPDATE_PERIOD, \
-    DEFAULT_CONFIG_FILE, DEFAULT_TILE_CACHE_SIZE, DEFAULT_TILE_COMP_MODE
+    DEFAULT_TILE_CACHE_SIZE, DEFAULT_TILE_COMP_MODE
 
 __author__ = "Norman Fomferra (Brockmann Consult GmbH)"
 
 
 @click.command(name='serve')
+@click.argument('cubes', metavar='CUBE...', nargs=-1)
 @click.version_option(__version__)
 @click.option('--name', '-n', metavar='NAME', default=DEFAULT_NAME,
               help=f'Service name. Defaults to {DEFAULT_NAME!r}.')
@@ -41,9 +44,14 @@ __author__ = "Norman Fomferra (Brockmann Consult GmbH)"
               help='Service will update after given seconds of inactivity. Zero or a negative value will '
                    'disable update checks. '
                    f'Defaults to {DEFAULT_UPDATE_PERIOD!r}.')
-@click.option('--config', '-c', metavar='FILE', default=None,
-              help='Datasets configuration file. '
-                   f'Defaults to {DEFAULT_CONFIG_FILE!r}.')
+@click.option('--styles', '-s', metavar='STYLES', default=None,
+              help='Color mapping styles for variables. '
+                   'Used only, if one or more CUBE arguments are provided and CONFIG is not given. '
+                   'Comma-separated list with elements of the form '
+                   '<var>=(<vmin>,<vmax>) or <var>=(<vmin>,<vmax>,"<cmap>")')
+@click.option('--config', '-c', metavar='CONFIG', default=None,
+              help='Use datasets configuration file CONFIG. '
+                   'Cannot be used if CUBES are provided.')
 @click.option('--tilecache', metavar='SIZE', default=DEFAULT_TILE_CACHE_SIZE,
               help=f'In-memory tile cache size in bytes. '
                    f'Unit suffixes {"K"!r}, {"M"!r}, {"G"!r} may be used. '
@@ -57,10 +65,12 @@ __author__ = "Norman Fomferra (Brockmann Consult GmbH)"
               help="Delegate logging to the console (stderr).")
 @click.option('--traceperf', is_flag=True,
               help="Print performance diagnostics (stdout).")
-def serve(name: str,
+def serve(cubes: List[str],
+          name: str,
           address: str,
           port: int,
           update: float,
+          styles: str,
           config: str,
           tilecache: str,
           tilemode: int,
@@ -73,26 +83,28 @@ def serve(name: str,
     The RESTful API documentation can be found at https://app.swaggerhub.com/apis/bcdev/xcube-server.
     """
 
+    if config and cubes:
+        raise click.ClickException("CONFIG and CUBES cannot be used at the same time.")
+    if styles:
+        styles = parse_cli_kwargs(styles, "STYLES")
     from xcube.webapi.app import new_application
     from xcube.webapi.service import Service
 
-    try:
-        print(f'{__description__}, version {__version__}')
-        service = Service(new_application(name),
-                          name=name,
-                          port=port,
-                          address=address,
-                          config_file=config,
-                          tile_cache_size=tilecache,
-                          tile_comp_mode=tilemode,
-                          update_period=update,
-                          log_to_stderr=verbose,
-                          trace_perf=traceperf)
-        service.start()
-        return 0
-    except Exception as e:
-        print('error: %s' % e)
-        return 1
+    print(f'{__description__}, version {__version__}')
+    service = Service(new_application(name),
+                      name=name,
+                      port=port,
+                      address=address,
+                      cube_paths=cubes,
+                      styles=styles,
+                      config_file=config,
+                      tile_cache_size=tilecache,
+                      tile_comp_mode=tilemode,
+                      update_period=update,
+                      log_to_stderr=verbose,
+                      trace_perf=traceperf)
+    service.start()
+    return 0
 
 
 def main(args=None):
