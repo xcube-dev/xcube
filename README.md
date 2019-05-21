@@ -31,7 +31,7 @@ First
     
 Then
     
-    $ activate xcube-dev
+    $ activate xcube
     $ python setup.py develop
 
 Update
@@ -116,6 +116,7 @@ To start a demo using docker use the following commands
 
 
 ## `xcube chunk`
+Can be used for changing the chunks of an existing data cube. 
 
     $ $ xcube chunk --help
     Usage: xcube chunk [OPTIONS] <input> <output>
@@ -138,6 +139,7 @@ Example:
     $ xcube chunk input_not_chunked.zarr output_rechunked.zarr --chunks "time=1,lat=270,lon=270"
 
 ## `xcube dump`
+Can be used for printing out the metadata of a data cube. 
 
     $ xcube dump --help
     Usage: xcube dump [OPTIONS] <path>
@@ -155,6 +157,7 @@ Example:
     $ xcube dump xcube_cube.zarr 
 
 ## `xcube extract`
+A time series for a specific location can be requested using `xcube extract`.
 
     $ xcube dump --help
     Usage: xcube extract [OPTIONS] <cube> <coords>
@@ -176,6 +179,7 @@ Example: # TODO: Help is needed here - how are the coords passed by the user?
     $ xcube extract xcube_cube.zarr 
 
 ## `xcube grid`
+For choosing a suitable gridding for a data cube, `xbube grid` is a useful tool.
 
     $ xcube grid --help
     Usage: xcube grid [OPTIONS] COMMAND [ARGS]...
@@ -266,24 +270,21 @@ Note, to check bounding box WKTs, you can use the
 handy tool [Wicket](https://arthur-e.github.io/Wicket/sandbox-gmaps3.html).
      
 ## `xcube gen`
+Is used to generate data cubes.
 
     $ xcube gen --help
     Usage: xcube gen [OPTIONS] INPUT_FILES
-    
+
       Generate data cube. Data cubes may be created in one go or successively in
       append mode, input by input. The input may be one or more input files or a
       pattern that may contain wildcards '?', '*', and '**'.
-    
+
     Options:
-      --version                       Show the version and exit.
       -p, --proc INPUT_PROCESSOR      Input processor type name. The choices as
-                                      input processor are: ['default', 'rbins-
-                                      seviri-highroc-scene-l2', 'rbins-seviri-
-                                      highroc-daily-l2', 'snap-olci-highroc-l2',
-                                      'snap-olci-cyanoalert-l2',
-                                      'vito-s2plus-l2'].  Additional information
-                                      about input processors can be accessed by
-                                      calling xcube generate_cube --info
+                                      input processor are: [].  Additional
+                                      information about input processors can be
+                                      accessed by calling xcube generate_cube
+                                      --info
       -c, --config CONFIG_FILE        Data cube configuration file in YAML format.
                                       More than one config input file is
                                       allowed.When passing several config files,
@@ -313,7 +314,6 @@ handy tool [Wicket](https://arthur-e.github.io/Wicket/sandbox-gmaps3.html).
                                       'Bilinear', 'Cubic', 'CubicSpline',
                                       'Lanczos', 'Average', 'Min', 'Max',
                                       'Median', 'Mode', 'Q1', 'Q3'])
-      --traceback                     On error, print Python traceback.
       -a, --append                    Append successive outputs.
       --dry_run                       Just read and process inputs, but don't
                                       produce any outputs.
@@ -341,8 +341,6 @@ handy tool [Wicket](https://arthur-e.github.io/Wicket/sandbox-gmaps3.html).
       netcdf4                 (*.nc)        NetCDF-4 file format
       zarr                    (*.zarr)      Zarr file format (http://zarr.readthedocs.io)
     
-
-
 
 
 
@@ -409,6 +407,9 @@ Example:
 
 ## `xcube serve`
 
+Is a light-weight web server that provides various services based on 
+xcube data cubes. 
+
     $ xcube serve --help
     Usage: xcube serve [OPTIONS]
     
@@ -427,8 +428,13 @@ Example:
       -u, --update PERIOD    Service will update after given seconds of
                              inactivity. Zero or a negative value will disable
                              update checks. Defaults to 2.0.
-      -c, --config FILE      Datasets configuration file. Defaults to
-                             'D:\\Projects\\xcube\\xcube_server.yml'.
+      -s, --styles STYLES    Color mapping styles for variables. Used only, if one
+                             or more CUBE arguments are provided and CONFIG is not
+                             given. Comma-separated list with elements of the form
+                             <var>=(<vmin>,<vmax>) or
+                             <var>=(<vmin>,<vmax>,"<cmap>")
+      -c, --config CONFIG    Use datasets configuration file CONFIG. Cannot be
+                             used if CUBES are provided.
       --tilecache SIZE       In-memory tile cache size in bytes. Unit suffixes
                              'K', 'M', 'G' may be used. Defaults to '512M'. The
                              special value 'OFF' disables tile caching.
@@ -442,8 +448,8 @@ Example:
 
 ### Objective
 
-The Xcube server is a light-weight web server that provides various services based on 
-Xcube datasets:
+The `xcube serve` is a light-weight web server that provides various services based on 
+xcube data cubes:
 
 * Catalogue services to query for datasets and their variables and dimensions, and feature collections. 
 * Tile map service, with some OGC WMTS 1.0 compatibility (REST and KVP APIs)
@@ -485,10 +491,13 @@ The SwaggerHub allows to choose the xcube-server project and therefore the datas
 
 #### Server
 
-To run the server on default port 8080:
+To run the server on default port 8080 using the demo configuration:
 
     $ xcube serve -v -c xcube/webapi/res/demo/config.yml
 
+To run the server using a particular data cube path and styling information for a variable:
+
+    $ xcube serve --styles conc_chl=(0,20,"viridis") /path/to/my/chl-cube.zarr
 
 Test it:
 
