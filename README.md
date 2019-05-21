@@ -13,13 +13,14 @@ Data cubes with [xarray](http://xarray.pydata.org/).
 - [Docker](#docker)
 - [Tools](#tools)
   - [`xcube` Command Line Interface](#xcube-command-line-interface)
-  - [`xcube gen`](#xcube-gen)
-  - [`xcube serve`](#xcube-serve)
-  - [`xcube dump`](#xcube-dump)
-  - [`xcube chunk`](#xcube-chunk)
+  - [`xcube chunk` ](#xcube-chunk)
+  - [`xcube dump` ](#xcube-dump)
+  - [`xcube extract`](#xcube-extract)
+  - [`xcube gen` Generating Data Cubes](#xcube-gen)
   - [`xcube grid`](#xcube-grid)
   - [`xcube level`](#xcube-level)
-  - [`xcube extract`](#xcube-extract)
+  - [`xcube vars2dim`](#xcube-vars2dim)
+  - [`xcube serve` Server for xcube Data Sets](#xcube-serve)
 
 # Installation
 
@@ -114,7 +115,6 @@ To start a demo using docker use the following commands
       vars2dim  Convert cube variables into new dimension.
     
 
-
 ## `xcube chunk`
 Can be used for changing the chunks of an existing data cube. 
 
@@ -177,6 +177,87 @@ A time series for a specific location can be requested using `xcube extract`.
 Example: # TODO: Help is needed here - how are the coords passed by the user? 
     
     $ xcube extract xcube_cube.zarr 
+    
+    
+## `xcube gen`
+Is used to generate data cubes.
+
+    $ xcube gen --help
+    Usage: xcube gen [OPTIONS] INPUT_FILES
+
+      Generate data cube. Data cubes may be created in one go or successively in
+      append mode, input by input. The input may be one or more input files or a
+      pattern that may contain wildcards '?', '*', and '**'.
+
+    Options:
+      -p, --proc INPUT_PROCESSOR      Input processor type name. The choices as
+                                      input processor are: [].  Additional
+                                      information about input processors can be
+                                      accessed by calling xcube generate_cube
+                                      --info
+      -c, --config CONFIG_FILE        Data cube configuration file in YAML format.
+                                      More than one config input file is
+                                      allowed.When passing several config files,
+                                      they are merged considering the order passed
+                                      via command line.
+      -d, --dir OUTPUT_DIR            Output directory. Defaults to '.'
+      -n, --name OUTPUT_NAME          Output filename pattern. Defaults to
+                                      'PROJ_WGS84_{INPUT_FILE}'.
+      -f, --format OUTPUT_FORMAT      Output writer type name. Defaults to 'zarr'.
+                                      The choices for the output format are:
+                                      ['csv', 'mem', 'netcdf4', 'zarr'].
+                                      Additional information about output formats
+                                      can be accessed by calling xcube
+                                      generate_cube --info
+      -s, --size OUTPUT_SIZE          Output size in pixels using format
+                                      "<width>,<height>".
+      -r, --region OUTPUT_REGION      Output region using format "<lon-min>,<lat-
+                                      min>,<lon-max>,<lat-max>"
+      -v, --variables OUTPUT_VARIABLES
+                                      Variables to be included in output. Comma-
+                                      separated list of names which may contain
+                                      wildcard characters "*" and "?".
+      --resampling OUTPUT_RESAMPLING  Fallback spatial resampling algorithm to be
+                                      used for all variables. Defaults to
+                                      'Nearest'. The choices for the resampling
+                                      algorithm are: dict_keys(['Nearest',
+                                      'Bilinear', 'Cubic', 'CubicSpline',
+                                      'Lanczos', 'Average', 'Min', 'Max',
+                                      'Median', 'Mode', 'Q1', 'Q3'])
+      -a, --append                    Append successive outputs.
+      --dry_run                       Just read and process inputs, but don't
+                                      produce any outputs.
+      -i, --info                      Displays additional information about format
+                                      options or about input processors.
+      --sort                          The input file list will be sorted before
+                                      creating the data cube. If --sort parameter
+                                      is not passed, order of input list will be
+                                      kept.
+      --help                          Show this message and exit.
+
+    $ xcube gen --info
+    input processors to be used with option --proc:
+      default                           Single-scene NetCDF/CF inputs in xcube standard format
+      rbins-seviri-highroc-scene-l2     RBINS SEVIRI HIGHROC single-scene Level-2 NetCDF inputs
+      rbins-seviri-highroc-daily-l2     RBINS SEVIRI HIGHROC daily Level-2 NetCDF inputs
+      snap-olci-highroc-l2              SNAP Sentinel-3 OLCI HIGHROC Level-2 NetCDF inputs
+      snap-olci-cyanoalert-l2           SNAP Sentinel-3 OLCI CyanoAlert Level-2 NetCDF inputs
+      vito-s2plus-l2                    VITO Sentinel-2 Plus Level 2 NetCDF inputs
+    
+    
+    output formats to be used with option --format:
+      csv                     (*.csv)       CSV file format
+      mem                     (*.mem)       In-memory dataset I/O
+      netcdf4                 (*.nc)        NetCDF-4 file format
+      zarr                    (*.zarr)      Zarr file format (http://zarr.readthedocs.io)
+    
+
+
+
+Example:
+
+    $ xcube gen -a -s 2000,1000 -r 0,50,5,52.5 -v conc_chl,conc_tsm,kd489,c2rcc_flags,quality_flags -n hiroc-cube -t snap-c2rcc D:\OneDrive\BC\EOData\HIGHROC\2017\01\*.nc
+
 
 ## `xcube grid`
 For choosing a suitable gridding for a data cube, `xbube grid` is a useful tool.
@@ -269,84 +350,6 @@ on a fixed Earth grid with the inverse resolution 384?
 Note, to check bounding box WKTs, you can use the 
 handy tool [Wicket](https://arthur-e.github.io/Wicket/sandbox-gmaps3.html).
      
-## `xcube gen`
-Is used to generate data cubes.
-
-    $ xcube gen --help
-    Usage: xcube gen [OPTIONS] INPUT_FILES
-
-      Generate data cube. Data cubes may be created in one go or successively in
-      append mode, input by input. The input may be one or more input files or a
-      pattern that may contain wildcards '?', '*', and '**'.
-
-    Options:
-      -p, --proc INPUT_PROCESSOR      Input processor type name. The choices as
-                                      input processor are: [].  Additional
-                                      information about input processors can be
-                                      accessed by calling xcube generate_cube
-                                      --info
-      -c, --config CONFIG_FILE        Data cube configuration file in YAML format.
-                                      More than one config input file is
-                                      allowed.When passing several config files,
-                                      they are merged considering the order passed
-                                      via command line.
-      -d, --dir OUTPUT_DIR            Output directory. Defaults to '.'
-      -n, --name OUTPUT_NAME          Output filename pattern. Defaults to
-                                      'PROJ_WGS84_{INPUT_FILE}'.
-      -f, --format OUTPUT_FORMAT      Output writer type name. Defaults to 'zarr'.
-                                      The choices for the output format are:
-                                      ['csv', 'mem', 'netcdf4', 'zarr'].
-                                      Additional information about output formats
-                                      can be accessed by calling xcube
-                                      generate_cube --info
-      -s, --size OUTPUT_SIZE          Output size in pixels using format
-                                      "<width>,<height>".
-      -r, --region OUTPUT_REGION      Output region using format "<lon-min>,<lat-
-                                      min>,<lon-max>,<lat-max>"
-      -v, --variables OUTPUT_VARIABLES
-                                      Variables to be included in output. Comma-
-                                      separated list of names which may contain
-                                      wildcard characters "*" and "?".
-      --resampling OUTPUT_RESAMPLING  Fallback spatial resampling algorithm to be
-                                      used for all variables. Defaults to
-                                      'Nearest'. The choices for the resampling
-                                      algorithm are: dict_keys(['Nearest',
-                                      'Bilinear', 'Cubic', 'CubicSpline',
-                                      'Lanczos', 'Average', 'Min', 'Max',
-                                      'Median', 'Mode', 'Q1', 'Q3'])
-      -a, --append                    Append successive outputs.
-      --dry_run                       Just read and process inputs, but don't
-                                      produce any outputs.
-      -i, --info                      Displays additional information about format
-                                      options or about input processors.
-      --sort                          The input file list will be sorted before
-                                      creating the data cube. If --sort parameter
-                                      is not passed, order of input list will be
-                                      kept.
-      --help                          Show this message and exit.
-
-    $ xcube gen --info
-    input processors to be used with option --proc:
-      default                           Single-scene NetCDF/CF inputs in xcube standard format
-      rbins-seviri-highroc-scene-l2     RBINS SEVIRI HIGHROC single-scene Level-2 NetCDF inputs
-      rbins-seviri-highroc-daily-l2     RBINS SEVIRI HIGHROC daily Level-2 NetCDF inputs
-      snap-olci-highroc-l2              SNAP Sentinel-3 OLCI HIGHROC Level-2 NetCDF inputs
-      snap-olci-cyanoalert-l2           SNAP Sentinel-3 OLCI CyanoAlert Level-2 NetCDF inputs
-      vito-s2plus-l2                    VITO Sentinel-2 Plus Level 2 NetCDF inputs
-    
-    
-    output formats to be used with option --format:
-      csv                     (*.csv)       CSV file format
-      mem                     (*.mem)       In-memory dataset I/O
-      netcdf4                 (*.nc)        NetCDF-4 file format
-      zarr                    (*.zarr)      Zarr file format (http://zarr.readthedocs.io)
-    
-
-
-
-Example:
-
-    $ xcube gen -a -s 2000,1000 -r 0,50,5,52.5 -v conc_chl,conc_tsm,kd489,c2rcc_flags,quality_flags -n hiroc-cube -t snap-c2rcc D:\OneDrive\BC\EOData\HIGHROC\2017\01\*.nc
 
 
 ## `xcube level`
