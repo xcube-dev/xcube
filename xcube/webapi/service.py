@@ -29,7 +29,7 @@ import time
 import traceback
 from datetime import datetime
 from json import JSONDecodeError
-from typing import Optional, Any, Dict
+from typing import Optional, Any, Dict, List, Tuple
 
 import tornado.escape
 import tornado.options
@@ -38,8 +38,8 @@ from tornado.ioloop import IOLoop
 from tornado.log import enable_pretty_logging
 from tornado.web import RequestHandler, Application
 
-from .context import ServiceContext
-from .defaults import DEFAULT_ADDRESS, DEFAULT_PORT, DEFAULT_CONFIG_FILE, DEFAULT_UPDATE_PERIOD, DEFAULT_LOG_PREFIX, \
+from .context import ServiceContext, guess_cube_format
+from .defaults import DEFAULT_ADDRESS, DEFAULT_PORT, DEFAULT_UPDATE_PERIOD, DEFAULT_LOG_PREFIX, \
     DEFAULT_TILE_CACHE_SIZE, DEFAULT_NAME, DEFAULT_TRACE_PERF, DEFAULT_TILE_COMP_MODE
 from .errors import ServiceBadRequestError
 from .reqparams import RequestParams
@@ -60,6 +60,8 @@ class Service:
                  name: str = DEFAULT_NAME,
                  address: str = DEFAULT_ADDRESS,
                  port: int = DEFAULT_PORT,
+                 cube_paths: List[str] = None,
+                 styles: Dict[str, Tuple] = None,
                  config_file: Optional[str] = None,
                  tile_cache_size: Optional[str] = DEFAULT_TILE_CACHE_SIZE,
                  tile_comp_mode: int = DEFAULT_TILE_COMP_MODE,
@@ -80,12 +82,18 @@ class Service:
         :param application: The Tornado web application
         :param address: the address
         :param port: the port number
+        :param cube_paths: optional list of cube paths
         :param config_file: optional configuration file
         :param update_period: if not-None, time of idleness in seconds before service is updated
         :param log_file_prefix: Log file prefix, default is "xcube_server.log"
         :param log_to_stderr: Whether logging should be shown on stderr
         :return: service information dictionary
         """
+        if config_file and cube_paths:
+            raise ValueError("config_file and cube_paths cannot be given both")
+        if config_file and styles:
+            raise ValueError("config_file and styles cannot be given both")
+
         log_dir = os.path.dirname(log_file_prefix)
         if log_dir and not os.path.isdir(log_dir):
             os.makedirs(log_dir, exist_ok=True)
@@ -97,6 +105,10 @@ class Service:
 
         tile_cache_config = parse_tile_cache_config(tile_cache_size)
 
+        config = None
+        if cube_paths:
+            config = new_default_config(cube_paths, styles)
+
         self.config_file = os.path.abspath(config_file) if config_file else None
         self.update_period = update_period
         self.update_timer = None
@@ -106,8 +118,10 @@ class Service:
                                  started=datetime.now().isoformat(sep=' '),
                                  pid=os.getpid())
 
+        base_dir = os.path.dirname(self.config_file) if self.config_file else os.path.abspath('')
         self.context = ServiceContext(name=name,
-                                      base_dir=os.path.dirname(self.config_file or os.path.abspath('')),
+                                      config=config,
+                                      base_dir=base_dir,
                                       trace_perf=trace_perf,
                                       tile_comp_mode=tile_comp_mode,
                                       tile_cache_capacity=tile_cache_config.get("capacity"))
@@ -167,7 +181,7 @@ class Service:
         IOLoop.current().add_callback_from_signal(self._on_shut_down)
 
     def _maybe_install_update_check(self):
-        if self.update_period is None or self.update_period <= 0:
+        if self.config_file is None or self.update_period is None or self.update_period <= 0:
             return
         IOLoop.current().call_later(self.update_period, self._maybe_check_for_updates)
 
@@ -178,7 +192,8 @@ class Service:
     def _maybe_load_config(self):
         config_file = self.config_file
         if config_file is None:
-            config_file = DEFAULT_CONFIG_FILE
+            return
+
         try:
             stat = os.stat(config_file)
         except OSError as e:
@@ -186,6 +201,7 @@ class Service:
                 _LOG.error(f'configuration file {config_file!r}: {e}')
                 self.config_error = e
             return
+
         if self.context.config_mtime != stat.st_mtime:
             self.context.config_mtime = stat.st_mtime
             try:
@@ -197,7 +213,6 @@ class Service:
                 if self.config_error is None:
                     _LOG.error(f'configuration file {config_file!r}: {e}')
                     self.config_error = e
-                return
 
 
 # noinspection PyAbstractClass
@@ -369,3 +384,31 @@ def parse_tile_cache_config(tile_cache_size: str) -> Dict[str, Any]:
         elif capacity < 0:
             raise ValueError(f"negative tile cache size: {tile_cache_size!r}")
     return dict(no_cache=True)
+
+
+def new_default_config(cube_paths: List[str], styles: Dict[str, Tuple] = None):
+    dataset_list = list()
+    index = 0
+    for cube_path in cube_paths:
+        dataset_list.append(dict(Identifier=f"dataset_{index + 1}",
+                                 Title=f"Dataset #{index + 1}",
+                                 Format=guess_cube_format(cube_path),
+                                 Path=cube_path,
+                                 FileSystem='local'))
+        index += 1
+    config = dict(Datasets=dataset_list)
+    if styles:
+        color_mappings = {}
+        for var_name, style_data in styles.items():
+            try:
+                value_min, value_max, color_bar_name = style_data
+                style = dict(ValueRange=[value_min, value_max], ColorBar=color_bar_name)
+            except (TypeError, ValueError):
+                try:
+                    value_min, value_max = style_data
+                    style = dict(ValueRange=[value_min, value_max])
+                except (TypeError, ValueError):
+                    raise ValueError(f"illegal style: {var_name}={style_data!r}")
+            color_mappings[var_name] = style
+        config["Styles"] = [dict(Identifier="default", ColorMappings=color_mappings)]
+    return config
