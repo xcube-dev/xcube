@@ -54,7 +54,7 @@ def gen_cube(input_files: Sequence[str] = None, input_processor: str = None, inp
     Generate a data cube from one or more input files.
 
     :param sort_mode:
-    :param input_files: The input files or a txt-file containing the paths of the input files.
+    :param input_files: The input files.
     :param input_processor: Name of a registered input processor (xcube.api.gen.inputprocessor.InputProcessor)
            to be used to transform the inputs
     :param input_processor_params: Parameters to be passed to the input processor.
