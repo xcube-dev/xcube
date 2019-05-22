@@ -21,14 +21,10 @@
 
 import click
 
-from xcube import open_from_obs, open_from_fs
-from xcube.api import assert_cube, open_dataset, read_dataset
-from xcube.util.cliutil import parse_cli_kwargs
-from xcube.util.dsio import guess_dataset_format, find_dataset_io
-
 __author__ = "Norman Fomferra (Brockmann Consult GmbH)"
 
 
+# noinspection PyShadowingBuiltins
 @click.command(name='apply', hidden=True)
 @click.argument('output', metavar='<output>')
 @click.argument('script', metavar='<script>')
@@ -86,25 +82,30 @@ def apply(output: str,
     with open(script, "r") as fp:
         code = fp.read()
 
-    locals = dict()
-    exec(code, globals(), locals)
+    locals_dict = dict()
+    exec(code, globals(), locals_dict)
 
     var_names = list(map(lambda s: s.strip(), vars.split(","))) if vars else None
 
-    init_function = locals.get(init_function_name)
+    init_function = locals_dict.get(init_function_name)
     if init_function is not None and not callable(init_function):
         raise click.ClickException(f"{init_function_name!r} in {script} is not a callable")
 
-    apply_function = locals.get(apply_function_name)
+    apply_function = locals_dict.get(apply_function_name)
     if apply_function is None:
         raise click.ClickException(f"missing function {apply_function_name!r} in {script}")
     if not callable(apply_function):
         raise click.ClickException(f"{apply_function!r} in {script} is not a callable")
 
+    from xcube.api import assert_cube, read_dataset
+    from xcube.util.cliutil import parse_cli_kwargs
+    from xcube.util.dsio import guess_dataset_format, find_dataset_io, open_from_obs
+
     kwargs = parse_cli_kwargs(params, "<params>")
     input_cube_0 = None
     input_cubes = []
     for input_path in input_paths:
+        # TODO (forman): move url code into read_dataset()
         if input_path.startswith("http://") or input_path.startswith("https://"):
             import urllib3
             url = urllib3.util.parse_url(input_path)
