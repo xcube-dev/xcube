@@ -19,7 +19,9 @@ class ServerCliTest(CliTest):
         import os
         viewer_path = os.environ.get(VIEWER_ENV_VAR)
 
-        del os.environ[VIEWER_ENV_VAR]
+        if viewer_path is not None:
+            del os.environ[VIEWER_ENV_VAR]
+
         result = self.invoke_cli(["serve", "--show"])
         self.assertEqual(2, result.exit_code)
         self.assertEqual(f'Error: Option "--show" / "-s": In order to run the viewer, '
@@ -35,7 +37,8 @@ class ServerCliTest(CliTest):
                          f'must be a directory: pip/po\n',
                          result.output[-117:])
 
-        os.environ[VIEWER_ENV_VAR] = viewer_path
+        if viewer_path is not None:
+            os.environ[VIEWER_ENV_VAR] = viewer_path
 
     def test_help(self):
         with self.assertRaises(SystemExit):
