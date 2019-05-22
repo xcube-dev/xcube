@@ -1,44 +1,11 @@
 import os
-import unittest
-from abc import ABCMeta
-from typing import List
 
-import click
-import click.testing
 import xarray as xr
 
-from xcube.api.new import new_cube
-from xcube.cli.cli import cli
-from xcube.util.dsio import rimraf
-
-TEST_NC_FILE = "test.nc"
-TEST_ZARR_DIR = "test.zarr"
+from test.cli.helpers import CliDataTest, TEST_NC_FILE, TEST_ZARR_DIR
 
 
-class CliTest(unittest.TestCase, metaclass=ABCMeta):
-
-    def invoke_cli(self, args: List[str]):
-        self.runner = click.testing.CliRunner()
-        return self.runner.invoke(cli, args, catch_exceptions=False)
-
-    def outputs(self) -> List[str]:
-        return []
-
-    def setUp(self):
-        self._rm_outputs()
-        dataset = new_cube(variables=dict(precipitation=0.4, temperature=275.2, soil_moisture=0.5))
-        dataset.to_netcdf(TEST_NC_FILE, mode="w")
-        dataset.to_zarr(TEST_ZARR_DIR, mode="w")
-
-    def tearDown(self):
-        self._rm_outputs()
-
-    def _rm_outputs(self):
-        for path in [TEST_ZARR_DIR, TEST_NC_FILE] + self.outputs():
-            rimraf(path)
-
-
-class DumpTest(CliTest):
+class DumpTest(CliDataTest):
 
     def test_dump_ds(self):
         result = self.invoke_cli(["dump", TEST_NC_FILE])
@@ -72,7 +39,7 @@ class DumpTest(CliTest):
         self.assertEqual(0, result.exit_code)
 
 
-class Vars2DimTest(CliTest):
+class Vars2DimTest(CliDataTest):
     TEST_OUTPUT = "test-vars2dim.zarr"
 
     def outputs(self):
@@ -100,7 +67,7 @@ class Vars2DimTest(CliTest):
         self.assertIn("temperature", str(var_names[2]))
 
 
-class ChunkTest(CliTest):
+class ChunkTest(CliDataTest):
     TEST_OUTPUT = "test-chunked.zarr"
 
     def outputs(self):
@@ -179,7 +146,7 @@ class ChunkTest(CliTest):
         self.assertEqual(1, result.exit_code)
 
 
-class LevelTest(CliTest):
+class LevelTest(CliDataTest):
     TEST_OUTPUT = "test.levels"
 
     def outputs(self):

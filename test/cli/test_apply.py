@@ -3,13 +3,13 @@ from typing import List
 
 import xarray as xr
 
-from test.cli.test_cli import CliTest, TEST_ZARR_DIR
+from test.cli.test_cli import CliDataTest, TEST_ZARR_DIR
 
 INPUT_PATH = TEST_ZARR_DIR
 OUTPUT_PATH = 'output.zarr'
 
 
-class ApplyCliTest(CliTest):
+class ApplyCliTest(CliDataTest):
 
     def outputs(self) -> List[str]:
         return [OUTPUT_PATH]

@@ -47,7 +47,7 @@ def timeit(config: str, repeats: int):
     command_template = config["command"]
     param_names = config["params"]
 
-    param_values = [config[param_name].keys() for param_name in param_names]
+    param_values = [config[param_name] for param_name in param_names]
 
     import numpy as np
     param_values_combinations = list(itertools.product(*param_values))
@@ -105,6 +105,7 @@ def timeit(config: str, repeats: int):
               f"{';'.join(param_names)};"
               f"time")
         for param_combination_index in range(param_combination_count):
+            param_values = param_values_combinations[param_combination_index]
             print(f"{param_combination_index};"
                   f"{';'.join(param_values)};"
                   f"{times[0, param_combination_index]}")

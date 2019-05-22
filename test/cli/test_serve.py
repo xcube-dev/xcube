@@ -1,9 +1,9 @@
 from xcube.cli.serve import VIEWER_ENV_VAR
 from xcube.cli.serve import main
-from .test_cli import CliTest
+from .test_cli import CliDataTest
 
 
-class ServerCliTest(CliTest):
+class ServerCliTest(CliDataTest):
     def test_config(self):
         result = self.invoke_cli(["serve", "--config", "x.yml", "pippo.zarr"])
         self.assertEqual(1, result.exit_code)
