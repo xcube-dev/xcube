@@ -26,7 +26,7 @@ class CliTest(unittest.TestCase, metaclass=ABCMeta):
 
     def setUp(self):
         self._rm_outputs()
-        dataset = new_cube(variables=dict(precipitation=0.4, temperature=275.2))
+        dataset = new_cube(variables=dict(precipitation=0.4, temperature=275.2, soil_moisture=0.5))
         dataset.to_netcdf(TEST_NC_FILE, mode="w")
         dataset.to_zarr(TEST_ZARR_DIR, mode="w")
 
@@ -56,6 +56,7 @@ class DumpTest(CliTest):
             "Data variables:\n"
             "    precipitation  (time, lat, lon) float64 ...\n"
             "    temperature    (time, lat, lon) float64 ...\n"
+            "    soil_moisture  (time, lat, lon) float64 ...\n"
             "Attributes:\n"
             "    Conventions:           CF-1.7\n"
             "    title:                 Test Cube\n"
@@ -86,16 +87,17 @@ class Vars2DimTest(CliTest):
 
         ds = xr.open_zarr(output_path)
         self.assertIn("var", ds.dims)
-        self.assertEqual(2, ds.dims["var"])
+        self.assertEqual(3, ds.dims["var"])
         self.assertIn("var", ds.coords)
         self.assertIn("data", ds.data_vars)
         var_names = ds["var"]
         self.assertEqual(("var",), var_names.dims)
         self.assertTrue(hasattr(var_names, "encoding"))
         self.assertEqual("object", str(var_names.dtype))
-        self.assertEqual(2, len(var_names))
+        self.assertEqual(3, len(var_names))
         self.assertIn("precipitation", str(var_names[0]))
-        self.assertIn("temperature", str(var_names[1]))
+        self.assertIn("soil_moisture", str(var_names[1]))
+        self.assertIn("temperature", str(var_names[2]))
 
 
 class ChunkTest(CliTest):
