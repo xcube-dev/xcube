@@ -1,7 +1,15 @@
 ## Changes in 0.2.0 (in dev)
 
-* Restructured and clarified code base (#27)
-* Moved to Python 3.7 (#25)
+* `xcube serve` can now be run with data cube paths and styling information given via the CLI rather 
+  than a configuration file. For example `xcube serve --styles conc_chl=(0,20,"viridis") /path/to/my/chl-cube.zarr`.
+  This allows for quick inspection of newly generated cubes via `xcube gen`.
+  Also added option `--show` that starts the Xcube viewer on desktop environments in a browser. 
+* Added new `xcube apply` command that can be used to generate an output cube computed from a Python function 
+  that is applied to one or more input cubes. 
+  The command is still in development and therefore hidden.
+* Added new `xcube timeit` command that can be used to measure the time required for 
+  parameterized command invocations. 
+  The command is still in development and therefore hidden.
 * Added global `xcube --scheduler <scheduler>` option for Dask distributed computing (#58)
 * Added global `xcube --traceback` option, removed local `xcube gen --traceback` option
 * Completed version 1 of an xcube developer guide.
@@ -14,6 +22,8 @@
 * Added `xcube serve` option `--traceperf` that allows switching on performance diagnostics.
 * Fixed error in plugins when importing `xcube.api.gen` (#62)
 * Fixed import of plugins only when executing `xcube.cli` (#66)
+* Restructured and clarified code base (#27)
+* Moved to Python 3.7 (#25)
 
 
 ## Changes in 0.1.0

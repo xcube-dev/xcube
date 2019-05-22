@@ -40,7 +40,10 @@ from .im import TileGrid
 from .mldataset import FileStorageMultiLevelDataset, BaseMultiLevelDataset, MultiLevelDataset, \
     ComputedMultiLevelDataset, ObjectStorageMultiLevelDataset
 from .reqparams import RequestParams
+from ..util.dsio import guess_dataset_format, FORMAT_NAME_NETCDF4, FORMAT_NAME_ZARR
 from ..util.perf import measure_time
+
+FORMAT_NAME_LEVELS = 'levels'
 
 COMPUTE_DATASET = 'compute_dataset'
 ALL_PLACES = "all"
@@ -178,6 +181,7 @@ class ServiceContext:
         return ml_dataset.tile_grid
 
     def get_color_mapping(self, ds_id: str, var_name: str):
+        cmap_cbar, cmap_vmin, cmap_vmax = DEFAULT_CMAP_CBAR, DEFAULT_CMAP_VMIN, DEFAULT_CMAP_VMAX
         dataset_descriptor = self.get_dataset_descriptor(ds_id)
         style_name = dataset_descriptor.get('Style', 'default')
         styles = self._config.get('Styles')
@@ -186,6 +190,7 @@ class ServiceContext:
             for s in styles:
                 if style_name == s['Identifier']:
                     style = s
+                    break
             # TODO: check color_mappings is not None
             if style:
                 color_mappings = style.get('ColorMappings')
@@ -193,11 +198,17 @@ class ServiceContext:
                     # TODO: check color_mappings is not None
                     color_mapping = color_mappings.get(var_name)
                     if color_mapping:
-                        cmap_cbar = color_mapping.get('ColorBar', DEFAULT_CMAP_CBAR)
-                        cmap_vmin, cmap_vmax = color_mapping.get('ValueRange', (DEFAULT_CMAP_VMIN, DEFAULT_CMAP_VMAX))
+                        cmap_cbar = color_mapping.get('ColorBar', cmap_cbar)
+                        cmap_vmin, cmap_vmax = color_mapping.get('ValueRange', (cmap_vmin, cmap_vmax))
                         return cmap_cbar, cmap_vmin, cmap_vmax
+            else:
+                ds, var = self.get_dataset_and_variable(ds_id, var_name)
+                cmap_cbar = var.attrs.get('color_bar_name', cmap_cbar)
+                cmap_vmin = var.attrs.get('color_value_min', cmap_vmin)
+                cmap_vmax = var.attrs.get('color_value_max', cmap_vmax)
+
         _LOG.warning(f'color mapping for variable {var_name!r} of dataset {ds_id!r} undefined: using defaults')
-        return DEFAULT_CMAP_CBAR, DEFAULT_CMAP_VMIN, DEFAULT_CMAP_VMAX
+        return cmap_cbar, cmap_vmin, cmap_vmax
 
     def _get_dataset_entry(self, ds_id: str) -> Tuple[MultiLevelDataset, Dict[str, Any]]:
         if ds_id not in self._dataset_cache:
@@ -393,6 +404,12 @@ class ServiceContext:
         return next((dsd for dsd in dataset_descriptors if dsd['Identifier'] == ds_name), None)
 
 
+def guess_cube_format(path: str) -> str:
+    if path.endswith('.levels'):
+        return FORMAT_NAME_LEVELS
+    return guess_dataset_format(path)
+
+
 # noinspection PyUnusedLocal
 def open_ml_dataset_from_object_storage(ctx: ServiceContext,
                                         dataset_descriptor: DatasetDescriptor) -> MultiLevelDataset:
@@ -402,7 +419,7 @@ def open_ml_dataset_from_object_storage(ctx: ServiceContext,
     if not path:
         raise ServiceConfigError(f"Missing 'path' entry in dataset descriptor {ds_id}")
 
-    data_format = dataset_descriptor.get('Format', 'zarr')
+    data_format = dataset_descriptor.get('Format', FORMAT_NAME_ZARR)
 
     s3_client_kwargs = {}
     if 'Endpoint' in dataset_descriptor:
@@ -411,14 +428,14 @@ def open_ml_dataset_from_object_storage(ctx: ServiceContext,
         s3_client_kwargs['region_name'] = dataset_descriptor['Region']
     obs_file_system = s3fs.S3FileSystem(anon=True, client_kwargs=s3_client_kwargs)
 
-    if data_format == 'zarr':
+    if data_format == FORMAT_NAME_ZARR:
         store = s3fs.S3Map(root=path, s3=obs_file_system, check=False)
         cached_store = zarr.LRUStoreCache(store, max_size=2 ** 28)
         with measure_time(tag=f"opened remote zarr dataset {path}"):
             ds = xr.open_zarr(cached_store)
         return BaseMultiLevelDataset(ds)
 
-    if data_format == 'levels':
+    if data_format == FORMAT_NAME_LEVELS:
         with measure_time(tag=f"opened remote levels dataset {path}"):
             return ObjectStorageMultiLevelDataset(ds_id, obs_file_system, path,
                                                   exception_type=ServiceConfigError)
@@ -434,21 +451,23 @@ def open_ml_dataset_from_local_fs(ctx: ServiceContext, dataset_descriptor: Datas
     if not os.path.isabs(path):
         path = os.path.join(ctx.base_dir, path)
 
-    data_format = dataset_descriptor.get('Format', 'nc')
+    data_format = dataset_descriptor.get('Format', guess_cube_format(path))
 
-    if data_format == 'nc':
+    if data_format == FORMAT_NAME_NETCDF4:
         with measure_time(tag=f"opened local NetCDF dataset {path}"):
             ds = xr.open_dataset(path)
             return BaseMultiLevelDataset(ds)
 
-    if data_format == 'zarr':
+    if data_format == FORMAT_NAME_ZARR:
         with measure_time(tag=f"opened local zarr dataset {path}"):
             ds = xr.open_zarr(path)
             return BaseMultiLevelDataset(ds)
 
-    if data_format == 'levels':
+    if data_format == FORMAT_NAME_LEVELS:
         with measure_time(tag=f"opened local levels dataset {path}"):
             return FileStorageMultiLevelDataset(path)
+
+    raise ServiceConfigError(f"Illegal data format {data_format!r} for dataset {ds_id}")
 
 
 def open_ml_dataset_from_python_code(ctx: ServiceContext, dataset_descriptor: DatasetDescriptor) -> MultiLevelDataset:
