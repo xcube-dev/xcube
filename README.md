@@ -560,3 +560,19 @@ in the [demo's HTML file](https://github.com/dcs4cop/xcube-server/blob/master/xc
 * Feature: collect Path entry of any Dataset and observe if the file are modified, if so remove dataset from cache
   to force its reopening.
 
+## Steps to create own Data Cube
+
+In order to create a suitable Data Cube for your needs, there are some questions which need to be aswered before hand. 
+
+1. Find approppriate grid for cube:
+* Which region needs to be covered by the data cube? 
+* At which resolution should the data cube be? 
+
+&rarr; Use `xcube grid` to determine a suitable bounding box which includes the region of interest 
+and is fixed to a global grid. 
+
+2. Decide on variables to be included:
+* Are all variables needed? If not, select the ones to be included.
+* Should specific pixels be masked out based on pixel expressions? 
+
+3. Decide on chunking
