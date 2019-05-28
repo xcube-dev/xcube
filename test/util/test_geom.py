@@ -4,26 +4,7 @@ import numpy as np
 import shapely.geometry
 import xarray as xr
 
-from xcube.webapi.utils import get_dataset_geometry, get_dataset_bounds, get_geometry_mask, \
-    timestamp_to_iso_string
-
-
-class TimestampToIsoStringTest(unittest.TestCase):
-    def test_it_with_default_res(self):
-        self.assertEqual("2018-09-05T00:00:00Z",
-                         timestamp_to_iso_string(np.datetime64("2018-09-05")))
-        self.assertEqual("2018-09-05T10:35:42Z",
-                         timestamp_to_iso_string(np.datetime64("2018-09-05 10:35:42")))
-        self.assertEqual("2018-09-05T10:35:42Z",
-                         timestamp_to_iso_string(np.datetime64("2018-09-05 10:35:42.164")))
-
-    def test_it_with_h_res(self):
-        self.assertEqual("2018-09-05T00:00:00Z",
-                         timestamp_to_iso_string(np.datetime64("2018-09-05"), freq="H"))
-        self.assertEqual("2018-09-05T11:00:00Z",
-                         timestamp_to_iso_string(np.datetime64("2018-09-05 10:35:42"), freq="H"))
-        self.assertEqual("2018-09-05T11:00:00Z",
-                         timestamp_to_iso_string(np.datetime64("2018-09-05 10:35:42.164"), freq="H"))
+from xcube.util.geom import get_dataset_geometry, get_dataset_bounds, get_geometry_mask
 
 
 class GetDatasetGeometryTest(unittest.TestCase):

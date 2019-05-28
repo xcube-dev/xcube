@@ -27,9 +27,11 @@ import xarray as xr
 
 from ..context import ServiceContext
 from ..errors import ServiceBadRequestError
-from ..utils import get_dataset_bounds, GeoJSON, timestamp_to_iso_string
 from ...api import ts
 from ...util.ancvar import find_ancillary_var_names
+from ...util.geojson import GeoJSON
+from ...util.geom import get_dataset_bounds
+from ...util.timecoord import timestamp_to_iso_string
 
 
 def get_time_series_info(ctx: ServiceContext) -> Dict:

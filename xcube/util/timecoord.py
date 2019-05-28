@@ -19,8 +19,10 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-from typing import Tuple
+import datetime
+from typing import Tuple, Union
 
+import numpy as np
 import pandas as pd
 import xarray as xr
 
@@ -64,3 +66,17 @@ def get_time_in_days_since_1970(time_str: str, pattern=None) -> float:
     datetime = pd.to_datetime(time_str, format=pattern, infer_datetime_format=True, utc=True)
     timedelta = datetime - REF_DATETIME
     return timedelta.days + timedelta.seconds / SECONDS_PER_DAY + timedelta.microseconds / MICROSECONDS_PER_DAY
+
+
+def timestamp_to_iso_string(time: Union[np.datetime64, datetime.datetime], freq='S'):
+    """
+    Convert a UTC timestamp given as nanos, millis, seconds, etc. since 1970-01-01 00:00:00
+    to an ISO-format string.
+
+    :param time: UTC timestamp given as time delta since since 1970-01-01 00:00:00 in the units given by
+           the numpy datetime64 type, so it can be as nanos, millis, seconds since 1970-01-01 00:00:00.
+    :param freq: time rounding resolution. See pandas.Timestamp.round().
+    :return: ISO-format string.
+    """
+    # All times are UTC (Z = Zulu Time Zone = UTC)
+    return pd.Timestamp(time).round(freq).isoformat() + 'Z'

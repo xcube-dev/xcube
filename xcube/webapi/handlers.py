@@ -33,7 +33,7 @@ from .controllers.time_series import get_time_series_info, get_time_series_for_p
 from .controllers.wmts import get_wmts_capabilities_xml
 from .errors import ServiceBadRequestError
 from .service import ServiceRequestHandler
-from .utils import timestamp_to_iso_string
+from ..util.timecoord import timestamp_to_iso_string
 
 __author__ = "Norman Fomferra (Brockmann Consult GmbH)"
 

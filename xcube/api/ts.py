@@ -26,8 +26,8 @@ import shapely.geometry
 import xarray as xr
 
 from ..api.select import select_vars
-from ..util.geomask import where_geometry
-from ..webapi.utils import get_dataset_geometry, GeoJSON
+from ..util.geojson import GeoJSON
+from ..util.geom import where_geometry, get_dataset_geometry
 
 
 def get_time_series_for_point(dataset: xr.Dataset,
@@ -73,13 +73,16 @@ def get_time_series_for_geometry(dataset: xr.Dataset,
                                          var_names=var_names,
                                          start_date=start_date, end_date=end_date)
 
+    dataset = select_vars(dataset, var_names)
+    if len(dataset.data_vars) == 0:
+        return None
+
     if start_date is not None or end_date is not None:
         # noinspection PyTypeChecker
         dataset = dataset.sel(time=slice(start_date, end_date))
 
     dataset = where_geometry(dataset,
                              geometry,
-                             var_names=var_names,
                              mask_var_name='__mask__')
     if dataset is None:
         return None
