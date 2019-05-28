@@ -60,6 +60,8 @@ def get_time_series_for_geometry(dataset: xr.Dataset,
                                  geometry: Union[shapely.geometry.base.BaseGeometry, Dict[str, Any]],
                                  var_names: Sequence[str] = None,
                                  use_groupby: bool = False,
+                                 include_count: bool = False,
+                                 include_stdev: bool = False,
                                  start_date: np.datetime64 = None,
                                  end_date: np.datetime64 = None) -> Optional[xr.Dataset]:
     if isinstance(geometry, dict):
@@ -90,19 +92,35 @@ def get_time_series_for_geometry(dataset: xr.Dataset,
     mask = dataset['__mask__']
     dataset = dataset.drop('__mask__')
 
+    ds_count = None
+    ds_stdev = None
     if use_groupby:
         time_group = dataset.groupby('time')
         ds_mean = time_group.mean()
-        ds_stdev = time_group.std()
-        ds_count = time_group.count()
+        if include_count:
+            ds_count = time_group.count()
+        if include_stdev:
+            ds_stdev = time_group.std()
     else:
         ds_mean = dataset.mean(dim=('lat', 'lon'))
-        ds_stdev = dataset.std(dim=('lat', 'lon'))
-        ds_count = dataset.count(dim=('lat', 'lon'))
+        if include_count:
+            ds_count = dataset.count(dim=('lat', 'lon'))
+        if include_stdev:
+            ds_stdev = dataset.std(dim=('lat', 'lon'))
 
-    ds_stdev = ds_stdev.rename(name_dict=dict({v: f"{v}_stdev" for v in ds_stdev.data_vars}))
-    ds_count = ds_count.rename(name_dict=dict({v: f"{v}_count" for v in ds_count.data_vars}))
-    dataset = xr.merge([ds_mean, ds_stdev, ds_count])
+    if ds_count is not None:
+        ds_count = ds_count.rename(name_dict=dict({v: f"{v}_count" for v in ds_count.data_vars}))
+
+    if ds_stdev is not None:
+        ds_stdev = ds_stdev.rename(name_dict=dict({v: f"{v}_stdev" for v in ds_stdev.data_vars}))
+
+    if ds_count is not None and ds_stdev is not None:
+        dataset = xr.merge([ds_mean, ds_stdev, ds_count])
+    elif ds_count is not None:
+        dataset = xr.merge([ds_mean, ds_count])
+    elif ds_stdev is not None:
+        dataset = xr.merge([ds_mean, ds_stdev])
+
     dataset = dataset.assign_attrs(max_number_of_observations=np.count_nonzero(mask))
 
     return dataset

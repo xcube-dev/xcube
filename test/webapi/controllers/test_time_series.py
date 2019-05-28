@@ -81,28 +81,17 @@ class TimeSeriesControllerTest(unittest.TestCase):
         expected_dict = {'results': [{'date': '2017-01-16T10:09:22Z',
                                       'result': {'average': 56.0228561816751,
                                                  'totalCount': 1,
-                                                 'uncertainty': 40.79473102254294,
                                                  'validCount': 122738}},
                                      {'date': '2017-01-25T09:35:51Z',
-                                      'result': {'average': None,
-                                                 'totalCount': 1,
-                                                 'uncertainty': None,
-                                                 'validCount': 0}},
+                                      'result': {'average': None, 'totalCount': 1, 'validCount': 0}},
                                      {'date': '2017-01-26T10:50:17Z',
-                                      'result': {'average': None,
-                                                 'totalCount': 1,
-                                                 'uncertainty': None,
-                                                 'validCount': 0}},
+                                      'result': {'average': None, 'totalCount': 1, 'validCount': 0}},
                                      {'date': '2017-01-28T09:58:11Z',
                                       'result': {'average': 49.71656646340396,
                                                  'totalCount': 1,
-                                                 'uncertainty': 34.99514822745371,
                                                  'validCount': 132716}},
                                      {'date': '2017-01-30T10:46:34Z',
-                                      'result': {'average': None,
-                                                 'totalCount': 1,
-                                                 'uncertainty': None,
-                                                 'validCount': 0}}]}
+                                      'result': {'average': None, 'totalCount': 1, 'validCount': 0}}]}
 
         self.assertEqual(expected_dict, time_series)
 
@@ -139,28 +128,17 @@ class TimeSeriesControllerTest(unittest.TestCase):
         expected_dict = {'results': [[{'date': '2017-01-16T10:09:22Z',
                                        'result': {'average': 56.0228561816751,
                                                   'totalCount': 1,
-                                                  'uncertainty': 40.79473102254294,
                                                   'validCount': 122738}},
                                       {'date': '2017-01-25T09:35:51Z',
-                                       'result': {'average': None,
-                                                  'totalCount': 1,
-                                                  'uncertainty': None,
-                                                  'validCount': 0}},
+                                       'result': {'average': None, 'totalCount': 1, 'validCount': 0}},
                                       {'date': '2017-01-26T10:50:17Z',
-                                       'result': {'average': None,
-                                                  'totalCount': 1,
-                                                  'uncertainty': None,
-                                                  'validCount': 0}},
+                                       'result': {'average': None, 'totalCount': 1, 'validCount': 0}},
                                       {'date': '2017-01-28T09:58:11Z',
                                        'result': {'average': 49.71656646340396,
                                                   'totalCount': 1,
-                                                  'uncertainty': 34.99514822745371,
                                                   'validCount': 132716}},
                                       {'date': '2017-01-30T10:46:34Z',
-                                       'result': {'average': None,
-                                                  'totalCount': 1,
-                                                  'uncertainty': None,
-                                                  'validCount': 0}}]]}
+                                       'result': {'average': None, 'totalCount': 1, 'validCount': 0}}]]}
 
         self.assertEqual(expected_dict, time_series)
 

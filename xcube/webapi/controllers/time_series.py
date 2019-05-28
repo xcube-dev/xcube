@@ -152,6 +152,8 @@ def _get_time_series_for_geometry(dataset: xr.Dataset,
                                           start_date=start_date, end_date=end_date)
 
     ts_ds = ts.get_time_series_for_geometry(dataset, geometry, [var_name],
+                                            include_count=True,
+                                            include_stdev=False,
                                             start_date=start_date, end_date=end_date)
     if ts_ds is None:
         return {'results': []}

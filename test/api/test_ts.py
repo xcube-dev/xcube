@@ -45,6 +45,8 @@ class TsTest(unittest.TestCase):
                                                                 [10.0, 20.0],
                                                                 [10.0, 10.0],
                                                                 [20.0, 10.0]]]),
+                                             include_count=True,
+                                             include_stdev=True,
                                              use_groupby=False)
         self.assertIsNotNone(ts_ds)
         self.assertIn('A', ts_ds)
@@ -70,6 +72,8 @@ class TsTest(unittest.TestCase):
                                                                 [10.0, 20.0],
                                                                 [10.0, 10.0],
                                                                 [20.0, 10.0]]]),
+                                             include_count=True,
+                                             include_stdev=True,
                                              use_groupby=True)
         self.assertIsNotNone(ts_ds)
         self.assertIn('A', ts_ds)
