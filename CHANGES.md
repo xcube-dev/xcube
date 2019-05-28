@@ -25,6 +25,7 @@
 * Included possibility to read the input file paths from a text file. (#47)
 * Restructured and clarified code base (#27)
 * Moved to Python 3.7 (#25)
+* Excluding all input processors except for the default one. They are now own repositories within the DCS4COP organisation. (#49)
 
 ## Changes in 0.1.0
 

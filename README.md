@@ -191,10 +191,9 @@ Is used to generate data cubes.
 
     Options:
       -p, --proc INPUT_PROCESSOR      Input processor type name. The choices as
-                                      input processor are: [].  Additional
-                                      information about input processors can be
-                                      accessed by calling xcube generate_cube
-                                      --info
+                                      input processor and additional information
+                                      about input processors  can be accessed by
+                                      calling xcube gen --info .
       -c, --config CONFIG_FILE        Data cube configuration file in YAML format.
                                       More than one config input file is
                                       allowed.When passing several config files,
@@ -238,11 +237,8 @@ Is used to generate data cubes.
     $ xcube gen --info
     input processors to be used with option --proc:
       default                           Single-scene NetCDF/CF inputs in xcube standard format
-      rbins-seviri-highroc-scene-l2     RBINS SEVIRI HIGHROC single-scene Level-2 NetCDF inputs
-      rbins-seviri-highroc-daily-l2     RBINS SEVIRI HIGHROC daily Level-2 NetCDF inputs
-      snap-olci-highroc-l2              SNAP Sentinel-3 OLCI HIGHROC Level-2 NetCDF inputs
-      snap-olci-cyanoalert-l2           SNAP Sentinel-3 OLCI CyanoAlert Level-2 NetCDF inputs
-      vito-s2plus-l2                    VITO Sentinel-2 Plus Level 2 NetCDF inputs
+
+    For more input processors use existing "xcube-gen-..." plugins from the github organisation DCS4COP or write own plugin.
     
     
     output formats to be used with option --format:
@@ -254,7 +250,12 @@ Is used to generate data cubes.
 
 Example:
 
-    $ xcube gen -a -s 2000,1000 -r 0,50,5,52.5 -v conc_chl,conc_tsm,kd489,c2rcc_flags,quality_flags -n hiroc-cube -t snap-c2rcc D:\OneDrive\BC\EOData\HIGHROC\2017\01\*.nc
+    $ xcube gen -a -s 2000,1000 -r 0,50,5,52.5 -v conc_chl,conc_tsm,kd489,c2rcc_flags,quality_flags -n hiroc-cube -t -p default D:\OneDrive\BC\EOData\HIGHROC\2017\01\*.nc
+
+Available xcube input processors within the DCS4COP organisation:
+* [xcube-gen-rbins](https://github.com/dcs4cop/xcube-gen-rbins)
+* [xcube-gen-bc](https://github.com/dcs4cop/xcube-gen-bc)
+* [xcube-gen-vito](https://github.com/dcs4cop/xcube-gen-vito)
 
 
 ## `xcube grid`
