@@ -2,6 +2,8 @@ import os
 import unittest
 import xarray as xr
 import numpy as np
+
+from xcube.api.gen.config import get_config_dict
 from xcube.util.dsio import rimraf
 from xcube.api.gen.gen import gen_cube
 from .helpers import get_inputdata_path
@@ -12,6 +14,7 @@ def clean_up():
     for file in files:
         rimraf(os.path.join('.', file))
         rimraf(os.path.join('.', file + 'temp.nc'))
+    rimraf(get_inputdata_path("input.txt"))
 
 
 class DefaultProcessTest(unittest.TestCase):
@@ -33,7 +36,6 @@ class DefaultProcessTest(unittest.TestCase):
         self.assertEqual(os.path.join('.', 'l2c-single.nc'), path)
 
     def test_process_inputs_append_multiple_nc(self):
-        # FIXME: this test still fails
         path, status = process_inputs_wrapper(
             input_files=[get_inputdata_path('201701??-IFR-L4_GHRSST-SSTfnd-ODYSSEA-NWE_002-v2.0-fv1.0.nc')],
             output_name='l2c',
@@ -45,6 +47,21 @@ class DefaultProcessTest(unittest.TestCase):
     def test_process_inputs_append_multiple_zarr(self):
         path, status = process_inputs_wrapper(
             input_files=[get_inputdata_path('201701??-IFR-L4_GHRSST-SSTfnd-ODYSSEA-NWE_002-v2.0-fv1.0.nc')],
+            output_name='l2c',
+            output_writer='zarr',
+            append_mode=True)
+        self.assertEqual(True, status)
+        self.assertEqual(os.path.join('.', 'l2c.zarr'), path)
+
+    def test_input_txt(self):
+        f = open((os.path.join(os.path.dirname(__file__), 'inputdata', "input.txt")), "w+")
+        for i in range(1, 4):
+            file_name = "2017010" + str(i) + "-IFR-L4_GHRSST-SSTfnd-ODYSSEA-NWE_002-v2.0-fv1.0.nc"
+            file = get_inputdata_path(file_name)
+            f.write("%s\n" % file)
+        f.close()
+        path, status = process_inputs_wrapper(
+            input_files=[get_inputdata_path('input.txt')],
             output_name='l2c',
             output_writer='zarr',
             append_mode=True)
@@ -68,18 +85,16 @@ def process_inputs_wrapper(input_files=None,
                            output_name=None,
                            output_writer='netcdf4',
                            append_mode=False):
-    return gen_cube(input_files=input_files,
-                    input_processor='default',
+    config = get_config_dict(locals())
+    return gen_cube(input_processor='default',
                     output_size=(320, 180),
                     output_region=(-4., 47., 12., 56.),
                     output_resampling='Nearest',
                     output_variables=[('analysed_sst', dict(name='SST'))],
                     output_dir='.',
-                    output_name=output_name,
-                    output_writer=output_writer,
-                    append_mode=append_mode,
                     dry_run=False,
-                    monitor=None)
+                    monitor=None,
+                    **config)
 
 
 def _check_output_for_360(output):

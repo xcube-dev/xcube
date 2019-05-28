@@ -1,22 +1,13 @@
-import unittest
-from typing import List
-import click
-import click.testing
-
-from xcube.cli.gen import gen as cli
+from test.cli.helpers import CliDataTest, CliTest
 
 
-class CliTest(unittest.TestCase):
-
-    @classmethod
-    def invoke_cli(cls, args: List[str]):
-        runner = click.testing.CliRunner()
-        return runner.invoke(cli, args)
+class GenCliTest(CliTest):
 
     def test_help_option(self):
-        result = self.invoke_cli(['time_irregular', '--help'])
+        result = self.invoke_cli(['gen', 'time_irregular', '--help'])
         self.assertEqual(0, result.exit_code)
 
+    # TODO (Alicja): reactive following tests
     # # This test fails, although an error is thrown - and then the click packages changes it into 0.
     # def test_missing_args(self):
     #     result = self.invoke_cli([])
@@ -50,5 +41,5 @@ class CliTest(unittest.TestCase):
     #     self.assertEqual(1, result.exit_code)
 
     def test_info_true(self):
-        result = self.invoke_cli(['--info'])
+        result = self.invoke_cli(['gen', '--info'])
         self.assertEqual(0, result.exit_code)

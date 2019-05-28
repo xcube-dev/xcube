@@ -43,8 +43,10 @@ def get_config_dict(config_obj: Dict[str, Union[str, bool, int, float, list, dic
     output_region = config_obj.get("output_region")
     output_variables = config_obj.get("output_variables")
     output_resampling = config_obj.get("output_resampling")
+    append_mode = config_obj.get("append_mode")
+    sort_mode = config_obj.get("sort_mode")
 
-    if len(config_file) == 0:
+    if config_file is None or len(config_file) == 0:
         config = {}
     else:
         config_paths = config_file
@@ -63,8 +65,13 @@ def get_config_dict(config_obj: Dict[str, Union[str, bool, int, float, list, dic
         config = merge_config(*config_dicts)
 
     # Overwrite current configuration by cli arguments
-    if input_files is not None:
-        config['input_files'] = input_files
+    if input_files is not None and config.get('input_files') is None:
+        if len(input_files) == 1 and input_files[0].endswith(".txt"):
+            with open(input_files[0]) as input_txt:
+                input_paths = input_txt.readlines()
+            config['input_files'] = [x.strip() for x in input_paths]
+        else:
+            config['input_files'] = input_files
 
     if input_processor is not None:
         config['input_processor'] = input_processor
@@ -111,6 +118,12 @@ def get_config_dict(config_obj: Dict[str, Union[str, bool, int, float, list, dic
         if any([var_name == '' for var_name in output_variables]):
             raise ValueError('all names in output_variables must be non-empty')
         config['output_variables'] = output_variables
+
+    if append_mode is not None and config.get('append_mode') is None:
+        config['append_mode'] = append_mode
+
+    if sort_mode is not None and config.get('sort_mode') is None:
+        config['sort_mode'] = sort_mode
 
     processed_variables = config.get('processed_variables')
     if processed_variables:
