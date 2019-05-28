@@ -22,9 +22,9 @@
 * Added `xcube serve` option `--traceperf` that allows switching on performance diagnostics.
 * Fixed error in plugins when importing `xcube.api.gen` (#62)
 * Fixed import of plugins only when executing `xcube.cli` (#66)
+* Included possibility to read the input file paths from a text file. (#47)
 * Restructured and clarified code base (#27)
 * Moved to Python 3.7 (#25)
-
 
 ## Changes in 0.1.0
 
