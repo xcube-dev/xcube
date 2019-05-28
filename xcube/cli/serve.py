@@ -22,17 +22,16 @@ from typing import List
 
 import click
 
-from xcube.util.cliutil import parse_cli_kwargs
-from xcube.webapi import __version__, __description__
 from xcube.webapi.defaults import DEFAULT_PORT, DEFAULT_NAME, DEFAULT_ADDRESS, DEFAULT_UPDATE_PERIOD, \
     DEFAULT_TILE_CACHE_SIZE, DEFAULT_TILE_COMP_MODE
 
 __author__ = "Norman Fomferra (Brockmann Consult GmbH)"
 
+VIEWER_ENV_VAR = 'XCUBE_VIEWER_PATH'
+
 
 @click.command(name='serve')
 @click.argument('cubes', metavar='CUBE...', nargs=-1)
-@click.version_option(__version__)
 @click.option('--name', '-n', metavar='NAME', default=DEFAULT_NAME,
               help=f'Service name. Defaults to {DEFAULT_NAME!r}.')
 @click.option('--address', '-a', metavar='ADDRESS', default=DEFAULT_ADDRESS,
@@ -61,6 +60,10 @@ __author__ = "Norman Fomferra (Brockmann Consult GmbH)"
               help='Tile computation mode. '
                    'This is an internal option used to switch between different tile computation implementations. '
                    f'Defaults to {DEFAULT_TILE_COMP_MODE!r}.')
+@click.option('--show', '-s', is_flag=True,
+              help=f"Run viewer app. Requires setting the environment variable {VIEWER_ENV_VAR} "
+                   f"to a valid xcube-viewer deployment or build directory. "
+                   f"Refer to https://github.com/dcs4cop/xcube-viewer for more information.")
 @click.option('--verbose', '-v', is_flag=True,
               help="Delegate logging to the console (stderr).")
 @click.option('--traceperf', is_flag=True,
@@ -74,6 +77,7 @@ def serve(cubes: List[str],
           config: str,
           tilecache: str,
           tilemode: int,
+          show: bool,
           verbose: bool,
           traceperf: bool):
     """
@@ -83,14 +87,21 @@ def serve(cubes: List[str],
     The RESTful API documentation can be found at https://app.swaggerhub.com/apis/bcdev/xcube-server.
     """
 
+    from xcube.util.cliutil import parse_cli_kwargs
+
     if config and cubes:
         raise click.ClickException("CONFIG and CUBES cannot be used at the same time.")
     if styles:
         styles = parse_cli_kwargs(styles, "STYLES")
+
+    from xcube.webapi import __version__, __description__
+    print(f'{__description__}, version {__version__}')
+
+    if show:
+        _run_viewer()
+
     from xcube.webapi.app import new_application
     from xcube.webapi.service import Service
-
-    print(f'{__description__}, version {__version__}')
     service = Service(new_application(name),
                       name=name,
                       port=port,
@@ -103,8 +114,39 @@ def serve(cubes: List[str],
                       update_period=update,
                       log_to_stderr=verbose,
                       trace_perf=traceperf)
+
     service.start()
     return 0
+
+
+def _run_viewer():
+    import subprocess
+    import threading
+    import webbrowser
+    import os
+
+    viewer_dir = os.environ.get(VIEWER_ENV_VAR)
+
+    if viewer_dir is None:
+        raise click.UsageError('Option "--show" / "-s": '
+                               f"In order to run the viewer, "
+                               f"set environment variable {VIEWER_ENV_VAR} "
+                               f"to a valid xcube-viewer deployment or build directory.")
+
+    if not os.path.isdir(viewer_dir):
+        raise click.UsageError('Option "--show" / "-s": '
+                               f"Viewer path set by environment variable {VIEWER_ENV_VAR} "
+                               f"must be a directory: " + viewer_dir)
+
+    def _run():
+        print("starting web server...")
+        with subprocess.Popen(['python', '-m', 'http.server', '--directory', viewer_dir],
+                              stdout=subprocess.PIPE,
+                              stderr=subprocess.PIPE):
+            print("opening viewer...")
+            webbrowser.open("http://localhost:8000/index.html")
+
+    threading.Thread(target=_run, name="xcube-viewer-runner").start()
 
 
 def main(args=None):
