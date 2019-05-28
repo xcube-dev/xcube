@@ -77,9 +77,6 @@ setup(
         ],
         'xcube_plugins': [
             'xcube_genl2c_default = xcube.api.gen.default:init_plugin',
-            'xcube_genl2c_snap = xcube.api.gen.snap:init_plugin',
-            'xcube_genl2c_rbins = xcube.api.gen.rbins:init_plugin',
-            'xcube_genl2c_vito = xcube.api.gen.vito:init_plugin',
         ],
     },
     install_requires=requirements,
