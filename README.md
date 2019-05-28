@@ -13,13 +13,15 @@ Data cubes with [xarray](http://xarray.pydata.org/).
 - [Docker](#docker)
 - [Tools](#tools)
   - [`xcube` Command Line Interface](#xcube-command-line-interface)
-  - [`xcube gen`](#xcube-gen)
-  - [`xcube serve`](#xcube-serve)
-  - [`xcube dump`](#xcube-dump)
   - [`xcube chunk`](#xcube-chunk)
+  - [`xcube dump`](#xcube-dump)
+  - [`xcube extract`](#xcube-extract)
+  - [`xcube gen`](#xcube-gen)
   - [`xcube grid`](#xcube-grid)
   - [`xcube level`](#xcube-level)
-  - [`xcube extract`](#xcube-extract)
+  - [`xcube serve`](#xcube-serve)
+  - [`xcube vars2dim`](#xcube-vars2dim)
+- [Steps to create of Data Cube](#steps-to-create-own-data-cube)
 
 # Installation
 
@@ -560,11 +562,11 @@ in the [demo's HTML file](https://github.com/dcs4cop/xcube-server/blob/master/xc
 * Feature: collect Path entry of any Dataset and observe if the file are modified, if so remove dataset from cache
   to force its reopening.
 
-## Steps to create own Data Cube
+# Steps to create own Data Cube
 
-In order to create a suitable Data Cube for your needs, there are some questions which need to be aswered before hand. 
+In order to create a suitable Data Cube for your needs, there are some questions which need to be answered before hand. 
 
-1. Find approppriate grid for cube:
+1. Find appropriate grid for cube:
     * Which region needs to be covered by the data cube? 
     * At which resolution should the data cube be? 
 
@@ -581,9 +583,23 @@ In order to create a suitable Data Cube for your needs, there are some questions
     &rarr; This website might be helpful when deciding about the chunk sizes:  https://docs.dask.org/en/latest/array-chunks.html
 
 4. Decide on the Data Cube output name and output path.
+
+5. For creating a growing Data Cube with each input file, select the append mode. 
     
-5. Use configuration file for generating your Data Cube:
-    * You might not want to place all settingings for your data cube within the command line, 
+6. Use configuration file for generating your Data Cube:
+    * You might not want to place all settings for your data cube within the command line, 
     you could use the parameter `-c, --config` and pass the above settings within a yaml-file. 
     Example for a configuration file: [dcs4cop-config.yml](examples/dcs4cop-config.yml)
-       
+      
+    * The parameter, which can be used within the configuration file are: 
+        * input_files
+        * input_processor 
+        * output_dir 
+        * output_name 
+        * output_writer
+        * output_size 
+        * output_region 
+        * output_variables
+        * output_resampling 
+        * append_mode 
+        * sort_mode 

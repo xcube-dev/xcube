@@ -120,10 +120,8 @@ def gen(input_files: str,
 
     config = get_config_dict(locals())
 
-    gen_cube(append_mode=append_mode,
-             dry_run=dry_run,
+    gen_cube(dry_run=dry_run,
              monitor=print,
-             sort_mode=sort_mode,
              **config)
 
     return 0
