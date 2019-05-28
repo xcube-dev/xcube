@@ -23,7 +23,7 @@ import glob
 import logging
 import os
 import threading
-from typing import Any, Dict, List, Optional, Tuple, Callable
+from typing import Any, Dict, List, Optional, Tuple, Callable, Collection
 
 import fiona
 import numpy as np
@@ -150,9 +150,14 @@ class ServiceContext:
         ml_dataset, _ = self._get_dataset_entry(ds_id)
         return ml_dataset
 
-    def get_dataset(self, ds_id: str) -> xr.Dataset:
+    def get_dataset(self, ds_id: str, var_names: Collection[str] = None) -> xr.Dataset:
         ml_dataset, _ = self._get_dataset_entry(ds_id)
-        return ml_dataset.base_dataset
+        dataset = ml_dataset.base_dataset
+        if var_names:
+            for var_name in var_names:
+                if var_name not in dataset:
+                    raise ServiceResourceNotFoundError(f'Variable "{var_name}" not found in dataset "{ds_id}"')
+        return dataset
 
     def get_variable_for_z(self, ds_id: str, var_name: str, z_index: int) -> xr.DataArray:
         ml_dataset = self.get_ml_dataset(ds_id)

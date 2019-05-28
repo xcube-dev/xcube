@@ -7,6 +7,22 @@ from .helpers import new_test_service_context
 
 
 class ServiceContextTest(unittest.TestCase):
+    def test_get_dataset_and_variable(self):
+        ctx = new_test_service_context()
+
+        ds = ctx.get_dataset('demo')
+        self.assertIsInstance(ds, xr.Dataset)
+
+        with self.assertRaises(ServiceResourceNotFoundError) as cm:
+            ctx.get_dataset('demox')
+        self.assertEqual(404, cm.exception.status_code)
+        self.assertEqual('Dataset "demox" not found', cm.exception.reason)
+
+        with self.assertRaises(ServiceResourceNotFoundError) as cm:
+            ctx.get_dataset('demo', ['conc_ys'])
+        self.assertEqual(404, cm.exception.status_code)
+        self.assertEqual('Variable "conc_ys" not found in dataset "demo"', cm.exception.reason)
+
     def test_config_and_dataset_cache(self):
         ctx = new_test_service_context()
         self.assertNotIn('demo', ctx.dataset_cache)
