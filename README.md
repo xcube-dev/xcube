@@ -565,14 +565,25 @@ in the [demo's HTML file](https://github.com/dcs4cop/xcube-server/blob/master/xc
 In order to create a suitable Data Cube for your needs, there are some questions which need to be aswered before hand. 
 
 1. Find approppriate grid for cube:
-* Which region needs to be covered by the data cube? 
-* At which resolution should the data cube be? 
+    * Which region needs to be covered by the data cube? 
+    * At which resolution should the data cube be? 
 
-&rarr; Use `xcube grid` to determine a suitable bounding box which includes the region of interest 
-and is fixed to a global grid. 
+    &rarr; Use `xcube grid` to determine a suitable bounding box which includes the region of interest 
+    and is fixed to a global grid. 
 
 2. Decide on variables to be included:
-* Are all variables needed? If not, select the ones to be included.
-* Should specific pixels be masked out based on pixel expressions? 
+    * Are all variables needed? If not, select the ones to be included.
+    * Should specific pixels be masked out based on pixel expressions? 
 
-3. Decide on chunking
+3. Decide on chunking:
+    * The chunking should depend on your needs
+
+    &rarr; This website might be helpful when deciding about the chunk sizes:  https://docs.dask.org/en/latest/array-chunks.html
+
+4. Decide on the Data Cube output name and output path.
+    
+5. Use configuration file for generating your Data Cube:
+    * You might not want to place all settingings for your data cube within the command line, 
+    you could use the parameter `-c, --config` and pass the above settings within a yaml-file. 
+    Example for a configuration file: [dcs4cop-config.yml](examples/dcs4cop-config.yml)
+       
