@@ -19,7 +19,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-from typing import Optional, Union, Dict, Tuple
+from typing import Optional, Union, Dict, Tuple, Sequence, Any
 
 import affine
 import math
@@ -27,15 +27,20 @@ import numpy as np
 import rasterio.features
 import shapely.geometry
 import shapely.geometry
+import shapely.wkt
 import xarray as xr
 
+from xcube.util.geojson import GeoJSON
+
+Geometry = Union[shapely.geometry.base.BaseGeometry, Dict[str, Any], str, Sequence[Union[float, int]]]
 Bounds = Tuple[float, float, float, float]
 SplitBounds = Tuple[Bounds, Optional[Bounds]]
 
 
 def where_geometry(dataset: xr.Dataset,
-                   geometry: shapely.geometry.base.BaseGeometry,
+                   geometry: Geometry,
                    mask_var_name: str = None) -> Optional[xr.Dataset]:
+    geometry = convert_geometry(geometry)
     ds_lon_min, ds_lat_min, ds_lon_max, ds_lat_max = get_dataset_bounds(dataset)
     inv_y = float(dataset.lat[0]) < float(dataset.lat[-1])
     dataset_geometry = get_box_split_bounds_geometry(ds_lon_min, ds_lat_min, ds_lon_max, ds_lat_max)
@@ -75,8 +80,9 @@ def where_geometry(dataset: xr.Dataset,
 
 
 def get_geometry_mask(width: int, height: int,
-                      geometry: Union[shapely.geometry.base.BaseGeometry, Dict],
+                      geometry: Geometry,
                       lon_min: float, lat_min: float, res: float) -> np.ndarray:
+    geometry = convert_geometry(geometry)
     # noinspection PyTypeChecker
     transform = affine.Affine(res, 0.0, lon_min,
                               0.0, -res, lat_min + res * height)
@@ -143,6 +149,39 @@ def get_box_split_bounds_geometry(lon_min: float, lat_min: float,
         return shapely.geometry.MultiPolygon(polygons=[shapely.geometry.box(*box_1), shapely.geometry.box(*box_2)])
     else:
         return shapely.geometry.box(*box_1)
+
+
+def convert_geometry(geometry: Optional[Geometry]) -> Optional[shapely.geometry.base.BaseGeometry]:
+    if isinstance(geometry, shapely.geometry.base.BaseGeometry):
+        return geometry
+
+    if isinstance(geometry, dict):
+        if not GeoJSON.is_geometry(geometry):
+            raise ValueError("Invalid GeoJSON geometry")
+        return shapely.geometry.shape(geometry)
+
+    if isinstance(geometry, str):
+        return shapely.wkt.loads(geometry)
+
+    if geometry is None:
+        return None
+
+    # noinspection PyBroadException
+    try:
+        x1, y1, x2, y2 = geometry
+        return shapely.geometry.shape(dict(type='Polygon',
+                                           coordinates=[[[x1, y1], [x2, y1], [x2, y2], [x1, y2], [x1, y1]]]))
+    except Exception:
+        # noinspection PyBroadException
+        try:
+            x, y = geometry
+            return shapely.geometry.shape(dict(type='Point', coordinates=[x, y]))
+        except Exception:
+            pass
+
+    raise ValueError(
+        'geometry must be either a geometry object, a valid GeoJSON object, a valid WKT string, '
+        'box coordinates (x1, y1, x2, y2), or point coordinates (x, y)')
 
 
 def _clamp(x, x1, x2):

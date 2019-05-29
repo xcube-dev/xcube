@@ -4,7 +4,7 @@ import numpy as np
 import xarray as xr
 
 from xcube.api import new_cube
-from xcube.api.ts import get_time_series_for_point, get_time_series_for_geometry
+from xcube.api.ts import get_time_series
 
 
 class TsTest(unittest.TestCase):
@@ -23,8 +23,7 @@ class TsTest(unittest.TestCase):
         self._cube = self._cube.chunk(chunks=dict(time=1, lat=180, lon=180))
 
     def test_point(self):
-        ts_ds = get_time_series_for_point(self._cube, dict(type='Point', coordinates=[20.0, 10.0]))
-
+        ts_ds = get_time_series(self._cube, dict(type='Point', coordinates=[20.0, 10.0]))
         self.assertIsNotNone(ts_ds)
         self.assertIn('A', ts_ds)
         self.assertIn('B', ts_ds)
@@ -38,16 +37,16 @@ class TsTest(unittest.TestCase):
                                        ts_ds.A.values)
 
     def test_polygon(self):
-        ts_ds = get_time_series_for_geometry(self._cube,
-                                             dict(type='Polygon',
-                                                  coordinates=[[[20.0, 10.0],
-                                                                [20.0, 20.0],
-                                                                [10.0, 20.0],
-                                                                [10.0, 10.0],
-                                                                [20.0, 10.0]]]),
-                                             include_count=True,
-                                             include_stdev=True,
-                                             use_groupby=False)
+        ts_ds = get_time_series(self._cube,
+                                dict(type='Polygon',
+                                     coordinates=[[[20.0, 10.0],
+                                                   [20.0, 20.0],
+                                                   [10.0, 20.0],
+                                                   [10.0, 10.0],
+                                                   [20.0, 10.0]]]),
+                                include_count=True,
+                                include_stdev=True,
+                                use_groupby=False)
         self.assertIsNotNone(ts_ds)
         self.assertIn('A', ts_ds)
         self.assertIn('B', ts_ds)
@@ -65,16 +64,16 @@ class TsTest(unittest.TestCase):
                                        ts_ds.A.values)
 
     def test_polygon_using_groupby(self):
-        ts_ds = get_time_series_for_geometry(self._cube,
-                                             dict(type='Polygon',
-                                                  coordinates=[[[20.0, 10.0],
-                                                                [20.0, 20.0],
-                                                                [10.0, 20.0],
-                                                                [10.0, 10.0],
-                                                                [20.0, 10.0]]]),
-                                             include_count=True,
-                                             include_stdev=True,
-                                             use_groupby=True)
+        ts_ds = get_time_series(self._cube,
+                                dict(type='Polygon',
+                                     coordinates=[[[20.0, 10.0],
+                                                   [20.0, 20.0],
+                                                   [10.0, 20.0],
+                                                   [10.0, 10.0],
+                                                   [20.0, 10.0]]]),
+                                include_count=True,
+                                include_stdev=True,
+                                use_groupby=True)
         self.assertIsNotNone(ts_ds)
         self.assertIn('A', ts_ds)
         self.assertIn('B', ts_ds)
