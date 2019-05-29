@@ -41,7 +41,8 @@ resampling_algs = NAME_TO_GDAL_RESAMPLE_ALG.keys()
 @click.option('--proc', '-p', metavar='INPUT_PROCESSOR', type=click.Choice(input_processor_names),
               help=f'Input processor type name. '
               f'The choices as input processor and additional information about input processors '
-              ' can be accessed by calling xcube gen --info .')
+              ' can be accessed by calling xcube gen --info . Defaults to "default" - the default input processor '
+              'that can deal with most common datasets conforming with the CF conventions.')
 @click.option('--config', '-c', metavar='CONFIG_FILE', multiple=True,
               help='Data cube configuration file in YAML format. More than one config input file is allowed.'
                    'When passing several config files, they are merged considering the order passed via command line.')
@@ -135,7 +136,7 @@ def _format_info():
     help_text = '\ninput processors to be used with option --proc:\n'
     help_text += _format_input_processors(input_processors)
     help_text += '\nFor more input processors use existing "xcube-gen-..." plugins ' \
-                 'from the github organisation DCS4COP or write own plugin.\n'
+                 "from the xcube's GitHub organisation or write own plugin.\n"
     help_text += '\n'
     help_text += '\noutput formats to be used with option --format:\n'
     help_text += _format_dataset_ios(output_writers)

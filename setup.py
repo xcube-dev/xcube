@@ -75,6 +75,8 @@ setup(
             'xcube-gen = xcube.cli.gen:main',
             'xcube-restime = xcube.cli.restime:main',
         ],
+        # This is xcube's extension point for new plugins. Use this extension point to add your own
+        # xcube plugin in the setup.py of your Python package sources.
         'xcube_plugins': [
             'xcube_genl2c_default = xcube.api.gen.default:init_plugin',
         ],

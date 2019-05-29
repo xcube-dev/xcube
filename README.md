@@ -118,7 +118,7 @@ To start a demo using docker use the following commands
 ## `xcube chunk`
 Can be used for changing the chunks of an existing data cube. 
 
-    $ $ xcube chunk --help
+    $ xcube chunk --help
     Usage: xcube chunk [OPTIONS] <input> <output>
     
       (Re-)chunk dataset. Changes the external chunking of all variables of
@@ -194,7 +194,8 @@ Is used to generate data cubes.
       -p, --proc INPUT_PROCESSOR      Input processor type name. The choices as
                                       input processor and additional information
                                       about input processors  can be accessed by
-                                      calling xcube gen --info .
+                                      calling xcube gen --info . Defaults to "default" - the default input processor 
+                                      that can deal with most common datasets conforming with the CF conventions.
       -c, --config CONFIG_FILE        Data cube configuration file in YAML format.
                                       More than one config input file is
                                       allowed.When passing several config files,
@@ -235,10 +236,17 @@ Is used to generate data cubes.
                                       kept.
       --help                          Show this message and exit.
 
+Below is the `xcube gen --info` call with 5 input processors installed via plugins.
+
     $ xcube gen --info
     input processors to be used with option --proc:
       default                           Single-scene NetCDF/CF inputs in xcube standard format
-
+      rbins-seviri-highroc-scene-l2     RBINS SEVIRI HIGHROC single-scene Level-2 NetCDF inputs 
+      rbins-seviri-highroc-daily-l2     RBINS SEVIRI HIGHROC daily Level-2 NetCDF inputs
+      snap-olci-highroc-l2              SNAP Sentinel-3 OLCI HIGHROC Level-2 NetCDF inputs
+      snap-olci-cyanoalert-l2           SNAP Sentinel-3 OLCI CyanoAlert Level-2 NetCDF inputs
+      vito-s2plus-l2                    VITO Sentinel-2 Plus Level 2 NetCDF inputs
+      
     For more input processors use existing "xcube-gen-..." plugins from the github organisation DCS4COP or write own plugin.
     
     
@@ -253,7 +261,7 @@ Example:
 
     $ xcube gen -a -s 2000,1000 -r 0,50,5,52.5 -v conc_chl,conc_tsm,kd489,c2rcc_flags,quality_flags -n hiroc-cube -t -p default D:\OneDrive\BC\EOData\HIGHROC\2017\01\*.nc
 
-Available xcube input processors within the DCS4COP organisation:
+Available xcube input processors within xcube's organisation:
 * [xcube-gen-rbins](https://github.com/dcs4cop/xcube-gen-rbins)
 * [xcube-gen-bc](https://github.com/dcs4cop/xcube-gen-bc)
 * [xcube-gen-vito](https://github.com/dcs4cop/xcube-gen-vito)
