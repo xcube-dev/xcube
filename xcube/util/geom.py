@@ -151,13 +151,18 @@ def get_box_split_bounds_geometry(lon_min: float, lat_min: float,
         return shapely.geometry.box(*box_1)
 
 
+_IVALID_GEOMETRY_MSG = ('geometry must be either a (shapely) geometry object, '
+                        'a valid GeoJSON object, a valid WKT string, '
+                        'box coordinates (x1, y1, x2, y2), or point coordinates (x, y)')
+
+
 def convert_geometry(geometry: Optional[Geometry]) -> Optional[shapely.geometry.base.BaseGeometry]:
     if isinstance(geometry, shapely.geometry.base.BaseGeometry):
         return geometry
 
     if isinstance(geometry, dict):
         if not GeoJSON.is_geometry(geometry):
-            raise ValueError("Invalid GeoJSON geometry")
+            raise ValueError(_IVALID_GEOMETRY_MSG)
         return shapely.geometry.shape(geometry)
 
     if isinstance(geometry, str):
@@ -179,9 +184,7 @@ def convert_geometry(geometry: Optional[Geometry]) -> Optional[shapely.geometry.
         except Exception:
             pass
 
-    raise ValueError(
-        'geometry must be either a geometry object, a valid GeoJSON object, a valid WKT string, '
-        'box coordinates (x1, y1, x2, y2), or point coordinates (x, y)')
+    raise ValueError(_IVALID_GEOMETRY_MSG)
 
 
 def _clamp(x, x1, x2):
