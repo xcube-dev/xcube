@@ -38,26 +38,38 @@ def get_time_series(cube: xr.Dataset,
                     var_names: Sequence[str] = None,
                     start_date: Date = None,
                     end_date: Date = None,
-                    use_groupby: bool = False,
                     include_count: bool = False,
                     include_stdev: bool = False,
+                    use_groupby: bool = False,
                     cube_asserted: bool = False) -> Optional[xr.Dataset]:
     """
     Get a time series dataset from a data *cube*.
 
     *geometry* may be provided as a (shapely) geometry object, a valid GeoJSON object, a valid WKT string,
-    box coordinates (x1, y1, x2, y2), or point coordinates (x, y).
+    a sequence of box coordinates (x1, y1, x2, y2), or point coordinates (x, y). If *geometry* covers an area,
+    i.e. is not a point, the function aggregates the variables to compute a mean value and if desired,
+    the number of valid observations and the standard deviation.
 
     *start_date* and *end_date* may be provided as a numpy.datetime64 or an ISO datetime string.
+
+    Returns a time-series dataset whose data variables have a time dimension but no longer have spatial dimensions,
+    hence the resulting dataset's variables will only have N-2 dimensions.
+    A global attribute ``max_number_of_observations`` will be set to the maximum number of observations
+    that could have been made in each time step.
+    If the given *geometry* does not overlap the cube's boundaries, or if not output variables remain,
+    the function returns ``None``.
 
     :param cube: The data cube
     :param geometry: Optional geometry
     :param var_names: Optional sequence of names of variables to be included.
     :param start_date: Optional start date.
     :param end_date: Optional end date.
-    :param use_groupby: Internal setting.
-    :param include_count: Whether to include counts. Ignored if geometry is a point.
-    :param include_stdev: Whether to include standard-deviation. Ignored if geometry is a point.
+    :param include_count: Whether to include the number of valid observations for each time step.
+           Ignored if geometry is a point.
+    :param include_stdev: Whether to include standard deviation for each time step.
+           Ignored if geometry is a point.
+    :param use_groupby: Use group-by operation. May increase or decrease runtime performance and/or memory consumption.
+    :param cube_asserted:  If False, *cube* will be verified, otherwise it is expected to be a valid cube.
     :return: A new dataset with time-series for each variable.
     """
 
