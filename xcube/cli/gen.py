@@ -95,6 +95,7 @@ def gen(input_files: str,
     Generate data cube.
     Data cubes may be created in one go or successively in append mode, input by input.
     The input may be one or more input files or a pattern that may contain wildcards '?', '*', and '**'.
+    The input files can be passed as lines of a text file.
     """
     input_files = input_files
     input_processor = proc
@@ -120,10 +121,8 @@ def gen(input_files: str,
 
     config = get_config_dict(locals())
 
-    gen_cube(append_mode=append_mode,
-             dry_run=dry_run,
+    gen_cube(dry_run=dry_run,
              monitor=print,
-             sort_mode=sort_mode,
              **config)
 
     return 0
