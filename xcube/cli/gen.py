@@ -136,7 +136,7 @@ def _format_info():
     help_text = '\ninput processors to be used with option --proc:\n'
     help_text += _format_input_processors(input_processors)
     help_text += '\nFor more input processors use existing "xcube-gen-..." plugins ' \
-                 "from the xcube's GitHub organisation or write own plugin.\n"
+                 "from the xcube's GitHub organisation or write your own plugin.\n"
     help_text += '\n'
     help_text += '\noutput formats to be used with option --format:\n'
     help_text += _format_dataset_ios(output_writers)
