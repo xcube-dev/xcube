@@ -1,7 +1,9 @@
 import unittest
 
+import numpy as np
+
 from test.sampledata import create_highroc_dataset
-from xcube.util.timecoord import add_time_coords, get_time_in_days_since_1970
+from xcube.util.timecoord import add_time_coords, get_time_in_days_since_1970, timestamp_to_iso_string
 
 
 class AddTimeCoordsTest(unittest.TestCase):
@@ -28,3 +30,21 @@ class AddTimeCoordsTest(unittest.TestCase):
         self.assertEqual(17325.5, get_time_in_days_since_1970('201706081200'))
         self.assertEqual(17690.5, get_time_in_days_since_1970('2018-06-08 12:00'))
         self.assertEqual(17690.5, get_time_in_days_since_1970('2018-06-08T12:00'))
+
+
+class TimestampToIsoStringTest(unittest.TestCase):
+    def test_it_with_default_res(self):
+        self.assertEqual("2018-09-05T00:00:00Z",
+                         timestamp_to_iso_string(np.datetime64("2018-09-05")))
+        self.assertEqual("2018-09-05T10:35:42Z",
+                         timestamp_to_iso_string(np.datetime64("2018-09-05 10:35:42")))
+        self.assertEqual("2018-09-05T10:35:42Z",
+                         timestamp_to_iso_string(np.datetime64("2018-09-05 10:35:42.164")))
+
+    def test_it_with_h_res(self):
+        self.assertEqual("2018-09-05T00:00:00Z",
+                         timestamp_to_iso_string(np.datetime64("2018-09-05"), freq="H"))
+        self.assertEqual("2018-09-05T11:00:00Z",
+                         timestamp_to_iso_string(np.datetime64("2018-09-05 10:35:42"), freq="H"))
+        self.assertEqual("2018-09-05T11:00:00Z",
+                         timestamp_to_iso_string(np.datetime64("2018-09-05 10:35:42.164"), freq="H"))

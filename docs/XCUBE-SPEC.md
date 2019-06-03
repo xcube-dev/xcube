@@ -122,10 +122,12 @@ ARD links:
 
 ## xcube Processing Levels
 
+This section provides an attempt to characterize data cubes generated from Earth Observation (EO) data
+according to their processing levels as they are commonly used in EO data processing.
 
-### Level-2C 
+### Level-1C and Level-2C 
 
-* Generated from Level-2 Earth Observation data
+* Generated from Level-1A, -1B, -2A, -2B Earth Observation data
 * Spatially resampled to common grid
   * Typically resampled at original resolution
   * May be down-sampled: aggregation/integration
@@ -135,7 +137,7 @@ ARD links:
 
 ### Level-3
 
-* Generated from Level-2C xcubes
+* Generated from Level-2C or -3 by temporal aggregation
 * No spatial processing
 * Temporally equidistant
 * Temporally integrated/aggregated

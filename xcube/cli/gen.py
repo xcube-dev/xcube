@@ -40,9 +40,9 @@ resampling_algs = NAME_TO_GDAL_RESAMPLE_ALG.keys()
 @click.argument('input_files', metavar='INPUT_FILES', nargs=-1)
 @click.option('--proc', '-p', metavar='INPUT_PROCESSOR', type=click.Choice(input_processor_names),
               help=f'Input processor type name. '
-              f'The choices as input processor are: {input_processor_names}. '
-              ' Additional information about input processors can be accessed by calling '
-              'xcube generate_cube --info')
+              f'The choices as input processor and additional information about input processors '
+              ' can be accessed by calling xcube gen --info . Defaults to "default" - the default input processor '
+              'that can deal with most common datasets conforming with the CF conventions.')
 @click.option('--config', '-c', metavar='CONFIG_FILE', multiple=True,
               help='Data cube configuration file in YAML format. More than one config input file is allowed.'
                    'When passing several config files, they are merged considering the order passed via command line.')
@@ -95,6 +95,7 @@ def gen(input_files: str,
     Generate data cube.
     Data cubes may be created in one go or successively in append mode, input by input.
     The input may be one or more input files or a pattern that may contain wildcards '?', '*', and '**'.
+    The input files can be passed as lines of a text file.
     """
     input_files = input_files
     input_processor = proc
@@ -120,10 +121,8 @@ def gen(input_files: str,
 
     config = get_config_dict(locals())
 
-    gen_cube(append_mode=append_mode,
-             dry_run=dry_run,
+    gen_cube(dry_run=dry_run,
              monitor=print,
-             sort_mode=sort_mode,
              **config)
 
     return 0
@@ -136,6 +135,8 @@ def _format_info():
 
     help_text = '\ninput processors to be used with option --proc:\n'
     help_text += _format_input_processors(input_processors)
+    help_text += '\nFor more input processors use existing "xcube-gen-..." plugins ' \
+                 "from the xcube's GitHub organisation or write your own plugin.\n"
     help_text += '\n'
     help_text += '\noutput formats to be used with option --format:\n'
     help_text += _format_dataset_ios(output_writers)
