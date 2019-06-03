@@ -45,7 +45,7 @@ In order to create a suitable Data Cube for your needs, there are some questions
 For creating a little cube you can execute the commandline below with the paths adjusted to your needs.
 
 
-`xcube gen  examples/data/*.nc --dir "your/output/path/" -c examples/config_files/dcs4cop-gen_BC_config_S2.yml -a --sort`
+`xcube gen  examples/data/*.nc --dir "your/output/path/" -c examples/config_files/dcs4cop-gen_BC_config_CMEMS.yml -a --sort`
 
 Caution: If you have input data that has file names not only varying with the time stamp but with e.g. A and B as well, 
 you need to pass the input files in the desired order via a text file. Each line of the text file should contain the 
