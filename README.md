@@ -13,14 +13,15 @@ Data cubes with [xarray](http://xarray.pydata.org/).
 - [Docker](#docker)
 - [Tools](#tools)
   - [`xcube` Command Line Interface](#xcube-command-line-interface)
-  - [`xcube chunk` ](#xcube-chunk)
-  - [`xcube dump` ](#xcube-dump)
+  - [`xcube chunk`](#xcube-chunk)
+  - [`xcube dump`](#xcube-dump)
   - [`xcube extract`](#xcube-extract)
-  - [`xcube gen` Generating Data Cubes](#xcube-gen)
+  - [`xcube gen`](#xcube-gen)
   - [`xcube grid`](#xcube-grid)
   - [`xcube level`](#xcube-level)
+  - [`xcube serve`](#xcube-serve)
   - [`xcube vars2dim`](#xcube-vars2dim)
-  - [`xcube serve` Server for xcube Data Sets](#xcube-serve)
+- [Steps to create of Data Cube](#steps-to-create-own-data-cube)
 
 # Installation
 
@@ -357,6 +358,92 @@ on a fixed Earth grid with the inverse resolution 384?
     
 Note, to check bounding box WKTs, you can use the 
 handy tool [Wicket](https://arthur-e.github.io/Wicket/sandbox-gmaps3.html).
+     
+## `xcube gen`
+
+    $ xcube gen --help
+    Usage: xcube gen [OPTIONS] INPUT_FILES
+    
+      Generate data cube. Data cubes may be created in one go or successively in
+      append mode, input by input. The input may be one or more input files or a
+      pattern that may contain wildcards '?', '*', and '**'.
+    
+    Options:
+      --version                       Show the version and exit.
+      -p, --proc INPUT_PROCESSOR      Input processor type name. The choices as
+                                      input processor are: ['default', 'rbins-
+                                      seviri-highroc-scene-l2', 'rbins-seviri-
+                                      highroc-daily-l2', 'snap-olci-highroc-l2',
+                                      'snap-olci-cyanoalert-l2',
+                                      'vito-s2plus-l2'].  Additional information
+                                      about input processors can be accessed by
+                                      calling xcube generate_cube --info
+      -c, --config CONFIG_FILE        Data cube configuration file in YAML format.
+                                      More than one config input file is
+                                      allowed.When passing several config files,
+                                      they are merged considering the order passed
+                                      via command line.
+      -d, --dir OUTPUT_DIR            Output directory. Defaults to '.'
+      -n, --name OUTPUT_NAME          Output filename pattern. Defaults to
+                                      'PROJ_WGS84_{INPUT_FILE}'.
+      -f, --format OUTPUT_FORMAT      Output writer type name. Defaults to 'zarr'.
+                                      The choices for the output format are:
+                                      ['csv', 'mem', 'netcdf4', 'zarr'].
+                                      Additional information about output formats
+                                      can be accessed by calling xcube
+                                      generate_cube --info
+      -s, --size OUTPUT_SIZE          Output size in pixels using format
+                                      "<width>,<height>".
+      -r, --region OUTPUT_REGION      Output region using format "<lon-min>,<lat-
+                                      min>,<lon-max>,<lat-max>"
+      -v, --variables OUTPUT_VARIABLES
+                                      Variables to be included in output. Comma-
+                                      separated list of names which may contain
+                                      wildcard characters "*" and "?".
+      --resampling OUTPUT_RESAMPLING  Fallback spatial resampling algorithm to be
+                                      used for all variables. Defaults to
+                                      'Nearest'. The choices for the resampling
+                                      algorithm are: dict_keys(['Nearest',
+                                      'Bilinear', 'Cubic', 'CubicSpline',
+                                      'Lanczos', 'Average', 'Min', 'Max',
+                                      'Median', 'Mode', 'Q1', 'Q3'])
+      --traceback                     On error, print Python traceback.
+      -a, --append                    Append successive outputs.
+      --dry_run                       Just read and process inputs, but don't
+                                      produce any outputs.
+      -i, --info                      Displays additional information about format
+                                      options or about input processors.
+      --sort                          The input file list will be sorted before
+                                      creating the data cube. If --sort parameter
+                                      is not passed, order of input list will be
+                                      kept.
+      --help                          Show this message and exit.
+
+    $ xcube gen --info
+    input processors to be used with option --proc:
+      default                           Single-scene NetCDF/CF inputs in xcube standard format
+      rbins-seviri-highroc-scene-l2     RBINS SEVIRI HIGHROC single-scene Level-2 NetCDF inputs
+      rbins-seviri-highroc-daily-l2     RBINS SEVIRI HIGHROC daily Level-2 NetCDF inputs
+      snap-olci-highroc-l2              SNAP Sentinel-3 OLCI HIGHROC Level-2 NetCDF inputs
+      snap-olci-cyanoalert-l2           SNAP Sentinel-3 OLCI CyanoAlert Level-2 NetCDF inputs
+      vito-s2plus-l2                    VITO Sentinel-2 Plus Level 2 NetCDF inputs
+    
+    
+    output formats to be used with option --format:
+      csv                     (*.csv)       CSV file format
+      mem                     (*.mem)       In-memory dataset I/O
+      netcdf4                 (*.nc)        NetCDF-4 file format
+      zarr                    (*.zarr)      Zarr file format (http://zarr.readthedocs.io)
+    
+
+
+
+
+
+Example:
+
+    $ xcube gen -a -s 2000,1000 -r 0,50,5,52.5 -v conc_chl,conc_tsm,kd489,c2rcc_flags,quality_flags -n hiroc-cube -t snap-c2rcc D:\OneDrive\BC\EOData\HIGHROC\2017\01\*.nc
+
 
 ## `xcube level`
 
@@ -578,19 +665,44 @@ in the [demo's HTML file](https://github.com/dcs4cop/xcube-server/blob/master/xc
 * Feature: collect Path entry of any Dataset and observe if the file are modified, if so remove dataset from cache
   to force its reopening.
 
-## Steps to create own Data Cube
+# Steps to create own Data Cube
 
-In order to create a suitable Data Cube for your needs, there are some questions which need to be aswered before hand. 
+In order to create a suitable Data Cube for your needs, there are some questions which need to be answered before hand. 
 
-1. Find approppriate grid for cube:
-* Which region needs to be covered by the data cube? 
-* At which resolution should the data cube be? 
+1. Find appropriate grid for cube:
+    * Which region needs to be covered by the data cube? 
+    * At which resolution should the data cube be? 
 
-&rarr; Use `xcube grid` to determine a suitable bounding box which includes the region of interest 
-and is fixed to a global grid. 
+    &rarr; Use `xcube grid` to determine a suitable bounding box which includes the region of interest 
+    and is fixed to a global grid. 
 
 2. Decide on variables to be included:
-* Are all variables needed? If not, select the ones to be included.
-* Should specific pixels be masked out based on pixel expressions? 
+    * Are all variables needed? If not, select the ones to be included.
+    * Should specific pixels be masked out based on pixel expressions? 
 
-3. Decide on chunking
+3. Decide on chunking:
+    * The chunking should depend on your needs
+
+    &rarr; This website might be helpful when deciding about the chunk sizes:  https://docs.dask.org/en/latest/array-chunks.html
+
+4. Decide on the Data Cube output name and output path.
+
+5. For creating a growing Data Cube with each input file, select the append mode. 
+    
+6. Use configuration file for generating your Data Cube:
+    * You might not want to place all settings for your data cube within the command line, 
+    you could use the parameter `-c, --config` and pass the above settings within a yaml-file. 
+    Example for a configuration file: [dcs4cop-config.yml](examples/dcs4cop-config.yml)
+      
+    * The parameter, which can be used within the configuration file are: 
+        * input_files
+        * input_processor 
+        * output_dir 
+        * output_name 
+        * output_writer
+        * output_size 
+        * output_region 
+        * output_variables
+        * output_resampling 
+        * append_mode 
+        * sort_mode 
