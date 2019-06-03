@@ -8,7 +8,7 @@ import xarray as xr
 import zarr
 
 from .im import TileGrid
-from .utils import get_dataset_bounds
+from ..util.geom import get_dataset_bounds
 from ..util.perf import measure_time
 
 
