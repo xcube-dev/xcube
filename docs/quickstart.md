@@ -76,6 +76,7 @@ you need to pass the input files in the desired order via a text file. Each line
 path to one input file. If you pass the input files in a desired order, then do not use the parameter `--sort` within
 the commandline interface.
 
+## xcube serve and xcube-viewer
 A generated data cube can be viewed via the [xcube-viewer](https://github.com/dcs4cop/xcube-viewer/)
 and with the help of using `xcube serve`. Please follow these steps: 
 
