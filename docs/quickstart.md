@@ -77,4 +77,26 @@ path to one input file. If you pass the input files in a desired order, then do 
 the commandline interface.
 
 A generated data cube can be viewed via the [xcube-viewer](https://github.com/dcs4cop/xcube-viewer/)
- and with the help of using `xcube serve`. 
+and with the help of using `xcube serve`. Please follow these steps: 
+
+`$ git clone https://github.com/dcs4cop/xcube-viewer.git`
+
+`$ cd xcube-viewer`
+
+`$ yarn build`
+
+On Linux - __please adjust path__:
+
+`$ export XCUBE_VIEWER_PATH=path/to/my/…/xcube-viewer/build`
+
+On Windows - __please adjust path__:
+
+`$ SET XCUBE_VIEWER_PATH=path/to/my/…/xcube-viewer/build`
+
+`$ xcube serve --show --styles "analysed_sst=(200,375,'plasma')" path/to/my/cube`
+
+In case you get an error message on the very bottom, that the server cannot be reached, refresh the page. 
+
+You can play around with the value range displayed in the viewer - here it is set to min=200K and max=375K. The colorbar 
+used for mapping can be modified as well and the 
+[colobars provided by matplotlib](https://matplotlib.org/examples/color/colormaps_reference.html) can be used. 
