@@ -25,7 +25,7 @@ In order to create a suitable Data Cube for your needs, there are some questions
 6. Use configuration file for generating your Data Cube:
     * You might not want to place all settings for your data cube within the command line, 
     you could use the parameter `-c, --config` and pass the above settings within a yaml-file. 
-    Example for a configuration file: [dcs4cop-config.yml](config_files/dcs4cop-config.yml)
+    Example for a configuration file: [dcs4cop-gen_BC_config_CMEMS.yml](config_files/dcs4cop-gen_BC_config_CMEMS.yml)
       
     * The parameter, which can be used within the configuration file are: 
         * input_files
@@ -50,4 +50,4 @@ For creating a little cube you can execute the commandline below with the paths 
 Caution: If you have input data that has file names not only varying with the time stamp but with e.g. A and B as well, 
 you need to pass the input files in the desired order via a text file. Each line of the text file should contain the 
 path to one input file. If you pass the input files in a desired order, then do not use the parameter `--sort` within
-the commandline interface
+the commandline interface.
