@@ -97,7 +97,7 @@ def apply(output: str,
     if not callable(apply_function):
         raise click.ClickException(f"{apply_function!r} in {script} is not a callable")
 
-    from xcube.api import assert_cube, read_dataset
+    from xcube.api import read_cube
     from xcube.util.cliutil import parse_cli_kwargs
     from xcube.util.dsio import guess_dataset_format, find_dataset_io, open_from_obs
 
@@ -105,14 +105,7 @@ def apply(output: str,
     input_cube_0 = None
     input_cubes = []
     for input_path in input_paths:
-        # TODO (forman): move url code into read_dataset()
-        if input_path.startswith("http://") or input_path.startswith("https://"):
-            import urllib3
-            url = urllib3.util.parse_url(input_path)
-            input_cube = open_from_obs(path=url.path, endpoint_url=f"{url.scheme}://{url.host}")
-            assert_cube(input_cube)
-        else:
-            input_cube = read_dataset(input_path=input_path, is_cube=True)
+        input_cube = read_cube(input_path=input_path)
         if input_cube_0 is None:
             input_cube_0 = input_cube
         else:

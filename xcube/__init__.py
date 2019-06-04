@@ -20,5 +20,4 @@
 # SOFTWARE.
 
 from .version import version as __version__
-from xcube.util.dsio import open_from_obs, open_from_fs
 
