@@ -62,7 +62,7 @@ with [coverage report](https://pytest-cov.readthedocs.io/en/latest/reporting.htm
 
 # User Guide
 
-A small user guide is provided [here](examples/Steps.md).
+A user guide is currently under development, a quickstart on how to generate data cubes can be found [here](examples/Steps.md).
 
 # Docker
 
