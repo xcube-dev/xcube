@@ -96,6 +96,8 @@ On Windows - __please adjust path__:
 
 `$ xcube serve --show --styles "analysed_sst=(200,375,'plasma')" path/to/my/cube`
 
+![](Screenshot_viewer.png)
+
 In case you get an error message on the very bottom, that the server cannot be reached, refresh the page. 
 
 You can play around with the value range displayed in the viewer - here it is set to min=200K and max=375K. The colorbar 
