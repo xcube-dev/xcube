@@ -21,7 +21,9 @@
 
 import datetime
 import fnmatch
-from typing import Any, Dict, Optional, Iterable, Tuple, List
+from typing import Any, Dict, Optional, Iterable, Tuple, List, Sequence
+
+import yaml
 
 UNDEFINED = object()
 PRIMITIVE_TYPES = (int, float, str, type(None))
@@ -139,3 +141,20 @@ def merge_config(first_dict: Dict, *more_dicts):
                     v = merge_config(output_dict[k], v)
                 output_dict[k] = v
     return output_dict
+
+
+def load_configs(*config_paths: str) -> Dict[str, Any]:
+    config_dicts = []
+    for config_path in config_paths:
+        with open(config_path) as fp:
+            try:
+                config_dict = yaml.safe_load(fp)
+            except yaml.YAMLError as e:
+                raise ValueError(f'YAML in {config_path!r} is invalid: {e}') from e
+            except OSError as e:
+                raise ValueError(f'cannot load configuration from {config_path!r}: {e}') from e
+            if not isinstance(config_dict, dict):
+                raise ValueError(f'invalid configuration format in {config_path!r}: dictionary expected')
+            config_dicts.append(config_dict)
+    config = merge_config(*config_dicts)
+    return config
