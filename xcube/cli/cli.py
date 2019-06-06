@@ -1,7 +1,7 @@
 import sys
 
 import click
-
+from xcube.cli.agg import aggregate
 from xcube.cli.apply import apply
 from xcube.cli.gen import gen
 from xcube.cli.grid import grid
@@ -111,13 +111,13 @@ def chunk(input, output, format=None, params=None, chunks=None):
                    'for imaging purposes.')
 @click.option('--tile-size', '-t', metavar='<tile-size>',
               help=f'Tile size, given as single integer number or as <tile-width>,<tile-height>. '
-              f'If omitted, the tile size will be derived from the <input>\'s '
-              f'internal spatial chunk sizes. '
-              f'If the <input> is not chunked, tile size will be {DEFAULT_TILE_SIZE}.')
+                   f'If omitted, the tile size will be derived from the <input>\'s '
+                   f'internal spatial chunk sizes. '
+                   f'If the <input> is not chunked, tile size will be {DEFAULT_TILE_SIZE}.')
 @click.option('--num-levels-max', '-n', metavar='<num-levels-max>', type=int,
               help=f'Maximum number of levels to generate. '
-              f'If not given, the number of levels will be derived from '
-              f'spatial dimension and tile sizes.')
+                   f'If not given, the number of levels will be derived from '
+                   f'spatial dimension and tile sizes.')
 def level(input, output, link, tile_size, num_levels_max):
     """
     Generate multi-resolution levels.
@@ -236,6 +236,7 @@ def cli(traceback=False, scheduler=None):
     """
 
 
+cli.add_command(aggregate)
 cli.add_command(chunk)
 cli.add_command(dump)
 cli.add_command(extract)

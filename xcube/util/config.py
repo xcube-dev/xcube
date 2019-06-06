@@ -21,7 +21,7 @@
 
 import datetime
 import fnmatch
-from typing import Any, Dict, Optional, Iterable, Tuple, List, Sequence
+from typing import Any, Dict, Optional, Iterable, Tuple, List
 
 import yaml
 

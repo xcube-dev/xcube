@@ -18,14 +18,15 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+from typing import Sequence, Dict, Any
 
 import click
+# TODO (forman): move RESAMPLING_METHODS to constants,
+# so we don't need to import xarray, etc which takes too much time
+from xcube.api.resample import RESAMPLING_METHODS
+from xcube.util.dsio import FORMAT_NAME_ZARR, FORMAT_NAME_NETCDF4, FORMAT_NAME_MEM
 
-from xcube.api.resample import resample_in_time, RESAMPLING_METHODS
-# TODO (forman): use DatasetIO registry
-from xcube.util.config import load_configs
-
-OUTPUT_FORMAT_NAMES = ['zarr', 'nc']
+OUTPUT_FORMAT_NAMES = [FORMAT_NAME_ZARR, FORMAT_NAME_NETCDF4, FORMAT_NAME_MEM]
 
 DEFAULT_OUTPUT_DIR = '.'
 DEFAULT_OUTPUT_PATTERN = 'L3_{INPUT_FILE}'
@@ -34,7 +35,8 @@ DEFAULT_OUTPUT_RESAMPLING_METHOD = 'nearest'
 DEFAULT_OUTPUT_FREQUENCY = '1D'
 
 
-@click.command(name='apply')
+# noinspection PyShadowingBuiltins
+@click.command(name='agg')
 @click.argument('input')
 @click.option('--config', '-c',
               help='Configuration file in YAML format.')
@@ -47,16 +49,16 @@ DEFAULT_OUTPUT_FREQUENCY = '1D'
               help="Output format.")
 @click.option('--vars',
               help="Comma-separated list of names of variables to be included.")
-@click.option('--resampling', choices=RESAMPLING_METHODS,
+@click.option('--resampling', type=click.Choice(RESAMPLING_METHODS),
               help='Temporal resampling method. Use format "<count><offset>"'
                    'where <offset> is one of {H, D, W, M, Q, Y}'
                    f'Defaults to {DEFAULT_OUTPUT_RESAMPLING_METHOD!r}.')
-@click.option('--frequency', dest='output_frequency',
+@click.option('--frequency',
               help='Temporal aggregation frequency.'
                    f'Defaults to {DEFAULT_OUTPUT_FREQUENCY!r}.')
 @click.option('--dry-run', default=False, is_flag=True,
               help='Just read and process inputs, but don\'t produce any outputs.')
-def agg(
+def aggregate(
         input,
         config,
         output,
@@ -78,6 +80,7 @@ def agg(
     output_resampling = resampling
     output_frequency = frequency
 
+    from xcube.util.config import load_configs
     config = load_configs(*config_files) if config_files else {}
 
     if input_path:
@@ -99,36 +102,34 @@ def agg(
                 and next(iter(True for var_name in output_variables if var_name == ''), False):
             output_variables = None
         if output_variables is None or len(output_variables) == 0:
-            print(f'error: invalid variables {arg_obj.output_variables!r}')
-            return 2
-        # TODO: instead filter list from config
+            raise click.ClickException(f'error: invalid variables {output_variables!r}')
         config['output_variables'] = output_variables
 
     # noinspection PyBroadException
-    _resample_in_time(*config,
-                      dry_run=dry_run,
-                      monitor=print)
-
+    _resample_in_time(**config, dry_run=dry_run, monitor=print)
     return 0
 
 
-def _resample_in_time(input_path: str,
-                      output_variables=None,
-                      output_metadata=None,
-                      output_path=DEFAULT_OUTPUT_DIR,
-                      output_format=DEFAULT_OUTPUT_FORMAT,
-                      output_resampling=DEFAULT_OUTPUT_RESAMPLING_METHOD,
-                      output_frequency=DEFAULT_OUTPUT_FREQUENCY,
-                      dry_run=False,
+def _resample_in_time(input_path: str = None,
+                      output_variables: Sequence[str] = None,
+                      output_metadata: Dict[str, Any] = None,
+                      output_path: str = DEFAULT_OUTPUT_DIR,
+                      output_format: str = DEFAULT_OUTPUT_FORMAT,
+                      output_resampling: str = DEFAULT_OUTPUT_RESAMPLING_METHOD,
+                      output_frequency: str = DEFAULT_OUTPUT_FREQUENCY,
+                      dry_run: bool = False,
                       monitor=None):
-    monitor(f'Reading L2C cube from {input_path!r}...')
-    ds = _read_dataset(input_path)
+    from xcube.api import open_cube
+    from xcube.api.readwrite import write_cube
+    from xcube.api.resample import resample_in_time
 
-    monitor('Resampling...')
-    resampled_ds = resample_in_time(ds, output_frequency, output_resampling, output_variables, output_metadata)
+    monitor(f'Opening cube from {input_path!r}...')
+    with open_cube(input_path) as ds:
+        monitor('Aggregating...')
+        agg_ds = resample_in_time(ds, output_frequency, output_resampling, output_variables, output_metadata)
 
-    monitor(f'Writing L3 cube to {output_path!r}...')
-    if not dry_run:
-        _write_dataset(resampled_ds, output_path, output_format)
+        monitor(f'Writing aggregated cube to {output_path!r}...')
+        if not dry_run:
+            write_cube(agg_ds, output_path, output_format, cube_asserted=True)
 
-    monitor(f'Done.')
+        monitor(f'Done.')
