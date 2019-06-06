@@ -43,6 +43,7 @@ from .defaults import DEFAULT_ADDRESS, DEFAULT_PORT, DEFAULT_UPDATE_PERIOD, DEFA
     DEFAULT_TILE_CACHE_SIZE, DEFAULT_NAME, DEFAULT_TRACE_PERF, DEFAULT_TILE_COMP_MODE
 from .errors import ServiceBadRequestError
 from .reqparams import RequestParams
+from ..util.caseless import caseless_dict
 from ..util.undefined import UNDEFINED
 
 __author__ = "Norman Fomferra (Brockmann Consult GmbH)"
@@ -221,6 +222,9 @@ class ServiceRequestHandler(RequestHandler):
     def __init__(self, application, request, **kwargs):
         super().__init__(application, request, **kwargs)
         self._params = ServiceRequestParams(self)
+
+    def set_caseless_query_arguments(self):
+        self.request.query_arguments = caseless_dict(self.request.query_arguments or {})
 
     @property
     def service_context(self) -> ServiceContext:

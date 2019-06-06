@@ -36,6 +36,18 @@ def compute_dataset(dataset: xr.Dataset,
     """
     Compute a dataset from another dataset and return it.
 
+    New variables are computed according to the value of an ``expression`` attribute which, if given,
+    must by a valid Python expression that can reference any other preceding variables by name.
+    The expression can also reference any flags defined by another variable according the their CF
+    attributes ``flag_meaning`` and ``flag_values``.
+
+    Invalid values may be masked out using the value of an
+    optional ``valid_pixel_expression`` attribute that forms a boolean Python expression.
+    The value of the ``_FillValue`` attribute or NaN will be used in the new variable where the
+    expression returns zero or false.
+
+    Other attributes will be stored as variable metadata as-is.
+
     :param dataset: A dataset.
     :param processed_variables: Optional list of variables that will be loaded or computed in the order given.
            Each variable is either identified by name or by a name to variable attributes mapping.
