@@ -29,7 +29,7 @@ from .handlers import GetNE2TileHandler, GetDatasetVarTileHandler, InfoHandler, 
     GetDatasetsHandler, FindPlacesHandler, FindDatasetPlacesHandler, \
     GetDatasetCoordsHandler, GetTimeSeriesInfoHandler, GetTimeSeriesForPointHandler, WMTSKvpHandler, \
     GetTimeSeriesForGeometryHandler, GetTimeSeriesForFeaturesHandler, GetTimeSeriesForGeometriesHandler, \
-    GetPlaceGroupsHandler, GetDatasetVarLegendHandler, GetDatasetHandler
+    GetPlaceGroupsHandler, GetDatasetVarLegendHandler, GetDatasetHandler, GetWMTSTileHandler
 from .service import url_pattern
 
 __author__ = "Norman Fomferra (Brockmann Consult GmbH)"
@@ -46,7 +46,7 @@ def new_application(name: str = DEFAULT_NAME):
         (prefix + url_pattern('/wmts/1.0.0/WMTSCapabilities.xml'),
          GetWMTSCapabilitiesXmlHandler),
         (prefix + url_pattern('/wmts/1.0.0/tile/{{ds_id}}/{{var_name}}/{{z}}/{{y}}/{{x}}.png'),
-         GetDatasetVarTileHandler),
+         GetWMTSTileHandler),
         (prefix + url_pattern('/wmts/kvp'),
          WMTSKvpHandler),
 

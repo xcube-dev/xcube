@@ -136,6 +136,21 @@ class GetDatasetCoordsHandler(ServiceRequestHandler):
 
 
 # noinspection PyAbstractClass,PyBroadException
+class GetWMTSTileHandler(ServiceRequestHandler):
+
+    async def get(self, ds_id: str, var_name: str, z: str, y: str, x: str):
+        self.set_caseless_query_arguments()
+        tile = await IOLoop.current().run_in_executor(None,
+                                                      get_dataset_tile,
+                                                      self.service_context,
+                                                      ds_id, var_name,
+                                                      x, y, z,
+                                                      self.params)
+        self.set_header('Content-Type', 'image/png')
+        self.finish(tile)
+
+
+# noinspection PyAbstractClass,PyBroadException
 class GetDatasetVarTileHandler(ServiceRequestHandler):
 
     async def get(self, ds_id: str, var_name: str, z: str, x: str, y: str):
