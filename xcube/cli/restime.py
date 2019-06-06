@@ -96,7 +96,7 @@ def main(args: Optional[List[str]] = None):
     if config_file:
         try:
             with open(config_file) as stream:
-                config = yaml.load(stream)
+                config = yaml.safe_load(stream)
             print(f'loaded configuration from {config_file!r}')
         except OSError as e:
             print(f'error: failed loading configuration from {config_file!r}: {e}')
