@@ -4,26 +4,7 @@ import numpy as np
 import shapely.geometry
 import xarray as xr
 
-from xcube.webapi.utils import get_dataset_geometry, get_dataset_bounds, get_geometry_mask, \
-    timestamp_to_iso_string
-
-
-class TimestampToIsoStringTest(unittest.TestCase):
-    def test_it_with_default_res(self):
-        self.assertEqual("2018-09-05T00:00:00Z",
-                         timestamp_to_iso_string(np.datetime64("2018-09-05")))
-        self.assertEqual("2018-09-05T10:35:42Z",
-                         timestamp_to_iso_string(np.datetime64("2018-09-05 10:35:42")))
-        self.assertEqual("2018-09-05T10:35:42Z",
-                         timestamp_to_iso_string(np.datetime64("2018-09-05 10:35:42.164")))
-
-    def test_it_with_h_res(self):
-        self.assertEqual("2018-09-05T00:00:00Z",
-                         timestamp_to_iso_string(np.datetime64("2018-09-05"), freq="H"))
-        self.assertEqual("2018-09-05T11:00:00Z",
-                         timestamp_to_iso_string(np.datetime64("2018-09-05 10:35:42"), freq="H"))
-        self.assertEqual("2018-09-05T11:00:00Z",
-                         timestamp_to_iso_string(np.datetime64("2018-09-05 10:35:42.164"), freq="H"))
+from xcube.util.geom import get_dataset_geometry, get_dataset_bounds, get_geometry_mask, convert_geometry
 
 
 class GetDatasetGeometryTest(unittest.TestCase):
@@ -129,3 +110,47 @@ class GetGeometryMaskTest(unittest.TestCase):
                                   [0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0],
                                   [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]], dtype=np.byte)
         np.testing.assert_array_almost_equal(expected_mask, actual_mask)
+
+
+class ConvertGeometryTest(unittest.TestCase):
+    def test_convert_null(self):
+        self.assertIs(None, convert_geometry(None))
+
+    def test_convert_to_point(self):
+        expected_point = shapely.geometry.Point(12.8, -34.4)
+        self.assertIs(expected_point,
+                      convert_geometry(expected_point))
+        self.assertEqual(expected_point,
+                         convert_geometry([12.8, -34.4]))
+        self.assertEqual(expected_point,
+                         convert_geometry('POINT (12.8 -34.4)'))
+        self.assertEqual(expected_point,
+                         convert_geometry(dict(type='Point', coordinates=[12.8, -34.4])))
+
+    def test_convert_to_box(self):
+        expected_box = shapely.geometry.Polygon(
+            [(12.8, -34.4), (14.2, -34.4), (14.2, 20.6), (12.8, 20.6), (12.8, -34.4)])
+        self.assertIs(expected_box,
+                      convert_geometry(expected_box))
+        self.assertEqual(expected_box,
+                         convert_geometry([12.8, -34.4, 14.2, 20.6]))
+        self.assertEqual(expected_box,
+                         convert_geometry('POLYGON ((12.8 -34.4, 14.2 -34.4, 14.2 20.6, 12.8 20.6, 12.8 -34.4))'))
+        self.assertEqual(expected_box,
+                         convert_geometry(dict(type='Polygon', coordinates=[
+                             [[12.8, -34.4], [14.2, -34.4], [14.2, 20.6], [12.8, 20.6], [12.8, -34.4]]
+                         ])))
+
+    def test_invalid(self):
+        expected_msg = ('geometry must be either a (shapely) geometry object, '
+                        'a valid GeoJSON object, a valid WKT string, '
+                        'box coordinates (x1, y1, x2, y2), '
+                        'or point coordinates (x, y)')
+
+        with self.assertRaises(ValueError) as cm:
+            convert_geometry(dict(coordinates=[12.8, -34.4]))
+        self.assertEqual(expected_msg, f'{cm.exception}')
+
+        with self.assertRaises(ValueError) as cm:
+            convert_geometry([12.8, -34.4, '?'])
+        self.assertEqual(expected_msg, f'{cm.exception}')

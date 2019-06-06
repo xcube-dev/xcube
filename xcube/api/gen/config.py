@@ -54,7 +54,7 @@ def get_config_dict(config_obj: Dict[str, Union[str, bool, int, float, list, dic
         for config_path in config_paths:
             with open(config_path) as fp:
                 try:
-                    config_dict = yaml.load(fp)
+                    config_dict = yaml.safe_load(fp)
                 except yaml.YAMLError as e:
                     raise ValueError(f'YAML in {config_path!r} is invalid: {e}') from e
                 except OSError as e:

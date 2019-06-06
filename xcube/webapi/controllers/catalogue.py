@@ -7,7 +7,8 @@ from ..context import ServiceContext
 from ..controllers.tiles import get_tile_source_options, get_dataset_tile_url
 from ..errors import ServiceBadRequestError
 from ..im.cmaps import get_cmaps
-from ..utils import get_dataset_bounds, timestamp_to_iso_string
+from ...util.geom import get_dataset_bounds
+from ...util.timecoord import timestamp_to_iso_string
 
 
 def get_datasets(ctx: ServiceContext, details=False, client=None, base_url: str = None) -> Dict:
