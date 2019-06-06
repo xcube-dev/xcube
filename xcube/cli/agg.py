@@ -29,11 +29,13 @@ from xcube.util.dsio import FORMAT_NAME_ZARR, FORMAT_NAME_NETCDF4, FORMAT_NAME_M
 OUTPUT_FORMAT_NAMES = [FORMAT_NAME_ZARR, FORMAT_NAME_NETCDF4, FORMAT_NAME_MEM]
 
 DEFAULT_OUTPUT_DIR = '.'
-DEFAULT_OUTPUT_PATTERN = 'L3_{INPUT_FILE}'
-DEFAULT_OUTPUT_FORMAT = 'zarr'
+DEFAULT_OUTPUT_FORMAT = FORMAT_NAME_ZARR
 DEFAULT_OUTPUT_RESAMPLING_METHOD = 'nearest'
 DEFAULT_OUTPUT_FREQUENCY = '1D'
 
+
+# TODO (forman): maybe we should stick to "resample" to also allow
+# for lower resolution resampling and later also for spatial resampling.
 
 # noinspection PyShadowingBuiltins
 @click.command(name='agg')
