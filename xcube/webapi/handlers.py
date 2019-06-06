@@ -37,20 +37,6 @@ from ..util.timecoord import timestamp_to_iso_string
 
 __author__ = "Norman Fomferra (Brockmann Consult GmbH)"
 
-_WMTS_KVP_KEYS = [
-    'Service',
-    'Request',
-    'Version',
-    'Format',
-    'Style',
-    'Layer',
-    'TileMatrixSet',
-    'TileMatrix',
-    'TileRow',
-    'TileCol'
-]
-
-_WMTS_KVP_LOWER_KEYS = [k.lower() for k in _WMTS_KVP_KEYS]
 _WMTS_VERSION = "1.0.0"
 _WMTS_TILE_FORMAT = "image/png"
 
@@ -59,8 +45,8 @@ _WMTS_TILE_FORMAT = "image/png"
 class WMTSKvpHandler(ServiceRequestHandler):
 
     async def get(self):
-        # According to WMTS 1.0 spec, all WMTS-specific keys must be case insensitive.
-        self._convert_wmts_keys_to_lower_case()
+        # According to WMTS 1.0 spec, query parameters must be case-insensitive.
+        self.set_caseless_query_arguments()
 
         service = self.params.get_query_argument('service')
         if service != "WMTS":
@@ -106,17 +92,6 @@ class WMTSKvpHandler(ServiceRequestHandler):
             raise ServiceBadRequestError('Request type "GetFeatureInfo" not yet implemented')
         else:
             raise ServiceBadRequestError(f'Invalid request type "{request}"')
-
-    def _convert_wmts_keys_to_lower_case(self):
-        query_arguments = dict(self.request.query_arguments)
-        query_keys = {k.lower(): k for k in query_arguments.keys()}
-        for lower_key in _WMTS_KVP_LOWER_KEYS:
-            if lower_key in query_keys:
-                query_key = query_keys[lower_key]
-                value = query_arguments[query_key]
-                del query_arguments[query_key]
-                query_arguments[lower_key] = value
-        self.request.query_arguments = query_arguments
 
 
 # noinspection PyAbstractClass

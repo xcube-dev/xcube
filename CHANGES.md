@@ -1,5 +1,6 @@
 ## Changes in 0.2.0 (in dev)
 
+* Fixed `xcube serve` WMTS KVP API to allow for case-insensitive query parameters. (#77)
 * `xcube serve` can now be run with data cube paths and styling information given via the CLI rather 
   than a configuration file. For example `xcube serve --styles conc_chl=(0,20,"viridis") /path/to/my/chl-cube.zarr`.
   This allows for quick inspection of newly generated cubes via `xcube gen`.
