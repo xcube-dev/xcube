@@ -2,7 +2,7 @@ from typing import Dict, TypeVar, Optional
 
 
 def caseless_dict(*args, **kwargs) -> Dict:
-    """Create a dictionary whose string keys are compared in a case-insensitive manner."""
+    """Create a dictionary that compares its string keys in a case-insensitive manner."""
     return _CaselessDict(*args, **kwargs)
 
 
