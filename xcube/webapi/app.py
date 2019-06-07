@@ -23,7 +23,7 @@ import os
 
 from tornado.web import Application, StaticFileHandler
 
-from .defaults import DEFAULT_NAME, API_PREFIX
+from .context import normalize_prefix
 from .handlers import GetNE2TileHandler, GetDatasetVarTileHandler, InfoHandler, GetNE2TileGridHandler, \
     GetDatasetVarTileGridHandler, GetWMTSCapabilitiesXmlHandler, GetColorBarsJsonHandler, GetColorBarsHtmlHandler, \
     GetDatasetsHandler, FindPlacesHandler, FindDatasetPlacesHandler, \
@@ -35,8 +35,9 @@ from .service import url_pattern
 __author__ = "Norman Fomferra (Brockmann Consult GmbH)"
 
 
-def new_application(name: str = DEFAULT_NAME):
-    prefix = f"/{name}{API_PREFIX}"
+def new_application(prefix: str = None):
+    prefix = normalize_prefix(prefix)
+
     application = Application([
         (prefix + '/res/(.*)',
          StaticFileHandler, {'path': os.path.join(os.path.dirname(__file__), 'res')}),
@@ -49,8 +50,6 @@ def new_application(name: str = DEFAULT_NAME):
          GetWMTSTileHandler),
         (prefix + url_pattern('/wmts/kvp'),
          WMTSKvpHandler),
-
-        # Natural Earth 2 tiles for testing
 
         (prefix + url_pattern('/datasets'),
          GetDatasetsHandler),
