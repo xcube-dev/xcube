@@ -21,6 +21,7 @@
 from typing import Sequence, Dict, Any
 
 import click
+
 # TODO (forman): move RESAMPLING_METHODS to constants,
 # so we don't need to import xarray, etc which takes too much time
 from xcube.api.resample import RESAMPLING_METHODS
@@ -28,8 +29,7 @@ from xcube.util.dsio import FORMAT_NAME_ZARR, FORMAT_NAME_NETCDF4, FORMAT_NAME_M
 
 OUTPUT_FORMAT_NAMES = [FORMAT_NAME_ZARR, FORMAT_NAME_NETCDF4, FORMAT_NAME_MEM]
 
-DEFAULT_OUTPUT_DIR = '.'
-DEFAULT_OUTPUT_FORMAT = FORMAT_NAME_ZARR
+DEFAULT_OUTPUT_PATH = 'out.zarr'
 DEFAULT_OUTPUT_RESAMPLING_METHOD = 'nearest'
 DEFAULT_OUTPUT_FREQUENCY = '1D'
 
@@ -40,24 +40,24 @@ DEFAULT_OUTPUT_FREQUENCY = '1D'
 # noinspection PyShadowingBuiltins
 @click.command(name='agg')
 @click.argument('input')
-@click.option('--config', '-c',
-              help='Configuration file in YAML format.')
 @click.option('--config', '-c', multiple=True,
               help='Data cube configuration file in YAML format. More than one config input file is allowed.'
                    'When passing several config files, they are merged considering the order passed via command line.')
+@click.option('--output', '-o',
+              default=DEFAULT_OUTPUT_PATH,
+              help="Output path.")
 @click.option('--format', '-f',
-              default='zarr',
-              type=click.Choice(['zarr', 'nc']),
-              help="Output format.")
+              type=click.Choice(OUTPUT_FORMAT_NAMES),
+              help="Output format. If omitted, format will be guessed from output path.")
 @click.option('--vars',
               help="Comma-separated list of names of variables to be included.")
 @click.option('--resampling', type=click.Choice(RESAMPLING_METHODS),
-              help='Temporal resampling method. Use format "<count><offset>"'
-                   'where <offset> is one of {H, D, W, M, Q, Y}'
-                   f'Defaults to {DEFAULT_OUTPUT_RESAMPLING_METHOD!r}.')
+              help='Temporal resampling method. Use format "<count><offset>" '
+                   'where <offset> is one of {H, D, W, M, Q, Y}. '
+              f'Defaults to {DEFAULT_OUTPUT_RESAMPLING_METHOD!r}.')
 @click.option('--frequency',
-              help='Temporal aggregation frequency.'
-                   f'Defaults to {DEFAULT_OUTPUT_FREQUENCY!r}.')
+              help='Temporal aggregation frequency. '
+              f'Defaults to {DEFAULT_OUTPUT_FREQUENCY!r}.')
 @click.option('--dry-run', default=False, is_flag=True,
               help='Just read and process inputs, but don\'t produce any outputs.')
 def aggregate(
@@ -115,8 +115,8 @@ def aggregate(
 def _resample_in_time(input_path: str = None,
                       output_variables: Sequence[str] = None,
                       output_metadata: Dict[str, Any] = None,
-                      output_path: str = DEFAULT_OUTPUT_DIR,
-                      output_format: str = DEFAULT_OUTPUT_FORMAT,
+                      output_path: str = DEFAULT_OUTPUT_PATH,
+                      output_format: str = None,
                       output_resampling: str = DEFAULT_OUTPUT_RESAMPLING_METHOD,
                       output_frequency: str = DEFAULT_OUTPUT_FREQUENCY,
                       dry_run: bool = False,
@@ -124,6 +124,10 @@ def _resample_in_time(input_path: str = None,
     from xcube.api import open_cube
     from xcube.api.readwrite import write_cube
     from xcube.api.resample import resample_in_time
+    from xcube.util.dsio import guess_dataset_format
+
+    if not output_format:
+        output_format = guess_dataset_format(output_path)
 
     monitor(f'Opening cube from {input_path!r}...')
     with open_cube(input_path) as ds:
