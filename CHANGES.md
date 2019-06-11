@@ -1,7 +1,7 @@
 ## Changes in 0.2.0 (in dev)
 
-* Added new CLI command `xcube agg` that is used to generate temporarily aggregated data cubes
-  from other data cubes.
+* Added new CLI command `xcube resample` that is used to generate temporarily up- or downsampled
+  data cubes from other data cubes.
 * `xcube serve` can now be run with data cube paths and styling information given via the CLI rather 
   than a configuration file. For example `xcube serve --styles conc_chl=(0,20,"viridis") /path/to/my/chl-cube.zarr`.
   This allows for quick inspection of newly generated cubes via `xcube gen`.

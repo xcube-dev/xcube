@@ -1,4 +1,4 @@
-from test.cli.helpers import CliDataTest, CliTest
+from test.cli.helpers import CliTest
 
 
 class GenCliTest(CliTest):
