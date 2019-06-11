@@ -40,7 +40,7 @@ from tornado.web import RequestHandler, Application
 
 from .context import ServiceContext, guess_cube_format
 from .defaults import DEFAULT_ADDRESS, DEFAULT_PORT, DEFAULT_UPDATE_PERIOD, DEFAULT_LOG_PREFIX, \
-    DEFAULT_TILE_CACHE_SIZE, DEFAULT_NAME, DEFAULT_TRACE_PERF, DEFAULT_TILE_COMP_MODE
+    DEFAULT_TILE_CACHE_SIZE, DEFAULT_TRACE_PERF, DEFAULT_TILE_COMP_MODE
 from .errors import ServiceBadRequestError
 from .reqparams import RequestParams
 from ..util.caseless import caseless_dict
@@ -58,7 +58,7 @@ class Service:
 
     def __init__(self,
                  application: Application,
-                 name: str = DEFAULT_NAME,
+                 prefix: str = None,
                  address: str = DEFAULT_ADDRESS,
                  port: int = DEFAULT_PORT,
                  cube_paths: List[str] = None,
@@ -120,7 +120,7 @@ class Service:
                                  pid=os.getpid())
 
         base_dir = os.path.dirname(self.config_file) if self.config_file else os.path.abspath('')
-        self.context = ServiceContext(name=name,
+        self.context = ServiceContext(prefix=prefix,
                                       config=config,
                                       base_dir=base_dir,
                                       trace_perf=trace_perf,
@@ -416,3 +416,5 @@ def new_default_config(cube_paths: List[str], styles: Dict[str, Tuple] = None):
             color_mappings[var_name] = style
         config["Styles"] = [dict(Identifier="default", ColorMappings=color_mappings)]
     return config
+
+

@@ -511,7 +511,7 @@ Is a light-weight web server that provides various services based on
 xcube data cubes. 
 
     $ xcube serve --help
-    Usage: xcube serve [OPTIONS]
+    Usage: xcube serve [OPTIONS] CUBE...
     
       Serve data cubes via web service.
     
@@ -520,11 +520,12 @@ xcube data cubes.
       https://app.swaggerhub.com/apis/bcdev/xcube-server.
     
     Options:
-      --version              Show the version and exit.
-      -n, --name NAME        Service name. Defaults to 'xcube'.
       -a, --address ADDRESS  Service address. Defaults to 'localhost'.
       -p, --port PORT        Port number where the service will listen on.
                              Defaults to 8080.
+      --prefix PREFIX        Service URL prefix. May contain template patterns
+                             such as "${version}" or "${name}". For example
+                             "${name}/api/${version}".
       -u, --update PERIOD    Service will update after given seconds of
                              inactivity. Zero or a negative value will disable
                              update checks. Defaults to 2.0.
@@ -541,6 +542,11 @@ xcube data cubes.
       --tilemode MODE        Tile computation mode. This is an internal option
                              used to switch between different tile computation
                              implementations. Defaults to 0.
+      -s, --show             Run viewer app. Requires setting the environment
+                             variable XCUBE_VIEWER_PATH to a valid xcube-viewer
+                             deployment or build directory. Refer to
+                             https://github.com/dcs4cop/xcube-viewer for more
+                             information.
       -v, --verbose          Delegate logging to the console (stderr).
       --traceperf            Print performance diagnostics (stdout).
       --help                 Show this message and exit.
@@ -602,42 +608,42 @@ To run the server using a particular data cube path and styling information for 
 Test it:
 
 * Datasets (Data Cubes):
-    * [Get datasets](http://localhost:8080/xcube/api/0.1.0.dev6/datasets)
-    * [Get dataset details](http://localhost:8080/xcube/api/0.1.0.dev6/datasets/local)
-    * [Get dataset coordinates](http://localhost:8080/xcube/api/0.1.0.dev6/datasets/local/coords/time)
+    * [Get datasets](http://localhost:8080/datasets)
+    * [Get dataset details](http://localhost:8080/datasets/local)
+    * [Get dataset coordinates](http://localhost:8080/datasets/local/coords/time)
 * Color bars:
-    * [Get color bars](http://localhost:8080/xcube/api/0.1.0.dev6/colorbars)
-    * [Get color bars (HTML)](http://localhost:8080/xcube/api/0.1.0.dev6/colorbars.html)
+    * [Get color bars](http://localhost:8080/colorbars)
+    * [Get color bars (HTML)](http://localhost:8080/colorbars.html)
 * WMTS:
-    * [Get WMTS KVP Capabilities (XML)](http://localhost:8080/xcube/api/0.1.0.dev6/wmts/kvp?Service=WMTS&Request=GetCapabilities)
-    * [Get WMTS KVP local tile (PNG)](http://localhost:8080/xcube/api/0.1.0.dev6/wmts/kvp?Service=WMTS&Request=GetTile&Version=1.0.0&Layer=local.conc_chl&TileMatrix=0&TileRow=0&TileCol=0&Format=image/png)
-    * [Get WMTS KVP remote tile (PNG)](http://localhost:8080/xcube/api/0.1.0.dev6/wmts/kvp?Service=WMTS&Request=GetTile&Version=1.0.0&Layer=remote.conc_chl&TileMatrix=0&TileRow=0&TileCol=0&Format=image/png)
-    * [Get WMTS REST Capabilities (XML)](http://localhost:8080/xcube/api/0.1.0.dev6/wmts/1.0.0/WMTSCapabilities.xml)
-    * [Get WMTS REST local tile (PNG)](http://localhost:8080/xcube/api/0.1.0.dev6/wmts/1.0.0/tile/local/conc_chl/0/0/1.png)
-    * [Get WMTS REST remote tile (PNG)](http://localhost:8080/xcube/api/0.1.0.dev6/wmts/1.0.0/tile/remote/conc_chl/0/0/1.png)
+    * [Get WMTS KVP Capabilities (XML)](http://localhost:8080/wmts/kvp?Service=WMTS&Request=GetCapabilities)
+    * [Get WMTS KVP local tile (PNG)](http://localhost:8080/wmts/kvp?Service=WMTS&Request=GetTile&Version=1.0.0&Layer=local.conc_chl&TileMatrix=0&TileRow=0&TileCol=0&Format=image/png)
+    * [Get WMTS KVP remote tile (PNG)](http://localhost:8080/wmts/kvp?Service=WMTS&Request=GetTile&Version=1.0.0&Layer=remote.conc_chl&TileMatrix=0&TileRow=0&TileCol=0&Format=image/png)
+    * [Get WMTS REST Capabilities (XML)](http://localhost:8080/wmts/1.0.0/WMTSCapabilities.xml)
+    * [Get WMTS REST local tile (PNG)](http://localhost:8080/wmts/1.0.0/tile/local/conc_chl/0/0/1.png)
+    * [Get WMTS REST remote tile (PNG)](http://localhost:8080/wmts/1.0.0/tile/remote/conc_chl/0/0/1.png)
 * Tiles
-    * [Get tile (PNG)](http://localhost:8080/xcube/api/0.1.0.dev6/datasets/local/vars/conc_chl/tiles/0/1/0.png)
-    * [Get tile grid for OpenLayers 4.x](http://localhost:8080/xcube/api/0.1.0.dev6/datasets/local/vars/conc_chl/tilegrid?tiles=ol4)
-    * [Get tile grid for Cesium 1.x](http://localhost:8080/xcube/api/0.1.0.dev6/datasets/local/vars/conc_chl/tilegrid?tiles=cesium)
-    * [Get legend for layer (PNG)](http://localhost:8080/xcube/api/0.1.0.dev6/datasets/local/vars/conc_chl/legend.png)
+    * [Get tile (PNG)](http://localhost:8080/datasets/local/vars/conc_chl/tiles/0/1/0.png)
+    * [Get tile grid for OpenLayers 4.x](http://localhost:8080/datasets/local/vars/conc_chl/tilegrid?tiles=ol4)
+    * [Get tile grid for Cesium 1.x](http://localhost:8080/datasets/local/vars/conc_chl/tilegrid?tiles=cesium)
+    * [Get legend for layer (PNG)](http://localhost:8080/datasets/local/vars/conc_chl/legend.png)
 * Time series service (preliminary & unstable, will likely change soon)
-    * [Get time stamps per dataset](http://localhost:8080/xcube/api/0.1.0.dev6/ts)
-    * [Get time series for single point](http://localhost:8080/xcube/api/0.1.0.dev6/ts/local/conc_chl/point?lat=51.4&lon=2.1&startDate=2017-01-15&endDate=2017-01-29)
+    * [Get time stamps per dataset](http://localhost:8080/ts)
+    * [Get time series for single point](http://localhost:8080/ts/local/conc_chl/point?lat=51.4&lon=2.1&startDate=2017-01-15&endDate=2017-01-29)
 * Places service (preliminary & unstable, will likely change soon)
-    * [Get all features](http://localhost:8080/xcube/api/0.1.0.dev6/places/all)
-    * [Get all features of collection "inside-cube"](http://localhost:8080/xcube/api/0.1.0.dev6/features/inside-cube)
-    * [Get all features for dataset "local"](http://localhost:8080/xcube/api/0.1.0.dev6/places/all/local)
-    * [Get all features of collection "inside-cube" for dataset "local"](http://localhost:8080/xcube/api/0.1.0.dev6/places/inside-cube/local)
+    * [Get all features](http://localhost:8080/places/all)
+    * [Get all features of collection "inside-cube"](http://localhost:8080/features/inside-cube)
+    * [Get all features for dataset "local"](http://localhost:8080/places/all/local)
+    * [Get all features of collection "inside-cube" for dataset "local"](http://localhost:8080/places/inside-cube/local)
 
 
 #### Clients
 
 There are example HTML pages for some tile server clients. They need to be run in 
-a web server. If you don't have one, you can use the Node `httpserver`:
+a web server. If you don't have one, you can use Node's `httpserver`:
 
     $ npm install -g httpserver
     
-After starting both the xcube-server and web server, e.g. on port 9090
+After starting both the xcube server and web server, e.g. on port 9090
 
     $ httpserver -d -p 9090
 
@@ -646,16 +652,16 @@ you can run the client demos by following their links given below.
    
 ##### OpenLayers
 
-[OpenLayers 4 Demo](http://localhost:9090/xcube_server/res/demo/index-ol4.html)
-[OpenLayers 4 Demo with WMTS](http://localhost:9090/xcube_server/res/demo/index-ol4-wmts.html)
+[OpenLayers 4 Demo](http://localhost:9090/xcube/webapi/res/demo/index-ol4.html)
+[OpenLayers 4 Demo with WMTS](http://localhost:9090/xcube/webapi/res/demo/index-ol4-wmts.html)
 
 ##### Cesium
 
-To run the [Cesium Demo](http://localhost:9090/xcube_server/res/demo/index-cesium.html) first
+To run the [Cesium Demo](http://localhost:9090/xcube/webapi/res/demo/index-cesium.html) first
 [download Cesium](https://cesiumjs.org/downloads/) and unpack the zip
 into the `xcube-server` source directory so that there exists an 
 `./Cesium-<version>` sub-directory. You may have to adapt the Cesium version number 
-in the [demo's HTML file](https://github.com/dcs4cop/xcube-server/blob/master/xcube_server/res/demo/index-cesium.html).
+in the [demo's HTML file](https://github.com/dcs4cop/xcube/blob/master/xcube/webapi/res/demo/index-cesium.html).
 
 ### Xcube server TODOs:
 
