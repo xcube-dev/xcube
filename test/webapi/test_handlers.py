@@ -277,4 +277,4 @@ class HandlersTest(AsyncHTTPTestCase):
 
     @property
     def prefix(self):
-        return f"/{DEFAULT_NAME}{API_PREFIX}"
+        return ''

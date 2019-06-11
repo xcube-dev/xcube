@@ -99,7 +99,7 @@ def apply(output: str,
 
     from xcube.api import read_cube
     from xcube.util.cliutil import parse_cli_kwargs
-    from xcube.util.dsio import guess_dataset_format, find_dataset_io, open_from_obs
+    from xcube.util.dsio import guess_dataset_format, find_dataset_io
 
     kwargs = parse_cli_kwargs(params, "<params>")
     input_cube_0 = None
