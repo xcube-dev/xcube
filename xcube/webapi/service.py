@@ -58,7 +58,7 @@ class Service:
 
     def __init__(self,
                  application: Application,
-                 prefix: str = DEFAULT_URL_PREFIX,
+                 prefix: str = None,
                  address: str = DEFAULT_ADDRESS,
                  port: int = DEFAULT_PORT,
                  cube_paths: List[str] = None,
