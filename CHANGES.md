@@ -1,5 +1,8 @@
 ## Changes in 0.2.0 (in dev)
 
+* `xcube serve` has a new `prefix` option which is a path appended to the server's host.
+  The `prefix` option replaces the `name` option which is now deprecated but kept 
+  for backward compatibility.
 * Fixed `xcube serve` WMTS KVP API to allow for case-insensitive query parameters. (#77)
 * `xcube serve` can now be run with data cube paths and styling information given via the CLI rather 
   than a configuration file. For example `xcube serve --styles conc_chl=(0,20,"viridis") /path/to/my/chl-cube.zarr`.
