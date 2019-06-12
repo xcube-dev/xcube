@@ -91,7 +91,7 @@ def process_inputs_wrapper(input_files=None,
                     output_region=(-4., 47., 12., 56.),
                     output_resampling='Nearest',
                     output_variables=[('analysed_sst', dict(name='SST'))],
-                    output_dir='.',
+                    output_path='.',
                     dry_run=False,
                     monitor=None,
                     **config)

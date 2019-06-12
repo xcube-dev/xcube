@@ -32,10 +32,9 @@ def get_config_dict(config_obj: Dict[str, Union[str, bool, int, float, list, dic
     :raise OSError, ValueError
     """
     config_file = config_obj.get("config_file")
-    input_files = config_obj.get("input_files")
+    input_paths = config_obj.get("input_paths")
     input_processor = config_obj.get("input_processor")
-    output_dir = config_obj.get("output_dir")
-    output_name = config_obj.get("output_name")
+    output_path = config_obj.get("output_path")
     output_writer = config_obj.get("output_writer")
     output_size = config_obj.get("output_size")
     output_region = config_obj.get("output_region")
@@ -47,27 +46,24 @@ def get_config_dict(config_obj: Dict[str, Union[str, bool, int, float, list, dic
     config = load_configs(*config_file) if config_file else {}
 
     # Overwrite current configuration by cli arguments
-    if input_files is not None and config.get('input_files') is None:
-        if len(input_files) == 1 and input_files[0].endswith(".txt"):
-            with open(input_files[0]) as input_txt:
+    if input_paths is not None and 'input_paths' not in config:
+        if len(input_paths) == 1 and input_paths[0].endswith(".txt"):
+            with open(input_paths[0]) as input_txt:
                 input_paths = input_txt.readlines()
-            config['input_files'] = [x.strip() for x in input_paths]
+            config['input_paths'] = [x.strip() for x in input_paths]
         else:
-            config['input_files'] = input_files
+            config['input_paths'] = input_paths
 
     if input_processor is not None:
         config['input_processor'] = input_processor
 
-    if output_dir is not None and config.get('output_dir') is None:
-        config['output_dir'] = output_dir
+    if output_path is not None and 'output_path' not in config:
+        config['output_path'] = output_path
 
-    if output_name is not None and config.get('output_name') is None:
-        config['output_name'] = output_name
-
-    if output_writer is not None and config.get('output_writer') is None:
+    if output_writer is not None and 'output_writer' not in config:
         config['output_writer'] = output_writer
 
-    if output_resampling is not None and config.get('output_resampling') is None:
+    if output_resampling is not None and 'output_resampling' not in config:
         config['output_resampling'] = output_resampling
 
     if output_size is not None:
