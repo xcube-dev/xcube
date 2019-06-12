@@ -4,6 +4,8 @@
   The `prefix` option replaces the `name` option which is now deprecated but kept 
   for backward compatibility.
 * Fixed `xcube serve` WMTS KVP API to allow for case-insensitive query parameters. (#77)
+* Added new CLI command `xcube resample` that is used to generate temporarily up- or downsampled
+  data cubes from other data cubes.
 * `xcube serve` can now be run with data cube paths and styling information given via the CLI rather 
   than a configuration file. For example `xcube serve --styles conc_chl=(0,20,"viridis") /path/to/my/chl-cube.zarr`.
   This allows for quick inspection of newly generated cubes via `xcube gen`.

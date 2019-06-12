@@ -20,9 +20,7 @@
 # SOFTWARE.
 from typing import Dict, Union
 
-import yaml
-
-from ...util.config import to_name_dict_pairs, flatten_dict, merge_config
+from ...util.config import to_name_dict_pairs, flatten_dict, load_configs
 
 
 def get_config_dict(config_obj: Dict[str, Union[str, bool, int, float, list, dict, tuple]]):
@@ -46,23 +44,7 @@ def get_config_dict(config_obj: Dict[str, Union[str, bool, int, float, list, dic
     append_mode = config_obj.get("append_mode")
     sort_mode = config_obj.get("sort_mode")
 
-    if config_file is None or len(config_file) == 0:
-        config = {}
-    else:
-        config_paths = config_file
-        config_dicts = []
-        for config_path in config_paths:
-            with open(config_path) as fp:
-                try:
-                    config_dict = yaml.safe_load(fp)
-                except yaml.YAMLError as e:
-                    raise ValueError(f'YAML in {config_path!r} is invalid: {e}') from e
-                except OSError as e:
-                    raise ValueError(f'cannot load configuration from {config_path!r}: {e}') from e
-                if not isinstance(config_dict, dict):
-                    raise ValueError(f'invalid configuration format in {config_path!r}: dictionary expected')
-                config_dicts.append(config_dict)
-        config = merge_config(*config_dicts)
+    config = load_configs(*config_file) if config_file else {}
 
     # Overwrite current configuration by cli arguments
     if input_files is not None and config.get('input_files') is None:
@@ -137,3 +119,5 @@ def get_config_dict(config_obj: Dict[str, Union[str, bool, int, float, list, dic
     if output_metadata:
         config['output_metadata'] = flatten_dict(output_metadata)
     return config
+
+
