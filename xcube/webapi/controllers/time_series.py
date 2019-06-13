@@ -63,7 +63,7 @@ def get_time_series_for_point(ctx: ServiceContext,
                               end_date: np.datetime64 = None) -> Dict:
     measure_time = measure_time_cm(disabled=not ctx.trace_perf)
     with measure_time('get_time_series_for_point'):
-        dataset = ctx.get_dataset(ds_name, [var_name])
+        dataset = ctx.get_dataset(ds_name, expected_var_names=[var_name])
         return _get_time_series_for_point(dataset, var_name,
                                           shapely.geometry.Point(lon, lat),
                                           start_date=start_date, end_date=end_date)
@@ -74,7 +74,7 @@ def get_time_series_for_geometry(ctx: ServiceContext,
                                  geometry: Dict,
                                  start_date: np.datetime64 = None,
                                  end_date: np.datetime64 = None) -> Dict:
-    dataset = ctx.get_dataset(ds_name, [var_name])
+    dataset = ctx.get_dataset(ds_name, expected_var_names=[var_name])
     if not GeoJSON.is_geometry(geometry):
         raise ServiceBadRequestError("Invalid GeoJSON geometry")
     if isinstance(geometry, dict):
@@ -89,7 +89,7 @@ def get_time_series_for_geometry_collection(ctx: ServiceContext,
                                             geometry_collection: Dict,
                                             start_date: np.datetime64 = None,
                                             end_date: np.datetime64 = None) -> Dict:
-    dataset = ctx.get_dataset(ds_name, [var_name])
+    dataset = ctx.get_dataset(ds_name, expected_var_names=[var_name])
     geometries = GeoJSON.get_geometry_collection_geometries(geometry_collection)
     if geometries is None:
         raise ServiceBadRequestError("Invalid GeoJSON geometry collection")
@@ -108,7 +108,7 @@ def get_time_series_for_feature_collection(ctx: ServiceContext,
                                            feature_collection: Dict,
                                            start_date: np.datetime64 = None,
                                            end_date: np.datetime64 = None) -> Dict:
-    dataset = ctx.get_dataset(ds_name, [var_name])
+    dataset = ctx.get_dataset(ds_name, expected_var_names=[var_name])
     features = GeoJSON.get_feature_collection_features(feature_collection)
     if features is None:
         raise ServiceBadRequestError("Invalid GeoJSON feature collection")
