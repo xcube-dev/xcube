@@ -1,8 +1,10 @@
 ## Changes in 0.2.0 (in dev)
 
+* Fixed error `indexes along dimension 'y' are not equal` occured when using 
+  `xcube gen` with processed variables that used flag values (#86)
 * `xcube serve` has a new `prefix` option which is a path appended to the server's host.
   The `prefix` option replaces the `name` option which is now deprecated but kept 
-  for backward compatibility.
+  for backward compatibility. (#79)
 * Fixed `xcube serve` WMTS KVP API to allow for case-insensitive query parameters. (#77)
 * Added new CLI command `xcube resample` that is used to generate temporarily up- or downsampled
   data cubes from other data cubes.
