@@ -118,7 +118,10 @@ class MaskSet:
         flag_var = self._flag_var
         flag_mask, flag_value = self._flags[flag_name]
 
-        mask_var = xr.DataArray(np.ones(flag_var.shape, dtype=np.uint8), dims=flag_var.dims, name=flag_name)
+        mask_var = xr.DataArray(np.ones(flag_var.shape, dtype=np.uint8),
+                                dims=flag_var.dims,
+                                name=flag_name,
+                                coords=flag_var.coords)
         if flag_mask is not None:
             if flag_var.dtype != flag_mask.dtype:
                 flag_var = flag_var.astype(flag_mask.dtype)
