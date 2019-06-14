@@ -1,6 +1,7 @@
 ## Changes in 0.2.0 (in dev)
 
-* Fixed error `indexes along dimension 'y' are not equal` occured when using 
+* Fixed problem where CTRL+C didn't function anymore with `xcube serve`. (#87)
+* Fixed error `indexes along dimension 'y' are not equal` occurred when using 
   `xcube gen` with processed variables that used flag values (#86)
 * `xcube serve` has a new `prefix` option which is a path appended to the server's host.
   The `prefix` option replaces the `name` option which is now deprecated but kept 
