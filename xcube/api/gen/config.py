@@ -70,31 +70,26 @@ def get_config_dict(config_obj: Dict[str, Union[str, bool, int, float, list, dic
         try:
             output_size = list(map(lambda c: int(c), output_size.split(',')))
         except ValueError:
-            raise ValueError(
-                f'Invalid output size was given. Only integers are accepted. The given output size was: '
-                f'{config_obj.get("output_size")!r}')
-        if len(output_size) != 2:
-            raise ValueError(f'The output size must be given as pair <width>,<height>, but was: '
-                             f'{config_obj.get("output_size")!r}')
+            output_size = None
+        if output_size is None or len(output_size) != 2:
+            raise ValueError(f'output_size must have the form <width>,<height>,'
+                             f' where both values must be positive integer numbers')
         config['output_size'] = output_size
 
     if output_region is not None:
         try:
             output_region = list(map(lambda c: float(c), output_region.split(',')))
         except ValueError:
-            raise ValueError(f'Invalid output region was given. Only floats are accepted. The given output region was: '
-                             f'{config_obj.get("output_region")!r}')
-        if len(output_region) != 4:
-            raise ValueError(f'The output region must be given as 4 values: <lon_min>,<lat_min>,<lon_max>,<lat_max>, '
-                             f'but was: {config_obj.get("output_region")!r}')
+            output_region = None
+        if output_region is None or len(output_region) != 4:
+            raise ValueError(f'output_region must have the form <lon_min>,<lat_min>,<lon_max>,<lat_max>,'
+                             f' where all four numbers must be floating point numbers in degrees')
         config['output_region'] = output_region
 
     if output_variables is not None:
         output_variables = list(map(lambda c: c.strip(), output_variables.split(',')))
-        if output_variables == ['']:
-            raise ValueError('output_variables must contain at least one name')
-        if any([var_name == '' for var_name in output_variables]):
-            raise ValueError('all names in output_variables must be non-empty')
+        if output_variables == [''] or any([var_name == '' for var_name in output_variables]):
+            raise ValueError('output_variables must be a list of existing variable names')
         config['output_variables'] = output_variables
 
     if append_mode is not None and config.get('append_mode') is None:

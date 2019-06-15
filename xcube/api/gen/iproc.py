@@ -225,4 +225,7 @@ def register_input_processor(input_processor: InputProcessor):
 
 
 def get_input_processor(name: str):
+    if not get_obj_registry().has(name, type=InputProcessor):
+        return None
     return get_obj_registry().get(name, type=InputProcessor)
+

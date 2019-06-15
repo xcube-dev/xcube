@@ -273,7 +273,7 @@ class Netcdf4DatasetIO(DatasetIO):
 
     def append(self, dataset: xr.Dataset, output_path: str, **kwargs):
         import os
-        temp_path = output_path + 'temp.nc'
+        temp_path = output_path + '.temp.nc'
         os.rename(output_path, temp_path)
         old_ds = xr.open_dataset(temp_path, decode_times=False)
         new_ds = xr.concat([old_ds, dataset],

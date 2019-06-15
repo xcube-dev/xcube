@@ -76,26 +76,32 @@ def gen_cube(input_paths: Sequence[str] = None, input_processor: str = None, inp
     # Force loading of plugins
     __import__('xcube.util.plugin')
 
+    if not input_processor:
+        raise ValueError('Missing input_processor')
+
     input_processor = get_input_processor(input_processor)
     if not input_processor:
-        raise ValueError(f'unknown input_processor {input_processor!r}')
+        raise ValueError(f'Unknown input_processor {input_processor!r}')
 
     if input_processor_params:
         try:
             input_processor.configure(**input_processor_params)
         except TypeError as e:
-            raise ValueError(f'invalid input_processor_params {input_processor_params!r}') from e
+            raise ValueError(f'Invalid input_processor_params {input_processor_params!r}') from e
 
     input_reader = find_dataset_io(input_reader or input_processor.input_reader)
     if not input_reader:
-        raise ValueError(f'unknown input_reader {input_reader!r}')
+        raise ValueError(f'Unknown input_reader {input_reader!r}')
+
+    if not output_path:
+        raise ValueError('Missing output_path')
 
     output_writer = output_writer or guess_dataset_format(output_path)
     if not output_writer:
-        raise ValueError(f'failed to guess output_writer from path {output_path}')
+        raise ValueError(f'Failed to guess output_writer from path {output_path}')
     output_writer = find_dataset_io(output_writer, modes={'w', 'a'} if append_mode else {'w'})
     if not output_writer:
-        raise ValueError(f'unknown output_writer {output_writer!r}')
+        raise ValueError(f'Unknown output_writer {output_writer!r}')
 
     if monitor is None:
         # noinspection PyUnusedLocal
@@ -108,14 +114,14 @@ def gen_cube(input_paths: Sequence[str] = None, input_processor: str = None, inp
         input_paths = [input_file for f in input_paths for input_file in glob.glob(f, recursive=True)]
 
     if not dry_run:
-        os.makedirs(output_path, exist_ok=True)
+        output_dir = os.path.abspath(os.path.dirname(output_path))
+        os.makedirs(output_dir, exist_ok=True)
 
     effective_input_reader_params = dict(input_processor.input_reader_params or {})
     effective_input_reader_params.update(input_reader_params or {})
 
     effective_output_writer_params = output_writer_params or {}
 
-    output_path = None
     status = False
 
     ds_count = len(input_paths)
@@ -124,22 +130,22 @@ def gen_cube(input_paths: Sequence[str] = None, input_processor: str = None, inp
     for input_file in input_paths:
         monitor(f'processing dataset {ds_index + 1} of {ds_count}: {input_file!r}...')
         # noinspection PyTypeChecker
-        status = _process_l2_input(input_processor,
-                                   input_reader,
-                                   effective_input_reader_params,
-                                   output_writer,
-                                   effective_output_writer_params,
-                                   input_file,
-                                   output_size,
-                                   output_region,
-                                   output_resampling,
-                                   output_path,
-                                   output_metadata,
-                                   output_variables,
-                                   processed_variables,
-                                   append_mode,
-                                   dry_run,
-                                   monitor)
+        status = _process_input(input_processor,
+                                input_reader,
+                                effective_input_reader_params,
+                                output_writer,
+                                effective_output_writer_params,
+                                input_file,
+                                output_size,
+                                output_region,
+                                output_resampling,
+                                output_path,
+                                output_metadata,
+                                output_variables,
+                                processed_variables,
+                                append_mode,
+                                dry_run,
+                                monitor)
         ds_index += 1
         if status:
             ds_count_ok += 1
@@ -150,22 +156,22 @@ def gen_cube(input_paths: Sequence[str] = None, input_processor: str = None, inp
     return status
 
 
-def _process_l2_input(input_processor: InputProcessor,
-                      input_reader: DatasetIO,
-                      input_reader_params: Dict[str, Any],
-                      output_writer: DatasetIO,
-                      output_writer_params: Dict[str, Any],
-                      input_file: str,
-                      output_size: Tuple[int, int],
-                      output_region: Tuple[float, float, float, float],
-                      output_resampling: str,
-                      output_path: str,
-                      output_metadata: NameAnyDict = None,
-                      output_variables: NameDictPairList = None,
-                      processed_variables: NameDictPairList = None,
-                      append_mode: bool = False,
-                      dry_run: bool = False,
-                      monitor: Callable[..., None] = None) -> bool:
+def _process_input(input_processor: InputProcessor,
+                   input_reader: DatasetIO,
+                   input_reader_params: Dict[str, Any],
+                   output_writer: DatasetIO,
+                   output_writer_params: Dict[str, Any],
+                   input_file: str,
+                   output_size: Tuple[int, int],
+                   output_region: Tuple[float, float, float, float],
+                   output_resampling: str,
+                   output_path: str,
+                   output_metadata: NameAnyDict = None,
+                   output_variables: NameDictPairList = None,
+                   processed_variables: NameDictPairList = None,
+                   append_mode: bool = False,
+                   dry_run: bool = False,
+                   monitor: Callable[..., None] = None) -> bool:
     monitor('reading dataset...')
     # noinspection PyBroadException
     try:

@@ -35,6 +35,7 @@ output_writer_names = [ds_io.name for ds_io in query_dataset_io(lambda ds_io: 'w
 resampling_algs = NAME_TO_GDAL_RESAMPLE_ALG.keys()
 
 
+# noinspection PyShadowingBuiltins
 @click.command(name='gen', context_settings={"ignore_unknown_options": True})
 @click.argument('inputs', nargs=-1)
 @click.option('--proc', '-p', type=click.Choice(input_processor_names),
@@ -48,7 +49,6 @@ resampling_algs = NAME_TO_GDAL_RESAMPLE_ALG.keys()
 @click.option('--output', '-o', default=DEFAULT_OUTPUT_PATH,
               help=f'Output path. Defaults to {DEFAULT_OUTPUT_PATH!r}')
 @click.option('--format', '-f', type=click.Choice(output_writer_names),
-              default=DEFAULT_OUTPUT_FORMAT,
               help=f'Output format. '
                    f'The choices for the output format are: {output_writer_names}.'
                    ' Additional information about output formats can be accessed by calling '
@@ -67,13 +67,13 @@ resampling_algs = NAME_TO_GDAL_RESAMPLE_ALG.keys()
                    f'The choices for the resampling algorithm are: {resampling_algs}')
 @click.option('--append', '-a', is_flag=True,
               help='Append successive outputs.')
-@click.option('--dry_run', is_flag=True,
-              help='Just read and process inputs, but don\'t produce any outputs.')
-@click.option('--info', '-i', is_flag=True,
-              help='Displays additional information about format options or about input processors.')
 @click.option('--sort', is_flag=True,
               help='The input file list will be sorted before creating the data cube. '
                    'If --sort parameter is not passed, order of input list will be kept.')
+@click.option('--info', '-i', is_flag=True,
+              help='Displays additional information about format options or about input processors.')
+@click.option('--dry_run', is_flag=True,
+              help='Just read and process inputs, but don\'t produce any outputs.')
 def gen(inputs: str,
         proc: str,
         config: tuple,

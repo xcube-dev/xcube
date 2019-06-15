@@ -1,5 +1,15 @@
 ## Changes in 0.2.0 (in dev)
 
+* Reworked `xcube gen` to be more user-friendly and more consistent with other tools. 
+  The changes are
+  - Removed `--dir` and `--name` options and replaced it by single `--output` option, 
+    whose default value is `out.zarr`. (#45)
+  - The `--format` option no longer has a default value. If not given, 
+    format is guessed from `--output` option.
+  - Renamed following parameters in the configuration file:
+    + `input_files` into `input_paths`, also because paths may point into object storage 
+      locations (buckets);  
+    + `output_file` into `output_path`, to be consistent with `input_paths`.  
 * Fixed problem where CTRL+C didn't function anymore with `xcube serve`. (#87)
 * Fixed error `indexes along dimension 'y' are not equal` occurred when using 
   `xcube gen` with processed variables that used flag values (#86)
@@ -7,8 +17,8 @@
   The `prefix` option replaces the `name` option which is now deprecated but kept 
   for backward compatibility. (#79)
 * Fixed `xcube serve` WMTS KVP API to allow for case-insensitive query parameters. (#77)
-* Added new CLI command `xcube resample` that is used to generate temporarily up- or downsampled
-  data cubes from other data cubes.
+* Added new CLI command `xcube resample` that is used to generate temporarily up- or 
+  downsampled data cubes from other data cubes.
 * `xcube serve` can now be run with data cube paths and styling information given via the CLI rather 
   than a configuration file. For example `xcube serve --styles conc_chl=(0,20,"viridis") /path/to/my/chl-cube.zarr`.
   This allows for quick inspection of newly generated cubes via `xcube gen`.
@@ -34,8 +44,9 @@
 * Included possibility to read the input file paths from a text file. (#47)
 * Restructured and clarified code base (#27)
 * Moved to Python 3.7 (#25)
-* Excluding all input processors except for the default one. They are now plugins and have own repositories within the 
-xcube's organisation. (#49)
+* Excluding all input processors except for the default one. 
+  They are now plugins and have own repositories within the 
+  xcube's organisation. (#49)
 
 ## Changes in 0.1.0
 

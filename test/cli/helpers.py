@@ -22,10 +22,6 @@ class CliTest(unittest.TestCase, metaclass=ABCMeta):
 
 class CliDataTest(CliTest, metaclass=ABCMeta):
 
-    def invoke_cli(self, args: List[str]):
-        self.runner = click.testing.CliRunner()
-        return self.runner.invoke(cli, args, catch_exceptions=False)
-
     def outputs(self) -> List[str]:
         return []
 
