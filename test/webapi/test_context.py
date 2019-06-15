@@ -19,7 +19,7 @@ class ServiceContextTest(unittest.TestCase):
         self.assertEqual('Dataset "demox" not found', cm.exception.reason)
 
         with self.assertRaises(ServiceResourceNotFoundError) as cm:
-            ctx.get_dataset('demo', ['conc_ys'])
+            ctx.get_dataset('demo', expected_var_names=['conc_ys'])
         self.assertEqual(404, cm.exception.status_code)
         self.assertEqual('Variable "conc_ys" not found in dataset "demo"', cm.exception.reason)
 
