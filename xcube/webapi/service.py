@@ -132,14 +132,16 @@ class Service:
         application.time_of_last_activity = time.process_time()
         self.application = application
 
-        self.server = application.listen(port, address=address or 'localhost')
-        # Ensure we have the same event loop in all threads
-        asyncio.set_event_loop_policy(_GlobalEventLoopPolicy(asyncio.get_event_loop()))
         # Register handlers for common termination signals
         signal.signal(signal.SIGINT, self._sig_handler)
         signal.signal(signal.SIGTERM, self._sig_handler)
+
+        self.server = application.listen(port, address=address or 'localhost')
+        # Ensure we have the same event loop in all threads
+        asyncio.set_event_loop_policy(_GlobalEventLoopPolicy(asyncio.get_event_loop()))
         self._maybe_load_config()
         self._maybe_install_update_check()
+        self._shutdown_requested = False
 
     def start(self):
         address = self.service_info['address']
@@ -149,6 +151,7 @@ class Service:
         _LOG.info(f'press CTRL+C to stop service')
         if len(self.context.config.get('Datasets', {})) == 0:
             _LOG.warning('no datasets configured')
+        tornado.ioloop.PeriodicCallback(self._try_shutdown, 100).start()
         IOLoop.current().start()
 
     def stop(self, kill=False):
@@ -158,9 +161,9 @@ class Service:
         if kill:
             sys.exit(0)
         else:
-            IOLoop.current().add_callback(self._on_shut_down)
+            IOLoop.current().add_callback(self._on_shutdown)
 
-    def _on_shut_down(self):
+    def _on_shutdown(self):
 
         _LOG.info('stopping service...')
 
@@ -175,11 +178,16 @@ class Service:
             self.server = None
 
         IOLoop.current().stop()
+        _LOG.info('service stopped.')
+
+    def _try_shutdown(self):
+        if self._shutdown_requested:
+            self._on_shutdown()
 
     # noinspection PyUnusedLocal
     def _sig_handler(self, sig, frame):
         _LOG.warning(f'caught signal {sig}')
-        IOLoop.current().add_callback_from_signal(self._on_shut_down)
+        self._shutdown_requested = True
 
     def _maybe_install_update_check(self):
         if self.config_file is None or self.update_period is None or self.update_period <= 0:
@@ -416,5 +424,3 @@ def new_default_config(cube_paths: List[str], styles: Dict[str, Tuple] = None):
             color_mappings[var_name] = style
         config["Styles"] = [dict(Identifier="default", ColorMappings=color_mappings)]
     return config
-
-

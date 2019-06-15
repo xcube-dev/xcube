@@ -153,11 +153,11 @@ class ServiceContext:
         ml_dataset, _ = self._get_dataset_entry(ds_id)
         return ml_dataset
 
-    def get_dataset(self, ds_id: str, var_names: Collection[str] = None) -> xr.Dataset:
+    def get_dataset(self, ds_id: str, expected_var_names: Collection[str] = None) -> xr.Dataset:
         ml_dataset, _ = self._get_dataset_entry(ds_id)
         dataset = ml_dataset.base_dataset
-        if var_names:
-            for var_name in var_names:
+        if expected_var_names:
+            for var_name in expected_var_names:
                 if var_name not in dataset:
                     raise ServiceResourceNotFoundError(f'Variable "{var_name}" not found in dataset "{ds_id}"')
         return dataset
@@ -210,7 +210,7 @@ class ServiceContext:
                         cmap_vmin, cmap_vmax = color_mapping.get('ValueRange', (cmap_vmin, cmap_vmax))
                         return cmap_cbar, cmap_vmin, cmap_vmax
             else:
-                ds = self.get_dataset(ds_id, var_name)
+                ds = self.get_dataset(ds_id, expected_var_names=[var_name])
                 var = ds[var_name]
                 cmap_cbar = var.attrs.get('color_bar_name', cmap_cbar)
                 cmap_vmin = var.attrs.get('color_value_min', cmap_vmin)
