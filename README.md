@@ -601,7 +601,7 @@ xcube data cubes.
       -u, --update PERIOD    Service will update after given seconds of
                              inactivity. Zero or a negative value will disable
                              update checks. Defaults to 2.0.
-      -s, --styles STYLES    Color mapping styles for variables. Used only, if one
+      -S, --styles STYLES    Color mapping styles for variables. Used only, if one
                              or more CUBE arguments are provided and CONFIG is not
                              given. Comma-separated list with elements of the form
                              <var>=(<vmin>,<vmax>) or

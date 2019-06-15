@@ -46,7 +46,7 @@ VIEWER_ENV_VAR = 'XCUBE_VIEWER_PATH'
               help='Service will update after given seconds of inactivity. Zero or a negative value will '
                    'disable update checks. '
               f'Defaults to {DEFAULT_UPDATE_PERIOD!r}.')
-@click.option('--styles', '-s', metavar='STYLES', default=None,
+@click.option('--styles', '-S', metavar='STYLES', default=None,
               help='Color mapping styles for variables. '
                    'Used only, if one or more CUBE arguments are provided and CONFIG is not given. '
                    'Comma-separated list with elements of the form '
