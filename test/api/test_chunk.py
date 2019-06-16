@@ -1,7 +1,9 @@
 import unittest
 
+import numpy as np
+
 from test.sampledata import new_test_dataset
-from xcube.api.chunk import chunk_dataset
+from xcube.api.chunk import chunk_dataset, get_empty_dataset_chunks, compute_chunk_slices
 
 
 class ChunkDatasetTest(unittest.TestCase):
@@ -37,3 +39,79 @@ class ChunkDatasetTest(unittest.TestCase):
         chunked_dataset = chunk_dataset(dataset, format_name="zarr")
         self.assertEqual({"_FillValue": -999.0}, chunked_dataset.precipitation.encoding)
         self.assertEqual({"_FillValue": -999.0}, chunked_dataset.temperature.encoding)
+
+
+class GetEmptyDatasetChunksTest(unittest.TestCase):
+
+    def test_not_chunked(self):
+        dataset = new_test_dataset(["2010-01-01", "2010-01-02"], precipitation=0.4, temperature=275.2)
+        with self.assertRaises(ValueError) as cm:
+            get_empty_dataset_chunks(dataset)
+        self.assertEqual('data array not chunked', f'{cm.exception}')
+
+    def test_non_empty(self):
+        dataset = new_test_dataset(["2010-01-01", "2010-01-02"],
+                                   precipitation=0.4, temperature=275.2).chunk(dict(time=1, lat=90, lon=90))
+        empty_dataset_chunks = get_empty_dataset_chunks(dataset)
+        self.assertEqual({'precipitation': (), 'temperature': ()},
+                         empty_dataset_chunks)
+
+    def test_all_empty(self):
+        dataset = new_test_dataset(["2010-01-01", "2010-01-02"],
+                                   precipitation=np.nan, temperature=np.nan).chunk(dict(time=1, lat=90, lon=90))
+        empty_dataset_chunks = get_empty_dataset_chunks(dataset)
+        self.assertEqual({'precipitation': ((0, 0, 0),
+                                            (0, 0, 1),
+                                            (0, 0, 2),
+                                            (0, 0, 3),
+                                            (0, 1, 0),
+                                            (0, 1, 1),
+                                            (0, 1, 2),
+                                            (0, 1, 3),
+                                            (1, 0, 0),
+                                            (1, 0, 1),
+                                            (1, 0, 2),
+                                            (1, 0, 3),
+                                            (1, 1, 0),
+                                            (1, 1, 1),
+                                            (1, 1, 2),
+                                            (1, 1, 3)),
+                          'temperature': ((0, 0, 0),
+                                          (0, 0, 1),
+                                          (0, 0, 2),
+                                          (0, 0, 3),
+                                          (0, 1, 0),
+                                          (0, 1, 1),
+                                          (0, 1, 2),
+                                          (0, 1, 3),
+                                          (1, 0, 0),
+                                          (1, 0, 1),
+                                          (1, 0, 2),
+                                          (1, 0, 3),
+                                          (1, 1, 0),
+                                          (1, 1, 1),
+                                          (1, 1, 2),
+                                          (1, 1, 3))}, empty_dataset_chunks)
+
+
+class ComputeChunkSlicesTest(unittest.TestCase):
+
+    def test_compute_chunk_slices(self):
+        chunk_slices = compute_chunk_slices(((1, 1), (90, 90), (90, 90, 90, 90)))
+        self.assertEqual([((0, 0, 0), ((0, 1), (0, 90), (0, 90))),
+                          ((0, 0, 1), ((0, 1), (0, 90), (90, 180))),
+                          ((0, 0, 2), ((0, 1), (0, 90), (180, 270))),
+                          ((0, 0, 3), ((0, 1), (0, 90), (270, 360))),
+                          ((0, 1, 0), ((0, 1), (90, 180), (0, 90))),
+                          ((0, 1, 1), ((0, 1), (90, 180), (90, 180))),
+                          ((0, 1, 2), ((0, 1), (90, 180), (180, 270))),
+                          ((0, 1, 3), ((0, 1), (90, 180), (270, 360))),
+                          ((1, 0, 0), ((1, 2), (0, 90), (0, 90))),
+                          ((1, 0, 1), ((1, 2), (0, 90), (90, 180))),
+                          ((1, 0, 2), ((1, 2), (0, 90), (180, 270))),
+                          ((1, 0, 3), ((1, 2), (0, 90), (270, 360))),
+                          ((1, 1, 0), ((1, 2), (90, 180), (0, 90))),
+                          ((1, 1, 1), ((1, 2), (90, 180), (90, 180))),
+                          ((1, 1, 2), ((1, 2), (90, 180), (180, 270))),
+                          ((1, 1, 3), ((1, 2), (90, 180), (270, 360)))],
+                         list(chunk_slices))

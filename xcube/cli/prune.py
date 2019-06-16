@@ -19,23 +19,28 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-from typing import Tuple, Dict, List
-
-import click
-import os.path
 import os
+import os.path
+import warnings
+
+import warning
+import click
+
 # TODO (forman): move FORMAT_NAME_ZARR to constants,
+from xcube.api.chunk import get_empty_dataset_chunks
 from xcube.util.dsio import FORMAT_NAME_ZARR
 
 
 # noinspection PyShadowingBuiltins
 @click.command(name='prune')
 @click.argument('input')
-@click.option('--dry-run', default=False, is_flag=True,
-              help='Just read and process inputs, but don\'t produce any outputs.')
+@click.option('--dry-run', is_flag=True,
+              help='Just read and process input, but don\'t produce any outputs.')
 def prune(input, dry_run):
     """
     Delete empty chunks.
+    Deletes all data files associated with empty (NaN-only) chunks in given INPUT cube,
+    which must have ZARR format.
     """
     _prune(input_path=input, dry_run=dry_run, monitor=print)
     return 0
@@ -45,29 +50,7 @@ def _prune(input_path: str = None,
            dry_run: bool = False,
            monitor=None):
     from xcube.api import open_cube
-    from xcube.api.readwrite import write_cube
     from xcube.util.dsio import guess_dataset_format
-    import xarray as xr
-    import numpy as np
-    import dask.array
-
-    # TODO (forman): make this API
-    def get_empty_chunks(cube: xr.Dataset) -> Dict[str, List[Tuple[int, ...]]]:
-        """
-        Identify empty cube chunks and return their indices.
-
-        :param cube: The cube.
-        :return: A mapping from variable name to a list of chunk indices.
-        """
-        for var_name in cube.data_vars:
-            var = cube[var_name]
-
-            xr.DataArray(dask.array.fromfunction(), dims=var.dims, name=)
-
-            def apply_function(data_block, index_block):
-                if np.all(np.isnan(data_block)):
-
-            xr.apply_ufunc(apply_function, var)
 
     input_format = guess_dataset_format(input_path)
     if input_format != FORMAT_NAME_ZARR:
@@ -77,20 +60,29 @@ def _prune(input_path: str = None,
     with open_cube(input_path) as cube:
 
         monitor('Identifying empty chunks...')
-        empty_chunks = get_empty_chunks(cube)
+        empty_chunks = get_empty_dataset_chunks(cube)
 
-        num_empty_chunks = 0
-        for var_name, chunk_indices in empty_chunks:
-            num_empty_chunks += len(chunk_indices)
-
+        num_deleted = 0
         for var_name, chunk_indices in empty_chunks:
             monitor(f'Deleting {len(chunk_indices)} empty chunk file(s) for variable {var_name!r}...')
             if not dry_run:
                 for chunk_index in chunk_indices:
-                    chunk_path = os.path.join(input_path, var_name, ".".join(chunk_index))
-                    os.remove(chunk_path)
-
-        monitor(f'Done.')
-
-
-
+                    block_path = None
+                    block_path_1 = block_path_2 = os.path.join(input_path, var_name, '.'.join(map(str, chunk_index)))
+                    if os.path.isfile(block_path_1):
+                        block_path = block_path_1
+                    else:
+                        block_path_2 = os.path.join(input_path, var_name, *map(str, chunk_index))
+                        if os.path.isfile(block_path_2):
+                            block_path = block_path_2
+                    if block_path:
+                        try:
+                            os.remove(block_path)
+                            num_deleted += 1
+                        except OSError as e:
+                            warnings.warn(f'error: failed to delete block file {block_path}: {e}')
+                    else:
+                        warnings.warn(f'error: could neither find block file {block_path_1} nor {block_path_2}')
+            else:
+                num_deleted += len(chunk_indices)
+        monitor(f'Done, {num_deleted} block file(s) deleted.')
