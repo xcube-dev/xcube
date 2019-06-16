@@ -104,7 +104,8 @@ class PruneDataTest(CliTest):
 
         # Open block, so we cannot delete
         path = os.path.join(self.TEST_CUBE, 'precipitation', '1.1.1')
-        with open(path, 'wb'):
+        # noinspection PyUnusedLocal
+        with open(path, 'wb') as fp:
             actual_message = None
             ok = _delete_block_file(self.TEST_CUBE, 'precipitation', (1, 1, 1), False, monitor=monitor)
             self.assertFalse(ok)
