@@ -1,5 +1,5 @@
 import os.path
-
+import sys
 import numpy as np
 import xarray as xr
 
@@ -102,12 +102,13 @@ class PruneDataTest(CliTest):
         self.assertEqual(None, actual_message)
         self.assertFalse(os.path.exists(os.path.join(self.TEST_CUBE, 'precipitation', '1.1.0')))
 
-        # Open block, so we cannot delete
-        path = os.path.join(self.TEST_CUBE, 'precipitation', '1.1.1')
-        # noinspection PyUnusedLocal
-        with open(path, 'wb') as fp:
-            actual_message = None
-            ok = _delete_block_file(self.TEST_CUBE, 'precipitation', (1, 1, 1), False, monitor=monitor)
-            self.assertFalse(ok)
-            self.assertIsNotNone(actual_message)
-            self.assertTrue(actual_message.startswith(f'error: failed to delete block file {path}: '))
+        if sys.platform == 'win32':
+            path = os.path.join(self.TEST_CUBE, 'precipitation', '1.1.1')
+            # Open block, so we cannot delete (Windows only)
+            # noinspection PyUnusedLocal
+            with open(path, 'wb') as fp:
+                actual_message = None
+                ok = _delete_block_file(self.TEST_CUBE, 'precipitation', (1, 1, 1), False, monitor=monitor)
+                self.assertFalse(ok)
+                self.assertIsNotNone(actual_message)
+                self.assertTrue(actual_message.startswith(f'error: failed to delete block file {path}: '))
