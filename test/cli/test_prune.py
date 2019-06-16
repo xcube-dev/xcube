@@ -40,13 +40,13 @@ class PruneDataTest(CliTest):
                          "Deleting 24 empty block file(s) for variable 'temperature'...\n"
                          "Done, 48 block file(s) deleted.\n",
                          result.stdout)
-        expected_file_names = ['.zarray',
-                               '.zattrs',
-                               '0.0.0', '0.0.1', '0.0.2', '0.0.3', '0.1.0', '0.1.1', '0.1.2', '0.1.3',
-                               '1.0.0', '1.0.1', '1.0.2', '1.0.3', '1.1.0', '1.1.1', '1.1.2', '1.1.3',
-                               '2.0.0', '2.0.1', '2.0.2', '2.0.3', '2.1.0', '2.1.1', '2.1.2', '2.1.3']
-        self.assertEqual(expected_file_names, os.listdir('test.zarr/precipitation'))
-        self.assertEqual(expected_file_names, os.listdir('test.zarr/temperature'))
+        expected_file_names = sorted(['.zarray',
+                                      '.zattrs',
+                                      '0.0.0', '0.0.1', '0.0.2', '0.0.3', '0.1.0', '0.1.1', '0.1.2', '0.1.3',
+                                      '1.0.0', '1.0.1', '1.0.2', '1.0.3', '1.1.0', '1.1.1', '1.1.2', '1.1.3',
+                                      '2.0.0', '2.0.1', '2.0.2', '2.0.3', '2.1.0', '2.1.1', '2.1.2', '2.1.3'])
+        self.assertEqual(expected_file_names, sorted(os.listdir('test.zarr/precipitation')))
+        self.assertEqual(expected_file_names, sorted(os.listdir('test.zarr/temperature')))
         ds = xr.open_zarr('test.zarr')
         assert_cube(ds)
         self.assertIn('precipitation', ds)
@@ -65,9 +65,9 @@ class PruneDataTest(CliTest):
                          "Deleting 24 empty block file(s) for variable 'temperature'...\n"
                          "Done, 48 block file(s) deleted.\n",
                          result.stdout)
-        expected_file_names = ['.zarray', '.zattrs']
-        self.assertEqual(expected_file_names, os.listdir('test.zarr/precipitation'))
-        self.assertEqual(expected_file_names, os.listdir('test.zarr/temperature'))
+        expected_file_names = sorted(['.zarray', '.zattrs'])
+        self.assertEqual(expected_file_names, sorted(os.listdir('test.zarr/precipitation')))
+        self.assertEqual(expected_file_names, sorted(os.listdir('test.zarr/temperature')))
         ds = xr.open_zarr('test.zarr')
         assert_cube(ds)
         self.assertIn('precipitation', ds)
