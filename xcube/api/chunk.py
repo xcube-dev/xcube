@@ -51,7 +51,7 @@ def get_empty_dataset_chunks(dataset: xr.Dataset) -> Dict[str, Tuple[Tuple[int, 
     return {var_name: get_empty_var_chunks(dataset[var_name]) for var_name in dataset.data_vars}
 
 
-def get_empty_var_chunks(var: xr.DataArray) -> Tuple[Tuple[int]]:
+def get_empty_var_chunks(var: xr.DataArray) -> Tuple[Tuple[int, ...]]:
     """
     Identify empty variable chunks and return their indices.
 
@@ -70,8 +70,9 @@ def get_empty_var_chunks(var: xr.DataArray) -> Tuple[Tuple[int]]:
         data = var[data_index]
         if np.all(np.isnan(data)):
             empty_chunk_indexes.append(chunk_index)
-            print(f'empty: {var.name}/{".".join(map(str, chunk_index))}')
+            # print(f'empty: {var.name}/{".".join(map(str, chunk_index))}')
 
+    # noinspection PyTypeChecker
     return tuple(empty_chunk_indexes)
 
 

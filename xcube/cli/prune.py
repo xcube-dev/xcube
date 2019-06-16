@@ -23,7 +23,6 @@ import os
 import os.path
 import warnings
 
-import warning
 import click
 
 # TODO (forman): move FORMAT_NAME_ZARR to constants,
@@ -58,31 +57,37 @@ def _prune(input_path: str = None,
 
     monitor(f'Opening cube from {input_path!r}...')
     with open_cube(input_path) as cube:
-
-        monitor('Identifying empty chunks...')
+        monitor('Identifying empty blocks...')
         empty_chunks = get_empty_dataset_chunks(cube)
 
-        num_deleted = 0
-        for var_name, chunk_indices in empty_chunks:
-            monitor(f'Deleting {len(chunk_indices)} empty chunk file(s) for variable {var_name!r}...')
-            if not dry_run:
-                for chunk_index in chunk_indices:
-                    block_path = None
-                    block_path_1 = block_path_2 = os.path.join(input_path, var_name, '.'.join(map(str, chunk_index)))
-                    if os.path.isfile(block_path_1):
-                        block_path = block_path_1
-                    else:
-                        block_path_2 = os.path.join(input_path, var_name, *map(str, chunk_index))
-                        if os.path.isfile(block_path_2):
-                            block_path = block_path_2
-                    if block_path:
-                        try:
-                            os.remove(block_path)
-                            num_deleted += 1
-                        except OSError as e:
-                            warnings.warn(f'error: failed to delete block file {block_path}: {e}')
-                    else:
-                        warnings.warn(f'error: could neither find block file {block_path_1} nor {block_path_2}')
-            else:
-                num_deleted += len(chunk_indices)
-        monitor(f'Done, {num_deleted} block file(s) deleted.')
+    num_deleted = 0
+    for var_name, chunk_indices in empty_chunks.items():
+        monitor(f'Deleting {len(chunk_indices)} empty block file(s) for variable {var_name!r}...')
+        for chunk_index in chunk_indices:
+            ok = _delete_block_file(input_path, var_name, chunk_index, dry_run, monitor)
+            if ok:
+                num_deleted += 1
+
+    monitor(f'Done, {num_deleted} block file(s) deleted.')
+
+
+def _delete_block_file(input_path, var_name, chunk_index, dry_run, monitor) -> bool:
+    block_path = None
+    block_path_1 = block_path_2 = os.path.join(input_path, var_name, '.'.join(map(str, chunk_index)))
+    if os.path.isfile(block_path_1):
+        block_path = block_path_1
+    else:
+        block_path_2 = os.path.join(input_path, var_name, *map(str, chunk_index))
+        if os.path.isfile(block_path_2):
+            block_path = block_path_2
+    if block_path:
+        if dry_run:
+            return True
+        try:
+            os.remove(block_path)
+            return True
+        except OSError as e:
+            monitor(f'error: failed to delete block file {block_path}: {e}')
+    else:
+        monitor(f'error: could neither find block file {block_path_1} nor {block_path_2}')
+    return False
