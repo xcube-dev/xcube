@@ -2,6 +2,16 @@
 
 ### Enhancements
 
+* Reworked `xcube gen` to be more user-friendly and more consistent with other tools. 
+  The changes are
+  - Removed `--dir` and `--name` options and replaced it by single `--output` option, 
+    whose default value is `out.zarr`. (#45)
+  - The `--format` option no longer has a default value. If not given, 
+    format is guessed from `--output` option.
+  - Renamed following parameters in the configuration file:
+    + `input_files` into `input_paths`, also because paths may point into object storage 
+      locations (buckets);  
+    + `output_file` into `output_path`, to be consistent with `input_paths`.  
 * Added new CLI command `xcube prune`. The tool deletes all block files associated with empty (NaN-
   only) chunks in given INPUT cube, which must have ZARR format. This can drastically reduce files 
   in sparse cubes and improve cube reading performance. (#92)
