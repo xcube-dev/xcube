@@ -443,7 +443,7 @@ handy tool [Wicket](https://arthur-e.github.io/Wicket/sandbox-gmaps3.html).
 
 Example:
 
-    $ xcube gen -p snap-olci-highroc-l2 -a -s 2000,1000 -r 0,50,5,52.5 -v conc_chl,conc_tsm,kd489,c2rcc_flags,quality_flags -o hiroc-cube D:\OneDrive\BC\EOData\HIGHROC\2017\**\*.nc
+    $ xcube gen -p snap-olci-highroc-l2 -a -s 2000,1000 -r 0,50,5,52.5 -v conc_chl,conc_tsm,kd489,c2rcc_flags,quality_flags -o hiroc-cube.zarr D:\OneDrive\BC\EOData\HIGHROC\2017\**\*.nc
 
 
 ## `xcube level`
