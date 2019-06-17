@@ -5,6 +5,7 @@ import click
 from xcube.cli.apply import apply
 from xcube.cli.gen import gen
 from xcube.cli.grid import grid
+from xcube.cli.prune import prune
 from xcube.cli.resample import resample
 from xcube.cli.serve import serve
 from xcube.cli.timeit import timeit
@@ -244,6 +245,7 @@ cli.add_command(extract)
 cli.add_command(gen)
 cli.add_command(grid)
 cli.add_command(level)
+cli.add_command(prune)
 cli.add_command(resample)
 cli.add_command(serve)
 cli.add_command(timeit)

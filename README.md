@@ -20,6 +20,7 @@ Data cubes with [xarray](http://xarray.pydata.org/).
   - [`xcube gen`](#xcube-gen)
   - [`xcube grid`](#xcube-grid)
   - [`xcube level`](#xcube-level)
+  - [`xcube prune`](#xcube-prune)
   - [`xcube resample`](#xcube-resample)
   - [`xcube serve`](#xcube-serve)
   - [`xcube vars2dim`](#xcube-vars2dim)
@@ -483,6 +484,19 @@ Example:
 Example:
 
     $ xcube level -l -t 720 data/cubes/test-cube.zarr
+
+## `xcube prune`
+
+    $ xcube prune --help
+    Usage: xcube prune [OPTIONS] INPUT
+    
+      Delete empty chunks. Deletes all block files associated with empty (NaN-
+      only) chunks in given INPUT cube, which must have ZARR format.
+    
+    Options:
+      --dry-run  Just read and process input, but don't produce any outputs.
+      --help     Show this message and exit.
+
 
 
 ## `xcube vars2dim`
