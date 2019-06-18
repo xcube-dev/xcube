@@ -33,8 +33,7 @@ import xarray as xr
 import zarr
 
 from .cache import MemoryCacheStore, Cache
-from .defaults import DEFAULT_CMAP_CBAR, DEFAULT_CMAP_VMIN, \
-    DEFAULT_CMAP_VMAX, API_PREFIX, DEFAULT_NAME, DEFAULT_TRACE_PERF
+from .defaults import DEFAULT_CMAP_CBAR, DEFAULT_CMAP_VMIN, DEFAULT_CMAP_VMAX, DEFAULT_TRACE_PERF
 from .errors import ServiceConfigError, ServiceError, ServiceBadRequestError, ServiceResourceNotFoundError
 from .im import TileGrid
 from .mldataset import FileStorageMultiLevelDataset, BaseMultiLevelDataset, MultiLevelDataset, \
@@ -42,6 +41,7 @@ from .mldataset import FileStorageMultiLevelDataset, BaseMultiLevelDataset, Mult
 from .reqparams import RequestParams
 from ..util.dsio import guess_dataset_format, FORMAT_NAME_NETCDF4, FORMAT_NAME_ZARR
 from ..util.perf import measure_time
+from ..version import version
 
 FORMAT_NAME_LEVELS = 'levels'
 
@@ -60,14 +60,14 @@ MultiLevelDatasetOpener = Callable[["ServiceContext", DatasetDescriptor], MultiL
 class ServiceContext:
 
     def __init__(self,
-                 name: str = DEFAULT_NAME,
+                 prefix: str = None,
                  base_dir: str = None,
                  config: Config = None,
                  trace_perf: bool = DEFAULT_TRACE_PERF,
                  tile_comp_mode: int = None,
                  tile_cache_capacity: int = None,
                  ml_dataset_openers: Dict[str, MultiLevelDatasetOpener] = None):
-        self._name = name
+        self._prefix = normalize_prefix(prefix)
         self._base_dir = os.path.abspath(base_dir or '')
         self._config = config if config is not None else dict()
         self._config_mtime = 0.0
@@ -144,17 +144,20 @@ class ServiceContext:
         return self._trace_perf
 
     def get_service_url(self, base_url, *path: str):
-        return base_url + '/' + self._name + API_PREFIX + '/' + '/'.join(path)
+        if self._prefix:
+            return base_url + '/' + self._prefix + '/' + '/'.join(path)
+        else:
+            return base_url + '/' + '/'.join(path)
 
     def get_ml_dataset(self, ds_id: str) -> MultiLevelDataset:
         ml_dataset, _ = self._get_dataset_entry(ds_id)
         return ml_dataset
 
-    def get_dataset(self, ds_id: str, var_names: Collection[str] = None) -> xr.Dataset:
+    def get_dataset(self, ds_id: str, expected_var_names: Collection[str] = None) -> xr.Dataset:
         ml_dataset, _ = self._get_dataset_entry(ds_id)
         dataset = ml_dataset.base_dataset
-        if var_names:
-            for var_name in var_names:
+        if expected_var_names:
+            for var_name in expected_var_names:
                 if var_name not in dataset:
                     raise ServiceResourceNotFoundError(f'Variable "{var_name}" not found in dataset "{ds_id}"')
         return dataset
@@ -207,7 +210,8 @@ class ServiceContext:
                         cmap_vmin, cmap_vmax = color_mapping.get('ValueRange', (cmap_vmin, cmap_vmax))
                         return cmap_cbar, cmap_vmin, cmap_vmax
             else:
-                ds, var = self.get_dataset_and_variable(ds_id, var_name)
+                ds = self.get_dataset(ds_id, expected_var_names=[var_name])
+                var = ds[var_name]
                 cmap_cbar = var.attrs.get('color_bar_name', cmap_cbar)
                 cmap_vmin = var.attrs.get('color_value_min', cmap_vmin)
                 cmap_vmax = var.attrs.get('color_value_max', cmap_vmax)
@@ -407,6 +411,17 @@ class ServiceContext:
                                 ds_name: str) -> Optional[Dict[str, Any]]:
         # Note: can be optimized by dict/key lookup
         return next((dsd for dsd in dataset_descriptors if dsd['Identifier'] == ds_name), None)
+
+
+def normalize_prefix(prefix: Optional[str]):
+    if not prefix:
+        return ''
+
+    prefix = prefix.replace('${version}', version).replace('${name}', 'xcube')
+    if not prefix.startswith('/'):
+        return '/' + prefix
+
+    return prefix
 
 
 def guess_cube_format(path: str) -> str:

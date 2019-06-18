@@ -40,9 +40,10 @@ from tornado.web import RequestHandler, Application
 
 from .context import ServiceContext, guess_cube_format
 from .defaults import DEFAULT_ADDRESS, DEFAULT_PORT, DEFAULT_UPDATE_PERIOD, DEFAULT_LOG_PREFIX, \
-    DEFAULT_TILE_CACHE_SIZE, DEFAULT_NAME, DEFAULT_TRACE_PERF, DEFAULT_TILE_COMP_MODE
+    DEFAULT_TILE_CACHE_SIZE, DEFAULT_TRACE_PERF, DEFAULT_TILE_COMP_MODE
 from .errors import ServiceBadRequestError
 from .reqparams import RequestParams
+from ..util.caseless import caseless_dict
 from ..util.undefined import UNDEFINED
 
 __author__ = "Norman Fomferra (Brockmann Consult GmbH)"
@@ -57,7 +58,7 @@ class Service:
 
     def __init__(self,
                  application: Application,
-                 name: str = DEFAULT_NAME,
+                 prefix: str = None,
                  address: str = DEFAULT_ADDRESS,
                  port: int = DEFAULT_PORT,
                  cube_paths: List[str] = None,
@@ -119,7 +120,7 @@ class Service:
                                  pid=os.getpid())
 
         base_dir = os.path.dirname(self.config_file) if self.config_file else os.path.abspath('')
-        self.context = ServiceContext(name=name,
+        self.context = ServiceContext(prefix=prefix,
                                       config=config,
                                       base_dir=base_dir,
                                       trace_perf=trace_perf,
@@ -131,14 +132,16 @@ class Service:
         application.time_of_last_activity = time.process_time()
         self.application = application
 
-        self.server = application.listen(port, address=address or 'localhost')
-        # Ensure we have the same event loop in all threads
-        asyncio.set_event_loop_policy(_GlobalEventLoopPolicy(asyncio.get_event_loop()))
         # Register handlers for common termination signals
         signal.signal(signal.SIGINT, self._sig_handler)
         signal.signal(signal.SIGTERM, self._sig_handler)
+
+        self.server = application.listen(port, address=address or 'localhost')
+        # Ensure we have the same event loop in all threads
+        asyncio.set_event_loop_policy(_GlobalEventLoopPolicy(asyncio.get_event_loop()))
         self._maybe_load_config()
         self._maybe_install_update_check()
+        self._shutdown_requested = False
 
     def start(self):
         address = self.service_info['address']
@@ -148,6 +151,7 @@ class Service:
         _LOG.info(f'press CTRL+C to stop service')
         if len(self.context.config.get('Datasets', {})) == 0:
             _LOG.warning('no datasets configured')
+        tornado.ioloop.PeriodicCallback(self._try_shutdown, 100).start()
         IOLoop.current().start()
 
     def stop(self, kill=False):
@@ -157,9 +161,9 @@ class Service:
         if kill:
             sys.exit(0)
         else:
-            IOLoop.current().add_callback(self._on_shut_down)
+            IOLoop.current().add_callback(self._on_shutdown)
 
-    def _on_shut_down(self):
+    def _on_shutdown(self):
 
         _LOG.info('stopping service...')
 
@@ -174,11 +178,16 @@ class Service:
             self.server = None
 
         IOLoop.current().stop()
+        _LOG.info('service stopped.')
+
+    def _try_shutdown(self):
+        if self._shutdown_requested:
+            self._on_shutdown()
 
     # noinspection PyUnusedLocal
     def _sig_handler(self, sig, frame):
         _LOG.warning(f'caught signal {sig}')
-        IOLoop.current().add_callback_from_signal(self._on_shut_down)
+        self._shutdown_requested = True
 
     def _maybe_install_update_check(self):
         if self.config_file is None or self.update_period is None or self.update_period <= 0:
@@ -221,6 +230,9 @@ class ServiceRequestHandler(RequestHandler):
     def __init__(self, application, request, **kwargs):
         super().__init__(application, request, **kwargs)
         self._params = ServiceRequestParams(self)
+
+    def set_caseless_query_arguments(self):
+        self.request.query_arguments = caseless_dict(self.request.query_arguments or {})
 
     @property
     def service_context(self) -> ServiceContext:

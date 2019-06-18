@@ -20,9 +20,7 @@
 # SOFTWARE.
 from typing import Dict, Union
 
-import yaml
-
-from ...util.config import to_name_dict_pairs, flatten_dict, merge_config
+from ...util.config import to_name_dict_pairs, flatten_dict, load_configs
 
 
 def get_config_dict(config_obj: Dict[str, Union[str, bool, int, float, list, dict, tuple]]):
@@ -34,10 +32,9 @@ def get_config_dict(config_obj: Dict[str, Union[str, bool, int, float, list, dic
     :raise OSError, ValueError
     """
     config_file = config_obj.get("config_file")
-    input_files = config_obj.get("input_files")
+    input_paths = config_obj.get("input_paths")
     input_processor = config_obj.get("input_processor")
-    output_dir = config_obj.get("output_dir")
-    output_name = config_obj.get("output_name")
+    output_path = config_obj.get("output_path")
     output_writer = config_obj.get("output_writer")
     output_size = config_obj.get("output_size")
     output_region = config_obj.get("output_region")
@@ -46,77 +43,53 @@ def get_config_dict(config_obj: Dict[str, Union[str, bool, int, float, list, dic
     append_mode = config_obj.get("append_mode")
     sort_mode = config_obj.get("sort_mode")
 
-    if config_file is None or len(config_file) == 0:
-        config = {}
-    else:
-        config_paths = config_file
-        config_dicts = []
-        for config_path in config_paths:
-            with open(config_path) as fp:
-                try:
-                    config_dict = yaml.safe_load(fp)
-                except yaml.YAMLError as e:
-                    raise ValueError(f'YAML in {config_path!r} is invalid: {e}') from e
-                except OSError as e:
-                    raise ValueError(f'cannot load configuration from {config_path!r}: {e}') from e
-                if not isinstance(config_dict, dict):
-                    raise ValueError(f'invalid configuration format in {config_path!r}: dictionary expected')
-                config_dicts.append(config_dict)
-        config = merge_config(*config_dicts)
+    config = load_configs(*config_file) if config_file else {}
 
     # Overwrite current configuration by cli arguments
-    if input_files is not None and config.get('input_files') is None:
-        if len(input_files) == 1 and input_files[0].endswith(".txt"):
-            with open(input_files[0]) as input_txt:
+    if input_paths is not None and 'input_paths' not in config:
+        if len(input_paths) == 1 and input_paths[0].endswith(".txt"):
+            with open(input_paths[0]) as input_txt:
                 input_paths = input_txt.readlines()
-            config['input_files'] = [x.strip() for x in input_paths]
+            config['input_paths'] = [x.strip() for x in input_paths]
         else:
-            config['input_files'] = input_files
+            config['input_paths'] = input_paths
 
     if input_processor is not None:
         config['input_processor'] = input_processor
 
-    if output_dir is not None and config.get('output_dir') is None:
-        config['output_dir'] = output_dir
+    if output_path is not None and 'output_path' not in config:
+        config['output_path'] = output_path
 
-    if output_name is not None and config.get('output_name') is None:
-        config['output_name'] = output_name
-
-    if output_writer is not None and config.get('output_writer') is None:
+    if output_writer is not None and 'output_writer' not in config:
         config['output_writer'] = output_writer
 
-    if output_resampling is not None and config.get('output_resampling') is None:
+    if output_resampling is not None and 'output_resampling' not in config:
         config['output_resampling'] = output_resampling
 
     if output_size is not None:
         try:
             output_size = list(map(lambda c: int(c), output_size.split(',')))
         except ValueError:
-            raise ValueError(
-                f'Invalid output size was given. Only integers are accepted. The given output size was: '
-                f'{config_obj.get("output_size")!r}')
-        if len(output_size) != 2:
-            raise ValueError(f'The output size must be given as pair <width>,<height>, but was: '
-                             f'{config_obj.get("output_size")!r}')
+            output_size = None
+        if output_size is None or len(output_size) != 2:
+            raise ValueError(f'output_size must have the form <width>,<height>,'
+                             f' where both values must be positive integer numbers')
         config['output_size'] = output_size
 
     if output_region is not None:
         try:
             output_region = list(map(lambda c: float(c), output_region.split(',')))
         except ValueError:
-            raise ValueError(f'Invalid output region was given. Only floats are accepted. The given output region was: '
-                             f'{config_obj.get("output_region")!r}')
-        if len(output_region) != 4:
-            raise ValueError(f'The output region must be given as 4 values: <lon_min>,<lat_min>,<lon_max>,<lat_max>, '
-                             f'but was: {config_obj.get("output_region")!r}')
+            output_region = None
+        if output_region is None or len(output_region) != 4:
+            raise ValueError(f'output_region must have the form <lon_min>,<lat_min>,<lon_max>,<lat_max>,'
+                             f' where all four numbers must be floating point numbers in degrees')
         config['output_region'] = output_region
 
     if output_variables is not None:
         output_variables = list(map(lambda c: c.strip(), output_variables.split(',')))
-        if output_variables == ['']:
-            raise ValueError('output_variables must contain at least one name')
-        if any([var_name == '' for var_name in output_variables]):
-            raise ValueError('all names in output_variables must be non-empty')
+        if output_variables == [''] or any([var_name == '' for var_name in output_variables]):
+            raise ValueError('output_variables must be a list of existing variable names')
         config['output_variables'] = output_variables
 
     if append_mode is not None and config.get('append_mode') is None:
@@ -137,3 +110,5 @@ def get_config_dict(config_obj: Dict[str, Union[str, bool, int, float, list, dic
     if output_metadata:
         config['output_metadata'] = flatten_dict(output_metadata)
     return config
+
+

@@ -19,7 +19,6 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-import glob
 import os
 import shutil
 import warnings
@@ -30,56 +29,14 @@ import pandas as pd
 import s3fs
 import xarray as xr
 import zarr
-from xcube.util.objreg import get_obj_registry
+
+from ..util.objreg import get_obj_registry
 
 FORMAT_NAME_EXCEL = "excel"
 FORMAT_NAME_CSV = "csv"
 FORMAT_NAME_MEM = "mem"
 FORMAT_NAME_NETCDF4 = "netcdf4"
 FORMAT_NAME_ZARR = "zarr"
-
-
-def open_from_fs(paths: str, recursive: bool = False, **kwargs):
-    """
-    Open an xcube (xarray dataset) from local or any mounted file system.
-
-    :param paths: A path which may contain Unix-style wildcards or a sequence of paths.
-    :param recursive: Whether wildcards should be resolved recursively in sub-directories.
-    :type kwargs: keyword arguments passed to `xarray.open_mfdataset()`.
-    """
-    if isinstance(paths, str):
-        paths = [file for file in glob.glob(paths, recursive=recursive)]
-        if 'autoclose' not in kwargs:
-            kwargs['autoclose'] = True
-
-    if 'coords' not in kwargs:
-        kwargs['coords'] = 'minimum'
-    if 'data_vars' not in kwargs:
-        kwargs['data_vars'] = 'minimum'
-
-    ds = xr.open_mfdataset(paths, **kwargs)
-
-    if 'chunks' not in kwargs:
-        print("ds.encoding = ", ds.encoding)
-
-    return ds
-
-
-def open_from_obs(path: str, endpoint_url: str = None, max_cache_size: int = 2 ** 28) -> xr.Dataset:
-    """
-    Open an xcube (xarray dataset) from S3 compatible object storage (OBS).
-
-    :param path: Path having format "<bucket>/<my>/<sub>/<path>"
-    :param endpoint_url: Optional URL of the OBS service endpoint. If omitted, AWS S3 service URL is used.
-    :param max_cache_size: If > 0, size of a memory cache in bytes, e.g. 2**30 = one giga bytes.
-           If None or size <= 0, no memory cache will be used.
-    :return: an xarray dataset
-    """
-    s3 = s3fs.S3FileSystem(anon=True, client_kwargs=dict(endpoint_url=endpoint_url))
-    store = s3fs.S3Map(root=path, s3=s3, check=False)
-    if max_cache_size is not None and max_cache_size > 0:
-        store = zarr.LRUStoreCache(store, max_size=max_cache_size)
-    return xr.open_zarr(store)
 
 
 class DatasetIO(metaclass=ABCMeta):
@@ -316,7 +273,7 @@ class Netcdf4DatasetIO(DatasetIO):
 
     def append(self, dataset: xr.Dataset, output_path: str, **kwargs):
         import os
-        temp_path = output_path + 'temp.nc'
+        temp_path = output_path + '.temp.nc'
         os.rename(output_path, temp_path)
         old_ds = xr.open_dataset(temp_path, decode_times=False)
         new_ds = xr.concat([old_ds, dataset],
@@ -384,7 +341,21 @@ class ZarrDatasetIO(DatasetIO):
         return (3 * ext_value + type_value) / 4
 
     def read(self, path: str, **kwargs) -> xr.Dataset:
-        return xr.open_zarr(path, **kwargs)
+        path_or_store = path
+        if isinstance(path, str) \
+                and (path.startswith("http://")
+                     or path.startswith("https://")):
+            import urllib3.util
+            url = urllib3.util.parse_url(path_or_store)
+            endpoint_url = f'{url.scheme}://{url.host}'
+            s3 = s3fs.S3FileSystem(anon=True, client_kwargs=dict(endpoint_url=endpoint_url))
+            path_or_store = s3fs.S3Map(root=path, s3=s3, check=False)
+            if 'max_cache_size' in kwargs:
+                max_cache_size = kwargs.pop('max_cache_size')
+                if max_cache_size > 0:
+                    path_or_store = zarr.LRUStoreCache(path_or_store, max_size=max_cache_size)
+
+        return xr.open_zarr(path_or_store, **kwargs)
 
     def write(self,
               dataset: xr.Dataset,
@@ -395,7 +366,8 @@ class ZarrDatasetIO(DatasetIO):
         encoding = self._get_write_encodings(dataset, compress, cname, clevel, shuffle, blocksize, chunksizes)
         dataset.to_zarr(output_path, mode="w", encoding=encoding)
 
-    def _get_write_encodings(self, dataset, compress, cname, clevel, shuffle, blocksize, chunksizes):
+    @classmethod
+    def _get_write_encodings(cls, dataset, compress, cname, clevel, shuffle, blocksize, chunksizes):
         encoding = None
         if chunksizes:
             encoding = {}
@@ -434,6 +406,7 @@ class ZarrDatasetIO(DatasetIO):
                 var_array.append(new_var, axis=axis)
 
 
+# noinspection PyAbstractClass
 class CsvDatasetIO(DatasetIO):
     """
     A dataset I/O that reads from / writes to CSV files.

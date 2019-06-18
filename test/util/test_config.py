@@ -1,15 +1,17 @@
+import os
 import shutil
 import unittest
 from io import StringIO
-import os
-from typing import Dict, Tuple
+from typing import Dict
 
 import yaml
-# from yaml.parser import ParserError # needs to be kept for last test, which is still not working properly
 
 from xcube.api.gen.config import get_config_dict
 from xcube.util.config import flatten_dict, to_name_dict_pair, to_name_dict_pairs, to_resolved_name_dict_pairs, \
     merge_config
+
+
+# from yaml.parser import ParserError # needs to be kept for last test, which is still not working properly
 
 
 class ToResolvedNameDictPairsTest(unittest.TestCase):
@@ -291,7 +293,7 @@ class MergeDictsTest(unittest.TestCase):
         self.assertEqual({'a': dict(c=25), 'o': 105}, actual_dict)
 
 
-def _get_config_obj(config_file: Tuple[str, str] = (),
+def _get_config_obj(config_file=None,
                     input_files=None,
                     input_processor=None,
                     output_dir=None,
@@ -393,9 +395,9 @@ class GetConfigDictTest(unittest.TestCase):
 
     def test_config_file_does_not_exist(self):
         config_obj = _get_config_obj(config_file=['bibo.yaml', ])
-        with self.assertRaises(FileNotFoundError) as cm:
+        with self.assertRaises(ValueError) as cm:
             get_config_dict(config_obj)
-        self.assertEqual("[Errno 2] No such file or directory: 'bibo.yaml'",
+        self.assertEqual("Cannot find configuration 'bibo.yaml'",
                          f'{cm.exception}')
 
     def test_output_size_option(self):
@@ -408,7 +410,7 @@ class GetConfigDictTest(unittest.TestCase):
         with self.assertRaises(ValueError) as cm:
             get_config_dict(config_obj)
         self.assertEqual(
-            "Invalid output size was given. Only integers are accepted. The given output size was: '120,abc'",
+            "output_size must have the form <width>,<height>, where both values must be positive integer numbers",
             f'{cm.exception}')
 
     def test_output_region_option(self):
@@ -420,15 +422,15 @@ class GetConfigDictTest(unittest.TestCase):
         config_obj = _get_config_obj(output_region='50,_2,55,21')
         with self.assertRaises(ValueError) as cm:
             get_config_dict(config_obj)
-        self.assertEqual("Invalid output region was given. Only floats are accepted. The given output region was:"
-                         " '50,_2,55,21'",
+        self.assertEqual("output_region must have the form <lon_min>,<lat_min>,<lon_max>,<lat_max>,"
+                         " where all four numbers must be floating point numbers in degrees",
                          f'{cm.exception}')
 
         config_obj = _get_config_obj(output_region='50, 20, 55')
         with self.assertRaises(ValueError) as cm:
             get_config_dict(config_obj)
-        self.assertEqual("The output region must be given as 4 values: <lon_min>,<lat_min>,<lon_max>,<lat_max>, "
-                         "but was: '50, 20, 55'",
+        self.assertEqual("output_region must have the form <lon_min>,<lat_min>,<lon_max>,<lat_max>,"
+                         " where all four numbers must be floating point numbers in degrees",
                          f'{cm.exception}')
 
     def test_output_variables_option(self):
@@ -441,13 +443,13 @@ class GetConfigDictTest(unittest.TestCase):
         config_obj = _get_config_obj(output_variables='')
         with self.assertRaises(ValueError) as cm:
             get_config_dict(config_obj)
-        self.assertEqual("output_variables must contain at least one name",
+        self.assertEqual("output_variables must be a list of existing variable names",
                          f'{cm.exception}')
 
         config_obj = _get_config_obj(output_variables='a*,')
         with self.assertRaises(ValueError) as cm:
             get_config_dict(config_obj)
-        self.assertEqual("all names in output_variables must be non-empty",
+        self.assertEqual("output_variables must be a list of existing variable names",
                          f'{cm.exception}')
 
     # This test is still not running correcly, needs to be fixed. TODO: AliceBalfanz

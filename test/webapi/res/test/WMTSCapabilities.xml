@@ -49,14 +49,14 @@
         <ows:Operation name="GetCapabilities">
             <ows:DCP>
                 <ows:HTTP>
-                    <ows:Get xlink:href="http://bibo/xcube/api/0.1.0.dev6/wmts/kvp?">
+                    <ows:Get xlink:href="http://bibo/wmts/kvp?">
                         <ows:Constraint name="GetEncoding">
                             <ows:AllowedValues>
                                 <ows:Value>KVP</ows:Value>
                             </ows:AllowedValues>
                         </ows:Constraint>
                     </ows:Get>
-                    <ows:Get xlink:href="http://bibo/xcube/api/0.1.0.dev6/wmts/1.0.0/WMTSCapabilities.xml">
+                    <ows:Get xlink:href="http://bibo/wmts/1.0.0/WMTSCapabilities.xml">
                         <ows:Constraint name="GetEncoding">
                             <ows:AllowedValues>
                                 <ows:Value>REST</ows:Value>
@@ -69,14 +69,14 @@
         <ows:Operation name="GetTile">
             <ows:DCP>
                 <ows:HTTP>
-                    <ows:Get xlink:href="http://bibo/xcube/api/0.1.0.dev6/wmts/kvp?">
+                    <ows:Get xlink:href="http://bibo/wmts/kvp?">
                         <ows:Constraint name="GetEncoding">
                             <ows:AllowedValues>
                                 <ows:Value>KVP</ows:Value>
                             </ows:AllowedValues>
                         </ows:Constraint>
                     </ows:Get>
-                    <ows:Get xlink:href="http://bibo/xcube/api/0.1.0.dev6/wmts/1.0.0/">
+                    <ows:Get xlink:href="http://bibo/wmts/1.0.0/">
                         <ows:Constraint name="GetEncoding">
                             <ows:AllowedValues>
                                 <ows:Value>REST</ows:Value>
@@ -135,7 +135,7 @@
             <Style isDefault="true"><ows:Identifier>Default</ows:Identifier></Style>
             <Format>image/png</Format>
             <TileMatrixSetLink><TileMatrixSet>TileGrid_0</TileMatrixSet></TileMatrixSetLink>
-            <ResourceURL format="image/png" resourceType="tile" template="http://bibo/xcube/api/0.1.0.dev6/wmts/1.0.0/tile/demo/quality_flags/{TileMatrix}/{TileRow}/{TileCol}.png"/>
+            <ResourceURL format="image/png" resourceType="tile" template="http://bibo/wmts/1.0.0/tile/demo/quality_flags/{TileMatrix}/{TileRow}/{TileCol}.png"/>
             <Dimension>
                 <ows:Identifier>time</ows:Identifier>
                 <ows:Title>time</ows:Title>
@@ -160,7 +160,7 @@
             <Style isDefault="true"><ows:Identifier>Default</ows:Identifier></Style>
             <Format>image/png</Format>
             <TileMatrixSetLink><TileMatrixSet>TileGrid_0</TileMatrixSet></TileMatrixSetLink>
-            <ResourceURL format="image/png" resourceType="tile" template="http://bibo/xcube/api/0.1.0.dev6/wmts/1.0.0/tile/demo/kd489/{TileMatrix}/{TileRow}/{TileCol}.png"/>
+            <ResourceURL format="image/png" resourceType="tile" template="http://bibo/wmts/1.0.0/tile/demo/kd489/{TileMatrix}/{TileRow}/{TileCol}.png"/>
             <Dimension>
                 <ows:Identifier>time</ows:Identifier>
                 <ows:Title>time</ows:Title>
@@ -185,7 +185,7 @@
             <Style isDefault="true"><ows:Identifier>Default</ows:Identifier></Style>
             <Format>image/png</Format>
             <TileMatrixSetLink><TileMatrixSet>TileGrid_0</TileMatrixSet></TileMatrixSetLink>
-            <ResourceURL format="image/png" resourceType="tile" template="http://bibo/xcube/api/0.1.0.dev6/wmts/1.0.0/tile/demo/conc_tsm/{TileMatrix}/{TileRow}/{TileCol}.png"/>
+            <ResourceURL format="image/png" resourceType="tile" template="http://bibo/wmts/1.0.0/tile/demo/conc_tsm/{TileMatrix}/{TileRow}/{TileCol}.png"/>
             <Dimension>
                 <ows:Identifier>time</ows:Identifier>
                 <ows:Title>time</ows:Title>
@@ -210,7 +210,7 @@
             <Style isDefault="true"><ows:Identifier>Default</ows:Identifier></Style>
             <Format>image/png</Format>
             <TileMatrixSetLink><TileMatrixSet>TileGrid_0</TileMatrixSet></TileMatrixSetLink>
-            <ResourceURL format="image/png" resourceType="tile" template="http://bibo/xcube/api/0.1.0.dev6/wmts/1.0.0/tile/demo/conc_chl/{TileMatrix}/{TileRow}/{TileCol}.png"/>
+            <ResourceURL format="image/png" resourceType="tile" template="http://bibo/wmts/1.0.0/tile/demo/conc_chl/{TileMatrix}/{TileRow}/{TileCol}.png"/>
             <Dimension>
                 <ows:Identifier>time</ows:Identifier>
                 <ows:Title>time</ows:Title>
@@ -235,7 +235,7 @@
             <Style isDefault="true"><ows:Identifier>Default</ows:Identifier></Style>
             <Format>image/png</Format>
             <TileMatrixSetLink><TileMatrixSet>TileGrid_0</TileMatrixSet></TileMatrixSetLink>
-            <ResourceURL format="image/png" resourceType="tile" template="http://bibo/xcube/api/0.1.0.dev6/wmts/1.0.0/tile/demo/c2rcc_flags/{TileMatrix}/{TileRow}/{TileCol}.png"/>
+            <ResourceURL format="image/png" resourceType="tile" template="http://bibo/wmts/1.0.0/tile/demo/c2rcc_flags/{TileMatrix}/{TileRow}/{TileCol}.png"/>
             <Dimension>
                 <ows:Identifier>time</ows:Identifier>
                 <ows:Title>time</ows:Title>
@@ -260,7 +260,7 @@
             <Style isDefault="true"><ows:Identifier>Default</ows:Identifier></Style>
             <Format>image/png</Format>
             <TileMatrixSetLink><TileMatrixSet>TileGrid_0</TileMatrixSet></TileMatrixSetLink>
-            <ResourceURL format="image/png" resourceType="tile" template="http://bibo/xcube/api/0.1.0.dev6/wmts/1.0.0/tile/demo-1w/quality_flags/{TileMatrix}/{TileRow}/{TileCol}.png"/>
+            <ResourceURL format="image/png" resourceType="tile" template="http://bibo/wmts/1.0.0/tile/demo-1w/quality_flags/{TileMatrix}/{TileRow}/{TileCol}.png"/>
             <Dimension>
                 <ows:Identifier>time</ows:Identifier>
                 <ows:Title>time</ows:Title>
@@ -283,7 +283,7 @@
             <Style isDefault="true"><ows:Identifier>Default</ows:Identifier></Style>
             <Format>image/png</Format>
             <TileMatrixSetLink><TileMatrixSet>TileGrid_0</TileMatrixSet></TileMatrixSetLink>
-            <ResourceURL format="image/png" resourceType="tile" template="http://bibo/xcube/api/0.1.0.dev6/wmts/1.0.0/tile/demo-1w/kd489/{TileMatrix}/{TileRow}/{TileCol}.png"/>
+            <ResourceURL format="image/png" resourceType="tile" template="http://bibo/wmts/1.0.0/tile/demo-1w/kd489/{TileMatrix}/{TileRow}/{TileCol}.png"/>
             <Dimension>
                 <ows:Identifier>time</ows:Identifier>
                 <ows:Title>time</ows:Title>
@@ -306,7 +306,7 @@
             <Style isDefault="true"><ows:Identifier>Default</ows:Identifier></Style>
             <Format>image/png</Format>
             <TileMatrixSetLink><TileMatrixSet>TileGrid_0</TileMatrixSet></TileMatrixSetLink>
-            <ResourceURL format="image/png" resourceType="tile" template="http://bibo/xcube/api/0.1.0.dev6/wmts/1.0.0/tile/demo-1w/conc_tsm/{TileMatrix}/{TileRow}/{TileCol}.png"/>
+            <ResourceURL format="image/png" resourceType="tile" template="http://bibo/wmts/1.0.0/tile/demo-1w/conc_tsm/{TileMatrix}/{TileRow}/{TileCol}.png"/>
             <Dimension>
                 <ows:Identifier>time</ows:Identifier>
                 <ows:Title>time</ows:Title>
@@ -329,7 +329,7 @@
             <Style isDefault="true"><ows:Identifier>Default</ows:Identifier></Style>
             <Format>image/png</Format>
             <TileMatrixSetLink><TileMatrixSet>TileGrid_0</TileMatrixSet></TileMatrixSetLink>
-            <ResourceURL format="image/png" resourceType="tile" template="http://bibo/xcube/api/0.1.0.dev6/wmts/1.0.0/tile/demo-1w/conc_chl/{TileMatrix}/{TileRow}/{TileCol}.png"/>
+            <ResourceURL format="image/png" resourceType="tile" template="http://bibo/wmts/1.0.0/tile/demo-1w/conc_chl/{TileMatrix}/{TileRow}/{TileCol}.png"/>
             <Dimension>
                 <ows:Identifier>time</ows:Identifier>
                 <ows:Title>time</ows:Title>
@@ -352,7 +352,7 @@
             <Style isDefault="true"><ows:Identifier>Default</ows:Identifier></Style>
             <Format>image/png</Format>
             <TileMatrixSetLink><TileMatrixSet>TileGrid_0</TileMatrixSet></TileMatrixSetLink>
-            <ResourceURL format="image/png" resourceType="tile" template="http://bibo/xcube/api/0.1.0.dev6/wmts/1.0.0/tile/demo-1w/c2rcc_flags/{TileMatrix}/{TileRow}/{TileCol}.png"/>
+            <ResourceURL format="image/png" resourceType="tile" template="http://bibo/wmts/1.0.0/tile/demo-1w/c2rcc_flags/{TileMatrix}/{TileRow}/{TileCol}.png"/>
             <Dimension>
                 <ows:Identifier>time</ows:Identifier>
                 <ows:Title>time</ows:Title>
@@ -375,7 +375,7 @@
             <Style isDefault="true"><ows:Identifier>Default</ows:Identifier></Style>
             <Format>image/png</Format>
             <TileMatrixSetLink><TileMatrixSet>TileGrid_0</TileMatrixSet></TileMatrixSetLink>
-            <ResourceURL format="image/png"resourceType="tile"template="http://bibo/xcube/api/0.1.0.dev6/wmts/1.0.0/tile/demo-1w/quality_flags_stdev/{TileMatrix}/{TileRow}/{TileCol}.png"/>
+            <ResourceURL format="image/png"resourceType="tile"template="http://bibo/wmts/1.0.0/tile/demo-1w/quality_flags_stdev/{TileMatrix}/{TileRow}/{TileCol}.png"/>
             <Dimension>
                 <ows:Identifier>time</ows:Identifier>
                 <ows:Title>time</ows:Title>
@@ -398,7 +398,7 @@
             <Style isDefault="true"><ows:Identifier>Default</ows:Identifier></Style>
             <Format>image/png</Format>
             <TileMatrixSetLink><TileMatrixSet>TileGrid_0</TileMatrixSet></TileMatrixSetLink>
-            <ResourceURL format="image/png"resourceType="tile"template="http://bibo/xcube/api/0.1.0.dev6/wmts/1.0.0/tile/demo-1w/kd489_stdev/{TileMatrix}/{TileRow}/{TileCol}.png"/>
+            <ResourceURL format="image/png"resourceType="tile"template="http://bibo/wmts/1.0.0/tile/demo-1w/kd489_stdev/{TileMatrix}/{TileRow}/{TileCol}.png"/>
             <Dimension>
                 <ows:Identifier>time</ows:Identifier>
                 <ows:Title>time</ows:Title>
@@ -421,7 +421,7 @@
             <Style isDefault="true"><ows:Identifier>Default</ows:Identifier></Style>
             <Format>image/png</Format>
             <TileMatrixSetLink><TileMatrixSet>TileGrid_0</TileMatrixSet></TileMatrixSetLink>
-            <ResourceURL format="image/png"resourceType="tile"template="http://bibo/xcube/api/0.1.0.dev6/wmts/1.0.0/tile/demo-1w/conc_tsm_stdev/{TileMatrix}/{TileRow}/{TileCol}.png"/>
+            <ResourceURL format="image/png"resourceType="tile"template="http://bibo/wmts/1.0.0/tile/demo-1w/conc_tsm_stdev/{TileMatrix}/{TileRow}/{TileCol}.png"/>
             <Dimension>
                 <ows:Identifier>time</ows:Identifier>
                 <ows:Title>time</ows:Title>
@@ -444,7 +444,7 @@
             <Style isDefault="true"><ows:Identifier>Default</ows:Identifier></Style>
             <Format>image/png</Format>
             <TileMatrixSetLink><TileMatrixSet>TileGrid_0</TileMatrixSet></TileMatrixSetLink>
-            <ResourceURL format="image/png"resourceType="tile"template="http://bibo/xcube/api/0.1.0.dev6/wmts/1.0.0/tile/demo-1w/conc_chl_stdev/{TileMatrix}/{TileRow}/{TileCol}.png"/>
+            <ResourceURL format="image/png"resourceType="tile"template="http://bibo/wmts/1.0.0/tile/demo-1w/conc_chl_stdev/{TileMatrix}/{TileRow}/{TileCol}.png"/>
             <Dimension>
                 <ows:Identifier>time</ows:Identifier>
                 <ows:Title>time</ows:Title>
@@ -467,7 +467,7 @@
             <Style isDefault="true"><ows:Identifier>Default</ows:Identifier></Style>
             <Format>image/png</Format>
             <TileMatrixSetLink><TileMatrixSet>TileGrid_0</TileMatrixSet></TileMatrixSetLink>
-            <ResourceURL format="image/png"resourceType="tile"template="http://bibo/xcube/api/0.1.0.dev6/wmts/1.0.0/tile/demo-1w/c2rcc_flags_stdev/{TileMatrix}/{TileRow}/{TileCol}.png"/>
+            <ResourceURL format="image/png"resourceType="tile"template="http://bibo/wmts/1.0.0/tile/demo-1w/c2rcc_flags_stdev/{TileMatrix}/{TileRow}/{TileCol}.png"/>
             <Dimension>
                 <ows:Identifier>time</ows:Identifier>
                 <ows:Title>time</ows:Title>
@@ -567,5 +567,5 @@
             </Theme>
         </Theme>
     </Themes>
-    <ServiceMetadataURL xlink:href="http://bibo/xcube/api/0.1.0.dev6/wmts/1.0.0/WMTSCapabilities.xml"/>
+    <ServiceMetadataURL xlink:href="http://bibo/wmts/1.0.0/WMTSCapabilities.xml"/>
 </Capabilities>

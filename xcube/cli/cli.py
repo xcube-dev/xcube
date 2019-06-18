@@ -5,6 +5,8 @@ import click
 from xcube.cli.apply import apply
 from xcube.cli.gen import gen
 from xcube.cli.grid import grid
+from xcube.cli.prune import prune
+from xcube.cli.resample import resample
 from xcube.cli.serve import serve
 from xcube.cli.timeit import timeit
 from xcube.util.cliutil import parse_cli_kwargs, new_cli_ctx_obj, handle_cli_exception, cli_option_traceback, \
@@ -236,16 +238,18 @@ def cli(traceback=False, scheduler=None):
     """
 
 
+cli.add_command(apply)
 cli.add_command(chunk)
 cli.add_command(dump)
 cli.add_command(extract)
-cli.add_command(grid)
-cli.add_command(vars2dim)
 cli.add_command(gen)
+cli.add_command(grid)
 cli.add_command(level)
-cli.add_command(apply)
-cli.add_command(timeit)
+cli.add_command(prune)
+cli.add_command(resample)
 cli.add_command(serve)
+cli.add_command(timeit)
+cli.add_command(vars2dim)
 
 
 def main(args=None):

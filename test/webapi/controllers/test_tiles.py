@@ -117,4 +117,4 @@ class TilesControllerTest(unittest.TestCase):
 
     @property
     def base_url(self):
-        return f'http://bibo/xcube{API_PREFIX}'
+        return f'http://bibo'
