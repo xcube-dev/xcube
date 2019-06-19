@@ -257,7 +257,11 @@ def get_dataset_indexes(dataset: xr.Dataset,
                          f" coordinate variable {coord_var_name!r} of size {coord_var.size}")
 
     if np.issubdtype(coord_values.dtype, np.datetime64):
-        coord_values = coord_values.astype(np.uint64)
+        try:
+            coord_values = coord_values.astype(np.uint64)
+        except TypeError:
+            # Fixes https://github.com/dcs4cop/xcube/issues/95
+            coord_values = coord_values.values.astype(np.uint64)
 
     indexes = np.linspace(0.0, n1, n2, dtype=np.float64)
     interp_indexes = np.interp(coord_values, coords, indexes, left=-1, right=-1)

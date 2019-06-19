@@ -48,6 +48,7 @@ xcube's organisation. (#49)
 
 ### Fixes
 
+* Fixed `xcube extract` regression that stopped working after Pandas update (#95) 
 * Fixed problem where CTRL+C didn't function anymore with `xcube serve`. (#87)
 * Fixed error `indexes along dimension 'y' are not equal` occurred when using 
   `xcube gen` with processed variables that used flag values (#86)
