@@ -6,8 +6,7 @@ import xarray as xr
 
 from .verify import assert_cube
 
-INDEX_NAME_PATTERN = '{name}_index'
-FRACTION_NAME_PATTERN = '{name}_fraction'
+DEFAULT_INDEX_NAME_PATTERN = '{name}_index'
 INDEX_DIM_NAME = "idx"
 
 POINT_INTERP_METHOD_NEAREST = "nearest"
@@ -18,7 +17,7 @@ DEFAULT_INTERP_POINT_METHOD = POINT_INTERP_METHOD_NEAREST
 def get_cube_values_for_points(cube: xr.Dataset,
                                points: Union[xr.Dataset, pd.DataFrame, Mapping[str, Any]],
                                var_names: Sequence[str] = None,
-                               index_name_pattern: str = INDEX_NAME_PATTERN,
+                               index_name_pattern: str = DEFAULT_INDEX_NAME_PATTERN,
                                include_indexes: bool = False,
                                method: str = DEFAULT_INTERP_POINT_METHOD,
                                cube_asserted: bool = False) -> xr.Dataset:
@@ -60,7 +59,7 @@ def get_cube_values_for_points(cube: xr.Dataset,
 def get_cube_values_for_indexes(cube: xr.Dataset,
                                 indexes: Union[xr.Dataset, pd.DataFrame, Mapping[str, Any]],
                                 var_names: Sequence[str] = None,
-                                index_name_pattern: str = INDEX_NAME_PATTERN,
+                                index_name_pattern: str = DEFAULT_INDEX_NAME_PATTERN,
                                 method: str = DEFAULT_INTERP_POINT_METHOD,
                                 cube_asserted: bool = False) -> xr.Dataset:
     """
@@ -159,7 +158,7 @@ def get_cube_values_for_indexes(cube: xr.Dataset,
 def get_cube_point_indexes(cube: xr.Dataset,
                            points: Union[xr.Dataset, pd.DataFrame, Mapping[str, Any]],
                            dim_name_mapping: Mapping[str, str] = None,
-                           index_name_pattern: str = INDEX_NAME_PATTERN,
+                           index_name_pattern: str = DEFAULT_INDEX_NAME_PATTERN,
                            dtype=np.float64,
                            cube_asserted: bool = False) -> xr.Dataset:
     """

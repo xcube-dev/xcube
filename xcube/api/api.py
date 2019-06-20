@@ -10,7 +10,7 @@ from .vars_to_dim import vars_to_dim
 from .chunk import chunk_dataset
 from .dump import dump_dataset
 from .extract import get_cube_values_for_points, get_cube_point_indexes, get_cube_values_for_indexes, \
-    get_dataset_indexes, INDEX_NAME_PATTERN
+    get_dataset_indexes, DEFAULT_INDEX_NAME_PATTERN
 from .new import new_cube
 from .readwrite import read_cube, open_cube, write_cube
 from .select import select_vars
@@ -110,7 +110,7 @@ class XCubeAPI:
     def values_for_points(self,
                           points: Union[xr.Dataset, pd.DataFrame, Mapping[str, Any]],
                           var_names: Sequence[str] = None,
-                          index_name_pattern: str = INDEX_NAME_PATTERN,
+                          index_name_pattern: str = DEFAULT_INDEX_NAME_PATTERN,
                           include_indexes: bool = False,
                           method: str = "nearest",
                           cube_asserted: bool = False):
@@ -137,7 +137,7 @@ class XCubeAPI:
     def values_for_indexes(self,
                            indexes: Union[xr.Dataset, pd.DataFrame, Mapping[str, Any]],
                            var_names: Sequence[str] = None,
-                           index_name_pattern: str = INDEX_NAME_PATTERN,
+                           index_name_pattern: str = DEFAULT_INDEX_NAME_PATTERN,
                            method: str = "nearest",
                            cube_asserted: bool = False) -> xr.Dataset:
         """
@@ -161,7 +161,7 @@ class XCubeAPI:
     def point_indexes(self,
                       points: Union[xr.Dataset, pd.DataFrame, Mapping[str, Any]],
                       dim_name_mapping: Mapping[str, str] = None,
-                      index_name_pattern: str = INDEX_NAME_PATTERN,
+                      index_name_pattern: str = DEFAULT_INDEX_NAME_PATTERN,
                       dtype=np.float64,
                       cube_asserted: bool = False):
         """

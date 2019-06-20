@@ -1,7 +1,6 @@
 import sys
 
 import click
-
 from xcube.cli.apply import apply
 from xcube.cli.gen import gen
 from xcube.cli.grid import grid
@@ -43,16 +42,26 @@ def extract(cube, coords, indexes=False, output=None,
     output_path = output
     include_indexes = indexes
 
-    from xcube.api import open_dataset, get_cube_values_for_points
+    from xcube.api.readwrite import open_dataset
+    from xcube.api.extract import get_cube_values_for_points, DEFAULT_INDEX_NAME_PATTERN
+
+    index_name_pattern = DEFAULT_INDEX_NAME_PATTERN
+    ref_name_pattern = '{name}_ref'
 
     coords = pd.read_csv(coords_path, parse_dates=["time"], infer_datetime_format=True)
-    print(coords, [coords[c].values.dtype for c in coords])
     with open_dataset(cube_path) as cube:
-        values = get_cube_values_for_points(cube, coords, include_indexes=include_indexes)
-        if output_path:
-            values.to_csv(output_path)
-        else:
-            print(values)
+        values = get_cube_values_for_points(cube,
+                                            coords,
+                                            include_indexes=include_indexes,
+                                            index_name_pattern=index_name_pattern).to_dataframe()
+        values = values.join(coords.rename({name: ref_name_pattern.format(name=name)
+                                            for name in coords.columns}),
+                             how='left')
+        values.to_csv(output_path if output_path else sys.stdout,
+                      # TODO(forman): make the following CLI options
+                      sep=',',
+                      date_format='%Y-%m-%dT%H:%M:%SZ',
+                      index=True)
 
 
 # noinspection PyShadowingBuiltins
@@ -113,13 +122,13 @@ def chunk(input, output, format=None, params=None, chunks=None):
                    'for imaging purposes.')
 @click.option('--tile-size', '-t', metavar='<tile-size>',
               help=f'Tile size, given as single integer number or as <tile-width>,<tile-height>. '
-              f'If omitted, the tile size will be derived from the <input>\'s '
-              f'internal spatial chunk sizes. '
-              f'If the <input> is not chunked, tile size will be {DEFAULT_TILE_SIZE}.')
+                   f'If omitted, the tile size will be derived from the <input>\'s '
+                   f'internal spatial chunk sizes. '
+                   f'If the <input> is not chunked, tile size will be {DEFAULT_TILE_SIZE}.')
 @click.option('--num-levels-max', '-n', metavar='<num-levels-max>', type=int,
               help=f'Maximum number of levels to generate. '
-              f'If not given, the number of levels will be derived from '
-              f'spatial dimension and tile sizes.')
+                   f'If not given, the number of levels will be derived from '
+                   f'spatial dimension and tile sizes.')
 def level(input, output, link, tile_size, num_levels_max):
     """
     Generate multi-resolution levels.
