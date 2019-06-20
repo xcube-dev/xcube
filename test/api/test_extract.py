@@ -1,10 +1,11 @@
 import unittest
 
 import numpy as np
+import pandas as pd
 import xarray as xr
 
-from xcube.api.new import new_cube
 from xcube.api.extract import get_cube_point_indexes, get_cube_values_for_points, get_dataset_indexes
+from xcube.api.new import new_cube
 
 
 # noinspection PyMethodMayBeStatic
@@ -19,7 +20,7 @@ class ExtractPointsTest(unittest.TestCase):
                         time_periods=20,
                         variables=dict(precipitation=0.6, temperature=276.2))
 
-    def _new_test_points_sone_invalid(self):
+    def _new_test_points(self):
         return dict(time=np.array(["2010-01-04", "2009-04-09",
                                    "2010-01-08", "2010-01-06",
                                    "2010-01-20", "2010-01-01",
@@ -29,7 +30,16 @@ class ExtractPointsTest(unittest.TestCase):
                     lon=np.array([0.0, 0.1, 0.4, 2.9, 1.6, 0.7, -0.5, 4.0]),
                     )
 
-    def test_get_cube_point_values(self):
+    def test_get_cube_point_values_from_data_frame(self):
+        self._test_get_cube_point_values(pd.DataFrame(self._new_test_points()))
+
+    def test_get_cube_point_values_from_dataset(self):
+        self._test_get_cube_point_values(xr.Dataset(self._new_test_points()))
+
+    def test_get_cube_point_values_from_dict(self):
+        self._test_get_cube_point_values(self._new_test_points())
+
+    def _test_get_cube_point_values(self, points):
         cube = self._new_test_cube()
 
         expected_prec_values = [0.6, np.nan, np.nan, 0.6, 0.6, 0.6, np.nan, 0.6]
@@ -37,8 +47,7 @@ class ExtractPointsTest(unittest.TestCase):
         expected_time_index = [3, -1, 7, 5, 19, 0, 4, 2]
         expected_lat_index = [0, 650, -1, 50, 950, 400, 100, 999]
         expected_lon_index = [0, 50, 200, 1450, 800, 349, -1, 1999]
-
-        values = get_cube_values_for_points(cube, self._new_test_points_sone_invalid(), include_indexes=True)
+        values = get_cube_values_for_points(cube, points, include_indexes=True)
         self.assertIsInstance(values, xr.Dataset)
         self.assertEqual(5, len(values.data_vars))
         self.assertEqual(['precipitation', 'temperature',
@@ -61,7 +70,7 @@ class ExtractPointsTest(unittest.TestCase):
         expected_lat_index = [0., 650., np.nan, 50., 950, 400., 100., 1000. - 1e-9]
         expected_lon_index = [0., 50., 200., 1450., 800., 350., np.nan, 2000. - 1e-9]
 
-        indexes = get_cube_point_indexes(cube, self._new_test_points_sone_invalid())
+        indexes = get_cube_point_indexes(cube, self._new_test_points())
         self.assertIsInstance(indexes, xr.Dataset)
         self.assertEqual(3, len(indexes.data_vars))
         self.assertEqual(['time_index', 'lat_index', 'lon_index'], [c for c in indexes.data_vars])
