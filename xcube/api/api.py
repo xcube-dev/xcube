@@ -153,7 +153,7 @@ class XCubeAPI:
         """
         return get_cube_values_for_indexes(self._dataset,
                                            indexes,
-                                           var_names=var_names,
+                                           data_var_names=var_names,
                                            index_name_pattern=index_name_pattern,
                                            method=method,
                                            cube_asserted=cube_asserted)

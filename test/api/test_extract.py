@@ -9,7 +9,7 @@ from xcube.api.new import new_cube
 
 
 # noinspection PyMethodMayBeStatic
-class ExtractPointsTest(unittest.TestCase):
+class GetCubeValuesForPointsTest(unittest.TestCase):
     def _new_test_cube(self):
         return new_cube(width=2000,
                         height=1000,
@@ -50,8 +50,13 @@ class ExtractPointsTest(unittest.TestCase):
         values = get_cube_values_for_points(cube, points, include_indexes=True)
         self.assertIsInstance(values, xr.Dataset)
         self.assertEqual(5, len(values.data_vars))
-        self.assertEqual(['precipitation', 'temperature',
-                          'time_index', 'lat_index', 'lon_index'], [c for c in values.data_vars])
+        self.assertEqual({
+            'precipitation',
+            'temperature',
+            'lat_index',
+            'lon_index',
+            'time_index'},
+            set(values.data_vars))
         np.testing.assert_array_almost_equal(np.array(expected_prec_values, dtype=np.float64),
                                              values["precipitation"].values)
         np.testing.assert_array_almost_equal(np.array(expected_temp_values, dtype=np.float64),
@@ -73,7 +78,7 @@ class ExtractPointsTest(unittest.TestCase):
         indexes = get_cube_point_indexes(cube, self._new_test_points())
         self.assertIsInstance(indexes, xr.Dataset)
         self.assertEqual(3, len(indexes.data_vars))
-        self.assertEqual(['time_index', 'lat_index', 'lon_index'], [c for c in indexes.data_vars])
+        self.assertEqual({'time_index', 'lat_index', 'lon_index'}, set(indexes.data_vars))
         np.testing.assert_array_almost_equal(np.array(expected_time_index, dtype=np.float64),
                                              indexes["time_index"].values)
         np.testing.assert_array_almost_equal(np.array(expected_lat_index, dtype=np.float64),
@@ -83,9 +88,9 @@ class ExtractPointsTest(unittest.TestCase):
 
 
 # noinspection PyMethodMayBeStatic
-class CoordIndexTest(unittest.TestCase):
+class GetDatasetIndexesTest(unittest.TestCase):
 
-    def test_get_coord_index_for_single_cell(self):
+    def test_get_dataset_indexes_for_single_cell(self):
         dataset = new_cube(width=360, height=180, drop_bounds=True)
         cell = dataset.isel(time=2, lat=20, lon=30)
         with self.assertRaises(ValueError) as cm:
@@ -93,29 +98,29 @@ class CoordIndexTest(unittest.TestCase):
         self.assertEqual("cannot determine cell boundaries for coordinate variable 'lon' of size 1",
                          f"{cm.exception}")
 
-    def test_get_coord_index_with_bounds(self):
+    def test_get_dataset_indexes_with_bounds(self):
         dataset = new_cube(width=360, height=180, drop_bounds=False)
-        self._assert_get_coord_index(dataset)
+        self._assert_get_dataset_indexes_works(dataset)
 
-    def test_get_coord_index_without_bounds(self):
+    def test_get_dataset_indexes_without_bounds(self):
         dataset = new_cube(width=360, height=180, drop_bounds=True)
-        self._assert_get_coord_index(dataset)
+        self._assert_get_dataset_indexes_works(dataset)
 
-    def test_get_coord_index_with_bounds_reverse_lat(self):
+    def test_get_dataset_indexes_with_bounds_reverse_lat(self):
         dataset = new_cube(width=360, height=180, drop_bounds=False)
         lat = dataset.lat.values[::-1]
         lat_bnds = dataset.lat_bnds.values[::-1, ::-1]
         dataset.coords["lat"] = xr.DataArray(lat, dims=("lat",))
         dataset.coords["lat_bnds"] = xr.DataArray(lat_bnds, dims=("lat", "bnds"))
-        self._assert_get_coord_index(dataset, reverse_lat=True)
+        self._assert_get_dataset_indexes_works(dataset, reverse_lat=True)
 
-    def test_get_coord_index_without_bounds_reverse_lat(self):
+    def test_get_dataset_indexes_without_bounds_reverse_lat(self):
         dataset = new_cube(width=360, height=180, drop_bounds=True)
         lat = dataset.lat.values[::-1]
         dataset.coords["lat"] = xr.DataArray(lat, dims=("lat",))
-        self._assert_get_coord_index(dataset, reverse_lat=True)
+        self._assert_get_dataset_indexes_works(dataset, reverse_lat=True)
 
-    def _assert_get_coord_index(self, dataset, reverse_lat=False):
+    def _assert_get_dataset_indexes_works(self, dataset, reverse_lat=False):
         lon_coords = np.array([-190, -180., -179, -10.4, 0., 10.4, 179., 180.0, 190])
         expected_lon_int64 = np.array([-1, 0, 1, 169, 180, 190, 359, 359, -1], dtype=np.int64)
         expected_lon_float64 = np.array([np.nan, 0., 1., 169.6, 180., 190.4, 359., 360., np.nan], dtype=np.float64)

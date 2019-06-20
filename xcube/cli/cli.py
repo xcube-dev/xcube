@@ -1,7 +1,9 @@
 import sys
 
 import click
+
 from xcube.cli.apply import apply
+from xcube.cli.extract import extract
 from xcube.cli.gen import gen
 from xcube.cli.grid import grid
 from xcube.cli.prune import prune
@@ -11,56 +13,6 @@ from xcube.cli.timeit import timeit
 from xcube.util.cliutil import parse_cli_kwargs, new_cli_ctx_obj, handle_cli_exception, cli_option_traceback, \
     cli_option_scheduler
 from xcube.version import version
-
-DEFAULT_TILE_SIZE = 512
-
-
-@click.command(name="extract")
-@click.argument('cube', metavar='<cube>')
-@click.argument('points', metavar='<points>')
-@click.option('--indexes', '-i', is_flag=True,
-              help="Include indexes in output.")
-@click.option('--output', '-o', metavar='<output>',
-              help="Output file.")
-@click.option('--format', '-f', metavar='<format>', type=click.Choice(['csv', 'json']),
-              help="Output format.", default='csv')
-def extract(cube,
-            points,
-            indexes=False,
-            output=None,
-            format=None):
-    """
-    Extract cube points.
-    Extracts data cells from <cube> at <points> and writes the resulting values to <output> using <format>.
-    """
-    import pandas as pd
-
-    cube_path = cube
-    coords_path = points
-    output_path = output
-    include_indexes = indexes
-
-    from xcube.api.readwrite import open_dataset
-    from xcube.api.extract import get_cube_values_for_points, DEFAULT_INDEX_NAME_PATTERN
-
-    # TODO(forman): make the following CLI options
-    index_name_pattern = DEFAULT_INDEX_NAME_PATTERN
-    ref_name_pattern = '{name}_ref'
-
-    points = pd.read_csv(coords_path, parse_dates=["time"], infer_datetime_format=True)
-    with open_dataset(cube_path) as cube:
-        values = get_cube_values_for_points(cube,
-                                            points,
-                                            include_indexes=include_indexes,
-                                            index_name_pattern=index_name_pattern).to_dataframe()
-        renamed_points = points.rename(columns={name: ref_name_pattern.format(name=name)
-                                                for name in points.columns})
-        values = values.join(renamed_points, how='left')
-        values.to_csv(output_path if output_path else sys.stdout,
-                      # TODO(forman): make the following CLI options
-                      sep=',',
-                      date_format='%Y-%m-%dT%H:%M:%SZ',
-                      index=True)
 
 
 # noinspection PyShadowingBuiltins
@@ -110,6 +62,9 @@ def chunk(input, output, format=None, params=None, chunks=None):
         write_dataset(chunked_dataset, output_path=output, format_name=format_name, **write_kwargs)
 
 
+DEFAULT_TILE_SIZE = 512
+
+
 # noinspection PyShadowingBuiltins
 @click.command(name="level")
 @click.argument('input', metavar='<input>')
@@ -121,13 +76,13 @@ def chunk(input, output, format=None, params=None, chunks=None):
                    'for imaging purposes.')
 @click.option('--tile-size', '-t', metavar='<tile-size>',
               help=f'Tile size, given as single integer number or as <tile-width>,<tile-height>. '
-                   f'If omitted, the tile size will be derived from the <input>\'s '
-                   f'internal spatial chunk sizes. '
-                   f'If the <input> is not chunked, tile size will be {DEFAULT_TILE_SIZE}.')
+              f'If omitted, the tile size will be derived from the <input>\'s '
+              f'internal spatial chunk sizes. '
+              f'If the <input> is not chunked, tile size will be {DEFAULT_TILE_SIZE}.')
 @click.option('--num-levels-max', '-n', metavar='<num-levels-max>', type=int,
               help=f'Maximum number of levels to generate. '
-                   f'If not given, the number of levels will be derived from '
-                   f'spatial dimension and tile sizes.')
+              f'If not given, the number of levels will be derived from '
+              f'spatial dimension and tile sizes.')
 def level(input, output, link, tile_size, num_levels_max):
     """
     Generate multi-resolution levels.
