@@ -17,46 +17,45 @@ DEFAULT_TILE_SIZE = 512
 
 @click.command(name="extract")
 @click.argument('cube', metavar='<cube>')
-@click.argument('coords', metavar='<coords>')
+@click.argument('points', metavar='<points>')
 @click.option('--indexes', '-i', is_flag=True,
               help="Include indexes in output.")
 @click.option('--output', '-o', metavar='<output>',
               help="Output file.")
-# @click.option('--format', '-f', metavar='<format>', type=click.Choice(['csv', 'stdout']),
-#               help="Format of the output. If not given, guessed from <output>, otherwise <stdout> is used.")
-# @click.option('--params', '-p', metavar='<params>',
-#               help="Parameters specific for the output format."
-#                    " Comma-separated list of <key>=<value> pairs.")
-def extract(cube, coords, indexes=False, output=None,
-            # format=None, params=None
-            ):
+@click.option('--format', '-f', metavar='<format>', type=click.Choice(['csv', 'json']),
+              help="Output format.", default='csv')
+def extract(cube,
+            points,
+            indexes=False,
+            output=None,
+            format=None):
     """
-    Extract cube time series.
-    Extracts data from <cube> at points given by coordinates <coords> and writes the resulting
-    time series to <output>.
+    Extract cube points.
+    Extracts data cells from <cube> at <points> and writes the resulting values to <output> using <format>.
     """
     import pandas as pd
 
     cube_path = cube
-    coords_path = coords
+    coords_path = points
     output_path = output
     include_indexes = indexes
 
     from xcube.api.readwrite import open_dataset
     from xcube.api.extract import get_cube_values_for_points, DEFAULT_INDEX_NAME_PATTERN
 
+    # TODO(forman): make the following CLI options
     index_name_pattern = DEFAULT_INDEX_NAME_PATTERN
     ref_name_pattern = '{name}_ref'
 
-    coords = pd.read_csv(coords_path, parse_dates=["time"], infer_datetime_format=True)
+    points = pd.read_csv(coords_path, parse_dates=["time"], infer_datetime_format=True)
     with open_dataset(cube_path) as cube:
         values = get_cube_values_for_points(cube,
-                                            coords,
+                                            points,
                                             include_indexes=include_indexes,
                                             index_name_pattern=index_name_pattern).to_dataframe()
-        values = values.join(coords.rename({name: ref_name_pattern.format(name=name)
-                                            for name in coords.columns}),
-                             how='left')
+        renamed_points = points.rename(columns={name: ref_name_pattern.format(name=name)
+                                                for name in points.columns})
+        values = values.join(renamed_points, how='left')
         values.to_csv(output_path if output_path else sys.stdout,
                       # TODO(forman): make the following CLI options
                       sep=',',
