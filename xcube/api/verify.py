@@ -39,7 +39,7 @@ def verify_cube(dataset: xr.Dataset) -> List[str]:
     _check_lon_or_lat(dataset, "lat", -90, 90, report)
     _check_lon_or_lat(dataset, "lon", -180, 180, report)
     _check_data_variables(dataset, report)
-    get_bounds_variable
+    # TODO (forman): verify bounds coordinate variables
     return report
 
 
