@@ -5,11 +5,11 @@ import click
 
 # noinspection PyShadowingBuiltins
 @click.command(name="extract")
-@click.argument('cube', metavar='<cube>')
-@click.argument('points', metavar='<points>')
-@click.option('--output', '-o', metavar='<output>',
-              help="Output file.")
-@click.option('--format', '-f', metavar='<format>', type=click.Choice(['csv', 'json', 'xlsx']),
+@click.argument('cube')
+@click.argument('points')
+@click.option('--output', '-o',
+              help="Output file. If omitted, output is written to stdout.")
+@click.option('--format', '-f', type=click.Choice(['csv', 'json', 'xlsx']),
               help="Output format. Currently, only 'csv' is supported.", default='csv')
 @click.option('--coords', '-C', is_flag=True,
               help="Include cube cell coordinates in output.")
@@ -18,7 +18,7 @@ import click
 @click.option('--indexes', '-I', is_flag=True,
               help="Include cube cell indexes in output.")
 @click.option('--refs', '-R', is_flag=True,
-              help="Include point (reference) values in output.")
+              help="Include point values as reference in output.")
 def extract(cube,
             points,
             output=None,
@@ -30,7 +30,9 @@ def extract(cube,
 ):
     """
     Extract cube points.
-    Extracts data cells from <cube> at <points> and writes the resulting values to <output> using <format>.
+
+    Extracts data cells from CUBE at coordinates given in each POINTS record and writes the resulting values to given
+    output path and format.
 
     <points> must be a CSV file that provides at least the columns "lon", "lat", and "time". The "lon" and "lat"
     columns provide a point's location in decimal degrees. The "time" column provides a point's date or
