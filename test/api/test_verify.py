@@ -11,6 +11,10 @@ class AssertAndVerifyCubeTest(unittest.TestCase):
 
     def test_assert_cube(self):
         cube = new_cube(variables=dict(precipitation=0.5))
+
+        cube_2 = assert_cube(cube)
+        self.assertIs(cube_2, cube)
+
         cube["chl"] = xr.DataArray(np.random.rand(cube.dims["lat"], cube.dims["lon"]),
                                    dims=("lat", "lon"),
                                    coords=dict(lat=cube.lat, lon=cube.lon))

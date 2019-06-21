@@ -32,6 +32,7 @@ import s3fs
 import xarray as xr
 import zarr
 
+from xcube.api import assert_cube
 from .cache import MemoryCacheStore, Cache
 from .defaults import DEFAULT_CMAP_CBAR, DEFAULT_CMAP_VMIN, DEFAULT_CMAP_VMAX, DEFAULT_TRACE_PERF
 from .errors import ServiceConfigError, ServiceError, ServiceBadRequestError, ServiceResourceNotFoundError
@@ -475,12 +476,12 @@ def open_ml_dataset_from_local_fs(ctx: ServiceContext, dataset_descriptor: Datas
 
     if data_format == FORMAT_NAME_NETCDF4:
         with measure_time(tag=f"opened local NetCDF dataset {path}"):
-            ds = xr.open_dataset(path)
+            ds = assert_cube(xr.open_dataset(path))
             return BaseMultiLevelDataset(ds)
 
     if data_format == FORMAT_NAME_ZARR:
         with measure_time(tag=f"opened local zarr dataset {path}"):
-            ds = xr.open_zarr(path)
+            ds = assert_cube(xr.open_zarr(path))
             return BaseMultiLevelDataset(ds)
 
     if data_format == FORMAT_NAME_LEVELS:

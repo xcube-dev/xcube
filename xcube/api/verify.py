@@ -4,7 +4,7 @@ import numpy as np
 import xarray as xr
 
 
-def assert_cube(dataset: xr.Dataset, name=None):
+def assert_cube(dataset: xr.Dataset, name=None) -> xr.Dataset:
     """
     Assert that the given *dataset* is a valid data cube.
 
@@ -18,6 +18,8 @@ def assert_cube(dataset: xr.Dataset, name=None):
         message += "is not a valid data cube, because:\n"
         message += "- " + ";\n- ".join(report) + "."
         raise ValueError(message)
+
+    return dataset
 
 
 def verify_cube(dataset: xr.Dataset) -> List[str]:
@@ -37,6 +39,7 @@ def verify_cube(dataset: xr.Dataset) -> List[str]:
     _check_lon_or_lat(dataset, "lat", -90, 90, report)
     _check_lon_or_lat(dataset, "lon", -180, 180, report)
     _check_data_variables(dataset, report)
+    get_bounds_variable
     return report
 
 
@@ -107,7 +110,7 @@ def _check_lon_or_lat(dataset, name, min_value, max_value, report):
         report.append(f"values of coordinate variable {name!r}"
                       f" must be in the range {min_value} to {max_value}")
 
-    # TODO (forman): the following check is not valid for "lat" because we currently use wrong lat-order
+    # TODO (forman): the following check is not valid for "lat" because we currently use 'wrong' lat-order
     # TODO (forman): the following check is not valid for "lon" if a cube covers the antimeridian
     # if not np.all(np.diff(var.astype(np.float64)) > 0):
     #    report.append(f"values of coordinate variable {name!r} must be monotonic increasing")

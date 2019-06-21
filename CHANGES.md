@@ -2,6 +2,7 @@
 
 ### Enhancements
 
+* `xcube serve` now verifies that call configured cubes are valid. (#107)
 * Reworked `xcube gen` to be more user-friendly and more consistent with other tools. 
   The changes are
   - Removed `--dir` and `--name` options and replaced it by single `--output` option, 
