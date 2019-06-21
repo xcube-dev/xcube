@@ -106,31 +106,43 @@ class GetDatasetIndexesTest(unittest.TestCase):
         dataset = new_cube(width=360, height=180, drop_bounds=True)
         self._assert_get_dataset_indexes_works(dataset)
 
-    def test_get_dataset_indexes_with_bounds_reverse_lat(self):
-        dataset = new_cube(width=360, height=180, drop_bounds=False)
-        lat = dataset.lat.values[::-1]
-        lat_bnds = dataset.lat_bnds.values[::-1, ::-1]
-        dataset.coords["lat"] = xr.DataArray(lat, dims=("lat",))
-        dataset.coords["lat_bnds"] = xr.DataArray(lat_bnds, dims=("lat", "bnds"))
-        self._assert_get_dataset_indexes_works(dataset, reverse_lat=True)
+    def test_get_dataset_indexes_with_bounds_inverse_lat(self):
+        dataset = new_cube(width=360, height=180, inverse_lat=True, drop_bounds=False)
+        self._assert_get_dataset_indexes_works(dataset, inverse_lat=True)
 
-    def test_get_dataset_indexes_without_bounds_reverse_lat(self):
-        dataset = new_cube(width=360, height=180, drop_bounds=True)
-        lat = dataset.lat.values[::-1]
-        dataset.coords["lat"] = xr.DataArray(lat, dims=("lat",))
-        self._assert_get_dataset_indexes_works(dataset, reverse_lat=True)
+    def test_get_dataset_indexes_without_bounds_inverse_lat(self):
+        dataset = new_cube(width=360, height=180, inverse_lat=True, drop_bounds=True)
+        self._assert_get_dataset_indexes_works(dataset, inverse_lat=True)
 
-    def _assert_get_dataset_indexes_works(self, dataset, reverse_lat=False):
+    def _assert_get_dataset_indexes_works(self, dataset, inverse_lat=False):
+        # - lon -------------------------------------
+
         lon_coords = np.array([-190, -180., -179, -10.4, 0., 10.4, 179., 180.0, 190])
         expected_lon_int64 = np.array([-1, 0, 1, 169, 180, 190, 359, 359, -1], dtype=np.int64)
         expected_lon_float64 = np.array([np.nan, 0., 1., 169.6, 180., 190.4, 359., 360., np.nan], dtype=np.float64)
 
+        indexes = get_dataset_indexes(dataset, "lon", lon_coords, index_dtype=np.int32)
+        np.testing.assert_array_equal(indexes, expected_lon_int64)
+        indexes = get_dataset_indexes(dataset, "lon", lon_coords)
+        np.testing.assert_array_almost_equal(indexes, expected_lon_float64)
+
+        # - lat -------------------------------------
+
         lat_coords = np.array([-100, -90., -89, -10.4, 0., 10.4, 89., 90.0, 100])
-        expected_lat_int64 = np.array([-1, 0, 1, 79, 90, 100, 179, 179, -1], dtype=np.int64)
-        expected_lat_float64 = np.array([np.nan, 0., 1., 79.6, 90., 100.4, 179., 180., np.nan], dtype=np.float64)
-        if reverse_lat:
-            expected_lat_int64 = expected_lat_int64[::-1]
-            expected_lat_float64 = expected_lat_float64[::-1]
+        if not inverse_lat:
+            expected_lat_int64 = np.array([-1, 0, 1, 79, 90, 100, 179, 179, -1], dtype=np.int64)
+            expected_lat_float64 = np.array([np.nan, 0., 1., 79.6, 90., 100.4, 179., 180., np.nan], dtype=np.float64)
+        else:
+            expected_lat_int64 = np.array([-1, 179, 179, 100, 90, 79, 1, 0, -1], dtype=np.int64)
+            expected_lat_float64 = np.array([np.nan, 180., 179., 100.4, 90., 79.6, 1., 0., np.nan],
+                                            dtype=np.float64)
+
+        indexes = get_dataset_indexes(dataset, "lat", lat_coords, index_dtype=np.int32)
+        np.testing.assert_array_equal(indexes, expected_lat_int64)
+        indexes = get_dataset_indexes(dataset, "lat", lat_coords)
+        np.testing.assert_array_almost_equal(indexes, expected_lat_float64)
+
+        # - time ------------------------------------
 
         time_coords = np.array(
             ["2010-01-03", "2010-01-02T23:15", "2010-05-15", "2010-01-01T12:00", "2010-01-05", "2009-12-07"],
@@ -138,17 +150,7 @@ class GetDatasetIndexesTest(unittest.TestCase):
         expected_time_int64 = np.array([2, 1, -1, 0, 4, -1], dtype=np.int64)
         expected_time_float64 = np.array([2., 1.96875, np.nan, 0.5, 4., np.nan], dtype=np.float64)
 
-        indexes = get_dataset_indexes(dataset, "lon", lon_coords, dtype=np.int32)
-        np.testing.assert_array_equal(indexes, expected_lon_int64)
-        indexes = get_dataset_indexes(dataset, "lon", lon_coords)
-        np.testing.assert_array_almost_equal(indexes, expected_lon_float64)
-
-        indexes = get_dataset_indexes(dataset, "lat", lat_coords, dtype=np.int32)
-        np.testing.assert_array_equal(indexes, expected_lat_int64)
-        indexes = get_dataset_indexes(dataset, "lat", lat_coords)
-        np.testing.assert_array_almost_equal(indexes, expected_lat_float64)
-
-        indexes = get_dataset_indexes(dataset, "time", time_coords, dtype=np.int32)
+        indexes = get_dataset_indexes(dataset, "time", time_coords, index_dtype=np.int32)
         np.testing.assert_array_equal(indexes, expected_time_int64)
         indexes = get_dataset_indexes(dataset, "time", time_coords)
         np.testing.assert_array_almost_equal(indexes, expected_time_float64)

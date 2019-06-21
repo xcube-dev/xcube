@@ -60,17 +60,17 @@ class ExtractCliTest(CliDataTest):
 
     def _do_test_points(self, filename):
         self._do_test_points_with_options(filename, options=[],
-                                          expected_length=4)
+                                          expected_length=6)
         self._do_test_points_with_options(filename, options=['--coords'],
-                                          expected_length=4)
+                                          expected_length=6)
         self._do_test_points_with_options(filename, options=['--bounds'],
-                                          expected_length=4)
+                                          expected_length=6)
         self._do_test_points_with_options(filename, options=['--refs'],
-                                          expected_length=4)
+                                          expected_length=6)
         self._do_test_points_with_options(filename, options=['--indexes'],
-                                          expected_length=4)
+                                          expected_length=6)
         self._do_test_points_with_options(filename, options=['--coords', '--bounds', '--refs', '--indexes'],
-                                          expected_length=4)
+                                          expected_length=6)
 
     def _do_test_points_with_options(self,
                                      filename,
