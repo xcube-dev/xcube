@@ -4,16 +4,19 @@ from typing import Dict, List, Mapping, Any, Union, Sequence
 import numpy as np
 import pandas as pd
 import xarray as xr
-from xcube.api.levels import compute_levels
 
-from .vars_to_dim import vars_to_dim
 from .chunk import chunk_dataset
+# noinspection PyUnresolvedReferences
+from .compute import compute_dataset
 from .dump import dump_dataset
 from .extract import get_cube_values_for_points, get_cube_point_indexes, get_cube_values_for_indexes, \
     get_dataset_indexes, DEFAULT_INDEX_NAME_PATTERN
+# noinspection PyUnresolvedReferences
+from .levels import compute_levels, read_levels, write_levels
 from .new import new_cube
 from .readwrite import read_cube, open_cube, write_cube
 from .select import select_vars
+from .vars_to_dim import vars_to_dim
 from .verify import verify_cube
 
 
@@ -39,6 +42,7 @@ class XCubeAPI:
             time_periods=5,
             time_freq="D",
             time_start='2010-01-01T00:00:00',
+            inverse_lat=False,
             drop_bounds=False,
             variables=None) -> xr.Dataset:
         """
@@ -53,6 +57,7 @@ class XCubeAPI:
         :param time_periods: Number of time steps
         :param time_freq: Duration of each time step
         :param time_start: First time value
+        :param inverse_lat: Whether to create an inverse latitude axis
         :param drop_bounds: If True, coordinate bounds variables are not created.
         :param variables: Dictionary of data variables to be added.
         :return: A cube instance
@@ -66,6 +71,7 @@ class XCubeAPI:
                         time_periods=time_periods,
                         time_freq=time_freq,
                         time_start=time_start,
+                        inverse_lat=inverse_lat,
                         drop_bounds=drop_bounds,
                         variables=variables)
 
@@ -162,7 +168,7 @@ class XCubeAPI:
                       points: Union[xr.Dataset, pd.DataFrame, Mapping[str, Any]],
                       dim_name_mapping: Mapping[str, str] = None,
                       index_name_pattern: str = DEFAULT_INDEX_NAME_PATTERN,
-                      dtype=np.float64,
+                      index_dtype=np.float64,
                       cube_asserted: bool = False):
         """
         Get indexes of given coordinates in *points* into this cube.
@@ -171,23 +177,24 @@ class XCubeAPI:
         :param dim_name_mapping: A mapping from dimension names in *cube* to column names in *points*.
         :param index_name_pattern: A naming pattern for the computed indexes columns.
                Must include "{name}" which will be replaced by the dimension name.
+        :param index_dtype: Numpy data type for the indexes. If it is a floating point type (default),
+               then *indexes* will contain fractions, which may be used for interpolation.
+               For out-of-range coordinates in *points*, indexes will be -1 if *index_dtype* is an integer type, and NaN,
+               if *index_dtype* is a floating point types.
         :param cube_asserted: If False, *cube* will be verified, otherwise it is expected to be a valid cube.
-        :param dtype: Numpy data type for the indexes. If it is floating point type (default),
-               then *indexes* contain fractions, which may be used for interpolation. If *dtype* is an integer
-               type out-of-range coordinates are indicated by index -1, and NaN if it is is a floating point type.
         :return: A dataset containing the index columns.
         """
         return get_cube_point_indexes(self._dataset,
                                       points,
                                       dim_name_mapping=dim_name_mapping,
                                       index_name_pattern=index_name_pattern,
-                                      dtype=dtype,
+                                      index_dtype=index_dtype,
                                       cube_asserted=cube_asserted)
 
     def indexes(self,
                 coord_var_name: str,
                 coord_values: Union[xr.DataArray, np.ndarray],
-                dtype=np.float64) -> Union[xr.DataArray, np.ndarray]:
+                index_dtype=np.float64) -> Union[xr.DataArray, np.ndarray]:
         """
         Compute the indexes into a coordinate variable *coord_var_name* of this cube
         for the given coordinate values *coord_values*.
@@ -196,22 +203,23 @@ class XCubeAPI:
         otherwise the result will be nonsense.
 
         For any value in *coord_values* that is out of the bounds of the coordinate variable's values,
-        the index depends on the value of *dtype*. If *dtype* is an integer type, invalid indexes are
+        the index depends on the value of *index_dtype*. If *index_dtype* is an integer type, invalid indexes are
         encoded as -1 while for floating point types, NaN will be used.
 
         Returns the indexes as an array-like object of type *dtype*.
 
         :param coord_var_name: Name of a coordinate variable.
         :param coord_values: Array-like coordinate values.
-        :param dtype: (Numpy) data type for the indexes. If it is floating point type (default),
-               then *indexes* contain fractions, which may be used for interpolation. If *dtype* is an integer
-               type out-of-range coordinates are indicated by index -1, and NaN if it is is a floating point type.
+        :param index_dtype: Numpy data type for the indexes. If it is a floating point type (default),
+               then *indexes* will contain fractions, which may be used for interpolation.
+               For out-of-range coordinates in *points*, indexes will be -1 if *index_dtype* is an integer type, and NaN,
+               if *index_dtype* is a floating point types.
         :return: The indexes and their fractions as a tuple of numpy int64 and float64 arrays.
         """
         return get_dataset_indexes(self._dataset,
                                    coord_var_name=coord_var_name,
                                    coord_values=coord_values,
-                                   dtype=dtype)
+                                   index_dtype=index_dtype)
 
     def chunk(self, chunk_sizes: Dict[str, int] = None, format_name: str = None) -> xr.Dataset:
         """
@@ -285,3 +293,19 @@ class XCubeAPI:
         :return: A list of dataset instances representing the multi-level pyramid.
         """
         return compute_levels(self._dataset, **kwargs)
+
+    def resample_in_time(self):
+        """
+        Resample a data cube in the time dimension.
+
+        :param frequency: Resampling frequency.
+        :param method: Resampling method or sequence of resampling methods.
+        :param offset: Offset used to adjust the resampled time labels. Some pandas date offset strings are supported.
+        :param base: Resampling method.
+        :param var_names: Variable names to include.
+        :param tolerance: Time tolerance for selective upsampling methods. Defaults to *frequency*.
+        :param interp_kind: Kind of interpolation if *method* is 'interpolation'.
+        :param metadata: Output metadata.
+        :return: A new data cube resampled in time.
+        """
+        return resample_in_time()
