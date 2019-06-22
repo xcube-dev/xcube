@@ -38,8 +38,8 @@ def verify_cube(dataset: xr.Dataset) -> List[str]:
     _check_time(dataset, "time", report)
     _check_lon_or_lat(dataset, "lat", -90, 90, report)
     _check_lon_or_lat(dataset, "lon", -180, 180, report)
-    _check_data_variables(dataset, report)
     # TODO (forman): verify bounds coordinate variables
+    _check_data_variables(dataset, report)
     return report
 
 
@@ -93,6 +93,24 @@ def _check_coord_var(dataset, name, report):
 
     if var.size == 0:
         report.append(f"coordinate variable {name!r} must not be empty")
+        return None
+
+    bnds_name = var.attrs.get('bounds', f'{name}_bnds')
+    if bnds_name in dataset.coords:
+        bnds_var = dataset.coords[bnds_name]
+        expected_shape = var.size, 2
+        expected_dtype = var.dtype
+        if len(bnds_var.dims) != 2 or bnds_var.dims[0] != name:
+            report.append(f"bounds coordinate variable {bnds_name!r}"
+                          f" must have dimensions ({name!r}, <bounds_dim>)")
+        if bnds_var.shape != expected_shape:
+            report.append(
+                f"shape of bounds coordinate variable {bnds_name!r}"
+                f" must be {expected_shape!r} but was {bnds_var.shape!r}")
+        if bnds_var.dtype != expected_dtype:
+            report.append(
+                f"type of bounds coordinate variable {bnds_name!r}"
+                f" must be {expected_dtype!r} but was {bnds_var.dtype!r}")
         return None
 
     return var
