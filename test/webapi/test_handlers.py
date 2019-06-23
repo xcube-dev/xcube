@@ -1,8 +1,6 @@
 from tornado.testing import AsyncHTTPTestCase
 
 from xcube.webapi.app import new_application
-# For usage of the tornado.testing.AsyncHTTPTestCase see http://www.tornadoweb.org/en/stable/testing.html
-from xcube.webapi.defaults import API_PREFIX, DEFAULT_NAME
 from .helpers import new_test_service_context
 
 CTX = new_test_service_context()
@@ -16,6 +14,9 @@ for name, var in _ds.coords.items():
 _ds = CTX.get_dataset("demo-1w")
 for name, var in _ds.coords.items():
     values = var.values
+
+
+# For usage of the tornado.testing.AsyncHTTPTestCase see http://www.tornadoweb.org/en/stable/testing.html
 
 
 class HandlersTest(AsyncHTTPTestCase):
@@ -144,6 +145,12 @@ class HandlersTest(AsyncHTTPTestCase):
         self.assertResponseOK(response)
         response = self.fetch(self.prefix + '/datasets?details=1&tiles=cesium')
         self.assertResponseOK(response)
+        response = self.fetch(self.prefix + '/datasets?details=1&point=2.8,51.0')
+        self.assertResponseOK(response)
+        response = self.fetch(self.prefix + '/datasets?details=1&point=2,8a,51.0')
+        self.assertBadRequestResponse(response,
+                                      "Parameter 'point' parameter must be a point using format"
+                                      " '<lon>,<lat>', but was '2,8a,51.0'")
 
     def test_fetch_dataset_json(self):
         response = self.fetch(self.prefix + '/datasets/demo')
