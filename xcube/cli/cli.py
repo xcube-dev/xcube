@@ -9,6 +9,7 @@ from xcube.cli.prune import prune
 from xcube.cli.resample import resample
 from xcube.cli.serve import serve
 from xcube.cli.timeit import timeit
+from xcube.cli.verify import verify
 from xcube.util.cliutil import parse_cli_kwargs, new_cli_ctx_obj, handle_cli_exception, cli_option_traceback, \
     cli_option_scheduler
 from xcube.version import version
@@ -250,6 +251,7 @@ cli.add_command(resample)
 cli.add_command(serve)
 cli.add_command(timeit)
 cli.add_command(vars2dim)
+cli.add_command(verify)
 
 
 def main(args=None):

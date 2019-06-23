@@ -2,6 +2,7 @@
 
 ### Enhancements
 
+* Added new CLI command `xcube verify` performing data cube verification. (#19)
 * Reworked `xcube gen` to be more user-friendly and more consistent with other tools. 
   The changes are
   - Removed `--dir` and `--name` options and replaced it by single `--output` option, 
