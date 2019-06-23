@@ -21,6 +21,7 @@
 
 import datetime
 import json
+import logging
 
 from tornado.ioloop import IOLoop
 
@@ -39,6 +40,7 @@ __author__ = "Norman Fomferra (Brockmann Consult GmbH)"
 
 _WMTS_VERSION = "1.0.0"
 _WMTS_TILE_FORMAT = "image/png"
+_LOG = logging.getLogger('xcube')
 
 
 # noinspection PyAbstractClass
@@ -126,6 +128,37 @@ class GetDatasetHandler(ServiceRequestHandler):
         response = get_dataset(self.service_context, ds_id, client=tile_client, base_url=self.base_url)
         self.set_header('Content-Type', 'application/json')
         self.write(json.dumps(response, indent=2))
+
+
+class GetDatasetZarrHandler(ServiceRequestHandler):
+
+    def get(self, ds_id: str, path: str):
+        # AWS S3
+
+        # Limits the response to object keys that begin with the specified prefix.
+        prefix = self.get_query_argument('prefix')
+        # Indicates a character or a sequence of characters used to group object keys.
+        # All object keys that contain the same string between the prefix, if specified,
+        # and the first occurrence of delimiter after the prefix are grouped under
+        # a single result element, 'CommonPrefixes'.
+        delimiter = self.get_query_argument('delimiter')
+        # Indicates the object key to start with when listing objects in a bucket.
+        # All objects are listed in the dictionary order.
+        marker = self.get_query_argument('marker')
+        # Sets the maximum number of object keys returned in the response body.
+        # The value ranges from 1 to 1000. If the value is not in this range,
+        # 1000 is returned by default.
+        max_keys = int(self.get_query_argument('max-keys', default='1000'))
+
+        # Google Cloud Storage
+
+        include_trailing_delimiter = self.get_query_argument('includeTrailingDelimiter')
+        max_results = self.get_query_argument('maxResults')
+        page_token = self.get_query_argument('pageToken')
+
+        _LOG.info(f'{ds_id}: {path!r}')
+        self.set_header('Content-Type', 'application/json')
+        self.write(json.dumps(dict(result='Hello!'), indent=2))
 
 
 # noinspection PyAbstractClass

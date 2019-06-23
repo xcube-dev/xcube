@@ -25,6 +25,8 @@ tags:
     description: WMTS 1.0.0 API
   - name: catalogue
     description: Catalogue API
+  - name: data
+    description: Data API
   - name: tiles
     description: Tiles API
   - name: time-series
@@ -168,6 +170,25 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/DimensionInfo'
+
+  ########################################################################################
+  # Data
+  ########################################################################################
+
+  '/datasets/{dataset}/data.zarr':
+    get:
+      tags:
+        - data
+      summary: Get dataset data as ZARR view
+      operationId: getDatasetZarr
+      parameters:
+      description: |
+        Provide a dataset's data as if it would be stored as a ZARR directory in Object Storage.
+      responses:
+        '200':
+          description: ZARR data view.
+          content:
+            application/octed-stream:
 
   ########################################################################################
   # Tiles

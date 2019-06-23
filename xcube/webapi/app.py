@@ -29,7 +29,7 @@ from .handlers import GetNE2TileHandler, GetDatasetVarTileHandler, InfoHandler, 
     GetDatasetsHandler, FindPlacesHandler, FindDatasetPlacesHandler, \
     GetDatasetCoordsHandler, GetTimeSeriesInfoHandler, GetTimeSeriesForPointHandler, WMTSKvpHandler, \
     GetTimeSeriesForGeometryHandler, GetTimeSeriesForFeaturesHandler, GetTimeSeriesForGeometriesHandler, \
-    GetPlaceGroupsHandler, GetDatasetVarLegendHandler, GetDatasetHandler, GetWMTSTileHandler
+    GetPlaceGroupsHandler, GetDatasetVarLegendHandler, GetDatasetHandler, GetWMTSTileHandler, GetDatasetZarrHandler
 from .service import url_pattern
 
 __author__ = "Norman Fomferra (Brockmann Consult GmbH)"
@@ -55,6 +55,8 @@ def new_application(prefix: str = None):
          GetDatasetsHandler),
         (prefix + url_pattern('/datasets/{{ds_id}}'),
          GetDatasetHandler),
+        (prefix + url_pattern('/datasets/{{ds_id}}/data.zarr/(?P<path>.*)'),
+         GetDatasetZarrHandler),
         (prefix + url_pattern('/datasets/{{ds_id}}/coords/{{dim_name}}'),
          GetDatasetCoordsHandler),
         (prefix + url_pattern('/datasets/{{ds_id}}/vars/{{var_name}}/legend.png'),

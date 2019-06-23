@@ -82,6 +82,16 @@ class UrlPatternTest(unittest.TestCase):
         self.assertIsNotNone(matcher)
         self.assertEqual(matcher.groupdict(), {'id1': '34', 'id2': 'a66'})
 
+        re_pattern = url_pattern('/datasets/{{ds_id}}/data.zarr/(?P<path>.*)')
+
+        matcher = re.fullmatch(re_pattern, '/datasets/S2PLUS_2017/data.zarr/')
+        self.assertIsNotNone(matcher)
+        self.assertEqual(matcher.groupdict(), {'ds_id': 'S2PLUS_2017', 'path': ''})
+
+        matcher = re.fullmatch(re_pattern, '/datasets/S2PLUS_2017/data.zarr/conc_chl/.zattrs')
+        self.assertIsNotNone(matcher)
+        self.assertEqual(matcher.groupdict(), {'ds_id': 'S2PLUS_2017', 'path': 'conc_chl/.zattrs'})
+
         x = 'C%3A%5CUsers%5CNorman%5CIdeaProjects%5Cccitools%5Cect-core%5Ctest%5Cui%5CTEST_WS_3'
         re_pattern = url_pattern('/ws/{{base_dir}}/res/{{res_name}}/add')
         matcher = re.fullmatch(re_pattern, '/ws/%s/res/SST/add' % x)
@@ -89,14 +99,16 @@ class UrlPatternTest(unittest.TestCase):
         self.assertEqual(matcher.groupdict(), {'base_dir': x, 'res_name': 'SST'})
 
     def test_url_pattern_ok(self):
-        self.assertEqual(url_pattern('/version'),
-                         '/version')
-        self.assertEqual(url_pattern('{{num}}/get'),
-                         '(?P<num>[^\;\/\?\:\@\&\=\+\$\,]+)/get')
-        self.assertEqual(url_pattern('/open/{{ws_name}}'),
-                         '/open/(?P<ws_name>[^\;\/\?\:\@\&\=\+\$\,]+)')
-        self.assertEqual(url_pattern('/open/ws{{id1}}/wf{{id2}}'),
-                         '/open/ws(?P<id1>[^\;\/\?\:\@\&\=\+\$\,]+)/wf(?P<id2>[^\;\/\?\:\@\&\=\+\$\,]+)')
+        self.assertEqual('/version',
+                         url_pattern('/version'))
+        self.assertEqual('(?P<num>[^\;\/\?\:\@\&\=\+\$\,]+)/get',
+                         url_pattern('{{num}}/get'))
+        self.assertEqual('/open/(?P<ws_name>[^\;\/\?\:\@\&\=\+\$\,]+)',
+                         url_pattern('/open/{{ws_name}}'))
+        self.assertEqual('/open/ws(?P<id1>[^\;\/\?\:\@\&\=\+\$\,]+)/wf(?P<id2>[^\;\/\?\:\@\&\=\+\$\,]+)',
+                         url_pattern('/open/ws{{id1}}/wf{{id2}}'))
+        self.assertEqual('/datasets/(?P<ds_id>[^\;\/\?\:\@\&\=\+\$\,]+)/data.zip/(.*)',
+                         url_pattern('/datasets/{{ds_id}}/data.zip/(.*)'))
 
     def test_url_pattern_fail(self):
         with self.assertRaises(ValueError) as cm:
