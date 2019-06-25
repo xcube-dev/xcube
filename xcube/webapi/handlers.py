@@ -25,6 +25,7 @@ import logging
 
 from tornado.ioloop import IOLoop
 
+from xcube.webapi.s3util import dict_to_xml
 from . import __version__, __description__
 from .controllers.catalogue import get_datasets, get_dataset_coordinates, get_color_bars, get_dataset
 from .controllers.places import find_places, find_dataset_places
@@ -132,36 +133,65 @@ class GetDatasetHandler(ServiceRequestHandler):
 
 class GetDatasetZarrHandler(ServiceRequestHandler):
 
-    def get(self, ds_id: str, path: str):
+    async def get(self, ds_id: str, path: str):
         # AWS S3
 
         # Limits the response to object keys that begin with the specified prefix.
         prefix = self.get_query_argument('prefix')
+
         # Indicates a character or a sequence of characters used to group object keys.
         # All object keys that contain the same string between the prefix, if specified,
         # and the first occurrence of delimiter after the prefix are grouped under
         # a single result element, 'CommonPrefixes'.
         delimiter = self.get_query_argument('delimiter')
+
         # Indicates the object key to start with when listing objects in a bucket.
         # All objects are listed in the dictionary order.
         marker = self.get_query_argument('marker')
+
         # Sets the maximum number of object keys returned in the response body.
         # The value ranges from 1 to 1000. If the value is not in this range,
         # 1000 is returned by default.
         max_keys = int(self.get_query_argument('max-keys', default='1000'))
 
-        # Google Cloud Storage
+        _LOG.info(f'S3 data access: path params: {dict(ds_id=ds_id, path=path)}')
+        _LOG.info(f'S3 data access: query_params: {dict(prefix=prefix, delimiter=delimiter, marker=marker,max_keys=max_keys)}')
 
-        include_trailing_delimiter = self.get_query_argument('includeTrailingDelimiter')
-        max_results = self.get_query_argument('maxResults')
-        page_token = self.get_query_argument('pageToken')
+        descriptor = self.service_context.get_dataset_descriptor(ds_id)
+        file_system = descriptor.get('FileSystem')
+        if file_system != 'local':
+            raise ServiceBadRequestError('ZARR view only implemented for local file systems')
 
-        _LOG.info(f'{ds_id}: {path!r}')
-        self.set_header('Content-Type', 'application/json')
-        self.write(json.dumps(dict(result='Hello!'), indent=2))
+        import os.path
+        import pathlib
+
+        local_path = descriptor.get('Path')
+        if not os.path.isabs(local_path):
+            local_path = os.path.join(self.service_context.base_dir, local_path)
+        if path:
+            local_path = os.path.join(local_path, path)
+
+        local_path = pathlib.Path(local_path)
+        if local_path.is_file():
+            self.set_header('Content-Type', 'application/octed-stream')
+            self.set_header('Content-Length', local_path.stat().st_size)
+            chunk_size = 1024 * 1024
+            with open(local_path, 'rb') as fp:
+                self.write(fp.read(chunk_size))
+                await self.flush()
+        elif local_path.is_dir():
+            self.set_header('Content-Type', 'application/octed-stream')
+            self.set_header('Content-Length', 0)
+            await self.finish()
+        else:
+            self.set_header('Content-Type', 'application/xml')
+            self.set_status(404)
+            await self.finish(dict_to_xml('Error',
+                                          dict(Code='NoSuchKey',
+                                               Message='The specified key does not exist.',
+                                               Key=path)))
 
 
-# noinspection PyAbstractClass
 class GetDatasetCoordsHandler(ServiceRequestHandler):
 
     def get(self, ds_id: str, dim_name: str):
