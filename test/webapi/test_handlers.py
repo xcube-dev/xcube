@@ -18,7 +18,6 @@ for name, var in _ds.coords.items():
 
 # For usage of the tornado.testing.AsyncHTTPTestCase see http://www.tornadoweb.org/en/stable/testing.html
 
-
 class HandlersTest(AsyncHTTPTestCase):
 
     def get_app(self):

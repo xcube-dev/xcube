@@ -25,7 +25,7 @@ import logging
 
 from tornado.ioloop import IOLoop
 
-from xcube.webapi.s3util import dict_to_xml
+from xcube.webapi.s3util import dict_to_xml, list_bucket_v1, list_bucket_result_to_xml, list_bucket_v2, mtime_to_str
 from . import __version__, __description__
 from .controllers.catalogue import get_datasets, get_dataset_coordinates, get_color_bars, get_dataset
 from .controllers.places import find_places, find_dataset_places
@@ -122,6 +122,7 @@ class GetDatasetsHandler(ServiceRequestHandler):
         self.write(json.dumps(response, indent=None if details else 2))
 
 
+# noinspection PyAbstractClass
 class GetDatasetHandler(ServiceRequestHandler):
 
     def get(self, ds_id: str):
@@ -131,65 +132,165 @@ class GetDatasetHandler(ServiceRequestHandler):
         self.write(json.dumps(response, indent=2))
 
 
-class GetDatasetZarrHandler(ServiceRequestHandler):
+# noinspection PyAbstractClass
+class ListS3BucketHandler(ServiceRequestHandler):
 
-    async def get(self, ds_id: str, path: str):
-        # AWS S3
+    async def get(self):
+        print('ListS3BucketHandler!')
 
-        # Limits the response to object keys that begin with the specified prefix.
-        prefix = self.get_query_argument('prefix')
+        import os.path
 
-        # Indicates a character or a sequence of characters used to group object keys.
-        # All object keys that contain the same string between the prefix, if specified,
-        # and the first occurrence of delimiter after the prefix are grouped under
-        # a single result element, 'CommonPrefixes'.
-        delimiter = self.get_query_argument('delimiter')
+        bucket_dict = {}
+        for descriptor in self.service_context.get_dataset_descriptors():
+            ds_id = descriptor.get('Identifier')
+            file_system = descriptor.get('FileSystem')
+            if file_system == 'local':
+                local_path = descriptor.get('Path')
+                if not os.path.isabs(local_path):
+                    local_path = os.path.join(self.service_context.base_dir, local_path)
+                if os.path.isdir(local_path) and local_path.endswith('.zarr'):
+                    bucket_dict[ds_id + '.zarr'] = local_path
 
-        # Indicates the object key to start with when listing objects in a bucket.
-        # All objects are listed in the dictionary order.
-        marker = self.get_query_argument('marker')
+        # Limits the response to keys that begin with the specified prefix.
+        # You can use prefixes to separate a bucket into different groupings of keys.
+        # (You can think of using prefix to make groups in the same way you'd use
+        # a folder in a file system.)
+        prefix = self.get_query_argument('prefix', default=None)
 
-        # Sets the maximum number of object keys returned in the response body.
-        # The value ranges from 1 to 1000. If the value is not in this range,
-        # 1000 is returned by default.
+        # A delimiter is a character you use to group keys.
+        # If you specify a prefix, all of the keys that contain the same string
+        # between the prefix and the first occurrence of the delimiter after
+        # the prefix are grouped under a single result element called CommonPrefixes.
+        # If you don't specify the prefix parameter, the substring starts at the
+        # beginning of the key.
+        # The keys that are grouped under the CommonPrefixes result element are not
+        # returned elsewhere in the response.
+        delimiter = self.get_query_argument('delimiter', default=None)
+
+        #
+        # Sets the maximum number of keys returned in the response body.
+        # If you want to retrieve fewer than the default 1,000 keys,
+        # you can add this to your request.
+        #
+        # The response might contain fewer keys, but it never contains more.
+        # If there are additional keys that satisfy the search criteria, but these
+        # keys were not returned because max-keys was exceeded, the response
+        # contains <IsTruncated>true</IsTruncated>.
+        # To return the additional keys, see NextContinuationToken.
         max_keys = int(self.get_query_argument('max-keys', default='1000'))
 
-        _LOG.info(f'S3 data access: path params: {dict(ds_id=ds_id, path=path)}')
-        _LOG.info(f'S3 data access: query_params: {dict(prefix=prefix, delimiter=delimiter, marker=marker,max_keys=max_keys)}')
+        list_type = self.get_query_argument('list-type', default=None)
+        if list_type is None:
+            # GET Bucket (List Objects) Version 1
+            # https://docs.aws.amazon.com/AmazonS3/latest/API/v2-RESTBucketGET.html
 
+            # Indicates the object key to start with when listing objects in a bucket.
+            # All objects are listed in the dictionary order.
+            marker = self.get_query_argument('marker', default=None)
+
+            v1_params = dict(prefix=prefix, delimiter=delimiter,
+                             max_keys=max_keys, marker=marker)
+            print('ListS3BucketHandler: v1_params: ', v1_params)
+            list_bucket_result = list_bucket_v1(bucket_dict, **v1_params)
+
+        elif list_type == '2':
+            # GET Bucket (List Objects) Version 2
+            # https://docs.aws.amazon.com/AmazonS3/latest/API/RESTBucketGET.html
+
+            # When the response to this API call is truncated (that is, the IsTruncated
+            # response element value is true), the response also includes the
+            # NextContinuationToken element. To list the next set of objects,
+            # you can use the NextContinuationToken element in the next request
+            # as the continuation-token.
+            continuation_token = self.get_query_argument('continuation-token', default=None)
+
+            # If you want the API to return key names after a specific object key in your key space,
+            # you can add this parameter. Amazon S3 lists objects in UTF-8 character
+            # encoding in lexicographical order.
+            start_after = self.get_query_argument('start-after', default=None)
+
+            v2_params = dict(prefix=prefix, delimiter=delimiter,
+                             max_keys=max_keys,
+                             start_after=start_after,
+                             continuation_token=continuation_token)
+            print('ListS3BucketHandler: v2_params: ', v2_params)
+            list_bucket_result = list_bucket_v2(bucket_dict, **v2_params)
+
+        else:
+            raise ServiceBadRequestError(f'Unknown bucket list type {list_type!r}')
+
+        xml = list_bucket_result_to_xml(list_bucket_result)
+        self.set_header('Content-Type', 'application/xml')
+        self.write(xml)
+        await self.flush()
+
+
+# noinspection PyAbstractClass
+class GetS3BucketObjectHandler(ServiceRequestHandler):
+    async def head(self, ds_id: str, path: str):
+        key, local_path = self._get_key_and_local_path(ds_id, path)
+        print(f'GetS3BucketObjectHandler: HEAD: key={key!r}, local_path={local_path!r}')
+        if local_path is None or not local_path.exists():
+            await self._key_not_found(key)
+        self.set_header('Server', 'xcube')
+        self.set_header('Last-Modified', mtime_to_str(local_path.stat().st_mtime))
+        if local_path.is_file():
+            self.set_header('Content-Length', local_path.stat().st_size)
+        else:
+            self.set_header('Content-Length', 0)
+        await self.finish()
+
+    async def get(self, ds_id: str, path: str):
+        key, local_path = self._get_key_and_local_path(ds_id, path)
+        print(f'GetS3BucketObjectHandler: GET: key={key!r}, local_path={local_path!r}')
+        if local_path is None or not local_path.exists():
+            await self._key_not_found(key)
+        self.set_header('Server', 'xcube')
+        self.set_header('Last-Modified', mtime_to_str(local_path.stat().st_mtime))
+        self.set_header('Content-Type', 'binary/octet-stream')
+        if local_path.is_file():
+            self.set_header('Content-Length', local_path.stat().st_size)
+            chunk_size = 1024 * 1024
+            with open(local_path, 'rb') as fp:
+                while True:
+                    chunk = fp.read(chunk_size)
+                    if len(chunk) == 0:
+                        break
+                    self.write(chunk)
+                    await self.flush()
+        else:
+            self.set_header('Content-Length', 0)
+            await self.finish()
+
+    def _key_not_found(self, key: str):
+        self.set_header('Content-Type', 'application/xml')
+        self.set_status(404)
+        return self.finish(dict_to_xml('Error',
+                                       dict(Code='NoSuchKey',
+                                            Message='The specified key does not exist.',
+                                            Key=key)))
+
+    def _get_key_and_local_path(self, ds_id: str, path: str):
         descriptor = self.service_context.get_dataset_descriptor(ds_id)
         file_system = descriptor.get('FileSystem')
         if file_system != 'local':
             raise ServiceBadRequestError('ZARR view only implemented for local file systems')
 
+        key = f'{ds_id}.zarr/{path}'
+
+        if path and '..' in path.split('/'):
+            return key, None
+
         import os.path
         import pathlib
 
         local_path = descriptor.get('Path')
-        if not os.path.isabs(local_path):
-            local_path = os.path.join(self.service_context.base_dir, local_path)
-        if path:
+        if os.path.isabs(local_path):
             local_path = os.path.join(local_path, path)
-
-        local_path = pathlib.Path(local_path)
-        if local_path.is_file():
-            self.set_header('Content-Type', 'application/octed-stream')
-            self.set_header('Content-Length', local_path.stat().st_size)
-            chunk_size = 1024 * 1024
-            with open(local_path, 'rb') as fp:
-                self.write(fp.read(chunk_size))
-                await self.flush()
-        elif local_path.is_dir():
-            self.set_header('Content-Type', 'application/octed-stream')
-            self.set_header('Content-Length', 0)
-            await self.finish()
         else:
-            self.set_header('Content-Type', 'application/xml')
-            self.set_status(404)
-            await self.finish(dict_to_xml('Error',
-                                          dict(Code='NoSuchKey',
-                                               Message='The specified key does not exist.',
-                                               Key=path)))
+            local_path = os.path.join(self.service_context.base_dir, local_path, path)
+
+        return key, pathlib.Path(local_path)
 
 
 class GetDatasetCoordsHandler(ServiceRequestHandler):
