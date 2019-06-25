@@ -347,7 +347,10 @@ class ZarrDatasetIO(DatasetIO):
                      or path.startswith("https://")):
             import urllib3.util
             url = urllib3.util.parse_url(path_or_store)
-            endpoint_url = f'{url.scheme}://{url.host}'
+            if url.port is not None:
+                endpoint_url = f'{url.scheme}://{url.host}:{url.port}'
+            else:
+                endpoint_url = f'{url.scheme}://{url.host}'
             bucket_path = url.path
             if bucket_path.startswith('/'):
                 bucket_path = bucket_path[1:]
