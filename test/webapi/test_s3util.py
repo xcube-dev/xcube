@@ -8,10 +8,27 @@ from xcube.util.dsio import rimraf
 from xcube.webapi.s3util import list_bucket, list_bucket_result_to_xml
 
 
-class ListBucketTest(unittest.TestCase):
+class BucketTest(unittest.TestCase):
     S3_BUCKET = os.path.join(os.path.dirname(__file__), "s3-bucket")
     TEST_CUBE_1 = os.path.join(S3_BUCKET, "test-1.zarr")
     TEST_CUBE_2 = os.path.join(S3_BUCKET, "test-2.zarr")
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        rimraf(cls.S3_BUCKET)
+        os.mkdir(cls.S3_BUCKET)
+        cube = new_cube(time_periods=3,
+                        variables=dict(precipitation=0.9,
+                                       temperature=278.3)).chunk(dict(time=1, lat=90, lon=90))
+        write_cube(cube, cls.TEST_CUBE_1, "zarr", cube_asserted=True)
+        write_cube(cube, cls.TEST_CUBE_2, "zarr", cube_asserted=True)
+
+    @classmethod
+    def tearDownClass(cls) -> None:
+        rimraf(cls.S3_BUCKET)
+
+
+class ListBucketTest(BucketTest):
 
     def test_list_bucket(self):
         self.maxDiff = None
@@ -27,27 +44,27 @@ class ListBucketTest(unittest.TestCase):
         self.assertListBucketResult(list_bucket_result, max_keys=5, is_truncated=True,
                                     next_marker='test-2.zarr/time_bnds/')
         self.assertIsInstance(list_bucket_result.get('Contents'), list)
-        self.assertEqual([{'ETag': '"9b4c896c64396373b28d5f4c5c438b3f"',
+        self.assertEqual([{'ETag': '"b25cd90af1027bca40aac125cd677632"',
                            'Key': 'test-1.zarr/',
                            'LastModified': '?',
                            'Size': 0,
                            'StorageClass': 'STANDARD'},
-                          {'ETag': '"e861244d88ada176417ca9cef653c252"',
+                          {'ETag': '"63c85aa57274ab7eda56a0d095df193b"',
                            'Key': 'test-1.zarr/.zattrs',
                            'LastModified': '?',
                            'Size': 426,
                            'StorageClass': 'STANDARD'},
-                          {'ETag': '"8181702529c9172a386fd239a538fb8c"',
+                          {'ETag': '"3e4069dee4d3a2e5c8214197389d9532"',
                            'Key': 'test-1.zarr/.zgroup',
                            'LastModified': '?',
                            'Size': 24,
                            'StorageClass': 'STANDARD'},
-                          {'ETag': '"3f48face6f2b707cf5c8c15dd2074e6f"',
+                          {'ETag': '"faac4687801157f63477ba6d3d7dab54"',
                            'Key': 'test-1.zarr/lat/',
                            'LastModified': '?',
                            'Size': 0,
                            'StorageClass': 'STANDARD'},
-                          {'ETag': '"1fd08df28f426c8cdfbbf0ddc53ae659"',
+                          {'ETag': '"82616df189209368fae5bd8caaf0f209"',
                            'Key': 'test-1.zarr/lat/.zarray',
                            'LastModified': '?',
                            'Size': 317,
@@ -79,17 +96,17 @@ class ListBucketTest(unittest.TestCase):
         self.assertListBucketResult(list_bucket_result, delimiter='/', prefix='test-2.zarr/')
         self.assertIsInstance(list_bucket_result.get('Contents'), list)
         self.assertIsInstance(list_bucket_result.get('CommonPrefixes'), list)
-        self.assertEqual([{'ETag': '"d19efdd038f8a3dc35b4dd03bb280a4a"',
+        self.assertEqual([{'ETag': '"2c510152490933efdd58ab4c8a7f811c"',
                            'Key': 'test-2.zarr/',
                            'LastModified': '?',
                            'Size': 0,
                            'StorageClass': 'STANDARD'},
-                          {'ETag': '"258058e6205449b0931127c9a46e7907"',
+                          {'ETag': '"5d8946b3d4ab4cfb9f000d9458a2f38b"',
                            'Key': 'test-2.zarr/.zattrs',
                            'LastModified': '?',
                            'Size': 426,
                            'StorageClass': 'STANDARD'},
-                          {'ETag': '"eee5470de5d094747fb51087fa617b9c"',
+                          {'ETag': '"818d43163d18ab128774c57fa346b4d3"',
                            'Key': 'test-2.zarr/.zgroup',
                            'LastModified': '?',
                            'Size': 24,
@@ -114,6 +131,16 @@ class ListBucketTest(unittest.TestCase):
         self.assertEqual(['test-2.zarr/'],
                          list_bucket_result.get('CommonPrefixes'))
 
+    def test_list_bucket_result_to_xml(self):
+        self.maxDiff = None
+        list_bucket_result = list_bucket(self.S3_BUCKET, delimiter='/', max_keys=10, prefix='test-1.zarr/',
+                                         last_modified='2019-06-24 20:43:40.862072')
+        self.assertListBucketResult(list_bucket_result, delimiter='/', max_keys=10, prefix='test-1.zarr/')
+        xml = list_bucket_result_to_xml(list_bucket_result)
+        with open(os.path.join(os.path.dirname(__file__), 's3', 'list-bucket-result-1.xml')) as fp:
+            expected_xml = fp.read()
+        self.assertEqual(expected_xml, xml)
+
     def assertListBucketResult(self, list_bucket_result, name="s3-bucket", prefix=None,
                                delimiter=None, max_keys=1000, is_truncated=False, marker=None, next_marker=None):
         self.assertIsInstance(list_bucket_result, dict)
@@ -124,26 +151,3 @@ class ListBucketTest(unittest.TestCase):
         self.assertEqual(is_truncated, list_bucket_result.get('IsTruncated'))
         self.assertEqual(marker, list_bucket_result.get('Marker'))
         self.assertEqual(next_marker, list_bucket_result.get('NextMarker'))
-
-    def test_list_bucket_result_to_xml(self):
-        self.maxDiff = None
-        list_bucket_result = list_bucket(self.S3_BUCKET, delimiter='/', max_keys=10, prefix='test-1.zarr/',
-                                         last_modified='2019-06-24 20:43:40.862072')
-        xml = list_bucket_result_to_xml(list_bucket_result)
-        with open(os.path.join(os.path.dirname(__file__), 's3', 'list-bucket-result-1.xml')) as fp:
-            expected_xml = fp.read()
-        self.assertEqual(expected_xml, xml)
-
-    @classmethod
-    def setUpClass(cls) -> None:
-        rimraf(cls.S3_BUCKET)
-        os.mkdir(cls.S3_BUCKET)
-        cube = new_cube(time_periods=3,
-                        variables=dict(precipitation=0.9,
-                                       temperature=278.3)).chunk(dict(time=1, lat=90, lon=90))
-        write_cube(cube, cls.TEST_CUBE_1, "zarr", cube_asserted=True)
-        write_cube(cube, cls.TEST_CUBE_2, "zarr", cube_asserted=True)
-
-    @classmethod
-    def tearDownClass(cls) -> None:
-        rimraf(cls.S3_BUCKET)

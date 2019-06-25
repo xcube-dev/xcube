@@ -10,21 +10,21 @@
     <Key>test-1.zarr/</Key>
     <Size>0</Size>
     <LastModified>2019-06-24 20:43:40.862072</LastModified>
-    <ETag>"9b4c896c64396373b28d5f4c5c438b3f"</ETag>
+    <ETag>"b25cd90af1027bca40aac125cd677632"</ETag>
     <StorageClass>STANDARD</StorageClass>
   </Contents>
   <Contents>
     <Key>test-1.zarr/.zattrs</Key>
     <Size>426</Size>
     <LastModified>2019-06-24 20:43:40.862072</LastModified>
-    <ETag>"e861244d88ada176417ca9cef653c252"</ETag>
+    <ETag>"63c85aa57274ab7eda56a0d095df193b"</ETag>
     <StorageClass>STANDARD</StorageClass>
   </Contents>
   <Contents>
     <Key>test-1.zarr/.zgroup</Key>
     <Size>24</Size>
     <LastModified>2019-06-24 20:43:40.862072</LastModified>
-    <ETag>"8181702529c9172a386fd239a538fb8c"</ETag>
+    <ETag>"3e4069dee4d3a2e5c8214197389d9532"</ETag>
     <StorageClass>STANDARD</StorageClass>
   </Contents>
   <CommonPrefixes>test-1.zarr/lat/</CommonPrefixes>
