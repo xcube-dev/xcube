@@ -233,7 +233,6 @@ class GetS3BucketObjectHandler(ServiceRequestHandler):
         if local_path is None or not local_path.exists():
             await self._key_not_found(key)
             return
-        self.set_header('Server', 'xcube')
         self.set_header('Last-Modified', mtime_to_str(local_path.stat().st_mtime))
         if local_path.is_file():
             self.set_header('Content-Length', local_path.stat().st_size)
@@ -247,7 +246,6 @@ class GetS3BucketObjectHandler(ServiceRequestHandler):
         if local_path is None or not local_path.exists():
             await self._key_not_found(key)
             return
-        self.set_header('Server', 'xcube')
         self.set_header('Last-Modified', mtime_to_str(local_path.stat().st_mtime))
         self.set_header('Content-Type', 'binary/octet-stream')
         if local_path.is_file():

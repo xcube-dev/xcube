@@ -45,6 +45,7 @@ from .errors import ServiceBadRequestError
 from .reqparams import RequestParams
 from ..util.caseless import caseless_dict
 from ..util.undefined import UNDEFINED
+from ..version import version
 
 __author__ = "Norman Fomferra (Brockmann Consult GmbH)"
 
@@ -247,6 +248,7 @@ class ServiceRequestHandler(RequestHandler):
         return self._params
 
     def set_default_headers(self):
+        self.set_header('Server', f'xcube-server/{version}')
         self.set_header('Access-Control-Allow-Origin', '*')
         self.set_header('Access-Control-Allow-Methods',
                         'GET,PUT,DELETE,OPTIONS')
