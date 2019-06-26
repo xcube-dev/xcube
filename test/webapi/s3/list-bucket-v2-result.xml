@@ -9,22 +9,22 @@
   <Contents>
     <Key>bibo.zarr/</Key>
     <Size>0</Size>
-    <LastModified>2019-06-24 20:43:40.862072</LastModified>
-    <ETag>"b25cd90af1027bca40aac125cd677632"</ETag>
+    <LastModified>2019-06-24T20:43:40.862Z</LastModified>
+    <ETag>"bcf6f7346690faad1e8026d1b564224a"</ETag>
     <StorageClass>STANDARD</StorageClass>
   </Contents>
   <Contents>
     <Key>bibo.zarr/.zattrs</Key>
     <Size>426</Size>
-    <LastModified>2019-06-24 20:43:40.862072</LastModified>
-    <ETag>"63c85aa57274ab7eda56a0d095df193b"</ETag>
+    <LastModified>2019-06-24T20:43:40.862Z</LastModified>
+    <ETag>"22be66954ad513c07ee0c0cb8f1805aa"</ETag>
     <StorageClass>STANDARD</StorageClass>
   </Contents>
   <Contents>
     <Key>bibo.zarr/.zgroup</Key>
     <Size>24</Size>
-    <LastModified>2019-06-24 20:43:40.862072</LastModified>
-    <ETag>"3e4069dee4d3a2e5c8214197389d9532"</ETag>
+    <LastModified>2019-06-24T20:43:40.862Z</LastModified>
+    <ETag>"c7a4dcb9d6a66348e2a4b41943878919"</ETag>
     <StorageClass>STANDARD</StorageClass>
   </Contents>
   <CommonPrefixes>

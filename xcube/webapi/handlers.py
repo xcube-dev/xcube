@@ -25,7 +25,7 @@ import logging
 
 from tornado.ioloop import IOLoop
 
-from xcube.webapi.s3util import dict_to_xml, list_bucket_v1, list_bucket_result_to_xml, list_bucket_v2, mtime_to_str
+from xcube.webapi.s3util import dict_to_xml, list_s3_bucket_v1, list_bucket_result_to_xml, list_s3_bucket_v2, mtime_to_str
 from . import __version__, __description__
 from .controllers.catalogue import get_datasets, get_dataset_coordinates, get_color_bars, get_dataset
 from .controllers.places import find_places, find_dataset_places
@@ -191,7 +191,7 @@ class ListS3BucketHandler(ServiceRequestHandler):
             v1_params = dict(prefix=prefix, delimiter=delimiter,
                              max_keys=max_keys, marker=marker)
             print('ListS3BucketHandler: v1_params: ', v1_params)
-            list_bucket_result = list_bucket_v1(bucket_dict, **v1_params)
+            list_bucket_result = list_s3_bucket_v1(bucket_dict, **v1_params)
 
         elif list_type == '2':
             # GET Bucket (List Objects) Version 2
@@ -214,7 +214,7 @@ class ListS3BucketHandler(ServiceRequestHandler):
                              start_after=start_after,
                              continuation_token=continuation_token)
             print('ListS3BucketHandler: v2_params: ', v2_params)
-            list_bucket_result = list_bucket_v2(bucket_dict, **v2_params)
+            list_bucket_result = list_s3_bucket_v2(bucket_dict, **v2_params)
 
         else:
             raise ServiceBadRequestError(f'Unknown bucket list type {list_type!r}')

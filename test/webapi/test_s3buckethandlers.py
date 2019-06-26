@@ -1,4 +1,5 @@
 import unittest
+import urllib.request
 
 from xcube.api import read_cube
 
@@ -8,10 +9,10 @@ ENDPOINT_URL = SERVER_URL + '/s3bucket'
 
 
 def is_server_running() -> bool:
-    import requests
     # noinspection PyBroadException
     try:
-        response = requests.request('GET', SERVER_URL, timeout=2.0)
+        with urllib.request.urlopen(SERVER_URL, timeout=2.0) as response:
+            response.read()
     except Exception:
         return False
     return 200 <= response.status_code < 400

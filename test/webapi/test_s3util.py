@@ -7,33 +7,43 @@ from typing import Dict
 from xcube.api import new_cube
 from xcube.api.readwrite import write_cube
 from xcube.util.dsio import rimraf
-from xcube.webapi.s3util import list_bucket_result_to_xml, list_bucket_keys, list_bucket_v2, list_bucket_v1
+from xcube.webapi.s3util import list_bucket_result_to_xml, list_s3_bucket_keys, list_s3_bucket_v2, list_s3_bucket_v1
+
+S3_BUCKET = os.path.join(os.path.dirname(__file__), "s3-bucket")
+TEST_CUBE_1 = os.path.join(S3_BUCKET, "test-1.zarr")
+TEST_CUBE_2 = os.path.join(S3_BUCKET, "test-2.zarr")
+S3_BUCKET_DICT = {'bibo.zarr': TEST_CUBE_1,
+                  'bert.zarr': TEST_CUBE_2}
 
 
-class ListBucketTest(unittest.TestCase, metaclass=ABCMeta):
-    S3_BUCKET = os.path.join(os.path.dirname(__file__), "s3-bucket")
-    TEST_CUBE_1 = os.path.join(S3_BUCKET, "test-1.zarr")
-    TEST_CUBE_2 = os.path.join(S3_BUCKET, "test-2.zarr")
-
-    BUCKET_DICT = {'bibo.zarr': TEST_CUBE_1,
-                   'bert.zarr': TEST_CUBE_2}
+class S3BucketTest(unittest.TestCase, metaclass=ABCMeta):
 
     def setUp(self):
         self.maxDiff = None
 
     @classmethod
     def setUpClass(cls) -> None:
-        rimraf(cls.S3_BUCKET)
-        os.mkdir(cls.S3_BUCKET)
+        rimraf(S3_BUCKET)
+        os.mkdir(S3_BUCKET)
         cube = new_cube(time_periods=3,
                         variables=dict(precipitation=0.9,
                                        temperature=278.3)).chunk(dict(time=1, lat=90, lon=90))
-        write_cube(cube, cls.TEST_CUBE_1, "zarr", cube_asserted=True)
-        write_cube(cube, cls.TEST_CUBE_2, "zarr", cube_asserted=True)
+        write_cube(cube, TEST_CUBE_1, "zarr", cube_asserted=True)
+        write_cube(cube, TEST_CUBE_2, "zarr", cube_asserted=True)
 
     @classmethod
     def tearDownClass(cls) -> None:
-        rimraf(cls.S3_BUCKET)
+        rimraf(S3_BUCKET)
+
+
+class ListS3BucketKeys(S3BucketTest):
+    def test_list_bucket_keys(self):
+        result = [key_path for key_path in list_s3_bucket_keys(S3_BUCKET_DICT)]
+        self.assertEqual(EXPECTED_KEYS, [key for key, _ in result])
+        self.assertEqual(170, len(EXPECTED_KEYS))
+
+
+class ListS3BucketTest(S3BucketTest, metaclass=ABCMeta):
 
     @abstractmethod
     def list_bucket(self, bucket_dict, **kwargs):
@@ -45,29 +55,24 @@ class ListBucketTest(unittest.TestCase, metaclass=ABCMeta):
 
 
 # noinspection PyUnresolvedReferences
-class ListBucketV12TestsMixin:
-
-    def test_list_bucket_keys(self):
-        result = [key_path for key_path in list_bucket_keys(self.BUCKET_DICT)]
-        self.assertEqual(EXPECTED_KEYS, [key for key, _ in result])
-        self.assertEqual(170, len(EXPECTED_KEYS))
+class ListS3BucketV12TestsMixin:
 
     def test_list_bucket_v12(self):
-        list_bucket_result = self.list_bucket(self.BUCKET_DICT)
+        list_bucket_result = self.list_bucket(S3_BUCKET_DICT)
         self.assert_list_bucket_result(list_bucket_result)
         self.assertIsInstance(list_bucket_result.get('Contents'), list)
         self.assertEqual(170, len(list_bucket_result.get('Contents')))
         self.assertNotIn('CommonPrefixes', list_bucket_result)
 
     def test_list_bucket_v12_prefix(self):
-        list_bucket_result = self.list_bucket(self.BUCKET_DICT, prefix='bibo.zarr/')
+        list_bucket_result = self.list_bucket(S3_BUCKET_DICT, prefix='bibo.zarr/')
         self.assert_list_bucket_result(list_bucket_result, prefix='bibo.zarr/')
         self.assertIsInstance(list_bucket_result.get('Contents'), list)
         self.assertEqual(85, len(list_bucket_result.get('Contents')))
         self.assertNotIn('CommonPrefixes', list_bucket_result)
 
     def test_list_bucket_v12_delimiter(self):
-        list_bucket_result = self.list_bucket(self.BUCKET_DICT, delimiter='/')
+        list_bucket_result = self.list_bucket(S3_BUCKET_DICT, delimiter='/')
         self.assert_list_bucket_result(list_bucket_result, delimiter='/')
         self.assertNotIn('Contents', list_bucket_result)
         self.assertIsInstance(list_bucket_result.get('CommonPrefixes'), list)
@@ -76,25 +81,25 @@ class ListBucketV12TestsMixin:
                          list_bucket_result.get('CommonPrefixes'))
 
     def test_list_bucket_v12_delimiter_prefix(self):
-        list_bucket_result = self.list_bucket(self.BUCKET_DICT, delimiter='/',
-                                              prefix='bert.zarr/', last_modified='?')
+        list_bucket_result = self.list_bucket(S3_BUCKET_DICT, delimiter='/',
+                                              prefix='bert.zarr/')
         self.assert_list_bucket_result(list_bucket_result, delimiter='/',
                                        prefix='bert.zarr/')
         self.assertIsInstance(list_bucket_result.get('Contents'), list)
         self.assertIsInstance(list_bucket_result.get('CommonPrefixes'), list)
-        self.assertEqual([{'ETag': '"2c510152490933efdd58ab4c8a7f811c"',
+        self.assertEqual([{'ETag': '"5fb93bce985c60d724d9869f32e02d24"',
                            'Key': 'bert.zarr/',
-                           'LastModified': '?',
+                           'LastModified': '2019-06-24T20:43:40.862Z',
                            'Size': 0,
                            'StorageClass': 'STANDARD'},
-                          {'ETag': '"5d8946b3d4ab4cfb9f000d9458a2f38b"',
+                          {'ETag': '"16a49349c15b9cd60c5d8a05fc6ad649"',
                            'Key': 'bert.zarr/.zattrs',
-                           'LastModified': '?',
+                           'LastModified': '2019-06-24T20:43:40.862Z',
                            'Size': 426,
                            'StorageClass': 'STANDARD'},
-                          {'ETag': '"818d43163d18ab128774c57fa346b4d3"',
+                          {'ETag': '"0a44cbe4de5e2936112efc2ed25b6223"',
                            'Key': 'bert.zarr/.zgroup',
-                           'LastModified': '?',
+                           'LastModified': '2019-06-24T20:43:40.862Z',
                            'Size': 24,
                            'StorageClass': 'STANDARD'}],
                          list_bucket_result.get('Contents'))
@@ -109,8 +114,8 @@ class ListBucketV12TestsMixin:
                          list_bucket_result.get('CommonPrefixes'))
 
     def test_list_bucket_v12_delimiter_prefix_2(self):
-        list_bucket_result = self.list_bucket(self.BUCKET_DICT, delimiter='/',
-                                              prefix='bert.zarr', last_modified='?')
+        list_bucket_result = self.list_bucket(S3_BUCKET_DICT, delimiter='/',
+                                              prefix='bert.zarr')
         self.assert_list_bucket_result(list_bucket_result, delimiter='/',
                                        prefix='bert.zarr')
         self.assertNotIn('Contents', list_bucket_result)
@@ -119,45 +124,44 @@ class ListBucketV12TestsMixin:
                          list_bucket_result.get('CommonPrefixes'))
 
 
-class ListBucketV1Test(ListBucketTest, ListBucketV12TestsMixin):
+class ListBucketV1Test(ListS3BucketTest, ListS3BucketV12TestsMixin):
     def test_list_bucket_v1_truncated(self):
-        list_bucket_result = self.list_bucket(self.BUCKET_DICT,
-                                              max_keys=5, last_modified='?')
+        list_bucket_result = self.list_bucket(S3_BUCKET_DICT,
+                                              max_keys=5)
         self.assert_list_bucket_result(list_bucket_result, max_keys=5, is_truncated=True,
                                        next_marker='bert.zarr/lat/.zattrs')
         self.assertIsInstance(list_bucket_result.get('Contents'), list)
-        self.assertEqual([{'ETag': '"2c510152490933efdd58ab4c8a7f811c"',
+        self.assertEqual([{'ETag': '"5fb93bce985c60d724d9869f32e02d24"',
                            'Key': 'bert.zarr/',
-                           'LastModified': '?',
+                           'LastModified': '2019-06-24T20:43:40.862Z',
                            'Size': 0,
                            'StorageClass': 'STANDARD'},
-                          {'ETag': '"5d8946b3d4ab4cfb9f000d9458a2f38b"',
+                          {'ETag': '"16a49349c15b9cd60c5d8a05fc6ad649"',
                            'Key': 'bert.zarr/.zattrs',
-                           'LastModified': '?',
+                           'LastModified': '2019-06-24T20:43:40.862Z',
                            'Size': 426,
                            'StorageClass': 'STANDARD'},
-                          {'ETag': '"818d43163d18ab128774c57fa346b4d3"',
+                          {'ETag': '"0a44cbe4de5e2936112efc2ed25b6223"',
                            'Key': 'bert.zarr/.zgroup',
-                           'LastModified': '?',
+                           'LastModified': '2019-06-24T20:43:40.862Z',
                            'Size': 24,
                            'StorageClass': 'STANDARD'},
-                          {'ETag': '"1f42995f4d5156dc9efe3d97f5df3cfe"',
+                          {'ETag': '"f64109793f6ea9ec1c9cfcb8ee97e145"',
                            'Key': 'bert.zarr/lat/',
-                           'LastModified': '?',
+                           'LastModified': '2019-06-24T20:43:40.862Z',
                            'Size': 0,
                            'StorageClass': 'STANDARD'},
-                          {'ETag': '"f95c0565c0cdb4bec1132434755abf5a"',
+                          {'ETag': '"b74fb939f20cf7cff02c208e8824faec"',
                            'Key': 'bert.zarr/lat/.zarray',
-                           'LastModified': '?',
+                           'LastModified': '2019-06-24T20:43:40.862Z',
                            'Size': 317,
                            'StorageClass': 'STANDARD'}],
                          list_bucket_result.get('Contents'))
         self.assertNotIn('CommonPrefixes', list_bucket_result)
 
     def test_list_bucket_v1_result_to_xml(self):
-        list_bucket_result = self.list_bucket(self.BUCKET_DICT, delimiter='/',
-                                              max_keys=10, prefix='bibo.zarr/',
-                                              last_modified='2019-06-24 20:43:40.862072')
+        list_bucket_result = self.list_bucket(S3_BUCKET_DICT, delimiter='/',
+                                              max_keys=10, prefix='bibo.zarr/')
         self.assert_list_bucket_result(list_bucket_result, delimiter='/',
                                        max_keys=10, prefix='bibo.zarr/')
         xml = list_bucket_result_to_xml(list_bucket_result)
@@ -166,7 +170,10 @@ class ListBucketV1Test(ListBucketTest, ListBucketV12TestsMixin):
         self.assertEqual(expected_xml, xml)
 
     def list_bucket(self, bucket_entries: Dict[str, str], **kwargs):
-        return list_bucket_v1(bucket_entries, **kwargs)
+        return list_s3_bucket_v1(bucket_entries,
+                                 key_to_etag=True,
+                                 last_modified='2019-06-24T20:43:40.862Z',
+                                 **kwargs)
 
     def assert_list_bucket_result(self,
                                   list_bucket_result,
@@ -187,46 +194,45 @@ class ListBucketV1Test(ListBucketTest, ListBucketV12TestsMixin):
         self.assertEqual(next_marker, list_bucket_result.get('NextMarker'))
 
 
-class ListBucketV2Test(ListBucketTest, ListBucketV12TestsMixin):
+class ListS3BucketV2Test(ListS3BucketTest, ListS3BucketV12TestsMixin):
 
     def test_list_bucket_v2_truncated(self):
-        list_bucket_result = self.list_bucket(self.BUCKET_DICT,
-                                              max_keys=5, last_modified='?')
+        list_bucket_result = self.list_bucket(S3_BUCKET_DICT,
+                                              max_keys=5)
         self.assert_list_bucket_result(list_bucket_result, max_keys=5, is_truncated=True,
-                                       next_continuation_token='bert.zarr/lat/.zattrs')
+                                       next_continuation_token=6)
         self.assertIsInstance(list_bucket_result.get('Contents'), list)
-        self.assertEqual([{'ETag': '"2c510152490933efdd58ab4c8a7f811c"',
+        self.assertEqual([{'ETag': '"5fb93bce985c60d724d9869f32e02d24"',
                            'Key': 'bert.zarr/',
-                           'LastModified': '?',
+                           'LastModified': '2019-06-24T20:43:40.862Z',
                            'Size': 0,
                            'StorageClass': 'STANDARD'},
-                          {'ETag': '"5d8946b3d4ab4cfb9f000d9458a2f38b"',
+                          {'ETag': '"16a49349c15b9cd60c5d8a05fc6ad649"',
                            'Key': 'bert.zarr/.zattrs',
-                           'LastModified': '?',
+                           'LastModified': '2019-06-24T20:43:40.862Z',
                            'Size': 426,
                            'StorageClass': 'STANDARD'},
-                          {'ETag': '"818d43163d18ab128774c57fa346b4d3"',
+                          {'ETag': '"0a44cbe4de5e2936112efc2ed25b6223"',
                            'Key': 'bert.zarr/.zgroup',
-                           'LastModified': '?',
+                           'LastModified': '2019-06-24T20:43:40.862Z',
                            'Size': 24,
                            'StorageClass': 'STANDARD'},
-                          {'ETag': '"1f42995f4d5156dc9efe3d97f5df3cfe"',
+                          {'ETag': '"f64109793f6ea9ec1c9cfcb8ee97e145"',
                            'Key': 'bert.zarr/lat/',
-                           'LastModified': '?',
+                           'LastModified': '2019-06-24T20:43:40.862Z',
                            'Size': 0,
                            'StorageClass': 'STANDARD'},
-                          {'ETag': '"f95c0565c0cdb4bec1132434755abf5a"',
+                          {'ETag': '"b74fb939f20cf7cff02c208e8824faec"',
                            'Key': 'bert.zarr/lat/.zarray',
-                           'LastModified': '?',
+                           'LastModified': '2019-06-24T20:43:40.862Z',
                            'Size': 317,
                            'StorageClass': 'STANDARD'}],
                          list_bucket_result.get('Contents'))
         self.assertNotIn('CommonPrefixes', list_bucket_result)
 
     def test_list_bucket_v2_result_to_xml(self):
-        list_bucket_result = self.list_bucket(self.BUCKET_DICT, delimiter='/',
-                                              max_keys=10, prefix='bibo.zarr/',
-                                              last_modified='2019-06-24 20:43:40.862072')
+        list_bucket_result = self.list_bucket(S3_BUCKET_DICT, delimiter='/',
+                                              max_keys=10, prefix='bibo.zarr/')
         self.assert_list_bucket_result(list_bucket_result, delimiter='/',
                                        max_keys=10, prefix='bibo.zarr/')
         xml = list_bucket_result_to_xml(list_bucket_result)
@@ -235,7 +241,10 @@ class ListBucketV2Test(ListBucketTest, ListBucketV12TestsMixin):
         self.assertEqual(expected_xml, xml)
 
     def list_bucket(self, bucket_entries: Dict[str, str], **kwargs):
-        return list_bucket_v2(bucket_entries, **kwargs)
+        return list_s3_bucket_v2(bucket_entries,
+                                 key_to_etag=True,
+                                 last_modified='2019-06-24T20:43:40.862Z',
+                                 **kwargs)
 
     def assert_list_bucket_result(self,
                                   list_bucket_result,
