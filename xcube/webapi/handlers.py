@@ -227,11 +227,12 @@ class ListS3BucketHandler(ServiceRequestHandler):
 
 # noinspection PyAbstractClass
 class GetS3BucketObjectHandler(ServiceRequestHandler):
-    async def head(self, ds_id: str, path: str):
+    async def head(self, ds_id: str, path: str = ''):
         key, local_path = self._get_key_and_local_path(ds_id, path)
         print(f'GetS3BucketObjectHandler: HEAD: key={key!r}, local_path={local_path!r}')
         if local_path is None or not local_path.exists():
             await self._key_not_found(key)
+            return
         self.set_header('Server', 'xcube')
         self.set_header('Last-Modified', mtime_to_str(local_path.stat().st_mtime))
         if local_path.is_file():
@@ -240,11 +241,12 @@ class GetS3BucketObjectHandler(ServiceRequestHandler):
             self.set_header('Content-Length', 0)
         await self.finish()
 
-    async def get(self, ds_id: str, path: str):
+    async def get(self, ds_id: str, path: str = ''):
         key, local_path = self._get_key_and_local_path(ds_id, path)
         print(f'GetS3BucketObjectHandler: GET: key={key!r}, local_path={local_path!r}')
         if local_path is None or not local_path.exists():
             await self._key_not_found(key)
+            return
         self.set_header('Server', 'xcube')
         self.set_header('Last-Modified', mtime_to_str(local_path.stat().st_mtime))
         self.set_header('Content-Type', 'binary/octet-stream')

@@ -67,6 +67,8 @@ def new_application(prefix: str = None):
 
         (prefix + url_pattern('/s3bucket/{{ds_id}}.zarr/(?P<path>.*)'),
          GetS3BucketObjectHandler),
+        (prefix + url_pattern('/s3bucket/{{ds_id}}.zarr'),
+         GetS3BucketObjectHandler),
         (prefix + url_pattern('/s3bucket'),
          ListS3BucketHandler),
 
