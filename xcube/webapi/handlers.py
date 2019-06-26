@@ -25,7 +25,6 @@ import logging
 
 from tornado.ioloop import IOLoop
 
-from xcube.webapi.s3util import dict_to_xml, list_s3_bucket_v1, list_bucket_result_to_xml, list_s3_bucket_v2, mtime_to_str
 from . import __version__, __description__
 from .controllers.catalogue import get_datasets, get_dataset_coordinates, get_color_bars, get_dataset
 from .controllers.places import find_places, find_dataset_places
@@ -34,6 +33,8 @@ from .controllers.time_series import get_time_series_info, get_time_series_for_p
     get_time_series_for_geometry_collection, get_time_series_for_feature_collection
 from .controllers.wmts import get_wmts_capabilities_xml
 from .errors import ServiceBadRequestError
+from .s3util import dict_to_xml, list_s3_bucket_v1, list_bucket_result_to_xml, list_s3_bucket_v2, \
+    mtime_to_str, str_to_etag
 from .service import ServiceRequestHandler
 from ..util.timecoord import timestamp_to_iso_string
 
@@ -136,88 +137,29 @@ class GetDatasetHandler(ServiceRequestHandler):
 class ListS3BucketHandler(ServiceRequestHandler):
 
     async def get(self):
-        print('ListS3BucketHandler!')
 
-        import os.path
-
-        bucket_dict = {}
-        for descriptor in self.service_context.get_dataset_descriptors():
-            ds_id = descriptor.get('Identifier')
-            file_system = descriptor.get('FileSystem')
-            if file_system == 'local':
-                local_path = descriptor.get('Path')
-                if not os.path.isabs(local_path):
-                    local_path = os.path.join(self.service_context.base_dir, local_path)
-                if os.path.isdir(local_path) and local_path.endswith('.zarr'):
-                    bucket_dict[ds_id + '.zarr'] = local_path
-
-        # Limits the response to keys that begin with the specified prefix.
-        # You can use prefixes to separate a bucket into different groupings of keys.
-        # (You can think of using prefix to make groups in the same way you'd use
-        # a folder in a file system.)
         prefix = self.get_query_argument('prefix', default=None)
-
-        # A delimiter is a character you use to group keys.
-        # If you specify a prefix, all of the keys that contain the same string
-        # between the prefix and the first occurrence of the delimiter after
-        # the prefix are grouped under a single result element called CommonPrefixes.
-        # If you don't specify the prefix parameter, the substring starts at the
-        # beginning of the key.
-        # The keys that are grouped under the CommonPrefixes result element are not
-        # returned elsewhere in the response.
         delimiter = self.get_query_argument('delimiter', default=None)
-
-        #
-        # Sets the maximum number of keys returned in the response body.
-        # If you want to retrieve fewer than the default 1,000 keys,
-        # you can add this to your request.
-        #
-        # The response might contain fewer keys, but it never contains more.
-        # If there are additional keys that satisfy the search criteria, but these
-        # keys were not returned because max-keys was exceeded, the response
-        # contains <IsTruncated>true</IsTruncated>.
-        # To return the additional keys, see NextContinuationToken.
         max_keys = int(self.get_query_argument('max-keys', default='1000'))
+        list_s3_bucket_params = dict(prefix=prefix, delimiter=delimiter,
+                                     max_keys=max_keys)
 
         list_type = self.get_query_argument('list-type', default=None)
         if list_type is None:
-            # GET Bucket (List Objects) Version 1
-            # https://docs.aws.amazon.com/AmazonS3/latest/API/v2-RESTBucketGET.html
-
-            # Indicates the object key to start with when listing objects in a bucket.
-            # All objects are listed in the dictionary order.
             marker = self.get_query_argument('marker', default=None)
-
-            v1_params = dict(prefix=prefix, delimiter=delimiter,
-                             max_keys=max_keys, marker=marker)
-            print('ListS3BucketHandler: v1_params: ', v1_params)
-            list_bucket_result = list_s3_bucket_v1(bucket_dict, **v1_params)
-
+            list_s3_bucket_params.update(marker=marker)
+            list_s3_bucket = list_s3_bucket_v1
         elif list_type == '2':
-            # GET Bucket (List Objects) Version 2
-            # https://docs.aws.amazon.com/AmazonS3/latest/API/RESTBucketGET.html
-
-            # When the response to this API call is truncated (that is, the IsTruncated
-            # response element value is true), the response also includes the
-            # NextContinuationToken element. To list the next set of objects,
-            # you can use the NextContinuationToken element in the next request
-            # as the continuation-token.
-            continuation_token = self.get_query_argument('continuation-token', default=None)
-
-            # If you want the API to return key names after a specific object key in your key space,
-            # you can add this parameter. Amazon S3 lists objects in UTF-8 character
-            # encoding in lexicographical order.
             start_after = self.get_query_argument('start-after', default=None)
-
-            v2_params = dict(prefix=prefix, delimiter=delimiter,
-                             max_keys=max_keys,
-                             start_after=start_after,
-                             continuation_token=continuation_token)
-            print('ListS3BucketHandler: v2_params: ', v2_params)
-            list_bucket_result = list_s3_bucket_v2(bucket_dict, **v2_params)
-
+            continuation_token = self.get_query_argument('continuation-token', default=None)
+            list_s3_bucket_params.update(start_after=start_after, continuation_token=continuation_token)
+            list_s3_bucket = list_s3_bucket_v2
         else:
             raise ServiceBadRequestError(f'Unknown bucket list type {list_type!r}')
+
+        print(f'ListS3BucketHandler: GET: list_s3_bucket_params={list_s3_bucket_params}')
+        bucket_mapping = self.service_context.get_s3_bucket_mapping()
+        list_bucket_result = list_s3_bucket(bucket_mapping, **list_s3_bucket_params)
 
         xml = list_bucket_result_to_xml(list_bucket_result)
         self.set_header('Content-Type', 'application/xml')
@@ -233,6 +175,7 @@ class GetS3BucketObjectHandler(ServiceRequestHandler):
         if local_path is None or not local_path.exists():
             await self._key_not_found(key)
             return
+        self.set_header('ETag', str_to_etag(local_path))
         self.set_header('Last-Modified', mtime_to_str(local_path.stat().st_mtime))
         if local_path.is_file():
             self.set_header('Content-Length', local_path.stat().st_size)
@@ -246,6 +189,7 @@ class GetS3BucketObjectHandler(ServiceRequestHandler):
         if local_path is None or not local_path.exists():
             await self._key_not_found(key)
             return
+        self.set_header('ETag', str_to_etag(local_path))
         self.set_header('Last-Modified', mtime_to_str(local_path.stat().st_mtime))
         self.set_header('Content-Type', 'binary/octet-stream')
         if local_path.is_file():
