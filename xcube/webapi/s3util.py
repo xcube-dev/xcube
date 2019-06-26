@@ -22,15 +22,43 @@ def list_s3_bucket_v2(bucket_entries: Dict[str, str],
 
     :param bucket_entries: mapping from the bucket's top-level names to directory paths in the local file system
     :param name: The bucket name, defaults to "s3bucket"
-    :param delimiter: See AWS docs. No default.
-    :param prefix: See AWS docs. No default.
-    :param max_keys: See AWS docs. Defaults to 1000.
-    :param start_after: See AWS docs. No default.
-    :param continuation_token: See AWS docs. No default.
-    :param storage_class: See AWS docs. Defaults to "STANDARD".
+    :param delimiter: A delimiter is a character you use to group keys.
+           If you specify a prefix, all of the keys that contain the same string
+           between the prefix and the first occurrence of the delimiter after
+           the prefix are grouped under a single result element called CommonPrefixes.
+           If you don't specify the prefix parameter, the substring starts at the
+           beginning of the key.
+           The keys that are grouped under the CommonPrefixes result element are not
+           returned elsewhere in the response.
+           Refer to AWS docs for details. No default.
+    :param prefix: Limits the response to keys that begin with the specified prefix.
+           You can use prefixes to separate a bucket into different groupings of keys.
+           (You can think of using prefix to make groups in the same way you'd use
+           a folder in a file system.)
+           Refer to AWS docs for details. No default.
+    :param max_keys: Sets the maximum number of keys returned in the response body.
+           If you want to retrieve fewer than the default 1000 keys,
+           you can add this to your request.
+           The response might contain fewer keys, but it never contains more.
+           If there are additional keys that satisfy the search criteria, but these
+           keys were not returned because max-keys was exceeded, the response
+           contains <IsTruncated>true</IsTruncated>.
+           To return the additional keys, see NextContinuationToken.
+           Refer to AWS docs for details. Defaults to 1000.
+    :param start_after: If you want the API to return key names after a specific object key in your key space,
+           you can add this parameter. Amazon S3 lists objects in UTF-8 character
+           encoding in lexicographical order.
+           Refer to AWS docs for details. No default.
+    :param continuation_token: When the response to this API call is truncated (that is, the IsTruncated
+           response element value is true), the response also includes the
+           NextContinuationToken element. To list the next set of objects,
+           you can use the NextContinuationToken element in the next request
+           as the continuation-token.
+           Refer to AWS docs for details. No default.
+    :param storage_class: Refer to AWS docs for details. Defaults to "STANDARD".
     :param last_modified: For testing only: always use this value for the "LastModified" entry of results
     :param key_to_etag: For testing only: use key to produce MD5 hashes for the "ETag" entry of results
-    :return: A dictionary that represents the contents of a "ListBucketResult". See AWS docs.
+    :return: A dictionary that represents the contents of a "ListBucketResult". Refer to AWS docs for details.
     """
     name = name or 's3bucket'
     max_keys = max_keys or 1000
@@ -116,14 +144,36 @@ def list_s3_bucket_v1(bucket_entries: Dict[str, str],
 
     :param bucket_entries: mapping from the bucket's top-level names to directory paths in the local file system
     :param name: The bucket name, defaults to "s3bucket"
-    :param delimiter: See AWS docs. No default.
-    :param prefix: See AWS docs. No default.
-    :param max_keys: See AWS docs. Defaults to 1000.
-    :param marker: See AWS docs. No default.
-    :param storage_class: See AWS docs. Defaults to "STANDARD".
+    :param delimiter: A delimiter is a character you use to group keys.
+           If you specify a prefix, all of the keys that contain the same string
+           between the prefix and the first occurrence of the delimiter after
+           the prefix are grouped under a single result element called CommonPrefixes.
+           If you don't specify the prefix parameter, the substring starts at the
+           beginning of the key.
+           The keys that are grouped under the CommonPrefixes result element are not
+           returned elsewhere in the response.
+           Refer to AWS docs for details. No default.
+    :param prefix: Limits the response to keys that begin with the specified prefix.
+           You can use prefixes to separate a bucket into different groupings of keys.
+           (You can think of using prefix to make groups in the same way you'd use
+           a folder in a file system.)
+           Refer to AWS docs for details. No default.
+    :param max_keys: Sets the maximum number of keys returned in the response body.
+           If you want to retrieve fewer than the default 1000 keys,
+           you can add this to your request.
+           The response might contain fewer keys, but it never contains more.
+           If there are additional keys that satisfy the search criteria, but these
+           keys were not returned because max-keys was exceeded, the response
+           contains <IsTruncated>true</IsTruncated>.
+           To return the additional keys, see NextMarker.
+           Refer to AWS docs for details.
+    :param marker: Indicates the object key to start with when listing objects in a bucket.
+           All objects are listed in the dictionary order.
+           Refer to AWS docs for details. No default.
+    :param storage_class: Refer to AWS docs for details. Defaults to "STANDARD".
     :param last_modified: For testing only: always use this value for the "LastModified" entry of results
     :param key_to_etag: For testing only: use key to produce MD5 hashes for the "ETag" entry of results
-    :return: A dictionary that represents the contents of a "ListBucketResult". See AWS docs.
+    :return: A dictionary that represents the contents of a "ListBucketResult". Refer to AWS docs for details.
     """
     name = name or 's3bucket'
     max_keys = max_keys or 1000
