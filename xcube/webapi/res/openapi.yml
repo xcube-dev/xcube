@@ -12,7 +12,7 @@ info:
   description: |
     A light-weight web server that provides
     various services based on xarray-enabled datasets.
-  version: "0.1.0.dev6"
+  version: "0.2.0.dev3"
   title: XCube Server API
   contact:
     email: bcdev@brockmann-consult.de
@@ -120,6 +120,7 @@ paths:
       parameters:
         - $ref: '#/components/parameters/datasetDetails'
         - $ref: '#/components/parameters/tileClient'
+        - $ref: '#/components/parameters/pointCoord'
       responses:
         '200':
           description: Dataset list.
@@ -309,6 +310,7 @@ paths:
         - $ref: '#/components/parameters/lon'
         - $ref: '#/components/parameters/startDate'
         - $ref: '#/components/parameters/endDate'
+        - $ref: '#/components/parameters/maxValids'
       responses:
         '200':
           description: Success
@@ -333,6 +335,7 @@ paths:
         - $ref: '#/components/parameters/variable'
         - $ref: '#/components/parameters/startDate'
         - $ref: '#/components/parameters/endDate'
+        - $ref: '#/components/parameters/maxValids'
       requestBody:
         $ref: '#/components/requestBodies/GeoJsonGeometry'
       responses:
@@ -359,6 +362,7 @@ paths:
         - $ref: '#/components/parameters/variable'
         - $ref: '#/components/parameters/startDate'
         - $ref: '#/components/parameters/endDate'
+        - $ref: '#/components/parameters/maxValids'
       requestBody:
         $ref: '#/components/requestBodies/GeoJsonGeometryCollection'
       responses:
@@ -385,6 +389,7 @@ paths:
         - $ref: '#/components/parameters/variable'
         - $ref: '#/components/parameters/startDate'
         - $ref: '#/components/parameters/endDate'
+        - $ref: '#/components/parameters/maxValids'
       requestBody:
         $ref: '#/components/requestBodies/GeoJsonFeatureCollection'
       responses:
@@ -608,6 +613,14 @@ components:
       schema:
         type: string
       example: 2099-01-01
+    maxValids:
+      name: maxValids
+      in: query
+      description: maximum number of valid (non-NaN) values in the result; if -1, only valid values are returned.
+      required: false
+      schema:
+        type: int
+      example: 2099-01-01
     datasetDetails:
       name: details
       in: query
@@ -626,6 +639,15 @@ components:
       schema:
         type: string
       example: ol4
+    pointCoord:
+      name: point
+      in: query
+      description: |
+          Point coordinates given in decimal degree. Used as filter.
+      required: false
+      schema:
+        type: string
+      example: 12.1,53.2
   schemas:
     PlaceGroupInfo:
       type: object

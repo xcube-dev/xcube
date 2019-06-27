@@ -25,9 +25,11 @@ class RequestParamsTest(unittest.TestCase):
         self.assertEqual('bert', rp.get_query_argument('s', 'bert'))
         self.assertEqual(234, rp.get_query_argument_int('i', 234))
         self.assertEqual(0.2, rp.get_query_argument_float('f', 0.2))
+        self.assertEqual((-10.4, 51.8), rp.get_query_argument_point('p', (-10.4, 51.8)))
 
-        rp = RequestParamsMock(s='bibo', i='465', f='0.1')
+        rp = RequestParamsMock(s='bibo', i='465', f='0.1', p='-10.4, 51.8')
         self.assertEqual('bibo', rp.get_query_argument('s', None))
         self.assertEqual(465, rp.get_query_argument_int('i', None))
         self.assertEqual(465., rp.get_query_argument_float('i', None))
         self.assertEqual(0.1, rp.get_query_argument_float('f', None))
+        self.assertEqual((-10.4, 51.8), rp.get_query_argument_point('p', None))

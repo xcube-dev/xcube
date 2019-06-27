@@ -112,7 +112,9 @@ class GetDatasetsHandler(ServiceRequestHandler):
     def get(self):
         details = bool(int(self.params.get_query_argument('details', '0')))
         tile_client = self.params.get_query_argument('tiles', None)
-        response = get_datasets(self.service_context, details=details, client=tile_client, base_url=self.base_url)
+        point = self.params.get_query_argument_point('point', None)
+        response = get_datasets(self.service_context, details=details, client=tile_client,
+                                point=point, base_url=self.base_url)
         self.set_header('Content-Type', 'application/json')
         self.write(json.dumps(response, indent=None if details else 2))
 
@@ -322,13 +324,16 @@ class GetTimeSeriesForPointHandler(ServiceRequestHandler):
         lat = self.params.get_query_argument_float('lat')
         start_date = self.params.get_query_argument_datetime('startDate', default=None)
         end_date = self.params.get_query_argument_datetime('endDate', default=None)
+        max_valids = self.params.get_query_argument_int('maxValids', default=None)
 
         response = await IOLoop.current().run_in_executor(None,
                                                           get_time_series_for_point,
                                                           self.service_context,
                                                           ds_id, var_name,
                                                           lon, lat,
-                                                          start_date, end_date)
+                                                          start_date,
+                                                          end_date,
+                                                          max_valids)
         self.set_header('Content-Type', 'application/json')
         self.finish(response)
 
@@ -339,6 +344,7 @@ class GetTimeSeriesForGeometryHandler(ServiceRequestHandler):
     async def post(self, ds_id: str, var_name: str):
         start_date = self.params.get_query_argument_datetime('startDate', default=None)
         end_date = self.params.get_query_argument_datetime('endDate', default=None)
+        max_valids = self.params.get_query_argument_int('maxValids', default=None)
         geometry = self.get_body_as_json_object("GeoJSON geometry")
 
         response = await IOLoop.current().run_in_executor(None,
@@ -346,7 +352,8 @@ class GetTimeSeriesForGeometryHandler(ServiceRequestHandler):
                                                           self.service_context,
                                                           ds_id, var_name,
                                                           geometry,
-                                                          start_date, end_date)
+                                                          start_date, end_date,
+                                                          max_valids)
         self.set_header('Content-Type', 'application/json')
         self.finish(response)
 
@@ -357,6 +364,7 @@ class GetTimeSeriesForGeometriesHandler(ServiceRequestHandler):
     async def post(self, ds_id: str, var_name: str):
         start_date = self.params.get_query_argument_datetime('startDate', default=None)
         end_date = self.params.get_query_argument_datetime('endDate', default=None)
+        max_valids = self.params.get_query_argument_int('maxValids', default=None)
         geometry_collection = self.get_body_as_json_object("GeoJSON geometry collection")
 
         response = await IOLoop.current().run_in_executor(None,
@@ -364,7 +372,8 @@ class GetTimeSeriesForGeometriesHandler(ServiceRequestHandler):
                                                           self.service_context,
                                                           ds_id, var_name,
                                                           geometry_collection,
-                                                          start_date, end_date)
+                                                          start_date, end_date,
+                                                          max_valids)
         self.set_header('Content-Type', 'application/json')
         self.finish(response)
 
@@ -375,6 +384,7 @@ class GetTimeSeriesForFeaturesHandler(ServiceRequestHandler):
     async def post(self, ds_id: str, var_name: str):
         start_date = self.params.get_query_argument_datetime('startDate', default=None)
         end_date = self.params.get_query_argument_datetime('endDate', default=None)
+        max_valids = self.params.get_query_argument_int('maxValids', default=None)
         feature_collection = self.get_body_as_json_object("GeoJSON feature collection")
 
         response = await IOLoop.current().run_in_executor(None,
@@ -382,6 +392,7 @@ class GetTimeSeriesForFeaturesHandler(ServiceRequestHandler):
                                                           self.service_context,
                                                           ds_id, var_name,
                                                           feature_collection,
-                                                          start_date, end_date)
+                                                          start_date, end_date,
+                                                          max_valids)
         self.set_header('Content-Type', 'application/json')
         self.finish(response)
