@@ -12,7 +12,7 @@ info:
   description: |
     A light-weight web server that provides
     various services based on xarray-enabled datasets.
-  version: "0.1.0.dev6"
+  version: "0.2.0.dev3"
   title: XCube Server API
   contact:
     email: bcdev@brockmann-consult.de
@@ -120,6 +120,7 @@ paths:
       parameters:
         - $ref: '#/components/parameters/datasetDetails'
         - $ref: '#/components/parameters/tileClient'
+        - $ref: '#/components/parameters/pointCoord'
       responses:
         '200':
           description: Dataset list.
@@ -626,6 +627,15 @@ components:
       schema:
         type: string
       example: ol4
+    pointCoord:
+      name: point
+      in: query
+      description: |
+          Point coordinates given in decimal degree. Used as filter.
+      required: false
+      schema:
+        type: string
+      example: 12.1,53.2
   schemas:
     PlaceGroupInfo:
       type: object
