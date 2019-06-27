@@ -3,6 +3,7 @@
 ### Enhancements
 
 * `xcube serve` now verifies that a configured cube is valid once it is opened. (#107)
+* Added new CLI command `xcube verify` performing data cube verification. (#19)
 * Reworked `xcube extract` to be finally useful and effective for point data extraction. (#102) 
 * `xcube server`can now filter datasets by point coordinate, e.g. `/datasets?point=12.5,52.8`. (#50) 
 * `xcube server`can now limit time series to a maximum number of 

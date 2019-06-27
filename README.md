@@ -24,6 +24,7 @@ Data cubes with [xarray](http://xarray.pydata.org/).
   - [`xcube resample`](#xcube-resample)
   - [`xcube serve`](#xcube-serve)
   - [`xcube vars2dim`](#xcube-vars2dim)
+  - [`xcube verify`](#xcube-verify)
 
 
 # Installation
@@ -118,8 +119,12 @@ To start a demo using docker use the following commands
       gen       Generate data cube.
       grid      Find spatial data cube resolutions and adjust bounding boxes.
       level     Generate multi-resolution levels.
+      prune     Delete empty chunks.
+      resample  Resample data along the time dimension.
       serve     Serve data cubes via web service.
       vars2dim  Convert cube variables into new dimension.
+      verify    Perform cube verification.
+
     
 
 ## `xcube chunk`
@@ -779,3 +784,27 @@ in the [demo's HTML file](https://github.com/dcs4cop/xcube/blob/master/xcube/web
 * Feature: WMTS GetFeatureInfo
 * Feature: collect Path entry of any Dataset and observe if the file are modified, if so remove dataset from cache
   to force its reopening.
+
+
+## `xcube verify`
+
+Perform cube verification.
+
+    Usage: xcube verify [OPTIONS] INPUT
+    
+      Perform cube verification.
+    
+      The tool verifies that INPUT
+      * defines the dimensions "time", "lat", "lon";
+      * has corresponding "time", "lat", "lon" coordinate variables and that they
+        are valid, e.g. 1-D, non-empty, using correct units;
+      * has valid  bounds variables for "time", "lat", "lon" coordinate
+        variables, if any;
+      * has any data variables and that they are valid, e.g. min. 3-D, all have
+        same dimensions, have at least dimensions "time", "lat", "lon".
+    
+      If INPUT is a valid data cube, the tool returns exit code 0. Otherwise a
+      violation report is written to stdout and the tool returns exit code 3.
+    
+    Options:
+      --help  Show this message and exit.
