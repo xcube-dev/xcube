@@ -392,6 +392,7 @@ paths:
         - $ref: '#/components/parameters/lon'
         - $ref: '#/components/parameters/startDate'
         - $ref: '#/components/parameters/endDate'
+        - $ref: '#/components/parameters/maxValids'
       responses:
         '200':
           description: Success
@@ -416,6 +417,7 @@ paths:
         - $ref: '#/components/parameters/variable'
         - $ref: '#/components/parameters/startDate'
         - $ref: '#/components/parameters/endDate'
+        - $ref: '#/components/parameters/maxValids'
       requestBody:
         $ref: '#/components/requestBodies/GeoJsonGeometry'
       responses:
@@ -442,6 +444,7 @@ paths:
         - $ref: '#/components/parameters/variable'
         - $ref: '#/components/parameters/startDate'
         - $ref: '#/components/parameters/endDate'
+        - $ref: '#/components/parameters/maxValids'
       requestBody:
         $ref: '#/components/requestBodies/GeoJsonGeometryCollection'
       responses:
@@ -468,6 +471,7 @@ paths:
         - $ref: '#/components/parameters/variable'
         - $ref: '#/components/parameters/startDate'
         - $ref: '#/components/parameters/endDate'
+        - $ref: '#/components/parameters/maxValids'
       requestBody:
         $ref: '#/components/requestBodies/GeoJsonFeatureCollection'
       responses:
@@ -690,6 +694,14 @@ components:
       required: false
       schema:
         type: string
+      example: 2099-01-01
+    maxValids:
+      name: maxValids
+      in: query
+      description: maximum number of valid (non-NaN) values in the result; if -1, only valid values are returned.
+      required: false
+      schema:
+        type: int
       example: 2099-01-01
     datasetDetails:
       name: details
