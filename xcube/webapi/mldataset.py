@@ -8,6 +8,7 @@ import xarray as xr
 import zarr
 
 from .im import TileGrid
+from ..api import assert_cube
 from ..util.geom import get_dataset_bounds
 from ..util.perf import measure_time
 
@@ -187,7 +188,7 @@ class FileStorageMultiLevelDataset(LazyMultiLevelDataset):
                     base_dir = os.path.dirname(self._dir_path)
                     level_path = os.path.join(base_dir, level_path)
         with measure_time(tag=f"opened local dataset {level_path} for level {index}"):
-            return xr.open_zarr(level_path, **zarr_kwargs)
+            return assert_cube(xr.open_zarr(level_path, **zarr_kwargs), name=level_path)
 
     def _get_tile_grid_lazily(self):
         """
@@ -258,7 +259,7 @@ class ObjectStorageMultiLevelDataset(LazyMultiLevelDataset):
         store = s3fs.S3Map(root=level_path, s3=self._obs_file_system, check=False)
         cached_store = zarr.LRUStoreCache(store, max_size=2 ** 28)
         with measure_time(tag=f"opened remote dataset {level_path} for level {index}"):
-            return xr.open_zarr(cached_store, **zarr_kwargs)
+            return assert_cube(xr.open_zarr(cached_store, **zarr_kwargs), name=level_path)
 
     def _get_tile_grid_lazily(self):
         """
@@ -379,7 +380,7 @@ class ComputedMultiLevelDataset(LazyMultiLevelDataset):
             raise self._exception_type(f"Failed to compute in-memory dataset {self._ds_id!r} at level {index} "
                                        f"from function {self._callable_name!r}: "
                                        f"expected an xarray.Dataset but got {type(computed_value)}")
-        return computed_value
+        return assert_cube(computed_value, name=self._ds_id)
 
 
 def _get_dataset_tile_grid(dataset: xr.Dataset, num_levels: int = None):
