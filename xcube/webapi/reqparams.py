@@ -20,7 +20,7 @@
 # SOFTWARE.
 
 from abc import abstractmethod, ABCMeta
-from typing import Optional
+from typing import Optional, Tuple
 
 import numpy as np
 
@@ -129,3 +129,19 @@ class RequestParams(metaclass=ABCMeta):
         value = self.get_query_argument(name, default=default)
 
         return self.to_datetime(name, value) if value is not None else default
+
+    def get_query_argument_point(self,
+                                 name: str,
+                                 default: Optional[Tuple[float, float]] = UNDEFINED) -> Optional[Tuple[float, float]]:
+
+        value = self.get_query_argument(name, default=default)
+        if value is None:
+            return default
+        if not isinstance(value, str):
+            return value
+        try:
+            x, y = map(float, value.split(','))
+            return x, y
+        except ValueError:
+            raise ServiceBadRequestError(f"Parameter {name!r} parameter must be a point using format '<lon>,<lat>',"
+                                         f" but was {value!r}")

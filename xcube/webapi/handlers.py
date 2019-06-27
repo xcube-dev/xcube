@@ -112,7 +112,9 @@ class GetDatasetsHandler(ServiceRequestHandler):
     def get(self):
         details = bool(int(self.params.get_query_argument('details', '0')))
         tile_client = self.params.get_query_argument('tiles', None)
-        response = get_datasets(self.service_context, details=details, client=tile_client, base_url=self.base_url)
+        point = self.params.get_query_argument_point('point', None)
+        response = get_datasets(self.service_context, details=details, client=tile_client,
+                                point=point, base_url=self.base_url)
         self.set_header('Content-Type', 'application/json')
         self.write(json.dumps(response, indent=None if details else 2))
 
