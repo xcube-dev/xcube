@@ -2,7 +2,12 @@
 
 ### Enhancements
 
-* `xcube serve` does now offer a AWS S3 compatible data access API (#115):
+* `xcube serve` can now be configured to serve cubes that are associated 
+   with another cube with same data but different chunking (#115). 
+   E.g. using chunks such as `time=512,lat=1,lon=1` can drastically improve 
+   time-series extractions. 
+   Have a look at the demo config in `xube/webapi/res/demo/config.yml`.     
+* `xcube serve` does now offer a AWS S3 compatible data access API (#97):
    - List bucket objects: `/s3bucket`, see AWS 
      docs [GET](https://docs.aws.amazon.com/AmazonS3/latest/API/v2-RESTBucketGET.html)
    - Get bucket object: `/s3bucket/{ds_id}/{path}`, 
