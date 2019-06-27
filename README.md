@@ -123,7 +123,8 @@ To start a demo using docker use the following commands
     
 
 ## `xcube chunk`
-Can be used for changing the chunks of an existing data cube. 
+
+(Re-)chunk dataset.
 
     $ xcube chunk --help
     Usage: xcube chunk [OPTIONS] <input> <output>
@@ -146,7 +147,8 @@ Example:
     $ xcube chunk input_not_chunked.zarr output_rechunked.zarr --chunks "time=1,lat=270,lon=270"
 
 ## `xcube dump`
-Can be used for printing out the metadata of a data cube. 
+
+Dump contents of a dataset.
 
     $ xcube dump --help
     Usage: xcube dump [OPTIONS] <path>
@@ -164,30 +166,44 @@ Example:
     $ xcube dump xcube_cube.zarr 
 
 ## `xcube extract`
-A time series for a specific location can be requested using `xcube extract`.
+
+Extract cube points.
 
     $ xcube dump --help
-    Usage: xcube extract [OPTIONS] <cube> <coords>
-    
-      Extract cube time series. Extracts data from <cube> at points given by
-      coordinates <coords> and writes the resulting time series to <output>.
-    
-    Options:
-      -i, --indexes          Include indexes in output.
-      -o, --output <output>  Output file.
-      -f, --format <format>  Format of the output. If not given, guessed from
-                             <output>, otherwise <stdout> is used.
-      -p, --params <params>  Parameters specific for the output format. Comma-
-                             separated list of <key>=<value> pairs.
-      --help                 Show this message and exit.
+    Usage: xcube extract [OPTIONS] CUBE POINTS
 
-Example: # TODO: Help is needed here - how are the coords passed by the user? 
+      Extract cube points.
+
+      Extracts data cells from CUBE at coordinates given in each POINTS record
+      and writes the resulting values to given output path and format.
+
+      <points> must be a CSV file that provides at least the columns "lon",
+      "lat", and "time". The "lon" and "lat" columns provide a point's location
+      in decimal degrees. The "time" column provides a point's date or date-
+      time. Its format should preferably be ISO, but other formats may work as
+      well.
+
+    Options:
+      -o, --output TEXT             Output file. If omitted, output is written to
+                                    stdout.
+      -f, --format [csv|json|xlsx]  Output format. Currently, only 'csv' is
+                                    supported.
+      -C, --coords                  Include cube cell coordinates in output.
+      -B, --bounds                  Include cube cell coordinate boundaries (if
+                                    any) in output.
+      -I, --indexes                 Include cube cell indexes in output.
+      -R, --refs                    Include point values as reference in output.
+      --help                        Show this message and exit.
+
+
+Example:  
     
-    $ xcube extract xcube_cube.zarr 
+    $ xcube extract xcube_cube.zarr point_data.csv -CBIR
     
     
 ## `xcube gen`
-Is used to generate data cubes.
+
+Generate data cube.
 
     $ xcube gen --help
     Usage: xcube gen [OPTIONS] INPUT_FILES
@@ -275,7 +291,8 @@ Available xcube input processors within xcube's organisation:
 
 
 ## `xcube grid`
-For choosing a suitable gridding for a data cube, `xbube grid` is a useful tool.
+
+Find spatial data cube resolutions and adjust bounding boxes.
 
     $ xcube grid --help
     Usage: xcube grid [OPTIONS] COMMAND [ARGS]...
@@ -449,6 +466,8 @@ Example:
 
 ## `xcube level`
 
+Generate multi-resolution levels.
+
     $ xcube level --help
     Usage: xcube level [OPTIONS] <input>
     
@@ -483,6 +502,8 @@ Example:
 
 ## `xcube prune`
 
+Delete empty chunks.
+
     $ xcube prune --help
     Usage: xcube prune [OPTIONS] INPUT
     
@@ -496,6 +517,8 @@ Example:
 
 
 ## `xcube vars2dim`
+
+Convert cube variables into new dimension.
 
     $ xcube vars2dim --help
     Usage: xcube vars2dim [OPTIONS] <cube>
@@ -515,8 +538,9 @@ Example:
       --help                     Show this message and exit.
 
 
-
 ## `xcube resample`
+
+Resample data along the time dimension.
 
     $ xcube resample --help
     Usage: xcube resample [OPTIONS] INPUT
@@ -589,8 +613,7 @@ Downsampling example:
 
 ## `xcube serve`
 
-Is a light-weight web server that provides various services based on 
-xcube data cubes. 
+Serve data cubes via web service. 
 
     $ xcube serve --help
     Usage: xcube serve [OPTIONS] CUBE...
