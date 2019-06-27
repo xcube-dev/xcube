@@ -21,7 +21,11 @@ def get_datasets(ctx: ServiceContext,
 
     dataset_dicts = list()
     for dataset_descriptor in dataset_descriptors:
+        if dataset_descriptor.get('Hidden'):
+            continue
+
         ds_id = dataset_descriptor['Identifier']
+
         dataset_dict = dict(id=ds_id)
 
         if 'Title' in dataset_descriptor:
