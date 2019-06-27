@@ -18,7 +18,6 @@ for name, var in _ds.coords.items():
 
 # For usage of the tornado.testing.AsyncHTTPTestCase see http://www.tornadoweb.org/en/stable/testing.html
 
-
 class HandlersTest(AsyncHTTPTestCase):
 
     def get_app(self):
@@ -158,6 +157,52 @@ class HandlersTest(AsyncHTTPTestCase):
         response = self.fetch(self.prefix + '/datasets/demo?tiles=ol4')
         self.assertResponseOK(response)
         response = self.fetch(self.prefix + '/datasets/demo?tiles=cesium')
+        self.assertResponseOK(response)
+
+    def test_fetch_list_s3bucket(self):
+        response = self.fetch(self.prefix + '/s3bucket')
+        self.assertResponseOK(response)
+        response = self.fetch(self.prefix + '/s3bucket?delimiter=%2F')
+        self.assertResponseOK(response)
+        response = self.fetch(self.prefix + '/s3bucket?delimiter=%2F&prefix=demo%2F')
+        self.assertResponseOK(response)
+        response = self.fetch(self.prefix + '/s3bucket?delimiter=%2F&list-type=2')
+        self.assertResponseOK(response)
+        response = self.fetch(self.prefix + '/s3bucket?delimiter=%2F&prefix=demo%2F&list-type=2')
+        self.assertResponseOK(response)
+
+    def test_fetch_head_s3bucket_object(self):
+        self._assert_fetch_head_s3bucket_object(method='HEAD')
+
+    def test_fetch_get_s3bucket_object(self):
+        self._assert_fetch_head_s3bucket_object(method='GET')
+
+    def _assert_fetch_head_s3bucket_object(self, method):
+        response = self.fetch(self.prefix + '/s3bucket/demo', method=method)
+        self.assertResponseOK(response)
+        response = self.fetch(self.prefix + '/s3bucket/demo/', method=method)
+        self.assertResponseOK(response)
+        response = self.fetch(self.prefix + '/s3bucket/demo/.zattrs', method=method)
+        self.assertResponseOK(response)
+        response = self.fetch(self.prefix + '/s3bucket/demo/.zgroup', method=method)
+        self.assertResponseOK(response)
+        response = self.fetch(self.prefix + '/s3bucket/demo/.zarray', method=method)
+        self.assertResourceNotFoundResponse(response)
+        response = self.fetch(self.prefix + '/s3bucket/demo/time/.zattrs', method=method)
+        self.assertResponseOK(response)
+        response = self.fetch(self.prefix + '/s3bucket/demo/time/.zarray', method=method)
+        self.assertResponseOK(response)
+        response = self.fetch(self.prefix + '/s3bucket/demo/time/.zgroup', method=method)
+        self.assertResourceNotFoundResponse(response)
+        response = self.fetch(self.prefix + '/s3bucket/demo/time/0', method=method)
+        self.assertResponseOK(response)
+        response = self.fetch(self.prefix + '/s3bucket/demo/conc_chl/.zattrs', method=method)
+        self.assertResponseOK(response)
+        response = self.fetch(self.prefix + '/s3bucket/demo/conc_chl/.zarray', method=method)
+        self.assertResponseOK(response)
+        response = self.fetch(self.prefix + '/s3bucket/demo/conc_chl/.zgroup', method=method)
+        self.assertResourceNotFoundResponse(response)
+        response = self.fetch(self.prefix + '/s3bucket/demo/conc_chl/1.2.4', method=method)
         self.assertResponseOK(response)
 
     def test_fetch_coords_json(self):

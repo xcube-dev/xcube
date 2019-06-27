@@ -29,7 +29,8 @@ from .handlers import GetNE2TileHandler, GetDatasetVarTileHandler, InfoHandler, 
     GetDatasetsHandler, FindPlacesHandler, FindDatasetPlacesHandler, \
     GetDatasetCoordsHandler, GetTimeSeriesInfoHandler, GetTimeSeriesForPointHandler, WMTSKvpHandler, \
     GetTimeSeriesForGeometryHandler, GetTimeSeriesForFeaturesHandler, GetTimeSeriesForGeometriesHandler, \
-    GetPlaceGroupsHandler, GetDatasetVarLegendHandler, GetDatasetHandler, GetWMTSTileHandler
+    GetPlaceGroupsHandler, GetDatasetVarLegendHandler, GetDatasetHandler, GetWMTSTileHandler, GetS3BucketObjectHandler, \
+    ListS3BucketHandler
 from .service import url_pattern
 
 __author__ = "Norman Fomferra (Brockmann Consult GmbH)"
@@ -63,6 +64,15 @@ def new_application(prefix: str = None):
          GetDatasetVarTileHandler),
         (prefix + url_pattern('/datasets/{{ds_id}}/vars/{{var_name}}/tilegrid'),
          GetDatasetVarTileGridHandler),
+
+        # AWS S3 compatible data access as ZARR
+
+        (prefix + url_pattern('/s3bucket/{{ds_id}}/(?P<path>.*)'),
+         GetS3BucketObjectHandler),
+        (prefix + url_pattern('/s3bucket/{{ds_id}}'),
+         GetS3BucketObjectHandler),
+        (prefix + url_pattern('/s3bucket'),
+         ListS3BucketHandler),
 
         # Natural Earth 2 tiles for testing
 

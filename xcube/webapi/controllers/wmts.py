@@ -118,11 +118,13 @@ def get_wmts_capabilities_xml(ctx: ServiceContext, base_url: str):
 
     dimensions_xml_cache = dict()
 
+
     contents_xml_lines = [(0, '<Contents>')]
     for dataset_descriptor in dataset_descriptors:
         ds_name = dataset_descriptor['Identifier']
         ds = ctx.get_dataset(ds_name)
-        for var_name in ds.data_vars:
+        var_names = sorted(ds.data_vars)
+        for var_name in var_names:
             var = ds[var_name]
             if len(var.shape) <= 2 or var.dims[-1] != 'lon' or var.dims[-2] != 'lat':
                 continue
@@ -253,7 +255,8 @@ def get_wmts_capabilities_xml(ctx: ServiceContext, base_url: str):
         themes_xml_lines.append((3, f'<ows:Title>{ds_title}</ows:Title>'))
         themes_xml_lines.append((3, f'<ows:Abstract>{ds_abstract}</ows:Abstract>'))
         themes_xml_lines.append((3, f'<ows:Identifier>{ds_name}</ows:Identifier>'))
-        for var_name in ds.data_vars:
+        var_names = sorted(ds.data_vars)
+        for var_name in var_names:
             var = ds[var_name]
             var_title = var.attrs.get('title', var.attrs.get('long_name', var_name))
             themes_xml_lines.append((3, '<Theme>'))

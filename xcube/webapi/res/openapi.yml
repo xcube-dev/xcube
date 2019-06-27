@@ -2,9 +2,9 @@ openapi: 3.0.0
 
 servers:
   - description: CyanoAlert Development API
-    url: http://www.brockmann-consult.de/cyanoalert-dev/api/0.1.0.dev6
+    url: http://www.brockmann-consult.de/cyanoalert-dev
   - description: DCS4COP Development API
-    url: http://xcube.dcs4cop.eu/dcs4cop-dev/api/0.1.0.dev6
+    url: http://xcube.dcs4cop.eu/dcs4cop-dev
   - description: SwaggerHub API Auto Mocking
     url: https://virtserver.swaggerhub.com/forman/xcube-server/1.0.0
 
@@ -12,8 +12,8 @@ info:
   description: |
     A light-weight web server that provides
     various services based on xarray-enabled datasets.
-  version: "0.2.0.dev3"
-  title: XCube Server API
+  version: "v1.dev"
+  title: Xcube Server API
   contact:
     email: bcdev@brockmann-consult.de
   license:
@@ -25,6 +25,8 @@ tags:
     description: WMTS 1.0.0 API
   - name: catalogue
     description: Catalogue API
+  - name: data
+    description: Data Access API
   - name: tiles
     description: Tiles API
   - name: time-series
@@ -170,6 +172,127 @@ paths:
                 $ref: '#/components/schemas/DimensionInfo'
 
   ########################################################################################
+  # AWS S3 compatible data access
+  ########################################################################################
+
+  '/s3bucket':
+    get:
+      tags:
+        - data
+      summary: List bucket objects
+      operationId: listBucketObjects
+      parameters:
+        - name: delimiter
+          schema:
+            type: string
+          in: query
+          required: false
+          description: |
+            A delimiter is a character you use to group keys.
+            If you specify a prefix, all of the keys that contain the same string between the
+            prefix and the first occurrence of the delimiter after the prefix are grouped under a
+            single result element called CommonPrefixes. If you don't specify the prefix parameter,
+            the substring starts at the beginning of the key. The keys that are grouped under the
+            CommonPrefixes result element are not returned elsewhere in the response.
+        - name: prefix
+          schema:
+            type: string
+          in: query
+          required: false
+          description: |
+            Limits the response to keys that begin with the specified prefix. You can use prefixes
+            to separate a bucket into different groupings of keys. (You can think of using prefix
+            to make groups in the same way you'd use a folder in a file system.)
+        - name: marker
+          schema:
+            type: string
+          in: query
+          required: false
+          description: |
+            Specifies the key to start with when listing objects in a bucket. The server returns
+            object keys in UTF-8 binary order, starting with key after the marker in order.
+        - name: max-keys
+          schema:
+            type: string
+          in: query
+          required: false
+          description: |
+            Sets the maximum number of keys returned in the response body. If you want to retrieve
+            fewer than the default 1,000 keys, you can add this to your request.
+            The response might contain fewer keys, but it never contains more. If there are
+            additional keys that satisfy the search criteria, but these keys were not returned
+            because max-keys was exceeded, the response contains <IsTruncated>true</IsTruncated>.
+            To return the additional keys, see marker.
+      description: |
+        Returns some or all (up to 1000) of the objects in the bucket.
+        You can use the request parameters as selection criteria to return a subset of the objects in a bucket.
+        A 200 OK response can contain valid or invalid XML.
+        Make sure to design your application to parse the contents of the response and handle it appropriately.
+        See https://docs.aws.amazon.com/AmazonS3/latest/API/v2-RESTBucketGET.html
+      responses:
+        '200':
+          description: The list-bucket result using XML format.
+          content:
+            application/xml:
+              schema:
+                # Probably wrong:
+                type: string
+                format: text
+
+
+  '/s3bucket/{path}':
+    head:
+      tags:
+        - data
+      summary: Get bucket object's metadata
+      operationId: getBucketObjectMetadata
+      parameters:
+        - name: path
+          in: path
+          description: Path to an object.
+          required: true
+          schema:
+            type: string
+      description: |
+        Retrieves metadata from an object without returning the object itself.
+        This operation is useful if you are interested only in an object's metadata.
+        See https://docs.aws.amazon.com/AmazonS3/latest/API/RESTObjectHEAD.html
+      responses:
+        '200':
+          description: The object metadata.
+          content:
+            binary/octet-stream:
+              schema:
+                # Probably wrong:
+                type: string
+                format: byte
+    get:
+      tags:
+        - data
+      summary: Get bucket object
+      operationId: getBucketObject
+      parameters:
+        - name: path
+          in: path
+          description: Path to an object.
+          required: true
+          schema:
+            type: string
+      description: |
+        Retrieves objects from a bucket.
+        See https://docs.aws.amazon.com/AmazonS3/latest/API/RESTObjectGET.html
+      responses:
+        '200':
+          description: The object's binary data.
+          content:
+            binary/octet-stream:
+              schema:
+                # Probably wrong:
+                type: string
+                format: byte
+
+
+  ########################################################################################
   # Tiles
   ########################################################################################
 
@@ -241,9 +364,9 @@ paths:
           description: Legend image.
           content:
             'image/png':
-                  schema:
-                    type: string
-                    format: binary
+              schema:
+                type: string
+                format: binary
         '404':
           description: Resource not found.
 

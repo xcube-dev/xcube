@@ -22,6 +22,7 @@
 import glob
 import logging
 import os
+import os.path
 import threading
 from typing import Any, Dict, List, Optional, Tuple, Callable, Collection
 
@@ -184,6 +185,20 @@ class ServiceContext:
         if dataset_descriptor is None:
             raise ServiceResourceNotFoundError(f'Dataset "{ds_id}" not found')
         return dataset_descriptor
+
+    def get_s3_bucket_mapping(self):
+        s3_bucket_mapping = {}
+        for descriptor in self.get_dataset_descriptors():
+            ds_id = descriptor.get('Identifier')
+            file_system = descriptor.get('FileSystem', 'local')
+            if file_system == 'local':
+                local_path = descriptor.get('Path')
+                if not os.path.isabs(local_path):
+                    local_path = os.path.join(self.base_dir, local_path)
+                local_path = os.path.normpath(local_path)
+                if os.path.isdir(local_path):
+                    s3_bucket_mapping[ds_id] = local_path
+        return s3_bucket_mapping
 
     def get_tile_grid(self, ds_id: str) -> TileGrid:
         ml_dataset, _ = self._get_dataset_entry(ds_id)

@@ -342,21 +342,32 @@ class ZarrDatasetIO(DatasetIO):
 
     def read(self, path: str, **kwargs) -> xr.Dataset:
         path_or_store = path
-        if isinstance(path, str) \
-                and (path.startswith("http://")
-                     or path.startswith("https://")):
-            import urllib3.util
-            url = urllib3.util.parse_url(path_or_store)
-            endpoint_url = f'{url.scheme}://{url.host}'
-            bucket_path = url.path
-            if bucket_path.startswith('/'):
-                bucket_path = bucket_path[1:]
-            s3 = s3fs.S3FileSystem(anon=True, client_kwargs=dict(endpoint_url=endpoint_url))
-            path_or_store = s3fs.S3Map(root=bucket_path, s3=s3, check=False)
-            if 'max_cache_size' in kwargs:
-                max_cache_size = kwargs.pop('max_cache_size')
-                if max_cache_size > 0:
-                    path_or_store = zarr.LRUStoreCache(path_or_store, max_size=max_cache_size)
+
+        if isinstance(path, str):
+            endpoint_url = None
+            root = None
+
+            if 'endpoint_url' in kwargs:
+                endpoint_url = kwargs.pop('endpoint_url')
+                root = path
+            if path.startswith("http://") or path.startswith("https://"):
+                import urllib3.util
+                url = urllib3.util.parse_url(path_or_store)
+                if url.port is not None:
+                    endpoint_url = f'{url.scheme}://{url.host}:{url.port}'
+                else:
+                    endpoint_url = f'{url.scheme}://{url.host}'
+                root = url.path
+                if root.startswith('/'):
+                    root = root[1:]
+
+            if endpoint_url and root is not None:
+                s3 = s3fs.S3FileSystem(anon=True, client_kwargs=dict(endpoint_url=endpoint_url))
+                path_or_store = s3fs.S3Map(root=root, s3=s3, check=False)
+                if 'max_cache_size' in kwargs:
+                    max_cache_size = kwargs.pop('max_cache_size')
+                    if max_cache_size > 0:
+                        path_or_store = zarr.LRUStoreCache(path_or_store, max_size=max_cache_size)
 
         return xr.open_zarr(path_or_store, **kwargs)
 
