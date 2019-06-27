@@ -47,7 +47,7 @@ _WMTS_VERSION = "1.0.0"
 _WMTS_TILE_FORMAT = "image/png"
 _LOG = logging.getLogger('xcube')
 
-_LOG_S3BUCKET_HANDLER = True
+_LOG_S3BUCKET_HANDLER = False
 
 # noinspection PyAbstractClass
 class WMTSKvpHandler(ServiceRequestHandler):
