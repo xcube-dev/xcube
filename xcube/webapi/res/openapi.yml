@@ -172,23 +172,84 @@ paths:
                 $ref: '#/components/schemas/DimensionInfo'
 
   ########################################################################################
-  # Data
+  # AWS S3 compatible data access
   ########################################################################################
 
-  '/datasets/{dataset}/data.zarr':
+  '/s3bucket':
     get:
       tags:
         - data
-      summary: Get dataset data as ZARR view
-      operationId: getDatasetZarr
+      summary: List bucket objects
+      operationId: listBucketObjects
       parameters:
       description: |
-        Provide a dataset's data as if it would be stored as a ZARR directory in Object Storage.
+        Returns some or all (up to 1000) of the objects in the bucket.
+        You can use the request parameters as selection criteria to return a subset of the objects in a bucket.
+        A 200 OK response can contain valid or invalid XML.
+        Make sure to design your application to parse the contents of the response and handle it appropriately.
+        See https://docs.aws.amazon.com/AmazonS3/latest/API/v2-RESTBucketGET.html
       responses:
         '200':
-          description: ZARR data view.
+          description: The list-bucket result using XML format.
           content:
-            application/octed-stream:
+            application/xml:
+              schema:
+                # Probably wrong:
+                type: string
+                format: text
+
+
+  '/s3bucket/{path}':
+    head:
+      tags:
+        - data
+      summary: Get bucket object's metadata
+      operationId: getBucketObjectMetadata
+      parameters:
+        - name: path
+          in: path
+          description: Path to an object.
+          required: true
+          schema:
+            type: string
+      description: |
+        Retrieves metadata from an object without returning the object itself.
+        This operation is useful if you are interested only in an object's metadata.
+        See https://docs.aws.amazon.com/AmazonS3/latest/API/RESTObjectHEAD.html
+      responses:
+        '200':
+          description: The object metadata.
+          content:
+            binary/octet-stream:
+              schema:
+                # Probably wrong:
+                type: string
+                format: byte
+    get:
+      tags:
+        - data
+      summary: Get bucket object
+      operationId: getBucketObject
+      parameters:
+        - name: path
+          in: path
+          description: Path to an object.
+          required: true
+          schema:
+            type: string
+      description: |
+        Retrieves objects from a bucket.
+        See https://docs.aws.amazon.com/AmazonS3/latest/API/RESTObjectGET.html
+      responses:
+        '200':
+          description: The object's binary data.
+          content:
+            binary/octet-stream:
+              schema:
+                # Probably wrong:
+                type: string
+                format: byte
+
 
   ########################################################################################
   # Tiles
@@ -262,9 +323,9 @@ paths:
           description: Legend image.
           content:
             'image/png':
-                  schema:
-                    type: string
-                    format: binary
+              schema:
+                type: string
+                format: binary
         '404':
           description: Resource not found.
 

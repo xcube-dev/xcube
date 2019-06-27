@@ -2,7 +2,7 @@
     "Conventions": "CF-1.6",
     "TileSize": "128:1190",
     "auto_grouping": "iop:conc:rtoa:rrs:rhown:kd:unc",
-    "coordinates": "lat_bnds lon_bnds time_bnds",
+    "coordinates": "lon_bnds lat_bnds time_bnds",
     "metadata_profile": "beam",
     "metadata_version": "0.5",
     "product_type": "C2RCC_OLCI",

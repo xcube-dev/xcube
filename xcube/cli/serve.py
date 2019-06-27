@@ -100,8 +100,9 @@ def serve(cubes: List[str],
     if styles:
         styles = parse_cli_kwargs(styles, "STYLES")
 
-    from xcube.webapi import __version__, __description__
-    print(f'{__description__}, version {__version__}')
+    from xcube.version import version
+    from xcube.webapi.defaults import SERVER_NAME, SERVER_DESCRIPTION
+    print(f'{SERVER_NAME}: {SERVER_DESCRIPTION}, version {version}')
 
     if show:
         _run_viewer()

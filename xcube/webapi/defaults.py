@@ -21,9 +21,10 @@
 
 import os
 
-from . import __version__
+SERVER_NAME = 'XcubeServer'
+SERVER_DESCRIPTION = f'WMTS, catalogue, data access, tile, feature, time-series services for' \
+                     ' xarray-enabled data cubes'
 
-DEFAULT_NAME = 'xcube'
 DEFAULT_ADDRESS = 'localhost'
 DEFAULT_PORT = 8080
 DEFAULT_TILE_CACHE_SIZE = "512M"
@@ -45,5 +46,3 @@ FILE_TILE_CACHE_ENABLED = False
 FILE_TILE_CACHE_PATH = './image-cache'
 
 MEM_TILE_CACHE_CAPACITY = 2 * _GIGAS
-
-API_PREFIX = f"/api/{__version__}"
