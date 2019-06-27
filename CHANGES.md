@@ -2,7 +2,13 @@
 
 ### Enhancements
 
-* `xcube server`can now filter datasets by point coordinate, e.g. `/dataset?point=12.5,52.8`. (#50) 
+* `xcube serve` does now offer a AWS S3 compatible data access API (#115):
+   - List bucket objects: `/s3bucket`, see AWS 
+     docs [GET](https://docs.aws.amazon.com/AmazonS3/latest/API/v2-RESTBucketGET.html)
+   - Get bucket object: `/s3bucket/{ds_id}/{path}`, 
+     see AWS docs [HEAD](https://docs.aws.amazon.com/AmazonS3/latest/API/RESTObjectHEAD.html) 
+     and [GET](https://docs.aws.amazon.com/AmazonS3/latest/API/RESTObjectGET.html)
+* `xcube serve` can now filter datasets by point coordinate, e.g. `/dataset?point=12.5,52.8`. (#50) 
 * Reworked `xcube gen` to be more user-friendly and more consistent with other tools. 
   The changes are
   - Removed `--dir` and `--name` options and replaced it by single `--output` option, 
