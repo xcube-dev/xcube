@@ -5,7 +5,7 @@ import numpy as np
 
 from xcube.api import read_cube
 
-SKIP_HELP = 'Skipped, because server is not running: $ xcube serve -c xcube/webapi/res/demo/config.yml'
+SKIP_HELP = 'Skipped, because server is not running: $ xcube serve -v -c xcube/webapi/res/demo/config.yml'
 SERVER_URL = 'http://localhost:8080'
 ENDPOINT_URL = SERVER_URL + '/s3bucket'
 
