@@ -2,7 +2,10 @@
 
 ### Enhancements
 
-* `xcube server`can now filter datasets by point coordinate, e.g. `/datasets?point=12.5,52.8`. (#50) 
+* `xcube server`can now limit time series to a maximum number of 
+  valid (not NaN) values. To activate, pass optional query parameter `maxValids` to the various `/ts`
+  functions. The special value `-1` will restrict the result to contain only valid values. (#113) 
+* `xcube server`can now filter datasets by point coordinate, e.g. `/dataset?point=12.5,52.8`. (#50) 
 * Reworked `xcube gen` to be more user-friendly and more consistent with other tools. 
   The changes are
   - Removed `--dir` and `--name` options and replaced it by single `--output` option, 
