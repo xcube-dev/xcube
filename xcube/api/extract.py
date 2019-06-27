@@ -6,8 +6,8 @@ import xarray as xr
 
 from .verify import assert_cube
 
-INDEX_NAME_PATTERN = '{name}_index'
-FRACTION_NAME_PATTERN = '{name}_fraction'
+DEFAULT_INDEX_NAME_PATTERN = '{name}_index'
+DEFAULT_REF_NAME_PATTERN = '{name}_ref'
 INDEX_DIM_NAME = "idx"
 
 POINT_INTERP_METHOD_NEAREST = "nearest"
@@ -18,8 +18,12 @@ DEFAULT_INTERP_POINT_METHOD = POINT_INTERP_METHOD_NEAREST
 def get_cube_values_for_points(cube: xr.Dataset,
                                points: Union[xr.Dataset, pd.DataFrame, Mapping[str, Any]],
                                var_names: Sequence[str] = None,
-                               index_name_pattern: str = INDEX_NAME_PATTERN,
+                               include_coords: bool = False,
+                               include_bounds: bool = False,
                                include_indexes: bool = False,
+                               index_name_pattern: str = DEFAULT_INDEX_NAME_PATTERN,
+                               include_refs: bool = False,
+                               ref_name_pattern: str = DEFAULT_REF_NAME_PATTERN,
                                method: str = DEFAULT_INTERP_POINT_METHOD,
                                cube_asserted: bool = False) -> xr.Dataset:
     """
@@ -28,9 +32,14 @@ def get_cube_values_for_points(cube: xr.Dataset,
     :param cube: The cube dataset.
     :param points: Dictionary that maps dimension name to coordinate arrays.
     :param var_names: An optional list of names of data variables in *cube* whose values shall be extracted.
-    :param index_name_pattern: A naming pattern for the computed indexes columns.
-           Must include "{name}" which will be replaced by the dimension name.
-    :param include_indexes: Weather to include computed indexes in return value.
+    :param include_coords: Weather to include the cube coordinates for each point in return value.
+    :param include_bounds: Weather to include the cube coordinate boundaries (if any) for each point in return value.
+    :param include_indexes: Weather to include computed indexes into the cube for each point in return value.
+    :param index_name_pattern: A naming pattern for the computed index columns.
+           Must include "{name}" which will be replaced by the index' dimension name.
+    :param include_refs: Weather to include point (reference) values in return value.
+    :param ref_name_pattern: A naming pattern for the computed point data columns.
+           Must include "{name}" which will be replaced by the point's attribute name.
     :param method: "nearest" or "linear".
     :param cube_asserted: If False, *cube* will be verified, otherwise it is expected to be a valid cube.
     :return: A new data frame whose columns are values from *cube* variables at given *points*.
@@ -41,12 +50,14 @@ def get_cube_values_for_points(cube: xr.Dataset,
     point_indexes = get_cube_point_indexes(cube,
                                            points,
                                            index_name_pattern=index_name_pattern,
-                                           dtype=np.int64 if method == POINT_INTERP_METHOD_NEAREST else np.float64,
+                                           index_dtype=np.int64 if method == POINT_INTERP_METHOD_NEAREST else np.float64,
                                            cube_asserted=True)
 
     cube_values = get_cube_values_for_indexes(cube,
                                               point_indexes,
-                                              var_names=var_names,
+                                              include_coords,
+                                              include_bounds,
+                                              data_var_names=var_names,
                                               index_name_pattern=index_name_pattern,
                                               method=method,
                                               cube_asserted=True)
@@ -54,13 +65,20 @@ def get_cube_values_for_points(cube: xr.Dataset,
     if include_indexes:
         cube_values.update(point_indexes)
 
+    if include_refs:
+        point_refs = xr.Dataset({ref_name_pattern.format(name=name): xr.DataArray(points[name], dims=[INDEX_DIM_NAME])
+                                 for name in points.keys()})
+        cube_values.update(point_refs)
+
     return cube_values
 
 
 def get_cube_values_for_indexes(cube: xr.Dataset,
                                 indexes: Union[xr.Dataset, pd.DataFrame, Mapping[str, Any]],
-                                var_names: Sequence[str] = None,
-                                index_name_pattern: str = INDEX_NAME_PATTERN,
+                                include_coords: bool = False,
+                                include_bounds: bool = False,
+                                data_var_names: Sequence[str] = None,
+                                index_name_pattern: str = DEFAULT_INDEX_NAME_PATTERN,
                                 method: str = DEFAULT_INTERP_POINT_METHOD,
                                 cube_asserted: bool = False) -> xr.Dataset:
     """
@@ -68,7 +86,9 @@ def get_cube_values_for_indexes(cube: xr.Dataset,
 
     :param cube: A cube dataset.
     :param indexes: A mapping from column names to index and fraction arrays for all cube dimensions.
-    :param var_names: An optional list of names of data variables in *cube* whose values shall be extracted.
+    :param include_coords: Weather to include the cube coordinates for each point in return value.
+    :param include_bounds: Weather to include the cube coordinate boundaries (if any) for each point in return value.
+    :param data_var_names: An optional list of names of data variables in *cube* whose values shall be extracted.
     :param index_name_pattern: A naming pattern for the computed indexes columns.
            Must include "{name}" which will be replaced by the dimension name.
     :param method: "nearest" or "linear".
@@ -83,35 +103,44 @@ def get_cube_values_for_indexes(cube: xr.Dataset,
     if method != POINT_INTERP_METHOD_NEAREST:
         raise NotImplementedError(f"method {method!r} not yet implemented")
 
-    all_var_names = tuple(cube.data_vars.keys())
-    if len(all_var_names) == 0:
+    all_data_var_names = tuple(cube.data_vars.keys())
+    if len(all_data_var_names) == 0:
         raise ValueError("cube is empty")
 
-    if var_names is not None:
-        if len(var_names) == 0:
+    if data_var_names is not None:
+        if len(data_var_names) == 0:
             return xr.Dataset(coords=indexes.coords if hasattr(indexes, "coords") else None)
-        for var_name in var_names:
+        for var_name in data_var_names:
             if var_name not in cube.data_vars:
                 raise ValueError(f"variable {var_name!r} not found in cube")
     else:
-        var_names = all_var_names
+        data_var_names = all_data_var_names
 
-    dim_names = cube[var_names[0]].dims
+    dim_names = cube[data_var_names[0]].dims
     num_dims = len(dim_names)
     index_names = [index_name_pattern.format(name=dim_name) for dim_name in dim_names]
     num_points = _validate_points(indexes, index_names, param_name="indexes")
     indexes = _normalize_points(indexes)
 
-    # Flatten any coordinate bounds variables
-    cube = xr.Dataset({var_name: cube[var_name] for var_name in var_names}, coords=cube.coords)
+    cube = xr.Dataset({var_name: cube[var_name] for var_name in data_var_names}, coords=cube.coords)
+
+    new_bounds_vars = {}
     bounds_var_names = _get_coord_bounds_var_names(cube)
-    new_vars = {}
-    for var_name, bnds_var_name in bounds_var_names.items():
-        bnds_var = cube[bnds_var_name]
-        new_vars[var_name + "_start"] = bnds_var[:, 0]
-        new_vars[var_name + "_end"] = bnds_var[:, 1]
-    cube = cube.drop(list(bounds_var_names.keys()))
-    cube = cube.assign_coords(**new_vars)
+    drop_coords = None
+    if bounds_var_names:
+        if include_bounds:
+            # Flatten any coordinate bounds variables
+            for var_name, bnds_var_name in bounds_var_names.items():
+                bnds_var = cube[bnds_var_name]
+                new_bounds_vars[var_name + "_lower"] = bnds_var[:, 0]
+                new_bounds_vars[var_name + "_upper"] = bnds_var[:, 1]
+            cube = cube.assign_coords(**new_bounds_vars)
+        cube = cube.drop(bounds_var_names.values())
+        if not include_coords:
+            drop_coords = set(cube.coords).difference(new_bounds_vars.keys())
+    else:
+        if not include_coords:
+            drop_coords = set(cube.coords)
 
     # Generate a validation condition so we can filter out invalid rows (where any index == -1)
     is_valid_point = None
@@ -130,10 +159,10 @@ def get_cube_values_for_indexes(cube: xr.Dataset,
         cube_values = cube.isel(cube_selector)
     elif num_valid_points == 0:
         # All indexes are invalid
-        new_vars = {}
-        for var_name in var_names:
-            new_vars[var_name] = _empty_points_var(cube[var_name], num_points)
-        cube_values = xr.Dataset(new_vars)
+        new_bounds_vars = {}
+        for var_name in cube.variables:
+            new_bounds_vars[var_name] = _empty_points_var(cube[var_name], num_points)
+        cube_values = xr.Dataset(new_bounds_vars)
     else:
         # Some invalid indexes
         idx = np.arange(num_points)
@@ -144,14 +173,17 @@ def get_cube_values_for_indexes(cube: xr.Dataset,
         cube_selector = {dim_names[i]: good_indexes[index_names[i]] for i in range(num_dims)}
         cube_values = cube.isel(cube_selector)
 
-        new_vars = {}
-        for var_name in var_names:
+        new_bounds_vars = {}
+        for var_name in cube.variables:
             var = cube_values[var_name]
             new_var = _empty_points_var(var, num_points)
             new_var[good_idx] = var
-            new_vars[var_name] = new_var
+            new_bounds_vars[var_name] = new_var
 
-        cube_values = xr.Dataset(new_vars)
+        cube_values = xr.Dataset(new_bounds_vars)
+
+    if drop_coords:
+        cube_values = cube_values.drop(drop_coords)
 
     return cube_values
 
@@ -159,8 +191,8 @@ def get_cube_values_for_indexes(cube: xr.Dataset,
 def get_cube_point_indexes(cube: xr.Dataset,
                            points: Union[xr.Dataset, pd.DataFrame, Mapping[str, Any]],
                            dim_name_mapping: Mapping[str, str] = None,
-                           index_name_pattern: str = INDEX_NAME_PATTERN,
-                           dtype=np.float64,
+                           index_name_pattern: str = DEFAULT_INDEX_NAME_PATTERN,
+                           index_dtype=np.float64,
                            cube_asserted: bool = False) -> xr.Dataset:
     """
     Get indexes of given point coordinates *points* into the given *dataset*.
@@ -170,9 +202,10 @@ def get_cube_point_indexes(cube: xr.Dataset,
     :param dim_name_mapping: A mapping from dimension names in *cube* to column names in *points*.
     :param index_name_pattern: A naming pattern for the computed indexes columns.
            Must include "{name}" which will be replaced by the dimension name.
-    :param dtype: Numpy data type for the indexes. If it is floating point type (default),
-           then *indexes* contain fractions, which may be used for interpolation. If *dtype* is an integer
-           type out-of-range coordinates are indicated by index -1, and NaN if it is is a floating point type.
+    :param index_dtype: Numpy data type for the indexes. If it is a floating point type (default),
+           then *indexes* will contain fractions, which may be used for interpolation.
+           For out-of-range coordinates in *points*, indexes will be -1 if *index_dtype* is an integer type, and NaN,
+           if *index_dtype* is a floating point types.
     :param cube_asserted: If False, *cube* will be verified, otherwise it is expected to be a valid cube.
     :return: A dataset containing the index columns.
     """
@@ -188,7 +221,7 @@ def get_cube_point_indexes(cube: xr.Dataset,
     indexes = []
     for dim_name, col_name in zip(dim_names, col_names):
         col = points[col_name]
-        coord_indexes = get_dataset_indexes(cube, dim_name, col, dtype=dtype)
+        coord_indexes = get_dataset_indexes(cube, dim_name, col, index_dtype=index_dtype)
         indexes.append((index_name_pattern.format(name=dim_name),
                         xr.DataArray(coord_indexes, dims=[INDEX_DIM_NAME])))
 
@@ -198,7 +231,7 @@ def get_cube_point_indexes(cube: xr.Dataset,
 def get_dataset_indexes(dataset: xr.Dataset,
                         coord_var_name: str,
                         coord_values: Union[xr.DataArray, np.ndarray],
-                        dtype=np.float64) -> Union[xr.DataArray, np.ndarray]:
+                        index_dtype=np.float64) -> Union[xr.DataArray, np.ndarray]:
     """
     Compute the indexes and their fractions into a coordinate variable *coord_var_name* of a *dataset*
     for the given coordinate values *coord_values*.
@@ -207,14 +240,15 @@ def get_dataset_indexes(dataset: xr.Dataset,
     otherwise the result will be nonsense.
 
     For any value in *coord_values* that is out of the bounds of the coordinate variable's values,
-    the index will be -1 and the fraction will be NaN.
+    the index depends on the value of *index_dtype*. If *index_dtype* is an integer type, invalid indexes are
+    encoded as -1 while for floating point types, NaN will be used.
 
     Returns a tuple of indexes as int64 array and fractions as float64 array.
 
     :param dataset: A cube dataset.
     :param coord_var_name: Name of a coordinate variable.
     :param coord_values: Array-like coordinate values.
-    :param dtype: Numpy data type for the indexes. If it is floating point type (default),
+    :param index_dtype: Numpy data type for the indexes. If it is floating point type (default),
            then *indexes* contain fractions, which may be used for interpolation. If *dtype* is an integer
            type out-of-range coordinates are indicated by index -1, and NaN if it is is a floating point type.
     :return: The indexes and their fractions as a tuple of numpy int64 and float64 arrays.
@@ -228,8 +262,8 @@ def get_dataset_indexes(dataset: xr.Dataset,
         coord_bounds = coord_bounds_var.values
         if np.issubdtype(coord_bounds.dtype, np.datetime64):
             coord_bounds = coord_bounds.astype(np.uint64)
-        is_reversed = (coord_bounds[0, 1] - coord_bounds[0, 0]) < 0
-        if is_reversed:
+        is_inverse = (coord_bounds[0, 1] - coord_bounds[0, 0]) < 0
+        if is_inverse:
             coord_bounds = coord_bounds[::-1, ::-1]
         coords = np.zeros(n2, dtype=coord_bounds.dtype)
         coords[0:-1] = coord_bounds[:, 0]
@@ -238,8 +272,8 @@ def get_dataset_indexes(dataset: xr.Dataset,
         center_coords = coord_var.values
         if np.issubdtype(center_coords.dtype, np.datetime64):
             center_coords = center_coords.astype(np.uint64)
-        is_reversed = (center_coords[-1] - center_coords[0]) < 0
-        if is_reversed:
+        is_inverse = (center_coords[-1] - center_coords[0]) < 0
+        if is_inverse:
             center_coords = center_coords[::-1]
         deltas = np.zeros(n2, dtype=center_coords.dtype)
         deltas[0:-2] = np.diff(center_coords)
@@ -265,15 +299,14 @@ def get_dataset_indexes(dataset: xr.Dataset,
 
     indexes = np.linspace(0.0, n1, n2, dtype=np.float64)
     interp_indexes = np.interp(coord_values, coords, indexes, left=-1, right=-1)
-    if np.issubdtype(dtype, np.integer):
-        interp_indexes = interp_indexes.astype(dtype)
-        interp_indexes[interp_indexes >= n1] = n1 - 1
+    if is_inverse:
+        i = interp_indexes >= 0
+        interp_indexes[i] = n1 - interp_indexes[i]
+    interp_indexes[interp_indexes >= n1] = n1 - 1e-9
+    if np.issubdtype(index_dtype, np.integer):
+        interp_indexes = interp_indexes.astype(index_dtype)
     else:
-        interp_indexes[interp_indexes >= n1] = n1 - 1e-9
         interp_indexes[interp_indexes < 0] = np.nan
-
-    if is_reversed:
-        interp_indexes = interp_indexes[::-1]
 
     return interp_indexes
 

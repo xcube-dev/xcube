@@ -16,6 +16,7 @@ def new_cube(title="Test Cube",
              time_periods=5,
              time_freq="D",
              time_start='2010-01-01T00:00:00',
+             inverse_lat=False,
              drop_bounds=False,
              variables=None):
     """
@@ -30,6 +31,7 @@ def new_cube(title="Test Cube",
     :param time_periods: Number of time steps
     :param time_freq: Duration of each time step
     :param time_start: First time value
+    :param inverse_lat: Whether to create an inverse latitude axis
     :param drop_bounds: If True, coordinate bounds variables are not created.
     :param variables: Dictionary of data variables to be added.
     :return: A cube instance
@@ -43,12 +45,16 @@ def new_cube(title="Test Cube",
     if time_periods < 0:
         raise ValueError()
 
-    lon_data = np.linspace(lon_start + 0.5 * spatial_res, lon_end - 0.5 * spatial_res, width)
+    spatial_res_05 = 0.5 * spatial_res
+
+    lon_data = np.linspace(lon_start + spatial_res_05, lon_end - spatial_res_05, width)
     lon = xr.DataArray(lon_data, dims="lon")
     lon.attrs["units"] = "degrees_east"
 
     lat_data = np.linspace(lat_start + 0.5 * spatial_res, lat_end - 0.5 * spatial_res, height)
     lat = xr.DataArray(lat_data, dims="lat")
+    if inverse_lat:
+        lat = lat[::-1]
     lat.attrs["units"] = "degrees_north"
 
     time_data_2 = pd.date_range(start=time_start, periods=time_periods + 1, freq=time_freq).values
@@ -72,6 +78,8 @@ def new_cube(title="Test Cube",
         lat_bnds_data = np.zeros((height, 2), dtype=np.float64)
         lat_bnds_data[:, 0] = np.linspace(lat_start, lat_end - spatial_res, height)
         lat_bnds_data[:, 1] = np.linspace(lat_start + spatial_res, lat_end, height)
+        if inverse_lat:
+            lat_bnds_data = lat_bnds_data[::-1, ::-1]
         lat_bnds = xr.DataArray(lat_bnds_data, dims=("lat", "bnds"))
         lat_bnds.attrs["units"] = "degrees_north"
 
