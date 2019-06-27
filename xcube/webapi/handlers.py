@@ -27,18 +27,19 @@ import pathlib
 
 from tornado.ioloop import IOLoop
 
-from . import __version__, __description__
 from .controllers.catalogue import get_datasets, get_dataset_coordinates, get_color_bars, get_dataset
 from .controllers.places import find_places, find_dataset_places
 from .controllers.tiles import get_dataset_tile, get_dataset_tile_grid, get_ne2_tile, get_ne2_tile_grid, get_legend
 from .controllers.time_series import get_time_series_info, get_time_series_for_point, get_time_series_for_geometry, \
     get_time_series_for_geometry_collection, get_time_series_for_feature_collection
 from .controllers.wmts import get_wmts_capabilities_xml
+from .defaults import SERVER_NAME, SERVER_DESCRIPTION
 from .errors import ServiceBadRequestError
 from .s3util import dict_to_xml, list_s3_bucket_v1, list_bucket_result_to_xml, list_s3_bucket_v2, \
     mtime_to_str, str_to_etag
 from .service import ServiceRequestHandler
 from ..util.timecoord import timestamp_to_iso_string
+from ..version import version
 
 __author__ = "Norman Fomferra (Brockmann Consult GmbH)"
 
@@ -46,6 +47,7 @@ _WMTS_VERSION = "1.0.0"
 _WMTS_TILE_FORMAT = "image/png"
 _LOG = logging.getLogger('xcube')
 
+_LOG_S3BUCKET_HANDLER = True
 
 # noinspection PyAbstractClass
 class WMTSKvpHandler(ServiceRequestHandler):
@@ -159,9 +161,13 @@ class ListS3BucketHandler(ServiceRequestHandler):
         else:
             raise ServiceBadRequestError(f'Unknown bucket list type {list_type!r}')
 
-        print(f'ListS3BucketHandler: GET: list_s3_bucket_params={list_s3_bucket_params}')
+        if _LOG_S3BUCKET_HANDLER:
+            _LOG.info(f'GET: list_s3_bucket_params={list_s3_bucket_params}')
         bucket_mapping = self.service_context.get_s3_bucket_mapping()
         list_bucket_result = list_s3_bucket(bucket_mapping, **list_s3_bucket_params)
+        if _LOG_S3BUCKET_HANDLER:
+            import json
+            _LOG.info(f'-->\n{json.dumps(list_bucket_result, indent=2)}')
 
         xml = list_bucket_result_to_xml(list_bucket_result)
         self.set_header('Content-Type', 'application/xml')
@@ -173,7 +179,8 @@ class ListS3BucketHandler(ServiceRequestHandler):
 class GetS3BucketObjectHandler(ServiceRequestHandler):
     async def head(self, ds_id: str, path: str = ''):
         key, local_path = self._get_key_and_local_path(ds_id, path)
-        print(f'GetS3BucketObjectHandler: HEAD: key={key!r}, local_path={local_path!r}')
+        if _LOG_S3BUCKET_HANDLER:
+            _LOG.info(f'HEAD: key={key!r}, local_path={local_path!r}')
         if local_path is None or not local_path.exists():
             await self._key_not_found(key)
             return
@@ -187,7 +194,8 @@ class GetS3BucketObjectHandler(ServiceRequestHandler):
 
     async def get(self, ds_id: str, path: str = ''):
         key, local_path = self._get_key_and_local_path(ds_id, path)
-        print(f'GetS3BucketObjectHandler: GET: key={key!r}, local_path={local_path!r}')
+        if _LOG_S3BUCKET_HANDLER:
+            _LOG.info(f'GET: key={key!r}, local_path={local_path!r}')
         if local_path is None or not local_path.exists():
             await self._key_not_found(key)
             return
@@ -197,7 +205,7 @@ class GetS3BucketObjectHandler(ServiceRequestHandler):
         if local_path.is_file():
             self.set_header('Content-Length', local_path.stat().st_size)
             chunk_size = 1024 * 1024
-            with open(local_path, 'rb') as fp:
+            with open(str(local_path), 'rb') as fp:
                 while True:
                     chunk = fp.read(chunk_size)
                     if len(chunk) == 0:
@@ -412,9 +420,9 @@ class InfoHandler(ServiceRequestHandler):
                                               freq="ms")
         server_time = timestamp_to_iso_string(datetime.datetime.now(), freq="ms")
         self.set_header('Content-Type', 'application/json')
-        self.write(json.dumps(dict(name='xcube_server',
-                                   description=__description__,
-                                   version=__version__,
+        self.write(json.dumps(dict(name=SERVER_NAME,
+                                   description=SERVER_DESCRIPTION,
+                                   version=version,
                                    configTime=config_time,
                                    serverTime=server_time),
                               indent=2))
