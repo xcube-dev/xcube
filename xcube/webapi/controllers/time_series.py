@@ -98,7 +98,7 @@ def get_time_series_for_geometry_collection(ctx: ServiceContext,
                                             ds_name: str, var_name: str,
                                             geometry_collection: Dict,
                                             start_date: np.datetime64 = None,
-                                            end_date: np.datetime64 = None) -> Dict:
+                                            end_date: np.datetime64 = None,
                                             max_valids: int = None) -> Dict:
     dataset = _get_time_series_dataset(ctx, ds_name, var_name)
     geometries = GeoJSON.get_geometry_collection_geometries(geometry_collection)
@@ -123,7 +123,6 @@ def get_time_series_for_feature_collection(ctx: ServiceContext,
                                            start_date: np.datetime64 = None,
                                            end_date: np.datetime64 = None,
                                            max_valids: int = None) -> Dict:
-                                           end_date: np.datetime64 = None) -> Dict:
     dataset = _get_time_series_dataset(ctx, ds_name, var_name)
     features = GeoJSON.get_feature_collection_features(feature_collection)
     if features is None:
