@@ -5,7 +5,7 @@ import os.path
 from typing import Dict, Any, List, Tuple, Iterator
 
 
-def list_s3_bucket_v2(bucket_entries: Dict[str, str],
+def list_s3_bucket_v2(bucket_mapping: Dict[str, str],
                       name: str = None,
                       delimiter: str = None,
                       prefix: str = None,
@@ -20,7 +20,7 @@ def list_s3_bucket_v2(bucket_entries: Dict[str, str],
     (https://docs.aws.amazon.com/AmazonS3/latest/API/v2-RESTBucketGET.html)
     for the local filesystem.
 
-    :param bucket_entries: mapping from the bucket's top-level names to directory paths in the local file system
+    :param bucket_mapping: mapping from the bucket's top-level names to directory paths in the local file system
     :param name: The bucket name, defaults to "s3bucket"
     :param delimiter: A delimiter is a character you use to group keys.
            If you specify a prefix, all of the keys that contain the same string
@@ -74,7 +74,7 @@ def list_s3_bucket_v2(bucket_entries: Dict[str, str],
 
     token = 0
 
-    for key, path in list_s3_bucket_keys(bucket_entries):
+    for key, path in list_s3_bucket_keys(bucket_mapping):
 
         token += 1
 
@@ -128,7 +128,7 @@ def list_s3_bucket_v2(bucket_entries: Dict[str, str],
     return list_bucket_result
 
 
-def list_s3_bucket_v1(bucket_entries: Dict[str, str],
+def list_s3_bucket_v1(bucket_mapping: Dict[str, str],
                       name: str = None,
                       delimiter: str = None,
                       prefix: str = None,
@@ -142,7 +142,7 @@ def list_s3_bucket_v1(bucket_entries: Dict[str, str],
     (https://docs.aws.amazon.com/AmazonS3/latest/API/RESTBucketGET.html)
     for the local filesystem.
 
-    :param bucket_entries: mapping from the bucket's top-level names to directory paths in the local file system
+    :param bucket_mapping: mapping from the bucket's top-level names to directory paths in the local file system
     :param name: The bucket name, defaults to "s3bucket"
     :param delimiter: A delimiter is a character you use to group keys.
            If you specify a prefix, all of the keys that contain the same string
@@ -186,7 +186,7 @@ def list_s3_bucket_v1(bucket_entries: Dict[str, str],
     common_prefixes_list = []
     common_prefixes_set = set()
 
-    for key, path in list_s3_bucket_keys(bucket_entries):
+    for key, path in list_s3_bucket_keys(bucket_mapping):
 
         if len(contents_list) == max_keys:
             is_truncated = True
@@ -234,13 +234,12 @@ def list_s3_bucket_v1(bucket_entries: Dict[str, str],
     return list_bucket_result
 
 
-def list_s3_bucket_keys(bucket_entries: Dict[str, str]) -> Iterator[Tuple[str, str]]:
-    bucket_entry_keys = sorted(list(bucket_entries.keys()))
+def list_s3_bucket_keys(bucket_mapping: Dict[str, str]) -> Iterator[Tuple[str, str]]:
+    bucket_entry_keys = sorted(list(bucket_mapping.keys()))
 
     for bucket_entry_key in bucket_entry_keys:
 
-        bucket_entry_path = bucket_entries[bucket_entry_key]
-        bucket_entry_path = os.path.abspath(os.path.normpath(bucket_entry_path))
+        bucket_entry_path = bucket_mapping[bucket_entry_key]
         if not os.path.isdir(bucket_entry_path):
             raise ValueError(f'Value for key {bucket_entry_key!r} is not a directory: {bucket_entry_path}')
 

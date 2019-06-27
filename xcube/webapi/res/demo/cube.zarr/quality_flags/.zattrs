@@ -4,7 +4,6 @@
         "lat",
         "lon"
     ],
-    "_Unsigned": "true",
     "flag_coding_name": "quality_flags",
     "flag_descriptions": "",
     "flag_masks": [

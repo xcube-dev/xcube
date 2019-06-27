@@ -194,6 +194,7 @@ class ServiceContext:
                 local_path = descriptor.get('Path')
                 if not os.path.isabs(local_path):
                     local_path = os.path.join(self.base_dir, local_path)
+                local_path = os.path.normpath(local_path)
                 if os.path.isdir(local_path):
                     _, ext = os.path.splitext(os.path.basename(local_path))
                     s3_bucket_mapping[ds_id + ext] = local_path

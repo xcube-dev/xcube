@@ -65,9 +65,11 @@ def new_application(prefix: str = None):
         (prefix + url_pattern('/datasets/{{ds_id}}/vars/{{var_name}}/tilegrid'),
          GetDatasetVarTileGridHandler),
 
-        (prefix + url_pattern('/s3bucket/{{ds_id}}.zarr/(?P<path>.*)'),
+        # AWS S3 compatible data access as ZARR
+
+        (prefix + url_pattern('/s3bucket/{{ds_id}}/(?P<path>.*)'),
          GetS3BucketObjectHandler),
-        (prefix + url_pattern('/s3bucket/{{ds_id}}.zarr'),
+        (prefix + url_pattern('/s3bucket/{{ds_id}}'),
          GetS3BucketObjectHandler),
         (prefix + url_pattern('/s3bucket'),
          ListS3BucketHandler),

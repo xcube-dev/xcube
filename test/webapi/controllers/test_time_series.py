@@ -154,10 +154,18 @@ class TimeSeriesControllerTest(unittest.TestCase):
     @staticmethod
     def _get_expected_info_dict():
         expected_dict = {'layers': []}
-        bounds = {'xmin': 0.0, 'ymin': 50.0, 'xmax': 5.0, 'ymax': 52.5}
-        demo_times = ['2017-01-16T10:09:22Z', '2017-01-25T09:35:51Z', '2017-01-26T10:50:17Z',
-                      '2017-01-28T09:58:11Z', '2017-01-30T10:46:34Z']
-        demo_variables = ['quality_flags', 'kd489', 'conc_tsm', 'conc_chl', 'c2rcc_flags']
+        bounds = {'xmin': 0.0, 'ymin': 50.0,
+                  'xmax': 5.0, 'ymax': 52.5}
+        demo_times = ['2017-01-16T10:09:22Z',
+                      '2017-01-25T09:35:51Z',
+                      '2017-01-26T10:50:17Z',
+                      '2017-01-28T09:58:11Z',
+                      '2017-01-30T10:46:34Z']
+        demo_variables = ['c2rcc_flags',
+                          'conc_chl',
+                          'conc_tsm',
+                          'kd489',
+                          'quality_flags']
         for demo_variable in demo_variables:
             dict_variable = {'name': f'demo.{demo_variable}', 'dates': demo_times, 'bounds': bounds}
             expected_dict['layers'].append(dict_variable)
@@ -165,7 +173,6 @@ class TimeSeriesControllerTest(unittest.TestCase):
         for demo_variable in demo_variables:
             dict_variable = {'name': f'demo-1w.{demo_variable}', 'dates': demo1w_times, 'bounds': bounds}
             expected_dict['layers'].append(dict_variable)
-        for demo_variable in demo_variables:
             dict_variable = {'name': f'demo-1w.{demo_variable}_stdev', 'dates': demo1w_times, 'bounds': bounds}
             expected_dict['layers'].append(dict_variable)
         return expected_dict

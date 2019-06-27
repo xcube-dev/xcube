@@ -159,6 +159,42 @@ class HandlersTest(AsyncHTTPTestCase):
         response = self.fetch(self.prefix + '/datasets/demo?tiles=cesium')
         self.assertResponseOK(response)
 
+    def test_fetch_list_s3bucket(self):
+        response = self.fetch(self.prefix + '/s3bucket')
+        self.assertResponseOK(response)
+        response = self.fetch(self.prefix + '/s3bucket?delimiter=%2F')
+        self.assertResponseOK(response)
+        response = self.fetch(self.prefix + '/s3bucket?delimiter=%2F&prefix=demo%2F')
+        self.assertResponseOK(response)
+        response = self.fetch(self.prefix + '/s3bucket?delimiter=%2F&list-type=2')
+        self.assertResponseOK(response)
+        response = self.fetch(self.prefix + '/s3bucket?delimiter=%2F&prefix=demo%2F&list-type=2')
+        self.assertResponseOK(response)
+
+    def test_fetch_head_s3bucket_object(self):
+        response = self.fetch(self.prefix + '/s3bucket/demo', method='HEAD')
+        self.assertResponseOK(response)
+        response = self.fetch(self.prefix + '/s3bucket/demo/', method='HEAD')
+        self.assertResponseOK(response)
+        response = self.fetch(self.prefix + '/s3bucket/demo/.zattrs', method='HEAD')
+        self.assertResponseOK(response)
+        response = self.fetch(self.prefix + '/s3bucket/demo/.zgroup', method='HEAD')
+        self.assertResponseOK(response)
+        response = self.fetch(self.prefix + '/s3bucket/demo/.zarray', method='HEAD')
+        self.assertResourceNotFoundResponse(response)
+
+    def test_fetch_get_s3bucket_object(self):
+        response = self.fetch(self.prefix + '/s3bucket/demo')
+        self.assertResponseOK(response)
+        response = self.fetch(self.prefix + '/s3bucket/demo/')
+        self.assertResponseOK(response)
+        response = self.fetch(self.prefix + '/s3bucket/demo/.zattrs')
+        self.assertResponseOK(response)
+        response = self.fetch(self.prefix + '/s3bucket/demo/.zgroup')
+        self.assertResponseOK(response)
+        response = self.fetch(self.prefix + '/s3bucket/demo/.zarray')
+        self.assertResourceNotFoundResponse(response)
+
     def test_fetch_coords_json(self):
         response = self.fetch(self.prefix + '/datasets/demo/coords/time')
         self.assertResponseOK(response)

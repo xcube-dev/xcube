@@ -48,8 +48,10 @@ def get_time_series_info(ctx: ServiceContext) -> Dict:
             time_stamps = []
             for time in time_data:
                 time_stamps.append(timestamp_to_iso_string(time))
-            for variable in dataset.data_vars.variables:
-                variable_dict = {'name': '{0}.{1}'.format(descriptor['Identifier'], variable),
+            var_names = sorted(dataset.data_vars)
+            for var_name in var_names:
+                ds_id = descriptor['Identifier']
+                variable_dict = {'name': f'{ds_id}.{var_name}',
                                  'dates': time_stamps,
                                  'bounds': dict(xmin=xmin, ymin=ymin, xmax=xmax, ymax=ymax)}
                 time_series_info['layers'].append(variable_dict)
