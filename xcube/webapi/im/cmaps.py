@@ -22,7 +22,6 @@ import base64
 import io
 import logging
 from threading import Lock
-
 import matplotlib
 import matplotlib.cm as cm
 import matplotlib.colors
@@ -123,7 +122,9 @@ def ensure_cmaps_loaded():
                 cbar_list = []
                 for cmap_name in cmap_names:
                     try:
-                        if cmap_category == 'Ocean':
+                        if '.cpd' in cmap_name:
+                            cmap = _get_custom_colormap(cmap_name)
+                        elif cmap_category == 'Ocean':
                             cmap = getattr(ocm, cmap_name)
                         else:
                             cmap = cm.get_cmap(cmap_name)
@@ -189,3 +190,6 @@ def ensure_cmaps_loaded():
             # import pprint
             # pprint.pprint(_CMAPS)
         _LOCK.release()
+
+
+
