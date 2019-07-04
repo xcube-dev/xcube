@@ -239,6 +239,32 @@ class ServiceContext:
         _LOG.warning(f'color mapping for variable {var_name!r} of dataset {ds_id!r} undefined: using defaults')
         return cmap_cbar, cmap_vmin, cmap_vmax
 
+    def _register_color_files(self, ds_id: str, var_name: str):
+        cmap_cbar = DEFAULT_CMAP_CBAR
+        dataset_descriptor = self.get_dataset_descriptor(ds_id)
+        style_name = dataset_descriptor.get('Style', 'default')
+        styles = self._config.get('Styles')
+        SNAP_CPD_LIST=list()
+        if styles:
+            style = None
+            for s in styles:
+                if style_name == s['Identifier']:
+                    style = s
+                    break
+            # TODO: check color_mappings is not None
+            if style:
+                color_mappings = style.get('ColorMappings')
+                if color_mappings:
+                    # TODO: check color_mappings is not None
+                    color_mapping = color_mappings.get(var_name)
+                    if color_mapping:
+                        if color_mapping.get('ColorFile') is not None:
+                            cmap_cbar = color_mapping.get('ColorFile', cmap_cbar)
+                            SNAP_CPD_LIST.append(cmap_cbar)
+                        return SNAP_CPD_LIST
+
+
+
     def _get_dataset_entry(self, ds_id: str) -> Tuple[MultiLevelDataset, Dict[str, Any]]:
         if ds_id not in self._dataset_cache:
             with self._lock:

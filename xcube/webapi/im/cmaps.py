@@ -87,7 +87,10 @@ _CMAPS = (('Perceptually Uniform Sequential',
             'brg', 'CMRmap', 'cubehelix',
             'gnuplot', 'gnuplot2', 'gist_ncar',
             'nipy_spectral', 'jet', 'rainbow',
-            'gist_rainbow', 'hsv', 'flag', 'prism')))
+            'gist_rainbow', 'hsv', 'flag', 'prism')),
+          ('Custom SNAP colormaps',
+           'Custom SNAP colormaps derived from a .cpd file. ',
+           (SNAP_CPD_LIST)))
 
 _CBARS_LOADED = False
 _LOCK = Lock()
