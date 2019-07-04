@@ -165,27 +165,34 @@ def ensure_cmaps_loaded():
                         _LOG.warning('could not create colormap "{}" because "{}" is of unknown type {}'
                                      .format(new_name, cmap.name, type(cmap)))
 
-                    gradient = np.linspace(0, 1, 256)
-                    gradient = np.vstack((gradient, gradient))
-                    image_data = cmap(gradient, bytes=True)
-                    image = Image.fromarray(image_data, 'RGBA')
+                    cbar_list.append((cmap_name, _get_cbar_png_bytes(cmap)))
+                    cbar_list.append((new_name, _get_cbar_png_bytes(new_cmap)))
 
-                    # ostream = io.FileIO('../cmaps/' + cmap_name + '.png', 'wb')
-                    # image.save(ostream, format='PNG')
-                    # ostream.close()
-
-                    ostream = io.BytesIO()
-                    image.save(ostream, format='PNG')
-                    cbar_png_bytes = ostream.getvalue()
-                    ostream.close()
-
-                    cbar_png_data = base64.b64encode(cbar_png_bytes)
-                    cbar_png_bytes = cbar_png_data.decode('unicode_escape')
-
-                    cbar_list.append((cmap_name, cbar_png_bytes))
                 new_cmaps.append((cmap_category, cmap_description, tuple(cbar_list)))
             _CMAPS = tuple(new_cmaps)
             _CBARS_LOADED = True
             # import pprint
             # pprint.pprint(_CMAPS)
         _LOCK.release()
+
+
+def _get_cbar_png_bytes(cmap):
+
+    gradient = np.linspace(0, 1, 256)
+    gradient = np.vstack((gradient, gradient))
+    image_data = cmap(gradient, bytes=True)
+    image = Image.fromarray(image_data, 'RGBA')
+
+    # ostream = io.FileIO('../cmaps/' + cmap_name + '.png', 'wb')
+    # image.save(ostream, format='PNG')
+    # ostream.close()
+
+    ostream = io.BytesIO()
+    image.save(ostream, format='PNG')
+    cbar_png_bytes = ostream.getvalue()
+    ostream.close()
+
+    cbar_png_data = base64.b64encode(cbar_png_bytes)
+    cbar_png_bytes = cbar_png_data.decode('unicode_escape')
+
+    return cbar_png_bytes

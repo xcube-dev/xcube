@@ -37,26 +37,26 @@ class CmapsTest(TestCase):
     def test_get_cmaps_category_tuples(self):
         cmaps = get_cmaps()
         category_tuple = cmaps[0][2]
-        self.assertEqual(len(category_tuple), 4)
+        self.assertEqual(len(category_tuple), 8)
         self.assertEqual(category_tuple[0][0], 'viridis')
         self.assertEqual(category_tuple[0][1],
                          'iVBORw0KGgoAAAANSUhEUgAAAQAAAAACCAYAAAC3zQLZAAAAzklEQVR4nO2TQZLFIAhEX7dXmyPM/Y8SZwEqMcnU3/9QZTU8GszC6Ee/HQlk5FAsJIENqVGv/piZ3uqf3nX6Vtd+l8D8UwNOLhZL3+BLh796OXvMdWaqtrrqnZ/tjvuZT/0XxnN/5f25z9X7tIMTKzV7/5yrME3NHoPlUzvplgOevOcz6ZO5eCqzOmark1nHDQveHuuYaazZkTcdmE110HJu6doR3tgfPHyL51zNc0fd2xjf0vPukUPL36YBTcpcWArFyY0RTca88cYbXxt/gUOJC8yRF1kAAAAASUVORK5CYII=')
 
-        self.assertEqual(category_tuple[1][0], 'inferno')
-        self.assertEqual(category_tuple[2][0], 'plasma')
-        self.assertEqual(category_tuple[3][0], 'magma')
+        self.assertEqual(category_tuple[1][0], 'viridis_alpha')
+        self.assertEqual(category_tuple[2][0], 'inferno')
+        self.assertEqual(category_tuple[3][0], 'inferno_alpha')
 
     def test_cmocean_category(self):
         cmaps = get_cmaps()
         category_tuple = cmaps[5][2]
-        self.assertEqual(len(category_tuple), 18)
+        self.assertEqual(len(category_tuple), 36)
         self.assertEqual(category_tuple[0][0], 'thermal')
         self.assertEqual(category_tuple[0][1],
                          'iVBORw0KGgoAAAANSUhEUgAAAQAAAAACCAYAAAC3zQLZAAAA2klEQVR4nO2S6xHDMAiDP+FROkL3Xy30RwBju52g8V0OIcnyKxqvtwsD5SfAUPZNE6M4VR2hJTdQeBX6UhlY8xgDY8V24A15pMuIXcQHJo4qwOQYIHlojpT6zWnzqDxRo+/+zFZbR7H2Tx3WvMPf1qDvq+17zz/m7TV97YxHbefEW27ve+7Oe9xZZu3cdXCdr17XokurfvYOcmTXxHJkE2P32ei8eVxww1WJecRlBxZr/cndj+T5MKULbzqm5pnY56MFjnkmPH7cb7xXzvR49RRO3njGM57xt+MDC391Pt11tkYAAAAASUVORK5CYII=')
 
-        self.assertEqual(category_tuple[1][0], 'haline')
-        self.assertEqual(category_tuple[2][0], 'solar')
-        self.assertEqual(category_tuple[3][0], 'ice')
+        self.assertEqual(category_tuple[1][0], 'thermal_alpha')
+        self.assertEqual(category_tuple[2][0], 'haline')
+        self.assertEqual(category_tuple[3][0], 'haline_alpha')
 
 
 def main():
