@@ -23,10 +23,13 @@ import io
 import logging
 from threading import Lock
 import matplotlib
+import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 import matplotlib.colors
 import numpy as np
+import re
 from PIL import Image
+from ..context import
 
 try:
     import cmocean.cm as ocm
@@ -88,9 +91,10 @@ _CMAPS = (('Perceptually Uniform Sequential',
             'gnuplot', 'gnuplot2', 'gist_ncar',
             'nipy_spectral', 'jet', 'rainbow',
             'gist_rainbow', 'hsv', 'flag', 'prism')),
-          ('Custom SNAP colormaps',
-           'Custom SNAP colormaps derived from a .cpd file. ',
-           (SNAP_CPD_LIST)))
+          ('Custom SNAP Colormaps',
+           'Custom SNAP colormaps derived from a .cpd file passed via the configuration file of the server.',
+           (register_color_files())))
+
 
 _CBARS_LOADED = False
 _LOCK = Lock()
@@ -125,7 +129,7 @@ def ensure_cmaps_loaded():
                 cbar_list = []
                 for cmap_name in cmap_names:
                     try:
-                        if '.cpd' in cmap_name:
+                        if cmap_category == 'Custom SNAP Colormaps':
                             cmap = _get_custom_colormap(cmap_name)
                         elif cmap_category == 'Ocean':
                             cmap = getattr(ocm, cmap_name)
@@ -200,3 +204,45 @@ def _get_cbar_png_bytes(cmap):
     cbar_png_bytes = cbar_png_data.decode('unicode_escape')
 
     return cbar_png_bytes
+
+
+def _get_custom_colormap(colortext):
+        colors = _get_color(colortext)
+        values = get_tick_val_col(colortext)
+
+        norm = plt.Normalize(min(values), max(values))
+        tuples = list(zip(map(norm, values), colors))
+        cmap = matplotlib.colors.LinearSegmentedColormap.from_list("", tuples)
+
+        return cmap
+
+
+def _get_color(colortext):
+    f = open(colortext, "r")
+    lines = f.readlines()
+    c = []
+    for x in lines:
+        if "color" in x:
+            r, g, b = (((re.split('\W+', x, 1)[1:])[0].strip()).split(','))
+            hex_col = ('#%02x%02x%02x' % (int(r), int(g), int(b)))
+            c.append(hex_col)
+    f.close()
+    return c
+
+
+def get_tick_val_col(colortext):
+    f = open(colortext, "r")
+    lines = f.readlines()
+    values = []
+    for x in lines:
+        if "sample" in x:
+            value = ((re.split('\W+', x, 1)[1:])[0].strip())
+            values.append(float(value))
+    f.close()
+    return values
+
+
+def get_norm(colortext):
+    values = get_tick_val_col(colortext)
+    norm = matplotlib.colors.LogNorm(min(values), max(values))
+    return norm, values

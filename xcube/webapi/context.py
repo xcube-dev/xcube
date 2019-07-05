@@ -56,7 +56,7 @@ Config = Dict[str, Any]
 DatasetDescriptor = Dict[str, Any]
 
 MultiLevelDatasetOpener = Callable[["ServiceContext", DatasetDescriptor], MultiLevelDataset]
-
+SNAP_CPD_LIST=List[str]
 
 # noinspection PyMethodMayBeStatic
 class ServiceContext:
@@ -239,7 +239,7 @@ class ServiceContext:
         _LOG.warning(f'color mapping for variable {var_name!r} of dataset {ds_id!r} undefined: using defaults')
         return cmap_cbar, cmap_vmin, cmap_vmax
 
-    def _register_color_files(self, ds_id: str, var_name: str):
+    def register_color_files(self, ds_id: str, var_name: str):
         cmap_cbar = DEFAULT_CMAP_CBAR
         dataset_descriptor = self.get_dataset_descriptor(ds_id)
         style_name = dataset_descriptor.get('Style', 'default')
