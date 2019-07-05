@@ -1,6 +1,8 @@
 from unittest import TestCase
+from matplotlib.colors import LinearSegmentedColormap, ListedColormap
+import matplotlib.cm as cm
 
-from xcube.webapi.im.cmaps import get_cmaps
+from xcube.webapi.im.cmaps import get_cmaps, ensure_cmaps_loaded
 
 
 class CmapsTest(TestCase):
@@ -9,6 +11,11 @@ class CmapsTest(TestCase):
         cmaps = get_cmaps()
         self.assertIs(cmaps, get_cmaps())
         self.assertIs(cmaps, get_cmaps())
+
+    def test_get_cmaps_registers_ocean_colour(self):
+        ensure_cmaps_loaded()
+        cmap = cm.get_cmap('deep', 256)
+        self.assertTrue((type(cmap) is LinearSegmentedColormap) or (type(cmap) is ListedColormap))
 
     def test_get_cmaps_retruns_equal_size_recs(self):
         cmaps = get_cmaps()
