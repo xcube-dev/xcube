@@ -456,8 +456,11 @@ class ColorMappedRgbaImage(DecoratorImage):
 
         try:
             self._cmap = cm.get_cmap(self._cmap_name, num_colors)
-        except ValueError:
-            self._cmap = getattr(ocm, self._cmap_name)
+        except ValueError as e:
+            _LOG.warning(str(e))
+            _LOG.warning('reverting to colour map "jet"')
+            self._cmap_name = 'jet'
+            self._cmap = cm.get_cmap(self._cmap_name, num_colors)
 
         self._cmap.set_bad('k', 0)
         self._no_data_value = no_data_value
