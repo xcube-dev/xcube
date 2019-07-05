@@ -35,6 +35,11 @@ from .utils import downsample_ndarray, aggregate_ndarray_first
 from ..cache import Cache
 from ...util.perf import measure_time_cm
 
+try:
+    import cmocean.cm as ocm
+except ImportError:
+    ocm = None
+
 __author__ = "Norman Fomferra (Brockmann Consult GmbH)"
 
 _LOG = logging.getLogger('xcube')
@@ -448,7 +453,12 @@ class ColorMappedRgbaImage(DecoratorImage):
         self._value_range = value_range
         self._cmap_name = cmap_name if cmap_name else 'jet'
         ensure_cmaps_loaded()
-        self._cmap = cm.get_cmap(self._cmap_name, num_colors)
+
+        try:
+            self._cmap = cm.get_cmap(self._cmap_name, num_colors)
+        except ValueError:
+            self._cmap = getattr(ocm, self._cmap_name)
+
         self._cmap.set_bad('k', 0)
         self._no_data_value = no_data_value
         self._encode = encode
