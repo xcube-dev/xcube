@@ -1,85 +1,96 @@
 Datasets:
-  - Identifier: local
-    Title: "Local OLCI L2C cube for region SNS"
-    BoundingBox: [0.0, 50, 5.0, 52.5]
-    FileSystem: local
-    Path: cube-1-250-250.zarr
-    Style: default
-    TimeSeriesDataset: local_ts
-    PlaceGroups:
-      - PlaceGroupRef: inside-cube
-      - PlaceGroupRef: outside-cube
-
-  - Identifier: local_ts
-    Title: "'local' optimized for time-series"
-    BoundingBox: [0.0, 50, 5.0, 52.5]
-    FileSystem: local
-    Path: cube-5-100-200.zarr
-    Hidden: true
-    Style: default
-
-  - Identifier: remote
-    Title: Remote OLCI L2C cube for region SNS
-    BoundingBox: [0.0, 50, 5.0, 52.5]
-    FileSystem: obs
+  - Identifier: cyanoalert-olci-lswe-l2c-v1
+    Title: "Sverige Sj\u00f6ar 2018"
     Endpoint: "http://obs.eu-de.otc.t-systems.com"
-    Path: "dcs4cop-obs-01/OLCI-SNS-RAW-CUBE-2.zarr"
+    Path: "cyanoalert/cyanoalert-olci-lswe-l2c-v1.zarr"
+    FileSystem: "obs"
     Region: "eu-de"
     Style: default
     PlaceGroups:
-      - PlaceGroupRef: inside-cube
-      - PlaceGroupRef: outside-cube
-
-  - Identifier: local_1w
-    Title: OLCI weekly L3 cube for region SNS computed from local L2C cube
-    BoundingBox: [0.0, 50, 5.0, 52.5]
-    FileSystem: memory
-    Path: "resample_in_time.py"
-    Function: "compute_dataset"
-    InputDatasets: ["local"]
-    InputParameters:
-      period: "1W"
-      incl_stdev: True
-    Style: default
-    PlaceGroups:
-      - PlaceGroupRef: inside-cube
-      - PlaceGroupRef: outside-cube
-
-  - Identifier: remote_1w
-    Title: OLCI weekly L3 cube for region SNS computed from remote L2C cube
-    BoundingBox: [0.0, 50, 5.0, 52.5]
-    FileSystem: memory
-    Path: "resample_in_time.py"
-    Function: "compute_dataset"
-    InputDatasets: ["remote"]
-    InputParameters:
-      period: "1W"
-      incl_stdev: True
-    Style: default
-    PlaceGroups:
-      - PlaceGroupRef: inside-cube
-      - PlaceGroupRef: outside-cube
+      - PlaceGroupRef: Sweden_SE_Lakes
+      - PlaceGroupRef: Sweden_SE_Bathing_Sites
 
 PlaceGroups:
-  - Identifier: inside-cube
-    Title: Points inside the cube
-    Path: "places/inside-cube.geojson"
-  - Identifier: outside-cube
-    Title: Points outside the cube
-    Path: "places/outside-cube.geojson"
+  - Identifier: Sweden_SE_Lakes
+    Title: "Svenska Sj\u00f6arna"
+    Path: "C:\\Users/Helge/IdeaProjects/xcube/data/places/Selected_Monitoring_Lakes_wgs84_reprojected.shp"
+    CharacterEncoding: utf-8
+    PropertyMapping:
+      label: "SJONAMN"
+      infoUrl: "URL_VISS"
+  - Identifier: Sweden_SE_Bathing_Sites
+    Title: "Sverige selected bathing sites"
+    Path: "C:\\Users/Helge/IdeaProjects/xcube/data/places/Selected_Bathing_Sites_reprojected.shp"
+    CharacterEncoding: utf-8
+    PropertyMapping:
+      label: "BADPLATS"
+      eu_id: "EU_ID"
 
 Styles:
   - Identifier: default
     ColorMappings:
-      conc_chl:
-        ColorBar: "plasma"
-        ValueRange: [0., 24.]
-      conc_tsm:
-        ColorBar: "PuBuGn"
+      chl_c2rcc:
+        ColorBar: "YlGn"
+        ValueRange: [0., 20.]
+      chl_mph:
+        ColorBar: "YlGn"
+        ValueRange: [0., 20.]
+      iop_adg:
+        ColorBar: "RdBu"
+        ValueRange: [0., 2.]
+      iop_agelb:
+        ColorBar: "RdPu"
+        ValueRange: [0., 2.]
+      kd_z90max:
+        ColorBar: "YlGn"
+        ValueRange: [0., 1.]
+      tsm_c2rcc:
+        ColorBar: "viridis"
         ValueRange: [0., 100.]
-      kd489:
-        ColorBar: "jet"
-        ValueRange: [0., 6.]
+      tur_nechad_665:
+        ColorBar: "inferno"
+        ValueRange: [0., 100.]
+      tur_nechad_865:
+        ColorBar: "plasma"
+        ValueRange: [0., 100.]
+      # min and max for the parameter below need to be adjusted! just placeholder values at the moment
+      c2rcc_secchi_depth_1:
+        ColorBar: "deep"
+        ValueRange: [0., 20.]
+      c2rcc_secchi_depth_2:
+        ColorBar: "deep"
+        ValueRange: [0, 20.]
+      c2rcc_secchi_depth_3:
+        ColorBar: "deep"
+        ValueRange: [0, 20.]
+      c2rcc_secchi_depth_4:
+        ColorBar: "deep"
+        ValueRange: [0, 20.]
+      immersed_cyanobacteria:
+        ColorBar: "Reds"
+        ValueRange: [0, 1.]
+      floating_cyanobacteria:
+        ColorBar: "Blues_alpha"
+        ValueRange: [0, 1.]
+      floating_vegetation:
+        ColorBar: "Greens_alpha"
+        ValueRange: [0, 1.]
+      chl_pitarch:
+        ColorBar: "gnuplot"
+        ValueRange: [0, 10.]
+
+#Styles:
+#  - Identifier: default
+#    ColorMappings:
+#      conc_chl:
+#        ColorBar: "plasma"
+#        ValueRange: [0., 24.]
+#      conc_tsm:
+#        ColorBar: "PuBuGn"
+#        ValueRange: [0., 100.]
+#      kd489:
+#        ColorBar: "jet"
+#        ValueRange: [0., 6.]
 
 ServiceProvider:
   ProviderName: "Brockmann Consult GmbH"
