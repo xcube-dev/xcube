@@ -22,15 +22,13 @@ import base64
 import io
 import logging
 from threading import Lock
-
 import matplotlib
+import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 import matplotlib.colors
-import matplotlib.pyplot as plt
 import numpy as np
-from PIL import Image
 import re
-
+from PIL import Image
 
 try:
     import cmocean.cm as ocm
@@ -41,13 +39,10 @@ __author__ = "Norman Fomferra (Brockmann Consult GmbH)"
 
 _LOG = logging.getLogger('xcube')
 
-
 # Have colormaps separated into categories:
 # (taken from http://matplotlib.org/examples/color/colormaps_reference.html)
 # colormaps for ocean:
 # (taken from https://matplotlib.org/cmocean/)
-# SNAP_CPD_LIST=('/home/alicja/Desktop/projects/xcube-services/cyanoalert/SNAP_colormaps/bfg_schweb.cpd',
-#                '/home/alicja/Desktop/projects/xcube-services/cyanoalert/SNAP_colormaps/chl_DeM2_200.cpd',)
 
 _CMAPS = (('Perceptually Uniform Sequential',
            'For many applications, a perceptually uniform colormap is the best choice - '
@@ -213,14 +208,14 @@ def _get_cbar_png_bytes(cmap):
 
 
 def _get_custom_colormap(colortext):
-    colors = _get_color(colortext)
-    values = get_tick_val_col(colortext)
+        colors = _get_color(colortext)
+        values = get_tick_val_col(colortext)
 
-    norm = plt.Normalize(min(values), max(values))
-    tuples = list(zip(map(norm, values), colors))
-    cmap = matplotlib.colors.LinearSegmentedColormap.from_list(colortext, tuples)
+        norm = plt.Normalize(min(values), max(values))
+        tuples = list(zip(map(norm, values), colors))
+        cmap = matplotlib.colors.LinearSegmentedColormap.from_list("", tuples)
 
-    return cmap
+        return cmap
 
 
 def _get_color(colortext):
@@ -252,5 +247,3 @@ def get_norm(colortext):
     values = get_tick_val_col(colortext)
     norm = matplotlib.colors.LogNorm(min(values), max(values))
     return norm, values
-
-
