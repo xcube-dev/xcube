@@ -130,6 +130,7 @@ def ensure_cmaps_loaded():
                             cmap = _get_custom_colormap(cmap_name)
                         elif cmap_category == 'Ocean':
                             cmap = getattr(ocm, cmap_name)
+                            cm.register_cmap(cmap=cmap)
                         else:
                             cmap = cm.get_cmap(cmap_name)
                     except ValueError:
