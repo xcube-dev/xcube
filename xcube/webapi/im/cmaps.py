@@ -46,6 +46,8 @@ _LOG = logging.getLogger('xcube')
 # (taken from http://matplotlib.org/examples/color/colormaps_reference.html)
 # colormaps for ocean:
 # (taken from https://matplotlib.org/cmocean/)
+# SNAP_CPD_LIST=('/home/alicja/Desktop/projects/xcube-services/cyanoalert/SNAP_colormaps/bfg_schweb.cpd',
+#                '/home/alicja/Desktop/projects/xcube-services/cyanoalert/SNAP_colormaps/chl_DeM2_200.cpd',)
 
 _CMAPS = (('Perceptually Uniform Sequential',
            'For many applications, a perceptually uniform colormap is the best choice - '
@@ -93,13 +95,11 @@ _CMAPS = (('Perceptually Uniform Sequential',
             'gnuplot', 'gnuplot2', 'gist_ncar',
             'nipy_spectral', 'jet', 'rainbow',
             'gist_rainbow', 'hsv', 'flag', 'prism')),
-          ('Custom SNAP colormaps',
+          ('Custom SNAP Colormaps',
            'Custom SNAP colormaps derived from a .cpd file. ',
-           ('/home/alicja/Desktop/projects/xcube-services/cyanoalert/SNAP_colormaps/chl_DeM2_200.cpd',)))
-
+           ()))
 _CBARS_LOADED = False
 _LOCK = Lock()
-
 
 def get_cmaps():
     """
@@ -119,15 +119,19 @@ def ensure_cmaps_loaded():
     """
     Loads all color maps from matplotlib and registers additional ones, if not done before.
     """
+    from xcube.webapi.service import SNAP_CPD_LIST
     global _CBARS_LOADED, _CMAPS
     if not _CBARS_LOADED:
         _LOCK.acquire()
         if not _CBARS_LOADED:
+
             new_cmaps = []
             for cmap_category, cmap_description, cmap_names in _CMAPS:
                 if cmap_category == 'Ocean' and ocm is None:
                     continue
                 cbar_list = []
+                if cmap_category == 'Custom SNAP Colormaps':
+                    cmap_names = tuple(SNAP_CPD_LIST)
                 for cmap_name in cmap_names:
                     try:
                         if '.cpd' in cmap_name:

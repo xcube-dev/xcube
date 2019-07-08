@@ -38,6 +38,7 @@ from tornado.ioloop import IOLoop
 from tornado.log import enable_pretty_logging
 from tornado.web import RequestHandler, Application
 
+from ..util.config import load_configs
 from .context import ServiceContext, guess_cube_format
 from .defaults import DEFAULT_ADDRESS, DEFAULT_PORT, DEFAULT_UPDATE_PERIOD, DEFAULT_LOG_PREFIX, \
     DEFAULT_TILE_CACHE_SIZE, DEFAULT_TRACE_PERF, DEFAULT_TILE_COMP_MODE
@@ -51,6 +52,7 @@ __author__ = "Norman Fomferra (Brockmann Consult GmbH)"
 
 _LOG = logging.getLogger('xcube')
 
+SNAP_CPD_LIST = list()
 
 class Service:
     """
@@ -95,6 +97,18 @@ class Service:
             raise ValueError("config_file and cube_paths cannot be given both")
         if config_file and styles:
             raise ValueError("config_file and styles cannot be given both")
+
+        global SNAP_CPD_LIST
+        if config_file:
+            config = load_configs(config_file) if config_file else {}
+            x = config['Styles']
+            for style in x:
+                cm = style['ColorMappings']
+                for key in cm.keys():
+                    if 'ColorFile' in cm[key]:
+                        cf = cm[key]['ColorFile']
+                        if cf not in SNAP_CPD_LIST:
+                            SNAP_CPD_LIST.append(cf)
 
         log_dir = os.path.dirname(log_file_prefix)
         if log_dir and not os.path.isdir(log_dir):
