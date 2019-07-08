@@ -125,6 +125,7 @@ def ensure_cmaps_loaded():
                     try:
                         if cmap_category == 'Ocean':
                             cmap = getattr(ocm, cmap_name)
+                            cm.register_cmap(cmap=cmap)
                         else:
                             cmap = cm.get_cmap(cmap_name)
                     except ValueError:
