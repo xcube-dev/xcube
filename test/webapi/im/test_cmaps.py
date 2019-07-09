@@ -2,7 +2,7 @@ from unittest import TestCase
 from matplotlib.colors import LinearSegmentedColormap, ListedColormap
 import matplotlib.cm as cm
 
-from xcube.webapi.im.cmaps import get_cmaps, ensure_cmaps_loaded
+from xcube.webapi.im.cmaps import get_cmaps, ensure_cmaps_loaded, _get_custom_colormap
 
 
 class CmapsTest(TestCase):
@@ -65,6 +65,27 @@ class CmapsTest(TestCase):
         self.assertEqual(category_tuple[1][0], 'thermal_alpha')
         self.assertEqual(category_tuple[2][0], 'haline')
         self.assertEqual(category_tuple[3][0], 'haline_alpha')
+
+    def test_get_cmaps_registers_snap_color(self):
+        ensure_cmaps_loaded()
+        cmap_name = 'chl_DeM2_200.cpd'
+        cmap = _get_custom_colormap(cmap_name)
+        cm.register_cmap(cmap=cmap)
+        self.assertTrue((type(cmap) is LinearSegmentedColormap) or (type(cmap) is ListedColormap))
+
+    def test_get_cmaps_registers_ivalid_snap_color(self):
+        ensure_cmaps_loaded()
+        cmap_name = 'chl_DeM2_200_invalid_for_testing.cpd'
+        with self.assertRaises(ValueError):
+            cmap = _get_custom_colormap(cmap_name)
+            cm.register_cmap(cmap=cmap)
+
+    def test_get_cmaps_registers_nonexisting_snap_color(self):
+        ensure_cmaps_loaded()
+        cmap_name = 'chl_DeM2_200_not_existing.cpd'
+        with self.assertRaises(ValueError):
+            cmap = _get_custom_colormap(cmap_name)
+            cm.register_cmap(cmap=cmap)
 
 
 def main():

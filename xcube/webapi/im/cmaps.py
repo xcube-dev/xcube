@@ -21,6 +21,7 @@
 import base64
 import io
 import logging
+import os
 from threading import Lock
 import matplotlib
 import matplotlib.pyplot as plt
@@ -128,7 +129,7 @@ def ensure_cmaps_loaded():
                     continue
                 cbar_list = []
                 if cmap_category == 'Custom SNAP Colormaps':
-                    cmap_names = tuple(SNAP_CPD_LIST)
+                    cmap_names = _check_if_exists(SNAP_CPD_LIST)
                     if len(cmap_names) == 0:
                         _LOG.warning('No custom SNAP colormaps found in server configuration file.')
                 for cmap_name in cmap_names:
@@ -212,14 +213,17 @@ def _get_cbar_png_bytes(cmap):
 
 
 def _get_custom_colormap(colortext):
-    colors = _get_color(colortext)
-    values = get_tick_val_col(colortext)
-    if colors is None or values is None:
+    try:
+        colors = _get_color(colortext)
+        values = get_tick_val_col(colortext)
+        if colors is None or values is None:
+            return
+        norm = plt.Normalize(min(values), max(values))
+        tuples = list(zip(map(norm, values), colors))
+        cmap = matplotlib.colors.LinearSegmentedColormap.from_list(colortext, tuples)
+    except FileNotFoundError:
+        _LOG.warning('No such file or directory: "%s"' % colortext)
         return
-    norm = plt.Normalize(min(values), max(values))
-    tuples = list(zip(map(norm, values), colors))
-    cmap = matplotlib.colors.LinearSegmentedColormap.from_list("", tuples)
-
     return cmap
 
 
@@ -260,3 +264,11 @@ def get_norm(colortext):
     values = get_tick_val_col(colortext)
     norm = matplotlib.colors.LogNorm(min(values), max(values))
     return norm, values
+
+
+def _check_if_exists(SNAP_CPD_LIST):
+    valid_path = []
+    for item in SNAP_CPD_LIST:
+        if os.path.isfile(item):
+            valid_path.append(item)
+    return tuple(valid_path)
