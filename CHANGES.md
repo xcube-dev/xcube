@@ -2,6 +2,8 @@
 
 ### Enhancements
 
+* `xcube serve` accepts custom SNAP colormaps. The path to a SAP .cpd file can be passed via the server  
+   configuration file with the paramter [ColorFile] instead of [ColorBar]. (#84)
 * `xcube serve` can now be configured to serve cubes that are associated 
    with another cube with same data but different chunking (#115). 
    E.g. using chunks such as `time=512,lat=1,lon=1` can drastically improve 
