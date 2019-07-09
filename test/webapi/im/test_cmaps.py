@@ -68,24 +68,22 @@ class CmapsTest(TestCase):
         self.assertEqual(category_tuple[3][0], 'haline_alpha')
 
     def test_get_cmaps_registers_snap_color(self):
-        print(os.getcwd())
         ensure_cmaps_loaded()
-        cmap_name = 'webapi/im/chl_DeM2_200.cpd'
+        cmap_name = 'test/webapi/im/chl_DeM2_200.cpd'
         cmap = _get_custom_colormap(cmap_name)
-        print(os.getcwd())
         cm.register_cmap(cmap=cmap)
         self.assertTrue((type(cmap) is LinearSegmentedColormap) or (type(cmap) is ListedColormap))
 
     def test_get_cmaps_registers_ivalid_snap_color(self):
         ensure_cmaps_loaded()
-        cmap_name = 'webapi/im/chl_DeM2_200_invalid_for_testing.cpd'
+        cmap_name = 'test/webapi/im/chl_DeM2_200_invalid_for_testing.cpd'
         with self.assertRaises(ValueError):
             cmap = _get_custom_colormap(cmap_name)
             cm.register_cmap(cmap=cmap)
 
     def test_get_cmaps_registers_nonexisting_snap_color(self):
         ensure_cmaps_loaded()
-        cmap_name = 'webapi/im/chl_DeM2_200_not_existing.cpd'
+        cmap_name = 'test/webapi/im/chl_DeM2_200_not_existing.cpd'
         with self.assertRaises(ValueError):
             cmap = _get_custom_colormap(cmap_name)
             cm.register_cmap(cmap=cmap)
