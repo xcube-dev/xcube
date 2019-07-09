@@ -1,3 +1,4 @@
+import os
 from unittest import TestCase
 from matplotlib.colors import LinearSegmentedColormap, ListedColormap
 import matplotlib.cm as cm
@@ -67,9 +68,11 @@ class CmapsTest(TestCase):
         self.assertEqual(category_tuple[3][0], 'haline_alpha')
 
     def test_get_cmaps_registers_snap_color(self):
+        print(os.getcwd())
         ensure_cmaps_loaded()
         cmap_name = 'webapi/im/chl_DeM2_200.cpd'
         cmap = _get_custom_colormap(cmap_name)
+        print(os.getcwd())
         cm.register_cmap(cmap=cmap)
         self.assertTrue((type(cmap) is LinearSegmentedColormap) or (type(cmap) is ListedColormap))
 
