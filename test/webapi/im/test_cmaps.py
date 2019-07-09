@@ -26,7 +26,7 @@ class CmapsTest(TestCase):
 
     def test_get_cmaps_categories(self):
         cmaps = get_cmaps()
-        self.assertGreaterEqual(len(cmaps), 7)
+        self.assertGreaterEqual(len(cmaps), 8)
         self.assertEqual(cmaps[0][0], 'Perceptually Uniform Sequential')
         self.assertEqual(cmaps[1][0], 'Sequential 1')
         self.assertEqual(cmaps[2][0], 'Sequential 2')
@@ -34,6 +34,7 @@ class CmapsTest(TestCase):
         self.assertEqual(cmaps[4][0], 'Qualitative')
         self.assertEqual(cmaps[5][0], 'Ocean')
         self.assertEqual(cmaps[6][0], 'Miscellaneous')
+        self.assertEqual(cmaps[7][0], 'Custom SNAP Colormaps')
 
     def test_get_cmaps_category_descr(self):
         cmaps = get_cmaps()

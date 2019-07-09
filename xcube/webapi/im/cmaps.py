@@ -93,8 +93,10 @@ _CMAPS = (('Perceptually Uniform Sequential',
           ('Custom SNAP Colormaps',
            'Custom SNAP colormaps derived from a .cpd file. ',
            ()))
+
 _CBARS_LOADED = False
 _LOCK = Lock()
+
 
 def get_cmaps():
     """
@@ -127,6 +129,8 @@ def ensure_cmaps_loaded():
                 cbar_list = []
                 if cmap_category == 'Custom SNAP Colormaps':
                     cmap_names = tuple(SNAP_CPD_LIST)
+                    if len(cmap_names) == 0:
+                        _LOG.warning('No custom SNAP colormaps found in server configuration file.')
                 for cmap_name in cmap_names:
                     try:
                         if '.cpd' in cmap_name:
@@ -208,25 +212,30 @@ def _get_cbar_png_bytes(cmap):
 
 
 def _get_custom_colormap(colortext):
-        colors = _get_color(colortext)
-        values = get_tick_val_col(colortext)
+    colors = _get_color(colortext)
+    values = get_tick_val_col(colortext)
+    if colors is None or values is None:
+        return
+    norm = plt.Normalize(min(values), max(values))
+    tuples = list(zip(map(norm, values), colors))
+    cmap = matplotlib.colors.LinearSegmentedColormap.from_list("", tuples)
 
-        norm = plt.Normalize(min(values), max(values))
-        tuples = list(zip(map(norm, values), colors))
-        cmap = matplotlib.colors.LinearSegmentedColormap.from_list("", tuples)
-
-        return cmap
+    return cmap
 
 
 def _get_color(colortext):
     f = open(colortext, "r")
     lines = f.readlines()
     c = []
-    for x in lines:
-        if "color" in x:
-            r, g, b = (((re.split('\W+', x, 1)[1:])[0].strip()).split(','))
-            hex_col = ('#%02x%02x%02x' % (int(r), int(g), int(b)))
-            c.append(hex_col)
+    if any('color' in line for line in lines):
+        for line in lines:
+            if "color" in line:
+                r, g, b = (((re.split('\W+', line, 1)[1:])[0].strip()).split(','))
+                hex_col = ('#%02x%02x%02x' % (int(r), int(g), int(b)))
+                c.append(hex_col)
+    else:
+        _LOG.warning('Keyword "color" not found. SNAP .cpd file invalid.')
+        return
     f.close()
     return c
 
@@ -235,10 +244,14 @@ def get_tick_val_col(colortext):
     f = open(colortext, "r")
     lines = f.readlines()
     values = []
-    for x in lines:
-        if "sample" in x:
-            value = ((re.split('\W+', x, 1)[1:])[0].strip())
-            values.append(float(value))
+    if any('sample' in line for line in lines):
+        for line in lines:
+            if "sample" in line:
+                value = ((re.split('\W+', line, 1)[1:])[0].strip())
+                values.append(float(value))
+    else:
+        _LOG.warning('Keyword "sample" not found. SNAP .cpd file invalid.')
+        return
     f.close()
     return values
 
