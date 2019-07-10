@@ -21,12 +21,14 @@
 import base64
 import io
 import logging
+import os
 from threading import Lock
-
 import matplotlib
+import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 import matplotlib.colors
 import numpy as np
+import re
 from PIL import Image
 
 try:
@@ -88,7 +90,10 @@ _CMAPS = (('Perceptually Uniform Sequential',
             'brg', 'CMRmap', 'cubehelix',
             'gnuplot', 'gnuplot2', 'gist_ncar',
             'nipy_spectral', 'jet', 'rainbow',
-            'gist_rainbow', 'hsv', 'flag', 'prism')))
+            'gist_rainbow', 'hsv', 'flag', 'prism')),
+          ('Custom SNAP Colormaps',
+           'Custom SNAP colormaps derived from a .cpd file. ',
+           ()))
 
 _CBARS_LOADED = False
 _LOCK = Lock()
@@ -112,19 +117,29 @@ def ensure_cmaps_loaded():
     """
     Loads all color maps from matplotlib and registers additional ones, if not done before.
     """
+    from xcube.webapi.service import SNAP_CPD_LIST
     global _CBARS_LOADED, _CMAPS
     if not _CBARS_LOADED:
         _LOCK.acquire()
         if not _CBARS_LOADED:
+
             new_cmaps = []
             for cmap_category, cmap_description, cmap_names in _CMAPS:
                 if cmap_category == 'Ocean' and ocm is None:
                     continue
                 cbar_list = []
+                if cmap_category == 'Custom SNAP Colormaps':
+                    cmap_names = _check_if_exists(SNAP_CPD_LIST)
+                    if len(cmap_names) == 0:
+                        _LOG.warning('No custom SNAP colormaps found in server configuration file.')
                 for cmap_name in cmap_names:
                     try:
-                        if cmap_category == 'Ocean':
+                        if '.cpd' in cmap_name:
+                            cmap = _get_custom_colormap(cmap_name)
+                            cm.register_cmap(cmap=cmap)
+                        elif cmap_category == 'Ocean':
                             cmap = getattr(ocm, cmap_name)
+                            cm.register_cmap(cmap=cmap)
                         else:
                             cmap = cm.get_cmap(cmap_name)
                     except ValueError:
@@ -165,27 +180,95 @@ def ensure_cmaps_loaded():
                         _LOG.warning('could not create colormap "{}" because "{}" is of unknown type {}'
                                      .format(new_name, cmap.name, type(cmap)))
 
-                    gradient = np.linspace(0, 1, 256)
-                    gradient = np.vstack((gradient, gradient))
-                    image_data = cmap(gradient, bytes=True)
-                    image = Image.fromarray(image_data, 'RGBA')
+                    cbar_list.append((cmap_name, _get_cbar_png_bytes(cmap)))
+                    cbar_list.append((new_name, _get_cbar_png_bytes(new_cmap)))
 
-                    # ostream = io.FileIO('../cmaps/' + cmap_name + '.png', 'wb')
-                    # image.save(ostream, format='PNG')
-                    # ostream.close()
-
-                    ostream = io.BytesIO()
-                    image.save(ostream, format='PNG')
-                    cbar_png_bytes = ostream.getvalue()
-                    ostream.close()
-
-                    cbar_png_data = base64.b64encode(cbar_png_bytes)
-                    cbar_png_bytes = cbar_png_data.decode('unicode_escape')
-
-                    cbar_list.append((cmap_name, cbar_png_bytes))
                 new_cmaps.append((cmap_category, cmap_description, tuple(cbar_list)))
             _CMAPS = tuple(new_cmaps)
             _CBARS_LOADED = True
             # import pprint
             # pprint.pprint(_CMAPS)
         _LOCK.release()
+
+
+def _get_cbar_png_bytes(cmap):
+    gradient = np.linspace(0, 1, 256)
+    gradient = np.vstack((gradient, gradient))
+    image_data = cmap(gradient, bytes=True)
+    image = Image.fromarray(image_data, 'RGBA')
+
+    # ostream = io.FileIO('../cmaps/' + cmap_name + '.png', 'wb')
+    # image.save(ostream, format='PNG')
+    # ostream.close()
+
+    ostream = io.BytesIO()
+    image.save(ostream, format='PNG')
+    cbar_png_bytes = ostream.getvalue()
+    ostream.close()
+
+    cbar_png_data = base64.b64encode(cbar_png_bytes)
+    cbar_png_bytes = cbar_png_data.decode('unicode_escape')
+
+    return cbar_png_bytes
+
+
+def _get_custom_colormap(colortext):
+    try:
+        colors = _get_color(colortext)
+        values = get_tick_val_col(colortext)
+        if colors is None or values is None:
+            return
+        norm = plt.Normalize(min(values), max(values))
+        tuples = list(zip(map(norm, values), colors))
+        cmap = matplotlib.colors.LinearSegmentedColormap.from_list(colortext, tuples)
+    except FileNotFoundError:
+        _LOG.warning('No such file or directory: "%s"' % colortext)
+        return
+    return cmap
+
+
+def _get_color(colortext):
+    f = open(colortext, "r")
+    lines = f.readlines()
+    c = []
+    if any('color' in line for line in lines):
+        for line in lines:
+            if "color" in line:
+                r, g, b = (((re.split('\W+', line, 1)[1:])[0].strip()).split(','))
+                hex_col = ('#%02x%02x%02x' % (int(r), int(g), int(b)))
+                c.append(hex_col)
+    else:
+        _LOG.warning('Keyword "color" not found. SNAP .cpd file invalid.')
+        return
+    f.close()
+    return c
+
+
+def get_tick_val_col(colortext):
+    f = open(colortext, "r")
+    lines = f.readlines()
+    values = []
+    if any('sample' in line for line in lines):
+        for line in lines:
+            if "sample" in line:
+                value = ((re.split('\W+', line, 1)[1:])[0].strip())
+                values.append(float(value))
+    else:
+        _LOG.warning('Keyword "sample" not found. SNAP .cpd file invalid.')
+        return
+    f.close()
+    return values
+
+
+def get_norm(colortext):
+    values = get_tick_val_col(colortext)
+    norm = matplotlib.colors.LogNorm(min(values), max(values))
+    return norm, values
+
+
+def _check_if_exists(SNAP_CPD_LIST):
+    valid_path = []
+    for item in SNAP_CPD_LIST:
+        if os.path.isfile(item):
+            valid_path.append(item)
+    return tuple(valid_path)

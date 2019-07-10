@@ -1,6 +1,9 @@
+import os
 from unittest import TestCase
+from matplotlib.colors import LinearSegmentedColormap, ListedColormap
+import matplotlib.cm as cm
 
-from xcube.webapi.im.cmaps import get_cmaps
+from xcube.webapi.im.cmaps import get_cmaps, ensure_cmaps_loaded, _get_custom_colormap
 
 
 class CmapsTest(TestCase):
@@ -9,6 +12,11 @@ class CmapsTest(TestCase):
         cmaps = get_cmaps()
         self.assertIs(cmaps, get_cmaps())
         self.assertIs(cmaps, get_cmaps())
+
+    def test_get_cmaps_registers_ocean_colour(self):
+        ensure_cmaps_loaded()
+        cmap = cm.get_cmap('deep', 256)
+        self.assertTrue((type(cmap) is LinearSegmentedColormap) or (type(cmap) is ListedColormap))
 
     def test_get_cmaps_retruns_equal_size_recs(self):
         cmaps = get_cmaps()
@@ -19,7 +27,7 @@ class CmapsTest(TestCase):
 
     def test_get_cmaps_categories(self):
         cmaps = get_cmaps()
-        self.assertGreaterEqual(len(cmaps), 7)
+        self.assertGreaterEqual(len(cmaps), 8)
         self.assertEqual(cmaps[0][0], 'Perceptually Uniform Sequential')
         self.assertEqual(cmaps[1][0], 'Sequential 1')
         self.assertEqual(cmaps[2][0], 'Sequential 2')
@@ -27,6 +35,7 @@ class CmapsTest(TestCase):
         self.assertEqual(cmaps[4][0], 'Qualitative')
         self.assertEqual(cmaps[5][0], 'Ocean')
         self.assertEqual(cmaps[6][0], 'Miscellaneous')
+        self.assertEqual(cmaps[7][0], 'Custom SNAP Colormaps')
 
     def test_get_cmaps_category_descr(self):
         cmaps = get_cmaps()
@@ -37,26 +46,47 @@ class CmapsTest(TestCase):
     def test_get_cmaps_category_tuples(self):
         cmaps = get_cmaps()
         category_tuple = cmaps[0][2]
-        self.assertEqual(len(category_tuple), 4)
+        self.assertEqual(len(category_tuple), 8)
         self.assertEqual(category_tuple[0][0], 'viridis')
         self.assertEqual(category_tuple[0][1],
                          'iVBORw0KGgoAAAANSUhEUgAAAQAAAAACCAYAAAC3zQLZAAAAzklEQVR4nO2TQZLFIAhEX7dXmyPM/Y8SZwEqMcnU3/9QZTU8GszC6Ee/HQlk5FAsJIENqVGv/piZ3uqf3nX6Vtd+l8D8UwNOLhZL3+BLh796OXvMdWaqtrrqnZ/tjvuZT/0XxnN/5f25z9X7tIMTKzV7/5yrME3NHoPlUzvplgOevOcz6ZO5eCqzOmark1nHDQveHuuYaazZkTcdmE110HJu6doR3tgfPHyL51zNc0fd2xjf0vPukUPL36YBTcpcWArFyY0RTca88cYbXxt/gUOJC8yRF1kAAAAASUVORK5CYII=')
 
-        self.assertEqual(category_tuple[1][0], 'inferno')
-        self.assertEqual(category_tuple[2][0], 'plasma')
-        self.assertEqual(category_tuple[3][0], 'magma')
+        self.assertEqual(category_tuple[1][0], 'viridis_alpha')
+        self.assertEqual(category_tuple[2][0], 'inferno')
+        self.assertEqual(category_tuple[3][0], 'inferno_alpha')
 
     def test_cmocean_category(self):
         cmaps = get_cmaps()
         category_tuple = cmaps[5][2]
-        self.assertEqual(len(category_tuple), 18)
+        self.assertEqual(len(category_tuple), 36)
         self.assertEqual(category_tuple[0][0], 'thermal')
         self.assertEqual(category_tuple[0][1],
                          'iVBORw0KGgoAAAANSUhEUgAAAQAAAAACCAYAAAC3zQLZAAAA2klEQVR4nO2S6xHDMAiDP+FROkL3Xy30RwBju52g8V0OIcnyKxqvtwsD5SfAUPZNE6M4VR2hJTdQeBX6UhlY8xgDY8V24A15pMuIXcQHJo4qwOQYIHlojpT6zWnzqDxRo+/+zFZbR7H2Tx3WvMPf1qDvq+17zz/m7TV97YxHbefEW27ve+7Oe9xZZu3cdXCdr17XokurfvYOcmTXxHJkE2P32ei8eVxww1WJecRlBxZr/cndj+T5MKULbzqm5pnY56MFjnkmPH7cb7xXzvR49RRO3njGM57xt+MDC391Pt11tkYAAAAASUVORK5CYII=')
 
-        self.assertEqual(category_tuple[1][0], 'haline')
-        self.assertEqual(category_tuple[2][0], 'solar')
-        self.assertEqual(category_tuple[3][0], 'ice')
+        self.assertEqual(category_tuple[1][0], 'thermal_alpha')
+        self.assertEqual(category_tuple[2][0], 'haline')
+        self.assertEqual(category_tuple[3][0], 'haline_alpha')
+
+    def test_get_cmaps_registers_snap_color(self):
+        ensure_cmaps_loaded()
+        cmap_name = 'test/webapi/im/chl_DeM2_200.cpd'
+        cmap = _get_custom_colormap(cmap_name)
+        cm.register_cmap(cmap=cmap)
+        self.assertTrue((type(cmap) is LinearSegmentedColormap) or (type(cmap) is ListedColormap))
+
+    def test_get_cmaps_registers_ivalid_snap_color(self):
+        ensure_cmaps_loaded()
+        cmap_name = 'test/webapi/im/chl_DeM2_200_invalid_for_testing.cpd'
+        with self.assertRaises(ValueError):
+            cmap = _get_custom_colormap(cmap_name)
+            cm.register_cmap(cmap=cmap)
+
+    def test_get_cmaps_registers_nonexisting_snap_color(self):
+        ensure_cmaps_loaded()
+        cmap_name = 'test/webapi/im/chl_DeM2_200_not_existing.cpd'
+        with self.assertRaises(ValueError):
+            cmap = _get_custom_colormap(cmap_name)
+            cm.register_cmap(cmap=cmap)
 
 
 def main():

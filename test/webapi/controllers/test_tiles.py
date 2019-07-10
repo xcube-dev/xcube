@@ -3,7 +3,6 @@ import unittest
 from xcube.webapi.context import ServiceContext
 from xcube.webapi.controllers.tiles import get_dataset_tile, get_ne2_tile, get_dataset_tile_grid, get_ne2_tile_grid, \
     get_legend
-from xcube.webapi.defaults import API_PREFIX
 from xcube.webapi.errors import ServiceBadRequestError, ServiceResourceNotFoundError
 from ..helpers import new_test_service_context, RequestParamsMock
 
@@ -50,16 +49,18 @@ class TilesControllerTest(unittest.TestCase):
 
         ctx = new_test_service_context()
         tile_grid = get_dataset_tile_grid(ctx, 'demo', 'conc_chl', 'ol4', 'http://bibo')
-        self.assertEqual({
-            'url': self.base_url + '/datasets/demo/vars/conc_chl/tiles/{z}/{x}/{y}.png',
-            'projection': 'EPSG:4326',
-            'minZoom': 0,
-            'maxZoom': 2,
-            'tileGrid': {'extent': [0.0, 50.0, 5.0, 52.5],
-                         'origin': [0.0, 52.5],
-                         'resolutions': [0.01, 0.005, 0.0025],
-                         'tileSize': [250, 250]},
-        }, tile_grid)
+        self.assertEqual(
+            {
+                'maxZoom': 2,
+                'minZoom': 0,
+                'projection': 'EPSG:4326',
+                'tileGrid': {'extent': [0, 50, 5, 52.5],
+                             'origin': [0, 52.5],
+                             'resolutions': [0.01, 0.005, 0.0025],
+                             'tileSize': [250, 250]},
+                'url': 'http://bibo/datasets/demo/vars/conc_chl/tiles/{z}/{x}/{y}.png'
+            },
+            tile_grid)
 
         tile_grid = get_dataset_tile_grid(ctx, 'demo', 'conc_chl', 'cesium', 'http://bibo')
         self.assertEqual({
@@ -117,4 +118,4 @@ class TilesControllerTest(unittest.TestCase):
 
     @property
     def base_url(self):
-        return f'http://bibo/xcube{API_PREFIX}'
+        return f'http://bibo'

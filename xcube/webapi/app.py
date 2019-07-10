@@ -23,20 +23,22 @@ import os
 
 from tornado.web import Application, StaticFileHandler
 
-from .defaults import DEFAULT_NAME, API_PREFIX
+from .context import normalize_prefix
 from .handlers import GetNE2TileHandler, GetDatasetVarTileHandler, InfoHandler, GetNE2TileGridHandler, \
     GetDatasetVarTileGridHandler, GetWMTSCapabilitiesXmlHandler, GetColorBarsJsonHandler, GetColorBarsHtmlHandler, \
     GetDatasetsHandler, FindPlacesHandler, FindDatasetPlacesHandler, \
     GetDatasetCoordsHandler, GetTimeSeriesInfoHandler, GetTimeSeriesForPointHandler, WMTSKvpHandler, \
     GetTimeSeriesForGeometryHandler, GetTimeSeriesForFeaturesHandler, GetTimeSeriesForGeometriesHandler, \
-    GetPlaceGroupsHandler, GetDatasetVarLegendHandler, GetDatasetHandler
+    GetPlaceGroupsHandler, GetDatasetVarLegendHandler, GetDatasetHandler, GetWMTSTileHandler, GetS3BucketObjectHandler, \
+    ListS3BucketHandler
 from .service import url_pattern
 
 __author__ = "Norman Fomferra (Brockmann Consult GmbH)"
 
 
-def new_application(name: str = DEFAULT_NAME):
-    prefix = f"/{name}{API_PREFIX}"
+def new_application(prefix: str = None):
+    prefix = normalize_prefix(prefix)
+
     application = Application([
         (prefix + '/res/(.*)',
          StaticFileHandler, {'path': os.path.join(os.path.dirname(__file__), 'res')}),
@@ -46,11 +48,9 @@ def new_application(name: str = DEFAULT_NAME):
         (prefix + url_pattern('/wmts/1.0.0/WMTSCapabilities.xml'),
          GetWMTSCapabilitiesXmlHandler),
         (prefix + url_pattern('/wmts/1.0.0/tile/{{ds_id}}/{{var_name}}/{{z}}/{{y}}/{{x}}.png'),
-         GetDatasetVarTileHandler),
+         GetWMTSTileHandler),
         (prefix + url_pattern('/wmts/kvp'),
          WMTSKvpHandler),
-
-        # Natural Earth 2 tiles for testing
 
         (prefix + url_pattern('/datasets'),
          GetDatasetsHandler),
@@ -64,6 +64,15 @@ def new_application(name: str = DEFAULT_NAME):
          GetDatasetVarTileHandler),
         (prefix + url_pattern('/datasets/{{ds_id}}/vars/{{var_name}}/tilegrid'),
          GetDatasetVarTileGridHandler),
+
+        # AWS S3 compatible data access as ZARR
+
+        (prefix + url_pattern('/s3bucket/{{ds_id}}/(?P<path>.*)'),
+         GetS3BucketObjectHandler),
+        (prefix + url_pattern('/s3bucket/{{ds_id}}'),
+         GetS3BucketObjectHandler),
+        (prefix + url_pattern('/s3bucket'),
+         ListS3BucketHandler),
 
         # Natural Earth 2 tiles for testing
 

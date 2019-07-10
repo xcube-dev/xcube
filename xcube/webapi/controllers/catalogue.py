@@ -1,5 +1,6 @@
+import functools
 import json
-from typing import Dict
+from typing import Dict, Tuple
 
 import numpy as np
 
@@ -11,12 +12,20 @@ from ...util.geom import get_dataset_bounds
 from ...util.timecoord import timestamp_to_iso_string
 
 
-def get_datasets(ctx: ServiceContext, details=False, client=None, base_url: str = None) -> Dict:
+def get_datasets(ctx: ServiceContext,
+                 details: bool = False,
+                 client: str = None,
+                 point: Tuple[float, float] = None,
+                 base_url: str = None) -> Dict:
     dataset_descriptors = ctx.get_dataset_descriptors()
 
     dataset_dicts = list()
     for dataset_descriptor in dataset_descriptors:
+        if dataset_descriptor.get('Hidden'):
+            continue
+
         ds_id = dataset_descriptor['Identifier']
+
         dataset_dict = dict(id=ds_id)
 
         if 'Title' in dataset_descriptor:
@@ -35,10 +44,20 @@ def get_datasets(ctx: ServiceContext, details=False, client=None, base_url: str 
 
         dataset_dicts.append(dataset_dict)
 
-    if details:
+    if details or point:
         for dataset_dict in dataset_dicts:
             ds_id = dataset_dict["id"]
-            dataset_dict.update(get_dataset(ctx, ds_id, client, base_url))
+            if point:
+                ds = ctx.get_dataset(ds_id)
+                if "bbox" not in dataset_dict:
+                    dataset_dict["bbox"] = list(get_dataset_bounds(ds))
+            if details:
+                dataset_dict.update(get_dataset(ctx, ds_id, client, base_url))
+
+    if point:
+        is_point_in_dataset_bbox = functools.partial(_is_point_in_dataset_bbox, point)
+        # noinspection PyTypeChecker
+        dataset_dicts = list(filter(is_point_in_dataset_bbox, dataset_dicts))
 
     return dict(datasets=dataset_dicts)
 
@@ -51,7 +70,9 @@ def get_dataset(ctx: ServiceContext, ds_id: str, client=None, base_url: str = No
     dataset_dict = dict(id=ds_id, title=ds_title)
 
     ds = ctx.get_dataset(ds_id)
-    dataset_dict["bbox"] = list(get_dataset_bounds(ds))
+
+    if "bbox" not in dataset_dict:
+        dataset_dict["bbox"] = list(get_dataset_bounds(ds))
 
     variable_dicts = []
     for var_name in ds.data_vars:
@@ -140,3 +161,17 @@ def get_color_bars(ctx: ServiceContext, mime_type: str) -> str:
             html_body += '    </table>\n'
         return html_head + html_body + html_foot
     raise ServiceBadRequestError(f'Format {mime_type!r} not supported for color bars')
+
+
+def _is_point_in_dataset_bbox(point: Tuple[float, float], dataset_dict: Dict):
+    if 'bbox' not in dataset_dict:
+        return False
+    x, y = point
+    x_min, y_min, x_max, y_max = dataset_dict['bbox']
+    if not (y_min <= y <= y_max):
+        return False
+    if x_min < x_max:
+        return x_min <= x <= x_max
+    else:
+        # Bounding box crosses antimeridian
+        return x_min <= x <= 180.0 or -180.0 <= x <= x_max

@@ -1,5 +1,5 @@
 # The MIT License (MIT)
-# Copyright (c) 2018 by the xcube development team and contributors
+# Copyright (c) 2019 by the xcube development team and contributors
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of
 # this software and associated documentation files (the "Software"), to deal in
@@ -18,7 +18,3 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-
-# Version string (PEP440-compatible), e.g. "0.8.0", "0.8.0.dev1", "0.8.0rc1", "0.8.0rc1.dev1"
-__version__ = '0.1.0.dev6'
-__description__ = 'xcube Server: WMTS, catalogue, tile, feature, time-series services for xarray-enabled data cubes'

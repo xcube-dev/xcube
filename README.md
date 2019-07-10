@@ -20,8 +20,11 @@ Data cubes with [xarray](http://xarray.pydata.org/).
   - [`xcube gen`](#xcube-gen)
   - [`xcube grid`](#xcube-grid)
   - [`xcube level`](#xcube-level)
+  - [`xcube prune`](#xcube-prune)
+  - [`xcube resample`](#xcube-resample)
   - [`xcube serve`](#xcube-serve)
   - [`xcube vars2dim`](#xcube-vars2dim)
+  - [`xcube verify`](#xcube-verify)
 
 
 # Installation
@@ -116,12 +119,17 @@ To start a demo using docker use the following commands
       gen       Generate data cube.
       grid      Find spatial data cube resolutions and adjust bounding boxes.
       level     Generate multi-resolution levels.
+      prune     Delete empty chunks.
+      resample  Resample data along the time dimension.
       serve     Serve data cubes via web service.
       vars2dim  Convert cube variables into new dimension.
+      verify    Perform cube verification.
+
     
 
 ## `xcube chunk`
-Can be used for changing the chunks of an existing data cube. 
+
+(Re-)chunk dataset.
 
     $ xcube chunk --help
     Usage: xcube chunk [OPTIONS] <input> <output>
@@ -144,7 +152,8 @@ Example:
     $ xcube chunk input_not_chunked.zarr output_rechunked.zarr --chunks "time=1,lat=270,lon=270"
 
 ## `xcube dump`
-Can be used for printing out the metadata of a data cube. 
+
+Dump contents of a dataset.
 
     $ xcube dump --help
     Usage: xcube dump [OPTIONS] <path>
@@ -162,30 +171,44 @@ Example:
     $ xcube dump xcube_cube.zarr 
 
 ## `xcube extract`
-A time series for a specific location can be requested using `xcube extract`.
+
+Extract cube points.
 
     $ xcube dump --help
-    Usage: xcube extract [OPTIONS] <cube> <coords>
-    
-      Extract cube time series. Extracts data from <cube> at points given by
-      coordinates <coords> and writes the resulting time series to <output>.
-    
-    Options:
-      -i, --indexes          Include indexes in output.
-      -o, --output <output>  Output file.
-      -f, --format <format>  Format of the output. If not given, guessed from
-                             <output>, otherwise <stdout> is used.
-      -p, --params <params>  Parameters specific for the output format. Comma-
-                             separated list of <key>=<value> pairs.
-      --help                 Show this message and exit.
+    Usage: xcube extract [OPTIONS] CUBE POINTS
 
-Example: # TODO: Help is needed here - how are the coords passed by the user? 
+      Extract cube points.
+
+      Extracts data cells from CUBE at coordinates given in each POINTS record
+      and writes the resulting values to given output path and format.
+
+      <points> must be a CSV file that provides at least the columns "lon",
+      "lat", and "time". The "lon" and "lat" columns provide a point's location
+      in decimal degrees. The "time" column provides a point's date or date-
+      time. Its format should preferably be ISO, but other formats may work as
+      well.
+
+    Options:
+      -o, --output TEXT             Output file. If omitted, output is written to
+                                    stdout.
+      -f, --format [csv|json|xlsx]  Output format. Currently, only 'csv' is
+                                    supported.
+      -C, --coords                  Include cube cell coordinates in output.
+      -B, --bounds                  Include cube cell coordinate boundaries (if
+                                    any) in output.
+      -I, --indexes                 Include cube cell indexes in output.
+      -R, --refs                    Include point values as reference in output.
+      --help                        Show this message and exit.
+
+
+Example:  
     
-    $ xcube extract xcube_cube.zarr 
+    $ xcube extract xcube_cube.zarr point_data.csv -CBIR
     
     
 ## `xcube gen`
-Is used to generate data cubes.
+
+Generate data cube.
 
     $ xcube gen --help
     Usage: xcube gen [OPTIONS] INPUT_FILES
@@ -273,7 +296,8 @@ Available xcube input processors within xcube's organisation:
 
 
 ## `xcube grid`
-For choosing a suitable gridding for a data cube, `xbube grid` is a useful tool.
+
+Find spatial data cube resolutions and adjust bounding boxes.
 
     $ xcube grid --help
     Usage: xcube grid [OPTIONS] COMMAND [ARGS]...
@@ -366,62 +390,62 @@ handy tool [Wicket](https://arthur-e.github.io/Wicket/sandbox-gmaps3.html).
 ## `xcube gen`
 
     $ xcube gen --help
-    Usage: xcube gen [OPTIONS] INPUT_FILES
+    Usage: xcube gen [OPTIONS] [INPUTS]...
     
       Generate data cube. Data cubes may be created in one go or successively in
-      append mode, input by input. The input may be one or more input files or a
-      pattern that may contain wildcards '?', '*', and '**'.
+      append mode, input by input. The input paths may be one or more input
+      files or a pattern that may contain wildcards '?', '*', and '**'. The
+      input paths can also be passed as lines of a text file. To do so, provide
+      exactly one input file with ".txt" extension which contains the actual
+      input paths to be used.
     
     Options:
-      --version                       Show the version and exit.
-      -p, --proc INPUT_PROCESSOR      Input processor type name. The choices as
-                                      input processor are: ['default', 'rbins-
-                                      seviri-highroc-scene-l2', 'rbins-seviri-
-                                      highroc-daily-l2', 'snap-olci-highroc-l2',
-                                      'snap-olci-cyanoalert-l2',
-                                      'vito-s2plus-l2'].  Additional information
-                                      about input processors can be accessed by
-                                      calling xcube generate_cube --info
-      -c, --config CONFIG_FILE        Data cube configuration file in YAML format.
+      -p, --proc []                   Input processor type name. The choices as
+                                      input processor and additional information
+                                      about input processors  can be accessed by
+                                      calling xcube gen --info . Defaults to
+                                      "default" - the default input processor that
+                                      can deal with most common datasets
+                                      conforming with the CF conventions.
+      -c, --config TEXT               Data cube configuration file in YAML format.
                                       More than one config input file is
                                       allowed.When passing several config files,
                                       they are merged considering the order passed
                                       via command line.
-      -d, --dir OUTPUT_DIR            Output directory. Defaults to '.'
-      -n, --name OUTPUT_NAME          Output filename pattern. Defaults to
-                                      'PROJ_WGS84_{INPUT_FILE}'.
-      -f, --format OUTPUT_FORMAT      Output writer type name. Defaults to 'zarr'.
-                                      The choices for the output format are:
-                                      ['csv', 'mem', 'netcdf4', 'zarr'].
-                                      Additional information about output formats
-                                      can be accessed by calling xcube
-                                      generate_cube --info
-      -s, --size OUTPUT_SIZE          Output size in pixels using format
+      -o, --output TEXT               Output path. Defaults to 'out.zarr'
+      -f, --format [csv|mem|netcdf4|zarr]
+                                      Output format. The choices for the output
+                                      format are: ['csv', 'mem', 'netcdf4',
+                                      'zarr']. Additional information about output
+                                      formats can be accessed by calling xcube gen
+                                      --info. If omitted, the format will be
+                                      guessed from the given output path.
+      -s, --size TEXT                 Output size in pixels using format
                                       "<width>,<height>".
-      -r, --region OUTPUT_REGION      Output region using format "<lon-min>,<lat-
+      -r, --region TEXT               Output region using format "<lon-min>,<lat-
                                       min>,<lon-max>,<lat-max>"
-      -v, --variables OUTPUT_VARIABLES
-                                      Variables to be included in output. Comma-
+      -v, --variables, --vars TEXT    Variables to be included in output. Comma-
                                       separated list of names which may contain
                                       wildcard characters "*" and "?".
-      --resampling OUTPUT_RESAMPLING  Fallback spatial resampling algorithm to be
+      --resampling [Nearest|Bilinear|Cubic|CubicSpline|Lanczos|Average|Min|Max|Median|Mode|Q1|Q3]
+                                      Fallback spatial resampling algorithm to be
                                       used for all variables. Defaults to
                                       'Nearest'. The choices for the resampling
                                       algorithm are: dict_keys(['Nearest',
                                       'Bilinear', 'Cubic', 'CubicSpline',
                                       'Lanczos', 'Average', 'Min', 'Max',
                                       'Median', 'Mode', 'Q1', 'Q3'])
-      --traceback                     On error, print Python traceback.
       -a, --append                    Append successive outputs.
-      --dry_run                       Just read and process inputs, but don't
-                                      produce any outputs.
-      -i, --info                      Displays additional information about format
-                                      options or about input processors.
       --sort                          The input file list will be sorted before
                                       creating the data cube. If --sort parameter
                                       is not passed, order of input list will be
                                       kept.
+      -i, --info                      Displays additional information about format
+                                      options or about input processors.
+      --dry_run                       Just read and process inputs, but don't
+                                      produce any outputs.
       --help                          Show this message and exit.
+
 
     $ xcube gen --info
     input processors to be used with option --proc:
@@ -440,16 +464,14 @@ handy tool [Wicket](https://arthur-e.github.io/Wicket/sandbox-gmaps3.html).
       zarr                    (*.zarr)      Zarr file format (http://zarr.readthedocs.io)
     
 
-
-
-
-
 Example:
 
-    $ xcube gen -a -s 2000,1000 -r 0,50,5,52.5 -v conc_chl,conc_tsm,kd489,c2rcc_flags,quality_flags -n hiroc-cube -t snap-c2rcc D:\OneDrive\BC\EOData\HIGHROC\2017\01\*.nc
+    $ xcube gen -p snap-olci-highroc-l2 -a -s 2000,1000 -r 0,50,5,52.5 -v conc_chl,conc_tsm,kd489,c2rcc_flags,quality_flags -o hiroc-cube.zarr D:\OneDrive\BC\EOData\HIGHROC\2017\**\*.nc
 
 
 ## `xcube level`
+
+Generate multi-resolution levels.
 
     $ xcube level --help
     Usage: xcube level [OPTIONS] <input>
@@ -483,8 +505,25 @@ Example:
 
     $ xcube level -l -t 720 data/cubes/test-cube.zarr
 
+## `xcube prune`
+
+Delete empty chunks.
+
+    $ xcube prune --help
+    Usage: xcube prune [OPTIONS] INPUT
+    
+      Delete empty chunks. Deletes all block files associated with empty (NaN-
+      only) chunks in given INPUT cube, which must have ZARR format.
+    
+    Options:
+      --dry-run  Just read and process input, but don't produce any outputs.
+      --help     Show this message and exit.
+
+
 
 ## `xcube vars2dim`
+
+Convert cube variables into new dimension.
 
     $ xcube vars2dim --help
     Usage: xcube vars2dim [OPTIONS] <cube>
@@ -504,14 +543,85 @@ Example:
       --help                     Show this message and exit.
 
 
+## `xcube resample`
+
+Resample data along the time dimension.
+
+    $ xcube resample --help
+    Usage: xcube resample [OPTIONS] INPUT
+    
+      Resample data along the time dimension.
+    
+    Options:
+      -c, --config TEXT               Data cube configuration file in YAML format.
+                                      More than one config input file is
+                                      allowed.When passing several config files,
+                                      they are merged considering the order passed
+                                      via command line.
+      -o, --output TEXT               Output path.
+      -f, --format [zarr|netcdf4|mem]
+                                      Output format. If omitted, format will be
+                                      guessed from output path.
+      --variables, --vars TEXT        Comma-separated list of names of variables
+                                      to be included.
+      -M, --method TEXT               Temporal resampling method. Available
+                                      downsampling methods are 'count', 'first',
+                                      'last', 'min', 'max', 'sum', 'prod', 'mean',
+                                      'median', 'std', 'var', the upsampling
+                                      methods are 'asfreq', 'ffill', 'bfill',
+                                      'pad', 'nearest', 'interpolate'. If the
+                                      upsampling method is 'interpolate', the
+                                      option '--kind' will be used, if given.
+                                      Other upsampling methods that select
+                                      existing values honour the '--tolerance'
+                                      option. Defaults to 'mean'.
+      -F, --frequency TEXT            Temporal aggregation frequency. Use format
+                                      "<count><offset>" where <offset> is one of
+                                      'H', 'D', 'W', 'M', 'Q', 'Y'. Defaults to
+                                      '1D'.
+      -O, --offset TEXT               Offset used to adjust the resampled time
+                                      labels. Uses same syntax as frequency. Some
+                                      Pandas date offset strings are supported as
+                                      well.
+      -B, --base INTEGER              For frequencies that evenly subdivide 1 day,
+                                      the origin of the aggregated intervals. For
+                                      example, for '24H' frequency, base could
+                                      range from 0 through 23. Defaults to 0.
+      -K, --kind TEXT                 Interpolation kind which will be used if
+                                      upsampling method is 'interpolation'. May be
+                                      one of 'zero', 'slinear', 'quadratic',
+                                      'cubic', 'linear', 'nearest', 'previous',
+                                      'next' where 'zero', 'slinear', 'quadratic',
+                                      'cubic' refer to a spline interpolation of
+                                      zeroth, first, second or third order;
+                                      'previous' and 'next' simply return the
+                                      previous or next value of the point. For
+                                      more info refer to
+                                      scipy.interpolate.interp1d(). Defaults to
+                                      'linear'.
+      -T, --tolerance TEXT            Tolerance for selective upsampling methods.
+                                      Uses same syntax as frequency. If the time
+                                      delta exceeds the tolerance, fill values
+                                      (NaN) will be used. Defaults to the given
+                                      frequency.
+      --dry-run                       Just read and process inputs, but don't
+                                      produce any outputs.
+      --help                          Show this message and exit.
+
+Upsampling example:
+
+    xcube resample --vars conc_chl,conc_tsm -F 12H -T 6H -M interpolation -K linear xcube\webapi\res\demo\cube.nc
+
+Downsampling example:
+
+    xcube resample --vars conc_chl,conc_tsm -F 3D -M mean -M std -M count xcube\webapi\res\demo\cube.nc
 
 ## `xcube serve`
 
-Is a light-weight web server that provides various services based on 
-xcube data cubes. 
+Serve data cubes via web service. 
 
     $ xcube serve --help
-    Usage: xcube serve [OPTIONS]
+    Usage: xcube serve [OPTIONS] CUBE...
     
       Serve data cubes via web service.
     
@@ -520,15 +630,16 @@ xcube data cubes.
       https://app.swaggerhub.com/apis/bcdev/xcube-server.
     
     Options:
-      --version              Show the version and exit.
-      -n, --name NAME        Service name. Defaults to 'xcube'.
       -a, --address ADDRESS  Service address. Defaults to 'localhost'.
       -p, --port PORT        Port number where the service will listen on.
                              Defaults to 8080.
+      --prefix PREFIX        Service URL prefix. May contain template patterns
+                             such as "${version}" or "${name}". For example
+                             "${name}/api/${version}".
       -u, --update PERIOD    Service will update after given seconds of
                              inactivity. Zero or a negative value will disable
                              update checks. Defaults to 2.0.
-      -s, --styles STYLES    Color mapping styles for variables. Used only, if one
+      -S, --styles STYLES    Color mapping styles for variables. Used only, if one
                              or more CUBE arguments are provided and CONFIG is not
                              given. Comma-separated list with elements of the form
                              <var>=(<vmin>,<vmax>) or
@@ -541,6 +652,11 @@ xcube data cubes.
       --tilemode MODE        Tile computation mode. This is an internal option
                              used to switch between different tile computation
                              implementations. Defaults to 0.
+      -s, --show             Run viewer app. Requires setting the environment
+                             variable XCUBE_VIEWER_PATH to a valid xcube-viewer
+                             deployment or build directory. Refer to
+                             https://github.com/dcs4cop/xcube-viewer for more
+                             information.
       -v, --verbose          Delegate logging to the console (stderr).
       --traceperf            Print performance diagnostics (stdout).
       --help                 Show this message and exit.
@@ -602,42 +718,42 @@ To run the server using a particular data cube path and styling information for 
 Test it:
 
 * Datasets (Data Cubes):
-    * [Get datasets](http://localhost:8080/xcube/api/0.1.0.dev6/datasets)
-    * [Get dataset details](http://localhost:8080/xcube/api/0.1.0.dev6/datasets/local)
-    * [Get dataset coordinates](http://localhost:8080/xcube/api/0.1.0.dev6/datasets/local/coords/time)
+    * [Get datasets](http://localhost:8080/datasets)
+    * [Get dataset details](http://localhost:8080/datasets/local)
+    * [Get dataset coordinates](http://localhost:8080/datasets/local/coords/time)
 * Color bars:
-    * [Get color bars](http://localhost:8080/xcube/api/0.1.0.dev6/colorbars)
-    * [Get color bars (HTML)](http://localhost:8080/xcube/api/0.1.0.dev6/colorbars.html)
+    * [Get color bars](http://localhost:8080/colorbars)
+    * [Get color bars (HTML)](http://localhost:8080/colorbars.html)
 * WMTS:
-    * [Get WMTS KVP Capabilities (XML)](http://localhost:8080/xcube/api/0.1.0.dev6/wmts/kvp?Service=WMTS&Request=GetCapabilities)
-    * [Get WMTS KVP local tile (PNG)](http://localhost:8080/xcube/api/0.1.0.dev6/wmts/kvp?Service=WMTS&Request=GetTile&Version=1.0.0&Layer=local.conc_chl&TileMatrix=0&TileRow=0&TileCol=0&Format=image/png)
-    * [Get WMTS KVP remote tile (PNG)](http://localhost:8080/xcube/api/0.1.0.dev6/wmts/kvp?Service=WMTS&Request=GetTile&Version=1.0.0&Layer=remote.conc_chl&TileMatrix=0&TileRow=0&TileCol=0&Format=image/png)
-    * [Get WMTS REST Capabilities (XML)](http://localhost:8080/xcube/api/0.1.0.dev6/wmts/1.0.0/WMTSCapabilities.xml)
-    * [Get WMTS REST local tile (PNG)](http://localhost:8080/xcube/api/0.1.0.dev6/wmts/1.0.0/tile/local/conc_chl/0/0/1.png)
-    * [Get WMTS REST remote tile (PNG)](http://localhost:8080/xcube/api/0.1.0.dev6/wmts/1.0.0/tile/remote/conc_chl/0/0/1.png)
+    * [Get WMTS KVP Capabilities (XML)](http://localhost:8080/wmts/kvp?Service=WMTS&Request=GetCapabilities)
+    * [Get WMTS KVP local tile (PNG)](http://localhost:8080/wmts/kvp?Service=WMTS&Request=GetTile&Version=1.0.0&Layer=local.conc_chl&TileMatrix=0&TileRow=0&TileCol=0&Format=image/png)
+    * [Get WMTS KVP remote tile (PNG)](http://localhost:8080/wmts/kvp?Service=WMTS&Request=GetTile&Version=1.0.0&Layer=remote.conc_chl&TileMatrix=0&TileRow=0&TileCol=0&Format=image/png)
+    * [Get WMTS REST Capabilities (XML)](http://localhost:8080/wmts/1.0.0/WMTSCapabilities.xml)
+    * [Get WMTS REST local tile (PNG)](http://localhost:8080/wmts/1.0.0/tile/local/conc_chl/0/0/1.png)
+    * [Get WMTS REST remote tile (PNG)](http://localhost:8080/wmts/1.0.0/tile/remote/conc_chl/0/0/1.png)
 * Tiles
-    * [Get tile (PNG)](http://localhost:8080/xcube/api/0.1.0.dev6/datasets/local/vars/conc_chl/tiles/0/1/0.png)
-    * [Get tile grid for OpenLayers 4.x](http://localhost:8080/xcube/api/0.1.0.dev6/datasets/local/vars/conc_chl/tilegrid?tiles=ol4)
-    * [Get tile grid for Cesium 1.x](http://localhost:8080/xcube/api/0.1.0.dev6/datasets/local/vars/conc_chl/tilegrid?tiles=cesium)
-    * [Get legend for layer (PNG)](http://localhost:8080/xcube/api/0.1.0.dev6/datasets/local/vars/conc_chl/legend.png)
+    * [Get tile (PNG)](http://localhost:8080/datasets/local/vars/conc_chl/tiles/0/1/0.png)
+    * [Get tile grid for OpenLayers 4.x](http://localhost:8080/datasets/local/vars/conc_chl/tilegrid?tiles=ol4)
+    * [Get tile grid for Cesium 1.x](http://localhost:8080/datasets/local/vars/conc_chl/tilegrid?tiles=cesium)
+    * [Get legend for layer (PNG)](http://localhost:8080/datasets/local/vars/conc_chl/legend.png)
 * Time series service (preliminary & unstable, will likely change soon)
-    * [Get time stamps per dataset](http://localhost:8080/xcube/api/0.1.0.dev6/ts)
-    * [Get time series for single point](http://localhost:8080/xcube/api/0.1.0.dev6/ts/local/conc_chl/point?lat=51.4&lon=2.1&startDate=2017-01-15&endDate=2017-01-29)
+    * [Get time stamps per dataset](http://localhost:8080/ts)
+    * [Get time series for single point](http://localhost:8080/ts/local/conc_chl/point?lat=51.4&lon=2.1&startDate=2017-01-15&endDate=2017-01-29)
 * Places service (preliminary & unstable, will likely change soon)
-    * [Get all features](http://localhost:8080/xcube/api/0.1.0.dev6/places/all)
-    * [Get all features of collection "inside-cube"](http://localhost:8080/xcube/api/0.1.0.dev6/features/inside-cube)
-    * [Get all features for dataset "local"](http://localhost:8080/xcube/api/0.1.0.dev6/places/all/local)
-    * [Get all features of collection "inside-cube" for dataset "local"](http://localhost:8080/xcube/api/0.1.0.dev6/places/inside-cube/local)
+    * [Get all features](http://localhost:8080/places/all)
+    * [Get all features of collection "inside-cube"](http://localhost:8080/features/inside-cube)
+    * [Get all features for dataset "local"](http://localhost:8080/places/all/local)
+    * [Get all features of collection "inside-cube" for dataset "local"](http://localhost:8080/places/inside-cube/local)
 
 
 #### Clients
 
 There are example HTML pages for some tile server clients. They need to be run in 
-a web server. If you don't have one, you can use the Node `httpserver`:
+a web server. If you don't have one, you can use Node's `httpserver`:
 
     $ npm install -g httpserver
     
-After starting both the xcube-server and web server, e.g. on port 9090
+After starting both the xcube server and web server, e.g. on port 9090
 
     $ httpserver -d -p 9090
 
@@ -646,16 +762,16 @@ you can run the client demos by following their links given below.
    
 ##### OpenLayers
 
-[OpenLayers 4 Demo](http://localhost:9090/xcube_server/res/demo/index-ol4.html)
-[OpenLayers 4 Demo with WMTS](http://localhost:9090/xcube_server/res/demo/index-ol4-wmts.html)
+[OpenLayers 4 Demo](http://localhost:9090/xcube/webapi/res/demo/index-ol4.html)
+[OpenLayers 4 Demo with WMTS](http://localhost:9090/xcube/webapi/res/demo/index-ol4-wmts.html)
 
 ##### Cesium
 
-To run the [Cesium Demo](http://localhost:9090/xcube_server/res/demo/index-cesium.html) first
+To run the [Cesium Demo](http://localhost:9090/xcube/webapi/res/demo/index-cesium.html) first
 [download Cesium](https://cesiumjs.org/downloads/) and unpack the zip
 into the `xcube-server` source directory so that there exists an 
 `./Cesium-<version>` sub-directory. You may have to adapt the Cesium version number 
-in the [demo's HTML file](https://github.com/dcs4cop/xcube-server/blob/master/xcube_server/res/demo/index-cesium.html).
+in the [demo's HTML file](https://github.com/dcs4cop/xcube/blob/master/xcube/webapi/res/demo/index-cesium.html).
 
 ### Xcube server TODOs:
 
@@ -668,3 +784,27 @@ in the [demo's HTML file](https://github.com/dcs4cop/xcube-server/blob/master/xc
 * Feature: WMTS GetFeatureInfo
 * Feature: collect Path entry of any Dataset and observe if the file are modified, if so remove dataset from cache
   to force its reopening.
+
+
+## `xcube verify`
+
+Perform cube verification.
+
+    Usage: xcube verify [OPTIONS] INPUT
+    
+      Perform cube verification.
+    
+      The tool verifies that INPUT
+      * defines the dimensions "time", "lat", "lon";
+      * has corresponding "time", "lat", "lon" coordinate variables and that they
+        are valid, e.g. 1-D, non-empty, using correct units;
+      * has valid  bounds variables for "time", "lat", "lon" coordinate
+        variables, if any;
+      * has any data variables and that they are valid, e.g. min. 3-D, all have
+        same dimensions, have at least dimensions "time", "lat", "lon".
+    
+      If INPUT is a valid data cube, the tool returns exit code 0. Otherwise a
+      violation report is written to stdout and the tool returns exit code 3.
+    
+    Options:
+      --help  Show this message and exit.

@@ -3,54 +3,17 @@ import sys
 import click
 
 from xcube.cli.apply import apply
+from xcube.cli.extract import extract
 from xcube.cli.gen import gen
 from xcube.cli.grid import grid
+from xcube.cli.prune import prune
+from xcube.cli.resample import resample
 from xcube.cli.serve import serve
 from xcube.cli.timeit import timeit
+from xcube.cli.verify import verify
 from xcube.util.cliutil import parse_cli_kwargs, new_cli_ctx_obj, handle_cli_exception, cli_option_traceback, \
     cli_option_scheduler
 from xcube.version import version
-
-DEFAULT_TILE_SIZE = 512
-
-
-@click.command(name="extract")
-@click.argument('cube', metavar='<cube>')
-@click.argument('coords', metavar='<coords>')
-@click.option('--indexes', '-i', is_flag=True,
-              help="Include indexes in output.")
-@click.option('--output', '-o', metavar='<output>',
-              help="Output file.")
-# @click.option('--format', '-f', metavar='<format>', type=click.Choice(['csv', 'stdout']),
-#               help="Format of the output. If not given, guessed from <output>, otherwise <stdout> is used.")
-# @click.option('--params', '-p', metavar='<params>',
-#               help="Parameters specific for the output format."
-#                    " Comma-separated list of <key>=<value> pairs.")
-def extract(cube, coords, indexes=False, output=None,
-            # format=None, params=None
-            ):
-    """
-    Extract cube time series.
-    Extracts data from <cube> at points given by coordinates <coords> and writes the resulting
-    time series to <output>.
-    """
-    import pandas as pd
-
-    cube_path = cube
-    coords_path = coords
-    output_path = output
-    include_indexes = indexes
-
-    from xcube.api import open_dataset, get_cube_values_for_points
-
-    coords = pd.read_csv(coords_path, parse_dates=["time"], infer_datetime_format=True)
-    print(coords, [coords[c].values.dtype for c in coords])
-    with open_dataset(cube_path) as cube:
-        values = get_cube_values_for_points(cube, coords, include_indexes=include_indexes)
-        if output_path:
-            values.to_csv(output_path)
-        else:
-            print(values)
 
 
 # noinspection PyShadowingBuiltins
@@ -98,6 +61,9 @@ def chunk(input, output, format=None, params=None, chunks=None):
 
         chunked_dataset = chunk_dataset(ds, chunk_sizes=chunk_sizes, format_name=format_name)
         write_dataset(chunked_dataset, output_path=output, format_name=format_name, **write_kwargs)
+
+
+DEFAULT_TILE_SIZE = 512
 
 
 # noinspection PyShadowingBuiltins
@@ -236,16 +202,19 @@ def cli(traceback=False, scheduler=None):
     """
 
 
+cli.add_command(apply)
 cli.add_command(chunk)
 cli.add_command(dump)
 cli.add_command(extract)
-cli.add_command(grid)
-cli.add_command(vars2dim)
 cli.add_command(gen)
+cli.add_command(grid)
 cli.add_command(level)
-cli.add_command(apply)
-cli.add_command(timeit)
+cli.add_command(prune)
+cli.add_command(resample)
 cli.add_command(serve)
+cli.add_command(timeit)
+cli.add_command(vars2dim)
+cli.add_command(verify)
 
 
 def main(args=None):

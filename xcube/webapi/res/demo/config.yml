@@ -3,11 +3,20 @@ Datasets:
     Title: "Local OLCI L2C cube for region SNS"
     BoundingBox: [0.0, 50, 5.0, 52.5]
     FileSystem: local
-    Path: "cube.nc"
+    Path: cube-1-250-250.zarr
     Style: default
+    TimeSeriesDataset: local_ts
     PlaceGroups:
       - PlaceGroupRef: inside-cube
       - PlaceGroupRef: outside-cube
+
+  - Identifier: local_ts
+    Title: "'local' optimized for time-series"
+    BoundingBox: [0.0, 50, 5.0, 52.5]
+    FileSystem: local
+    Path: cube-5-100-200.zarr
+    Hidden: true
+    Style: default
 
   - Identifier: remote
     Title: Remote OLCI L2C cube for region SNS
@@ -89,4 +98,3 @@ ServiceProvider:
         PostalCode: "21502"
         Country: "Germany"
         ElectronicMailAddress: "norman.fomferra@brockmann-consult.de"
-

@@ -1,0 +1,58 @@
+{
+    "_ARRAY_DIMENSIONS": [
+        "time",
+        "lat",
+        "lon"
+    ],
+    "color_table_blue_values": [
+        128,
+        255,
+        255,
+        255,
+        255,
+        0,
+        0,
+        0,
+        0,
+        0
+    ],
+    "color_table_green_values": [
+        0,
+        0,
+        102,
+        204,
+        255,
+        128,
+        255,
+        95,
+        0,
+        0
+    ],
+    "color_table_red_values": [
+        0,
+        0,
+        51,
+        0,
+        0,
+        0,
+        255,
+        255,
+        215,
+        150
+    ],
+    "color_table_sample_values": [
+        0.0,
+        0.5,
+        1.0,
+        2.0,
+        3.0,
+        4.5,
+        13.0,
+        25.0,
+        30.0,
+        40.0
+    ],
+    "long_name": "Chlorophylll concentration",
+    "units": "mg m^-3",
+    "valid_pixel_expression": "c2rcc_flags.Valid_PE"
+}

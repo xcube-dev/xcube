@@ -45,7 +45,7 @@ class ServiceBadRequestError(ServiceError):
     Exception raised by tile service request handlers.
     """
 
-    def __init__(self, reason: str, log_message: str = None):
+    def __init__(self, reason: object, log_message: object = None) -> object:
         super().__init__(reason, status_code=400, log_message=log_message)
 
 

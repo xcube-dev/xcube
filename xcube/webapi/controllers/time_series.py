@@ -40,6 +40,8 @@ def get_time_series_info(ctx: ServiceContext) -> Dict:
     descriptors = ctx.get_dataset_descriptors()
     for descriptor in descriptors:
         if 'Identifier' in descriptor:
+            if descriptor.get('Hidden'):
+                continue
             dataset = ctx.get_dataset(descriptor['Identifier'])
             if 'time' not in dataset.variables:
                 continue
@@ -48,8 +50,10 @@ def get_time_series_info(ctx: ServiceContext) -> Dict:
             time_stamps = []
             for time in time_data:
                 time_stamps.append(timestamp_to_iso_string(time))
-            for variable in dataset.data_vars.variables:
-                variable_dict = {'name': '{0}.{1}'.format(descriptor['Identifier'], variable),
+            var_names = sorted(dataset.data_vars)
+            for var_name in var_names:
+                ds_id = descriptor['Identifier']
+                variable_dict = {'name': f'{ds_id}.{var_name}',
                                  'dates': time_stamps,
                                  'bounds': dict(xmin=xmin, ymin=ymin, xmax=xmax, ymax=ymax)}
                 time_series_info['layers'].append(variable_dict)
@@ -60,36 +64,43 @@ def get_time_series_for_point(ctx: ServiceContext,
                               ds_name: str, var_name: str,
                               lon: float, lat: float,
                               start_date: np.datetime64 = None,
-                              end_date: np.datetime64 = None) -> Dict:
+                              end_date: np.datetime64 = None,
+                              max_valids: int = None) -> Dict:
     measure_time = measure_time_cm(disabled=not ctx.trace_perf)
     with measure_time('get_time_series_for_point'):
-        dataset = ctx.get_dataset(ds_name, [var_name])
+        dataset = _get_time_series_dataset(ctx, ds_name, var_name)
         return _get_time_series_for_point(dataset, var_name,
                                           shapely.geometry.Point(lon, lat),
-                                          start_date=start_date, end_date=end_date)
+                                          start_date=start_date,
+                                          end_date=end_date,
+                                          max_valids=max_valids)
 
 
 def get_time_series_for_geometry(ctx: ServiceContext,
                                  ds_name: str, var_name: str,
                                  geometry: Dict,
                                  start_date: np.datetime64 = None,
-                                 end_date: np.datetime64 = None) -> Dict:
-    dataset = ctx.get_dataset(ds_name, [var_name])
+                                 end_date: np.datetime64 = None,
+                                 max_valids: int = None) -> Dict:
+    dataset = _get_time_series_dataset(ctx, ds_name, var_name)
     if not GeoJSON.is_geometry(geometry):
         raise ServiceBadRequestError("Invalid GeoJSON geometry")
     if isinstance(geometry, dict):
         geometry = shapely.geometry.shape(geometry)
     return _get_time_series_for_geometry(dataset, var_name,
                                          geometry,
-                                         start_date=start_date, end_date=end_date)
+                                         start_date=start_date,
+                                         end_date=end_date,
+                                         max_valids=max_valids)
 
 
 def get_time_series_for_geometry_collection(ctx: ServiceContext,
                                             ds_name: str, var_name: str,
                                             geometry_collection: Dict,
                                             start_date: np.datetime64 = None,
-                                            end_date: np.datetime64 = None) -> Dict:
-    dataset = ctx.get_dataset(ds_name, [var_name])
+                                            end_date: np.datetime64 = None,
+                                            max_valids: int = None) -> Dict:
+    dataset = _get_time_series_dataset(ctx, ds_name, var_name)
     geometries = GeoJSON.get_geometry_collection_geometries(geometry_collection)
     if geometries is None:
         raise ServiceBadRequestError("Invalid GeoJSON geometry collection")
@@ -100,15 +111,19 @@ def get_time_series_for_geometry_collection(ctx: ServiceContext,
         except (TypeError, ValueError) as e:
             raise ServiceBadRequestError("Invalid GeoJSON geometry collection") from e
         shapes.append(geometry)
-    return _get_time_series_for_geometries(dataset, var_name, shapes, start_date, end_date)
+    return _get_time_series_for_geometries(dataset, var_name, shapes,
+                                           start_date=start_date,
+                                           end_date=end_date,
+                                           max_valids=max_valids)
 
 
 def get_time_series_for_feature_collection(ctx: ServiceContext,
                                            ds_name: str, var_name: str,
                                            feature_collection: Dict,
                                            start_date: np.datetime64 = None,
-                                           end_date: np.datetime64 = None) -> Dict:
-    dataset = ctx.get_dataset(ds_name, [var_name])
+                                           end_date: np.datetime64 = None,
+                                           max_valids: int = None) -> Dict:
+    dataset = _get_time_series_dataset(ctx, ds_name, var_name)
     features = GeoJSON.get_feature_collection_features(feature_collection)
     if features is None:
         raise ServiceBadRequestError("Invalid GeoJSON feature collection")
@@ -120,14 +135,18 @@ def get_time_series_for_feature_collection(ctx: ServiceContext,
         except (TypeError, ValueError) as e:
             raise ServiceBadRequestError("Invalid GeoJSON feature collection") from e
         shapes.append(geometry)
-    return _get_time_series_for_geometries(dataset, var_name, shapes, start_date, end_date)
+    return _get_time_series_for_geometries(dataset, var_name, shapes,
+                                           start_date=start_date,
+                                           end_date=end_date,
+                                           max_valids=max_valids)
 
 
 def _get_time_series_for_point(dataset: xr.Dataset,
                                var_name: str,
                                point: shapely.geometry.Point,
                                start_date: np.datetime64 = None,
-                               end_date: np.datetime64 = None) -> Dict:
+                               end_date: np.datetime64 = None,
+                               max_valids: int = None) -> Dict:
     var_names = [var_name]
 
     ancillary_var_names = find_ancillary_var_names(dataset, var_name, same_shape=True, same_dims=True)
@@ -140,14 +159,19 @@ def _get_time_series_for_point(dataset: xr.Dataset,
     if ts_ds is None:
         return {'results': []}
 
-    return _collect_ts_result(ts_ds, var_name, uncert_var_name, None)
+    return _collect_ts_result(ts_ds,
+                              var_name,
+                              uncert_var_name=uncert_var_name,
+                              count_var_name=None,
+                              max_valids=max_valids)
 
 
 def _get_time_series_for_geometry(dataset: xr.Dataset,
                                   var_name: str,
                                   geometry: shapely.geometry.base.BaseGeometry,
                                   start_date: np.datetime64 = None,
-                                  end_date: np.datetime64 = None) -> Dict:
+                                  end_date: np.datetime64 = None,
+                                  max_valids: int = None) -> Dict:
     if isinstance(geometry, shapely.geometry.Point):
         return _get_time_series_for_point(dataset, var_name,
                                           geometry,
@@ -156,7 +180,8 @@ def _get_time_series_for_geometry(dataset: xr.Dataset,
     ts_ds = ts.get_time_series(dataset, geometry, [var_name],
                                include_count=True,
                                include_stdev=False,
-                               start_date=start_date, end_date=end_date)
+                               start_date=start_date,
+                               end_date=end_date)
     if ts_ds is None:
         return {'results': []}
 
@@ -170,10 +195,18 @@ def _get_time_series_for_geometry(dataset: xr.Dataset,
     if 'number_of_observations' in ancillary_var_names:
         count_var_name = next(iter(ancillary_var_names['number_of_observations']))
 
-    return _collect_ts_result(ts_ds, var_name, uncert_var_name, count_var_name)
+    return _collect_ts_result(ts_ds,
+                              var_name,
+                              uncert_var_name=uncert_var_name,
+                              count_var_name=count_var_name,
+                              max_valids=max_valids)
 
 
-def _collect_ts_result(ts_ds, var_name, uncert_var_name, count_var_name):
+def _collect_ts_result(ts_ds: xr.Dataset,
+                       var_name: str,
+                       uncert_var_name: str = None,
+                       count_var_name: str = None,
+                       max_valids: int = None):
     var = ts_ds[var_name]
     uncert_var = ts_ds[uncert_var_name] if uncert_var_name else None
     count_var = ts_ds[count_var_name] if count_var_name else None
@@ -183,14 +216,20 @@ def _collect_ts_result(ts_ds, var_name, uncert_var_name, count_var_name):
     num_times = var.time.size
     time_series = []
     for time_index in range(num_times):
+        if len(time_series) == max_valids:
+            break
+
         value = float(var[time_index])
-        statistics = {'totalCount': total_count}
         if np.isnan(value):
-            statistics['average'] = None
-            statistics['validCount'] = 0
+            if max_valids is not None:
+                continue
+            statistics = dict(average=None,
+                              validCount=0,
+                              totalCount=total_count)
         else:
-            statistics['average'] = value
-            statistics['validCount'] = int(count_var[time_index]) if count_var is not None else 1
+            statistics = dict(average=value,
+                              validCount=int(count_var[time_index]) if count_var is not None else 1,
+                              totalCount=total_count)
         if uncert_var is not None:
             value = float(uncert_var[time_index])
             # TODO (forman): agree with Dirk on how we call provided uncertainty
@@ -209,11 +248,20 @@ def _get_time_series_for_geometries(dataset: xr.Dataset,
                                     var_name: str,
                                     geometries: List[shapely.geometry.base.BaseGeometry],
                                     start_date: np.datetime64 = None,
-                                    end_date: np.datetime64 = None) -> Dict:
+                                    end_date: np.datetime64 = None,
+                                    max_valids=None) -> Dict:
     time_series = []
     for geometry in geometries:
         result = _get_time_series_for_geometry(dataset, var_name,
                                                geometry,
-                                               start_date=start_date, end_date=end_date)
+                                               start_date=start_date,
+                                               end_date=end_date,
+                                               max_valids=max_valids)
         time_series.append(result["results"])
     return {'results': time_series}
+
+
+def _get_time_series_dataset(ctx: ServiceContext, ds_name: str, var_name: str = None):
+    descriptor = ctx.get_dataset_descriptor(ds_name)
+    ts_ds_name = descriptor.get('TimeSeriesDataset', ds_name)
+    return ctx.get_dataset(ts_ds_name, expected_var_names=[var_name] if var_name else None)

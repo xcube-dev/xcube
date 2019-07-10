@@ -1,8 +1,6 @@
 from tornado.testing import AsyncHTTPTestCase
 
 from xcube.webapi.app import new_application
-# For usage of the tornado.testing.AsyncHTTPTestCase see http://www.tornadoweb.org/en/stable/testing.html
-from xcube.webapi.defaults import API_PREFIX, DEFAULT_NAME
 from .helpers import new_test_service_context
 
 CTX = new_test_service_context()
@@ -17,6 +15,8 @@ _ds = CTX.get_dataset("demo-1w")
 for name, var in _ds.coords.items():
     values = var.values
 
+
+# For usage of the tornado.testing.AsyncHTTPTestCase see http://www.tornadoweb.org/en/stable/testing.html
 
 class HandlersTest(AsyncHTTPTestCase):
 
@@ -144,6 +144,12 @@ class HandlersTest(AsyncHTTPTestCase):
         self.assertResponseOK(response)
         response = self.fetch(self.prefix + '/datasets?details=1&tiles=cesium')
         self.assertResponseOK(response)
+        response = self.fetch(self.prefix + '/datasets?details=1&point=2.8,51.0')
+        self.assertResponseOK(response)
+        response = self.fetch(self.prefix + '/datasets?details=1&point=2,8a,51.0')
+        self.assertBadRequestResponse(response,
+                                      "Parameter 'point' parameter must be a point using format"
+                                      " '<lon>,<lat>', but was '2,8a,51.0'")
 
     def test_fetch_dataset_json(self):
         response = self.fetch(self.prefix + '/datasets/demo')
@@ -151,6 +157,52 @@ class HandlersTest(AsyncHTTPTestCase):
         response = self.fetch(self.prefix + '/datasets/demo?tiles=ol4')
         self.assertResponseOK(response)
         response = self.fetch(self.prefix + '/datasets/demo?tiles=cesium')
+        self.assertResponseOK(response)
+
+    def test_fetch_list_s3bucket(self):
+        response = self.fetch(self.prefix + '/s3bucket')
+        self.assertResponseOK(response)
+        response = self.fetch(self.prefix + '/s3bucket?delimiter=%2F')
+        self.assertResponseOK(response)
+        response = self.fetch(self.prefix + '/s3bucket?delimiter=%2F&prefix=demo%2F')
+        self.assertResponseOK(response)
+        response = self.fetch(self.prefix + '/s3bucket?delimiter=%2F&list-type=2')
+        self.assertResponseOK(response)
+        response = self.fetch(self.prefix + '/s3bucket?delimiter=%2F&prefix=demo%2F&list-type=2')
+        self.assertResponseOK(response)
+
+    def test_fetch_head_s3bucket_object(self):
+        self._assert_fetch_head_s3bucket_object(method='HEAD')
+
+    def test_fetch_get_s3bucket_object(self):
+        self._assert_fetch_head_s3bucket_object(method='GET')
+
+    def _assert_fetch_head_s3bucket_object(self, method):
+        response = self.fetch(self.prefix + '/s3bucket/demo', method=method)
+        self.assertResponseOK(response)
+        response = self.fetch(self.prefix + '/s3bucket/demo/', method=method)
+        self.assertResponseOK(response)
+        response = self.fetch(self.prefix + '/s3bucket/demo/.zattrs', method=method)
+        self.assertResponseOK(response)
+        response = self.fetch(self.prefix + '/s3bucket/demo/.zgroup', method=method)
+        self.assertResponseOK(response)
+        response = self.fetch(self.prefix + '/s3bucket/demo/.zarray', method=method)
+        self.assertResourceNotFoundResponse(response)
+        response = self.fetch(self.prefix + '/s3bucket/demo/time/.zattrs', method=method)
+        self.assertResponseOK(response)
+        response = self.fetch(self.prefix + '/s3bucket/demo/time/.zarray', method=method)
+        self.assertResponseOK(response)
+        response = self.fetch(self.prefix + '/s3bucket/demo/time/.zgroup', method=method)
+        self.assertResourceNotFoundResponse(response)
+        response = self.fetch(self.prefix + '/s3bucket/demo/time/0', method=method)
+        self.assertResponseOK(response)
+        response = self.fetch(self.prefix + '/s3bucket/demo/conc_chl/.zattrs', method=method)
+        self.assertResponseOK(response)
+        response = self.fetch(self.prefix + '/s3bucket/demo/conc_chl/.zarray', method=method)
+        self.assertResponseOK(response)
+        response = self.fetch(self.prefix + '/s3bucket/demo/conc_chl/.zgroup', method=method)
+        self.assertResourceNotFoundResponse(response)
+        response = self.fetch(self.prefix + '/s3bucket/demo/conc_chl/1.2.4', method=method)
         self.assertResponseOK(response)
 
     def test_fetch_coords_json(self):
@@ -277,4 +329,4 @@ class HandlersTest(AsyncHTTPTestCase):
 
     @property
     def prefix(self):
-        return f"/{DEFAULT_NAME}{API_PREFIX}"
+        return ''

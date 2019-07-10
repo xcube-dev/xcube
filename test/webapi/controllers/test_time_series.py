@@ -36,6 +36,36 @@ class TimeSeriesControllerTest(unittest.TestCase):
                                                  'validCount': 1}}]}
         self.assertEqual(expected_dict, time_series)
 
+    def test_get_time_series_for_point_one_valid(self):
+        ctx = new_test_service_context()
+        time_series = get_time_series_for_point(ctx, 'demo', 'conc_tsm',
+                                                lon=2.1, lat=51.4,
+                                                start_date=np.datetime64('2017-01-15'),
+                                                end_date=np.datetime64('2017-01-29'),
+                                                max_valids=1)
+        expected_dict = {'results': [{'date': '2017-01-16T10:09:22Z',
+                                      'result': {'average': 3.534773588180542,
+                                                 'totalCount': 1,
+                                                 'validCount': 1}}]}
+        self.assertEqual(expected_dict, time_series)
+
+    def test_get_time_series_for_point_only_valids(self):
+        ctx = new_test_service_context()
+        time_series = get_time_series_for_point(ctx, 'demo', 'conc_tsm',
+                                                lon=2.1, lat=51.4,
+                                                start_date=np.datetime64('2017-01-15'),
+                                                end_date=np.datetime64('2017-01-29'),
+                                                max_valids=-1)
+        expected_dict = {'results': [{'date': '2017-01-16T10:09:22Z',
+                                      'result': {'average': 3.534773588180542,
+                                                 'totalCount': 1,
+                                                 'validCount': 1}},
+                                     {'date': '2017-01-28T09:58:11Z',
+                                      'result': {'average': 20.12085723876953,
+                                                 'totalCount': 1,
+                                                 'validCount': 1}}]}
+        self.assertEqual(expected_dict, time_series)
+
     def test_get_time_series_for_point_with_uncertainty(self):
         ctx = new_test_service_context()
         time_series = get_time_series_for_point(ctx, 'demo-1w', 'conc_tsm',
@@ -54,7 +84,7 @@ class TimeSeriesControllerTest(unittest.TestCase):
                                                  'validCount': 1}}]}
         self.assertEqual(expected_dict, time_series)
 
-    def test_get_time_series_for_geometry(self):
+    def test_get_time_series_for_geometry_point(self):
         ctx = new_test_service_context()
         time_series = get_time_series_for_geometry(ctx, 'demo', 'conc_tsm',
                                                    dict(type="Point", coordinates=[2.1, 51.4]),
@@ -74,6 +104,8 @@ class TimeSeriesControllerTest(unittest.TestCase):
                                                  'validCount': 1}}]}
         self.assertEqual(expected_dict, time_series)
 
+    def test_get_time_series_for_geometry_polygon(self):
+        ctx = new_test_service_context()
         time_series = get_time_series_for_geometry(ctx, 'demo', 'conc_tsm',
                                                    dict(type="Polygon", coordinates=[[
                                                        [1., 51.], [2., 51.], [2., 52.], [1., 52.], [1., 51.]
@@ -95,7 +127,20 @@ class TimeSeriesControllerTest(unittest.TestCase):
 
         self.assertEqual(expected_dict, time_series)
 
-    def test_get_time_series_for_geometries(self):
+    def test_get_time_series_for_geometry_polygon_one_valid(self):
+        ctx = new_test_service_context()
+        time_series = get_time_series_for_geometry(ctx, 'demo', 'conc_tsm',
+                                                   dict(type="Polygon", coordinates=[[
+                                                       [1., 51.], [2., 51.], [2., 52.], [1., 52.], [1., 51.]
+                                                   ]]), max_valids=1)
+        expected_dict = {'results': [{'date': '2017-01-16T10:09:22Z',
+                                      'result': {'average': 56.0228561816751,
+                                                 'totalCount': 1,
+                                                 'validCount': 122738}}]}
+
+        self.assertEqual(expected_dict, time_series)
+
+    def test_get_time_series_for_geometries_incl_point(self):
         ctx = new_test_service_context()
         time_series = get_time_series_for_geometry_collection(ctx,
                                                               'demo', 'conc_tsm',
@@ -118,6 +163,8 @@ class TimeSeriesControllerTest(unittest.TestCase):
                                                   'validCount': 1}}]]}
         self.assertEqual(expected_dict, time_series)
 
+    def test_get_time_series_for_geometries_incl_polygon(self):
+        ctx = new_test_service_context()
         time_series = get_time_series_for_geometry_collection(ctx,
                                                               'demo', 'conc_tsm',
                                                               dict(type="GeometryCollection",
@@ -154,10 +201,18 @@ class TimeSeriesControllerTest(unittest.TestCase):
     @staticmethod
     def _get_expected_info_dict():
         expected_dict = {'layers': []}
-        bounds = {'xmin': 0.0, 'ymin': 50.0, 'xmax': 5.0, 'ymax': 52.5}
-        demo_times = ['2017-01-16T10:09:22Z', '2017-01-25T09:35:51Z', '2017-01-26T10:50:17Z',
-                      '2017-01-28T09:58:11Z', '2017-01-30T10:46:34Z']
-        demo_variables = ['quality_flags', 'kd489', 'conc_tsm', 'conc_chl', 'c2rcc_flags']
+        bounds = {'xmin': 0.0, 'ymin': 50.0,
+                  'xmax': 5.0, 'ymax': 52.5}
+        demo_times = ['2017-01-16T10:09:22Z',
+                      '2017-01-25T09:35:51Z',
+                      '2017-01-26T10:50:17Z',
+                      '2017-01-28T09:58:11Z',
+                      '2017-01-30T10:46:34Z']
+        demo_variables = ['c2rcc_flags',
+                          'conc_chl',
+                          'conc_tsm',
+                          'kd489',
+                          'quality_flags']
         for demo_variable in demo_variables:
             dict_variable = {'name': f'demo.{demo_variable}', 'dates': demo_times, 'bounds': bounds}
             expected_dict['layers'].append(dict_variable)
@@ -165,7 +220,6 @@ class TimeSeriesControllerTest(unittest.TestCase):
         for demo_variable in demo_variables:
             dict_variable = {'name': f'demo-1w.{demo_variable}', 'dates': demo1w_times, 'bounds': bounds}
             expected_dict['layers'].append(dict_variable)
-        for demo_variable in demo_variables:
             dict_variable = {'name': f'demo-1w.{demo_variable}_stdev', 'dates': demo1w_times, 'bounds': bounds}
             expected_dict['layers'].append(dict_variable)
         return expected_dict

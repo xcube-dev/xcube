@@ -21,46 +21,40 @@
 
 import datetime
 import json
+import logging
+import os.path
+import pathlib
 
 from tornado.ioloop import IOLoop
 
-from . import __version__, __description__
 from .controllers.catalogue import get_datasets, get_dataset_coordinates, get_color_bars, get_dataset
 from .controllers.places import find_places, find_dataset_places
 from .controllers.tiles import get_dataset_tile, get_dataset_tile_grid, get_ne2_tile, get_ne2_tile_grid, get_legend
 from .controllers.time_series import get_time_series_info, get_time_series_for_point, get_time_series_for_geometry, \
     get_time_series_for_geometry_collection, get_time_series_for_feature_collection
 from .controllers.wmts import get_wmts_capabilities_xml
+from .defaults import SERVER_NAME, SERVER_DESCRIPTION
 from .errors import ServiceBadRequestError
+from .s3util import dict_to_xml, list_s3_bucket_v1, list_bucket_result_to_xml, list_s3_bucket_v2, \
+    mtime_to_str, str_to_etag
 from .service import ServiceRequestHandler
 from ..util.timecoord import timestamp_to_iso_string
+from ..version import version
 
 __author__ = "Norman Fomferra (Brockmann Consult GmbH)"
 
-_WMTS_KVP_KEYS = [
-    'Service',
-    'Request',
-    'Version',
-    'Format',
-    'Style',
-    'Layer',
-    'TileMatrixSet',
-    'TileMatrix',
-    'TileRow',
-    'TileCol'
-]
-
-_WMTS_KVP_LOWER_KEYS = [k.lower() for k in _WMTS_KVP_KEYS]
 _WMTS_VERSION = "1.0.0"
 _WMTS_TILE_FORMAT = "image/png"
+_LOG = logging.getLogger('xcube')
 
+_LOG_S3BUCKET_HANDLER = False
 
 # noinspection PyAbstractClass
 class WMTSKvpHandler(ServiceRequestHandler):
 
     async def get(self):
-        # According to WMTS 1.0 spec, all WMTS-specific keys must be case insensitive.
-        self._convert_wmts_keys_to_lower_case()
+        # According to WMTS 1.0 spec, query parameters must be case-insensitive.
+        self.set_caseless_query_arguments()
 
         service = self.params.get_query_argument('service')
         if service != "WMTS":
@@ -107,17 +101,6 @@ class WMTSKvpHandler(ServiceRequestHandler):
         else:
             raise ServiceBadRequestError(f'Invalid request type "{request}"')
 
-    def _convert_wmts_keys_to_lower_case(self):
-        query_arguments = dict(self.request.query_arguments)
-        query_keys = {k.lower(): k for k in query_arguments.keys()}
-        for lower_key in _WMTS_KVP_LOWER_KEYS:
-            if lower_key in query_keys:
-                query_key = query_keys[lower_key]
-                value = query_arguments[query_key]
-                del query_arguments[query_key]
-                query_arguments[lower_key] = value
-        self.request.query_arguments = query_arguments
-
 
 # noinspection PyAbstractClass
 class GetWMTSCapabilitiesXmlHandler(ServiceRequestHandler):
@@ -137,11 +120,14 @@ class GetDatasetsHandler(ServiceRequestHandler):
     def get(self):
         details = bool(int(self.params.get_query_argument('details', '0')))
         tile_client = self.params.get_query_argument('tiles', None)
-        response = get_datasets(self.service_context, details=details, client=tile_client, base_url=self.base_url)
+        point = self.params.get_query_argument_point('point', None)
+        response = get_datasets(self.service_context, details=details, client=tile_client,
+                                point=point, base_url=self.base_url)
         self.set_header('Content-Type', 'application/json')
         self.write(json.dumps(response, indent=None if details else 2))
 
 
+# noinspection PyAbstractClass
 class GetDatasetHandler(ServiceRequestHandler):
 
     def get(self, ds_id: str):
@@ -152,12 +138,139 @@ class GetDatasetHandler(ServiceRequestHandler):
 
 
 # noinspection PyAbstractClass
+class ListS3BucketHandler(ServiceRequestHandler):
+
+    async def get(self):
+
+        prefix = self.get_query_argument('prefix', default=None)
+        delimiter = self.get_query_argument('delimiter', default=None)
+        max_keys = int(self.get_query_argument('max-keys', default='1000'))
+        list_s3_bucket_params = dict(prefix=prefix, delimiter=delimiter,
+                                     max_keys=max_keys)
+
+        list_type = self.get_query_argument('list-type', default=None)
+        if list_type is None:
+            marker = self.get_query_argument('marker', default=None)
+            list_s3_bucket_params.update(marker=marker)
+            list_s3_bucket = list_s3_bucket_v1
+        elif list_type == '2':
+            start_after = self.get_query_argument('start-after', default=None)
+            continuation_token = self.get_query_argument('continuation-token', default=None)
+            list_s3_bucket_params.update(start_after=start_after, continuation_token=continuation_token)
+            list_s3_bucket = list_s3_bucket_v2
+        else:
+            raise ServiceBadRequestError(f'Unknown bucket list type {list_type!r}')
+
+        if _LOG_S3BUCKET_HANDLER:
+            _LOG.info(f'GET: list_s3_bucket_params={list_s3_bucket_params}')
+        bucket_mapping = self.service_context.get_s3_bucket_mapping()
+        list_bucket_result = list_s3_bucket(bucket_mapping, **list_s3_bucket_params)
+        if _LOG_S3BUCKET_HANDLER:
+            import json
+            _LOG.info(f'-->\n{json.dumps(list_bucket_result, indent=2)}')
+
+        xml = list_bucket_result_to_xml(list_bucket_result)
+        self.set_header('Content-Type', 'application/xml')
+        self.write(xml)
+        await self.flush()
+
+
+# noinspection PyAbstractClass
+class GetS3BucketObjectHandler(ServiceRequestHandler):
+    async def head(self, ds_id: str, path: str = ''):
+        key, local_path = self._get_key_and_local_path(ds_id, path)
+        if _LOG_S3BUCKET_HANDLER:
+            _LOG.info(f'HEAD: key={key!r}, local_path={local_path!r}')
+        if local_path is None or not local_path.exists():
+            await self._key_not_found(key)
+            return
+        self.set_header('ETag', str_to_etag(str(local_path)))
+        self.set_header('Last-Modified', mtime_to_str(local_path.stat().st_mtime))
+        if local_path.is_file():
+            self.set_header('Content-Length', local_path.stat().st_size)
+        else:
+            self.set_header('Content-Length', 0)
+        await self.finish()
+
+    async def get(self, ds_id: str, path: str = ''):
+        key, local_path = self._get_key_and_local_path(ds_id, path)
+        if _LOG_S3BUCKET_HANDLER:
+            _LOG.info(f'GET: key={key!r}, local_path={local_path!r}')
+        if local_path is None or not local_path.exists():
+            await self._key_not_found(key)
+            return
+        self.set_header('ETag', str_to_etag(str(local_path)))
+        self.set_header('Last-Modified', mtime_to_str(local_path.stat().st_mtime))
+        self.set_header('Content-Type', 'binary/octet-stream')
+        if local_path.is_file():
+            self.set_header('Content-Length', local_path.stat().st_size)
+            chunk_size = 1024 * 1024
+            with open(str(local_path), 'rb') as fp:
+                while True:
+                    chunk = fp.read(chunk_size)
+                    if len(chunk) == 0:
+                        break
+                    self.write(chunk)
+                    await self.flush()
+        else:
+            self.set_header('Content-Length', 0)
+            await self.finish()
+
+    def _key_not_found(self, key: str):
+        self.set_header('Content-Type', 'application/xml')
+        self.set_status(404)
+        return self.finish(dict_to_xml('Error',
+                                       dict(Code='NoSuchKey',
+                                            Message='The specified key does not exist.',
+                                            Key=key)))
+
+    def _get_key_and_local_path(self, ds_id: str, path: str):
+        descriptor = self.service_context.get_dataset_descriptor(ds_id)
+        file_system = descriptor.get('FileSystem', 'local')
+        required_file_system = 'local'
+        if file_system != required_file_system:
+            raise ServiceBadRequestError(f'AWS S3 data access: currently, only datasets in'
+                                         f' file system {required_file_system!r} are supported,'
+                                         f' but dataset {ds_id!r} uses file system {file_system!r}')
+
+        key = f'{ds_id}/{path}'
+
+        # validate path
+        if path and '..' in path.split('/'):
+            raise ServiceBadRequestError(f'AWS S3 data access: received illegal key {key!r}')
+
+        local_path = descriptor.get('Path')
+        if os.path.isabs(local_path):
+            local_path = os.path.join(local_path, path)
+        else:
+            local_path = os.path.join(self.service_context.base_dir, local_path, path)
+
+        local_path = os.path.normpath(local_path)
+
+        return key, pathlib.Path(local_path)
+
+
 class GetDatasetCoordsHandler(ServiceRequestHandler):
 
     def get(self, ds_id: str, dim_name: str):
         response = get_dataset_coordinates(self.service_context, ds_id, dim_name)
         self.set_header('Content-Type', 'application/json')
         self.write(json.dumps(response, indent=2))
+
+
+# noinspection PyAbstractClass,PyBroadException
+class GetWMTSTileHandler(ServiceRequestHandler):
+
+    async def get(self, ds_id: str, var_name: str, z: str, y: str, x: str):
+        self.set_caseless_query_arguments()
+        tile = await IOLoop.current().run_in_executor(None,
+                                                      get_dataset_tile,
+                                                      self.service_context,
+                                                      ds_id, var_name,
+                                                      x, y, z,
+                                                      self.params)
+        self.set_header('Content-Type', 'image/png')
+        self.finish(tile)
 
 
 # noinspection PyAbstractClass,PyBroadException
@@ -307,9 +420,9 @@ class InfoHandler(ServiceRequestHandler):
                                               freq="ms")
         server_time = timestamp_to_iso_string(datetime.datetime.now(), freq="ms")
         self.set_header('Content-Type', 'application/json')
-        self.write(json.dumps(dict(name='xcube_server',
-                                   description=__description__,
-                                   version=__version__,
+        self.write(json.dumps(dict(name=SERVER_NAME,
+                                   description=SERVER_DESCRIPTION,
+                                   version=version,
                                    configTime=config_time,
                                    serverTime=server_time),
                               indent=2))
@@ -332,13 +445,16 @@ class GetTimeSeriesForPointHandler(ServiceRequestHandler):
         lat = self.params.get_query_argument_float('lat')
         start_date = self.params.get_query_argument_datetime('startDate', default=None)
         end_date = self.params.get_query_argument_datetime('endDate', default=None)
+        max_valids = self.params.get_query_argument_int('maxValids', default=None)
 
         response = await IOLoop.current().run_in_executor(None,
                                                           get_time_series_for_point,
                                                           self.service_context,
                                                           ds_id, var_name,
                                                           lon, lat,
-                                                          start_date, end_date)
+                                                          start_date,
+                                                          end_date,
+                                                          max_valids)
         self.set_header('Content-Type', 'application/json')
         self.finish(response)
 
@@ -349,6 +465,7 @@ class GetTimeSeriesForGeometryHandler(ServiceRequestHandler):
     async def post(self, ds_id: str, var_name: str):
         start_date = self.params.get_query_argument_datetime('startDate', default=None)
         end_date = self.params.get_query_argument_datetime('endDate', default=None)
+        max_valids = self.params.get_query_argument_int('maxValids', default=None)
         geometry = self.get_body_as_json_object("GeoJSON geometry")
 
         response = await IOLoop.current().run_in_executor(None,
@@ -356,7 +473,8 @@ class GetTimeSeriesForGeometryHandler(ServiceRequestHandler):
                                                           self.service_context,
                                                           ds_id, var_name,
                                                           geometry,
-                                                          start_date, end_date)
+                                                          start_date, end_date,
+                                                          max_valids)
         self.set_header('Content-Type', 'application/json')
         self.finish(response)
 
@@ -367,6 +485,7 @@ class GetTimeSeriesForGeometriesHandler(ServiceRequestHandler):
     async def post(self, ds_id: str, var_name: str):
         start_date = self.params.get_query_argument_datetime('startDate', default=None)
         end_date = self.params.get_query_argument_datetime('endDate', default=None)
+        max_valids = self.params.get_query_argument_int('maxValids', default=None)
         geometry_collection = self.get_body_as_json_object("GeoJSON geometry collection")
 
         response = await IOLoop.current().run_in_executor(None,
@@ -374,7 +493,8 @@ class GetTimeSeriesForGeometriesHandler(ServiceRequestHandler):
                                                           self.service_context,
                                                           ds_id, var_name,
                                                           geometry_collection,
-                                                          start_date, end_date)
+                                                          start_date, end_date,
+                                                          max_valids)
         self.set_header('Content-Type', 'application/json')
         self.finish(response)
 
@@ -385,6 +505,7 @@ class GetTimeSeriesForFeaturesHandler(ServiceRequestHandler):
     async def post(self, ds_id: str, var_name: str):
         start_date = self.params.get_query_argument_datetime('startDate', default=None)
         end_date = self.params.get_query_argument_datetime('endDate', default=None)
+        max_valids = self.params.get_query_argument_int('maxValids', default=None)
         feature_collection = self.get_body_as_json_object("GeoJSON feature collection")
 
         response = await IOLoop.current().run_in_executor(None,
@@ -392,6 +513,7 @@ class GetTimeSeriesForFeaturesHandler(ServiceRequestHandler):
                                                           self.service_context,
                                                           ds_id, var_name,
                                                           feature_collection,
-                                                          start_date, end_date)
+                                                          start_date, end_date,
+                                                          max_valids)
         self.set_header('Content-Type', 'application/json')
         self.finish(response)

@@ -9,6 +9,7 @@ import matplotlib.colors
 import matplotlib.figure
 import numpy as np
 
+from xcube.webapi.im.cmaps import get_norm
 from ..context import ServiceContext
 from ..defaults import DEFAULT_CMAP_WIDTH, DEFAULT_CMAP_HEIGHT
 from ..errors import ServiceBadRequestError, ServiceResourceNotFoundError
@@ -166,9 +167,18 @@ def get_legend(ctx: ServiceContext,
 
     fig = matplotlib.figure.Figure(figsize=(cmap_w, cmap_h))
     ax1 = fig.add_subplot(1, 1, 1)
-    norm = matplotlib.colors.Normalize(vmin=cmap_vmin, vmax=cmap_vmax)
-    image_legend = matplotlib.colorbar.ColorbarBase(ax1, cmap=cmap,
-                                                    norm=norm, orientation='vertical')
+    if '.cpd' in cmap_cbar:
+        norm, ticks = get_norm(cmap_cbar)
+    else:
+        norm = matplotlib.colors.Normalize(vmin=cmap_vmin, vmax=cmap_vmax)
+        ticks = None
+
+    image_legend = matplotlib.colorbar.ColorbarBase(ax1,
+                                                    format='%.1f',
+                                                    ticks=ticks,
+                                                    cmap=cmap,
+                                                    norm=norm,
+                                                    orientation='vertical')
 
     image_legend_label = ctx.get_legend_label(ds_id, var_name)
     if image_legend_label is not None:
