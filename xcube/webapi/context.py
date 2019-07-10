@@ -222,8 +222,12 @@ class ServiceContext:
                     # TODO: check color_mappings is not None
                     color_mapping = color_mappings.get(var_name)
                     if color_mapping:
-                        cmap_cbar = color_mapping.get('ColorBar', cmap_cbar)
                         cmap_vmin, cmap_vmax = color_mapping.get('ValueRange', (cmap_vmin, cmap_vmax))
+                        if color_mapping.get('ColorFile') is not None:
+                            cmap_cbar = color_mapping.get('ColorFile', cmap_cbar)
+                        else:
+                            cmap_cbar = color_mapping.get('ColorBar', cmap_cbar)
+
                         return cmap_cbar, cmap_vmin, cmap_vmax
             else:
                 ds = self.get_dataset(ds_id, expected_var_names=[var_name])
