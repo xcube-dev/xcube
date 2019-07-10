@@ -42,4 +42,4 @@ EXPOSE 8000
 
 # Start server
 ENTRYPOINT ["/bin/bash", "-c"]
-CMD ["source activate xcube && xcube serve -v -c /config/config.yml -p 8000 -a '0.0.0.0' -u 30 "]
+CMD ["source activate xcube && xcube"]
