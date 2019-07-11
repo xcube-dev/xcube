@@ -197,6 +197,9 @@ def _process_input(input_processor: InputProcessor,
 
     if os.path.isdir(output_path):
         append_ts_to_dc = check_append_or_insert(time_range, output_path)
+        if append_ts_to_dc is None:
+            monitor('Time Stamp of input data set is already existing in data cube: skipping...')
+            return False
 
     # noinspection PyShadowingNames
     def step1(dataset):
@@ -267,6 +270,7 @@ def _process_input(input_processor: InputProcessor,
 
             def step9(dataset):
                 output_writer.write(dataset, temp_output_path, **output_writer_params)
+
                 return dataset
 
             steps.append((step9, f'writing a temporary zarr at {temp_output_path} '
