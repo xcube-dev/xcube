@@ -24,6 +24,7 @@ import glob
 import io
 import os
 import pstats
+import tempfile
 import time
 import traceback
 from typing import Sequence, Callable, Tuple, Dict, Any
@@ -194,6 +195,9 @@ def _process_input(input_processor: InputProcessor,
 
     steps = []
 
+    if os.path.isdir(output_path):
+        append_ts_to_dc = check_append_or_insert(time_range, output_path)
+
     # noinspection PyShadowingNames
     def step1(dataset):
         return input_processor.pre_process(dataset)
@@ -251,13 +255,23 @@ def _process_input(input_processor: InputProcessor,
     steps.append((step8, 'updating dataset attributes'))
 
     if not dry_run:
-        if append_mode and os.path.exists(output_path):
+        if append_ts_to_dc and append_mode and os.path.exists(output_path):
             # noinspection PyShadowingNames
             def step9(dataset):
                 output_writer.append(dataset, output_path, **output_writer_params)
                 return dataset
 
             steps.append((step9, f'appending to {output_path}'))
+        elif not append_ts_to_dc and append_mode and os.path.exists(output_path):
+            temp_output_path = os.path.join(tempfile.gettempdir(), input_file.replace("/", "_"))
+
+            def step9(dataset):
+                output_writer.write(dataset, temp_output_path, **output_writer_params)
+                return dataset
+
+            steps.append((step9, f'writing a temporary zarr at {temp_output_path} '
+            f'and inserting into existing data cube at {output_path}'))
+
         else:
             # noinspection PyShadowingNames
             def step9(dataset):
