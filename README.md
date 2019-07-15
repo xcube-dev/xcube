@@ -258,10 +258,13 @@ Generate data cube.
                                       produce any outputs.
       -i, --info                      Displays additional information about format
                                       options or about input processors.
-      --sort                          The input file list will be sorted before
-                                      creating the data cube. If --sort parameter
-                                      is not passed, order of input list will be
-                                      kept.
+      --sort                          This parameter is only needed for creating
+                                      netCDF cubes. The input file list will be
+                                      sorted before creating the data cube. If
+                                      --sort parameter is not passed, order of
+                                      input list will be kept.When creating zarr
+                                      data cubes, chronology is forced by "xcube
+                                      gen".
       --help                          Show this message and exit.
 
 Below is the `xcube gen --info` call with 5 input processors installed via plugins.

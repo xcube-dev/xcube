@@ -68,8 +68,10 @@ resampling_algs = NAME_TO_GDAL_RESAMPLE_ALG.keys()
 @click.option('--append', '-a', is_flag=True,
               help='Append successive outputs.')
 @click.option('--sort', is_flag=True,
-              help='The input file list will be sorted before creating the data cube. '
-                   'If --sort parameter is not passed, order of input list will be kept.')
+              help='This parameter is only needed for creating netCDF cubes. '
+                   'The input file list will be sorted before creating the data cube. '
+                   'If --sort parameter is not passed, order of input list will be kept.'
+                   'When creating zarr data cubes, chronology is forced by "xcube gen". ')
 @click.option('--info', '-i', is_flag=True,
               help='Displays additional information about format options or about input processors.')
 @click.option('--dry_run', is_flag=True,
