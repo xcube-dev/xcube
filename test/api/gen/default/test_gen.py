@@ -65,6 +65,14 @@ class DefaultProcessTest(unittest.TestCase):
         )
         self.assertEqual(True, status)
 
+    def test_zarr_insert(self):
+        status = gen_cube_wrapper(
+            [get_inputdata_path('input_r.txt')],
+            'l2c.zarr',
+            True
+        )
+        self.assertEqual(True, status)
+
     def test_handle_360_lon(self):
         status = gen_cube_wrapper(
             [get_inputdata_path('20170101120000-UKMO-L4_GHRSST-SSTfnd-OSTIAanom-GLOB-v02.0-fv02.0.nc')],

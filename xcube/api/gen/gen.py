@@ -38,7 +38,6 @@ from ..update import update_var_props, update_global_attrs
 from ...util.config import NameAnyDict, NameDictPairList, to_resolved_name_dict_pairs
 from ...util.dsio import rimraf, DatasetIO, find_dataset_io, guess_dataset_format
 from ...util.timecoord import add_time_coords
-from test.helpers import get_inputdata_path
 
 _PROFILING_ON = False
 _APPEND_DS_TO_DC = None
@@ -197,7 +196,7 @@ def _process_input(input_processor: InputProcessor,
 
     steps = []
     global _APPEND_DS_TO_DC
-    if os.path.isdir(output_path):
+    if os.path.isdir(output_path) and output_path.endswith('.zarr'):
         _APPEND_DS_TO_DC = check_append_or_insert(time_range, output_path)
         if _APPEND_DS_TO_DC is None:
             monitor('Time Stamp of input data set is already existing in data cube: skipping...')
@@ -260,16 +259,16 @@ def _process_input(input_processor: InputProcessor,
     steps.append((step8, 'updating dataset attributes'))
 
     if not dry_run:
-        if _APPEND_DS_TO_DC and append_mode and os.path.exists(output_path):
+        if _APPEND_DS_TO_DC is True and append_mode and os.path.exists(output_path):
             # noinspection PyShadowingNames
             def step9(dataset):
                 output_writer.append(dataset, output_path, **output_writer_params)
                 return dataset
 
             steps.append((step9, f'appending to {output_path}'))
-        elif not _APPEND_DS_TO_DC and append_mode and os.path.exists(output_path):
+        elif _APPEND_DS_TO_DC is False and append_mode and os.path.exists(output_path):
             # temp_output_path = os.path.join(tempfile.gettempdir(), input_file.replace("/", "_")[:-3]+'.zarr')
-            temp_output_path = get_inputdata_path()
+            temp_output_path = os.path.join(os.path.dirname(__file__), '..', '..','..', 'test/api/gen/default/inputdata', input_file.replace("/", "_")[:-3]+'.zarr')
             def step9(dataset):
                 output_writer.write(dataset, temp_output_path, **output_writer_params)
                 merge_single_zarr_into_destination_zarr(temp_output_path, output_path)
