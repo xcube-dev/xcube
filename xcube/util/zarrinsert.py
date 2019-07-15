@@ -19,13 +19,9 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-import datetime
 import json
-import os
-from typing import Tuple, Union
-
 import numpy as np
-import pandas as pd
+import os
 import shutil
 import xarray as xr
 
@@ -39,8 +35,6 @@ def check_append_or_insert(time_range, output_path):
     else:
         t_center = t1
     ds = xr.open_zarr(output_path)
-    ds_time = (get_time_in_days_since_1970(ds.time.values[-1]))
-    ds_time_normal = ds.time.values[-1]
     if np.greater(t_center, get_time_in_days_since_1970(ds.time.values[-1])):
         # append modus
         return True
@@ -52,10 +46,10 @@ def check_if_unique(src_time, dst_path):
     """Check if to be added time stamp is unique """
     ds = xr.open_zarr(dst_path)
     mask = np.equal(get_time_in_days_since_1970(ds.time.values[:]), src_time)
-    if not mask.all():
+    if not mask.any():
         return False
     else:
-        print("All timestamps to be merged are aleady in destination data set, and are skipped.")
+        print("Timestamp of input file aleady in destination data set, therefore skipping.")
         return None
 
 

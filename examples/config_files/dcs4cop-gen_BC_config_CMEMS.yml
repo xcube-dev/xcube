@@ -3,7 +3,7 @@ input_processor: default
 output_size: [10240, 5632]
 output_region: [-16.0,48.0,10.666666666666666,62.666666666666664]
 
-output_name: "dcs4cop-bc-sst-sns-l2c-v1-2017"
+output_path: "dcs4cop-bc-sst-sns-l2c-v1-2017.zarr"
 
 output_writer: zarr
 
