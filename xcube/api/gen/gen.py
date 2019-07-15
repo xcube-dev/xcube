@@ -195,96 +195,101 @@ def _process_input(input_processor: InputProcessor,
         output_variables = [(var_name, None) for var_name in input_dataset.data_vars]
 
     steps = []
-    global _APPEND_DS_TO_DC
-    if os.path.isdir(output_path) and output_path.endswith('.zarr'):
-        _APPEND_DS_TO_DC = check_append_or_insert(time_range, output_path)
-        if _APPEND_DS_TO_DC is None:
-            monitor('Time Stamp of input data set is already existing in data cube: skipping...')
-            return False
 
-    # noinspection PyShadowingNames
     def step1(dataset):
-        return input_processor.pre_process(dataset)
+        global _APPEND_DS_TO_DC
+        if os.path.isdir(output_path) and output_path.endswith('.zarr'):
+            _APPEND_DS_TO_DC = check_append_or_insert(time_range, output_path)
+            if _APPEND_DS_TO_DC is None:
+                monitor('Time Stamp of input data set is already existing in data cube: skipping...')
+                return False
+        return dataset
 
-    steps.append((step1, 'pre-processing dataset'))
+    steps.append((step1, 'check append or insert'))
 
     # noinspection PyShadowingNames
     def step2(dataset):
-        return compute_dataset(dataset, processed_variables=processed_variables)
+        return input_processor.pre_process(dataset)
 
-    steps.append((step2, 'computing variables'))
+    steps.append((step2, 'pre-processing dataset'))
 
     # noinspection PyShadowingNames
     def step3(dataset):
+        return compute_dataset(dataset, processed_variables=processed_variables)
+
+    steps.append((step3, 'computing variables'))
+
+    # noinspection PyShadowingNames
+    def step4(dataset):
         extra_vars = input_processor.get_extra_vars(dataset)
         selected_variables = set([var_name for var_name, _ in output_variables])
         selected_variables.update(extra_vars or set())
         return select_vars(dataset, selected_variables)
 
-    steps.append((step3, 'selecting variables'))
+    steps.append((step4, 'selecting variables'))
 
     # noinspection PyShadowingNames
-    def step4(dataset):
+    def step5(dataset):
         return input_processor.process(dataset,
                                        dst_size=output_size,
                                        dst_region=output_region,
                                        dst_resampling=output_resampling,
                                        include_non_spatial_vars=False)
 
-    steps.append((step4, 'transforming dataset'))
+    steps.append((step5, 'transforming dataset'))
 
     if time_range is not None:
         # noinspection PyShadowingNames
-        def step5(dataset):
+        def step6(dataset):
             return add_time_coords(dataset, time_range)
 
-        steps.append((step5, 'adding time coordinates'))
-
-    # noinspection PyShadowingNames
-    def step6(dataset):
-        return update_var_props(dataset, output_variables)
-
-    steps.append((step6, 'updating variable properties'))
+        steps.append((step6, 'adding time coordinates'))
 
     # noinspection PyShadowingNames
     def step7(dataset):
-        return input_processor.post_process(dataset)
+        return update_var_props(dataset, output_variables)
 
-    steps.append((step7, 'post-processing dataset'))
+    steps.append((step7, 'updating variable properties'))
 
     # noinspection PyShadowingNames
     def step8(dataset):
+        return input_processor.post_process(dataset)
+
+    steps.append((step8, 'post-processing dataset'))
+
+    # noinspection PyShadowingNames
+    def step9(dataset):
         return update_global_attrs(dataset, output_metadata=output_metadata)
 
-    steps.append((step8, 'updating dataset attributes'))
+    steps.append((step9, 'updating dataset attributes'))
 
     if not dry_run:
         if _APPEND_DS_TO_DC is True and append_mode and os.path.exists(output_path):
             # noinspection PyShadowingNames
-            def step9(dataset):
+            def step10(dataset):
                 output_writer.append(dataset, output_path, **output_writer_params)
                 return dataset
 
-            steps.append((step9, f'appending to {output_path}'))
+            steps.append((step10, f'appending to {output_path}'))
         elif _APPEND_DS_TO_DC is False and append_mode and os.path.exists(output_path):
             # temp_output_path = os.path.join(tempfile.gettempdir(), input_file.replace("/", "_")[:-3]+'.zarr')
             temp_output_path = os.path.join(os.path.dirname(__file__), '..', '..','..', 'test/api/gen/default/inputdata', input_file.replace("/", "_")[:-3]+'.zarr')
-            def step9(dataset):
+            def step10(dataset):
                 output_writer.write(dataset, temp_output_path, **output_writer_params)
                 merge_single_zarr_into_destination_zarr(temp_output_path, output_path)
                 return dataset
 
-            steps.append((step9, f'writing a temporary zarr at {temp_output_path} '
+            steps.append((step10, f'writing a temporary zarr at {temp_output_path} '
             f'and inserting into existing data cube at {output_path}'))
 
         else:
             # noinspection PyShadowingNames
-            def step9(dataset):
+            def step10(dataset):
                 rimraf(output_path)
                 output_writer.write(dataset, output_path, **output_writer_params)
                 return dataset
 
-            steps.append((step9, f'writing to {output_path}'))
+            steps.append((step10, f'writing to {output_path}'))
 
     if _PROFILING_ON:
         pr = cProfile.Profile()

@@ -40,19 +40,18 @@ def check_append_or_insert(time_range, output_path):
         t_center = t1
     ds = xr.open_zarr(output_path)
     ds_time = (get_time_in_days_since_1970(ds.time.values[-1]))
+    ds_time_normal = ds.time.values[-1]
     if np.greater(t_center, get_time_in_days_since_1970(ds.time.values[-1])):
         # append modus
-        print("Append modus is chosen.")
         return True
     else:
-        check_if_unique(t_center, output_path)
-#         print("Merge modus is chosen.")
+        return check_if_unique(t_center, output_path)
+
 
 def check_if_unique(src_time, dst_path):
-    print('check unique')
     """Check if to be added time stamp is unique """
     ds = xr.open_zarr(dst_path)
-    mask = np.equal(get_time_in_days_since_1970(ds.time.values), src_time)
+    mask = np.equal(get_time_in_days_since_1970(ds.time.values[:]), src_time)
     if not mask.all():
         return False
     else:
@@ -65,13 +64,13 @@ def merge_single_zarr_into_destination_zarr(src_path, dst_path):
     ds_single = xr.open_zarr(src_path)
     ds = xr.open_zarr(dst_path)
     src_idx = 0
-    new_idx = np.amin(np.where((ds.time) > (ds_single.time[src_idx])))
+    new_idx = np.amin(np.where(ds.time[:] > (ds_single.time[src_idx])))
     ds.close()
     ds_single.close()
     # Preparing the source directory with the single time stamp to be ready for merging
     # --> files of variables, excluding "lat" and "lon" need to be renamed
     rename_file(src_path, src_idx, new_idx)
-    # Preparing the destinanation directory to be ready for single time stam to be merged
+    # Preparing the destination directory to be ready for single time stam to be merged
     # --> files of variables, excluding "lat" and "lon" need to be renamed
     # The renaming needs to happen in reversed order and starting at the index of nearest above value:
     for i in reversed(range(new_idx, ds.time.shape[0])):
@@ -85,15 +84,15 @@ def rename_file(path_to_ds, old_index, new_time_i):
     """Renaming files within the directories according to new time index."""
     ds = xr.open_zarr(path_to_ds)
     for v in ds.variables:
-        if (v != 'lat') and (v != 'lon'):
+        if (v != 'lat') and (v != 'lon') and (v !='lat_bnds') and (v != 'lon_bnds'):
             path = os.path.join(path_to_ds, v)
             for root, dirs, files in os.walk(path):
                 for filename in files:
                     if (str(old_index)) in filename[0] and (v != "time"):
-                        parts = filename.split('.',1)
+                        parts = filename.split('.', 1)
                         new_name = (str(new_time_i) + '.{}').format(parts[1])
                         if new_name != path:
-                             os.rename(os.path.join(path, filename), os.path.join(path, new_name))
+                            os.rename(os.path.join(path, filename), os.path.join(path, new_name))
                     elif (str(old_index)) in filename[0] and (v == "time"):
                         if str(new_time_i) != path:
                             os.rename(os.path.join(path, filename), os.path.join(path, str(new_time_i)))
@@ -105,7 +104,7 @@ def adjust_zarray(dst_path, variable):
     with open((os.path.join(dst_path, variable, '.zarray')), 'r') as jsonFile:
         data = json.load(jsonFile)
     t_shape = data["shape"]
-    data["shape"][0] = t_shape[0] +1
+    data["shape"][0] = t_shape[0] + 1
 
     with open((os.path.join(dst_path, variable, '.zarray')), 'w') as jsonFile:
         json.dump(data, jsonFile, indent=4)
@@ -121,5 +120,5 @@ def copy_into_target(src_path, dst_path, src_index):
             for root, dirs, files in os.walk(path):
                 for filename in files:
                     if str(src_index) in filename[0]:
-                        shutil.copyfile((os.path.join(src_path, v, filename)), (os.path.join(dst_path, v,  filename)))
+                        shutil.copyfile((os.path.join(src_path, v, filename)), (os.path.join(dst_path, v, filename)))
             adjust_zarray(dst_path, v)
