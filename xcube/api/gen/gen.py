@@ -24,7 +24,6 @@ import glob
 import io
 import os
 import pstats
-import tempfile
 import time
 import traceback
 from typing import Sequence, Callable, Tuple, Dict, Any
@@ -41,6 +40,7 @@ from ...util.timecoord import add_time_coords
 
 _PROFILING_ON = False
 _APPEND_DS_TO_DC = None
+
 
 def gen_cube(input_paths: Sequence[str] = None, input_processor: str = None, input_processor_params: Dict = None,
              input_reader: str = None, input_reader_params: Dict[str, Any] = None,
@@ -265,14 +265,17 @@ def _process_input(input_processor: InputProcessor,
                     if _APPEND_DS_TO_DC is True:
                         output_writer.append(dataset, output_path, **output_writer_params)
                     elif _APPEND_DS_TO_DC is False:
-                        tempdir_for_merging = os.path.join(os.path.dirname(__file__), '..', '..','..','tempdir_for_merging')
+                        tempdir_for_merging = os.path.join(os.path.dirname(__file__), '..', '..', '..',
+                                                           'tempdir_for_merging')
                         try:
                             os.mkdir(tempdir_for_merging)
                         except OSError:
                             print("Creation of the directory %s failed" % tempdir_for_merging)
                         else:
-                            print("Successfully created the directory %s for inserting time stamp " % tempdir_for_merging)
-                        temp_output_path = os.path.join(tempdir_for_merging, input_file.replace("/", "_")[:-3]+'.zarr')
+                            print("Successfully created the directory %s for inserting "
+                                  "time stamp " % tempdir_for_merging)
+                        temp_output_path = os.path.join(tempdir_for_merging,
+                                                        input_file.replace("/", "_")[:-3] + '.zarr')
                         output_writer.write(dataset, temp_output_path, **output_writer_params)
                         merge_single_zarr_into_destination_zarr(temp_output_path, output_path)
                         rimraf(tempdir_for_merging)

@@ -49,7 +49,7 @@ def check_if_unique(src_time, dst_path):
     if not mask.any():
         return False
     else:
-        print("Timestamp of input file aleady in destination data set, therefore skipping.")
+        print("Timestamp of input file already in destination data set, therefore skipping.")
         return None
 
 
@@ -77,7 +77,7 @@ def rename_file(path_to_ds, old_index, new_time_i):
     """Renaming files within the directories according to new time index."""
     ds = xr.open_zarr(path_to_ds)
     for v in ds.variables:
-        if (v != 'lat') and (v != 'lon') and (v !='lat_bnds') and (v != 'lon_bnds'):
+        if (v != 'lat') and (v != 'lon') and (v != 'lat_bnds') and (v != 'lon_bnds'):
             path = os.path.join(path_to_ds, v)
             for root, dirs, files in os.walk(path):
                 for filename in files:
