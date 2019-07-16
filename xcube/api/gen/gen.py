@@ -262,19 +262,20 @@ def _process_input(input_processor: InputProcessor,
                     if _APPEND_DS_TO_DC is None:
                         monitor('Time Stamp of input data set is already existing in data cube: skipping...')
                         return False
-                if _APPEND_DS_TO_DC is True:
-                    output_writer.append(dataset, output_path, **output_writer_params)
-                elif _APPEND_DS_TO_DC is False:
-                    tempdir_for_merging = os.path.join(os.path.dirname(__file__), '..', '..','..','tempdir_for_merging')
-                    try:
-                        os.mkdir(tempdir_for_merging)
-                    except OSError:
-                        print("Creation of the directory %s failed" % tempdir_for_merging)
-                    else:
-                        print("Successfully created the directory %s " % tempdir_for_merging)
-                    temp_output_path = os.path.join(tempdir_for_merging, input_file.replace("/", "_")[:-3]+'.zarr')
-                    output_writer.write(dataset, temp_output_path, **output_writer_params)
-                    merge_single_zarr_into_destination_zarr(temp_output_path, output_path)
+                    if _APPEND_DS_TO_DC is True:
+                        output_writer.append(dataset, output_path, **output_writer_params)
+                    elif _APPEND_DS_TO_DC is False:
+                        tempdir_for_merging = os.path.join(os.path.dirname(__file__), '..', '..','..','tempdir_for_merging')
+                        try:
+                            os.mkdir(tempdir_for_merging)
+                        except OSError:
+                            print("Creation of the directory %s failed" % tempdir_for_merging)
+                        else:
+                            print("Successfully created the directory %s for inserting time stamp " % tempdir_for_merging)
+                        temp_output_path = os.path.join(tempdir_for_merging, input_file.replace("/", "_")[:-3]+'.zarr')
+                        output_writer.write(dataset, temp_output_path, **output_writer_params)
+                        merge_single_zarr_into_destination_zarr(temp_output_path, output_path)
+                        rimraf(tempdir_for_merging)
                 return dataset
 
             steps.append((step9, f'appending to {output_path}'))
@@ -311,7 +312,6 @@ def _process_input(input_processor: InputProcessor,
         return False
     finally:
         input_dataset.close()
-        rimraf(os.path.join(os.path.dirname(__file__), '..', '..','..','tempdir_for_merging'))
 
     if _PROFILING_ON:
         # noinspection PyUnboundLocalVariable

@@ -74,7 +74,6 @@ def merge_single_zarr_into_destination_zarr(src_path, dst_path):
 
 
 def rename_file(path_to_ds, old_index, new_time_i):
-    print('renaming file')
     """Renaming files within the directories according to new time index."""
     ds = xr.open_zarr(path_to_ds)
     for v in ds.variables:
@@ -92,20 +91,7 @@ def rename_file(path_to_ds, old_index, new_time_i):
                             os.rename(os.path.join(path, filename), os.path.join(path, str(new_time_i)))
 
 
-def adjust_zarray(dst_path, variable):
-    print('adjusting zarray')
-    """Changing the shape for time in the .zarray file."""
-    with open((os.path.join(dst_path, variable, '.zarray')), 'r') as jsonFile:
-        data = json.load(jsonFile)
-    t_shape = data["shape"]
-    data["shape"][0] = t_shape[0] + 1
-
-    with open((os.path.join(dst_path, variable, '.zarray')), 'w') as jsonFile:
-        json.dump(data, jsonFile, indent=4)
-
-
 def copy_into_target(src_path, dst_path, src_index):
-    print('copy into target')
     """Copy the files with the new time stamp into the existing zarr directory."""
     ds = xr.open_zarr(src_path)
     for v in ds.variables:
@@ -116,3 +102,14 @@ def copy_into_target(src_path, dst_path, src_index):
                     if str(src_index) in filename[0]:
                         shutil.copyfile((os.path.join(src_path, v, filename)), (os.path.join(dst_path, v, filename)))
             adjust_zarray(dst_path, v)
+
+
+def adjust_zarray(dst_path, variable):
+    """Changing the shape for time in the .zarray file."""
+    with open((os.path.join(dst_path, variable, '.zarray')), 'r') as jsonFile:
+        data = json.load(jsonFile)
+    t_shape = data["shape"]
+    data["shape"][0] = t_shape[0] + 1
+
+    with open((os.path.join(dst_path, variable, '.zarray')), 'w') as jsonFile:
+        json.dump(data, jsonFile, indent=4)
