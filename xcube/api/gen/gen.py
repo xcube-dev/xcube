@@ -28,7 +28,7 @@ import time
 import traceback
 from typing import Sequence, Callable, Tuple, Dict, Any
 
-from xcube.util.zarrinsert import check_append_or_insert, merge_single_zarr_into_destination_zarr
+from xcube.util.zarrinsert import check_append_or_insert, merge_single_zarr_into_destination_zarr, _check_ds_single_time
 from .defaults import DEFAULT_OUTPUT_SIZE, DEFAULT_OUTPUT_RESAMPLING, DEFAULT_OUTPUT_PATH
 from .iproc import InputProcessor, get_input_processor
 from ..compute import compute_dataset
@@ -277,6 +277,8 @@ def _process_input(input_processor: InputProcessor,
                         temp_output_path = os.path.join(tempdir_for_merging,
                                                         input_file.replace("/", "_")[:-3] + '.zarr')
                         output_writer.write(dataset, temp_output_path, **output_writer_params)
+                        while not _check_ds_single_time(temp_output_path):
+                            time.sleep(5)
                         merge_single_zarr_into_destination_zarr(temp_output_path, output_path)
                         rimraf(tempdir_for_merging)
                 return dataset
