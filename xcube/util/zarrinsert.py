@@ -116,19 +116,19 @@ def rename_file(path_to_ds, old_index, new_time_i):
             for root, dirs, files in os.walk(path):
                 for filename in files:
                     parts1 = filename.split('.',1)[0]
-                    if (str(old_index)) in parts1 and (v != "time") and (len(parts1) == len(str(new_time_i))):
-                        parts2 = filename.split('.', 1)
+                    if parts1 == (str(old_index)) and (v != "time"):
+                        parts2 = filename.split('.', 1)[1]
                         print('parts of filename is %s' % parts2)
-                        new_name = (str(new_time_i) + '.{}').format(parts2[1])
+                        new_name = (str(new_time_i) + '.{}').format(parts2)
                         print('new name is %s' % new_name)
-                        if new_name != path:
-                            os.rename(os.path.join(path, filename), os.path.join(path, new_name))
-                    elif (str(old_index)) in parts1 and (v == "time"):
-                        if str(new_time_i) != path:
-                            print('for time the new_index is %s' % new_time_i)
-                            os.rename(os.path.join(path, filename), os.path.join(path, str(new_time_i)))
-                        else:
-                            print('the old time index is the same with the new one, so it is kept')
+                        # if new_name != path:
+                        os.rename(os.path.join(path, filename), os.path.join(path, new_name))
+                    elif parts1 == (str(old_index)) and (v == "time"):
+                        # if str(new_time_i) != path:
+                        #     print('for time the new_index is %s' % new_time_i)
+                        os.rename(os.path.join(path, filename), os.path.join(path, str(new_time_i)))
+                        # else:
+                        #     print('the old time index is the same with the new one, so it is kept')
 
 
 def copy_into_target(src_path, dst_path, src_index):
@@ -147,7 +147,7 @@ def copy_into_target(src_path, dst_path, src_index):
 
                     print(filename)
                     print(parts1)
-                    if str(src_index) in parts1 and (len(parts1) == len(str(src_index))):
+                    if parts1 == str(src_index):
                         shutil.copyfile((os.path.join(src_path, v, filename)), (os.path.join(dst_path, v, filename)))
             adjust_zarray(dst_path, v)
 
