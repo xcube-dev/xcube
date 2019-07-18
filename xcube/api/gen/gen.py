@@ -28,7 +28,7 @@ import time
 import traceback
 from typing import Sequence, Callable, Tuple, Dict, Any
 
-from xcube.util.zarrinsert import check_append_or_insert, merge_single_zarr_into_destination_zarr, _check_ds_single_time
+from xcube.util.zarrinsert import check_append_or_insert, merge_single_zarr_into_destination_zarr
 from .defaults import DEFAULT_OUTPUT_SIZE, DEFAULT_OUTPUT_RESAMPLING, DEFAULT_OUTPUT_PATH
 from .iproc import InputProcessor, get_input_processor
 from ..compute import compute_dataset
@@ -257,11 +257,10 @@ def _process_input(input_processor: InputProcessor,
             # noinspection PyShadowingNames
             def step9(dataset):
                 global _APPEND_DS_TO_DC
-                if output_path.endswith('.zarr'):
+                if output_path.endswith('.nc'):
+                    output_writer.append(dataset, output_path, **output_writer_params)
+                elif output_path.endswith('.zarr'):
                     _APPEND_DS_TO_DC = check_append_or_insert(time_range, output_path)
-                    if _APPEND_DS_TO_DC is None:
-                        monitor('Time Stamp of input data set is already existing in data cube: skipping...')
-                        return False
                     if _APPEND_DS_TO_DC is True:
                         output_writer.append(dataset, output_path, **output_writer_params)
                     elif _APPEND_DS_TO_DC is False:
@@ -270,20 +269,22 @@ def _process_input(input_processor: InputProcessor,
                         try:
                             os.mkdir(tempdir_for_merging)
                         except OSError:
-                            print("Creation of the directory %s failed" % tempdir_for_merging)
+                            monitor("Creation of the directory %s failed" % tempdir_for_merging)
                         else:
-                            print("Successfully created the directory %s for inserting "
-                                  "time stamp " % tempdir_for_merging)
+                            monitor("Successfully created the directory %s for inserting "
+                                    "time stamp " % tempdir_for_merging)
                         temp_output_path = os.path.join(tempdir_for_merging,
                                                         input_file.replace("/", "_")[:-3] + '.zarr')
                         output_writer.write(dataset, temp_output_path, **output_writer_params)
-                        while not _check_ds_single_time(temp_output_path):
-                            time.sleep(5)
-                        merge_single_zarr_into_destination_zarr(temp_output_path, output_path)
+                        merged_data_set = merge_single_zarr_into_destination_zarr(temp_output_path, output_path)
                         rimraf(tempdir_for_merging)
+                        if not merged_data_set:
+                            monitor('Time Stamp of input data set is already existing in data cube: skipping...')
+                            return False
+
                 return dataset
 
-            steps.append((step9, f'appending to {output_path}'))
+            steps.append((step9, f'appending or merging to {output_path}'))
 
         else:
             # noinspection PyShadowingNames
