@@ -107,3 +107,6 @@ ENV/
 
 # Test data
 *.nc/
+
+# Test notebooks used for development
+notebooks

@@ -25,21 +25,21 @@ In order to create a suitable Data Cube for your needs, there are some questions
 6. Use configuration file for generating your Data Cube:
     * You might not want to place all settings for your data cube within the command line, 
     you could use the parameter `-c, --config` and pass the above settings within a yaml-file. 
-    Example for a configuration file: [dcs4cop-gen_BC_config_CMEMS.yml](../examples/config_files/dcs4cop-gen_BC_config_CMEMS.yml)
+    Example for a configuration file: [dcs4cop-gen_BC_config_CMEMS.yml](../examples/gen/config_files/dcs4cop-gen_BC_config_CMEMS.yml)
       
     * The parameter, which can be used within the configuration file are: 
-        * input_files
-        * input_processor 
-        * output_dir 
-        * output_name 
-        * output_writer
-        * output_size 
-        * output_region 
-        * output_variables
-        * output_resampling 
-        * append_mode 
-        * sort_mode 
-        
+            * config_file
+            * input_paths 
+            * input_processor
+            * output_path 
+            * output_writer 
+            * output_size 
+            * output_region 
+            * output_variables 
+            * output_resampling 
+            * append_mode 
+            * sort_mode 
+            
 ## Minimal working example
 
 The input data for the examlpe contain sea surface temperature anomaly over the global ocean and are provided by [Copernicus
@@ -48,13 +48,13 @@ Here is a [Product User Manual](http://resources.marine.copernicus.eu/documents/
 
 For creating a little cube you can execute the commandline below with the paths adjusted to your needs.
 
-`xcube gen  examples/data/*.nc --dir "your/output/path/" -c examples/config_files/dcs4cop-gen_BC_config_CMEMS.yml -a --sort`
+`xcube gen  examples/gen/data/*.nc --output "your/output/path/dcs4cop-bc-sst-sns-l2c-v1-2017.zarr" -c examples/gen/config_files/dcs4cop-gen_BC_config_CMEMS.yml -a --sort`
 
-The [configuration file](../examples/config_files/dcs4cop-gen_BC_config_CMEMS.yml) specifies the input processor, 
+The [configuration file](../examples/gen/config_files/dcs4cop-gen_BC_config_CMEMS.yml) specifies the input processor, 
 which in this case is the default one. The output size is 10240, 5632 which was derived by using `xcube grid` 
 for a spatial resolution of 300m and a bounding box (-15,48,10,62)(lon_min,lat_min,lon_max,lat_max). This also results 
 in a adjusted bounding box which places the region into a global grid, called *output_region* in the configuration file. 
-The output name (output_name) of the data cube and the format (output_writer) are defined as well. 
+The output format (output_writer) are defined as well. 
 The chunking of the dimensions can be set by the output writer parameter (output_writer_params) called chunksizes, 
 and here the chunking is set for latitude and longitude. If the chunking is not set, a automatic chunking is appllied.
 The spatial resampling method (output_resampling) is set to 'nearest' and the confguration file contains only one 
@@ -62,7 +62,7 @@ variable which will be included into the data cube - 'analysed-sst'.
 
 The Analysed Sea Surface Temperature data set contains the variable already as needed. This means no pixel 
 masking needs to be applied. However, this might differ depending on the input data. You can take a look at a 
-[configuration file which takes SENTINEL-3 Ocean and Land Colour Instrument (OLCI)](../examples/config_files/dcs4cop-config.yml)
+[configuration file which takes SENTINEL-3 Ocean and Land Colour Instrument (OLCI)](../examples/gen/config_files/dcs4cop-config.yml)
 as input files, which is a bit more complex.
 The advantage of using pixel expressions is, that the generated cube contains only valid pixels and the user of the data cube
 does not have to worry about something like land-masking or invalid values. 

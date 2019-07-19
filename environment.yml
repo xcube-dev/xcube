@@ -13,13 +13,14 @@ dependencies:
   - dask =1.2
   - fiona =1.8
   - gdal =2.4
+  - libgdal =2.4
   - matplotlib =3.0
   - netcdf4 =1.5.0
   - numba =0.43
   - numpy =1.16
   - pandas =0.24
   - pillow =6.0
-  - proj4 =6.0
+  - proj4 =5.2
   - pyyaml =5.1
   - rasterio =1.0
   - s3fs =0.2
@@ -30,8 +31,6 @@ dependencies:
   - xarray =0.12
   - zarr =2.3
   - sphinx =2.0.1
-  # Optional
-  - cmocean =2.0
   # Testing
   - flake8 =3.7
   - pytest =4.4

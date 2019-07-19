@@ -219,50 +219,52 @@ Generate data cube.
         be passed as lines of a text file.
 
     Options:
-      -p, --proc INPUT_PROCESSOR      Input processor type name. The choices as
+        -p, --proc []                   Input processor type name. The choices as
                                       input processor and additional information
                                       about input processors  can be accessed by
-                                      calling xcube gen --info . Defaults to "default" - the default input processor 
-                                      that can deal with most common datasets conforming with the CF conventions.
-      -c, --config CONFIG_FILE        Data cube configuration file in YAML format.
+                                      calling xcube gen --info . Defaults to
+                                      "default" - the default input processor that
+                                      can deal with most common datasets
+                                      conforming with the CF conventions.
+        -c, --config TEXT               Data cube configuration file in YAML format.
                                       More than one config input file is
                                       allowed.When passing several config files,
                                       they are merged considering the order passed
                                       via command line.
-      -d, --dir OUTPUT_DIR            Output directory. Defaults to '.'
-      -n, --name OUTPUT_NAME          Output filename pattern. Defaults to
-                                      'PROJ_WGS84_{INPUT_FILE}'.
-      -f, --format OUTPUT_FORMAT      Output writer type name. Defaults to 'zarr'.
-                                      The choices for the output format are:
-                                      ['csv', 'mem', 'netcdf4', 'zarr'].
-                                      Additional information about output formats
-                                      can be accessed by calling xcube
-                                      generate_cube --info
-      -s, --size OUTPUT_SIZE          Output size in pixels using format
+        -o, --output TEXT               Output path. Defaults to 'out.zarr'
+        -f, --format [csv|mem|netcdf4|zarr]
+                                      Output format. The choices for the output
+                                      format are: ['csv', 'mem', 'netcdf4',
+                                      'zarr']. Additional information about output
+                                      formats can be accessed by calling xcube gen
+                                      --info. If omitted, the format will be
+                                      guessed from the given output path.
+        -s, --size TEXT                 Output size in pixels using format
                                       "<width>,<height>".
-      -r, --region OUTPUT_REGION      Output region using format "<lon-min>,<lat-
+        -r, --region TEXT               Output region using format "<lon-min>,<lat-
                                       min>,<lon-max>,<lat-max>"
-      -v, --variables OUTPUT_VARIABLES
-                                      Variables to be included in output. Comma-
+        -v, --variables, --vars TEXT    Variables to be included in output. Comma-
                                       separated list of names which may contain
                                       wildcard characters "*" and "?".
-      --resampling OUTPUT_RESAMPLING  Fallback spatial resampling algorithm to be
+        --resampling [Nearest|Bilinear|Cubic|CubicSpline|Lanczos|Average|Min|Max|Median|Mode|Q1|Q3]
+                                      Fallback spatial resampling algorithm to be
                                       used for all variables. Defaults to
                                       'Nearest'. The choices for the resampling
                                       algorithm are: dict_keys(['Nearest',
                                       'Bilinear', 'Cubic', 'CubicSpline',
                                       'Lanczos', 'Average', 'Min', 'Max',
                                       'Median', 'Mode', 'Q1', 'Q3'])
-      -a, --append                    Append successive outputs.
-      --dry_run                       Just read and process inputs, but don't
-                                      produce any outputs.
-      -i, --info                      Displays additional information about format
-                                      options or about input processors.
-      --sort                          The input file list will be sorted before
+        -a, --append                    Append successive outputs.
+        --sort                          The input file list will be sorted before
                                       creating the data cube. If --sort parameter
                                       is not passed, order of input list will be
                                       kept.
-      --help                          Show this message and exit.
+        -i, --info                      Displays additional information about format
+                                      options or about input processors.
+        --dry_run                       Just read and process inputs, but don't
+                                      produce any outputs.
+        --help                          Show this message and exit.
+
 
 Below is the `xcube gen --info` call with 5 input processors installed via plugins.
 
@@ -296,6 +298,7 @@ Available xcube input processors within xcube's organisation:
 
 
 ## `xcube grid`
+[TODO] - need major revision, examples not working anymore! Help needed
 
 Find spatial data cube resolutions and adjust bounding boxes.
 
@@ -466,8 +469,12 @@ handy tool [Wicket](https://arthur-e.github.io/Wicket/sandbox-gmaps3.html).
 
 Example:
 
-    $ xcube gen -p snap-olci-highroc-l2 -a -s 2000,1000 -r 0,50,5,52.5 -v conc_chl,conc_tsm,kd489,c2rcc_flags,quality_flags -o hiroc-cube.zarr D:\OneDrive\BC\EOData\HIGHROC\2017\**\*.nc
-
+__Caution:__ Parameter for passing the input processor via the command line interface is not working at the moment, 
+this is a [known issue](https://github.com/dcs4cop/xcube/issues/120). __Workaround:__ `xcube gen` is functioning when using a config 
+file, which includes the specification of the input processor. An example config file can be found 
+[here](examples/gen/config_files/dcs4cop-gen_BC_config_CMEMS.yml).
+    
+    $ xcube gen  examples/gen/data/*.nc -p default -a -s 10240,5632 -r -16.0,48.0,10.666666666666666,62.666666666666664 -v analysed_sst -o CMEMS_demo_cube.zarr 
 
 ## `xcube level`
 
@@ -610,11 +617,11 @@ Resample data along the time dimension.
 
 Upsampling example:
 
-    xcube resample --vars conc_chl,conc_tsm -F 12H -T 6H -M interpolation -K linear xcube\webapi\res\demo\cube.nc
+    xcube resample --vars conc_chl,conc_tsm -F 12H -T 6H -M interpolation -K linear examples/serve/demo/cube.nc
 
 Downsampling example:
 
-    xcube resample --vars conc_chl,conc_tsm -F 3D -M mean -M std -M count xcube\webapi\res\demo\cube.nc
+    xcube resample --vars conc_chl,conc_tsm -F 3D -M mean -M std -M count examples/serve/demo/cube.nc
 
 ## `xcube serve`
 
@@ -685,7 +692,7 @@ The Xcube server supports local NetCDF files or local or remote [Zarr](https://z
 Remote Zarr directories must be stored in publicly accessible, AWS S3 compatible 
 object storage (OBS).
 
-As an example, here is the [configuration of the demo server](https://github.com/bcdev/xcube-server/blob/master/xcube_server/res/demo/config.yml).
+As an example, here is the [configuration of the demo server](https://github.com/dcs4cop/xcube//blob/master/examples/serve/demo/config.yml).
 
 ### OGC WMTS compatibility
 
@@ -709,7 +716,7 @@ The SwaggerHub allows to choose the xcube-server project and therefore the datas
 
 To run the server on default port 8080 using the demo configuration:
 
-    $ xcube serve -v -c xcube/webapi/res/demo/config.yml
+    $ xcube serve -v -c examples/serve/demo/config.yml
 
 To run the server using a particular data cube path and styling information for a variable:
 
@@ -762,16 +769,16 @@ you can run the client demos by following their links given below.
    
 ##### OpenLayers
 
-[OpenLayers 4 Demo](http://localhost:9090/xcube/webapi/res/demo/index-ol4.html)
-[OpenLayers 4 Demo with WMTS](http://localhost:9090/xcube/webapi/res/demo/index-ol4-wmts.html)
+[OpenLayers 4 Demo](http://localhost:9090/examples/serve/demo/index-ol4.html)
+[OpenLayers 4 Demo with WMTS](http://localhost:9090/examples/serve/demo/index-ol4-wmts.html)
 
 ##### Cesium
 
-To run the [Cesium Demo](http://localhost:9090/xcube/webapi/res/demo/index-cesium.html) first
+To run the [Cesium Demo](http://localhost:9090/examples/serve/demo/index-cesium.html) first
 [download Cesium](https://cesiumjs.org/downloads/) and unpack the zip
 into the `xcube-server` source directory so that there exists an 
 `./Cesium-<version>` sub-directory. You may have to adapt the Cesium version number 
-in the [demo's HTML file](https://github.com/dcs4cop/xcube/blob/master/xcube/webapi/res/demo/index-cesium.html).
+in the [demo's HTML file](https://github.com/dcs4cop/xcube/blob/master/examples/serve/demo/index-cesium.html).
 
 ### Xcube server TODOs:
 

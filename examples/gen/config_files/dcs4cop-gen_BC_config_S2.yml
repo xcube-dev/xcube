@@ -1,21 +1,19 @@
-input_processor: default
+input_processor: vito-s2plus-l2
 
 output_size: [10240, 5632]
 output_region: [-16.0,48.0,10.666666666666666,62.666666666666664]
 
-output_name: "dcs4cop-bc-sst-sns-l2c-v1-2017"
+output_path: "dcs4cop-bc-s2-sns-l2c-v1.zarr"
 
 output_writer: zarr
 
 output_writer_params: 
   chunksizes: 
-    lat: 704
-    lon: 640
+    lat: 1024
+    lon: 1024
     
 output_resampling: Nearest
 
-output_variables:
-  - analysed_sst
 
 
 # xcube global dataset metadata
@@ -27,12 +25,12 @@ output_variables:
 #
 output_metadata:
   # CF: A succinct description of what is in the dataset.
-  title: "DCS4COP CMEMS Global SST & Sea Ice Anomaly Data Cube"
+  title: "DCS4COP Sentinel2 L2C Data Cube"
 
   # CF: The method of production of the original data.
   # If it was model-generated, source should name the model and its version, as specifically as could be useful.
   # If it is observational, source should characterize it (e.g., "surface observation" or "radiosonde").
-  source: "CMEMS Global SST & Sea Ice Anomaly Data Cube"
+  source: "Sentinel2 VITO"
 
 
   # CF: Published or web-based references that describe the data or methods used to produce it.
@@ -48,7 +46,7 @@ output_metadata:
   keywords: ""
 
   # The combination of the "naming authority" and the "id" should be a globally unique identifier for the dataset.
-  id: "dcs4cop-bc-sst-sns-l2c-v1"
+  id: "dcs4cop-bc-s2-sns-l2c-v1"
   naming_authority: "bc"
 
   # The scientific project that produced the data.
@@ -58,7 +56,7 @@ output_metadata:
   processing_level: "L2C"
 
   # A place to acknowledge various type of support for the project that produced this data.
-  acknowledgment: "Data Cube produced based on data provided by GHRSST, Met Office and CMEMS"
+  acknowledgment: "Sentinel2 VITO"
 
   # The name of the controlled vocabulary from which variable standard names are taken.
   standard_name_vocabulary: ""
@@ -122,4 +120,4 @@ output_metadata:
   #    start:      2017-01-01
   #    end:        2017-12-31
   #    duration:   "P1Y"
-  #    resolution: "1D"
+#    resolution: "1D"
