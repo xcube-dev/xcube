@@ -110,3 +110,5 @@ ENV/
 
 # Test notebooks used for development
 notebooks
+scripts
+examples/gen/cmd_files
