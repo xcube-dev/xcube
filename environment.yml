@@ -12,7 +12,7 @@ dependencies:
   - cmocean =2.0
   - dask =1.2
   - fiona =1.8
-  - gdal =2.4
+  - gdal =2.5
   - libgdal =2.4
   - matplotlib =3.0
   - netcdf4 =1.5.0
