@@ -1,4 +1,4 @@
-name: xcube-testing
+name: xcube
 channels:
   - conda-forge
   - defaults
