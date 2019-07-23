@@ -60,7 +60,6 @@ class Vars2DimTest(CliDataTest):
         var_names = ds["var"]
         self.assertEqual(("var",), var_names.dims)
         self.assertTrue(hasattr(var_names, "encoding"))
-        self.assertEqual("<U13", str(var_names.dtype))
         self.assertEqual(3, len(var_names))
         self.assertIn("precipitation", str(var_names[0]))
         self.assertIn("soil_moisture", str(var_names[1]))
