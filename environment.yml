@@ -19,7 +19,7 @@ dependencies:
   - numpy =1.16
   - pandas =0.24
   - pillow =6.0
-  - proj4 =6.0
+  - proj4 =5.2
   - pyyaml =5.1
   - rasterio =1.0
   - s3fs =0.2
@@ -30,8 +30,6 @@ dependencies:
   - xarray =0.12
   - zarr =2.3
   - sphinx =2.0.1
-  # Optional
-  - cmocean =2.0
   # Testing
   - flake8 =3.7
   - pytest =4.4
