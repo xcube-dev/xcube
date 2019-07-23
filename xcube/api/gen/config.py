@@ -20,7 +20,7 @@
 # SOFTWARE.
 from typing import Dict, Union
 
-from ...util.config import to_name_dict_pairs, flatten_dict, load_configs
+from ...util.config import to_name_dict_pairs, flatten_dict, load_configs, cubegen_param_metadata_update
 
 
 def get_config_dict(config_obj: Dict[str, Union[str, bool, int, float, list, dict, tuple]]):
@@ -109,10 +109,5 @@ def get_config_dict(config_obj: Dict[str, Union[str, bool, int, float, list, dic
     output_metadata = config.get('output_metadata')
     if output_metadata:
         config['output_metadata'] = flatten_dict(output_metadata)
-    cubegen_param = config.copy()
-    cubegen_param.pop('output_metadata', None)
-    cubgen_param_keys = list(cubegen_param.keys())
-    for key in cubgen_param_keys:
-        cubegen_param['cubegen_param_'+ key] = cubegen_param.pop(key)
-    config['output_metadata'].update(flatten_dict(cubegen_param))
+    config = cubegen_param_metadata_update(config)
     return config

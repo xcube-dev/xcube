@@ -76,6 +76,22 @@ class DefaultProcessTest(unittest.TestCase):
         self.assertIn('lon', ds.coords)
         self.assertFalse(np.any(ds.coords['lon'] > 180.))
 
+    def test_update_metadata_with_cubegen_param(self):
+        f = open((os.path.join(os.path.dirname(__file__), 'inputdata', "input.txt")), "w+")
+        for i in range(1, 4):
+            file_name = "2017010" + str(i) + "-IFR-L4_GHRSST-SSTfnd-ODYSSEA-NWE_002-v2.0-fv1.0.nc"
+            file = get_inputdata_path(file_name)
+            f.write("%s\n" % file)
+        f.close()
+        status = gen_cube_wrapper(
+            [get_inputdata_path('input.txt')],
+            'l2c.zarr',
+            True
+        )
+        self.assertEqual(True, status)
+        ds = xr.open_zarr('l2c.zarr')
+        self.assertIn('cubegen_param_append_mode', ds.attrs.keys())
+
 
 # noinspection PyShadowingBuiltins
 def gen_cube_wrapper(input_paths, output_path, append_mode):
