@@ -446,6 +446,7 @@ class GetTimeSeriesForPointHandler(ServiceRequestHandler):
         start_date = self.params.get_query_argument_datetime('startDate', default=None)
         end_date = self.params.get_query_argument_datetime('endDate', default=None)
         max_valids = self.params.get_query_argument_int('maxValids', default=None)
+        _check_max_valids(max_valids)
 
         response = await IOLoop.current().run_in_executor(None,
                                                           get_time_series_for_point,
@@ -466,6 +467,7 @@ class GetTimeSeriesForGeometryHandler(ServiceRequestHandler):
         start_date = self.params.get_query_argument_datetime('startDate', default=None)
         end_date = self.params.get_query_argument_datetime('endDate', default=None)
         max_valids = self.params.get_query_argument_int('maxValids', default=None)
+        _check_max_valids(max_valids)
         geometry = self.get_body_as_json_object("GeoJSON geometry")
 
         response = await IOLoop.current().run_in_executor(None,
@@ -486,6 +488,7 @@ class GetTimeSeriesForGeometriesHandler(ServiceRequestHandler):
         start_date = self.params.get_query_argument_datetime('startDate', default=None)
         end_date = self.params.get_query_argument_datetime('endDate', default=None)
         max_valids = self.params.get_query_argument_int('maxValids', default=None)
+        _check_max_valids(max_valids)
         geometry_collection = self.get_body_as_json_object("GeoJSON geometry collection")
 
         response = await IOLoop.current().run_in_executor(None,
@@ -506,6 +509,7 @@ class GetTimeSeriesForFeaturesHandler(ServiceRequestHandler):
         start_date = self.params.get_query_argument_datetime('startDate', default=None)
         end_date = self.params.get_query_argument_datetime('endDate', default=None)
         max_valids = self.params.get_query_argument_int('maxValids', default=None)
+        _check_max_valids(max_valids)
         feature_collection = self.get_body_as_json_object("GeoJSON feature collection")
 
         response = await IOLoop.current().run_in_executor(None,
@@ -517,3 +521,8 @@ class GetTimeSeriesForFeaturesHandler(ServiceRequestHandler):
                                                           max_valids)
         self.set_header('Content-Type', 'application/json')
         self.finish(response)
+
+
+def _check_max_valids(max_valids):
+    if not (max_valids is None or max_valids == -1 or max_valids > 0):
+        raise ServiceBadRequestError('If given, query parameter "maxValids" must be -1 or positive')
