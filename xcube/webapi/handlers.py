@@ -362,7 +362,7 @@ class GetPlaceGroupsHandler(ServiceRequestHandler):
 
     # noinspection PyShadowingBuiltins
     def get(self):
-        response = self.service_context.get_place_groups()
+        response = self.service_context.get_global_place_groups()
         self.set_header('Content-Type', "application/json")
         self.write(json.dumps(response, indent=2))
 
