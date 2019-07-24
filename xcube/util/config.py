@@ -98,20 +98,40 @@ def flatten_dict(d: Dict[str, Any]) -> Dict[str, Any]:
 
 
 def cubegen_param_metadata_update(d: Dict[str, Any]) -> Dict[str, Any]:
-    cubegen_param = dict()
-    # cubegen_param.fromkeys(['history'])
-    cubegen_param['history'] = d.copy()
-    cubegen_param['history'].pop('output_metadata', None)
-    cubegen_param_keys = list(cubegen_param['history'].keys())
+    cubegen_param = d.copy()
+    cubegen_param.pop('output_metadata', None)
+    cubegen_param_keys = list(cubegen_param.keys())
+    cubegen_param_array = []
     for key in cubegen_param_keys:
-        # cubegen_param['history']
-        # cubegen_param['history'].update(key=cubegen_param.pop(key))
-        cubegen_param['history'][key] = str(cubegen_param['history'][key])
+        cubegen_param_array.append(str(key) + ": " + str(cubegen_param[key]))
+        # cubegen_param[key] = str(cubegen_param[key])
+
+
+    # cubegen_param_array = flatten_dict(cubegen_param)
+
     if 'output_metadata' in d:
-        d['output_metadata']['history'].update(flatten_dict(cubegen_param))
+        d['output_metadata'].update(flatten_dict(cubegen_param))
     else:
-        d.fromkeys(['output_metadata'])
-        d['output_metadata']['history'] = flatten_dict(cubegen_param)
+        d['output_metadata'] = flatten_dict(dict(history=cubegen_param_array))
+
+    # cubegen_param['history'] = d.copy()
+    # cubegen_param['history'].pop('output_metadata', None)
+    # cubegen_param['history'].update(flatten_dict(cubegen_param['history']))
+    # cubegen_param_keys = list(cubegen_param['history'].keys())
+    # for key in cubegen_param_keys:
+    #     # cubegen_param['history']
+    #     # cubegen_param['history'].update(key=cubegen_param.pop(key))
+    #     cubegen_param['history'][key] = str(cubegen_param['history'][key])
+
+    # if 'output_metadata' in d:
+    #     # d['output_metadata'].append('history')
+    # # d.setdefault(['output_metadata']['history'], []).append(flatten_dict(cubegen_param))
+    #     d['output_metadata'].update(flatten_dict(cubegen_param))
+    # else:
+    # #     d.append('history')
+    #
+    # #     d.fromkeys(['output_metadata'])
+    #     d['output_metadata'] = cubegen_param
     return d
 
 
