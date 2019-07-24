@@ -92,9 +92,9 @@ def new_application(prefix: str = None):
 
         (prefix + url_pattern('/places'),
          GetPlaceGroupsHandler),
-        (prefix + url_pattern('/places/{{collection_name}}'),
+        (prefix + url_pattern('/places/{{place_group_id}}'),
          FindPlacesHandler),
-        (prefix + url_pattern('/places/{{collection_name}}/{{ds_id}}'),
+        (prefix + url_pattern('/places/{{place_group_id}}/{{ds_id}}'),
          FindDatasetPlacesHandler),
 
         # Time-series API (for VITO's DCS4COP viewer only, PRELIMINARY & UNSTABLE - will be revised soon)
