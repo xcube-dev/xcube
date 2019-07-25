@@ -1,12 +1,3 @@
 {
-    "Conventions": "CF-1.6",
-    "TileSize": "128:1190",
-    "auto_grouping": "iop:conc:rtoa:rrs:rhown:kd:unc",
-    "coordinates": "lon_bnds lat_bnds time_bnds",
-    "metadata_profile": "beam",
-    "metadata_version": "0.5",
-    "product_type": "C2RCC_OLCI",
-    "start_date": "16-JAN-2017 10:09:05.396603",
-    "stop_date": "16-JAN-2017 10:09:38.271909",
-    "tiepoint_coordinates": "TP_longitude TP_latitude"
+    "Conventions": "CF-1.7"
 }
