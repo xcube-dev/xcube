@@ -109,14 +109,13 @@ def get_dataset(ctx: ServiceContext, ds_id: str, client=None, base_url: str = No
     dim_names = ds.data_vars[list(ds.data_vars)[0]].dims if len(ds.data_vars) > 0 else ds.dims.keys()
     dataset_dict["dimensions"] = [get_dataset_coordinates(ctx, ds_id, dim_name) for dim_name in dim_names]
 
-    # place_groups = ctx.get_dataset_place_groups(ds_id, load_features=False)
-    place_groups = ctx.get_dataset_place_groups(ds_id, load_features=True)
+    place_groups = ctx.get_dataset_place_groups(ds_id)
     if place_groups:
         def filter_place_group(place_group: Dict):
             place_group = dict(place_group)
             del place_group['sourcePaths']
             del place_group['sourceEncoding']
-            # place_group['features'] = None
+            place_group['features'] = None
             return place_group
         place_groups = list(map(filter_place_group, place_groups))
         dataset_dict["placeGroups"] = place_groups
