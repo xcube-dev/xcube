@@ -278,7 +278,7 @@ class ServiceContext:
                 self.load_place_group_features(place_group)
         return place_groups
 
-    def get_dataset_place_groups(self, ds_id: str, load_features=True) -> List[Dict]:
+    def get_dataset_place_groups(self, ds_id: str, load_features=False) -> List[Dict]:
         dataset_descriptor = self.get_dataset_descriptor(ds_id)
 
         place_group_id_prefix = f"DS-{ds_id}-"
