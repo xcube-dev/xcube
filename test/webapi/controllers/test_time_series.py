@@ -43,8 +43,8 @@ class TimeSeriesControllerTest(unittest.TestCase):
                                                 start_date=np.datetime64('2017-01-15'),
                                                 end_date=np.datetime64('2017-01-29'),
                                                 max_valids=1)
-        expected_dict = {'results': [{'date': '2017-01-16T10:09:22Z',
-                                      'result': {'average': 3.534773588180542,
+        expected_dict = {'results': [{'date': '2017-01-28T09:58:11Z',
+                                      'result': {'average': 20.12085723876953,
                                                  'totalCount': 1,
                                                  'validCount': 1}}]}
         self.assertEqual(expected_dict, time_series)
@@ -133,10 +133,27 @@ class TimeSeriesControllerTest(unittest.TestCase):
                                                    dict(type="Polygon", coordinates=[[
                                                        [1., 51.], [2., 51.], [2., 52.], [1., 52.], [1., 51.]
                                                    ]]), max_valids=1)
+        expected_dict = {'results': [{'date': '2017-01-28T09:58:11Z',
+                                      'result': {'average': 49.71656646340396,
+                                                 'totalCount': 1,
+                                                 'validCount': 132716}}]}
+
+        self.assertEqual(expected_dict, time_series)
+
+    def test_get_time_series_for_geometry_polygon_only_valids(self):
+        ctx = new_test_service_context()
+        time_series = get_time_series_for_geometry(ctx, 'demo', 'conc_tsm',
+                                                   dict(type="Polygon", coordinates=[[
+                                                       [1., 51.], [2., 51.], [2., 52.], [1., 52.], [1., 51.]
+                                                   ]]), max_valids=-1)
         expected_dict = {'results': [{'date': '2017-01-16T10:09:22Z',
                                       'result': {'average': 56.0228561816751,
                                                  'totalCount': 1,
-                                                 'validCount': 122738}}]}
+                                                 'validCount': 122738}},
+                                     {'date': '2017-01-28T09:58:11Z',
+                                      'result': {'average': 49.71656646340396,
+                                                 'totalCount': 1,
+                                                 'validCount': 132716}}]}
 
         self.assertEqual(expected_dict, time_series)
 
