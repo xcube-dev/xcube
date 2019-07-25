@@ -271,6 +271,8 @@ class HandlersTest(AsyncHTTPTestCase):
         self.assertBadRequestResponse(response, 'Missing query parameter "lon"')
         response = self.fetch(self.prefix + '/ts/demo/conc_chl/point?lon=2.1')
         self.assertBadRequestResponse(response, 'Missing query parameter "lat"')
+        response = self.fetch(self.prefix + '/ts/demo/conc_chl/point?lon=2.1&lat=51.1&maxValids=-5')
+        self.assertBadRequestResponse(response, 'If given, query parameter "maxValids" must be -1 or positive')
         response = self.fetch(self.prefix + '/ts/demo/conc_chl/point?lon=120.5&lat=-12.4')
         self.assertResponseOK(response)
         response = self.fetch(self.prefix + '/ts/demo/conc_chl/point?lon=2.1&lat=51.1')
