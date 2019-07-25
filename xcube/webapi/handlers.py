@@ -27,7 +27,8 @@ import pathlib
 
 from tornado.ioloop import IOLoop
 
-from .controllers.catalogue import get_datasets, get_dataset_coordinates, get_color_bars, get_dataset
+from .controllers.catalogue import get_datasets, get_dataset_coordinates, get_color_bars, get_dataset, \
+    get_dataset_places
 from .controllers.places import find_places, find_dataset_places
 from .controllers.tiles import get_dataset_tile, get_dataset_tile_grid, get_ne2_tile, get_ne2_tile_grid, get_legend
 from .controllers.time_series import get_time_series_info, get_time_series_for_point, get_time_series_for_geometry, \
@@ -48,6 +49,7 @@ _WMTS_TILE_FORMAT = "image/png"
 _LOG = logging.getLogger('xcube')
 
 _LOG_S3BUCKET_HANDLER = False
+
 
 # noinspection PyAbstractClass
 class WMTSKvpHandler(ServiceRequestHandler):
@@ -135,6 +137,22 @@ class GetDatasetHandler(ServiceRequestHandler):
         response = get_dataset(self.service_context, ds_id, client=tile_client, base_url=self.base_url)
         self.set_header('Content-Type', 'application/json')
         self.write(json.dumps(response, indent=2))
+
+
+class GetDatasetPlacesHandler(ServiceRequestHandler):
+
+    def get(self, ds_id: str):
+        response = get_dataset_places(self.service_context, ds_id)
+        self.set_header('Content-Type', 'application/json')
+        self.write(json.dumps(response))
+
+
+class GetDatasetCoordsHandler(ServiceRequestHandler):
+
+    def get(self, ds_id: str, dim_name: str):
+        response = get_dataset_coordinates(self.service_context, ds_id, dim_name)
+        self.set_header('Content-Type', 'application/json')
+        self.write(json.dumps(response))
 
 
 # noinspection PyAbstractClass
@@ -248,14 +266,6 @@ class GetS3BucketObjectHandler(ServiceRequestHandler):
         local_path = os.path.normpath(local_path)
 
         return key, pathlib.Path(local_path)
-
-
-class GetDatasetCoordsHandler(ServiceRequestHandler):
-
-    def get(self, ds_id: str, dim_name: str):
-        response = get_dataset_coordinates(self.service_context, ds_id, dim_name)
-        self.set_header('Content-Type', 'application/json')
-        self.write(json.dumps(response, indent=2))
 
 
 # noinspection PyAbstractClass,PyBroadException

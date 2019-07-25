@@ -1,9 +1,10 @@
 import functools
 import json
-from typing import Dict, Tuple
+from typing import Dict, Tuple, List
 
 import numpy as np
 
+from xcube.webapi.controllers.places import GeoJsonFeatureCollection
 from ..context import ServiceContext
 from ..controllers.tiles import get_tile_source_options, get_dataset_tile_url
 from ..errors import ServiceBadRequestError
@@ -62,7 +63,7 @@ def get_datasets(ctx: ServiceContext,
     return dict(datasets=dataset_dicts)
 
 
-def get_dataset(ctx: ServiceContext, ds_id: str, client=None, base_url: str = None) -> Dict:
+def get_dataset(ctx: ServiceContext, ds_id: str, client=None, base_url: str = None) -> GeoJsonFeatureCollection:
     dataset_descriptor = ctx.get_dataset_descriptor(ds_id)
 
     ds_id = dataset_descriptor['Identifier']
@@ -117,10 +118,16 @@ def get_dataset(ctx: ServiceContext, ds_id: str, client=None, base_url: str = No
             del place_group['sourceEncoding']
             place_group['features'] = None
             return place_group
+
         place_groups = list(map(filter_place_group, place_groups))
         dataset_dict["placeGroups"] = place_groups
 
     return dataset_dict
+
+
+def get_dataset_places(ctx: ServiceContext, ds_id: str) -> List[GeoJsonFeatureCollection]:
+    place_groups = ctx.get_dataset_place_groups(ds_id, load_features=True)
+    return place_groups
 
 
 def get_dataset_coordinates(ctx: ServiceContext, ds_id: str, dim_name: str) -> Dict:
