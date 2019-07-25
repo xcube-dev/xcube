@@ -112,7 +112,6 @@ class ServiceContext:
                     self._tile_cache.clear()
                 if self._place_group_cache:
                     self._place_group_cache.clear()
-
         self._config = config
 
     @property
