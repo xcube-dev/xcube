@@ -97,44 +97,6 @@ def flatten_dict(d: Dict[str, Any]) -> Dict[str, Any]:
     return result
 
 
-def cubegen_param_metadata_update(d: Dict[str, Any]) -> Dict[str, Any]:
-    cubegen_param = d.copy()
-    cubegen_param.pop('output_metadata', None)
-    cubegen_param_keys = list(cubegen_param.keys())
-    cubegen_param_array = []
-    for key in cubegen_param_keys:
-        cubegen_param_array.append(str(key) + ": " + str(cubegen_param[key]))
-        # cubegen_param[key] = str(cubegen_param[key])
-
-    cubegen_dict = dict(history=cubegen_param_array)
-    # cubegen_param_array = flatten_dict(cubegen_param)
-
-    if 'output_metadata' in d:
-        d['output_metadata'].update(flatten_dict(cubegen_param))
-    else:
-        d['output_metadata'] = flatten_dict(dict(history=cubegen_param_array))
-
-    # cubegen_param['history'] = d.copy()
-    # cubegen_param['history'].pop('output_metadata', None)
-    # cubegen_param['history'].update(flatten_dict(cubegen_param['history']))
-    # cubegen_param_keys = list(cubegen_param['history'].keys())
-    # for key in cubegen_param_keys:
-    #     # cubegen_param['history']
-    #     # cubegen_param['history'].update(key=cubegen_param.pop(key))
-    #     cubegen_param['history'][key] = str(cubegen_param['history'][key])
-
-    # if 'output_metadata' in d:
-    #     # d['output_metadata'].append('history')
-    # # d.setdefault(['output_metadata']['history'], []).append(flatten_dict(cubegen_param))
-    #     d['output_metadata'].update(flatten_dict(cubegen_param))
-    # else:
-    # #     d.append('history')
-    #
-    # #     d.fromkeys(['output_metadata'])
-    #     d['output_metadata'] = cubegen_param
-    return d
-
-
 def _flatten_dict_value(value: Any,
                         result: Dict[str, Any],
                         parent_name: Optional[str],
@@ -167,6 +129,22 @@ def _flatten_dict_value(value: Any,
         _flatten_dict_value(e, result, parent_name, True)
 
     return result
+
+
+def cubegen_param_metadata_update(d: Dict[str, Any]) -> Dict[str, Any]:
+    cubegen_param = d.copy()
+    cubegen_param.pop('output_metadata', None)
+    cubegen_param_keys = list(cubegen_param.keys())
+    cubegen_param_array = []
+    for key in cubegen_param_keys:
+        cubegen_param_array.append(str(key) + ": " + str(cubegen_param[key]) + '\n')
+    cubegen_dict = dict(history=cubegen_param_array)
+    cubegen_dict['history'] = str(cubegen_dict['history'])
+    if 'output_metadata' in d:
+        d['output_metadata'].update(cubegen_dict)
+    else:
+        d['output_metadata'] = cubegen_dict
+    return d
 
 
 def merge_config(first_dict: Dict, *more_dicts):

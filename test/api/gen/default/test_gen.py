@@ -90,7 +90,7 @@ class DefaultProcessTest(unittest.TestCase):
         )
         self.assertEqual(True, status)
         ds = xr.open_zarr('l2c.zarr')
-        self.assertIn('cubegen_param_append_mode', ds.attrs.keys())
+        self.assertIn('history', ds.attrs.keys())
 
 
 # noinspection PyShadowingBuiltins
