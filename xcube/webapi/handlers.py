@@ -371,7 +371,7 @@ class GetPlaceGroupsHandler(ServiceRequestHandler):
 class FindPlacesHandler(ServiceRequestHandler):
 
     # noinspection PyShadowingBuiltins
-    def get(self, collection_name: str):
+    def get(self, place_group_id: str):
         query_expr = self.params.get_query_argument("query", None)
         geom_wkt = self.params.get_query_argument("geom", None)
         box_coords = self.params.get_query_argument("bbox", None)
@@ -379,19 +379,19 @@ class FindPlacesHandler(ServiceRequestHandler):
         if geom_wkt and box_coords:
             raise ServiceBadRequestError('Only one of "geom" and "bbox" may be given')
         response = find_places(self.service_context,
-                               collection_name,
+                               place_group_id,
                                geom_wkt=geom_wkt, box_coords=box_coords,
                                query_expr=query_expr, comb_op=comb_op)
         self.set_header('Content-Type', "application/json")
         self.write(json.dumps(response, indent=2))
 
     # noinspection PyShadowingBuiltins
-    def post(self, collection_name: str):
+    def post(self, place_group_id: str):
         query_expr = self.params.get_query_argument("query", None)
         comb_op = self.params.get_query_argument("comb", "and")
         geojson_obj = self.get_body_as_json_object()
         response = find_places(self.service_context,
-                               collection_name,
+                               place_group_id,
                                geojson_obj=geojson_obj,
                                query_expr=query_expr, comb_op=comb_op)
         self.set_header('Content-Type', "application/json")
@@ -402,11 +402,11 @@ class FindPlacesHandler(ServiceRequestHandler):
 class FindDatasetPlacesHandler(ServiceRequestHandler):
 
     # noinspection PyShadowingBuiltins
-    def get(self, collection_name: str, ds_id: str):
+    def get(self, place_group_id: str, ds_id: str):
         query_expr = self.params.get_query_argument("query", None)
         comb_op = self.params.get_query_argument("comb", "and")
         response = find_dataset_places(self.service_context,
-                                       collection_name, ds_id,
+                                       place_group_id, ds_id,
                                        query_expr=query_expr, comb_op=comb_op)
         self.set_header('Content-Type', "application/json")
         self.write(json.dumps(response, indent=2))
@@ -446,6 +446,7 @@ class GetTimeSeriesForPointHandler(ServiceRequestHandler):
         start_date = self.params.get_query_argument_datetime('startDate', default=None)
         end_date = self.params.get_query_argument_datetime('endDate', default=None)
         max_valids = self.params.get_query_argument_int('maxValids', default=None)
+        _check_max_valids(max_valids)
 
         response = await IOLoop.current().run_in_executor(None,
                                                           get_time_series_for_point,
@@ -466,6 +467,7 @@ class GetTimeSeriesForGeometryHandler(ServiceRequestHandler):
         start_date = self.params.get_query_argument_datetime('startDate', default=None)
         end_date = self.params.get_query_argument_datetime('endDate', default=None)
         max_valids = self.params.get_query_argument_int('maxValids', default=None)
+        _check_max_valids(max_valids)
         geometry = self.get_body_as_json_object("GeoJSON geometry")
 
         response = await IOLoop.current().run_in_executor(None,
@@ -486,6 +488,7 @@ class GetTimeSeriesForGeometriesHandler(ServiceRequestHandler):
         start_date = self.params.get_query_argument_datetime('startDate', default=None)
         end_date = self.params.get_query_argument_datetime('endDate', default=None)
         max_valids = self.params.get_query_argument_int('maxValids', default=None)
+        _check_max_valids(max_valids)
         geometry_collection = self.get_body_as_json_object("GeoJSON geometry collection")
 
         response = await IOLoop.current().run_in_executor(None,
@@ -506,6 +509,7 @@ class GetTimeSeriesForFeaturesHandler(ServiceRequestHandler):
         start_date = self.params.get_query_argument_datetime('startDate', default=None)
         end_date = self.params.get_query_argument_datetime('endDate', default=None)
         max_valids = self.params.get_query_argument_int('maxValids', default=None)
+        _check_max_valids(max_valids)
         feature_collection = self.get_body_as_json_object("GeoJSON feature collection")
 
         response = await IOLoop.current().run_in_executor(None,
@@ -517,3 +521,8 @@ class GetTimeSeriesForFeaturesHandler(ServiceRequestHandler):
                                                           max_valids)
         self.set_header('Content-Type', 'application/json')
         self.finish(response)
+
+
+def _check_max_valids(max_valids):
+    if not (max_valids is None or max_valids == -1 or max_valids > 0):
+        raise ServiceBadRequestError('If given, query parameter "maxValids" must be -1 or positive')
