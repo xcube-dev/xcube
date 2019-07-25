@@ -50,7 +50,7 @@ def find_places(ctx: ServiceContext,
     elif geojson_obj:
         try:
             if geojson_obj["type"] == "FeatureCollection":
-                query_geometry = shapely.geometry.shape(geojson_obj["places"][0]["geometry"])
+                query_geometry = shapely.geometry.shape(geojson_obj["features"][0]["geometry"])
             elif geojson_obj["type"] == "Feature":
                 query_geometry = shapely.geometry.shape(geojson_obj["geometry"])
             else:
@@ -80,11 +80,10 @@ def __find_places(ctx: ServiceContext,
         raise NotImplementedError("comb_op not yet supported")
 
     if place_group_id == ALL_PLACES:
-        place_groups = ctx.get_global_place_groups()
+        place_groups = ctx.get_global_place_groups(load_features=True)
         features = []
-        for pg in place_groups:
-            pg_features = ctx.load_place_group_features(pg)
-            features.extend(pg_features)
+        for place_group in place_groups:
+            features.extend(place_group['features'])
         feature_collection = dict(type="FeatureCollection", features=features)
     else:
         feature_collection = ctx.get_global_place_group(place_group_id, load_features=True)
