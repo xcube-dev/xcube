@@ -139,7 +139,7 @@ def cubegen_param_metadata_update(d: Dict[str, Any]) -> Dict[str, Any]:
     for key in cubegen_param_keys:
         cubegen_param_array.append(str(key) + ": " + str(cubegen_param[key]) + '\n')
     cubegen_dict = dict(history=cubegen_param_array)
-    cubegen_dict['history'] = str(cubegen_dict['history'])
+    cubegen_dict['history'] = str(cubegen_dict['history']).replace('[', '').replace(']', '')
     if 'output_metadata' in d:
         d['output_metadata'].update(cubegen_dict)
     else:
