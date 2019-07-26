@@ -28,7 +28,7 @@ import pathlib
 from tornado.ioloop import IOLoop
 
 from .controllers.catalogue import get_datasets, get_dataset_coordinates, get_color_bars, get_dataset, \
-    get_dataset_places
+    get_dataset_place_groups, get_dataset_place_group
 from .controllers.places import find_places, find_dataset_places
 from .controllers.tiles import get_dataset_tile, get_dataset_tile_grid, get_ne2_tile, get_ne2_tile_grid, get_legend
 from .controllers.time_series import get_time_series_info, get_time_series_for_point, get_time_series_for_geometry, \
@@ -139,10 +139,18 @@ class GetDatasetHandler(ServiceRequestHandler):
         self.write(json.dumps(response, indent=2))
 
 
-class GetDatasetPlacesHandler(ServiceRequestHandler):
+class GetDatasetPlaceGroupsHandler(ServiceRequestHandler):
 
     def get(self, ds_id: str):
-        response = get_dataset_places(self.service_context, ds_id)
+        response = get_dataset_place_groups(self.service_context, ds_id)
+        self.set_header('Content-Type', 'application/json')
+        self.write(json.dumps(response))
+
+
+class GetDatasetPlaceGroupHandler(ServiceRequestHandler):
+
+    def get(self, ds_id: str, place_group_id: str):
+        response = get_dataset_place_group(self.service_context, ds_id, place_group_id)
         self.set_header('Content-Type', 'application/json')
         self.write(json.dumps(response))
 

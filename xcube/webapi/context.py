@@ -290,6 +290,15 @@ class ServiceContext:
 
         return place_groups
 
+    def get_dataset_place_group(self, ds_id: str, place_group_id: str, load_features=False) -> Dict:
+        place_groups = self.get_dataset_place_groups(ds_id, load_features=False)
+        for place_group in place_groups:
+            if place_group_id == place_group['id']:
+                if load_features:
+                    self._load_place_group_features(place_group)
+                return place_group
+        raise ServiceResourceNotFoundError(f'Place group "{place_group_id}" not found')
+
     def get_global_place_groups(self, load_features=False) -> List[Dict]:
         return self._load_place_groups(self._config.get("PlaceGroups", []), is_global=True, load_features=load_features)
 
@@ -310,11 +319,13 @@ class ServiceContext:
                            load_features: bool = False) -> List[Dict]:
         place_groups = []
         for place_group_descriptor in place_group_descriptors:
-            place_group = self._load_place_group(place_group_descriptor, is_global=is_global, load_features=load_features)
+            place_group = self._load_place_group(place_group_descriptor, is_global=is_global,
+                                                 load_features=load_features)
             place_groups.append(place_group)
         return place_groups
 
-    def _load_place_group(self, place_group_descriptor: Dict[str, Any], is_global: bool = False, load_features: bool = False) -> Dict[str, Any]:
+    def _load_place_group(self, place_group_descriptor: Dict[str, Any], is_global: bool = False,
+                          load_features: bool = False) -> Dict[str, Any]:
         place_group_id = place_group_descriptor.get("PlaceGroupRef")
         if place_group_id:
             if is_global:

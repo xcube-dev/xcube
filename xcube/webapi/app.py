@@ -30,7 +30,7 @@ from .handlers import GetNE2TileHandler, GetDatasetVarTileHandler, InfoHandler, 
     GetDatasetCoordsHandler, GetTimeSeriesInfoHandler, GetTimeSeriesForPointHandler, WMTSKvpHandler, \
     GetTimeSeriesForGeometryHandler, GetTimeSeriesForFeaturesHandler, GetTimeSeriesForGeometriesHandler, \
     GetPlaceGroupsHandler, GetDatasetVarLegendHandler, GetDatasetHandler, GetWMTSTileHandler, GetS3BucketObjectHandler, \
-    ListS3BucketHandler, GetDatasetPlacesHandler
+    ListS3BucketHandler, GetDatasetPlaceGroupsHandler, GetDatasetPlaceGroupHandler
 from .service import url_pattern
 
 __author__ = "Norman Fomferra (Brockmann Consult GmbH)"
@@ -57,7 +57,9 @@ def new_application(prefix: str = None):
         (prefix + url_pattern('/datasets/{{ds_id}}'),
          GetDatasetHandler),
         (prefix + url_pattern('/datasets/{{ds_id}}/places'),
-         GetDatasetPlacesHandler),
+         GetDatasetPlaceGroupsHandler),
+        (prefix + url_pattern('/datasets/{{ds_id}}/places/{{place_group_id}}'),
+         GetDatasetPlaceGroupHandler),
         (prefix + url_pattern('/datasets/{{ds_id}}/coords/{{dim_name}}'),
          GetDatasetCoordsHandler),
         (prefix + url_pattern('/datasets/{{ds_id}}/vars/{{var_name}}/legend.png'),
