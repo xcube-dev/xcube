@@ -20,6 +20,8 @@
 # SOFTWARE.
 
 import datetime
+import glob
+import traceback
 from typing import Tuple, Union, Sequence
 
 import numpy as np
@@ -104,7 +106,7 @@ def sort_by_time(input_paths: Sequence[str], input_reader, input_processor, moni
     return sorted_input_paths
 
 
-def _get_half_time(time_range):
+def _get_half_time(time_range: Tuple[float, float]):
     start_time = time_range[0]
     end_time = time_range[0]
     half_seconds = (end_time - start_time) / 2
