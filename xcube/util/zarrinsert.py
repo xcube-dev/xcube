@@ -27,7 +27,7 @@ import xarray as xr
 
 from typing import Tuple
 
-from xcube.util.timecoord import get_time_in_days_since_1970
+from .timecoord import get_time_in_days_since_1970
 
 
 def check_append_or_insert(time_range: Tuple[float, float], output_path: str) -> bool:
@@ -72,36 +72,39 @@ def _check_if_insert_into_output_path(input_path: str, output_path: str) -> bool
 
 def _rename_file(path: str, old_time_idx: int, new_time_idx: int):
     """Renaming files within the directories according to new time index."""
-    with xr.open_zarr(path) as ds:
-        variables = ds.variables
-    for v in variables:
-        if (v != 'lat') and (v != 'lon') and (v != 'lat_bnds') and (v != 'lon_bnds'):
-            v_path = os.path.join(path, v)
-            for root, dirs, files in os.walk(v_path):
-                for filename in files:
-                    parts1 = filename.split('.', 1)[0]
-                    if parts1 == (str(old_time_idx)) and (v != "time"):
-                        parts2 = filename.split('.', 1)[1]
-                        new_name = f'{new_time_idx}.{parts2}'
-                        os.rename(os.path.join(v_path, filename), os.path.join(v_path, new_name))
-                    elif parts1 == (str(old_time_idx)) and (v == "time"):
-                        os.rename(os.path.join(v_path, filename), os.path.join(v_path, str(new_time_idx)))
+    for variable in _get_variables_and_dims_to_rename_and_copy(path):
+        v_path = os.path.join(path, variable)
+        for root, dirs, files in os.walk(v_path):
+            for filename in files:
+                parts1 = filename.split('.', 1)[0]
+                if parts1 == (str(old_time_idx)) and (variable != "time"):
+                    parts2 = filename.split('.', 1)[1]
+                    new_name = f'{new_time_idx}.{parts2}'
+                    os.rename(os.path.join(v_path, filename), os.path.join(v_path, new_name))
+                elif parts1 == (str(old_time_idx)) and (variable == "time"):
+                    os.rename(os.path.join(v_path, filename), os.path.join(v_path, str(new_time_idx)))
 
 
 def _copy_into_output_path(input_path: str, output_path: str, input_time_idx: int):
     """Copy the files with the new time stamp into the existing zarr directory."""
-    with xr.open_zarr(input_path) as input_ds:
-        variables = input_ds.variables
-    for variable in variables:
-        if (variable != 'lat') and (variable != 'lon') and (variable != 'lat_bnds') and (variable != 'lon_bnds'):
-            v_path = os.path.join(input_path, variable)
-            for root, dirs, files in os.walk(v_path):
-                for filename in files:
-                    parts1 = filename.split('.', 1)[0]
-                    if parts1 == str(input_time_idx):
-                        shutil.copyfile((os.path.join(input_path, variable, filename)),
-                                        (os.path.join(output_path, variable, filename)))
-            _adjust_zarray(output_path, variable)
+    for variable in _get_variables_and_dims_to_rename_and_copy(input_path):
+        v_path = os.path.join(input_path, variable)
+        for root, dirs, files in os.walk(v_path):
+            for filename in files:
+                parts1 = filename.split('.', 1)[0]
+                if parts1 == str(input_time_idx):
+                    shutil.copyfile((os.path.join(input_path, variable, filename)),
+                                    (os.path.join(output_path, variable, filename)))
+        _adjust_zarray(output_path, variable)
+
+
+def _get_variables_and_dims_to_rename_and_copy(path: str):
+    with xr.open_zarr(path) as ds:
+        variables = []
+        for v in ds.variables:
+            if 'time' in ds[v].dims:
+                variables.append(v)
+    return variables
 
 
 def _adjust_zarray(output_path: str, variable: str):
