@@ -31,6 +31,7 @@ from xcube.util.timecoord import get_time_in_days_since_1970
 
 
 def check_append_or_insert(time_range: Tuple[float, float], output_path: str) -> bool:
+    """Checking if time stamp needs to be inserted into output path or appended."""
     t1, t2 = time_range
     if t1 != t2:
         t_center = (t1 + t2) / 2

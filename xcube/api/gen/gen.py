@@ -262,8 +262,8 @@ def _process_input(input_processor: InputProcessor,
                 steps.append((step9, f'appending to {output_path}'))
 
             elif output_path.endswith('.zarr'):
-                _APPEND_DS_TO_DC = check_append_or_insert(time_range, output_path)
-                if _APPEND_DS_TO_DC:
+                append_input_file_to_output_path = check_append_or_insert(time_range, output_path)
+                if append_input_file_to_output_path:
                     def step9(dataset):
                         output_writer.append(dataset, output_path, **output_writer_params)
                         return dataset

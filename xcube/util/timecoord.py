@@ -85,6 +85,7 @@ def timestamp_to_iso_string(time: Union[np.datetime64, datetime.datetime], freq=
 
 
 def sort_by_time(input_paths: Sequence[str], input_reader, input_processor, monitor):
+    """ Sort input paths based on time stamp of each input file"""
     sorted_input_paths = []
     times = []
     input_paths = [input_file for f in input_paths for input_file in glob.glob(f, recursive=True)]
@@ -107,6 +108,7 @@ def sort_by_time(input_paths: Sequence[str], input_reader, input_processor, moni
 
 
 def _get_half_time(time_range: Tuple[float, float]):
+    """Get half time of time range"""
     start_time = time_range[0]
     end_time = time_range[0]
     half_seconds = (end_time - start_time) / 2
