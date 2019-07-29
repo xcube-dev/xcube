@@ -254,17 +254,18 @@ Generate data cube.
                                       'Lanczos', 'Average', 'Min', 'Max',
                                       'Median', 'Mode', 'Q1', 'Q3'])
       -a, --append                    Append successive outputs.
+      --nosort                        This parameter is needed if the order of the
+                                      input files is already sorted by the user
+                                      and the chronology is ensured. By providing
+                                      a sorted list of inputs the performance of
+                                      xcube gen can be improved. When the
+                                      parameter is not given, the default
+                                      behaviour of xcube gen sorts the input files
+                                      based on the time stamps of the input files.
       --dry_run                       Just read and process inputs, but don't
                                       produce any outputs.
       -i, --info                      Displays additional information about format
                                       options or about input processors.
-      --sort                          This parameter is only needed for creating
-                                      netCDF cubes. The input file list will be
-                                      sorted before creating the data cube. If
-                                      --sort parameter is not passed, order of
-                                      input list will be kept. When creating zarr
-                                      data cubes, chronology is forced by "xcube
-                                      gen".
       --help                          Show this message and exit.
 
 Below is the `xcube gen --info` call with 5 input processors installed via plugins.

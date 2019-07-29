@@ -36,7 +36,7 @@ from ..select import select_vars
 from ..update import update_var_props, update_global_attrs
 from ...util.config import NameAnyDict, NameDictPairList, to_resolved_name_dict_pairs
 from ...util.dsio import rimraf, DatasetIO, find_dataset_io, guess_dataset_format
-from ...util.timecoord import add_time_coords
+from ...util.timecoord import add_time_coords, sort_by_time
 from ...util.zarrinsert import check_append_or_insert, insert_input_file_into_output_path
 
 _PROFILING_ON = False
@@ -50,11 +50,11 @@ def gen_cube(input_paths: Sequence[str] = None, input_processor: str = None, inp
              output_writer: str = None, output_writer_params: Dict[str, Any] = None,
              output_metadata: NameAnyDict = None, output_variables: NameDictPairList = None,
              processed_variables: NameDictPairList = None, append_mode: bool = False, dry_run: bool = False,
-             monitor: Callable[..., None] = None, sort_mode: bool = False) -> bool:
+             monitor: Callable[..., None] = None, no_sort: bool = False) -> bool:
     """
     Generate a data cube from one or more input files.
 
-    :param sort_mode:
+    :param no_sort:
     :param input_paths: The input paths.
     :param input_processor: Name of a registered input processor (xcube.api.gen.inputprocessor.InputProcessor)
            to be used to transform the inputs
@@ -110,8 +110,8 @@ def gen_cube(input_paths: Sequence[str] = None, input_processor: str = None, inp
         def monitor(*args):
             pass
 
-    if sort_mode is True:
-        input_paths = sorted([input_file for f in input_paths for input_file in glob.glob(f, recursive=True)])
+    if no_sort is False:
+        input_paths = sort_by_time(input_paths, input_reader, input_processor, monitor)
     else:
         input_paths = [input_file for f in input_paths for input_file in glob.glob(f, recursive=True)]
 

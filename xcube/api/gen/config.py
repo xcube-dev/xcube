@@ -41,7 +41,7 @@ def get_config_dict(config_obj: Dict[str, Union[str, bool, int, float, list, dic
     output_variables = config_obj.get("output_variables")
     output_resampling = config_obj.get("output_resampling")
     append_mode = config_obj.get("append_mode")
-    sort_mode = config_obj.get("sort_mode")
+    no_sort = config_obj.get("no_sort")
 
     config = load_configs(*config_file) if config_file else {}
 
@@ -95,8 +95,8 @@ def get_config_dict(config_obj: Dict[str, Union[str, bool, int, float, list, dic
     if append_mode is not None and config.get('append_mode') is None:
         config['append_mode'] = append_mode
 
-    if sort_mode is not None and config.get('sort_mode') is None:
-        config['sort_mode'] = sort_mode
+    if no_sort is not None and config.get('no_sort') is None:
+        config['no_sort'] = no_sort
 
     processed_variables = config.get('processed_variables')
     if processed_variables:

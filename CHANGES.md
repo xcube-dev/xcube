@@ -1,6 +1,9 @@
 ## Changes in 0.2.0 (in dev)
 
 ### Enhancements
+* `xcube gen` now has a parameter `--nosort`, which the user can use to suppress xcube gen to sort the input list based
+   based on the time stamps of the input files. When using the `--nosort` parameter, the list should be already
+   presorted in order to improve the performance of `xcube gen`.
 * `xcube gen` is now able to insert time stamps into existing data cubes in zarr format without breaking the chronology.
    If a time stamp of an input file is already in the data cube, the input file is skipped. (#64 and #45)
 * `xcube serve` accepts custom SNAP colormaps. The path to a SAP .cpd file can be passed via the server  

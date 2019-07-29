@@ -65,7 +65,8 @@ class DefaultProcessTest(unittest.TestCase):
         status = gen_cube_wrapper(
             [get_inputdata_path('input.txt')],
             'l2c.zarr',
-            True
+            True,
+            no_sort=True
         )
         self.assertEqual(True, status)
         ds = xr.open_zarr('l2c.zarr')
@@ -78,13 +79,26 @@ class DefaultProcessTest(unittest.TestCase):
         status = gen_cube_wrapper(
             [get_inputdata_path('input.txt')],
             'l2c.zarr',
-            True
+            True,
+            no_sort=True
         )
         self.assertEqual(True, status)
         ds = xr.open_zarr('l2c.zarr')
         self.assertEqual(
             "['2017-01-01T00:00:00.000000000' '2017-01-02T00:00:00.000000000'\n '2017-01-03T00:00:00.000000000']",
             str(ds.time.values[:]))
+
+    def test_sortby_time(self):
+        create_input_txt(reversed(range(1, 4)))
+        status = gen_cube_wrapper(
+            [get_inputdata_path('input.txt')],
+            'l2c.zarr',
+            True,
+            sort_mode=False
+        )
+        self.assertEqual(True, status)
+        ds = xr.open_zarr('l2c.zarr')
+        self.assertEqual('2017-01-01T00:00:00.000000000', str(ds.time.values[0]))
 
     def test_handle_360_lon(self):
         status = gen_cube_wrapper(
@@ -99,8 +113,13 @@ class DefaultProcessTest(unittest.TestCase):
 
 
 # noinspection PyShadowingBuiltins
-def gen_cube_wrapper(input_paths, output_path, append_mode):
-    config = get_config_dict(locals())
+def gen_cube_wrapper(input_paths, output_path, append_mode, **kwargs):
+    test_dict = locals().copy()
+    if "kwargs" in test_dict:
+        kwargs = test_dict.get("kwargs")
+        for key in kwargs:
+            test_dict[key] = kwargs[key]
+    config = get_config_dict(test_dict)
     return gen_cube(input_processor='default',
                     output_size=(320, 180),
                     output_region=(-4., 47., 12., 56.),

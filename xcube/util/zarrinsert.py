@@ -25,10 +25,12 @@ import os
 import shutil
 import xarray as xr
 
+from typing import Tuple
+
 from xcube.util.timecoord import get_time_in_days_since_1970
 
 
-def check_append_or_insert(time_range, output_path):
+def check_append_or_insert(time_range: Tuple[float, float], output_path: str) -> bool:
     t1, t2 = time_range
     if t1 != t2:
         t_center = (t1 + t2) / 2
@@ -38,7 +40,7 @@ def check_append_or_insert(time_range, output_path):
         return np.greater(t_center, get_time_in_days_since_1970(ds.time.values[-1]))
 
 
-def insert_input_file_into_output_path(input_path, output_path):
+def insert_input_file_into_output_path(input_path: str, output_path: str) -> bool:
     """Merging the data for the new time stamp into the existing and remaining zarr directory."""
     insert = _check_if_insert_into_output_path(input_path, output_path)
     if insert:
@@ -60,14 +62,14 @@ def insert_input_file_into_output_path(input_path, output_path):
         return False
 
 
-def _check_if_insert_into_output_path(input_path, output_path):
+def _check_if_insert_into_output_path(input_path: str, output_path: str) -> bool:
     """Check if to be added time stamp is unique """
     with xr.open_zarr(input_path) as input_ds, xr.open_zarr(output_path) as output_ds:
         mask = np.equal(output_ds.time.values, input_ds.time.values)
         return not mask.any()
 
 
-def _rename_file(path, old_time_idx, new_time_idx):
+def _rename_file(path: str, old_time_idx: int, new_time_idx: int):
     """Renaming files within the directories according to new time index."""
     with xr.open_zarr(path) as ds:
         variables = ds.variables
@@ -85,7 +87,7 @@ def _rename_file(path, old_time_idx, new_time_idx):
                         os.rename(os.path.join(v_path, filename), os.path.join(v_path, str(new_time_idx)))
 
 
-def _copy_into_output_path(input_path, output_path, input_time_idx):
+def _copy_into_output_path(input_path: str, output_path: str, input_time_idx: int):
     """Copy the files with the new time stamp into the existing zarr directory."""
     with xr.open_zarr(input_path) as input_ds:
         variables = input_ds.variables
@@ -100,7 +102,7 @@ def _copy_into_output_path(input_path, output_path, input_time_idx):
             _adjust_zarray(output_path, variable)
 
 
-def _adjust_zarray(output_path, variable):
+def _adjust_zarray(output_path: str, variable: str):
     """Changing the shape for time in the .zarray file."""
     with open((os.path.join(output_path, variable, '.zarray')), 'r') as jsonFile:
         data = json.load(jsonFile)
