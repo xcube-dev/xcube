@@ -48,15 +48,15 @@ def insert_input_file_into_output_path(input_path: str, output_path: str) -> boo
         with xr.open_zarr(input_path) as input_ds, xr.open_zarr(output_path) as output_ds:
             input_time_idx = 0
             new_time_idx = np.amin(np.where(output_ds.time[:] > (input_ds.time.values[input_time_idx])))
-        # Preparing the source directory with the single time stamp to be ready for merging
-        # --> files of variables, excluding "lat" and "lon" need to be renamed
+            # Preparing the source directory with the single time stamp to be ready for merging
+            # --> files of variables, excluding "lat" and "lon" need to be renamed
             _rename_file(input_path, input_time_idx, new_time_idx)
             # Preparing the destination directory to be ready for single time stam to be merged
             # --> files of variables, excluding "lat" and "lon" need to be renamed
             # The renaming needs to happen in reversed order and starting at the index of nearest above value:
             for i in reversed(range(new_time_idx, output_ds.time.shape[0])):
                 _rename_file(output_path, i, (i + 1))
-            # Final step: copy the single time stamp files into the destination zarr and adjusting .zarray to the change.
+            # Final step: copy the single time stamp files into destination zarr and adjusting .zarray to the change.
             _copy_into_output_path(input_path, output_path, new_time_idx)
             return True
     else:
@@ -82,7 +82,7 @@ def _rename_file(path: str, old_time_idx: int, new_time_idx: int):
                     parts1 = filename.split('.', 1)[0]
                     if parts1 == (str(old_time_idx)) and (v != "time"):
                         parts2 = filename.split('.', 1)[1]
-                        new_name = (str(new_time_idx) + '.{}').format(parts2)
+                        new_name = f'{new_time_idx}.{parts2}'
                         os.rename(os.path.join(v_path, filename), os.path.join(v_path, new_name))
                     elif parts1 == (str(old_time_idx)) and (v == "time"):
                         os.rename(os.path.join(v_path, filename), os.path.join(v_path, str(new_time_idx)))
@@ -99,7 +99,8 @@ def _copy_into_output_path(input_path: str, output_path: str, input_time_idx: in
                 for filename in files:
                     parts1 = filename.split('.', 1)[0]
                     if parts1 == str(input_time_idx):
-                        shutil.copyfile((os.path.join(input_path, variable, filename)), (os.path.join(output_path, variable, filename)))
+                        shutil.copyfile((os.path.join(input_path, variable, filename)),
+                                        (os.path.join(output_path, variable, filename)))
             _adjust_zarray(output_path, variable)
 
 
