@@ -262,7 +262,7 @@ Generate data cube.
                                       netCDF cubes. The input file list will be
                                       sorted before creating the data cube. If
                                       --sort parameter is not passed, order of
-                                      input list will be kept.When creating zarr
+                                      input list will be kept. When creating zarr
                                       data cubes, chronology is forced by "xcube
                                       gen".
       --help                          Show this message and exit.

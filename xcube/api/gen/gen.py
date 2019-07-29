@@ -24,11 +24,11 @@ import glob
 import io
 import os
 import pstats
+import tempfile
 import time
 import traceback
 from typing import Sequence, Callable, Tuple, Dict, Any
 
-from xcube.util.zarrinsert import check_append_or_insert, merge_single_zarr_into_destination_zarr
 from .defaults import DEFAULT_OUTPUT_SIZE, DEFAULT_OUTPUT_RESAMPLING, DEFAULT_OUTPUT_PATH
 from .iproc import InputProcessor, get_input_processor
 from ..compute import compute_dataset
@@ -37,9 +37,9 @@ from ..update import update_var_props, update_global_attrs
 from ...util.config import NameAnyDict, NameDictPairList, to_resolved_name_dict_pairs
 from ...util.dsio import rimraf, DatasetIO, find_dataset_io, guess_dataset_format
 from ...util.timecoord import add_time_coords
+from ...util.zarrinsert import check_append_or_insert, insert_input_file_into_output_path
 
 _PROFILING_ON = False
-_APPEND_DS_TO_DC = None
 
 
 def gen_cube(input_paths: Sequence[str] = None, input_processor: str = None, input_processor_params: Dict = None,
@@ -255,36 +255,32 @@ def _process_input(input_processor: InputProcessor,
     if not dry_run:
         if append_mode and os.path.exists(output_path):
             # noinspection PyShadowingNames
-            def step9(dataset):
-                global _APPEND_DS_TO_DC
-                if output_path.endswith('.nc'):
+            if output_path.endswith('.nc'):
+                def step9(dataset):
                     output_writer.append(dataset, output_path, **output_writer_params)
-                elif output_path.endswith('.zarr'):
-                    _APPEND_DS_TO_DC = check_append_or_insert(time_range, output_path)
-                    if _APPEND_DS_TO_DC is True:
+                    return dataset
+                steps.append((step9, f'appending to {output_path}'))
+
+            elif output_path.endswith('.zarr'):
+                _APPEND_DS_TO_DC = check_append_or_insert(time_range, output_path)
+                if _APPEND_DS_TO_DC:
+                    def step9(dataset):
                         output_writer.append(dataset, output_path, **output_writer_params)
-                    elif _APPEND_DS_TO_DC is False:
-                        tempdir_for_merging = os.path.join(os.path.dirname(__file__), '..', '..', '..',
-                                                           'tempdir_for_merging')
-                        try:
-                            os.mkdir(tempdir_for_merging)
-                        except OSError:
-                            monitor("Creation of the directory %s failed" % tempdir_for_merging)
-                        else:
-                            monitor("Successfully created the directory %s for inserting "
-                                    "time stamp " % tempdir_for_merging)
-                        temp_output_path = os.path.join(tempdir_for_merging,
-                                                        input_file.replace("/", "_")[:-3] + '.zarr')
-                        output_writer.write(dataset, temp_output_path, **output_writer_params)
-                        merged_data_set = merge_single_zarr_into_destination_zarr(temp_output_path, output_path)
-                        rimraf(tempdir_for_merging)
+                        return dataset
+
+                    steps.append((step9, f'appending to {output_path}'))
+
+                else:
+                    def step9(dataset):
+                        input_tempdir = tempfile.TemporaryDirectory()
+                        output_writer.write(dataset, input_tempdir.name, **output_writer_params)
+                        merged_data_set = insert_input_file_into_output_path(input_tempdir.name, output_path)
                         if not merged_data_set:
-                            monitor('Time Stamp of input data set is already existing in data cube: skipping...')
+                            monitor('Time stamp of input data set is already exists in output: skipping it...')
                             return False
+                        return dataset
 
-                return dataset
-
-            steps.append((step9, f'appending or merging to {output_path}'))
+                    steps.append((step9, f'inserting into {output_path}'))
 
         else:
             # noinspection PyShadowingNames

@@ -1,9 +1,8 @@
 ## Changes in 0.2.0 (in dev)
 
 ### Enhancements
-* `xcube gen` is now able to insert time stamps into existing data cubes in __zarr__ format without breaking the chronology. 
-    The parameter `--sort` therefore is not needed anymore for building and appending __.zarr__ cubes. If a time stamp of 
-    an input file is already in the data cube, the input file is skipped. (#64 and #45)
+* `xcube gen` is now able to insert time stamps into existing data cubes in zarr format without breaking the chronology.
+   If a time stamp of an input file is already in the data cube, the input file is skipped. (#64 and #45)
 * `xcube serve` accepts custom SNAP colormaps. The path to a SAP .cpd file can be passed via the server  
    configuration file with the paramter [ColorFile] instead of [ColorBar]. (#84)
 * `xcube serve` can now be configured to serve cubes that are associated 

@@ -7,7 +7,7 @@ import xarray as xr
 from xcube.api.gen.config import get_config_dict
 from xcube.api.gen.gen import gen_cube
 from xcube.util.dsio import rimraf
-from .helpers import get_inputdata_path
+from .helpers import get_inputdata_path, create_input_txt
 
 
 def clean_up():
@@ -52,12 +52,7 @@ class DefaultProcessTest(unittest.TestCase):
         self.assertEqual(True, status)
 
     def test_input_txt(self):
-        f = open((os.path.join(os.path.dirname(__file__), 'inputdata', "input.txt")), "w+")
-        for i in range(1, 4):
-            file_name = "2017010" + str(i) + "-IFR-L4_GHRSST-SSTfnd-ODYSSEA-NWE_002-v2.0-fv1.0.nc"
-            file = get_inputdata_path(file_name)
-            f.write("%s\n" % file)
-        f.close()
+        create_input_txt(range(1, 4))
         status = gen_cube_wrapper(
             [get_inputdata_path('input.txt')],
             'l2c.zarr',
@@ -66,32 +61,30 @@ class DefaultProcessTest(unittest.TestCase):
         self.assertEqual(True, status)
 
     def test_zarr_insert(self):
-        f = open((os.path.join(os.path.dirname(__file__), 'inputdata', "input.txt")), "w+")
-        for i in [1, 3, 2]:
-            file_name = "2017010" + str(i) + "-IFR-L4_GHRSST-SSTfnd-ODYSSEA-NWE_002-v2.0-fv1.0.nc"
-            file = get_inputdata_path(file_name)
-            f.write("%s\n" % file)
-        f.close()
+        create_input_txt([1, 3, 2])
         status = gen_cube_wrapper(
             [get_inputdata_path('input.txt')],
             'l2c.zarr',
             True
         )
         self.assertEqual(True, status)
+        ds = xr.open_zarr('l2c.zarr')
+        self.assertEqual(
+            "['2017-01-01T00:00:00.000000000' '2017-01-02T00:00:00.000000000'\n '2017-01-03T00:00:00.000000000']",
+            str(ds.time.values[:]))
 
     def test_insert_zarr_duplicate(self):
-        f = open((os.path.join(os.path.dirname(__file__), 'inputdata', "input.txt")), "w+")
-        for i in [1, 3, 2, 1]:
-            file_name = "2017010" + str(i) + "-IFR-L4_GHRSST-SSTfnd-ODYSSEA-NWE_002-v2.0-fv1.0.nc"
-            file = get_inputdata_path(file_name)
-            f.write("%s\n" % file)
-        f.close()
+        create_input_txt([1, 3, 2, 1])
         status = gen_cube_wrapper(
             [get_inputdata_path('input.txt')],
             'l2c.zarr',
             True
         )
         self.assertEqual(True, status)
+        ds = xr.open_zarr('l2c.zarr')
+        self.assertEqual(
+            "['2017-01-01T00:00:00.000000000' '2017-01-02T00:00:00.000000000'\n '2017-01-03T00:00:00.000000000']",
+            str(ds.time.values[:]))
 
     def test_handle_360_lon(self):
         status = gen_cube_wrapper(
