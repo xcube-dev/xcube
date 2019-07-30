@@ -36,6 +36,13 @@ from ...util.timecoord import timestamp_to_iso_string
 
 
 def get_time_series_info(ctx: ServiceContext) -> Dict:
+    """
+    Get time-series meta-information for variables.
+
+    :param ctx: Service context object
+    :return: a dictionary with a single entry "layers" which is a list of entries that are
+             dictionaries containing a variable's "name", "dates", and "bounds".
+    """
     time_series_info = {'layers': []}
     descriptors = ctx.get_dataset_descriptors()
     for descriptor in descriptors:
@@ -66,6 +73,22 @@ def get_time_series_for_point(ctx: ServiceContext,
                               start_date: np.datetime64 = None,
                               end_date: np.datetime64 = None,
                               max_valids: int = None) -> Dict:
+    """
+    Get the time-series for a given point.
+
+    :param ctx: Service context object
+    :param ds_name: The dataset identifier.
+    :param var_name: The variable name.
+    :param lon: The point's longitude in decimal degrees.
+    :param lat: The point's latitude in decimal degrees.
+    :param start_date: An optional start date.
+    :param end_date: An optional end date.
+    :param max_valids: Optional number of valid points.
+           If it is None (default), also missing values are returned as NaN;
+           if it is -1 only valid values are returned;
+           if it is a positive integer, the most recent valid values are returned.
+    :return: Time-series data structure.
+    """
     measure_time = measure_time_cm(disabled=not ctx.trace_perf)
     with measure_time('get_time_series_for_point'):
         dataset = _get_time_series_dataset(ctx, ds_name, var_name)
@@ -82,6 +105,21 @@ def get_time_series_for_geometry(ctx: ServiceContext,
                                  start_date: np.datetime64 = None,
                                  end_date: np.datetime64 = None,
                                  max_valids: int = None) -> Dict:
+    """
+    Get the time-series for a given *geometry*.
+
+    :param ctx: Service context object
+    :param ds_name: The dataset identifier.
+    :param var_name: The variable name.
+    :param geometry: The geometry, usually a point or polygon.
+    :param start_date: An optional start date.
+    :param end_date: An optional end date.
+    :param max_valids: Optional number of valid points.
+           If it is None (default), also missing values are returned as NaN;
+           if it is -1 only valid values are returned;
+           if it is a positive integer, the most recent valid values are returned.
+    :return: Time-series data structure.
+    """
     dataset = _get_time_series_dataset(ctx, ds_name, var_name)
     if not GeoJSON.is_geometry(geometry):
         raise ServiceBadRequestError("Invalid GeoJSON geometry")
@@ -100,6 +138,21 @@ def get_time_series_for_geometry_collection(ctx: ServiceContext,
                                             start_date: np.datetime64 = None,
                                             end_date: np.datetime64 = None,
                                             max_valids: int = None) -> Dict:
+    """
+    Get the time-series for a given *geometry_collection*.
+
+    :param ctx: Service context object
+    :param ds_name: The dataset identifier.
+    :param var_name: The variable name.
+    :param geometry_collection: The geometry collection.
+    :param start_date: An optional start date.
+    :param end_date: An optional end date.
+    :param max_valids: Optional number of valid points.
+           If it is None (default), also missing values are returned as NaN;
+           if it is -1 only valid values are returned;
+           if it is a positive integer, the most recent valid values are returned.
+    :return: Time-series data structure.
+    """
     dataset = _get_time_series_dataset(ctx, ds_name, var_name)
     geometries = GeoJSON.get_geometry_collection_geometries(geometry_collection)
     if geometries is None:
@@ -123,6 +176,21 @@ def get_time_series_for_feature_collection(ctx: ServiceContext,
                                            start_date: np.datetime64 = None,
                                            end_date: np.datetime64 = None,
                                            max_valids: int = None) -> Dict:
+    """
+    Get the time-series for the geometries of a given *feature_collection*.
+
+    :param ctx: Service context object
+    :param ds_name: The dataset identifier.
+    :param var_name: The variable name.
+    :param feature_collection: The feature collection.
+    :param start_date: An optional start date.
+    :param end_date: An optional end date.
+    :param max_valids: Optional number of valid points.
+           If it is None (default), also missing values are returned as NaN;
+           if it is -1 only valid values are returned;
+           if it is a positive integer, the most recent valid values are returned.
+    :return: Time-series data structure.
+    """
     dataset = _get_time_series_dataset(ctx, ds_name, var_name)
     features = GeoJSON.get_feature_collection_features(feature_collection)
     if features is None:
@@ -207,6 +275,9 @@ def _collect_ts_result(ts_ds: xr.Dataset,
                        uncert_var_name: str = None,
                        count_var_name: str = None,
                        max_valids: int = None):
+    if not (max_valids is None or max_valids == -1 or max_valids > 0):
+        raise ValueError('max_valids must be either None, -1 or positive')
+
     var = ts_ds[var_name]
     uncert_var = ts_ds[uncert_var_name] if uncert_var_name else None
     count_var = ts_ds[count_var_name] if count_var_name else None
@@ -215,7 +286,14 @@ def _collect_ts_result(ts_ds: xr.Dataset,
 
     num_times = var.time.size
     time_series = []
-    for time_index in range(num_times):
+
+    pos_max_valids = max_valids is not None and max_valids > 0
+    if pos_max_valids:
+        time_indexes = range(num_times - 1, -1, -1)
+    else:
+        time_indexes = range(num_times)
+
+    for time_index in time_indexes:
         if len(time_series) == max_valids:
             break
 
@@ -241,7 +319,10 @@ def _collect_ts_result(ts_ds: xr.Dataset,
         time_series.append(dict(result=statistics,
                                 date=timestamp_to_iso_string(var.time[time_index].data)))
 
-    return {'results': time_series}
+    if pos_max_valids:
+        return {'results': time_series[::-1]}
+    else:
+        return {'results': time_series}
 
 
 def _get_time_series_for_geometries(dataset: xr.Dataset,
