@@ -36,7 +36,7 @@ from ..select import select_vars
 from ..update import update_var_props, update_global_attrs
 from ...util.config import NameAnyDict, NameDictPairList, to_resolved_name_dict_pairs
 from ...util.dsio import rimraf, DatasetIO, find_dataset_io, guess_dataset_format
-from ...util.timecoord import add_time_coords, sort_by_time
+from ...util.timecoord import add_time_coords
 from ...util.zarrinsert import check_append_or_insert, insert_input_file_into_output_path
 
 _PROFILING_ON = False
@@ -111,7 +111,7 @@ def gen_cube(input_paths: Sequence[str] = None, input_processor: str = None, inp
             pass
 
     if no_sort is False:
-        input_paths = sort_by_time(input_paths, input_reader, input_processor, monitor)
+        input_paths = _sort_by_time(input_paths, input_reader, input_processor, monitor)
     else:
         input_paths = [input_file for f in input_paths for input_file in glob.glob(f, recursive=True)]
 
@@ -157,6 +157,37 @@ def gen_cube(input_paths: Sequence[str] = None, input_processor: str = None, inp
 
     return status
 
+
+def _sort_by_time(input_paths: Sequence[str], input_reader, input_processor, monitor):
+    """ Sort input paths based on time stamp of each input file"""
+    sorted_input_paths = []
+    times = []
+    input_paths = [input_file for f in input_paths for input_file in glob.glob(f, recursive=True)]
+    for input_path in input_paths:
+        try:
+            input_dataset = input_reader.read(input_path)
+            monitor(f'Dataset read for sorting by time:\n{input_path}')
+        except Exception as e:
+            monitor(f'ERROR: cannot read input: {e}: skipping...')
+            traceback.print_exc()
+            return False
+        time_range = input_processor.get_time_range(input_dataset)
+        if _get_half_time(time_range) not in times:
+            sorted_input_paths.append(input_path)
+            times.append(_get_half_time(time_range))
+
+    times, sorted_input_paths = (list(t) for t in zip(*sorted(zip(times, sorted_input_paths))))
+
+    return sorted_input_paths
+
+
+def _get_half_time(time_range: Tuple[float, float]):
+    """Get half time of time range"""
+    start_time = time_range[0]
+    end_time = time_range[0]
+    half_seconds = (end_time - start_time) / 2
+    halftime = start_time + half_seconds
+    return halftime
 
 def _process_input(input_processor: InputProcessor,
                    input_reader: DatasetIO,
@@ -259,6 +290,7 @@ def _process_input(input_processor: InputProcessor,
                 def step9(dataset):
                     output_writer.append(dataset, output_path, **output_writer_params)
                     return dataset
+
                 steps.append((step9, f'appending to {output_path}'))
 
             elif output_path.endswith('.zarr'):

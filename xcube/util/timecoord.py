@@ -20,9 +20,7 @@
 # SOFTWARE.
 
 import datetime
-import glob
-import traceback
-from typing import Tuple, Union, Sequence
+from typing import Tuple, Union
 
 import numpy as np
 import pandas as pd
@@ -83,34 +81,3 @@ def timestamp_to_iso_string(time: Union[np.datetime64, datetime.datetime], freq=
     # All times are UTC (Z = Zulu Time Zone = UTC)
     return pd.Timestamp(time).round(freq).isoformat() + 'Z'
 
-
-def sort_by_time(input_paths: Sequence[str], input_reader, input_processor, monitor):
-    """ Sort input paths based on time stamp of each input file"""
-    sorted_input_paths = []
-    times = []
-    input_paths = [input_file for f in input_paths for input_file in glob.glob(f, recursive=True)]
-    for input_path in input_paths:
-        try:
-            input_dataset = input_reader.read(input_path)
-            monitor(f'Dataset read for sorting by time:\n{input_path}')
-        except Exception as e:
-            monitor(f'ERROR: cannot read input: {e}: skipping...')
-            traceback.print_exc()
-            return False
-        time_range = input_processor.get_time_range(input_dataset)
-        if _get_half_time(time_range) not in times:
-            sorted_input_paths.append(input_path)
-            times.append(_get_half_time(time_range))
-
-    times, sorted_input_paths = (list(t) for t in zip(*sorted(zip(times, sorted_input_paths))))
-
-    return sorted_input_paths
-
-
-def _get_half_time(time_range: Tuple[float, float]):
-    """Get half time of time range"""
-    start_time = time_range[0]
-    end_time = time_range[0]
-    half_seconds = (end_time - start_time) / 2
-    halftime = start_time + half_seconds
-    return halftime
