@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 
-from .chunk import chunk_dataset
+from xcube.util.chunk import chunk_dataset
 # noinspection PyUnresolvedReferences
 from .compute import compute_dataset
 from .dump import dump_dataset

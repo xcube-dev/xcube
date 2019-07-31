@@ -28,36 +28,44 @@ from typing import Dict, Union
 import numpy as np
 import xarray as xr
 import zarr
-from xcube.api import chunk_dataset
+
+from xcube.util.timecoord import get_time_in_days_since_1970
+from .chunk import chunk_dataset
 
 
 def add_time_slice(store: Union[str, MutableMapping],
                    time_slice: xr.Dataset,
-                   chunk_sizes: Dict[str, int]):
-    insert_index = -1
-    t_new = time_slice.time[0]
+                   chunk_sizes: Dict[str, int] = None):
+    insert_index = get_time_insert_index(store, time_slice)
+    if insert_index == -1:
+        append_time_slice(store, time_slice, chunk_sizes=chunk_sizes)
+    else:
+        insert_time_slice(store, insert_index, time_slice, chunk_sizes=chunk_sizes)
+
+
+def get_time_insert_index(store: Union[str, MutableMapping],
+                          time_slice: xr.Dataset):
     try:
         cube = xr.open_zarr(store)
-        for i in range(cube.time.size):
-            t = cube.time[i]
-            if t_new <= t:
-                insert_index = i
-                break
     except ValueError:
-        # time_slice = chunk_dataset(time_slice, chunk_sizes, format_name='zarr')
-        # time_slice.to_zarr(store, time_slice)
-        pass
+        # ValueError raised if cube store does not exist
+        return -1
 
-    if insert_index == -1:
-        append_time_slice(store, time_slice, chunk_sizes)
-    else:
-        insert_time_slice(store, insert_index, time_slice, chunk_sizes)
+    slice_time = time_slice.time[0]
+    for i in range(cube.time.size):
+        time = cube.time[i]
+        if slice_time == time:
+            raise NotImplementedError(f'time already found in {store}, this is not yet supported')
+        if slice_time < get_time_in_days_since_1970(time):
+            return i
+    return -1
 
 
 def append_time_slice(store: Union[str, MutableMapping],
                       time_slice: xr.Dataset,
-                      chunk_sizes: Dict[str, int]):
-    time_slice = chunk_dataset(time_slice, chunk_sizes, format_name='zarr')
+                      chunk_sizes: Dict[str, int] = None):
+    if chunk_sizes:
+        time_slice = chunk_dataset(time_slice, chunk_sizes, format_name='zarr')
     time_slice.to_zarr(store, mode='a', append_dim='time')
     _unchunk_zarr_cube_time_vars(store)
 
@@ -65,7 +73,7 @@ def append_time_slice(store: Union[str, MutableMapping],
 def insert_time_slice(store: Union[str, MutableMapping],
                       insert_index: int,
                       time_slice: xr.Dataset,
-                      chunk_sizes: Dict[str, int]):
+                      chunk_sizes: Dict[str, int] = None):
     time_var_names = []
     with xr.open_zarr(store) as cube:
         for var_name in cube.variables:
@@ -74,8 +82,8 @@ def insert_time_slice(store: Union[str, MutableMapping],
                 if var.dims[0] != 'time':
                     raise ValueError(f"Variable: {var_name} Dimension 'time' must be first dimension")
                 time_var_names.append(var_name)
-
-    time_slice = chunk_dataset(time_slice, chunk_sizes, format_name='zarr')
+    if chunk_sizes:
+        time_slice = chunk_dataset(time_slice, chunk_sizes, format_name='zarr')
     temp_dir = tempfile.TemporaryDirectory(suffix='time-slice-', prefix='.zarr')
     time_slice.to_zarr(temp_dir.name)
     slice_root_group = zarr.open(temp_dir.name, mode='r')

@@ -1,15 +1,15 @@
+import time
 import unittest
 
 import numpy as np
 import xarray as xr
 import zarr
-from xcube.api import new_cube, chunk_dataset
+
+from xcube.api import chunk_dataset, new_cube
 from xcube.util.dsgrow import add_time_slice
 from xcube.util.dsio import rimraf
-
 from .diagnosticstore import DiagnosticStore, logging_observer
 
-import time
 
 class AddTimeSliceTest(unittest.TestCase):
     CUBE_PATH = 'test-cube.zarr'
@@ -59,6 +59,13 @@ class AddTimeSliceTest(unittest.TestCase):
                                  '2019-03-09T12:00'], dtype=actual.dtype)
             np.testing.assert_equal(actual, expected)
 
+            actual = cube.temperature.isel(lat=0, lon=0).values
+            expected = np.array([270., 270.5, 271., 271.5, 272., 272.5, 273., 273.5, 274.,
+                                 274.5, 275., 275.5, 276., 276.5, 277., 277.5, 278., 278.5,
+                                 279., 279.5, 280., 280.5, 281., 281.5, 282., 282.5, 283.],
+                                dtype=actual.dtype)
+            np.testing.assert_almost_equal(actual, expected)
+
     def test_insert_time_slice(self):
         cube = new_cube(time_periods=10, time_start='2019-01-01',
                         variables=dict(precipitation=0.1,
@@ -71,7 +78,7 @@ class AddTimeSliceTest(unittest.TestCase):
 
         time_slice = new_cube(time_periods=1, time_start='2019-01-08T16:30:00',
                               variables=dict(precipitation=0.2,
-                                             temperature=275.8,
+                                             temperature=274.8,
                                              soil_moisture=0.4))
 
         t0 = time.perf_counter()
@@ -92,7 +99,7 @@ class AddTimeSliceTest(unittest.TestCase):
 
         time_slice = new_cube(time_periods=1, time_start='2018-12-31T10:15:00',
                               variables=dict(precipitation=0.2,
-                                             temperature=275.8,
+                                             temperature=273.8,
                                              soil_moisture=0.4))
 
         t0 = time.perf_counter()
@@ -111,6 +118,11 @@ class AddTimeSliceTest(unittest.TestCase):
                                  '2019-01-09T04:30', '2019-01-09T12:00',
                                  '2019-01-10T12:00'], dtype=actual.dtype)
             np.testing.assert_equal(actual, expected)
+
+            actual = cube.temperature.isel(lat=0, lon=0).values
+            expected = np.array([273.8, 270.5, 270.5, 270.5, 270.5, 270.5, 270.5, 270.5, 270.5, 274.8, 270.5, 270.5],
+                                dtype=actual.dtype)
+            np.testing.assert_almost_equal(actual, expected)
 
 
 class ZarrStoreTest(unittest.TestCase):
