@@ -278,7 +278,7 @@ class Netcdf4DatasetIO(DatasetIO):
         import os
         temp_path = output_path + '.temp.nc'
         os.rename(output_path, temp_path)
-        old_ds = xr.open_dataset(temp_path, decode_times=False)
+        old_ds = xr.open_dataset(temp_path)
         new_ds = xr.concat([old_ds, dataset],
                            dim='time',
                            data_vars='minimal',
