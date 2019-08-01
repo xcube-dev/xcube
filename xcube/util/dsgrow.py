@@ -50,6 +50,7 @@ def get_time_insert_index(store: Union[str, MutableMapping],
         # ValueError raised if cube store does not exist
         return -1
 
+    # TODO (forman): optimise following naive search by bi-sectioning or so
     slice_time = time_slice.time[0]
     for i in range(cube.time.size):
         time = cube.time[i]
@@ -57,6 +58,7 @@ def get_time_insert_index(store: Union[str, MutableMapping],
             raise NotImplementedError(f'time already found in {store}, this is not yet supported')
         if slice_time < time:
             return i
+
     return -1
 
 
