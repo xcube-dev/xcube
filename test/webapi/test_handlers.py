@@ -84,6 +84,36 @@ class HandlersTest(AsyncHTTPTestCase):
                                             '&TileCol=0')
         self.assertResponseOK(response)
 
+        # issue #132 by Dirk
+        response = self.fetch(self.prefix + '/wmts/kvp'
+                                            '?Service=WMTS'
+                                            '&Version=1.0.0'
+                                            '&Request=GetTile'
+                                            '&Format=image/png'
+                                            '&Style=Default'
+                                            '&Layer=demo.conc_chl'
+                                            '&TileMatrixSet=TileGrid_2000_1000'
+                                            '&TileMatrix=0'
+                                            '&TileRow=0'
+                                            '&TileCol=0'
+                                            '&Time=2017-01-25T09%3A35%3A50')
+        self.assertResponseOK(response)
+
+        # issue #132 by Dirk
+        response = self.fetch(self.prefix + '/wmts/kvp'
+                                            '?Service=WMTS'
+                                            '&Version=1.0.0'
+                                            '&Request=GetTile'
+                                            '&Format=image/png'
+                                            '&Style=Default'
+                                            '&Layer=demo.conc_chl'
+                                            '&TileMatrixSet=TileGrid_2000_1000'
+                                            '&TileMatrix=0'
+                                            '&TileRow=0'
+                                            '&TileCol=0'
+                                            '&Time=2017-01-25T09%3A35%3A50%2F2017-01-25T10%3A20%3A15')
+        self.assertResponseOK(response)
+
         response = self.fetch(self.prefix + '/wmts/kvp'
                                             '?Service=WMTS'
                                             '&Version=1.0.0'
@@ -122,6 +152,7 @@ class HandlersTest(AsyncHTTPTestCase):
                                             '&TileRow=0'
                                             '&TileCol=0')
         self.assertBadRequestResponse(response, 'Value for "layer" parameter must be "<dataset>.<variable>"')
+
 
     def test_fetch_wmts_capabilities(self):
         response = self.fetch(self.prefix + '/wmts/1.0.0/WMTSCapabilities.xml')
