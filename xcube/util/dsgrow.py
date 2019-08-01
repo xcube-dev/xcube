@@ -29,7 +29,6 @@ import numpy as np
 import xarray as xr
 import zarr
 
-from xcube.util.timecoord import get_time_in_days_since_1970
 from .chunk import chunk_dataset
 
 
@@ -56,7 +55,7 @@ def get_time_insert_index(store: Union[str, MutableMapping],
         time = cube.time[i]
         if slice_time == time:
             raise NotImplementedError(f'time already found in {store}, this is not yet supported')
-        if slice_time < get_time_in_days_since_1970(time):
+        if slice_time < time:
             return i
     return -1
 
