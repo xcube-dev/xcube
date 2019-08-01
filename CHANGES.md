@@ -2,6 +2,9 @@
 
 ### Enhancements
 
+* `xcube gen` is now taking care that when new time slices are added to an existing 
+   cube, this is done by maintaining the chronological order. New time slices are 
+   either appended or inserted. (#64)
 * `xcube serve` accepts custom SNAP colormaps. The path to a SAP .cpd file can be passed via the server  
    configuration file with the paramter [ColorFile] instead of [ColorBar]. (#84)
 * `xcube serve` can now be configured to serve cubes that are associated 
