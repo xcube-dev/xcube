@@ -29,6 +29,10 @@ class TilesControllerTest(unittest.TestCase):
         self.assertIsInstance(tile, bytes)
 
         ctx = new_test_service_context()
+        tile = get_dataset_tile(ctx, 'demo', 'conc_tsm', '0', '0', '0', RequestParamsMock(time='2017-01-26/2017-01-27'))
+        self.assertIsInstance(tile, bytes)
+
+        ctx = new_test_service_context()
         tile = get_dataset_tile(ctx, 'demo', 'conc_tsm', '0', '0', '0', RequestParamsMock(time='current'))
         self.assertIsInstance(tile, bytes)
 

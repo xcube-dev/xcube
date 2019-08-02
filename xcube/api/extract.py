@@ -32,12 +32,12 @@ def get_cube_values_for_points(cube: xr.Dataset,
     :param cube: The cube dataset.
     :param points: Dictionary that maps dimension name to coordinate arrays.
     :param var_names: An optional list of names of data variables in *cube* whose values shall be extracted.
-    :param include_coords: Weather to include the cube coordinates for each point in return value.
-    :param include_bounds: Weather to include the cube coordinate boundaries (if any) for each point in return value.
-    :param include_indexes: Weather to include computed indexes into the cube for each point in return value.
+    :param include_coords: Whether to include the cube coordinates for each point in return value.
+    :param include_bounds: Whether to include the cube coordinate boundaries (if any) for each point in return value.
+    :param include_indexes: Whether to include computed indexes into the cube for each point in return value.
     :param index_name_pattern: A naming pattern for the computed index columns.
            Must include "{name}" which will be replaced by the index' dimension name.
-    :param include_refs: Weather to include point (reference) values in return value.
+    :param include_refs: Whether to include point (reference) values in return value.
     :param ref_name_pattern: A naming pattern for the computed point data columns.
            Must include "{name}" which will be replaced by the point's attribute name.
     :param method: "nearest" or "linear".
@@ -86,8 +86,8 @@ def get_cube_values_for_indexes(cube: xr.Dataset,
 
     :param cube: A cube dataset.
     :param indexes: A mapping from column names to index and fraction arrays for all cube dimensions.
-    :param include_coords: Weather to include the cube coordinates for each point in return value.
-    :param include_bounds: Weather to include the cube coordinate boundaries (if any) for each point in return value.
+    :param include_coords: Whether to include the cube coordinates for each point in return value.
+    :param include_bounds: Whether to include the cube coordinate boundaries (if any) for each point in return value.
     :param data_var_names: An optional list of names of data variables in *cube* whose values shall be extracted.
     :param index_name_pattern: A naming pattern for the computed indexes columns.
            Must include "{name}" which will be replaced by the dimension name.

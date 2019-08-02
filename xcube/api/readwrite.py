@@ -71,7 +71,7 @@ def open_dataset(input_path: str,
 
     :param input_path: input path
     :param format_name: format, e.g. "zarr" or "netcdf4"
-    :param is_cube: Weather a ValueError will be raised, if the dataset read from *input_path* is not a data cube.
+    :param is_cube: Whether a ValueError will be raised, if the dataset read from *input_path* is not a data cube.
     :param kwargs: format-specific keyword arguments
     :return: dataset object
     """
@@ -92,7 +92,7 @@ def read_dataset(input_path: str,
 
     :param input_path: input path
     :param format_name: format, e.g. "zarr" or "netcdf4"
-    :param is_cube: Weather a ValueError will be raised, if the dataset read from *input_path* is not a data cube.
+    :param is_cube: Whether a ValueError will be raised, if the dataset read from *input_path* is not a data cube.
     :param kwargs: format-specific keyword arguments
     :return: dataset object
     """
