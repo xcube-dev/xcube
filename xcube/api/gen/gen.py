@@ -255,7 +255,7 @@ def _process_input(input_processor: InputProcessor,
         if append_mode and os.path.exists(output_path):
             # noinspection PyShadowingNames
             def step9(dataset):
-                index = get_time_insert_index(output_path, dataset)
+                index = get_time_insert_index(output_path, dataset.time[0])
                 if index == -1:
                     output_writer.append(dataset, output_path, **output_writer_params)
                 else:

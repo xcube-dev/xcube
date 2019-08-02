@@ -6,7 +6,7 @@ import xarray as xr
 import zarr
 
 from xcube.api import chunk_dataset, new_cube
-from xcube.util.dsgrow import add_time_slice
+from xcube.util.dsgrow import add_time_slice, get_time_insert_index
 from xcube.util.dsio import rimraf
 from .diagnosticstore import DiagnosticStore, logging_observer
 
@@ -65,6 +65,23 @@ class AddTimeSliceTest(unittest.TestCase):
                                  279., 279.5, 280., 280.5, 281., 281.5, 282., 282.5, 283.],
                                 dtype=actual.dtype)
             np.testing.assert_almost_equal(actual, expected)
+
+    def test_get_time_insert_index(self):
+        cube = new_cube(time_periods=10, time_start='2019-01-01',
+                        variables=dict(precipitation=0.1,
+                                       temperature=270.5,
+                                       soil_moisture=0.2))
+        chunk_sizes = dict(time=1, lat=90, lon=90)
+        cube = chunk_dataset(cube, chunk_sizes, format_name='zarr')
+        cube.to_zarr(self.CUBE_PATH)
+        cube.close()
+        insert_index = get_time_insert_index(self.CUBE_PATH, np.datetime64('2019-01-02T00:00:00'))
+        self.assertEqual(1, insert_index)
+        with self.assertRaises(NotImplementedError) as cm:
+            get_time_insert_index(self.CUBE_PATH, np.datetime64('2019-01-01T12:00:00'))
+        self.assertEqual('time already found in test-cube.zarr, this is not yet supported', f"{cm.exception}")
+        insert_index = get_time_insert_index(self.CUBE_PATH, np.datetime64('2019-01-12T00:00:00'))
+        self.assertEqual(-1, insert_index)
 
     def test_insert_time_slice(self):
         cube = new_cube(time_periods=10, time_start='2019-01-01',

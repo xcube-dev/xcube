@@ -35,7 +35,7 @@ from .chunk import chunk_dataset
 def add_time_slice(store: Union[str, MutableMapping],
                    time_slice: xr.Dataset,
                    chunk_sizes: Dict[str, int] = None):
-    insert_index = get_time_insert_index(store, time_slice)
+    insert_index = get_time_insert_index(store, time_slice.time[0])
     if insert_index == -1:
         append_time_slice(store, time_slice, chunk_sizes=chunk_sizes)
     else:
@@ -43,7 +43,7 @@ def add_time_slice(store: Union[str, MutableMapping],
 
 
 def get_time_insert_index(store: Union[str, MutableMapping],
-                          time_slice: xr.Dataset):
+                          slice_time):
     try:
         cube = xr.open_zarr(store)
     except ValueError:
@@ -51,7 +51,6 @@ def get_time_insert_index(store: Union[str, MutableMapping],
         return -1
 
     # TODO (forman): optimise following naive search by bi-sectioning or so
-    slice_time = time_slice.time[0]
     for i in range(cube.time.size):
         time = cube.time[i]
         if slice_time == time:
