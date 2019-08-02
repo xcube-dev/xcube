@@ -41,6 +41,7 @@ from .im import TileGrid
 from .mldataset import FileStorageMultiLevelDataset, BaseMultiLevelDataset, MultiLevelDataset, \
     ComputedMultiLevelDataset, ObjectStorageMultiLevelDataset
 from .reqparams import RequestParams
+from ..api import assert_cube
 from ..util.dsio import guess_dataset_format
 from ..util.constants import FORMAT_NAME_ZARR, FORMAT_NAME_NETCDF4
 from ..util.perf import measure_time
@@ -418,9 +419,16 @@ class ServiceContext:
                 elif np.issubdtype(coord_var.dtype, np.integer):
                     var_indexers[dim_name] = int(dim_value_str)
                 elif np.issubdtype(coord_var.dtype, np.datetime64):
-                    var_indexers[dim_name] = pd.to_datetime(dim_value_str)
+                    if '/' in dim_value_str:
+                        date_str_1, date_str_2 = dim_value_str.split('/', maxsplit=1)
+                        var_indexer_1 = pd.to_datetime(date_str_1)
+                        var_indexer_2 = pd.to_datetime(date_str_2)
+                        var_indexers[dim_name] = var_indexer_1 + (var_indexer_2 - var_indexer_1) / 2
+                    else:
+                        date_str = dim_value_str
+                        var_indexers[dim_name] = pd.to_datetime(date_str)
                 else:
-                    raise ValueError(f'unable to dimension value {dim_value_str!r} to {coord_var.dtype!r}')
+                    raise ValueError(f'unable to convert value {dim_value_str!r} to {coord_var.dtype!r}')
             except ValueError as e:
                 raise ServiceBadRequestError(
                     f'{dim_value_str!r} is not a valid value for dimension {dim_name!r} '
