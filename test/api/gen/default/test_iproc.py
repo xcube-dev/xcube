@@ -5,7 +5,7 @@ import pandas as pd
 import xarray as xr
 
 from xcube.api.gen.default.iproc import DefaultInputProcessor
-from xcube.util.timecoord import get_time_in_days_since_1970
+from xcube.util.timecoord import to_time_in_days_since_1970
 
 
 class DefaultInputProcessorTest(unittest.TestCase):
@@ -26,23 +26,23 @@ class DefaultInputProcessorTest(unittest.TestCase):
         reprojection_info = self.processor.get_reprojection_info(create_default_dataset())
         self.assertIsNotNone(reprojection_info)
 
-    def test_get_time_range(self):
+    def test_to_time_range(self):
         ds = create_default_dataset(time_mode="time")
         t1, t2 = self.processor.get_time_range(ds)
-        self.assertEqual(get_time_in_days_since_1970("20100301T120000Z"), t1)
-        self.assertEqual(get_time_in_days_since_1970("20100301T120000Z"), t2)
+        self.assertEqual(to_time_in_days_since_1970("20100301T120000Z"), t1)
+        self.assertEqual(to_time_in_days_since_1970("20100301T120000Z"), t2)
         ds = create_default_dataset(time_mode="time_bnds")
         t1, t2 = self.processor.get_time_range(ds)
-        self.assertEqual(get_time_in_days_since_1970("20100301T000000Z"), t1)
-        self.assertEqual(get_time_in_days_since_1970("20100301T235959Z"), t2)
+        self.assertEqual(to_time_in_days_since_1970("20100301T000000Z"), t1)
+        self.assertEqual(to_time_in_days_since_1970("20100301T235959Z"), t2)
         ds = create_default_dataset(time_mode="time_coverage")
         t1, t2 = self.processor.get_time_range(ds)
-        self.assertEqual(get_time_in_days_since_1970("20100301T000000Z"), t1)
-        self.assertEqual(get_time_in_days_since_1970("20100301T235959Z"), t2)
+        self.assertEqual(to_time_in_days_since_1970("20100301T000000Z"), t1)
+        self.assertEqual(to_time_in_days_since_1970("20100301T235959Z"), t2)
         ds = create_default_dataset(time_mode="start_stop_time")
         t1, t2 = self.processor.get_time_range(ds)
-        self.assertEqual(get_time_in_days_since_1970("20100301T000000Z"), t1)
-        self.assertEqual(get_time_in_days_since_1970("20100301T235959Z"), t2)
+        self.assertEqual(to_time_in_days_since_1970("20100301T000000Z"), t1)
+        self.assertEqual(to_time_in_days_since_1970("20100301T235959Z"), t2)
         ds = create_default_dataset(time_mode="no_time")
         with self.assertRaises(ValueError) as cm:
             self.processor.get_time_range(ds)

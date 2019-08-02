@@ -26,15 +26,16 @@ import os
 import pstats
 import time
 import traceback
-from typing import Sequence, Callable, Tuple, Dict, Any
+from typing import Any, Callable, Dict, Sequence, Tuple
 
-from .defaults import DEFAULT_OUTPUT_SIZE, DEFAULT_OUTPUT_RESAMPLING, DEFAULT_OUTPUT_PATH
+from xcube.util.dsgrow import get_time_insert_index
+from .defaults import DEFAULT_OUTPUT_PATH, DEFAULT_OUTPUT_RESAMPLING, DEFAULT_OUTPUT_SIZE
 from .iproc import InputProcessor, get_input_processor
 from ..compute import compute_dataset
 from ..select import select_vars
-from ..update import update_var_props, update_global_attrs
+from ..update import update_global_attrs, update_var_props
 from ...util.config import NameAnyDict, NameDictPairList, to_resolved_name_dict_pairs
-from ...util.dsio import rimraf, DatasetIO, find_dataset_io, guess_dataset_format
+from ...util.dsio import DatasetIO, find_dataset_io, guess_dataset_format, rimraf
 from ...util.timecoord import add_time_coords
 
 _PROFILING_ON = False
@@ -254,10 +255,14 @@ def _process_input(input_processor: InputProcessor,
         if append_mode and os.path.exists(output_path):
             # noinspection PyShadowingNames
             def step9(dataset):
-                output_writer.append(dataset, output_path, **output_writer_params)
+                index = get_time_insert_index(output_path, dataset.time[0])
+                if index == -1:
+                    output_writer.append(dataset, output_path, **output_writer_params)
+                else:
+                    output_writer.insert(dataset, index, output_path)
                 return dataset
 
-            steps.append((step9, f'appending to {output_path}'))
+            steps.append((step9, f'adding to {output_path}'))
         else:
             # noinspection PyShadowingNames
             def step9(dataset):
