@@ -141,6 +141,31 @@ class AddTimeSliceTest(unittest.TestCase):
                                 dtype=actual.dtype)
             np.testing.assert_almost_equal(actual, expected)
 
+    def test_insert_time_slice_into_corrupt_cube(self):
+        cube = new_cube(time_periods=10, time_start='2019-01-01',
+                        variables=dict(precipitation=0.1,
+                                       temperature=270.5,
+                                       soil_moisture=0.2))
+        chunk_sizes = dict(time=1, lat=90, lon=90)
+        cube = chunk_dataset(cube, chunk_sizes, format_name='zarr')
+        t, y, x = cube.precipitation.shape
+        new_shape = y, t, x
+        t, y, x = cube.precipitation.dims
+        new_dims = y, t, x
+        false_cube = xr.DataArray(cube.precipitation.values.reshape(new_shape), dims=new_dims,
+                                  coords=cube.precipitation.coords)
+        false_cube = false_cube.to_dataset(dim='precipitation')
+        false_cube.to_zarr(self.CUBE_PATH)
+        false_cube.close()
+        cube.close()
+        time_slice = new_cube(time_periods=1, time_start='2019-01-08T16:30:00',
+                              variables=dict(precipitation=0.2,
+                                             temperature=274.8,
+                                             soil_moisture=0.4))
+        with self.assertRaises(ValueError) as cm:
+            add_time_slice(self.CUBE_PATH, time_slice)
+        self.assertEqual("Variable: precipitation Dimension 'time' must be first dimension", f"{cm.exception}")
+
 
 class ZarrStoreTest(unittest.TestCase):
     CUBE_PATH = 'store-test-cube.zarr'
