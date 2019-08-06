@@ -25,7 +25,7 @@ import numpy as np
 import xarray as xr
 
 from xcube.util.constants import CRS_WKT_EPSG_4326
-from xcube.util.timecoord import get_time_in_days_since_1970
+from xcube.util.timecoord import to_time_in_days_since_1970
 from ..iproc import XYInputProcessor, register_input_processor, ReprojectionInfo
 
 
@@ -102,7 +102,7 @@ class DefaultInputProcessor(XYInputProcessor):
         if time_coverage_start is None or time_coverage_end is None:
             raise ValueError("invalid input: missing time coverage information in dataset")
 
-        return get_time_in_days_since_1970(time_coverage_start), get_time_in_days_since_1970(time_coverage_end)
+        return to_time_in_days_since_1970(time_coverage_start), to_time_in_days_since_1970(time_coverage_end)
 
     @classmethod
     def get_time_range_from_attrs(cls, dataset: xr.Dataset) -> Tuple[str, str]:

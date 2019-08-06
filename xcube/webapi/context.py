@@ -33,6 +33,7 @@ import s3fs
 import xarray as xr
 import zarr
 
+from xcube.api import assert_cube
 from .cache import MemoryCacheStore, Cache
 from .defaults import DEFAULT_CMAP_CBAR, DEFAULT_CMAP_VMIN, DEFAULT_CMAP_VMAX, DEFAULT_TRACE_PERF
 from .errors import ServiceConfigError, ServiceError, ServiceBadRequestError, ServiceResourceNotFoundError
@@ -41,7 +42,8 @@ from .mldataset import FileStorageMultiLevelDataset, BaseMultiLevelDataset, Mult
     ComputedMultiLevelDataset, ObjectStorageMultiLevelDataset
 from .reqparams import RequestParams
 from ..api import assert_cube
-from ..util.dsio import guess_dataset_format, FORMAT_NAME_NETCDF4, FORMAT_NAME_ZARR
+from ..util.dsio import guess_dataset_format
+from ..util.constants import FORMAT_NAME_ZARR, FORMAT_NAME_NETCDF4
 from ..util.perf import measure_time
 from ..version import version
 
