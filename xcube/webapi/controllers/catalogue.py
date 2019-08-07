@@ -124,7 +124,7 @@ def get_dataset_place_groups(ctx: ServiceContext, ds_id: str) -> List[GeoJsonFea
 
 
 def get_dataset_place_group(ctx: ServiceContext, ds_id: str, place_group_id: str) -> GeoJsonFeatureCollection:
-    place_group = ctx.get_dataset_place_group(ds_id, place_group_id, load_features=False)
+    place_group = ctx.get_dataset_place_group(ds_id, place_group_id, load_features=True)
     return _filter_place_group(place_group, del_features=False)
 
 

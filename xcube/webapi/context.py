@@ -33,7 +33,6 @@ import s3fs
 import xarray as xr
 import zarr
 
-from xcube.api import assert_cube
 from .cache import MemoryCacheStore, Cache
 from .defaults import DEFAULT_CMAP_CBAR, DEFAULT_CMAP_VMIN, DEFAULT_CMAP_VMAX, DEFAULT_TRACE_PERF
 from .errors import ServiceConfigError, ServiceError, ServiceBadRequestError, ServiceResourceNotFoundError
@@ -293,7 +292,7 @@ class ServiceContext:
         return place_groups
 
     def get_dataset_place_group(self, ds_id: str, place_group_id: str, load_features=False) -> Dict:
-        place_groups = self.get_dataset_place_groups(ds_id, load_features=False)
+        place_groups = self.get_dataset_place_groups(ds_id, load_features=load_features)
         for place_group in place_groups:
             if place_group_id == place_group['id']:
                 if load_features:
