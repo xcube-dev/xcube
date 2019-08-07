@@ -1,0 +1,81 @@
+# The MIT License (MIT)
+# Copyright (c) 2019 by the xcube development team and contributors
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy of
+# this software and associated documentation files (the "Software"), to deal in
+# the Software without restriction, including without limitation the rights to
+# use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
+# of the Software, and to permit persons to whom the Software is furnished to do
+# so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
+import os.path
+import shutil
+from typing import Type
+
+import zarr
+
+from .unchunk import unchunk_dataset
+
+
+def consolidate_dataset(input_path: str,
+                        output_path: str = None,
+                        in_place: bool = False,
+                        unchunk_coords: bool = False,
+                        exception_type: Type[Exception] = ValueError):
+    """
+    Consolidate a dataset's metadata files and optionally coordinate files.
+
+    Reduces the number of metadata and coordinate data files in data cube given by given by *dataset_path*.
+    Consolidated cubes open much faster from remote locations, e.g. in object storage,
+    because obviously much less HTTP requests are required to fetch initial cube meta
+    information.
+
+    That is, it merges all metadata files into a single top-level JSON file ".zmetadata".
+    If *unchunk_coords* is set, it removes any chunking of coordinate variables
+    so they comprise a single binary data file instead of one file per data chunk.
+
+    The primary usage of this tool is to reduce the number of metadata and coordinate files
+    so opening cubes from remote locations, e.g. in object storage, requires much less HTTP
+    requests.
+
+    :param input_path: Path to input dataset with ZARR format.
+    :param output_path: Path to output dataset with ZARR format. May contain "{input}" template string,
+           which is replaced by the input path's file name without file name extentsion.
+    :param in_place: Whether to modify the dataset in place.
+           If False, a copy is made and *output_path* must be given.
+    :param unchunk_coords: Whether to also consolidate coordinate chunk files.
+    :param exception_type: Type of exception to be used on value errors.
+    """
+    if not os.path.isfile(os.path.join(input_path, '.zgroup')):
+        raise exception_type('Input path must point to ZARR dataset directory.')
+
+    if in_place:
+        output_path = input_path
+    else:
+        if not output_path:
+            raise exception_type(f'Output path must be given.')
+        if '{input}' in output_path:
+            base_name, _ = os.path.splitext(os.path.basename(input_path))
+            output_path = output_path.format(input=base_name)
+        if os.path.samefile(input_path, output_path):
+            raise exception_type(f'Output {output_path!r} must not be same as input.')
+        if os.path.exists(output_path):
+            raise exception_type(f'Output path already exists.')
+
+    if not in_place:
+        shutil.copytree(input_path, output_path)
+
+    zarr.convenience.consolidate_metadata(output_path)
+    if unchunk_coords:
+        unchunk_dataset(output_path, coords_only=True)

@@ -56,28 +56,8 @@ def consolidate(input,
     so opening cubes from remote locations, e.g. in object storage, requires much less HTTP
     requests.
     """
-    import os.path
-
-    input_path = input
-
-    if not os.path.isfile(os.path.join(input_path, '.zgroup')):
-        raise click.ClickException('Input must be a path to a ZARR directory.')
-
-    if in_place:
-        output_path = input_path
-    else:
-        if '{input}' in output_path:
-            base_name, _ = os.path.splitext(os.path.basename(input_path))
-            output_path = output_path.format(input=base_name)
-        if os.path.samefile(input_path, output_path):
-            raise click.ClickException('Output path must not be same as input.')
-
-    import zarr
-    from xcube.api import unchunk_dataset
-
-    if not in_place:
-        zarr.convenience.copy_store(input_path, output_path)
-
-    zarr.convenience.consolidate_metadata(output_path)
-    if unchunk_coords:
-        unchunk_dataset(output_path, coords_only=True)
+    from xcube.api import consolidate_dataset
+    consolidate_dataset(input,
+                        output_path=output_path,
+                        in_place=in_place,
+                        unchunk_coords=unchunk_coords)
