@@ -370,6 +370,30 @@ paths:
         '404':
           description: Resource not found.
 
+  '/datasets/{dataset}/filter/{geometry}/stats/{type}':
+    get:
+      tags:
+        - geometry filter summary statistics
+      summary: Get summary statistic of a dataset filtered by geometry
+      description: |
+        Get summary statistic of a dataset filtered by geometry
+      operationId: getDatasetSummaryStatisticByGeometry
+      parameters:
+        - $ref: '#/components/parameters/statstype'
+        - $ref: '#/components/parameters/dataset'
+        - $ref: '#/components/parameters/geometry'
+      responses:
+        '200':
+          description: Summary Statistics
+          content:
+            'application/json':
+              schema:
+                type: array
+                items:
+                  type: object
+        '404':
+          description: Dataset not found.
+
   ########################################################################################
   # Color Bars
   ########################################################################################
@@ -623,6 +647,20 @@ components:
       name: dataset
       in: path
       description: Dataset name.
+      required: true
+      schema:
+        type: string
+    statstype:
+      name: type
+      in: path
+      description: Type of Summary Statistics
+      required: true
+      schema:
+        type: string
+    geometry:
+      name: geometry
+      in: path
+      description: Geometry for Filtering a Dataset
       required: true
       schema:
         type: string

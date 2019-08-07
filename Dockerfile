@@ -35,11 +35,11 @@ RUN source activate xcube && python setup.py develop
 
 # Test xcube package
 ENV NUMBA_DISABLE_JIT 1
-#RUN source activate xcube && pytest
+RUN source activate xcube && pytest
 
 # Export web server port 8000
 EXPOSE 8000
 
 # Start server
-ENTRYPOINT ["/bin/bash", "-c"]
-CMD ["source activate xcube && xcube"]
+ENTRYPOINT ["/bin/bash", "-c", "source activate xcube"]
+#CMD ["source activate xcube && xcube server -v -c xcube_server/res/demo/config.yml -p 8000 -a '0.0.0.0' -u 30 "]
