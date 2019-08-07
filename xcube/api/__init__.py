@@ -15,3 +15,4 @@ from .vars_to_dim import vars_to_dim
 from .verify import assert_cube, verify_cube
 # noinspection PyUnresolvedReferences
 from ..util.chunk import chunk_dataset
+from ..util.unchunk import unchunk_dataset

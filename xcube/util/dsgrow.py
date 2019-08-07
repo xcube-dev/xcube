@@ -19,17 +19,15 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-import os
-import os.path
 import tempfile
 from collections import MutableMapping
 from typing import Dict, Union
 
-import numpy as np
 import xarray as xr
 import zarr
 
 from .chunk import chunk_dataset
+from .unchunk import unchunk_dataset
 
 
 def add_time_slice(store: Union[str, MutableMapping],
@@ -67,7 +65,7 @@ def append_time_slice(store: Union[str, MutableMapping],
     if chunk_sizes:
         time_slice = chunk_dataset(time_slice, chunk_sizes, format_name='zarr')
     time_slice.to_zarr(store, mode='a', append_dim='time')
-    _unchunk_zarr_cube_time_vars(store)
+    unchunk_dataset(store, coords_only=True)
 
 
 def insert_time_slice(store: Union[str, MutableMapping],
@@ -101,21 +99,4 @@ def insert_time_slice(store: Union[str, MutableMapping],
             # Insert slice
             var_array[insert_index, ...] = slice_array[0]
 
-    _unchunk_zarr_cube_time_vars(store)
-
-
-def _unchunk_zarr_cube_time_vars(cube_path: str):
-    with xr.open_zarr(cube_path) as dataset:
-        coord_var_names = [var_name for var_name in dataset.coords if 'time' in dataset[var_name].dims]
-    for coord_var_name in coord_var_names:
-        coord_var_path = os.path.join(cube_path, coord_var_name)
-        coord_var_array = zarr.convenience.open_array(coord_var_path, 'r+')
-        # Fully load data and attrs so we no longer depend on files
-        data = np.array(coord_var_array)
-        attributes = coord_var_array.attrs.asdict()
-        # Save array data
-        zarr.convenience.save_array(coord_var_path, data, chunks=False, fill_value=coord_var_array.fill_value)
-        # zarr.convenience.save_array() does not seem save user attributes (file ".zattrs" not written),
-        # therefore we must modify attrs explicitly:
-        coord_var_array = zarr.convenience.open_array(coord_var_path, 'r+')
-        coord_var_array.attrs.update(attributes)
+    unchunk_dataset(store, coords_only=True)

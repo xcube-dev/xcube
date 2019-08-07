@@ -3,6 +3,7 @@ import sys
 import click
 
 from xcube.cli.apply import apply
+from xcube.cli.consolidate import consolidate
 from xcube.cli.extract import extract
 from xcube.cli.gen import gen
 from xcube.cli.grid import grid
@@ -204,6 +205,7 @@ def cli(traceback=False, scheduler=None):
 
 cli.add_command(apply)
 cli.add_command(chunk)
+cli.add_command(consolidate)
 cli.add_command(dump)
 cli.add_command(extract)
 cli.add_command(gen)
