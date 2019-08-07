@@ -2,6 +2,10 @@
 
 ### Enhancements
 
+* The behavior of web API `/datasets?details=1` has changed.
+  The call no longer includes associated vector data as GeoJSON. Instead new API
+  has beed added to fetch new vector data on demand:
+  `/datasets/{dataset}/places` and `/datasets/{dataset}/places/{place}` (#130)
 * `xcube gen` is now taking care that when new time slices are added to an existing 
    cube, this is done by maintaining the chronological order. New time slices are 
    either appended or inserted. (#64)
