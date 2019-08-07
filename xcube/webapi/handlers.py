@@ -27,7 +27,8 @@ import pathlib
 
 from tornado.ioloop import IOLoop
 
-from .controllers.catalogue import get_datasets, get_dataset_coordinates, get_color_bars, get_dataset
+from .controllers.catalogue import get_datasets, get_dataset_coordinates, get_color_bars, get_dataset, \
+    get_dataset_place_groups, get_dataset_place_group
 from .controllers.places import find_places, find_dataset_places
 from .controllers.tiles import get_dataset_tile, get_dataset_tile_grid, get_ne2_tile, get_ne2_tile_grid, get_legend
 from .controllers.time_series import get_time_series_info, get_time_series_for_point, get_time_series_for_geometry, \
@@ -48,6 +49,7 @@ _WMTS_TILE_FORMAT = "image/png"
 _LOG = logging.getLogger('xcube')
 
 _LOG_S3BUCKET_HANDLER = False
+
 
 # noinspection PyAbstractClass
 class WMTSKvpHandler(ServiceRequestHandler):
@@ -135,6 +137,30 @@ class GetDatasetHandler(ServiceRequestHandler):
         response = get_dataset(self.service_context, ds_id, client=tile_client, base_url=self.base_url)
         self.set_header('Content-Type', 'application/json')
         self.write(json.dumps(response, indent=2))
+
+
+class GetDatasetPlaceGroupsHandler(ServiceRequestHandler):
+
+    def get(self, ds_id: str):
+        response = get_dataset_place_groups(self.service_context, ds_id)
+        self.set_header('Content-Type', 'application/json')
+        self.write(json.dumps(response))
+
+
+class GetDatasetPlaceGroupHandler(ServiceRequestHandler):
+
+    def get(self, ds_id: str, place_group_id: str):
+        response = get_dataset_place_group(self.service_context, ds_id, place_group_id)
+        self.set_header('Content-Type', 'application/json')
+        self.write(json.dumps(response))
+
+
+class GetDatasetCoordsHandler(ServiceRequestHandler):
+
+    def get(self, ds_id: str, dim_name: str):
+        response = get_dataset_coordinates(self.service_context, ds_id, dim_name)
+        self.set_header('Content-Type', 'application/json')
+        self.write(json.dumps(response))
 
 
 # noinspection PyAbstractClass
@@ -250,14 +276,6 @@ class GetS3BucketObjectHandler(ServiceRequestHandler):
         return key, pathlib.Path(local_path)
 
 
-class GetDatasetCoordsHandler(ServiceRequestHandler):
-
-    def get(self, ds_id: str, dim_name: str):
-        response = get_dataset_coordinates(self.service_context, ds_id, dim_name)
-        self.set_header('Content-Type', 'application/json')
-        self.write(json.dumps(response, indent=2))
-
-
 # noinspection PyAbstractClass,PyBroadException
 class GetWMTSTileHandler(ServiceRequestHandler):
 
@@ -362,7 +380,7 @@ class GetPlaceGroupsHandler(ServiceRequestHandler):
 
     # noinspection PyShadowingBuiltins
     def get(self):
-        response = self.service_context.get_place_groups()
+        response = self.service_context.get_global_place_groups()
         self.set_header('Content-Type', "application/json")
         self.write(json.dumps(response, indent=2))
 
@@ -371,7 +389,7 @@ class GetPlaceGroupsHandler(ServiceRequestHandler):
 class FindPlacesHandler(ServiceRequestHandler):
 
     # noinspection PyShadowingBuiltins
-    def get(self, collection_name: str):
+    def get(self, place_group_id: str):
         query_expr = self.params.get_query_argument("query", None)
         geom_wkt = self.params.get_query_argument("geom", None)
         box_coords = self.params.get_query_argument("bbox", None)
@@ -379,19 +397,19 @@ class FindPlacesHandler(ServiceRequestHandler):
         if geom_wkt and box_coords:
             raise ServiceBadRequestError('Only one of "geom" and "bbox" may be given')
         response = find_places(self.service_context,
-                               collection_name,
+                               place_group_id,
                                geom_wkt=geom_wkt, box_coords=box_coords,
                                query_expr=query_expr, comb_op=comb_op)
         self.set_header('Content-Type', "application/json")
         self.write(json.dumps(response, indent=2))
 
     # noinspection PyShadowingBuiltins
-    def post(self, collection_name: str):
+    def post(self, place_group_id: str):
         query_expr = self.params.get_query_argument("query", None)
         comb_op = self.params.get_query_argument("comb", "and")
         geojson_obj = self.get_body_as_json_object()
         response = find_places(self.service_context,
-                               collection_name,
+                               place_group_id,
                                geojson_obj=geojson_obj,
                                query_expr=query_expr, comb_op=comb_op)
         self.set_header('Content-Type', "application/json")
@@ -402,11 +420,11 @@ class FindPlacesHandler(ServiceRequestHandler):
 class FindDatasetPlacesHandler(ServiceRequestHandler):
 
     # noinspection PyShadowingBuiltins
-    def get(self, collection_name: str, ds_id: str):
+    def get(self, place_group_id: str, ds_id: str):
         query_expr = self.params.get_query_argument("query", None)
         comb_op = self.params.get_query_argument("comb", "and")
         response = find_dataset_places(self.service_context,
-                                       collection_name, ds_id,
+                                       place_group_id, ds_id,
                                        query_expr=query_expr, comb_op=comb_op)
         self.set_header('Content-Type', "application/json")
         self.write(json.dumps(response, indent=2))
@@ -446,6 +464,7 @@ class GetTimeSeriesForPointHandler(ServiceRequestHandler):
         start_date = self.params.get_query_argument_datetime('startDate', default=None)
         end_date = self.params.get_query_argument_datetime('endDate', default=None)
         max_valids = self.params.get_query_argument_int('maxValids', default=None)
+        _check_max_valids(max_valids)
 
         response = await IOLoop.current().run_in_executor(None,
                                                           get_time_series_for_point,
@@ -466,6 +485,7 @@ class GetTimeSeriesForGeometryHandler(ServiceRequestHandler):
         start_date = self.params.get_query_argument_datetime('startDate', default=None)
         end_date = self.params.get_query_argument_datetime('endDate', default=None)
         max_valids = self.params.get_query_argument_int('maxValids', default=None)
+        _check_max_valids(max_valids)
         geometry = self.get_body_as_json_object("GeoJSON geometry")
 
         response = await IOLoop.current().run_in_executor(None,
@@ -486,6 +506,7 @@ class GetTimeSeriesForGeometriesHandler(ServiceRequestHandler):
         start_date = self.params.get_query_argument_datetime('startDate', default=None)
         end_date = self.params.get_query_argument_datetime('endDate', default=None)
         max_valids = self.params.get_query_argument_int('maxValids', default=None)
+        _check_max_valids(max_valids)
         geometry_collection = self.get_body_as_json_object("GeoJSON geometry collection")
 
         response = await IOLoop.current().run_in_executor(None,
@@ -506,6 +527,7 @@ class GetTimeSeriesForFeaturesHandler(ServiceRequestHandler):
         start_date = self.params.get_query_argument_datetime('startDate', default=None)
         end_date = self.params.get_query_argument_datetime('endDate', default=None)
         max_valids = self.params.get_query_argument_int('maxValids', default=None)
+        _check_max_valids(max_valids)
         feature_collection = self.get_body_as_json_object("GeoJSON feature collection")
 
         response = await IOLoop.current().run_in_executor(None,
@@ -517,3 +539,8 @@ class GetTimeSeriesForFeaturesHandler(ServiceRequestHandler):
                                                           max_valids)
         self.set_header('Content-Type', 'application/json')
         self.finish(response)
+
+
+def _check_max_valids(max_valids):
+    if not (max_valids is None or max_valids == -1 or max_valids > 0):
+        raise ServiceBadRequestError('If given, query parameter "maxValids" must be -1 or positive')

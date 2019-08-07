@@ -336,13 +336,13 @@ class TransformArrayImage(DecoratorImage):
     Performs basic (numpy) array tile transformations. Currently available: force_masked, flip_y.
     Expects the source image to provide (numpy) arrays.
 
-    :param source_image: the source image
-    :param image_id: optional unique image identifier
-    :param flip_y: weather to flip pixels in y-direction
-    :param force_masked: weather to force creation of masked arrays
-    :param no_data_value: optional no-data value for mask creation
-    :param tile_cache: optional tile cache
-    :param trace_perf: whether to log runtime performance information
+    :param source_image: The source image
+    :param image_id: Optional unique image identifier
+    :param flip_y: Whether to flip pixels in y-direction
+    :param force_masked: Whether to force creation of masked arrays
+    :param no_data_value: Optional no-data value for mask creation
+    :param tile_cache: Optional tile cache
+    :param trace_perf: Whether to log runtime performance information
     """
 
     def __init__(self,

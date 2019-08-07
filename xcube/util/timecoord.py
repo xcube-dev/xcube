@@ -20,7 +20,7 @@
 # SOFTWARE.
 
 import datetime
-from typing import Tuple, Union
+from typing import Tuple, Union, Sequence
 
 import numpy as np
 import pandas as pd
@@ -41,31 +41,48 @@ def add_time_coords(dataset: xr.Dataset, time_range: Tuple[float, float]) -> xr.
     else:
         t_center = t1
     dataset = dataset.expand_dims('time')
-    dataset = dataset.assign_coords(time=(['time'], [t_center]))
+    dataset = dataset.assign_coords(time=(['time'],
+                                          from_time_in_days_since_1970([t_center])))
     time_var = dataset.coords['time']
     time_var.attrs['long_name'] = 'time'
     time_var.attrs['standard_name'] = 'time'
-    time_var.attrs['units'] = DATETIME_UNITS
-    time_var.attrs['calendar'] = DATETIME_CALENDAR
+    # Avoiding xarray error:
+    #   ValueError: failed to prevent overwriting existing key units in attrs on variable 'time'.
+    #   This is probably an encoding field used by xarray to describe how a variable is serialized.
+    #   To proceed, remove this key from the variable's attributes manually.
+    # time_var.attrs['units'] = DATETIME_UNITS
+    # time_var.attrs['calendar'] = DATETIME_CALENDAR
     time_var.encoding['units'] = DATETIME_UNITS
     time_var.encoding['calendar'] = DATETIME_CALENDAR
     if t1 != t2:
         time_var.attrs['bounds'] = 'time_bnds'
-        dataset = dataset.assign_coords(time_bnds=(['time', 'bnds'], [[t1, t2]]))
+        dataset = dataset.assign_coords(time_bnds=(['time', 'bnds'],
+                                                   from_time_in_days_since_1970([t1, t2]).reshape(1, 2)))
         time_bnds_var = dataset.coords['time_bnds']
         time_bnds_var.attrs['long_name'] = 'time'
         time_bnds_var.attrs['standard_name'] = 'time'
-        time_bnds_var.attrs['units'] = DATETIME_UNITS
-        time_bnds_var.attrs['calendar'] = DATETIME_CALENDAR
+        # Avoiding xarray error:
+        #   ValueError: failed to prevent overwriting existing key units in attrs on variable 'time'.
+        #   This is probably an encoding field used by xarray to describe how a variable is serialized.
+        #   To proceed, remove this key from the variable's attributes manually.
+        # time_bnds_var.attrs['units'] = DATETIME_UNITS
+        # time_bnds_var.attrs['calendar'] = DATETIME_CALENDAR
         time_bnds_var.encoding['units'] = DATETIME_UNITS
         time_bnds_var.encoding['calendar'] = DATETIME_CALENDAR
     return dataset
 
 
-def get_time_in_days_since_1970(time_str: str, pattern=None) -> float:
+def to_time_in_days_since_1970(time_str: str, pattern=None) -> float:
     datetime = pd.to_datetime(time_str, format=pattern, infer_datetime_format=True, utc=True)
     timedelta = datetime - REF_DATETIME
     return timedelta.days + timedelta.seconds / SECONDS_PER_DAY + timedelta.microseconds / MICROSECONDS_PER_DAY
+
+
+def from_time_in_days_since_1970(time_value: Union[float, Sequence[float]]) -> np.ndarray:
+    if isinstance(time_value, int) or isinstance(time_value, float):
+        return pd.to_datetime(time_value, utc=True, unit='d', origin='unix').round(freq='ms').to_datetime64()
+    else:
+        return np.array(list(map(from_time_in_days_since_1970, time_value)))
 
 
 def timestamp_to_iso_string(time: Union[np.datetime64, datetime.datetime], freq='S'):

@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 
-from .chunk import chunk_dataset
+from xcube.util.chunk import chunk_dataset
 # noinspection PyUnresolvedReferences
 from .compute import compute_dataset
 from .dump import dump_dataset
@@ -127,7 +127,7 @@ class XCubeAPI:
         :param var_names: An optional list of names of data variables in *cube* whose values shall be extracted.
         :param index_name_pattern: A naming pattern for the computed indexes columns.
                Must include "{name}" which will be replaced by the dimension name.
-        :param include_indexes: Weather to include computed indexes in return value.
+        :param include_indexes: Whether to include computed indexes in return value.
         :param method: "nearest" or "linear".
         :param cube_asserted: If False, *cube* will be verified, otherwise it is expected to be a valid cube.
         :return: A new data frame whose columns are values from *cube* variables at given *points*.

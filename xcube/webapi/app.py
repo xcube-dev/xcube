@@ -30,7 +30,7 @@ from .handlers import GetNE2TileHandler, GetDatasetVarTileHandler, InfoHandler, 
     GetDatasetCoordsHandler, GetTimeSeriesInfoHandler, GetTimeSeriesForPointHandler, WMTSKvpHandler, \
     GetTimeSeriesForGeometryHandler, GetTimeSeriesForFeaturesHandler, GetTimeSeriesForGeometriesHandler, \
     GetPlaceGroupsHandler, GetDatasetVarLegendHandler, GetDatasetHandler, GetWMTSTileHandler, GetS3BucketObjectHandler, \
-    ListS3BucketHandler
+    ListS3BucketHandler, GetDatasetPlaceGroupsHandler, GetDatasetPlaceGroupHandler
 from .service import url_pattern
 
 __author__ = "Norman Fomferra (Brockmann Consult GmbH)"
@@ -56,6 +56,10 @@ def new_application(prefix: str = None):
          GetDatasetsHandler),
         (prefix + url_pattern('/datasets/{{ds_id}}'),
          GetDatasetHandler),
+        (prefix + url_pattern('/datasets/{{ds_id}}/places'),
+         GetDatasetPlaceGroupsHandler),
+        (prefix + url_pattern('/datasets/{{ds_id}}/places/{{place_group_id}}'),
+         GetDatasetPlaceGroupHandler),
         (prefix + url_pattern('/datasets/{{ds_id}}/coords/{{dim_name}}'),
          GetDatasetCoordsHandler),
         (prefix + url_pattern('/datasets/{{ds_id}}/vars/{{var_name}}/legend.png'),
@@ -92,9 +96,9 @@ def new_application(prefix: str = None):
 
         (prefix + url_pattern('/places'),
          GetPlaceGroupsHandler),
-        (prefix + url_pattern('/places/{{collection_name}}'),
+        (prefix + url_pattern('/places/{{place_group_id}}'),
          FindPlacesHandler),
-        (prefix + url_pattern('/places/{{collection_name}}/{{ds_id}}'),
+        (prefix + url_pattern('/places/{{place_group_id}}/{{ds_id}}'),
          FindDatasetPlacesHandler),
 
         # Time-series API (for VITO's DCS4COP viewer only, PRELIMINARY & UNSTABLE - will be revised soon)

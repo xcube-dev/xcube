@@ -21,13 +21,11 @@
 
 import os
 import os.path
-import warnings
 
 import click
 
-# TODO (forman): move FORMAT_NAME_ZARR to constants,
-from xcube.api.chunk import get_empty_dataset_chunks
-from xcube.util.dsio import FORMAT_NAME_ZARR
+from xcube.util.chunk import get_empty_dataset_chunks
+from xcube.util.constants import FORMAT_NAME_ZARR
 
 
 # noinspection PyShadowingBuiltins

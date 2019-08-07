@@ -2,6 +2,13 @@
 
 ### Enhancements
 
+* The behavior of web API `/datasets?details=1` has changed.
+  The call no longer includes associated vector data as GeoJSON. Instead new API
+  has beed added to fetch new vector data on demand:
+  `/datasets/{dataset}/places` and `/datasets/{dataset}/places/{place}` (#130)
+* `xcube gen` is now taking care that when new time slices are added to an existing 
+   cube, this is done by maintaining the chronological order. New time slices are 
+   either appended or inserted. (#64)
 * `xcube serve` accepts custom SNAP colormaps. The path to a SAP .cpd file can be passed via the server  
    configuration file with the paramter [ColorFile] instead of [ColorBar]. (#84)
 * `xcube serve` can now be configured to serve cubes that are associated 
@@ -68,6 +75,8 @@ xcube's organisation. (#49)
 
 ### Fixes
 
+* Fixed `xcube serve` issue with WMTS KVP method `GetTile` with query parameter `time` 
+  whose value can now also have the two forms `<start-date>/<end-date>` and just `<date>`. (#132) 
 * Fixed `xcube extract` regression that stopped working after Pandas update (#95) 
 * Fixed problem where CTRL+C didn't function anymore with `xcube serve`. (#87)
 * Fixed error `indexes along dimension 'y' are not equal` occurred when using 

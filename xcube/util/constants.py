@@ -38,3 +38,6 @@ GEOGCS["WGS 84",
         AUTHORITY["EPSG","9122"]],
     AUTHORITY["EPSG","4326"]]
 """
+FORMAT_NAME_ZARR = "zarr"
+FORMAT_NAME_NETCDF4 = "netcdf4"
+FORMAT_NAME_MEM = "mem"
