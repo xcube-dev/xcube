@@ -166,11 +166,11 @@ class HandlersTest(AsyncHTTPTestCase):
         response = self.fetch(self.prefix + '/wmts/1.0.0/tile/demo/conc_chl/0/0/0.png?time=current&cbar=jet')
         self.assertResponseOK(response)
 
-    def test_fetch_datasets_json(self):
+    def test_fetch_datasets(self):
         response = self.fetch(self.prefix + '/datasets')
         self.assertResponseOK(response)
 
-    def test_fetch_datasets_details_json(self):
+    def test_fetch_datasets_details(self):
         response = self.fetch(self.prefix + '/datasets?details=1')
         self.assertResponseOK(response)
         response = self.fetch(self.prefix + '/datasets?details=1&tiles=cesium')
@@ -182,12 +182,20 @@ class HandlersTest(AsyncHTTPTestCase):
                                       "Parameter 'point' parameter must be a point using format"
                                       " '<lon>,<lat>', but was '2,8a,51.0'")
 
-    def test_fetch_dataset_json(self):
+    def test_fetch_dataset(self):
         response = self.fetch(self.prefix + '/datasets/demo')
         self.assertResponseOK(response)
         response = self.fetch(self.prefix + '/datasets/demo?tiles=ol4')
         self.assertResponseOK(response)
         response = self.fetch(self.prefix + '/datasets/demo?tiles=cesium')
+        self.assertResponseOK(response)
+
+    def test_fetch_dataset_places(self):
+        response = self.fetch(self.prefix + '/datasets/demo/places')
+        self.assertResponseOK(response)
+
+    def test_fetch_dataset_coords(self):
+        response = self.fetch(self.prefix + '/datasets/demo/coords/time')
         self.assertResponseOK(response)
 
     def test_fetch_list_s3bucket(self):
@@ -236,10 +244,6 @@ class HandlersTest(AsyncHTTPTestCase):
         response = self.fetch(self.prefix + '/s3bucket/demo/conc_chl/1.2.4', method=method)
         self.assertResponseOK(response)
 
-    def test_fetch_coords_json(self):
-        response = self.fetch(self.prefix + '/datasets/demo/coords/time')
-        self.assertResponseOK(response)
-
     def test_fetch_dataset_tile(self):
         response = self.fetch(self.prefix + '/datasets/demo/vars/conc_chl/tiles/0/0/0.png')
         self.assertResponseOK(response)
@@ -273,17 +277,17 @@ class HandlersTest(AsyncHTTPTestCase):
         response = self.fetch(self.prefix + '/colorbars.html')
         self.assertResponseOK(response)
 
-    def test_fetch_feature_collections(self):
+    def test_fetch_all_places(self):
         response = self.fetch(self.prefix + '/places')
         self.assertResponseOK(response)
 
-    def test_fetch_features(self):
+    def test_fetch_places(self):
         response = self.fetch(self.prefix + '/places/all')
         self.assertResponseOK(response)
         response = self.fetch(self.prefix + '/places/all?bbox=10,10,20,20')
         self.assertResponseOK(response)
 
-    def test_fetch_features_for_dataset(self):
+    def test_fetch_dataset_places(self):
         response = self.fetch(self.prefix + '/places/all/demo')
         self.assertResponseOK(response)
         response = self.fetch(self.prefix + '/places/inside-cube/demo')

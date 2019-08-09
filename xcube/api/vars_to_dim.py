@@ -21,6 +21,8 @@
 
 import xarray as xr
 
+from .verify import assert_cube
+
 
 def vars_to_dim(cube: xr.Dataset,
                 dim_name: str = 'var',
@@ -51,6 +53,3 @@ def vars_to_dim(cube: xr.Dataset,
     da = da.assign_coords(**{dim_name: new_coord_var})
 
     return xr.Dataset(dict(**{var_name: da}))
-
-
-from .verify import assert_cube
