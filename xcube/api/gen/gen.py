@@ -21,6 +21,7 @@
 
 import cProfile
 import glob
+import inspect
 import io
 import os
 import pstats
@@ -245,32 +246,38 @@ def _process_input(input_processor: InputProcessor,
 
     steps.append((step7, 'post-processing dataset'))
 
-    # noinspection PyShadowingNames
-    def step8(dataset):
-        return update_global_attrs(dataset, output_metadata=output_metadata)
-
-    steps.append((step8, 'updating dataset attributes'))
+    update_mode = None
 
     if not dry_run:
         if append_mode and os.path.exists(output_path):
             # noinspection PyShadowingNames
-            def step9(dataset):
+            def step8(dataset):
                 index = get_time_insert_index(output_path, dataset.time[0])
                 if index == -1:
+                    update_mode = 'append'
                     output_writer.append(dataset, output_path, **output_writer_params)
                 else:
+                    update_mode = 'insert'
                     output_writer.insert(dataset, index, output_path)
-                return dataset
+                return dataset, update_mode
 
-            steps.append((step9, f'adding to {output_path}'))
+            steps.append((step8, f'adding to {output_path}'))
         else:
             # noinspection PyShadowingNames
-            def step9(dataset):
+            def step8(dataset):
                 rimraf(output_path)
+                update_mode = 'create'
                 output_writer.write(dataset, output_path, **output_writer_params)
-                return dataset
+                return dataset, update_mode
 
-            steps.append((step9, f'writing to {output_path}'))
+            steps.append((step8, f'writing to {output_path}'))
+
+    locals = inspect.currentframe()
+    # noinspection PyShadowingNames
+    def step9(dataset):
+        return update_global_attrs(dataset[0], update_mode=dataset[1], output_metadata=output_metadata, locals=locals)
+
+    steps.append((step9, 'updating dataset attributes'))
 
     if _PROFILING_ON:
         pr = cProfile.Profile()

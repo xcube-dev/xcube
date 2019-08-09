@@ -20,6 +20,8 @@
 # SOFTWARE.
 
 import datetime
+import inspect
+import json
 from typing import Any, Dict
 
 import xarray as xr
@@ -75,10 +77,13 @@ def update_var_props(dataset: xr.Dataset,
     return dataset
 
 
-def update_global_attrs(dataset: xr.Dataset, output_metadata: Dict[str, Any] = None) -> xr.Dataset:
+def update_global_attrs(dataset: xr.Dataset, update_mode: str = None, output_metadata: Dict[str, Any] = None,
+                        locals: Dict[str, Any] = None) -> xr.Dataset:
     """
     Update the global CF/THREDDS attributes of given *dataset*.
 
+    :param update_mode:
+    :param locals:
     :param dataset: The dataset.
     :param output_metadata: Extra metadata.
     :return: A new dataset.
@@ -127,6 +132,20 @@ def update_global_attrs(dataset: xr.Dataset, output_metadata: Dict[str, Any] = N
             if coord_res_attr_name is not None and coord_res is not None:
                 dataset.attrs[coord_res_attr_name] = coord_res if coord_res > 0 else -coord_res
 
+    args, _, _, values = inspect.getargvalues(locals)
+    if update_mode == 'create':
+        cube_gen_param = json.dumps({'input_file': values['input_file'],
+                                     'append_mode': values['append_mode'],
+                                     'input_processor': str(values['input_processor']),
+                                     'output_variables': values['output_variables'],
+                                     'processed_variables': values['processed_variables'],
+                                     'output_writer': str(values['output_writer'])}, indent=4)
+        dataset.attrs['history'] = f"[{datetime.datetime.now().isoformat()}] {update_mode} with {cube_gen_param} "
+    else:
+
+        dataset.attrs.update({
+            'history': f"[{datetime.datetime.now().isoformat()}] {update_mode} {json.dumps({'input_file': values['input_file']})}"})
+    # TODO: Question - should we maybe change this to utcnow() ?
     dataset.attrs['date_modified'] = datetime.datetime.now().isoformat()
 
     return dataset

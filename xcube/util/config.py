@@ -22,7 +22,7 @@
 import datetime
 import fnmatch
 import os.path
-from typing import Any, Dict, Optional, Iterable, Tuple, List
+from typing import Any, Dict, Iterable, List, Optional, Tuple
 
 import yaml
 
@@ -129,22 +129,6 @@ def _flatten_dict_value(value: Any,
         _flatten_dict_value(e, result, parent_name, True)
 
     return result
-
-
-def cubegen_param_metadata_update(d: Dict[str, Any]) -> Dict[str, Any]:
-    cubegen_param = d.copy()
-    cubegen_param.pop('output_metadata', None)
-    cubegen_param_keys = list(cubegen_param.keys())
-    cubegen_param_array = []
-    for key in cubegen_param_keys:
-        cubegen_param_array.append(str(key) + ": " + str(cubegen_param[key]) + '\n')
-    cubegen_dict = dict(history=cubegen_param_array)
-    cubegen_dict['history'] = str(cubegen_dict['history']).replace('[', '').replace(']', '')
-    if 'output_metadata' in d:
-        d['output_metadata'].update(cubegen_dict)
-    else:
-        d['output_metadata'] = cubegen_dict
-    return d
 
 
 def merge_config(first_dict: Dict, *more_dicts):
