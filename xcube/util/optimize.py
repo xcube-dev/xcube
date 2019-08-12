@@ -28,26 +28,22 @@ import zarr
 from .unchunk import unchunk_dataset
 
 
-def consolidate_dataset(input_path: str,
-                        output_path: str = None,
-                        in_place: bool = False,
-                        unchunk_coords: bool = False,
-                        exception_type: Type[Exception] = ValueError):
+def optimize_dataset(input_path: str,
+                     output_path: str = None,
+                     in_place: bool = False,
+                     unchunk_coords: bool = False,
+                     exception_type: Type[Exception] = ValueError):
     """
-    Consolidate a dataset's metadata files and optionally coordinate files.
+    Optimize a dataset for faster access.
 
     Reduces the number of metadata and coordinate data files in data cube given by given by *dataset_path*.
     Consolidated cubes open much faster from remote locations, e.g. in object storage,
     because obviously much less HTTP requests are required to fetch initial cube meta
-    information.
-
-    That is, it merges all metadata files into a single top-level JSON file ".zmetadata".
+    information. That is, it merges all metadata files into a single top-level JSON file ".zmetadata".
     If *unchunk_coords* is set, it removes any chunking of coordinate variables
     so they comprise a single binary data file instead of one file per data chunk.
-
-    The primary usage of this tool is to reduce the number of metadata and coordinate files
-    so opening cubes from remote locations, e.g. in object storage, requires much less HTTP
-    requests.
+    The primary usage of this function is to optimize data cubes for cloud object storage.
+    The function currently works only for data cubes using ZARR format.
 
     :param input_path: Path to input dataset with ZARR format.
     :param output_path: Path to output dataset with ZARR format. May contain "{input}" template string,
@@ -57,8 +53,11 @@ def consolidate_dataset(input_path: str,
     :param unchunk_coords: Whether to also consolidate coordinate chunk files.
     :param exception_type: Type of exception to be used on value errors.
     """
+
     if not os.path.isfile(os.path.join(input_path, '.zgroup')):
         raise exception_type('Input path must point to ZARR dataset directory.')
+
+    input_path = os.path.abspath(os.path.normpath(input_path))
 
     if in_place:
         output_path = input_path
@@ -68,8 +67,7 @@ def consolidate_dataset(input_path: str,
         if '{input}' in output_path:
             base_name, _ = os.path.splitext(os.path.basename(input_path))
             output_path = output_path.format(input=base_name)
-        if os.path.samefile(input_path, output_path):
-            raise exception_type(f'Output {output_path!r} must not be same as input.')
+        output_path = os.path.abspath(os.path.normpath(output_path))
         if os.path.exists(output_path):
             raise exception_type(f'Output path already exists.')
 

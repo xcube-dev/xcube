@@ -16,6 +16,6 @@ from .verify import assert_cube, verify_cube
 # noinspection PyUnresolvedReferences
 from ..util.chunk import chunk_dataset
 # noinspection PyUnresolvedReferences
-from ..util.consolidate import consolidate_dataset
+from ..util.optimize import optimize_dataset
 # noinspection PyUnresolvedReferences
 from ..util.unchunk import unchunk_dataset
