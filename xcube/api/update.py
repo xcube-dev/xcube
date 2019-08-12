@@ -139,13 +139,15 @@ def update_global_attrs(dataset: xr.Dataset, update_mode: str = None, output_met
             if 'input' in value and value != 'input_dataset' or 'output' in value  and value != 'output_metadata':
                 cube_gen_param.append((json.dumps({value: str(values[value])})))
 
-        str_cube_gen_param = "\n".join(cube_gen_param).replace("'", "").replace("{", "").replace("}", "").replace('"', '')
-        dataset.attrs['history'] = f'[{datetime.datetime.now().isoformat()}] {update_mode} with \n {str_cube_gen_param}'
+        str_cube_gen_param = "\n".join(cube_gen_param).replace("'", "").replace("{", "").replace("}", "").replace(
+            '"', '')
+        dataset.attrs[
+            'history'] = f"""[{datetime.datetime.now().isoformat()}] {update_mode} with \n{str_cube_gen_param}"""
     else:
         cube_gen_param = json.dumps({'input_file': values['input_file']})
         str_cube_gen_param = cube_gen_param.replace("'", "").replace("{", "").replace("}", "").replace('"', '')
-        dataset.attrs.update({
-            'history': f"[{datetime.datetime.now().isoformat()}] {update_mode} {str_cube_gen_param}"})
+        dataset.attrs['history'].update({
+            'history': f"""[{datetime.datetime.now().isoformat()}] {update_mode} {str_cube_gen_param}"""})
     # TODO: Question - should we maybe change this to utcnow() ?
     dataset.attrs['date_modified'] = datetime.datetime.now().isoformat()
 
