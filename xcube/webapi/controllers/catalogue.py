@@ -119,12 +119,14 @@ def get_dataset(ctx: ServiceContext, ds_id: str, client=None, base_url: str = No
 
 
 def get_dataset_place_groups(ctx: ServiceContext, ds_id: str) -> List[GeoJsonFeatureCollection]:
-    place_groups = ctx.get_dataset_place_groups(ds_id, load_features=True)
-    return _filter_place_groups(place_groups, del_features=False)
+    # Do not load or return features, just place group (metadata).
+    place_groups = ctx.get_dataset_place_groups(ds_id, load_features=False)
+    return _filter_place_groups(place_groups, del_features=True)
 
 
 def get_dataset_place_group(ctx: ServiceContext, ds_id: str, place_group_id: str) -> GeoJsonFeatureCollection:
-    place_group = ctx.get_dataset_place_group(ds_id, place_group_id, load_features=False)
+    # Load and return features for specific place group.
+    place_group = ctx.get_dataset_place_group(ds_id, place_group_id, load_features=True)
     return _filter_place_group(place_group, del_features=False)
 
 
