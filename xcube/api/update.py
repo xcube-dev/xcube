@@ -134,17 +134,18 @@ def update_global_attrs(dataset: xr.Dataset, update_mode: str = None, output_met
 
     args, _, _, values = inspect.getargvalues(locals)
     if update_mode == 'create':
-        cube_gen_param = json.dumps({'input_file': values['input_file'],
-                                     'append_mode': values['append_mode'],
-                                     'input_processor': str(values['input_processor']),
-                                     'output_variables': values['output_variables'],
-                                     'processed_variables': values['processed_variables'],
-                                     'output_writer': str(values['output_writer'])}, indent=4)
-        dataset.attrs['history'] = f"[{datetime.datetime.now().isoformat()}] {update_mode} with {cube_gen_param} "
-    else:
+        cube_gen_param = []
+        for value in values:
+            if 'input' in value and value != 'input_dataset' or 'output' in value  and value != 'output_metadata':
+                cube_gen_param.append((json.dumps({value: str(values[value])})))
 
+        str_cube_gen_param = "\n".join(cube_gen_param).replace("'", "").replace("{", "").replace("}", "").replace('"', '')
+        dataset.attrs['history'] = f'[{datetime.datetime.now().isoformat()}] {update_mode} with \n {str_cube_gen_param}'
+    else:
+        cube_gen_param = json.dumps({'input_file': values['input_file']})
+        str_cube_gen_param = cube_gen_param.replace("'", "").replace("{", "").replace("}", "").replace('"', '')
         dataset.attrs.update({
-            'history': f"[{datetime.datetime.now().isoformat()}] {update_mode} {json.dumps({'input_file': values['input_file']})}"})
+            'history': f"[{datetime.datetime.now().isoformat()}] {update_mode} {str_cube_gen_param}"})
     # TODO: Question - should we maybe change this to utcnow() ?
     dataset.attrs['date_modified'] = datetime.datetime.now().isoformat()
 
