@@ -2,6 +2,7 @@
 
 ### Enhancements
 
+* Changed version tag from 0.2.0dev3 to 0.2.0.dev
 * The behavior of web API `/datasets?details=1` has changed.
   The call no longer includes associated vector data as GeoJSON. Instead new API
   has beed added to fetch new vector data on demand:
