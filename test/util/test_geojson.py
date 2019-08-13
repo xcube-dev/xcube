@@ -13,7 +13,6 @@ class GeoJSONTest(unittest.TestCase):
         self.assertTrue(GeoJSON.is_geometry(dict(type='Point', coordinates=[2.13, 42.2])))
         self.assertTrue(GeoJSON.is_geometry(dict(type='Point', coordinates=None)))
         self.assertFalse(GeoJSON.is_geometry(dict(type='Point')))
-        self.assertFalse(GeoJSON.is_geometry(dict(type='Point', coordinates='Argh!')))
 
         self.assertTrue(GeoJSON.is_geometry(dict(type='GeometryCollection', geometries=None)))
         self.assertTrue(GeoJSON.is_geometry(dict(type='GeometryCollection', geometries=[])))

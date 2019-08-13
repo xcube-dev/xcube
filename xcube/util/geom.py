@@ -19,10 +19,10 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+import math
 from typing import Optional, Union, Dict, Tuple, Sequence, Any
 
 import affine
-import math
 import numpy as np
 import rasterio.features
 import shapely.geometry
@@ -30,57 +30,140 @@ import shapely.geometry
 import shapely.wkt
 import xarray as xr
 
-from xcube.util.geojson import GeoJSON
+from .geojson import GeoJSON
 
-Geometry = Union[shapely.geometry.base.BaseGeometry, Dict[str, Any], str, Sequence[Union[float, int]]]
+GeometryLike = Union[shapely.geometry.base.BaseGeometry, Dict[str, Any], str, Sequence[Union[float, int]]]
 Bounds = Tuple[float, float, float, float]
 SplitBounds = Tuple[Bounds, Optional[Bounds]]
 
+_INVALID_GEOMETRY_MSG = ('Geometry must be either a (shapely) geometry object, '
+                         'a valid GeoJSON object, a valid WKT string, '
+                         'box coordinates (x1, y1, x2, y2), or point coordinates (x, y)')
 
-def where_geometry(dataset: xr.Dataset,
-                   geometry: Geometry,
-                   mask_var_name: str = None) -> Optional[xr.Dataset]:
+_INVALID_BOX_COORDS_MSG = 'Invalid box coordinates'
+
+
+def mask_dataset_by_geometry(dataset: xr.Dataset,
+                             geometry: GeometryLike,
+                             no_clip: bool = False,
+                             save_geometry_mask: Union[str, bool] = False,
+                             save_geometry_wkt: Union[str, bool] = False) -> Optional[xr.Dataset]:
+    """
+    Mask a dataset according to the given geometry. The cells of variables of the
+    returned dataset will have NaN-values where their spatial coordinates are not intersecting
+    the given geometry.
+
+    :param dataset: The dataset
+    :param geometry: A geometry-like object, see py:function:`convert_geometry`.
+    :param no_clip: If True, the function will not clip the dataset before masking, this is, the
+        returned dataset will have the same dimension size as the given *dataset*.
+    :param save_geometry_mask: If value is a string, a variable named by *save_mask* representing the effective geometry mask
+        will be stored in the returned dataset.
+    :param save_mask: If the value is a string, the effective geometry mask array is stored as
+        a 2D data variable named by *save_mask*.
+        If the value is True, the name "geometry_mask" is used.
+    :param save_geometry_wkt: If the value is a string, the effective intersection geometry is stored as
+        a Geometry WKT string in the global attribute named by *save_geometry*.
+        If the value is True, the name "geometry_wkt" is used.
+    :return: The dataset spatial subset, or None if the bounding box of the dataset has a no or a zero area
+        intersection with the bounding box of the geometry.
+    """
     geometry = convert_geometry(geometry)
-    ds_lon_min, ds_lat_min, ds_lon_max, ds_lat_max = get_dataset_bounds(dataset)
-    inv_y = float(dataset.lat[0]) < float(dataset.lat[-1])
-    dataset_geometry = get_box_split_bounds_geometry(ds_lon_min, ds_lat_min, ds_lon_max, ds_lat_max)
-    # TODO: split geometry
-    split_geometry = geometry
-    actual_geometry = dataset_geometry.intersection(split_geometry)
-    if actual_geometry.is_empty:
+
+    intersection_geometry = intersect_geometries(get_dataset_bounds(dataset), geometry)
+    if intersection_geometry is None:
         return None
 
-    width = len(dataset.lon)
-    height = len(dataset.lat)
-    res = (ds_lat_max - ds_lat_min) / height
+    if not no_clip:
+        dataset = _clip_dataset_by_geometry(dataset, intersection_geometry)
 
-    g_lon_min, g_lat_min, g_lon_max, g_lat_max = actual_geometry.bounds
-    x1 = _clamp(int(math.floor((g_lon_min - ds_lon_min) / res)), 0, width - 1)
-    x2 = _clamp(int(math.ceil((g_lon_max - ds_lon_min) / res)) + 1, 0, width - 1)
-    y1 = _clamp(int(math.floor((g_lat_min - ds_lat_min) / res)), 0, height - 1)
-    y2 = _clamp(int(math.ceil((g_lat_max - ds_lat_min) / res)) + 1, 0, height - 1)
-    if not inv_y:
+    ds_x_min, ds_y_min, ds_x_max, ds_y_max = get_dataset_bounds(dataset)
+
+    width = dataset.dims['lon']
+    height = dataset.dims['lat']
+    spatial_res = (ds_x_max - ds_x_min) / width
+
+    mask_data = get_geometry_mask(width, height, intersection_geometry, ds_x_min, ds_y_min, spatial_res)
+    mask = xr.DataArray(mask_data,
+                        coords=dict(lat=dataset.lat, lon=dataset.lon),
+                        dims=('lat', 'lon'))
+
+    masked_vars = {}
+    for var_name in dataset.data_vars:
+        var = dataset[var_name]
+        masked_vars[var_name] = var.where(mask)
+
+    masked_dataset = dataset.copy(data=masked_vars)
+
+    _save_geometry_mask(masked_dataset, mask, save_geometry_mask)
+    _save_geometry_wkt(masked_dataset, intersection_geometry, save_geometry_wkt)
+
+    return masked_dataset
+
+
+def clip_dataset_by_geometry(dataset: xr.Dataset,
+                             geometry: GeometryLike,
+                             save_geometry: Union[str, bool] = False) -> Optional[xr.Dataset]:
+    """
+    Spatially clip a dataset according to the bounding box of a given geometry.
+
+    :param dataset: The dataset
+    :param geometry: A geometry-like object, see py:function:`convert_geometry`.
+    :param save_geometry: If the value is a string, the effective intersection geometry is stored as a Geometry WKT string
+        in the global attribute named by *save_geometry*. If the value is True, the name "geometry_wkt" is used.
+    :return: The dataset spatial subset, or None if the bounding box of the dataset has a no or a zero area
+        intersection with the bounding box of the geometry.
+    """
+    intersection_geometry = intersect_geometries(get_dataset_bounds(dataset), geometry)
+    if intersection_geometry is None:
+        return None
+    return _clip_dataset_by_geometry(dataset, intersection_geometry, save_geometry_wkt=save_geometry)
+
+
+def _clip_dataset_by_geometry(dataset: xr.Dataset,
+                              intersection_geometry: shapely.geometry.base.BaseGeometry,
+                              save_geometry_wkt: bool = False) -> Optional[xr.Dataset]:
+    # TODO (forman): the following code is wrong, if the dataset bounds cross the anti-meridian!
+
+    ds_x_min, ds_y_min, ds_x_max, ds_y_max = get_dataset_bounds(dataset)
+
+    width = dataset.lon.size
+    height = dataset.lat.size
+    res = (ds_y_max - ds_y_min) / height
+
+    g_lon_min, g_lat_min, g_lon_max, g_lat_max = intersection_geometry.bounds
+    x1 = _clamp(int(math.floor((g_lon_min - ds_x_min) / res)), 0, width - 1)
+    x2 = _clamp(int(math.ceil((g_lon_max - ds_x_min) / res)), 0, width - 1)
+    y1 = _clamp(int(math.floor((g_lat_min - ds_y_min) / res)), 0, height - 1)
+    y2 = _clamp(int(math.ceil((g_lat_max - ds_y_min) / res)), 0, height - 1)
+    if not is_dataset_y_axis_inverted(dataset):
         _y1, _y2 = y1, y2
         y1 = height - _y2 - 1
         y2 = height - _y1 - 1
-    ds_subset = dataset.isel(lon=slice(x1, x2), lat=slice(y1, y2))
-    subset_ds_lon_min, subset_ds_lat_min, subset_ds_lon_max, subset_ds_lat_max = get_dataset_bounds(ds_subset)
-    subset_width = len(ds_subset.lon)
-    subset_height = len(ds_subset.lat)
 
-    mask_data = get_geometry_mask(subset_width, subset_height, actual_geometry, subset_ds_lon_min, subset_ds_lat_min,
-                                  res)
-    mask = xr.DataArray(mask_data, coords=dict(lat=ds_subset.lat, lon=ds_subset.lon), dims=('lat', 'lon'))
+    dataset_subset = dataset.isel(lon=slice(x1, x2), lat=slice(y1, y2))
 
-    ds_subset_masked = xr.where(mask, ds_subset, np.nan)
-    if mask_var_name:
-        ds_subset_masked[mask_var_name] = mask
+    # TODO (forman): Adjust global attrs
 
-    return ds_subset_masked
+    _save_geometry_wkt(dataset_subset, intersection_geometry, save_geometry_wkt)
+
+    return dataset_subset
+
+
+def _save_geometry_mask(dataset, mask, save_mask):
+    if save_mask:
+        var_name = save_mask if isinstance(save_mask, str) else 'geometry_mask'
+        dataset[var_name] = mask
+
+
+def _save_geometry_wkt(dataset, intersection_geometry, save_geometry):
+    if save_geometry:
+        attr_name = save_geometry if isinstance(save_geometry, str) else 'geometry_wkt'
+        dataset.attrs.update({attr_name: intersection_geometry.wkt})
 
 
 def get_geometry_mask(width: int, height: int,
-                      geometry: Geometry,
+                      geometry: GeometryLike,
                       lon_min: float, lat_min: float, res: float) -> np.ndarray:
     geometry = convert_geometry(geometry)
     # noinspection PyTypeChecker
@@ -91,6 +174,90 @@ def get_geometry_mask(width: int, height: int,
                                            transform=transform,
                                            all_touched=True,
                                            invert=True)
+
+
+def intersect_geometries(geometry1: GeometryLike, geometry2: GeometryLike) \
+        -> Optional[shapely.geometry.base.BaseGeometry]:
+    geometry1 = convert_geometry(geometry1)
+    if geometry1 is None:
+        return None
+    geometry2 = convert_geometry(geometry2)
+    if geometry2 is None:
+        return geometry1
+    intersection_geometry = geometry1.intersection(geometry2)
+    if not intersection_geometry.is_valid or intersection_geometry.is_empty:
+        return None
+    return intersection_geometry
+
+
+def convert_geometry(geometry: Optional[GeometryLike]) -> Optional[shapely.geometry.base.BaseGeometry]:
+    """
+    Convert a geometry-like object into a shapely geometry object (``shapely.geometry.BaseGeometry``).
+
+    A geometry-like object is may be any shapely geometry object,
+    * a dictionary that can be serialized to valid GeoJSON,
+    * a WKT string,
+    * a box given by a string of the form "<x1>,<y1>,<x2>,<y2>"
+      or by a sequence of four numbers x1, y1, x2, y2,
+    * a point by a string of the form "<x>,<y>"
+      or by a sequence of two numbers x, y.
+
+    Handling of geometries crossing the antimeridian:
+
+    * If box coordinates are given, it is allowed to pass x1, x2 where x1 > x2,
+      which is interpreted as a box crossing the antimeridian. In this case the function
+      splits the box along the antimeridian and returns a multi-polygon.
+    * In all other cases, 2D geometries are assumed to _not cross the antimeridian at all_.
+
+    :param geometry: A geometry-like object
+    :return:  Shapely geometry object or None.
+    """
+
+    if isinstance(geometry, shapely.geometry.base.BaseGeometry):
+        return geometry
+
+    if isinstance(geometry, dict):
+        if not GeoJSON.is_geometry(geometry):
+            raise ValueError(_INVALID_GEOMETRY_MSG)
+        return shapely.geometry.shape(geometry)
+
+    if isinstance(geometry, str):
+        return shapely.wkt.loads(geometry)
+
+    if geometry is None:
+        return None
+
+    invalid_box_coords = False
+    # noinspection PyBroadException
+    try:
+        x1, y1, x2, y2 = geometry
+        is_point = x1 == x2 and y1 == y2
+        if is_point:
+            return shapely.geometry.Point(x1, y1)
+        invalid_box_coords = x1 == x2 or y1 >= y2
+        if not invalid_box_coords:
+            return get_box_split_bounds_geometry(x1, y1, x2, y2)
+    except Exception:
+        # noinspection PyBroadException
+        try:
+            x, y = geometry
+            return shapely.geometry.Point(x, y)
+        except Exception:
+            pass
+
+    if invalid_box_coords:
+        raise ValueError(_INVALID_BOX_COORDS_MSG)
+    raise ValueError(_INVALID_GEOMETRY_MSG)
+
+
+def is_dataset_y_axis_inverted(dataset: Union[xr.Dataset, xr.DataArray]) -> bool:
+    if 'lat' in dataset.coords:
+        y = dataset.lat
+    elif 'y' in dataset.coords:
+        y = dataset.y
+    else:
+        raise ValueError("Neither 'lat' nor 'y' coordinate variable found.")
+    return float(y[0]) < float(y[-1])
 
 
 def get_dataset_geometry(dataset: Union[xr.Dataset, xr.DataArray]) -> shapely.geometry.base.BaseGeometry:
@@ -149,42 +316,6 @@ def get_box_split_bounds_geometry(lon_min: float, lat_min: float,
         return shapely.geometry.MultiPolygon(polygons=[shapely.geometry.box(*box_1), shapely.geometry.box(*box_2)])
     else:
         return shapely.geometry.box(*box_1)
-
-
-_INVALID_GEOMETRY_MSG = ('geometry must be either a (shapely) geometry object, '
-                         'a valid GeoJSON object, a valid WKT string, '
-                         'box coordinates (x1, y1, x2, y2), or point coordinates (x, y)')
-
-
-def convert_geometry(geometry: Optional[Geometry]) -> Optional[shapely.geometry.base.BaseGeometry]:
-    if isinstance(geometry, shapely.geometry.base.BaseGeometry):
-        return geometry
-
-    if isinstance(geometry, dict):
-        if not GeoJSON.is_geometry(geometry):
-            raise ValueError(_INVALID_GEOMETRY_MSG)
-        return shapely.geometry.shape(geometry)
-
-    if isinstance(geometry, str):
-        return shapely.wkt.loads(geometry)
-
-    if geometry is None:
-        return None
-
-    # noinspection PyBroadException
-    try:
-        x1, y1, x2, y2 = geometry
-        return shapely.geometry.shape(dict(type='Polygon',
-                                           coordinates=[[[x1, y1], [x2, y1], [x2, y2], [x1, y2], [x1, y1]]]))
-    except Exception:
-        # noinspection PyBroadException
-        try:
-            x, y = geometry
-            return shapely.geometry.shape(dict(type='Point', coordinates=[x, y]))
-        except Exception:
-            pass
-
-    raise ValueError(_INVALID_GEOMETRY_MSG)
 
 
 def _clamp(x, x1, x2):

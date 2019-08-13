@@ -4,7 +4,118 @@ import numpy as np
 import shapely.geometry
 import xarray as xr
 
-from xcube.util.geom import get_dataset_geometry, get_dataset_bounds, get_geometry_mask, convert_geometry
+from xcube.api import new_cube
+from xcube.util.geom import get_dataset_geometry, get_dataset_bounds, get_geometry_mask, convert_geometry, \
+    mask_dataset_by_geometry, clip_dataset_by_geometry
+
+
+class DatasetGeometryTest(unittest.TestCase):
+
+    def setUp(self) -> None:
+        width = 16
+        height = 8
+        spatial_res = 360 / width
+        lon_min = -2 * spatial_res + 0.5 * spatial_res
+        lat_min = -2 * spatial_res + 0.5 * spatial_res
+        lon_max = lon_min + 6 * spatial_res
+        lat_max = lat_min + 3 * spatial_res
+
+        self.triangle = shapely.geometry.Polygon(((lon_min, lat_min),
+                                                  (lon_max, lat_min),
+                                                  (0.5 * (lon_max + lon_min), lat_max),
+                                                  (lon_min, lat_min)))
+
+        self.cube = new_cube(width=width,
+                             height=height,
+                             spatial_res=spatial_res,
+                             drop_bounds=True,
+                             variables=dict(temp=273.9, precip=0.9))
+
+    def test_clip_dataset_by_geometry(self):
+        cube = clip_dataset_by_geometry(self.cube, self.triangle)
+        self._assert_clipped_dataset_has_basic_props(cube)
+        cube = clip_dataset_by_geometry(self.cube, self.triangle, save_geometry=True)
+        self._assert_clipped_dataset_has_basic_props(cube)
+        self._assert_saved_geometry_wkt_is_fine(cube, 'geometry_wkt')
+        cube = clip_dataset_by_geometry(self.cube, self.triangle, save_geometry='intersect_geom')
+        self._assert_saved_geometry_wkt_is_fine(cube, 'intersect_geom')
+
+    def test_mask_dataset_by_geometry(self):
+        cube = mask_dataset_by_geometry(self.cube, self.triangle)
+        self._assert_clipped_dataset_has_basic_props(cube)
+        cube = mask_dataset_by_geometry(self.cube, self.triangle, save_geometry_wkt=True)
+        self._assert_saved_geometry_wkt_is_fine(cube, 'geometry_wkt')
+        cube = mask_dataset_by_geometry(self.cube, self.triangle, save_geometry_wkt='intersect_geom')
+        self._assert_saved_geometry_wkt_is_fine(cube, 'intersect_geom')
+
+    def test_mask_dataset_by_geometry_store_mask(self):
+        cube = mask_dataset_by_geometry(self.cube, self.triangle, save_geometry_mask='geom_mask')
+        self._assert_clipped_dataset_has_basic_props(cube)
+        self._assert_dataset_mask_is_fine(cube, 'geom_mask')
+
+    def _assert_clipped_dataset_has_basic_props(self, dataset):
+        self.assertEqual({'time': 5, 'lat': 4, 'lon': 7}, dataset.dims)
+        self.assertIn('temp', dataset)
+        self.assertIn('precip', dataset)
+        temp = dataset['temp']
+        precip = dataset['precip']
+        self.assertEqual(('time', 'lat', 'lon'), temp.dims)
+        self.assertEqual((5, 4, 7), temp.shape)
+        self.assertEqual(('time', 'lat', 'lon'), precip.dims)
+        self.assertEqual((5, 4, 7), precip.shape)
+
+    def _assert_dataset_mask_is_fine(self, dataset, mask_var_name):
+        self.assertIn(mask_var_name, dataset)
+        geom_mask = dataset[mask_var_name]
+        self.assertEqual(('lat', 'lon'), geom_mask.dims)
+        self.assertEqual((4, 7), geom_mask.shape)
+        np.testing.assert_array_almost_equal(geom_mask.values.astype(np.byte),
+                                             np.array([[0, 0, 0, 1, 0, 0, 0],
+                                                       [0, 0, 1, 1, 1, 0, 0],
+                                                       [0, 1, 1, 1, 1, 1, 0],
+                                                       [1, 1, 1, 1, 1, 1, 1]], dtype=np.byte))
+
+    def _assert_saved_geometry_wkt_is_fine(self, dataset, geometry_wkt_name):
+        self.assertIn(geometry_wkt_name, dataset.attrs)
+        self.assertEqual('POLYGON ((-33.75 -33.75, 33.75 33.75, 101.25 -33.75, -33.75 -33.75))',
+                         dataset.attrs[geometry_wkt_name])
+
+
+class GetGeometryMaskTest(unittest.TestCase):
+    def test_get_geometry_mask(self):
+        w = 16
+        h = 8
+        res = 1.0
+        lon_min = 0
+        lat_min = 0
+        lon_max = lon_min + w * res
+        lat_max = lat_min + h * res
+
+        triangle = shapely.geometry.Polygon(((lon_min, lat_min), (lon_max, lat_min), (lon_max, lat_max),
+                                             (lon_min, lat_min)))
+
+        actual_mask = get_geometry_mask(w, h, triangle, lon_min, lat_min, res)
+        expected_mask = np.array([[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1],
+                                  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1],
+                                  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1],
+                                  [0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1],
+                                  [0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+                                  [0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+                                  [0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+                                  [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]], dtype=np.byte)
+        np.testing.assert_array_almost_equal(expected_mask, actual_mask.astype('byte'))
+
+        smaller_triangle = triangle.buffer(-1.5 * res)
+        actual_mask = get_geometry_mask(w, h, smaller_triangle, lon_min, lat_min, res)
+        expected_mask = np.array([[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                                  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                                  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0],
+                                  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0],
+                                  [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 0],
+                                  [0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0],
+                                  [0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0],
+                                  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]], dtype=np.byte)
+        np.testing.assert_array_almost_equal(expected_mask, actual_mask)
 
 
 class GetDatasetGeometryTest(unittest.TestCase):
@@ -75,43 +186,6 @@ def _get_antimeridian_datasets():
     return ds1, ds2
 
 
-class GetGeometryMaskTest(unittest.TestCase):
-    def test_get_geometry_mask(self):
-        w = 16
-        h = 8
-        res = 1.0
-        lon_min = 0
-        lat_min = 0
-        lon_max = lon_min + w * res
-        lat_max = lat_min + h * res
-
-        triangle = shapely.geometry.Polygon(((lon_min, lat_min), (lon_max, lat_min), (lon_max, lat_max),
-                                             (lon_min, lat_min)))
-
-        actual_mask = get_geometry_mask(w, h, triangle, lon_min, lat_min, res)
-        expected_mask = np.array([[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1],
-                                  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1],
-                                  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1],
-                                  [0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1],
-                                  [0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-                                  [0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-                                  [0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-                                  [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]], dtype=np.byte)
-        np.testing.assert_array_almost_equal(expected_mask, actual_mask.astype('byte'))
-
-        smaller_triangle = triangle.buffer(-1.5 * res)
-        actual_mask = get_geometry_mask(w, h, smaller_triangle, lon_min, lat_min, res)
-        expected_mask = np.array([[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                                  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                                  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0],
-                                  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0],
-                                  [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 0],
-                                  [0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0],
-                                  [0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0],
-                                  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]], dtype=np.byte)
-        np.testing.assert_array_almost_equal(expected_mask, actual_mask)
-
-
 class ConvertGeometryTest(unittest.TestCase):
     def test_convert_null(self):
         self.assertIs(None, convert_geometry(None))
@@ -123,26 +197,55 @@ class ConvertGeometryTest(unittest.TestCase):
         self.assertEqual(expected_point,
                          convert_geometry([12.8, -34.4]))
         self.assertEqual(expected_point,
-                         convert_geometry('POINT (12.8 -34.4)'))
+                         convert_geometry(np.array([12.8, -34.4])))
         self.assertEqual(expected_point,
-                         convert_geometry(dict(type='Point', coordinates=[12.8, -34.4])))
+                         convert_geometry(expected_point.wkt))
+        self.assertEqual(expected_point,
+                         convert_geometry(expected_point.__geo_interface__))
+
+    def test_convert_box_as_point(self):
+        expected_point = shapely.geometry.Point(12.8, -34.4)
+        self.assertEqual(expected_point,
+                         convert_geometry([12.8, -34.4, 12.8, -34.4]))
 
     def test_convert_to_box(self):
-        expected_box = shapely.geometry.Polygon(
-            [(12.8, -34.4), (14.2, -34.4), (14.2, 20.6), (12.8, 20.6), (12.8, -34.4)])
+        expected_box = shapely.geometry.box(12.8, -34.4, 14.2, 20.6)
         self.assertIs(expected_box,
                       convert_geometry(expected_box))
         self.assertEqual(expected_box,
                          convert_geometry([12.8, -34.4, 14.2, 20.6]))
         self.assertEqual(expected_box,
-                         convert_geometry('POLYGON ((12.8 -34.4, 14.2 -34.4, 14.2 20.6, 12.8 20.6, 12.8 -34.4))'))
+                         convert_geometry(np.array([12.8, -34.4, 14.2, 20.6])))
         self.assertEqual(expected_box,
-                         convert_geometry(dict(type='Polygon', coordinates=[
-                             [[12.8, -34.4], [14.2, -34.4], [14.2, 20.6], [12.8, 20.6], [12.8, -34.4]]
-                         ])))
+                         convert_geometry(expected_box.wkt))
+        self.assertEqual(expected_box,
+                         convert_geometry(expected_box.__geo_interface__))
+
+    def test_convert_to_split_box(self):
+        expected_split_box = shapely.geometry.MultiPolygon(polygons=[
+            shapely.geometry.Polygon(((180.0, -34.4), (180.0, 20.6), (172.1, 20.6), (172.1, -34.4),
+                                      (180.0, -34.4))),
+            shapely.geometry.Polygon(((-165.7, -34.4), (-165.7, 20.6), (-180.0, 20.6), (-180.0, -34.4),
+                                      (-165.7, -34.4)))])
+        actual_split_box = convert_geometry([172.1, -34.4, -165.7, 20.6])
+        self.assertEqual(expected_split_box,
+                         actual_split_box)
+
+    def test_convert_invalid_box(self):
+        expected_msg = 'Invalid box coordinates'
+
+        with self.assertRaises(ValueError) as cm:
+            convert_geometry([12.8, 20.6, 14.2, -34.4])
+        self.assertEqual(expected_msg, f'{cm.exception}')
+        with self.assertRaises(ValueError) as cm:
+            convert_geometry([12.8, -34.4, 12.8, 20.6])
+        self.assertEqual(expected_msg, f'{cm.exception}')
+        with self.assertRaises(ValueError) as cm:
+            convert_geometry([12.8, -34.4, 12.8, 20.6])
+        self.assertEqual(expected_msg, f'{cm.exception}')
 
     def test_invalid(self):
-        expected_msg = ('geometry must be either a (shapely) geometry object, '
+        expected_msg = ('Geometry must be either a (shapely) geometry object, '
                         'a valid GeoJSON object, a valid WKT string, '
                         'box coordinates (x1, y1, x2, y2), '
                         'or point coordinates (x, y)')
