@@ -12,7 +12,7 @@ info:
   description: |
     A light-weight web server that provides
     various services based on xarray-enabled datasets.
-  version: "v1.dev"
+  version: "0.2.0-dev"
   title: Xcube Server API
   contact:
     email: bcdev@brockmann-consult.de
