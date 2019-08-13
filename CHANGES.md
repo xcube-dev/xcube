@@ -2,6 +2,9 @@
 
 ### Enhancements
 
+* Added two new spatial dataset operations to Python API `xcube.api` (#148):
+  * `mask_dataset_by_geometry(dataset, geometry)` clip and mask a dataset by geometry
+  * `clip_dataset_by_geometry(dataset, geometry)` just clip a dataset by geometry 
 * The behavior of web API `/datasets?details=1` has changed.
   The call no longer includes associated vector data as GeoJSON. Instead new API
   has beed added to fetch new vector data on demand:
