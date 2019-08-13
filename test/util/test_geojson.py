@@ -20,6 +20,21 @@ class GeoJSONTest(unittest.TestCase):
 
         self.assertFalse(GeoJSON.is_geometry(dict(type='Feature', properties=None)))
 
+    def test_is_feature(self):
+        self.assertTrue(GeoJSON.is_feature(dict(type='Feature',
+                                                geometry=dict(type='Point',
+                                                              coordinates=[2.13, 42.2]))))
+        self.assertFalse(GeoJSON.is_feature(dict(type='Point', coordinates=[2.13, 42.2])))
+
+    def test_is_feature_collection(self):
+        self.assertTrue(GeoJSON.is_feature_collection(dict(type='FeatureCollection',
+                                                           features=[dict(type='Feature',
+                                                                          geometry=dict(type='Point',
+                                                                                        coordinates=[
+                                                                                            2.13,
+                                                                                            42.2]))])))
+        self.assertFalse(GeoJSON.is_feature_collection(dict(type='Point', coordinates=[2.13, 42.2])))
+
     def test_get_type_name(self):
         self.assertEqual('Feature',
                          GeoJSON.get_type_name(dict(type='Feature')))

@@ -37,7 +37,7 @@ Bounds = Tuple[float, float, float, float]
 SplitBounds = Tuple[Bounds, Optional[Bounds]]
 
 _INVALID_GEOMETRY_MSG = ('Geometry must be either a shapely geometry object, '
-                         'a GeoJSON geometry object, a geometry WKT string, '
+                         'a GeoJSON-serializable dictionary, a geometry WKT string, '
                          'box coordinates (x1, y1, x2, y2), '
                          'or point coordinates (x, y)')
 
@@ -218,9 +218,20 @@ def convert_geometry(geometry: Optional[GeometryLike]) -> Optional[shapely.geome
         return geometry
 
     if isinstance(geometry, dict):
-        if not GeoJSON.is_geometry(geometry):
-            raise ValueError(_INVALID_GEOMETRY_MSG)
-        return shapely.geometry.shape(geometry)
+        if GeoJSON.is_geometry(geometry):
+            return shapely.geometry.shape(geometry)
+        elif GeoJSON.is_feature(geometry):
+            geometry = GeoJSON.get_feature_geometry(geometry)
+            if geometry is not None:
+                return shapely.geometry.shape(geometry)
+        elif GeoJSON.is_feature_collection(geometry):
+            features = GeoJSON.get_feature_collection_features(geometry)
+            if features is not None:
+                geometries = [f2 for f2 in [GeoJSON.get_feature_geometry(f1) for f1 in features] if f2 is not None]
+                if geometries:
+                    geometry = dict(type='GeometryCollection', geometries=geometries)
+                    return shapely.geometry.shape(geometry)
+        raise ValueError(_INVALID_GEOMETRY_MSG)
 
     if isinstance(geometry, str):
         return shapely.wkt.loads(geometry)

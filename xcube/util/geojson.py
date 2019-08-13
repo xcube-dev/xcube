@@ -36,6 +36,14 @@ class GeoJSON:
         return cls.get_type_name(obj) == 'Point'
 
     @classmethod
+    def is_feature(cls, obj: Any) -> bool:
+        return cls.get_type_name(obj) == cls.FEATURE_TYPE
+
+    @classmethod
+    def is_feature_collection(cls, obj: Any) -> bool:
+        return cls.get_type_name(obj) == cls.FEATURE_COLLECTION_TYPE and cls._is_valid_sequence(obj, 'features')
+
+    @classmethod
     def is_geometry(cls, obj: Any) -> bool:
         type_name = cls.get_type_name(obj)
         if type_name in cls.PRIMITIVE_GEOMETRY_TYPES:

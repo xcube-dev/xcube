@@ -227,33 +227,46 @@ class ConvertGeometryTest(unittest.TestCase):
                                       (180.0, -34.4))),
             shapely.geometry.Polygon(((-165.7, -34.4), (-165.7, 20.6), (-180.0, 20.6), (-180.0, -34.4),
                                       (-165.7, -34.4)))])
-        actual_split_box = convert_geometry([172.1, -34.4, -165.7, 20.6])
         self.assertEqual(expected_split_box,
-                         actual_split_box)
+                         convert_geometry([172.1, -34.4, -165.7, 20.6]))
+
+    def test_convert_from_geojson_feature_dict(self):
+        expected_box1 = shapely.geometry.box(-10, -20, 20, 10)
+        expected_box2 = shapely.geometry.box(30, 20, 50, 40)
+        feature1 = dict(type='Feature', geometry=expected_box1.__geo_interface__)
+        feature2 = dict(type='Feature', geometry=expected_box2.__geo_interface__)
+        feature_collection = dict(type='FeatureCollection', features=(feature1, feature2))
+
+        actual_geom = convert_geometry(feature1)
+        self.assertEqual(expected_box1, actual_geom)
+
+        actual_geom = convert_geometry(feature2)
+        self.assertEqual(expected_box2, actual_geom)
+
+        expected_geom = shapely.geometry.GeometryCollection(geoms=[expected_box1, expected_box2])
+        actual_geom = convert_geometry(feature_collection)
+        self.assertEqual(expected_geom, actual_geom)
 
     def test_convert_invalid_box(self):
-        expected_msg = 'Invalid box coordinates'
+        from xcube.util.geom import _INVALID_BOX_COORDS_MSG
 
         with self.assertRaises(ValueError) as cm:
             convert_geometry([12.8, 20.6, 14.2, -34.4])
-        self.assertEqual(expected_msg, f'{cm.exception}')
+        self.assertEqual(_INVALID_BOX_COORDS_MSG, f'{cm.exception}')
         with self.assertRaises(ValueError) as cm:
             convert_geometry([12.8, -34.4, 12.8, 20.6])
-        self.assertEqual(expected_msg, f'{cm.exception}')
+        self.assertEqual(_INVALID_BOX_COORDS_MSG, f'{cm.exception}')
         with self.assertRaises(ValueError) as cm:
             convert_geometry([12.8, -34.4, 12.8, 20.6])
-        self.assertEqual(expected_msg, f'{cm.exception}')
+        self.assertEqual(_INVALID_BOX_COORDS_MSG, f'{cm.exception}')
 
     def test_invalid(self):
-        expected_msg = ('Geometry must be either a shapely geometry object, '
-                        'a GeoJSON geometry object, a geometry WKT string, '
-                        'box coordinates (x1, y1, x2, y2), '
-                        'or point coordinates (x, y)')
+        from xcube.util.geom import _INVALID_GEOMETRY_MSG
 
         with self.assertRaises(ValueError) as cm:
             convert_geometry(dict(coordinates=[12.8, -34.4]))
-        self.assertEqual(expected_msg, f'{cm.exception}')
+        self.assertEqual(_INVALID_GEOMETRY_MSG, f'{cm.exception}')
 
         with self.assertRaises(ValueError) as cm:
             convert_geometry([12.8, -34.4, '?'])
-        self.assertEqual(expected_msg, f'{cm.exception}')
+        self.assertEqual(_INVALID_GEOMETRY_MSG, f'{cm.exception}')
