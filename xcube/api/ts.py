@@ -28,13 +28,13 @@ import xarray as xr
 
 from ..api.select import select_vars
 from ..api.verify import assert_cube
-from ..util.geom import where_geometry, convert_geometry, Geometry, get_dataset_geometry
+from ..util.geom import mask_dataset_by_geometry, convert_geometry, GeometryLike, get_dataset_geometry
 
 Date = Union[np.datetime64, str]
 
 
 def get_time_series(cube: xr.Dataset,
-                    geometry: Geometry = None,
+                    geometry: GeometryLike = None,
                     var_names: Sequence[str] = None,
                     start_date: Date = None,
                     end_date: Date = None,
@@ -94,7 +94,7 @@ def get_time_series(cube: xr.Dataset,
         return dataset.assign_attrs(max_number_of_observations=1)
 
     if geometry is not None:
-        dataset = where_geometry(dataset, geometry, mask_var_name='__mask__')
+        dataset = mask_dataset_by_geometry(dataset, geometry, save_geometry_mask='__mask__')
         if dataset is None:
             return None
         mask = dataset['__mask__']

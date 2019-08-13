@@ -2,8 +2,6 @@ from .api import XCubeAPI
 from .dump import dump_dataset
 from .extract import DEFAULT_INDEX_NAME_PATTERN, DEFAULT_INTERP_POINT_METHOD, DEFAULT_REF_NAME_PATTERN, \
     get_cube_point_indexes, get_cube_values_for_indexes, get_cube_values_for_points, get_dataset_indexes
-from .extract import get_cube_values_for_points, get_cube_point_indexes, get_cube_values_for_indexes, \
-    get_dataset_indexes, DEFAULT_INDEX_NAME_PATTERN, DEFAULT_REF_NAME_PATTERN, DEFAULT_INTERP_POINT_METHOD
 from .gen.gen import gen_cube
 from .levels import compute_levels, read_levels, write_levels
 from .new import new_cube
@@ -19,3 +17,5 @@ from ..util.chunk import chunk_dataset
 from ..util.optimize import optimize_dataset
 # noinspection PyUnresolvedReferences
 from ..util.unchunk import unchunk_dataset
+# noinspection PyUnresolvedReferences
+from ..util.geom import clip_dataset_by_geometry, mask_dataset_by_geometry, convert_geometry
