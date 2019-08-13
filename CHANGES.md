@@ -2,6 +2,8 @@
 
 ### Enhancements
 
+* Added new CLI tool `xcube optimize` and API function `xcube.api.optimize_dataset` 
+  optimizes data cubes for cloud object storage deployment. (#141)
 * Added two new spatial dataset operations to Python API `xcube.api` (#148):
   * `mask_dataset_by_geometry(dataset, geometry)` clip and mask a dataset by geometry
   * `clip_dataset_by_geometry(dataset, geometry)` just clip a dataset by geometry 
