@@ -1,10 +1,11 @@
 import functools
 import json
-from typing import Dict, Tuple
+from typing import Dict, Tuple, List
 
 import numpy as np
 
 from ..context import ServiceContext
+from ..controllers.places import GeoJsonFeatureCollection
 from ..controllers.tiles import get_tile_source_options, get_dataset_tile_url
 from ..errors import ServiceBadRequestError
 from ..im.cmaps import get_cmaps
@@ -62,7 +63,7 @@ def get_datasets(ctx: ServiceContext,
     return dict(datasets=dataset_dicts)
 
 
-def get_dataset(ctx: ServiceContext, ds_id: str, client=None, base_url: str = None) -> Dict:
+def get_dataset(ctx: ServiceContext, ds_id: str, client=None, base_url: str = None) -> GeoJsonFeatureCollection:
     dataset_descriptor = ctx.get_dataset_descriptor(ds_id)
 
     ds_id = dataset_descriptor['Identifier']
@@ -92,7 +93,8 @@ def get_dataset(ctx: ServiceContext, ds_id: str, client=None, base_url: str = No
         if client is not None:
             tile_grid = ctx.get_tile_grid(ds_id)
             tile_xyz_source_options = get_tile_source_options(tile_grid,
-                                                              get_dataset_tile_url(ctx, ds_id, var_name,
+                                                              get_dataset_tile_url(ctx, ds_id,
+                                                                                   var_name,
                                                                                    base_url),
                                                               client=client)
             variable_dict["tileSourceOptions"] = tile_xyz_source_options
@@ -111,9 +113,21 @@ def get_dataset(ctx: ServiceContext, ds_id: str, client=None, base_url: str = No
 
     place_groups = ctx.get_dataset_place_groups(ds_id)
     if place_groups:
-        dataset_dict["placeGroups"] = place_groups
+        dataset_dict["placeGroups"] = _filter_place_groups(place_groups, del_features=True)
 
     return dataset_dict
+
+
+def get_dataset_place_groups(ctx: ServiceContext, ds_id: str) -> List[GeoJsonFeatureCollection]:
+    # Do not load or return features, just place group (metadata).
+    place_groups = ctx.get_dataset_place_groups(ds_id, load_features=False)
+    return _filter_place_groups(place_groups, del_features=True)
+
+
+def get_dataset_place_group(ctx: ServiceContext, ds_id: str, place_group_id: str) -> GeoJsonFeatureCollection:
+    # Load and return features for specific place group.
+    place_group = ctx.get_dataset_place_group(ds_id, place_group_id, load_features=True)
+    return _filter_place_group(place_group, del_features=False)
 
 
 def get_dataset_coordinates(ctx: ServiceContext, ds_id: str, dim_name: str) -> Dict:
@@ -175,3 +189,23 @@ def _is_point_in_dataset_bbox(point: Tuple[float, float], dataset_dict: Dict):
     else:
         # Bounding box crosses antimeridian
         return x_min <= x <= 180.0 or -180.0 <= x <= x_max
+
+
+def _filter_place_group(place_group: Dict, del_features: bool = False) -> Dict:
+    place_group = dict(place_group)
+    del place_group['sourcePaths']
+    del place_group['sourceEncoding']
+    if del_features:
+        del place_group['features']
+    return place_group
+
+
+def _filter_place_groups(place_groups, del_features: bool = False) -> List[Dict]:
+    if del_features:
+        def __filter_place_group(place_group):
+            return _filter_place_group(place_group, del_features=True)
+    else:
+        def __filter_place_group(place_group):
+            return _filter_place_group(place_group, del_features=False)
+
+    return list(map(__filter_place_group, place_groups))

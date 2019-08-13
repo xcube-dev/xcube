@@ -156,7 +156,7 @@ Pass `True` to `cube_asserted` argument of other API called later on:
         result = bibosify_cube(cube, ..., cube_asserted=True)
         ...
 
-If `import xcube` is used in client code, any `xarray.Dataset` object will have
+If `import xcube.api` is used in client code, any `xarray.Dataset` object will have
 an extra property `xcube` whose interface is defined by the class 
 `xcube.api.XCubeAPI`. This class is an 
 [xarray extension](http://xarray.pydata.org/en/stable/internals.html#extending-xarray) that is 

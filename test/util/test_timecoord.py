@@ -3,7 +3,8 @@ import unittest
 import numpy as np
 
 from test.sampledata import create_highroc_dataset
-from xcube.util.timecoord import add_time_coords, get_time_in_days_since_1970, timestamp_to_iso_string
+from xcube.util.timecoord import add_time_coords, to_time_in_days_since_1970, timestamp_to_iso_string, \
+    from_time_in_days_since_1970
 
 
 class AddTimeCoordsTest(unittest.TestCase):
@@ -25,11 +26,25 @@ class AddTimeCoordsTest(unittest.TestCase):
         self.assertIn('time_bnds', dataset_with_time)
         self.assertEqual(dataset_with_time.time_bnds.shape, (1, 2))
 
-    def test_get_time_in_days_since_1970(self):
-        self.assertEqual(17324.5, get_time_in_days_since_1970('201706071200'))
-        self.assertEqual(17325.5, get_time_in_days_since_1970('201706081200'))
-        self.assertEqual(17690.5, get_time_in_days_since_1970('2018-06-08 12:00'))
-        self.assertEqual(17690.5, get_time_in_days_since_1970('2018-06-08T12:00'))
+    def test_to_time_in_days_since_1970(self):
+        self.assertEqual(17324.5,
+                         to_time_in_days_since_1970('201706071200'))
+        self.assertEqual(17325.5,
+                         to_time_in_days_since_1970('201706081200'))
+        self.assertEqual(17690.5,
+                         to_time_in_days_since_1970('2018-06-08 12:00'))
+        self.assertEqual(17690.5,
+                         to_time_in_days_since_1970('2018-06-08T12:00'))
+
+    def test_from_time_in_days_since_1970(self):
+        self.assertEqual('2017-06-07T12:00:00.000000000',
+                         str(from_time_in_days_since_1970(to_time_in_days_since_1970('201706071200'))))
+        self.assertEqual('2017-06-08T12:00:00.000000000',
+                         str(from_time_in_days_since_1970(to_time_in_days_since_1970('201706081200'))))
+        self.assertEqual('2018-06-08T12:00:00.000000000',
+                         str(from_time_in_days_since_1970(to_time_in_days_since_1970('2018-06-08 12:00'))))
+        self.assertEqual('2018-06-08T12:00:00.000000000',
+                         str(from_time_in_days_since_1970(to_time_in_days_since_1970('2018-06-08T12:00'))))
 
 
 class TimestampToIsoStringTest(unittest.TestCase):

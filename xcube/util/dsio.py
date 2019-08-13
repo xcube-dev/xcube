@@ -22,21 +22,20 @@
 import os
 import shutil
 import warnings
-from abc import abstractmethod, ABCMeta
-from typing import Set, Callable, List, Optional, Dict, Iterable, Tuple
+from abc import ABCMeta, abstractmethod
+from typing import Callable, Dict, Iterable, List, Optional, Set, Tuple
 
 import pandas as pd
 import s3fs
 import xarray as xr
 import zarr
 
-from ..util.objreg import get_obj_registry
+from .constants import FORMAT_NAME_MEM, FORMAT_NAME_NETCDF4, FORMAT_NAME_ZARR
+from .dsgrow import append_time_slice, insert_time_slice
+from .objreg import get_obj_registry
 
 FORMAT_NAME_EXCEL = "excel"
 FORMAT_NAME_CSV = "csv"
-FORMAT_NAME_MEM = "mem"
-FORMAT_NAME_NETCDF4 = "netcdf4"
-FORMAT_NAME_ZARR = "zarr"
 
 
 class DatasetIO(metaclass=ABCMeta):
@@ -93,6 +92,10 @@ class DatasetIO(metaclass=ABCMeta):
 
     def append(self, dataset: xr.Dataset, output_path: str, **kwargs):
         """"Append *dataset* to existing *output_path* using format-specific write parameters *kwargs*."""
+        raise NotImplementedError()
+
+    def insert(self, dataset: xr.Dataset, index: int, output_path: str, **kwargs):
+        """"Insert *dataset* at *index* into existing *output_path* using format-specific write parameters *kwargs*."""
         raise NotImplementedError()
 
 
@@ -275,7 +278,7 @@ class Netcdf4DatasetIO(DatasetIO):
         import os
         temp_path = output_path + '.temp.nc'
         os.rename(output_path, temp_path)
-        old_ds = xr.open_dataset(temp_path, decode_times=False)
+        old_ds = xr.open_dataset(temp_path)
         new_ds = xr.concat([old_ds, dataset],
                            dim='time',
                            data_vars='minimal',
@@ -410,14 +413,10 @@ class ZarrDatasetIO(DatasetIO):
         return encoding
 
     def append(self, dataset: xr.Dataset, output_path: str, **kwargs):
-        import zarr
-        if self.root_group is None:
-            self.root_group = zarr.open(output_path, mode='a')
-        for var_name, var_array in self.root_group.arrays():
-            new_var = dataset[var_name]
-            if 'time' in new_var.dims:
-                axis = new_var.dims.index('time')
-                var_array.append(new_var, axis=axis)
+        append_time_slice(output_path, dataset)
+
+    def insert(self, dataset: xr.Dataset, index: int, output_path: str, **kwargs):
+        insert_time_slice(output_path, index, dataset)
 
 
 # noinspection PyAbstractClass

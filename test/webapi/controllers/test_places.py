@@ -46,12 +46,12 @@ class FeaturesControllerTest(unittest.TestCase):
         places = find_places(ctx, "all", geojson_obj=geojson_obj)
         self._assertPlaceGroup(places, 2, {'0', '3'})
 
-        geojson_obj = {'type': 'FeatureCollection', 'places': [geojson_obj]}
+        geojson_obj = {'type': 'FeatureCollection', 'features': [geojson_obj]}
         places = find_places(ctx, "all", geojson_obj=geojson_obj)
         self._assertPlaceGroup(places, 2, {'0', '3'})
 
         with self.assertRaises(ServiceBadRequestError) as cm:
-            geojson_obj = {'type': 'FeatureCollection', 'places': []}
+            geojson_obj = {'type': 'FeatureCollection', 'features': []}
             find_places(ctx, "all", geojson_obj=geojson_obj)
         self.assertEqual("HTTP 400: Received invalid GeoJSON object", f"{cm.exception}")
 

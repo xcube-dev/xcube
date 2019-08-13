@@ -71,39 +71,60 @@ class ServiceContextTest(unittest.TestCase):
         cm = ctx.get_color_mapping('demo', '_')
         self.assertEqual(('jet', 0., 1.), cm)
 
-    def test_get_feature_collections(self):
+    def test_get_global_place_groups(self):
         ctx = new_test_service_context()
-        feature_collections = ctx.get_place_groups()
-        self.assertIsInstance(feature_collections, list)
-        self.assertEqual([{'id': 'inside-cube', 'title': 'Points inside the cube'},
-                          {'id': 'outside-cube', 'title': 'Points outside the cube'}],
-                         feature_collections)
+        place_groups = ctx.get_global_place_groups(load_features=False)
+        self.assertIsInstance(place_groups, list)
+        self.assertEqual(2, len(place_groups))
+        for place_group in place_groups:
+            self.assertIn("type", place_group)
+            self.assertIn("id", place_group)
+            self.assertIn("title", place_group)
+            self.assertIn("propertyMapping", place_group)
+            self.assertIn("sourcePaths", place_group)
+            self.assertIn("sourceEncoding", place_group)
+            self.assertIn("features", place_group)
+        place_group = place_groups[0]
+        self.assertEqual('inside-cube', place_group['id'])
+        self.assertEqual('Points inside the cube', place_group['title'])
+        self.assertEqual(None, place_group['features'])
+        place_group = place_groups[1]
+        self.assertEqual('outside-cube', place_group['id'])
+        self.assertEqual('Points outside the cube', place_group['title'])
+        self.assertEqual(None, place_group['features'])
 
-    def test_get_place_group(self):
-        ctx = new_test_service_context()
-        place_group = ctx.get_place_group()
-        self.assertIsInstance(place_group, dict)
-        self.assertIn("type", place_group)
-        self.assertEqual("FeatureCollection", place_group["type"])
-        self.assertIn("features", place_group)
-        self.assertIsInstance(place_group["features"], list)
-        self.assertEqual(6, len(place_group["features"]))
-        self.assertIs(place_group, ctx.get_place_group())
-        self.assertEqual([str(i) for i in range(6)],
-                         [f["id"] for f in place_group["features"] if "id" in f])
+        place_groups = ctx.get_global_place_groups(load_features=True)
+        self.assertIsInstance(place_groups, list)
+        self.assertEqual(2, len(place_groups))
+        for place_group in place_groups:
+            self.assertIn("type", place_group)
+            self.assertIn("id", place_group)
+            self.assertIn("title", place_group)
+            self.assertIn("propertyMapping", place_group)
+            self.assertIn("sourcePaths", place_group)
+            self.assertIn("sourceEncoding", place_group)
+            self.assertIn("features", place_group)
+        place_group = place_groups[0]
+        self.assertEqual('inside-cube', place_group['id'])
+        self.assertEqual('Points inside the cube', place_group['title'])
+        self.assertIsNotNone(place_group['features'])
+        place_group = place_groups[1]
+        self.assertEqual('outside-cube', place_group['id'])
+        self.assertEqual('Points outside the cube', place_group['title'])
+        self.assertIsNotNone(place_group['features'])
 
-    def test_get_place_group_by_name(self):
+    def test_get_global_place_group(self):
         ctx = new_test_service_context()
-        place_group = ctx.get_place_group(place_group_id="inside-cube")
+        place_group = ctx.get_global_place_group("inside-cube", load_features=True)
         self.assertIsInstance(place_group, dict)
         self.assertIn("type", place_group)
         self.assertEqual("FeatureCollection", place_group["type"])
         self.assertIn("features", place_group)
         self.assertIsInstance(place_group["features"], list)
         self.assertEqual(3, len(place_group["features"]))
-        self.assertIs(place_group, ctx.get_place_group(place_group_id="inside-cube"))
-        self.assertIsNot(place_group, ctx.get_place_group(place_group_id="outside-cube"))
+        self.assertIs(place_group, ctx.get_global_place_group(place_group_id="inside-cube"))
+        self.assertIsNot(place_group, ctx.get_global_place_group(place_group_id="outside-cube"))
 
         with self.assertRaises(ServiceResourceNotFoundError) as cm:
-            ctx.get_place_group(place_group_id="bibo")
+            ctx.get_global_place_group("bibo")
         self.assertEqual('HTTP 404: Place group "bibo" not found', f"{cm.exception}")
