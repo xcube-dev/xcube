@@ -21,7 +21,7 @@ class TsTest(unittest.TestCase):
                                                    [10.0, 20.0],
                                                    [10.0, 10.0],
                                                    [20.0, 10.0]]]))
-        self.assert_dataset_ok(ts_ds, 110, True, False, False, True, False, False)
+        self.assert_dataset_ok(ts_ds, 100, True, False, False, True, False, False)
 
     def test_polygon_incl_count_stdev(self):
         ts_ds = get_time_series(self.cube,
@@ -33,7 +33,7 @@ class TsTest(unittest.TestCase):
                                                    [20.0, 10.0]]]),
                                 include_count=True,
                                 include_stdev=True)
-        self.assert_dataset_ok(ts_ds, 110, True, True, True, True, True, True)
+        self.assert_dataset_ok(ts_ds, 100, True, True, True, True, True, True)
 
     def test_polygon_incl_count(self):
         ts_ds = get_time_series(self.cube,
@@ -44,7 +44,7 @@ class TsTest(unittest.TestCase):
                                                    [10.0, 10.0],
                                                    [20.0, 10.0]]]),
                                 include_count=True)
-        self.assert_dataset_ok(ts_ds, 110, True, True, False, True, True, False)
+        self.assert_dataset_ok(ts_ds, 100, True, True, False, True, True, False)
 
     def test_polygon_incl_stdev_var_subs(self):
         ts_ds = get_time_series(self.cube,
@@ -56,7 +56,7 @@ class TsTest(unittest.TestCase):
                                                    [20.0, 10.0]]]),
                                 var_names=['B'],
                                 include_stdev=True)
-        self.assert_dataset_ok(ts_ds, 110, False, False, False, True, False, True)
+        self.assert_dataset_ok(ts_ds, 100, False, False, False, True, False, True)
 
     def test_polygon_using_groupby(self):
         ts_ds = get_time_series(self.cube,
@@ -69,7 +69,7 @@ class TsTest(unittest.TestCase):
                                 include_count=True,
                                 include_stdev=True,
                                 use_groupby=True)
-        self.assert_dataset_ok(ts_ds, 110, True, True, True, True, True, True)
+        self.assert_dataset_ok(ts_ds, 100, True, True, True, True, True, True)
 
     def test_no_vars(self):
         ts_ds = get_time_series(self.cube,
@@ -86,10 +86,10 @@ class TsTest(unittest.TestCase):
         shape = 25, 180, 360
         dims = 'time', 'lat', 'lon'
         self.ts_a = np.linspace(1, 25, 25)
-        self.ts_a_count = np.array(25 * [110])
+        self.ts_a_count = np.array(25 * [100])
         self.ts_a_stdev = np.array(25 * [0.0])
         self.ts_b = np.linspace(0, 1, 25)
-        self.ts_b_count = np.array(25 * [110])
+        self.ts_b_count = np.array(25 * [100])
         self.ts_b_stdev = np.array(25 * [0.0])
         self.cube = new_cube(time_periods=25,
                              variables=dict(
