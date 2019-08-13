@@ -245,8 +245,8 @@ class ConvertGeometryTest(unittest.TestCase):
         self.assertEqual(expected_msg, f'{cm.exception}')
 
     def test_invalid(self):
-        expected_msg = ('Geometry must be either a (shapely) geometry object, '
-                        'a valid GeoJSON object, a valid WKT string, '
+        expected_msg = ('Geometry must be either a shapely geometry object, '
+                        'a GeoJSON geometry object, a geometry WKT string, '
                         'box coordinates (x1, y1, x2, y2), '
                         'or point coordinates (x, y)')
 

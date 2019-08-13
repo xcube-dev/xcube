@@ -36,9 +36,10 @@ GeometryLike = Union[shapely.geometry.base.BaseGeometry, Dict[str, Any], str, Se
 Bounds = Tuple[float, float, float, float]
 SplitBounds = Tuple[Bounds, Optional[Bounds]]
 
-_INVALID_GEOMETRY_MSG = ('Geometry must be either a (shapely) geometry object, '
-                         'a valid GeoJSON object, a valid WKT string, '
-                         'box coordinates (x1, y1, x2, y2), or point coordinates (x, y)')
+_INVALID_GEOMETRY_MSG = ('Geometry must be either a shapely geometry object, '
+                         'a GeoJSON geometry object, a geometry WKT string, '
+                         'box coordinates (x1, y1, x2, y2), '
+                         'or point coordinates (x, y)')
 
 _INVALID_BOX_COORDS_MSG = 'Invalid box coordinates'
 
