@@ -84,7 +84,7 @@ def update_dataset_temporal_attrs(dataset: xr.Dataset,
     :param dataset: The dataset.
     :param update_existing: If ``True``, any existing attributes will be updated.
     :param in_place: If ``True``, *dataset* will be modified in place and returned.
-    :return: A new dataset, if *in_place* if ``False`` (default), else the passed and modified *dataset*.
+    :return: A new dataset, if *in_place* is ``False`` (default), else the passed and modified *dataset*.
     """
     return _update_dataset_attrs(dataset, [_TIME_ATTRS_DATA],
                                  update_existing=update_existing, in_place=in_place)
