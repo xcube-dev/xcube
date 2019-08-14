@@ -5,6 +5,7 @@ import shapely.geometry
 import xarray as xr
 
 from xcube.api import new_cube
+from xcube.util.chunk import chunk_dataset
 from xcube.util.geom import get_dataset_geometry, get_dataset_bounds, get_geometry_mask, convert_geometry, \
     mask_dataset_by_geometry, clip_dataset_by_geometry
 
@@ -52,6 +53,20 @@ class DatasetGeometryTest(unittest.TestCase):
         cube = mask_dataset_by_geometry(self.cube, self.triangle, save_geometry_mask='geom_mask')
         self._assert_clipped_dataset_has_basic_props(cube)
         self._assert_dataset_mask_is_fine(cube, 'geom_mask')
+
+    def test_clip_dataset_for_chunked_input(self):
+        cube = chunk_dataset(self.cube, chunk_sizes=dict(time=1, lat=90, lon=90))
+        cube = clip_dataset_by_geometry(cube, self.triangle)
+        self._assert_clipped_dataset_has_basic_props(cube)
+        self.assertEqual(((1, 1, 1, 1, 1), (4,), (7,)), cube.temp.chunks)
+        self.assertEqual(((1, 1, 1, 1, 1), (4,), (7,)), cube.precip.chunks)
+
+    def test_mask_dataset_for_chunked_input(self):
+        cube = chunk_dataset(self.cube, chunk_sizes=dict(time=1, lat=90, lon=90))
+        cube = mask_dataset_by_geometry(cube, self.triangle)
+        self._assert_clipped_dataset_has_basic_props(cube)
+        self.assertEqual(((1, 1, 1, 1, 1), (4,), (7,)), cube.temp.chunks)
+        self.assertEqual(((1, 1, 1, 1, 1), (4,), (7,)), cube.precip.chunks)
 
     def _assert_clipped_dataset_has_basic_props(self, dataset):
         self.assertEqual({'time': 5, 'lat': 4, 'lon': 7}, dataset.dims)
