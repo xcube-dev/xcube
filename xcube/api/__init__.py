@@ -14,8 +14,11 @@ from .verify import assert_cube, verify_cube
 # noinspection PyUnresolvedReferences
 from ..util.chunk import chunk_dataset
 # noinspection PyUnresolvedReferences
+from ..util.geom import clip_dataset_by_geometry, mask_dataset_by_geometry, convert_geometry
+# noinspection PyUnresolvedReferences
 from ..util.optimize import optimize_dataset
 # noinspection PyUnresolvedReferences
 from ..util.unchunk import unchunk_dataset
 # noinspection PyUnresolvedReferences
-from ..util.geom import clip_dataset_by_geometry, mask_dataset_by_geometry, convert_geometry
+from ..util.update import update_dataset_attrs, update_dataset_spatial_attrs, update_dataset_temporal_attrs, \
+    update_dataset_var_attrs

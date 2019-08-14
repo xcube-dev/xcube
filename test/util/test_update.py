@@ -5,32 +5,32 @@ import pandas as pd
 import xarray as xr
 
 from test.sampledata import create_highroc_dataset
-from xcube.api.update import update_var_props, update_global_attrs
+from xcube.util.update import update_dataset_var_attrs, update_dataset_attrs
 
 
 class UpdateVariablePropsTest(unittest.TestCase):
     def test_no_change(self):
         ds1 = create_highroc_dataset()
         # noinspection PyTypeChecker
-        ds2 = update_var_props(ds1, None)
+        ds2 = update_dataset_var_attrs(ds1, None)
         self.assertIs(ds2, ds1)
-        ds2 = update_var_props(ds1, [])
+        ds2 = update_dataset_var_attrs(ds1, [])
         self.assertIs(ds2, ds1)
 
     def test_change_all_or_none(self):
         ds1 = create_highroc_dataset()
-        ds2 = update_var_props(ds1,
-                               [(var_name, {'marker': True}) for var_name in ds1.data_vars])
+        ds2 = update_dataset_var_attrs(ds1,
+                                       [(var_name, {'marker': True}) for var_name in ds1.data_vars])
         self.assertEqual(len(ds1.data_vars), len(ds2.data_vars))
         self.assertTrue(all(['marker' in ds2[n].attrs for n in ds2.variables]))
 
         with self.assertRaises(KeyError):
-            update_var_props(ds1, [('bibo', {'marker': True})])
+            update_dataset_var_attrs(ds1, [('bibo', {'marker': True})])
 
     def test_change_some(self):
         ds1 = create_highroc_dataset()
-        ds2 = update_var_props(ds1,
-                               [('conc_chl', {'name': 'chl_c2rcc'}),
+        ds2 = update_dataset_var_attrs(ds1,
+                                       [('conc_chl', {'name': 'chl_c2rcc'}),
                                 ('c2rcc_flags', {'name': 'flags', 'marker': True}),
                                 ('rtoa_10', None)])
 
@@ -52,11 +52,11 @@ class UpdateVariablePropsTest(unittest.TestCase):
         self.assertIn('rtoa_10', ds2.data_vars)
 
         with self.assertRaises(ValueError) as cm:
-            update_var_props(ds1, [('conc_chl', None),
-                                   ('c2rcc_flags', None),
-                                   ('rtoa_1', {'name': 'refl_toa'}),
-                                   ('rtoa_2', {'name': 'refl_toa'}),
-                                   ('rtoa_3', {'name': 'refl_toa'})])
+            update_dataset_var_attrs(ds1, [('conc_chl', None),
+                                           ('c2rcc_flags', None),
+                                           ('rtoa_1', {'name': 'refl_toa'}),
+                                           ('rtoa_2', {'name': 'refl_toa'}),
+                                           ('rtoa_3', {'name': 'refl_toa'})])
         self.assertEqual("variable 'rtoa_2' cannot be renamed into 'refl_toa' because the name is already in use",
                          f'{cm.exception}')
 
@@ -93,7 +93,7 @@ class UpdateGlobalAttributesTest(unittest.TestCase):
         output_metadata = dict(history='pipo', license='MIT', Conventions='CF-1.7')
 
         ds1 = xr.Dataset(coords=coords)
-        ds2 = update_global_attrs(ds1, output_metadata=output_metadata)
+        ds2 = update_dataset_attrs(ds1, global_attrs=output_metadata)
 
         self.assertIsNot(ds2, ds1)
         self.assertEqual('CF-1.7', ds2.attrs.get('Conventions'))
@@ -112,7 +112,7 @@ class UpdateGlobalAttributesTest(unittest.TestCase):
         self.assertIn('date_modified', ds2.attrs)
 
         ds1 = xr.Dataset(coords=coords_with_bnds)
-        ds2 = update_global_attrs(ds1, output_metadata=output_metadata)
+        ds2 = update_dataset_attrs(ds1, global_attrs=output_metadata)
 
         self.assertIsNot(ds2, ds1)
         self.assertEqual('CF-1.7', ds2.attrs.get('Conventions'))
