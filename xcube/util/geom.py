@@ -93,7 +93,7 @@ def mask_dataset_by_geometry(dataset: xr.Dataset,
         var = dataset[var_name]
         masked_vars[var_name] = var.where(mask)
 
-    masked_dataset = dataset.copy(data=masked_vars)
+    masked_dataset = xr.Dataset(masked_vars, coords=dataset.coords, attrs=dataset.attrs)
 
     _save_geometry_mask(masked_dataset, mask, save_geometry_mask)
     _save_geometry_wkt(masked_dataset, intersection_geometry, save_geometry_wkt)
