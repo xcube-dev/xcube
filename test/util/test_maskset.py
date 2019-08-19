@@ -152,3 +152,7 @@ class MaskSetTest(unittest.TestCase):
             assert_array_almost_equal(mask.values, data, err_msg=msg)
 
         self.assertEqual(set(s2l2a_slc_meanings), set(dir(mask_set)))
+
+        html = mask_set._repr_html_()
+        self.assertTrue(html.startswith('<html>'))
+        self.assertTrue(html.endswith('</html>'))

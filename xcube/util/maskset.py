@@ -89,6 +89,20 @@ class MaskSet:
                 masks[var_name] = MaskSet(var)
         return masks
 
+    def _repr_html_(self):
+        lines = ['<html>',
+                 '<table>',
+                 '<tr><th>Flag name</th><th>Mask</th><th>Value</th></tr>']
+
+        for name, data in self._flags.items():
+            mask, value = data
+            lines.append(f'<tr><td>{name}</td><td>{mask}</td><td>{value}</td></tr>')
+
+        lines.extend(['</table>',
+                      '</html>'])
+
+        return '\n'.join(lines)
+
     def __str__(self):
         return "%s(%s)" % (self._flag_var.name, ', '.join(["%s=%s" % (n, v) for n, v in self._flags.items()]))
 
