@@ -18,8 +18,6 @@ from .select import select_vars
 from .vars_to_dim import vars_to_dim
 from .verify import verify_cube
 from ..util.chunk import chunk_dataset
-# noinspection PyUnresolvedReferences
-from ..util.maskset import MaskSet
 
 
 @xr.register_dataset_accessor('xcube')
