@@ -49,6 +49,10 @@ class DatasetGeometryTest(unittest.TestCase):
         cube = mask_dataset_by_geometry(self.cube, self.triangle, save_geometry_wkt='intersect_geom')
         self._assert_saved_geometry_wkt_is_fine(cube, 'intersect_geom')
 
+    def test_mask_dataset_by_geometry_excluded_vars(self):
+        cube = mask_dataset_by_geometry(self.cube, self.triangle, excluded_vars='precip')
+        self._assert_clipped_dataset_has_basic_props(cube)
+
     def test_mask_dataset_by_geometry_store_mask(self):
         cube = mask_dataset_by_geometry(self.cube, self.triangle, save_geometry_mask='geom_mask')
         self._assert_clipped_dataset_has_basic_props(cube)

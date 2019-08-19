@@ -47,6 +47,7 @@ _INVALID_BOX_COORDS_MSG = 'Invalid box coordinates'
 
 def mask_dataset_by_geometry(dataset: xr.Dataset,
                              geometry: GeometryLike,
+                             excluded_vars: Sequence[str] = None,
                              no_clip: bool = False,
                              save_geometry_mask: Union[str, bool] = False,
                              save_geometry_wkt: Union[str, bool] = False) -> Optional[xr.Dataset]:
@@ -57,6 +58,8 @@ def mask_dataset_by_geometry(dataset: xr.Dataset,
 
     :param dataset: The dataset
     :param geometry: A geometry-like object, see py:function:`convert_geometry`.
+    :param excluded_vars: Optional sequence of names of data variables that should not be masked
+        (but still may be clipped).
     :param no_clip: If True, the function will not clip the dataset before masking, this is, the
         returned dataset will have the same dimension size as the given *dataset*.
     :param save_geometry_mask: If the value is a string, the effective geometry mask array is stored as
@@ -88,12 +91,14 @@ def mask_dataset_by_geometry(dataset: xr.Dataset,
                         coords=dict(lat=dataset.lat, lon=dataset.lon),
                         dims=('lat', 'lon'))
 
-    masked_vars = {}
-    for var_name in dataset.data_vars:
-        var = dataset[var_name]
-        masked_vars[var_name] = var.where(mask)
+    dataset_vars = {}
+    for var_name, var in dataset.data_vars.items():
+        if not excluded_vars or var_name not in excluded_vars:
+            dataset_vars[var_name] = var.where(mask)
+        else:
+            dataset_vars[var_name] = var
 
-    masked_dataset = xr.Dataset(masked_vars, coords=dataset.coords, attrs=dataset.attrs)
+    masked_dataset = xr.Dataset(dataset_vars, coords=dataset.coords, attrs=dataset.attrs)
 
     _save_geometry_mask(masked_dataset, mask, save_geometry_mask)
     _save_geometry_wkt(masked_dataset, intersection_geometry, save_geometry_wkt)
