@@ -1,6 +1,7 @@
 import unittest
 
 import numpy as np
+import xarray as xr
 from numpy.testing import assert_array_almost_equal
 
 from test.sampledata import create_highroc_dataset, create_c2rcc_flag_var, create_cmems_sst_flag_var
@@ -93,4 +94,61 @@ class MaskSetTest(unittest.TestCase):
         mask_set = mask_sets['c2rcc_flags']
         self.assertIsInstance(mask_set, MaskSet)
 
-# TODO: add tests according to http://cfconventions.org/Data/cf-conventions/cf-conventions-1.7/build/ch03s05.html
+    def test_mask_set_with_flag_values(self):
+        s2l2a_slc_meanings = ['no_data',
+                              'saturated_or_defective',
+                              'dark_area_pixels',
+                              'cloud_shadows',
+                              'vegetation',
+                              'bare_soils',
+                              'water',
+                              'clouds_low_probability_or_unclassified',
+                              'clouds_medium_probability',
+                              'clouds_high_probability',
+                              'cirrus',
+                              'snow_or_ice']
+
+        data = np.array([[1, 2, 8, 3],
+                         [7, 6, 0, 4],
+                         [9, 5, 11, 10]], dtype=np.uint8)
+        flag_var = xr.DataArray(data,
+                                dims=('y', 'x'),
+                                name='SLC',
+                                attrs=dict(
+                                    long_name="Scene classification flags",
+                                    flag_values=','.join(f'{i}' for i in range(len(s2l2a_slc_meanings))),
+                                    flag_meanings=' '.join(s2l2a_slc_meanings),
+                                ))
+
+        mask_set = MaskSet(flag_var)
+
+        self.assertEqual('SLC(no_data=(None, 0), saturated_or_defective=(None, 1), dark_area_pixels=(None, 2), '
+                         'cloud_shadows=(None, 3), vegetation=(None, 4), bare_soils=(None, 5), water=(None, 6), '
+                         'clouds_low_probability_or_unclassified=(None, 7), clouds_medium_probability=(None, 8), '
+                         'clouds_high_probability=(None, 9), cirrus=(None, 10), snow_or_ice=(None, 11))',
+                         str(mask_set))
+
+        validation_data = ((0, 'no_data', mask_set.no_data, np.array([[0, 0, 0, 0],
+                                                                      [0, 0, 1, 0],
+                                                                      [0, 0, 0, 0]],
+                                                                     dtype=np.uint8)),
+                           (4, 'vegetation', mask_set.vegetation, np.array([[0, 0, 0, 0],
+                                                                            [0, 0, 0, 1],
+                                                                            [0, 0, 0, 0]],
+                                                                           dtype=np.uint8)),
+                           (10, 'cirrus', mask_set.cirrus, np.array([[0, 0, 0, 0],
+                                                                     [0, 0, 0, 0],
+                                                                     [0, 0, 0, 1]],
+                                                                    dtype=np.uint8)),
+                           (6, 'water', mask_set.water, np.array([[0, 0, 0, 0],
+                                                                  [0, 1, 0, 0],
+                                                                  [0, 0, 0, 0]],
+                                                                 dtype=np.uint8)))
+
+        for index, name, mask, data in validation_data:
+            msg = f'index={index}, name={name!r}, data={data!r}'
+            self.assertIs(mask, mask_set[index], msg=msg)
+            self.assertIs(mask, mask_set[name], msg=msg)
+            assert_array_almost_equal(mask.values, data, err_msg=msg)
+
+        self.assertEqual(set(s2l2a_slc_meanings), set(dir(mask_set)))
