@@ -5,7 +5,6 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 
-from xcube.util.chunk import chunk_dataset
 # noinspection PyUnresolvedReferences
 from .compute import compute_dataset
 from .dump import dump_dataset
@@ -18,10 +17,13 @@ from .readwrite import read_cube, open_cube, write_cube
 from .select import select_vars
 from .vars_to_dim import vars_to_dim
 from .verify import verify_cube
+from ..util.chunk import chunk_dataset
+# noinspection PyUnresolvedReferences
+from ..util.maskset import MaskSet
 
 
 @xr.register_dataset_accessor('xcube')
-class XCubeAPI:
+class XCubeDatasetAccessor:
     """
     The XCube API.
 
@@ -293,19 +295,3 @@ class XCubeAPI:
         :return: A list of dataset instances representing the multi-level pyramid.
         """
         return compute_levels(self._dataset, **kwargs)
-
-    def resample_in_time(self):
-        """
-        Resample a data cube in the time dimension.
-
-        :param frequency: Resampling frequency.
-        :param method: Resampling method or sequence of resampling methods.
-        :param offset: Offset used to adjust the resampled time labels. Some pandas date offset strings are supported.
-        :param base: Resampling method.
-        :param var_names: Variable names to include.
-        :param tolerance: Time tolerance for selective upsampling methods. Defaults to *frequency*.
-        :param interp_kind: Kind of interpolation if *method* is 'interpolation'.
-        :param metadata: Output metadata.
-        :return: A new data cube resampled in time.
-        """
-        return resample_in_time()
