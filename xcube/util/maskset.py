@@ -19,7 +19,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-from typing import Dict, Any
+from typing import Dict, Any, Iterable
 
 import numpy as np
 import xarray as xr
@@ -91,6 +91,9 @@ class MaskSet:
 
     def __str__(self):
         return "%s(%s)" % (self._flag_var.name, ', '.join(["%s=%s" % (n, v) for n, v in self._flags.items()]))
+
+    def __dir__(self) -> Iterable[str]:
+        return self._flag_names
 
     def __getattr__(self, name: str) -> Any:
         if name not in self._flags:
