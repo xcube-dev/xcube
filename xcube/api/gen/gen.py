@@ -34,7 +34,7 @@ from .defaults import DEFAULT_OUTPUT_PATH, DEFAULT_OUTPUT_RESAMPLING, DEFAULT_OU
 from .iproc import InputProcessor, get_input_processor
 from ..compute import compute_dataset
 from ..select import select_vars
-from ..update import update_global_attrs, update_var_props
+from xcube.util.update import update_dataset_attrs, update_dataset_var_attrs
 from ...util.config import NameAnyDict, NameDictPairList, to_resolved_name_dict_pairs
 from ...util.dsio import DatasetIO, find_dataset_io, guess_dataset_format, rimraf
 from ...util.timecoord import add_time_coords
@@ -236,7 +236,7 @@ def _process_input(input_processor: InputProcessor,
 
     # noinspection PyShadowingNames
     def step6(dataset):
-        return update_var_props(dataset, output_variables)
+        return update_dataset_var_attrs(dataset, output_variables)
 
     steps.append((step6, 'updating variable properties'))
 
@@ -246,38 +246,32 @@ def _process_input(input_processor: InputProcessor,
 
     steps.append((step7, 'post-processing dataset'))
 
-    update_mode = None
+    # noinspection PyShadowingNames
+    def step8(dataset):
+        return update_dataset_attrs(dataset, global_attrs=output_metadata)
+
+    steps.append((step8, 'updating dataset attributes'))
 
     if not dry_run:
         if append_mode and os.path.exists(output_path):
             # noinspection PyShadowingNames
-            def step8(dataset):
+            def step9(dataset):
                 index = get_time_insert_index(output_path, dataset.time[0])
                 if index == -1:
-                    update_mode = 'append'
                     output_writer.append(dataset, output_path, **output_writer_params)
                 else:
-                    update_mode = 'insert'
                     output_writer.insert(dataset, index, output_path)
-                return dataset, update_mode
+                return dataset
 
-            steps.append((step8, f'adding to {output_path}'))
+            steps.append((step9, f'adding to {output_path}'))
         else:
             # noinspection PyShadowingNames
-            def step8(dataset):
+            def step9(dataset):
                 rimraf(output_path)
-                update_mode = 'create'
                 output_writer.write(dataset, output_path, **output_writer_params)
-                return dataset, update_mode
+                return dataset
 
-            steps.append((step8, f'writing to {output_path}'))
-
-    locals = inspect.currentframe()
-    # noinspection PyShadowingNames
-    def step9(dataset):
-        return update_global_attrs(dataset[0], update_mode=dataset[1], output_metadata=output_metadata, locals=locals)
-
-    steps.append((step9, 'updating dataset attributes'))
+            steps.append((step9, f'writing to {output_path}'))
 
     if _PROFILING_ON:
         pr = cProfile.Profile()

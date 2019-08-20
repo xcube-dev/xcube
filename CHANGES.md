@@ -2,6 +2,14 @@
 
 ### Enhancements
 
+* `xcube.api` now exports the `MaskSet` class which is useful for decoding flag values encoding following the
+  [CF conventions](http://cfconventions.org/Data/cf-conventions/cf-conventions-1.7/cf-conventions.html#flags).
+* Added new CLI tool `xcube optimize` and API function `xcube.api.optimize_dataset` 
+  optimizes data cubes for cloud object storage deployment. (#141)
+* Added two new spatial dataset operations to Python API `xcube.api` (#148):
+  * `mask_dataset_by_geometry(dataset, geometry)` clip and mask a dataset by geometry
+  * `clip_dataset_by_geometry(dataset, geometry)` just clip a dataset by geometry 
+* Changed the dev version tag from 0.2.0.dev3 to 0.2.0.dev
 * The behavior of web API `/datasets?details=1` has changed.
   The call no longer includes associated vector data as GeoJSON. Instead new API
   has beed added to fetch new vector data on demand:

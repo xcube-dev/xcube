@@ -26,7 +26,6 @@ from typing import Any, Dict, Iterable, List, Optional, Tuple
 
 import yaml
 
-UNDEFINED = object()
 PRIMITIVE_TYPES = (int, float, str, type(None))
 
 NameAnyDict = Dict[str, Any]

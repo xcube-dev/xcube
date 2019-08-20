@@ -4,6 +4,18 @@ Version 0.1, draft
 
 *IMPORTANT NOTE: Any changes to this doc must be reviewed by dev-team through pull requests.* 
 
+## Preface
+
+> _Gedacht ist nicht gesagt._  
+> _Gesagt ist nicht gehört._  
+> _Gehört ist nicht verstanden._  
+> _Verstanden ist nicht einverstanden._  
+> _Einverstanden ist nicht umgesetzt._  
+> _Umgesetzt ist nicht beibehalten._  
+       
+by Konrad Lorenz (translation is left to the reader)
+
+
 ## Table of Contents
 
 - [Versioning](#versioning)
@@ -143,8 +155,14 @@ if so, name the primary dataset argument `cube` and add a
 keyword parameter `cube_asserted: bool = False`. 
 Otherwise name the primary dataset argument `dataset`.
 
-In the implementation, if not `cube_asserted`, 
-we must assert the `cube` is a cube. 
+Reflect the fact, that a certain API method or function operates only 
+on datasets that conform with the xcube data cube specifications by
+using `cube` in its name rather than `dataset`. For example `compute_dataset` 
+can operate on any xarray datasets, while `get_cube_values_for_points` expects a 
+data cube as input or `read_cube` ensures it will return valid data cubes only. 
+
+In the implementation, if `not cube_asserted`, 
+we must assert and verify the `cube` is a cube. 
 Pass `True` to `cube_asserted` argument of other API called later on: 
     
     from .verify import assert_cube
@@ -156,7 +174,7 @@ Pass `True` to `cube_asserted` argument of other API called later on:
         result = bibosify_cube(cube, ..., cube_asserted=True)
         ...
 
-If `import xcube` is used in client code, any `xarray.Dataset` object will have
+If `import xcube.api` is used in client code, any `xarray.Dataset` object will have
 an extra property `xcube` whose interface is defined by the class 
 `xcube.api.XCubeAPI`. This class is an 
 [xarray extension](http://xarray.pydata.org/en/stable/internals.html#extending-xarray) that is 
@@ -209,3 +227,10 @@ Make sure your change
 1. Merge PR after all reviewers are accepted your change. Otherwise go back. 
 1. Remove issue label "in progress".
 1. Delete the development branch "developer-issue#-title".
+1. If the PR is only partly solving an issue:
+    1. Make sure the issue contains a to-do list (checkboxes) to complete the issue. 
+    1. Do not include the line "closes #<issue>" in your last commit message. 
+    1. Add "relates to issue#" in PR.  
+    1. Make sure to check the corresponding to-do items (checkboxes) *after* the PR is merged.
+    1. Remove issue label "in progress". 
+    1. Leave issue open. 
