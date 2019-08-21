@@ -5,6 +5,7 @@ import shapely.geometry
 import xarray as xr
 
 from xcube.api import new_cube
+from xcube.util.chunk import chunk_dataset
 from xcube.util.geom import get_dataset_geometry, get_dataset_bounds, get_geometry_mask, convert_geometry, \
     mask_dataset_by_geometry, clip_dataset_by_geometry
 
@@ -34,10 +35,10 @@ class DatasetGeometryTest(unittest.TestCase):
     def test_clip_dataset_by_geometry(self):
         cube = clip_dataset_by_geometry(self.cube, self.triangle)
         self._assert_clipped_dataset_has_basic_props(cube)
-        cube = clip_dataset_by_geometry(self.cube, self.triangle, save_geometry=True)
+        cube = clip_dataset_by_geometry(self.cube, self.triangle, save_geometry_wkt=True)
         self._assert_clipped_dataset_has_basic_props(cube)
         self._assert_saved_geometry_wkt_is_fine(cube, 'geometry_wkt')
-        cube = clip_dataset_by_geometry(self.cube, self.triangle, save_geometry='intersect_geom')
+        cube = clip_dataset_by_geometry(self.cube, self.triangle, save_geometry_wkt='intersect_geom')
         self._assert_saved_geometry_wkt_is_fine(cube, 'intersect_geom')
 
     def test_mask_dataset_by_geometry(self):
@@ -48,10 +49,28 @@ class DatasetGeometryTest(unittest.TestCase):
         cube = mask_dataset_by_geometry(self.cube, self.triangle, save_geometry_wkt='intersect_geom')
         self._assert_saved_geometry_wkt_is_fine(cube, 'intersect_geom')
 
+    def test_mask_dataset_by_geometry_excluded_vars(self):
+        cube = mask_dataset_by_geometry(self.cube, self.triangle, excluded_vars='precip')
+        self._assert_clipped_dataset_has_basic_props(cube)
+
     def test_mask_dataset_by_geometry_store_mask(self):
         cube = mask_dataset_by_geometry(self.cube, self.triangle, save_geometry_mask='geom_mask')
         self._assert_clipped_dataset_has_basic_props(cube)
         self._assert_dataset_mask_is_fine(cube, 'geom_mask')
+
+    def test_clip_dataset_for_chunked_input(self):
+        cube = chunk_dataset(self.cube, chunk_sizes=dict(time=1, lat=90, lon=90))
+        cube = clip_dataset_by_geometry(cube, self.triangle)
+        self._assert_clipped_dataset_has_basic_props(cube)
+        self.assertEqual(((1, 1, 1, 1, 1), (4,), (7,)), cube.temp.chunks)
+        self.assertEqual(((1, 1, 1, 1, 1), (4,), (7,)), cube.precip.chunks)
+
+    def test_mask_dataset_for_chunked_input(self):
+        cube = chunk_dataset(self.cube, chunk_sizes=dict(time=1, lat=90, lon=90))
+        cube = mask_dataset_by_geometry(cube, self.triangle)
+        self._assert_clipped_dataset_has_basic_props(cube)
+        self.assertEqual(((1, 1, 1, 1, 1), (4,), (7,)), cube.temp.chunks)
+        self.assertEqual(((1, 1, 1, 1, 1), (4,), (7,)), cube.precip.chunks)
 
     def _assert_clipped_dataset_has_basic_props(self, dataset):
         self.assertEqual({'time': 5, 'lat': 4, 'lon': 7}, dataset.dims)
@@ -63,6 +82,18 @@ class DatasetGeometryTest(unittest.TestCase):
         self.assertEqual((5, 4, 7), temp.shape)
         self.assertEqual(('time', 'lat', 'lon'), precip.dims)
         self.assertEqual((5, 4, 7), precip.shape)
+
+        self.assertIn('geospatial_lon_min', dataset.attrs)
+        self.assertIn('geospatial_lon_max', dataset.attrs)
+        self.assertIn('geospatial_lon_units', dataset.attrs)
+        self.assertIn('geospatial_lon_resolution', dataset.attrs)
+        self.assertIn('geospatial_lat_min', dataset.attrs)
+        self.assertIn('geospatial_lat_max', dataset.attrs)
+        self.assertIn('geospatial_lat_units', dataset.attrs)
+        self.assertIn('geospatial_lat_resolution', dataset.attrs)
+        self.assertIn('time_coverage_start', dataset.attrs)
+        self.assertIn('time_coverage_end', dataset.attrs)
+        self.assertIn('date_modified', dataset.attrs)
 
     def _assert_dataset_mask_is_fine(self, dataset, mask_var_name):
         self.assertIn(mask_var_name, dataset)
