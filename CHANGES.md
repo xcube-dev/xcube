@@ -2,6 +2,10 @@
 
 ### Enhancements
 
+* `xcube.api.new_cube` function now accepts callables as values for variables.
+  This allows to compute variable values depending on the (t, y, x) position
+  in the cube. Useful for testing.
+* Added new CLI tool `xcube optimize` and API function `xcube.api.optimize_dataset`
 * `xcube.api` now exports the `MaskSet` class which is useful for decoding flag values encoding following the
   [CF conventions](http://cfconventions.org/Data/cf-conventions/cf-conventions-1.7/cf-conventions.html#flags).
 * Added new CLI tool `xcube optimize` and API function `xcube.api.optimize_dataset` 
