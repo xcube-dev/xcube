@@ -2,6 +2,9 @@
 
 ### Enhancements
 
+* `xcube gen` is now taking care that when new time slices are added to an existing
+   cube, this is done by maintaining the chronological order. New time slices are
+   either appended, inserted, or replaced. (#64) (#139)
 * `xcube.api` now exports the `MaskSet` class which is useful for decoding flag values encoding following the
   [CF conventions](http://cfconventions.org/Data/cf-conventions/cf-conventions-1.7/cf-conventions.html#flags).
 * Added new CLI tool `xcube optimize` and API function `xcube.api.optimize_dataset` 
@@ -14,10 +17,7 @@
   The call no longer includes associated vector data as GeoJSON. Instead new API
   has beed added to fetch new vector data on demand:
   `/datasets/{dataset}/places` and `/datasets/{dataset}/places/{place}` (#130)
-* `xcube gen` is now taking care that when new time slices are added to an existing 
-   cube, this is done by maintaining the chronological order. New time slices are 
-   either appended or inserted. (#64)
-* `xcube serve` accepts custom SNAP colormaps. The path to a SAP .cpd file can be passed via the server  
+* `xcube serve` accepts custom SNAP colormaps. The path to a SAP .cpd file can be passed via the server
    configuration file with the paramter [ColorFile] instead of [ColorBar]. (#84)
 * `xcube serve` can now be configured to serve cubes that are associated 
    with another cube with same data but different chunking (#115). 
