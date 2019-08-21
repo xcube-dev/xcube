@@ -31,6 +31,7 @@ import shapely.wkt
 import xarray as xr
 
 from .geojson import GeoJSON
+from .update import update_dataset_spatial_attrs
 
 GeometryLike = Union[shapely.geometry.base.BaseGeometry, Dict[str, Any], str, Sequence[Union[float, int]]]
 Bounds = Tuple[float, float, float, float]
@@ -46,6 +47,7 @@ _INVALID_BOX_COORDS_MSG = 'Invalid box coordinates'
 
 def mask_dataset_by_geometry(dataset: xr.Dataset,
                              geometry: GeometryLike,
+                             excluded_vars: Sequence[str] = None,
                              no_clip: bool = False,
                              save_geometry_mask: Union[str, bool] = False,
                              save_geometry_wkt: Union[str, bool] = False) -> Optional[xr.Dataset]:
@@ -56,12 +58,12 @@ def mask_dataset_by_geometry(dataset: xr.Dataset,
 
     :param dataset: The dataset
     :param geometry: A geometry-like object, see py:function:`convert_geometry`.
+    :param excluded_vars: Optional sequence of names of data variables that should not be masked
+        (but still may be clipped).
     :param no_clip: If True, the function will not clip the dataset before masking, this is, the
         returned dataset will have the same dimension size as the given *dataset*.
-    :param save_geometry_mask: If value is a string, a variable named by *save_mask* representing the effective geometry mask
-        will be stored in the returned dataset.
-    :param save_mask: If the value is a string, the effective geometry mask array is stored as
-        a 2D data variable named by *save_mask*.
+    :param save_geometry_mask: If the value is a string, the effective geometry mask array is stored as
+        a 2D data variable named by *save_geometry_mask*.
         If the value is True, the name "geometry_mask" is used.
     :param save_geometry_wkt: If the value is a string, the effective intersection geometry is stored as
         a Geometry WKT string in the global attribute named by *save_geometry*.
@@ -89,12 +91,14 @@ def mask_dataset_by_geometry(dataset: xr.Dataset,
                         coords=dict(lat=dataset.lat, lon=dataset.lon),
                         dims=('lat', 'lon'))
 
-    masked_vars = {}
-    for var_name in dataset.data_vars:
-        var = dataset[var_name]
-        masked_vars[var_name] = var.where(mask)
+    dataset_vars = {}
+    for var_name, var in dataset.data_vars.items():
+        if not excluded_vars or var_name not in excluded_vars:
+            dataset_vars[var_name] = var.where(mask)
+        else:
+            dataset_vars[var_name] = var
 
-    masked_dataset = dataset.copy(data=masked_vars)
+    masked_dataset = xr.Dataset(dataset_vars, coords=dataset.coords, attrs=dataset.attrs)
 
     _save_geometry_mask(masked_dataset, mask, save_geometry_mask)
     _save_geometry_wkt(masked_dataset, intersection_geometry, save_geometry_wkt)
@@ -104,21 +108,22 @@ def mask_dataset_by_geometry(dataset: xr.Dataset,
 
 def clip_dataset_by_geometry(dataset: xr.Dataset,
                              geometry: GeometryLike,
-                             save_geometry: Union[str, bool] = False) -> Optional[xr.Dataset]:
+                             save_geometry_wkt: Union[str, bool] = False) -> Optional[xr.Dataset]:
     """
     Spatially clip a dataset according to the bounding box of a given geometry.
 
     :param dataset: The dataset
     :param geometry: A geometry-like object, see py:function:`convert_geometry`.
-    :param save_geometry: If the value is a string, the effective intersection geometry is stored as a Geometry WKT string
-        in the global attribute named by *save_geometry*. If the value is True, the name "geometry_wkt" is used.
+    :param save_geometry_wkt: If the value is a string, the effective intersection geometry is stored as
+        a Geometry WKT string in the global attribute named by *save_geometry*.
+        If the value is True, the name "geometry_wkt" is used.
     :return: The dataset spatial subset, or None if the bounding box of the dataset has a no or a zero area
         intersection with the bounding box of the geometry.
     """
     intersection_geometry = intersect_geometries(get_dataset_bounds(dataset), geometry)
     if intersection_geometry is None:
         return None
-    return _clip_dataset_by_geometry(dataset, intersection_geometry, save_geometry_wkt=save_geometry)
+    return _clip_dataset_by_geometry(dataset, intersection_geometry, save_geometry_wkt=save_geometry_wkt)
 
 
 def _clip_dataset_by_geometry(dataset: xr.Dataset,
@@ -144,7 +149,7 @@ def _clip_dataset_by_geometry(dataset: xr.Dataset,
 
     dataset_subset = dataset.isel(lon=slice(x1, x2), lat=slice(y1, y2))
 
-    # TODO (forman): Adjust global attrs
+    update_dataset_spatial_attrs(dataset_subset, update_existing=True, in_place=True)
 
     _save_geometry_wkt(dataset_subset, intersection_geometry, save_geometry_wkt)
 
