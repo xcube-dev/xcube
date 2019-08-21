@@ -20,13 +20,13 @@
 # SOFTWARE.
 
 from typing import Tuple
-import numpy as np
 
+import numpy as np
 import xarray as xr
 
-from xcube.util.constants import CRS_WKT_EPSG_4326
-from xcube.util.timecoord import to_time_in_days_since_1970
 from ..iproc import XYInputProcessor, register_input_processor, ReprojectionInfo
+from ....util.constants import CRS_WKT_EPSG_4326
+from ....util.timecoord import to_time_in_days_since_1970
 
 
 class DefaultInputProcessor(XYInputProcessor):
