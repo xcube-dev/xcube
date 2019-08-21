@@ -740,7 +740,7 @@ The Xcube server supports local NetCDF files or local or remote [Zarr](https://z
 Remote Zarr directories must be stored in publicly accessible, AWS S3 compatible 
 object storage (OBS).
 
-As an example, here is the [configuration of the demo server](https://github.com/dcs4cop/xcube//blob/master/examples/serve/demo/config.yml).
+As an example, here is the [configuration of the demo server](https://github.com/dcs4cop/xcube/blob/master/examples/serve/demo/config.yml).
 
 ### OGC WMTS compatibility
 
