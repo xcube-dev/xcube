@@ -208,7 +208,7 @@ def _process_input(input_processor: InputProcessor,
         output_variables = [(var_name, None) for var_name in input_dataset.data_vars]
 
     time_index, update_mode = find_time_slice(output_path,
-                                              from_time_in_days_since_1970(time_range[0]))
+                                              from_time_in_days_since_1970((time_range[0] + time_range[1]) / 2))
 
     steps = []
 
