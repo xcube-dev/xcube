@@ -66,7 +66,9 @@ resampling_algs = NAME_TO_GDAL_RESAMPLE_ALG.keys()
                    f'Defaults to {DEFAULT_OUTPUT_RESAMPLING!r}. '
                    f'The choices for the resampling algorithm are: {resampling_algs}')
 @click.option('--append', '-a', is_flag=True,
-              help='Append successive outputs.')
+              help='Deprecated. The command will now always create, insert, replace, or append input slices.')
+@click.option('--prof', is_flag=True,
+              help='Collect profiling information and dump results after processing.')
 @click.option('--sort', is_flag=True,
               help='The input file list will be sorted before creating the data cube. '
                    'If --sort parameter is not passed, order of input list will be kept.')
@@ -84,6 +86,7 @@ def gen(inputs: str,
         variables: str,
         resampling: str,
         append: bool,
+        prof: bool,
         dry_run: bool,
         info: bool,
         sort: bool):
@@ -103,7 +106,7 @@ def gen(inputs: str,
     output_region = region
     output_variables = variables
     output_resampling = resampling
-    append_mode = append
+    profile_mode = prof
     dry_run = dry_run
     info_mode = info
     sort_mode = sort
