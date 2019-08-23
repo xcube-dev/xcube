@@ -65,7 +65,8 @@ with open('xcube/version.py') as f:
 setup(
     name="xcube",
     version=version,
-    description='xcube API and CLIs',
+    description=('xcube is a Python package for generating and exploiting '
+                 'data cubes powered by xarray, dask, and zarr.'),
     license='MIT',
     author='xcube Development Team',
     packages=packages,
