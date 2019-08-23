@@ -78,13 +78,14 @@ class DefaultProcessTest(unittest.TestCase):
 
 
 # noinspection PyShadowingBuiltins
-def gen_cube_wrapper(input_paths, output_path, append_mode):
-    config = get_config_dict(locals())
+def gen_cube_wrapper(input_paths, output_path, append_mode, sort_mode=True):
+    config = get_config_dict(dict(input_paths=input_paths, output_path=output_path, append_mode=append_mode))
     return gen_cube(input_processor='default',
                     output_size=(320, 180),
                     output_region=(-4., 47., 12., 56.),
                     output_resampling='Nearest',
                     output_variables=[('analysed_sst', dict(name='SST'))],
+                    sort_mode=sort_mode,
                     dry_run=False,
                     monitor=None,
                     **config)

@@ -55,10 +55,10 @@ def gen_cube(input_paths: Sequence[str] = None,
              output_variables: NameDictPairList = None,
              processed_variables: NameDictPairList = None,
              profile_mode: bool = False,
+             sort_mode: bool = False,
              append_mode: bool = None,
              dry_run: bool = False,
-             monitor: Callable[..., None] = None,
-             sort_mode: bool = False) -> bool:
+             monitor: Callable[..., None] = None) -> bool:
     """
     Generate a data cube from one or more input files.
 
