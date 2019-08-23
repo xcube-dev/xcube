@@ -1,4 +1,12 @@
-## Changes in 0.2.0 (in dev)
+## Changes in 0.2.0.dev2 (in dev)
+
+### Fixes
+
+* `xcube gen` is now taking care that when new time slices are added to an existing
+   cube, this is done by maintaining the chronological order. New time slices are
+   either appended, inserted, or replaced. (#64) (#139)
+
+## Changes in 0.2.0.dev1
 
 ### Enhancements
 
