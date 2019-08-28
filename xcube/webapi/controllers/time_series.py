@@ -282,7 +282,7 @@ def _collect_ts_result(ts_ds: xr.Dataset,
     uncert_var = ts_ds[uncert_var_name] if uncert_var_name else None
     count_var = ts_ds[count_var_name] if count_var_name else None
 
-    total_count = ts_ds.get('max_number_of_observations', 1)
+    total_count = ts_ds.attrs.get('max_number_of_observations', 1)
 
     num_times = var.time.size
     time_series = []
