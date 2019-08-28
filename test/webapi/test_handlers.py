@@ -345,19 +345,19 @@ class HandlersTest(AsyncHTTPTestCase):
         self.assertResponseOK(response)
 
     def test_fetch_time_series_features(self):
-        response = self.fetch(self.prefix + '/ts/demo/conc_chl/places', method="POST",
+        response = self.fetch(self.prefix + '/ts/demo/conc_chl/features', method="POST",
                               body='')
         self.assertBadRequestResponse(response, 'Invalid or missing GeoJSON feature collection in request body')
         response = self.fetch(self.prefix + '/ts/demo/conc_chl/places', method="POST",
                               body='{"type":"Point"}')
         self.assertBadRequestResponse(response, 'Invalid GeoJSON feature collection')
-        response = self.fetch(self.prefix + '/ts/demo/conc_chl/places', method="POST",
+        response = self.fetch(self.prefix + '/ts/demo/conc_chl/features', method="POST",
                               body='{"type": "FeatureCollection", "features": null}')
         self.assertResponseOK(response)
-        response = self.fetch(self.prefix + '/ts/demo/conc_chl/places', method="POST",
+        response = self.fetch(self.prefix + '/ts/demo/conc_chl/features', method="POST",
                               body='{"type": "FeatureCollection", "features": []}')
         self.assertResponseOK(response)
-        response = self.fetch(self.prefix + '/ts/demo/conc_chl/places', method="POST",
+        response = self.fetch(self.prefix + '/ts/demo/conc_chl/features', method="POST",
                               body='{"type": "FeatureCollection", "features": ['
                                    '  {"type": "Feature", "properties": {}, '
                                    '   "geometry": {"type": "Point", "coordinates": [1, 51]}}'
