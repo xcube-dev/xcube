@@ -348,7 +348,7 @@ class HandlersTest(AsyncHTTPTestCase):
         response = self.fetch(self.prefix + '/ts/demo/conc_chl/features', method="POST",
                               body='')
         self.assertBadRequestResponse(response, 'Invalid or missing GeoJSON feature collection in request body')
-        response = self.fetch(self.prefix + '/ts/demo/conc_chl/places', method="POST",
+        response = self.fetch(self.prefix + '/ts/demo/conc_chl/features', method="POST",
                               body='{"type":"Point"}')
         self.assertBadRequestResponse(response, 'Invalid GeoJSON feature collection')
         response = self.fetch(self.prefix + '/ts/demo/conc_chl/features', method="POST",
