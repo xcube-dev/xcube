@@ -2,11 +2,14 @@
 
 ### Enhancements
 
+* Added option `inclStDev` and `inclCount` query parameters to `ts/{dataset}/{variable}/geometry` and derivates.
+  If used with `inclStDev=1`, Xcube Viewer will show error bars for each time series point.
 * `xcube.api.new_cube` function now accepts callables as values for variables.
   This allows to compute variable values depending on the (t, y, x) position
   in the cube. Useful for testing.
 
 ### Fixes
+
 * `totalCount` attribute of time series returned by Web API `ts/{dataset}/{variable}/{geom-type}` now
    contains the correct number of possible observations. Was always `1` before.
 * Renamed Web API function `ts/{dataset}/{variable}/places` into
