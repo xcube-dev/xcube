@@ -26,30 +26,39 @@ import os
 import pstats
 import time
 import traceback
+import warnings
 from typing import Any, Callable, Dict, Sequence, Tuple
 
-from xcube.util.dsgrow import get_time_insert_index
 from .defaults import DEFAULT_OUTPUT_PATH, DEFAULT_OUTPUT_RESAMPLING, DEFAULT_OUTPUT_SIZE
 from .iproc import InputProcessor, get_input_processor
 from ..compute import compute_dataset
 from ..select import select_vars
-from xcube.util.update import update_dataset_attrs, update_dataset_var_attrs
 from ...util.config import NameAnyDict, NameDictPairList, to_resolved_name_dict_pairs
 from ...util.dsio import DatasetIO, find_dataset_io, guess_dataset_format, rimraf
-from ...util.timecoord import add_time_coords
+from ...util.timecoord import add_time_coords, from_time_in_days_since_1970
+from ...util.timeslice import find_time_slice
+from ...util.update import update_dataset_attrs, update_dataset_var_attrs, update_dataset_temporal_attrs
 
-_PROFILING_ON = False
 
-
-def gen_cube(input_paths: Sequence[str] = None, input_processor: str = None, input_processor_params: Dict = None,
-             input_reader: str = None, input_reader_params: Dict[str, Any] = None,
+def gen_cube(input_paths: Sequence[str] = None,
+             input_processor: str = None,
+             input_processor_params: Dict = None,
+             input_reader: str = None,
+             input_reader_params: Dict[str, Any] = None,
              output_region: Tuple[float, float, float, float] = None,
-             output_size: Tuple[int, int] = DEFAULT_OUTPUT_SIZE, output_resampling: str = DEFAULT_OUTPUT_RESAMPLING,
+             output_size: Tuple[int, int] = DEFAULT_OUTPUT_SIZE,
+             output_resampling: str = DEFAULT_OUTPUT_RESAMPLING,
              output_path: str = DEFAULT_OUTPUT_PATH,
-             output_writer: str = None, output_writer_params: Dict[str, Any] = None,
-             output_metadata: NameAnyDict = None, output_variables: NameDictPairList = None,
-             processed_variables: NameDictPairList = None, append_mode: bool = False, dry_run: bool = False,
-             monitor: Callable[..., None] = None, sort_mode: bool = False) -> bool:
+             output_writer: str = None,
+             output_writer_params: Dict[str, Any] = None,
+             output_metadata: NameAnyDict = None,
+             output_variables: NameDictPairList = None,
+             processed_variables: NameDictPairList = None,
+             profile_mode: bool = False,
+             sort_mode: bool = False,
+             append_mode: bool = None,
+             dry_run: bool = False,
+             monitor: Callable[..., None] = None) -> bool:
     """
     Generate a data cube from one or more input files.
 
@@ -69,7 +78,8 @@ def gen_cube(input_paths: Sequence[str] = None, input_processor: str = None, inp
     :param output_metadata: Extra metadata passed to output cube.
     :param output_variables: Output variables.
     :param processed_variables: Processed variables computed on-the-fly.
-    :param append_mode: Whether processed inputs shall be appended to an existing cube.
+    :param profile_mode: Whether profiling should be enabled.
+    :param append_mode: Deprecated. The function will always either insert, replace, or append new time slices.
     :param dry_run: Doesn't write any data. For testing.
     :param monitor: A progress monitor.
     :return: True for success.
@@ -79,6 +89,10 @@ def gen_cube(input_paths: Sequence[str] = None, input_processor: str = None, inp
 
     if not input_processor:
         raise ValueError('Missing input_processor')
+
+    if append_mode is not None:
+        warnings.warn('append_mode in gen_cube() is deprecated, '
+                      'time slices will now always be inserted, replaced, or appended.')
 
     input_processor = get_input_processor(input_processor)
     if not input_processor:
@@ -100,7 +114,7 @@ def gen_cube(input_paths: Sequence[str] = None, input_processor: str = None, inp
     output_writer = output_writer or guess_dataset_format(output_path)
     if not output_writer:
         raise ValueError(f'Failed to guess output_writer from path {output_path}')
-    output_writer = find_dataset_io(output_writer, modes={'w', 'a'} if append_mode else {'w'})
+    output_writer = find_dataset_io(output_writer, modes={'w', 'a'})
     if not output_writer:
         raise ValueError(f'Unknown output_writer {output_writer!r}')
 
@@ -144,7 +158,7 @@ def gen_cube(input_paths: Sequence[str] = None, input_processor: str = None, inp
                                 output_metadata,
                                 output_variables,
                                 processed_variables,
-                                append_mode,
+                                profile_mode,
                                 dry_run,
                                 monitor)
         ds_index += 1
@@ -170,10 +184,10 @@ def _process_input(input_processor: InputProcessor,
                    output_metadata: NameAnyDict = None,
                    output_variables: NameDictPairList = None,
                    processed_variables: NameDictPairList = None,
-                   append_mode: bool = False,
+                   profile_mode: bool = False,
                    dry_run: bool = False,
                    monitor: Callable[..., None] = None) -> bool:
-    monitor('reading dataset...')
+    monitor('reading input slice...')
     # noinspection PyBroadException
     try:
         input_dataset = input_reader.read(input_file, **input_reader_params)
@@ -193,86 +207,93 @@ def _process_input(input_processor: InputProcessor,
     else:
         output_variables = [(var_name, None) for var_name in input_dataset.data_vars]
 
+    time_index, update_mode = find_time_slice(output_path,
+                                              from_time_in_days_since_1970((time_range[0] + time_range[1]) / 2))
+
     steps = []
 
     # noinspection PyShadowingNames
-    def step1(dataset):
-        return input_processor.pre_process(dataset)
+    def step1(input_slice):
+        return input_processor.pre_process(input_slice)
 
-    steps.append((step1, 'pre-processing dataset'))
-
-    # noinspection PyShadowingNames
-    def step2(dataset):
-        return compute_dataset(dataset, processed_variables=processed_variables)
-
-    steps.append((step2, 'computing variables'))
+    steps.append((step1, 'pre-processing input slice'))
 
     # noinspection PyShadowingNames
-    def step3(dataset):
-        extra_vars = input_processor.get_extra_vars(dataset)
+    def step2(input_slice):
+        return compute_dataset(input_slice, processed_variables=processed_variables)
+
+    steps.append((step2, 'computing input slice variables'))
+
+    # noinspection PyShadowingNames
+    def step3(input_slice):
+        extra_vars = input_processor.get_extra_vars(input_slice)
         selected_variables = set([var_name for var_name, _ in output_variables])
         selected_variables.update(extra_vars or set())
-        return select_vars(dataset, selected_variables)
+        return select_vars(input_slice, selected_variables)
 
-    steps.append((step3, 'selecting variables'))
+    steps.append((step3, 'selecting input slice variables'))
 
     # noinspection PyShadowingNames
-    def step4(dataset):
-        return input_processor.process(dataset,
+    def step4(input_slice):
+        return input_processor.process(input_slice,
                                        dst_size=output_size,
                                        dst_region=output_region,
                                        dst_resampling=output_resampling,
                                        include_non_spatial_vars=False)
 
-    steps.append((step4, 'transforming dataset'))
+    steps.append((step4, 'transforming input slice'))
 
     if time_range is not None:
-        # noinspection PyShadowingNames
-        def step5(dataset):
-            return add_time_coords(dataset, time_range)
+        def step5(input_slice):
+            return add_time_coords(input_slice, time_range)
 
-        steps.append((step5, 'adding time coordinates'))
+        steps.append((step5, 'adding time coordinates to input slice'))
 
-    # noinspection PyShadowingNames
-    def step6(dataset):
-        return update_dataset_var_attrs(dataset, output_variables)
+    def step6(input_slice):
+        return update_dataset_var_attrs(input_slice, output_variables)
 
-    steps.append((step6, 'updating variable properties'))
+    steps.append((step6, 'updating variable attributes of input slice'))
 
-    # noinspection PyShadowingNames
-    def step7(dataset):
-        return input_processor.post_process(dataset)
+    def step7(input_slice):
+        return input_processor.post_process(input_slice)
 
-    steps.append((step7, 'post-processing dataset'))
+    steps.append((step7, 'post-processing input slice'))
 
-    # noinspection PyShadowingNames
-    def step8(dataset):
-        return update_dataset_attrs(dataset, global_attrs=output_metadata)
+    if update_mode == 'create':
 
-    steps.append((step8, 'updating dataset attributes'))
-
-    if not dry_run:
-        if append_mode and os.path.exists(output_path):
-            # noinspection PyShadowingNames
-            def step9(dataset):
-                index = get_time_insert_index(output_path, dataset.time[0])
-                if index == -1:
-                    output_writer.append(dataset, output_path, **output_writer_params)
-                else:
-                    output_writer.insert(dataset, index, output_path)
-                return dataset
-
-            steps.append((step9, f'adding to {output_path}'))
-        else:
-            # noinspection PyShadowingNames
-            def step9(dataset):
+        def step8(input_slice):
+            if not dry_run:
                 rimraf(output_path)
-                output_writer.write(dataset, output_path, **output_writer_params)
-                return dataset
+                output_writer.write(input_slice, output_path, **output_writer_params)
+            return update_dataset_attrs(input_slice, global_attrs=output_metadata, update_existing=True)
 
-            steps.append((step9, f'writing to {output_path}'))
+        steps.append((step8, f'creating input slice in {output_path}'))
 
-    if _PROFILING_ON:
+    elif update_mode == 'append':
+        def step8(input_slice):
+            if not dry_run:
+                output_writer.append(input_slice, output_path, **output_writer_params)
+            return update_dataset_temporal_attrs(input_slice, update_existing=True)
+
+        steps.append((step8, f'appending input slice to {output_path}'))
+
+    elif update_mode == 'insert':
+        def step8(input_slice):
+            if not dry_run:
+                output_writer.insert(input_slice, time_index, output_path)
+            return update_dataset_temporal_attrs(input_slice, update_existing=True)
+
+        steps.append((step8, f'inserting input slice before index {time_index} in {output_path}'))
+
+    elif update_mode == 'replace':
+        def step8(input_slice):
+            if not dry_run:
+                output_writer.replace(input_slice, time_index, output_path)
+            return update_dataset_temporal_attrs(input_slice, update_existing=True)
+
+        steps.append((step8, f'replacing input slice at index {time_index} in {output_path}'))
+
+    if profile_mode:
         pr = cProfile.Profile()
         pr.enable()
 
@@ -296,7 +317,7 @@ def _process_input(input_processor: InputProcessor,
     finally:
         input_dataset.close()
 
-    if _PROFILING_ON:
+    if profile_mode:
         # noinspection PyUnboundLocalVariable
         pr.disable()
         s = io.StringIO()

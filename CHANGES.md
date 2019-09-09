@@ -1,4 +1,24 @@
-## Changes in 0.2.0 (in dev)
+## Changes in 0.2.0.dev2 (in dev)
+
+### Enhancements
+
+* Added option `inclStDev` and `inclCount` query parameters to `ts/{dataset}/{variable}/geometry` and derivates.
+  If used with `inclStDev=1`, Xcube Viewer will show error bars for each time series point.
+* `xcube.api.new_cube` function now accepts callables as values for variables.
+  This allows to compute variable values depending on the (t, y, x) position
+  in the cube. Useful for testing.
+
+### Fixes
+
+* `totalCount` attribute of time series returned by Web API `ts/{dataset}/{variable}/{geom-type}` now
+   contains the correct number of possible observations. Was always `1` before.
+* Renamed Web API function `ts/{dataset}/{variable}/places` into
+  `ts/{dataset}/{variable}/features`.
+* `xcube gen` is now taking care that when new time slices are added to an existing
+   cube, this is done by maintaining the chronological order. New time slices are
+   either appended, inserted, or replaced. (#64) (#139)
+
+## Changes in 0.2.0.dev1
 
 ### Enhancements
 
@@ -14,10 +34,7 @@
   The call no longer includes associated vector data as GeoJSON. Instead new API
   has beed added to fetch new vector data on demand:
   `/datasets/{dataset}/places` and `/datasets/{dataset}/places/{place}` (#130)
-* `xcube gen` is now taking care that when new time slices are added to an existing 
-   cube, this is done by maintaining the chronological order. New time slices are 
-   either appended or inserted. (#64)
-* `xcube serve` accepts custom SNAP colormaps. The path to a SAP .cpd file can be passed via the server  
+* `xcube serve` accepts custom SNAP colormaps. The path to a SAP .cpd file can be passed via the server
    configuration file with the paramter [ColorFile] instead of [ColorBar]. (#84)
 * `xcube serve` can now be configured to serve cubes that are associated 
    with another cube with same data but different chunking (#115). 

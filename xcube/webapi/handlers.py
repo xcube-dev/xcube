@@ -484,6 +484,8 @@ class GetTimeSeriesForGeometryHandler(ServiceRequestHandler):
     async def post(self, ds_id: str, var_name: str):
         start_date = self.params.get_query_argument_datetime('startDate', default=None)
         end_date = self.params.get_query_argument_datetime('endDate', default=None)
+        incl_count = self.params.get_query_argument_int('inclCount', default=1) != 0
+        incl_stdev = self.params.get_query_argument_int('inclStDev', default=0) != 0
         max_valids = self.params.get_query_argument_int('maxValids', default=None)
         _check_max_valids(max_valids)
         geometry = self.get_body_as_json_object("GeoJSON geometry")
@@ -494,6 +496,7 @@ class GetTimeSeriesForGeometryHandler(ServiceRequestHandler):
                                                           ds_id, var_name,
                                                           geometry,
                                                           start_date, end_date,
+                                                          incl_count, incl_stdev,
                                                           max_valids)
         self.set_header('Content-Type', 'application/json')
         self.finish(response)
@@ -505,6 +508,8 @@ class GetTimeSeriesForGeometriesHandler(ServiceRequestHandler):
     async def post(self, ds_id: str, var_name: str):
         start_date = self.params.get_query_argument_datetime('startDate', default=None)
         end_date = self.params.get_query_argument_datetime('endDate', default=None)
+        incl_count = self.params.get_query_argument_int('inclCount', default=1) != 0
+        incl_stdev = self.params.get_query_argument_int('inclStDev', default=0) != 0
         max_valids = self.params.get_query_argument_int('maxValids', default=None)
         _check_max_valids(max_valids)
         geometry_collection = self.get_body_as_json_object("GeoJSON geometry collection")
@@ -515,6 +520,7 @@ class GetTimeSeriesForGeometriesHandler(ServiceRequestHandler):
                                                           ds_id, var_name,
                                                           geometry_collection,
                                                           start_date, end_date,
+                                                          incl_count, incl_stdev,
                                                           max_valids)
         self.set_header('Content-Type', 'application/json')
         self.finish(response)
@@ -526,6 +532,8 @@ class GetTimeSeriesForFeaturesHandler(ServiceRequestHandler):
     async def post(self, ds_id: str, var_name: str):
         start_date = self.params.get_query_argument_datetime('startDate', default=None)
         end_date = self.params.get_query_argument_datetime('endDate', default=None)
+        incl_count = self.params.get_query_argument_int('inclCount', default=1) != 0
+        incl_stdev = self.params.get_query_argument_int('inclStDev', default=0) != 0
         max_valids = self.params.get_query_argument_int('maxValids', default=None)
         _check_max_valids(max_valids)
         feature_collection = self.get_body_as_json_object("GeoJSON feature collection")
@@ -536,6 +544,7 @@ class GetTimeSeriesForFeaturesHandler(ServiceRequestHandler):
                                                           ds_id, var_name,
                                                           feature_collection,
                                                           start_date, end_date,
+                                                          incl_count, incl_stdev,
                                                           max_valids)
         self.set_header('Content-Type', 'application/json')
         self.finish(response)

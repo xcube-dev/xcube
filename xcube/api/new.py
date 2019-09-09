@@ -1,3 +1,5 @@
+import itertools
+
 import numpy as np
 import pandas as pd
 import xarray as xr
@@ -20,7 +22,15 @@ def new_cube(title="Test Cube",
              drop_bounds=False,
              variables=None):
     """
-    Create a new empty cube. Useful for testing.
+    Create a new empty cube. Useful for creating cubes templates with predefined
+    coordinate variables and metadata. The function is also heavily used
+    by xcube's unit tests.
+
+    The values of the *variables* dictionary can be either constants,
+    array-like objects, or functions that compute their return value from
+    passed coordinate indexes. The expected signature is:::
+
+        def my_func(time: int, lat: int, lon: int) -> Union[bool, int, float]
 
     :param title: A title.
     :param width: Horizontal number of grid cells
@@ -109,8 +119,6 @@ def new_cube(title="Test Cube",
         "geospatial_lat_units": "degrees_north",
     }
 
-    # TODO (forman): allow variable values to be expressions so values will be computed from coords using numexpr
-
     data_vars = {}
     if variables:
         dims = ("time", "lat", "lon")
@@ -121,6 +129,12 @@ def new_cube(title="Test Cube",
                 data_vars[var_name] = data
             elif isinstance(data, int) or isinstance(data, float) or isinstance(data, bool):
                 data_vars[var_name] = xr.DataArray(np.full(shape, data), dims=dims)
+            elif callable(data):
+                func = data
+                data = np.zeros(shape)
+                for index in itertools.product(*map(range, shape)):
+                    data[index] = func(*index)
+                data_vars[var_name] = xr.DataArray(data, dims=dims)
             elif data is None:
                 data_vars[var_name] = xr.DataArray(np.random.uniform(0.0, 1.0, size).reshape(shape), dims=dims)
             else:

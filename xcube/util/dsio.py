@@ -31,7 +31,7 @@ import xarray as xr
 import zarr
 
 from .constants import FORMAT_NAME_MEM, FORMAT_NAME_NETCDF4, FORMAT_NAME_ZARR
-from .dsgrow import append_time_slice, insert_time_slice
+from .timeslice import append_time_slice, insert_time_slice, replace_time_slice
 from .objreg import get_obj_registry
 
 FORMAT_NAME_EXCEL = "excel"
@@ -96,6 +96,10 @@ class DatasetIO(metaclass=ABCMeta):
 
     def insert(self, dataset: xr.Dataset, index: int, output_path: str, **kwargs):
         """"Insert *dataset* at *index* into existing *output_path* using format-specific write parameters *kwargs*."""
+        raise NotImplementedError()
+
+    def replace(self, dataset: xr.Dataset, index: int, output_path: str, **kwargs):
+        """"Replace *dataset* at *index* in existing *output_path* using format-specific write parameters *kwargs*."""
         raise NotImplementedError()
 
 
@@ -418,6 +422,8 @@ class ZarrDatasetIO(DatasetIO):
     def insert(self, dataset: xr.Dataset, index: int, output_path: str, **kwargs):
         insert_time_slice(output_path, index, dataset)
 
+    def replace(self, dataset: xr.Dataset, index: int, output_path: str, **kwargs):
+        replace_time_slice(output_path, index, dataset)
 
 # noinspection PyAbstractClass
 class CsvDatasetIO(DatasetIO):
