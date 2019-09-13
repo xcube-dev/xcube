@@ -24,7 +24,6 @@ import os.path
 
 import click
 
-from xcube.util.chunk import get_empty_dataset_chunks
 from xcube.util.constants import FORMAT_NAME_ZARR
 
 
@@ -47,6 +46,7 @@ def _prune(input_path: str = None,
            dry_run: bool = False,
            monitor=None):
     from xcube.api import open_cube
+    from xcube.util.chunk import get_empty_dataset_chunks
     from xcube.util.dsio import guess_dataset_format
 
     input_format = guess_dataset_format(input_path)
