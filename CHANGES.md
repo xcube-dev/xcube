@@ -1,5 +1,7 @@
 ## Changes in 0.2.0.dev2 (in dev)
 
+* Reorganisation of the Documentation and Examples Section (partly adressing #106)
+
 ### Enhancements
 
 * Added option `inclStDev` and `inclCount` query parameters to `ts/{dataset}/{variable}/geometry` and derivates.
