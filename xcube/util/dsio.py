@@ -352,11 +352,14 @@ class ZarrDatasetIO(DatasetIO):
 
         if isinstance(path, str):
             endpoint_url = None
+            region_name = None
             root = None
 
             if 'endpoint_url' in kwargs:
                 endpoint_url = kwargs.pop('endpoint_url')
                 root = path
+            if 'region_name' in kwargs:
+                region_name = kwargs.pop('region_name')
             if path.startswith("http://") or path.startswith("https://"):
                 import urllib3.util
                 url = urllib3.util.parse_url(path_or_store)
@@ -369,7 +372,7 @@ class ZarrDatasetIO(DatasetIO):
                     root = root[1:]
 
             if endpoint_url and root is not None:
-                s3 = s3fs.S3FileSystem(anon=True, client_kwargs=dict(endpoint_url=endpoint_url))
+                s3 = s3fs.S3FileSystem(anon=True, client_kwargs=dict(endpoint_url=endpoint_url, region_name=region_name))
                 path_or_store = s3fs.S3Map(root=root, s3=s3, check=False)
                 if 'max_cache_size' in kwargs:
                     max_cache_size = kwargs.pop('max_cache_size')
