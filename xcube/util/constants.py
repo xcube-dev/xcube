@@ -41,3 +41,22 @@ GEOGCS["WGS 84",
 FORMAT_NAME_ZARR = "zarr"
 FORMAT_NAME_NETCDF4 = "netcdf4"
 FORMAT_NAME_MEM = "mem"
+
+# Note: this list must be kept in-sync with xcube/util/reproject.py:NAME_TO_GDAL_RESAMPLE_ALG
+RESAMPLING_METHOD_NAMES = {
+    # Up-sampling
+    'Nearest',
+    'Bilinear',
+    'Cubic',
+    'CubicSpline',
+    'Lanczos',
+
+    # Down-sampling
+    'Average',
+    'Min',
+    'Max',
+    'Median',
+    'Mode',
+    'Q1',
+    'Q3',
+}

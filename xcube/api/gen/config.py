@@ -18,6 +18,7 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+
 from typing import Dict, Union
 
 from ...util.config import to_name_dict_pairs, flatten_dict, load_configs
@@ -33,9 +34,9 @@ def get_config_dict(config_obj: Dict[str, Union[str, bool, int, float, list, dic
     """
     config_file = config_obj.get("config_file")
     input_paths = config_obj.get("input_paths")
-    input_processor = config_obj.get("input_processor")
+    input_processor_name = config_obj.get("input_processor_name", config_obj.get("input_processor"))
     output_path = config_obj.get("output_path")
-    output_writer = config_obj.get("output_writer")
+    output_writer_name = config_obj.get("output_writer_name", config_obj.get("output_writer"))
     output_size = config_obj.get("output_size")
     output_region = config_obj.get("output_region")
     output_variables = config_obj.get("output_variables")
@@ -54,14 +55,14 @@ def get_config_dict(config_obj: Dict[str, Union[str, bool, int, float, list, dic
         else:
             config['input_paths'] = input_paths
 
-    if input_processor is not None:
-        config['input_processor'] = input_processor
+    if input_processor_name is not None:
+        config['input_processor_name'] = input_processor_name
 
     if output_path is not None and 'output_path' not in config:
         config['output_path'] = output_path
 
-    if output_writer is not None and 'output_writer' not in config:
-        config['output_writer'] = output_writer
+    if output_writer_name is not None and 'output_writer_name' not in config:
+        config['output_writer_name'] = output_writer_name
 
     if output_resampling is not None and 'output_resampling' not in config:
         config['output_resampling'] = output_resampling

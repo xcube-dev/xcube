@@ -21,37 +21,29 @@
 
 import click
 
-from xcube.api.gen.config import get_config_dict
 from xcube.api.gen.defaults import DEFAULT_OUTPUT_PATH, DEFAULT_OUTPUT_RESAMPLING
-from xcube.api.gen.gen import gen_cube
-from xcube.api.gen.iproc import InputProcessor
-from xcube.util.dsio import query_dataset_io
-from xcube.util.objreg import get_obj_registry
-from xcube.util.reproject import NAME_TO_GDAL_RESAMPLE_ALG
+from xcube.util.constants import RESAMPLING_METHOD_NAMES
 
-input_processor_names = [input_processor.name
-                         for input_processor in get_obj_registry().get_all(type=InputProcessor)]
-output_writer_names = [ds_io.name for ds_io in query_dataset_io(lambda ds_io: 'w' in ds_io.modes)]
-resampling_algs = NAME_TO_GDAL_RESAMPLE_ALG.keys()
+resampling_methods = sorted(RESAMPLING_METHOD_NAMES)
 
 
 # noinspection PyShadowingBuiltins
 @click.command(name='gen', context_settings={"ignore_unknown_options": True})
 @click.argument('inputs', nargs=-1)
-@click.option('--proc', '-p', type=click.Choice(input_processor_names),
-              help=f'Input processor type name. '
-                   f'The choices as input processor and additional information about input processors '
-                   ' can be accessed by calling xcube gen --info . Defaults to "default" - the default input processor '
-                   'that can deal with most common datasets conforming with the CF conventions.')
+@click.option('--proc', '-p', default='default',
+              help=f'Input processor name. '
+                   f'The available input processor names and additional information about input processors '
+                   'can be accessed by calling xcube gen --info . Defaults to "default", an input processor '
+                   'that can deal with simple datasets whose variables have dimensions ("lat", "lon") and '
+                   'conform with the CF conventions.')
 @click.option('--config', '-c', multiple=True,
               help='Data cube configuration file in YAML format. More than one config input file is allowed.'
                    'When passing several config files, they are merged considering the order passed via command line.')
 @click.option('--output', '-o', default=DEFAULT_OUTPUT_PATH,
               help=f'Output path. Defaults to {DEFAULT_OUTPUT_PATH!r}')
-@click.option('--format', '-f', type=click.Choice(output_writer_names),
+@click.option('--format', '-f',
               help=f'Output format. '
-                   f'The choices for the output format are: {output_writer_names}.'
-                   ' Additional information about output formats can be accessed by calling '
+                   'Information about output formats can be accessed by calling '
                    'xcube gen --info. If omitted, the format will be guessed from the given output path.')
 @click.option('--size', '-s',
               help='Output size in pixels using format "<width>,<height>".')
@@ -60,11 +52,11 @@ resampling_algs = NAME_TO_GDAL_RESAMPLE_ALG.keys()
 @click.option('--variables', '--vars', '-v',
               help='Variables to be included in output. '
                    'Comma-separated list of names which may contain wildcard characters "*" and "?".')
-@click.option('--resampling', type=click.Choice(resampling_algs),
+@click.option('--resampling', type=click.Choice(resampling_methods),
               default=DEFAULT_OUTPUT_RESAMPLING,
               help='Fallback spatial resampling algorithm to be used for all variables. '
                    f'Defaults to {DEFAULT_OUTPUT_RESAMPLING!r}. '
-                   f'The choices for the resampling algorithm are: {resampling_algs}')
+                   f'The choices for the resampling algorithm are: {resampling_methods}')
 @click.option('--append', '-a', is_flag=True,
               help='Deprecated. The command will now always create, insert, replace, or append input slices.')
 @click.option('--prof', is_flag=True,
@@ -98,10 +90,10 @@ def gen(inputs: str,
     ".txt" extension which contains the actual input paths to be used.
     """
     input_paths = inputs
-    input_processor = proc
+    input_processor_name = proc
     config_file = config
     output_path = output
-    output_writer = format
+    output_writer_name = format
     output_size = size
     output_region = region
     output_variables = variables
@@ -111,6 +103,8 @@ def gen(inputs: str,
     info_mode = info
     sort_mode = sort
 
+    from xcube.api.gen.config import get_config_dict
+    from xcube.api.gen.gen import gen_cube
     # Force loading of plugins
     __import__('xcube.util.plugin')
 
@@ -128,7 +122,10 @@ def gen(inputs: str,
 
 
 def _format_info():
-    # noinspection PyUnresolvedReferences
+    from xcube.api.gen.iproc import InputProcessor
+    from xcube.util.dsio import query_dataset_io
+    from xcube.util.objreg import get_obj_registry
+
     input_processors = get_obj_registry().get_all(type=InputProcessor)
     output_writers = query_dataset_io(lambda ds_io: 'w' in ds_io.modes)
 

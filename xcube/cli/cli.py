@@ -3,10 +3,10 @@ import sys
 import click
 
 from xcube.cli.apply import apply
-from xcube.cli.optimize import optimize
 from xcube.cli.extract import extract
 from xcube.cli.gen import gen
 from xcube.cli.grid import grid
+from xcube.cli.optimize import optimize
 from xcube.cli.prune import prune
 from xcube.cli.resample import resample
 from xcube.cli.serve import serve
@@ -78,13 +78,13 @@ DEFAULT_TILE_SIZE = 512
                    'for imaging purposes.')
 @click.option('--tile-size', '-t', metavar='<tile-size>',
               help=f'Tile size, given as single integer number or as <tile-width>,<tile-height>. '
-              f'If omitted, the tile size will be derived from the <input>\'s '
-              f'internal spatial chunk sizes. '
-              f'If the <input> is not chunked, tile size will be {DEFAULT_TILE_SIZE}.')
+                   f'If omitted, the tile size will be derived from the <input>\'s '
+                   f'internal spatial chunk sizes. '
+                   f'If the <input> is not chunked, tile size will be {DEFAULT_TILE_SIZE}.')
 @click.option('--num-levels-max', '-n', metavar='<num-levels-max>', type=int,
               help=f'Maximum number of levels to generate. '
-              f'If not given, the number of levels will be derived from '
-              f'spatial dimension and tile sizes.')
+                   f'If not given, the number of levels will be derived from '
+                   f'spatial dimension and tile sizes.')
 def level(input, output, link, tile_size, num_levels_max):
     """
     Generate multi-resolution levels.

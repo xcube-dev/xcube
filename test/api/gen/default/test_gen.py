@@ -92,9 +92,23 @@ class DefaultProcessTest(unittest.TestCase):
         self.assertIn('lon', ds.coords)
         self.assertFalse(np.any(ds.coords['lon'] > 180.))
 
+    def test_illegal_proc(self):
+        with self.assertRaises(ValueError) as e:
+            gen_cube_wrapper(
+                [get_inputdata_path('20170101120000-UKMO-L4_GHRSST-SSTfnd-OSTIAanom-GLOB-v02.0-fv02.0.nc')],
+                'l2c-single.zarr', sort_mode=True, input_processor_name=None)
+        self.assertEqual('Missing input_processor_name', f'{e.exception}')
+
+        with self.assertRaises(ValueError) as e:
+            gen_cube_wrapper(
+                [get_inputdata_path('20170101120000-UKMO-L4_GHRSST-SSTfnd-OSTIAanom-GLOB-v02.0-fv02.0.nc')],
+                'l2c-single.zarr', sort_mode=True, input_processor_name='chris-proba')
+        self.assertEqual("Unknown input_processor_name 'chris-proba'", f'{e.exception}')
+
 
 # noinspection PyShadowingBuiltins
-def gen_cube_wrapper(input_paths, output_path, sort_mode=False) -> Tuple[bool, Optional[str]]:
+def gen_cube_wrapper(input_paths, output_path, sort_mode=False, input_processor_name='default') \
+        -> Tuple[bool, Optional[str]]:
     output = None
 
     def output_monitor(msg):
@@ -105,7 +119,7 @@ def gen_cube_wrapper(input_paths, output_path, sort_mode=False) -> Tuple[bool, O
             output += msg + '\n'
 
     config = get_config_dict(dict(input_paths=input_paths, output_path=output_path))
-    return gen_cube(input_processor='default',
+    return gen_cube(input_processor_name=input_processor_name,
                     output_size=(320, 180),
                     output_region=(-4., 47., 12., 56.),
                     output_resampling='Nearest',

@@ -12,6 +12,7 @@
 
 ### Fixes
 
+* It was no longer possible to use the `xcube gen` CLI with `--proc` option. (#120)
 * `totalCount` attribute of time series returned by Web API `ts/{dataset}/{variable}/{geom-type}` now
    contains the correct number of possible observations. Was always `1` before.
 * Renamed Web API function `ts/{dataset}/{variable}/places` into
