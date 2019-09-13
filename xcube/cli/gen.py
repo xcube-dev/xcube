@@ -34,7 +34,7 @@ resampling_methods = sorted(RESAMPLING_METHOD_NAMES)
               help=f'Input processor name. '
                    f'The available input processor names and additional information about input processors '
                    'can be accessed by calling xcube gen --info . Defaults to "default", an input processor '
-                   'that can deal with simple datasets whose variables have dimensions ("lat", "lon") and'
+                   'that can deal with simple datasets whose variables have dimensions ("lat", "lon") and '
                    'conform with the CF conventions.')
 @click.option('--config', '-c', multiple=True,
               help='Data cube configuration file in YAML format. More than one config input file is allowed.'

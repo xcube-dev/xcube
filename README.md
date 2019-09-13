@@ -228,7 +228,7 @@ Generate data cube.
                                       calling xcube gen --info . Defaults to
                                       "default", an input processor that can deal
                                       with simple datasets whose variables have
-                                      dimensions ("lat", "lon") andconform with
+                                      dimensions ("lat", "lon") and conform with
                                       the CF conventions.
       -c, --config TEXT               Data cube configuration file in YAML format.
                                       More than one config input file is
