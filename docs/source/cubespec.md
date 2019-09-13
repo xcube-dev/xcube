@@ -1,13 +1,10 @@
-# xcube Specification version 1
+# xcube Specification
 
-
---------------------------------------
-
-This document provides a technical specification of the protocol and format used 
+This document provides a technical specification of the protocol and format used
 for xcube data cubes. The key words “MUST”, “MUST NOT”, “REQUIRED”, “SHALL”,
- “SHALL NOT”, “SHOULD”, “SHOULD NOT”, “RECOMMENDED”, “MAY”, and “OPTIONAL” in 
- this document are to be interpreted as described in 
- [RFC 2119](https://www.ietf.org/rfc/rfc2119.txt).
+“SHALL NOT”, “SHOULD”, “SHOULD NOT”, “RECOMMENDED”, “MAY”, and “OPTIONAL” in
+this document are to be interpreted as described in
+[RFC 2119](https://www.ietf.org/rfc/rfc2119.txt).
 
 ## Status
 
@@ -65,7 +62,7 @@ ARD links:
   * Attributes: 
     * Temporal coordinate variables MUST have `units`, `standard_name`, and any others.
     * `standard_name` MUST be `"time"`, `units` MUST have format `"<deltatime> since <datetime>"` 
-       where `datetime` must have ISO-format. `calendar` may be given, if not,
+      where `datetime` must have ISO-format. `calendar` may be given, if not,
       `"gregorian"` is assumed.
 * Spatial coordinate variables
   * SHALL provide spatial coordinates for given spatial index.
@@ -85,8 +82,6 @@ ARD links:
     * `color_value_min`, `color_value_max`: Minimum and maximum value for applying the colour bar.
        If not provided, minimum and maximum default to `valid_min`, `valid_max`. If neither 
        these are provided, minimum and maximum default to `0` and `1`.
-
-
 
 ### WGS84 Schema (extends Basic)
 
