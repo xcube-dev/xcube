@@ -15,10 +15,14 @@ class GenCliTest(CliTest):
         result = self.invoke_cli(['gen', '--info'])
         self.assertEqual(0, result.exit_code)
 
-    def test_missing_args(self):
+    def test_default_proc_is_valid(self):
+        result = self.invoke_cli(['gen', '-p', 'default', 'input.nc'])
+        self.assertEqual(0, result.exit_code)
+
+    def test_main_with_illegal_proc(self):
         with self.assertRaises(ValueError) as cm:
-            self.invoke_cli(['gen'])
-        self.assertEqual("Missing input_processor", f'{cm.exception}')
+            self.invoke_cli(['gen', '--proc', 'gnartz'])
+        self.assertEqual("Unknown input_processor_name 'gnartz'", f'{cm.exception}')
 
     def test_main_with_illegal_size_option(self):
         with self.assertRaises(ValueError) as cm:
@@ -46,8 +50,4 @@ class GenCliTest(CliTest):
             self.invoke_cli(['gen', '-c', 'nonono.yml', 'input.nc'])
         self.assertEqual("Cannot find configuration 'nonono.yml'", f'{cm.exception}')
 
-    def test_main_with_illegal_options(self):
-        with self.assertRaises(ValueError) as cm:
-            self.invoke_cli(['gen', 'input.nc'])
-        self.assertEqual('Missing input_processor', f'{cm.exception}')
 

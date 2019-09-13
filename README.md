@@ -222,23 +222,21 @@ Generate data cube.
       input paths to be used.
 
     Options:
-      -p, --proc []                   Input processor type name. The choices as
-                                      input processor and additional information
-                                      about input processors  can be accessed by
+      -p, --proc TEXT                 Input processor name. The available input
+                                      processor names and additional information
+                                      about input processors can be accessed by
                                       calling xcube gen --info . Defaults to
-                                      "default" - the default input processor that
-                                      can deal with most common datasets
-                                      conforming with the CF conventions.
+                                      "default", an input processor that can deal
+                                      with simple datasets whose variables have
+                                      dimensions ("lat", "lon") andconform with
+                                      the CF conventions.
       -c, --config TEXT               Data cube configuration file in YAML format.
                                       More than one config input file is
                                       allowed.When passing several config files,
                                       they are merged considering the order passed
                                       via command line.
       -o, --output TEXT               Output path. Defaults to 'out.zarr'
-      -f, --format [csv|mem|netcdf4|zarr]
-                                      Output format. The choices for the output
-                                      format are: ['csv', 'mem', 'netcdf4',
-                                      'zarr']. Additional information about output
+      -f, --format TEXT               Output format. Information about output
                                       formats can be accessed by calling xcube gen
                                       --info. If omitted, the format will be
                                       guessed from the given output path.
@@ -249,14 +247,14 @@ Generate data cube.
       -v, --variables, --vars TEXT    Variables to be included in output. Comma-
                                       separated list of names which may contain
                                       wildcard characters "*" and "?".
-      --resampling [Nearest|Bilinear|Cubic|CubicSpline|Lanczos|Average|Min|Max|Median|Mode|Q1|Q3]
+      --resampling [Average|Bilinear|Cubic|CubicSpline|Lanczos|Max|Median|Min|Mode|Nearest|Q1|Q3]
                                       Fallback spatial resampling algorithm to be
                                       used for all variables. Defaults to
                                       'Nearest'. The choices for the resampling
-                                      algorithm are: dict_keys(['Nearest',
-                                      'Bilinear', 'Cubic', 'CubicSpline',
-                                      'Lanczos', 'Average', 'Min', 'Max',
-                                      'Median', 'Mode', 'Q1', 'Q3'])
+                                      algorithm are: ['Average', 'Bilinear',
+                                      'Cubic', 'CubicSpline', 'Lanczos', 'Max',
+                                      'Median', 'Min', 'Mode', 'Nearest', 'Q1',
+                                      'Q3']
       -a, --append                    Deprecated. The command will now always
                                       create, insert, replace, or append input
                                       slices.

@@ -41,15 +41,15 @@ from ...util.update import update_dataset_attrs, update_dataset_var_attrs, updat
 
 
 def gen_cube(input_paths: Sequence[str] = None,
-             input_processor: str = None,
+             input_processor_name: str = None,
              input_processor_params: Dict = None,
-             input_reader: str = None,
+             input_reader_name: str = None,
              input_reader_params: Dict[str, Any] = None,
              output_region: Tuple[float, float, float, float] = None,
              output_size: Tuple[int, int] = DEFAULT_OUTPUT_SIZE,
              output_resampling: str = DEFAULT_OUTPUT_RESAMPLING,
              output_path: str = DEFAULT_OUTPUT_PATH,
-             output_writer: str = None,
+             output_writer_name: str = None,
              output_writer_params: Dict[str, Any] = None,
              output_metadata: NameAnyDict = None,
              output_variables: NameDictPairList = None,
@@ -64,16 +64,17 @@ def gen_cube(input_paths: Sequence[str] = None,
 
     :param sort_mode:
     :param input_paths: The input paths.
-    :param input_processor: Name of a registered input processor (xcube.api.gen.inputprocessor.InputProcessor)
-           to be used to transform the inputs
+    :param input_processor_name: Name of a registered input processor
+        (xcube.api.gen.inputprocessor.InputProcessor) to be used to transform the inputs.
     :param input_processor_params: Parameters to be passed to the input processor.
-    :param input_reader: Name of a registered input reader (xcube.api.util.dsio.DatasetIO).
+    :param input_reader_name: Name of a registered input reader (xcube.api.util.dsio.DatasetIO).
     :param input_reader_params: Parameters passed to the input reader.
     :param output_region: Output region as tuple of floats: (lon_min, lat_min, lon_max, lat_max).
     :param output_size: The spatial dimensions of the output as tuple of ints: (width, height).
     :param output_resampling: The resampling method for the output.
     :param output_path: The output directory.
-    :param output_writer: Name of an output writer (xcube.api.util.dsio.DatasetIO) used to write the cube.
+    :param output_writer_name: Name of an output writer
+        (xcube.api.util.dsio.DatasetIO) used to write the cube.
     :param output_writer_params: Parameters passed to the output writer.
     :param output_metadata: Extra metadata passed to output cube.
     :param output_variables: Output variables.
@@ -87,16 +88,16 @@ def gen_cube(input_paths: Sequence[str] = None,
     # Force loading of plugins
     __import__('xcube.util.plugin')
 
-    if not input_processor:
-        raise ValueError('Missing input_processor')
-
     if append_mode is not None:
         warnings.warn('append_mode in gen_cube() is deprecated, '
                       'time slices will now always be inserted, replaced, or appended.')
 
-    input_processor = get_input_processor(input_processor)
+    if not input_processor_name:
+        raise ValueError('Missing input_processor_name')
+
+    input_processor = get_input_processor(input_processor_name)
     if not input_processor:
-        raise ValueError(f'Unknown input_processor {input_processor!r}')
+        raise ValueError(f'Unknown input_processor_name {input_processor_name!r}')
 
     if input_processor_params:
         try:
@@ -104,19 +105,19 @@ def gen_cube(input_paths: Sequence[str] = None,
         except TypeError as e:
             raise ValueError(f'Invalid input_processor_params {input_processor_params!r}') from e
 
-    input_reader = find_dataset_io(input_reader or input_processor.input_reader)
+    input_reader = find_dataset_io(input_reader_name or input_processor.input_reader)
     if not input_reader:
-        raise ValueError(f'Unknown input_reader {input_reader!r}')
+        raise ValueError(f'Unknown input_reader_name {input_reader_name!r}')
 
     if not output_path:
         raise ValueError('Missing output_path')
 
-    output_writer = output_writer or guess_dataset_format(output_path)
+    output_writer_name = output_writer_name or guess_dataset_format(output_path)
+    if not output_writer_name:
+        raise ValueError(f'Failed to guess output_writer_name from path {output_path}')
+    output_writer = find_dataset_io(output_writer_name, modes={'w', 'a'})
     if not output_writer:
-        raise ValueError(f'Failed to guess output_writer from path {output_path}')
-    output_writer = find_dataset_io(output_writer, modes={'w', 'a'})
-    if not output_writer:
-        raise ValueError(f'Unknown output_writer {output_writer!r}')
+        raise ValueError(f'Unknown output_writer_name {output_writer_name!r}')
 
     if monitor is None:
         # noinspection PyUnusedLocal
