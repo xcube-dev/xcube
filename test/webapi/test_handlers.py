@@ -153,7 +153,6 @@ class HandlersTest(AsyncHTTPTestCase):
                                             '&TileCol=0')
         self.assertBadRequestResponse(response, 'Value for "layer" parameter must be "<dataset>.<variable>"')
 
-
     def test_fetch_wmts_capabilities(self):
         response = self.fetch(self.prefix + '/wmts/1.0.0/WMTSCapabilities.xml')
         self.assertResponseOK(response)
@@ -188,10 +187,6 @@ class HandlersTest(AsyncHTTPTestCase):
         response = self.fetch(self.prefix + '/datasets/demo?tiles=ol4')
         self.assertResponseOK(response)
         response = self.fetch(self.prefix + '/datasets/demo?tiles=cesium')
-        self.assertResponseOK(response)
-
-    def test_fetch_dataset_places(self):
-        response = self.fetch(self.prefix + '/datasets/demo/places')
         self.assertResponseOK(response)
 
     def test_fetch_dataset_coords(self):
@@ -288,6 +283,8 @@ class HandlersTest(AsyncHTTPTestCase):
         self.assertResponseOK(response)
 
     def test_fetch_dataset_places(self):
+        response = self.fetch(self.prefix + '/datasets/demo/places')
+        self.assertResponseOK(response)
         response = self.fetch(self.prefix + '/places/all/demo')
         self.assertResponseOK(response)
         response = self.fetch(self.prefix + '/places/inside-cube/demo')
