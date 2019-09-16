@@ -1,6 +1,9 @@
 .. _CF conventions: http://cfconventions.org/cf-conventions/cf-conventions.html
+.. _`dask`: https://dask.readthedocs.io/
+.. _xarray: http://xarray.pydata.org/
 .. _xarray.Dataset: http://xarray.pydata.org/en/stable/data-structures.html#dataset
 .. _xarray.DataArray: http://xarray.pydata.org/en/stable/data-structures.html#dataarray
+.. _`zarr`: https://zarr.readthedocs.io/
 .. _`Zarr format`: https://zarr.readthedocs.io/en/stable/spec/v2.html
 .. _`Sentinel Hub`: https://www.sentinel-hub.com/
 
@@ -31,6 +34,9 @@ represented by multi-dimensional `xarray.DataArray`_ that is arranged in non-ove
 sub-regions (data chunks). The data chunks allow for out-of-core computation of cube dataset's that don't fit
 in a single computer's RAM.
 
+Processing Model
+================
+
 When data cubes are opened, only the cube's structure and its metadata are loaded into memory. The actual
 data arrays of variables are loaded on-demand only, and only for chunks intersecting the desired sub-region.
 
@@ -45,3 +51,8 @@ For the external, physical representation of cube we usually use the `Zarr forma
 processing data chunks that may be fetched from remote cloud storage such as S3 and GCS.
 
 
+Python Packages
+===============
+
+The in-memory data model, processing model, and the external format used in xcube
+are provided through the excellent Python `xarray`_, `dask`_, and `zarr`_ packages.
