@@ -35,7 +35,7 @@ dependencies:
   - pytest =4.4
   - pytest-cov =2.6
   # Docs
-  - sphinx >=2.2.0
+  - sphinx >=2.0
   - sphinx_rtd_theme >=0.4.3
   - recommonmark >=0.6.0
 
