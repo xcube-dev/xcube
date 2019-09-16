@@ -1,5 +1,4 @@
 import unittest
-import warnings
 
 from xcube.util.plugin import get_plugins, load_plugins
 
@@ -30,6 +29,7 @@ class BadEntryPoint(EntryPoint):
         raise RuntimeError()
 
 
+# noinspection PyUnresolvedReferences
 class PluginTest(unittest.TestCase):
 
     def test_get_plugins(self):
