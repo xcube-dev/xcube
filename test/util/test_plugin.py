@@ -1,4 +1,5 @@
 import unittest
+import warnings
 
 from xcube.util.plugin import get_plugins, load_plugins
 
@@ -42,13 +43,27 @@ class PluginTest(unittest.TestCase):
         self.assertEqual(True, PLUGIN_INIT)
 
     def test_load_plugins_fail_load(self):
-        plugins = load_plugins([BadEntryPoint('test', init_plugin_and_succeed)])
-        self.assertEqual({}, plugins)
+        with warnings.catch_warnings(record=True) as warning:
+            warnings.simplefilter("always")
+
+            plugins = load_plugins([BadEntryPoint('test', init_plugin_and_succeed)])
+
+            self.assertEqual(len(warning), 1)
+            self.assertEqual({}, plugins)
 
     def test_load_plugins_fail_call(self):
-        plugins = load_plugins([EntryPoint('test', init_plugin_but_fail)])
-        self.assertEqual({}, plugins)
+        with warnings.catch_warnings(record=True) as warning:
+            warnings.simplefilter("always")
+            plugins = load_plugins([EntryPoint('test', init_plugin_but_fail)])
+
+            self.assertEqual(len(warning), 1)
+            self.assertEqual({}, plugins)
 
     def test_load_plugins_not_callable(self):
-        plugins = load_plugins([EntryPoint('test', "init_plugin_and_succeed")])
-        self.assertEqual({}, plugins)
+        with warnings.catch_warnings(record=True) as warning:
+            warnings.simplefilter("always")
+            expected = "xcube plugin with entry point 'test' must be a callable but got a <class 'str'>"
+            plugins = load_plugins([EntryPoint('test', "init_plugin_and_succeed")])
+            self.assertEqual(len(warning), 1)
+            self.assertEqual(expected, str(warning[0].message))
+            self.assertEqual({}, plugins)
