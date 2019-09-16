@@ -34,7 +34,7 @@ VIEWER_ENV_VAR = 'XCUBE_VIEWER_PATH'
 @click.argument('cube', nargs=-1)
 @click.option('--address', '-a', metavar='ADDRESS', default=DEFAULT_ADDRESS,
               help=f'Service address. Defaults to {DEFAULT_ADDRESS!r}.')
-@click.option('--port', '-p', metavar='PORT', default=DEFAULT_PORT, type=int,
+@click.option('--port', metavar='PORT', default=DEFAULT_PORT, type=int,
               help=f'Port number where the service will listen on. Defaults to {DEFAULT_PORT}.')
 @click.option('--prefix', metavar='PREFIX',
               help='Service URL prefix. May contain template patterns such as "${version}" or "${name}". '
@@ -67,7 +67,7 @@ VIEWER_ENV_VAR = 'XCUBE_VIEWER_PATH'
               help=f"Run viewer app. Requires setting the environment variable {VIEWER_ENV_VAR} "
               f"to a valid xcube-viewer deployment or build directory. "
               f"Refer to https://github.com/dcs4cop/xcube-viewer for more information.")
-@click.option('--verbose', '-v', is_flag=True,
+@click.option('--verbose', is_flag=True,
               help="Delegate logging to the console (stderr).")
 @click.option('--traceperf', is_flag=True,
               help="Print performance diagnostics (stdout).")

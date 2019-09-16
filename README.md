@@ -189,7 +189,7 @@ Extract cube points.
       Its format should preferably be ISO, but other formats may work as well.
     
     Options:
-      -o, --output <OUTPUT>  Output file. If omitted, output is written to stdout.
+      -o, --output <OUTPUT>  Output path. If omitted, output is written to stdout.
       -f, --format <FORMAT>  Output format. Currently, only 'csv' is supported.
       -C, --coords           Include cube cell coordinates in output.
       -B, --bounds           Include cube cell coordinate boundaries (if any) in
@@ -492,7 +492,7 @@ Generate multi-resolution levels.
       result to directory <OUTPUT>.
     
     Options:
-      -o, --output <OUTPUT>           Output directory. If omitted,
+      -o, --output <OUTPUT>           Output path. If omitted,
                                       "<INPUT>.levels" will be used.
       -l, --link                      Link the <INPUT> instead of converting it to
                                       a level zero dataset. Use with care, as the
@@ -692,7 +692,7 @@ Serve data cubes via web service.
                              deployment or build directory. Refer to
                              https://github.com/dcs4cop/xcube-viewer for more
                              information.
-      -v, --verbose          Delegate logging to the console (stderr).
+      --verbose          Delegate logging to the console (stderr).
       --traceperf            Print performance diagnostics (stdout).
       --help                 Show this message and exit.
 
@@ -744,7 +744,7 @@ The SwaggerHub allows to choose the xcube-server project and therefore the datas
 
 To run the server on default port 8080 using the demo configuration:
 
-    $ xcube serve -v -c examples/serve/demo/config.yml
+    $ xcube serve --verbose -c examples/serve/demo/config.yml
 
 To run the server using a particular data cube path and styling information for a variable:
 
@@ -838,7 +838,7 @@ Convert cube variables into new dimension.
                                       variables. Defaults to "data".
       -d, --dim_name <DIM-NAME>       Name of the new dimension into variables.
                                       Defaults to "var".
-      -o, --output <OUTPUT>           Output file path. If omitted,
+      -o, --output <OUTPUT>           Output path. If omitted,
                                       '<INPUT>-vars2dim.<INPUT-FORMAT>' will be
                                       used.
       -f, --format <FORMAT>           Format of the output. If not given, guessed

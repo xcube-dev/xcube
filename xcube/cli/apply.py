@@ -26,13 +26,13 @@ __author__ = "Norman Fomferra (Brockmann Consult GmbH)"
 
 # noinspection PyShadowingBuiltins
 @click.command(name='apply', hidden=True)
-@click.argument('script', metavar='<SCRIPT>')
-@click.argument('cube', metavar='<CUBE>', nargs=-1)
+@click.argument('script')
+@click.argument('cube', nargs=-1)
 @click.option('--output', '-o', metavar='<OUTPUT>', default=DEFAULT_OUTPUT_PATH,
               help=f'Output path. Defaults to {DEFAULT_OUTPUT_PATH!r}')
 @click.option('--params', metavar='<PARAMS>',
               help="Keyword arguments passed to apply() and init() functions in <script>.")
-@click.option('--variables', '--vars', '-v', metavar='<variables>',
+@click.option('--variables', '--vars', '-v', metavar='<VARIABLES>',
               help="Comma-separated list of variable names.")
 @click.option('--dask', metavar='<DASK>',
               default='forbidden',
@@ -102,7 +102,7 @@ def apply(script: str,
     from xcube.util.cliutil import parse_cli_kwargs
     from xcube.util.dsio import guess_dataset_format, find_dataset_io
 
-    kwargs = parse_cli_kwargs(params, "<params>")
+    kwargs = parse_cli_kwargs(params, "<PARAMS>")
     input_cube_0 = None
     input_cubes = []
     for input_path in input_paths:

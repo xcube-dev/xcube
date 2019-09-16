@@ -8,7 +8,7 @@ import click
 @click.argument('cube')
 @click.argument('points')
 @click.option('--output', '-o', metavar='<OUTPUT>',
-              help="Output file. If omitted, output is written to stdout.")
+              help="Output path. If omitted, output is written to stdout.")
 @click.option('--format', '-f', metavar='<FORMAT>', type=click.Choice(['csv', 'json', 'xlsx']),
               help="Output format. Currently, only 'csv' is supported.", default='csv')
 @click.option('--coords', '-C', is_flag=True,

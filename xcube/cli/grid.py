@@ -166,10 +166,10 @@ def factor_out_two(x: int) -> Tuple[int, int]:
 
 
 @click.command(name="res")
-@click.argument('target_res', metavar="TARGET_RES")
+@click.argument('target_res', metavar='TARGET_RES')
 @click.option('--delta_res', '-d', metavar='DELTA_RES', default=_DEFAULT_RES_DELTA,
               help=f'Maximum resolution delta. Defaults to {_DEFAULT_RES_DELTA}.')
-@click.option('--coverage', '-c', metavar="COVERAGE", default=str(_DEFAULT_LAT_COVERAGE),
+@click.option('--coverage', '--cov', metavar="COVERAGE", default=str(_DEFAULT_LAT_COVERAGE),
               help=f'The vertical coverage in degrees. Defaults to {_DEFAULT_LAT_COVERAGE} degrees.')
 @click.option('--tile_max', '-t', metavar='TILE_MAX', default=_DEFAULT_MAX_TILE, type=int,
               help=f'Maximum tile size. Defaults to {_DEFAULT_MAX_TILE}.')
@@ -245,7 +245,7 @@ def list_resolutions(target_res: str,
               help='Resolution in degrees. Can also be a rational number of form RES_NOM/RES_DEN.')
 @click.option('--height', '-h', metavar="HEIGHT", type=int,
               help='Height in grid cells.')
-@click.option('--coverage', '-c', metavar="COVERAGE", default=str(_DEFAULT_LAT_COVERAGE),
+@click.option('--coverage', '--cov', metavar="COVERAGE", default=str(_DEFAULT_LAT_COVERAGE),
               help=f'The vertical coverage in degrees. Defaults to {_DEFAULT_LAT_COVERAGE} degrees.')
 @click.option('--level_min', '-l', metavar="LEVEL_MIN", type=int,
               help="List at least up to this level.")
@@ -275,7 +275,7 @@ def list_levels(res: str, height: int, coverage: str, level_min: Optional[int], 
               help='The parent grid\'s resolution in degrees. Can also be a rational number of form A/B.')
 @click.option('--height', '-h', metavar="HEIGHT", type=int,
               help='The parent grid\'s height in grid cells.')
-@click.option('--coverage', '-c', metavar="COVERAGE", default=str(_DEFAULT_LAT_COVERAGE),
+@click.option('--coverage', '--cov', metavar="COVERAGE", default=str(_DEFAULT_LAT_COVERAGE),
               help=f'The parent grid\'s coverage in degrees. Defaults to {_DEFAULT_LAT_COVERAGE} degrees.')
 @click.option('--tile_factor', '-t', metavar="TILE_FACTOR", type=int,
               help='A tile factor to compute tile sizes from height at level zero: TILE = TILE_FACTOR * HEIGHT_0.'

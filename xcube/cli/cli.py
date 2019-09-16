@@ -25,7 +25,7 @@ from xcube.version import version
               help=f'Output path. Defaults to {DEFAULT_OUTPUT_PATH!r}')
 @click.option('--format', '-f', metavar='<FORMAT>', type=click.Choice(['zarr', 'netcdf']),
               help="Format of the output. If not given, guessed from <OUTPUT>.")
-@click.option('--params', '-p', metavar='<PARAMS>',
+@click.option('--params', metavar='<PARAMS>',
               help="Parameters specific for the output format."
                    " Comma-separated list of <key>=<value> pairs.")
 @click.option('--chunks', '-c', metavar='<CHUNKS>', nargs=1, default=None,
@@ -73,10 +73,10 @@ DEFAULT_TILE_SIZE = 512
 @click.command(name="level")
 @click.argument('input')
 @click.option('--output', '-o', metavar='<OUTPUT>',
-              help='Output directory. If omitted, "<INPUT>.levels" will be used.')
-@click.option('--link', '-l', is_flag=True, flag_value=True,
-              help='Link the <INPUT> instead of converting it to a level zero dataset. '
-                   'Use with care, as the <INPUT>\'s internal spatial chunk sizes may be inappropriate '
+              help='Output path. If omitted, "<INPUT>.levels" will be used.')
+@click.option('--link', is_flag=True, flag_value=True,
+              help='Link the INPUT instead of converting it to a level zero dataset. '
+                   'Use with care, as the INPUT\'s internal spatial chunk sizes may be inappropriate '
                    'for imaging purposes.')
 @click.option('--tile-size', '-t', metavar='<TILE-SIZE>',
               help=f'Tile size, given as single integer number or as <tile-width>,<tile-height>. '
@@ -167,7 +167,7 @@ def dump(input, variable, encoding):
               default='var',
               help='Name of the new dimension into variables. Defaults to "var".')
 @click.option('--output', '-o', metavar='<OUTPUT>',
-              help="Output file path. If omitted, '<INPUT>-vars2dim.<INPUT-FORMAT>' will be used.")
+              help="Output path. If omitted, '<INPUT>-vars2dim.<INPUT-FORMAT>' will be used.")
 @click.option('--format', '-f', metavar='<FORMAT>', type=click.Choice(['zarr', 'netcdf']),
               help="Format of the output. If not given, guessed from <OUTPUT>.")
 def vars2dim(cube, variable, dim_name, output=None, format=None):
