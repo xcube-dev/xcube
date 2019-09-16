@@ -16,7 +16,6 @@ on the current context. It may refer to a data service such as `Sentinel Hub`_, 
 API, or to a concrete set of spatial images that form a time-series.
 
 This chapter briefly explains the very specific data cube concept used in the xcube project.
-For details, please refer to the :doc:`cubespec`.
 
 Data Model
 ==========
@@ -28,6 +27,7 @@ The dimensions are usually time, latitude, and longitude, however other dimensio
 All xcube data cubes are structured in the same way following a common data model.
 They are also self-describing by providing metadata for the cube and
 all cube's variables following the `CF conventions`_.
+For details regarding the common data model, please refer to the :doc:`cubespec`.
 
 A cube's in-memory representation in Python programs is an `xarray.Dataset`_ instance. Each data variable is
 represented by multi-dimensional `xarray.DataArray`_ that is arranged in non-overlapping, contiguous
