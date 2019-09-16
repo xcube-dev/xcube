@@ -6,9 +6,15 @@
 
 xcube is an [xarray](http://xarray.pydata.org/)-based EO data cube toolkit.
 
-# Table of Contents
+Find out more:
+
+- [Main Documentation](https://xcube.readthedocs.io)
+
+Other resources
 
 - [Installation](docs/installation.md)
 - [Developer Guide](docs/devguide.md)
 - [Docker](docs/docker.md)
+- [Cube Spec](docs/cubespec.md)
+- [Developer Guide](docs/devguide.md)
 
