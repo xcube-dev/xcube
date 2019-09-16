@@ -12,11 +12,9 @@ xcube has been developed to generate, manipulate, and publish data cubes from Ea
    :caption: Getting started
    :maxdepth: 1
 
-   cubedef
    overview
    examples
    installation
-   docker
 
 .. toctree::
    :caption: Components
