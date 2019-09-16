@@ -31,7 +31,7 @@ VIEWER_ENV_VAR = 'XCUBE_VIEWER_PATH'
 
 
 @click.command(name='serve')
-@click.argument('cubes', metavar='CUBE...', nargs=-1)
+@click.argument('cube', nargs=-1)
 @click.option('--address', '-a', metavar='ADDRESS', default=DEFAULT_ADDRESS,
               help=f'Service address. Defaults to {DEFAULT_ADDRESS!r}.')
 @click.option('--port', '-p', metavar='PORT', default=DEFAULT_PORT, type=int,
@@ -71,7 +71,7 @@ VIEWER_ENV_VAR = 'XCUBE_VIEWER_PATH'
               help="Delegate logging to the console (stderr).")
 @click.option('--traceperf', is_flag=True,
               help="Print performance diagnostics (stdout).")
-def serve(cubes: List[str],
+def serve(cube: List[str],
           address: str,
           port: int,
           prefix: str,
@@ -95,7 +95,7 @@ def serve(cubes: List[str],
 
     prefix = prefix or name
 
-    if config and cubes:
+    if config and cube:
         raise click.ClickException("CONFIG and CUBES cannot be used at the same time.")
     if styles:
         styles = parse_cli_kwargs(styles, "STYLES")
@@ -113,7 +113,7 @@ def serve(cubes: List[str],
                       prefix=prefix,
                       port=port,
                       address=address,
-                      cube_paths=cubes,
+                      cube_paths=cube,
                       styles=styles,
                       config_file=config,
                       tile_cache_size=tilecache,

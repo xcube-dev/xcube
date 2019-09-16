@@ -26,13 +26,13 @@ import click
 
 # noinspection PyShadowingBuiltins
 @click.command(name='verify')
-@click.argument('input')
-def verify(input):
+@click.argument('cube')
+def verify(cube):
     """
     Perform cube verification.
 
     \b
-    The tool verifies that INPUT
+    The tool verifies that CUBE
     * defines the dimensions "time", "lat", "lon";
     * has corresponding "time", "lat", "lon" coordinate variables and that they
       are valid, e.g. 1-D, non-empty, using correct units;
@@ -44,7 +44,7 @@ def verify(input):
     If INPUT is a valid data cube, the tool returns exit code 0.
     Otherwise a violation report is written to stdout and the tool returns exit code 3.
     """
-    return _verify(input_path=input, monitor=print)
+    return _verify(input_path=cube, monitor=print)
 
 
 def _verify(input_path: str = None, monitor=None):

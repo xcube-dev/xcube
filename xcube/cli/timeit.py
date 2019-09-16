@@ -25,14 +25,14 @@ __author__ = "Norman Fomferra (Brockmann Consult GmbH)"
 
 
 @click.command(name='timeit', hidden=True)
-@click.argument('config', metavar='<config>')
-@click.option('--repeats', metavar='<repeats>', type=int, default=1,
+@click.argument('config', metavar='<CONFIG>')
+@click.option('--repeats', metavar='<REPEATS>', type=int, default=1,
               help="Number of repetitions")
 def timeit(config: str, repeats: int):
     """
     Time an executable.
-    Record the processing time of the executable with varying parameters defined <config>.
-    Repeat the executions <repeats> times.
+    Record the processing time of the executable with varying parameters defined <CONFIG>.
+    Repeat the executions <REPEATS> times.
     """
 
     config_path = config

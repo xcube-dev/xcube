@@ -43,17 +43,17 @@ DEFAULT_INTERPOLATION_KIND = 'linear'
 
 # noinspection PyShadowingBuiltins
 @click.command(name='resample')
-@click.argument('input')
-@click.option('--config', '-c', multiple=True,
+@click.argument('cube')
+@click.option('--config', '-c', metavar='<CONFIG>', multiple=True,
               help='Data cube configuration file in YAML format. More than one config input file is allowed.'
                    'When passing several config files, they are merged considering the order passed via command line.')
-@click.option('--output', '-o',
+@click.option('--output', '-o', metavar='<OUTPUT>',
               default=DEFAULT_OUTPUT_PATH,
-              help="Output path.")
+              help=f"Output path. Defaults to {DEFAULT_OUTPUT_PATH!r}.")
 @click.option('--format', '-f',
               type=click.Choice(OUTPUT_FORMAT_NAMES),
               help="Output format. If omitted, format will be guessed from output path.")
-@click.option('--variables', '--vars',
+@click.option('--variables', '--vars', '-v', metavar='<VARIABLES>',
               help="Comma-separated list of names of variables to be included.")
 @click.option('--method', '-M', multiple=True,
               help=f"Temporal resampling method. "
@@ -93,7 +93,7 @@ DEFAULT_INTERPOLATION_KIND = 'linear'
                    'Defaults to the given frequency.')
 @click.option('--dry-run', default=False, is_flag=True,
               help='Just read and process inputs, but don\'t produce any outputs.')
-def resample(input,
+def resample(cube,
              config,
              output,
              format,
@@ -109,7 +109,7 @@ def resample(input,
     Resample data along the time dimension.
     """
 
-    input_path = input
+    input_path = cube
     config_files = config
     output_path = output
     output_format = format

@@ -29,27 +29,27 @@ resampling_methods = sorted(RESAMPLING_METHOD_NAMES)
 
 # noinspection PyShadowingBuiltins
 @click.command(name='gen', context_settings={"ignore_unknown_options": True})
-@click.argument('inputs', nargs=-1)
-@click.option('--proc', '-p', default='default',
+@click.argument('input', nargs=-1)
+@click.option('--proc', '-p', metavar='<INPUT-PROCESSOR>', default='default',
               help=f'Input processor name. '
                    f'The available input processor names and additional information about input processors '
                    'can be accessed by calling xcube gen --info . Defaults to "default", an input processor '
                    'that can deal with simple datasets whose variables have dimensions ("lat", "lon") and '
                    'conform with the CF conventions.')
-@click.option('--config', '-c', multiple=True,
+@click.option('--config', '-c', metavar='<CONFIG>', multiple=True,
               help='Data cube configuration file in YAML format. More than one config input file is allowed.'
                    'When passing several config files, they are merged considering the order passed via command line.')
-@click.option('--output', '-o', default=DEFAULT_OUTPUT_PATH,
+@click.option('--output', '-o', metavar='<OUTPUT>', default=DEFAULT_OUTPUT_PATH,
               help=f'Output path. Defaults to {DEFAULT_OUTPUT_PATH!r}')
-@click.option('--format', '-f',
+@click.option('--format', '-f', metavar='<FORMAT>',
               help=f'Output format. '
                    'Information about output formats can be accessed by calling '
                    'xcube gen --info. If omitted, the format will be guessed from the given output path.')
-@click.option('--size', '-s',
+@click.option('--size', '-s', metavar='<SIZE>',
               help='Output size in pixels using format "<width>,<height>".')
-@click.option('--region', '-r',
+@click.option('--region', '-r', metavar='<REGION>',
               help='Output region using format "<lon-min>,<lat-min>,<lon-max>,<lat-max>"')
-@click.option('--variables', '--vars', '-v',
+@click.option('--variables', '--vars', '-v', metavar='<VARIABLES>',
               help='Variables to be included in output. '
                    'Comma-separated list of names which may contain wildcard characters "*" and "?".')
 @click.option('--resampling', type=click.Choice(resampling_methods),
@@ -68,7 +68,7 @@ resampling_methods = sorted(RESAMPLING_METHOD_NAMES)
               help='Displays additional information about format options or about input processors.')
 @click.option('--dry_run', is_flag=True,
               help='Just read and process inputs, but don\'t produce any outputs.')
-def gen(inputs: str,
+def gen(input: str,
         proc: str,
         config: tuple,
         output: str,
@@ -89,7 +89,7 @@ def gen(inputs: str,
     The input paths can also be passed as lines of a text file. To do so, provide exactly one input file with
     ".txt" extension which contains the actual input paths to be used.
     """
-    input_paths = inputs
+    input_paths = input
     input_processor_name = proc
     config_file = config
     output_path = output

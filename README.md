@@ -93,14 +93,13 @@ To start a demo using docker use the following commands
     $ xcube --help
     Usage: xcube [OPTIONS] COMMAND [ARGS]...
     
-    Xcube Toolkit
+      Xcube Toolkit
     
     Options:
       --version                Show the version and exit.
       --traceback              Enable tracing back errors by dumping the Python
                                call stack. Pass as very first option to also trace
                                back error during command-line validation.
-
       --scheduler <scheduler>  Enable distributed computing using the Dask
                                scheduler identified by <scheduler>. <scheduler>
                                can have the form <address>?<keyword>=<value>,...
@@ -112,59 +111,60 @@ To start a demo using docker use the following commands
                                Refer to http://distributed.dask.org/en/latest/api.
                                html#distributed.Client
       --help                   Show this message and exit.
-
+    
     Commands:
-      chunk     (Re-)chunk dataset.
-      dump      Dump contents of a dataset.
-      extract   Extract cube time series.
+      chunk     (Re-)chunk data cube.
+      dump      Dump contents of an input dataset.
+      extract   Extract cube points.
       gen       Generate data cube.
       grid      Find spatial data cube resolutions and adjust bounding boxes.
       level     Generate multi-resolution levels.
+      optimize  Optimize data cube for faster access.
       prune     Delete empty chunks.
       resample  Resample data along the time dimension.
       serve     Serve data cubes via web service.
       vars2dim  Convert cube variables into new dimension.
       verify    Perform cube verification.
 
-    
-
 ## `xcube chunk`
 
 (Re-)chunk dataset.
 
     $ xcube chunk --help
-    Usage: xcube chunk [OPTIONS] <input> <output>
+    Usage: xcube chunk [OPTIONS] CUBE
     
-      (Re-)chunk dataset. Changes the external chunking of all variables of
-      <input> according to <chunks> and writes the result to <output>.
+      (Re-)chunk data cube. Changes the external chunking of all variables of CUBE
+      according to <CHUNKS> and writes the result to <OUTPUT>.
     
     Options:
-      -f, --format <format>  Format of the output. If not given, guessed from
-                             <output>.
-      -p, --params <params>  Parameters specific for the output format. Comma-
+      -o, --output <OUTPUT>  Output path. Defaults to 'out.zarr'
+      -f, --format <FORMAT>  Format of the output. If not given, guessed from
+                             <OUTPUT>.
+      -p, --params <PARAMS>  Parameters specific for the output format. Comma-
                              separated list of <key>=<value> pairs.
-      -c, --chunks <chunks>  Chunk sizes for each dimension. Comma-separated list
+      -c, --chunks <CHUNKS>  Chunk sizes for each dimension. Comma-separated list
                              of <dim>=<size> pairs, e.g. "time=1,lat=270,lon=270"
       --help                 Show this message and exit.
 
 
 Example:
 
-    $ xcube chunk input_not_chunked.zarr output_rechunked.zarr --chunks "time=1,lat=270,lon=270"
+    $ xcube chunk input_not_chunked.zarr -o output_rechunked.zarr --chunks "time=1,lat=270,lon=270"
 
 ## `xcube dump`
 
 Dump contents of a dataset.
 
     $ xcube dump --help
-    Usage: xcube dump [OPTIONS] <path>
+    Usage: xcube dump [OPTIONS] INPUT
     
-    Dump contents of a dataset.
+      Dump contents of an input dataset.
     
-    optional arguments:
-      --help                Show this help message and exit
-      --variable, -v        Name of a variable (multiple allowed).
-      --encoding, -e        Dump also variable encoding information.
+    Options:
+      -v, --variable, --var <VARIABLE>
+                                      Name of a variable (multiple allowed).
+      -e, --encoding                  Dump also variable encoding information.
+      --help                          Show this message and exit.
 
 
 Example:
@@ -174,32 +174,30 @@ Example:
 ## `xcube extract`
 
 Extract cube points.
-
-    $ xcube dump --help
+    
+    $ xcube extract --help
     Usage: xcube extract [OPTIONS] CUBE POINTS
-
+    
       Extract cube points.
-
+    
       Extracts data cells from CUBE at coordinates given in each POINTS record
       and writes the resulting values to given output path and format.
-
-      <points> must be a CSV file that provides at least the columns "lon",
-      "lat", and "time". The "lon" and "lat" columns provide a point's location
-      in decimal degrees. The "time" column provides a point's date or date-
-      time. Its format should preferably be ISO, but other formats may work as
-      well.
-
+    
+      POINTS must be a CSV file that provides at least the columns "lon", "lat",
+      and "time". The "lon" and "lat" columns provide a point's location in
+      decimal degrees. The "time" column provides a point's date or date-time.
+      Its format should preferably be ISO, but other formats may work as well.
+    
     Options:
-      -o, --output TEXT             Output file. If omitted, output is written to
-                                    stdout.
-      -f, --format [csv|json|xlsx]  Output format. Currently, only 'csv' is
-                                    supported.
-      -C, --coords                  Include cube cell coordinates in output.
-      -B, --bounds                  Include cube cell coordinate boundaries (if
-                                    any) in output.
-      -I, --indexes                 Include cube cell indexes in output.
-      -R, --refs                    Include point values as reference in output.
-      --help                        Show this message and exit.
+      -o, --output <OUTPUT>  Output file. If omitted, output is written to stdout.
+      -f, --format <FORMAT>  Output format. Currently, only 'csv' is supported.
+      -C, --coords           Include cube cell coordinates in output.
+      -B, --bounds           Include cube cell coordinate boundaries (if any) in
+                             output.
+      -I, --indexes          Include cube cell indexes in output.
+      -R, --refs             Include point values as reference in output.
+      --help                 Show this message and exit.
+
 
 
 Example:  
@@ -212,17 +210,17 @@ Example:
 Generate data cube.
 
     $ xcube gen --help
-    Usage: xcube gen [OPTIONS] [INPUTS]...
-
+    Usage: xcube gen [OPTIONS] [INPUT]...
+    
       Generate data cube. Data cubes may be created in one go or successively in
       append mode, input by input. The input paths may be one or more input
       files or a pattern that may contain wildcards '?', '*', and '**'. The
       input paths can also be passed as lines of a text file. To do so, provide
       exactly one input file with ".txt" extension which contains the actual
       input paths to be used.
-
+    
     Options:
-      -p, --proc TEXT                 Input processor name. The available input
+      -p, --proc <INPUT-PROCESSOR>    Input processor name. The available input
                                       processor names and additional information
                                       about input processors can be accessed by
                                       calling xcube gen --info . Defaults to
@@ -230,21 +228,22 @@ Generate data cube.
                                       with simple datasets whose variables have
                                       dimensions ("lat", "lon") and conform with
                                       the CF conventions.
-      -c, --config TEXT               Data cube configuration file in YAML format.
+      -c, --config <CONFIG>           Data cube configuration file in YAML format.
                                       More than one config input file is
                                       allowed.When passing several config files,
                                       they are merged considering the order passed
                                       via command line.
-      -o, --output TEXT               Output path. Defaults to 'out.zarr'
-      -f, --format TEXT               Output format. Information about output
+      -o, --output <OUTPUT>           Output path. Defaults to 'out.zarr'
+      -f, --format <FORMAT>           Output format. Information about output
                                       formats can be accessed by calling xcube gen
                                       --info. If omitted, the format will be
                                       guessed from the given output path.
-      -s, --size TEXT                 Output size in pixels using format
+      -s, --size <SIZE>               Output size in pixels using format
                                       "<width>,<height>".
-      -r, --region TEXT               Output region using format "<lon-min>,<lat-
+      -r, --region <REGION>           Output region using format "<lon-min>,<lat-
                                       min>,<lon-max>,<lat-max>"
-      -v, --variables, --vars TEXT    Variables to be included in output. Comma-
+      -v, --variables, --vars <VARIABLES>
+                                      Variables to be included in output. Comma-
                                       separated list of names which may contain
                                       wildcard characters "*" and "?".
       --resampling [Average|Bilinear|Cubic|CubicSpline|Lanczos|Max|Median|Min|Mode|Nearest|Q1|Q3]
@@ -485,27 +484,27 @@ file, which includes the specification of the input processor. An example config
 Generate multi-resolution levels.
 
     $ xcube level --help
-    Usage: xcube level [OPTIONS] <input>
-    
-      Generate multi-resolution levels. Transform the given dataset by <input>
+    Usage: xcube level [OPTIONS] INPUT
+
+      Generate multi-resolution levels. Transform the given dataset by INPUT
       into the levels of a multi-level pyramid with spatial resolution
       decreasing by a factor of two in both spatial dimensions and write the
-      result to directory <output>.
+      result to directory <OUTPUT>.
     
     Options:
-      -o, --output <output>           Output directory. If omitted,
-                                      "<input>.levels" will be used.
-      -l, --link                      Link the <input> instead of converting it to
+      -o, --output <OUTPUT>           Output directory. If omitted,
+                                      "<INPUT>.levels" will be used.
+      -l, --link                      Link the <INPUT> instead of converting it to
                                       a level zero dataset. Use with care, as the
-                                      <input>'s internal spatial chunk sizes may
+                                      <INPUT>'s internal spatial chunk sizes may
                                       be inappropriate for imaging purposes.
-      -t, --tile-size <tile-size>     Tile size, given as single integer number or
+      -t, --tile-size <TILE-SIZE>     Tile size, given as single integer number or
                                       as <tile-width>,<tile-height>. If omitted,
                                       the tile size will be derived from the
-                                      <input>'s internal spatial chunk sizes. If
-                                      the <input> is not chunked, tile size will
+                                      <INPUT>'s internal spatial chunk sizes. If
+                                      the <INPUT> is not chunked, tile size will
                                       be 512.
-      -n, --num-levels-max <num-levels-max>
+      -n, --num-levels-max <NUM-LEVELS-MAX>
                                       Maximum number of levels to generate. If not
                                       given, the number of levels will be derived
                                       from spatial dimension and tile sizes.
@@ -521,12 +520,12 @@ Example:
 Optimize data cube for faster access.
 
     $ xcube optimize --help
-    Usage: xcube optimize [OPTIONS] INPUT
+    Usage: xcube optimize [OPTIONS] CUBE
     
       Optimize data cube for faster access.
     
       Reduces the number of metadata and coordinate data files in data cube
-      given by INPUT. Consolidated cubes open much faster especially from remote
+      given by CUBE. Consolidated cubes open much faster especially from remote
       locations, e.g. in object storage, because obviously much less HTTP
       requests are required to fetch initial cube meta information. That is, it
       merges all metadata files into a single top-level JSON file ".zmetadata".
@@ -537,15 +536,15 @@ Optimize data cube for faster access.
       format.
     
     Options:
-      -o, --output TEXT  Output path. The placeholder "<built-in function input>"
-                         will be replaced by the input's filename without
-                         extension (such as ".zarr"). Defaults to
-                         "{input}-optimized.zarr".
-      -I, --in-place     Optimize cube in place. Ignores output path.
-      -C, --coords       Also optimize coordinate variables by converting any
-                         chunked arrays into single, non-chunked, contiguous
-                         arrays.
-      --help             Show this message and exit.
+      -o, --output <OUTPUT>  Output path. The placeholder "<built-in function
+                             input>" will be replaced by the input's filename
+                             without extension (such as ".zarr"). Defaults to
+                             "{input}-optimized.zarr".
+      -I, --in-place         Optimize cube in place. Ignores output path.
+      -C, --coords           Also optimize coordinate variables by converting any
+                             chunked arrays into single, non-chunked, contiguous
+                             arrays.
+      --help                 Show this message and exit.
 
 Examples:
 
@@ -568,37 +567,14 @@ Optimize a cube in-place with consolidated metadata and consolidated coordinate 
 Delete empty chunks.
 
     $ xcube prune --help
-    Usage: xcube prune [OPTIONS] INPUT
+    Usage: xcube prune [OPTIONS] CUBE
     
-      Delete empty chunks. Deletes all block files associated with empty (NaN-
-      only) chunks in given INPUT cube, which must have ZARR format.
+      Delete empty chunks. Deletes all data files associated with empty (NaN-
+      only) chunks in given CUBE, which must have ZARR format.
     
     Options:
       --dry-run  Just read and process input, but don't produce any outputs.
       --help     Show this message and exit.
-
-
-
-## `xcube vars2dim`
-
-Convert cube variables into new dimension.
-
-    $ xcube vars2dim --help
-    Usage: xcube vars2dim [OPTIONS] <cube>
-    
-      Convert cube variables into new dimension. Moves all variables of <cube>
-      into into a single new variable <var-name> with a new dimension <dim-name>
-      and writes the results to <output>.
-    
-    Options:
-      -d, --dim_name <dim-name>  Name of the new dimension into variables.
-                                 Defaults to "var".
-      -v, --var_name <var-name>  Name of the new variable that includes all
-                                 variables. Defaults to "data".
-      -o, --output <output>      Output file.
-      -f, --format <format>      Format of the output. If not given, guessed from
-                                 <output>.
-      --help                     Show this message and exit.
 
 
 ## `xcube resample`
@@ -606,21 +582,22 @@ Convert cube variables into new dimension.
 Resample data along the time dimension.
 
     $ xcube resample --help
-    Usage: xcube resample [OPTIONS] INPUT
-    
+    Usage: xcube resample [OPTIONS] CUBE
+
       Resample data along the time dimension.
     
     Options:
-      -c, --config TEXT               Data cube configuration file in YAML format.
+      -c, --config <CONFIG>           Data cube configuration file in YAML format.
                                       More than one config input file is
                                       allowed.When passing several config files,
                                       they are merged considering the order passed
                                       via command line.
-      -o, --output TEXT               Output path.
+      -o, --output <OUTPUT>           Output path. Defaults to 'out.zarr'.
       -f, --format [zarr|netcdf4|mem]
                                       Output format. If omitted, format will be
                                       guessed from output path.
-      --variables, --vars TEXT        Comma-separated list of names of variables
+      -v, --variables, --vars <VARIABLES>
+                                      Comma-separated list of names of variables
                                       to be included.
       -M, --method TEXT               Temporal resampling method. Available
                                       downsampling methods are 'count', 'first',
@@ -679,7 +656,7 @@ Downsampling example:
 Serve data cubes via web service. 
 
     $ xcube serve --help
-    Usage: xcube serve [OPTIONS] CUBE...
+    Usage: xcube serve [OPTIONS] [CUBE]...
     
       Serve data cubes via web service.
     
@@ -844,15 +821,41 @@ in the [demo's HTML file](https://github.com/dcs4cop/xcube/blob/master/examples/
   to force its reopening.
 
 
+## `xcube vars2dim`
+
+Convert cube variables into new dimension.
+
+    $ xcube vars2dim --help
+    Usage: xcube vars2dim [OPTIONS] CUBE
+    
+      Convert cube variables into new dimension. Moves all variables of CUBE
+      into into a single new variable <var-name> with a new dimension <DIM-NAME>
+      and writes the results to <OUTPUT>.
+    
+    Options:
+      -v, --variable, --var <VARIABLE>
+                                      Name of the new variable that includes all
+                                      variables. Defaults to "data".
+      -d, --dim_name <DIM-NAME>       Name of the new dimension into variables.
+                                      Defaults to "var".
+      -o, --output <OUTPUT>           Output file path. If omitted,
+                                      '<INPUT>-vars2dim.<INPUT-FORMAT>' will be
+                                      used.
+      -f, --format <FORMAT>           Format of the output. If not given, guessed
+                                      from <OUTPUT>.
+      --help                          Show this message and exit.
+
+
 ## `xcube verify`
 
 Perform cube verification.
 
-    Usage: xcube verify [OPTIONS] INPUT
+    $ xcube verify --help
+    Usage: xcube verify [OPTIONS] CUBE
     
       Perform cube verification.
     
-      The tool verifies that INPUT
+      The tool verifies that CUBE
       * defines the dimensions "time", "lat", "lon";
       * has corresponding "time", "lat", "lon" coordinate variables and that they
         are valid, e.g. 1-D, non-empty, using correct units;

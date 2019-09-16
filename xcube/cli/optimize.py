@@ -26,8 +26,8 @@ DEFAULT_OUTPUT_PATH = '{input}-optimized.zarr'
 
 # noinspection PyShadowingBuiltins
 @click.command(name='optimize')
-@click.argument('input')
-@click.option('--output', '-o', 'output_path',
+@click.argument('CUBE')
+@click.option('--output', '-o', metavar='<OUTPUT>',
               help=f'Output path. The placeholder "{input}" will be replaced by the input\'s filename '
                    f'without extension (such as ".zarr"). Defaults to "{DEFAULT_OUTPUT_PATH}".',
               default=DEFAULT_OUTPUT_PATH)
@@ -38,14 +38,14 @@ DEFAULT_OUTPUT_PATH = '{input}-optimized.zarr'
               help="Also optimize coordinate variables by converting any chunked arrays "
                    "into single, non-chunked, contiguous arrays.",
               is_flag=True)
-def optimize(input,
-             output_path,
+def optimize(cube,
+             output,
              in_place,
              unchunk_coords):
     """
     Optimize data cube for faster access.
 
-    Reduces the number of metadata and coordinate data files in data cube given by INPUT.
+    Reduces the number of metadata and coordinate data files in data cube given by CUBE.
     Consolidated cubes open much faster especially from remote locations, e.g. in object storage,
     because obviously much less HTTP requests are required to fetch initial cube meta
     information. That is, it merges all metadata files into a single top-level JSON file ".zmetadata".
@@ -55,7 +55,7 @@ def optimize(input,
     The command currently works only for data cubes using ZARR format.
     """
     from xcube.api import optimize_dataset
-    optimize_dataset(input,
-                     output_path=output_path,
+    optimize_dataset(cube,
+                     output_path=output,
                      in_place=in_place,
                      unchunk_coords=unchunk_coords)

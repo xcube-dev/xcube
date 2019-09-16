@@ -29,7 +29,7 @@ class ApplyCliTest(CliDataTest):
                                   '--dask', 'parallelized',
                                   '--params', 'a=0.1,b=0.4',
                                   '--vars', 'precipitation,soil_moisture',
-                                  OUTPUT_PATH,
+                                  '--output', OUTPUT_PATH,
                                   script_path,
                                   INPUT_PATH])
         self.assertEqual(0, result.exit_code)

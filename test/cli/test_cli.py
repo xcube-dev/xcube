@@ -76,7 +76,7 @@ class ChunkTest(CliDataTest):
         output_path = ChunkTest.TEST_OUTPUT
         result = self.invoke_cli(["chunk",
                                   TEST_ZARR_DIR,
-                                  output_path,
+                                  "-o" , output_path,
                                   "-c", "time=1,lat=20,lon=40"])
         self.assertEqual("", result.output)
         self.assertEqual(0, result.exit_code)
@@ -115,9 +115,9 @@ class ChunkTest(CliDataTest):
     def test_chunk_size_syntax(self):
         result = self.invoke_cli(["chunk",
                                   TEST_NC_FILE,
-                                  "test-chunked.zarr",
+                                  "-o", "test-chunked.zarr",
                                   "-c", "time=1,lat!gnnn,lon=40"])
-        self.assertEqual("Error: Invalid value for <chunks>:"
+        self.assertEqual("Error: Invalid value for <CHUNKS>:"
                          " 'time=1,lat!gnnn,lon=40'\n",
                          result.output)
         self.assertEqual(1, result.exit_code)
@@ -125,9 +125,9 @@ class ChunkTest(CliDataTest):
     def test_chunk_size_not_an_int(self):
         result = self.invoke_cli(["chunk",
                                   TEST_NC_FILE,
-                                  "test-chunked.zarr",
+                                  "-o", "test-chunked.zarr",
                                   "-c", "time=1,lat=20.3,lon=40"])
-        self.assertEqual("Error: Invalid value for <chunks>,"
+        self.assertEqual("Error: Invalid value for <CHUNKS>,"
                          " chunk sizes must be positive integers:"
                          " time=1,lat=20.3,lon=40\n",
                          result.output)
@@ -136,9 +136,9 @@ class ChunkTest(CliDataTest):
     def test_chunk_size_not_a_dim(self):
         result = self.invoke_cli(["chunk",
                                   TEST_NC_FILE,
-                                  "test-chunked.zarr",
+                                  "-o", "test-chunked.zarr",
                                   "-c", "time=1,lati=20,lon=40"])
-        self.assertEqual("Error: Invalid value for <chunks>,"
+        self.assertEqual("Error: Invalid value for <CHUNKS>,"
                          " 'lati' is not the name of any dimension:"
                          " time=1,lati=20,lon=40\n",
                          result.output)
@@ -208,7 +208,7 @@ class LevelTest(CliDataTest):
                                   "-o", LevelTest.TEST_OUTPUT,
                                   TEST_NC_FILE,
                                   ])
-        self.assertEqual("Error: <tile-size> must comprise positive integers\n",
+        self.assertEqual("Error: <TILE-SIZE> must comprise positive integers\n",
                          result.output)
         self.assertEqual(1, result.exit_code)
 
@@ -224,6 +224,6 @@ class LevelTest(CliDataTest):
                                   "-n", "0",
                                   "-o", LevelTest.TEST_OUTPUT,
                                   TEST_NC_FILE])
-        self.assertEqual("Error: <num-levels-max> must be a positive integer\n",
+        self.assertEqual("Error: <NUM-LEVELS-MAX> must be a positive integer\n",
                          result.output)
         self.assertEqual(1, result.exit_code)
