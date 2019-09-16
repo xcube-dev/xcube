@@ -234,7 +234,7 @@ def _get_color(colortext):
     if any('color' in line for line in lines):
         for line in lines:
             if "color" in line:
-                r, g, b = (((re.split('\W+', line, 1)[1:])[0].strip()).split(','))
+                r, g, b = (((re.split(r'\W+', line, 1)[1:])[0].strip()).split(','))
                 hex_col = ('#%02x%02x%02x' % (int(r), int(g), int(b)))
                 c.append(hex_col)
     else:
@@ -251,7 +251,7 @@ def get_tick_val_col(colortext):
     if any('sample' in line for line in lines):
         for line in lines:
             if "sample" in line:
-                value = ((re.split('\W+', line, 1)[1:])[0].strip())
+                value = ((re.split(r'\W+', line, 1)[1:])[0].strip())
                 values.append(float(value))
     else:
         _LOG.warning('Keyword "sample" not found. SNAP .cpd file invalid.')
