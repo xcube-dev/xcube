@@ -91,30 +91,31 @@ In the following common arguments and options are listed.
 
 Input argument:
 
-    @click.argument('input', metavar='<input>')
+    @click.argument('input')
 
-Output argument:
+If input argument is restricted to a data cube:
 
-    @click.argument('output', metavar='<output>')
+    @click.argument('cube')
+
 
 Output (directory) option:
 
-    @click.option('--output', '-o', metavar='<output>',
-                  help='Output directory. If omitted, "<input>.levels" will be used.')
+    @click.option('--output', '-o', metavar='<OUTPUT>',
+                  help='Output directory. If omitted, "INPUT.levels" will be used.')
 
 Output format:
 
-    @click.option('--format', '-f', metavar='<format>', type=click.Choice(['zarr', 'netcdf']),
-                  help="Format of the output. If not given, guessed from <output>.")
+    @click.option('--format', '-f', metavar='<FORMAT>', type=click.Choice(['zarr', 'netcdf']),
+                  help="Format of the output. If not given, guessed from <OUTPUT>.")
 
 Output parameters:
 
-    @click.option('--param', '-p', metavar='<param>', multiple=True,
+    @click.option('--param', metavar='<PARAM>', multiple=True,
                   help="Parameter specific for the output format. Multiple allowed.")
 
 Variable names:
 
-    @click.option('--var', '-v', metavar='<variable>', multiple=True,
+    @click.option('--variable',--var', '-v', metavar='<VARIABLE>', multiple=True,
                   help="Name of a variable. Multiple allowed.")
 
 

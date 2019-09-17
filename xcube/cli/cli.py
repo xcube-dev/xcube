@@ -28,7 +28,7 @@ from xcube.version import version
 @click.option('--params', metavar='<PARAMS>',
               help="Parameters specific for the output format."
                    " Comma-separated list of <key>=<value> pairs.")
-@click.option('--chunks', '-c', metavar='<CHUNKS>', nargs=1, default=None,
+@click.option('--chunks', metavar='<CHUNKS>', nargs=1, default=None,
               help='Chunk sizes for each dimension.'
                    ' Comma-separated list of <dim>=<size> pairs,'
                    ' e.g. "time=1,lat=270,lon=270"')

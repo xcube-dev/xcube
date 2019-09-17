@@ -167,20 +167,20 @@ def factor_out_two(x: int) -> Tuple[int, int]:
 
 @click.command(name="res")
 @click.argument('target_res', metavar='TARGET_RES')
-@click.option('--delta_res', '-d', metavar='DELTA_RES', default=_DEFAULT_RES_DELTA,
+@click.option('--delta_res', '-D', metavar='DELTA_RES', default=_DEFAULT_RES_DELTA,
               help=f'Maximum resolution delta. Defaults to {_DEFAULT_RES_DELTA}.')
 @click.option('--coverage', '--cov', metavar="COVERAGE", default=str(_DEFAULT_LAT_COVERAGE),
               help=f'The vertical coverage in degrees. Defaults to {_DEFAULT_LAT_COVERAGE} degrees.')
-@click.option('--tile_max', '-t', metavar='TILE_MAX', default=_DEFAULT_MAX_TILE, type=int,
+@click.option('--tile_max', metavar='TILE_MAX', default=_DEFAULT_MAX_TILE, type=int,
               help=f'Maximum tile size. Defaults to {_DEFAULT_MAX_TILE}.')
 @click.option('--level_min', '-l', metavar='LEVEL_MIN', default=_DEFAULT_MIN_LEVEL, type=int,
               help=f'Minimum resolution level. Defaults to {_DEFAULT_MIN_LEVEL}.')
-@click.option('--int_inv_res', '-i', metavar='INT_INV_RES', is_flag=True,
+@click.option('--int_inv_res', metavar='INT_INV_RES', is_flag=True,
               help=f'Find only resolutions whose inverse are integers.')
-@click.option('--sort_by', '-s', metavar='SORT_BY',
+@click.option('--sort_by', metavar='SORT_BY',
               type=click.Choice(_SORT_BY_KEYS), default=_DEFAULT_SORT_BY,
               help='Sort output by column name.')
-@click.option('--num_results', '-n', metavar='NUM_RESULTS',
+@click.option('--num_results', '-N', metavar='NUM_RESULTS',
               type=int, default=_DEFAULT_NUM_RESULTS,
               help=f'Maximum number of results to list. Defaults to {_DEFAULT_NUM_RESULTS}')
 @click.option('--sep', metavar='SEP', default='\t',
@@ -241,7 +241,7 @@ def list_resolutions(target_res: str,
 
 
 @click.command(name="levels")
-@click.option('--res', '-r', metavar="RES",
+@click.option('--res', '-R', metavar="RES",
               help='Resolution in degrees. Can also be a rational number of form RES_NOM/RES_DEN.')
 @click.option('--height', '-h', metavar="HEIGHT", type=int,
               help='Height in grid cells.')
@@ -271,13 +271,13 @@ def list_levels(res: str, height: int, coverage: str, level_min: Optional[int], 
 
 @click.command(name="abox", context_settings={"ignore_unknown_options": True})
 @click.argument('geom', metavar="GEOM")
-@click.option('--res', '-r', metavar="RES",
+@click.option('--res', '-R', metavar="RES",
               help='The parent grid\'s resolution in degrees. Can also be a rational number of form A/B.')
 @click.option('--height', '-h', metavar="HEIGHT", type=int,
               help='The parent grid\'s height in grid cells.')
 @click.option('--coverage', '--cov', metavar="COVERAGE", default=str(_DEFAULT_LAT_COVERAGE),
               help=f'The parent grid\'s coverage in degrees. Defaults to {_DEFAULT_LAT_COVERAGE} degrees.')
-@click.option('--tile_factor', '-t', metavar="TILE_FACTOR", type=int,
+@click.option('--tile_factor', metavar="TILE_FACTOR", type=int,
               help='A tile factor to compute tile sizes from height at level zero: TILE = TILE_FACTOR * HEIGHT_0.'
                    'Usually TILE_FACTOR = 2^N. If not given, TILE = 1.')
 def adjust_box(geom: str, res: Optional[str], height: Optional[int], coverage: str, tile_factor: Optional[int]):

@@ -73,7 +73,7 @@ class GridCliTest(unittest.TestCase):
         return runner.invoke(cli, args)
 
     def test_levels(self):
-        result = self.invoke_cli(["levels", "-r", "1/384"])
+        result = self.invoke_cli(["levels", "-R", "1/384"])
         self.assertEqual(("""
 L	H	R	R (deg)	R (m)
 0	135	4/3	1.3333333333333333	148425.99
@@ -91,7 +91,7 @@ L	H	R	R (deg)	R (m)
         self.assertEqual(0, result.exit_code)
 
     def test_res(self):
-        result = self.invoke_cli(["res", "300m", "-d", "1%", "-s", "+H0", "-n", "6"])
+        result = self.invoke_cli(["res", "300m", "-D", "1%", "--sort_by", "+H0", "-N", "6"])
         print(result.output)
         self.assertEqual(("""
 R_D (%)	R_NOM	R_DEN	R (deg)	R (m)	H	H0	L
@@ -106,7 +106,7 @@ R_D (%)	R_NOM	R_DEN	R (deg)	R (m)	H	H0	L
         self.assertEqual(0, result.exit_code)
 
     def test_abox(self):
-        result = self.invoke_cli(['abox', "0,50,5,52.5", "-r", "1/384"])
+        result = self.invoke_cli(['abox', "0,50,5,52.5", "-R", "1/384"])
         self.assertEqual(("""
 Orig. box coord. = 0.0,50.0,5.0,52.5
 Adj. box coord.  = 0.0,49.33333333333333,5.333333333333333,53.33333333333333

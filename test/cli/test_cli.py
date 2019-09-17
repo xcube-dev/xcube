@@ -77,7 +77,7 @@ class ChunkTest(CliDataTest):
         result = self.invoke_cli(["chunk",
                                   TEST_ZARR_DIR,
                                   "-o" , output_path,
-                                  "-c", "time=1,lat=20,lon=40"])
+                                  "--chunks", "time=1,lat=20,lon=40"])
         self.assertEqual("", result.output)
         self.assertEqual(0, result.exit_code)
         self.assertTrue(os.path.isdir(output_path))
@@ -97,8 +97,8 @@ class ChunkTest(CliDataTest):
     #     output_path = "test-chunked.nc"
     #     result = self.invoke_cli(["chunk",
     #                               TEST_NC_FILE,
-    #                               output_path,
-    #                               "-c", "time=1,lat=20,lon=40"])
+    #                               "-o", output_path,
+    #                               "--chunks", "time=1,lat=20,lon=40"])
     #     self.assertEqual("", result.output)
     #     self.assertEqual(0, result.exit_code)
     #     self.assertTrue(os.path.isdir(output_path))
@@ -116,7 +116,7 @@ class ChunkTest(CliDataTest):
         result = self.invoke_cli(["chunk",
                                   TEST_NC_FILE,
                                   "-o", "test-chunked.zarr",
-                                  "-c", "time=1,lat!gnnn,lon=40"])
+                                  "--chunks", "time=1,lat!gnnn,lon=40"])
         self.assertEqual("Error: Invalid value for <CHUNKS>:"
                          " 'time=1,lat!gnnn,lon=40'\n",
                          result.output)
@@ -126,7 +126,7 @@ class ChunkTest(CliDataTest):
         result = self.invoke_cli(["chunk",
                                   TEST_NC_FILE,
                                   "-o", "test-chunked.zarr",
-                                  "-c", "time=1,lat=20.3,lon=40"])
+                                  "--chunks", "time=1,lat=20.3,lon=40"])
         self.assertEqual("Error: Invalid value for <CHUNKS>,"
                          " chunk sizes must be positive integers:"
                          " time=1,lat=20.3,lon=40\n",
@@ -137,7 +137,7 @@ class ChunkTest(CliDataTest):
         result = self.invoke_cli(["chunk",
                                   TEST_NC_FILE,
                                   "-o", "test-chunked.zarr",
-                                  "-c", "time=1,lati=20,lon=40"])
+                                  "--chunks", "time=1,lati=20,lon=40"])
         self.assertEqual("Error: Invalid value for <CHUNKS>,"
                          " 'lati' is not the name of any dimension:"
                          " time=1,lati=20,lon=40\n",
@@ -173,7 +173,7 @@ class LevelTest(CliDataTest):
 
     def test_level_with_zarr_link(self):
         result = self.invoke_cli(["level",
-                                  "-l",
+                                  "--link",
                                   "-t", "45",
                                   "-o", LevelTest.TEST_OUTPUT,
                                   TEST_ZARR_DIR,

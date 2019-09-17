@@ -140,9 +140,9 @@ To start a demo using docker use the following commands
       -o, --output <OUTPUT>  Output path. Defaults to 'out.zarr'
       -f, --format <FORMAT>  Format of the output. If not given, guessed from
                              <OUTPUT>.
-      -p, --params <PARAMS>  Parameters specific for the output format. Comma-
+      --params <PARAMS>      Parameters specific for the output format. Comma-
                              separated list of <key>=<value> pairs.
-      -c, --chunks <CHUNKS>  Chunk sizes for each dimension. Comma-separated list
+      --chunks <CHUNKS>  Chunk sizes for each dimension. Comma-separated list
                              of <dim>=<size> pairs, e.g. "time=1,lat=270,lon=270"
       --help                 Show this message and exit.
 
@@ -192,10 +192,10 @@ Extract cube points.
       -o, --output <OUTPUT>  Output path. If omitted, output is written to stdout.
       -f, --format <FORMAT>  Output format. Currently, only 'csv' is supported.
       -C, --coords           Include cube cell coordinates in output.
-      -B, --bounds           Include cube cell coordinate boundaries (if any) in
+      -b, --bounds           Include cube cell coordinate boundaries (if any) in
                              output.
-      -I, --indexes          Include cube cell indexes in output.
-      -R, --refs             Include point values as reference in output.
+      --indexes              Include cube cell indexes in output.
+      --refs                 Include point values as reference in output.
       --help                 Show this message and exit.
 
 
@@ -292,7 +292,7 @@ Below is the `xcube gen --info` call with 5 input processors installed via plugi
 
 Example:
 
-    $ xcube gen -a -s 2000,1000 -r 0,50,5,52.5 -v conc_chl,conc_tsm,kd489,c2rcc_flags,quality_flags -n hiroc-cube -t -p default D:\OneDrive\BC\EOData\HIGHROC\2017\01\*.nc
+    $ xcube gen -a -s 2000,1000 -r 0,50,5,52.5 -v conc_chl,conc_tsm,kd489,c2rcc_flags,quality_flags -o hiroc-cube.zarr -p default D:\OneDrive\BC\EOData\HIGHROC\2017\01\*.nc
 
 Available xcube input processors within xcube's organisation:
 * [xcube-gen-rbins](https://github.com/dcs4cop/xcube-gen-rbins)
@@ -345,7 +345,7 @@ Find spatial data cube resolutions and adjust bounding boxes.
 Example: Find suitable target resolution for a ~300m (Sentinel 3 OLCI FR resolution) 
 fixed Earth grid within a deviation of 5%.
 
-    $ xcube grid res 300m -d 5%
+    $ xcube grid res 300m -D 5%
     
     TILE    LEVEL   HEIGHT  INV_RES RES (deg)       RES (m), DELTA_RES (%)
     540     7       69120   384     0.0026041666666666665   289.9   -3.4
@@ -494,7 +494,7 @@ Generate multi-resolution levels.
     Options:
       -o, --output <OUTPUT>           Output path. If omitted,
                                       "<INPUT>.levels" will be used.
-      -l, --link                      Link the <INPUT> instead of converting it to
+      --link                          Link the <INPUT> instead of converting it to
                                       a level zero dataset. Use with care, as the
                                       <INPUT>'s internal spatial chunk sizes may
                                       be inappropriate for imaging purposes.
@@ -513,7 +513,7 @@ Generate multi-resolution levels.
     
 Example:
 
-    $ xcube level -l -t 720 data/cubes/test-cube.zarr
+    $ xcube level --link -t 720 data/cubes/test-cube.zarr
 
 ## `xcube optimize`
 
@@ -666,7 +666,7 @@ Serve data cubes via web service.
     
     Options:
       -a, --address ADDRESS  Service address. Defaults to 'localhost'.
-      -p, --port PORT        Port number where the service will listen on.
+      --port PORT            Port number where the service will listen on.
                              Defaults to 8080.
       --prefix PREFIX        Service URL prefix. May contain template patterns
                              such as "${version}" or "${name}". For example
@@ -687,12 +687,12 @@ Serve data cubes via web service.
       --tilemode MODE        Tile computation mode. This is an internal option
                              used to switch between different tile computation
                              implementations. Defaults to 0.
-      -s, --show             Run viewer app. Requires setting the environment
+      --show                 Run viewer app. Requires setting the environment
                              variable XCUBE_VIEWER_PATH to a valid xcube-viewer
                              deployment or build directory. Refer to
                              https://github.com/dcs4cop/xcube-viewer for more
                              information.
-      --verbose          Delegate logging to the console (stderr).
+      --verbose              Delegate logging to the console (stderr).
       --traceperf            Print performance diagnostics (stdout).
       --help                 Show this message and exit.
 
