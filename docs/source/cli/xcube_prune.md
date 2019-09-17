@@ -10,10 +10,10 @@ the near future.
 $ xcube prune --help
 ```
 
-    Usage: xcube prune [OPTIONS] INPUT
+    Usage: xcube prune [OPTIONS] CUBE
     
-      Delete empty chunks. Deletes all block files associated with empty (NaN-
-      only) chunks in given INPUT cube, which must have ZARR format.
+      Delete empty chunks. Deletes all data files associated with empty (NaN-
+      only) chunks in given CUBE, which must have ZARR format.
     
     Options:
       --dry-run  Just read and process input, but don't produce any outputs.

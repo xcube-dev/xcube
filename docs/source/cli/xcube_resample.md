@@ -6,21 +6,22 @@ Resample data along the time dimension.
 $ xcube resample --help
 ```
     
-    Usage: xcube resample [OPTIONS] INPUT
+    Usage: xcube resample [OPTIONS] CUBE
     
       Resample data along the time dimension.
     
     Options:
-      -c, --config TEXT               Data cube configuration file in YAML format.
+      -c, --config <CONFIG>           Data cube configuration file in YAML format.
                                       More than one config input file is
                                       allowed.When passing several config files,
                                       they are merged considering the order passed
                                       via command line.
-      -o, --output TEXT               Output path.
+      -o, --output <OUTPUT>           Output path. Defaults to 'out.zarr'.
       -f, --format [zarr|netcdf4|mem]
                                       Output format. If omitted, format will be
                                       guessed from output path.
-      --variables, --vars TEXT        Comma-separated list of names of variables
+      -v, --variables, --vars <VARIABLES>
+                                      Comma-separated list of names of variables
                                       to be included.
       -M, --method TEXT               Temporal resampling method. Available
                                       downsampling methods are 'count', 'first',

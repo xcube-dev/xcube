@@ -2,16 +2,16 @@
 
 Optimize data cube for faster access.
 
-```
+```bash
 $ xcube optimize --help
 ```
 
-    Usage: xcube optimize [OPTIONS] INPUT
+    Usage: xcube optimize [OPTIONS] CUBE
     
       Optimize data cube for faster access.
     
       Reduces the number of metadata and coordinate data files in data cube
-      given by INPUT. Consolidated cubes open much faster especially from remote
+      given by CUBE. Consolidated cubes open much faster especially from remote
       locations, e.g. in object storage, because obviously much less HTTP
       requests are required to fetch initial cube meta information. That is, it
       merges all metadata files into a single top-level JSON file ".zmetadata".
@@ -22,15 +22,15 @@ $ xcube optimize --help
       format.
     
     Options:
-      -o, --output TEXT  Output path. The placeholder "<built-in function input>"
-                         will be replaced by the input's filename without
-                         extension (such as ".zarr"). Defaults to
-                         "{input}-optimized.zarr".
-      -I, --in-place     Optimize cube in place. Ignores output path.
-      -C, --coords       Also optimize coordinate variables by converting any
-                         chunked arrays into single, non-chunked, contiguous
-                         arrays.
-      --help             Show this message and exit.
+      -o, --output <OUTPUT>  Output path. The placeholder "<built-in function
+                             input>" will be replaced by the input's filename
+                             without extension (such as ".zarr"). Defaults to
+                             "{input}-optimized.zarr".
+      -I, --in-place         Optimize cube in place. Ignores output path.
+      -C, --coords           Also optimize coordinate variables by converting any
+                             chunked arrays into single, non-chunked, contiguous
+                             arrays.
+      --help                 Show this message and exit.
 
 
 Examples:

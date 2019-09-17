@@ -46,7 +46,7 @@ The SwaggerHub allows to choose the xcube-server project and therefore the datas
 $ xcube serve --help
 ```
 
-    Usage: xcube serve [OPTIONS] CUBE...
+    Usage: xcube serve [OPTIONS] [CUBE]...
     
       Serve data cubes via web service.
     
@@ -56,7 +56,7 @@ $ xcube serve --help
     
     Options:
       -a, --address ADDRESS  Service address. Defaults to 'localhost'.
-      -p, --port PORT        Port number where the service will listen on.
+      --port PORT            Port number where the service will listen on.
                              Defaults to 8080.
       --prefix PREFIX        Service URL prefix. May contain template patterns
                              such as "${version}" or "${name}". For example
@@ -77,12 +77,12 @@ $ xcube serve --help
       --tilemode MODE        Tile computation mode. This is an internal option
                              used to switch between different tile computation
                              implementations. Defaults to 0.
-      -s, --show             Run viewer app. Requires setting the environment
+      --show                 Run viewer app. Requires setting the environment
                              variable XCUBE_VIEWER_PATH to a valid xcube-viewer
                              deployment or build directory. Refer to
                              https://github.com/dcs4cop/xcube-viewer for more
                              information.
-      -v, --verbose          Delegate logging to the console (stderr).
+      --verbose              Delegate logging to the console (stderr).
       --traceperf            Print performance diagnostics (stdout).
       --help                 Show this message and exit.
 
