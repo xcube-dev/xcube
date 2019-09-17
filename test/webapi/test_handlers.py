@@ -344,7 +344,8 @@ class HandlersTest(AsyncHTTPTestCase):
                               body='{"type": "GeometryCollection", "geometries": []}')
         self.assertResponseOK(response)
         response = self.fetch(self.prefix + '/ts/demo/conc_chl/geometries', method="POST",
-                              body='{"type": "GeometryCollection", "geometries": [{"type": "Point", "coordinates": [1, 51]}]}')
+                              body='{"type": "GeometryCollection", "geometries": '
+                                   '[{"type": "Point", "coordinates": [1, 51]}]}')
         self.assertResponseOK(response)
 
     def test_fetch_time_series_features(self):
