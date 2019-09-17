@@ -1,6 +1,7 @@
 ## Changes in 0.2.0.dev2 (in dev)
 
-* Reorganisation of the Documentation and Examples Section (partly adressing #106)
+* Making CLI parameters consistent and removing or changing parameter abbreviations in case they were used twice for different params. (partly addressing #91)
+* Reorganisation of the Documentation and Examples Section (partly addressing #106)
 
 ### Enhancements
 
