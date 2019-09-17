@@ -7,6 +7,7 @@ from xcube.webapi.controllers.time_series import get_time_series_info, get_time_
 from ..helpers import new_test_service_context
 
 
+# noinspection PyUnresolvedReferences
 class TimeSeriesControllerTest(unittest.TestCase):
 
     def setUp(self) -> None:
@@ -70,22 +71,25 @@ class TimeSeriesControllerTest(unittest.TestCase):
         self.assertEqual(expected_result, actual_result)
 
     def test_get_time_series_for_point_with_uncertainty(self):
-        ctx = new_test_service_context()
-        actual_result = get_time_series_for_point(ctx, 'demo-1w', 'conc_tsm',
-                                                  lon=2.1, lat=51.4,
-                                                  start_date=np.datetime64('2017-01-15'),
-                                                  end_date=np.datetime64('2017-01-29'))
-        expected_result = {'results': [{'date': '2017-01-22T00:00:00Z',
-                                        'result': {'average': 3.534773588180542,
-                                                   'uncertainty': 0.0,
-                                                   'totalCount': 1,
-                                                   'validCount': 1}},
-                                       {'date': '2017-01-29T00:00:00Z',
-                                        'result': {'average': 20.12085723876953,
-                                                   'uncertainty': 0.0,
-                                                   'totalCount': 1,
-                                                   'validCount': 1}}]}
-        self.assertEqual(expected_result, actual_result)
+        with self.assertWarns(RuntimeWarning) as warning:
+            ctx = new_test_service_context()
+            actual_result = get_time_series_for_point(ctx, 'demo-1w', 'conc_tsm',
+                                                      lon=2.1, lat=51.4,
+                                                      start_date=np.datetime64('2017-01-15'),
+                                                      end_date=np.datetime64('2017-01-29'))
+            expected_result = {'results': [{'date': '2017-01-22T00:00:00Z',
+                                            'result': {'average': 3.534773588180542,
+                                                       'uncertainty': 0.0,
+                                                       'totalCount': 1,
+                                                       'validCount': 1}},
+                                           {'date': '2017-01-29T00:00:00Z',
+                                            'result': {'average': 20.12085723876953,
+                                                       'uncertainty': 0.0,
+                                                       'totalCount': 1,
+                                                       'validCount': 1}}]}
+            for w in warning.warnings:
+                self.assertEqual("invalid value encountered in true_divide", str(w.message))
+            self.assertEqual(expected_result, actual_result)
 
     def test_get_time_series_for_geometry_point(self):
         ctx = new_test_service_context()
@@ -109,104 +113,116 @@ class TimeSeriesControllerTest(unittest.TestCase):
         self.assertEqual(expected_result, actual_result)
 
     def test_get_time_series_for_geometry_polygon(self):
-        ctx = new_test_service_context()
-        actual_result = get_time_series_for_geometry(ctx, 'demo', 'conc_tsm',
-                                                     dict(type="Polygon", coordinates=[[
-                                                         [1., 51.], [2., 51.], [2., 52.], [1., 52.], [1., 51.]
-                                                     ]]),
-                                                     include_count=True)
-        expected_result = {'results': [{'date': '2017-01-16T10:09:22Z',
-                                        'result': {'average': 56.12519223634024,
-                                                   'totalCount': 159600,
-                                                   'validCount': 122392}},
-                                       {'date': '2017-01-25T09:35:51Z',
-                                        'result': {'average': None,
-                                                   'totalCount': 159600,
-                                                   'validCount': 0}},
-                                       {'date': '2017-01-26T10:50:17Z',
-                                        'result': {'average': None,
-                                                   'totalCount': 159600,
-                                                   'validCount': 0}},
-                                       {'date': '2017-01-28T09:58:11Z',
-                                        'result': {'average': 49.70755256053988,
-                                                   'totalCount': 159600,
-                                                   'validCount': 132066}},
-                                       {'date': '2017-01-30T10:46:34Z',
-                                        'result': {'average': None,
-                                                   'totalCount': 159600,
-                                                   'validCount': 0}}]}
-        self.assertEqual(expected_result, actual_result)
+        with self.assertWarns(RuntimeWarning) as warning:
+            ctx = new_test_service_context()
+            actual_result = get_time_series_for_geometry(ctx, 'demo', 'conc_tsm',
+                                                         dict(type="Polygon", coordinates=[[
+                                                             [1., 51.], [2., 51.], [2., 52.], [1., 52.], [1., 51.]
+                                                         ]]),
+                                                         include_count=True)
+            expected_result = {'results': [{'date': '2017-01-16T10:09:22Z',
+                                            'result': {'average': 56.12519223634024,
+                                                       'totalCount': 159600,
+                                                       'validCount': 122392}},
+                                           {'date': '2017-01-25T09:35:51Z',
+                                            'result': {'average': None,
+                                                       'totalCount': 159600,
+                                                       'validCount': 0}},
+                                           {'date': '2017-01-26T10:50:17Z',
+                                            'result': {'average': None,
+                                                       'totalCount': 159600,
+                                                       'validCount': 0}},
+                                           {'date': '2017-01-28T09:58:11Z',
+                                            'result': {'average': 49.70755256053988,
+                                                       'totalCount': 159600,
+                                                       'validCount': 132066}},
+                                           {'date': '2017-01-30T10:46:34Z',
+                                            'result': {'average': None,
+                                                       'totalCount': 159600,
+                                                       'validCount': 0}}]}
+            for w in warning.warnings:
+                self.assertEqual("invalid value encountered in true_divide", str(w.message))
+            self.assertEqual(expected_result, actual_result)
 
     def test_get_time_series_for_geometry_polygon_with_stdev(self):
-        ctx = new_test_service_context()
-        actual_result = get_time_series_for_geometry(ctx, 'demo', 'conc_tsm',
-                                                     dict(type="Polygon", coordinates=[[
-                                                         [1., 51.], [2., 51.], [2., 52.], [1., 52.], [1., 51.]
-                                                     ]]),
-                                                     include_count=True,
-                                                     include_stdev=True)
+        with self.assertWarns(RuntimeWarning) as warning:
+            ctx = new_test_service_context()
+            actual_result = get_time_series_for_geometry(ctx, 'demo', 'conc_tsm',
+                                                         dict(type="Polygon", coordinates=[[
+                                                             [1., 51.], [2., 51.], [2., 52.], [1., 52.], [1., 51.]
+                                                         ]]),
+                                                         include_count=True,
+                                                         include_stdev=True)
 
-        expected_result = {'results': [{'date': '2017-01-16T10:09:22Z',
-                                        'result': {'average': 56.12519223634024,
-                                                   'totalCount': 159600,
-                                                   'uncertainty': 40.78859862094861,
-                                                   'validCount': 122392}},
-                                       {'date': '2017-01-25T09:35:51Z',
-                                        'result': {'average': None,
-                                                   'totalCount': 159600,
-                                                   'uncertainty': None,
-                                                   'validCount': 0}},
-                                       {'date': '2017-01-26T10:50:17Z',
-                                        'result': {'average': None,
-                                                   'totalCount': 159600,
-                                                   'uncertainty': None,
-                                                   'validCount': 0}},
-                                       {'date': '2017-01-28T09:58:11Z',
-                                        'result': {'average': 49.70755256053988,
-                                                   'totalCount': 159600,
-                                                   'uncertainty': 34.98868194514786,
-                                                   'validCount': 132066}},
-                                       {'date': '2017-01-30T10:46:34Z',
-                                        'result': {'average': None,
-                                                   'totalCount': 159600,
-                                                   'uncertainty': None,
-                                                   'validCount': 0}}]}
+            expected_result = {'results': [{'date': '2017-01-16T10:09:22Z',
+                                            'result': {'average': 56.12519223634024,
+                                                       'totalCount': 159600,
+                                                       'uncertainty': 40.78859862094861,
+                                                       'validCount': 122392}},
+                                           {'date': '2017-01-25T09:35:51Z',
+                                            'result': {'average': None,
+                                                       'totalCount': 159600,
+                                                       'uncertainty': None,
+                                                       'validCount': 0}},
+                                           {'date': '2017-01-26T10:50:17Z',
+                                            'result': {'average': None,
+                                                       'totalCount': 159600,
+                                                       'uncertainty': None,
+                                                       'validCount': 0}},
+                                           {'date': '2017-01-28T09:58:11Z',
+                                            'result': {'average': 49.70755256053988,
+                                                       'totalCount': 159600,
+                                                       'uncertainty': 34.98868194514786,
+                                                       'validCount': 132066}},
+                                           {'date': '2017-01-30T10:46:34Z',
+                                            'result': {'average': None,
+                                                       'totalCount': 159600,
+                                                       'uncertainty': None,
+                                                       'validCount': 0}}]}
 
-        self.assertEqual(expected_result, actual_result)
+            for w in warning.warnings:
+                self.assertEqual("invalid value encountered in true_divide", str(w.message))
+            self.assertEqual(expected_result, actual_result)
 
     def test_get_time_series_for_geometry_polygon_one_valid(self):
-        ctx = new_test_service_context()
-        actual_result = get_time_series_for_geometry(ctx, 'demo', 'conc_tsm',
-                                                     dict(type="Polygon", coordinates=[[
-                                                         [1., 51.], [2., 51.], [2., 52.], [1., 52.], [1., 51.]
-                                                     ]]),
-                                                     include_count=True,
-                                                     max_valids=1)
-        expected_result = {'results': [{'date': '2017-01-28T09:58:11Z',
-                                        'result': {'average': 49.70755256053988,
-                                                   'totalCount': 159600,
-                                                   'validCount': 132066}}]}
+        with self.assertWarns(RuntimeWarning) as warning:
+            ctx = new_test_service_context()
+            actual_result = get_time_series_for_geometry(ctx, 'demo', 'conc_tsm',
+                                                         dict(type="Polygon", coordinates=[[
+                                                             [1., 51.], [2., 51.], [2., 52.], [1., 52.], [1., 51.]
+                                                         ]]),
+                                                         include_count=True,
+                                                         max_valids=1)
+            expected_result = {'results': [{'date': '2017-01-28T09:58:11Z',
+                                            'result': {'average': 49.70755256053988,
+                                                       'totalCount': 159600,
+                                                       'validCount': 132066}}]}
 
-        self.assertEqual(expected_result, actual_result)
+            for w in warning.warnings:
+                self.assertEqual("invalid value encountered in true_divide", str(w.message))
+            self.assertEqual(expected_result, actual_result)
 
     def test_get_time_series_for_geometry_polygon_only_valids(self):
-        ctx = new_test_service_context()
-        actual_result = get_time_series_for_geometry(ctx, 'demo', 'conc_tsm',
-                                                     dict(type="Polygon", coordinates=[[
-                                                         [1., 51.], [2., 51.], [2., 52.], [1., 52.], [1., 51.]
-                                                     ]]),
-                                                     include_count=True,
-                                                     max_valids=-1)
-        expected_result = {'results': [{'date': '2017-01-16T10:09:22Z',
-                                        'result': {'average': 56.12519223634024,
-                                                   'totalCount': 159600,
-                                                   'validCount': 122392}},
-                                       {'date': '2017-01-28T09:58:11Z',
-                                        'result': {'average': 49.70755256053988,
-                                                   'totalCount': 159600,
-                                                   'validCount': 132066}}]}
+        with self.assertWarns(RuntimeWarning) as warning:
+            ctx = new_test_service_context()
+            actual_result = get_time_series_for_geometry(ctx, 'demo', 'conc_tsm',
+                                                         dict(type="Polygon", coordinates=[[
+                                                             [1., 51.], [2., 51.], [2., 52.], [1., 52.], [1., 51.]
+                                                         ]]),
+                                                         include_count=True,
+                                                         max_valids=-1)
+            expected_result = {'results': [{'date': '2017-01-16T10:09:22Z',
+                                            'result': {'average': 56.12519223634024,
+                                                       'totalCount': 159600,
+                                                       'validCount': 122392}},
+                                           {'date': '2017-01-28T09:58:11Z',
+                                            'result': {'average': 49.70755256053988,
+                                                       'totalCount': 159600,
+                                                       'validCount': 132066}}]}
 
-        self.assertEqual(expected_result, actual_result)
+            for w in warning.warnings:
+                self.assertEqual("invalid value encountered in true_divide", str(w.message))
+            self.assertEqual(expected_result, actual_result)
 
     def test_get_time_series_for_geometries_incl_point(self):
         ctx = new_test_service_context()
@@ -233,37 +249,40 @@ class TimeSeriesControllerTest(unittest.TestCase):
         self.assertEqual(expected_result, actual_result)
 
     def test_get_time_series_for_geometries_incl_polygon(self):
-        ctx = new_test_service_context()
-        actual_result = get_time_series_for_geometry_collection(ctx,
-                                                                'demo', 'conc_tsm',
-                                                                dict(type="GeometryCollection",
-                                                                     geometries=[dict(type="Polygon", coordinates=[[
-                                                                         [1., 51.], [2., 51.], [2., 52.], [1., 52.],
-                                                                         [1., 51.]
-                                                                     ]])]),
-                                                                include_count=True)
-        expected_result = {'results': [[{'date': '2017-01-16T10:09:22Z',
-                                         'result': {'average': 56.12519223634024,
-                                                    'totalCount': 159600,
-                                                    'validCount': 122392}},
-                                        {'date': '2017-01-25T09:35:51Z',
-                                         'result': {'average': None,
-                                                    'totalCount': 159600,
-                                                    'validCount': 0}},
-                                        {'date': '2017-01-26T10:50:17Z',
-                                         'result': {'average': None,
-                                                    'totalCount': 159600,
-                                                    'validCount': 0}},
-                                        {'date': '2017-01-28T09:58:11Z',
-                                         'result': {'average': 49.70755256053988,
-                                                    'totalCount': 159600,
-                                                    'validCount': 132066}},
-                                        {'date': '2017-01-30T10:46:34Z',
-                                         'result': {'average': None,
-                                                    'totalCount': 159600,
-                                                    'validCount': 0}}]]}
+        with self.assertWarns(RuntimeWarning) as warning:
+            ctx = new_test_service_context()
+            actual_result = get_time_series_for_geometry_collection(ctx,
+                                                                    'demo', 'conc_tsm',
+                                                                    dict(type="GeometryCollection",
+                                                                         geometries=[dict(type="Polygon", coordinates=[[
+                                                                             [1., 51.], [2., 51.], [2., 52.], [1., 52.],
+                                                                             [1., 51.]
+                                                                         ]])]),
+                                                                    include_count=True)
+            expected_result = {'results': [[{'date': '2017-01-16T10:09:22Z',
+                                             'result': {'average': 56.12519223634024,
+                                                        'totalCount': 159600,
+                                                        'validCount': 122392}},
+                                            {'date': '2017-01-25T09:35:51Z',
+                                             'result': {'average': None,
+                                                        'totalCount': 159600,
+                                                        'validCount': 0}},
+                                            {'date': '2017-01-26T10:50:17Z',
+                                             'result': {'average': None,
+                                                        'totalCount': 159600,
+                                                        'validCount': 0}},
+                                            {'date': '2017-01-28T09:58:11Z',
+                                             'result': {'average': 49.70755256053988,
+                                                        'totalCount': 159600,
+                                                        'validCount': 132066}},
+                                            {'date': '2017-01-30T10:46:34Z',
+                                             'result': {'average': None,
+                                                        'totalCount': 159600,
+                                                        'validCount': 0}}]]}
 
-        self.assertEqual(expected_result, actual_result)
+            for w in warning.warnings:
+                self.assertEqual("invalid value encountered in true_divide", str(w.message))
+            self.assertEqual(expected_result, actual_result)
 
     def test_get_time_series_info(self):
         self.maxDiff = None
