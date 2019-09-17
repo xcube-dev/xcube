@@ -3,9 +3,9 @@ Command-line Interface
 ======================
 
 The xcube command-line interface is a single executable ``xcube`` with several sub-commands comprising
-functions ranging from cube generation, over cube analysis and manipulation, to cube publication.
+functions ranging from xcube dataset generation, over analysis and manipulation, to dataset publication.
 
-Most of the commands operate on datasets that conform to the xcube definition (:doc:`cubedef`) a data cube.
+Most of the commands operate on inputs that must be an (:doc:`cubespec`) - a data cube in the xcube sense.
 Such inputs are consistently named ``CUBE`` and provided as command argument(s). You may pass a path into the
 local file system or a path into some object storage bucket, e.g. in AWS S3.
 Command inputs of other type are usually called ``INPUT``.

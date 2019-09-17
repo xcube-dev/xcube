@@ -1,13 +1,13 @@
-=================
-Generating a cube
-=================
+===========================
+Generating an xcube dataset
+===========================
 
-In this example we show how to generate a (toy) data cube from a set of EO source files.
+In this example we show how to generate a (toy) xcube dataset from a set of EO source files.
 
 Preparation
 ===========
 
-In order to create a suitable data cube for your needs,
+In order to create a suitable xcube dataset for your needs,
 there are some questions which need to be answered before hand.
 
 1. Find appropriate grid for cube:

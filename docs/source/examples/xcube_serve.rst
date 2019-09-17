@@ -1,8 +1,8 @@
-================
-Publishing cubes
-================
+=========================
+Publishing xcube datasets
+=========================
 
-This example demonstrates how to run an xcube server to publish existing cubes.
+This example demonstrates how to run an xcube server to publish existing xcube datasets.
 
 Running the server
 ==================
@@ -11,7 +11,7 @@ To run the server on default port 8080 using the demo configuration:::
 
     $ xcube serve -v -c examples/serve/demo/config.yml
 
-To run the server using a particular data cube path and styling information for a variable:::
+To run the server using a particular xcube dataset path and styling information for a variable:::
 
     $ xcube serve --styles conc_chl=(0,20,"viridis") examples/serve/demo/cube-1-250-250.zarr
 
@@ -53,7 +53,7 @@ After starting the server, check the various functions provided by xcube Web API
 xcube Viewer
 ============
 
-Data cubes published through ``xcube serve`` can be visualised using the `xcube-viewer <https://github.com/dcs4cop/xcube-viewer/>`_
+xcube datasets published through ``xcube serve`` can be visualised using the `xcube-viewer <https://github.com/dcs4cop/xcube-viewer/>`_
 web application.
 To do so, run ``xcube serve`` with the ``--show`` flag.
 

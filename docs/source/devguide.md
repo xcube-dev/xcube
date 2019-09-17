@@ -150,16 +150,15 @@ Create new module in `xcube.api` and add your functions.
 For any functions added make sure naming is in line with other API.
 Add clear doc-string to the new API. Use Sphinx RST format.
 
-Decide if your API methods requires cubes as inputs, 
+Decide if your API methods requires [xcube datasets](docs/source/cubespec.md) as inputs, 
 if so, name the primary dataset argument `cube` and add a 
 keyword parameter `cube_asserted: bool = False`. 
 Otherwise name the primary dataset argument `dataset`.
 
 Reflect the fact, that a certain API method or function operates only 
-on datasets that conform with the xcube data cube specifications by
-using `cube` in its name rather than `dataset`. For example `compute_dataset` 
-can operate on any xarray datasets, while `get_cube_values_for_points` expects a 
-data cube as input or `read_cube` ensures it will return valid data cubes only. 
+on xcube datasets (data cubes) by using `cube` in its name rather than `dataset`. For example `compute_dataset` 
+can operate on any xarray datasets, while `get_cube_values_for_points` expects an
+xcube dataset as input or `read_cube` ensures it will return valid xcube datasets only. 
 
 In the implementation, if `not cube_asserted`, 
 we must assert and verify the `cube` is a cube. 
