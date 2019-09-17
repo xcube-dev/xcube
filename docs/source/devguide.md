@@ -1,4 +1,4 @@
-# Xcube Developer Guide
+# xcube Developer Guide
 
 Version 0.1, draft
 
@@ -229,9 +229,9 @@ Make sure your change
 1. Remove issue label "in progress".
 1. Delete the development branch "developer-issue#-title".
 1. If the PR is only partly solving an issue:
-    1. Make sure the issue contains a to-do list (checkboxes) to complete the issue. 
-    1. Do not include the line "closes #<issue>" in your last commit message. 
-    1. Add "relates to issue#" in PR.  
-    1. Make sure to check the corresponding to-do items (checkboxes) *after* the PR is merged.
-    1. Remove issue label "in progress". 
-    1. Leave issue open. 
+   1. Make sure the issue contains a to-do list (checkboxes) to complete the issue.
+   1. Do not include the line "closes #<issue>" in your last commit message.
+   1. Add "relates to issue#" in PR.
+   1. Make sure to check the corresponding to-do items (checkboxes) *after* the PR is merged.
+   1. Remove issue label "in progress".
+   1. Leave issue open.

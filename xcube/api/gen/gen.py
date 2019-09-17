@@ -312,7 +312,7 @@ def _process_input(input_processor: InputProcessor,
         total_t2 = time.perf_counter()
         monitor(f'{num_steps} steps took {total_t2 - total_t1} seconds to complete')
     except RuntimeError as e:
-        monitor(f'Error: during reprojection to WGS84: {e}: skipping it...')
+        monitor(f'Error: something went wrong during processing, skipping input slice: {e}')
         traceback.print_exc()
         return False
     finally:

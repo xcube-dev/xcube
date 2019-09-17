@@ -1,9 +1,0 @@
-WKT,id,Partner,Region
-"POLYGON ((2.37 51.58,6.05 51.58,6.05 50.61,2.37 50.61,2.37 51.58))",1,VITO,Flanders
-"POLYGON ((2.0 52.3,4.0 52.3,4.0 50.3,2.0 50.3,2.0 52.3))",2,RBINS,Belgian Coastal Zone
-"POLYGON ((-15 62,10 62,10 48,-15 48,-15 62))",3,BC,North Sea
-"POLYGON ((-10 45,-1.25 45.0,-1.25 43.25,-10.0 43.25,-10 45))",4,STARLAB,Cantabrian Sea
-"POLYGON ((-2.5 47.0,0.5 47.0,0.5 44.0,-2.5 44.0,-2.5 47.0))",5,UPMC,Gironde Estuary
-"POLYGON ((-2 56,3 56,3 50,-2 50,-2 56))",7,UHULL,No name
-"POLYGON ((10 72,32 72,32 54,10 54,10 72))",81,NIVA,Norwegian Coastal Zone
-"POLYGON ((3 72,32 72,32 54,3 54,3 72))",82,NIVA,Norwegian Coastal Zone
