@@ -44,7 +44,8 @@ class DefaultProcessTest(unittest.TestCase):
             self.assertTrue('\nstep 8 of 8: creating input slice in l2c.nc...\n' in output)
             self.assertTrue('\nstep 8 of 8: appending input slice to l2c.nc...\n' in output)
 
-            # Ignoring warning Variable 'time' has datetime type and a bounds variable but time.encoding does not have units specified...
+            # Ignoring warning Variable 'time' has datetime type and a bounds variable but time.encoding
+            # does not have units specified...
             # TODO: Find out why this happens
             for w in warning.warnings:
                 self.assertTrue("has datetime type and a bounds variable but time.encoding does" in str(w.message))
