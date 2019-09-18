@@ -2,13 +2,24 @@
 Command-line Interface
 ======================
 
-The xcube command-line interface is a single executable ``xcube`` with several sub-commands comprising
+The xcube command-line interface (CLI) is a single executable ``xcube`` with several sub-commands comprising
 functions ranging from xcube dataset generation, over analysis and manipulation, to dataset publication.
 
-Most of the commands operate on inputs that must be an (:doc:`cubespec`) - a data cube in the xcube sense.
-Such inputs are consistently named ``CUBE`` and provided as command argument(s). You may pass a path into the
+Common Arguments and Options
+============================
+
+Most of the commands operate on inputs that are xcube datasets. Such inputs are consistently named
+``CUBE`` and provided as command argument(s). You may pass a path into the
 local file system or a path into some object storage bucket, e.g. in AWS S3.
-Command inputs of other type are usually called ``INPUT``.
+Command inputs of other types are consistently called ``INPUT``.
+
+Many commands also output something, i.e. are writing files. The paths or names of such outputs are
+consistently provided by the ``-o OUTPUT`` or ``--output OUTPUT`` option. As the output is an option,
+there is usually a default value for it. If multiply file formats are supported, commands usually provide
+a ``-f FORMAT`` or ``--format FORMAT`` option. If omitted, the format may be guessed from the output's name.
+
+Command Overview
+================
 
 .. toctree::
    :caption: Main command

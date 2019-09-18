@@ -17,14 +17,14 @@ xcube is an open-source Python package and toolkit that has been developed to pr
 analysis-ready form to users. We do this by carefully converting EO data sources into self-contained *data cubes*
 that can be published in the cloud.
 
-What is a Data Cube?
-====================
+Data Cube
+=========
 
 The interpretation of the term *data cube* in the EO domain usually depends
 on the current context. It may refer to a data service such as `Sentinel Hub`_, to some abstract
 API, or to a concrete set of spatial images that form a time-series.
 
-This section briefly explains the specific concept of a data cube used in the xcube project - the xcube dataset.
+This section briefly explains the specific concept of a data cube used in the xcube project - the **xcube dataset**.
 
 Data Model
 ----------
@@ -68,34 +68,55 @@ provided by `xarray`_, the memory management and processing model is provided th
 and the external format is provided by `zarr`_. xarray, dask, and zarr have increased their popularity for
 big data solutions over the last couple of years, for creating a scalable and efficient EO data solutions.
 
-The Tools
-=========
+Toolkit
+=======
 
 On top of `xarray`_, `dask`_, `zarr`_, and other popular Python data science packages,
 xcube provides various higher-level tools to generate, manipulate, and publish xcube datasets:
 
-* :doc:`cli` -access, generate, modify, and analyse xcube datasets;
+* :doc:`cli` -access, generate, modify, and analyse xcube datasets using the ``xcube`` tool;
 * :doc:`api` - access, generate, modify, and analyse xcube datasets via Python programs and notebooks;
-* :doc:`webapi` - access, generate, modify, and analyse xcube datasets via a RESTful API;
+* :doc:`webapi` - access, analyse, visualize xcube datasets via an xcube server;
 * :doc:`viewer` – publish and visualise xcube datasets using maps and time-series charts.
 
-A typical workflow:
+
+Workflows
+=========
+
+The basic use case is to generate an xcube dataset and deploy it so that your users can access it:
 
 1. generate an xcube dataset from some EO data sources
-   using the :doc:`cli/xcube_gen` tool;
-2. optimize the xcube dataset with respect to specific use cases
-   using the :doc:`cli/xcube_optimize` and :doc:`cli/xcube_prune` tools.
-3. deploy xcube datasets to some accessible location (e.g. on AWS S3).
+   using the :doc:`cli/xcube_gen` tool with a specific *input processor*;
+2. optimize the generated xcube dataset with respect to specific use cases
+   using the :doc:`cli/xcube_chunk` tool.
+3. optimize the generated xcube dataset by consolidating metadata and elimination of empty chunks
+   using :doc:`cli/xcube_optimize` and :doc:`cli/xcube_prune` tools.
+4. deploy the optimized xcube dataset to some location (e.g. on AWS S3) where users can access them.
 
-Then users can
+Then you and your users can
 
-4. access, analyse, modify, transform, visualise the data using the :doc:`api` and `xarray API`_ through
+5. access, analyse, modify, transform, visualise the data using the :doc:`api` and `xarray API`_ through
    Python programs or `JupyterLab`_.
 
-Another way to let users interact with the data is to
+Another way to provide the data to users is via the *xcube server*, that provides a
+RESTful API and a `WMTS <https://en.wikipedia.org/wiki/Web_Map_Tile_Service>`_. The latter is used
+to visualise spatial subsets of xcube datasets efficiently at any zoom level.
+To provide optimal visualisation and data extraction performance through the xcube server,
+xcube datasets may be prepared beforehand. Steps 6, 7, 8 are optional.
 
-5. publish the xcube datasets through a web API
-   using the :doc:`cli/xcube_serve` tool;
-6. visualise the xcube datasets by
-   using :doc:`viewer`.
+6. verify a dataset to be published conforms with the :doc:`cubespec`
+   using the :doc:`cli/xcube_verify` tool.
+7. adjust your dataset chunking to be optimal for generating spatial image tiles and generate
+   a multi-resolution image pyramid
+   using the :doc:`cli/xcube_chunk` and :doc:`cli/xcube_level` tools.
+8. create a dataset variant optimal for time series-extraction again
+   using the :doc:`cli/xcube_chunk` tool.
+9. configure xcube datasets and publish them through the xcube server
+   using the :doc:`cli/xcube_serve` tool.
+
+You may then use a WMTS-compatible client to visualise the datasets or develop your own client that
+will make use of the xcube's REST API.
+
+The easiest way to visualize your data is using the xcube :doc:`viewer`, a single-page web application that
+can be configured to work with some xcube server URL.
 

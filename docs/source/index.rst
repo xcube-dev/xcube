@@ -9,7 +9,7 @@ xcube - An xarray-based EO data cube toolkit
 xcube has been developed to generate, manipulate, analyse, and publish data cubes from EO data.
 
 .. toctree::
-   :caption: Getting started
+   :caption: Getting Started
    :maxdepth: 1
 
    overview
@@ -17,16 +17,16 @@ xcube has been developed to generate, manipulate, analyse, and publish data cube
    installation
 
 .. toctree::
-   :caption: Components
+   :caption: User Guide
    :maxdepth: 1
 
    cli
-   viewer
-   webapi
    api
+   webapi
+   viewer
 
 .. toctree::
-   :caption: Other resources
+   :caption: Other Resources
    :maxdepth: 1
 
    cubespec
