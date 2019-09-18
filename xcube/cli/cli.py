@@ -25,10 +25,10 @@ from xcube.version import version
               help=f'Output path. Defaults to {DEFAULT_OUTPUT_PATH!r}')
 @click.option('--format', '-f', metavar='FORMAT', type=click.Choice(['zarr', 'netcdf']),
               help="Format of the output. If not given, guessed from OUTPUT.")
-@click.option('--params', metavar='PARAMS',
+@click.option('--params', '-p', metavar='PARAMS',
               help="Parameters specific for the output format."
                    " Comma-separated list of <key>=<value> pairs.")
-@click.option('--chunks', metavar='CHUNKS', nargs=1, default=None,
+@click.option('--chunks','-C', metavar='CHUNKS', nargs=1, default=None,
               help='Chunk sizes for each dimension.'
                    ' Comma-separated list of <dim>=<size> pairs,'
                    ' e.g. "time=1,lat=270,lon=270"')
@@ -74,7 +74,7 @@ DEFAULT_TILE_SIZE = 512
 @click.argument('input')
 @click.option('--output', '-o', metavar='OUTPUT',
               help='Output path. If omitted, "INPUT.levels" will be used.')
-@click.option('--link', is_flag=True, flag_value=True,
+@click.option('--link', '-L', is_flag=True, flag_value=True,
               help='Link the INPUT instead of converting it to a level zero dataset. '
                    'Use with care, as the INPUT\'s internal spatial chunk sizes may be inappropriate '
                    'for imaging purposes.')
@@ -145,7 +145,7 @@ def level(input, output, link, tile_size, num_levels_max):
 @click.argument('input')
 @click.option('--variable', '--var', metavar='VARIABLE', multiple=True,
               help="Name of a variable (multiple allowed).")
-@click.option('--encoding', '-e', is_flag=True, flag_value=True,
+@click.option('--encoding', '-E', is_flag=True, flag_value=True,
               help="Dump also variable encoding information.")
 def dump(input, variable, encoding):
     """
@@ -163,7 +163,7 @@ def dump(input, variable, encoding):
 @click.option('--variable', '--var', metavar='VARIABLE',
               default='data',
               help='Name of the new variable that includes all variables. Defaults to "data".')
-@click.option('--dim_name', '-d', metavar='DIM-NAME',
+@click.option('--dim_name', '-D', metavar='DIM-NAME',
               default='var',
               help='Name of the new dimension into variables. Defaults to "var".')
 @click.option('--output', '-o', metavar='OUTPUT',

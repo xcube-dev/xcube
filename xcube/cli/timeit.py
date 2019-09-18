@@ -26,7 +26,7 @@ __author__ = "Norman Fomferra (Brockmann Consult GmbH)"
 
 @click.command(name='timeit', hidden=True)
 @click.argument('config')
-@click.option('--repeats', metavar='REPEATS', type=int, default=1,
+@click.option('--repeats', '-R', metavar='REPEATS', type=int, default=1,
               help="Number of repetitions")
 def timeit(config: str, repeats: int):
     """

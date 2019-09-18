@@ -55,8 +55,8 @@ $ xcube serve --help
       https://app.swaggerhub.com/apis/bcdev/xcube-server.
     
     Options:
-      -a, --address ADDRESS  Service address. Defaults to 'localhost'.
-      --port PORT            Port number where the service will listen on.
+      -A, --address ADDRESS  Service address. Defaults to 'localhost'.
+      -P --port PORT            Port number where the service will listen on.
                              Defaults to 8080.
       --prefix PREFIX        Service URL prefix. May contain template patterns
                              such as "${version}" or "${name}". For example
@@ -77,7 +77,7 @@ $ xcube serve --help
       --tilemode MODE        Tile computation mode. This is an internal option
                              used to switch between different tile computation
                              implementations. Defaults to 0.
-      --show                 Run viewer app. Requires setting the environment
+      -s, --show                 Run viewer app. Requires setting the environment
                              variable XCUBE_VIEWER_PATH to a valid xcube-viewer
                              deployment or build directory. Refer to
                              https://github.com/dcs4cop/xcube-viewer for more

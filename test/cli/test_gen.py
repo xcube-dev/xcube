@@ -16,7 +16,7 @@ class GenCliTest(CliTest):
         self.assertEqual(0, result.exit_code)
 
     def test_default_proc_is_valid(self):
-        result = self.invoke_cli(['gen', '-p', 'default', 'input.nc'])
+        result = self.invoke_cli(['gen', '-P', 'default', 'input.nc'])
         self.assertEqual(0, result.exit_code)
 
     def test_main_with_illegal_proc(self):

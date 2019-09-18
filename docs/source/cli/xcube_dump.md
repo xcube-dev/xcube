@@ -14,7 +14,7 @@ $ xcube dump --help
     Options:
       --variable, --var VARIABLE
                                       Name of a variable (multiple allowed).
-      -e, --encoding                  Dump also variable encoding information.
+      -E, --encoding                  Dump also variable encoding information.
       --help                          Show this message and exit.
 
 

@@ -22,10 +22,10 @@ $ xcube extract --help
       -o, --output OUTPUT    Output path. If omitted, output is written to stdout.
       -f, --format FORMAT    Output format. Currently, only 'csv' is supported.
       -C, --coords           Include cube cell coordinates in output.
-      -b, --bounds           Include cube cell coordinate boundaries (if any) in
+      -B, --bounds           Include cube cell coordinate boundaries (if any) in
                              output.
-      --indexes              Include cube cell indexes in output.
-      --refs                 Include point values as reference in output.
+      -I, --indexes              Include cube cell indexes in output.
+      -R, --refs                 Include point values as reference in output.
       --help                 Show this message and exit.
 
 

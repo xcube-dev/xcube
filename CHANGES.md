@@ -5,19 +5,22 @@
   The following CLI parameter have changed and their abbreviation is not enabled anymore : 
 
     - `xcube gen -v` is now only `xcube gen --vars` or `xcube gen --variables` 
-    - `xcube chunk -p` is now only  `xcube chunk --params`
-    - `xcube chunk -c`  is now only  `xcube chunk --chunks`
-    - `xcube level -l` is now `xcube level --link`
+    - `xcube gen -p` is now  `xcube gen -P` 
+    - `xcube gen -i` is now  `xcube gen -I` 
+    - `xcube gen -r` is now  `xcube gen -R`
+    - `xcube gen -s` is now  `xcube gen -S` 
+    - `xcube chunk -c`  is now  `xcube chunk -C`
+    - `xcube level -l` is now `xcube level -L`
     - `xcube dump -v` is now `xcube dump --variable` or `xcube dump --var`
+    - `xcube dump -e` is now `xcube dump -E` 
     - `xcube vars2dim -v` is now `xcube vars2dim --variable` or `xcube vars2dim --var`
     - `xcube vars2dim --var_name` is now `xcube vars2dim --variable` or `xcube vars2dim --var`
-    - `xcube extract -B` is now `xcube extract -b`
-    - `xcube extract -R` is now `xcube extract --refs`
+    - `xcube vars2dim -d` is now `xcube vars2dim -D` 
     - `xcube grid res -d` is now `xcube grid res -D`
     - `xcube grid res -c` is now `xcube grid res --cov` or `xcube grid res --coverage` 
     - `xcube grid res -n` is now `xcube grid res -N` or `xcube grid res --num_results` 
-    - `xcube serve -p` is now `xcube serve --port` 
-    - `xcube serve -s` is now `xcube serve --show` 
+    - `xcube serve -p` is now `xcube serve -P` 
+    - `xcube serve -a` is now `xcube serve -A` 
     
 * Reorganisation of the Documentation and Examples Section (partly addressing #106)
 

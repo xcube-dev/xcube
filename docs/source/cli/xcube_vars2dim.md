@@ -16,7 +16,7 @@ $ xcube vars2dim --help
       --variable, --var VARIABLE
                                       Name of the new variable that includes all
                                       variables. Defaults to "data".
-      -d, --dim_name DIM-NAME         Name of the new dimension into variables.
+      -D, --dim_name DIM-NAME         Name of the new dimension into variables.
                                       Defaults to "var".
       -o, --output OUTPUT             Output path. If omitted,
                                       'INPUT-vars2dim.INPUT-FORMAT' will be

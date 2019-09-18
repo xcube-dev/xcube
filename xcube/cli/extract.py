@@ -13,11 +13,11 @@ import click
               help="Output format. Currently, only 'csv' is supported.", default='csv')
 @click.option('--coords', '-C', is_flag=True,
               help="Include cube cell coordinates in output.")
-@click.option('--bounds', '-b', is_flag=True,
+@click.option('--bounds', '-B', is_flag=True,
               help="Include cube cell coordinate boundaries (if any) in output.")
-@click.option('--indexes', is_flag=True,
+@click.option('--indexes', '-I', is_flag=True,
               help="Include cube cell indexes in output.")
-@click.option('--refs', is_flag=True,
+@click.option('--refs', '-R', is_flag=True,
               help="Include point values as reference in output.")
 def extract(cube,
             points,

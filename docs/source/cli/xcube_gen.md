@@ -16,7 +16,7 @@ $ xcube gen --help
       input paths to be used.
     
     Options:
-      -p, --proc INPUT-PROCESSOR      Input processor name. The available input
+      -P, --proc INPUT-PROCESSOR      Input processor name. The available input
                                       processor names and additional information
                                       about input processors can be accessed by
                                       calling xcube gen --info . Defaults to
@@ -34,9 +34,9 @@ $ xcube gen --help
                                       formats can be accessed by calling xcube gen
                                       --info. If omitted, the format will be
                                       guessed from the given output path.
-      -s, --size SIZE                 Output size in pixels using format
+      -S, --size SIZE                 Output size in pixels using format
                                       "<width>,<height>".
-      -r, --region REGION             Output region using format "<lon-min>,<lat-
+      -R, --region REGION             Output region using format "<lon-min>,<lat-
                                       min>,<lon-max>,<lat-max>"
       --variables, --vars VARIABLES
                                       Variables to be included in output. Comma-
@@ -59,7 +59,7 @@ $ xcube gen --help
                                       creating the xcube dataset. If --sort parameter
                                       is not passed, order of input list will be
                                       kept.
-      -i, --info                      Displays additional information about format
+      -I, --info                      Displays additional information about format
                                       options or about input processors.
       --dry_run                       Just read and process inputs, but don't
                                       produce any outputs.
@@ -89,7 +89,7 @@ Below is the `xcube gen --info` call with 5 input processors installed via plugi
 
 Example:
 
-    $ xcube gen -s 2000,1000 -r 0,50,5,52.5 --vars conc_chl,conc_tsm,kd489,c2rcc_flags,quality_flags -o hiroc-cube.zarr -p default D:\OneDrive\BC\EOData\HIGHROC\2017\01\*.nc
+    $ xcube gen -S 2000,1000 -R 0,50,5,52.5 --vars conc_chl,conc_tsm,kd489,c2rcc_flags,quality_flags -o hiroc-cube.zarr -P default D:\OneDrive\BC\EOData\HIGHROC\2017\01\*.nc
 
 
 Some input processors have been developed for specific EO data sources 

@@ -16,7 +16,7 @@ $ xcube level --help
     Options:
       -o, --output OUTPUT             Output path. If omitted, "INPUT.levels"
                                       will be used.
-      --link                          Link the INPUT instead of converting it to a
+      -L, --link                          Link the INPUT instead of converting it to a
                                       level zero dataset. Use with care, as the
                                       INPUT's internal spatial chunk sizes may be
                                       inappropriate for imaging purposes.

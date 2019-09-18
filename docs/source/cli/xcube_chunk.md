@@ -15,9 +15,9 @@ $ xcube chunk --help
       -o, --output OUTPUT    Output path. Defaults to 'out.zarr'
       -f, --format FORMAT    Format of the output. If not given, guessed from
                              OUTPUT.
-      --params PARAMS        Parameters specific for the output format. Comma-
+      -p, --params PARAMS    Parameters specific for the output format. Comma-
                              separated list of <key>=<value> pairs.
-      --chunks CHUNKS        Chunk sizes for each dimension. Comma-separated list
+      -C, --chunks CHUNKS    Chunk sizes for each dimension. Comma-separated list
                              of <dim>=<size> pairs, e.g. "time=1,lat=270,lon=270"
       --help                 Show this message and exit.
 

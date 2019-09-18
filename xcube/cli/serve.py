@@ -32,9 +32,9 @@ VIEWER_ENV_VAR = 'XCUBE_VIEWER_PATH'
 
 @click.command(name='serve')
 @click.argument('cube', nargs=-1)
-@click.option('--address', '-a', metavar='ADDRESS', default=DEFAULT_ADDRESS,
+@click.option('--address', '-A', metavar='ADDRESS', default=DEFAULT_ADDRESS,
               help=f'Service address. Defaults to {DEFAULT_ADDRESS!r}.')
-@click.option('--port', metavar='PORT', default=DEFAULT_PORT, type=int,
+@click.option('--port', '-P', metavar='PORT', default=DEFAULT_PORT, type=int,
               help=f'Port number where the service will listen on. Defaults to {DEFAULT_PORT}.')
 @click.option('--prefix', metavar='PREFIX',
               help='Service URL prefix. May contain template patterns such as "${version}" or "${name}". '
@@ -63,7 +63,7 @@ VIEWER_ENV_VAR = 'XCUBE_VIEWER_PATH'
               help='Tile computation mode. '
                    'This is an internal option used to switch between different tile computation implementations. '
               f'Defaults to {DEFAULT_TILE_COMP_MODE!r}.')
-@click.option('--show', is_flag=True,
+@click.option('--show','-s',  is_flag=True,
               help=f"Run viewer app. Requires setting the environment variable {VIEWER_ENV_VAR} "
               f"to a valid xcube-viewer deployment or build directory. "
               f"Refer to https://github.com/dcs4cop/xcube-viewer for more information.")
