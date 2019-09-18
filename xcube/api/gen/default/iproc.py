@@ -180,7 +180,8 @@ def _normalize_lon_360(dataset: xr.Dataset) -> xr.Dataset:
     if not np.any(lon_values[lon_size_05:] > 180.):
         return dataset
 
-    dataset = dataset.roll(lon=lon_size_05)
+    # roll_coords will be set to False by default in the future
+    dataset = dataset.roll(lon=lon_size_05, roll_coords=True)
     dataset = dataset.assign_coords(lon=(((dataset.lon + 180) % 360) - 180))
 
     return dataset

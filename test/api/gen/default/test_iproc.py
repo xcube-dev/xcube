@@ -74,8 +74,9 @@ def create_default_dataset(time_mode: str = "time_bnds"):
     res = 180. / h
     lon = np.linspace(-180 + 0.5 * res, 180 - 0.5 * res, w)
     lat = np.linspace(-90 + 0.5 * res, 90 - 0.5 * res, h)
-    time = np.array([pd.to_datetime("20100301T120000Z")])
-    time_bnds = np.array([[pd.to_datetime("20100301T000000Z"), pd.to_datetime("20100301T235959Z")]])
+    time = np.array([pd.to_datetime("20100301T120000")], dtype="datetime64[ns]")
+    time_bnds = np.array([[pd.to_datetime("20100301T000000"), pd.to_datetime("20100301T235959")]],
+                         dtype="datetime64[ns]")
 
     coords = dict(
         lon=(("lon",), lon, dict(long_name="longitude", units="degrees_east")),

@@ -190,7 +190,7 @@ class FlattenDictTest(unittest.TestCase):
 
     def test_from_yaml(self):
         stream = StringIO(TEST_JSON)
-        d = yaml.load(stream)
+        d = yaml.full_load(stream)
         d = flatten_dict(d['output_metadata'])
         self.assertEqual(17, len(d))
         self.assertEqual('DCS4COP Sentinel-3 OLCI L2C Data Cube',
@@ -352,7 +352,7 @@ def _create_temp_yaml(temp_path_for_yaml, config_file_name, config_yaml):
             print("Successfully created the directory %s " % temp_path_for_yaml)
             yaml_path = os.path.join(temp_path_for_yaml, config_file_name)
             with open(yaml_path, 'w') as outfile:
-                yaml.dump(yaml.load(config_yaml), outfile)
+                yaml.dump(yaml.full_load(config_yaml), outfile)
             return yaml_path
 
     else:
