@@ -2,6 +2,10 @@
 
 * Reorganisation of the Documentation and Examples Section (partly adressing #106)
 
+### New
+
+* Added first version of the [xcube documentation](https://xcube.readthedocs.io/) generated from `./docs` folder.
+
 ### Enhancements
 
 * Added option `inclStDev` and `inclCount` query parameters to `ts/{dataset}/{variable}/geometry` and derivates.
