@@ -311,24 +311,20 @@ class HandlersTest(AsyncHTTPTestCase):
         response = self.fetch(self.prefix + '/ts/demo/conc_chl/point?lon=2.1&lat=51.1')
         self.assertResponseOK(response)
 
-    # noinspection PyUnresolvedReferences
     def test_fetch_time_series_geometry(self):
-        with self.assertWarns(RuntimeWarning) as warning:
-            response = self.fetch(self.prefix + '/ts/demo/conc_chl/geometry', method="POST",
-                                  body='')
-            self.assertBadRequestResponse(response, 'Invalid or missing GeoJSON geometry in request body')
-            response = self.fetch(self.prefix + '/ts/demo/conc_chl/geometry', method="POST",
-                                  body='{"type":"Point"}')
-            self.assertBadRequestResponse(response, 'Invalid GeoJSON geometry')
-            response = self.fetch(self.prefix + '/ts/demo/conc_chl/geometry', method="POST",
-                                  body='{"type": "Point", "coordinates": [1, 51]}')
-            self.assertResponseOK(response)
-            response = self.fetch(self.prefix + '/ts/demo/conc_chl/geometry', method="POST",
-                                  body='{"type":"Polygon", "coordinates": [[[1, 51], [2, 51], [2, 52], [1, 51]]]}')
+        response = self.fetch(self.prefix + '/ts/demo/conc_chl/geometry', method="POST",
+                              body='')
+        self.assertBadRequestResponse(response, 'Invalid or missing GeoJSON geometry in request body')
+        response = self.fetch(self.prefix + '/ts/demo/conc_chl/geometry', method="POST",
+                              body='{"type":"Point"}')
+        self.assertBadRequestResponse(response, 'Invalid GeoJSON geometry')
+        response = self.fetch(self.prefix + '/ts/demo/conc_chl/geometry', method="POST",
+                              body='{"type": "Point", "coordinates": [1, 51]}')
+        self.assertResponseOK(response)
+        response = self.fetch(self.prefix + '/ts/demo/conc_chl/geometry', method="POST",
+                              body='{"type":"Polygon", "coordinates": [[[1, 51], [2, 51], [2, 52], [1, 51]]]}')
 
-            for w in warning.warnings:
-                self.assertEqual("invalid value encountered in true_divide", str(w.message))
-            self.assertResponseOK(response)
+        self.assertResponseOK(response)
 
     def test_fetch_time_series_geometries(self):
         response = self.fetch(self.prefix + '/ts/demo/conc_chl/geometries', method="POST",

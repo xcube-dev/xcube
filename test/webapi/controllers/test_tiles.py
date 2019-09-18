@@ -84,28 +84,22 @@ class TilesControllerTest(unittest.TestCase):
         self.assertEqual(400, cm.exception.status_code)
         self.assertEqual('Unknown tile client "ol2.json"', cm.exception.reason)
 
-    # noinspection PyUnresolvedReferences
     def test_get_legend(self):
-        with self.assertWarns(Warning) as warning:
-            ctx = new_test_service_context()
-            image = get_legend(ctx, 'demo', 'conc_chl', RequestParamsMock())
-            self.assertEqual("<class 'bytes'>", str(type(image)))
+        ctx = new_test_service_context()
+        image = get_legend(ctx, 'demo', 'conc_chl', RequestParamsMock())
+        self.assertEqual("<class 'bytes'>", str(type(image)))
 
-            with self.assertRaises(ServiceResourceNotFoundError) as cm:
-                get_legend(ctx, 'demo', 'conc_chl', RequestParamsMock(cbar='sun-shine'))
-            self.assertEqual('color bar sun-shine not found', cm.exception.reason)
+        with self.assertRaises(ServiceResourceNotFoundError) as cm:
+            get_legend(ctx, 'demo', 'conc_chl', RequestParamsMock(cbar='sun-shine'))
+        self.assertEqual('color bar sun-shine not found', cm.exception.reason)
 
-            with self.assertRaises(ServiceBadRequestError) as cm:
-                get_legend(ctx, 'demo', 'conc_chl', RequestParamsMock(vmin='sun-shine'))
-            self.assertEqual("""Parameter "vmin" must be a number, but was 'sun-shine'""", cm.exception.reason)
+        with self.assertRaises(ServiceBadRequestError) as cm:
+            get_legend(ctx, 'demo', 'conc_chl', RequestParamsMock(vmin='sun-shine'))
+        self.assertEqual("""Parameter "vmin" must be a number, but was 'sun-shine'""", cm.exception.reason)
 
-            with self.assertRaises(ServiceBadRequestError) as cm:
-                get_legend(ctx, 'demo', 'conc_chl', RequestParamsMock(width='sun-shine'))
-            self.assertEqual("""Parameter "width" must be an integer, but was 'sun-shine'""", cm.exception.reason)
-
-            # Accepting this warning for the moment.Recipe to circumvent does not work: fig.set_tight_layout(True)
-            # instead of fig.tight_layout()
-            self.assertEqual("tight_layout : falling back to Agg renderer", str(warning.warnings[0].message))
+        with self.assertRaises(ServiceBadRequestError) as cm:
+            get_legend(ctx, 'demo', 'conc_chl', RequestParamsMock(width='sun-shine'))
+        self.assertEqual("""Parameter "width" must be an integer, but was 'sun-shine'""", cm.exception.reason)
 
     def test_get_ne2_tile_grid(self):
         ctx = ServiceContext()

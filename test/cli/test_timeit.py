@@ -3,7 +3,6 @@ import os
 from test.cli.helpers import CliDataTest
 
 
-# noinspection PyUnresolvedReferences
 class TimeitCliTest(CliDataTest):
 
     def test_help_option(self):
@@ -21,18 +20,12 @@ class TimeitCliTest(CliDataTest):
         self.assertTrue('\n1;test.nc;' in result.stdout, msg=msg)
 
     def test_simple_with_repetitions(self):
-        with self.assertWarns(RuntimeWarning) as warning:
-            config_path = os.path.join(os.path.dirname(__file__), 'timeit-configs', 'simple.yml')
-            result = self.invoke_cli(['timeit', '--repeats', 3, config_path])
-            msg = f'actual output:\n{result.stdout}'
+        config_path = os.path.join(os.path.dirname(__file__), 'timeit-configs', 'simple.yml')
+        result = self.invoke_cli(['timeit', '--repeats', 3, config_path])
+        msg = f'actual output:\n{result.stdout}'
 
-            allowed = ("Mean of empty slice", "All-NaN slice encountered", "Degrees of freedom <= 0 for slice.")
-            for w in warning.warnings:
-                can_ignore = str(w.message) in allowed
-                self.assertTrue(can_ignore)
-
-            self.assertTrue('# command template: xcube dump ${input}\n' in result.stdout, msg=msg)
-            self.assertTrue('\n# repetition count: 3\n' in result.stdout, msg=msg)
-            self.assertTrue('\nid;input;time-mean;time-median;time-stdev;time-min;time-max\n' in result.stdout, msg=msg)
-            self.assertTrue('\n0;test.zarr;' in result.stdout, msg=msg)
-            self.assertTrue('\n1;test.nc;' in result.stdout, msg=msg)
+        self.assertTrue('# command template: xcube dump ${input}\n' in result.stdout, msg=msg)
+        self.assertTrue('\n# repetition count: 3\n' in result.stdout, msg=msg)
+        self.assertTrue('\nid;input;time-mean;time-median;time-stdev;time-min;time-max\n' in result.stdout, msg=msg)
+        self.assertTrue('\n0;test.zarr;' in result.stdout, msg=msg)
+        self.assertTrue('\n1;test.nc;' in result.stdout, msg=msg)

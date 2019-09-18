@@ -27,28 +27,19 @@ class DefaultProcessTest(unittest.TestCase):
     def tearDown(self):
         clean_up()
 
-    # noinspection PyMethodMayBeStatic
     def test_process_inputs_single(self):
         status, output = gen_cube_wrapper(
             [get_inputdata_path('20170101-IFR-L4_GHRSST-SSTfnd-ODYSSEA-NWE_002-v2.0-fv1.0.nc')], 'l2c-single.nc')
         self.assertEqual(True, status)
         self.assertTrue('\nstep 8 of 8: creating input slice in l2c-single.nc...\n' in output)
 
-    # noinspection PyUnresolvedReferences
     def test_process_inputs_append_multiple_nc(self):
-        with self.assertWarns(UserWarning) as warning:
-            status, output = gen_cube_wrapper(
-                [get_inputdata_path('201701??-IFR-L4_GHRSST-SSTfnd-ODYSSEA-NWE_002-v2.0-fv1.0.nc')], 'l2c.nc',
-                sort_mode=True)
-            self.assertEqual(True, status)
-            self.assertTrue('\nstep 8 of 8: creating input slice in l2c.nc...\n' in output)
-            self.assertTrue('\nstep 8 of 8: appending input slice to l2c.nc...\n' in output)
-
-            # Ignoring warning Variable 'time' has datetime type and a bounds variable but time.encoding
-            # does not have units specified...
-            # TODO: Find out why this happens
-            for w in warning.warnings:
-                self.assertTrue("has datetime type and a bounds variable but time.encoding does" in str(w.message))
+        status, output = gen_cube_wrapper(
+            [get_inputdata_path('201701??-IFR-L4_GHRSST-SSTfnd-ODYSSEA-NWE_002-v2.0-fv1.0.nc')], 'l2c.nc',
+            sort_mode=True)
+        self.assertEqual(True, status)
+        self.assertTrue('\nstep 8 of 8: creating input slice in l2c.nc...\n' in output)
+        self.assertTrue('\nstep 8 of 8: appending input slice to l2c.nc...\n' in output)
 
     def test_process_inputs_append_multiple_zarr(self):
         status, output = gen_cube_wrapper(
