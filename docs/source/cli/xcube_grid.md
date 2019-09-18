@@ -2,7 +2,7 @@
 
 Warning: this tool will likely change in the near future.
 
-Find spatial data cube resolutions and adjust bounding boxes.
+Find spatial xcube dataset resolutions and adjust bounding boxes.
 
 ```bash
 $ xcube grid --help
@@ -10,7 +10,7 @@ $ xcube grid --help
 
     Usage: xcube grid [OPTIONS] COMMAND [ARGS]...
     
-      Find spatial data cube resolutions and adjust bounding boxes.
+      Find spatial xcube dataset resolutions and adjust bounding boxes.
     
       We find suitable resolutions with respect to a possibly regional fixed
       Earth grid and adjust regional spatial bounding boxes to that grid. We
@@ -73,7 +73,7 @@ We want to see if the resolution pyramid also supports a resolution close to 10m
 
 This indicates we have a resolution of 9.1m at level 12.
 
-Lets assume we have data cube region with longitude from 0 to 5 degrees
+Lets assume we have xcube dataset region with longitude from 0 to 5 degrees
 and latitudes from 50 to 52.5 degrees. What is the adjusted bounding box 
 on a fixed Earth grid with the inverse resolution 384?
 

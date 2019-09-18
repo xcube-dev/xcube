@@ -41,7 +41,7 @@ def verify(cube):
     * has any data variables and that they are valid, e.g. min. 3-D, all have
       same dimensions, have at least dimensions "time", "lat", "lon".
 
-    If INPUT is a valid data cube, the tool returns exit code 0.
+    If INPUT is a valid xcube dataset, the tool returns exit code 0.
     Otherwise a violation report is written to stdout and the tool returns exit code 3.
     """
     return _verify(input_path=cube, monitor=print)

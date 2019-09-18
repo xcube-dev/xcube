@@ -377,7 +377,7 @@ def _fetch_coverage_from_option(coverage_str: str) -> fractions.Fraction:
 @click.group()
 def grid():
     """
-    Find spatial data cube resolutions and adjust bounding boxes.
+    Find spatial xcube dataset resolutions and adjust bounding boxes.
 
     We find suitable resolutions with respect to a possibly regional fixed Earth grid and adjust regional spatial
     bounding boxes to that grid. We also try to select the resolutions such

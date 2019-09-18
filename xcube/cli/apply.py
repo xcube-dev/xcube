@@ -28,21 +28,21 @@ __author__ = "Norman Fomferra (Brockmann Consult GmbH)"
 @click.command(name='apply', hidden=True)
 @click.argument('script')
 @click.argument('cube', nargs=-1)
-@click.option('--output', '-o', metavar='<OUTPUT>', default=DEFAULT_OUTPUT_PATH,
+@click.option('--output', '-o', metavar='OUTPUT', default=DEFAULT_OUTPUT_PATH,
               help=f'Output path. Defaults to {DEFAULT_OUTPUT_PATH!r}')
-@click.option('--params', metavar='<PARAMS>',
+@click.option('--params', metavar='PARAMS',
               help="Keyword arguments passed to apply() and init() functions in <script>.")
-@click.option('--variables', '--vars', '-v', metavar='<VARIABLES>',
+@click.option('--variables', '--vars', metavar='VARIABLES',
               help="Comma-separated list of variable names.")
-@click.option('--dask', metavar='<DASK>',
+@click.option('--dask', metavar='DASK',
               default='forbidden',
               type=click.Choice(['forbidden', 'allowed', 'parallelized']),
               help="Mode of operation for the Dask library.")
-@click.option('--format', '-f', metavar='<FORMAT>',
+@click.option('--format', '-f', metavar='FORMAT',
               default='zarr',
               type=click.Choice(['zarr', 'nc']),
               help="Output format.")
-@click.option('--dtype', metavar='<DTYPES>',
+@click.option('--dtype', metavar='DTYPES',
               default='float64',
               type=click.Choice(["uint8", "int8", "uint16", "int16", "uint32", "int32", "float32", "float64"]),
               help="Output data type.")
@@ -60,7 +60,7 @@ def apply(script: str,
     N is the number of variables from all data cubes.
 
     Uses the Python program SCRIPT to transform data cubes
-    given by CUBEs into a new data cube given by <output>.
+    given by CUBEs into a new xcube dataset given by OUTPUT.
 
     The <script> must define a function ``apply(*variables, **params)`` where variables
     are numpy arrays (chunks) in the order given by VARIABLES or given by the variables returned by
@@ -102,7 +102,7 @@ def apply(script: str,
     from xcube.util.cliutil import parse_cli_kwargs
     from xcube.util.dsio import guess_dataset_format, find_dataset_io
 
-    kwargs = parse_cli_kwargs(params, "<PARAMS>")
+    kwargs = parse_cli_kwargs(params, "PARAMS")
     input_cube_0 = None
     input_cubes = []
     for input_path in input_paths:

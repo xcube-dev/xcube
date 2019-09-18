@@ -82,7 +82,7 @@ $ xcube serve --help
                              deployment or build directory. Refer to
                              https://github.com/dcs4cop/xcube-viewer for more
                              information.
-      --verbose              Delegate logging to the console (stderr).
+      -v, --verbose          Delegate logging to the console (stderr).
       --traceperf            Print performance diagnostics (stdout).
       --help                 Show this message and exit.
 

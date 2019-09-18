@@ -27,7 +27,7 @@ DEFAULT_OUTPUT_PATH = '{input}-optimized.zarr'
 # noinspection PyShadowingBuiltins
 @click.command(name='optimize')
 @click.argument('CUBE')
-@click.option('--output', '-o', metavar='<OUTPUT>',
+@click.option('--output', '-o', metavar='OUTPUT',
               help=f'Output path. The placeholder "{input}" will be replaced by the input\'s filename '
                    f'without extension (such as ".zarr"). Defaults to "{DEFAULT_OUTPUT_PATH}".',
               default=DEFAULT_OUTPUT_PATH)
@@ -43,9 +43,9 @@ def optimize(cube,
              in_place,
              unchunk_coords):
     """
-    Optimize data cube for faster access.
+    Optimize xcube dataset for faster access.
 
-    Reduces the number of metadata and coordinate data files in data cube given by CUBE.
+    Reduces the number of metadata and coordinate data files in xcube dataset given by CUBE.
     Consolidated cubes open much faster especially from remote locations, e.g. in object storage,
     because obviously much less HTTP requests are required to fetch initial cube meta
     information. That is, it merges all metadata files into a single top-level JSON file ".zmetadata".

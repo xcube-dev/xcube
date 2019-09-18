@@ -67,7 +67,7 @@ VIEWER_ENV_VAR = 'XCUBE_VIEWER_PATH'
               help=f"Run viewer app. Requires setting the environment variable {VIEWER_ENV_VAR} "
               f"to a valid xcube-viewer deployment or build directory. "
               f"Refer to https://github.com/dcs4cop/xcube-viewer for more information.")
-@click.option('--verbose', is_flag=True,
+@click.option('--verbose', '-v', is_flag=True,
               help="Delegate logging to the console (stderr).")
 @click.option('--traceperf', is_flag=True,
               help="Print performance diagnostics (stdout).")

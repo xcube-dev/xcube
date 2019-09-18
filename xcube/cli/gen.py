@@ -30,26 +30,26 @@ resampling_methods = sorted(RESAMPLING_METHOD_NAMES)
 # noinspection PyShadowingBuiltins
 @click.command(name='gen', context_settings={"ignore_unknown_options": True})
 @click.argument('input', nargs=-1)
-@click.option('--proc', '-p', metavar='<INPUT-PROCESSOR>', default='default',
+@click.option('--proc', '-p', metavar='INPUT-PROCESSOR', default='default',
               help=f'Input processor name. '
                    f'The available input processor names and additional information about input processors '
                    'can be accessed by calling xcube gen --info . Defaults to "default", an input processor '
                    'that can deal with simple datasets whose variables have dimensions ("lat", "lon") and '
                    'conform with the CF conventions.')
-@click.option('--config', '-c', metavar='<CONFIG>', multiple=True,
-              help='Data cube configuration file in YAML format. More than one config input file is allowed.'
+@click.option('--config', '-c', metavar='CONFIG', multiple=True,
+              help='xcube dataset configuration file in YAML format. More than one config input file is allowed.'
                    'When passing several config files, they are merged considering the order passed via command line.')
-@click.option('--output', '-o', metavar='<OUTPUT>', default=DEFAULT_OUTPUT_PATH,
+@click.option('--output', '-o', metavar='OUTPUT', default=DEFAULT_OUTPUT_PATH,
               help=f'Output path. Defaults to {DEFAULT_OUTPUT_PATH!r}')
-@click.option('--format', '-f', metavar='<FORMAT>',
+@click.option('--format', '-f', metavar='FORMAT',
               help=f'Output format. '
                    'Information about output formats can be accessed by calling '
                    'xcube gen --info. If omitted, the format will be guessed from the given output path.')
-@click.option('--size', '-s', metavar='<SIZE>',
+@click.option('--size', '-s', metavar='SIZE',
               help='Output size in pixels using format "<width>,<height>".')
-@click.option('--region', '-r', metavar='<REGION>',
+@click.option('--region', '-r', metavar='REGION',
               help='Output region using format "<lon-min>,<lat-min>,<lon-max>,<lat-max>"')
-@click.option('--variables', '--vars', '-v', metavar='<VARIABLES>',
+@click.option('--variables', '--vars', metavar='VARIABLES',
               help='Variables to be included in output. '
                    'Comma-separated list of names which may contain wildcard characters "*" and "?".')
 @click.option('--resampling', type=click.Choice(resampling_methods),
@@ -62,7 +62,7 @@ resampling_methods = sorted(RESAMPLING_METHOD_NAMES)
 @click.option('--prof', is_flag=True,
               help='Collect profiling information and dump results after processing.')
 @click.option('--sort', is_flag=True,
-              help='The input file list will be sorted before creating the data cube. '
+              help='The input file list will be sorted before creating the xcube dataset. '
                    'If --sort parameter is not passed, order of input list will be kept.')
 @click.option('--info', '-i', is_flag=True,
               help='Displays additional information about format options or about input processors.')
@@ -83,7 +83,7 @@ def gen(input: str,
         info: bool,
         sort: bool):
     """
-    Generate data cube.
+    Generate xcube dataset.
     Data cubes may be created in one go or successively in append mode, input by input.
     The input paths may be one or more input files or a pattern that may contain wildcards '?', '*', and '**'.
     The input paths can also be passed as lines of a text file. To do so, provide exactly one input file with

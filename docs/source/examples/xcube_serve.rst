@@ -11,7 +11,7 @@ To run the server on default port 8080 using the demo configuration:::
 
     $ xcube serve --verbose -c examples/serve/demo/config.yml
 
-To run the server using a particular data cube path and styling information for a variable:::
+To run the server using a particular xcube dataset path and styling information for a variable:::
 
     $ xcube serve --styles conc_chl=(0,20,"viridis") examples/serve/demo/cube-1-250-250.zarr
 

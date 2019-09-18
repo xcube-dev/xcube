@@ -117,7 +117,7 @@ class ChunkTest(CliDataTest):
                                   TEST_NC_FILE,
                                   "-o", "test-chunked.zarr",
                                   "--chunks", "time=1,lat!gnnn,lon=40"])
-        self.assertEqual("Error: Invalid value for <CHUNKS>:"
+        self.assertEqual("Error: Invalid value for CHUNKS:"
                          " 'time=1,lat!gnnn,lon=40'\n",
                          result.output)
         self.assertEqual(1, result.exit_code)
@@ -127,7 +127,7 @@ class ChunkTest(CliDataTest):
                                   TEST_NC_FILE,
                                   "-o", "test-chunked.zarr",
                                   "--chunks", "time=1,lat=20.3,lon=40"])
-        self.assertEqual("Error: Invalid value for <CHUNKS>,"
+        self.assertEqual("Error: Invalid value for CHUNKS,"
                          " chunk sizes must be positive integers:"
                          " time=1,lat=20.3,lon=40\n",
                          result.output)
@@ -138,7 +138,7 @@ class ChunkTest(CliDataTest):
                                   TEST_NC_FILE,
                                   "-o", "test-chunked.zarr",
                                   "--chunks", "time=1,lati=20,lon=40"])
-        self.assertEqual("Error: Invalid value for <CHUNKS>,"
+        self.assertEqual("Error: Invalid value for CHUNKS,"
                          " 'lati' is not the name of any dimension:"
                          " time=1,lati=20,lon=40\n",
                          result.output)
@@ -208,7 +208,7 @@ class LevelTest(CliDataTest):
                                   "-o", LevelTest.TEST_OUTPUT,
                                   TEST_NC_FILE,
                                   ])
-        self.assertEqual("Error: <TILE-SIZE> must comprise positive integers\n",
+        self.assertEqual("Error: TILE-SIZE must comprise positive integers\n",
                          result.output)
         self.assertEqual(1, result.exit_code)
 
@@ -224,6 +224,6 @@ class LevelTest(CliDataTest):
                                   "-n", "0",
                                   "-o", LevelTest.TEST_OUTPUT,
                                   TEST_NC_FILE])
-        self.assertEqual("Error: <NUM-LEVELS-MAX> must be a positive integer\n",
+        self.assertEqual("Error: NUM-LEVELS-MAX must be a positive integer\n",
                          result.output)
         self.assertEqual(1, result.exit_code)

@@ -19,8 +19,8 @@ $ xcube extract --help
       Its format should preferably be ISO, but other formats may work as well.
     
     Options:
-      -o, --output <OUTPUT>  Output path. If omitted, output is written to stdout.
-      -f, --format <FORMAT>  Output format. Currently, only 'csv' is supported.
+      -o, --output OUTPUT    Output path. If omitted, output is written to stdout.
+      -f, --format FORMAT    Output format. Currently, only 'csv' is supported.
       -C, --coords           Include cube cell coordinates in output.
       -b, --bounds           Include cube cell coordinate boundaries (if any) in
                              output.

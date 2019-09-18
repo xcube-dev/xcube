@@ -42,7 +42,7 @@ class GenCliTest(CliTest):
 
     def test_main_with_illegal_variable_option(self):
         with self.assertRaises(ValueError) as cm:
-            self.invoke_cli(['gen', '-v', ' ', 'input.nc'])
+            self.invoke_cli(['gen', '--vars', ' ', 'input.nc'])
         self.assertEqual("output_variables must be a list of existing variable names", f'{cm.exception}')
 
     def test_main_with_illegal_config_option(self):

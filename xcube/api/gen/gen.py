@@ -60,7 +60,7 @@ def gen_cube(input_paths: Sequence[str] = None,
              dry_run: bool = False,
              monitor: Callable[..., None] = None) -> bool:
     """
-    Generate a data cube from one or more input files.
+    Generate a xcube dataset from one or more input files.
 
     :param sort_mode:
     :param input_paths: The input paths.

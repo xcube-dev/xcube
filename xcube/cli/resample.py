@@ -44,16 +44,16 @@ DEFAULT_INTERPOLATION_KIND = 'linear'
 # noinspection PyShadowingBuiltins
 @click.command(name='resample')
 @click.argument('cube')
-@click.option('--config', '-c', metavar='<CONFIG>', multiple=True,
-              help='Data cube configuration file in YAML format. More than one config input file is allowed.'
+@click.option('--config', '-c', metavar='CONFIG', multiple=True,
+              help='xcube dataset configuration file in YAML format. More than one config input file is allowed.'
                    'When passing several config files, they are merged considering the order passed via command line.')
-@click.option('--output', '-o', metavar='<OUTPUT>',
+@click.option('--output', '-o', metavar='OUTPUT',
               default=DEFAULT_OUTPUT_PATH,
               help=f"Output path. Defaults to {DEFAULT_OUTPUT_PATH!r}.")
 @click.option('--format', '-f',
               type=click.Choice(OUTPUT_FORMAT_NAMES),
               help="Output format. If omitted, format will be guessed from output path.")
-@click.option('--variables', '--vars', '-v', metavar='<VARIABLES>',
+@click.option('--variables', '--vars', metavar='VARIABLES',
               help="Comma-separated list of names of variables to be included.")
 @click.option('--method', '-M', multiple=True,
               help=f"Temporal resampling method. "
