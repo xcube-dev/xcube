@@ -55,7 +55,7 @@ def get_config_dict(config_obj: Dict[str, Union[str, bool, int, float, list, dic
         else:
             config['input_paths'] = input_paths
 
-    if input_processor_name is not None:
+    if input_processor_name is not None and 'input_processor_name' not in config:
         config['input_processor_name'] = input_processor_name
 
     if output_path is not None and 'output_path' not in config:
