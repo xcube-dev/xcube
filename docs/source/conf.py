@@ -19,6 +19,8 @@ import sphinx_rtd_theme
 # noinspection PyUnresolvedReferences
 import recommonmark
 
+from xcube.version import version
+
 
 # -- Project information -----------------------------------------------------
 
@@ -28,7 +30,7 @@ copyright = '2019, Brockmann Consult GmbH'
 author = 'Brockmann Consult GmbH'
 
 # The full version, including alpha/beta/rc tags
-release = '0.2.0'
+release = version
 
 # Title of the document
 doc_title = 'xcube Toolkit Documentation'
@@ -105,3 +107,12 @@ html_static_path = ['_static']
 # Output file base name for HTML help builder.
 htmlhelp_basename = project + '-docs'
 
+# -- Options for Autodoc output -------------------------------------------------
+
+autoclass_content = 'class'
+autodoc_member_order = 'bysource'
+autodoc_inherit_docstrings = True
+autodoc_typehints = 'signature'
+autodoc_mock_imports = [
+
+]
