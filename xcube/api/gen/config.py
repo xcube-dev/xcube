@@ -21,7 +21,7 @@
 
 from typing import Dict, Union
 
-from ...util.config import to_name_dict_pairs, flatten_dict, load_configs
+from ...util.config import flatten_dict, load_configs, to_name_dict_pairs
 
 
 def get_config_dict(config_obj: Dict[str, Union[str, bool, int, float, list, dict, tuple]]):
@@ -34,9 +34,9 @@ def get_config_dict(config_obj: Dict[str, Union[str, bool, int, float, list, dic
     """
     config_file = config_obj.get("config_file")
     input_paths = config_obj.get("input_paths")
-    input_processor_name = config_obj.get("input_processor_name", config_obj.get("input_processor"))
+    input_processor_name = config_obj.get("input_processor_name")
     output_path = config_obj.get("output_path")
-    output_writer_name = config_obj.get("output_writer_name", config_obj.get("output_writer"))
+    output_writer_name = config_obj.get("output_writer_name")
     output_size = config_obj.get("output_size")
     output_region = config_obj.get("output_region")
     output_variables = config_obj.get("output_variables")
@@ -45,6 +45,12 @@ def get_config_dict(config_obj: Dict[str, Union[str, bool, int, float, list, dic
     sort_mode = config_obj.get("sort_mode")
 
     config = load_configs(*config_file) if config_file else {}
+
+    # preserve backward compatibility for old names
+    if 'input_processor' in config:
+        config['input_processor_name'] = config.pop('input_processor')
+    if 'output_writer' in config:
+        config['output_writer_name'] = config.pop('output_writer')
 
     # Overwrite current configuration by cli arguments
     if input_paths is not None and 'input_paths' not in config:
@@ -111,5 +117,3 @@ def get_config_dict(config_obj: Dict[str, Union[str, bool, int, float, list, dic
     if output_metadata:
         config['output_metadata'] = flatten_dict(output_metadata)
     return config
-
-
