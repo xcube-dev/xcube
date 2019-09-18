@@ -2,7 +2,7 @@
 Command-line Interface
 ======================
 
-The xcube command-line interface (CLI) is a single executable ``xcube`` with several sub-commands comprising
+The xcube command-line interface (CLI) is a single executable :doc:`cli/xcube` with several sub-commands comprising
 functions ranging from xcube dataset generation, over analysis and manipulation, to dataset publication.
 
 Common Arguments and Options
@@ -18,32 +18,39 @@ consistently provided by the ``-o OUTPUT`` or ``--output OUTPUT`` option. As the
 there is usually a default value for it. If multiply file formats are supported, commands usually provide
 a ``-f FORMAT`` or ``--format FORMAT`` option. If omitted, the format may be guessed from the output's name.
 
-Command Overview
-================
+Command Index
+=============
+
+Cube generation
+---------------
 
 .. toctree::
-   :caption: Main command
-   :maxdepth: 1
-
-   cli/xcube
-
-.. toctree::
-   :caption: Cube generation
    :maxdepth: 1
 
    cli/xcube_gen
    cli/xcube_grid
 
+Cube inspection
+---------------
+
 .. toctree::
-   :caption: Cube inspection and data extraction
    :maxdepth: 1
 
    cli/xcube_dump
-   cli/xcube_extract
    cli/xcube_verify
 
+Cube data extraction
+--------------------
+
 .. toctree::
-   :caption: Cube manipulation
+   :maxdepth: 1
+
+   cli/xcube_extract
+
+Cube manipulation
+-----------------
+
+.. toctree::
    :maxdepth: 1
 
    cli/xcube_chunk
@@ -53,8 +60,10 @@ Command Overview
    cli/xcube_resample
    cli/xcube_vars2dim
 
+Cube publication
+----------------
+
 .. toctree::
-   :caption: Cube publication
    :maxdepth: 1
 
    cli/xcube_serve

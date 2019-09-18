@@ -91,27 +91,31 @@ The basic use case is to generate an xcube dataset and deploy it so that your us
    using the :doc:`cli/xcube_chunk` tool.
 3. optimize the generated xcube dataset by consolidating metadata and elimination of empty chunks
    using :doc:`cli/xcube_optimize` and :doc:`cli/xcube_prune` tools.
-4. deploy the optimized xcube dataset to some location (e.g. on AWS S3) where users can access them.
+4. deploy the optimized xcube dataset(s) to some location (e.g. on AWS S3) where users can access them.
 
-Then you and your users can
+Then you can
 
 5. access, analyse, modify, transform, visualise the data using the :doc:`api` and `xarray API`_ through
-   Python programs or `JupyterLab`_.
+   Python programs or `JupyterLab`_, or
+6. extract data points by coordinates from a cube
+   using the :doc:`cli/xcube_extract` tool, or
+7. resample the cube in time to generate temporal aggregations
+   using the :doc:`cli/xcube_resample` tool.
 
 Another way to provide the data to users is via the *xcube server*, that provides a
 RESTful API and a `WMTS <https://en.wikipedia.org/wiki/Web_Map_Tile_Service>`_. The latter is used
 to visualise spatial subsets of xcube datasets efficiently at any zoom level.
 To provide optimal visualisation and data extraction performance through the xcube server,
-xcube datasets may be prepared beforehand. Steps 6, 7, 8 are optional.
+xcube datasets may be prepared beforehand. Steps 8 to 10 are optional.
 
-6. verify a dataset to be published conforms with the :doc:`cubespec`
+8. verify a dataset to be published conforms with the :doc:`cubespec`
    using the :doc:`cli/xcube_verify` tool.
-7. adjust your dataset chunking to be optimal for generating spatial image tiles and generate
+9. adjust your dataset chunking to be optimal for generating spatial image tiles and generate
    a multi-resolution image pyramid
    using the :doc:`cli/xcube_chunk` and :doc:`cli/xcube_level` tools.
-8. create a dataset variant optimal for time series-extraction again
+10. create a dataset variant optimal for time series-extraction again
    using the :doc:`cli/xcube_chunk` tool.
-9. configure xcube datasets and publish them through the xcube server
+11. configure xcube datasets and publish them through the xcube server
    using the :doc:`cli/xcube_serve` tool.
 
 You may then use a WMTS-compatible client to visualise the datasets or develop your own client that
@@ -119,4 +123,3 @@ will make use of the xcube's REST API.
 
 The easiest way to visualize your data is using the xcube :doc:`viewer`, a single-page web application that
 can be configured to work with some xcube server URL.
-

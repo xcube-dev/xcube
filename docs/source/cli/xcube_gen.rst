@@ -1,10 +1,14 @@
-# `xcube gen`
+=============
+``xcube gen``
+=============
 
 Generate data cube.
 
-```bash
-$ xcube gen --help
-```
+::
+
+    $ xcube gen --help
+
+::
 
     Usage: xcube gen [OPTIONS] [INPUTS]...
     
@@ -65,7 +69,7 @@ $ xcube gen --help
       --help                          Show this message and exit.
 
 
-Below is the `xcube gen --info` call with 5 input processors installed via plugins.
+Below is the ouput of a ``xcube gen --info`` call showing five input processors installed via plugins.::
 
     $ xcube gen --info
     input processors to be used with option --proc:
@@ -86,7 +90,7 @@ Below is the `xcube gen --info` call with 5 input processors installed via plugi
       zarr                    (*.zarr)      Zarr file format (http://zarr.readthedocs.io)
 
 
-Example:
+Example:::
 
     $ xcube gen -a -s 2000,1000 -r 0,50,5,52.5 -v conc_chl,conc_tsm,kd489,c2rcc_flags,quality_flags -n hiroc-cube -t -p default D:\OneDrive\BC\EOData\HIGHROC\2017\01\*.nc
 
@@ -99,3 +103,4 @@ input processor plug-ins:
 * `xcube-gen-bc <https://github.com/dcs4cop/xcube-gen-bc>`_
 * `xcube-gen-vito <https://github.com/dcs4cop/xcube-gen-vito>`_
 
+The related Python API function is :py:func:`xcube.api.gen_cube`.
