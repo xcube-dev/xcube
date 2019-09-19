@@ -30,7 +30,7 @@ __author__ = "Norman Fomferra (Brockmann Consult GmbH)"
 @click.argument('cube', nargs=-1)
 @click.option('--output', '-o', metavar='OUTPUT', default=DEFAULT_OUTPUT_PATH,
               help=f'Output path. Defaults to {DEFAULT_OUTPUT_PATH!r}')
-@click.option('--params', 'p', metavar='PARAMS',
+@click.option('--params', '-p', metavar='PARAMS',
               help="Keyword arguments passed to apply() and init() functions in <script>.")
 @click.option('--variables', '--vars', metavar='VARIABLES',
               help="Comma-separated list of variable names.")
