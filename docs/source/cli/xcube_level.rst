@@ -43,8 +43,5 @@ Example:
 
     $ xcube level --link -t 720 data/cubes/test-cube.zarr
 
-The related Python API function is :py:func:`xcube.api.compute_levels`.
-
-The related Python API function is :py:func:`xcube.api.read_levels`.
-
-The related Python API function is :py:func:`xcube.api.write_levels`.
+The related Python API function are :py:func:`xcube.api.compute_levels`, :py:func:`xcube.api.read_levels`,
+and :py:func:`xcube.api.write_levels`.

@@ -29,4 +29,4 @@ Perform cube verification.
     Options:
       --help  Show this message and exit.
 
-The related Python API function is :py:func:`xcube.api.verify_cube`.
+The related Python API functions are :py:func:`xcube.api.verify_cube` and :py:func:`xcube.api.assert_cube`.

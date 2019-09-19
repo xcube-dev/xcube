@@ -39,4 +39,5 @@ Example:
 
     $ xcube extract xcube_cube.zarr -o point_data.csv -Cb --indexes --refs
     
-The related Python API function is :py:func:`xcube.api.get_cube_values_for_points`.
+Related Python API functions are :py:func:`xcube.api.get_cube_values_for_points`,
+:py:func:`xcube.api.get_cube_point_indexes`, and :py:func:`xcube.api.get_cube_values_for_indexes`.
