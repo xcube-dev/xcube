@@ -742,7 +742,7 @@ components:
       description: maximum number of valid (non-NaN) values in the result; if -1, only valid values are returned.
       required: false
       schema:
-        type: int
+        type: integer
       example: 2099-01-01
     datasetDetails:
       name: details
