@@ -3,23 +3,23 @@
 Perform cube verification.
 
 ```bash
-xcube verify --help
+$ xcube verify --help
 ```
 
-    Usage: xcube verify [OPTIONS] INPUT
+    Usage: xcube verify [OPTIONS] CUBE
     
       Perform cube verification.
     
-      The tool verifies that INPUT
+      The tool verifies that CUBE
       * defines the dimensions "time", "lat", "lon";
       * has corresponding "time", "lat", "lon" coordinate variables and that they
         are valid, e.g. 1-D, non-empty, using correct units;
-      * has valid bounds variables for "time", "lat", "lon" coordinate
+      * has valid  bounds variables for "time", "lat", "lon" coordinate
         variables, if any;
       * has any data variables and that they are valid, e.g. min. 3-D, all have
         same dimensions, have at least dimensions "time", "lat", "lon".
     
-      If INPUT is a valid data cube, the tool returns exit code 0. Otherwise a
+      If INPUT is a valid xcube dataset, the tool returns exit code 0. Otherwise a
       violation report is written to stdout and the tool returns exit code 3.
     
     Options:

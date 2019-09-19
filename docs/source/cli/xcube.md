@@ -13,9 +13,8 @@ $ xcube --help
       --traceback              Enable tracing back errors by dumping the Python
                                call stack. Pass as very first option to also trace
                                back error during command-line validation.
-    
-      --scheduler <scheduler>  Enable distributed computing using the Dask
-                               scheduler identified by <scheduler>. <scheduler>
+      --scheduler SCHEDULER    Enable distributed computing using the Dask
+                               scheduler identified by SCHEDULER. SCHEDULER
                                can have the form <address>?<keyword>=<value>,...
                                where <address> is <host> or <host>:<port> and
                                specifies the scheduler's address in your network.
@@ -27,12 +26,13 @@ $ xcube --help
       --help                   Show this message and exit.
     
     Commands:
-      chunk     (Re-)chunk dataset.
-      dump      Dump contents of a dataset.
-      extract   Extract cube time series.
-      gen       Generate data cube.
-      grid      Find spatial data cube resolutions and adjust bounding boxes.
+      chunk     (Re-)chunk xcube dataset.
+      dump      Dump contents of an input dataset.
+      extract   Extract cube points.
+      gen       Generate xcube dataset.
+      grid      Find spatial xcube dataset resolutions and adjust bounding boxes.
       level     Generate multi-resolution levels.
+      optimize  Optimize xcube dataset for faster access.
       prune     Delete empty chunks.
       resample  Resample data along the time dimension.
       serve     Serve data cubes via web service.

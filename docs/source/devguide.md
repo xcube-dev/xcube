@@ -91,30 +91,31 @@ In the following common arguments and options are listed.
 
 Input argument:
 
-    @click.argument('input', metavar='<input>')
+    @click.argument('input')
 
-Output argument:
+If input argument is restricted to a xcube dataset:
 
-    @click.argument('output', metavar='<output>')
+    @click.argument('cube')
+
 
 Output (directory) option:
 
-    @click.option('--output', '-o', metavar='<output>',
-                  help='Output directory. If omitted, "<input>.levels" will be used.')
+    @click.option('--output', '-o', metavar='OUTPUT',
+                  help='Output directory. If omitted, "INPUT.levels" will be used.')
 
 Output format:
 
-    @click.option('--format', '-f', metavar='<format>', type=click.Choice(['zarr', 'netcdf']),
-                  help="Format of the output. If not given, guessed from <output>.")
+    @click.option('--format', '-f', metavar='FORMAT', type=click.Choice(['zarr', 'netcdf']),
+                  help="Format of the output. If not given, guessed from OUTPUT.")
 
 Output parameters:
 
-    @click.option('--param', '-p', metavar='<param>', multiple=True,
+    @click.option('--param', metavar='PARAM', multiple=True,
                   help="Parameter specific for the output format. Multiple allowed.")
 
 Variable names:
 
-    @click.option('--var', '-v', metavar='<variable>', multiple=True,
+    @click.option('--variable',--var', metavar='VARIABLE', multiple=True,
                   help="Name of a variable. Multiple allowed.")
 
 
@@ -156,10 +157,10 @@ keyword parameter `cube_asserted: bool = False`.
 Otherwise name the primary dataset argument `dataset`.
 
 Reflect the fact, that a certain API method or function operates only 
-on datasets that conform with the xcube data cube specifications by
+on datasets that conform with the xcube dataset specifications by
 using `cube` in its name rather than `dataset`. For example `compute_dataset` 
 can operate on any xarray datasets, while `get_cube_values_for_points` expects a 
-data cube as input or `read_cube` ensures it will return valid data cubes only. 
+xcube dataset as input or `read_cube` ensures it will return valid data cubes only. 
 
 In the implementation, if `not cube_asserted`, 
 we must assert and verify the `cube` is a cube. 

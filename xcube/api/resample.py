@@ -36,9 +36,9 @@ def resample_in_time(cube: xr.Dataset,
                      var_names: Sequence[str] = None,
                      metadata: Dict[str, Any] = None):
     """
-    Resample a data cube in the time dimension.
+    Resample a xcube dataset in the time dimension.
 
-    :param cube: The data cube.
+    :param cube: The xcube dataset.
     :param frequency: Resampling frequency.
     :param method: Resampling method or sequence of resampling methods.
     :param offset: Offset used to adjust the resampled time labels. Some pandas date offset strings are supported.
@@ -47,7 +47,7 @@ def resample_in_time(cube: xr.Dataset,
     :param tolerance: Time tolerance for selective upsampling methods. Defaults to *frequency*.
     :param interp_kind: Kind of interpolation if *method* is 'interpolation'.
     :param metadata: Output metadata.
-    :return: A new data cube resampled in time.
+    :return: A new xcube dataset resampled in time.
     """
     if var_names:
         cube = select_vars(cube, var_names)
