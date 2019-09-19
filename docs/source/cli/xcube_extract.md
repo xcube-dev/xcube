@@ -8,7 +8,7 @@ $ xcube extract --help
 
     Usage: xcube extract [OPTIONS] CUBE POINTS
     
-      Extract cube points.
+      Extract data points from an xcube dataset.
     
       Extracts data cells from CUBE at coordinates given in each POINTS record
       and writes the resulting values to given output path and format.
