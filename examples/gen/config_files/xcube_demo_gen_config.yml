@@ -1,9 +1,9 @@
-input_processor: default
+input_processor_name: default
 
 output_size: [10240, 5632]
 output_region: [-16.0,48.0,10.666666666666666,62.666666666666664]
 
-output_writer: zarr
+output_writer_name: zarr
 
 output_writer_params: 
   chunksizes: 
@@ -25,7 +25,7 @@ output_variables:
 #
 output_metadata:
   # CF: A succinct description of what is in the dataset.
-  title: "DCS4COP CMEMS Global SST & Sea Ice Anomaly Data Cube"
+  title: "CMEMS Global SST Anomaly Data Cube"
 
   # CF: The method of production of the original data.
   # If it was model-generated, source should name the model and its version, as specifically as could be useful.
@@ -46,11 +46,11 @@ output_metadata:
   keywords: ""
 
   # The combination of the "naming authority" and the "id" should be a globally unique identifier for the dataset.
-  id: "dcs4cop-bc-sst-sns-l2c-v1"
+  id: "demo-bc-sst-sns-l2c-v1"
   naming_authority: "bc"
 
   # The scientific project that produced the data.
-  project: "DCS4COP"
+  project: "xcube"
 
   # A textual description of the processing (or quality control) level of the data.
   processing_level: "L2C"
