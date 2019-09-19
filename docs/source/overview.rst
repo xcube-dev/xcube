@@ -1,6 +1,7 @@
 .. _CF conventions: http://cfconventions.org/cf-conventions/cf-conventions.html
 .. _`dask`: https://dask.readthedocs.io/
 .. _`JupyterLab`: https://jupyterlab.readthedocs.io/
+.. _`WMTS`: https://en.wikipedia.org/wiki/Web_Map_Tile_Service
 .. _xarray: http://xarray.pydata.org/
 .. _xarray API: http://xarray.pydata.org/en/stable/api.html
 .. _xarray.Dataset: http://xarray.pydata.org/en/stable/data-structures.html#dataset
@@ -103,7 +104,7 @@ Then you can
    using the :doc:`cli/xcube_resample` tool.
 
 Another way to provide the data to users is via the *xcube server*, that provides a
-RESTful API and a `WMTS <https://en.wikipedia.org/wiki/Web_Map_Tile_Service>`_. The latter is used
+RESTful API and a `WMTS`_. The latter is used
 to visualise spatial subsets of xcube datasets efficiently at any zoom level.
 To provide optimal visualisation and data extraction performance through the xcube server,
 xcube datasets may be prepared beforehand. Steps 8 to 10 are optional.
