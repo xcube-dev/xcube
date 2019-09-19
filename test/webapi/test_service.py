@@ -101,13 +101,13 @@ class UrlPatternTest(unittest.TestCase):
     def test_url_pattern_ok(self):
         self.assertEqual('/version',
                          url_pattern('/version'))
-        self.assertEqual('(?P<num>[^\;\/\?\:\@\&\=\+\$\,]+)/get',
+        self.assertEqual(r'(?P<num>[^\;\/\?\:\@\&\=\+\$\,]+)/get',
                          url_pattern('{{num}}/get'))
-        self.assertEqual('/open/(?P<ws_name>[^\;\/\?\:\@\&\=\+\$\,]+)',
+        self.assertEqual(r'/open/(?P<ws_name>[^\;\/\?\:\@\&\=\+\$\,]+)',
                          url_pattern('/open/{{ws_name}}'))
-        self.assertEqual('/open/ws(?P<id1>[^\;\/\?\:\@\&\=\+\$\,]+)/wf(?P<id2>[^\;\/\?\:\@\&\=\+\$\,]+)',
+        self.assertEqual(r'/open/ws(?P<id1>[^\;\/\?\:\@\&\=\+\$\,]+)/wf(?P<id2>[^\;\/\?\:\@\&\=\+\$\,]+)',
                          url_pattern('/open/ws{{id1}}/wf{{id2}}'))
-        self.assertEqual('/datasets/(?P<ds_id>[^\;\/\?\:\@\&\=\+\$\,]+)/data.zip/(.*)',
+        self.assertEqual(r'/datasets/(?P<ds_id>[^\;\/\?\:\@\&\=\+\$\,]+)/data.zip/(.*)',
                          url_pattern('/datasets/{{ds_id}}/data.zip/(.*)'))
 
     def test_url_pattern_fail(self):

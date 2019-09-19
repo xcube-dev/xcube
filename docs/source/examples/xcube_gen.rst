@@ -66,7 +66,7 @@ The output format (``output_writer_name``) are defined as well.
 The chunking of the dimensions can be set by the output writer parameter (``output_writer_params``) called chunksizes,
 and here the chunking is set for latitude and longitude. If the chunking is not set, a automatic chunking is appllied.
 The spatial resampling method (output_resampling) is set to 'nearest' and the confguration file contains only one 
-variable which will be included into the data cube - 'analysed-sst'.
+variable which will be included into the xcube dataset - 'analysed-sst'.
 
 The Analysed Sea Surface Temperature data set contains the variable already as needed. This means no pixel 
 masking needs to be applied. However, this might differ depending on the input data. You can take a look at a 

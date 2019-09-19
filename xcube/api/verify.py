@@ -27,16 +27,16 @@ import xarray as xr
 
 def assert_cube(dataset: xr.Dataset, name=None) -> xr.Dataset:
     """
-    Assert that the given *dataset* is a valid data cube.
+    Assert that the given *dataset* is a valid xcube dataset.
 
     :param dataset: The dataset to be validated.
     :param name: Optional parameter name.
-    :raise: ValueError, if dataset is not a valid data cube
+    :raise: ValueError, if dataset is not a valid xcube dataset
     """
     report = verify_cube(dataset)
     if report:
         message = f"Dataset" + (name + " " if name else " ")
-        message += "is not a valid data cube, because:\n"
+        message += "is not a valid xcube dataset, because:\n"
         message += "- " + ";\n- ".join(report) + "."
         raise ValueError(message)
 
@@ -45,7 +45,7 @@ def assert_cube(dataset: xr.Dataset, name=None) -> xr.Dataset:
 
 def verify_cube(dataset: xr.Dataset) -> List[str]:
     """
-    Verify the given *dataset* for being a valid data cube.
+    Verify the given *dataset* for being a valid xcube dataset.
 
     The tool verifies that *dataset*
     * defines the dimensions "time", "lat", "lon";
@@ -56,7 +56,7 @@ def verify_cube(dataset: xr.Dataset) -> List[str]:
     * has any data variables and that they are valid, e.g. min. 3-D, all have
       same dimensions, have at least dimensions "time", "lat", "lon".
 
-    Returns a list of issues, which is empty if *dataset* is a valid data cube.
+    Returns a list of issues, which is empty if *dataset* is a valid xcube dataset.
 
     :param dataset: A dataset to be verified.
     :return: List of issues or empty list.

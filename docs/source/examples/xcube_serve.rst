@@ -9,7 +9,7 @@ Running the server
 
 To run the server on default port 8080 using the demo configuration:::
 
-    $ xcube serve -v -c examples/serve/demo/config.yml
+    $ xcube serve --verbose -c examples/serve/demo/config.yml
 
 To run the server using a particular xcube dataset path and styling information for a variable:::
 

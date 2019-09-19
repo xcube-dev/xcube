@@ -7,9 +7,9 @@ import click
 @click.command(name="extract")
 @click.argument('cube')
 @click.argument('points')
-@click.option('--output', '-o',
-              help="Output file. If omitted, output is written to stdout.")
-@click.option('--format', '-f', type=click.Choice(['csv', 'json', 'xlsx']),
+@click.option('--output', '-o', metavar='OUTPUT',
+              help="Output path. If omitted, output is written to stdout.")
+@click.option('--format', '-f', metavar='FORMAT', type=click.Choice(['csv', 'json', 'xlsx']),
               help="Output format. Currently, only 'csv' is supported.", default='csv')
 @click.option('--coords', '-C', is_flag=True,
               help="Include cube cell coordinates in output.")
@@ -34,7 +34,7 @@ def extract(cube,
     Extracts data cells from CUBE at coordinates given in each POINTS record and writes the resulting values to given
     output path and format.
 
-    <points> must be a CSV file that provides at least the columns "lon", "lat", and "time". The "lon" and "lat"
+    POINTS must be a CSV file that provides at least the columns "lon", "lat", and "time". The "lon" and "lat"
     columns provide a point's location in decimal degrees. The "time" column provides a point's date or
     date-time. Its format should preferably be ISO, but other formats may work as well.
     """

@@ -2,7 +2,7 @@
 ``xcube gen``
 =============
 
-Generate data cube.
+Generate xcube dataset.
 
 ::
 
@@ -10,9 +10,9 @@ Generate data cube.
 
 ::
 
-    Usage: xcube gen [OPTIONS] [INPUTS]...
+    Usage: xcube gen [OPTIONS] [INPUT]...
     
-      Generate data cube. Data cubes may be created in one go or successively in
+      Generate xcube dataset. Data cubes may be created in one go or successively in
       append mode, input by input. The input paths may be one or more input
       files or a pattern that may contain wildcards '?', '*', and '**'. The
       input paths can also be passed as lines of a text file. To do so, provide
@@ -20,7 +20,7 @@ Generate data cube.
       input paths to be used.
     
     Options:
-      -p, --proc TEXT                 Input processor name. The available input
+      -P, --proc INPUT-PROCESSOR      Input processor name. The available input
                                       processor names and additional information
                                       about input processors can be accessed by
                                       calling xcube gen --info . Defaults to
@@ -28,21 +28,22 @@ Generate data cube.
                                       with simple datasets whose variables have
                                       dimensions ("lat", "lon") and conform with
                                       the CF conventions.
-      -c, --config TEXT               Data cube configuration file in YAML format.
+      -c, --config CONFIG             xcube dataset configuration file in YAML format.
                                       More than one config input file is
                                       allowed.When passing several config files,
                                       they are merged considering the order passed
                                       via command line.
-      -o, --output TEXT               Output path. Defaults to 'out.zarr'
-      -f, --format TEXT               Output format. Information about output
+      -o, --output OUTPUT             Output path. Defaults to 'out.zarr'
+      -f, --format FORMAT             Output format. Information about output
                                       formats can be accessed by calling xcube gen
                                       --info. If omitted, the format will be
                                       guessed from the given output path.
-      -s, --size TEXT                 Output size in pixels using format
+      -S, --size SIZE                 Output size in pixels using format
                                       "<width>,<height>".
-      -r, --region TEXT               Output region using format "<lon-min>,<lat-
+      -R, --region REGION             Output region using format "<lon-min>,<lat-
                                       min>,<lon-max>,<lat-max>"
-      -v, --variables, --vars TEXT    Variables to be included in output. Comma-
+      --variables, --vars VARIABLES
+                                      Variables to be included in output. Comma-
                                       separated list of names which may contain
                                       wildcard characters "*" and "?".
       --resampling [Average|Bilinear|Cubic|CubicSpline|Lanczos|Max|Median|Min|Mode|Nearest|Q1|Q3]
@@ -59,10 +60,10 @@ Generate data cube.
       --prof                          Collect profiling information and dump
                                       results after processing.
       --sort                          The input file list will be sorted before
-                                      creating the data cube. If --sort parameter
+                                      creating the xcube dataset. If --sort parameter
                                       is not passed, order of input list will be
                                       kept.
-      -i, --info                      Displays additional information about format
+      -I, --info                      Displays additional information about format
                                       options or about input processors.
       --dry_run                       Just read and process inputs, but don't
                                       produce any outputs.
@@ -92,7 +93,7 @@ Below is the ouput of a ``xcube gen --info`` call showing five input processors 
 
 Example:::
 
-    $ xcube gen -a -s 2000,1000 -r 0,50,5,52.5 -v conc_chl,conc_tsm,kd489,c2rcc_flags,quality_flags -n hiroc-cube -t -p default D:\OneDrive\BC\EOData\HIGHROC\2017\01\*.nc
+    $ xcube gen -S 2000,1000 -R 0,50,5,52.5 --vars conc_chl,conc_tsm,kd489,c2rcc_flags,quality_flags -o hiroc-cube.zarr -P default D:\OneDrive\BC\EOData\HIGHROC\2017\01\*.nc
 
 
 Some input processors have been developed for specific EO data sources 

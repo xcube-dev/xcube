@@ -25,7 +25,7 @@ class AssertAndVerifyCubeTest(unittest.TestCase):
                                                    dims=("y", "x")))
         with self.assertRaises(ValueError) as cm:
             assert_cube(cube)
-        self.assertEqual("Dataset is not a valid data cube, because:\n"
+        self.assertEqual("Dataset is not a valid xcube dataset, because:\n"
                          "- coordinate variable 'lat' must have a single dimension 'lat';\n"
                          "- coordinate variable 'lon' must have a single dimension 'lon'.",
                          f"{cm.exception}")
@@ -40,7 +40,7 @@ class AssertAndVerifyCubeTest(unittest.TestCase):
                                   lon_bnds=xr.DataArray(lon_bnds, dims=("time", "lon", "bnds")))
         with self.assertRaises(ValueError) as cm:
             assert_cube(cube)
-        self.assertEqual("Dataset is not a valid data cube, because:\n"
+        self.assertEqual("Dataset is not a valid xcube dataset, because:\n"
                          "- bounds coordinate variable 'lat_bnds' must have dimensions ('lat', <bounds_dim>);\n"
                          "- shape of bounds coordinate variable 'lat_bnds' must be (180, 2) but was (5, 180, 2);\n"
                          "- bounds coordinate variable 'lon_bnds' must have dimensions ('lon', <bounds_dim>);\n"
@@ -57,7 +57,7 @@ class AssertAndVerifyCubeTest(unittest.TestCase):
                                    coords=dict(lat=cube.lat, lon=cube.lon))
         with self.assertRaises(ValueError) as cm:
             assert_cube(cube)
-        self.assertEqual("Dataset is not a valid data cube, because:\n"
+        self.assertEqual("Dataset is not a valid xcube dataset, because:\n"
                          "- dimensions of data variable 'chl' must be"
                          " ('time', ..., 'lat', 'lon'), but were ('lat', 'lon') for 'chl';\n"
                          "- dimensions of all data variables must be same,"

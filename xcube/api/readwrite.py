@@ -16,7 +16,7 @@ def open_cube(input_path: str,
     :param input_path: input path
     :param format_name: format, e.g. "zarr" or "netcdf4"
     :param kwargs: format-specific keyword arguments
-    :return: data cube
+    :return: xcube dataset
     """
     dataset = read_cube(input_path, format_name, **kwargs)
     try:
@@ -29,13 +29,13 @@ def read_cube(input_path: str,
               format_name: str = None,
               **kwargs) -> xr.Dataset:
     """
-    Read a data cube from *input_path*.
+    Read a xcube dataset from *input_path*.
     If *format* is not provided it will be guessed from *input_path*.
 
     :param input_path: input path
     :param format_name: format, e.g. "zarr" or "netcdf4"
     :param kwargs: format-specific keyword arguments
-    :return: data cube
+    :return: xcube dataset
     """
     return read_dataset(input_path, format_name=format_name, is_cube=True, **kwargs)
 
@@ -46,15 +46,15 @@ def write_cube(cube: xr.Dataset,
                cube_asserted: bool = False,
                **kwargs) -> xr.Dataset:
     """
-    Write a data cube to *output_path*.
+    Write a xcube dataset to *output_path*.
     If *format* is not provided it will be guessed from *output_path*.
 
-    :param cube: Data cube to be written.
+    :param cube: xcube dataset to be written.
     :param output_path: output path
     :param format_name: format, e.g. "zarr" or "netcdf4"
     :param kwargs: format-specific keyword arguments
     :param cube_asserted: If False, *cube* will be verified, otherwise it is expected to be a valid cube.
-    :return: data cube *cube*
+    :return: xcube dataset *cube*
     """
     if not cube_asserted:
         assert_cube(cube)
@@ -71,7 +71,7 @@ def open_dataset(input_path: str,
 
     :param input_path: input path
     :param format_name: format, e.g. "zarr" or "netcdf4"
-    :param is_cube: Whether a ValueError will be raised, if the dataset read from *input_path* is not a data cube.
+    :param is_cube: Whether a ValueError will be raised, if the dataset read from *input_path* is not a xcube dataset.
     :param kwargs: format-specific keyword arguments
     :return: dataset object
     """
@@ -92,7 +92,7 @@ def read_dataset(input_path: str,
 
     :param input_path: input path
     :param format_name: format, e.g. "zarr" or "netcdf4"
-    :param is_cube: Whether a ValueError will be raised, if the dataset read from *input_path* is not a data cube.
+    :param is_cube: Whether a ValueError will be raised, if the dataset read from *input_path* is not a xcube dataset.
     :param kwargs: format-specific keyword arguments
     :return: dataset object
     """

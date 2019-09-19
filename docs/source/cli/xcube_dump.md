@@ -3,18 +3,19 @@
 Dump contents of a dataset.
 
 ```bash
-    $ xcube dump --help
+$ xcube dump --help
 ```
 
     
-    Usage: xcube dump [OPTIONS] <path>
+    Usage: xcube dump [OPTIONS] INPUT
     
-    Dump contents of a dataset.
+      Dump contents of an input dataset.
     
-    optional arguments:
-      --help                Show this help message and exit
-      --variable, -v        Name of a variable (multiple allowed).
-      --encoding, -e        Dump also variable encoding information.
+    Options:
+      --variable, --var VARIABLE
+                                      Name of a variable (multiple allowed).
+      -E, --encoding                  Dump also variable encoding information.
+      --help                          Show this message and exit.
 
 
 Example:

@@ -60,7 +60,7 @@ def gen_cube(input_paths: Sequence[str] = None,
              dry_run: bool = False,
              monitor: Callable[..., None] = None) -> bool:
     """
-    Generate a data cube from one or more input files.
+    Generate a xcube dataset from one or more input files.
 
     :param sort_mode:
     :param input_paths: The input paths.
@@ -194,13 +194,13 @@ def _process_input(input_processor: InputProcessor,
         input_dataset = input_reader.read(input_file, **input_reader_params)
         monitor(f'Dataset read:\n{input_dataset}')
     except Exception as e:
-        monitor(f'ERROR: cannot read input: {e}: skipping...')
+        monitor(f'Error: cannot read input: {e}: skipping...')
         traceback.print_exc()
         return False
 
     time_range = input_processor.get_time_range(input_dataset)
     if time_range[0] > time_range[1]:
-        monitor('ERROR: start time is greater than end time: skipping...')
+        monitor('Error: start time is greater than end time: skipping...')
         return False
 
     if output_variables:
@@ -312,7 +312,7 @@ def _process_input(input_processor: InputProcessor,
         total_t2 = time.perf_counter()
         monitor(f'{num_steps} steps took {total_t2 - total_t1} seconds to complete')
     except RuntimeError as e:
-        monitor(f'ERROR: something went wrong during processing, skipping input slice: {e}')
+        monitor(f'Error: something went wrong during processing, skipping input slice: {e}')
         traceback.print_exc()
         return False
     finally:

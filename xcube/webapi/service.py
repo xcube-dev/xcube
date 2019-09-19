@@ -54,6 +54,7 @@ _LOG = logging.getLogger('xcube')
 
 SNAP_CPD_LIST = list()
 
+
 class Service:
     """
     A web service that provides a remote API to some application.
@@ -365,7 +366,7 @@ def url_pattern(pattern: str):
     :return: equivalent regex pattern
     :raise ValueError: if *pattern* is invalid
     """
-    name_pattern = '(?P<%s>[^\;\/\?\:\@\&\=\+\$\,]+)'
+    name_pattern = r'(?P<%s>[^\;\/\?\:\@\&\=\+\$\,]+)'
     reg_expr = ''
     pos = 0
     while True:

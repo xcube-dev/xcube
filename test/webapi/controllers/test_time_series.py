@@ -85,6 +85,7 @@ class TimeSeriesControllerTest(unittest.TestCase):
                                                    'uncertainty': 0.0,
                                                    'totalCount': 1,
                                                    'validCount': 1}}]}
+
         self.assertEqual(expected_result, actual_result)
 
     def test_get_time_series_for_geometry_point(self):
@@ -205,7 +206,6 @@ class TimeSeriesControllerTest(unittest.TestCase):
                                         'result': {'average': 49.70755256053988,
                                                    'totalCount': 159600,
                                                    'validCount': 132066}}]}
-
         self.assertEqual(expected_result, actual_result)
 
     def test_get_time_series_for_geometries_incl_point(self):
