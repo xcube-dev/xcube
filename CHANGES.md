@@ -1,5 +1,9 @@
 ## Changes in 0.2.0.dev2 (in dev)
 
+* Reorganisation of the Documentation and Examples Section (partly addressing #106)
+
+### Enhancements
+
 * Making CLI parameters consistent and removing or changing parameter abbreviations in case they were used twice for different params. (partly addressing #91)
   For every CLI command which is generating an output a path must be provided by the option `-o`, `--output`. If not provided by the user, a default output_path is generated.
   The following CLI parameter have changed and their abbreviation is not enabled anymore : 
@@ -22,10 +26,6 @@
     - `xcube serve -p` is now `xcube serve -P` 
     - `xcube serve -a` is now `xcube serve -A` 
     
-* Reorganisation of the Documentation and Examples Section (partly addressing #106)
-
-### Enhancements
-
 * Added option `inclStDev` and `inclCount` query parameters to `ts/{dataset}/{variable}/geometry` and derivates.
   If used with `inclStDev=1`, Xcube Viewer will show error bars for each time series point.
 * `xcube.api.new_cube` function now accepts callables as values for variables.
