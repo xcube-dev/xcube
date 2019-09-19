@@ -1,19 +1,19 @@
 openapi: 3.0.0
 
 servers:
-  - description: CyanoAlert Development API
-    url: http://www.brockmann-consult.de/cyanoalert-dev
   - description: DCS4COP Development API
-    url: http://xcube.dcs4cop.eu/dcs4cop-dev
+    url: https://xcube2.dcs4cop.eu/dcs4cop-dev/api/0.1.0.dev6/
+  - description: CyanoAlert Development API
+    url: https://cyanoalert.brockmann-consult.com/api/v1.dev/
   - description: SwaggerHub API Auto Mocking
-    url: https://virtserver.swaggerhub.com/forman/xcube-server/1.0.0
+    url: https://virtserver.swaggerhub.com/forman/xcube-server/0.2.0-dev/
 
 info:
   description: |
     A light-weight web server that provides
     various services based on xarray-enabled datasets.
   version: "0.2.0-dev"
-  title: Xcube Server API
+  title: xcube Web API
   contact:
     email: bcdev@brockmann-consult.de
   license:
