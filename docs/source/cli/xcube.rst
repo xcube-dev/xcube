@@ -1,8 +1,13 @@
-# `xcube`
+==========
+``xcube``
+==========
 
-```bash
-$ xcube --help
-```
+::
+
+    $ xcube --help
+
+::
+
 
     Usage: xcube [OPTIONS] COMMAND [ARGS]...
     

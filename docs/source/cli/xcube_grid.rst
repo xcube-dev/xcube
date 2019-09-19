@@ -1,12 +1,16 @@
-# `xcube grid`
+==============
+``xcube grid``
+==============
 
 Warning: this tool will likely change in the near future.
 
 Find spatial xcube dataset resolutions and adjust bounding boxes.
 
-```bash
-$ xcube grid --help
-```
+::
+
+    $ xcube grid --help
+
+::
 
     Usage: xcube grid [OPTIONS] COMMAND [ARGS]...
     
@@ -47,8 +51,12 @@ $ xcube grid --help
 Example: Find suitable target resolution for a ~300m (Sentinel 3 OLCI FR resolution) 
 fixed Earth grid within a deviation of 5%.
 
+::
+
     $ xcube grid res 300m -D 5%
-    
+
+::
+
     TILE    LEVEL   HEIGHT  INV_RES RES (deg)       RES (m), DELTA_RES (%)
     540     7       69120   384     0.0026041666666666665   289.9   -3.4
     4140    4       66240   368     0.002717391304347826    302.5   0.8
@@ -61,7 +69,12 @@ which is the fixed Earth grid identifier.
 We want to see if the resolution pyramid also supports a resolution close to 10m 
 (Sentinel 2 MSI resolution).
 
+::
+
     $ xcube grid levels 384 -m 6
+
+::
+
     LEVEL   HEIGHT  INV_RES RES (deg)       RES (m)
     0       540     3       0.3333333333333333      37106.5
     1       1080    6       0.16666666666666666     18553.2
@@ -77,8 +90,12 @@ Lets assume we have xcube dataset region with longitude from 0 to 5 degrees
 and latitudes from 50 to 52.5 degrees. What is the adjusted bounding box 
 on a fixed Earth grid with the inverse resolution 384?
 
+::
+
     $ xcube grid abox  0,50,5,52.5  384
-     
+
+::
+
     Orig. box coord. = 0.0,50.0,5.0,52.5
     Adj. box coord.  = 0.0,49.21875,5.625,53.4375
     Orig. box WKT    = POLYGON ((0.0 50.0, 5.0 50.0, 5.0 52.5, 0.0 52.5, 0.0 50.0))
@@ -93,5 +110,5 @@ on a fixed Earth grid with the inverse resolution 384?
 
     
 Note, to check bounding box WKTs, you can use the 
-handy [Wicket](https://arthur-e.github.io/Wicket/sandbox-gmaps3.html) tool.
+handy `Wicket <https://arthur-e.github.io/Wicket/sandbox-gmaps3.html>`_ tool.
      

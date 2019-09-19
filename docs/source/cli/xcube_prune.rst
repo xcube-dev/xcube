@@ -1,4 +1,6 @@
-# `xcube prune`
+===============
+``xcube prune``
+===============
 
 Delete empty chunks.
 
@@ -6,9 +8,11 @@ Warning: this tool will likely be integrated into ``xcube optimize`` in
 the near future.
 
 
-```bash
-$ xcube prune --help
-```
+::
+
+    $ xcube prune --help
+
+::
 
     Usage: xcube prune [OPTIONS] CUBE
     

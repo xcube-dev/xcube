@@ -1,10 +1,14 @@
-# `xcube extract`
+=================
+``xcube extract``
+=================
 
 Extract cube points.
 
-```bash
-$ xcube extract --help
-```
+::
+
+    $ xcube extract --help
+
+::
 
     Usage: xcube extract [OPTIONS] CUBE POINTS
     
@@ -24,12 +28,15 @@ $ xcube extract --help
       -C, --coords           Include cube cell coordinates in output.
       -B, --bounds           Include cube cell coordinate boundaries (if any) in
                              output.
-      -I, --indexes              Include cube cell indexes in output.
-      -R, --refs                 Include point values as reference in output.
+      -I, --indexes          Include cube cell indexes in output.
+      -R, --refs             Include point values as reference in output.
       --help                 Show this message and exit.
 
 
 Example:  
-    
+
+::
+
     $ xcube extract xcube_cube.zarr -o point_data.csv -Cb --indexes --refs
     
+The related Python API function is :py:func:`xcube.api.get_cube_values_for_points`.
