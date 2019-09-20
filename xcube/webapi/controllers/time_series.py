@@ -83,8 +83,6 @@ def get_time_series_for_point(ctx: ServiceContext,
     :param lat: The point's latitude in decimal degrees.
     :param start_date: An optional start date.
     :param end_date: An optional end date.
-    :param include_count: Whether to include the valid number of observations in the result.
-    :param include_stdev: Whether to include the standard deviation in the result.
     :param max_valids: Optional number of valid points.
            If it is None (default), also missing values are returned as NaN;
            if it is -1 only valid values are returned;
