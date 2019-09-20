@@ -14,7 +14,10 @@ conda:
   environment: environment.yml
 
 # The path to the pip requirements file.
-requirements_file: docs/source/requirements.txt
+# Optionally set the version of Python and requirements required to build your docs
+python:
+  install:
+    - requirements: docs/source/requirements.txt
 
 # Optionally build your docs in additional formats such as PDF and ePub
 formats: all
