@@ -1,4 +1,4 @@
-.. _`xcube viewer demo`: https://xcube-viewer.s3.eu-central-1.amazonaws.com
+.. _`xcube viewer demo`: https://xcube-viewer.s3.eu-central-1.amazonaws.com/index.html
 .. _`xcube-viewer`: https://github.com/dcs4cop/xcube-viewer
 .. _`README`: https://github.com/dcs4cop/xcube-viewer/blob/master/README.md
 
