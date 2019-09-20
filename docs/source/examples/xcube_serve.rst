@@ -1,3 +1,5 @@
+.. warning:: This chapter is a work in progress and currently less than a draft.
+
 =========================
 Publishing xcube datasets
 =========================
