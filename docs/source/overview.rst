@@ -75,7 +75,7 @@ Toolkit
 On top of `xarray`_, `dask`_, `zarr`_, and other popular Python data science packages,
 xcube provides various higher-level tools to generate, manipulate, and publish xcube datasets:
 
-* :doc:`cli` -access, generate, modify, and analyse xcube datasets using the ``xcube`` tool;
+* :doc:`cli` - access, generate, modify, and analyse xcube datasets using the ``xcube`` tool;
 * :doc:`api` - access, generate, modify, and analyse xcube datasets via Python programs and notebooks;
 * :doc:`webapi` - access, analyse, visualize xcube datasets via an xcube server;
 * :doc:`viewer` – publish and visualise xcube datasets using maps and time-series charts.
@@ -115,9 +115,9 @@ xcube datasets may be prepared beforehand. Steps 8 to 10 are optional.
    a multi-resolution image pyramid
    using the :doc:`cli/xcube_chunk` and :doc:`cli/xcube_level` tools.
 10. create a dataset variant optimal for time series-extraction again
-   using the :doc:`cli/xcube_chunk` tool.
+    using the :doc:`cli/xcube_chunk` tool.
 11. configure xcube datasets and publish them through the xcube server
-   using the :doc:`cli/xcube_serve` tool.
+    using the :doc:`cli/xcube_serve` tool.
 
 You may then use a WMTS-compatible client to visualise the datasets or develop your own client that
 will make use of the xcube's REST API.
