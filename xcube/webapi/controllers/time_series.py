@@ -339,7 +339,7 @@ def _collect_ts_result(ts_ds: xr.Dataset,
                 statistics['uncertainty'] = float(value)
 
         time_series.append(dict(result=statistics,
-                                date=timestamp_to_iso_string(var.time[time_index].data)))
+                                date=timestamp_to_iso_string(var.time[time_index].values)))
 
     if pos_max_valids:
         return {'results': time_series[::-1]}
