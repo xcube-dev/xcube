@@ -1,0 +1,71 @@
+import unittest
+from typing import Tuple
+
+import numpy as np
+import xarray as xr
+
+from xcube.util.cubestore import CubeStore
+
+
+class CubeStoreTest(unittest.TestCase):
+
+    def test_strict_cf_convention(self):
+        index_var = gen_index_var(dims=('time', 'lat', 'lon'),
+                                  shape=(4, 8, 16),
+                                  chunks=(2, 4, 8))
+        self.assertIsNotNone(index_var)
+        self.assertEqual((4, 8, 16), index_var.shape)
+        self.assertEqual(((2, 2), (4, 4), (8, 8)), index_var.chunks)
+        self.assertEqual(('time', 'lat', 'lon'), index_var.dims)
+
+        visited_indexes = set()
+
+        def index_var_ufunc(index_var_):
+            nonlocal visited_indexes
+            visited_indexes.add(tuple(map(int, index_var_.ravel()[0:6])))
+            return index_var_
+
+        result = xr.apply_ufunc(index_var_ufunc, index_var, dask='parallelized', output_dtypes=[index_var.dtype])
+        self.assertIsNotNone(result)
+        self.assertEqual((4, 8, 16), result.shape)
+        self.assertEqual(((2, 2), (4, 4), (8, 8)), result.chunks)
+        self.assertEqual(('time', 'lat', 'lon'), result.dims)
+
+        values = result.values
+        self.assertEqual((4, 8, 16), values.shape)
+        np.testing.assert_array_equal(index_var.values, values)
+
+        self.assertEqual(8, len(visited_indexes))
+        self.assertEqual({
+            (0, 2, 0, 4, 0, 8),
+            (2, 4, 0, 4, 0, 8),
+            (0, 2, 4, 8, 0, 8),
+            (2, 4, 4, 8, 0, 8),
+            (0, 2, 0, 4, 8, 16),
+            (2, 4, 0, 4, 8, 16),
+            (0, 2, 4, 8, 8, 16),
+            (2, 4, 4, 8, 8, 16),
+        }, visited_indexes)
+
+
+def gen_index_var(dims, shape, chunks):
+    # noinspection PyUnusedLocal
+    def get_chunk(cube_store: CubeStore, name: str, index: Tuple[int, ...]) -> bytes:
+        data = np.zeros(cube_store.chunks, dtype=np.uint64)
+        data_view = data.ravel()
+        if data_view.base is not data:
+            raise ValueError('view expected')
+        if data_view.size < cube_store.ndim * 2:
+            raise ValueError('size too small')
+        for i in range(cube_store.ndim):
+            j1 = cube_store.chunks[i] * index[i]
+            j2 = j1 + cube_store.chunks[i]
+            data_view[2 * i] = j1
+            data_view[2 * i + 1] = j2
+        return data.tobytes()
+
+    store = CubeStore(dims, shape, chunks)
+    store.add_lazy_array('__index_var__', '<u8', get_chunk=get_chunk)
+
+    ds = xr.open_zarr(store)
+    return ds.__index_var__

@@ -1,6 +1,7 @@
 # Force loading of xarray
 # noinspection PyUnresolvedReferences
-import xcube.api.api
+from .api import XCubeDatasetAccessor
+from .apply import apply
 from .dump import dump_dataset
 from .extract import DEFAULT_INDEX_NAME_PATTERN, DEFAULT_INTERP_POINT_METHOD, DEFAULT_REF_NAME_PATTERN, \
     get_cube_point_indexes, get_cube_values_for_indexes, get_cube_values_for_points, get_dataset_indexes
