@@ -9,11 +9,15 @@ This example demonstrates how to run an xcube server to publish existing xcube d
 Running the server
 ==================
 
-To run the server on default port 8080 using the demo configuration:::
+To run the server on default port 8080 using the demo configuration:
+
+::
 
     $ xcube serve --verbose -c examples/serve/demo/config.yml
 
-To run the server using a particular xcube dataset path and styling information for a variable:::
+To run the server using a particular xcube dataset path and styling information for a variable:
+
+::
 
     $ xcube serve --styles conc_chl=(0,20,"viridis") examples/serve/demo/cube-1-250-250.zarr
 
@@ -63,24 +67,38 @@ In order make this option usable, xcube-viewer must be installed and build:
 
 1. Download and install `yarn <https://yarnpkg.com/lang/en/>`_.
 
-2. Download and build xcube-viewer:::
+2. Download and build xcube-viewer:
+
+::
 
     $ git clone https://github.com/dcs4cop/xcube-viewer.git
     $ cd xcube-viewer
     $ yarn build
 
 3. Configure ``xcube serve`` so it finds the xcube-viewer
-   On Linux (please adjust path):::
+   On Linux (please adjust path):
+
+::
 
     $ export XCUBE_VIEWER_PATH=/abs/path/to/xcube-viewer/build
 
-   On Windows (please adjust path):::
+   On Windows (please adjust path):
+
+::
 
     > SET XCUBE_VIEWER_PATH=/abs/path/to/xcube-viewer/build
 
-4. Then run ``xcube serve --show``:::
+4. Then run ``xcube serve --show``:
+
+::
 
     $ xcube serve --show --styles conc_chl=(0,20,"viridis") examples/serve/demo/cube-1-250-250.zarr
+
+Viewing the generated xcube dataset described in the example :doc:``xcube_gen``:
+
+::
+
+    $ xcube serve --show --styles analysed_sst=(200,375,'plasma') demo_SST_xcube-optimized.zarr
 
 
 In case you get an error message "cannot reach server" on the very bottom of the web app's main window,
@@ -95,11 +113,15 @@ Other clients
 =============
 
 There are example HTML pages for some tile server clients. They need to be run in
-a web server. If you don't have one, you can use Node's `httpserver`:::
+a web server. If you don't have one, you can use Node's ``httpserver``:
+
+::
 
     $ npm install -g httpserver
 
-After starting both the xcube server and web server, e.g. on port 9090::
+After starting both the xcube server and web server, e.g. on port 9090:
+
+::
 
     $ httpserver -d -p 9090
 
