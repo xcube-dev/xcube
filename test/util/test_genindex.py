@@ -10,7 +10,7 @@ import xarray as xr
 
 
 class GenIndexTest(unittest.TestCase):
-
+    @unittest.skip("index store needs to be finalised. Not a production element at this stage.")
     def test_strict_cf_convention(self):
         index_var = gen_index_var(shape=(4, 8, 16), chunks=(2, 4, 8), dims=('time', 'lat', 'lon'))
         self.assertIsNotNone(index_var)
