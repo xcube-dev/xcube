@@ -1,6 +1,6 @@
-======================
-Command-line Interface
-======================
+===
+CLI
+===
 
 The xcube command-line interface (CLI) is a single executable :doc:`cli/xcube` with several
 sub-commands comprising functions ranging from xcube dataset generation, over analysis and

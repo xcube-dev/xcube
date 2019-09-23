@@ -1,10 +1,14 @@
-# `xcube dump`
+==============
+``xcube dump``
+==============
 
 Dump contents of a dataset.
 
-```bash
-$ xcube dump --help
-```
+::
+
+    $ xcube dump --help
+
+::
 
     
     Usage: xcube dump [OPTIONS] INPUT
@@ -19,6 +23,8 @@ $ xcube dump --help
 
 
 Example:
+
+::
 
     $ xcube dump xcube_cube.zarr 
 

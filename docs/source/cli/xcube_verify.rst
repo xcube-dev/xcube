@@ -1,10 +1,14 @@
-# `xcube verify`
+================
+``xcube verify``
+================
 
 Perform cube verification.
 
-```bash
-$ xcube verify --help
-```
+::
+
+    $ xcube verify --help
+
+::
 
     Usage: xcube verify [OPTIONS] CUBE
     
@@ -24,3 +28,5 @@ $ xcube verify --help
     
     Options:
       --help  Show this message and exit.
+
+The related Python API functions are :py:func:`xcube.api.verify_cube` and :py:func:`xcube.api.assert_cube`.

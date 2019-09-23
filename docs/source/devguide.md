@@ -93,7 +93,7 @@ Input argument:
 
     @click.argument('input')
 
-If input argument is restricted to a xcube dataset:
+If input argument is restricted to an xcube dataset:
 
     @click.argument('cube')
 
@@ -110,7 +110,7 @@ Output format:
 
 Output parameters:
 
-    @click.option('--param', metavar='PARAM', multiple=True,
+    @click.option('--param', '-p', metavar='PARAM', multiple=True,
                   help="Parameter specific for the output format. Multiple allowed.")
 
 Variable names:
@@ -122,6 +122,9 @@ Variable names:
 For parsing CLI inputs, use helper functions that are already in use.
 In the CLI command implementation code, raise `click.ClickException(message)` 
 with a clear `message` for users.
+
+Common xcube CLI options like `-f` for FORMAT should be lower case letters and 
+specific xcube CLI options like `-S` for SIZE in `xcube gen` are recommended to be uppercase letters. 
 
 Extensively validate CLI inputs to avoid that API functions raise 
 `ValueError`, `TypeError`, etc. Such errors and their message texts are

@@ -1,4 +1,6 @@
-# `xcube prune`
+===============
+``xcube prune``
+===============
 
 Delete empty chunks.
 
@@ -6,9 +8,11 @@ Warning: this tool will likely be integrated into ``xcube optimize`` in
 the near future.
 
 
-```bash
-$ xcube prune --help
-```
+::
+
+    $ xcube prune --help
+
+::
 
     Usage: xcube prune [OPTIONS] CUBE
     
@@ -20,3 +24,4 @@ $ xcube prune --help
       --help     Show this message and exit.
 
 
+A related Python API function is :py:func:`xcube.api.get_empty_dataset_chunks`.
