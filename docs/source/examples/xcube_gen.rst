@@ -20,7 +20,7 @@ there are some questions which need to be answered before hand.
 and is fixed to a global grid.
 
 2. Decide on variables to be included:
-    * Are all the variables in the source files needed? If not, select the ones to be included.
+    * Are all variables of the source files needed? If not, select the ones to be included.
     * Should specific pixels be masked out?
 
 3. Decide on chunking:
@@ -28,12 +28,12 @@ and is fixed to a global grid.
 
 → This website might be helpful when deciding about the chunk sizes:  https://docs.dask.org/en/latest/array-chunks.html
 
-4. Decide on the cube's output name and output path.
+4. Decide on the xcube dataset storage location.
 
 5. Use configuration file for generating your Data Cube:
-    * You might not want to place all settings for your data cube within the command line,
+    * You might not want to place all settings for your xcube dataset within the command line,
       you could use the option ``-c, --config`` and pass the above settings within a yaml file.
-      Example for a configuration file: [xcube_demo_gen_config.yml](../examples/gen/config_files/xcube_demo_gen_config.yml)
+      Example for a configuration file: `dcs4cop-gen_BC_config_CMEMS.yml <https://github.com/dcs4cop/xcube/blob/master/examples/gen/config_files/dcs4cop-gen_BC_config_CMEMS.yml>`_
 
     * The parameter, which can be used within the configuration file are:
         * ``input_paths``
@@ -62,16 +62,16 @@ For creating a little cube you can execute the command-line below with the paths
 
 ::
 
-    $ xcube gen -o "your/output/path/dcs4cop-bc-sst-sns-l2c-v1-2017.zarr" -c examples/gen/config_files/xcube_demo_gen_config.yml --sort examples/gen/data/*.nc
+    $ xcube gen -o "your/output/path/demo_SST_xcube.zarr" -c examples/gen/config_files/dcs4cop-gen_BC_config_CMEMS.yml --sort examples/gen/data/*.nc
 
-The `configuration file <https://github.com/dcs4cop/xcube/tree/master/examples/gen/config_files/xcube_demo_gen_config.yml>`_ specifies the input processor,
+The `configuration file <https://github.com/dcs4cop/xcube/tree/master/examples/gen/config_files/dcs4cop-gen_BC_config_CMEMS.yml>`_ specifies the input processor,
 which in this case is the default one. The output size is 10240, 5632 which was derived by using :doc:``cli/xcube grid``
 for a spatial resolution of 300 meters and a bounding box -15, 48, 10, 62 (lon_min, lat_min, lon_max, lat_max). This also results
 in a adjusted bounding box which places the region into a global grid, called ``output_region`` in the configuration file.
-The output format (``output_writer_name``) are defined as well.
+The output format (``output_writer_name``) is defined as well.
 The chunking of the dimensions can be set by the output writer parameter (``output_writer_params``) called chunksizes,
-and here the chunking is set for latitude and longitude. If the chunking is not set, a automatic chunking is appllied.
-The spatial resampling method (output_resampling) is set to 'nearest' and the confguration file contains only one 
+and here the chunking is set for latitude and longitude. If the chunking is not set, a automatic chunking is applied.
+The spatial resampling method (output_resampling) is set to 'nearest' and the configuration file contains only one
 variable which will be included into the xcube dataset - 'analysed-sst'.
 
 The Analysed Sea Surface Temperature data set contains the variable already as needed. This means no pixel 
@@ -89,4 +89,31 @@ with xarray into a Notebook (example will follow soon).
 you need to pass the input files in the desired order via a text file. Each line of the text file should contain the 
 path to one input file. If you pass the input files in a desired order, then do not use the parameter ``--sort`` within
 the commandline interface.
+
+
+Optimizing and pruning a xcube dataset
+======================================
+
+If you want to optimize your generated xcube dataset e.g. for publishing it in a xcube viewer via xcube serve
+you can use  :doc:``cli/xcube optimize``.
+
+::
+
+    $ xcube optimize demo_SST_xcube.zarr -C
+
+By executing the command above, an optimized xcube dataset called demo_SST_xcube-optimized.zarr will be created.
+You can take a look into the directory of the original xcube dataset and the optimized one, and you will notice that
+a file called .zmetadata. .zmetadata contains the information stored in .zattrs and .zarray of each variable of the
+xcube dataset and makes requests of metadata faster. The option ``-C`` optimizes coordinate variables by converting any
+chunked arrays into single, non-chunked, contiguous arrays.
+
+For deleting empty chunks :doc:``cli/xcube prune`` can be used. It deletes all data files associated with empty (NaN-only)
+chunks of an xcube dataset, and is restricted to the ZARR format.
+
+::
+
+    $ xcube prune demo_SST_xcube-optimized.zarr
+
+The pruned xcube dataset is saved in place and needs no output path.
+
 
