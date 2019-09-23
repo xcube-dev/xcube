@@ -1,6 +1,7 @@
 ## Changes in 0.2.0.dev2 (in dev)
 
 * Reorganisation of the Documentation and Examples Section (partly addressing #106)
+* Loosened python conda environment to satisfy conda-forge requirements
 
 ### New
 
