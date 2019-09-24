@@ -2,6 +2,9 @@
 ``xcube vars2dim``
 ==================
 
+Synopsis
+========
+
 Convert cube variables into new dimension.
 
 ::
@@ -27,5 +30,8 @@ Convert cube variables into new dimension.
                                   OUTPUT.
       --help                      Show this message and exit.
 
+
+Python API
+==========
 
 The related Python API function is :py:func:`xcube.api.vars_to_dim`.

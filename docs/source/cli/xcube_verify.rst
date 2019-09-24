@@ -2,6 +2,9 @@
 ``xcube verify``
 ================
 
+Synopsis
+========
+
 Perform cube verification.
 
 ::
@@ -28,5 +31,8 @@ Perform cube verification.
     
     Options:
       --help  Show this message and exit.
+
+Python API
+==========
 
 The related Python API functions are :py:func:`xcube.api.verify_cube` and :py:func:`xcube.api.assert_cube`.

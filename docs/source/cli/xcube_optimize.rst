@@ -2,6 +2,9 @@
 ``xcube optimize``
 ==================
 
+Synopsis
+========
+
 Optimize xcube dataset for faster access.
 
 ::
@@ -37,7 +40,8 @@ Optimize xcube dataset for faster access.
       --help               Show this message and exit.
 
 
-Examples:
+Examples
+========
 
 Write an cube with consolidated metadata to ``cube-optimized.zarr``:
 
@@ -58,5 +62,8 @@ Optimize a cube in-place with consolidated metadata and consolidated coordinate 
 
     $ xcube optimize -IC ./cube.zarr
 
+
+Python API
+==========
 
 The related Python API function is :py:func:`xcube.api.optimize_dataset`.

@@ -2,6 +2,9 @@
 ``xcube chunk``
 ===============
 
+Synopsis
+========
+
 (Re-)chunk xcube dataset.
 
 ::
@@ -26,10 +29,14 @@
       --help               Show this message and exit.
 
 
-Example:
+Example
+=======
 
 ::
 
     $ xcube chunk input_not_chunked.zarr -o output_rechunked.zarr --chunks "time=1,lat=270,lon=270"
+
+Python API
+==========
 
 The related Python API function is :py:func:`xcube.api.chunk_dataset`.

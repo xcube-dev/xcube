@@ -2,6 +2,9 @@
 ``xcube level``
 ===============
 
+Synopsis
+========
+
 Generate multi-resolution levels.
 
 ::
@@ -37,11 +40,16 @@ Generate multi-resolution levels.
 
 
     
-Example:
+Example
+=======
 
 ::
 
     $ xcube level --link -t 720 data/cubes/test-cube.zarr
+
+Python API
+==========
+
 
 The related Python API function are :py:func:`xcube.api.compute_levels`, :py:func:`xcube.api.read_levels`,
 and :py:func:`xcube.api.write_levels`.

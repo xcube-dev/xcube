@@ -2,6 +2,9 @@
 ``xcube resample``
 ==================
 
+Synopsis
+========
+
 Resample data along the time dimension.
 
 ::
@@ -70,6 +73,9 @@ Resample data along the time dimension.
                                       produce any outputs.
       --help                          Show this message and exit.
 
+Examples
+========
+
 Upsampling example:
 
 ::
@@ -81,5 +87,8 @@ Downsampling example:
 ::
 
     $ xcube resample --vars conc_chl,conc_tsm -F 3D -M mean -M std -M count examples/serve/demo/cube.nc
+
+Python API
+==========
 
 The related Python API function is :py:func:`xcube.api.resample_in_time`.

@@ -19,11 +19,6 @@ Overview
 analysis-ready form to users. xcube achieves this by carefully converting EO data sources into self-contained *data cubes*
 that can be published in the cloud.
 
-Motivation
-==========
-
-
-
 Data Cube
 =========
 
