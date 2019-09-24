@@ -12,7 +12,7 @@ from .helpers import get_inputdata_path
 
 
 def clean_up():
-    files = ['l2c-single.nc', 'l2c.nc', 'l2c.zarr', 'l2c-single.zarr']
+    files = ['l2c-single.nc', 'l2c-single.zarr', 'l2c.nc', 'l2c.zarr']
     for file in files:
         rimraf(file)
         rimraf(file + '.temp.nc')  # May remain from Netcdf4DatasetIO.append()
@@ -27,7 +27,7 @@ class DefaultProcessTest(unittest.TestCase):
     def tearDown(self):
         clean_up()
 
-    def test_process_inputs_single(self):
+    def test_process_inputs_single_nc(self):
         status, output = gen_cube_wrapper(
             [get_inputdata_path('20170101-IFR-L4_GHRSST-SSTfnd-ODYSSEA-NWE_002-v2.0-fv1.0.nc')], 'l2c-single.nc')
         self.assertEqual(True, status)
@@ -48,6 +48,16 @@ class DefaultProcessTest(unittest.TestCase):
                             dict(date_modified=None,
                                  time_coverage_start='2016-12-31T12:00:00.000000000',
                                  time_coverage_end='2017-01-03T12:00:00.000000000'))
+
+    def test_process_inputs_single_zarr(self):
+        status, output = gen_cube_wrapper(
+            [get_inputdata_path('20170101-IFR-L4_GHRSST-SSTfnd-ODYSSEA-NWE_002-v2.0-fv1.0.nc')], 'l2c-single.zarr')
+        self.assertEqual(True, status)
+        self.assertTrue('\nstep 8 of 8: creating input slice in l2c-single.zarr...\n' in output)
+        self.assert_cube_ok(xr.open_zarr('l2c-single.zarr'), 1,
+                            dict(date_modified=None,
+                                 time_coverage_start='2016-12-31T12:00:00.000000000',
+                                 time_coverage_end='2017-01-01T12:00:00.000000000'))
 
     def test_process_inputs_append_multiple_zarr(self):
         status, output = gen_cube_wrapper(
@@ -109,7 +119,9 @@ class DefaultProcessTest(unittest.TestCase):
         self.assertEqual({'lat': 180, 'lon': 320, 'bnds': 2, 'time': expected_time_dim}, cube.dims)
         self.assertEqual({'lon', 'lat', 'time', 'lon_bnds', 'lat_bnds', 'time_bnds'}, set(cube.coords))
         self.assertEqual({'analysed_sst'}, set(cube.data_vars))
-        expected_attrs = dict(date_modified=None,
+        expected_attrs = dict(title='Test Cube',
+                              project='xcube',
+                              date_modified=None,
                               geospatial_lon_min=-4.0,
                               geospatial_lon_max=12.0,
                               geospatial_lon_resolution=0.05,
@@ -170,4 +182,9 @@ def gen_cube_wrapper(input_paths, output_path, sort_mode=False, input_processor_
         sort_mode=sort_mode,
     )
 
-    return gen_cube(dry_run=False, monitor=output_monitor, **config), output
+    output_metadata = dict(
+        title='Test Cube',
+        project='xcube',
+    )
+
+    return gen_cube(dry_run=False, monitor=output_monitor, output_metadata=output_metadata, **config), output

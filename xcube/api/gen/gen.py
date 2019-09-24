@@ -261,7 +261,6 @@ def _process_input(input_processor: InputProcessor,
     steps.append((step7, 'post-processing input slice'))
 
     if update_mode == 'create':
-
         def step8(input_slice):
             if not dry_run:
                 rimraf(output_path)

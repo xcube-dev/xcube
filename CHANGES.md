@@ -39,6 +39,7 @@
 
 ### Fixes
 
+* `xcube gen` CLI now updates metadata correctly. (#181)
 * It was no longer possible to use the `xcube gen` CLI with `--proc` option. (#120)
 * `totalCount` attribute of time series returned by Web API `ts/{dataset}/{variable}/{geom-type}` now
    contains the correct number of possible observations. Was always `1` before.
