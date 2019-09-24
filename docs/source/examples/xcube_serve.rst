@@ -104,7 +104,7 @@ Viewing the generated xcube dataset described in the example :doc:`xcube_gen`:
 
 ::
 
-    $ xcube serve --show --styles "analysed_sst=(200,375,'plasma')" demo_SST_xcube-optimized.zarr
+    $ xcube serve --show --styles "analysed_sst=(280,290,'plasma')" demo_SST_xcube-optimized.zarr
 
 .. image:: ../_static/screenshot_xcube_viewer_sst_docu.png
   :width: 800
@@ -113,7 +113,7 @@ Viewing the generated xcube dataset described in the example :doc:`xcube_gen`:
 In case you get an error message "cannot reach server" on the very bottom of the web app's main window,
 refresh the page.
 
-You can play around with the value range displayed in the viewer, here it is set to min=200K and max=375K.
+You can play around with the value range displayed in the viewer, here it is set to min=280K and max=290K.
 The colormap used for mapping can be modified as well and the
 `colormaps provided by matplotlib`_ can be used.
 
