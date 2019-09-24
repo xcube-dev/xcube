@@ -14,9 +14,9 @@ The xcube viewer app is a simple, single-page web application to be used with th
 Demo
 ====
 
-To test the viewer app you can use the `xcube viewer demo`_.
-When you open the page you will see a message "cannot reach server", this is normal as the demo is configured to
-run with an xcube server started locally on default port 8080, see :doc:`webapi`. So you can either run an xcube
+To test the viewer app, you can use the `xcube viewer demo`_.
+When you open the page a message "cannot reach server" will appear. This is normal as the demo is configured to
+run with an xcube server started locally on default port 8080, see :doc:`webapi`. Hence, you can either run an xcube
 server instance locally then reload the viewer page, or configure the viewer with an an existing xcube server.
 To do so open the viewer's settings panels, select "Server". A "Select Server" panel is opened, click the "+"
 button to add a new server. Here are two demo servers that you may add for testing:

@@ -1,20 +1,25 @@
+.. _xcube repository: https://github.com/dcs4cop/xcube/tree/master/examples/gen/data
+.. _Copernicus Marine Environment Monitoring Service: http://marine.copernicus.eu/
+.. _Product User Manual: http://resources.marine.copernicus.eu/documents/PUM/CMEMS-SST-PUM-010-001.pdf
+.. _configuration file: https://github.com/dcs4cop/xcube/tree/master/examples/gen/config_files/xcube_sst_demo_config.yml
+.. _configuration file which takes Sentinel-3 Ocean and Land Colour Instrument (OLCI): https://github.com/dcs4cop/xcube/tree/master/examples/gen/config_files/xcube_olci_demo_config.yml
+
 .. warning:: This chapter is a work in progress and currently less than a draft.
 
 ===========================
 Generating an xcube dataset
 ===========================
 
-In this example we show how to generate a (toy) xcube dataset from a set of EO source files.
+In the following example a tiny demo xcube dataset is generated.
 
 
-Sea Surface Temperature Anomalies over the Global Ocean
+Analysed Sea Surface Temperature over the Global Ocean
 ========================================================
 
-Input data for this example is located in the xcube repository at ``docs/examples/gen/data``.
-The input files contain sea surface temperature anomalies over the global ocean and are provided by
-`Copernicus Marine Environment Monitoring Service <http://marine.copernicus.eu/>`_.
-The data is described in a dedicated
-`Product User Manual <http://resources.marine.copernicus.eu/documents/PUM/CMEMS-SST-PUM-010-001.pdf>`_.
+Input data for this example is located in the `xcube repository`_.
+The input files contain analysed sea surface temperature and sea surface temperature anomaly over the global ocean
+and are provided by `Copernicus Marine Environment Monitoring Service`_.
+The data is described in a dedicated `Product User Manual`_.
 
 Before starting the example, you need to activate the xcube environment:
 
@@ -22,7 +27,7 @@ Before starting the example, you need to activate the xcube environment:
 
     $ conda activate xcube
 
-If you want to take a look at the input data you can use :doc:``cli/xcube dump`` to print out the metadata of a selected input file:
+If you want to take a look at the input data you can use :doc:`cli/xcube dump` to print out the metadata of a selected input file:
 
 ::
 
@@ -89,7 +94,8 @@ If you want to take a look at the input data you can use :doc:``cli/xcube dump``
             cdm_data_type:              grid
 
 
-Below an example xcube dataset will be created, which will contain the variable analysed_sst. The metadata for a specific variable can be viewed by:
+Below an example xcube dataset will be created, which will contain the variable analysed_sst.
+The metadata for a specific variable can be viewed by:
 
 ::
 
@@ -118,24 +124,24 @@ For creating a toy xcube dataset you can execute the command-line below. Please 
 
 ::
 
-    $ xcube gen -o "your/output/path/demo_SST_xcube.zarr" -c examples/gen/config_files/dcs4cop-gen_BC_config_CMEMS.yml --sort examples/gen/data/*.nc
+    $ xcube gen -o "your/output/path/demo_SST_xcube.zarr" -c examples/gen/config_files/xcube_sst_demo_config.yml --sort examples/gen/data/*.nc
 
-The `configuration file <https://github.com/dcs4cop/xcube/tree/master/examples/gen/config_files/dcs4cop-gen_BC_config_CMEMS.yml>`_ specifies the input processor,
-which in this case is the default one. The output size is 10240, 5632. The bounding box of the xcube data cube is given by``output_region`` in the configuration file.
+The `configuration file`_ specifies the input processor, which in this case is the default one.
+The output size is 10240, 5632. The bounding box of the data cube is given by ``output_region`` in the configuration file.
 The output format (``output_writer_name``) is defined as well.
-The chunking of the dimensions can be set by the output writer parameter (``output_writer_params``) called chunksizes,
-and here the chunking is set for latitude and longitude. If the chunking is not set, a automatic chunking is applied.
-The spatial resampling method (output_resampling) is set to 'nearest' and the configuration file contains only one
+The chunking of the dimensions can be set by the ``chunksizes`` attribute of the ``output_writer_params`` parameter,
+and in the example configuration file the chunking is set for latitude and longitude. If the chunking is not set, a automatic chunking is applied.
+The spatial resampling method (``output_resampling``) is set to 'nearest' and the configuration file contains only one
 variable which will be included into the xcube dataset - 'analysed-sst'.
 
 The Analysed Sea Surface Temperature data set contains the variable already as needed. This means no pixel 
 masking needs to be applied. However, this might differ depending on the input data. You can take a look at a 
-`configuration file which takes Sentinel-3 Ocean and Land Colour Instrument (OLCI) <https://github.com/dcs4cop/xcube/tree/master/examples/gen/config_files/dcs4cop-config.yml>`_
+`configuration file which takes Sentinel-3 Ocean and Land Colour Instrument (OLCI)`_
 as input files, which is a bit more complex.
-The advantage of using pixel expressions is, that the generated cube contains only valid pixels and the user of the data cube
-does not have to worry about something like land-masking or invalid values. 
-Furthermore, the generated data cube is spatially regular meaning that for each time stamp the daca cells are located 
-always at the same position. The time stamps are kept from the input data set.
+The advantage of using pixel expressions is, that the generated cube contains only valid pixels and the user of the
+data cube does not have to worry about something like land-masking or invalid values.
+Furthermore, the generated data cube is spatially regular. This means the data are aligned on a common spatial grid and
+cover the same region. The time stamps are kept from the input data set.
 
 **Caution:** If you have input data that has file names not only varying with the time stamp but with e.g. A and B as well,
 you need to pass the input files in the desired order via a text file. Each line of the text file should contain the 
@@ -147,7 +153,7 @@ Optimizing and pruning a xcube dataset
 ======================================
 
 If you want to optimize your generated xcube dataset e.g. for publishing it in a xcube viewer via xcube serve
-you can use  :doc:``cli/xcube optimize``:
+you can use  :doc:`cli/xcube optimize`:
 
 ::
 
@@ -159,7 +165,7 @@ a file called .zmetadata. .zmetadata contains the information stored in .zattrs 
 xcube dataset and makes requests of metadata faster. The option ``-C`` optimizes coordinate variables by converting any
 chunked arrays into single, non-chunked, contiguous arrays.
 
-For deleting empty chunks :doc:``cli/xcube prune`` can be used. It deletes all data files associated with empty (NaN-only)
+For deleting empty chunks :doc:`cli/xcube prune` can be used. It deletes all data files associated with empty (NaN-only)
 chunks of an xcube dataset, and is restricted to the ZARR format.
 
 ::
@@ -169,7 +175,7 @@ chunks of an xcube dataset, and is restricted to the ZARR format.
 The pruned xcube dataset is saved in place and does not need an output path. The size of the xcube dataset was 6,8 MB before pruning it
 and 6,5 MB afterwards. According to the output printed to the terminal, 30 block files were deleted.
 
-The metadata of the xcube dataset can be viewed with :doc:``cli/xcube dump`` as well:
+The metadata of the xcube dataset can be viewed with :doc:`cli/xcube dump` as well:
 
 ::
 

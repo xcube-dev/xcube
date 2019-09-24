@@ -2,6 +2,9 @@
 ``xcube extract``
 =================
 
+Synopsis
+========
+
 Extract cube points.
 
 ::
@@ -33,11 +36,16 @@ Extract cube points.
       --help                 Show this message and exit.
 
 
-Example:  
+Example
+=======
 
 ::
 
     $ xcube extract xcube_cube.zarr -o point_data.csv -Cb --indexes --refs
-    
+
+
+Python API
+==========
+
 Related Python API functions are :py:func:`xcube.api.get_cube_values_for_points`,
 :py:func:`xcube.api.get_cube_point_indexes`, and :py:func:`xcube.api.get_cube_values_for_indexes`.
