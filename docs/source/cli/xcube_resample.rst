@@ -1,18 +1,22 @@
-# `xcube resample`
+==================
+``xcube resample``
+==================
 
 Resample data along the time dimension.
 
-```bash
-$ xcube resample --help
-```
-    
+::
+
+    $ xcube resample --help
+
+::
+
     Usage: xcube resample [OPTIONS] CUBE
-    
+
       Resample data along the time dimension.
-    
+
     Options:
-      -c, --config CONFIG             xcube dataset configuration file in YAML format.
-                                      More than one config input file is
+      -c, --config CONFIG             xcube dataset configuration file in YAML
+                                      format. More than one config input file is
                                       allowed.When passing several config files,
                                       they are merged considering the order passed
                                       via command line.
@@ -20,8 +24,7 @@ $ xcube resample --help
       -f, --format [zarr|netcdf4|mem]
                                       Output format. If omitted, format will be
                                       guessed from output path.
-      --variables, --vars VARIABLES
-                                      Comma-separated list of names of variables
+      --variables, --vars VARIABLES   Comma-separated list of names of variables
                                       to be included.
       -M, --method TEXT               Temporal resampling method. Available
                                       downsampling methods are 'count', 'first',
@@ -67,12 +70,16 @@ $ xcube resample --help
                                       produce any outputs.
       --help                          Show this message and exit.
 
-
 Upsampling example:
 
-    xcube resample --vars conc_chl,conc_tsm -F 12H -T 6H -M interpolation -K linear examples/serve/demo/cube.nc
+::
+
+    $ xcube resample --vars conc_chl,conc_tsm -F 12H -T 6H -M interpolation -K linear examples/serve/demo/cube.nc
 
 Downsampling example:
 
-    xcube resample --vars conc_chl,conc_tsm -F 3D -M mean -M std -M count examples/serve/demo/cube.nc
+::
 
+    $ xcube resample --vars conc_chl,conc_tsm -F 3D -M mean -M std -M count examples/serve/demo/cube.nc
+
+The related Python API function is :py:func:`xcube.api.resample_in_time`.

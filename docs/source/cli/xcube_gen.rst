@@ -70,9 +70,14 @@ Generate xcube dataset.
       --help                          Show this message and exit.
 
 
-Below is the ouput of a ``xcube gen --info`` call showing five input processors installed via plugins.::
+Below is the ouput of a ``xcube gen --info`` call showing five input processors installed via plugins.
+
+::
 
     $ xcube gen --info
+
+::
+
     input processors to be used with option --proc:
       default                           Single-scene NetCDF/CF inputs in xcube standard format
       rbins-seviri-highroc-scene-l2     RBINS SEVIRI HIGHROC single-scene Level-2 NetCDF inputs
@@ -91,7 +96,9 @@ Below is the ouput of a ``xcube gen --info`` call showing five input processors 
       zarr                    (*.zarr)      Zarr file format (http://zarr.readthedocs.io)
 
 
-Example:::
+Example:
+
+::
 
     $ xcube gen -S 2000,1000 -R 0,50,5,52.5 --vars conc_chl,conc_tsm,kd489,c2rcc_flags,quality_flags -o hiroc-cube.zarr -P default D:\OneDrive\BC\EOData\HIGHROC\2017\01\*.nc
 

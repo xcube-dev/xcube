@@ -110,6 +110,8 @@ html_static_path = ['_static']
 # Output file base name for HTML help builder.
 htmlhelp_basename = project + '-docs'
 
+html_logo = '_static/logo.png'
+
 # -- Options for Autodoc output -------------------------------------------------
 
 autoclass_content = 'class'
