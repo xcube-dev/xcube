@@ -1,3 +1,10 @@
+.. _xcube-viewer: https://github.com/dcs4cop/xcube-viewer/
+.. _yarn: https://yarnpkg.com/lang/en/
+.. _colormaps provided by matplotlib: https://matplotlib.org/examples/color/colormaps_reference.html
+.. _Cesium Demo: http://localhost:9090/examples/serve/demo/index-cesium.html
+.. _download Cesium: https://cesiumjs.org/downloads/
+.. _demo's HTML file: https://github.com/dcs4cop/xcube/blob/master/examples/serve/demo/index-cesium.html
+
 .. warning:: This chapter is a work in progress and currently less than a draft.
 
 =========================
@@ -59,13 +66,12 @@ After starting the server, check the various functions provided by xcube Web API
 xcube Viewer
 ============
 
-xcube datasets published through ``xcube serve`` can be visualised using the `xcube-viewer <https://github.com/dcs4cop/xcube-viewer/>`_
-web application.
+xcube datasets published through ``xcube serve`` can be visualised using the `xcube-viewer`_ web application.
 To do so, run ``xcube serve`` with the ``--show`` flag.
 
 In order make this option usable, xcube-viewer must be installed and build:
 
-1. Download and install `yarn <https://yarnpkg.com/lang/en/>`_.
+1. Download and install `yarn`_.
 
 2. Download and build xcube-viewer:
 
@@ -109,7 +115,7 @@ refresh the page.
 
 You can play around with the value range displayed in the viewer, here it is set to min=200K and max=375K.
 The colormap used for mapping can be modified as well and the
-`colormaps provided by matplotlib <https://matplotlib.org/examples/color/colormaps_reference.html>`_ can be used.
+`colormaps provided by matplotlib`_ can be used.
 
 
 Other clients
@@ -140,9 +146,9 @@ OpenLayers
 Cesium
 ------
 
-To run the `Cesium Demo <http://localhost:9090/examples/serve/demo/index-cesium.html>`_ first
-`download Cesium <https://cesiumjs.org/downloads/>`_ and unpack the zip
+To run the `Cesium Demo`_ first
+`download Cesium`_ and unpack the zip
 into the ``xcube serve`` source directory so that there exists an
 ``./Cesium-x.y.z`` sub-directory. You may have to adapt the Cesium version number
-in the `demo's HTML file <https://github.com/dcs4cop/xcube/blob/master/examples/serve/demo/index-cesium.html>`_.
+in the `demo's HTML file`_.
 
