@@ -22,7 +22,7 @@ Before starting the example, you need to activate the xcube environment:
 
     $ conda activate xcube
 
-If you want to take a look at the input data you can use :doc:``cli/xcube dump`` to print out the metadata of a selected input file:
+If you want to take a look at the input data you can use :doc:`cli/xcube dump` to print out the metadata of a selected input file:
 
 ::
 
@@ -121,9 +121,10 @@ For creating a toy xcube dataset you can execute the command-line below. Please 
     $ xcube gen -o "your/output/path/demo_SST_xcube.zarr" -c examples/gen/config_files/dcs4cop-gen_BC_config_CMEMS.yml --sort examples/gen/data/*.nc
 
 The `configuration file <https://github.com/dcs4cop/xcube/tree/master/examples/gen/config_files/dcs4cop-gen_BC_config_CMEMS.yml>`_ specifies the input processor,
-which in this case is the default one. The output size is 10240, 5632. The bounding box of the xcube data cube is given by``output_region`` in the configuration file.
+which in this case is the default one. The output size is 10240, 5632. The bounding box of the data cube is given by
+``output_region`` in the configuration file.
 The output format (``output_writer_name``) is defined as well.
-The chunking of the dimensions can be set by the output writer parameter (``output_writer_params``) called chunksizes,
+The chunking of the dimensions can be set by the ``chunksizes`` attribute of the ``output_writer_params`` parameter,
 and here the chunking is set for latitude and longitude. If the chunking is not set, a automatic chunking is applied.
 The spatial resampling method (output_resampling) is set to 'nearest' and the configuration file contains only one
 variable which will be included into the xcube dataset - 'analysed-sst'.
