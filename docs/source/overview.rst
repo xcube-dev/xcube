@@ -53,7 +53,7 @@ contiguous sub-regions (data chunks). The data chunks allow for out-of-core comp
 fit in a single computer's RAM.
 
 The chunking of xcube datasets has a substantial impact on processing performance and there is no single ideal
-chunking for all use cases. xcube provide tools for re-chunking of xcube datasets
+chunking for all use cases. xcube provides tools for re-chunking of xcube datasets
 (:doc:`cli/xcube_chunk`, :doc:`cli/xcube_level`) and the xcube server (:doc:`cli/xcube_serve`) allows
 serving the same data cubes using different chunkings. For further reading have a look into
 the  `xarray documentation <http://xarray.pydata.org/en/stable/dask.html#chunking-and-performance>`_.
@@ -81,7 +81,7 @@ The xcube package builds heavily on Python’s big data ecosystem for handling h
 and exploiting cloud-based storage and processing resources. In particular, xcube's in-memory data model is
 provided by `xarray`_, the memory management and processing model is provided through `dask`_,
 and the external format is provided by `zarr`_. xarray, dask, and zarr have increased their popularity for
-big data solutions over the last couple of years, for creating a scalable and efficient EO data solutions.
+big data solutions over the last couple of years, for creating scalable and efficient EO data solutions.
 
 Toolkit
 =======
@@ -136,5 +136,5 @@ xcube datasets may be prepared beforehand. Steps 8 to 10 are optional.
 You may then use a WMTS-compatible client to visualise the datasets or develop your own xcube server client that
 will make use of the xcube's REST API.
 
-The easiest way to visualize your data is using the xcube :doc:`viewer`, a single-page web application that
-can be configured to work with some xcube server URL.
+The easiest way to visualise your data is using the xcube :doc:`viewer`, a single-page web application that
+can be configured to work with xcube server URLs.
