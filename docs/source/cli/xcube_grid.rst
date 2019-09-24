@@ -2,7 +2,10 @@
 ``xcube grid``
 ==============
 
-Warning: this tool will likely change in the near future.
+.. attention:: This tool will likely change in the near future.
+
+Synopsis
+========
 
 Find spatial xcube dataset resolutions and adjust bounding boxes.
 

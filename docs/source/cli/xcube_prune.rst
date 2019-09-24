@@ -4,8 +4,7 @@
 
 Delete empty chunks.
 
-Warning: this tool will likely be integrated into ``xcube optimize`` in
-the near future.
+.. attention:: This tool will likely be integrated into ``xcube optimize`` in the near future.
 
 
 ::
