@@ -22,7 +22,7 @@ Before starting the example, you need to activate the xcube environment:
 
     $ conda activate xcube
 
-If you want to take a look at the input data you can use :doc:``cli/xcube dump`` to print out the metadata of a selected input file:
+If you want to take a look at the input data you can use :doc:`cli/xcube dump` to print out the metadata of a selected input file:
 
 ::
 
@@ -147,7 +147,7 @@ Optimizing and pruning a xcube dataset
 ======================================
 
 If you want to optimize your generated xcube dataset e.g. for publishing it in a xcube viewer via xcube serve
-you can use  :doc:``cli/xcube optimize``:
+you can use  :doc:`cli/xcube optimize`:
 
 ::
 
@@ -159,7 +159,7 @@ a file called .zmetadata. .zmetadata contains the information stored in .zattrs 
 xcube dataset and makes requests of metadata faster. The option ``-C`` optimizes coordinate variables by converting any
 chunked arrays into single, non-chunked, contiguous arrays.
 
-For deleting empty chunks :doc:``cli/xcube prune`` can be used. It deletes all data files associated with empty (NaN-only)
+For deleting empty chunks :doc:`cli/xcube prune` can be used. It deletes all data files associated with empty (NaN-only)
 chunks of an xcube dataset, and is restricted to the ZARR format.
 
 ::
@@ -169,7 +169,7 @@ chunks of an xcube dataset, and is restricted to the ZARR format.
 The pruned xcube dataset is saved in place and does not need an output path. The size of the xcube dataset was 6,8 MB before pruning it
 and 6,5 MB afterwards. According to the output printed to the terminal, 30 block files were deleted.
 
-The metadata of the xcube dataset can be viewed with :doc:``cli/xcube dump`` as well:
+The metadata of the xcube dataset can be viewed with :doc:`cli/xcube dump` as well:
 
 ::
 

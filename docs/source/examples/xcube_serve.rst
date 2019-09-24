@@ -94,13 +94,13 @@ In order make this option usable, xcube-viewer must be installed and build:
 
     $ xcube serve --show --styles conc_chl=(0,20,"viridis") examples/serve/demo/cube-1-250-250.zarr
 
-Viewing the generated xcube dataset described in the example :doc:``xcube_gen``:
+Viewing the generated xcube dataset described in the example :doc:`xcube_gen`:
 
 ::
 
     $ xcube serve --show --styles "analysed_sst=(200,375,'plasma')" demo_SST_xcube-optimized.zarr
 
-.. image:: screenshot_xcube_viewer_sst_docu.png
+.. image:: ../_static/screenshot_xcube_viewer_sst_docu.png
   :width: 800
 
 
