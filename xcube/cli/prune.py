@@ -29,16 +29,16 @@ from xcube.util.constants import FORMAT_NAME_ZARR
 
 # noinspection PyShadowingBuiltins
 @click.command(name='prune')
-@click.argument('input')
+@click.argument('cube')
 @click.option('--dry-run', is_flag=True,
               help='Just read and process input, but don\'t produce any outputs.')
-def prune(input, dry_run):
+def prune(cube, dry_run):
     """
     Delete empty chunks.
-    Deletes all data files associated with empty (NaN-only) chunks in given INPUT cube,
+    Deletes all data files associated with empty (NaN-only) chunks in given CUBE,
     which must have ZARR format.
     """
-    _prune(input_path=input, dry_run=dry_run, monitor=print)
+    _prune(input_path=cube, dry_run=dry_run, monitor=print)
     return 0
 
 

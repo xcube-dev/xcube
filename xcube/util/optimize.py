@@ -36,7 +36,7 @@ def optimize_dataset(input_path: str,
     """
     Optimize a dataset for faster access.
 
-    Reduces the number of metadata and coordinate data files in data cube given by given by *dataset_path*.
+    Reduces the number of metadata and coordinate data files in xcube dataset given by given by *dataset_path*.
     Consolidated cubes open much faster from remote locations, e.g. in object storage,
     because obviously much less HTTP requests are required to fetch initial cube meta
     information. That is, it merges all metadata files into a single top-level JSON file ".zmetadata".

@@ -91,7 +91,7 @@ class XCubeDatasetAccessor:
     @classmethod
     def read(cls, input_path: str, format_name: str = None, **kwargs) -> xr.Dataset:
         """
-        Read a data cube from *input_path*.
+        Read a xcube dataset from *input_path*.
         If *format* is not provided it will be guessed from *input_path*.
 
         :param input_path: input path
@@ -238,7 +238,7 @@ class XCubeDatasetAccessor:
         Convert data variables into a dimension
 
         :param dim_name: The name of the new dimension ['vars']
-        :return: A new data cube with the new dimension.
+        :return: A new xcube dataset with the new dimension.
         """
         return vars_to_dim(self._dataset, dim_name)
 
@@ -258,9 +258,9 @@ class XCubeDatasetAccessor:
 
     def verify(self) -> List[str]:
         """
-        Verify that this dataset is a valid data cube.
+        Verify that this dataset is a valid xcube dataset.
 
-        Returns a list of issues, which is empty if this dataset is a valid data cube.
+        Returns a list of issues, which is empty if this dataset is a valid xcube dataset.
 
         :return: List of issues or empty list.
         """

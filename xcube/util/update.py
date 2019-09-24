@@ -42,7 +42,8 @@ def update_dataset_attrs(dataset: xr.Dataset,
                          update_existing: bool = False,
                          in_place: bool = False) -> xr.Dataset:
     """
-    Update spatio-temporal CF/THREDDS attributes given *dataset*.
+    Update spatio-temporal CF/THREDDS attributes given *dataset* according
+    to spatio-temporal coordinate variables time, lat, and lon.
 
     :param dataset: The dataset.
     :param global_attrs: Optional global attributes.

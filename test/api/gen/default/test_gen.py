@@ -27,7 +27,6 @@ class DefaultProcessTest(unittest.TestCase):
     def tearDown(self):
         clean_up()
 
-    # noinspection PyMethodMayBeStatic
     def test_process_inputs_single(self):
         status, output = gen_cube_wrapper(
             [get_inputdata_path('20170101-IFR-L4_GHRSST-SSTfnd-ODYSSEA-NWE_002-v2.0-fv1.0.nc')], 'l2c-single.nc')
@@ -96,7 +95,7 @@ class DefaultProcessTest(unittest.TestCase):
         with self.assertRaises(ValueError) as e:
             gen_cube_wrapper(
                 [get_inputdata_path('20170101120000-UKMO-L4_GHRSST-SSTfnd-OSTIAanom-GLOB-v02.0-fv02.0.nc')],
-                'l2c-single.zarr', sort_mode=True, input_processor_name=None)
+                'l2c-single.zarr', sort_mode=True, input_processor_name="")
         self.assertEqual('Missing input_processor_name', f'{e.exception}')
 
         with self.assertRaises(ValueError) as e:

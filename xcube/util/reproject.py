@@ -22,7 +22,7 @@
 import warnings
 from typing import Tuple, List, Union, Dict, Any
 
-import gdal
+from osgeo import gdal
 import numpy as np
 import xarray as xr
 from xcube.util.constants import CRS_WKT_EPSG_4326, EARTH_GEO_COORD_RANGE

@@ -23,6 +23,7 @@ class TimeitCliTest(CliDataTest):
         config_path = os.path.join(os.path.dirname(__file__), 'timeit-configs', 'simple.yml')
         result = self.invoke_cli(['timeit', '--repeats', 3, config_path])
         msg = f'actual output:\n{result.stdout}'
+
         self.assertTrue('# command template: xcube dump ${input}\n' in result.stdout, msg=msg)
         self.assertTrue('\n# repetition count: 3\n' in result.stdout, msg=msg)
         self.assertTrue('\nid;input;time-mean;time-median;time-stdev;time-min;time-max\n' in result.stdout, msg=msg)
