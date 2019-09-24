@@ -9,6 +9,7 @@
 .. _`zarr`: https://zarr.readthedocs.io/
 .. _`Zarr format`: https://zarr.readthedocs.io/en/stable/spec/v2.html
 .. _`Sentinel Hub`: https://www.sentinel-hub.com/
+.. _`Chunking and Performance`: http://xarray.pydata.org/en/stable/dask.html#chunking-and-performance
 
 ========
 Overview
@@ -49,14 +50,24 @@ For details regarding the common data model, please refer to the :doc:`cubespec`
 
 A xcube dataset's in-memory representation in Python programs is an `xarray.Dataset`_ instance. Each
 dataset variable is represented by multi-dimensional `xarray.DataArray`_ that is arranged in non-overlapping,
-contiguous sub-regions (data chunks). The data chunks allow for out-of-core computation of cube dataset's that don't
-fit in a single computer's RAM.
+contiguous sub-regions called *data chunks*.
 
-The chunking of xcube datasets has a substantial impact on processing performance and there is no single ideal
-chunking for all use cases. xcube provides tools for re-chunking of xcube datasets
-(:doc:`cli/xcube_chunk`, :doc:`cli/xcube_level`) and the xcube server (:doc:`cli/xcube_serve`) allows
-serving the same data cubes using different chunkings. For further reading have a look into
-the  `xarray documentation <http://xarray.pydata.org/en/stable/dask.html#chunking-and-performance>`_.
+Data Chunks
+-----------
+
+Chunked variables allow for out-of-core computations of xcube dataset that don't fit in a single computer's RAM as
+data chunks can be processed independently from each other.
+
+The way how dataset variables are sub-divided into smaller chunks - their *chunking* -
+has a substantial impact on processing performance and there is no single ideal
+chunking for all use cases. For time series analyses it is preferable to have chunks with a
+smaller spatial dimensions and larger time dimension, for spatial analyses and visualisation
+on using a map, the opposite is the case.
+
+xcube provide tools for re-chunking of xcube datasets (:doc:`cli/xcube_chunk`, :doc:`cli/xcube_level`)
+and the xcube server (:doc:`cli/xcube_serve`) allows
+serving the same data cubes using different chunkings. For further reading have a look into the
+`Chunking and Performance`_ section of the xarray documentation.
 
 Processing Model
 ----------------
@@ -71,8 +82,9 @@ execution model.
 Data Format
 -----------
 
-For the external, physical representation of xcube datasets we usually use the `Zarr format`_. Zarr supports parallel
-processing of data chunks that may be fetched from remote cloud storage such as S3 and GCS.
+For the external, physical representation of xcube datasets we usually use the `Zarr format`_. Zarr takes full
+advantage of data chunks and supports parallel processing of chunks that may originate from the local file system
+or from remote cloud storage such as S3 and GCS.
 
 Python Packages
 ---------------
