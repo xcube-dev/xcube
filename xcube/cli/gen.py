@@ -18,6 +18,7 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+from typing import Sequence
 
 import click
 
@@ -68,9 +69,9 @@ resampling_methods = sorted(RESAMPLING_METHOD_NAMES)
               help='Displays additional information about format options or about input processors.')
 @click.option('--dry_run', is_flag=True,
               help='Just read and process inputs, but don\'t produce any outputs.')
-def gen(input: str,
+def gen(input: Sequence[str],
         proc: str,
-        config: tuple,
+        config: Sequence[str],
         output: str,
         format: str,
         size: str,
@@ -89,19 +90,8 @@ def gen(input: str,
     The input paths can also be passed as lines of a text file. To do so, provide exactly one input file with
     ".txt" extension which contains the actual input paths to be used.
     """
-    input_paths = input
-    input_processor_name = proc
-    config_file = config
-    output_path = output
-    output_writer_name = format
-    output_size = size
-    output_region = region
-    output_variables = variables
-    output_resampling = resampling
-    profile_mode = prof
     dry_run = dry_run
     info_mode = info
-    sort_mode = sort
 
     from xcube.api.gen.config import get_config_dict
     from xcube.api.gen.gen import gen_cube
@@ -112,7 +102,20 @@ def gen(input: str,
         print(_format_info())
         return 0
 
-    config = get_config_dict(locals())
+    config = get_config_dict(
+        input_paths=input,
+        input_processor_name=proc,
+        config_files=config,
+        output_path=output,
+        output_writer_name=format,
+        output_size=size,
+        output_region=region,
+        output_variables=variables,
+        output_resampling=resampling,
+        profile_mode=prof,
+        append_mode=append,
+        sort_mode=sort,
+    )
 
     gen_cube(dry_run=dry_run,
              monitor=print,

@@ -266,7 +266,8 @@ def _process_input(input_processor: InputProcessor,
             if not dry_run:
                 rimraf(output_path)
                 output_writer.write(input_slice, output_path, **output_writer_params)
-            return update_dataset_attrs(input_slice, global_attrs=output_metadata, update_existing=True)
+                _update_cube_attrs(output_writer, output_path, global_attrs=output_metadata, temporal_only=False)
+            return input_slice
 
         steps.append((step8, f'creating input slice in {output_path}'))
 
@@ -274,7 +275,8 @@ def _process_input(input_processor: InputProcessor,
         def step8(input_slice):
             if not dry_run:
                 output_writer.append(input_slice, output_path, **output_writer_params)
-            return update_dataset_temporal_attrs(input_slice, update_existing=True)
+                _update_cube_attrs(output_writer, output_path, temporal_only=True)
+            return input_slice
 
         steps.append((step8, f'appending input slice to {output_path}'))
 
@@ -282,7 +284,8 @@ def _process_input(input_processor: InputProcessor,
         def step8(input_slice):
             if not dry_run:
                 output_writer.insert(input_slice, time_index, output_path)
-            return update_dataset_temporal_attrs(input_slice, update_existing=True)
+                _update_cube_attrs(output_writer, output_path, temporal_only=True)
+            return input_slice
 
         steps.append((step8, f'inserting input slice before index {time_index} in {output_path}'))
 
@@ -290,7 +293,8 @@ def _process_input(input_processor: InputProcessor,
         def step8(input_slice):
             if not dry_run:
                 output_writer.replace(input_slice, time_index, output_path)
-            return update_dataset_temporal_attrs(input_slice, update_existing=True)
+                _update_cube_attrs(output_writer, output_path, temporal_only=True)
+            return input_slice
 
         steps.append((step8, f'replacing input slice at index {time_index} in {output_path}'))
 
@@ -327,3 +331,17 @@ def _process_input(input_processor: InputProcessor,
         print(s.getvalue())
 
     return True
+
+
+def _update_cube_attrs(output_writer: DatasetIO, output_path: str,
+                       global_attrs: Dict = None,
+                       temporal_only: bool = False):
+    cube = output_writer.read(output_path)
+    if temporal_only:
+        cube = update_dataset_temporal_attrs(cube, update_existing=True, in_place=True)
+    else:
+        cube = update_dataset_attrs(cube, update_existing=True, in_place=True)
+    global_attrs = dict(global_attrs) if global_attrs else {}
+    global_attrs.update(cube.attrs)
+    cube.close()
+    output_writer.update(output_path, global_attrs=global_attrs)

@@ -1,6 +1,6 @@
 import os
 import unittest
-from typing import Tuple, Optional
+from typing import Tuple, Optional, Dict, Any
 
 import numpy as np
 import xarray as xr
@@ -32,6 +32,10 @@ class DefaultProcessTest(unittest.TestCase):
             [get_inputdata_path('20170101-IFR-L4_GHRSST-SSTfnd-ODYSSEA-NWE_002-v2.0-fv1.0.nc')], 'l2c-single.nc')
         self.assertEqual(True, status)
         self.assertTrue('\nstep 8 of 8: creating input slice in l2c-single.nc...\n' in output)
+        self.assert_cube_ok(xr.open_dataset('l2c-single.nc', autoclose=True), 1,
+                            dict(date_modified=None,
+                                 time_coverage_start='2016-12-31T12:00:00.000000000',
+                                 time_coverage_end='2017-01-01T12:00:00.000000000'))
 
     def test_process_inputs_append_multiple_nc(self):
         status, output = gen_cube_wrapper(
@@ -40,6 +44,10 @@ class DefaultProcessTest(unittest.TestCase):
         self.assertEqual(True, status)
         self.assertTrue('\nstep 8 of 8: creating input slice in l2c.nc...\n' in output)
         self.assertTrue('\nstep 8 of 8: appending input slice to l2c.nc...\n' in output)
+        self.assert_cube_ok(xr.open_dataset('l2c.nc', autoclose=True), 3,
+                            dict(date_modified=None,
+                                 time_coverage_start='2016-12-31T12:00:00.000000000',
+                                 time_coverage_end='2017-01-03T12:00:00.000000000'))
 
     def test_process_inputs_append_multiple_zarr(self):
         status, output = gen_cube_wrapper(
@@ -48,6 +56,10 @@ class DefaultProcessTest(unittest.TestCase):
         self.assertEqual(True, status)
         self.assertTrue('\nstep 8 of 8: creating input slice in l2c.zarr...\n' in output)
         self.assertTrue('\nstep 8 of 8: appending input slice to l2c.zarr...\n' in output)
+        self.assert_cube_ok(xr.open_zarr('l2c.zarr'), 3,
+                            dict(date_modified=None,
+                                 time_coverage_start='2016-12-31T12:00:00.000000000',
+                                 time_coverage_end='2017-01-03T12:00:00.000000000'))
 
     def test_process_inputs_insert_multiple_zarr(self):
         status, output = gen_cube_wrapper(
@@ -59,6 +71,10 @@ class DefaultProcessTest(unittest.TestCase):
         self.assertTrue('\nstep 8 of 8: creating input slice in l2c.zarr...\n' in output)
         self.assertTrue('\nstep 8 of 8: appending input slice to l2c.zarr...\n' in output)
         self.assertTrue('\nstep 8 of 8: inserting input slice before index 0 in l2c.zarr...\n' in output)
+        self.assert_cube_ok(xr.open_zarr('l2c.zarr'), 3,
+                            dict(date_modified=None,
+                                 time_coverage_start='2016-12-31T12:00:00.000000000',
+                                 time_coverage_end='2017-01-03T12:00:00.000000000'))
 
     def test_process_inputs_replace_multiple_zarr(self):
         status, output = gen_cube_wrapper(
@@ -71,6 +87,10 @@ class DefaultProcessTest(unittest.TestCase):
         self.assertTrue('\nstep 8 of 8: creating input slice in l2c.zarr...\n' in output)
         self.assertTrue('\nstep 8 of 8: appending input slice to l2c.zarr...\n' in output)
         self.assertTrue('\nstep 8 of 8: replacing input slice at index 1 in l2c.zarr...\n' in output)
+        self.assert_cube_ok(xr.open_zarr('l2c.zarr'), 3,
+                            dict(date_modified=None,
+                                 time_coverage_start='2016-12-31T12:00:00.000000000',
+                                 time_coverage_end='2017-01-03T12:00:00.000000000'))
 
     def test_input_txt(self):
         f = open((os.path.join(os.path.dirname(__file__), 'inputdata', "input.txt")), "w+")
@@ -81,6 +101,28 @@ class DefaultProcessTest(unittest.TestCase):
         f.close()
         status, output = gen_cube_wrapper([get_inputdata_path('input.txt')], 'l2c.zarr', sort_mode=True)
         self.assertEqual(True, status)
+        self.assert_cube_ok(xr.open_zarr('l2c.zarr'), 3,
+                            dict(time_coverage_start='2016-12-31T12:00:00.000000000',
+                                 time_coverage_end='2017-01-03T12:00:00.000000000'))
+
+    def assert_cube_ok(self, cube: xr.Dataset, expected_time_dim: int, expected_extra_attrs: Dict[str, Any]):
+        self.assertEqual({'lat': 180, 'lon': 320, 'bnds': 2, 'time': expected_time_dim}, cube.dims)
+        self.assertEqual({'lon', 'lat', 'time', 'lon_bnds', 'lat_bnds', 'time_bnds'}, set(cube.coords))
+        self.assertEqual({'analysed_sst'}, set(cube.data_vars))
+        expected_attrs = dict(date_modified=None,
+                              geospatial_lon_min=-4.0,
+                              geospatial_lon_max=12.0,
+                              geospatial_lon_resolution=0.05,
+                              geospatial_lon_units='degrees_east',
+                              geospatial_lat_min=47.0,
+                              geospatial_lat_max=56.0,
+                              geospatial_lat_resolution=0.05,
+                              geospatial_lat_units='degrees_north')
+        expected_attrs.update(expected_extra_attrs)
+        for k, v in expected_attrs.items():
+            self.assertIn(k, cube.attrs)
+            if v is not None:
+                self.assertEqual(v, cube.attrs[k], msg=f'key {k!r}')
 
     def test_handle_360_lon(self):
         status, output = gen_cube_wrapper(
@@ -117,13 +159,15 @@ def gen_cube_wrapper(input_paths, output_path, sort_mode=False, input_processor_
         else:
             output += msg + '\n'
 
-    config = get_config_dict(dict(input_paths=input_paths, output_path=output_path))
-    return gen_cube(input_processor_name=input_processor_name,
-                    output_size=(320, 180),
-                    output_region=(-4., 47., 12., 56.),
-                    output_resampling='Nearest',
-                    output_variables=[('analysed_sst', dict(name='SST'))],
-                    sort_mode=sort_mode,
-                    dry_run=False,
-                    monitor=output_monitor,
-                    **config), output
+    config = get_config_dict(
+        input_paths=input_paths,
+        input_processor_name=input_processor_name,
+        output_path=output_path,
+        output_size='320,180',
+        output_region='-4,47,12,56',
+        output_resampling='Nearest',
+        output_variables='analysed_sst',
+        sort_mode=sort_mode,
+    )
+
+    return gen_cube(dry_run=False, monitor=output_monitor, **config), output
