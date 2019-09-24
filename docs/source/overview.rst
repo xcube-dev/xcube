@@ -31,42 +31,42 @@ Data Model
 
 An xcube dataset comprises one or more (geo-physical) data variables
 whose values are stored in cells of a common multi-dimensional, spatio-temporal grid.
-The dimensions are usually time, latitude, and longitude, however other dimensions may be present.
+The dimensions are usually time, latitude, and longitude. However, other dimensions may be present.
 
 All xcube datasets are structured in the same way following a common data model.
 They are also self-describing by providing metadata for the cube and
 all cube's variables following the `CF conventions`_.
-For details regarding the common data model, please refer to the :doc:`cubespec`.
+Please refer to the :doc:`cubespec` for details regarding the common data mode.
 
-A xcube dataset's in-memory representation in Python programs is an `xarray.Dataset`_ instance. Each
+An xcube dataset's in-memory representation in Python programs is an `xarray.Dataset`_ instance. Each
 dataset variable is represented by multi-dimensional `xarray.DataArray`_ that is arranged in non-overlapping,
-contiguous sub-regions (data chunks). The data chunks allow for out-of-core computation of cube dataset's that don't
+contiguous sub-regions (data chunks). The data chunks allow for out-of-core computation of cube datasets that don't
 fit in a single computer's RAM.
 
 Processing Model
 ----------------
 
 When xcube datasets are opened, only the cube's structure and its metadata are loaded into memory. The actual
-data arrays of variables are loaded on-demand only, and only for chunks intersecting the desired sub-region.
+data arrays of variables are loaded on-demand only and only for chunks intersecting the desired sub-region.
 
 Operations that generate new data variables from existing ones will be chunked
-in the same way. Therefore such operation chains generate a processing graph providing a deferred, concurrent
+in the same way. Therefore, such operation chains generate a processing graph providing a deferred, concurrent
 execution model.
 
 Data Format
 -----------
 
-For the external, physical representation of cube we usually use the `Zarr format`_ that supports parallel
-processing data chunks that may be fetched from remote cloud storage such as S3 and GCS.
+For the external, physical representation of cube we usually use the so-called `Zarr format`_ that supports parallel
+processing of data chunks. These chunks may be fetched from remote cloud storage such as S3 and GCS.
 
 Python Packages
 ---------------
 
-The xcube package builds heavily on Python’s big data ecosystem for handling huge N-dimensional data arrays
+The xcube package relies heavily on Python’s big data ecosystem for handling huge N-dimensional data arrays
 and exploiting cloud-based storage and processing resources. In particular, xcube's in-memory data model is
 provided by `xarray`_, the memory management and processing model is provided through `dask`_,
-and the external format is provided by `zarr`_. xarray, dask, and zarr have increased their popularity for
-big data solutions over the last couple of years, for creating a scalable and efficient EO data solutions.
+and the external format is provided by `zarr`_. xarray, dask and zarr have increased their popularity for
+big data solutions over the past couple of years, and for creating a scalable and efficient EO data solutions.
 
 Toolkit
 =======
@@ -83,7 +83,7 @@ xcube provides various higher-level tools to generate, manipulate, and publish x
 Workflows
 =========
 
-The basic use case is to generate an xcube dataset and deploy it so that your users can access it:
+The basic use case is generating an xcube dataset, and deploy it in an accessible manner:
 
 1. generate an xcube dataset from some EO data sources
    using the :doc:`cli/xcube_gen` tool with a specific *input processor*;
@@ -105,8 +105,8 @@ Then you can
 Another way to provide the data to users is via the *xcube server*, that provides a
 RESTful API and a `WMTS <https://en.wikipedia.org/wiki/Web_Map_Tile_Service>`_. The latter is used
 to visualise spatial subsets of xcube datasets efficiently at any zoom level.
-To provide optimal visualisation and data extraction performance through the xcube server,
-xcube datasets may be prepared beforehand. Steps 8 to 10 are optional.
+xcube datasets may be prepared beforehand in order to provide optimal visualisation and data extraction performance 
+through the xcube server. Steps 8 to 10 are optional.
 
 8. verify a dataset to be published conforms with the :doc:`cubespec`
    using the :doc:`cli/xcube_verify` tool.
