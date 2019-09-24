@@ -98,7 +98,7 @@ Viewing the generated xcube dataset described in the example :doc:``xcube_gen``:
 
 ::
 
-    $ xcube serve --show --styles analysed_sst=(200,375,'plasma') demo_SST_xcube-optimized.zarr
+    $ xcube serve --show --styles "analysed_sst=(200,375,'plasma')" demo_SST_xcube-optimized.zarr
 
 
 In case you get an error message "cannot reach server" on the very bottom of the web app's main window,
