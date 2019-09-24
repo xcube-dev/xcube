@@ -20,11 +20,8 @@ there is usually a default value for it. If multiply file formats are supported,
 provide a ``-f FORMAT`` or ``--format FORMAT`` option. If omitted, the format may be guessed from the
 output's name.
 
-Command Index
-=============
-
 Cube generation
----------------
+===============
 
 .. toctree::
    :maxdepth: 1
@@ -33,7 +30,7 @@ Cube generation
    cli/xcube_grid
 
 Cube inspection
----------------
+===============
 
 .. toctree::
    :maxdepth: 1
@@ -42,7 +39,7 @@ Cube inspection
    cli/xcube_verify
 
 Cube data extraction
---------------------
+====================
 
 .. toctree::
    :maxdepth: 1
@@ -50,7 +47,7 @@ Cube data extraction
    cli/xcube_extract
 
 Cube manipulation
------------------
+=================
 
 .. toctree::
    :maxdepth: 1
@@ -63,7 +60,7 @@ Cube manipulation
    cli/xcube_vars2dim
 
 Cube publication
-----------------
+================
 
 .. toctree::
    :maxdepth: 1

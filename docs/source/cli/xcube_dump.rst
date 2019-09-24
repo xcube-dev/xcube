@@ -2,6 +2,9 @@
 ``xcube dump``
 ==============
 
+Synopsis
+========
+
 Dump contents of a dataset.
 
 ::
@@ -22,7 +25,8 @@ Dump contents of a dataset.
       --help                          Show this message and exit.
 
 
-Example:
+Example
+=======
 
 ::
 

@@ -2,6 +2,10 @@
 ``xcube serve``
 ===============
 
+Synopsis
+========
+
+
 Serve data cubes via web service.
 
 The ``xcube serve`` is a light-weight web server that provides various services based on
@@ -89,4 +93,12 @@ The SwaggerHub allows to choose the xcube-server project and therefore the datas
       -v, --verbose          Delegate logging to the console (stderr).
       --traceperf            Print performance diagnostics (stdout).
       --help                 Show this message and exit.
+
+
+Configuration File
+==================
+
+
+Example
+=======
 
