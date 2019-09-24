@@ -123,9 +123,11 @@ Example
 =======
 
 ::
+
     xcube serve --port 8080 --config ./examples/serve/demo/config.yml --verbose
 
 ::
+
     xcube Server: WMTS, catalogue, data access, tile, feature, time-series services for xarray-enabled data cubes, version 0.2.0
     [I 190924 17:08:54 service:228] configuration file 'D:\\Projects\\xcube\\examples\\serve\\demo\\config.yml' successfully loaded
     [I 190924 17:08:54 service:158] service running, listening on localhost:8080, try http://localhost:8080/datasets
@@ -135,15 +137,11 @@ Example
 Web API
 =======
 
-Find its Web API description `here <https://app.swaggerhub.com/apis-docs/bcdev/xcube-server>`_.
+The xcube server has a dedicated `Web API Documentation <https://app.swaggerhub.com/apis-docs/bcdev/xcube-server>`_
+on SwaggerHub. It also lets you explore the API of existing xcube-servers.
 
-To explore the API of existing xcube-servers go to the `SwaggerHub of bcdev <https://app.swaggerhub.com/apis/bcdev/xcube-server/0.1.0.dev6>`_.
-The SwaggerHub allows to choose the xcube-server project and therefore the datasets which are used for the exploration.
-
-The xcube server implements the OGC WMTS RESTful and KVP architectural styles
-of the `OGC WMTS 1.0.0 specification <http://www.opengeospatial.org/standards/wmts>`_.
-
-The following operations are supported:
+The xcube server implements the OGC WMTS RESTful and KVP architectural styles of the
+`OGC WMTS 1.0.0 specification <http://www.opengeospatial.org/standards/wmts>`_. The following operations are supported:
 
 * **GetCapabilities**: ``/xcube/wmts/1.0.0/WMTSCapabilities.xml``
 * **GetTile**: ``/xcube/wmts/1.0.0/tile/{DatasetName}/{VarName}/{TileMatrix}/{TileCol}/{TileRow}.png``
