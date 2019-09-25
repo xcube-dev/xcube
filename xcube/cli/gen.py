@@ -31,7 +31,7 @@ resampling_methods = sorted(RESAMPLING_METHOD_NAMES)
 # noinspection PyShadowingBuiltins
 @click.command(name='gen', context_settings={"ignore_unknown_options": True})
 @click.argument('input', nargs=-1)
-@click.option('--proc', '-P', metavar='INPUT-PROCESSOR', default='default',
+@click.option('--proc', '-P', metavar='INPUT-PROCESSOR', default=None,
               help=f'Input processor name. '
                    f'The available input processor names and additional information about input processors '
                    'can be accessed by calling xcube gen --info . Defaults to "default", an input processor '
@@ -85,7 +85,9 @@ def gen(input: Sequence[str],
         sort: bool):
     """
     Generate xcube dataset.
-    Data cubes may be created in one go or successively in append mode, input by input.
+    Data cubes may be created in one go or successively for all given inputs.
+    Each input is expected to provide a single time slice which may be appended, inserted or which may replace an
+    existing time slice in the output dataset.
     The input paths may be one or more input files or a pattern that may contain wildcards '?', '*', and '**'.
     The input paths can also be passed as lines of a text file. To do so, provide exactly one input file with
     ".txt" extension which contains the actual input paths to be used.

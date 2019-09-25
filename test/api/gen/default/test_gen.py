@@ -150,7 +150,7 @@ class DefaultProcessTest(unittest.TestCase):
             gen_cube_wrapper(
                 [get_inputdata_path('20170101120000-UKMO-L4_GHRSST-SSTfnd-OSTIAanom-GLOB-v02.0-fv02.0.nc')],
                 'l2c-single.zarr', sort_mode=True, input_processor_name="")
-        self.assertEqual('Missing input_processor_name', f'{e.exception}')
+        self.assertEqual('input_processor_name must not be empty', f'{e.exception}')
 
         with self.assertRaises(ValueError) as e:
             gen_cube_wrapper(
@@ -160,7 +160,7 @@ class DefaultProcessTest(unittest.TestCase):
 
 
 # noinspection PyShadowingBuiltins
-def gen_cube_wrapper(input_paths, output_path, sort_mode=False, input_processor_name='default') \
+def gen_cube_wrapper(input_paths, output_path, sort_mode=False, input_processor_name=None) \
         -> Tuple[bool, Optional[str]]:
     output = None
 

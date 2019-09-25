@@ -19,14 +19,16 @@ Generate xcube dataset.
 ::
 
     Usage: xcube gen [OPTIONS] [INPUT]...
-    
-      Generate xcube dataset. Data cubes may be created in one go or successively in
-      append mode, input by input. The input paths may be one or more input
-      files or a pattern that may contain wildcards '?', '*', and '**'. The
-      input paths can also be passed as lines of a text file. To do so, provide
-      exactly one input file with ".txt" extension which contains the actual
-      input paths to be used.
-    
+
+      Generate xcube dataset. Data cubes may be created in one go or
+      successively for all given inputs. Each input is expected to provide a
+      single time slice which may be appended, inserted or which may replace an
+      existing time slice in the output dataset. The input paths may be one or
+      more input files or a pattern that may contain wildcards '?', '*', and
+      '**'. The input paths can also be passed as lines of a text file. To do
+      so, provide exactly one input file with ".txt" extension which contains
+      the actual input paths to be used.
+
     Options:
       -P, --proc INPUT-PROCESSOR      Input processor name. The available input
                                       processor names and additional information
@@ -36,8 +38,8 @@ Generate xcube dataset.
                                       with simple datasets whose variables have
                                       dimensions ("lat", "lon") and conform with
                                       the CF conventions.
-      -c, --config CONFIG             xcube dataset configuration file in YAML format.
-                                      More than one config input file is
+      -c, --config CONFIG             xcube dataset configuration file in YAML
+                                      format. More than one config input file is
                                       allowed.When passing several config files,
                                       they are merged considering the order passed
                                       via command line.
@@ -50,8 +52,7 @@ Generate xcube dataset.
                                       "<width>,<height>".
       -R, --region REGION             Output region using format "<lon-min>,<lat-
                                       min>,<lon-max>,<lat-max>"
-      --variables, --vars VARIABLES
-                                      Variables to be included in output. Comma-
+      --variables, --vars VARIABLES   Variables to be included in output. Comma-
                                       separated list of names which may contain
                                       wildcard characters "*" and "?".
       --resampling [Average|Bilinear|Cubic|CubicSpline|Lanczos|Max|Median|Min|Mode|Nearest|Q1|Q3]
@@ -68,14 +69,15 @@ Generate xcube dataset.
       --prof                          Collect profiling information and dump
                                       results after processing.
       --sort                          The input file list will be sorted before
-                                      creating the xcube dataset. If --sort parameter
-                                      is not passed, order of input list will be
-                                      kept.
+                                      creating the xcube dataset. If --sort
+                                      parameter is not passed, order of input list
+                                      will be kept.
       -I, --info                      Displays additional information about format
                                       options or about input processors.
       --dry_run                       Just read and process inputs, but don't
                                       produce any outputs.
       --help                          Show this message and exit.
+
 
 
 Below is the ouput of a ``xcube gen --info`` call showing five input processors installed via plugins.

@@ -92,8 +92,10 @@ def gen_cube(input_paths: Sequence[str] = None,
         warnings.warn('append_mode in gen_cube() is deprecated, '
                       'time slices will now always be inserted, replaced, or appended.')
 
-    if not input_processor_name:
-        raise ValueError('Missing input_processor_name')
+    if input_processor_name is None:
+        input_processor_name = 'default'
+    elif input_processor_name == '':
+        raise ValueError('input_processor_name must not be empty')
 
     input_processor = get_input_processor(input_processor_name)
     if not input_processor:
