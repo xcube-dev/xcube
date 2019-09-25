@@ -20,7 +20,7 @@ class ApplyTest(unittest.TestCase):
                            my_cube_func,
                            ['analysed_sst', 'analysis_error'],
                            ['lat', 'lon'],
-                           parameters=dict(my_param_1=9.3, my_param_2='Helo'))
+                           params=dict(my_param_1=9.3, my_param_2='Helo'))
 
         self.assertIsNotNone(result_var)
         self.assertEqual(0, len(calls))
