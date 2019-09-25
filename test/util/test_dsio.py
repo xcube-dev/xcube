@@ -52,6 +52,25 @@ class DatasetIOTest(unittest.TestCase):
             # noinspection PyTypeChecker
             ds_io.append(None, 'test.nc')
 
+    def test_insert_raises(self):
+        ds_io = MyDatasetIO()
+        with self.assertRaises(NotImplementedError):
+            # noinspection PyTypeChecker
+            ds_io.insert(None, 0, 'test.nc')
+
+
+    def test_replace_raises(self):
+        ds_io = MyDatasetIO()
+        with self.assertRaises(NotImplementedError):
+            # noinspection PyTypeChecker
+            ds_io.replace(None, 0, 'test.nc')
+
+    def test_update_raises(self):
+        ds_io = MyDatasetIO()
+        with self.assertRaises(NotImplementedError):
+            # noinspection PyTypeChecker
+            ds_io.update(None, 'test.nc')
+
 
 class MemDatasetIOTest(unittest.TestCase):
 

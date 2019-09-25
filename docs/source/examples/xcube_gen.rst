@@ -195,6 +195,41 @@ The metadata of the xcube dataset can be viewed with :doc:`cli/xcube dump` as we
     Dimensions without coordinates: bnds
     Data variables:
         analysed_sst  (time, lat, lon) float64 dask.array<shape=(3, 5632, 10240), chunksize=(1, 704, 640)>
+    Attributes:
+        acknowledgment:             Data Cube produced based on data provided by ...
+        comment:
+        contributor_name:
+        contributor_role:
+        creator_email:              info@brockmann-consult.de
+        creator_name:               Brockmann Consult GmbH
+        creator_url:                https://www.brockmann-consult.de
+        date_modified:              2019-09-25T08:50:32.169031
+        geospatial_lat_max:         62.666666666666664
+        geospatial_lat_min:         48.0
+        geospatial_lat_resolution:  0.002604166666666666
+        geospatial_lat_units:       degrees_north
+        geospatial_lon_max:         10.666666666666664
+        geospatial_lon_min:         -16.0
+        geospatial_lon_resolution:  0.0026041666666666665
+        geospatial_lon_units:       degrees_east
+        history:                    xcube/reproj-snap-nc
+        id:                         demo-bc-sst-sns-l2c-v1
+        institution:                Brockmann Consult GmbH
+        keywords:
+        license:                    terms and conditions of the DCS4COP data dist...
+        naming_authority:           bc
+        processing_level:           L2C
+        project:                    xcube
+        publisher_email:            info@brockmann-consult.de
+        publisher_name:             Brockmann Consult GmbH
+        publisher_url:              https://www.brockmann-consult.de
+        references:                 https://dcs4cop.eu/
+        source:                     CMEMS Global SST & Sea Ice Anomaly Data Cube
+        standard_name_vocabulary:
+        summary:
+        time_coverage_end:          2017-06-08T00:00:00.000000000
+        time_coverage_start:        2017-06-05T00:00:00.000000000
+        title:                      CMEMS Global SST Anomaly Data Cube
 
 The metadata for the variable analysed_sst can be viewed:
 

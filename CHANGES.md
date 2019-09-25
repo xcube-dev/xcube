@@ -1,14 +1,13 @@
 ## Changes in 0.2.0.dev2 (in dev)
 
-* Reorganisation of the Documentation and Examples Section (partly addressing #106)
-* Loosened python conda environment to satisfy conda-forge requirements
-
 ### New
 
 * Added first version of the [xcube documentation](https://xcube.readthedocs.io/) generated from `./docs` folder.
 
 ### Enhancements
 
+* Reorganisation of the Documentation and Examples Section (partly addressing #106)
+* Loosened python conda environment to satisfy conda-forge requirements
 * Making CLI parameters consistent and removing or changing parameter abbreviations in case they were used twice for different params. (partly addressing #91)
   For every CLI command which is generating an output a path must be provided by the option `-o`, `--output`. If not provided by the user, a default output_path is generated.
   The following CLI parameter have changed and their abbreviation is not enabled anymore : 
@@ -39,6 +38,7 @@
 
 ### Fixes
 
+* `xcube gen` CLI now updates metadata correctly. (#181)
 * It was no longer possible to use the `xcube gen` CLI with `--proc` option. (#120)
 * `totalCount` attribute of time series returned by Web API `ts/{dataset}/{variable}/{geom-type}` now
    contains the correct number of possible observations. Was always `1` before.
