@@ -1,3 +1,9 @@
+## Changes in 0.2.1.dev0
+
+
+- Removed obsolete entry points from setup.py
+
+
 ## Changes in 0.2.0
 
 ### New
