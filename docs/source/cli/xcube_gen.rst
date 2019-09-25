@@ -108,7 +108,7 @@ Configuration File
 ==================
 
 Configuration files passed to ``xcube gen`` via the ``-c, --config`` option use `YAML format`_.
-Multiple configuration files may be given. In this case all configuration are merged into a single one.
+Multiple configuration files may be given. In this case all configurations are merged into a single one.
 Parameter values will be overwritten by subsequent configurations if they are scalars. If
 they are objects / mappings, their values will be deeply merged.
 
