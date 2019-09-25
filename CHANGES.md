@@ -1,4 +1,4 @@
-## Changes in 0.2.0.dev2 (in dev)
+## Changes in 0.2.0
 
 ### New
 
@@ -35,23 +35,6 @@
 * `xcube.api.new_cube` function now accepts callables as values for variables.
   This allows to compute variable values depending on the (t, y, x) position
   in the cube. Useful for testing.
-
-### Fixes
-
-* `xcube gen` CLI now updates metadata correctly. (#181)
-* It was no longer possible to use the `xcube gen` CLI with `--proc` option. (#120)
-* `totalCount` attribute of time series returned by Web API `ts/{dataset}/{variable}/{geom-type}` now
-   contains the correct number of possible observations. Was always `1` before.
-* Renamed Web API function `ts/{dataset}/{variable}/places` into
-  `ts/{dataset}/{variable}/features`.
-* `xcube gen` is now taking care that when new time slices are added to an existing
-   cube, this is done by maintaining the chronological order. New time slices are
-   either appended, inserted, or replaced. (#64) (#139)
-
-## Changes in 0.2.0.dev1
-
-### Enhancements
-
 * `xcube.api` now exports the `MaskSet` class which is useful for decoding flag values encoding following the
   [CF conventions](http://cfconventions.org/Data/cf-conventions/cf-conventions-1.7/cf-conventions.html#flags).
 * Added new CLI tool `xcube optimize` and API function `xcube.api.optimize_dataset` 
@@ -128,8 +111,18 @@
 * Excluding all input processors except for the default one. They are now plugins and have own repositories within the 
 xcube's organisation. (#49)
 
+
 ### Fixes
 
+* `xcube gen` CLI now updates metadata correctly. (#181)
+* It was no longer possible to use the `xcube gen` CLI with `--proc` option. (#120)
+* `totalCount` attribute of time series returned by Web API `ts/{dataset}/{variable}/{geom-type}` now
+   contains the correct number of possible observations. Was always `1` before.
+* Renamed Web API function `ts/{dataset}/{variable}/places` into
+  `ts/{dataset}/{variable}/features`.
+* `xcube gen` is now taking care that when new time slices are added to an existing
+   cube, this is done by maintaining the chronological order. New time slices are
+   either appended, inserted, or replaced. (#64) (#139)
 * Fixed `xcube serve` issue with WMTS KVP method `GetTile` with query parameter `time` 
   whose value can now also have the two forms `<start-date>/<end-date>` and just `<date>`. (#132) 
 * Fixed `xcube extract` regression that stopped working after Pandas update (#95) 
@@ -139,7 +132,6 @@ xcube's organisation. (#49)
 * Fixed `xcube serve` WMTS KVP API to allow for case-insensitive query parameters. (#77)
 * Fixed error in plugins when importing `xcube.api.gen` (#62)
 * Fixed import of plugins only when executing `xcube.cli` (#66)
-
 
 ## Changes in 0.1.0
 

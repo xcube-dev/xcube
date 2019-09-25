@@ -1,5 +1,5 @@
 .. _`WMTS`: https://en.wikipedia.org/wiki/Web_Map_Tile_Service
-.. _`xcube Web API reference`: https://app.swaggerhub.com/apis-docs/bcdev/xcube-server/0.2.0-dev
+.. _`xcube Web API reference`: https://app.swaggerhub.com/apis-docs/bcdev/xcube-server/0.2.0
 
 
 ==================
