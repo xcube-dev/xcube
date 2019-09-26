@@ -6,13 +6,13 @@ servers:
   - description: CyanoAlert Development API
     url: https://cyanoalert.brockmann-consult.com/api/v1.dev/
   - description: SwaggerHub API Auto Mocking
-    url: https://virtserver.swaggerhub.com/forman/xcube-server/0.2.0-dev/
+    url: https://virtserver.swaggerhub.com/forman/xcube-server/0.2.0/
 
 info:
   description: |
     A light-weight web server that provides
     various services based on xarray-enabled datasets.
-  version: "0.2.0-dev"
+  version: "0.2.0"
   title: xcube Web API
   contact:
     email: bcdev@brockmann-consult.de

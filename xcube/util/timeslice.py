@@ -77,6 +77,19 @@ def append_time_slice(store: Union[str, MutableMapping],
     """
     if chunk_sizes:
         time_slice = chunk_dataset(time_slice, chunk_sizes, format_name='zarr')
+
+    # Unfortunately time_slice.to_zarr(store, mode='a', append_dim='time') will replace global attributes of store
+    # with attributes of time_slice (xarray bug?), which are usually empty in our case.
+    # Hence, we must save our old attributes in a copy of time_slice.
+    ds = zarr.open_group(store, mode='r')
+    time_slice = time_slice.copy()
+    time_slice.attrs.update(ds.attrs)
+    if 'coordinates' in time_slice.attrs:
+        # Remove 'coordinates', otherwise we get
+        # ValueError: cannot serialize coordinates because the global attribute 'coordinates' already exists
+        # from next time_slice.to_zarr(...) call.
+        time_slice.attrs.pop('coordinates')
+
     time_slice.to_zarr(store, mode='a', append_dim='time')
     unchunk_dataset(store, coords_only=True)
 
