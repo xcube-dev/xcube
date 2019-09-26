@@ -1,60 +1,131 @@
-from typing import Tuple, Sequence, Dict, Any, Callable
+from typing import Tuple, Sequence, Dict, Any, Callable, Union
 
 import numpy as np
 import xarray as xr
 
+from xcube.util.schema import CubeSchema
 from .verify import assert_cube
 from ..util.cubestore import CubeStore
 
 CubeFunc = Callable[..., np.ndarray]
 
 
-def apply(cube: xr.Dataset,
-          cube_func: CubeFunc,
-          data_var_names: Sequence[str] = None,
-          coord_var_names: Sequence[str] = None,
-          parameters: Dict[str, Any] = None,
+# TODO: support vectorize = all cubes have same variables and cube_func receives variables as vectors (with extra dim)
+# TODO: support multiple outputs = provide output_variables, a mapping from variable names to dtype and other attributes
+
+def apply(cube_func: CubeFunc,
+          *cubes: xr.Dataset,
+          var_names: Sequence[str] = None,
+          params: Dict[str, Any] = None,
+          schema: CubeSchema = None,
+          vectorize: bool = False,
+          output_var_defs: Sequence[Union[str, Dict[str, Any]]] = None,
           cube_asserted: bool = False):
+
     if not cube_asserted:
-        assert_cube(cube)
+        for cube in cubes:
+            assert_cube(cube)
 
-    dims, shape, chunks = get_cube_schema(cube)
-    ndim = len(dims)
+    if cubes:
+        schema = CubeSchema.new(cubes[0])
+        for cube in cubes:
+            if not cube_asserted:
+                assert_cube(cube)
+            if cube != cubes[0]:
+                other_schema = CubeSchema.new(cube)
+                # TODO (forman): broadcast all cubes to same shape, rechunk to same chunks
+    elif schema is None:
+        raise ValueError('schema must be given')
 
-    index_var = gen_index_var(dims, shape, chunks)
-    index_var = index_var.assign_coords(**{var_name: var for var_name, var in cube.coords.items() if var_name in dims})
+    if vectorize:
+        raise NotImplementedError()
+
+    if output_var_defs is None:
+        output_var_defs = ['result']
+
+    var_names = var_names or []
+    variables = []
+    for var_name in var_names:
+        var = None
+        for cube in cubes:
+            if var_name in cube.data_vars:
+                var = cube[var_name]
+                break
+        if var is None:
+            raise ValueError(f'variable {var_name!r} not found in any of cubes')
+        variables.append(var)
+
+    index_var = gen_index_var(schema)
 
     def cube_func_wrapper(index_chunk, *var_chunks, **kwargs):
-        nonlocal ndim, dims
+        nonlocal schema, var_names, variables
 
-        coord_vars = kwargs['coord_vars']
         index_chunk = index_chunk.ravel()
-        coord_chunks = []
-        for i in range(ndim):
-            dim_name = dims[i]
-            if dim_name in coord_vars:
-                coord_var = coord_vars[dim_name]
-                start = int(index_chunk[2 * i + 0])
-                end = int(index_chunk[2 * i + 1])
-                coord_chunks.append(coord_var[start: end].values)
+        dim_slices = {}
+        for i in range(schema.ndim):
+            dim_name = schema.dims[i]
+            start = int(index_chunk[2 * i + 0])
+            end = int(index_chunk[2 * i + 1])
+            dim_slices[dim_name] = slice(start, end)
 
-        return cube_func(*var_chunks, *coord_chunks, kwargs['parameters'])
+        sub_coords = {}
+        for coord_var_name, coord_var in schema.coords.items():
+            coord_slice_indexes = [slice(None)] * coord_var.ndim
+            for i in range(schema.ndim):
+                dim_name = schema.dims[i]
+                j = coord_var.dims.index(dim_name)
+                coord_slice_indexes[j] = dim_slices[dim_name]
+            sub_coords[coord_var_name] = coord_var[tuple(coord_slice_indexes)]
 
-    data_var_names = data_var_names or []
-    coord_var_names = coord_var_names or []
+        sub_vars = {}
+        for i in range(len(var_names)):
+            sub_var_coords = {name: sub_coords[name] for name in variables[i].coords}
+            sub_var = xr.DataArray(var_chunks[i],
+                                   name=var_name,
+                                   coords=sub_var_coords,
+                                   attrs=variables[i].attrs)
+            sub_vars[var_name] = sub_var
 
-    data_vars = [cube.data_vars[var_name] for var_name in data_var_names]
-    coord_vars = {var_name: cube.coords[var_name] for var_name in coord_var_names}
+        sub_cube = xr.Dataset(sub_vars, coords=sub_coords)
 
-    return xr.apply_ufunc(cube_func_wrapper,
-                          index_var,
-                          *data_vars,
-                          dask='parallelized',
-                          output_dtypes=[np.float],
-                          kwargs={'coord_vars': coord_vars, 'parameters': parameters})
+        return cube_func(sub_cube,
+                         parameters=kwargs['parameters'],
+                         dim_slices=dim_slices)
+
+    # noinspection PyTypeChecker
+    output_var_names = [v if isinstance(v, str) else v['name']
+                        for v in output_var_defs]
+    # noinspection PyTypeChecker
+    output_dtypes = [np.float64 if isinstance(v, str) or 'dtype' not in v else v['dtype']
+                     for v in output_var_defs]
+    # noinspection PyTypeChecker,PyUnresolvedReferences
+    output_attrs = [{} if isinstance(v, str) else {ak: av
+                                                   for ak, av in v.items()
+                                                   if ak not in {'name', 'dtype'}}
+                    for v in output_var_defs]
+
+    output_vars = xr.apply_ufunc(cube_func_wrapper,
+                                 index_var,
+                                 *variables,
+                                 dask='parallelized',
+                                 output_dtypes=output_dtypes,
+                                 kwargs=params)
+
+    if isinstance(output_vars, xr.DataArray):
+        output_vars = (output_vars,)
+
+    output_data_vars = {}
+    for i in range(len(output_var_defs)):
+        output_data_vars[output_var_names[i]] = xr.DataArray(output_vars[i],
+                                                             attrs=output_attrs[i])
+    return xr.Dataset(output_data_vars, coords=schema.coords)
 
 
-def gen_index_var(dims, shape, chunks):
+def gen_index_var(schema: CubeSchema):
+    dims = schema.dims
+    shape = schema.shape
+    chunks = schema.chunks
+
     # noinspection PyUnusedLocal
     def get_chunk(cube_store: CubeStore, name: str, index: Tuple[int, ...]) -> bytes:
         data = np.zeros(cube_store.chunks, dtype=np.uint64)
@@ -73,56 +144,7 @@ def gen_index_var(dims, shape, chunks):
     store = CubeStore(dims, shape, chunks)
     store.add_lazy_array('__index_var__', '<u8', get_chunk=get_chunk)
 
-    ds = xr.open_zarr(store)
-    return ds.__index_var__
-
-
-# TODO (forman): code duplication with xcube.api.verify._check_data_variables(), line 76
-def get_cube_schema(cube: xr.Dataset, cube_asserted: bool = False) -> Tuple[
-    Tuple[str, ...], Tuple[int, ...], Tuple[int, ...]]:
-    if not cube_asserted:
-        assert_cube(cube)
-
-    first_dims = None
-    first_shape = None
-    first_chunks = None
-
-    for var_name, var in cube.data_vars.items():
-
-        dims = var.dims
-        if first_dims is None:
-            first_dims = dims
-        elif first_dims != dims:
-            raise ValueError(f'all variables must have same dimensions, but variable {var_name!r} '
-                             f'has dimensions {dims!r}')
-
-        shape = var.shape
-        if first_shape is None:
-            first_shape = shape
-        elif first_shape != shape:
-            raise ValueError(f'all variables must have same shape, but variable {var_name!r} '
-                             f'has shape {shape!r}')
-
-        dask_chunks = var.chunks
-        if dask_chunks is None:
-            raise ValueError(f'all variables must be chunked, but variable {var_name!r} is not')
-        chunks = []
-        for i in range(var.ndim):
-            dim_name = var.dims[i]
-            dim_chunk_sizes = dask_chunks[i]
-            first_size = dim_chunk_sizes[0]
-            if any(size != first_size for size in dim_chunk_sizes[1:-1]):
-                raise ValueError(f'dimension {dim_name!r} of variable {var_name!r} has chunks of different sizes: '
-                                 f'{dim_chunk_sizes!r}')
-            chunks.append(first_size)
-        chunks = tuple(chunks)
-        if first_chunks is None:
-            first_chunks = chunks
-        elif first_chunks != chunks:
-            raise ValueError(f'all variables must have same chunks, but variable {var_name!r} '
-                             f'has chunks {chunks!r}')
-
-    if first_dims is None:
-        raise ValueError('cube is empty')
-
-    return first_dims, first_shape, first_chunks
+    dataset = xr.open_zarr(store)
+    index_var = dataset.__index_var__
+    index_var.assign_coords(**schema.coords)
+    return index_var
