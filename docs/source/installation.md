@@ -5,12 +5,12 @@
 
 Into existing conda environment (>= Python 3.7)
 
-    $ git install -c conda-forge xcube
+    $ conda install -c conda-forge xcube
 
 Into new conda environment
     
-    $ git create -c conda-forge -n xcube python3
-    $ git install -c conda-forge xcube
+    $ conda create -c conda-forge -n xcube python3
+    $ conda install -c conda-forge xcube
 
 
 ## Installation from sources
