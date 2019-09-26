@@ -1,6 +1,13 @@
 ## Changes in 0.2.1 (in development)
 
-- Removed obsolete entry points from setup.py
+### Enhancements
+
+- `xcube serve` now recognises xcube datasets with consolidated 
+  metadata. (#141) 
+
+### Fixes
+
+- Removed obsolete entry points from `./setup.py`.
 
 ## Changes in 0.2.0
 
