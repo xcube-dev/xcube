@@ -1,8 +1,9 @@
 # xcube Developer Guide
 
-Version 0.1, draft
+Version 0.2, draft
 
-*IMPORTANT NOTE: Any changes to this doc must be reviewed by dev-team through pull requests.* 
+*IMPORTANT NOTE: Any changes to this doc must be reviewed by dev-team 
+through pull requests.* 
 
 ## Preface
 
@@ -29,11 +30,21 @@ by Konrad Lorenz (translation is left to the reader)
 ## Versioning
 
 We adhere to [PEP-440](https://www.python.org/dev/peps/pep-0440/).
+Therefore, the xcube software version uses the format 
+`<major>.<minor>.<micro>`  for released versions and 
+`<major>.<minor>.<micro>.dev<n>` for versions in development. 
+
+* `<major>` is increased for major enhancements. 
+  CLI / API changes may introduce incompatibilities with former version.
+* `<minor>` is increased for new features and and minor enhancements.
+  CLI / API changes are backward compatible with former version.  
+* `<micro>` is increased for bug fixes and micro enhancements.
+  CLI / API changes are backward compatible with former version.  
+* `<n>` is increased whenever the team (internally) deploys new builds
+  of a development snapshot.
 
 The current software version is in `xcube/version.py`.
 
-While developing a version, we append version suffix `.dev<N>`.
-Before the release, we remove the suffix.
 
 ## Coding Style
 
@@ -45,25 +56,27 @@ We try adhering to [PEP-8](https://www.python.org/dev/peps/pep-0008/).
   CLI command implementations should be lightweight. 
   Move implementation code either into `api` or `util`.  
   CLI commands must be maintained w.r.t. backward compatibility.
-  Therefore think twice before adding new or change existing CLI commands. 
-* `xcube.api` - Here live API functions that are required by someone or that exists because a CLI 
-  command is implemented here. 
+  Therefore think twice before adding new or change existing CLI 
+  commands. 
+* `xcube.api` - Here live API functions that are required by someone or 
+  that exists because a CLI command is implemented here. 
   API code must be maintained w.r.t. backward compatibility.
   Therefore think twice before adding new or change existing API. 
-* `xcube.webapi` - Here live Web API functions that are required by someone. 
-  Web API command implementations should be lightweight.
+* `xcube.webapi` - Here live Web API functions that are required by 
+  someone. Web API command implementations should be lightweight.
   Move implementation code either into `api` or `util`.  
   Web API interface must be maintained w.r.t. backward compatibility.
   Therefore think twice before adding new or change existing API.
 * `xcube.util` - Mainly implementation helpers. 
-  Comprises classes and functions that are used by `cli`, `api`, `webapi` 
-  in order to maximize modularisation and testability but to minimize code duplication.  
-  The code in here must not be dependent on any of `cli`, `api`, `webapi`.
-  The code in here may change often and in any way as desired by code 
-  implementing the `cli`, `api`, `webapi` packages.    
+  Comprises classes and functions that are used by `cli`, `api`, 
+  `webapi` in order to maximize modularisation and testability but to 
+  minimize code duplication.  
+  The code in here must not be dependent on any of `cli`, `api`,
+  `webapi`.The code in here may change often and in any way as desired 
+  by code implementing the `cli`, `api`, `webapi` packages.    
 
-The following sections will guide you through extending or changing the main packages that form
-xcube's public interface.
+The following sections will guide you through extending or changing the
+main packages that form xcube's public interface.
 
 ### Package `xcube.cli`
 
@@ -72,7 +85,8 @@ xcube's public interface.
 Make sure your change
 
 1. is covered by unit-tests (package `test/api`); 
-1. is reflected by the CLI's doc-strings and tools documentation (currently in `README.md`);
+1. is reflected by the CLI's doc-strings and tools documentation 
+   (currently in `README.md`);
 1. follows existing xcube CLI conventions;
 1. follows PEP8 conventions;
 1. is reflected in API and WebAPI, if desired;
@@ -80,12 +94,12 @@ Make sure your change
 
 #### Hints
 
-Make sure your new CLI command is in line with the others commands regarding 
-command name, option names, as well as metavar arguments names. 
-The CLI command name shall ideally be a verb.
+Make sure your new CLI command is in line with the others commands 
+regarding command name, option names, as well as metavar arguments 
+names. The CLI command name shall ideally be a verb.
 
-Avoid introducing new option arguments if similar options are already in use 
-for existing commands.
+Avoid introducing new option arguments if similar options are already 
+in use for existing commands.
 
 In the following common arguments and options are listed.
 
@@ -120,19 +134,20 @@ Variable names:
 
 
 For parsing CLI inputs, use helper functions that are already in use.
-In the CLI command implementation code, raise `click.ClickException(message)` 
-with a clear `message` for users.
+In the CLI command implementation code, raise 
+`click.ClickException(message)` with a clear `message` for users.
 
-Common xcube CLI options like `-f` for FORMAT should be lower case letters and 
-specific xcube CLI options like `-S` for SIZE in `xcube gen` are recommended to be uppercase letters. 
+Common xcube CLI options like `-f` for FORMAT should be lower case 
+letters and specific xcube CLI options like `-S` for SIZE in `xcube gen`
+are recommended to be uppercase letters. 
 
 Extensively validate CLI inputs to avoid that API functions raise 
 `ValueError`, `TypeError`, etc. Such errors and their message texts are
 usually hard to understand by users. They are actually dedicated to 
 to developers, not CLI users.
 
-There is a global option `--traceback` flag that user can set to dump stack traces. 
-You don't need to print stack traces from your code.  
+There is a global option `--traceback` flag that user can set to dump 
+stack traces. You don't need to print stack traces from your code.  
 
 ### Package `xcube.api`
 
@@ -154,16 +169,17 @@ Create new module in `xcube.api` and add your functions.
 For any functions added make sure naming is in line with other API.
 Add clear doc-string to the new API. Use Sphinx RST format.
 
-Decide if your API methods requires [xcube datasets](./cubespec.md) as inputs, 
-if so, name the primary dataset argument `cube` and add a 
+Decide if your API methods requires [xcube datasets](./cubespec.md) as 
+inputs, if so, name the primary dataset argument `cube` and add a 
 keyword parameter `cube_asserted: bool = False`. 
 Otherwise name the primary dataset argument `dataset`.
 
 Reflect the fact, that a certain API method or function operates only 
 on datasets that conform with the xcube dataset specifications by
-using `cube` in its name rather than `dataset`. For example `compute_dataset` 
-can operate on any xarray datasets, while `get_cube_values_for_points` expects a 
-xcube dataset as input or `read_cube` ensures it will return valid xcube datasets only. 
+using `cube` in its name rather than `dataset`. For example
+`compute_dataset` can operate on any xarray datasets, while 
+`get_cube_values_for_points` expects a xcube dataset as input or 
+`read_cube` ensures it will return valid xcube datasets only. 
 
 In the implementation, if `not cube_asserted`, 
 we must assert and verify the `cube` is a cube. 
@@ -178,11 +194,12 @@ Pass `True` to `cube_asserted` argument of other API called later on:
         result = bibosify_cube(cube, ..., cube_asserted=True)
         ...
 
-If `import xcube.api` is used in client code, any `xarray.Dataset` object will have
-an extra property `xcube` whose interface is defined by the class 
-`xcube.api.XCubeAPI`. This class is an 
-[xarray extension](http://xarray.pydata.org/en/stable/internals.html#extending-xarray) that is 
-used to reflect `xcube.api` functions and make it directly applicable to the `xarray.Dataset` object.
+If `import xcube.api` is used in client code, any `xarray.Dataset` 
+object will have an extra property `xcube` whose interface is defined 
+by the class `xcube.api.XCubeAPI`. This class is an 
+[xarray extension](http://xarray.pydata.org/en/stable/internals.html#extending-xarray) 
+that is used to reflect `xcube.api` functions and make it directly 
+applicable to the `xarray.Dataset` object.
 
 Therefore any xcube API shall be reflected in this extension class.
 
@@ -194,7 +211,8 @@ Therefore any xcube API shall be reflected in this extension class.
 Make sure your change
 
 1. is covered by unit-tests (package `test/webapi`); 
-1. is covered by Web API specification and documentation (currently in `webapi/res/openapi.yml`);
+1. is covered by Web API specification and documentation (currently in
+   `webapi/res/openapi.yml`);
 1. follows existing xcube Web API conventions;
 1. follows PEP8 conventions;
 1. is reflected in CLI and API, if desired;
@@ -202,9 +220,12 @@ Make sure your change
 
 ### Hints
 
-* The Web API is defined in `webapi.app` which defines mapping from resource URLs to handlers
-* All handlers are implemented in `webapi.handlers`. Handler code just delegates to dedicated controllers.
-* All controllers are implemented in `webapi.controllers.*`. They might further delegate into `api.*`
+* The Web API is defined in `webapi.app` which defines mapping from 
+  resource URLs to handlers
+* All handlers are implemented in `webapi.handlers`. Handler code just 
+  delegates to dedicated controllers.
+* All controllers are implemented in `webapi.controllers.*`. They might
+  further delegate into `api.*`
 
 ## Development Process
 
@@ -218,23 +239,59 @@ Make sure your change
    1. others
 1. Make sure issue is assigned to you, if unclear agree with team first.
 1. Add issue label "in progress".
-1. Create development branch named "developer-issue#-title".
-1. Develop, having in mind the checklists and implementation hints above.
-   1. In your first commit, refer the issue so it will appear as link in the issue history
+1. Create development branch named "<developer>-<issue>-<title>" 
+   or "<developer>-<issue>-<title>-fix" (see below).
+1. Develop, having in mind the checklists and implementation hints
+   above.
+   1. In your first commit, refer the issue so it will appear as link 
+      in the issue history
    1. Develop, test, and push to the remote branch as desired. 
    1. In your last commit, utilize checklists above. 
-      (You can include the line "closes #<issue>" in your commit message to auto-close the issue 
-      once the PR is merged.)
-1. Create PR if build servers succeed on your branch. If not, fix issue first.  
+      (You can include the line "closes #<issue>" in your commit message
+      to auto-close the issue once the PR is merged.)
+1. Create PR if build servers succeed on your branch. If not, fix issue
+   first.  
    For the PR assign the team for review, agree who is to merge. 
-   Also reviewers must have checklist in mind! 
-1. Merge PR after all reviewers are accepted your change. Otherwise go back. 
+   Also reviewers should have checklist in mind.
+1. Merge PR after all reviewers are accepted your change. Otherwise go
+   back. 
 1. Remove issue label "in progress".
-1. Delete the development branch "developer-issue#-title".
+1. Delete the development branch.
 1. If the PR is only partly solving an issue:
-   1. Make sure the issue contains a to-do list (checkboxes) to complete the issue.
-   1. Do not include the line "closes #<issue>" in your last commit message.
+   1. Make sure the issue contains a to-do list (checkboxes) to complete
+      the issue.
+   1. Do not include the line "closes #<issue>" in your last commit
+      message.
    1. Add "relates to issue#" in PR.
-   1. Make sure to check the corresponding to-do items (checkboxes) *after* the PR is merged.
+   1. Make sure to check the corresponding to-do items (checkboxes) 
+      *after* the PR is merged.
    1. Remove issue label "in progress".
    1. Leave issue open.
+
+## Branches and Releases
+
+### Target Branches
+
+* The `master` branch contains latest developments, including new 
+  features and fixes. It is used to generate `<major>.<minor>.0` 
+  releases. That is, either `<major>` or `<minor>` is increased.
+* The `<major>.<minor>.x` branch is the maintenance branch for a 
+  former release tagged `v<major>.<minor>.0`. It is used to generate
+  maintenance `<major>.<minor>.<fix>` releases. That is, only `<fix>` 
+  is increased. Most changes to `<major>.<minor>.x` branch must 
+  obviously be merged into `master` branch too.
+  
+The software version string on all active branches is always 
+`<major>.<minor>.<micro>.dev<n>`. Only for a release, we remove the 
+`.dev<n>` suffix.
+
+### Development Branches
+
+Development branches that target the `<major>.<minor>.x` branch 
+should indicate that by using the suffix `-fix`, 
+e.g. `coolguy-7633-div_by_zero_in_mean-fix`. After a pull request,
+the development branch will first be merged into the 
+`<major>.<minor>.x` branch then into `master`.
+
+
+ 
