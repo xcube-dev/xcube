@@ -7,6 +7,8 @@
 
 ### Fixes
 
+- `xcube optimize` now consolidates metadata only after consolidating
+  coordinate variables. (#194)
 - Removed obsolete entry points from `./setup.py`.
 
 ## Changes in 0.2.0
