@@ -399,8 +399,6 @@ class ZarrDatasetIO(DatasetIO):
                         path_or_store = zarr.LRUStoreCache(path_or_store, max_size=max_cache_size)
             else:
                 consolidated = os.path.exists(os.path.join(path_or_store, '.zmetadata'))
-        print(f"{path}, consolidated={consolidated}")
-        # consolidated = False
         return xr.open_zarr(path_or_store, consolidated=consolidated, **kwargs)
 
     def write(self,
