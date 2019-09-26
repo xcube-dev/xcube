@@ -287,8 +287,11 @@ The software version string on all active branches is always
 
 ### Development Branches
 
-Branches that target `<major>.<minor>.x` should be indicate that in 
-their name by using suffix `fix`, 
-e.g. `coolguy-7633-div_by_zero_in_mean-fix`
+Development branches that target the `<major>.<minor>.x` branch 
+should indicate that by using the suffix `-fix`, 
+e.g. `coolguy-7633-div_by_zero_in_mean-fix`. After a pull request,
+the development branch will first be merged into the 
+`<major>.<minor>.x` branch then into `master`.
+
 
  
