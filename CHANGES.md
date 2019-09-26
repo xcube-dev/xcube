@@ -1,3 +1,6 @@
+## Changes in 0.3.0 (in development)
+
+
 ## Changes in 0.2.1 (in development)
 
 - Removed obsolete entry points from setup.py
