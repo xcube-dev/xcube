@@ -1,5 +1,10 @@
 ## Changes in 0.2.1 (in development)
 
+
+### Fixes
+
+- `xcube optimize` now consolidates metadata only after consolidating
+  coordinate variables. (#194)
 - Removed broken links from `./README.md` (#197)
 - Removed obsolete entry points from setup.py
 
