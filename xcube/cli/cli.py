@@ -3,7 +3,7 @@ import sys
 import click
 
 from xcube.api.gen.defaults import DEFAULT_OUTPUT_PATH
-from xcube.cli.apply import apply
+from xcube.cli.compute import compute
 from xcube.cli.extract import extract
 from xcube.cli.gen import gen
 from xcube.cli.grid import grid
@@ -28,7 +28,7 @@ from xcube.version import version
 @click.option('--params', '-p', metavar='PARAMS',
               help="Parameters specific for the output format."
                    " Comma-separated list of <key>=<value> pairs.")
-@click.option('--chunks','-C', metavar='CHUNKS', nargs=1, default=None,
+@click.option('--chunks', '-C', metavar='CHUNKS', nargs=1, default=None,
               help='Chunk sizes for each dimension.'
                    ' Comma-separated list of <dim>=<size> pairs,'
                    ' e.g. "time=1,lat=270,lon=270"')
@@ -205,8 +205,8 @@ def cli(traceback=False, scheduler=None):
     """
 
 
-cli.add_command(apply)
 cli.add_command(chunk)
+cli.add_command(compute)
 cli.add_command(optimize)
 cli.add_command(dump)
 cli.add_command(extract)

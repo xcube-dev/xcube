@@ -6,7 +6,7 @@ import pandas as pd
 import xarray as xr
 
 # noinspection PyUnresolvedReferences
-from .compute import compute_dataset
+from .evaluate import evaluate_dataset
 from .dump import dump_dataset
 from .extract import get_cube_values_for_points, get_cube_point_indexes, get_cube_values_for_indexes, \
     get_dataset_indexes, DEFAULT_INDEX_NAME_PATTERN

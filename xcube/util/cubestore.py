@@ -1,30 +1,48 @@
 import itertools
 import json
 from collections import MutableMapping
-from typing import Iterator, Dict, Tuple, Iterable, KeysView, Callable, Any, Union
+from typing import Iterator, Dict, Tuple, Iterable, KeysView, Callable, Any, Union, Sequence
 
 import numpy as np
+
+__author__ = "Norman Fomferra (Brockmann Consult GmbH)"
 
 GetChunk = Callable[["CubeStore", str, Tuple[int, ...]], bytes]
 
 
 class CubeStore(MutableMapping):
     """
-    A Zarr Store that generates compatible xcube datasets.
+    A Zarr Store that generates data cubes by allowing data variables to fetch or compute their chunks
+    by a user-defined function.
+
+    This is how the function is called:::
+
+        ``data = get_chunk(cube_store, var_name, chunk_indexes)``
+
+    where ``cube_store`` is this store, ``var_name`` is the name of the variable for which data
+    is fetched, and ``chunk_indexes`` is a tuple of zero-based, integer chunk indexes. The result must
+    be a Python *bytes* object.
+
+    :param dims: Dimension names of all data variables, e.g. ('time', 'lat', 'lon').
+    :param shape: Shape of all data variables according to *dims*, e.g. (512, 720, 1480).
+    :param chunks: Chunk sizes of all data variables according to *dims*, e.g. (128, 180, 180).
+    :param attrs: Global dataset attributes.
+    :param get_chunk: Default chunk fetching/computing function.
+    :param trace_store_calls: Whether to print calls into the ``MutableMapping`` interface.
     """
 
     def __init__(self,
-                 dims: Tuple[str, ...],
-                 shape: Tuple[int, ...],
-                 chunks: Tuple[int, ...],
+                 dims: Sequence[str],
+                 shape: Sequence[int],
+                 chunks: Sequence[int],
                  attrs: Dict[str, Any] = None,
                  get_chunk: GetChunk = None,
                  trace_store_calls: bool = False):
 
         self._ndim = len(dims)
-        self._dims = dims
-        self._shape = shape
-        self._chunks = chunks
+        self._dims = tuple(dims)
+        self._shape = tuple(shape)
+        self._chunks = tuple(chunks)
         self._get_chunk = get_chunk
         self._trace_store_calls = trace_store_calls
 
