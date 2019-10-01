@@ -23,7 +23,7 @@ import os
 import shutil
 import warnings
 from abc import ABCMeta, abstractmethod
-from typing import Callable, Dict, Iterable, List, Optional, Set, Tuple
+from typing import Callable, Dict, Iterable, List, Optional, Set, Tuple, Any
 
 import pandas as pd
 import s3fs
@@ -31,8 +31,8 @@ import xarray as xr
 import zarr
 
 from .constants import FORMAT_NAME_MEM, FORMAT_NAME_NETCDF4, FORMAT_NAME_ZARR
-from .dsgrow import append_time_slice, insert_time_slice
 from .objreg import get_obj_registry
+from .timeslice import append_time_slice, insert_time_slice, replace_time_slice
 
 FORMAT_NAME_EXCEL = "excel"
 FORMAT_NAME_CSV = "csv"
@@ -96,6 +96,14 @@ class DatasetIO(metaclass=ABCMeta):
 
     def insert(self, dataset: xr.Dataset, index: int, output_path: str, **kwargs):
         """"Insert *dataset* at *index* into existing *output_path* using format-specific write parameters *kwargs*."""
+        raise NotImplementedError()
+
+    def replace(self, dataset: xr.Dataset, index: int, output_path: str, **kwargs):
+        """"Replace *dataset* at *index* in existing *output_path* using format-specific write parameters *kwargs*."""
+        raise NotImplementedError()
+
+    def update(self, output_path: str, global_attrs: Dict[str, Any] = None, **kwargs):
+        """"Update *dataset* at *output_path* using format-specific open parameters *kwargs*."""
         raise NotImplementedError()
 
 
@@ -234,6 +242,10 @@ class MemDatasetIO(DatasetIO):
         else:
             self.datasets[path] = dataset.copy()
 
+    def update(self, output_path: str, global_attrs: Dict[str, Any] = None, **kwargs):
+        if global_attrs:
+            ds = self.datasets[output_path]
+            ds.attrs.update(global_attrs)
 
 class Netcdf4DatasetIO(DatasetIO):
     """
@@ -288,6 +300,13 @@ class Netcdf4DatasetIO(DatasetIO):
         new_ds.to_netcdf(output_path)
         old_ds.close()
         rimraf(temp_path)
+
+    def update(self, output_path: str, global_attrs: Dict[str, Any] = None, **kwargs):
+        if global_attrs:
+            import netCDF4
+            ds = netCDF4.Dataset(output_path, 'r+')
+            ds.setncatts(global_attrs)
+            ds.close()
 
 
 class ZarrDatasetIO(DatasetIO):
@@ -348,11 +367,14 @@ class ZarrDatasetIO(DatasetIO):
 
         if isinstance(path, str):
             endpoint_url = None
+            region_name = None
             root = None
 
             if 'endpoint_url' in kwargs:
                 endpoint_url = kwargs.pop('endpoint_url')
                 root = path
+            if 'region_name' in kwargs:
+                region_name = kwargs.pop('region_name')
             if path.startswith("http://") or path.startswith("https://"):
                 import urllib3.util
                 url = urllib3.util.parse_url(path_or_store)
@@ -365,7 +387,8 @@ class ZarrDatasetIO(DatasetIO):
                     root = root[1:]
 
             if endpoint_url and root is not None:
-                s3 = s3fs.S3FileSystem(anon=True, client_kwargs=dict(endpoint_url=endpoint_url))
+                s3 = s3fs.S3FileSystem(anon=True,
+                                       client_kwargs=dict(endpoint_url=endpoint_url, region_name=region_name))
                 path_or_store = s3fs.S3Map(root=root, s3=s3, check=False)
                 if 'max_cache_size' in kwargs:
                     max_cache_size = kwargs.pop('max_cache_size')
@@ -417,6 +440,15 @@ class ZarrDatasetIO(DatasetIO):
 
     def insert(self, dataset: xr.Dataset, index: int, output_path: str, **kwargs):
         insert_time_slice(output_path, index, dataset)
+
+    def replace(self, dataset: xr.Dataset, index: int, output_path: str, **kwargs):
+        replace_time_slice(output_path, index, dataset)
+
+    def update(self, output_path: str, global_attrs: Dict[str, Any] = None, **kwargs):
+        if global_attrs:
+            import zarr
+            ds = zarr.open_group(output_path, mode='r+', **kwargs)
+            ds.attrs.update(global_attrs)
 
 
 # noinspection PyAbstractClass

@@ -104,6 +104,8 @@ def get_time_series_for_geometry(ctx: ServiceContext,
                                  geometry: Dict,
                                  start_date: np.datetime64 = None,
                                  end_date: np.datetime64 = None,
+                                 include_count: bool = False,
+                                 include_stdev: bool = False,
                                  max_valids: int = None) -> Dict:
     """
     Get the time-series for a given *geometry*.
@@ -114,6 +116,8 @@ def get_time_series_for_geometry(ctx: ServiceContext,
     :param geometry: The geometry, usually a point or polygon.
     :param start_date: An optional start date.
     :param end_date: An optional end date.
+    :param include_count: Whether to include the valid number of observations in the result.
+    :param include_stdev: Whether to include the standard deviation in the result.
     :param max_valids: Optional number of valid points.
            If it is None (default), also missing values are returned as NaN;
            if it is -1 only valid values are returned;
@@ -129,6 +133,8 @@ def get_time_series_for_geometry(ctx: ServiceContext,
                                          geometry,
                                          start_date=start_date,
                                          end_date=end_date,
+                                         include_count=include_count,
+                                         include_stdev=include_stdev,
                                          max_valids=max_valids)
 
 
@@ -137,6 +143,8 @@ def get_time_series_for_geometry_collection(ctx: ServiceContext,
                                             geometry_collection: Dict,
                                             start_date: np.datetime64 = None,
                                             end_date: np.datetime64 = None,
+                                            include_count: bool = False,
+                                            include_stdev: bool = False,
                                             max_valids: int = None) -> Dict:
     """
     Get the time-series for a given *geometry_collection*.
@@ -147,6 +155,8 @@ def get_time_series_for_geometry_collection(ctx: ServiceContext,
     :param geometry_collection: The geometry collection.
     :param start_date: An optional start date.
     :param end_date: An optional end date.
+    :param include_count: Whether to include the valid number of observations in the result.
+    :param include_stdev: Whether to include the standard deviation in the result.
     :param max_valids: Optional number of valid points.
            If it is None (default), also missing values are returned as NaN;
            if it is -1 only valid values are returned;
@@ -167,6 +177,8 @@ def get_time_series_for_geometry_collection(ctx: ServiceContext,
     return _get_time_series_for_geometries(dataset, var_name, shapes,
                                            start_date=start_date,
                                            end_date=end_date,
+                                           include_count=include_count,
+                                           include_stdev=include_stdev,
                                            max_valids=max_valids)
 
 
@@ -175,6 +187,8 @@ def get_time_series_for_feature_collection(ctx: ServiceContext,
                                            feature_collection: Dict,
                                            start_date: np.datetime64 = None,
                                            end_date: np.datetime64 = None,
+                                           include_count: bool = False,
+                                           include_stdev: bool = False,
                                            max_valids: int = None) -> Dict:
     """
     Get the time-series for the geometries of a given *feature_collection*.
@@ -185,6 +199,8 @@ def get_time_series_for_feature_collection(ctx: ServiceContext,
     :param feature_collection: The feature collection.
     :param start_date: An optional start date.
     :param end_date: An optional end date.
+    :param include_count: Whether to include the valid number of observations in the result.
+    :param include_stdev: Whether to include the standard deviation in the result.
     :param max_valids: Optional number of valid points.
            If it is None (default), also missing values are returned as NaN;
            if it is -1 only valid values are returned;
@@ -206,6 +222,8 @@ def get_time_series_for_feature_collection(ctx: ServiceContext,
     return _get_time_series_for_geometries(dataset, var_name, shapes,
                                            start_date=start_date,
                                            end_date=end_date,
+                                           include_count=include_count,
+                                           include_stdev=include_stdev,
                                            max_valids=max_valids)
 
 
@@ -239,6 +257,8 @@ def _get_time_series_for_geometry(dataset: xr.Dataset,
                                   geometry: shapely.geometry.base.BaseGeometry,
                                   start_date: np.datetime64 = None,
                                   end_date: np.datetime64 = None,
+                                  include_count=True,
+                                  include_stdev=False,
                                   max_valids: int = None) -> Dict:
     if isinstance(geometry, shapely.geometry.Point):
         return _get_time_series_for_point(dataset, var_name,
@@ -246,8 +266,8 @@ def _get_time_series_for_geometry(dataset: xr.Dataset,
                                           start_date=start_date, end_date=end_date)
 
     ts_ds = ts.get_time_series(dataset, geometry, [var_name],
-                               include_count=True,
-                               include_stdev=False,
+                               include_count=include_count,
+                               include_stdev=include_stdev,
                                start_date=start_date,
                                end_date=end_date)
     if ts_ds is None:
@@ -282,7 +302,7 @@ def _collect_ts_result(ts_ds: xr.Dataset,
     uncert_var = ts_ds[uncert_var_name] if uncert_var_name else None
     count_var = ts_ds[count_var_name] if count_var_name else None
 
-    total_count = ts_ds.get('max_number_of_observations', 1)
+    total_count = ts_ds.attrs.get('max_number_of_observations', 1)
 
     num_times = var.time.size
     time_series = []
@@ -317,7 +337,7 @@ def _collect_ts_result(ts_ds: xr.Dataset,
                 statistics['uncertainty'] = float(value)
 
         time_series.append(dict(result=statistics,
-                                date=timestamp_to_iso_string(var.time[time_index].data)))
+                                date=timestamp_to_iso_string(var.time[time_index].values)))
 
     if pos_max_valids:
         return {'results': time_series[::-1]}
@@ -330,6 +350,8 @@ def _get_time_series_for_geometries(dataset: xr.Dataset,
                                     geometries: List[shapely.geometry.base.BaseGeometry],
                                     start_date: np.datetime64 = None,
                                     end_date: np.datetime64 = None,
+                                    include_count=False,
+                                    include_stdev=False,
                                     max_valids=None) -> Dict:
     time_series = []
     for geometry in geometries:
@@ -337,6 +359,8 @@ def _get_time_series_for_geometries(dataset: xr.Dataset,
                                                geometry,
                                                start_date=start_date,
                                                end_date=end_date,
+                                               include_count=include_count,
+                                               include_stdev=include_stdev,
                                                max_valids=max_valids)
         time_series.append(result["results"])
     return {'results': time_series}

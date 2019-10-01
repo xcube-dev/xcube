@@ -111,7 +111,7 @@ def new_application(prefix: str = None):
          GetTimeSeriesForGeometryHandler),
         (prefix + url_pattern('/ts/{{ds_id}}/{{var_name}}/geometries'),
          GetTimeSeriesForGeometriesHandler),
-        (prefix + url_pattern('/ts/{{ds_id}}/{{var_name}}/places'),
+        (prefix + url_pattern('/ts/{{ds_id}}/{{var_name}}/features'),
          GetTimeSeriesForFeaturesHandler),
     ])
     return application

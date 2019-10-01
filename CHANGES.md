@@ -1,7 +1,48 @@
-## Changes in 0.2.0 (in dev)
+## Changes in 0.3.0 (in development)
+
+
+## Changes in 0.2.1 (in development)
+
+- Removed broken links from `./README.md` (#197)
+- Removed obsolete entry points from setup.py
+
+## Changes in 0.2.0
+
+### New
+
+* Added first version of the [xcube documentation](https://xcube.readthedocs.io/) generated from `./docs` folder.
 
 ### Enhancements
 
+* Reorganisation of the Documentation and Examples Section (partly addressing #106)
+* Loosened python conda environment to satisfy conda-forge requirements
+* Making CLI parameters consistent and removing or changing parameter abbreviations in case they were used twice for different params. (partly addressing #91)
+  For every CLI command which is generating an output a path must be provided by the option `-o`, `--output`. If not provided by the user, a default output_path is generated.
+  The following CLI parameter have changed and their abbreviation is not enabled anymore : 
+
+    - `xcube gen -v` is now only `xcube gen --vars` or `xcube gen --variables` 
+    - `xcube gen -p` is now  `xcube gen -P` 
+    - `xcube gen -i` is now  `xcube gen -I` 
+    - `xcube gen -r` is now  `xcube gen -R`
+    - `xcube gen -s` is now  `xcube gen -S` 
+    - `xcube chunk -c`  is now  `xcube chunk -C`
+    - `xcube level -l` is now `xcube level -L`
+    - `xcube dump -v` is now `xcube dump --variable` or `xcube dump --var`
+    - `xcube dump -e` is now `xcube dump -E` 
+    - `xcube vars2dim -v` is now `xcube vars2dim --variable` or `xcube vars2dim --var`
+    - `xcube vars2dim --var_name` is now `xcube vars2dim --variable` or `xcube vars2dim --var`
+    - `xcube vars2dim -d` is now `xcube vars2dim -D` 
+    - `xcube grid res -d` is now `xcube grid res -D`
+    - `xcube grid res -c` is now `xcube grid res --cov` or `xcube grid res --coverage` 
+    - `xcube grid res -n` is now `xcube grid res -N` or `xcube grid res --num_results` 
+    - `xcube serve -p` is now `xcube serve -P` 
+    - `xcube serve -a` is now `xcube serve -A` 
+    
+* Added option `inclStDev` and `inclCount` query parameters to `ts/{dataset}/{variable}/geometry` and derivates.
+  If used with `inclStDev=1`, Xcube Viewer will show error bars for each time series point.
+* `xcube.api.new_cube` function now accepts callables as values for variables.
+  This allows to compute variable values depending on the (t, y, x) position
+  in the cube. Useful for testing.
 * `xcube.api` now exports the `MaskSet` class which is useful for decoding flag values encoding following the
   [CF conventions](http://cfconventions.org/Data/cf-conventions/cf-conventions-1.7/cf-conventions.html#flags).
 * Added new CLI tool `xcube optimize` and API function `xcube.api.optimize_dataset` 
@@ -14,10 +55,7 @@
   The call no longer includes associated vector data as GeoJSON. Instead new API
   has beed added to fetch new vector data on demand:
   `/datasets/{dataset}/places` and `/datasets/{dataset}/places/{place}` (#130)
-* `xcube gen` is now taking care that when new time slices are added to an existing 
-   cube, this is done by maintaining the chronological order. New time slices are 
-   either appended or inserted. (#64)
-* `xcube serve` accepts custom SNAP colormaps. The path to a SAP .cpd file can be passed via the server  
+* `xcube serve` accepts custom SNAP colormaps. The path to a SAP .cpd file can be passed via the server
    configuration file with the paramter [ColorFile] instead of [ColorBar]. (#84)
 * `xcube serve` can now be configured to serve cubes that are associated 
    with another cube with same data but different chunking (#115). 
@@ -31,7 +69,7 @@
      see AWS docs [HEAD](https://docs.aws.amazon.com/AmazonS3/latest/API/RESTObjectHEAD.html) 
      and [GET](https://docs.aws.amazon.com/AmazonS3/latest/API/RESTObjectGET.html)
 * `xcube serve` now verifies that a configured cube is valid once it is opened. (#107)
-* Added new CLI command `xcube verify` performing data cube verification. (#19)
+* Added new CLI command `xcube verify` performing xcube dataset verification. (#19)
 * Reworked `xcube extract` to be finally useful and effective for point data extraction. (#102) 
 * `xcube server`can now filter datasets by point coordinate, e.g. `/datasets?point=12.5,52.8`. (#50) 
 * `xcube server`can now limit time series to a maximum number of 
@@ -55,7 +93,7 @@
   for backward compatibility. (#79)
 * Added new CLI command `xcube resample` that is used to generate temporarily up- or downsampled
   data cubes from other data cubes.
-* `xcube serve` can now be run with data cube paths and styling information given via the CLI rather 
+* `xcube serve` can now be run with xcube dataset paths and styling information given via the CLI rather 
   than a configuration file. For example `xcube serve --styles conc_chl=(0,20,"viridis") /path/to/my/chl-cube.zarr`.
   This allows for quick inspection of newly generated cubes via `xcube gen`.
   Also added option `--show` that starts the Xcube viewer on desktop environments in a browser. 
@@ -65,7 +103,7 @@
 * Added new `xcube timeit` command that can be used to measure the time required for 
   parameterized command invocations. 
   The command is still in development and therefore hidden.
-* Added global `xcube --scheduler <scheduler>` option for Dask distributed computing (#58)
+* Added global `xcube --scheduler SCHEDULER` option for Dask distributed computing (#58)
 * Added global `xcube --traceback` option, removed local `xcube gen --traceback` option
 * Completed version 1 of an xcube developer guide.
 * Added `xcube serve` command (#43) 
@@ -81,8 +119,18 @@
 * Excluding all input processors except for the default one. They are now plugins and have own repositories within the 
 xcube's organisation. (#49)
 
+
 ### Fixes
 
+* `xcube gen` CLI now updates metadata correctly. (#181)
+* It was no longer possible to use the `xcube gen` CLI with `--proc` option. (#120)
+* `totalCount` attribute of time series returned by Web API `ts/{dataset}/{variable}/{geom-type}` now
+   contains the correct number of possible observations. Was always `1` before.
+* Renamed Web API function `ts/{dataset}/{variable}/places` into
+  `ts/{dataset}/{variable}/features`.
+* `xcube gen` is now taking care that when new time slices are added to an existing
+   cube, this is done by maintaining the chronological order. New time slices are
+   either appended, inserted, or replaced. (#64) (#139)
 * Fixed `xcube serve` issue with WMTS KVP method `GetTile` with query parameter `time` 
   whose value can now also have the two forms `<start-date>/<end-date>` and just `<date>`. (#132) 
 * Fixed `xcube extract` regression that stopped working after Pandas update (#95) 
@@ -92,7 +140,6 @@ xcube's organisation. (#49)
 * Fixed `xcube serve` WMTS KVP API to allow for case-insensitive query parameters. (#77)
 * Fixed error in plugins when importing `xcube.api.gen` (#62)
 * Fixed import of plugins only when executing `xcube.cli` (#66)
-
 
 ## Changes in 0.1.0
 

@@ -18,6 +18,7 @@ for name, var in _ds.coords.items():
 
 # For usage of the tornado.testing.AsyncHTTPTestCase see http://www.tornadoweb.org/en/stable/testing.html
 
+
 class HandlersTest(AsyncHTTPTestCase):
 
     def get_app(self):
@@ -153,7 +154,6 @@ class HandlersTest(AsyncHTTPTestCase):
                                             '&TileCol=0')
         self.assertBadRequestResponse(response, 'Value for "layer" parameter must be "<dataset>.<variable>"')
 
-
     def test_fetch_wmts_capabilities(self):
         response = self.fetch(self.prefix + '/wmts/1.0.0/WMTSCapabilities.xml')
         self.assertResponseOK(response)
@@ -188,10 +188,6 @@ class HandlersTest(AsyncHTTPTestCase):
         response = self.fetch(self.prefix + '/datasets/demo?tiles=ol4')
         self.assertResponseOK(response)
         response = self.fetch(self.prefix + '/datasets/demo?tiles=cesium')
-        self.assertResponseOK(response)
-
-    def test_fetch_dataset_places(self):
-        response = self.fetch(self.prefix + '/datasets/demo/places')
         self.assertResponseOK(response)
 
     def test_fetch_dataset_coords(self):
@@ -288,6 +284,8 @@ class HandlersTest(AsyncHTTPTestCase):
         self.assertResponseOK(response)
 
     def test_fetch_dataset_places(self):
+        response = self.fetch(self.prefix + '/datasets/demo/places')
+        self.assertResponseOK(response)
         response = self.fetch(self.prefix + '/places/all/demo')
         self.assertResponseOK(response)
         response = self.fetch(self.prefix + '/places/inside-cube/demo')
@@ -325,6 +323,7 @@ class HandlersTest(AsyncHTTPTestCase):
         self.assertResponseOK(response)
         response = self.fetch(self.prefix + '/ts/demo/conc_chl/geometry', method="POST",
                               body='{"type":"Polygon", "coordinates": [[[1, 51], [2, 51], [2, 52], [1, 51]]]}')
+
         self.assertResponseOK(response)
 
     def test_fetch_time_series_geometries(self):
@@ -341,23 +340,24 @@ class HandlersTest(AsyncHTTPTestCase):
                               body='{"type": "GeometryCollection", "geometries": []}')
         self.assertResponseOK(response)
         response = self.fetch(self.prefix + '/ts/demo/conc_chl/geometries', method="POST",
-                              body='{"type": "GeometryCollection", "geometries": [{"type": "Point", "coordinates": [1, 51]}]}')
+                              body='{"type": "GeometryCollection", "geometries": '
+                                   '[{"type": "Point", "coordinates": [1, 51]}]}')
         self.assertResponseOK(response)
 
     def test_fetch_time_series_features(self):
-        response = self.fetch(self.prefix + '/ts/demo/conc_chl/places', method="POST",
+        response = self.fetch(self.prefix + '/ts/demo/conc_chl/features', method="POST",
                               body='')
         self.assertBadRequestResponse(response, 'Invalid or missing GeoJSON feature collection in request body')
-        response = self.fetch(self.prefix + '/ts/demo/conc_chl/places', method="POST",
+        response = self.fetch(self.prefix + '/ts/demo/conc_chl/features', method="POST",
                               body='{"type":"Point"}')
         self.assertBadRequestResponse(response, 'Invalid GeoJSON feature collection')
-        response = self.fetch(self.prefix + '/ts/demo/conc_chl/places', method="POST",
+        response = self.fetch(self.prefix + '/ts/demo/conc_chl/features', method="POST",
                               body='{"type": "FeatureCollection", "features": null}')
         self.assertResponseOK(response)
-        response = self.fetch(self.prefix + '/ts/demo/conc_chl/places', method="POST",
+        response = self.fetch(self.prefix + '/ts/demo/conc_chl/features', method="POST",
                               body='{"type": "FeatureCollection", "features": []}')
         self.assertResponseOK(response)
-        response = self.fetch(self.prefix + '/ts/demo/conc_chl/places', method="POST",
+        response = self.fetch(self.prefix + '/ts/demo/conc_chl/features', method="POST",
                               body='{"type": "FeatureCollection", "features": ['
                                    '  {"type": "Feature", "properties": {}, '
                                    '   "geometry": {"type": "Point", "coordinates": [1, 51]}}'

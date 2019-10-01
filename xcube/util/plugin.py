@@ -43,6 +43,7 @@ def load_plugins(entry_points, plugins=None):
                 _handle_error(entry_point, e)
                 continue
         else:
+            # We use warning and not raise to allow loading xcube despite a broken plugin. Raise would stop xcube.
             warnings.warn(f'xcube plugin with entry point {entry_point.name!r} '
                           f'must be a callable but got a {type(plugin_init_function)!r}')
             continue
@@ -60,6 +61,7 @@ def get_plugins():
 
 
 def _handle_error(entry_point, e):
+    # We use warning and not raise to allow loading xcube despite a broken plugin. Raise would stop xcube.
     warnings.warn('Unexpected exception while loading xcube plugin '
                   f'with entry point {entry_point.name!r}: {e}')
     traceback.print_exc()

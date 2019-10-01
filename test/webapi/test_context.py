@@ -33,9 +33,9 @@ class ServiceContextTest(unittest.TestCase):
 
         ctx.config = dict(Datasets=[
             dict(Identifier='demo',
-                 Path="../../../../xcube/webapi/res/demo/cube.nc"),
+                 Path="../../../../examples/serve/demo/cube.nc"),
             dict(Identifier='demo2',
-                 Path="../../../../xcube/webapi/res/demo/cube.nc"),
+                 Path="../../../../examples/serve/demo/cube.nc"),
         ])
         self.assertNotIn('demo', ctx.dataset_cache)
         self.assertNotIn('demo2', ctx.dataset_cache)
@@ -46,7 +46,7 @@ class ServiceContextTest(unittest.TestCase):
 
         ctx.config = dict(Datasets=[
             dict(Identifier='demo2',
-                 Path="../../../../xcube/webapi/res/demo/cube.nc"),
+                 Path="../../../../examples/serve/demo/cube.nc"),
         ])
         self.assertNotIn('demo', ctx.dataset_cache)
         self.assertNotIn('demo2', ctx.dataset_cache)
@@ -58,7 +58,7 @@ class ServiceContextTest(unittest.TestCase):
                          list(bucket_mapping.keys()))
         path = bucket_mapping['demo']
         self.assertTrue(os.path.isabs(path))
-        self.assertTrue(path.replace('\\', '/').endswith('xcube/webapi/res/demo/cube-1-250-250.zarr'))
+        self.assertTrue(path.replace('\\', '/').endswith('examples/serve/demo/cube-1-250-250.zarr'))
 
     def test_get_color_mapping(self):
         ctx = new_test_service_context()

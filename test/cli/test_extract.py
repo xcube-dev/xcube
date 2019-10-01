@@ -80,7 +80,7 @@ class ExtractCliTest(CliDataTest):
         args = ['extract']
         if options:
             args += options
-        args += [os.path.join(base_dir, '..', '..', 'xcube', 'webapi', 'res', 'demo', 'cube.nc'),
+        args += [os.path.join(base_dir, '..', '..', 'examples', 'serve', 'demo', 'cube.nc'),
                  os.path.join(base_dir, 'extract-points', filename)]
         result = self.invoke_cli(args)
         self.assertEqual(0, result.exit_code)

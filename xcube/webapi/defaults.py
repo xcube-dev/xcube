@@ -21,7 +21,7 @@
 
 import os
 
-SERVER_NAME = 'XcubeServer'
+SERVER_NAME = 'xcube Server'
 SERVER_DESCRIPTION = f'WMTS, catalogue, data access, tile, feature, time-series services for' \
                      ' xarray-enabled data cubes'
 

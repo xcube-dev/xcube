@@ -66,7 +66,7 @@ instance/
 .scrapy
 
 # Sphinx documentation
-docs/_build/
+docs/build/
 
 # PyBuilder
 target/
@@ -107,3 +107,7 @@ ENV/
 
 # Test data
 *.nc/
+
+# Test notebooks used for development
+scripts
+examples/gen/cmd_files

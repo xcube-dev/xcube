@@ -1,1 +1,0 @@
-# xcube demo notebooks

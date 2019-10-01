@@ -31,15 +31,15 @@ VIEWER_ENV_VAR = 'XCUBE_VIEWER_PATH'
 
 
 @click.command(name='serve')
-@click.argument('cubes', metavar='CUBE...', nargs=-1)
-@click.option('--address', '-a', metavar='ADDRESS', default=DEFAULT_ADDRESS,
+@click.argument('cube', nargs=-1)
+@click.option('--address', '-A', metavar='ADDRESS', default=DEFAULT_ADDRESS,
               help=f'Service address. Defaults to {DEFAULT_ADDRESS!r}.')
-@click.option('--port', '-p', metavar='PORT', default=DEFAULT_PORT, type=int,
+@click.option('--port', '-P', metavar='PORT', default=DEFAULT_PORT, type=int,
               help=f'Port number where the service will listen on. Defaults to {DEFAULT_PORT}.')
 @click.option('--prefix', metavar='PREFIX',
               help='Service URL prefix. May contain template patterns such as "${version}" or "${name}". '
                    'For example "${name}/api/${version}".')
-@click.option('--name', '-n', metavar='NAME', hidden=True,
+@click.option('--name', metavar='NAME', hidden=True,
               help='Service name. Deprecated, use prefix option instead.')
 @click.option('--update', '-u', metavar='PERIOD', type=float,
               default=DEFAULT_UPDATE_PERIOD,
@@ -63,7 +63,7 @@ VIEWER_ENV_VAR = 'XCUBE_VIEWER_PATH'
               help='Tile computation mode. '
                    'This is an internal option used to switch between different tile computation implementations. '
               f'Defaults to {DEFAULT_TILE_COMP_MODE!r}.')
-@click.option('--show', '-s', is_flag=True,
+@click.option('--show','-s',  is_flag=True,
               help=f"Run viewer app. Requires setting the environment variable {VIEWER_ENV_VAR} "
               f"to a valid xcube-viewer deployment or build directory. "
               f"Refer to https://github.com/dcs4cop/xcube-viewer for more information.")
@@ -71,7 +71,7 @@ VIEWER_ENV_VAR = 'XCUBE_VIEWER_PATH'
               help="Delegate logging to the console (stderr).")
 @click.option('--traceperf', is_flag=True,
               help="Print performance diagnostics (stdout).")
-def serve(cubes: List[str],
+def serve(cube: List[str],
           address: str,
           port: int,
           prefix: str,
@@ -95,7 +95,7 @@ def serve(cubes: List[str],
 
     prefix = prefix or name
 
-    if config and cubes:
+    if config and cube:
         raise click.ClickException("CONFIG and CUBES cannot be used at the same time.")
     if styles:
         styles = parse_cli_kwargs(styles, "STYLES")
@@ -113,7 +113,7 @@ def serve(cubes: List[str],
                       prefix=prefix,
                       port=port,
                       address=address,
-                      cube_paths=cubes,
+                      cube_paths=cube,
                       styles=styles,
                       config_file=config,
                       tile_cache_size=tilecache,
@@ -135,13 +135,13 @@ def _run_viewer():
     viewer_dir = os.environ.get(VIEWER_ENV_VAR)
 
     if viewer_dir is None:
-        raise click.UsageError('Option "--show" / "-s": '
+        raise click.UsageError('Option "--show": '
                                f"In order to run the viewer, "
                                f"set environment variable {VIEWER_ENV_VAR} "
                                f"to a valid xcube-viewer deployment or build directory.")
 
     if not os.path.isdir(viewer_dir):
-        raise click.UsageError('Option "--show" / "-s": '
+        raise click.UsageError('Option "--show": '
                                f"Viewer path set by environment variable {VIEWER_ENV_VAR} "
                                f"must be a directory: " + viewer_dir)
 

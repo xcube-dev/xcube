@@ -18,32 +18,37 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-from typing import Dict, Union
+from typing import Sequence
 
 from ...util.config import flatten_dict, load_configs, to_name_dict_pairs
 
 
-def get_config_dict(config_obj: Dict[str, Union[str, bool, int, float, list, dict, tuple]]):
+def get_config_dict(config_files: Sequence[str] = None,
+                    input_paths: Sequence[str] = None,
+                    input_processor_name: str = None,
+                    output_path: str = None,
+                    output_writer_name: str = None,
+                    output_size: str = None,
+                    output_region: str = None,
+                    output_variables: str = None,
+                    output_resampling: str = None,
+                    append_mode: bool = True,
+                    profile_mode: bool = False,
+                    sort_mode: bool = False):
     """
-    Get configuration dictionary.
+    Get a configuration dictionary from given (command-line) arguments.
 
-    :param config_obj: A configuration object.
     :return: Configuration dictionary
     :raise OSError, ValueError
     """
-    config_file = config_obj.get("config_file")
-    input_paths = config_obj.get("input_paths")
-    input_processor = config_obj.get("input_processor")
-    output_path = config_obj.get("output_path")
-    output_writer = config_obj.get("output_writer")
-    output_size = config_obj.get("output_size")
-    output_region = config_obj.get("output_region")
-    output_variables = config_obj.get("output_variables")
-    output_resampling = config_obj.get("output_resampling")
-    append_mode = config_obj.get("append_mode")
-    sort_mode = config_obj.get("sort_mode")
 
-    config = load_configs(*config_file) if config_file else {}
+    config = load_configs(*config_files) if config_files else {}
+
+    # preserve backward compatibility for old names
+    if 'input_processor' in config:
+        config['input_processor_name'] = config.pop('input_processor')
+    if 'output_writer' in config:
+        config['output_writer_name'] = config.pop('output_writer')
 
     # Overwrite current configuration by cli arguments
     if input_paths is not None and 'input_paths' not in config:
@@ -54,14 +59,14 @@ def get_config_dict(config_obj: Dict[str, Union[str, bool, int, float, list, dic
         else:
             config['input_paths'] = input_paths
 
-    if input_processor is not None:
-        config['input_processor'] = input_processor
+    if input_processor_name is not None and 'input_processor_name' not in config:
+        config['input_processor_name'] = input_processor_name
 
     if output_path is not None and 'output_path' not in config:
         config['output_path'] = output_path
 
-    if output_writer is not None and 'output_writer' not in config:
-        config['output_writer'] = output_writer
+    if output_writer_name is not None and 'output_writer_name' not in config:
+        config['output_writer_name'] = output_writer_name
 
     if output_resampling is not None and 'output_resampling' not in config:
         config['output_resampling'] = output_resampling
@@ -92,6 +97,9 @@ def get_config_dict(config_obj: Dict[str, Union[str, bool, int, float, list, dic
             raise ValueError('output_variables must be a list of existing variable names')
         config['output_variables'] = output_variables
 
+    if profile_mode is not None and config.get('profile_mode') is None:
+        config['profile_mode'] = profile_mode
+
     if append_mode is not None and config.get('append_mode') is None:
         config['append_mode'] = append_mode
 
@@ -109,4 +117,5 @@ def get_config_dict(config_obj: Dict[str, Union[str, bool, int, float, list, dic
     output_metadata = config.get('output_metadata')
     if output_metadata:
         config['output_metadata'] = flatten_dict(output_metadata)
+
     return config

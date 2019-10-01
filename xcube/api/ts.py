@@ -59,7 +59,7 @@ def get_time_series(cube: xr.Dataset,
     If the given *geometry* does not overlap the cube's boundaries, or if not output variables remain,
     the function returns ``None``.
 
-    :param cube: The data cube
+    :param cube: The xcube dataset
     :param geometry: Optional geometry
     :param var_names: Optional sequence of names of variables to be included.
     :param start_date: Optional start date.
@@ -107,11 +107,11 @@ def get_time_series(cube: xr.Dataset,
     ds_stdev = None
     if use_groupby:
         time_group = dataset.groupby('time')
-        ds_mean = time_group.mean(skipna=True)
+        ds_mean = time_group.mean(skipna=True, dim=xr.ALL_DIMS)
         if include_count:
-            ds_count = time_group.count()
+            ds_count = time_group.count(dim=xr.ALL_DIMS)
         if include_stdev:
-            ds_stdev = time_group.std(skipna=True)
+            ds_stdev = time_group.std(skipna=True, dim=xr.ALL_DIMS)
     else:
         ds_mean = dataset.mean(dim=('lat', 'lon'), skipna=True)
         if include_count:

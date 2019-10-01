@@ -65,15 +65,14 @@ with open('xcube/version.py') as f:
 setup(
     name="xcube",
     version=version,
-    description='xcube API and CLIs',
+    description=('xcube is a Python package for generating and exploiting '
+                 'data cubes powered by xarray, dask, and zarr.'),
     license='MIT',
     author='xcube Development Team',
     packages=packages,
     entry_points={
         'console_scripts': [
             'xcube = xcube.cli.cli:main',
-            'xcube-gen = xcube.cli.gen:main',
-            'xcube-restime = xcube.cli.restime:main',
         ],
         # This is xcube's extension point for new plugins. Use this extension point to add your own
         # xcube plugin in the setup.py of your Python package sources.

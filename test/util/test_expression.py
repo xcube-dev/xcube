@@ -142,6 +142,7 @@ class TranspileExprTest(unittest.TestCase):
         self.assertEqual(transpile_expr('sin(x)'), 'np.sin(x)')
         self.assertEqual(transpile_expr('min(x, y)'), 'np.fmin(x, y)')
         self.assertEqual(transpile_expr('max(x, y)'), 'np.fmax(x, y)')
+        self.assertEqual(transpile_expr('isnan(x, y)'), 'np.isnan(x, y)')
 
     def test_conditional(self):
         # The following conditional expr looks wrong but this is how it looks like after translating

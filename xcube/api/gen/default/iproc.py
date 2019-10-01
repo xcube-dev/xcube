@@ -20,13 +20,13 @@
 # SOFTWARE.
 
 from typing import Tuple
-import numpy as np
 
+import numpy as np
 import xarray as xr
 
-from xcube.util.constants import CRS_WKT_EPSG_4326
-from xcube.util.timecoord import to_time_in_days_since_1970
 from ..iproc import XYInputProcessor, register_input_processor, ReprojectionInfo
+from ....util.constants import CRS_WKT_EPSG_4326
+from ....util.timecoord import to_time_in_days_since_1970
 
 
 class DefaultInputProcessor(XYInputProcessor):
@@ -180,7 +180,8 @@ def _normalize_lon_360(dataset: xr.Dataset) -> xr.Dataset:
     if not np.any(lon_values[lon_size_05:] > 180.):
         return dataset
 
-    dataset = dataset.roll(lon=lon_size_05)
+    # roll_coords will be set to False by default in the future
+    dataset = dataset.roll(lon=lon_size_05, roll_coords=True)
     dataset = dataset.assign_coords(lon=(((dataset.lon + 180) % 360) - 180))
 
     return dataset

@@ -39,7 +39,7 @@ def cli_option_scheduler(func):
         address_and_kwargs = value.split("?", 2)
         if len(address_and_kwargs) == 2:
             address, kwargs_string = address_and_kwargs
-            kwargs = parse_cli_kwargs(kwargs_string, metavar="<scheduler>")
+            kwargs = parse_cli_kwargs(kwargs_string, metavar="SCHEDULER")
         else:
             address, = address_and_kwargs
             kwargs = dict()
@@ -57,9 +57,9 @@ def cli_option_scheduler(func):
 
     return click.option(
         '--scheduler',
-        metavar='<scheduler>',
-        help="Enable distributed computing using the Dask scheduler identified by <scheduler>. "
-             "<scheduler> can have the form <address>?<keyword>=<value>,... where <address> "
+        metavar='SCHEDULER',
+        help="Enable distributed computing using the Dask scheduler identified by SCHEDULER. "
+             "SCHEDULER can have the form <address>?<keyword>=<value>,... where <address> "
              "is <host> or <host>:<port> and specifies the scheduler's address in your network. "
              "For more information on distributed computing "
              "using Dask, refer to http://distributed.dask.org/. "
