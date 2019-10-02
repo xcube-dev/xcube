@@ -86,7 +86,7 @@ def update_dataset_spatial_attrs(dataset: xr.Dataset,
 
 def update_dataset_temporal_attrs(dataset: xr.Dataset,
                                   input_path: str = None,
-                                  update_mode:str = None,
+                                  update_mode: str = None,
                                   update_existing: bool = False,
                                   in_place: bool = False) -> xr.Dataset:
     """
@@ -154,13 +154,16 @@ def _update_dataset_attrs(dataset: xr.Dataset,
 
     dataset.attrs['date_modified'] = datetime.datetime.utcnow().isoformat()
     if update_mode:
-        if 'history' in dataset.attrs.keys():
-            dataset.attrs["history"] = f"{dataset.attrs['history']} \n " \
-                                       f"[{datetime.datetime.utcnow().isoformat()}] {update_mode} {input_path}"
-        else:
+        if update_mode == "create":
             dataset.attrs[
                 "history"] = f"[{datetime.datetime.utcnow().isoformat()}] {update_mode} xcube dataset with {input_path} \n" \
                              f"with the parameters: {history} \n"
+        else:
+            if 'history' in dataset.attrs.keys():
+                dataset.attrs["history"] = f"{dataset.attrs['history']} \n " \
+                                           f"[{datetime.datetime.utcnow().isoformat()}] {update_mode} {input_path}"
+            else:
+                dataset.attrs["history"] = f"[{datetime.datetime.utcnow().isoformat()}] {update_mode} {input_path} \n"
 
     return dataset
 
