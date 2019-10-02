@@ -31,8 +31,8 @@ class UpdateVariablePropsTest(unittest.TestCase):
         ds1 = create_highroc_dataset()
         ds2 = update_dataset_var_attrs(ds1,
                                        [('conc_chl', {'name': 'chl_c2rcc'}),
-                                ('c2rcc_flags', {'name': 'flags', 'marker': True}),
-                                ('rtoa_10', None)])
+                                        ('c2rcc_flags', {'name': 'flags', 'marker': True}),
+                                        ('rtoa_10', None)])
 
         self.assertEqual(len(ds1.data_vars), len(ds2.data_vars))
 
@@ -98,7 +98,7 @@ class UpdateGlobalAttributesTest(unittest.TestCase):
         self.assertIsNot(ds2, ds1)
         self.assertEqual('CF-1.7', ds2.attrs.get('Conventions'))
         self.assertEqual('MIT', ds2.attrs.get('license'))
-        self.assertEqual('pipo', ds2.attrs.get('history'))
+        self.assertIn('pipo', ds2.attrs.get('history'))
         self.assertEqual(-20.0, ds2.attrs.get('geospatial_lon_min'))
         self.assertEqual(-18.0, ds2.attrs.get('geospatial_lon_max'))
         self.assertEqual(0.25, ds2.attrs.get('geospatial_lon_resolution'))
@@ -117,7 +117,7 @@ class UpdateGlobalAttributesTest(unittest.TestCase):
         self.assertIsNot(ds2, ds1)
         self.assertEqual('CF-1.7', ds2.attrs.get('Conventions'))
         self.assertEqual('MIT', ds2.attrs.get('license'))
-        self.assertEqual('pipo', ds2.attrs.get('history'))
+        self.assertIn('pipo', ds2.attrs.get('history'))
         self.assertEqual(-20.0, ds2.attrs.get('geospatial_lon_min'))
         self.assertEqual(-18.0, ds2.attrs.get('geospatial_lon_max'))
         self.assertEqual(0.25, ds2.attrs.get('geospatial_lon_resolution'))

@@ -171,7 +171,7 @@ def get_color_bars(ctx: ServiceContext, mime_type: str) -> str:
                 cmap_name, cmap_data = cmap_bar
                 cmap_image = f'<img src="data:image/png;base64,{cmap_data}" width="100%%" height="32"/>'
                 html_body += f'        <tr><td style="width: 5em">{cmap_name}:' \
-                    f'</td><td style="width: 40em">{cmap_image}</td></tr>\n'
+                             f'</td><td style="width: 40em">{cmap_image}</td></tr>\n'
             html_body += '    </table>\n'
         return html_head + html_body + html_foot
     raise ServiceBadRequestError(f'Format {mime_type!r} not supported for color bars')

@@ -136,6 +136,20 @@ class DefaultProcessTest(unittest.TestCase):
             if v is not None:
                 self.assertEqual(v, cube.attrs[k], msg=f'key {k!r}')
 
+    def test_history(self):
+        f = open((os.path.join(os.path.dirname(__file__), 'inputdata', "input.txt")), "w+")
+        for i in range(1, 4):
+            file_name = "2017010" + str(i) + "-IFR-L4_GHRSST-SSTfnd-ODYSSEA-NWE_002-v2.0-fv1.0.nc"
+            file = get_inputdata_path(file_name)
+            f.write("%s\n" % file)
+        f.close()
+        status, output = gen_cube_wrapper([get_inputdata_path('input.txt')], 'l2c.zarr', sort_mode=True)
+        self.assertEqual(True, status)
+        ds = xr.open_zarr('l2c.zarr')
+        self.assertIn('history', ds.attrs.keys())
+        self.assertIn('create', ds.attrs["history"])
+        self.assertIn('append', ds.attrs["history"])
+
     def test_handle_360_lon(self):
         status, output = gen_cube_wrapper(
             [get_inputdata_path('20170101120000-UKMO-L4_GHRSST-SSTfnd-OSTIAanom-GLOB-v02.0-fv02.0.nc')],
