@@ -3,6 +3,10 @@
 
 ## Changes in 0.2.1 (in development)
 
+### New
+
+- added automatic history to xcube gen, which keeps record of cubegen parameter and which input files have been appended,
+inserted, replaced to an existing xcube dataset together with the UTC time of the modification.
 
 ### Fixes
 
