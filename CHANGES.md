@@ -3,8 +3,11 @@
 
 ## Changes in 0.2.1 (in development)
 
-- added automatic history to xcube gen, which keeps record of cubegen parameter and which input files have been appended,
-inserted, replaced to an existing xcube dataset together with the UTC time of the modification.
+
+### Fixes
+
+- `xcube optimize` now consolidates metadata only after consolidating
+  coordinate variables. (#194)
 - Removed broken links from `./README.md` (#197)
 - Removed obsolete entry points from setup.py
 
