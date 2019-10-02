@@ -6,6 +6,7 @@
 
 ### Fixes
 
+- `.levels` can be stored in obs and are usable with `xcube serve`
 - `xcube optimize` now consolidates metadata only after consolidating
   coordinate variables. (#194)
 - Removed broken links from `./README.md` (#197)

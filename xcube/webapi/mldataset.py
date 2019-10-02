@@ -214,14 +214,14 @@ class ObjectStorageMultiLevelDataset(LazyMultiLevelDataset):
 
         level_paths = {}
         for entry in obs_file_system.walk(dir_path, directories=True):
-            basename = None
-            if entry.endswith(".zarr") and obs_file_system.isdir(entry):
-                basename, _ = os.path.splitext(entry)
-            elif entry.endswith(".link") and obs_file_system.isfile(entry):
-                basename, _ = os.path.splitext(entry)
-            if basename is not None and basename.isdigit():
+            level_dir = entry.split("/")[-1]
+            basename, ext = os.path.splitext(level_dir)
+            if basename.isdigit():
                 level = int(basename)
-                level_paths[level] = dir_path + "/" + entry
+                if entry.endswith(".zarr") and obs_file_system.isdir(entry):
+                    level_paths[level] = (ext, dir_path + "/" + level_dir)
+                elif entry.endswith(".link") and obs_file_system.isfile(entry):
+                    level_paths[level] = (ext, dir_path + "/" + level_dir)
 
         num_levels = len(level_paths)
         # Consistency check
