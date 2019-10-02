@@ -277,7 +277,8 @@ def _process_input(input_processor: InputProcessor,
                                output_variables=output_variables,
                                processed_variables=processed_variables
                                )
-                _update_cube_attrs(output_writer, input_file, output_path, update_mode=update_mode, global_attrs=output_metadata,
+                _update_cube_attrs(output_writer, input_file, output_path, update_mode=update_mode,
+                                   global_attrs=output_metadata,
                                    history=history, temporal_only=False)
             return input_slice
 
@@ -287,7 +288,7 @@ def _process_input(input_processor: InputProcessor,
         def step8(input_slice):
             if not dry_run:
                 output_writer.append(input_slice, output_path, **output_writer_params)
-                _update_cube_attrs( output_writer, input_file, output_path, update_mode=update_mode,temporal_only=True)
+                _update_cube_attrs(output_writer, input_file, output_path, update_mode=update_mode, temporal_only=True)
             return input_slice
 
         steps.append((step8, f'appending input slice to {output_path}'))
@@ -296,7 +297,7 @@ def _process_input(input_processor: InputProcessor,
         def step8(input_slice):
             if not dry_run:
                 output_writer.insert(input_slice, time_index, output_path)
-                _update_cube_attrs(output_writer, input_file, output_path, update_mode=update_mode,  temporal_only=True)
+                _update_cube_attrs(output_writer, input_file, output_path, update_mode=update_mode, temporal_only=True)
             return input_slice
 
         steps.append((step8, f'inserting input slice before index {time_index} in {output_path}'))
@@ -305,7 +306,7 @@ def _process_input(input_processor: InputProcessor,
         def step8(input_slice):
             if not dry_run:
                 output_writer.replace(input_slice, time_index, output_path)
-                _update_cube_attrs(output_writer, input_file, output_path,update_mode=update_mode, temporal_only=True)
+                _update_cube_attrs(output_writer, input_file, output_path, update_mode=update_mode, temporal_only=True)
             return input_slice
 
         steps.append((step8, f'replacing input slice at index {time_index} in {output_path}'))
@@ -350,9 +351,17 @@ def _update_cube_attrs(output_writer: DatasetIO, input_path: str, output_path: s
                        temporal_only: bool = False):
     cube = output_writer.read(output_path)
     if temporal_only:
-        cube = update_dataset_temporal_attrs(cube, os.path.basename(input_path), update_mode=update_mode, update_existing=True, in_place=True)
+        cube = update_dataset_temporal_attrs(cube,
+                                             os.path.basename(input_path),
+                                             update_mode=update_mode,
+                                             update_existing=True,
+                                             in_place=True)
     else:
-        cube = update_dataset_attrs(cube, os.path.basename(input_path), update_mode=update_mode,  history=history, update_existing=True,
+        cube = update_dataset_attrs(cube,
+                                    os.path.basename(input_path),
+                                    update_mode=update_mode,
+                                    history=history,
+                                    update_existing=True,
                                     in_place=True)
     global_attrs = dict(global_attrs) if global_attrs else {}
     global_attrs.update(cube.attrs)
