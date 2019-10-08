@@ -21,6 +21,7 @@ from ..util.geom import clip_dataset_by_geometry, mask_dataset_by_geometry, conv
 from ..util.maskset import MaskSet
 # noinspection PyUnresolvedReferences
 from ..util.optimize import optimize_dataset
+from ..util.edit import edit_metadata
 # noinspection PyUnresolvedReferences
 from ..util.unchunk import unchunk_dataset
 # noinspection PyUnresolvedReferences
