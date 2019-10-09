@@ -18,10 +18,13 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-
 import os.path
 import shutil
 from typing import Type
+import warnings
+import zarr
+
+from xcube.util.config import load_configs
 
 
 def edit_metadata(input_path: str,
@@ -64,3 +67,24 @@ def edit_metadata(input_path: str,
 
     if not in_place:
         shutil.copytree(input_path, output_path)
+
+    new_metadata = load_configs(metadata_path)
+
+    for element in new_metadata:
+        if os.path.exists(os.path.join(output_path, '.zmetadata')):
+            print('.zmetadata exists')
+        if 'output_metadata' in element:
+            cube = zarr.open(output_path)
+            _edit_keyvalue_in_metadata(cube, new_metadata, element)
+        else:
+            cube = zarr.open(output_path)
+            if cube.__contains__(element):
+                _edit_keyvalue_in_metadata(cube[element], new_metadata, element)
+            else:
+                warnings.warn(f'The variable {element} could not be found in the xcube dataset. '
+                              f'Please check spelling of it.')
+
+
+def _edit_keyvalue_in_metadata(cube, new_metadata, element):
+    for key in new_metadata[element].keys():
+        cube.attrs.update({key: new_metadata[element][key]})
