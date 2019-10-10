@@ -50,5 +50,6 @@ def edit(cube,
     edit_metadata(cube,
                   output_path=output,
                   metadata_path=metadata,
-                  in_place=in_place
+                  in_place=in_place,
+                  monitor=print
                   )

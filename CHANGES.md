@@ -3,7 +3,9 @@
 
 ## Changes in 0.2.1 (in development)
 
-
+- Added new CLI tool `xcube edit` and API function `xcube.api.edit_metadata` 
+  which allows to edit the metadata of an existing xcube dataset. (#170)
+  
 ### Fixes
 
 - `xcube optimize` now consolidates metadata only after consolidating
