@@ -68,8 +68,6 @@ class EditVariablePropsTest(unittest.TestCase):
         self.assertEqual('www.some_very_nice_url.com', ds1.attrs.__getitem__('creator_url'))
 
     def test_edit_zmetadata(self):
-        edit_metadata(TEST_CUBE_ZARR, metadata_path=TEST_NEW_META_YML, in_place=False,
-                      output_path=TEST_CUBE_ZARR_EDIT, monitor=print)
         optimize_dataset(TEST_CUBE_ZARR, unchunk_coords=True, output_path=TEST_CUBE_ZARR_OPTIMIZED)
         edit_metadata(TEST_CUBE_ZARR_OPTIMIZED, metadata_path=TEST_NEW_META_YML, in_place=False,
                       output_path=TEST_CUBE_ZARR_OPTIMIZED_EDIT, monitor=print)
