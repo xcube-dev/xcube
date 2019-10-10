@@ -78,3 +78,22 @@ class EditVariablePropsTest(unittest.TestCase):
         self.assertEqual('happiness', ds2['conc_chl'].attrs.__getitem__('units'))
         self.assertNotIn('creator_name', ds1.attrs.keys())
         self.assertIn('creator_name', ds2.attrs.keys())
+
+    def test_failures(self):
+        with self.assertRaises(RuntimeError) as cm:
+            edit_metadata('pippo', in_place=True, exception_type=RuntimeError, metadata_path=TEST_NEW_META_YML)
+        self.assertEqual('Input path must point to ZARR dataset directory.', f'{cm.exception}')
+
+        with self.assertRaises(RuntimeError) as cm:
+            edit_metadata(TEST_CUBE_ZARR, exception_type=RuntimeError, metadata_path=TEST_NEW_META_YML)
+        self.assertEqual('Output path must be given.', f'{cm.exception}')
+
+        with self.assertRaises(RuntimeError) as cm:
+            edit_metadata(TEST_CUBE_ZARR, output_path=TEST_CUBE_ZARR, exception_type=RuntimeError,
+                          metadata_path=TEST_NEW_META_YML)
+        self.assertEqual('Output path already exists.', f'{cm.exception}')
+
+        with self.assertRaises(RuntimeError) as cm:
+            edit_metadata(TEST_CUBE_ZARR, output_path='./' + TEST_CUBE_ZARR, exception_type=RuntimeError,
+                          metadata_path=TEST_NEW_META_YML)
+        self.assertEqual('Output path already exists.', f'{cm.exception}')
