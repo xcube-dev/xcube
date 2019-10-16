@@ -40,7 +40,7 @@ def optimize_dataset(input_path: str,
     Consolidated cubes open much faster from remote locations, e.g. in object storage,
     because obviously much less HTTP requests are required to fetch initial cube meta
     information. That is, it merges all metadata files into a single top-level JSON file ".zmetadata".
-    If *unchunk_coords* is set, it removes any chunking of coordinate variables
+    If *unchunk_coords* is set, it also removes any chunking of coordinate variables
     so they comprise a single binary data file instead of one file per data chunk.
     The primary usage of this function is to optimize data cubes for cloud object storage.
     The function currently works only for data cubes using ZARR format.
@@ -74,6 +74,7 @@ def optimize_dataset(input_path: str,
     if not in_place:
         shutil.copytree(input_path, output_path)
 
-    zarr.convenience.consolidate_metadata(output_path)
     if unchunk_coords:
         unchunk_dataset(output_path, coords_only=True)
+
+    zarr.convenience.consolidate_metadata(output_path)

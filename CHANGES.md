@@ -1,10 +1,17 @@
-## Changes in 0.3.0 (in development)
-
-
 ## Changes in 0.2.1 (in development)
 
+### Enhancements
+
+- `xcube serve` now recognises xcube datasets with consolidated 
+  metadata. (#141) 
+
+### Fixes
+
+- `.levels` can be stored in obs and are usable with `xcube serve` (#179)
+- `xcube optimize` now consolidates metadata only after consolidating
+  coordinate variables. (#194)
 - Removed broken links from `./README.md` (#197)
-- Removed obsolete entry points from setup.py
+- Removed obsolete entry points from `./setup.py`.
 
 ## Changes in 0.2.0
 
