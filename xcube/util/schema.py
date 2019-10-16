@@ -1,3 +1,24 @@
+# The MIT License (MIT)
+# Copyright (c) 2019 by the xcube development team and contributors
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy of
+# this software and associated documentation files (the "Software"), to deal in
+# the Software without restriction, including without limitation the rights to
+# use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
+# of the Software, and to permit persons to whom the Software is furnished to do
+# so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
 from typing import Tuple, Sequence, Dict, Optional
 
 import numpy as np
@@ -5,6 +26,16 @@ import xarray as xr
 
 
 class CubeSchema:
+    """
+    A schema that can be used to create new xcube datasets.
+    The given *shape*, *dims*, and *chunks*, *coords* apply to all data variables.
+
+    :param shape: A tuple of dimension sizes.
+    :param coords: A dictionary of coordinate variables. Must have values for all *dims*.
+    :param dims: A sequence of dimension names. Defaults to ``('time', 'lat', 'lon')``.
+    :param chunks: A tuple of chunk sizes in each dimension.
+    """
+
     def __init__(self,
                  shape: Sequence[int],
                  coords: Dict[str, np.array],
@@ -40,26 +71,32 @@ class CubeSchema:
 
     @property
     def ndim(self) -> int:
+        """Number of dimensions."""
         return len(self._dims)
 
     @property
     def dims(self) -> Tuple[str]:
+        """Tuple of dimension names."""
         return self._dims
 
     @property
     def shape(self) -> Tuple[int]:
+        """Tuple of dimension sizes."""
         return self._shape
 
     @property
     def chunks(self) -> Optional[Tuple[int]]:
+        """Tuple of dimension chunk sizes."""
         return self._chunks
 
     @property
     def coords(self) -> Dict[str, xr.DataArray]:
+        """Dictionary of coordinate variables."""
         return self._coords
 
     @classmethod
-    def new(cls, cube: xr.Dataset, cube_asserted: bool = False) -> "CubeSchema":
+    def new(cls, cube: xr.Dataset) -> "CubeSchema":
+        """Create a cube schema from given *cube*."""
         return get_cube_schema(cube)
 
 

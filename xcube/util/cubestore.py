@@ -1,3 +1,24 @@
+# The MIT License (MIT)
+# Copyright (c) 2019 by the xcube development team and contributors
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy of
+# this software and associated documentation files (the "Software"), to deal in
+# the Software without restriction, including without limitation the rights to
+# use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
+# of the Software, and to permit persons to whom the Software is furnished to do
+# so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
 import itertools
 import json
 from collections import MutableMapping
@@ -13,11 +34,11 @@ GetChunk = Callable[["CubeStore", str, Tuple[int, ...]], bytes]
 class CubeStore(MutableMapping):
     """
     A Zarr Store that generates data cubes by allowing data variables to fetch or compute their chunks
-    by a user-defined function.
+    by a user-defined function *get_chunk*. Implements the standard Python ``MutableMapping`` interface.
 
-    This is how the function is called:::
+    This is how the *get_chunk* function is called:::
 
-        ``data = get_chunk(cube_store, var_name, chunk_indexes)``
+        data = get_chunk(cube_store, var_name, chunk_indexes)
 
     where ``cube_store`` is this store, ``var_name`` is the name of the variable for which data
     is fetched, and ``chunk_indexes`` is a tuple of zero-based, integer chunk indexes. The result must

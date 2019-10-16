@@ -29,6 +29,14 @@ Cube generation
    cli/xcube_gen
    cli/xcube_grid
 
+Cube computation
+================
+
+.. toctree::
+   :maxdepth: 1
+
+   cli/xcube_compute
+
 Cube inspection
 ===============
 
