@@ -3,9 +3,9 @@ from typing import Tuple, Sequence, Dict, Any, Callable, Union
 import numpy as np
 import xarray as xr
 
-from xcube.util.schema import CubeSchema
 from .verify import assert_cube
 from ..util.cubestore import CubeStore
+from ..util.schema import CubeSchema
 
 CubeFuncOutput = Union[xr.DataArray, np.ndarray, Sequence[Union[xr.DataArray, np.ndarray]]]
 CubeFunc = Callable[..., CubeFuncOutput]
