@@ -22,14 +22,15 @@ Optimize xcube dataset for faster access.
       The command currently works only for data cubes using ZARR format.
 
     Options:
-      -o, --output OUTPUT  Output path. The placeholder "<built-in function
-                           input>" will be replaced by the input's filename
-                           without extension (such as ".zarr"). Defaults to
-                           "{input}-edited.zarr".
-      -M, --metadata TEXT  The metadata of the cube is edited. The metadata to be
-                           changed should be saved in a single yml file.
-      -I, --in-place       Edit the cube in place. Ignores output path.
-      --help               Show this message and exit.
+      -o, --output OUTPUT      Output path. The placeholder "<built-in function
+                               input>" will be replaced by the input's filename
+                               without extension (such as ".zarr"). Defaults to
+                               "{input}-edited.zarr".
+      -M, --metadata METADATA  The metadata of the cube is edited. The metadata to
+                               be changed should be passed over in a single yml
+                               file.
+      -I, --in-place           Edit the cube in place. Ignores output path.
+      --help                   Show this message and exit.
 
 
 Examples
