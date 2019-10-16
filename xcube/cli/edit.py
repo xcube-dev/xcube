@@ -31,9 +31,9 @@ DEFAULT_OUTPUT_PATH = '{input}-edited.zarr'
               help=f'Output path. The placeholder "{input}" will be replaced by the input\'s filename '
                    f'without extension (such as ".zarr"). Defaults to "{DEFAULT_OUTPUT_PATH}".',
               default=DEFAULT_OUTPUT_PATH)
-@click.option('--metadata', '-M',
+@click.option('--metadata', '-M', metavar='METADATA',
               help='The metadata of the cube is edited. '
-                   'The metadata to be changed should be saved in a single yml file.')
+                   'The metadata to be changed should be passed over in a single yml file.')
 @click.option('--in-place', '-I', 'in_place',
               help="Edit the cube in place. Ignores output path.",
               is_flag=True)
