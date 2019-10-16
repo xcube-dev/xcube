@@ -259,7 +259,8 @@ class ObjectStorageMultiLevelDataset(LazyMultiLevelDataset):
         store = s3fs.S3Map(root=level_path, s3=self._obs_file_system, check=False)
         cached_store = zarr.LRUStoreCache(store, max_size=2 ** 28)
         with measure_time(tag=f"opened remote dataset {level_path} for level {index}"):
-            return assert_cube(xr.open_zarr(cached_store, **zarr_kwargs), name=level_path)
+            consolidated = self._obs_file_system.exists(f'{level_path}/.zmetadata')
+            return assert_cube(xr.open_zarr(cached_store, consolidated=consolidated, **zarr_kwargs), name=level_path)
 
     def _get_tile_grid_lazily(self):
         """
