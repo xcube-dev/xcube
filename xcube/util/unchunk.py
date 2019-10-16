@@ -40,8 +40,7 @@ def unchunk_dataset(dataset_path: str, var_names: Sequence[str] = None, coords_o
     if not is_zarr:
         raise ValueError(f'{dataset_path!r} is not a valid ZARR directory')
 
-    is_consolidated = os.path.isfile(os.path.join(dataset_path, '.zmetadata'))
-    with xr.open_zarr(dataset_path, consolidated=is_consolidated) as dataset:
+    with xr.open_zarr(dataset_path) as dataset:
         if var_names is None:
             if coords_only:
                 var_names = list(dataset.coords)

@@ -499,7 +499,8 @@ def open_ml_dataset_from_object_storage(ctx: ServiceContext,
         store = s3fs.S3Map(root=path, s3=obs_file_system, check=False)
         cached_store = zarr.LRUStoreCache(store, max_size=2 ** 28)
         with measure_time(tag=f"opened remote zarr dataset {path}"):
-            ds = xr.open_zarr(cached_store)
+            consolidated = obs_file_system.exists(f'{path}/.zmetadata')
+            ds = assert_cube(xr.open_zarr(cached_store, consolidated=consolidated))
         return BaseMultiLevelDataset(ds)
 
     if data_format == FORMAT_NAME_LEVELS:
