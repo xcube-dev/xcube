@@ -6,7 +6,7 @@
   metadata. (#141) 
 
 ### Fixes
-
+- time stamps are now parsed correcly into cube from input data(#207)
 - `.levels` can be stored in obs and are usable with `xcube serve` (#179)
 - `xcube optimize` now consolidates metadata only after consolidating
   coordinate variables. (#194)
