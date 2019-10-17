@@ -45,9 +45,9 @@ class ReprojectionInfo:
                e.g. ('TP_longitude', 'TP_latitude')
         :param xy_crs: Spatial reference system, e.g. 'EPSG:4326'
         :param xy_gcp_step: Step size for collecting ground control points from spatial
-               coordinate arrays given by **xy_tp_var_names**.
-        :param xy_tp_gcp_step: Step size for collecting ground control points from spatial
                coordinate arrays given by **xy_var_names**.
+        :param xy_tp_gcp_step: Step size for collecting ground control points from spatial
+               coordinate arrays given by **xy_tp_var_names**.
         """
         self.xy_var_names = xy_var_names
         self.xy_tp_var_names = xy_tp_var_names
