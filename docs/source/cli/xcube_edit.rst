@@ -8,7 +8,8 @@
 Synopsis
 ========
 
-Optimize xcube dataset for faster access.
+Edit metadata of an xcube dataset.
+
 
 ::
 
