@@ -19,7 +19,8 @@ TEST_CUBE_ZARR_EDIT = 'test_edited_meta.zarr'
 TEST_CUBE_ZARR_OPTIMIZED_EDIT = 'test_optimized_edited_meta.zarr'
 
 TEST_NEW_META = {'output_metadata': {'creator_name': 'Brockmann Consult GmbH with love',
-                                     'creator_url': 'www.some_very_nice_url.com'},
+                                     'creator_url': 'www.some_very_nice_url.com',
+                                     'geospatial_lat_max': 'something around the north pole.'},
                  'conc_chl': {'units': 'happiness'},
                  'some_crazy_var': {'units': 'happiness'}}
 
@@ -55,6 +56,30 @@ class EditVariablePropsTest(unittest.TestCase):
         self.assertEqual('happiness', ds2['conc_chl'].attrs.__getitem__('units'))
         self.assertNotIn('creator_name', ds1.attrs.keys())
         self.assertIn('creator_name', ds2.attrs.keys())
+
+    def test_update_coords_metadata(self):
+        edit_metadata(TEST_CUBE_ZARR, metadata_path=TEST_NEW_META_YML, coords=True, in_place=False,
+                      output_path=TEST_CUBE_ZARR_EDIT, monitor=print)
+        ds1 = zarr.open(TEST_CUBE_ZARR)
+        ds2 = zarr.open(TEST_CUBE_ZARR_EDIT)
+        self.assertEqual(ds1.__len__(), ds2.__len__())
+        self.assertEqual(ds1.attrs.__getitem__('start_date'), ds2.attrs.__getitem__('start_date'))
+        self.assertEqual(ds1.attrs.__getitem__('start_date'), ds2.attrs.__getitem__('start_date'))
+        self.assertEqual('happiness', ds2['conc_chl'].attrs.__getitem__('units'))
+        self.assertIn('geospatial_lon_units', ds2.attrs.keys())
+        self.assertEqual('degrees_east', ds2.attrs.__getitem__('geospatial_lon_units'))
+        self.assertNotIn('geospatial_lat_max', ds1.attrs.keys())
+        self.assertNotIn('geospatial_lat_max', ds2.attrs.keys())
+
+    def test_update_coords_metadata_only(self):
+        edit_metadata(TEST_CUBE_ZARR, coords=True, in_place=False,
+                      output_path=TEST_CUBE_ZARR_EDIT, monitor=print)
+        ds1 = zarr.open(TEST_CUBE_ZARR)
+        ds2 = zarr.open(TEST_CUBE_ZARR_EDIT)
+        self.assertEqual(ds1.__len__(), ds2.__len__())
+        self.assertNotIn('geospatial_lon_units', ds1.attrs.keys())
+        self.assertIn('geospatial_lon_units', ds2.attrs.keys())
+        self.assertEqual('degrees_east', ds2.attrs.__getitem__('geospatial_lon_units'))
 
     def test_edit_metadata_in_place(self):
         edit_metadata(TEST_CUBE_ZARR, metadata_path=TEST_NEW_META_YML, in_place=True, monitor=print)
