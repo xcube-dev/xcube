@@ -4,13 +4,21 @@ import yaml
 import zarr
 
 from test.sampledata import create_highroc_dataset
+from xcube.api import new_cube
+from xcube.util.chunk import chunk_dataset
+from xcube.util.constants import FORMAT_NAME_ZARR
 from xcube.util.dsio import rimraf
 from xcube.util.edit import edit_metadata
 from xcube.util.optimize import optimize_dataset
 
 TEST_CUBE = create_highroc_dataset()
 
+TEST_CUBE_COORDS = chunk_dataset(new_cube(time_periods=3, variables=dict(A=0.5, B=-1.5)),
+                                 chunk_sizes=dict(time=1, lat=180, lon=360), format_name=FORMAT_NAME_ZARR)
+
 TEST_CUBE_ZARR = 'test.zarr'
+
+TEST_CUBE_ZARR_COORDS = 'test_coords.zarr'
 
 TEST_CUBE_ZARR_OPTIMIZED = 'test-optimized.zarr'
 
@@ -31,16 +39,19 @@ class EditVariablePropsTest(unittest.TestCase):
 
     def setUp(self):
         rimraf(TEST_CUBE_ZARR)
+        rimraf(TEST_CUBE_ZARR_COORDS)
         rimraf(TEST_NEW_META_YML)
         rimraf(TEST_CUBE_ZARR_EDIT)
         rimraf(TEST_CUBE_ZARR_OPTIMIZED)
         rimraf(TEST_CUBE_ZARR_OPTIMIZED_EDIT)
         TEST_CUBE.to_zarr(TEST_CUBE_ZARR)
+        TEST_CUBE_COORDS.to_zarr(TEST_CUBE_ZARR_COORDS)
         with open(TEST_NEW_META_YML, 'w') as outfile:
             yaml.dump(TEST_NEW_META, outfile, default_flow_style=False)
 
     def tearDown(self):
         rimraf(TEST_CUBE_ZARR)
+        rimraf(TEST_CUBE_ZARR_COORDS)
         rimraf(TEST_NEW_META_YML)
         rimraf(TEST_CUBE_ZARR_EDIT)
         rimraf(TEST_CUBE_ZARR_OPTIMIZED)
@@ -58,7 +69,7 @@ class EditVariablePropsTest(unittest.TestCase):
         self.assertIn('creator_name', ds2.attrs.keys())
 
     def test_update_coords_metadata(self):
-        edit_metadata(TEST_CUBE_ZARR, metadata_path=TEST_NEW_META_YML, coords=True, in_place=False,
+        edit_metadata(TEST_CUBE_ZARR, metadata_path=TEST_NEW_META_YML, update_coords=True, in_place=False,
                       output_path=TEST_CUBE_ZARR_EDIT, monitor=print)
         ds1 = zarr.open(TEST_CUBE_ZARR)
         ds2 = zarr.open(TEST_CUBE_ZARR_EDIT)
@@ -72,13 +83,28 @@ class EditVariablePropsTest(unittest.TestCase):
         self.assertNotIn('geospatial_lat_max', ds2.attrs.keys())
 
     def test_update_coords_metadata_only(self):
-        edit_metadata(TEST_CUBE_ZARR, coords=True, in_place=False,
+        ds1 = zarr.open(TEST_CUBE_ZARR_COORDS)
+        delete_list = ['geospatial_lat_max', 'geospatial_lat_min', 'geospatial_lat_units', 'geospatial_lon_max',
+                       'geospatial_lon_min', 'geospatial_lon_units', 'time_coverage_end', 'time_coverage_start']
+        for attr in ds1.attrs.keys():
+            if attr in delete_list:
+                ds1.attrs.__delitem__(attr)
+        edit_metadata(TEST_CUBE_ZARR_COORDS, update_coords=True, in_place=False,
                       output_path=TEST_CUBE_ZARR_EDIT, monitor=print)
-        ds1 = zarr.open(TEST_CUBE_ZARR)
+        ds1 = zarr.open(TEST_CUBE_ZARR_COORDS)
         ds2 = zarr.open(TEST_CUBE_ZARR_EDIT)
+        for attr in delete_list:
+            self.assertNotIn(attr, ds1.attrs.keys())
         self.assertEqual(ds1.__len__(), ds2.__len__())
-        self.assertNotIn('geospatial_lon_units', ds1.attrs.keys())
-        self.assertIn('geospatial_lon_units', ds2.attrs.keys())
+        self.assertIn('geospatial_lat_max', ds2.attrs.keys())
+        self.assertIn('geospatial_lat_min', ds2.attrs.keys())
+        self.assertIn('geospatial_lat_resolution', ds2.attrs.keys())
+        self.assertIn('geospatial_lat_units', ds2.attrs.keys())
+        self.assertIn('geospatial_lon_max', ds2.attrs.keys())
+        self.assertEqual(180.0, ds2.attrs.__getitem__('geospatial_lon_max'))
+        self.assertEqual(-180.0, ds2.attrs.__getitem__('geospatial_lon_min'))
+        self.assertEqual('2010-01-04T00:00:00.000000000', ds2.attrs.__getitem__('time_coverage_end'))
+        self.assertEqual('2010-01-01T00:00:00.000000000', ds2.attrs.__getitem__('time_coverage_start'))
         self.assertEqual('degrees_east', ds2.attrs.__getitem__('geospatial_lon_units'))
 
     def test_edit_metadata_in_place(self):

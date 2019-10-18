@@ -37,7 +37,7 @@ _NO_MANUAL_EDIT = ['geospatial_lon_min', 'geospatial_lon_max', 'geospatial_lon_u
 def edit_metadata(input_path: str,
                   output_path: str = None,
                   metadata_path: str = None,
-                  coords: bool = False,
+                  update_coords: bool = False,
                   in_place: bool = False,
                   monitor: Callable[..., None] = None,
                   exception_type: Type[Exception] = ValueError):
@@ -52,7 +52,7 @@ def edit_metadata(input_path: str,
     :param output_path: Path to output dataset with ZARR format. May contain "{input}" template string,
            which is replaced by the input path's file name without file name extentsion.
     :param metadata_path: Path to the metadata file, which will edit the existing metadata.
-    :param coords: Whether to update the metadata about the coordinates.
+    :param update_coords: Whether to update the metadata about the coordinates.
     :param in_place: Whether to modify the dataset in place.
            If False, a copy is made and *output_path* must be given.
     :param monitor: A progress monitor.
@@ -86,7 +86,7 @@ def edit_metadata(input_path: str,
 
     cube = zarr.open(output_path)
 
-    if coords:
+    if update_coords:
         with xr.open_zarr(output_path) as ds:
             ds_attrs = update_dataset_attrs(ds, update_existing=False, in_place=True).attrs
         for key in ds_attrs:

@@ -22,15 +22,19 @@ Optimize xcube dataset for faster access.
       The command currently works only for data cubes using ZARR format.
 
     Options:
-      -o, --output OUTPUT      Output path. The placeholder "<built-in function
-                               input>" will be replaced by the input's filename
-                               without extension (such as ".zarr"). Defaults to
+      -o, --output OUTPUT      Output path. The placeholder "{input}" will be
+                               replaced by the input's filename without extension
+                               (such as ".zarr"). Defaults to
                                "{input}-edited.zarr".
       -M, --metadata METADATA  The metadata of the cube is edited. The metadata to
                                be changed should be passed over in a single yml
                                file.
+      -C, --coords             Update the metadata of the coordinates of the xcube
+                               dataset.
       -I, --in-place           Edit the cube in place. Ignores output path.
       --help                   Show this message and exit.
+
+
 
 
 Examples
@@ -48,7 +52,24 @@ Edit the metadata of the existing xcube dataset  ``cube-1-250-250-edited.zarr``:
 
     $ xcube edit /examples/serve/demo/cube-1-250-250.zarr -M examples/edit/edit_metadata_cube-1-250-250.yml -o cube-1-250-250-edited.zarr
     
+The global attributes below, which are related to the xcube dataset coodrinates cannot be manually edited.
 
+* ``geospatial_lon_min``
+* ``geospatial_lon_max``
+* ``geospatial_lon_units``
+* ``geospatial_lon_resolution``
+* ``geospatial_lat_min``
+* ``geospatial_lat_max``
+* ``geospatial_lat_units``
+* ``geospatial_lat_resolution``
+* ``time_coverage_start``
+* ``time_coverage_end``
+
+If you wish to update these attributes, you can use the commandline parameter ``-C``:
+
+    $ xcube edit /examples/serve/demo/cube-1-250-250.zarr -C -o cube-1-250-250-edited.zarr
+
+The ``-C`` will update the coordinate attributes based on information derived directly from the cube.
 
 Python API
 ==========

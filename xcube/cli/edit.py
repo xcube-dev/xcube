@@ -28,20 +28,20 @@ DEFAULT_OUTPUT_PATH = '{input}-edited.zarr'
 @click.command(name='edit')
 @click.argument('cube')
 @click.option('--output', '-o', metavar='OUTPUT',
-              help=f'Output path. The placeholder "{input}" will be replaced by the input\'s filename '
+              help='Output path. The placeholder "{input}" will be replaced by the input\'s filename '
                    f'without extension (such as ".zarr"). Defaults to "{DEFAULT_OUTPUT_PATH}".',
               default=DEFAULT_OUTPUT_PATH)
 @click.option('--metadata', '-M', metavar='METADATA',
               help='The metadata of the cube is edited. '
                    'The metadata to be changed should be passed over in a single yml file.')
-@click.option('--coords', '-C', is_flag=False,
+@click.option('--coords', '-C', is_flag=True,
               help='Update the metadata of the coordinates of the xcube dataset.')
 @click.option('--in-place', '-I', 'in_place', is_flag=True,
               help='Edit the cube in place. Ignores output path.')
 def edit(cube,
          output,
-         coords,
          metadata,
+         coords,
          in_place):
     """
     Edit the metadata of an xcube dataset.
@@ -52,7 +52,7 @@ def edit(cube,
     edit_metadata(cube,
                   output_path=output,
                   metadata_path=metadata,
-                  coords=coords,
+                  update_coords=coords,
                   in_place=in_place,
                   monitor=print
                   )
