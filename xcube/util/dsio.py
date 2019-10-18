@@ -247,6 +247,7 @@ class MemDatasetIO(DatasetIO):
             ds = self.datasets[output_path]
             ds.attrs.update(global_attrs)
 
+
 class Netcdf4DatasetIO(DatasetIO):
     """
     A dataset I/O that reads from / writes to NetCDF files.
@@ -364,6 +365,7 @@ class ZarrDatasetIO(DatasetIO):
 
     def read(self, path: str, **kwargs) -> xr.Dataset:
         path_or_store = path
+        consolidated = False
 
         if isinstance(path, str):
             endpoint_url = None
@@ -389,13 +391,15 @@ class ZarrDatasetIO(DatasetIO):
             if endpoint_url and root is not None:
                 s3 = s3fs.S3FileSystem(anon=True,
                                        client_kwargs=dict(endpoint_url=endpoint_url, region_name=region_name))
+                consolidated = s3.exists(f'{root}/.zmetadata')
                 path_or_store = s3fs.S3Map(root=root, s3=s3, check=False)
                 if 'max_cache_size' in kwargs:
                     max_cache_size = kwargs.pop('max_cache_size')
                     if max_cache_size > 0:
                         path_or_store = zarr.LRUStoreCache(path_or_store, max_size=max_cache_size)
-
-        return xr.open_zarr(path_or_store, **kwargs)
+            else:
+                consolidated = os.path.exists(os.path.join(path_or_store, '.zmetadata'))
+        return xr.open_zarr(path_or_store, consolidated=consolidated, **kwargs)
 
     def write(self,
               dataset: xr.Dataset,
