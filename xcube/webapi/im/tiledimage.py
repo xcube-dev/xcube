@@ -930,10 +930,6 @@ class NdarrayImage(OpImage):
         return trim_tile(tile, self.tile_size)
 
 
-LC_STANDARD_NAMES = {'land_cover_lccs algorithmic_confidence', 'land_cover_lccs status_flag', 'land_cover_lccs',
-                     'land_cover_lccs number_of_observations', 'land_cover_lccs status_flag'}
-
-
 class ImagePyramid:
     """
     A stack of tiled images (see TileImage) that form a quadtree image pyramid with increasing levels of detail.
