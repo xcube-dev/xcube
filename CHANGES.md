@@ -1,3 +1,11 @@
+## Changes in 0.3.0 (in development)
+
+### New
+
+- New CLI command `xcube var2rgb` allowing to generate RGB(A) imagery from given cube 
+  and variable. (#?) 
+  
+
 ## Changes in 0.2.1 (in development)
 
 ### Enhancements
