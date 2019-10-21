@@ -2,6 +2,9 @@
 
 ### New
 
+* Added new CLI command `xcube tile` allowing to generate RGB(A) imagery from given cube 
+  and variable. (#?) 
+
 * Introduced new (ortho-)rectification algorithm allowing reprojection of 
   satellite images that come with (terrain-corrected) geo-locations for every pixel.
 
