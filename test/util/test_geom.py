@@ -213,7 +213,7 @@ def _get_antimeridian_datasets():
     ds1, ds2 = _get_nominal_datasets()
     ds1 = ds1.assign_coords(lon=(("lon",), np.array([170., 180., -170., -160.])))
     ds2 = ds2.assign_coords(
-        lon_bnds=(("lon", 2), np.array([[165., 175], [175., -175.], [-175., -165], [-165., -155.]])))
+        lon_bnds=(("lon", "bnds"), np.array([[165., 175], [175., -175.], [-175., -165], [-165., -155.]])))
     return ds1, ds2
 
 
