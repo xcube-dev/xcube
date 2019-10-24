@@ -73,7 +73,7 @@ def add_time_coords(dataset: xr.Dataset, time_range: Tuple[float, float]) -> xr.
 
 
 def to_time_in_days_since_1970(time_str: str, pattern=None) -> float:
-    datetime = pd.to_datetime(time_str, format=pattern, infer_datetime_format=True, utc=True)
+    datetime = pd.to_datetime(time_str, format=pattern, infer_datetime_format=False, utc=True)
     timedelta = datetime - REF_DATETIME
     return timedelta.days + timedelta.seconds / SECONDS_PER_DAY + timedelta.microseconds / MICROSECONDS_PER_DAY
 

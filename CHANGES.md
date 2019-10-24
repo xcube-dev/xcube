@@ -6,8 +6,8 @@
   metadata. (#141) 
 
 ### Fixes
-
-- `.levels` can be stored in obs and are usable with `xcube serve` (#179)
+- `xcube gen` now parses time stamps correcly from input data. (#207)
+- Dataset multi-resolution pyramids (`*.levels` directories) can be stored in cloud object storage and are now usable with `xcube serve` (#179)
 - `xcube optimize` now consolidates metadata only after consolidating
   coordinate variables. (#194)
 - Removed broken links from `./README.md` (#197)
