@@ -15,8 +15,6 @@ from .ts import get_time_series
 from .vars_to_dim import vars_to_dim
 from .verify import assert_cube, verify_cube
 # noinspection PyUnresolvedReferences
-# from ..cli.cli import cli
-# noinspection PyUnresolvedReferences
 from ..util.chunk import chunk_dataset, get_empty_dataset_chunks
 # noinspection PyUnresolvedReferences
 from ..util.ext import ExtensionRegistry
