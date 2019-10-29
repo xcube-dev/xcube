@@ -62,7 +62,8 @@ def discover_plugin_modules(module_prefixes=None):
     entry_points = []
     for module_finder, module_name, ispkg in pkgutil.iter_modules():
         if any([module_name.startswith(module_prefix) for module_prefix in module_prefixes]):
-            print(f'xcube plugin module found: {module_name}')
+            # TODO (forman): Consider turning this into debug log:
+            # print(f'xcube plugin module found: {module_name}')
             entry_points.append(_ModuleEntryPoint(module_name))
     return entry_points
 
@@ -79,7 +80,8 @@ def load_plugins(entry_points=None, ext_registry=None):
     plugins = {}
 
     for entry_point in entry_points:
-        print(f'loading xcube plugin {entry_point.name!r}')
+        # TODO (forman): Consider turning this into debug log:
+        # print(f'loading xcube plugin {entry_point.name!r}')
 
         t0 = time.perf_counter()
 
