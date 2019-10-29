@@ -28,7 +28,6 @@ from typing import Callable, Dict
 
 from pkg_resources import iter_entry_points
 
-
 DEFAULT_ENTRY_POINT_GROUP_NAME = 'xcube_plugins'
 DEFAULT_MODULE_PREFIX = 'xcube_'
 DEFAULT_MODULE_FUNCTION_NAME = 'init_plugin'
@@ -69,7 +68,6 @@ def discover_plugin_modules(module_prefixes=None):
 
 
 def load_plugins(entry_points=None, ext_registry=None):
-
     if entry_points is None:
         entry_points = list(iter_entry_points(group=DEFAULT_ENTRY_POINT_GROUP_NAME, name=None)) \
                        + discover_plugin_modules()
@@ -83,18 +81,20 @@ def load_plugins(entry_points=None, ext_registry=None):
     for entry_point in entry_points:
         print(f'loading xcube plugin {entry_point.name!r}')
 
+        t0 = time.perf_counter()
+
         # noinspection PyBroadException
-        t1 = time.perf_counter()
         try:
             plugin_init_function = entry_point.load()
         except Exception as e:
             _handle_error(entry_point, e)
             continue
-        t2 = time.perf_counter()
 
-        if t2 - t1 > 500:
-            warnings.warn(f'loading xcube plugin {entry_point.name!r} took {int(t2 - t1)} ms, '
-                          f'consider optimization')
+        millis = int(1000 * (time.perf_counter() - t0))
+
+        if millis >= 100:
+            warnings.warn(f'loading xcube plugin {entry_point.name!r} took {millis} ms, '
+                          f'consider code optimization!')
 
         if not callable(plugin_init_function):
             # We use warning and not raise to allow loading xcube despite a broken plugin. Raise would stop xcube.
