@@ -19,6 +19,11 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-# IMPORTANT NOTE:
-#   This file must not contain any executable code,
-#   so xcube.util subpackages can be imported without side-effects!
+from xcube.util.ext import ExtensionRegistry
+
+
+def init_plugin(ext_registry: ExtensionRegistry):
+    """
+    xcube CLI standard extensions
+    """
+    pass

@@ -74,10 +74,17 @@ setup(
         'console_scripts': [
             'xcube = xcube.cli.cli:main',
         ],
-        # This is xcube's extension point for new plugins. Use this extension point to add your own
-        # xcube plugin in the setup.py of your Python package sources.
+
+        # The following are xcube's extension points
+        # You can use these extension points in your the setup.py of your own Python packages.
+
         'xcube_plugins': [
-            'xcube_genl2c_default = xcube.api.gen.default:init_plugin',
+            # Input processors for "xcube gen" command (registers factories for InputProcessor instances)
+            'xcube_default_iproc = xcube.plugins.iproc:init_plugin',
+            # Dataset I/O objects (registers factories for DatasetIO instances)
+            'xcube_default_dsio = xcube.plugins.dsio:init_plugin',
+            # Command-line interface commands (registers factories for click.Command instances)
+            'xcube_default_cli = xcube.plugins.cli:init_plugin',
         ],
     },
     install_requires=requirements,

@@ -24,8 +24,10 @@ from typing import Tuple, Union, Optional, Collection
 
 import xarray as xr
 
-from ...util.objreg import get_obj_registry
+from ...util.plugin import get_ext_registry
 from ...util.reproject import reproject_xy_to_wgs84
+
+INPUT_PROCESSOR_EXTENSION_TYPE = 'iproc'
 
 
 class ReprojectionInfo:
@@ -220,12 +222,7 @@ class XYInputProcessor(InputProcessor, metaclass=ABCMeta):
                                      include_non_spatial_vars=include_non_spatial_vars)
 
 
-def register_input_processor(input_processor: InputProcessor):
-    get_obj_registry().put(input_processor.name, input_processor, type=InputProcessor)
-
-
-def get_input_processor(name: str):
-    if not get_obj_registry().has(name, type=InputProcessor):
+def find_input_processor(name: str):
+    if not get_ext_registry().has_ext(INPUT_PROCESSOR_EXTENSION_TYPE, name):
         return None
-    return get_obj_registry().get(name, type=InputProcessor)
-
+    return get_ext_registry().get_ext_obj(INPUT_PROCESSOR_EXTENSION_TYPE, name)

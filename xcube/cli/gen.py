@@ -21,7 +21,6 @@
 from typing import Sequence
 
 import click
-
 from xcube.api.gen.defaults import DEFAULT_OUTPUT_PATH, DEFAULT_OUTPUT_RESAMPLING
 from xcube.util.constants import RESAMPLING_METHOD_NAMES
 
@@ -127,11 +126,10 @@ def gen(input: Sequence[str],
 
 
 def _format_info():
-    from xcube.api.gen.iproc import InputProcessor
     from xcube.util.dsio import query_dataset_io
-    from xcube.util.objreg import get_obj_registry
+    from xcube.util.plugin import get_ext_registry
 
-    input_processors = get_obj_registry().get_all(type=InputProcessor)
+    input_processors = get_ext_registry().get_all_ext_obj('iproc')
     output_writers = query_dataset_io(lambda ds_io: 'w' in ds_io.modes)
 
     help_text = '\ninput processors to be used with option --proc:\n'

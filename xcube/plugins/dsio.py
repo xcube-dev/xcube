@@ -19,6 +19,39 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-# IMPORTANT NOTE:
-#   This file must not contain any executable code,
-#   so xcube.util subpackages can be imported without side-effects!
+
+from xcube.util.ext import ExtensionRegistry
+
+
+def init_plugin(ext_registry: ExtensionRegistry):
+    """
+    xcube dataset I/O standard extensions
+    """
+    ext_registry.add_ext_factory('dsio', 'zarr', _load_dsio_zarr,
+                                 description='Zarr file format (http://zarr.readthedocs.io)')
+    ext_registry.add_ext_factory('dsio', 'netcdf4', _load_dsio_netcdf4,
+                                 description='NetCDF-4 file format')
+    ext_registry.add_ext_factory('dsio', 'csv', _load_dsio_csv,
+                                 description='CSV file format')
+    ext_registry.add_ext_factory('dsio', 'mem', _load_dsio_mem,
+                                 description='In-memory dataset I/O')
+
+
+def _load_dsio_zarr():
+    from xcube.util.dsio import ZarrDatasetIO
+    return ZarrDatasetIO()
+
+
+def _load_dsio_netcdf4():
+    from xcube.util.dsio import Netcdf4DatasetIO
+    return Netcdf4DatasetIO()
+
+
+def _load_dsio_csv():
+    from xcube.util.dsio import CsvDatasetIO
+    return CsvDatasetIO()
+
+
+def _load_dsio_mem():
+    from xcube.util.dsio import MemDatasetIO
+    return MemDatasetIO()

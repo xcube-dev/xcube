@@ -19,6 +19,17 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-# IMPORTANT NOTE:
-#   This file must not contain any executable code,
-#   so xcube.util subpackages can be imported without side-effects!
+from xcube.util.ext import ExtensionRegistry
+
+
+def init_plugin(ext_registry: ExtensionRegistry):
+    """
+    xcube input processor standard extensions
+    """
+    ext_registry.add_ext_factory('iproc', 'default', _load_iproc_default,
+                                 description='Single-scene NetCDF/CF inputs in xcube standard format')
+
+
+def _load_iproc_default():
+    from xcube.api.gen.default.iproc import DefaultInputProcessor
+    return DefaultInputProcessor()

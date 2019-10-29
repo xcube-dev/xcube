@@ -30,7 +30,7 @@ import warnings
 from typing import Any, Callable, Dict, Sequence, Tuple
 
 from .defaults import DEFAULT_OUTPUT_PATH, DEFAULT_OUTPUT_RESAMPLING, DEFAULT_OUTPUT_SIZE
-from .iproc import InputProcessor, get_input_processor
+from .iproc import InputProcessor, find_input_processor
 from ..compute import compute_dataset
 from ..select import select_vars
 from ...util.config import NameAnyDict, NameDictPairList, to_resolved_name_dict_pairs
@@ -97,7 +97,7 @@ def gen_cube(input_paths: Sequence[str] = None,
     elif input_processor_name == '':
         raise ValueError('input_processor_name must not be empty')
 
-    input_processor = get_input_processor(input_processor_name)
+    input_processor = find_input_processor(input_processor_name)
     if not input_processor:
         raise ValueError(f'Unknown input_processor_name {input_processor_name!r}')
 

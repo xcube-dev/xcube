@@ -4,7 +4,19 @@
 
 - `xcube serve` now recognises xcube datasets with consolidated 
   metadata. (#141) 
+- xcube now discovers plugin modules by module naming convention. 
+  All modules named `xcube_{plugin_name}` are considered an xcube 
+  plugin named `{plugin_name}`. (For details, see section 
+  [Creating and discovering plugins](https://packaging.python.org/guides/creating-and-discovering-plugins/)
+  in the [Python Packing User Guide](https://packaging.python.org/)). (#211)  
 
+### Incompatible changes
+
+- The function specified by `xcube_plugins` entry points now receives an single argument of 
+  type `xcube.api.ExtensionRegistry`. Plugins are asked to add their extensions
+  to this registry. As an example, have a look at the default `xcube_plugins` entry points 
+  in `./setup.py`.   
+ 
 ### Fixes
 
 - `.levels` can be stored in obs and are usable with `xcube serve` (#179)

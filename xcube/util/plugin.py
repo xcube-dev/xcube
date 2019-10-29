@@ -19,53 +19,129 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+import importlib
+import pkgutil
+import time
 import traceback
 import warnings
+from typing import Callable, Dict
 
 from pkg_resources import iter_entry_points
 
 
-def load_plugins(entry_points, plugins=None):
-    plugins = plugins if plugins is not None else {}
+DEFAULT_ENTRY_POINT_GROUP_NAME = 'xcube_plugins'
+DEFAULT_MODULE_PREFIX = 'xcube_'
+DEFAULT_MODULE_FUNCTION_NAME = 'init_plugin'
+
+#: Mapping of xcube entry point names to JSON-serializable plugin meta-information.
+_PLUGIN_REGISTRY = None
+
+
+def init_plugins() -> None:
+    """Load plugins if not already done."""
+    global _PLUGIN_REGISTRY
+    if _PLUGIN_REGISTRY is None:
+        _PLUGIN_REGISTRY = load_plugins()
+
+
+def get_plugins() -> Dict[str, Dict]:
+    """Get mapping of "xcube_plugins" entry point names to JSON-serializable plugin meta-information."""
+    init_plugins()
+    global _PLUGIN_REGISTRY
+    return dict(_PLUGIN_REGISTRY)
+
+
+def get_ext_registry():
+    """Get populated extension registry."""
+    from ..util.ext import get_ext_registry
+    init_plugins()
+    return get_ext_registry()
+
+
+def discover_plugin_modules(module_prefixes=None):
+    module_prefixes = module_prefixes or [DEFAULT_MODULE_PREFIX]
+    entry_points = []
+    for module_finder, module_name, ispkg in pkgutil.iter_modules():
+        if any([module_name.startswith(module_prefix) for module_prefix in module_prefixes]):
+            print(f'xcube plugin module found: {module_name}')
+            entry_points.append(_ModuleEntryPoint(module_name))
+    return entry_points
+
+
+def load_plugins(entry_points=None, ext_registry=None):
+
+    if entry_points is None:
+        entry_points = list(iter_entry_points(group=DEFAULT_ENTRY_POINT_GROUP_NAME, name=None)) \
+                       + discover_plugin_modules()
+
+    if ext_registry is None:
+        from ..util.ext import get_ext_registry
+        ext_registry = get_ext_registry()
+
+    plugins = {}
+
     for entry_point in entry_points:
+        print(f'loading xcube plugin {entry_point.name!r}')
+
         # noinspection PyBroadException
+        t1 = time.perf_counter()
         try:
             plugin_init_function = entry_point.load()
         except Exception as e:
             _handle_error(entry_point, e)
             continue
+        t2 = time.perf_counter()
 
-        if callable(plugin_init_function):
-            # noinspection PyBroadException
-            try:
-                plugin_init_function()
-            except Exception as e:
-                _handle_error(entry_point, e)
-                continue
-        else:
+        if t2 - t1 > 500:
+            warnings.warn(f'loading xcube plugin {entry_point.name!r} took {int(t2 - t1)} ms, '
+                          f'consider optimization')
+
+        if not callable(plugin_init_function):
             # We use warning and not raise to allow loading xcube despite a broken plugin. Raise would stop xcube.
-            warnings.warn(f'xcube plugin with entry point {entry_point.name!r} '
-                          f'must be a callable but got a {type(plugin_init_function)!r}')
+            warnings.warn(f'xcube plugin {entry_point.name!r} '
+                          f'must be callable but got a {type(plugin_init_function)!r}')
             continue
 
-        # Here: use pkg_resources and introspection to generate a
-        # JSON-serializable dictionary of plugin meta-information
-        plugins[entry_point.name] = {'entry_point': entry_point.name}
+        # noinspection PyBroadException
+        try:
+            plugin_init_function(ext_registry)
+        except Exception as e:
+            _handle_error(entry_point, e)
+            continue
+
+        plugins[entry_point.name] = {'name': entry_point.name, 'doc': plugin_init_function.__doc__}
 
     return plugins
 
 
-def get_plugins():
-    """Get mapping of "xcube_plugins" entry point names to JSON-serializable plugin meta-information."""
-    return dict(_PLUGIN_REGISTRY)
-
-
 def _handle_error(entry_point, e):
     # We use warning and not raise to allow loading xcube despite a broken plugin. Raise would stop xcube.
-    warnings.warn('Unexpected exception while loading xcube plugin '
-                  f'with entry point {entry_point.name!r}: {e}')
+    warnings.warn(f'Unexpected exception while loading xcube plugin {entry_point.name!r}: {e}')
     traceback.print_exc()
 
 
-#: Mapping of Cate entry point names to JSON-serializable plugin meta-information.
-_PLUGIN_REGISTRY = load_plugins(iter_entry_points(group='xcube_plugins', name=None))
+class _ModuleEntryPoint:
+    def __init__(self, module_name: str):
+        self._module_name = module_name
+
+    @property
+    def name(self) -> str:
+        return self._module_name
+
+    def load(self) -> Callable:
+        module_name = self._module_name
+        module = importlib.import_module(self._module_name)
+
+        def check(module_func_name):
+            return hasattr(module, module_func_name) and callable(getattr(module, module_func_name))
+
+        module_func_name_1 = 'init_' + module_name
+        if check(module_func_name_1):
+            return getattr(module, module_func_name_1)
+
+        module_func_name_2 = DEFAULT_MODULE_FUNCTION_NAME
+        if check(module_func_name_2):
+            return getattr(module, module_func_name_2)
+
+        raise AttributeError(f'xcube plugin module {module_name!r} must define '
+                             f'a function named {module_func_name_1!r} or {module_func_name_2!r}')

@@ -1,6 +1,7 @@
 # Force loading of xarray
 # noinspection PyUnresolvedReferences
 import xcube.api.api
+
 from .dump import dump_dataset
 from .extract import DEFAULT_INDEX_NAME_PATTERN, DEFAULT_INTERP_POINT_METHOD, DEFAULT_REF_NAME_PATTERN, \
     get_cube_point_indexes, get_cube_values_for_indexes, get_cube_values_for_points, get_dataset_indexes
@@ -14,13 +15,19 @@ from .ts import get_time_series
 from .vars_to_dim import vars_to_dim
 from .verify import assert_cube, verify_cube
 # noinspection PyUnresolvedReferences
+# from ..cli.cli import cli
+# noinspection PyUnresolvedReferences
 from ..util.chunk import chunk_dataset, get_empty_dataset_chunks
+# noinspection PyUnresolvedReferences
+from ..util.ext import ExtensionRegistry
 # noinspection PyUnresolvedReferences
 from ..util.geom import clip_dataset_by_geometry, mask_dataset_by_geometry, convert_geometry
 # noinspection PyUnresolvedReferences
 from ..util.maskset import MaskSet
 # noinspection PyUnresolvedReferences
 from ..util.optimize import optimize_dataset
+# noinspection PyUnresolvedReferences
+from ..util.plugin import get_ext_registry
 # noinspection PyUnresolvedReferences
 from ..util.unchunk import unchunk_dataset
 # noinspection PyUnresolvedReferences

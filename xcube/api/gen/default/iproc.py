@@ -24,7 +24,7 @@ from typing import Tuple
 import numpy as np
 import xarray as xr
 
-from ..iproc import XYInputProcessor, register_input_processor, ReprojectionInfo
+from ..iproc import XYInputProcessor, ReprojectionInfo
 from ....util.constants import CRS_WKT_EPSG_4326
 from ....util.timecoord import to_time_in_days_since_1970
 
@@ -185,7 +185,3 @@ def _normalize_lon_360(dataset: xr.Dataset) -> xr.Dataset:
     dataset = dataset.assign_coords(lon=(((dataset.lon + 180) % 360) - 180))
 
     return dataset
-
-
-def init_plugin():
-    register_input_processor(DefaultInputProcessor())

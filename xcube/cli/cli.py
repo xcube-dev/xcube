@@ -1,8 +1,6 @@
 import sys
 
 import click
-
-from xcube.api.gen.defaults import DEFAULT_OUTPUT_PATH
 from xcube.cli.apply import apply
 from xcube.cli.extract import extract
 from xcube.cli.gen import gen
@@ -15,7 +13,10 @@ from xcube.cli.timeit import timeit
 from xcube.cli.verify import verify
 from xcube.util.cliutil import cli_option_scheduler, cli_option_traceback, handle_cli_exception, new_cli_ctx_obj, \
     parse_cli_kwargs
+from xcube.util.plugin import get_ext_registry
 from xcube.version import version
+
+DEFAULT_OUTPUT_PATH = 'out.zarr'
 
 
 # noinspection PyShadowingBuiltins
@@ -28,7 +29,7 @@ from xcube.version import version
 @click.option('--params', '-p', metavar='PARAMS',
               help="Parameters specific for the output format."
                    " Comma-separated list of <key>=<value> pairs.")
-@click.option('--chunks','-C', metavar='CHUNKS', nargs=1, default=None,
+@click.option('--chunks', '-C', metavar='CHUNKS', nargs=1, default=None,
               help='Chunk sizes for each dimension.'
                    ' Comma-separated list of <dim>=<size> pairs,'
                    ' e.g. "time=1,lat=270,lon=270"')
@@ -141,6 +142,7 @@ def level(input, output, link, tile_size, num_levels_max):
     print(f"{len(levels)} level(s) written into {output_path} after {time.perf_counter() - start_time} seconds")
 
 
+# noinspection PyShadowingBuiltins
 @click.command(name="dump")
 @click.argument('input')
 @click.option('--variable', '--var', metavar='VARIABLE', multiple=True,
@@ -195,13 +197,13 @@ def vars2dim(cube, variable, dim_name, output=None, format=None):
 
 
 # noinspection PyShadowingBuiltins,PyUnusedLocal
-@click.group()
+@click.group(name='xcube')
 @click.version_option(version)
 @cli_option_traceback
 @cli_option_scheduler
 def cli(traceback=False, scheduler=None):
     """
-    Xcube Toolkit
+    xcube Toolkit
     """
 
 
@@ -220,6 +222,9 @@ cli.add_command(timeit)
 cli.add_command(vars2dim)
 cli.add_command(verify)
 
+for extra_command in get_ext_registry().get_all_ext_obj('cli'):
+    cli.add_command(extra_command)
+
 
 def main(args=None):
     # noinspection PyBroadException
@@ -227,7 +232,7 @@ def main(args=None):
     try:
         exit_code = cli.main(args=args, obj=ctx_obj, standalone_mode=False)
     except Exception as e:
-        exit_code = handle_cli_exception(e, traceback_mode=ctx_obj.get("traceback", False))
+        exit_code = handle_cli_exception(e, traceback_mode=ctx_obj.get(False, "traceback"))
     sys.exit(exit_code)
 
 
