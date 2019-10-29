@@ -19,41 +19,21 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-
-import importlib
-
-from xcube.util.ext import ExtensionRegistry
+import click
 
 
-def init_plugin(ext_registry: ExtensionRegistry):
+# noinspection PyShadowingBuiltins
+@click.command(name="dump")
+@click.argument('input')
+@click.option('--variable', '--var', metavar='VARIABLE', multiple=True,
+              help="Name of a variable (multiple allowed).")
+@click.option('--encoding', '-E', is_flag=True, flag_value=True,
+              help="Dump also variable encoding information.")
+def dump(input, variable, encoding):
     """
-    xcube CLI standard extensions
+    Dump contents of an input dataset.
     """
-
-    cli_command_names = [
-        'apply',
-        'chunk',
-        'dump',
-        'extract',
-        'gen',
-        'grid',
-        'level',
-        'optimize',
-        'prune',
-        'resample',
-        'serve',
-        'timeit',
-        'vars2dim',
-        'verify',
-    ]
-
-    class Factory:
-        def __init__(self, name: str):
-            self.name = name
-
-        def load(self):
-            module = importlib.import_module('xcube.cli.' + self.name)
-            return getattr(module, self.name)
-
-    for cli_command_name in cli_command_names:
-        ext_registry.add_ext('cli', cli_command_name, Factory(cli_command_name))
+    from xcube.api import open_dataset, dump_dataset
+    with open_dataset(input) as ds:
+        text = dump_dataset(ds, var_names=variable, show_var_encoding=encoding)
+        print(text)

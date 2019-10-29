@@ -19,41 +19,38 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+import sys
 
-import importlib
+import click
+from xcube.util.cliutil import cli_option_scheduler, cli_option_traceback, handle_cli_exception, new_cli_ctx_obj
+from xcube.util.plugin import get_ext_registry
+from xcube.version import version
 
-from xcube.util.ext import ExtensionRegistry
 
-
-def init_plugin(ext_registry: ExtensionRegistry):
+# noinspection PyShadowingBuiltins,PyUnusedLocal
+@click.group(name='xcube')
+@click.version_option(version)
+@cli_option_traceback
+@cli_option_scheduler
+def cli(traceback=False, scheduler=None):
     """
-    xcube CLI standard extensions
+    xcube Toolkit
     """
 
-    cli_command_names = [
-        'apply',
-        'chunk',
-        'dump',
-        'extract',
-        'gen',
-        'grid',
-        'level',
-        'optimize',
-        'prune',
-        'resample',
-        'serve',
-        'timeit',
-        'vars2dim',
-        'verify',
-    ]
 
-    class Factory:
-        def __init__(self, name: str):
-            self.name = name
+for command in get_ext_registry().get_all_ext_obj('cli'):
+    cli.add_command(command)
 
-        def load(self):
-            module = importlib.import_module('xcube.cli.' + self.name)
-            return getattr(module, self.name)
 
-    for cli_command_name in cli_command_names:
-        ext_registry.add_ext('cli', cli_command_name, Factory(cli_command_name))
+def main(args=None):
+    # noinspection PyBroadException
+    ctx_obj = new_cli_ctx_obj()
+    try:
+        exit_code = cli.main(args=args, obj=ctx_obj, standalone_mode=False)
+    except Exception as e:
+        exit_code = handle_cli_exception(e, traceback_mode=ctx_obj.get(False, "traceback"))
+    sys.exit(exit_code)
+
+
+if __name__ == '__main__':
+    main()
