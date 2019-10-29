@@ -20,3 +20,4 @@
 # SOFTWARE.
 
 from .gen import gen_cube
+from .iproc import ReprojectionInfo, InputProcessor, XYInputProcessor, find_input_processor
