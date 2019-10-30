@@ -20,6 +20,7 @@ dependencies:
   - pandas >=0.24
   - pillow >=6.0
   - proj4 >=5.2
+  - pyproj >=2.1
   - pyyaml >=5.1
   - rasterio >=1.0
   - s3fs >=0.2
