@@ -2,6 +2,12 @@
 
 ### New
 
+* xcube now discovers plugin modules by module naming convention. 
+  All modules named `xcube_{plugin_name}` are considered an xcube 
+  plugin named `{plugin_name}`. (For details, see section 
+  [Creating and discovering plugins](https://packaging.python.org/guides/creating-and-discovering-plugins/)
+  in the [Python Packing User Guide](https://packaging.python.org/)). (#211)  
+
 * Added new `xcube compute` CLI command and `xcube.api.compute_cube()` API 
   function that can be used to generate an output cube computed from a Python
   function that is applied to one or more input cubes. Replaces the formerly 
@@ -12,6 +18,11 @@
 The following changes introduce incompatibilities with former xcube 0.2.x 
 versions. 
 
+* The function specified by `xcube_plugins` entry points now receives an single argument of 
+  type `xcube.api.ExtensionRegistry`. Plugins are asked to add their extensions
+  to this registry. As an example, have a look at the default `xcube_plugins` entry points 
+  in `./setup.py`.   
+ 
 * `xcube.api.compute_dataset()` function has been renamed to 
   `xcube.api.evaluate_dataset()`. This has been done in order avoid confusion
   with new API function `xcube.api.compute_cube()`.
@@ -22,19 +33,7 @@ versions.
 
 - `xcube serve` now recognises xcube datasets with consolidated 
   metadata. (#141) 
-- xcube now discovers plugin modules by module naming convention. 
-  All modules named `xcube_{plugin_name}` are considered an xcube 
-  plugin named `{plugin_name}`. (For details, see section 
-  [Creating and discovering plugins](https://packaging.python.org/guides/creating-and-discovering-plugins/)
-  in the [Python Packing User Guide](https://packaging.python.org/)). (#211)  
 
-### Incompatible changes
-
-- The function specified by `xcube_plugins` entry points now receives an single argument of 
-  type `xcube.api.ExtensionRegistry`. Plugins are asked to add their extensions
-  to this registry. As an example, have a look at the default `xcube_plugins` entry points 
-  in `./setup.py`.   
- 
 ### Fixes
 
 - `.levels` can be stored in obs and are usable with `xcube serve` (#179)
