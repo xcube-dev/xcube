@@ -8,7 +8,7 @@ class DatasetIOPluginTest(unittest.TestCase):
         from xcube.plugins.dsio import init_plugin
         ext_reg = ExtensionRegistry()
         init_plugin(ext_reg)
-        self.assertTrue(ext_reg.has_ext('dsio', 'zarr'))
-        self.assertTrue(ext_reg.has_ext('dsio', 'netcdf4'))
-        self.assertTrue(ext_reg.has_ext('dsio', 'csv'))
-        self.assertTrue(ext_reg.has_ext('dsio', 'mem'))
+        self.assertTrue(ext_reg.has_ext('xcube.core.dsio', 'zarr'))
+        self.assertTrue(ext_reg.has_ext('xcube.core.dsio', 'netcdf4'))
+        self.assertTrue(ext_reg.has_ext('xcube.core.dsio', 'csv'))
+        self.assertTrue(ext_reg.has_ext('xcube.core.dsio', 'mem'))

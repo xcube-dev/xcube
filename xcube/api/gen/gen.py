@@ -85,8 +85,6 @@ def gen_cube(input_paths: Sequence[str] = None,
     :param monitor: A progress monitor.
     :return: True for success.
     """
-    # Force loading of plugins
-    __import__('xcube.util.plugin')
 
     if append_mode is not None:
         warnings.warn('append_mode in gen_cube() is deprecated, '

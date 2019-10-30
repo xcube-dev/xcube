@@ -20,12 +20,10 @@
 # SOFTWARE.
 
 
-import importlib
-
-from xcube.util.ext import ExtensionRegistry
+import xcube.util.ext
 
 
-def init_plugin(ext_registry: ExtensionRegistry):
+def init_plugin(ext_registry: xcube.util.ext.ExtensionRegistry):
     """
     xcube CLI standard extensions
     """
@@ -47,13 +45,6 @@ def init_plugin(ext_registry: ExtensionRegistry):
         'verify',
     ]
 
-    class Factory:
-        def __init__(self, name: str):
-            self.name = name
-
-        def load(self):
-            module = importlib.import_module('xcube.cli.' + self.name)
-            return getattr(module, self.name)
-
     for cli_command_name in cli_command_names:
-        ext_registry.add_ext(Factory(cli_command_name), 'cli', cli_command_name)
+        ext_registry.add_ext_lazy(xcube.util.ext.ModuleLoader('xcube.cli.' + cli_command_name, cli_command_name),
+                                  'xcube.cli', cli_command_name)

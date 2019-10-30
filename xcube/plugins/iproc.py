@@ -19,14 +19,15 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-from xcube.util.ext import ExtensionRegistry
+import xcube.util.ext
 
 
-def init_plugin(ext_registry: ExtensionRegistry):
+def init_plugin(ext_registry: xcube.util.ext.ExtensionRegistry):
     """
     xcube input processor standard extensions
     """
-    ext_registry.add_ext_lazy(_load_iproc_default, 'iproc', 'default',
+    ext_registry.add_ext_lazy(_load_iproc_default,
+                              'xcube.core.gen.iproc', 'default',
                               description='Single-scene NetCDF/CF inputs in xcube standard format')
 
 

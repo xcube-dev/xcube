@@ -8,4 +8,4 @@ class InputProcessorPluginTest(unittest.TestCase):
         from xcube.plugins.iproc import init_plugin
         ext_reg = ExtensionRegistry()
         init_plugin(ext_reg)
-        self.assertTrue(ext_reg.has_ext('iproc', 'default'))
+        self.assertTrue(ext_reg.has_ext('xcube.core.gen.iproc', 'default'))

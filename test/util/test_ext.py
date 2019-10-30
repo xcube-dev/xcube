@@ -11,7 +11,7 @@ class B(A):
     pass
 
 
-class ObjRegistryTest(unittest.TestCase):
+class ExtensionRegistryTest(unittest.TestCase):
     def test_get_ext_reg(self):
         self.assertIsInstance(get_ext_registry(), ExtensionRegistry)
 
@@ -73,19 +73,21 @@ class ObjRegistryTest(unittest.TestCase):
         ext_reg = ExtensionRegistry()
         obj1 = A()
         obj2 = A()
+        obj3 = A()
+        obj4 = B()
         obj5 = B()
         obj6 = B()
 
-        def obj3():
-            return A()
+        def load_obj3():
+            return obj3
 
-        def obj4():
-            return B()
+        def load_obj4():
+            return obj4
 
         ext_reg.add_ext(obj1, 'A', 'a1')
         ext_reg.add_ext(obj2, 'A', 'a2')
-        ext_reg.add_ext_lazy(obj3, 'A', 'a3')
-        ext_reg.add_ext_lazy(obj4, 'B', 'b1')
+        ext_reg.add_ext_lazy(load_obj3, 'A', 'a3')
+        ext_reg.add_ext_lazy(load_obj4, 'B', 'b1')
         ext_reg.add_ext(obj5, 'B', 'b2')
         ext_reg.add_ext(obj6, 'B', 'b3')
         self.assertIs(obj1, ext_reg.get_ext_obj('A', 'a1'))

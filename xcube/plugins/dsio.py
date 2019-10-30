@@ -20,18 +20,25 @@
 # SOFTWARE.
 
 
-from xcube.util.ext import ExtensionRegistry
+import xcube.util.ext
 
 
-def init_plugin(ext_registry: ExtensionRegistry):
+def init_plugin(ext_registry: xcube.util.ext.ExtensionRegistry):
     """
     xcube dataset I/O standard extensions
     """
-    ext_registry.add_ext(_load_dsio_zarr, 'dsio', 'zarr', lazy=True,
-                         description='Zarr file format (http://zarr.readthedocs.io)')
-    ext_registry.add_ext(_load_dsio_netcdf4, 'dsio', 'netcdf4', lazy=True, description='NetCDF-4 file format')
-    ext_registry.add_ext(_load_dsio_csv, 'dsio', 'csv', lazy=True, description='CSV file format')
-    ext_registry.add_ext(_load_dsio_mem, 'dsio', 'mem', lazy=True, description='In-memory dataset I/O')
+    ext_registry.add_ext_lazy(_load_dsio_zarr,
+                              'xcube.core.dsio', 'zarr',
+                              description='Zarr file format (http://zarr.readthedocs.io)')
+    ext_registry.add_ext_lazy(_load_dsio_netcdf4,
+                              'xcube.core.dsio', 'netcdf4',
+                              description='NetCDF-4 file format')
+    ext_registry.add_ext_lazy(_load_dsio_csv,
+                              'xcube.core.dsio', 'csv',
+                              description='CSV file format')
+    ext_registry.add_ext_lazy(_load_dsio_mem,
+                              'xcube.core.dsio', 'mem',
+                              description='In-memory dataset I/O')
 
 
 def _load_dsio_zarr():

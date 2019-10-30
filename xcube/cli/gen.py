@@ -18,9 +18,11 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+
 from typing import Sequence
 
 import click
+
 from xcube.api.gen.defaults import DEFAULT_OUTPUT_PATH, DEFAULT_OUTPUT_RESAMPLING
 from xcube.util.constants import RESAMPLING_METHOD_NAMES
 
@@ -96,8 +98,6 @@ def gen(input: Sequence[str],
 
     from xcube.api.gen.config import get_config_dict
     from xcube.api.gen.gen import gen_cube
-    # Force loading of plugins
-    __import__('xcube.util.plugin')
 
     if info_mode:
         print(_format_info())
@@ -129,7 +129,7 @@ def _format_info():
     from xcube.util.dsio import query_dataset_io
     from xcube.util.plugin import get_ext_registry
 
-    input_processors = get_ext_registry().get_all_ext_obj('iproc')
+    input_processors = get_ext_registry().get_all_ext_obj('xcube.core.gen.iproc')
     output_writers = query_dataset_io(lambda ds_io: 'w' in ds_io.modes)
 
     help_text = '\ninput processors to be used with option --proc:\n'

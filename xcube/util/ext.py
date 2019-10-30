@@ -45,7 +45,7 @@ class Extension:
             if hasattr(obj, 'load') and callable(obj.load):
                 loader = obj
             elif callable(obj):
-                loader = _Loader(obj)
+                loader = LoadFunctionLoader(obj)
             else:
                 raise ValueError(f'invalid loader for lazy extension object {name!r} of type {type!r}')
             obj = UNDEFINED
@@ -236,9 +236,33 @@ def get_ext_registry() -> ExtensionRegistry:
     return _EXTENSION_REGISTRY_SINGLETON
 
 
-class _Loader:
-    def __init__(self, load_func):
+class LoadFunctionLoader:
+    """
+    A loader that executes a load function.
+
+    :param load_func: The load function.
+    """
+
+    def __init__(self, load_func: Callable[[], Any]):
         self.load_func = load_func
 
-    def load(self):
+    def load(self) -> Any:
         return self.load_func()
+
+
+class ModuleLoader:
+    """
+    A loader that loads a module or a component from a module.
+
+    :param module_name: the package, e.g. "xcube.cli.level"
+    :param component_name: the component, e.g. "level"
+    """
+
+    def __init__(self, module_name: str, component_name: str = None):
+        self.module_name = module_name
+        self.component_name = component_name
+
+    def load(self) -> Any:
+        import importlib
+        module = importlib.import_module(self.module_name)
+        return getattr(module, self.component_name) if self.component_name else module

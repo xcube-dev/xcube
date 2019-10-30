@@ -27,7 +27,7 @@ import xarray as xr
 from ...util.plugin import get_ext_registry
 from ...util.reproject import reproject_xy_to_wgs84
 
-INPUT_PROCESSOR_EXTENSION_TYPE = 'iproc'
+EXT_TYPE_INPUT_PROCESSOR = 'xcube.core.gen.iproc'
 
 
 class ReprojectionInfo:
@@ -223,6 +223,6 @@ class XYInputProcessor(InputProcessor, metaclass=ABCMeta):
 
 
 def find_input_processor(name: str):
-    if not get_ext_registry().has_ext(INPUT_PROCESSOR_EXTENSION_TYPE, name):
+    if not get_ext_registry().has_ext(EXT_TYPE_INPUT_PROCESSOR, name):
         return None
-    return get_ext_registry().get_ext_obj(INPUT_PROCESSOR_EXTENSION_TYPE, name)
+    return get_ext_registry().get_ext_obj(EXT_TYPE_INPUT_PROCESSOR, name)
