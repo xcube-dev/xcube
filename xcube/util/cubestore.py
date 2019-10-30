@@ -119,7 +119,7 @@ class CubeStore(MutableMapping):
 
         get_chunk = get_chunk or self._get_chunk
         if get_chunk is None:
-            raise ValueError('get_chunk must be given aas there is no default')
+            raise ValueError('get_chunk must be given as there is no default')
 
         array_metadata = dict(zarr_format=2,
                               shape=self._shape,

@@ -1,4 +1,5 @@
 import unittest
+import warnings
 from typing import Tuple
 
 import numpy as np
@@ -9,7 +10,7 @@ from xcube.util.cubestore import CubeStore
 
 class CubeStoreTest(unittest.TestCase):
 
-    def test_strict_cf_convention(self):
+    def test_cube_store(self):
         index_var = gen_index_var(dims=('time', 'lat', 'lon'),
                                   shape=(4, 8, 16),
                                   chunks=(2, 4, 8))
@@ -21,8 +22,12 @@ class CubeStoreTest(unittest.TestCase):
         visited_indexes = set()
 
         def index_var_ufunc(index_var_):
+            if index_var_.size < 6:
+                warnings.warn(f"weird variable of size {index_var_.size} received!")
+                return
             nonlocal visited_indexes
-            visited_indexes.add(tuple(map(int, index_var_.ravel()[0:6])))
+            index = tuple(map(int, index_var_.ravel()[0:6]))
+            visited_indexes.add(index)
             return index_var_
 
         result = xr.apply_ufunc(index_var_ufunc, index_var, dask='parallelized', output_dtypes=[index_var.dtype])
@@ -34,6 +39,8 @@ class CubeStoreTest(unittest.TestCase):
         values = result.values
         self.assertEqual((4, 8, 16), values.shape)
         np.testing.assert_array_equal(index_var.values, values)
+
+        print(visited_indexes)
 
         self.assertEqual(8, len(visited_indexes))
         self.assertEqual({

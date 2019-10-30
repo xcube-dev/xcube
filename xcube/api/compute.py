@@ -19,6 +19,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+import warnings
 from typing import Tuple, Sequence, Dict, Any, Callable, Union
 
 import numpy as np
@@ -118,6 +119,11 @@ def compute_cube(cube_func: CubeFunc,
         nonlocal input_cube_schema, input_var_names, input_params, input_vars
 
         index_chunk = index_chunk.ravel()
+
+        if index_chunk.size < 2 * input_cube_schema.ndim:
+            warnings.warn(f"weird index_chunk of size {index_chunk.size} received!")
+            return
+
         dim_ranges = {}
         for i in range(input_cube_schema.ndim):
             dim_name = input_cube_schema.dims[i]
