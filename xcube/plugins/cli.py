@@ -29,8 +29,8 @@ def init_plugin(ext_registry: xcube.util.ext.ExtensionRegistry):
     """
 
     cli_command_names = [
-        'apply',
         'chunk',
+        'compute',
         'dump',
         'extract',
         'gen',

@@ -57,7 +57,10 @@ def compute(script: str,
             output_var_name: str,
             output_var_dtype: str):
     """
-    Compute a cube variable from other cube variables in CUBEs using a user-provided Python function in SCRIPT.
+    Compute a cube from one or more other cubes.
+
+    The command computes a cube variable from other cube variables in CUBEs
+    using a user-provided Python function in SCRIPT.
 
     The SCRIPT must define a function named "compute":
 
