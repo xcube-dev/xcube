@@ -56,4 +56,4 @@ def init_plugin(ext_registry: ExtensionRegistry):
             return getattr(module, self.name)
 
     for cli_command_name in cli_command_names:
-        ext_registry.add_ext('cli', cli_command_name, Factory(cli_command_name))
+        ext_registry.add_ext(Factory(cli_command_name), 'cli', cli_command_name)

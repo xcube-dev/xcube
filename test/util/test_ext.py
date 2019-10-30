@@ -35,8 +35,8 @@ class ObjRegistryTest(unittest.TestCase):
             def load(self):
                 return B()
 
-        a_ext = ext_reg.add_ext('A', 'test', a_obj)
-        b_ext = ext_reg.add_ext('B', 'test', BFactory())
+        a_ext = ext_reg.add_ext(a_obj, 'A', 'test')
+        b_ext = ext_reg.add_ext(BFactory(), 'B', 'test')
 
         self.assertEqual(True, ext_reg.has_ext('A', 'test'))
         self.assertIsInstance(a_ext, Extension)
@@ -73,23 +73,21 @@ class ObjRegistryTest(unittest.TestCase):
         ext_reg = ExtensionRegistry()
         obj1 = A()
         obj2 = A()
-        obj3 = A()
-        obj4 = B()
         obj5 = B()
         obj6 = B()
 
-        def obj3_func():
-            return obj3
+        def obj3():
+            return A()
 
-        def obj4_func():
-            return obj4
+        def obj4():
+            return B()
 
-        ext_reg.add_ext('A', 'a1', obj1)
-        ext_reg.add_ext('A', 'a2', obj2)
-        ext_reg.add_ext_factory('A', 'a3', obj3_func)
-        ext_reg.add_ext_factory('B', 'b1', obj4_func)
-        ext_reg.add_ext('B', 'b2', obj5)
-        ext_reg.add_ext('B', 'b3', obj6)
+        ext_reg.add_ext(obj1, 'A', 'a1')
+        ext_reg.add_ext(obj2, 'A', 'a2')
+        ext_reg.add_ext_lazy(obj3, 'A', 'a3')
+        ext_reg.add_ext_lazy(obj4, 'B', 'b1')
+        ext_reg.add_ext(obj5, 'B', 'b2')
+        ext_reg.add_ext(obj6, 'B', 'b3')
         self.assertIs(obj1, ext_reg.get_ext_obj('A', 'a1'))
         self.assertIs(obj2, ext_reg.get_ext_obj('A', 'a2'))
         self.assertIs(obj3, ext_reg.get_ext_obj('A', 'a3'))
@@ -106,20 +104,20 @@ class ObjRegistryTest(unittest.TestCase):
         obj5 = B()
         obj6 = B()
 
-        class Obj3Factory:
+        class Obj3Loader:
             # noinspection PyMethodMayBeStatic
             def load(self):
                 return obj3
 
-        def get_obj4(self):
+        def load_obj4():
             return obj4
 
-        ext_reg.add_ext('A', 'a1', obj1, description='knorg')
-        ext_reg.add_ext('A', 'a2', obj2, description='gnatz')
-        ext_reg.add_ext('A', 'a3', Obj3Factory(), description='gnatz')
-        ext_reg.add_ext_factory('B', 'b1', get_obj4, description='knorg')
-        ext_reg.add_ext('B', 'b2', obj5, description='gnatz')
-        ext_reg.add_ext('B', 'b3', obj6, description='knorg')
+        ext_reg.add_ext(obj1, 'A', 'a1', description='knorg')
+        ext_reg.add_ext(obj2, 'A', 'a2', description='gnatz')
+        ext_reg.add_ext_lazy(Obj3Loader(), 'A', 'a3', description='gnatz')
+        ext_reg.add_ext_lazy(load_obj4, 'B', 'b1', description='knorg')
+        ext_reg.add_ext(obj5, 'B', 'b2', description='gnatz')
+        ext_reg.add_ext(obj6, 'B', 'b3', description='knorg')
 
         def is_knorg(ext):
             return ext.metadata.get('description') == 'knorg'

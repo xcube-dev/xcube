@@ -27,46 +27,47 @@ from .undefined import UNDEFINED
 __author__ = "Norman Fomferra (Brockmann Consult GmbH)"
 
 
-def to_ext_obj_factory(factory_function: Callable[[], Any]):
-    """
-    Utility that converts a *factory_function* into a
-    a extension object factory that has a "load()" method that calls the *factory_function.
-
-    :param factory_function: no-arg function that yields the extension object
-    :return: extension object factory instance
-    """
-
-    class ExtObjFactory:
-        def load(self):
-            return factory_function()
-
-    return ExtObjFactory()
-
-
 class Extension:
     """
     An extension in a :class:ExtensionRegistry.
 
     :param registry: extension registry that will host this extension
+    :param obj: extension object
     :param type: extension type
     :param name: extension name
-    :param obj: extension object
     :param metadata: extension metadata
     """
 
     # noinspection PyShadowingBuiltins
-    def __init__(self, registry: 'ExtensionRegistry', type: str, name: str, obj: Any, **metadata):
+    def __init__(self, registry: 'ExtensionRegistry', obj: Any, type: str, name: str, lazy: bool, **metadata):
         loader = None
-        if hasattr(obj, 'load') and callable(obj.load):
-            loader = obj
+        if lazy:
+            if hasattr(obj, 'load') and callable(obj.load):
+                loader = obj
+            elif callable(obj):
+                loader = _Loader(obj)
+            else:
+                raise ValueError(f'invalid loader for lazy extension object {name!r} of type {type!r}')
             obj = UNDEFINED
         self._registry = registry
+        self._loader = loader
+        self._obj = obj
         self._type = type
         self._name = name
         self._metadata = metadata
-        self._loader = loader
-        self._obj = obj
         self._deleted = False
+
+    @property
+    def obj(self) -> Any:
+        """The actual object instance."""
+        if self._loader is not None:
+            self._obj = self._loader.load()
+        return self._obj
+
+    @property
+    def lazy(self) -> bool:
+        """Whether this is a lazy extension."""
+        return self._loader is not None
 
     @property
     def type(self) -> str:
@@ -82,13 +83,6 @@ class Extension:
     def metadata(self) -> Mapping[str, Any]:
         """Metadata of the extension."""
         return dict(self._metadata)
-
-    @property
-    def obj(self) -> Any:
-        """The actual object instance."""
-        if self._obj is UNDEFINED and self._loader is not None:
-            self._obj = self._loader.load()
-        return self._obj
 
     @property
     def deleted(self) -> bool:
@@ -176,21 +170,7 @@ class ExtensionRegistry:
             return list(name_to_ext.values())
         return [ext for ext in name_to_ext.values() if predicate(ext)]
 
-    def add_ext_factory(self, type: str, name: str, obj_func: Callable[[], Any], **metadata) -> Extension:
-        """
-        Register function *obj_func* for given *type* and *name*, with optional *metadata*.
-
-        The given *obj_func* is called to produce the actual extension object lazily.
-
-        :param type: extension type
-        :param name: extension name
-        :param obj_func: extension object factory function
-        :param metadata: extension metadata
-        :return: a registered extension
-        """
-        return self.add_ext(type, name, to_ext_obj_factory(obj_func), **metadata)
-
-    def add_ext(self, type: str, name: str, obj: Any, **metadata) -> Extension:
+    def add_ext(self, obj: Any, type: str, name: str, lazy: bool = False, **metadata) -> Extension:
         """
         Register extension object *obj* for given *type* and *name*, with optional *metadata*.
 
@@ -198,9 +178,18 @@ class ExtensionRegistry:
         attribute ``load`` that can be called without arguments and will return the actual extension object.
         Extension object factories are lazily, that is, only when the actual extension object is required.
 
+        If the *lazy* flag is set, the extension object is registered lazily. In this case,
+        *obj* must be either
+
+        * a no-arg callable that produces the desired extension object or
+        * an object with a no-arg callable attribute ``load`` that produces the desired extension object.
+
+        In both cases, the extension object is not produced until it is used for the very first time.
+
+        :param obj: extension object or extension object loader if *lazy* is set
         :param type: extension type
         :param name: extension name
-        :param obj: extension object or extension object factory
+        :param lazy: whether *obj* is an extension object loader, see description above
         :param metadata: extension metadata
         :return: a registered extension
         """
@@ -209,16 +198,28 @@ class ExtensionRegistry:
         else:
             name_to_ext = {}
             self._type_to_ext[type] = name_to_ext
-        ext = Extension(self, type, name, obj, **metadata)
+        ext = Extension(self, obj, type, name, lazy, **metadata)
         name_to_ext[name] = ext
         return ext
 
+    def add_ext_lazy(self, obj: Any, type: str, name: str, **metadata) -> Extension:
+        """
+        Abbreviation for::
+
+             add_ext(obj, type, name, lazy=True, **metadata)
+
+        :param obj: extension object or extension object loader if *lazy* is set
+        :param type: extension type
+        :param name: extension name
+        :param lazy: whether *obj* is an extension object loader, see description above
+        :param metadata: extension metadata
+        :return: a registered extension
+        """
+        return self.add_ext(obj, type, name, lazy=True, **metadata)
+
     def remove_ext(self, type: str, name: str):
-        get_ext()
-        name_to_ext = self._type_to_ext[type]
-        del name_to_ext[name]
-        if not name_to_ext:
-            del self._type_to_ext[type]
+        ext = self.get_ext(type, name)
+        ext.delete()
 
     def _delete(self, type: str, name: str):
         name_to_ext = self._type_to_ext[type]
@@ -233,3 +234,11 @@ _EXTENSION_REGISTRY_SINGLETON = ExtensionRegistry()
 def get_ext_registry() -> ExtensionRegistry:
     """Return the extension registry singleton."""
     return _EXTENSION_REGISTRY_SINGLETON
+
+
+class _Loader:
+    def __init__(self, load_func):
+        self.load_func = load_func
+
+    def load(self):
+        return self.load_func()

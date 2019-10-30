@@ -6,9 +6,9 @@ from xcube.util.plugin import get_plugins, load_plugins, discover_plugin_modules
 
 def init_plugin(ext_registry: ExtensionRegistry):
     """A test plugin that registers test extensions"""
-    ext_registry.add_ext('test', 'ext1', object())
-    ext_registry.add_ext('test', 'ext2', object())
-    ext_registry.add_ext('test', 'ext3', object())
+    ext_registry.add_ext(object(), 'test', 'ext1')
+    ext_registry.add_ext(object(), 'test', 'ext2')
+    ext_registry.add_ext(object(), 'test', 'ext3')
 
 
 def init_plugin_bad():

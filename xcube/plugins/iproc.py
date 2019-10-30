@@ -26,8 +26,8 @@ def init_plugin(ext_registry: ExtensionRegistry):
     """
     xcube input processor standard extensions
     """
-    ext_registry.add_ext_factory('iproc', 'default', _load_iproc_default,
-                                 description='Single-scene NetCDF/CF inputs in xcube standard format')
+    ext_registry.add_ext_lazy(_load_iproc_default, 'iproc', 'default',
+                              description='Single-scene NetCDF/CF inputs in xcube standard format')
 
 
 def _load_iproc_default():
