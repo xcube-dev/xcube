@@ -31,7 +31,7 @@ from typing import Any, Callable, Dict, Sequence, Tuple
 
 from .defaults import DEFAULT_OUTPUT_PATH, DEFAULT_OUTPUT_RESAMPLING, DEFAULT_OUTPUT_SIZE
 from .iproc import InputProcessor, find_input_processor
-from ..compute import compute_dataset
+from ..evaluate import evaluate_dataset
 from ..select import select_vars
 from ...util.config import NameAnyDict, NameDictPairList, to_resolved_name_dict_pairs
 from ...util.dsio import DatasetIO, find_dataset_io, guess_dataset_format, rimraf
@@ -221,7 +221,7 @@ def _process_input(input_processor: InputProcessor,
 
     # noinspection PyShadowingNames
     def step2(input_slice):
-        return compute_dataset(input_slice, processed_variables=processed_variables)
+        return evaluate_dataset(input_slice, processed_variables=processed_variables)
 
     steps.append((step2, 'computing input slice variables'))
 
