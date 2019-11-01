@@ -3,7 +3,7 @@
 ### Enhancements
 
 - Added new CLI tool `xcube edit` and API function `xcube.api.edit_metadata`
-  which allows to edit the metadata of an existing xcube dataset. (#170)
+  which allows editing the metadata of an existing xcube dataset. (#170)
 - `xcube serve` now recognises xcube datasets with consolidated
   metadata. (#141)
 
