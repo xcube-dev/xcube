@@ -11,7 +11,7 @@ from .dump import dump_dataset
 from .extract import get_cube_values_for_points, get_cube_point_indexes, get_cube_values_for_indexes, \
     get_dataset_indexes, DEFAULT_INDEX_NAME_PATTERN
 # noinspection PyUnresolvedReferences
-from .levels import compute_levels, read_levels, write_levels
+from .level import compute_levels, read_levels, write_levels
 from .new import new_cube
 from .readwrite import read_cube, open_cube, write_cube
 from .select import select_vars
@@ -23,7 +23,9 @@ from ..util.chunk import chunk_dataset
 @xr.register_dataset_accessor('xcube')
 class XCubeDatasetAccessor:
     """
-    The XCube API.
+    The xcube xarray API.
+
+    The API is made available via the ``xcube`` attribute of xarray.Dataset instances.
 
     :param dataset: An xarray dataset instance, that should conform to xcube's data cube specification.
     """

@@ -51,7 +51,7 @@ def level(input, output, link, tile_size, num_levels_max):
     """
     import time
     import os
-    from xcube.core.levels import write_levels
+    from xcube.core.level import write_levels
 
     input_path = input
     output_path = output

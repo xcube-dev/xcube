@@ -21,14 +21,14 @@
 
 # Force loading of xarray
 # noinspection PyUnresolvedReferences
-from .api import XCubeDatasetAccessor
+from .xarray import XCubeDatasetAccessor
 from .compute import compute_cube
 from .dump import dump_dataset
 from .evaluate import evaluate_dataset
 from .extract import DEFAULT_INDEX_NAME_PATTERN, DEFAULT_INTERP_POINT_METHOD, DEFAULT_REF_NAME_PATTERN, \
     get_cube_point_indexes, get_cube_values_for_indexes, get_cube_values_for_points, get_dataset_indexes
 from .gen.gen import gen_cube
-from .levels import compute_levels, read_levels, write_levels
+from .level import compute_levels, read_levels, write_levels
 from .new import new_cube
 from .readwrite import open_cube, open_dataset, read_cube, read_dataset, write_cube, write_dataset
 from .resample import resample_in_time

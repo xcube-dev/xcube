@@ -3,7 +3,7 @@ import unittest
 import xarray as xr
 
 from test.sampledata import new_test_dataset
-from xcube.core.api import XCubeDatasetAccessor
+from xcube.core.xarray import XCubeDatasetAccessor
 
 
 class XCubeDatasetAccessorTest(unittest.TestCase):
