@@ -26,8 +26,8 @@ import shapely.geometry
 import shapely.wkt
 import xarray as xr
 
-from ..api.select import select_vars
-from ..api.verify import assert_cube
+from ..core.select import select_vars
+from ..core.verify import assert_cube
 from ..util.geom import mask_dataset_by_geometry, convert_geometry, GeometryLike, get_dataset_geometry
 
 Date = Union[np.datetime64, str]

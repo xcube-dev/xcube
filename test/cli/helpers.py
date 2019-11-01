@@ -5,7 +5,7 @@ from typing import List
 import click
 import click.testing
 
-from xcube.api.new import new_cube
+from xcube.core.new import new_cube
 from xcube.cli.main import cli
 from xcube.util.dsio import rimraf
 

@@ -4,7 +4,7 @@ import numpy as np
 import shapely.geometry
 import xarray as xr
 
-from xcube.api import new_cube
+from xcube.core import new_cube
 from xcube.util.chunk import chunk_dataset
 from xcube.util.geom import get_dataset_geometry, get_dataset_bounds, get_geometry_mask, convert_geometry, \
     mask_dataset_by_geometry, clip_dataset_by_geometry

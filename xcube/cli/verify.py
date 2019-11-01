@@ -48,7 +48,7 @@ def verify(cube):
 
 
 def _verify(input_path: str = None, monitor=None):
-    from xcube.api import open_dataset, verify_cube
+    from xcube.core import open_dataset, verify_cube
 
     monitor(f'Opening cube from {input_path!r}...')
     with open_dataset(input_path) as cube:

@@ -65,16 +65,16 @@ def gen_cube(input_paths: Sequence[str] = None,
     :param sort_mode:
     :param input_paths: The input paths.
     :param input_processor_name: Name of a registered input processor
-        (xcube.api.gen.inputprocessor.InputProcessor) to be used to transform the inputs.
+        (xcube.core.gen.inputprocessor.InputProcessor) to be used to transform the inputs.
     :param input_processor_params: Parameters to be passed to the input processor.
-    :param input_reader_name: Name of a registered input reader (xcube.api.util.dsio.DatasetIO).
+    :param input_reader_name: Name of a registered input reader (xcube.core.util.dsio.DatasetIO).
     :param input_reader_params: Parameters passed to the input reader.
     :param output_region: Output region as tuple of floats: (lon_min, lat_min, lon_max, lat_max).
     :param output_size: The spatial dimensions of the output as tuple of ints: (width, height).
     :param output_resampling: The resampling method for the output.
     :param output_path: The output directory.
     :param output_writer_name: Name of an output writer
-        (xcube.api.util.dsio.DatasetIO) used to write the cube.
+        (xcube.core.util.dsio.DatasetIO) used to write the cube.
     :param output_writer_params: Parameters passed to the output writer.
     :param output_metadata: Extra metadata passed to output cube.
     :param output_variables: Output variables.

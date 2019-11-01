@@ -48,7 +48,7 @@ def edit(cube,
     Edits the metadata of a given CUBE.
     The command currently works only for data cubes using ZARR format.
     """
-    from xcube.api import edit_metadata
+    from xcube.core import edit_metadata
     edit_metadata(cube,
                   output_path=output,
                   metadata_path=metadata,

@@ -40,7 +40,7 @@ from .im import TileGrid
 from .mldataset import FileStorageMultiLevelDataset, BaseMultiLevelDataset, MultiLevelDataset, \
     ComputedMultiLevelDataset, ObjectStorageMultiLevelDataset
 from .reqparams import RequestParams
-from ..api import assert_cube
+from ..core import assert_cube
 from ..util.dsio import guess_dataset_format
 from ..util.constants import FORMAT_NAME_ZARR, FORMAT_NAME_NETCDF4, FORMAT_NAME_LEVELS
 from ..util.perf import measure_time

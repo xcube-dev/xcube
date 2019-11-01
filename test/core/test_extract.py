@@ -4,8 +4,8 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 
-from xcube.api.extract import get_cube_point_indexes, get_cube_values_for_points, get_dataset_indexes
-from xcube.api.new import new_cube
+from xcube.core.extract import get_cube_point_indexes, get_cube_values_for_points, get_dataset_indexes
+from xcube.core.new import new_cube
 
 
 # noinspection PyMethodMayBeStatic

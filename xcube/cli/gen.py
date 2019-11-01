@@ -23,7 +23,7 @@ from typing import Sequence, List
 
 import click
 
-from xcube.api.gen.defaults import DEFAULT_OUTPUT_PATH, DEFAULT_OUTPUT_RESAMPLING
+from xcube.core.gen.defaults import DEFAULT_OUTPUT_PATH, DEFAULT_OUTPUT_RESAMPLING
 from xcube.util.constants import RESAMPLING_METHOD_NAMES
 from xcube.util.extension import Extension
 
@@ -97,8 +97,8 @@ def gen(input: Sequence[str],
     dry_run = dry_run
     info_mode = info
 
-    from xcube.api.gen.config import get_config_dict
-    from xcube.api.gen.gen import gen_cube
+    from xcube.core.gen.config import get_config_dict
+    from xcube.core.gen.gen import gen_cube
 
     if info_mode:
         print(_format_info())

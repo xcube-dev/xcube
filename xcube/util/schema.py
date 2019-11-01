@@ -100,7 +100,7 @@ class CubeSchema:
         return get_cube_schema(cube)
 
 
-# TODO (forman): code duplication with xcube.api.verify._check_data_variables(), line 76
+# TODO (forman): code duplication with xcube.core.verify._check_data_variables(), line 76
 def get_cube_schema(cube: xr.Dataset) -> CubeSchema:
     first_dims = None
     first_shape = None

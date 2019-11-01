@@ -77,7 +77,7 @@ setup(
 
         # xcube default extensions:
         'xcube_plugins': [
-            # Input processors for "xcube gen" command (registers factories for xcube.api.gen.InputProcessor instances)
+            # Input processors for "xcube gen" command (registers factories for xcube.core.gen.iproc.InputProcessor instances)
             'xcube_default_iproc = xcube.plugins.iproc:init_plugin',
             # Dataset I/O objects (registers factories for DatasetIO instances)
             'xcube_default_dsio = xcube.plugins.dsio:init_plugin',

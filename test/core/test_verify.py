@@ -3,8 +3,8 @@ import unittest
 import numpy as np
 import xarray as xr
 
-from xcube.api.new import new_cube
-from xcube.api.verify import verify_cube, assert_cube
+from xcube.core.new import new_cube
+from xcube.core.verify import verify_cube, assert_cube
 
 
 class AssertAndVerifyCubeTest(unittest.TestCase):

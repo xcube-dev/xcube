@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 
-from xcube.api.gen.default.iproc import DefaultInputProcessor
+from xcube.core.gen.default.iproc import DefaultInputProcessor
 from xcube.util.timecoord import to_time_in_days_since_1970
 
 

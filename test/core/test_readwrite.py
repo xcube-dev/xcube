@@ -3,8 +3,8 @@ import unittest
 
 import numpy as np
 
-from xcube.api.new import new_cube
-from xcube.api.readwrite import open_dataset, read_dataset, write_dataset
+from xcube.core.new import new_cube
+from xcube.core.readwrite import open_dataset, read_dataset, write_dataset
 
 TEST_NC_FILE = "test.nc"
 TEST_NC_FILE_2 = "test-2.nc"

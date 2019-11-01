@@ -172,9 +172,9 @@ def _resample_in_time(input_path: str = None,
                       tolerance: str = None,
                       dry_run: bool = False,
                       monitor=None):
-    from xcube.api import open_cube
-    from xcube.api.readwrite import write_cube
-    from xcube.api.resample import resample_in_time
+    from xcube.core import open_cube
+    from xcube.core.readwrite import write_cube
+    from xcube.core.resample import resample_in_time
     from xcube.util.dsio import guess_dataset_format
 
     if not output_format:

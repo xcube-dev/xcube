@@ -3,7 +3,7 @@ import unittest
 import numpy as np
 import xarray as xr
 
-from xcube.api.evaluate import evaluate_dataset
+from xcube.core.evaluate import evaluate_dataset
 
 nan = float('nan')
 

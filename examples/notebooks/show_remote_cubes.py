@@ -3,7 +3,7 @@ import os
 import pandas as pd
 import s3fs
 
-from xcube.api import read_cube
+from xcube.core import read_cube
 
 
 def show_remote_cubes(bucket, endpoint_url, region_name):

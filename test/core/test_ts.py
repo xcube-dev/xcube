@@ -3,8 +3,8 @@ import unittest
 import numpy as np
 import xarray as xr
 
-from xcube.api import new_cube
-from xcube.api.ts import get_time_series
+from xcube.core import new_cube
+from xcube.core.ts import get_time_series
 
 
 class TsTest(unittest.TestCase):

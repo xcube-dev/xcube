@@ -23,7 +23,7 @@ from typing import List
 
 import click
 
-from xcube.api.gen.defaults import DEFAULT_OUTPUT_PATH
+from xcube.core.gen.defaults import DEFAULT_OUTPUT_PATH
 
 __author__ = "Norman Fomferra (Brockmann Consult GmbH)"
 
@@ -114,7 +114,7 @@ def compute(script: str,
     any cube data.
 
     """
-    from xcube.api import compute_cube, read_cube
+    from xcube.core import compute_cube, read_cube
     from xcube.util.cliutil import parse_cli_kwargs
     from xcube.util.dsio import guess_dataset_format, find_dataset_io
 

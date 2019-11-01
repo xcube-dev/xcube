@@ -4,8 +4,8 @@ import numpy as np
 import xarray as xr
 
 from test.cli.helpers import CliTest
-from xcube.api import assert_cube, new_cube
-from xcube.api.readwrite import write_cube
+from xcube.core import assert_cube, new_cube
+from xcube.core.readwrite import write_cube
 from xcube.cli.prune import _delete_block_file
 from xcube.util.dsio import rimraf
 

@@ -4,7 +4,7 @@ import yaml
 import zarr
 
 from test.sampledata import create_highroc_dataset
-from xcube.api import new_cube
+from xcube.core import new_cube
 from xcube.util.chunk import chunk_dataset
 from xcube.util.constants import FORMAT_NAME_ZARR
 from xcube.util.dsio import rimraf

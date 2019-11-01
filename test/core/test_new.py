@@ -2,7 +2,7 @@ import unittest
 
 import numpy as np
 
-from xcube.api import new_cube
+from xcube.core import new_cube
 
 
 class NewCubeTest(unittest.TestCase):

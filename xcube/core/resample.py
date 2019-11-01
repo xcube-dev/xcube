@@ -23,7 +23,7 @@ from typing import Dict, Any, Sequence, Union
 
 import xarray as xr
 
-from xcube.api.select import select_vars
+from xcube.core.select import select_vars
 
 
 def resample_in_time(cube: xr.Dataset,

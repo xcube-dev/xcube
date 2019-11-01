@@ -13,7 +13,7 @@ def new_test_dataset(time, height=180, **indexers):
            Value may be a scalar or a vector of same length as *time*.
     :return: test dataset
     """
-    # TODO (forman): get rid of this code here, utilise xcube.api.new_cube() instead
+    # TODO (forman): get rid of this code here, utilise xcube.core.new_cube() instead
     time = [time] if isinstance(time, str) else time
     width = height * 2
     num_times = len(time)

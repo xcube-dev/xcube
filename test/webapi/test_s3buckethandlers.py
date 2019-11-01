@@ -3,7 +3,7 @@ import urllib.request
 
 import numpy as np
 
-from xcube.api import read_cube
+from xcube.core import read_cube
 
 SKIP_HELP = 'Skipped, because server is not running: $ xcube serve --verbose -c examples/serve/demo/config.yml'
 SERVER_URL = 'http://localhost:8080'

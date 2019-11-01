@@ -27,7 +27,7 @@ import xarray as xr
 
 from ..context import ServiceContext
 from ..errors import ServiceBadRequestError
-from ...api import ts
+from ...core import ts
 from ...util.ancvar import find_ancillary_var_names
 from ...util.geojson import GeoJSON
 from ...util.geom import get_dataset_bounds

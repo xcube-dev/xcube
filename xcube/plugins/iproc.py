@@ -27,7 +27,7 @@ def init_plugin(ext_registry: extension.ExtensionRegistry):
     xcube input processor standard extensions
     """
     ext_registry.add_extension(
-        loader=extension.import_component('xcube.api.gen.default.iproc:DefaultInputProcessor', call=True),
+        loader=extension.import_component('xcube.core.gen.default.iproc:DefaultInputProcessor', call=True),
         point='xcube.core.gen.iproc', name='default',
         description='Single-scene NetCDF/CF inputs in xcube standard format'
     )

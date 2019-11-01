@@ -4,8 +4,8 @@ from typing import Any, Dict, Tuple
 import numpy as np
 import xarray as xr
 
-from xcube.api import new_cube, chunk_dataset, compute_cube
-from xcube.api.compute import CubeFuncOutput
+from xcube.core import new_cube, chunk_dataset, compute_cube
+from xcube.core.compute import CubeFuncOutput
 from xcube.util.schema import CubeSchema
 
 

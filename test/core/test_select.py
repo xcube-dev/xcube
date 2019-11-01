@@ -1,7 +1,7 @@
 import unittest
 
 from test.sampledata import create_highroc_dataset
-from xcube.api.select import select_vars
+from xcube.core.select import select_vars
 
 
 class SelectVariablesTest(unittest.TestCase):

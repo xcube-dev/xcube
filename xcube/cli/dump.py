@@ -33,7 +33,7 @@ def dump(input, variable, encoding):
     """
     Dump contents of an input dataset.
     """
-    from xcube.api import open_dataset, dump_dataset
+    from xcube.core import open_dataset, dump_dataset
     with open_dataset(input) as ds:
         text = dump_dataset(ds, var_names=variable, show_var_encoding=encoding)
         print(text)
