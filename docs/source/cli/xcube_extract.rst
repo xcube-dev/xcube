@@ -47,5 +47,8 @@ Example
 Python API
 ==========
 
-Related Python API functions are :py:func:`xcube.api.get_cube_values_for_points`,
-:py:func:`xcube.api.get_cube_point_indexes`, and :py:func:`xcube.api.get_cube_values_for_indexes`.
+Related Python API functions are
+
+* :py:func:`xcube.core.extract.get_cube_values_for_points`,
+* :py:func:`xcube.core.extract.get_cube_point_indexes`, and
+* :py:func:`xcube.core.extract.get_cube_values_for_indexes`.

@@ -75,4 +75,4 @@ The ``-C`` will update the coordinate attributes based on information derived di
 Python API
 ==========
 
-The related Python API function is :py:func:`xcube.api.edit_metadata`.
+The related Python API function is :py:func:`xcube.core.edit.edit_metadata`.

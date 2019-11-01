@@ -35,4 +35,7 @@ Perform cube verification.
 Python API
 ==========
 
-The related Python API functions are :py:func:`xcube.api.verify_cube` and :py:func:`xcube.api.assert_cube`.
+The related Python API functions are
+
+* :py:func:`xcube.core.verify.verify_cube`, and
+* :py:func:`xcube.core.verify.assert_cube`.

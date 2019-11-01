@@ -51,5 +51,8 @@ Python API
 ==========
 
 
-The related Python API function are :py:func:`xcube.api.compute_levels`, :py:func:`xcube.api.read_levels`,
-and :py:func:`xcube.api.write_levels`.
+The related Python API function are
+
+* :py:func:`xcube.core.level.compute_levels`,
+* :py:func:`xcube.core.level.read_levels`, and
+* :py:func:`xcube.core.level.write_levels`.

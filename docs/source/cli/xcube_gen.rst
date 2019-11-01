@@ -244,6 +244,6 @@ input processor plug-ins:
 Python API
 ==========
 
-The related Python API function is :py:func:`xcube.api.gen_cube`.
+The related Python API function is :py:func:`xcube.core.gen.gen.gen_cube`.
 
 

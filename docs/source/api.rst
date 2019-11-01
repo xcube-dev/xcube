@@ -5,107 +5,102 @@ Python API
 Cube I/O
 ========
 
-.. autofunction:: xcube.api.read_cube
+.. autofunction:: xcube.core.readwrite.read_cube
 
-.. autofunction:: xcube.api.open_cube
+.. autofunction:: xcube.core.readwrite.open_cube
 
-.. autofunction:: xcube.api.write_cube
+.. autofunction:: xcube.core.readwrite.write_cube
 
 Cube generation
 ===============
 
-.. autofunction:: xcube.api.gen_cube
+.. autofunction:: xcube.core.gen.gen.gen_cube
 
-.. autofunction:: xcube.api.new_cube
+.. autofunction:: xcube.core.new.new_cube
 
 Cube computation
 ================
 
-.. autofunction:: xcube.api.compute_cube
+.. autofunction:: xcube.core.compute.compute_cube
 
-.. autofunction:: xcube.api.evaluate_dataset
+.. autofunction:: xcube.core.evaluate.evaluate_dataset
 
 Cube data extraction
 ====================
 
-.. autofunction:: xcube.api.get_cube_values_for_points
+.. autofunction:: xcube.core.extract.get_cube_values_for_points
 
-.. autofunction:: xcube.api.get_cube_point_indexes
+.. autofunction:: xcube.core.extract.get_cube_point_indexes
 
-.. autofunction:: xcube.api.get_cube_values_for_indexes
+.. autofunction:: xcube.core.extract.get_cube_values_for_indexes
 
-.. autofunction:: xcube.api.get_dataset_indexes
+.. autofunction:: xcube.core.extract.get_dataset_indexes
 
-.. autofunction:: xcube.api.get_time_series
+.. autofunction:: xcube.core.timeseries.get_time_series
 
 Cube manipulation
 =================
 
-.. autofunction:: xcube.api.resample_in_time
+.. autofunction:: xcube.core.resample.resample_in_time
 
-.. autofunction:: xcube.api.vars_to_dim
+.. autofunction:: xcube.core.vars_2dim.vars_to_dim
 
-.. autofunction:: xcube.api.chunk_dataset
+.. autofunction:: xcube.core.chunk.chunk_dataset
 
-.. autofunction:: xcube.api.unchunk_dataset
+.. autofunction:: xcube.core.chunk.unchunk_dataset
 
-.. autofunction:: xcube.api.vars_to_dim
+.. autofunction:: xcube.core.optimize.optimize_dataset
 
 Cube subsetting
 ===============
 
-.. autofunction:: xcube.api.select_vars
+.. autofunction:: xcube.core.select.select_vars
 
-.. autofunction:: xcube.api.clip_dataset_by_geometry
+.. autofunction:: xcube.core.geom.clip_dataset_by_geometry
 
 
 Cube masking
 ============
 
-.. autofunction:: xcube.api.mask_dataset_by_geometry
+.. autofunction:: xcube.core.geom.mask_dataset_by_geometry
 
-.. autoclass:: xcube.api.MaskSet
+.. autoclass:: xcube.core.maskset.MaskSet
 
-
-Cube optimization
-=================
-
-.. autofunction:: xcube.api.optimize_dataset
 
 
 Cube metadata
 =============
 
-.. autofunction:: xcube.api.edit_metadata
+.. autofunction:: xcube.core.edit.edit_metadata
 
-.. autofunction:: xcube.api.update_dataset_attrs
+.. autofunction:: xcube.core.update.update_dataset_attrs
 
-.. autofunction:: xcube.api.update_dataset_spatial_attrs
+.. autofunction:: xcube.core.update.update_dataset_spatial_attrs
 
-.. autofunction:: xcube.api.update_dataset_temporal_attrs
+.. autofunction:: xcube.core.update.update_dataset_temporal_attrs
 
 
 Cube verification
 =================
 
-.. autofunction:: xcube.api.assert_cube
+.. autofunction:: xcube.core.util.assert_cube
 
-.. autofunction:: xcube.api.verify_cube
+.. autofunction:: xcube.core.util.verify_cube
 
 Multi-resolution pyramids
 =========================
 
-.. autofunction:: xcube.api.compute_levels
+.. autofunction:: xcube.core.level.compute_levels
 
-.. autofunction:: xcube.api.read_levels
+.. autofunction:: xcube.core.level.read_levels
 
-.. autofunction:: xcube.api.write_levels
+.. autofunction:: xcube.core.level.write_levels
 
 Utilities
 =========
 
-.. autofunction:: xcube.api.convert_geometry
+.. autofunction:: xcube.core.geom.convert_geometry
 
-.. autoclass:: xcube.api.CubeStore
+.. autoclass:: xcube.core.store.CubeStore
 
-.. autoclass:: xcube.api.CubeSchema
+.. autoclass:: xcube.core.schema.CubeSchema

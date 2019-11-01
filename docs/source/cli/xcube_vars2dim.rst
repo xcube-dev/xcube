@@ -34,4 +34,4 @@ Convert cube variables into new dimension.
 Python API
 ==========
 
-The related Python API function is :py:func:`xcube.api.vars_to_dim`.
+The related Python API function is :py:func:`xcube.core.vars2dim.vars_to_dim`.

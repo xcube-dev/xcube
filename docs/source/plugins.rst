@@ -1,4 +1,4 @@
-.. _xcube.api.gen.default.iproc.DefaultInputProcessor: https://github.com/dcs4cop/xcube/blob/master/xcube/api/gen/default/iproc.py
+.. _xcube.core.gen.iproc.DefaultInputProcessor: https://github.com/dcs4cop/xcube/blob/master/xcube/core/gen/iproc.py
 
 =======
 Plugins
@@ -39,11 +39,11 @@ is expected to be given as global attributes.
 
 If your input files do not conform with the ``default`` expectations, you can extend xcube
 and write your own input processor. An input processor is an implementation of the
-:class:`xcube.api.gen.iproc.InputProcessor` or :class:`xcube.api.gen.iproc.XYInputProcessor`
+:class:`xcube.core.gen.iproc.InputProcessor` or :class:`xcube.core.gen.iproc.XYInputProcessor`
 class.
 
 As an example take a look at the implementation of the ``default`` input processor
-`xcube.api.gen.default.iproc.DefaultInputProcessor`_.
+`xcube.core.gen.iproc.DefaultInputProcessor`_.
 
 *More coming soon...*
 
