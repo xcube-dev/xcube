@@ -45,7 +45,7 @@ def prune(cube, dry_run):
 def _prune(input_path: str = None,
            dry_run: bool = False,
            monitor=None):
-    from xcube.core import open_cube
+    from xcube.core.readwrite import open_cube
     from xcube.util.chunk import get_empty_dataset_chunks
     from xcube.util.dsio import guess_dataset_format
 

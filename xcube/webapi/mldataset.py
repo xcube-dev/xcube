@@ -7,8 +7,8 @@ import s3fs
 import xarray as xr
 import zarr
 
-from .im import TileGrid
-from ..core import assert_cube
+from .im.tilegrid import TileGrid
+from ..core.verify import assert_cube
 from ..util.geom import get_dataset_bounds
 from ..util.perf import measure_time
 

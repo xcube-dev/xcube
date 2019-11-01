@@ -1,6 +1,6 @@
 from unittest import TestCase
 
-from xcube.webapi.im import GLOBAL_GEO_EXTENT
+from xcube.webapi.im.tilegrid import GLOBAL_GEO_EXTENT
 from xcube.webapi.im.tilegrid import TileGrid, pow2_1d_subdivisions, pow2_2d_subdivision
 
 

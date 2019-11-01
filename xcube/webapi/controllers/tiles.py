@@ -9,11 +9,12 @@ import matplotlib.colors
 import matplotlib.figure
 import numpy as np
 
-from xcube.webapi.im.cmaps import get_norm
 from ..context import ServiceContext
 from ..defaults import DEFAULT_CMAP_WIDTH, DEFAULT_CMAP_HEIGHT
 from ..errors import ServiceBadRequestError, ServiceResourceNotFoundError
-from ..im import NdarrayImage, TransformArrayImage, ColorMappedRgbaImage, ColorMappedRgbaImage2, TileGrid
+from ..im.cmaps import get_norm
+from ..im.tiledimage import NdarrayImage, TransformArrayImage, ColorMappedRgbaImage, ColorMappedRgbaImage2
+from ..im.tilegrid import TileGrid
 from ..ne2 import NaturalEarth2Image
 from ..reqparams import RequestParams
 from ...util.perf import measure_time_cm

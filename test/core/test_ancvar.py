@@ -3,7 +3,7 @@ import unittest
 import numpy as np
 import xarray as xr
 
-from xcube.util.ancvar import find_ancillary_var_names
+from xcube.core.ancvar import find_ancillary_var_names
 
 
 class FindAncillaryVarNamesTest(unittest.TestCase):

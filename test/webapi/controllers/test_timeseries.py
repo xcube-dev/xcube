@@ -2,7 +2,7 @@ import unittest
 
 import numpy as np
 
-from xcube.webapi.controllers.time_series import get_time_series_info, get_time_series_for_point, \
+from xcube.webapi.controllers.timeseries import get_time_series_info, get_time_series_for_point, \
     get_time_series_for_geometry, get_time_series_for_geometry_collection
 from ..helpers import new_test_service_context
 

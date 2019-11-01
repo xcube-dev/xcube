@@ -1,9 +1,10 @@
 from unittest import TestCase
 
 import numpy as np
-from xcube.webapi.im import TileGrid, GLOBAL_GEO_EXTENT
+
 from xcube.webapi.im.tiledimage import ImagePyramid, OpImage, create_ndarray_downsampling_image, \
     TransformArrayImage, FastNdarrayDownsamplingImage, trim_tile
+from xcube.webapi.im.tilegrid import TileGrid, GLOBAL_GEO_EXTENT
 from xcube.webapi.im.utils import aggregate_ndarray_mean
 
 

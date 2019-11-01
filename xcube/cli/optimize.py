@@ -54,7 +54,7 @@ def optimize(cube,
     The primary usage of this command is to optimize data cubes for cloud object storage.
     The command currently works only for data cubes using ZARR format.
     """
-    from xcube.core import optimize_dataset
+    from xcube.util.optimize import optimize_dataset
     optimize_dataset(cube,
                      output_path=output,
                      in_place=in_place,

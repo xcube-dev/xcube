@@ -4,7 +4,8 @@ import numpy as np
 import xarray as xr
 import zarr
 
-from xcube.core import chunk_dataset, new_cube
+from xcube.core.new import new_cube
+from xcube.util.chunk import chunk_dataset
 from xcube.util.dsio import rimraf
 from xcube.util.timeslice import find_time_slice, append_time_slice, insert_time_slice, replace_time_slice
 from .diagnosticstore import DiagnosticStore, logging_observer

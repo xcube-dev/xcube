@@ -114,7 +114,8 @@ def compute(script: str,
     any cube data.
 
     """
-    from xcube.core import compute_cube, read_cube
+    from xcube.core.compute import compute_cube
+    from xcube.core.readwrite import read_cube
     from xcube.util.cliutil import parse_cli_kwargs
     from xcube.util.dsio import guess_dataset_format, find_dataset_io
 

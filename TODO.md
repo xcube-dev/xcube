@@ -41,3 +41,15 @@ This is good, `xcube.core` doesn't do anything, but contains sub-modules that ar
     
     def init_plugin(ext_registry: xcube.core.ext.ExtensionRegistry):
         ...
+        
+        
+### edit_metadata
+
+**problem**: 
+- API function does not conform to guidelines.
+- CLI `--metadata` option description not clear 
+**solution**:
+- Rename `edit_metadata` to `update_cube_metadata`
+- Move to `xcube.core.update` module
+- Update help for CLI `--metadata` option
+- Rename CLI command to `update` (?)

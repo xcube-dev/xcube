@@ -1,7 +1,7 @@
 import unittest
 
 from test.sampledata import new_test_dataset
-from xcube.core import dump_dataset
+from xcube.core.dump import dump_dataset
 
 
 class DumpDatasetTest(unittest.TestCase):

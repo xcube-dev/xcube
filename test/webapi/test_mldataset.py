@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 
-from xcube.webapi.im import TileGrid
+from xcube.webapi.im.tilegrid import TileGrid
 from xcube.webapi.mldataset import BaseMultiLevelDataset, ComputedMultiLevelDataset
 
 

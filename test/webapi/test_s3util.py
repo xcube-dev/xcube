@@ -4,7 +4,7 @@ import unittest
 from abc import abstractmethod, ABCMeta
 from typing import Dict
 
-from xcube.core import new_cube
+from xcube.core.new import new_cube
 from xcube.core.readwrite import write_cube
 from xcube.util.dsio import rimraf
 from xcube.webapi.s3util import list_bucket_result_to_xml, list_s3_bucket_keys, list_s3_bucket_v2, list_s3_bucket_v1

@@ -776,7 +776,7 @@ class NdarrayDownsamplingImage(DownsamplingImage):
     :param tile_cache: an optional tile cache
     :param aggregator: an aggregator function which will be called like so:
             aggregator(downsampled_tile_00, downsampled_tile_01, downsampled_tile_10, downsampled_tile_11).
-            see utils.downsample_ndarray() function
+            see xcube.webapi.im.utils.downsample_ndarray() function
     """
 
     def __init__(self,

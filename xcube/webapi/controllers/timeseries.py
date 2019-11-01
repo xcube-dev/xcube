@@ -28,7 +28,7 @@ import xarray as xr
 from ..context import ServiceContext
 from ..errors import ServiceBadRequestError
 from ...core import timeseries
-from ...util.ancvar import find_ancillary_var_names
+from ...core.ancvar import find_ancillary_var_names
 from ...util.geojson import GeoJSON
 from ...util.geom import get_dataset_bounds
 from ...util.perf import measure_time_cm

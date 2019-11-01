@@ -31,7 +31,7 @@ from .controllers.catalogue import get_datasets, get_dataset_coordinates, get_co
     get_dataset_place_groups, get_dataset_place_group
 from .controllers.places import find_places, find_dataset_places
 from .controllers.tiles import get_dataset_tile, get_dataset_tile_grid, get_ne2_tile, get_ne2_tile_grid, get_legend
-from .controllers.time_series import get_time_series_info, get_time_series_for_point, get_time_series_for_geometry, \
+from .controllers.timeseries import get_time_series_info, get_time_series_for_point, get_time_series_for_geometry, \
     get_time_series_for_geometry_collection, get_time_series_for_feature_collection
 from .controllers.wmts import get_wmts_capabilities_xml
 from .defaults import SERVER_NAME, SERVER_DESCRIPTION

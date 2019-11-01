@@ -21,8 +21,8 @@
 
 import os
 
-from .im import GLOBAL_GEO_EXTENT
 from .im.tiledimage import AbstractTiledImage, ImagePyramid
+from .im.tilegrid import GLOBAL_GEO_EXTENT
 from .im.tilegrid import TileGrid
 
 __author__ = "Norman Fomferra (Brockmann Consult GmbH)"

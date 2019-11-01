@@ -43,7 +43,8 @@ def vars2dim(cube, variable, dim_name, output=None, format=None):
     """
 
     from xcube.util.dsio import guess_dataset_format
-    from xcube.core import open_dataset, vars_to_dim, write_dataset
+    from xcube.core.readwrite import open_dataset, write_dataset
+    from xcube.core.vars2dim import vars_to_dim
     import os
 
     if not output:

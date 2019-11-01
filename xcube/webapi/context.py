@@ -36,16 +36,15 @@ import zarr
 from .cache import MemoryCacheStore, Cache
 from .defaults import DEFAULT_CMAP_CBAR, DEFAULT_CMAP_VMIN, DEFAULT_CMAP_VMAX, DEFAULT_TRACE_PERF
 from .errors import ServiceConfigError, ServiceError, ServiceBadRequestError, ServiceResourceNotFoundError
-from .im import TileGrid
+from .im.tilegrid import TileGrid
 from .mldataset import FileStorageMultiLevelDataset, BaseMultiLevelDataset, MultiLevelDataset, \
     ComputedMultiLevelDataset, ObjectStorageMultiLevelDataset
 from .reqparams import RequestParams
-from ..core import assert_cube
-from ..util.dsio import guess_dataset_format
+from ..core.verify import assert_cube
 from ..util.constants import FORMAT_NAME_ZARR, FORMAT_NAME_NETCDF4, FORMAT_NAME_LEVELS
+from ..util.dsio import guess_dataset_format
 from ..util.perf import measure_time
 from ..version import version
-
 
 COMPUTE_DATASET = 'compute_dataset'
 ALL_PLACES = "all"
