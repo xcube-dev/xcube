@@ -1,4 +1,4 @@
-.. _xarray: http://xarray.pydata.org/
+.. _xcube.api.gen.default.iproc.DefaultInputProcessor: https://github.com/dcs4cop/xcube/blob/master/xcube/api/gen/default/iproc.py
 
 =======
 Plugins
@@ -28,20 +28,31 @@ Input Processor Extensions
 --------------------------
 
 Input processors are used the ``xcube gen`` CLI command and ``gen_cube`` API function.
+An input processor is responsible for processing individual time slices after they have been
+opened from their sources and before they are appended to or inserted into the data cube
+to be generated.
 
-An input processor is an implementation of the ``xcube.api.gen.iproc.InputProcessor``
+By default, xcube uses a standard input processor named ``default`` that expects inputs
+to be individual NetCDF files that conform to the CF-convention. Every file is expected
+to contain a single spatial image with dimensions ``lat`` and ``lon`` and the time
+is expected to be given as global attributes.
+
+If your input files do not conform with the ``default`` expectations, you can extend xcube
+and write your own input processor. An input processor is an implementation of the
+:class:`xcube.api.gen.iproc.InputProcessor` or :class:`xcube.api.gen.iproc.XYInputProcessor`
 class.
 
-As an example look into the standards have a look
+As an example take a look at the implementation of the ``default`` input processor
+`xcube.api.gen.default.iproc.DefaultInputProcessor`_.
 
-*Coming soon...*
+*More coming soon...*
 
 Dataset I/O Extensions
 ----------------------
 
-*Coming soon...*
+*More coming soon...*
 
 CLI Extensions
 --------------
 
-*Coming soon...*
+*More coming soon...*
