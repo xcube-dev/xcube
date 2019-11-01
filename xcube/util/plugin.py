@@ -31,9 +31,12 @@ from pkg_resources import iter_entry_points
 
 from .extension import Extension
 
-DEFAULT_ENTRY_POINT_GROUP_NAME = 'xcube_plugins'
-DEFAULT_MODULE_PREFIX = 'xcube_'
-DEFAULT_MODULE_FUNCTION_NAME = 'init_plugin'
+DEFAULT_PLUGIN_ENTRY_POINT_GROUP_NAME = 'xcube_plugins'
+DEFAULT_PLUGIN_MODULE_PREFIX = 'xcube_'
+DEFAULT_PLUGIN_MODULE_NAME = 'plugin'
+DEFAULT_PLUGIN_MODULE_FUNCTION_NAME = 'init_plugin'
+DEFAULT_PLUGIN_LOAD_TIME_LIMIT = 100  # milliseconds
+DEFAULT_PLUGIN_INIT_TIME_LIMIT = 100  # milliseconds
 
 #: Mapping of xcube entry point names to JSON-serializable plugin meta-information.
 _PLUGIN_REGISTRY = None
@@ -61,7 +64,7 @@ def get_extension_registry():
 
 
 def discover_plugin_modules(module_prefixes=None):
-    module_prefixes = module_prefixes or [DEFAULT_MODULE_PREFIX]
+    module_prefixes = module_prefixes or [DEFAULT_PLUGIN_MODULE_PREFIX]
     entry_points = []
     for module_finder, module_name, ispkg in pkgutil.iter_modules():
         if any([module_name.startswith(module_prefix) for module_prefix in module_prefixes]):
@@ -73,7 +76,7 @@ def discover_plugin_modules(module_prefixes=None):
 
 def load_plugins(entry_points=None, ext_registry=None):
     if entry_points is None:
-        entry_points = list(iter_entry_points(group=DEFAULT_ENTRY_POINT_GROUP_NAME, name=None)) \
+        entry_points = list(iter_entry_points(group=DEFAULT_PLUGIN_ENTRY_POINT_GROUP_NAME, name=None)) \
                        + discover_plugin_modules()
 
     if ext_registry is None:
@@ -96,8 +99,7 @@ def load_plugins(entry_points=None, ext_registry=None):
             continue
 
         millis = int(1000 * (time.perf_counter() - t0))
-
-        if millis >= 100:
+        if millis >= DEFAULT_PLUGIN_LOAD_TIME_LIMIT:
             warnings.warn(f'loading xcube plugin {entry_point.name!r} took {millis} ms, '
                           f'consider code optimization!')
 
@@ -107,12 +109,19 @@ def load_plugins(entry_points=None, ext_registry=None):
                           f'must be callable but got a {type(plugin_init_function)!r}')
             continue
 
+        t0 = time.perf_counter()
+
         # noinspection PyBroadException
         try:
             plugin_init_function(ext_registry)
         except Exception as e:
             _handle_error(entry_point, e)
             continue
+
+        millis = int(1000 * (time.perf_counter() - t0))
+        if millis >= DEFAULT_PLUGIN_INIT_TIME_LIMIT:
+            warnings.warn(f'initializing xcube plugin {entry_point.name!r} took {millis} ms, '
+                          f'consider code optimization!')
 
         plugins[entry_point.name] = {'name': entry_point.name, 'doc': plugin_init_function.__doc__}
 
@@ -134,22 +143,24 @@ class _ModuleEntryPoint:
         return self._module_name
 
     def load(self) -> Callable:
+        """
+        Load function "init_plugin()" either from "<module_name>.plugin" or "<module_name>"
+        :return: plugin init function
+        """
         module_name = self._module_name
-        module = importlib.import_module(self._module_name)
+        try:
+            plugin_module = importlib.import_module(self._module_name + '.' + DEFAULT_PLUGIN_MODULE_NAME)
+        except ModuleNotFoundError:
+            plugin_module = importlib.import_module(self._module_name)
 
-        def check(module_func_name):
-            return hasattr(module, module_func_name) and callable(getattr(module, module_func_name))
-
-        module_func_name_1 = 'init_' + module_name
-        if check(module_func_name_1):
-            return getattr(module, module_func_name_1)
-
-        module_func_name_2 = DEFAULT_MODULE_FUNCTION_NAME
-        if check(module_func_name_2):
-            return getattr(module, module_func_name_2)
+        module_func_name = DEFAULT_PLUGIN_MODULE_FUNCTION_NAME
+        if hasattr(plugin_module, module_func_name):
+            module_func = getattr(plugin_module, module_func_name)
+            if callable(module_func):
+                return module_func
 
         raise AttributeError(f'xcube plugin module {module_name!r} must define '
-                             f'a function named {module_func_name_1!r} or {module_func_name_2!r}')
+                             f'a function named {module_func_name!r}')
 
 
 class ExtensionComponent(metaclass=abc.ABCMeta):
