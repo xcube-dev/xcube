@@ -41,7 +41,7 @@ Edit metadata of an xcube dataset.
 Examples
 ========
 
-The global attributes of the demo xcube dataset  `demo cube-1-250-250.zarr`_ do not contain the creators name
+The global attributes of the demo xcube dataset  `demo cube-1-250-250.zarr`_ in the examples folder do not contain the creators name
 not an url. Furthermore the long name of the variable 'conc_chl' is 'Chlorophylll concentration', with too many l's.
 This can be fixed by using xcube edit. A yml-file defining the key words to be changed with the new content has to
 be created. The demo yml is saved in the `examples folder`_.

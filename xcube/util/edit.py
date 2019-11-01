@@ -59,10 +59,10 @@ def edit_metadata(input_path: str,
     :param exception_type: Type of exception to be used on value errors.
     """
 
+    input_path = os.path.abspath(os.path.normpath(input_path))
+
     if not os.path.isfile(os.path.join(input_path, '.zgroup')):
         raise exception_type('Input path must point to ZARR dataset directory.')
-
-    input_path = os.path.abspath(os.path.normpath(input_path))
 
     if in_place:
         output_path = input_path
