@@ -76,6 +76,8 @@ Cube optimization
 Cube metadata
 =============
 
+.. autofunction:: xcube.api.edit_metadata
+
 .. autofunction:: xcube.api.update_dataset_attrs
 
 .. autofunction:: xcube.api.update_dataset_spatial_attrs
