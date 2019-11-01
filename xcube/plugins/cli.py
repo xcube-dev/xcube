@@ -32,6 +32,7 @@ def init_plugin(ext_registry: extension.ExtensionRegistry):
         'chunk',
         'compute',
         'dump',
+        'edit',
         'extract',
         'gen',
         'grid',
