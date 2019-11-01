@@ -3,12 +3,12 @@ import unittest
 import numpy as np
 import xarray as xr
 
-from xcube.api.compute import compute_dataset
+from xcube.api.evaluate import evaluate_dataset
 
 nan = float('nan')
 
 
-class ComputeDatasetTest(unittest.TestCase):
+class EvaluateDatasetTest(unittest.TestCase):
     @classmethod
     def get_test_dataset(cls):
         return xr.Dataset(dict(a=(('y', 'x'), [[0.1, 0.2, 0.4, 0.1], [0.5, 0.1, 0.2, 0.3]]),
@@ -21,7 +21,7 @@ class ComputeDatasetTest(unittest.TestCase):
 
     def test_compute_dataset_without_processed_variables(self):
         dataset = self.get_test_dataset()
-        computed_dataset = compute_dataset(dataset)
+        computed_dataset = evaluate_dataset(dataset)
         self.assertIsNot(computed_dataset, dataset)
         self.assertIn('x', computed_dataset)
         self.assertIn('y', computed_dataset)
@@ -50,8 +50,8 @@ class ComputeDatasetTest(unittest.TestCase):
 
     def test_compute_dataset_with_processed_variables(self):
         dataset = self.get_test_dataset()
-        computed_dataset = compute_dataset(dataset,
-                                           processed_variables=[('a', None),
+        computed_dataset = evaluate_dataset(dataset,
+                                            processed_variables=[('a', None),
                                                                 ('b', dict(valid_pixel_expression=None)),
                                                                 ('c', dict(expression='a + b')),
                                                                 ('d', dict(valid_pixel_expression='c > 0.4'))])

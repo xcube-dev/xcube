@@ -18,6 +18,12 @@ Cube generation
 
 .. autofunction:: xcube.api.new_cube
 
+Cube computation
+================
+
+.. autofunction:: xcube.api.compute_cube
+
+.. autofunction:: xcube.api.evaluate_dataset
 
 Cube data extraction
 ====================
@@ -99,3 +105,7 @@ Utilities
 =========
 
 .. autofunction:: xcube.api.convert_geometry
+
+.. autoclass:: xcube.api.CubeStore
+
+.. autoclass:: xcube.api.CubeSchema
