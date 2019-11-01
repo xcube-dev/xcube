@@ -31,7 +31,7 @@ import xarray as xr
 import zarr
 
 from .constants import FORMAT_NAME_MEM, FORMAT_NAME_NETCDF4, FORMAT_NAME_ZARR
-from .plugin import get_extension_registry
+from .plugin import get_extension_registry, ExtensionComponent
 from .timeslice import append_time_slice, insert_time_slice, replace_time_slice
 
 FORMAT_NAME_EXCEL = "excel"
@@ -40,37 +40,35 @@ FORMAT_NAME_CSV = "csv"
 EXTENSION_POINT_DATASET_IOS = 'xcube.core.dsio'
 
 
-class DatasetIO(metaclass=ABCMeta):
+class DatasetIO(ExtensionComponent, metaclass=ABCMeta):
     """
     An abstract base class that represents dataset input/output.
+
+    :param name: A unique dataset I/O identifier.
     """
 
-    @property
-    @abstractmethod
-    def name(self) -> str:
-        """Name of this dataset I/O."""
-        pass
+    def __init__(self, name: str):
+        super().__init__(EXTENSION_POINT_DATASET_IOS, name)
 
     @property
-    @abstractmethod
     def description(self) -> str:
-        """A description for this dataset I/O."""
-        pass
+        """
+        :return: A description for this input processor
+        """
+        return self.get_metadata_attr('description', '')
 
     @property
-    @abstractmethod
     def ext(self) -> str:
         """The primary filename extension used by this dataset I/O."""
-        pass
+        return self.get_metadata_attr('ext', '')
 
     @property
-    @abstractmethod
     def modes(self) -> Set[str]:
         """
         A set describing the modes of this dataset I/O.
         Must be one or more of "r" (read), "w" (write), and "a" (append).
         """
-        pass
+        return self.get_metadata_attr('modes', set())
 
     @abstractmethod
     def fitness(self, path: str, path_type: str = None) -> float:
@@ -107,6 +105,17 @@ class DatasetIO(metaclass=ABCMeta):
     def update(self, output_path: str, global_attrs: Dict[str, Any] = None, **kwargs):
         """"Update *dataset* at *output_path* using format-specific open parameters *kwargs*."""
         raise NotImplementedError()
+
+
+def get_extension(name: str):
+    return get_extension_registry().get_extension(EXTENSION_POINT_DATASET_IOS, name)
+
+
+def find_dataset_io_by_name(name: str):
+    extension = get_extension(name)
+    if not extension:
+        return None
+    return extension.component
 
 
 def find_dataset_io(format_name: str, modes: Iterable[str] = None, default: DatasetIO = None) -> Optional[DatasetIO]:
@@ -186,6 +195,7 @@ def query_dataset_io(filter_fn: Callable[[DatasetIO], bool] = None) -> List[Data
     return list(filter(filter_fn, dataset_ios))
 
 
+# noinspection PyAbstractClass
 class MemDatasetIO(DatasetIO):
     """
     An in-memory  dataset I/O. Keeps all datasets in a dictionary.
@@ -194,54 +204,43 @@ class MemDatasetIO(DatasetIO):
     """
 
     def __init__(self, datasets: Dict[str, xr.Dataset] = None):
-        self.datasets = datasets or {}
+        super().__init__(FORMAT_NAME_MEM)
+        self._datasets = datasets or {}
 
     @property
-    def name(self) -> str:
-        return FORMAT_NAME_MEM
-
-    @property
-    def description(self) -> str:
-        return 'In-memory dataset I/O'
-
-    @property
-    def ext(self) -> str:
-        return 'mem'
-
-    @property
-    def modes(self) -> Set[str]:
-        return {'r', 'w', 'a'}
+    def datasets(self) -> Dict[str, xr.Dataset]:
+        return self._datasets
 
     def fitness(self, path: str, path_type: str = None) -> float:
-        if path in self.datasets:
+        if path in self._datasets:
             return 1.0
         ext_value = _get_ext(path) == ".mem"
         type_value = 0.0
         return (3 * ext_value + type_value) / 4
 
     def read(self, path: str, **kwargs) -> xr.Dataset:
-        if path in self.datasets:
-            return self.datasets[path]
+        if path in self._datasets:
+            return self._datasets[path]
         raise FileNotFoundError(path)
 
     def write(self, dataset: xr.Dataset, path: str, **kwargs):
-        self.datasets[path] = dataset
+        self._datasets[path] = dataset
 
     def append(self, dataset: xr.Dataset, path: str, **kwargs):
-        if path in self.datasets:
-            old_ds = self.datasets[path]
+        if path in self._datasets:
+            old_ds = self._datasets[path]
             # noinspection PyTypeChecker
-            self.datasets[path] = xr.concat([old_ds, dataset],
-                                            dim='time',
-                                            data_vars='minimal',
-                                            coords='minimal',
-                                            compat='equals')
+            self._datasets[path] = xr.concat([old_ds, dataset],
+                                             dim='time',
+                                             data_vars='minimal',
+                                             coords='minimal',
+                                             compat='equals')
         else:
-            self.datasets[path] = dataset.copy()
+            self._datasets[path] = dataset.copy()
 
     def update(self, output_path: str, global_attrs: Dict[str, Any] = None, **kwargs):
         if global_attrs:
-            ds = self.datasets[output_path]
+            ds = self._datasets[output_path]
             ds.attrs.update(global_attrs)
 
 
@@ -250,21 +249,8 @@ class Netcdf4DatasetIO(DatasetIO):
     A dataset I/O that reads from / writes to NetCDF files.
     """
 
-    @property
-    def name(self) -> str:
-        return FORMAT_NAME_NETCDF4
-
-    @property
-    def description(self) -> str:
-        return 'NetCDF-4 file format'
-
-    @property
-    def ext(self) -> str:
-        return 'nc'
-
-    @property
-    def modes(self) -> Set[str]:
-        return {'r', 'w', 'a'}
+    def __init__(self):
+        super().__init__(FORMAT_NAME_NETCDF4)
 
     def fitness(self, path: str, path_type: str = None) -> float:
         ext = _get_ext(path)
@@ -313,23 +299,7 @@ class ZarrDatasetIO(DatasetIO):
     """
 
     def __init__(self):
-        self.root_group = None
-
-    @property
-    def name(self) -> str:
-        return FORMAT_NAME_ZARR
-
-    @property
-    def description(self) -> str:
-        return 'Zarr file format (http://zarr.readthedocs.io)'
-
-    @property
-    def ext(self) -> str:
-        return 'zarr'
-
-    @property
-    def modes(self) -> Set[str]:
-        return {'r', 'w', 'a'}
+        super().__init__(FORMAT_NAME_ZARR)
 
     def fitness(self, path: str, path_type: str = None) -> float:
         ext = _get_ext(path)
@@ -459,23 +429,7 @@ class CsvDatasetIO(DatasetIO):
     """
 
     def __init__(self):
-        self.root_group = None
-
-    @property
-    def name(self) -> str:
-        return FORMAT_NAME_CSV
-
-    @property
-    def description(self) -> str:
-        return 'CSV file format'
-
-    @property
-    def ext(self) -> str:
-        return 'csv'
-
-    @property
-    def modes(self) -> Set[str]:
-        return {'r', 'w'}
+        super().__init__(FORMAT_NAME_CSV)
 
     def fitness(self, path: str, path_type: str = None) -> float:
         if path_type == "dir":

@@ -20,13 +20,14 @@ class ExtensionRegistryTest(unittest.TestCase):
 
     def test_get_extension_illegal(self):
         ext_reg = ExtensionRegistry()
-        with self.assertRaises(KeyError):
-            ext_reg.get_extension('A', 'test')
+        self.assertEqual(False, ext_reg.has_extension('A', 'test'))
+        self.assertEqual(None, ext_reg.get_extension('A', 'test'))
 
     def test_get_component_illegal(self):
         ext_reg = ExtensionRegistry()
-        with self.assertRaises(KeyError):
+        with self.assertRaises(ValueError) as cm:
             ext_reg.get_component('A', 'test')
+        self.assertEqual("extension 'test' not found for extension point 'A'", f'{cm.exception}')
 
     def test_protocol(self):
         ext_reg = ExtensionRegistry()

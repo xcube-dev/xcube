@@ -19,14 +19,17 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+import abc
 import importlib
 import pkgutil
 import time
 import traceback
 import warnings
-from typing import Callable, Dict
+from typing import Callable, Dict, Optional, Any
 
 from pkg_resources import iter_entry_points
+
+from .extension import Extension
 
 DEFAULT_ENTRY_POINT_GROUP_NAME = 'xcube_plugins'
 DEFAULT_MODULE_PREFIX = 'xcube_'
@@ -147,3 +150,42 @@ class _ModuleEntryPoint:
 
         raise AttributeError(f'xcube plugin module {module_name!r} must define '
                              f'a function named {module_func_name_1!r} or {module_func_name_2!r}')
+
+
+class ExtensionComponent(metaclass=abc.ABCMeta):
+    """
+    Utility base class for extension components.
+    """
+
+    def __init__(self, extension_point: str, name: str):
+        if not extension_point:
+            raise ValueError('extension_point must be given')
+        if not name:
+            raise ValueError('name must be given')
+        self._extension_point = extension_point
+        self._name = name
+
+    @property
+    def name(self) -> str:
+        return self._name
+
+    @property
+    def extension_point(self) -> str:
+        """
+        :return: The extension point for this component.
+        """
+        return self._extension_point
+
+    @property
+    def extension(self) -> Optional[Extension]:
+        """
+        :return: The extension for this component. None, if it has not (yet) been registered as an extension.
+        """
+        return get_extension_registry().get_extension(self._extension_point, self._name)
+
+    def get_metadata_attr(self, key: str, default: Any = None) -> Any:
+        """
+        :return: A metadata attribute for *key* and given *default* value.
+        """
+        extension = self.extension
+        return extension.metadata.get(key, default) if extension is not None else ''

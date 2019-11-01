@@ -13,9 +13,8 @@ from xcube.util.dsio import DatasetIO, MemDatasetIO, Netcdf4DatasetIO, ZarrDatas
 # noinspection PyAbstractClass
 class MyDatasetIO(DatasetIO):
 
-    @property
-    def name(self) -> str:
-        return "test"
+    def __init__(self):
+        super().__init__("test")
 
     @property
     def description(self) -> str:
@@ -105,7 +104,7 @@ class MemDatasetIOTest(unittest.TestCase):
         with self.assertRaises(FileNotFoundError):
             ds_io.read('test.nc')
         ds1 = xr.Dataset()
-        ds_io.datasets['test.nc'] = ds1
+        ds_io._datasets['test.nc'] = ds1
         ds2 = ds_io.read('test.nc')
         self.assertIs(ds2, ds1)
 
@@ -113,7 +112,7 @@ class MemDatasetIOTest(unittest.TestCase):
         ds_io = MemDatasetIO()
         ds1 = xr.Dataset()
         ds_io.write(ds1, 'test.nc')
-        ds2 = ds_io.datasets['test.nc']
+        ds2 = ds_io._datasets['test.nc']
         self.assertIs(ds2, ds1)
 
     def test_append(self):
@@ -124,7 +123,7 @@ class MemDatasetIOTest(unittest.TestCase):
         ds_io.append(ds1, 'test.nc')
         ds_io.append(ds2, 'test.nc')
         ds_io.append(ds3, 'test.nc')
-        ds4 = ds_io.datasets.get('test.nc')
+        ds4 = ds_io._datasets.get('test.nc')
         self.assertIsNotNone(ds4)
         self.assertIn('time', ds4)
         self.assertIn('temperature', ds4)

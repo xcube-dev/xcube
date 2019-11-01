@@ -21,7 +21,7 @@
 
 
 import importlib
-from typing import List, Any, Dict, Callable, Mapping, Sequence
+from typing import List, Any, Dict, Callable, Mapping, Sequence, Optional
 
 __author__ = "Norman Fomferra (Brockmann Consult GmbH)"
 
@@ -119,26 +119,31 @@ class ExtensionRegistry:
         """
         return point in self._extension_points and name in self._extension_points[point]
 
-    def get_extension(self, point: str, name: str) -> Extension:
+    def get_extension(self, point: str, name: str) -> Optional[Extension]:
         """
         Get registered extension for given *point* and *name*.
 
         :param point: extension point identifier
         :param name: extension name
-        :return: the extension
+        :return: the extension or None, if no such exists
         """
-        point_extensions = self._extension_points[point]
-        return point_extensions[name]
+        if point not in self._extension_points:
+            return None
+        return self._extension_points[point].get(name)
 
     def get_component(self, point: str, name: str) -> Any:
         """
         Get extension component for given *point* and *name*.
+        Raises a ValueError if no such extension exists.
 
         :param point: extension point identifier
         :param name: extension name
-        :return: extension components
+        :return: extension component
         """
-        return self.get_extension(point, name).component
+        extension = self.get_extension(point, name)
+        if extension is None:
+            raise ValueError(f'extension {name!r} not found for extension point {point!r}')
+        return extension.component
 
     def find_extensions(self,
                         point: str,

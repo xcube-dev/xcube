@@ -49,15 +49,8 @@ class DefaultInputProcessor(XYInputProcessor):
     """
 
     def __init__(self):
+        super().__init__('default')
         self._input_reader = 'netcdf4'
-
-    @property
-    def name(self) -> str:
-        return 'default'
-
-    @property
-    def description(self) -> str:
-        return 'Single-scene NetCDF/CF inputs in xcube standard format'
 
     def configure(self, input_reader: str = 'netcdf4'):
         self._input_reader = input_reader

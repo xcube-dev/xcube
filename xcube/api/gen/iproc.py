@@ -24,7 +24,7 @@ from typing import Tuple, Union, Optional, Collection
 
 import xarray as xr
 
-from ...util.plugin import get_extension_registry
+from ...util.plugin import get_extension_registry, ExtensionComponent
 from ...util.reproject import reproject_xy_to_wgs84
 
 EXTENSION_POINT_INPUT_PROCESSORS = 'xcube.core.gen.iproc'
@@ -58,24 +58,22 @@ class ReprojectionInfo:
         self.xy_tp_gcp_step = xy_tp_gcp_step
 
 
-class InputProcessor(metaclass=ABCMeta):
+class InputProcessor(ExtensionComponent, metaclass=ABCMeta):
     """
     Read and process inputs for the gen tool.
+
+    :param name: A unique input processor identifier.
     """
 
-    @property
-    @abstractmethod
-    def name(self) -> str:
-        """
-        :return: The name of this input processor
-        """
+    def __init__(self, name: str):
+        super().__init__(EXTENSION_POINT_INPUT_PROCESSORS, name)
 
     @property
-    @abstractmethod
     def description(self) -> str:
         """
-        :return: The description of this input processor
+        :return: A description for this input processor
         """
+        return self.get_metadata_attr('description', '')
 
     def configure(self, **parameters):
         """
@@ -223,6 +221,7 @@ class XYInputProcessor(InputProcessor, metaclass=ABCMeta):
 
 
 def find_input_processor(name: str):
-    if not get_extension_registry().has_extension(EXTENSION_POINT_INPUT_PROCESSORS, name):
+    extension = get_extension_registry().get_extension(EXTENSION_POINT_INPUT_PROCESSORS, name)
+    if not extension:
         return None
-    return get_extension_registry().get_component(EXTENSION_POINT_INPUT_PROCESSORS, name)
+    return extension.component
