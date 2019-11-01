@@ -57,7 +57,6 @@ class DatasetIOTest(unittest.TestCase):
             # noinspection PyTypeChecker
             ds_io.insert(None, 0, 'test.nc')
 
-
     def test_replace_raises(self):
         ds_io = MyDatasetIO()
         with self.assertRaises(NotImplementedError):
