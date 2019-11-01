@@ -2,8 +2,10 @@
 
 ### Enhancements
 
-- `xcube serve` now recognises xcube datasets with consolidated 
-  metadata. (#141) 
+- Added new CLI tool `xcube edit` and API function `xcube.api.edit_metadata`
+  which allows editing the metadata of an existing xcube dataset. (#170)
+- `xcube serve` now recognises xcube datasets with
+  metadata consolidated by the `xcube opmimize` command. (#141)
 
 ### Fixes
 - `xcube gen` now parses time stamps correcly from input data. (#207)
