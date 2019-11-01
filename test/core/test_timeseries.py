@@ -4,7 +4,7 @@ import numpy as np
 import xarray as xr
 
 from xcube.core import new_cube
-from xcube.core.ts import get_time_series
+from xcube.core.timeseries import get_time_series
 
 
 class TsTest(unittest.TestCase):

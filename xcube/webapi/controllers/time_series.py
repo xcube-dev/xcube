@@ -27,7 +27,7 @@ import xarray as xr
 
 from ..context import ServiceContext
 from ..errors import ServiceBadRequestError
-from ...core import ts
+from ...core import timeseries
 from ...util.ancvar import find_ancillary_var_names
 from ...util.geojson import GeoJSON
 from ...util.geom import get_dataset_bounds
@@ -241,7 +241,7 @@ def _get_time_series_for_point(dataset: xr.Dataset,
         uncert_var_name = next(iter(ancillary_var_names['standard_error']))
         var_names.append(uncert_var_name)
 
-    ts_ds = ts.get_time_series(dataset, point, var_names, start_date=start_date, end_date=end_date)
+    ts_ds = timeseries.get_time_series(dataset, point, var_names, start_date=start_date, end_date=end_date)
     if ts_ds is None:
         return {'results': []}
 
@@ -265,11 +265,11 @@ def _get_time_series_for_geometry(dataset: xr.Dataset,
                                           geometry,
                                           start_date=start_date, end_date=end_date)
 
-    ts_ds = ts.get_time_series(dataset, geometry, [var_name],
-                               include_count=include_count,
-                               include_stdev=include_stdev,
-                               start_date=start_date,
-                               end_date=end_date)
+    ts_ds = timeseries.get_time_series(dataset, geometry, [var_name],
+                                       include_count=include_count,
+                                       include_stdev=include_stdev,
+                                       start_date=start_date,
+                                       end_date=end_date)
     if ts_ds is None:
         return {'results': []}
 

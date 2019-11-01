@@ -33,8 +33,8 @@ from .new import new_cube
 from .readwrite import open_cube, open_dataset, read_cube, read_dataset, write_cube, write_dataset
 from .resample import resample_in_time
 from .select import select_vars
-from .ts import get_time_series
-from .vars_to_dim import vars_to_dim
+from .timeseries import get_time_series
+from .vars2dim import vars_to_dim
 from .verify import assert_cube, verify_cube
 # noinspection PyUnresolvedReferences
 from ..util.chunk import chunk_dataset, get_empty_dataset_chunks

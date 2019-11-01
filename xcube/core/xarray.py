@@ -15,7 +15,7 @@ from .level import compute_levels, read_levels, write_levels
 from .new import new_cube
 from .readwrite import read_cube, open_cube, write_cube
 from .select import select_vars
-from .vars_to_dim import vars_to_dim
+from .vars2dim import vars_to_dim
 from .verify import verify_cube
 from ..util.chunk import chunk_dataset
 

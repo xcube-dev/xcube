@@ -1,7 +1,7 @@
 import unittest
 
 from xcube.core import new_cube
-from xcube.core.vars_to_dim import vars_to_dim
+from xcube.core.vars2dim import vars_to_dim
 
 
 class VarsToDimTest(unittest.TestCase):
