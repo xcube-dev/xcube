@@ -24,10 +24,10 @@ from typing import Tuple, Union, Optional, Collection
 
 import xarray as xr
 
-from ...util.plugin import get_ext_registry
+from ...util.plugin import get_extension_registry
 from ...util.reproject import reproject_xy_to_wgs84
 
-EXT_TYPE_INPUT_PROCESSOR = 'xcube.core.gen.iproc'
+EXTENSION_POINT_INPUT_PROCESSORS = 'xcube.core.gen.iproc'
 
 
 class ReprojectionInfo:
@@ -223,6 +223,6 @@ class XYInputProcessor(InputProcessor, metaclass=ABCMeta):
 
 
 def find_input_processor(name: str):
-    if not get_ext_registry().has_ext(EXT_TYPE_INPUT_PROCESSOR, name):
+    if not get_extension_registry().has_extension(EXTENSION_POINT_INPUT_PROCESSORS, name):
         return None
-    return get_ext_registry().get_ext_obj(EXT_TYPE_INPUT_PROCESSOR, name)
+    return get_extension_registry().get_component(EXTENSION_POINT_INPUT_PROCESSORS, name)

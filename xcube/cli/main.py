@@ -24,10 +24,10 @@ import sys
 import click
 
 from xcube.util.cliutil import cli_option_scheduler, cli_option_traceback, handle_cli_exception, new_cli_ctx_obj
-from xcube.util.plugin import get_ext_registry
+from xcube.util.plugin import get_extension_registry
 from xcube.version import version
 
-EXT_TYPE_CLI = 'xcube.cli'
+EXTENSION_POINT_CLI_COMMANDS = 'xcube.cli'
 
 
 # noinspection PyShadowingBuiltins,PyUnusedLocal
@@ -42,7 +42,7 @@ def cli(traceback=False, scheduler=None):
 
 
 # Add registered CLI commands
-for command in get_ext_registry().get_all_ext_obj(EXT_TYPE_CLI):
+for command in get_extension_registry().find_components(EXTENSION_POINT_CLI_COMMANDS):
     cli.add_command(command)
 
 

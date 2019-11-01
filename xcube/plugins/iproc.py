@@ -19,18 +19,15 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-import xcube.util.ext
+from xcube.util import extension
 
 
-def init_plugin(ext_registry: xcube.util.ext.ExtensionRegistry):
+def init_plugin(ext_registry: extension.ExtensionRegistry):
     """
     xcube input processor standard extensions
     """
-    ext_registry.add_ext_lazy(_load_iproc_default,
-                              'xcube.core.gen.iproc', 'default',
-                              description='Single-scene NetCDF/CF inputs in xcube standard format')
-
-
-def _load_iproc_default():
-    from xcube.api.gen.default.iproc import DefaultInputProcessor
-    return DefaultInputProcessor()
+    ext_registry.add_extension(
+        loader=extension.import_component('xcube.api.gen.default.iproc:DefaultInputProcessor', call=True),
+        point='xcube.core.gen.iproc', name='default',
+        description='Single-scene NetCDF/CF inputs in xcube standard format'
+    )

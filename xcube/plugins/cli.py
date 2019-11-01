@@ -20,10 +20,10 @@
 # SOFTWARE.
 
 
-import xcube.util.ext
+from xcube.util import extension
 
 
-def init_plugin(ext_registry: xcube.util.ext.ExtensionRegistry):
+def init_plugin(ext_registry: extension.ExtensionRegistry):
     """
     xcube CLI standard extensions
     """
@@ -46,5 +46,6 @@ def init_plugin(ext_registry: xcube.util.ext.ExtensionRegistry):
     ]
 
     for cli_command_name in cli_command_names:
-        ext_registry.add_ext_lazy(xcube.util.ext.ModuleLoader('xcube.cli.' + cli_command_name, cli_command_name),
-                                  'xcube.cli', cli_command_name)
+        ext_registry.add_extension(
+            loader=extension.import_component(f'xcube.cli.{cli_command_name}:{cli_command_name}'),
+            point='xcube.cli', name=cli_command_name)

@@ -41,7 +41,7 @@ from ..util.chunk import chunk_dataset, get_empty_dataset_chunks
 # noinspection PyUnresolvedReferences
 from ..util.cubestore import CubeStore
 # noinspection PyUnresolvedReferences
-from ..util.ext import ExtensionRegistry
+from ..util.extension import ExtensionRegistry
 # noinspection PyUnresolvedReferences
 from ..util.geom import clip_dataset_by_geometry, mask_dataset_by_geometry, convert_geometry
 # noinspection PyUnresolvedReferences
@@ -49,9 +49,9 @@ from ..util.maskset import MaskSet
 # noinspection PyUnresolvedReferences
 from ..util.optimize import optimize_dataset
 # noinspection PyUnresolvedReferences
-from ..util.schema import CubeSchema
+from ..util.plugin import get_extension_registry
 # noinspection PyUnresolvedReferences
-from ..util.plugin import get_ext_registry
+from ..util.schema import CubeSchema
 # noinspection PyUnresolvedReferences
 from ..util.unchunk import unchunk_dataset
 # noinspection PyUnresolvedReferences

@@ -20,42 +20,26 @@
 # SOFTWARE.
 
 
-import xcube.util.ext
+from xcube.util import extension
 
 
-def init_plugin(ext_registry: xcube.util.ext.ExtensionRegistry):
+def init_plugin(ext_registry: extension.ExtensionRegistry):
     """
     xcube dataset I/O standard extensions
     """
-    ext_registry.add_ext_lazy(_load_dsio_zarr,
-                              'xcube.core.dsio', 'zarr',
-                              description='Zarr file format (http://zarr.readthedocs.io)')
-    ext_registry.add_ext_lazy(_load_dsio_netcdf4,
-                              'xcube.core.dsio', 'netcdf4',
-                              description='NetCDF-4 file format')
-    ext_registry.add_ext_lazy(_load_dsio_csv,
-                              'xcube.core.dsio', 'csv',
-                              description='CSV file format')
-    ext_registry.add_ext_lazy(_load_dsio_mem,
-                              'xcube.core.dsio', 'mem',
-                              description='In-memory dataset I/O')
-
-
-def _load_dsio_zarr():
-    from xcube.util.dsio import ZarrDatasetIO
-    return ZarrDatasetIO()
-
-
-def _load_dsio_netcdf4():
-    from xcube.util.dsio import Netcdf4DatasetIO
-    return Netcdf4DatasetIO()
-
-
-def _load_dsio_csv():
-    from xcube.util.dsio import CsvDatasetIO
-    return CsvDatasetIO()
-
-
-def _load_dsio_mem():
-    from xcube.util.dsio import MemDatasetIO
-    return MemDatasetIO()
+    ext_registry.add_extension(loader=extension.import_component('xcube.util.dsio:ZarrDatasetIO', call=True),
+                               point='xcube.core.dsio', name='zarr',
+                               description='Zarr file format (http://zarr.readthedocs.io)',
+                               ext='zarr', modes={'r', 'w', 'a'})
+    ext_registry.add_extension(loader=extension.import_component('xcube.util.dsio:Netcdf4DatasetIO', call=True),
+                               point='xcube.core.dsio', name='netcdf4',
+                               description='NetCDF-4 file format',
+                               ext='nc', modes={'r', 'w', 'a'})
+    ext_registry.add_extension(loader=extension.import_component('xcube.util.dsio:CsvDatasetIO', call=True),
+                               point='xcube.core.dsio', name='csv',
+                               description='CSV file format',
+                               ext='csv', modes={'r', 'w'})
+    ext_registry.add_extension(loader=extension.import_component('xcube.util.dsio:MemDatasetIO', call=True),
+                               point='xcube.core.dsio', name='mem',
+                               description='In-memory dataset I/O',
+                               ext='mem', modes={'r', 'w', 'a'})

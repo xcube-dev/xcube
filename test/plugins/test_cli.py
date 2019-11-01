@@ -1,6 +1,6 @@
 import unittest
 
-from xcube.util.ext import ExtensionRegistry
+from xcube.util.extension import ExtensionRegistry
 
 
 class CliCommandPluginTest(unittest.TestCase):
@@ -8,7 +8,9 @@ class CliCommandPluginTest(unittest.TestCase):
         from xcube.plugins.cli import init_plugin
         ext_reg = ExtensionRegistry()
         init_plugin(ext_reg)
-        self.assertTrue(ext_reg.has_ext('xcube.cli', 'gen'))
-        self.assertTrue(ext_reg.has_ext('xcube.cli', 'level'))
-        self.assertTrue(ext_reg.has_ext('xcube.cli', 'optimize'))
+        self.assertTrue(ext_reg.has_extension('xcube.cli', 'compute'))
+        self.assertTrue(ext_reg.has_extension('xcube.cli', 'extract'))
+        self.assertTrue(ext_reg.has_extension('xcube.cli', 'gen'))
+        self.assertTrue(ext_reg.has_extension('xcube.cli', 'level'))
+        self.assertTrue(ext_reg.has_extension('xcube.cli', 'optimize'))
         # ...

@@ -31,13 +31,13 @@ import xarray as xr
 import zarr
 
 from .constants import FORMAT_NAME_MEM, FORMAT_NAME_NETCDF4, FORMAT_NAME_ZARR
-from .plugin import get_ext_registry
+from .plugin import get_extension_registry
 from .timeslice import append_time_slice, insert_time_slice, replace_time_slice
 
 FORMAT_NAME_EXCEL = "excel"
 FORMAT_NAME_CSV = "csv"
 
-EXT_TYPE_DATASET_IO = 'xcube.core.dsio'
+EXTENSION_POINT_DATASET_IOS = 'xcube.core.dsio'
 
 
 class DatasetIO(metaclass=ABCMeta):
@@ -112,7 +112,7 @@ class DatasetIO(metaclass=ABCMeta):
 def find_dataset_io(format_name: str, modes: Iterable[str] = None, default: DatasetIO = None) -> Optional[DatasetIO]:
     modes = set(modes) if modes else None
     format_name = format_name.lower()
-    dataset_ios = get_ext_registry().get_all_ext_obj(EXT_TYPE_DATASET_IO)
+    dataset_ios = get_extension_registry().find_components(EXTENSION_POINT_DATASET_IOS)
     for dataset_io in dataset_ios:
         # noinspection PyUnresolvedReferences
         if format_name == dataset_io.name.lower():
@@ -162,7 +162,7 @@ def guess_dataset_ios(path: str) -> List[Tuple[DatasetIO, float]]:
     else:
         input_type = None
 
-    dataset_ios = get_ext_registry().get_all_ext_obj(EXT_TYPE_DATASET_IO)
+    dataset_ios = get_extension_registry().find_components(EXTENSION_POINT_DATASET_IOS)
 
     dataset_io_fitness_list = []
     for dataset_io in dataset_ios:
@@ -180,7 +180,7 @@ def _get_ext(path: str) -> Optional[str]:
 
 
 def query_dataset_io(filter_fn: Callable[[DatasetIO], bool] = None) -> List[DatasetIO]:
-    dataset_ios = get_ext_registry().get_all_ext_obj(EXT_TYPE_DATASET_IO)
+    dataset_ios = get_extension_registry().find_components(EXTENSION_POINT_DATASET_IOS)
     if filter_fn is None:
         return dataset_ios
     return list(filter(filter_fn, dataset_ios))

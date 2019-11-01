@@ -50,11 +50,11 @@ def get_plugins() -> Dict[str, Dict]:
     return dict(_PLUGIN_REGISTRY)
 
 
-def get_ext_registry():
+def get_extension_registry():
     """Get populated extension registry."""
-    from ..util.ext import get_ext_registry
+    from ..util.extension import get_extension_registry
     init_plugins()
-    return get_ext_registry()
+    return get_extension_registry()
 
 
 def discover_plugin_modules(module_prefixes=None):
@@ -74,8 +74,8 @@ def load_plugins(entry_points=None, ext_registry=None):
                        + discover_plugin_modules()
 
     if ext_registry is None:
-        from ..util.ext import get_ext_registry
-        ext_registry = get_ext_registry()
+        from ..util.extension import get_extension_registry
+        ext_registry = get_extension_registry()
 
     plugins = {}
 

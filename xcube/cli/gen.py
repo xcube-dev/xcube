@@ -19,12 +19,13 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-from typing import Sequence
+from typing import Sequence, List
 
 import click
 
 from xcube.api.gen.defaults import DEFAULT_OUTPUT_PATH, DEFAULT_OUTPUT_RESAMPLING
 from xcube.util.constants import RESAMPLING_METHOD_NAMES
+from xcube.util.extension import Extension
 
 resampling_methods = sorted(RESAMPLING_METHOD_NAMES)
 
@@ -126,36 +127,41 @@ def gen(input: Sequence[str],
 
 
 def _format_info():
-    from xcube.util.dsio import query_dataset_io
-    from xcube.util.plugin import get_ext_registry
+    from xcube.util.plugin import get_extension_registry
 
-    input_processors = get_ext_registry().get_all_ext_obj('xcube.core.gen.iproc')
-    output_writers = query_dataset_io(lambda ds_io: 'w' in ds_io.modes)
+    iproc_extensions = get_extension_registry().find_extensions('xcube.core.gen.iproc')
+    dsio_extensions = get_extension_registry().find_extensions('xcube.core.dsio',
+                                                               lambda e: 'w' in e.metadata.get('modes', set()))
 
-    help_text = '\ninput processors to be used with option --proc:\n'
-    help_text += _format_input_processors(input_processors)
+    help_text = '\nInput processors to be used with option --proc:\n'
+    help_text += _format_input_processors(iproc_extensions)
     help_text += '\nFor more input processors use existing "xcube-gen-..." plugins ' \
                  "from the xcube's GitHub organisation or write your own plugin.\n"
     help_text += '\n'
-    help_text += '\noutput formats to be used with option --format:\n'
-    help_text += _format_dataset_ios(output_writers)
+    help_text += '\nOutput formats to be used with option --format:\n'
+    help_text += _format_dataset_ios(dsio_extensions)
     help_text += '\n'
 
     return help_text
 
 
-def _format_input_processors(input_processors):
+def _format_input_processors(input_processors: List[Extension]):
     help_text = ''
     for input_processor in input_processors:
+        name = input_processor.name
+        description = input_processor.metadata.get('description', '')
         fill = ' ' * (34 - len(input_processor.name))
-        help_text += f'  {input_processor.name}{fill}{input_processor.description}\n'
+        help_text += f'  {name}{fill}{description}\n'
     return help_text
 
 
-def _format_dataset_ios(dataset_ios):
+def _format_dataset_ios(dataset_ios: List[Extension]):
     help_text = ''
     for ds_io in dataset_ios:
-        fill1 = ' ' * (24 - len(ds_io.name))
-        fill2 = ' ' * (10 - len(ds_io.ext))
-        help_text += f'  {ds_io.name}{fill1}(*.{ds_io.ext}){fill2}{ds_io.description}\n'
+        name = ds_io.name
+        description = ds_io.metadata.get('description', '')
+        ext = ds_io.metadata.get('ext', '?')
+        fill1 = ' ' * (24 - len(name))
+        fill2 = ' ' * (10 - len(ext))
+        help_text += f'  {name}{fill1}(*.{ext}){fill2}{description}\n'
     return help_text
