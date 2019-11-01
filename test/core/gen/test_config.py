@@ -3,6 +3,7 @@ import shutil
 import unittest
 
 import yaml
+
 from xcube.core.gen.config import get_config_dict
 
 TEMP_PATH_FOR_YAML = './temp_test_data_for_xcube_tests'

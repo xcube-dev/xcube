@@ -5,10 +5,10 @@ from typing import Tuple, Optional, Dict, Any
 import numpy as np
 import xarray as xr
 
+from test.core.gen.helpers import get_inputdata_path
 from xcube.core.gen.config import get_config_dict
 from xcube.core.gen.gen import gen_cube
 from xcube.util.dsio import rimraf
-from .helpers import get_inputdata_path
 
 
 def clean_up():

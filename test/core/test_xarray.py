@@ -3,13 +3,13 @@ import unittest
 import xarray as xr
 
 from test.sampledata import new_test_dataset
-from xcube.core.xarray import XCubeDatasetAccessor
+from xcube.core.xarray import DatasetAccessor
 
 
 class XCubeDatasetAccessorTest(unittest.TestCase):
     # noinspection PyMethodMayBeStatic
     def test_init(self):
-        XCubeDatasetAccessor(xr.Dataset())
+        DatasetAccessor(xr.Dataset())
 
     def test_installed(self):
         self.assertTrue(hasattr(xr.Dataset, "xcube"))

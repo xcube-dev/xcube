@@ -72,17 +72,12 @@ setup(
     packages=packages,
     entry_points={
         'console_scripts': [
+            # xcube's CLI
             'xcube = xcube.cli.main:main',
         ],
-
-        # xcube default extensions:
         'xcube_plugins': [
-            # Input processors for "xcube gen" command (registers factories for xcube.core.gen.iproc.InputProcessor instances)
-            'xcube_default_iproc = xcube.plugins.iproc:init_plugin',
-            # Dataset I/O objects (registers factories for DatasetIO instances)
-            'xcube_default_dsio = xcube.plugins.dsio:init_plugin',
-            # Command-line interface commands (registers factories for click.Command/Group instances)
-            'xcube_default_cli = xcube.plugins.cli:init_plugin',
+            # xcube's standard extensions
+            'xcube_standard = xcube.plugin:init_plugin',
         ],
     },
     install_requires=requirements,

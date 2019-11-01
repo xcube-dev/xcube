@@ -21,7 +21,7 @@ from ..util.chunk import chunk_dataset
 
 
 @xr.register_dataset_accessor('xcube')
-class XCubeDatasetAccessor:
+class DatasetAccessor:
     """
     The xcube xarray API.
 
