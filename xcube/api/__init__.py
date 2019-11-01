@@ -41,7 +41,9 @@ from ..util.chunk import chunk_dataset, get_empty_dataset_chunks
 # noinspection PyUnresolvedReferences
 from ..util.cubestore import CubeStore
 # noinspection PyUnresolvedReferences
-from ..util.geom import clip_dataset_by_geometry, mask_dataset_by_geometry, convert_geometry
+from ..util.edit import edit_metadata
+# noinspection PyUnresolvedReferences
+from ..util.geom import clip_dataset_by_geometry, convert_geometry, mask_dataset_by_geometry
 # noinspection PyUnresolvedReferences
 from ..util.maskset import MaskSet
 # noinspection PyUnresolvedReferences

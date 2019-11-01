@@ -3,6 +3,7 @@ import sys
 import click
 
 from xcube.api.gen.defaults import DEFAULT_OUTPUT_PATH
+from xcube.cli.edit import edit
 from xcube.cli.compute import compute
 from xcube.cli.extract import extract
 from xcube.cli.gen import gen
@@ -209,6 +210,7 @@ cli.add_command(chunk)
 cli.add_command(compute)
 cli.add_command(optimize)
 cli.add_command(dump)
+cli.add_command(edit)
 cli.add_command(extract)
 cli.add_command(gen)
 cli.add_command(grid)

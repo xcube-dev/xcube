@@ -31,8 +31,8 @@ class UpdateVariablePropsTest(unittest.TestCase):
         ds1 = create_highroc_dataset()
         ds2 = update_dataset_var_attrs(ds1,
                                        [('conc_chl', {'name': 'chl_c2rcc'}),
-                                ('c2rcc_flags', {'name': 'flags', 'marker': True}),
-                                ('rtoa_10', None)])
+                                        ('c2rcc_flags', {'name': 'flags', 'marker': True}),
+                                        ('rtoa_10', None)])
 
         self.assertEqual(len(ds1.data_vars), len(ds2.data_vars))
 

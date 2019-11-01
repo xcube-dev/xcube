@@ -61,6 +61,7 @@ Cube manipulation
    :maxdepth: 1
 
    cli/xcube_chunk
+   cli/xcube_edit
    cli/xcube_level
    cli/xcube_optimize
    cli/xcube_prune
