@@ -1,4 +1,3 @@
-from contextlib import contextmanager
 from typing import Dict, List, Mapping, Any, Union, Sequence
 
 import numpy as np
@@ -6,6 +5,7 @@ import pandas as pd
 import xarray as xr
 
 from xcube.core.chunk import chunk_dataset
+from xcube.core.dsio import open_cube, write_cube
 from xcube.core.dump import dump_dataset
 # noinspection PyUnresolvedReferences
 from xcube.core.evaluate import evaluate_dataset
@@ -14,7 +14,6 @@ from xcube.core.extract import get_cube_values_for_points, get_cube_point_indexe
 # noinspection PyUnresolvedReferences
 from xcube.core.level import compute_levels, read_levels, write_levels
 from xcube.core.new import new_cube
-from xcube.core.readwrite import read_cube, open_cube, write_cube
 from xcube.core.select import select_vars
 from xcube.core.vars2dim import vars_to_dim
 from xcube.core.verify import verify_cube
@@ -77,7 +76,6 @@ class DatasetAccessor:
                         drop_bounds=drop_bounds,
                         variables=variables)
 
-    @contextmanager
     @classmethod
     def open(cls, input_path: str, format_name: str = None, **kwargs) -> xr.Dataset:
         """
@@ -88,20 +86,7 @@ class DatasetAccessor:
         :param kwargs: format-specific keyword arguments
         :return: dataset object
         """
-        yield open_cube(input_path, format_name=format_name, is_cube=True, **kwargs)
-
-    @classmethod
-    def read(cls, input_path: str, format_name: str = None, **kwargs) -> xr.Dataset:
-        """
-        Read a xcube dataset from *input_path*.
-        If *format* is not provided it will be guessed from *input_path*.
-
-        :param input_path: input path
-        :param format_name: format, e.g. "zarr" or "netcdf4"
-        :param kwargs: format-specific keyword arguments
-        :return: dataset object
-        """
-        return read_cube(input_path, format_name=format_name, **kwargs)
+        return open_cube(input_path, format_name=format_name, **kwargs)
 
     def write(self, output_path: str, format_name: str = None, **kwargs) -> xr.Dataset:
         """

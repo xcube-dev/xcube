@@ -5,11 +5,9 @@ Python API
 Cube I/O
 ========
 
-.. autofunction:: xcube.core.readwrite.read_cube
+.. autofunction:: xcube.core.dsio.open_cube
 
-.. autofunction:: xcube.core.readwrite.open_cube
-
-.. autofunction:: xcube.core.readwrite.write_cube
+.. autofunction:: xcube.core.dsio.write_cube
 
 Cube generation
 ===============
@@ -43,11 +41,11 @@ Cube manipulation
 
 .. autofunction:: xcube.core.resample.resample_in_time
 
-.. autofunction:: xcube.core.vars_2dim.vars_to_dim
+.. autofunction:: xcube.core.vars2dim.vars_to_dim
 
 .. autofunction:: xcube.core.chunk.chunk_dataset
 
-.. autofunction:: xcube.core.chunk.unchunk_dataset
+.. autofunction:: xcube.core.unchunk.unchunk_dataset
 
 .. autofunction:: xcube.core.optimize.optimize_dataset
 

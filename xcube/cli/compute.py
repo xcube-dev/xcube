@@ -114,9 +114,9 @@ def compute(script: str,
     any cube data.
 
     """
-    from xcube.core.compute import compute_cube
-    from xcube.core.readwrite import read_cube
     from xcube.util.clihelper import parse_cli_kwargs
+    from xcube.core.compute import compute_cube
+    from xcube.core.dsio import open_cube
     from xcube.core.dsio import guess_dataset_format, find_dataset_io
 
     input_paths = cube
@@ -141,7 +141,7 @@ def compute(script: str,
 
     input_cubes = []
     for input_path in input_paths:
-        input_cubes.append(read_cube(input_path=input_path))
+        input_cubes.append(open_cube(input_path=input_path))
 
     if initialize_function:
         input_var_names, input_params = initialize_function(input_cubes, input_var_names, input_params)
@@ -172,4 +172,3 @@ def _get_function(object, function_name, source, force=False):
     if not callable(function):
         raise click.ClickException(f"{function_name!r} in {source} is not a callable")
     return function
-

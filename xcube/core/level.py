@@ -3,7 +3,7 @@ from typing import List, Callable, Sequence, Optional, Tuple
 
 import xarray as xr
 
-from xcube.core.readwrite import read_dataset
+from xcube.core.dsio import open_dataset
 
 PyramidLevelCallback = Callable[[xr.Dataset, int, int], Optional[xr.Dataset]]
 
@@ -133,7 +133,7 @@ def write_levels(output_path: str,
         os.makedirs(output_path)
 
     if dataset is None:
-        dataset = read_dataset(input_path)
+        dataset = open_dataset(input_path)
 
     return compute_levels(dataset, post_process_level=post_process_level, **kwargs)
 

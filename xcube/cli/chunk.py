@@ -58,11 +58,11 @@ def chunk(cube, output, format=None, params=None, chunks=None):
     if params:
         write_kwargs = parse_cli_kwargs(params, metavar="PARAMS")
 
-    from xcube.core.dsio import guess_dataset_format
-    format_name = format if format else guess_dataset_format(output)
-
-    from xcube.core.readwrite import open_dataset, write_dataset
     from xcube.core.chunk import chunk_dataset
+    from xcube.core.dsio import guess_dataset_format
+    from xcube.core.dsio import open_dataset, write_dataset
+
+    format_name = format if format else guess_dataset_format(output)
 
     with open_dataset(input_path=cube) as ds:
         if chunk_sizes:
