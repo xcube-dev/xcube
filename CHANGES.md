@@ -26,6 +26,13 @@ versions.
 * `xcube.api.compute_dataset()` function has been renamed to 
   `xcube.api.evaluate_dataset()`. This has been done in order avoid confusion
   with new API function `xcube.api.compute_cube()`.
+  
+  
+* Restructuring
+  - renamed `xcube.api` into `xcube.core`
+  - moved several modules from `xcube.util` into `xcube.core`
+  - moved contents of module `xcube.api.readwrite` into `xcube.core.dsio`.
+  - removed functions "read_cube" and "read_dataset" as "open_cube" and "open_dataset" are ok
 
 ## Changes in 0.2.1 (in development)
 
