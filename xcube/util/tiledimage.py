@@ -30,10 +30,11 @@ import numba
 import numpy as np
 from PIL import Image
 
-from xcube.util.perf import measure_time_cm
+from xcube.constants import GLOBAL_GEO_EXTENT
 from xcube.util.cache import Cache
 from xcube.util.cmaps import ensure_cmaps_loaded
-from xcube.util.tilegrid import TileGrid, GeoExtent, GLOBAL_GEO_EXTENT
+from xcube.util.perf import measure_time_cm
+from xcube.util.tilegrid import TileGrid, GeoExtent
 
 try:
     import cmocean.cm as ocm

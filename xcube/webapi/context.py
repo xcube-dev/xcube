@@ -35,7 +35,7 @@ import zarr
 
 from xcube.core.dsio import guess_dataset_format
 from xcube.core.verify import assert_cube
-from xcube.util.constants import FORMAT_NAME_ZARR, FORMAT_NAME_NETCDF4, FORMAT_NAME_LEVELS
+from xcube.constants import FORMAT_NAME_ZARR, FORMAT_NAME_NETCDF4, FORMAT_NAME_LEVELS
 from xcube.util.perf import measure_time
 from xcube.version import version
 from xcube.util.cache import MemoryCacheStore, Cache

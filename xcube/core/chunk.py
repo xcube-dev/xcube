@@ -4,7 +4,7 @@ from typing import Dict, Tuple, Iterable
 import numpy as np
 import xarray as xr
 
-from xcube.util.constants import FORMAT_NAME_ZARR, FORMAT_NAME_NETCDF4
+from xcube.constants import FORMAT_NAME_ZARR, FORMAT_NAME_NETCDF4
 
 
 def chunk_dataset(dataset: xr.Dataset,

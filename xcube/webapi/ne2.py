@@ -21,8 +21,8 @@
 
 import os
 
+from xcube.constants import GLOBAL_GEO_EXTENT
 from xcube.util.tiledimage import AbstractTiledImage, ImagePyramid
-from xcube.util.tilegrid import GLOBAL_GEO_EXTENT
 from xcube.util.tilegrid import TileGrid
 
 __author__ = "Norman Fomferra (Brockmann Consult GmbH)"

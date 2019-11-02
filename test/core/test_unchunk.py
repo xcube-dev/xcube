@@ -3,7 +3,7 @@ import unittest
 
 from xcube.core.new import new_cube
 from xcube.core.chunk import chunk_dataset
-from xcube.util.constants import FORMAT_NAME_ZARR
+from xcube.constants import FORMAT_NAME_ZARR
 from xcube.core.dsio import rimraf
 from xcube.core.unchunk import unchunk_dataset
 

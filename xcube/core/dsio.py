@@ -30,15 +30,11 @@ import s3fs
 import xarray as xr
 import zarr
 
+from xcube.constants import EXTENSION_POINT_DATASET_IOS
+from xcube.constants import FORMAT_NAME_MEM, FORMAT_NAME_NETCDF4, FORMAT_NAME_ZARR, FORMAT_NAME_CSV
 from xcube.core.timeslice import append_time_slice, insert_time_slice, replace_time_slice
 from xcube.core.verify import assert_cube
-from xcube.util.constants import FORMAT_NAME_MEM, FORMAT_NAME_NETCDF4, FORMAT_NAME_ZARR
 from xcube.util.plugin import get_extension_registry, ExtensionComponent
-
-FORMAT_NAME_EXCEL = "excel"
-FORMAT_NAME_CSV = "csv"
-
-EXTENSION_POINT_DATASET_IOS = 'xcube.core.dsio'
 
 
 def open_cube(input_path: str,

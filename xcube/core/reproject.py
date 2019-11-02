@@ -26,7 +26,7 @@ import numpy as np
 import xarray as xr
 from osgeo import gdal
 
-from xcube.util.constants import CRS_WKT_EPSG_4326, EARTH_GEO_COORD_RANGE
+from xcube.constants import CRS_WKT_EPSG_4326, GLOBAL_GEO_EXTENT
 
 gdal.UseExceptions()
 gdal.PushErrorHandler('CPLQuietErrorHandler')
@@ -240,7 +240,7 @@ def reproject_xy_to_wgs84(src_dataset: xr.Dataset,
     src_width = x_var.shape[-1]
     src_height = x_var.shape[-2]
 
-    dst_region = _ensure_valid_region(dst_region, EARTH_GEO_COORD_RANGE, x_var, y_var)
+    dst_region = _ensure_valid_region(dst_region, GLOBAL_GEO_EXTENT, x_var, y_var)
     dst_x1, dst_y1, dst_x2, dst_y2 = dst_region
 
     dst_res = max((dst_x2 - dst_x1) / dst_width, (dst_y2 - dst_y1) / dst_height)

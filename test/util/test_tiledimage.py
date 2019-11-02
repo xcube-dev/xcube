@@ -2,10 +2,11 @@ from unittest import TestCase
 
 import numpy as np
 
+from xcube.constants import GLOBAL_GEO_EXTENT
 from xcube.util.tiledimage import ImagePyramid, OpImage, create_ndarray_downsampling_image, \
     TransformArrayImage, FastNdarrayDownsamplingImage, trim_tile
 from xcube.util.tiledimage import downsample_ndarray, aggregate_ndarray_mean, aggregate_ndarray_first
-from xcube.util.tilegrid import TileGrid, GLOBAL_GEO_EXTENT
+from xcube.util.tilegrid import TileGrid
 
 
 class MyTiledImage(OpImage):

@@ -23,9 +23,9 @@ from typing import List
 
 import click
 
-from xcube.core.gen.defaults import DEFAULT_OUTPUT_PATH
-
 __author__ = "Norman Fomferra (Brockmann Consult GmbH)"
+
+DEFAULT_OUTPUT_PATH = 'out.zarr'
 
 
 @click.command(name='compute')

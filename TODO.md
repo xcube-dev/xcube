@@ -53,3 +53,10 @@ This is good, `xcube.core` doesn't do anything, but contains sub-modules that ar
 - Move to `xcube.core.update` module
 - Update help for CLI `--metadata` option
 - Rename CLI command to `update` (?)
+
+
+### restructuring
+
+* fix time constants in `xcube.core.timeccord` and `xcube.core.new`, move to `xcube.constants`
+* move resampling defaults from `xcube.core.reproject` to `xcube.constants`
+* move defaults from `xcube.core.extract` to `xcube.constants`

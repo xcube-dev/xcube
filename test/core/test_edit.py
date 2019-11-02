@@ -6,7 +6,7 @@ import zarr
 from test.sampledata import create_highroc_dataset
 from xcube.core.new import new_cube
 from xcube.core.chunk import chunk_dataset
-from xcube.util.constants import FORMAT_NAME_ZARR
+from xcube.constants import FORMAT_NAME_ZARR
 from xcube.core.dsio import rimraf
 from xcube.core.edit import edit_metadata
 from xcube.core.optimize import optimize_dataset

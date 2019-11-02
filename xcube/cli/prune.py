@@ -24,7 +24,7 @@ import os.path
 
 import click
 
-from xcube.util.constants import FORMAT_NAME_ZARR
+from xcube.constants import FORMAT_NAME_ZARR
 
 
 # noinspection PyShadowingBuiltins

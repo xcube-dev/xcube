@@ -24,10 +24,9 @@ import sys
 import click
 
 from xcube.cli.common import cli_option_scheduler, cli_option_traceback, handle_cli_exception, new_cli_ctx_obj
+from xcube.constants import EXTENSION_POINT_CLI_COMMANDS
 from xcube.util.plugin import get_extension_registry
 from xcube.version import version
-
-EXTENSION_POINT_CLI_COMMANDS = 'xcube.cli'
 
 
 # noinspection PyShadowingBuiltins,PyUnusedLocal

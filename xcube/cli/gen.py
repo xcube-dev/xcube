@@ -23,8 +23,10 @@ from typing import Sequence, List
 
 import click
 
+from xcube.constants import EXTENSION_POINT_DATASET_IOS
+from xcube.constants import EXTENSION_POINT_INPUT_PROCESSORS
+from xcube.constants import RESAMPLING_METHOD_NAMES
 from xcube.core.gen.defaults import DEFAULT_OUTPUT_PATH, DEFAULT_OUTPUT_RESAMPLING
-from xcube.util.constants import RESAMPLING_METHOD_NAMES
 from xcube.util.extension import Extension
 
 resampling_methods = sorted(RESAMPLING_METHOD_NAMES)
@@ -129,8 +131,8 @@ def gen(input: Sequence[str],
 def _format_info():
     from xcube.util.plugin import get_extension_registry
 
-    iproc_extensions = get_extension_registry().find_extensions('xcube.core.gen.iproc')
-    dsio_extensions = get_extension_registry().find_extensions('xcube.core.dsio',
+    iproc_extensions = get_extension_registry().find_extensions(EXTENSION_POINT_INPUT_PROCESSORS)
+    dsio_extensions = get_extension_registry().find_extensions(EXTENSION_POINT_DATASET_IOS,
                                                                lambda e: 'w' in e.metadata.get('modes', set()))
 
     help_text = '\nInput processors to be used with option --proc:\n'

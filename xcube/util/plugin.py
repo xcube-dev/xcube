@@ -29,14 +29,13 @@ from typing import Callable, Dict, Optional, Any
 
 from pkg_resources import iter_entry_points
 
+from xcube.constants import PLUGIN_ENTRY_POINT_GROUP_NAME
+from xcube.constants import PLUGIN_INIT_TIME__WARN_LIMIT
+from xcube.constants import PLUGIN_LOAD_TIME_WARN_LIMIT
+from xcube.constants import PLUGIN_MODULE_FUNCTION_NAME
+from xcube.constants import PLUGIN_MODULE_NAME
+from xcube.constants import PLUGIN_MODULE_PREFIX
 from xcube.util.extension import Extension
-
-DEFAULT_PLUGIN_ENTRY_POINT_GROUP_NAME = 'xcube_plugins'
-DEFAULT_PLUGIN_MODULE_PREFIX = 'xcube_'
-DEFAULT_PLUGIN_MODULE_NAME = 'plugin'
-DEFAULT_PLUGIN_MODULE_FUNCTION_NAME = 'init_plugin'
-DEFAULT_PLUGIN_LOAD_TIME_LIMIT = 100  # milliseconds
-DEFAULT_PLUGIN_INIT_TIME_LIMIT = 100  # milliseconds
 
 #: Mapping of xcube entry point names to JSON-serializable plugin meta-information.
 _PLUGIN_REGISTRY = None
@@ -64,7 +63,7 @@ def get_extension_registry():
 
 
 def discover_plugin_modules(module_prefixes=None):
-    module_prefixes = module_prefixes or [DEFAULT_PLUGIN_MODULE_PREFIX]
+    module_prefixes = module_prefixes or [PLUGIN_MODULE_PREFIX]
     entry_points = []
     for module_finder, module_name, ispkg in pkgutil.iter_modules():
         if any([module_name.startswith(module_prefix) for module_prefix in module_prefixes]):
@@ -76,7 +75,7 @@ def discover_plugin_modules(module_prefixes=None):
 
 def load_plugins(entry_points=None, ext_registry=None):
     if entry_points is None:
-        entry_points = list(iter_entry_points(group=DEFAULT_PLUGIN_ENTRY_POINT_GROUP_NAME, name=None)) \
+        entry_points = list(iter_entry_points(group=PLUGIN_ENTRY_POINT_GROUP_NAME, name=None)) \
                        + discover_plugin_modules()
 
     if ext_registry is None:
@@ -99,7 +98,7 @@ def load_plugins(entry_points=None, ext_registry=None):
             continue
 
         millis = int(1000 * (time.perf_counter() - t0))
-        if millis >= DEFAULT_PLUGIN_LOAD_TIME_LIMIT:
+        if millis >= PLUGIN_LOAD_TIME_WARN_LIMIT:
             warnings.warn(f'loading xcube plugin {entry_point.name!r} took {millis} ms, '
                           f'consider code optimization!')
 
@@ -119,7 +118,7 @@ def load_plugins(entry_points=None, ext_registry=None):
             continue
 
         millis = int(1000 * (time.perf_counter() - t0))
-        if millis >= DEFAULT_PLUGIN_INIT_TIME_LIMIT:
+        if millis >= PLUGIN_INIT_TIME__WARN_LIMIT:
             warnings.warn(f'initializing xcube plugin {entry_point.name!r} took {millis} ms, '
                           f'consider code optimization!')
 
@@ -149,11 +148,11 @@ class _ModuleEntryPoint:
         """
         module_name = self._module_name
         try:
-            plugin_module = importlib.import_module(self._module_name + '.' + DEFAULT_PLUGIN_MODULE_NAME)
+            plugin_module = importlib.import_module(self._module_name + '.' + PLUGIN_MODULE_NAME)
         except ModuleNotFoundError:
             plugin_module = importlib.import_module(self._module_name)
 
-        module_func_name = DEFAULT_PLUGIN_MODULE_FUNCTION_NAME
+        module_func_name = PLUGIN_MODULE_FUNCTION_NAME
         if hasattr(plugin_module, module_func_name):
             module_func = getattr(plugin_module, module_func_name)
             if callable(module_func):

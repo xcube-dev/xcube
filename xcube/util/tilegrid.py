@@ -32,8 +32,6 @@ MODE_GE = 1
 
 GeoExtent = Tuple[float, float, float, float]
 
-GLOBAL_GEO_EXTENT = -180.0, -90.0, +180.0, +90.0
-
 
 class TileGrid:
     """

@@ -25,12 +25,11 @@ from typing import Tuple, Union, Optional, Collection
 import numpy as np
 import xarray as xr
 
+from xcube.constants import CRS_WKT_EPSG_4326
+from xcube.constants import EXTENSION_POINT_INPUT_PROCESSORS
 from xcube.core.reproject import reproject_xy_to_wgs84
 from xcube.core.timecoord import to_time_in_days_since_1970
-from xcube.util.constants import CRS_WKT_EPSG_4326
 from xcube.util.plugin import get_extension_registry, ExtensionComponent
-
-EXTENSION_POINT_INPUT_PROCESSORS = 'xcube.core.gen.iproc'
 
 
 class ReprojectionInfo:
