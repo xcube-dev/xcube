@@ -1,5 +1,5 @@
 # The MIT License (MIT)
-# Copyright (c) 2018 by the xcube development team and contributors
+# Copyright (c) 2019 by the xcube development team and contributors
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of
 # this software and associated documentation files (the "Software"), to deal in
@@ -18,17 +18,19 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+
 import base64
 import io
 import logging
 import os
+import re
 from threading import Lock
+
 import matplotlib
-import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 import matplotlib.colors
+import matplotlib.pyplot as plt
 import numpy as np
-import re
 from PIL import Image
 
 try:

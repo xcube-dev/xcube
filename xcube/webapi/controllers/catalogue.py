@@ -4,13 +4,13 @@ from typing import Dict, Tuple, List
 
 import numpy as np
 
-from ..context import ServiceContext
-from ..controllers.places import GeoJsonFeatureCollection
-from ..controllers.tiles import get_tile_source_options, get_dataset_tile_url
-from ..errors import ServiceBadRequestError
-from ..im.cmaps import get_cmaps
 from xcube.core.geom import get_dataset_bounds
 from xcube.core.timecoord import timestamp_to_iso_string
+from xcube.util.cmaps import get_cmaps
+from xcube.webapi.context import ServiceContext
+from xcube.webapi.controllers.places import GeoJsonFeatureCollection
+from xcube.webapi.controllers.tiles import get_tile_source_options, get_dataset_tile_url
+from xcube.webapi.errors import ServiceBadRequestError
 
 
 def get_datasets(ctx: ServiceContext,
@@ -171,7 +171,7 @@ def get_color_bars(ctx: ServiceContext, mime_type: str) -> str:
                 cmap_name, cmap_data = cmap_bar
                 cmap_image = f'<img src="data:image/png;base64,{cmap_data}" width="100%%" height="32"/>'
                 html_body += f'        <tr><td style="width: 5em">{cmap_name}:' \
-                    f'</td><td style="width: 40em">{cmap_image}</td></tr>\n'
+                             f'</td><td style="width: 40em">{cmap_image}</td></tr>\n'
             html_body += '    </table>\n'
         return html_head + html_body + html_foot
     raise ServiceBadRequestError(f'Format {mime_type!r} not supported for color bars')

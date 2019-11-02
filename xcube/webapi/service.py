@@ -1,5 +1,5 @@
 # The MIT License (MIT)
-# Copyright (c) 2018 by the xcube development team and contributors
+# Copyright (c) 2019 by the xcube development team and contributors
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of
 # this software and associated documentation files (the "Software"), to deal in
@@ -43,10 +43,10 @@ from xcube.util.config import load_configs
 from xcube.util.undefined import UNDEFINED
 from xcube.version import version
 from xcube.webapi.context import ServiceContext, guess_cube_format
+from xcube.webapi.defaults import DEFAULT_ADDRESS, DEFAULT_PORT, DEFAULT_UPDATE_PERIOD, DEFAULT_LOG_PREFIX, \
+    DEFAULT_TILE_CACHE_SIZE, DEFAULT_TRACE_PERF, DEFAULT_TILE_COMP_MODE
 from xcube.webapi.errors import ServiceBadRequestError
 from xcube.webapi.reqparams import RequestParams
-from .defaults import DEFAULT_ADDRESS, DEFAULT_PORT, DEFAULT_UPDATE_PERIOD, DEFAULT_LOG_PREFIX, \
-    DEFAULT_TILE_CACHE_SIZE, DEFAULT_TRACE_PERF, DEFAULT_TILE_COMP_MODE
 
 __author__ = "Norman Fomferra (Brockmann Consult GmbH)"
 

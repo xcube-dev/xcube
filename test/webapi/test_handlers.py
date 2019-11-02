@@ -1,7 +1,7 @@
 from tornado.testing import AsyncHTTPTestCase
 
+from test.webapi.helpers import new_test_service_context
 from xcube.webapi.app import new_application
-from .helpers import new_test_service_context
 
 CTX = new_test_service_context()
 

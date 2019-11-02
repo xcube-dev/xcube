@@ -1,9 +1,9 @@
 import unittest
 
+from test.webapi.helpers import new_test_service_context
 from xcube.webapi.context import ServiceContext
 from xcube.webapi.controllers.catalogue import get_datasets, get_color_bars
 from xcube.webapi.errors import ServiceBadRequestError
-from ..helpers import new_test_service_context
 
 
 class CatalogueControllerTest(unittest.TestCase):

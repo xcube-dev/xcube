@@ -2,7 +2,7 @@ import os
 import shutil
 from unittest import TestCase
 
-from xcube.webapi.cache import CacheStore, Cache, MemoryCacheStore, FileCacheStore
+from xcube.util.cache import CacheStore, Cache, MemoryCacheStore, FileCacheStore
 
 
 class MemoryCacheStoreTest(TestCase):

@@ -3,8 +3,8 @@ import unittest
 
 import xarray as xr
 
+from test.webapi.helpers import new_test_service_context
 from xcube.webapi.errors import ServiceResourceNotFoundError
-from .helpers import new_test_service_context
 
 
 class ServiceContextTest(unittest.TestCase):

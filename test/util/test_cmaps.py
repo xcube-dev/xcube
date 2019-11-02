@@ -3,7 +3,7 @@ from unittest import TestCase
 from matplotlib.colors import LinearSegmentedColormap, ListedColormap
 import matplotlib.cm as cm
 
-from xcube.webapi.im.cmaps import get_cmaps, ensure_cmaps_loaded, _get_custom_colormap
+from xcube.util.cmaps import get_cmaps, ensure_cmaps_loaded, _get_custom_colormap
 
 
 class CmapsTest(TestCase):

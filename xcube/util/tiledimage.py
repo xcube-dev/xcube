@@ -1,5 +1,5 @@
 # The MIT License (MIT)
-# Copyright (c) 2018 by the xcube development team and contributors
+# Copyright (c) 2019 by the xcube development team and contributors
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of
 # this software and associated documentation files (the "Software"), to deal in
@@ -31,10 +31,9 @@ import numpy as np
 from PIL import Image
 
 from xcube.util.perf import measure_time_cm
-from xcube.webapi.cache import Cache
-from xcube.webapi.im.cmaps import ensure_cmaps_loaded
-from xcube.webapi.im.tilegrid import TileGrid, GeoExtent, GLOBAL_GEO_EXTENT
-from xcube.webapi.im.utils import downsample_ndarray, aggregate_ndarray_first
+from xcube.util.cache import Cache
+from xcube.util.cmaps import ensure_cmaps_loaded
+from xcube.util.tilegrid import TileGrid, GeoExtent, GLOBAL_GEO_EXTENT
 
 try:
     import cmocean.cm as ocm
@@ -784,9 +783,9 @@ class NdarrayDownsamplingImage(DownsamplingImage):
                  source_image: TiledImage,
                  image_id: str = None,
                  tile_cache: Cache = None,
-                 aggregator=aggregate_ndarray_first):
+                 aggregator=None):
         super().__init__(source_image, image_id=image_id, tile_cache=tile_cache)
-        self._aggregator = aggregator
+        self._aggregator = aggregator or aggregate_ndarray_first
 
     def aggregate_and_stitch_source_tiles(self, source_tiles: TileQuad, target_size: Size2D, target_positions) -> Tile:
         prototype_tile = source_tiles[0]
@@ -1096,3 +1095,42 @@ def trim_tile(tile: Tile, expected_tile_size: Size2D, fill_value: float = np.nan
         # crop
         tile = tile[..., 0:expected_height, 0:expected_width]
     return tile
+
+
+# noinspection PyUnusedLocal
+def aggregate_ndarray_first(a1, a2, a3, a4):
+    return a1
+
+
+def aggregate_ndarray_min(a1, a2, a3, a4):
+    a = np.fmin(a1, a2)
+    a = np.fmin(a, a3, out=a)
+    a = np.fmin(a, a4, out=a)
+    return a
+
+
+def aggregate_ndarray_max(a1, a2, a3, a4):
+    a = np.fmax(a1, a2)
+    a = np.fmax(a, a3, out=a)
+    a = np.fmax(a, a4, out=a)
+    return a
+
+
+def aggregate_ndarray_sum(a1, a2, a3, a4):
+    return a1 + a2 + a3 + a4
+
+
+def aggregate_ndarray_mean(a1, a2, a3, a4):
+    return (a1 + a2 + a3 + a4) / 4.
+
+
+def downsample_ndarray(a, aggregator=aggregate_ndarray_mean):
+    if aggregator is aggregate_ndarray_first:
+        # Optimization
+        return a[..., 0::2, 0::2]
+    else:
+        a1 = a[..., 0::2, 0::2]
+        a2 = a[..., 0::2, 1::2]
+        a3 = a[..., 1::2, 0::2]
+        a4 = a[..., 1::2, 1::2]
+        return aggregator(a1, a2, a3, a4)

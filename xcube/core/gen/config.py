@@ -20,7 +20,7 @@
 # SOFTWARE.
 from typing import Sequence
 
-from ...util.config import flatten_dict, load_configs, to_name_dict_pairs
+from xcube.util.config import flatten_dict, load_configs, to_name_dict_pairs
 
 
 def get_config_dict(config_files: Sequence[str] = None,

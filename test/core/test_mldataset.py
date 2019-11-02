@@ -5,8 +5,8 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 
-from xcube.webapi.im.tilegrid import TileGrid
-from xcube.webapi.mldataset import BaseMultiLevelDataset, ComputedMultiLevelDataset
+from xcube.core.mldataset import BaseMultiLevelDataset, ComputedMultiLevelDataset
+from xcube.util.tilegrid import TileGrid
 
 
 class BaseMultiLevelDatasetTest(unittest.TestCase):
@@ -44,7 +44,8 @@ class ComputedMultiLevelDatasetTest(unittest.TestCase):
             self.fail(f"unexpected ds_id={ds_id!r}")
 
         ml_ds2 = ComputedMultiLevelDataset("ml_ds2",
-                                           os.path.join(os.path.dirname(__file__), "res", "test", "script.py"),
+                                           os.path.join(os.path.dirname(__file__),
+                                                        "..", "webapi", "res", "test", "script.py"),
                                            "compute_dataset",
                                            ["ml_ds1"],
                                            input_ml_dataset_getter,

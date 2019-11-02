@@ -10,7 +10,7 @@ import zarr
 from xcube.core.geom import get_dataset_bounds
 from xcube.core.verify import assert_cube
 from xcube.util.perf import measure_time
-from xcube.webapi.im.tilegrid import TileGrid
+from xcube.util.tilegrid import TileGrid
 
 
 class MultiLevelDataset(metaclass=ABCMeta):

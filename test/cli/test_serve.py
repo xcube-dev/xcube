@@ -1,6 +1,7 @@
+from test.cli.test_cli import CliDataTest
+
 from xcube.cli.serve import VIEWER_ENV_VAR
 from xcube.cli.serve import main
-from .test_cli import CliDataTest
 
 
 class ServerCliTest(CliDataTest):

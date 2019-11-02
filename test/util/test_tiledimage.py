@@ -2,10 +2,10 @@ from unittest import TestCase
 
 import numpy as np
 
-from xcube.webapi.im.tiledimage import ImagePyramid, OpImage, create_ndarray_downsampling_image, \
+from xcube.util.tiledimage import ImagePyramid, OpImage, create_ndarray_downsampling_image, \
     TransformArrayImage, FastNdarrayDownsamplingImage, trim_tile
-from xcube.webapi.im.tilegrid import TileGrid, GLOBAL_GEO_EXTENT
-from xcube.webapi.im.utils import aggregate_ndarray_mean
+from xcube.util.tiledimage import downsample_ndarray, aggregate_ndarray_mean, aggregate_ndarray_first
+from xcube.util.tilegrid import TileGrid, GLOBAL_GEO_EXTENT
 
 
 class MyTiledImage(OpImage):
@@ -308,3 +308,38 @@ class ImagePyramidTest(TestCase):
         self.assertEqual((1, 270, 270), tile_0_1_0.shape)
         self.assertAlmostEqual(0, tile_0_1_0[..., 0, 0])
         self.assertAlmostEqual(0, tile_0_1_0[..., 269, 269])
+
+
+class ArrayResampleTest(TestCase):
+    def test_numpy_reduce(self):
+        nan = np.nan
+        a = np.zeros((8, 6))
+        a[0::2, 0::2] = 1.1
+        a[0::2, 1::2] = 2.2
+        a[1::2, 0::2] = 3.3
+        a[1::2, 1::2] = 4.4
+        a[6, 4] = np.nan
+
+        self.assertEqual(a.shape, (8, 6))
+        np.testing.assert_equal(a, np.array([[1.1, 2.2, 1.1, 2.2, 1.1, 2.2],
+                                             [3.3, 4.4, 3.3, 4.4, 3.3, 4.4],
+                                             [1.1, 2.2, 1.1, 2.2, 1.1, 2.2],
+                                             [3.3, 4.4, 3.3, 4.4, 3.3, 4.4],
+                                             [1.1, 2.2, 1.1, 2.2, 1.1, 2.2],
+                                             [3.3, 4.4, 3.3, 4.4, 3.3, 4.4],
+                                             [1.1, 2.2, 1.1, 2.2, nan, 2.2],
+                                             [3.3, 4.4, 3.3, 4.4, 3.3, 4.4]]))
+
+        b = downsample_ndarray(a)
+        self.assertEqual(b.shape, (4, 3))
+        np.testing.assert_equal(b, np.array([[2.75, 2.75, 2.75],
+                                             [2.75, 2.75, 2.75],
+                                             [2.75, 2.75, 2.75],
+                                             [2.75, 2.75, nan]]))
+
+        b = downsample_ndarray(a, aggregator=aggregate_ndarray_first)
+        self.assertEqual(b.shape, (4, 3))
+        np.testing.assert_equal(b, np.array([[1.1, 1.1, 1.1],
+                                             [1.1, 1.1, 1.1],
+                                             [1.1, 1.1, 1.1],
+                                             [1.1, 1.1, nan]]))

@@ -58,7 +58,7 @@ def get_plugins() -> Dict[str, Dict]:
 
 def get_extension_registry():
     """Get populated extension registry."""
-    from ..util.extension import get_extension_registry
+    from xcube.util.extension import get_extension_registry
     init_plugins()
     return get_extension_registry()
 
@@ -80,7 +80,7 @@ def load_plugins(entry_points=None, ext_registry=None):
                        + discover_plugin_modules()
 
     if ext_registry is None:
-        from ..util.extension import get_extension_registry
+        from xcube.util.extension import get_extension_registry
         ext_registry = get_extension_registry()
 
     plugins = {}

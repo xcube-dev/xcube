@@ -1,6 +1,6 @@
 import math
 
-from ..context import ServiceContext
+from xcube.webapi.context import ServiceContext
 
 # WGS84 ellipsoid semi-major axis
 _WGS84_MEAN_EARTH_RADIUS_IN_METERS = 6378137.0
@@ -117,7 +117,6 @@ def get_wmts_capabilities_xml(ctx: ServiceContext, base_url: str):
     layer_base_url = ctx.get_service_url(base_url, 'wmts/1.0.0/tile/%s/%s/{TileMatrix}/{TileRow}/{TileCol}.png')
 
     dimensions_xml_cache = dict()
-
 
     contents_xml_lines = [(0, '<Contents>')]
     for dataset_descriptor in dataset_descriptors:

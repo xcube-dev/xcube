@@ -9,15 +9,15 @@ import matplotlib.colors
 import matplotlib.figure
 import numpy as np
 
-from ..context import ServiceContext
-from ..defaults import DEFAULT_CMAP_WIDTH, DEFAULT_CMAP_HEIGHT
-from ..errors import ServiceBadRequestError, ServiceResourceNotFoundError
-from ..im.cmaps import get_norm
-from ..im.tiledimage import NdarrayImage, TransformArrayImage, ColorMappedRgbaImage, ColorMappedRgbaImage2
-from ..im.tilegrid import TileGrid
-from ..ne2 import NaturalEarth2Image
-from ..reqparams import RequestParams
-from ...util.perf import measure_time_cm
+from xcube.util.cmaps import get_norm
+from xcube.util.perf import measure_time_cm
+from xcube.util.tiledimage import NdarrayImage, TransformArrayImage, ColorMappedRgbaImage, ColorMappedRgbaImage2
+from xcube.util.tilegrid import TileGrid
+from xcube.webapi.context import ServiceContext
+from xcube.webapi.defaults import DEFAULT_CMAP_WIDTH, DEFAULT_CMAP_HEIGHT
+from xcube.webapi.errors import ServiceBadRequestError, ServiceResourceNotFoundError
+from xcube.webapi.ne2 import NaturalEarth2Image
+from xcube.webapi.reqparams import RequestParams
 
 _LOG = logging.getLogger('xcube')
 

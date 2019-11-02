@@ -259,3 +259,31 @@ class QueryDatasetIOsTest(unittest.TestCase):
         ds_ios = query_dataset_io(lambda ds_io: ds_io.name == 'mem')
         self.assertEqual(1, len(ds_ios))
         self.assertIsInstance(ds_ios[0], MemDatasetIO)
+
+
+class ContextManagerTest(unittest.TestCase):
+    def test_it(self):
+        class A:
+            def __init__(self):
+                self.closed = False
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, exception_type, exception_value, traceback):
+                self.close()
+
+            def close(self):
+                self.closed = True
+
+        def open_a():
+            return A()
+
+        with open_a() as a:
+            pass
+
+        self.assertEqual(True, a.closed)
+
+        a = open_a()
+        self.assertIsInstance(a, A)
+        self.assertEqual(False, a.closed)

@@ -1,5 +1,5 @@
 # The MIT License (MIT)
-# Copyright (c) 2018 by the xcube development team and contributors
+# Copyright (c) 2019 by the xcube development team and contributors
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of
 # this software and associated documentation files (the "Software"), to deal in
@@ -25,14 +25,14 @@ import numpy as np
 import shapely.geometry
 import xarray as xr
 
-from ..context import ServiceContext
-from ..errors import ServiceBadRequestError
-from ...core import timeseries
-from ...core.ancvar import find_ancillary_var_names
-from ...util.geojson import GeoJSON
+from xcube.core import timeseries
+from xcube.core.ancvar import find_ancillary_var_names
 from xcube.core.geom import get_dataset_bounds
-from ...util.perf import measure_time_cm
 from xcube.core.timecoord import timestamp_to_iso_string
+from xcube.util.geojson import GeoJSON
+from xcube.util.perf import measure_time_cm
+from xcube.webapi.context import ServiceContext
+from xcube.webapi.errors import ServiceBadRequestError
 
 
 def get_time_series_info(ctx: ServiceContext) -> Dict:
