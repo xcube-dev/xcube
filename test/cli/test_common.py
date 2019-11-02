@@ -2,7 +2,7 @@ import unittest
 
 import click
 
-from xcube.util.clihelper import parse_cli_kwargs, handle_cli_exception
+from xcube.cli.common import parse_cli_kwargs, handle_cli_exception
 
 
 class ClickUtilTest(unittest.TestCase):

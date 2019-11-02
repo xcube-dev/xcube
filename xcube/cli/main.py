@@ -23,7 +23,7 @@ import sys
 
 import click
 
-from xcube.util.clihelper import cli_option_scheduler, cli_option_traceback, handle_cli_exception, new_cli_ctx_obj
+from xcube.cli.common import cli_option_scheduler, cli_option_traceback, handle_cli_exception, new_cli_ctx_obj
 from xcube.util.plugin import get_extension_registry
 from xcube.version import version
 

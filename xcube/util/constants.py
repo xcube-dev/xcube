@@ -45,7 +45,7 @@ FORMAT_NAME_CSV = "csv"
 FORMAT_NAME_MEM = "mem"
 FORMAT_NAME_LEVELS = "levels"
 
-# Note: this list must be kept in-sync with xcube/util/reproject.py:NAME_TO_GDAL_RESAMPLE_ALG
+# Note: this list must be kept in-sync with xcube.core.reproject:NAME_TO_GDAL_RESAMPLE_ALG
 RESAMPLING_METHOD_NAMES = {
     # Up-sampling
     'Nearest',

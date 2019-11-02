@@ -21,7 +21,7 @@
 
 import click
 
-from xcube.util.clihelper import parse_cli_kwargs
+from xcube.cli.common import parse_cli_kwargs
 
 DEFAULT_OUTPUT_PATH = 'out.zarr'
 
