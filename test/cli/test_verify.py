@@ -4,7 +4,7 @@ import xarray as xr
 from test.cli.helpers import CliTest
 from xcube.core.new import new_cube
 from xcube.core.readwrite import write_cube
-from xcube.util.dsio import rimraf
+from xcube.core.dsio import rimraf
 
 
 class VerifyTest(CliTest):

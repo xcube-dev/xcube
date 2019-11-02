@@ -5,7 +5,7 @@ import xarray as xr
 from numpy.testing import assert_array_almost_equal
 
 from test.sampledata import create_highroc_dataset, create_c2rcc_flag_var, create_cmems_sst_flag_var
-from xcube.util.maskset import MaskSet
+from xcube.core.maskset import MaskSet
 
 
 class MaskSetTest(unittest.TestCase):

@@ -5,7 +5,7 @@ import pandas as pd
 import xarray as xr
 
 from test.sampledata import create_highroc_dataset
-from xcube.util.update import update_dataset_var_attrs, update_dataset_attrs
+from xcube.core.update import update_dataset_var_attrs, update_dataset_attrs
 
 
 class UpdateVariablePropsTest(unittest.TestCase):

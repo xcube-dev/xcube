@@ -25,7 +25,7 @@ from typing import Type
 
 import zarr
 
-from .unchunk import unchunk_dataset
+from xcube.core.unchunk import unchunk_dataset
 
 
 def optimize_dataset(input_path: str,

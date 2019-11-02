@@ -5,19 +5,19 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 
+from xcube.core.chunk import chunk_dataset
+from xcube.core.dump import dump_dataset
 # noinspection PyUnresolvedReferences
-from .evaluate import evaluate_dataset
-from .dump import dump_dataset
-from .extract import get_cube_values_for_points, get_cube_point_indexes, get_cube_values_for_indexes, \
+from xcube.core.evaluate import evaluate_dataset
+from xcube.core.extract import get_cube_values_for_points, get_cube_point_indexes, get_cube_values_for_indexes, \
     get_dataset_indexes, DEFAULT_INDEX_NAME_PATTERN
 # noinspection PyUnresolvedReferences
-from .level import compute_levels, read_levels, write_levels
-from .new import new_cube
-from .readwrite import read_cube, open_cube, write_cube
-from .select import select_vars
-from .vars2dim import vars_to_dim
-from .verify import verify_cube
-from ..util.chunk import chunk_dataset
+from xcube.core.level import compute_levels, read_levels, write_levels
+from xcube.core.new import new_cube
+from xcube.core.readwrite import read_cube, open_cube, write_cube
+from xcube.core.select import select_vars
+from xcube.core.vars2dim import vars_to_dim
+from xcube.core.verify import verify_cube
 
 
 @xr.register_dataset_accessor('xcube')

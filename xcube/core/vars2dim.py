@@ -21,7 +21,7 @@
 
 import xarray as xr
 
-from .verify import assert_cube
+from xcube.core.verify import assert_cube
 
 
 def vars_to_dim(cube: xr.Dataset,

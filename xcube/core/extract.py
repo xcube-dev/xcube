@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 
-from .verify import assert_cube
+from xcube.core.verify import assert_cube
 
 DEFAULT_INDEX_NAME_PATTERN = '{name}_index'
 DEFAULT_REF_NAME_PATTERN = '{name}_ref'

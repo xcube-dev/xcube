@@ -7,8 +7,8 @@ import xarray as xr
 from xcube.core.compute import CubeFuncOutput
 from xcube.core.compute import compute_cube
 from xcube.core.new import new_cube
-from xcube.util.chunk import chunk_dataset
-from xcube.util.schema import CubeSchema
+from xcube.core.chunk import chunk_dataset
+from xcube.core.schema import CubeSchema
 
 
 class ComputeCubeTest(unittest.TestCase):

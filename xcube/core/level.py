@@ -3,7 +3,7 @@ from typing import List, Callable, Sequence, Optional, Tuple
 
 import xarray as xr
 
-from .readwrite import read_dataset
+from xcube.core.readwrite import read_dataset
 
 PyramidLevelCallback = Callable[[xr.Dataset, int, int], Optional[xr.Dataset]]
 

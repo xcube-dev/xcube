@@ -30,8 +30,8 @@ import shapely.geometry
 import shapely.wkt
 import xarray as xr
 
-from .geojson import GeoJSON
-from .update import update_dataset_spatial_attrs
+from xcube.util.geojson import GeoJSON
+from xcube.core.update import update_dataset_spatial_attrs
 
 GeometryLike = Union[shapely.geometry.base.BaseGeometry, Dict[str, Any], str, Sequence[Union[float, int]]]
 Bounds = Tuple[float, float, float, float]

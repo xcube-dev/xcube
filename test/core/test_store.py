@@ -5,7 +5,7 @@ from typing import Tuple
 import numpy as np
 import xarray as xr
 
-from xcube.util.cubestore import CubeStore
+from xcube.core.store import CubeStore
 
 
 class CubeStoreTest(unittest.TestCase):

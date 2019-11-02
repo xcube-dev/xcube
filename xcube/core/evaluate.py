@@ -25,9 +25,9 @@ import math
 import numpy as np
 import xarray as xr
 
+from xcube.core.maskset import MaskSet
 from xcube.util.config import NameDictPairList, to_resolved_name_dict_pairs
 from xcube.util.expression import compute_array_expr
-from xcube.util.maskset import MaskSet
 
 
 def evaluate_dataset(dataset: xr.Dataset,

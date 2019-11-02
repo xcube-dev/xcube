@@ -6,7 +6,7 @@ import pandas as pd
 import xarray as xr
 
 from test.sampledata import new_test_dataset
-from xcube.util.dsio import DatasetIO, MemDatasetIO, Netcdf4DatasetIO, ZarrDatasetIO, CsvDatasetIO, \
+from xcube.core.dsio import DatasetIO, MemDatasetIO, Netcdf4DatasetIO, ZarrDatasetIO, CsvDatasetIO, \
     find_dataset_io, query_dataset_io
 
 

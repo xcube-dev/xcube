@@ -4,7 +4,7 @@ from typing import Dict, Tuple, Iterable
 import numpy as np
 import xarray as xr
 
-from .constants import FORMAT_NAME_ZARR, FORMAT_NAME_NETCDF4
+from xcube.util.constants import FORMAT_NAME_ZARR, FORMAT_NAME_NETCDF4
 
 
 def chunk_dataset(dataset: xr.Dataset,
@@ -77,7 +77,6 @@ def get_empty_var_chunks(var: xr.DataArray) -> Tuple[Tuple[int, ...]]:
 
 
 def compute_chunk_slices(chunks: Tuple[Tuple[int, ...], ...]) -> Iterable:
-
     chunk_indices = []
     for c in chunks:
         chunk_indices.append(tuple(i for i in range(len(c))))

@@ -21,9 +21,9 @@
 
 import os
 
-from .im.tiledimage import AbstractTiledImage, ImagePyramid
-from .im.tilegrid import GLOBAL_GEO_EXTENT
-from .im.tilegrid import TileGrid
+from xcube.webapi.im.tiledimage import AbstractTiledImage, ImagePyramid
+from xcube.webapi.im.tilegrid import GLOBAL_GEO_EXTENT
+from xcube.webapi.im.tilegrid import TileGrid
 
 __author__ = "Norman Fomferra (Brockmann Consult GmbH)"
 

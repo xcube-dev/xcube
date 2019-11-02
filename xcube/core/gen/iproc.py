@@ -27,8 +27,8 @@ import xarray as xr
 
 from ...util.constants import CRS_WKT_EPSG_4326
 from ...util.plugin import get_extension_registry, ExtensionComponent
-from ...util.reproject import reproject_xy_to_wgs84
-from ...util.timecoord import to_time_in_days_since_1970
+from xcube.core.reproject import reproject_xy_to_wgs84
+from xcube.core.timecoord import to_time_in_days_since_1970
 
 EXTENSION_POINT_INPUT_PROCESSORS = 'xcube.core.gen.iproc'
 

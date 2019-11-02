@@ -29,7 +29,7 @@ from typing import Callable, Dict, Optional, Any
 
 from pkg_resources import iter_entry_points
 
-from .extension import Extension
+from xcube.util.extension import Extension
 
 DEFAULT_PLUGIN_ENTRY_POINT_GROUP_NAME = 'xcube_plugins'
 DEFAULT_PLUGIN_MODULE_PREFIX = 'xcube_'

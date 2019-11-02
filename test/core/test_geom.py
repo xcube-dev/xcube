@@ -5,8 +5,8 @@ import shapely.geometry
 import xarray as xr
 
 from xcube.core.new import new_cube
-from xcube.util.chunk import chunk_dataset
-from xcube.util.geom import get_dataset_geometry, get_dataset_bounds, get_geometry_mask, convert_geometry, \
+from xcube.core.chunk import chunk_dataset
+from xcube.core.geom import get_dataset_geometry, get_dataset_bounds, get_geometry_mask, convert_geometry, \
     mask_dataset_by_geometry, clip_dataset_by_geometry
 
 
@@ -279,7 +279,7 @@ class ConvertGeometryTest(unittest.TestCase):
         self.assertEqual(expected_geom, actual_geom)
 
     def test_convert_invalid_box(self):
-        from xcube.util.geom import _INVALID_BOX_COORDS_MSG
+        from xcube.core.geom import _INVALID_BOX_COORDS_MSG
 
         with self.assertRaises(ValueError) as cm:
             convert_geometry([12.8, 20.6, 14.2, -34.4])
@@ -292,7 +292,7 @@ class ConvertGeometryTest(unittest.TestCase):
         self.assertEqual(_INVALID_BOX_COORDS_MSG, f'{cm.exception}')
 
     def test_invalid(self):
-        from xcube.util.geom import _INVALID_GEOMETRY_MSG
+        from xcube.core.geom import _INVALID_GEOMETRY_MSG
 
         with self.assertRaises(ValueError) as cm:
             convert_geometry(dict(coordinates=[12.8, -34.4]))

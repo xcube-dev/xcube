@@ -21,7 +21,7 @@
 
 import click
 
-from xcube.util.cliutil import parse_cli_kwargs
+from xcube.util.clihelper import parse_cli_kwargs
 
 DEFAULT_OUTPUT_PATH = 'out.zarr'
 
@@ -58,11 +58,11 @@ def chunk(cube, output, format=None, params=None, chunks=None):
     if params:
         write_kwargs = parse_cli_kwargs(params, metavar="PARAMS")
 
-    from xcube.util.dsio import guess_dataset_format
+    from xcube.core.dsio import guess_dataset_format
     format_name = format if format else guess_dataset_format(output)
 
     from xcube.core.readwrite import open_dataset, write_dataset
-    from xcube.util.chunk import chunk_dataset
+    from xcube.core.chunk import chunk_dataset
 
     with open_dataset(input_path=cube) as ds:
         if chunk_sizes:

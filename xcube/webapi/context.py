@@ -33,18 +33,18 @@ import s3fs
 import xarray as xr
 import zarr
 
-from .cache import MemoryCacheStore, Cache
-from .defaults import DEFAULT_CMAP_CBAR, DEFAULT_CMAP_VMIN, DEFAULT_CMAP_VMAX, DEFAULT_TRACE_PERF
-from .errors import ServiceConfigError, ServiceError, ServiceBadRequestError, ServiceResourceNotFoundError
-from .im.tilegrid import TileGrid
-from .mldataset import FileStorageMultiLevelDataset, BaseMultiLevelDataset, MultiLevelDataset, \
+from xcube.core.dsio import guess_dataset_format
+from xcube.core.verify import assert_cube
+from xcube.util.constants import FORMAT_NAME_ZARR, FORMAT_NAME_NETCDF4, FORMAT_NAME_LEVELS
+from xcube.util.perf import measure_time
+from xcube.version import version
+from xcube.webapi.cache import MemoryCacheStore, Cache
+from xcube.webapi.defaults import DEFAULT_CMAP_CBAR, DEFAULT_CMAP_VMIN, DEFAULT_CMAP_VMAX, DEFAULT_TRACE_PERF
+from xcube.webapi.errors import ServiceConfigError, ServiceError, ServiceBadRequestError, ServiceResourceNotFoundError
+from xcube.webapi.im.tilegrid import TileGrid
+from xcube.webapi.mldataset import FileStorageMultiLevelDataset, BaseMultiLevelDataset, MultiLevelDataset, \
     ComputedMultiLevelDataset, ObjectStorageMultiLevelDataset
-from .reqparams import RequestParams
-from ..core.verify import assert_cube
-from ..util.constants import FORMAT_NAME_ZARR, FORMAT_NAME_NETCDF4, FORMAT_NAME_LEVELS
-from ..util.dsio import guess_dataset_format
-from ..util.perf import measure_time
-from ..version import version
+from xcube.webapi.reqparams import RequestParams
 
 COMPUTE_DATASET = 'compute_dataset'
 ALL_PLACES = "all"

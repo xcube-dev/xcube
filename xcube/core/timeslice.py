@@ -27,8 +27,8 @@ import numpy as np
 import xarray as xr
 import zarr
 
-from .chunk import chunk_dataset
-from .unchunk import unchunk_dataset
+from xcube.core.chunk import chunk_dataset
+from xcube.core.unchunk import unchunk_dataset
 
 DEFAULT_TIME_EPS = np.array(1000 * 1000, dtype='timedelta64[ns]')
 

@@ -6,7 +6,7 @@ from matplotlib import pyplot as plt
 from numpy.testing import assert_array_almost_equal
 
 from test.sampledata import create_highroc_dataset, create_s2plus_dataset
-from xcube.util.reproject import reproject_xy_to_wgs84, reproject_crs_to_wgs84, get_projection_wkt
+from xcube.core.reproject import reproject_xy_to_wgs84, reproject_crs_to_wgs84, get_projection_wkt
 
 nan = np.nan
 

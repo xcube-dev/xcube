@@ -3,7 +3,7 @@ import unittest
 import numpy as np
 
 from test.sampledata import new_test_dataset
-from xcube.util.chunk import chunk_dataset, get_empty_dataset_chunks, compute_chunk_slices
+from xcube.core.chunk import chunk_dataset, get_empty_dataset_chunks, compute_chunk_slices
 
 
 class ChunkDatasetTest(unittest.TestCase):

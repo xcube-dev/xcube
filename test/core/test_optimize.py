@@ -4,10 +4,10 @@ import unittest
 from typing import Set
 
 from xcube.core.new import new_cube
-from xcube.util.chunk import chunk_dataset
+from xcube.core.chunk import chunk_dataset
 from xcube.util.constants import FORMAT_NAME_ZARR
-from xcube.util.dsio import rimraf
-from xcube.util.optimize import optimize_dataset
+from xcube.core.dsio import rimraf
+from xcube.core.optimize import optimize_dataset
 
 TEST_CUBE = chunk_dataset(new_cube(time_periods=3, variables=dict(A=0.5, B=-1.5)),
                           chunk_sizes=dict(time=1, lat=180, lon=360), format_name=FORMAT_NAME_ZARR)

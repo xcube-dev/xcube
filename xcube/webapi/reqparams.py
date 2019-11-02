@@ -24,8 +24,8 @@ from typing import Optional, Tuple
 
 import numpy as np
 
-from .errors import ServiceBadRequestError
-from ..util.undefined import UNDEFINED
+from xcube.util.undefined import UNDEFINED
+from xcube.webapi.errors import ServiceBadRequestError
 
 
 class RequestParams(metaclass=ABCMeta):

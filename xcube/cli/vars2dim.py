@@ -42,7 +42,7 @@ def vars2dim(cube, variable, dim_name, output=None, format=None):
     with a new dimension DIM-NAME and writes the results to OUTPUT.
     """
 
-    from xcube.util.dsio import guess_dataset_format
+    from xcube.core.dsio import guess_dataset_format
     from xcube.core.readwrite import open_dataset, write_dataset
     from xcube.core.vars2dim import vars_to_dim
     import os

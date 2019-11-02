@@ -7,10 +7,10 @@ import s3fs
 import xarray as xr
 import zarr
 
-from .im.tilegrid import TileGrid
-from ..core.verify import assert_cube
-from ..util.geom import get_dataset_bounds
-from ..util.perf import measure_time
+from xcube.core.geom import get_dataset_bounds
+from xcube.core.verify import assert_cube
+from xcube.util.perf import measure_time
+from xcube.webapi.im.tilegrid import TileGrid
 
 
 class MultiLevelDataset(metaclass=ABCMeta):

@@ -5,7 +5,7 @@ import pandas as pd
 import xarray as xr
 
 from xcube.core.gen.iproc import DefaultInputProcessor
-from xcube.util.timecoord import to_time_in_days_since_1970
+from xcube.core.timecoord import to_time_in_days_since_1970
 
 
 class DefaultInputProcessorTest(unittest.TestCase):

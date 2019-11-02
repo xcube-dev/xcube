@@ -2,8 +2,8 @@ from contextlib import contextmanager
 
 import xarray as xr
 
-from .verify import assert_cube
-from xcube.util.dsio import find_dataset_io, guess_dataset_format
+from xcube.core.dsio import find_dataset_io, guess_dataset_format
+from xcube.core.verify import assert_cube
 
 
 @contextmanager

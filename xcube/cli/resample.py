@@ -175,7 +175,7 @@ def _resample_in_time(input_path: str = None,
     from xcube.core.readwrite import open_cube
     from xcube.core.readwrite import write_cube
     from xcube.core.resample import resample_in_time
-    from xcube.util.dsio import guess_dataset_format
+    from xcube.core.dsio import guess_dataset_format
 
     if not output_format:
         output_format = guess_dataset_format(output_path)

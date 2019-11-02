@@ -91,7 +91,7 @@ def serve(cube: List[str],
     The RESTful API documentation can be found at https://app.swaggerhub.com/apis/bcdev/xcube-server.
     """
 
-    from xcube.util.cliutil import parse_cli_kwargs
+    from xcube.util.clihelper import parse_cli_kwargs
 
     prefix = prefix or name
 

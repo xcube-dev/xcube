@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 
 from test.sampledata import create_highroc_dataset
-from xcube.util.timecoord import add_time_coords, from_time_in_days_since_1970, timestamp_to_iso_string, \
+from xcube.core.timecoord import add_time_coords, from_time_in_days_since_1970, timestamp_to_iso_string, \
     to_time_in_days_since_1970
 
 

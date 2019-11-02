@@ -116,8 +116,8 @@ def compute(script: str,
     """
     from xcube.core.compute import compute_cube
     from xcube.core.readwrite import read_cube
-    from xcube.util.cliutil import parse_cli_kwargs
-    from xcube.util.dsio import guess_dataset_format, find_dataset_io
+    from xcube.util.clihelper import parse_cli_kwargs
+    from xcube.core.dsio import guess_dataset_format, find_dataset_io
 
     input_paths = cube
 

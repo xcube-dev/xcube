@@ -9,7 +9,7 @@ from xcube.cli.prune import _delete_block_file
 from xcube.core.new import new_cube
 from xcube.core.readwrite import write_cube
 from xcube.core.verify import assert_cube
-from xcube.util.dsio import rimraf
+from xcube.core.dsio import rimraf
 
 
 class PruneTest(CliTest):

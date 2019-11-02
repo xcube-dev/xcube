@@ -6,7 +6,7 @@ import numpy as np
 import xarray as xr
 
 from xcube.core.level import compute_levels, write_levels, read_levels
-from xcube.util.dsio import rimraf
+from xcube.core.dsio import rimraf
 
 
 def get_path(filename):

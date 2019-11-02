@@ -30,9 +30,9 @@ from ..errors import ServiceBadRequestError
 from ...core import timeseries
 from ...core.ancvar import find_ancillary_var_names
 from ...util.geojson import GeoJSON
-from ...util.geom import get_dataset_bounds
+from xcube.core.geom import get_dataset_bounds
 from ...util.perf import measure_time_cm
-from ...util.timecoord import timestamp_to_iso_string
+from xcube.core.timecoord import timestamp_to_iso_string
 
 
 def get_time_series_info(ctx: ServiceContext) -> Dict:

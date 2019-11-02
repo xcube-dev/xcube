@@ -18,6 +18,7 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+
 import io
 import logging
 import uuid
@@ -29,11 +30,11 @@ import numba
 import numpy as np
 from PIL import Image
 
-from .cmaps import ensure_cmaps_loaded
-from .tilegrid import TileGrid, GeoExtent, GLOBAL_GEO_EXTENT
-from .utils import downsample_ndarray, aggregate_ndarray_first
-from ..cache import Cache
-from ...util.perf import measure_time_cm
+from xcube.util.perf import measure_time_cm
+from xcube.webapi.cache import Cache
+from xcube.webapi.im.cmaps import ensure_cmaps_loaded
+from xcube.webapi.im.tilegrid import TileGrid, GeoExtent, GLOBAL_GEO_EXTENT
+from xcube.webapi.im.utils import downsample_ndarray, aggregate_ndarray_first
 
 try:
     import cmocean.cm as ocm

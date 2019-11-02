@@ -9,8 +9,8 @@ from ..controllers.places import GeoJsonFeatureCollection
 from ..controllers.tiles import get_tile_source_options, get_dataset_tile_url
 from ..errors import ServiceBadRequestError
 from ..im.cmaps import get_cmaps
-from ...util.geom import get_dataset_bounds
-from ...util.timecoord import timestamp_to_iso_string
+from xcube.core.geom import get_dataset_bounds
+from xcube.core.timecoord import timestamp_to_iso_string
 
 
 def get_datasets(ctx: ServiceContext,

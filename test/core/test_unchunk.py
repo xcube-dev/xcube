@@ -2,10 +2,10 @@ import os.path
 import unittest
 
 from xcube.core.new import new_cube
-from xcube.util.chunk import chunk_dataset
+from xcube.core.chunk import chunk_dataset
 from xcube.util.constants import FORMAT_NAME_ZARR
-from xcube.util.dsio import rimraf
-from xcube.util.unchunk import unchunk_dataset
+from xcube.core.dsio import rimraf
+from xcube.core.unchunk import unchunk_dataset
 
 
 class UnchunkDatasetTest(unittest.TestCase):

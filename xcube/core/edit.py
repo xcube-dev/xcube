@@ -18,16 +18,18 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+
 import os.path
 import shutil
 import warnings
 from typing import Callable, Type
+
 import xarray as xr
 import zarr
 
+from xcube.core.optimize import optimize_dataset
+from xcube.core.update import update_dataset_attrs
 from xcube.util.config import load_configs
-from xcube.util.optimize import optimize_dataset
-from xcube.util.update import update_dataset_attrs
 
 _NO_MANUAL_EDIT = ['geospatial_lon_min', 'geospatial_lon_max', 'geospatial_lon_units', 'geospatial_lon_resolution',
                    'geospatial_lat_min', 'geospatial_lat_max', 'geospatial_lat_units', 'geospatial_lat_resolution',

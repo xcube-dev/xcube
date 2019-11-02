@@ -5,10 +5,10 @@ import xarray as xr
 import zarr
 
 from xcube.core.new import new_cube
-from xcube.util.chunk import chunk_dataset
-from xcube.util.dsio import rimraf
-from xcube.util.timeslice import find_time_slice, append_time_slice, insert_time_slice, replace_time_slice
-from .diagnosticstore import DiagnosticStore, logging_observer
+from xcube.core.chunk import chunk_dataset
+from xcube.core.dsio import rimraf
+from xcube.core.timeslice import find_time_slice, append_time_slice, insert_time_slice, replace_time_slice
+from test.core.diagnosticstore import DiagnosticStore, logging_observer
 
 
 class TimeSliceTest(unittest.TestCase):

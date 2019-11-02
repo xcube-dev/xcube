@@ -29,15 +29,15 @@ import traceback
 import warnings
 from typing import Any, Callable, Dict, Sequence, Tuple
 
-from .defaults import DEFAULT_OUTPUT_PATH, DEFAULT_OUTPUT_RESAMPLING, DEFAULT_OUTPUT_SIZE
-from .iproc import InputProcessor, find_input_processor
-from ..evaluate import evaluate_dataset
-from ..select import select_vars
-from ...util.config import NameAnyDict, NameDictPairList, to_resolved_name_dict_pairs
-from ...util.dsio import DatasetIO, find_dataset_io, guess_dataset_format, rimraf
-from ...util.timecoord import add_time_coords, from_time_in_days_since_1970
-from ...util.timeslice import find_time_slice
-from ...util.update import update_dataset_attrs, update_dataset_var_attrs, update_dataset_temporal_attrs
+from xcube.core.dsio import DatasetIO, find_dataset_io, guess_dataset_format, rimraf
+from xcube.core.evaluate import evaluate_dataset
+from xcube.core.gen.defaults import DEFAULT_OUTPUT_PATH, DEFAULT_OUTPUT_RESAMPLING, DEFAULT_OUTPUT_SIZE
+from xcube.core.gen.iproc import InputProcessor, find_input_processor
+from xcube.core.select import select_vars
+from xcube.core.timecoord import add_time_coords, from_time_in_days_since_1970
+from xcube.core.timeslice import find_time_slice
+from xcube.core.update import update_dataset_attrs, update_dataset_var_attrs, update_dataset_temporal_attrs
+from xcube.util.config import NameAnyDict, NameDictPairList, to_resolved_name_dict_pairs
 
 
 def gen_cube(input_paths: Sequence[str] = None,
