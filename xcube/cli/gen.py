@@ -99,12 +99,12 @@ def gen(input: Sequence[str],
     dry_run = dry_run
     info_mode = info
 
-    from xcube.core.gen.config import get_config_dict
-    from xcube.core.gen.gen import gen_cube
-
     if info_mode:
         print(_format_info())
         return 0
+
+    from xcube.core.gen.config import get_config_dict
+    from xcube.core.gen.gen import gen_cube
 
     config = get_config_dict(
         input_paths=input,
