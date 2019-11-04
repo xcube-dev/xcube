@@ -238,16 +238,17 @@ def import_component(spec: str,
                      call_kwargs: Mapping[str, Any] = None) -> ComponentLoader:
     """
     Return a component loader that imports a module or module component from *spec*.
-    To import a module *spec* is the fully qualified module name, to import a
-    component, *spec* must append the component name separated by a color (":") character.
+    To import a module, *spec* should be the fully qualified module name. To import a
+    component, *spec* must also append the component name to the fully qualified module name
+    separated by a color (":") character.
 
     An optional *transform* callable my be used to transform the imported component. If given,
-    a new component is computed:::
+    a new component is computed::
 
         component = transform(component, extension)
 
     If the *call* flag is set, the component is expected to be a callable which will be called
-    using the given *call_args* and *call_kwargs* to produce a new component:::
+    using the given *call_args* and *call_kwargs* to produce a new component::
 
         component = component(*call_kwargs, **call_kwargs)
 
@@ -255,7 +256,7 @@ def import_component(spec: str,
 
     :param spec: String of the form "module_path" or "module_path:component_name"
     :param transform: callable that takes two positional arguments,
-        the imported component and the extension of type :class:`Èxtension`
+        the imported component and the extension of type :class:`Extension`
     :param call: Whether to finally call the component with given *call_args* and *call_kwargs*
     :param call_args: arguments passed to a callable component if *call* flag is set
     :param call_kwargs: keyword arguments passed to callable component if *call* flag is set
