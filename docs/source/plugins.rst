@@ -35,9 +35,10 @@ Available Plugins
 SENTINEL Hub
 ------------
 
-The xcube_sh_ plugin adds support for the `SENTINEL Hub Cloud API`_. It extends xcube by
-* a new Python API function ``xcube_sh.open.open_cube`` to create data cubes from SENTINEL Hub on-the-fly;
-* adding a new CLI command ``xcube sh`` to write data cubes created from SENTINEL Hub into the file system.
+The xcube_sh_ plugin adds support for the `SENTINEL Hub Cloud API`_. It extends xcube by a new Python API
+function ``xcube_sh.cube.open_cube`` to create data cubes from SENTINEL Hub on-the-fly. It also
+adds a new CLI command ``xcube sh gen`` to generate and write data cubes created from SENTINEL Hub
+into the file system.
 
 Cube Generation
 ---------------
