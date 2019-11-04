@@ -15,9 +15,8 @@
 Plugins
 =======
 
-xcube's functionality can be extended by plugins. A plugin is a Python module that is detected
-by xcube at runtime and dynamically loaded by xcube on demand, that is, once the extensions
-added by plugins need to be made available.
+xcube's functionality can be extended by plugins. A plugin contributes extensions to specific extension points
+defined by xcube. Plugins are detected and dynamically loaded, once the available extensions need to be inquired.
 
 Installing Plugins
 ==================
