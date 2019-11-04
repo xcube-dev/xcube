@@ -51,7 +51,7 @@ class Extension:
     def __init__(self,
                  point: str,
                  name: str,
-                 component: Any = None,
+                 component: Component = None,
                  loader: ComponentLoader = None,
                  **metadata):
 
@@ -77,7 +77,7 @@ class Extension:
         return self._loader is not None
 
     @property
-    def component(self) -> Any:
+    def component(self) -> Component:
         """Extension component."""
         if self._component is None and self._loader is not None:
             self._component = self._loader(self)
@@ -167,7 +167,7 @@ class ExtensionRegistry:
 
     def find_components(self,
                         point: str,
-                        predicate: ExtensionPredicate = None) -> List[Extension]:
+                        predicate: ExtensionPredicate = None) -> List[Component]:
         """
         Find extension components for *point* and optional filter function *predicate*.
 
@@ -183,25 +183,25 @@ class ExtensionRegistry:
     def add_extension(self,
                       point: str,
                       name: str,
-                      component: Any = None,
+                      component: Component = None,
                       loader: ComponentLoader = None,
                       **metadata) -> Extension:
         """
-        Register an extension component *component* or an extension component *loader* for
+        Register an extension *component* or an extension component *loader* for
         the given extension *point*, *name*, and additional *metadata*.
 
         Either *component* or *loader* must be specified, but not both.
 
-        A given *loader* must be a callable that will be called with the provided *point*, *name*, and *metadata*
-        arguments and is expected to return the actual extension component.
+        A given *loader* must be a callable with one positional argument *extension* of type :class:`Extension`
+        and is expected to return the actual extension component, which may be of any type.
         The *loader* will only be called once and only when the actual extension component
         is requested for the first time. Consider using the function :func:`import_component` to create a
         loader that lazily imports a component from a module and optionally executes it.
-`
-        :param component: extension component
-        :param loader: extension component loader function
+
         :param point: extension point identifier
         :param name: extension name
+        :param component: extension component
+        :param loader: extension component loader function
         :param metadata: extension metadata
         :return: a registered extension
         """
@@ -238,6 +238,8 @@ def import_component(spec: str,
                      call_kwargs: Mapping[str, Any] = None) -> ComponentLoader:
     """
     Return a component loader that imports a module or module component from *spec*.
+    To import a module *spec* is the fully qualified module name, to import a
+    component, *spec* must append the component name separated by a color (":") character.
 
     An optional *transform* callable my be used to transform the imported component. If given,
     a new component is computed:::
@@ -252,8 +254,9 @@ def import_component(spec: str,
     Finally, the component is returned.
 
     :param spec: String of the form "module_path" or "module_path:component_name"
-    :param transform: callable that is called with the imported component and extension point, name, and metadata
-    :param call: Whether to finally call the component with given *args* and *kwargs*
+    :param transform: callable that takes two positional arguments,
+        the imported component and the extension of type :class:`Èxtension`
+    :param call: Whether to finally call the component with given *call_args* and *call_kwargs*
     :param call_args: arguments passed to a callable component if *call* flag is set
     :param call_kwargs: keyword arguments passed to callable component if *call* flag is set
     :return: a component loader
