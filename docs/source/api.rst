@@ -63,6 +63,7 @@ Cube masking
 .. autofunction:: xcube.core.geom.mask_dataset_by_geometry
 
 .. autoclass:: xcube.core.maskset.MaskSet
+    :members:
 
 
 
@@ -100,15 +101,19 @@ Utilities
 .. autofunction:: xcube.core.geom.convert_geometry
 
 .. autoclass:: xcube.core.store.CubeStore
+    :members:
 
 .. autoclass:: xcube.core.schema.CubeSchema
+    :members:
 
 Plugin Development
 ==================
 
 .. autoclass:: xcube.util.extension.ExtensionRegistry
+    :members:
 
 .. autoclass:: xcube.util.extension.Extension
+    :members:
 
 .. autofunction:: xcube.util.extension.import_component
 

@@ -87,10 +87,11 @@ For more information on Setuptools entry points refer to section `Creating and d
 Initializer Function
 --------------------
 
-xcube plugins are initialized using a dedicated function that has a single *extension registry* argument,
-that is used by plugins's to register their extensions to xcube. By convention, this function is called
-``init_plugin``, however, when using entry points, it can have any name. As an example, here is the initializer
-function of the SENTINEL Hub plugin ``xcube_sh/plugin.py``:::
+xcube plugins are initialized using a dedicated function that has a single *extension registry* argument
+of type :class:`xcube.util.extension.ExtensionRegistry`, that is used by plugins's to register their extensions
+to xcube. By convention, this function is called ``init_plugin``, however, when using entry points,
+it can have any name. As an example, here is the initializer function of the SENTINEL Hub plugin
+``xcube_sh/plugin.py``:::
 
 
     from xcube.constants import EXTENSION_POINT_CLI_COMMANDS
