@@ -21,6 +21,13 @@
 
 import math
 
+PLUGIN_ENTRY_POINT_GROUP_NAME = 'xcube_plugins'
+PLUGIN_MODULE_PREFIX = 'xcube_'
+PLUGIN_MODULE_NAME = 'plugin'
+PLUGIN_MODULE_FUNCTION_NAME = 'init_plugin'
+PLUGIN_LOAD_TIME_WARN_LIMIT = 100  # milliseconds
+PLUGIN_INIT_TIME__WARN_LIMIT = 100  # milliseconds
+
 EXTENSION_POINT_CLI_COMMANDS = 'xcube.cli'
 EXTENSION_POINT_DATASET_IOS = 'xcube.core.dsio'
 EXTENSION_POINT_INPUT_PROCESSORS = 'xcube.core.gen.iproc'
@@ -68,10 +75,3 @@ RESAMPLING_METHOD_NAMES = {
     'Q1',
     'Q3',
 }
-
-PLUGIN_ENTRY_POINT_GROUP_NAME = 'xcube_plugins'
-PLUGIN_MODULE_PREFIX = 'xcube_'
-PLUGIN_MODULE_NAME = 'plugin'
-PLUGIN_MODULE_FUNCTION_NAME = 'init_plugin'
-PLUGIN_LOAD_TIME_WARN_LIMIT = 100  # milliseconds
-PLUGIN_INIT_TIME__WARN_LIMIT = 100  # milliseconds
