@@ -102,3 +102,16 @@ Utilities
 .. autoclass:: xcube.core.store.CubeStore
 
 .. autoclass:: xcube.core.schema.CubeSchema
+
+Plugin Development
+==================
+
+.. autoclass:: xcube.util.extension.ExtensionRegistry
+
+.. autoclass:: xcube.util.extension.Extension
+
+.. autofunction:: xcube.util.extension.import_component
+
+.. autofunction:: xcube.util.plugin.get_extension_registry
+
+.. autofunction:: xcube.util.plugin.get_plugins

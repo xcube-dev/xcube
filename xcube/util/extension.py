@@ -37,7 +37,7 @@ class Extension:
 
     Extensions are registered in a :class:`ExtensionRegistry`.
 
-    Extension objects are not meant to be instantiated directly. Instead
+    Extension objects are not meant to be instantiated directly. Instead,
     :meth:`ExtensionRegistry.add_extension` is used to register extensions.
 
     :param point: extension point identifier
@@ -195,8 +195,9 @@ class ExtensionRegistry:
         A given *loader* must be a callable that will be called with the provided *point*, *name*, and *metadata*
         arguments and is expected to return the actual extension component.
         The *loader* will only be called once and only when the actual extension component
-        is requested for the first time.
-
+        is requested for the first time. Consider using the function :func:`import_component` to create a
+        loader that lazily imports a component from a module and optionally executes it.
+`
         :param component: extension component
         :param loader: extension component loader function
         :param point: extension point identifier
