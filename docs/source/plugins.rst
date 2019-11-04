@@ -1,4 +1,15 @@
 .. _xcube.core.gen.iproc.DefaultInputProcessor: https://github.com/dcs4cop/xcube/blob/master/xcube/core/gen/iproc.py
+.. _setup.py: https://github.com/dcs4cop/xcube/blob/master/setup.py
+.. _`Creating and discovering plugins`: https://packaging.python.org/guides/creating-and-discovering-plugins/
+.. _`Python Packing User Guide`: https://packaging.python.org/
+.. _`Dynamic Discovery of Services and Plugins`: https://setuptools.readthedocs.io/en/latest/setuptools.html#dynamic-discovery-of-services-and-plugins
+.. _`Setuptools documentation`: https://setuptools.readthedocs.io/
+.. _`Setuptools`: https://setuptools.readthedocs.io/
+.. _`SENTINEL Hub Cloud API`: https://www.sentinel-hub.com/
+.. _xcube_sh: https://github.com/dcs4cop/xcube-sh
+.. _xcube_gen_bc: https://github.com/dcs4cop/xcube-gen-bc
+.. _xcube_gen_rbins: https://github.com/dcs4cop/xcube-gen-rbins
+.. _xcube_gen_vito: https://github.com/dcs4cop/xcube-gen-vito
 
 =======
 Plugins
@@ -24,8 +35,7 @@ Available Plugins
 SENTINEL Hub
 ------------
 
-The [xcube-sh](https://github.com/dcs4cop/xcube-sh) plugin adds support for the
-[SENTINEL Hub Cloud API](https://www.sentinel-hub.com/). It extends xcube by
+The xcube_sh_ plugin adds support for the `SENTINEL Hub Cloud API`_. It extends xcube by
 * a new Python API function ``xcube_sh.open.open_cube`` to create data cubes from SENTINEL Hub on-the-fly;
 * adding a new CLI command ``xcube sh`` to write data cubes created from SENTINEL Hub into the file system.
 
@@ -36,11 +46,11 @@ xcube's GitHub organisation currently hosts a few plugins that add new *input pr
 (see below) to xcube's data cube generation tool :doc:`cli/xcube_gen`. They are very specific
 but are a good starting point for developing your own input processors:
 
-* [xcube-gen-bc](https://github.com/dcs4cop/xcube-gen-bc) - adds new input processors for specific
+* xcube_gen_bc_ - adds new input processors for specific
   Ocean Colour Earth Observation products derived from the Sentinel-3 OLCI measurements.
-* [xcube-gen-rbins](https://github.com/dcs4cop/xcube-gen-rbins) - adds new input processors for specific
+* xcube_gen_rbins_ - adds new input processors for specific
   Ocean Colour Earth Observation products derived from the SEVIRI measurements.
-* [xcube-gen-vito](https://github.com/dcs4cop/xcube-gen-vito) - adds new input processors for specific
+* xcube_gen_vito_ - adds new input processors for specific
   Ocean Colour Earth Observation products derived from the Sentinel-2 MSI measurements.
 
 
@@ -62,16 +72,15 @@ By naming convention: Any Python package named ``xcube_<name>`` that defines a p
 named ``init_plugin`` either defined in ``xcube_<name>/plugin.py`` (preferred) or ``xcube_<name>/__init__.py``
 is an xcube plugin.
 
-By entry point: Any Python package installed using [Setuptools](https://setuptools.readthedocs.io/) that
+By entry point: Any Python package installed using Setuptools_ that
 defines a non-empty entry point group ``xcube_plugins`` is an xcube plugin. An entry point in the
 ``xcube_plugins`` group has the format ``<name> = <fully-qualified-module-path>:<init-func-name>``,
 and therefore specifies where plugin *initializer function* named ``<init-func-name>`` is found.
 As an example, refer to the xcube standard plugin definitions in xcube's
-[``setup.py``](https://github.com/dcs4cop/xcube/blob/master/setup.py) file.
+`setup.py`_ file.
 
-For more information on Setuptools entry points refer to section
-[Dynamic Discovery of Services and Plugins](https://setuptools.readthedocs.io/en/latest/setuptools.html#dynamic-discovery-of-services-and-plugins)
-in the [Setuptools documentation](https://setuptools.readthedocs.io/).
+For more information on Setuptools entry points refer to section `Creating and discovering plugins`_ in the
+`Python Packing User Guide`_ and `Dynamic Discovery of Services and Plugins`_ in the `Setuptools documentation`_.
 
 
 Initializer Function
