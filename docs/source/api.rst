@@ -117,6 +117,12 @@ Plugin Development
 
 .. autofunction:: xcube.util.extension.import_component
 
+.. autodata:: xcube.constants.EXTENSION_POINT_INPUT_PROCESSORS
+
+.. autodata:: xcube.constants.EXTENSION_POINT_DATASET_IOS
+
+.. autodata:: xcube.constants.EXTENSION_POINT_CLI_COMMANDS
+
 .. autofunction:: xcube.util.plugin.get_extension_registry
 
 .. autofunction:: xcube.util.plugin.get_plugins

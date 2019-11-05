@@ -28,9 +28,12 @@ PLUGIN_MODULE_FUNCTION_NAME = 'init_plugin'
 PLUGIN_LOAD_TIME_WARN_LIMIT = 100  # milliseconds
 PLUGIN_INIT_TIME__WARN_LIMIT = 100  # milliseconds
 
-EXTENSION_POINT_CLI_COMMANDS = 'xcube.cli'
-EXTENSION_POINT_DATASET_IOS = 'xcube.core.dsio'
+#: The extension point identifier for input processor extensions
 EXTENSION_POINT_INPUT_PROCESSORS = 'xcube.core.gen.iproc'
+#: The extension point identifier for dataset I/O extensions
+EXTENSION_POINT_DATASET_IOS = 'xcube.core.dsio'
+#: The extension point identifier for CLI command extensions
+EXTENSION_POINT_CLI_COMMANDS = 'xcube.cli'
 
 GLOBAL_GEO_EXTENT = -180., -90., 180., 90.
 
