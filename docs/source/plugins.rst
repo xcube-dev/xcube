@@ -10,6 +10,8 @@
 .. _xcube_gen_bc: https://github.com/dcs4cop/xcube-gen-bc
 .. _xcube_gen_rbins: https://github.com/dcs4cop/xcube-gen-rbins
 .. _xcube_gen_vito: https://github.com/dcs4cop/xcube-gen-vito
+.. _click: https://click.palletsprojects.com
+.. _`click commands or command groups`: https://click.palletsprojects.com/en/7.x/commands/
 
 =======
 Plugins
@@ -152,6 +154,8 @@ The extension point identifier is defined by the constant ``xcube.constants.EXTE
 CLI Extensions
 --------------
 
-*More coming soon...*
+CLI extensions enhance the ``xcube`` command-line tool by new sub-commands.
+The xcube CLI is implemented using the click_ library, therefore the extension
+components must be `click commands or command groups`_.
 
 The extension point identifier is defined by the constant ``xcube.constants.EXTENSION_POINT_CLI_COMMANDS``.
