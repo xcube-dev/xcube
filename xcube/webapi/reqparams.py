@@ -1,5 +1,5 @@
 # The MIT License (MIT)
-# Copyright (c) 2018 by the xcube development team and contributors
+# Copyright (c) 2019 by the xcube development team and contributors
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of
 # this software and associated documentation files (the "Software"), to deal in
@@ -24,8 +24,8 @@ from typing import Optional, Tuple
 
 import numpy as np
 
-from .errors import ServiceBadRequestError
-from ..util.undefined import UNDEFINED
+from xcube.util.undefined import UNDEFINED
+from xcube.webapi.errors import ServiceBadRequestError
 
 
 class RequestParams(metaclass=ABCMeta):

@@ -1,10 +1,10 @@
 import unittest
 
+from test.webapi.helpers import new_test_service_context, RequestParamsMock
 from xcube.webapi.context import ServiceContext
 from xcube.webapi.controllers.tiles import get_dataset_tile, get_ne2_tile, get_dataset_tile_grid, get_ne2_tile_grid, \
     get_legend
 from xcube.webapi.errors import ServiceBadRequestError, ServiceResourceNotFoundError
-from ..helpers import new_test_service_context, RequestParamsMock
 
 
 class TilesControllerTest(unittest.TestCase):

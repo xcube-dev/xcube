@@ -1,8 +1,8 @@
 import unittest
 
+from test.webapi.helpers import new_test_service_context
 from xcube.webapi.controllers.places import find_places, find_dataset_places
 from xcube.webapi.errors import ServiceBadRequestError
-from ..helpers import new_test_service_context
 
 
 class FeaturesControllerTest(unittest.TestCase):

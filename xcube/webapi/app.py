@@ -1,5 +1,5 @@
 # The MIT License (MIT)
-# Copyright (c) 2018 by the xcube development team and contributors
+# Copyright (c) 2019 by the xcube development team and contributors
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of
 # this software and associated documentation files (the "Software"), to deal in
@@ -23,15 +23,15 @@ import os
 
 from tornado.web import Application, StaticFileHandler
 
-from .context import normalize_prefix
-from .handlers import GetNE2TileHandler, GetDatasetVarTileHandler, InfoHandler, GetNE2TileGridHandler, \
+from xcube.webapi.context import normalize_prefix
+from xcube.webapi.handlers import GetNE2TileHandler, GetDatasetVarTileHandler, InfoHandler, GetNE2TileGridHandler, \
     GetDatasetVarTileGridHandler, GetWMTSCapabilitiesXmlHandler, GetColorBarsJsonHandler, GetColorBarsHtmlHandler, \
     GetDatasetsHandler, FindPlacesHandler, FindDatasetPlacesHandler, \
     GetDatasetCoordsHandler, GetTimeSeriesInfoHandler, GetTimeSeriesForPointHandler, WMTSKvpHandler, \
     GetTimeSeriesForGeometryHandler, GetTimeSeriesForFeaturesHandler, GetTimeSeriesForGeometriesHandler, \
     GetPlaceGroupsHandler, GetDatasetVarLegendHandler, GetDatasetHandler, GetWMTSTileHandler, GetS3BucketObjectHandler, \
     ListS3BucketHandler, GetDatasetPlaceGroupsHandler, GetDatasetPlaceGroupHandler
-from .service import url_pattern
+from xcube.webapi.service import url_pattern
 
 __author__ = "Norman Fomferra (Brockmann Consult GmbH)"
 

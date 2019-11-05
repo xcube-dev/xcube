@@ -9,5 +9,4 @@ ignore =
     # invalid escape sequence
     W605
 
-#  __init__ contain a huge amount of unused imports
-exclude= __init__.py, build/
+exclude= build/

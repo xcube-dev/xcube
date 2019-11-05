@@ -91,4 +91,4 @@ Downsampling example:
 Python API
 ==========
 
-The related Python API function is :py:func:`xcube.api.resample_in_time`.
+The related Python API function is :py:func:`xcube.core.resample.resample_in_time`.

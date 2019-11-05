@@ -1,8 +1,8 @@
 import os
 import unittest
 
+from test.webapi.helpers import get_res_test_dir, new_test_service_context
 from xcube.webapi.controllers.wmts import get_wmts_capabilities_xml
-from ..helpers import get_res_test_dir, new_test_service_context
 
 
 class WmtsControllerTest(unittest.TestCase):

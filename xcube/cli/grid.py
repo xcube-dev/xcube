@@ -25,7 +25,7 @@ from typing import Tuple, List, Optional, Union
 
 import click
 
-from xcube.util.constants import EARTH_EQUATORIAL_PERIMETER
+from xcube.constants import EARTH_EQUATORIAL_PERIMETER
 
 _DEFAULT_MIN_LEVEL = 0
 _DEFAULT_MAX_TILE = 2500

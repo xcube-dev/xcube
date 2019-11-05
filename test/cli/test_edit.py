@@ -2,9 +2,9 @@ import yaml
 import zarr
 
 from test.cli.test_cli import CliDataTest
-from test.util.test_edit import TEST_CUBE, TEST_CUBE_ZARR, TEST_CUBE_ZARR_EDIT, TEST_NEW_META, TEST_NEW_META_YML, \
+from test.core.test_edit import TEST_CUBE, TEST_CUBE_ZARR, TEST_CUBE_ZARR_EDIT, TEST_NEW_META, TEST_NEW_META_YML, \
     TEST_CUBE_ZARR_COORDS, TEST_CUBE_COORDS
-from xcube.util.dsio import rimraf
+from xcube.core.dsio import rimraf
 
 TEST_CUBE_ZARR_EDIT_DEFAULT = 'test-edited.zarr'
 

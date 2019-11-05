@@ -5,10 +5,10 @@ import shapely.geometry
 import shapely.wkt
 from shapely.errors import WKTReadingError
 
-from ..context import ServiceContext, ALL_PLACES
-from ..errors import ServiceBadRequestError
-from ...util.geom import get_dataset_geometry, get_box_split_bounds_geometry
-from ...util.perf import measure_time
+from xcube.core.geom import get_dataset_geometry, get_box_split_bounds_geometry
+from xcube.util.perf import measure_time
+from xcube.webapi.context import ServiceContext, ALL_PLACES
+from xcube.webapi.errors import ServiceBadRequestError
 
 _LOG = logging.getLogger('xcube')
 

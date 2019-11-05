@@ -99,5 +99,5 @@ with ``./algoithms/s3-olci-ndvi.py`` being:
 Python API
 ==========
 
-The related Python API function is :py:func:`xcube.api.compute_cube`.
+The related Python API function is :py:func:`xcube.core.compute.compute_cube`.
 

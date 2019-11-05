@@ -66,4 +66,4 @@ Optimize a cube in-place with consolidated metadata and consolidated coordinate 
 Python API
 ==========
 
-The related Python API function is :py:func:`xcube.api.optimize_dataset`.
+The related Python API function is :py:func:`xcube.core.optimize.optimize_dataset`.

@@ -5,9 +5,9 @@ from typing import List
 import click
 import click.testing
 
-from xcube.api.new import new_cube
-from xcube.cli.cli import cli
-from xcube.util.dsio import rimraf
+from xcube.core.new import new_cube
+from xcube.cli.main import cli
+from xcube.core.dsio import rimraf
 
 TEST_NC_FILE = "test.nc"
 TEST_ZARR_DIR = "test.zarr"

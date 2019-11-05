@@ -2,19 +2,46 @@
 
 ### New
 
+* xcube now discovers plugin modules by module naming convention
+  and by Setuptools entry points. See new chapter 
+  [Plugins](https://xcube.readthedocs.io/en/forman-211-simple_plugin_discov/plugins.html) 
+  in xcube's documentation for details. (#211)  
+
 * Added new `xcube compute` CLI command and `xcube.api.compute_cube()` API 
   function that can be used to generate an output cube computed from a Python
   function that is applied to one or more input cubes. Replaces the formerly 
   hidden `xcube apply` command. (#167)
+
+### Enhancements
+
+* CLI commands execute much faster now when invoked with the `--help` and `--info` options.
+
 
 ### Incompatible changes
 
 The following changes introduce incompatibilities with former xcube 0.2.x 
 versions. 
 
+* The function specified by `xcube_plugins` entry points now receives an single argument of 
+  type `xcube.api.ExtensionRegistry`. Plugins are asked to add their extensions
+  to this registry. As an example, have a look at the default `xcube_plugins` entry points 
+  in `./setup.py`.   
+ 
 * `xcube.api.compute_dataset()` function has been renamed to 
   `xcube.api.evaluate_dataset()`. This has been done in order avoid confusion
   with new API function `xcube.api.compute_cube()`.
+  
+* xcube's package structure has been drastically changed: 
+  - all of xcube's `__init__.py` files are now empty and no longer 
+    have side effects such as sub-module aggregations. 
+    Therefore, components need to be imported from individual modules.
+  - renamed `xcube.api` into `xcube.core`
+  - moved several modules from `xcube.util` into `xcube.core`
+  - the new `xcube.constants` module contains package level constants
+  - the new `xcube.plugin` module now registers all standard extensions
+  - moved contents of module `xcube.api.readwrite` into `xcube.core.dsio`.
+  - removed functions `read_cube` and `read_dataset` as `open_cube` and `open_dataset` are sufficient
+  - all internal module imports are now absolute, rather than relative  
 
 ## Changes in 0.2.1 (in development)
 

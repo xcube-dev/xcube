@@ -1,0 +1,24 @@
+#BEAM Colour Palette Definition File
+#Tue Nov 20 16:54:12 CET 2018
+autoDistribute=false
+color0=0,0,128
+color1=0,0,255
+color2=51,102,255
+color3=0,204,255
+color4=0,255,255
+color5=0,128,0
+color6=255,255,0
+color7=255,95,0
+color8=215,0,0
+color9=150,0,0
+numPoints=10
+no_samp0=3.647132543846965E-4
+no_samp1=1.0
+no_samp2=2.5
+no_samp3=5.0
+no_samp4=10.0
+no_samp5=25.0
+no_samp=50.0
+no_samp=100.0
+no_samp150.0
+no_samp=200.0

@@ -1,5 +1,5 @@
 # The MIT License (MIT)
-# Copyright (c) 2018 by the xcube development team and contributors
+# Copyright (c) 2019 by the xcube development team and contributors
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of
 # this software and associated documentation files (the "Software"), to deal in
@@ -21,9 +21,9 @@
 
 import os
 
-from .im import GLOBAL_GEO_EXTENT
-from .im.tiledimage import AbstractTiledImage, ImagePyramid
-from .im.tilegrid import TileGrid
+from xcube.constants import GLOBAL_GEO_EXTENT
+from xcube.util.tiledimage import AbstractTiledImage, ImagePyramid
+from xcube.util.tilegrid import TileGrid
 
 __author__ = "Norman Fomferra (Brockmann Consult GmbH)"
 

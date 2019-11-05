@@ -22,9 +22,10 @@ by Konrad Lorenz (translation is left to the reader)
 - [Versioning](#versioning)
 - [Coding Style](#coding-style)
 - [Main Packages](#main-packages)
+  - [Package `xcube.core`](#package-xcubecore)
   - [Package `xcube.cli`](#package-xcubecli)
-  - [Package `xcube.api`](#package-xcubeapi)
   - [Package `xcube.webapi`](#package-xcubewebapi)
+  - [Package `xcube.util`](#package-xcubeutil)
 - [Development Process](#development-process)
 
 ## Versioning
@@ -52,28 +53,27 @@ We try adhering to [PEP-8](https://www.python.org/dev/peps/pep-0008/).
 
 ## Main Packages
 
-* `xcube.cli` - Here live CLI commands that are required by someone. 
+* `xcube.core` - Hosts core API functions. 
+  Code in here should be maintained w.r.t. backward compatibility.
+  Therefore think twice before adding new or change existing core API. 
+* `xcube.cli` - Hosts CLI commands. 
   CLI command implementations should be lightweight. 
-  Move implementation code either into `api` or `util`.  
+  Move implementation code either into `core` or `util`.  
   CLI commands must be maintained w.r.t. backward compatibility.
   Therefore think twice before adding new or change existing CLI 
   commands. 
-* `xcube.api` - Here live API functions that are required by someone or 
-  that exists because a CLI command is implemented here. 
-  API code must be maintained w.r.t. backward compatibility.
-  Therefore think twice before adding new or change existing API. 
-* `xcube.webapi` - Here live Web API functions that are required by 
-  someone. Web API command implementations should be lightweight.
-  Move implementation code either into `api` or `util`.  
+* `xcube.webapi` - Hosts Web API functions. 
+  Web API command implementations should be lightweight.
+  Move implementation code either into `core` or `util`.  
   Web API interface must be maintained w.r.t. backward compatibility.
-  Therefore think twice before adding new or change existing API.
+  Therefore think twice before adding new or change existing web API.
 * `xcube.util` - Mainly implementation helpers. 
-  Comprises classes and functions that are used by `cli`, `api`, 
+  Comprises classes and functions that are used by `cli`, `core`, 
   `webapi` in order to maximize modularisation and testability but to 
   minimize code duplication.  
-  The code in here must not be dependent on any of `cli`, `api`,
-  `webapi`.The code in here may change often and in any way as desired 
-  by code implementing the `cli`, `api`, `webapi` packages.    
+  The code in here must not be dependent on any of `cli`, `core`,
+  `webapi`. The code in here may change often and in any way as desired 
+  by code implementing the `cli`, `core`, `webapi` packages.    
 
 The following sections will guide you through extending or changing the
 main packages that form xcube's public interface.
@@ -84,7 +84,7 @@ main packages that form xcube's public interface.
 
 Make sure your change
 
-1. is covered by unit-tests (package `test/api`); 
+1. is covered by unit-tests (package `test/cli`); 
 1. is reflected by the CLI's doc-strings and tools documentation 
    (currently in `README.md`);
 1. follows existing xcube CLI conventions;
@@ -149,23 +149,23 @@ to developers, not CLI users.
 There is a global option `--traceback` flag that user can set to dump 
 stack traces. You don't need to print stack traces from your code.  
 
-### Package `xcube.api`
+### Package `xcube.core`
 
 #### Checklist
 
 Make sure your change
 
-1. is covered by unit-tests (package `test/api`); 
+1. is covered by unit-tests (package `test/core`); 
 1. is covered by API documentation;
 1. follows existing xcube API conventions;
 1. follows PEP8 conventions;
-1. is reflected in xarray extension class `xcube.api.api.API`;
+1. is reflected in xarray extension class `xcube.core.xarray.DatasetAccessor`;
 1. is reflected in CLI and WebAPI if desired;
 1. is reflected in `CHANGES.md`.
 
 #### Hints
 
-Create new module in `xcube.api` and add your functions.
+Create new module in `xcube.core` and add your functions.
 For any functions added make sure naming is in line with other API.
 Add clear doc-string to the new API. Use Sphinx RST format.
 
@@ -185,7 +185,7 @@ In the implementation, if `not cube_asserted`,
 we must assert and verify the `cube` is a cube. 
 Pass `True` to `cube_asserted` argument of other API called later on: 
     
-    from .verify import assert_cube
+    from xcube.core.verify import assert_cube
 
     def frombosify_cube(cube: xr.Dataset, ..., cube_asserted: bool = False):  
         if not cube_asserted:
@@ -194,11 +194,11 @@ Pass `True` to `cube_asserted` argument of other API called later on:
         result = bibosify_cube(cube, ..., cube_asserted=True)
         ...
 
-If `import xcube.api` is used in client code, any `xarray.Dataset` 
+If `import xcube.core.xarray` is imported in client code, any `xarray.Dataset` 
 object will have an extra property `xcube` whose interface is defined 
-by the class `xcube.api.XCubeAPI`. This class is an 
+by the class `xcube.core.xarray.DatasetAccessor`. This class is an 
 [xarray extension](http://xarray.pydata.org/en/stable/internals.html#extending-xarray) 
-that is used to reflect `xcube.api` functions and make it directly 
+that is used to reflect `xcube.core` functions and make it directly 
 applicable to the `xarray.Dataset` object.
 
 Therefore any xcube API shall be reflected in this extension class.
@@ -225,7 +225,7 @@ Make sure your change
 * All handlers are implemented in `webapi.handlers`. Handler code just 
   delegates to dedicated controllers.
 * All controllers are implemented in `webapi.controllers.*`. They might
-  further delegate into `api.*`
+  further delegate into `core.*`
 
 ## Development Process
 

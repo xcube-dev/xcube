@@ -1,5 +1,5 @@
 # The MIT License (MIT)
-# Copyright (c) 2018 by the xcube development team and contributors
+# Copyright (c) 2019 by the xcube development team and contributors
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of
 # this software and associated documentation files (the "Software"), to deal in
@@ -23,9 +23,9 @@ from typing import List
 
 import click
 
-from xcube.api.gen.defaults import DEFAULT_OUTPUT_PATH
-
 __author__ = "Norman Fomferra (Brockmann Consult GmbH)"
+
+DEFAULT_OUTPUT_PATH = 'out.zarr'
 
 
 @click.command(name='compute')
@@ -57,7 +57,10 @@ def compute(script: str,
             output_var_name: str,
             output_var_dtype: str):
     """
-    Compute a cube variable from other cube variables in CUBEs using a user-provided Python function in SCRIPT.
+    Compute a cube from one or more other cubes.
+
+    The command computes a cube variable from other cube variables in CUBEs
+    using a user-provided Python function in SCRIPT.
 
     The SCRIPT must define a function named "compute":
 
@@ -111,9 +114,10 @@ def compute(script: str,
     any cube data.
 
     """
-    from xcube.api import compute_cube, read_cube
-    from xcube.util.cliutil import parse_cli_kwargs
-    from xcube.util.dsio import guess_dataset_format, find_dataset_io
+    from xcube.cli.common import parse_cli_kwargs
+    from xcube.core.compute import compute_cube
+    from xcube.core.dsio import open_cube
+    from xcube.core.dsio import guess_dataset_format, find_dataset_io
 
     input_paths = cube
 
@@ -137,7 +141,7 @@ def compute(script: str,
 
     input_cubes = []
     for input_path in input_paths:
-        input_cubes.append(read_cube(input_path=input_path))
+        input_cubes.append(open_cube(input_path=input_path))
 
     if initialize_function:
         input_var_names, input_params = initialize_function(input_cubes, input_var_names, input_params)
@@ -168,4 +172,3 @@ def _get_function(object, function_name, source, force=False):
     if not callable(function):
         raise click.ClickException(f"{function_name!r} in {source} is not a callable")
     return function
-
