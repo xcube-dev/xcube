@@ -25,7 +25,7 @@ DEFAULT_OUTPUT_PATH = 'out.csv'
 DEFAULT_NUM_POINTS_MAX = 100
 
 
-@click.command(name="genpoints", hidden=True)
+@click.command(name="genpts", hidden=True)
 @click.argument('cube')
 @click.option('--output', '-o', 'output_path',
               help=f'Output path. Defaults to "{DEFAULT_OUTPUT_PATH}".',
@@ -34,11 +34,11 @@ DEFAULT_NUM_POINTS_MAX = 100
               help=f'Number of point_data. Defaults to "{DEFAULT_NUM_POINTS_MAX}".',
               type=int,
               default=DEFAULT_NUM_POINTS_MAX)
-def genpoints(cube: str, output_path: str, num_points_max: int):
+def genpts(cube: str, output_path: str, num_points_max: int):
     """
-    Generate synthetic data points.
+    Generate synthetic data points from CUBE.
 
-    Generates synthetic data points for a given data cube and write points to a CSV and GeoJSON file.
+    Generates synthetic data points for a given data CUBE and write points to a CSV and GeoJSON file.
     The primary use of the tool is to point datasets for machine learning tasks
     and to create test points for the "xcube extract" command.
     """
@@ -123,4 +123,4 @@ def _to_geojson_dict(point_data, num_points):
 
 
 if __name__ == '__main__':
-    genpoints.main()
+    genpts.main()
