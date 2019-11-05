@@ -12,6 +12,7 @@
 #
 import os
 import sys
+
 src_root = os.path.abspath('../..')
 sys.path.insert(0, src_root)
 
@@ -119,5 +120,28 @@ autodoc_member_order = 'bysource'
 autodoc_inherit_docstrings = True
 autodoc_typehints = 'signature'
 autodoc_mock_imports = [
-
+    'affine',
+    'blas',
+    'click',
+    'cmocean',
+    'dask',
+    'fiona',
+    'gdal',
+    'matplotlib',
+    'netcdf4',
+    'numba',
+    'numpy',
+    'pandas',
+    #'pillow',
+    'proj4',
+    'pyproj',
+    'pyyaml',
+    'rasterio',
+    's3fs',
+    'scipy',
+    'setuptools',
+    'shapely',
+    # 'tornado',
+    'xarray',
+    'zarr',
 ]
