@@ -1,22 +1,5 @@
-## Changes in 0.3.0 (in development)
 
-### New
-
-* Added new `xcube compute` CLI command and `xcube.api.compute_cube()` API 
-  function that can be used to generate an output cube computed from a Python
-  function that is applied to one or more input cubes. Replaces the formerly 
-  hidden `xcube apply` command. (#167)
-
-### Incompatible changes
-
-The following changes introduce incompatibilities with former xcube 0.2.x 
-versions. 
-
-* `xcube.api.compute_dataset()` function has been renamed to 
-  `xcube.api.evaluate_dataset()`. This has been done in order avoid confusion
-  with new API function `xcube.api.compute_cube()`.
-
-## Changes in 0.2.1 (in development)
+## Changes in 0.2.1
 
 ### Enhancements
 
