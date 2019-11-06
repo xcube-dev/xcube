@@ -82,9 +82,9 @@ Cube metadata
 Cube verification
 =================
 
-.. autofunction:: xcube.core.util.assert_cube
+.. autofunction:: xcube.core.verify.assert_cube
 
-.. autofunction:: xcube.core.util.verify_cube
+.. autofunction:: xcube.core.verify.verify_cube
 
 Multi-resolution pyramids
 =========================
