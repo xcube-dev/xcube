@@ -19,7 +19,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-from typing import Sequence, List
+from typing import List, Sequence
 
 import click
 
@@ -66,9 +66,11 @@ resampling_methods = sorted(RESAMPLING_METHOD_NAMES)
               help='Deprecated. The command will now always create, insert, replace, or append input slices.')
 @click.option('--prof', is_flag=True,
               help='Collect profiling information and dump results after processing.')
-@click.option('--sort', is_flag=True,
-              help='The input file list will be sorted before creating the xcube dataset. '
-                   'If --sort parameter is not passed, order of input list will be kept.')
+@click.option('--no_sort', is_flag=True,
+              help='The input file list wont be sorted before creating the xcube dataset. '
+                   'If --no_sort parameter is passed, order the input list will be kept. '
+                   'This parameter should be used for better performance, '
+                   'provided that the input file list is in correct order (continuous time).')
 @click.option('--info', '-I', is_flag=True,
               help='Displays additional information about format options or about input processors.')
 @click.option('--dry_run', is_flag=True,
@@ -86,7 +88,7 @@ def gen(input: Sequence[str],
         prof: bool,
         dry_run: bool,
         info: bool,
-        sort: bool):
+        no_sort: bool):
     """
     Generate xcube dataset.
     Data cubes may be created in one go or successively for all given inputs.
@@ -118,7 +120,7 @@ def gen(input: Sequence[str],
         output_resampling=resampling,
         profile_mode=prof,
         append_mode=append,
-        sort_mode=sort,
+        no_sort_mode=no_sort,
     )
 
     gen_cube(dry_run=dry_run,

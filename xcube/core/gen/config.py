@@ -34,7 +34,7 @@ def get_config_dict(config_files: Sequence[str] = None,
                     output_resampling: str = None,
                     append_mode: bool = True,
                     profile_mode: bool = False,
-                    sort_mode: bool = False):
+                    no_sort_mode: bool = False):
     """
     Get a configuration dictionary from given (command-line) arguments.
 
@@ -103,8 +103,8 @@ def get_config_dict(config_files: Sequence[str] = None,
     if append_mode is not None and config.get('append_mode') is None:
         config['append_mode'] = append_mode
 
-    if sort_mode is not None and config.get('sort_mode') is None:
-        config['sort_mode'] = sort_mode
+    if no_sort_mode is not None and config.get('no_sort_mode') is None:
+        config['no_sort_mode'] = no_sort_mode
 
     processed_variables = config.get('processed_variables')
     if processed_variables:
