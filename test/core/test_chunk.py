@@ -29,6 +29,26 @@ class ChunkDatasetTest(unittest.TestCase):
         self.assertEqual({}, chunked_dataset.precipitation.encoding)
         self.assertEqual({}, chunked_dataset.temperature.encoding)
 
+        dataset = dataset.chunk(dict(time=2, lat=10, lon=20))
+
+        chunked_dataset = chunk_dataset(dataset,
+                                        chunk_sizes=None,
+                                        format_name="zarr")
+        self.assertEqual({}, chunked_dataset.precipitation.encoding)
+        self.assertEqual({}, chunked_dataset.temperature.encoding)
+
+        chunked_dataset = chunk_dataset(dataset,
+                                        chunk_sizes={},
+                                        format_name="zarr")
+        self.assertEqual({'chunks': (2, 10, 20)}, chunked_dataset.precipitation.encoding)
+        self.assertEqual({'chunks': (2, 10, 20)}, chunked_dataset.temperature.encoding)
+
+        chunked_dataset = chunk_dataset(dataset,
+                                        chunk_sizes=dict(time=1),
+                                        format_name="zarr")
+        self.assertEqual({'chunks': (1, 10, 20)}, chunked_dataset.precipitation.encoding)
+        self.assertEqual({'chunks': (1, 10, 20)}, chunked_dataset.temperature.encoding)
+
     def test_unchunk_dataset(self):
         dataset = new_test_dataset(["2010-01-01", "2010-01-02", "2010-01-03", "2010-01-04", "2010-01-05"],
                                    precipitation=0.4, temperature=275.2)

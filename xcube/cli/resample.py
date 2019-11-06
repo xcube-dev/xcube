@@ -167,7 +167,7 @@ def _resample_in_time(input_path: str = None,
                       methods: Sequence[str] = (DEFAULT_RESAMPLING_METHOD,),
                       frequency: str = DEFAULT_RESAMPLING_FREQUENCY,
                       offset: str = None,
-                      base: str = DEFAULT_RESAMPLING_BASE,
+                      base: int = DEFAULT_RESAMPLING_BASE,
                       interp_kind: str = DEFAULT_INTERPOLATION_KIND,
                       tolerance: str = None,
                       dry_run: bool = False,
@@ -176,6 +176,7 @@ def _resample_in_time(input_path: str = None,
     from xcube.core.dsio import open_cube
     from xcube.core.dsio import write_cube
     from xcube.core.resample import resample_in_time
+    from xcube.core.update import update_dataset_chunk_encoding
 
     if not output_format:
         output_format = guess_dataset_format(output_path)
@@ -191,8 +192,14 @@ def _resample_in_time(input_path: str = None,
                                   base=base,
                                   interp_kind=interp_kind,
                                   tolerance=tolerance,
+                                  time_chunk_size=1,
                                   var_names=variables,
                                   metadata=metadata)
+
+        agg_ds = update_dataset_chunk_encoding(agg_ds,
+                                               chunk_sizes={},
+                                               format_name=output_format,
+                                               in_place=True)
 
         monitor(f'Writing resampled cube to {output_path!r}...')
         if not dry_run:
