@@ -43,10 +43,11 @@ def resample_in_time(cube: xr.Dataset,
     Resample a xcube dataset in the time dimension.
 
     :param cube: The xcube dataset.
-    :param frequency: Resampling frequency.
+    :param frequency: Temporal aggregation frequency. Use format "<count><offset>"
+        "where <offset> is one of 'H', 'D', 'W', 'M', 'Q', 'Y'.
     :param method: Resampling method or sequence of resampling methods.
     :param offset: Offset used to adjust the resampled time labels.
-        Some pandas date offset strings are supported.
+        Uses same syntax as *frequency*.
     :param base: For frequencies that evenly subdivide 1 day, the "origin" of the
         aggregated intervals. For example, for '24H' frequency, base could range from 0 through 23.
     :param time_chunk_size: If not None, the chunk size to be used for the "time" dimension.
