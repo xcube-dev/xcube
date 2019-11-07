@@ -3,10 +3,10 @@
 ### New
 
 * Added new parameter in `xcube gen` called `--no_sort`. Using `--no_sort`, 
-the input file list wont be sorted before creating the xcube dataset. 
-If `--no_sort` parameter is passed, order the input list will be kept. 
-The parameter `--sort` is deprecated and the input files will be sorted 
-by default. 
+  the input file list wont be sorted before creating the xcube dataset. 
+  If `--no_sort` parameter is passed, order the input list will be kept. 
+  The parameter `--sort` is deprecated and the input files will be sorted 
+  by default. 
 
 * xcube now discovers plugin modules by module naming convention
   and by Setuptools entry points. See new chapter 

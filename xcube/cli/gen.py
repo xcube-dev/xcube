@@ -67,8 +67,8 @@ resampling_methods = sorted(RESAMPLING_METHOD_NAMES)
 @click.option('--prof', is_flag=True,
               help='Collect profiling information and dump results after processing.')
 @click.option('--no_sort', is_flag=True,
-              help='The input file list wont be sorted before creating the xcube dataset. '
-                   'If --no_sort parameter is passed, order the input list will be kept. '
+              help='The input file list will not be sorted before creating the xcube dataset. '
+                   'If --no_sort parameter is passed, the order of the input list will be kept. '
                    'This parameter should be used for better performance, '
                    'provided that the input file list is in correct order (continuous time).')
 @click.option('--info', '-I', is_flag=True,
