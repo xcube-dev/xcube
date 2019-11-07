@@ -130,8 +130,7 @@ def gen_cube(input_paths: Sequence[str] = None,
     input_paths = [input_file for f in input_paths for input_file in glob.glob(f, recursive=True)]
 
     if not no_sort_mode and len(input_paths) > 1:
-        input_paths = _get_sorted_input_paths(
-            [input_file for f in input_paths for input_file in glob.glob(f, recursive=True)])
+        input_paths = _get_sorted_input_paths(input_paths)
 
     if not dry_run:
         output_dir = os.path.abspath(os.path.dirname(output_path))
