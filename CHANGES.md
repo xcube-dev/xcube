@@ -16,6 +16,10 @@
 
 * CLI commands execute much faster now when invoked with the `--help` and `--info` options.
 
+### Fixes
+
+* `xcube resample` now correctly re-chunks its output. By default, chunking of the 
+  `time` dimension is set to one. (#212)
 
 ### Incompatible changes
 

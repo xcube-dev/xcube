@@ -24,6 +24,8 @@ from typing import Any, Dict
 
 import xarray as xr
 
+from xcube.constants import FORMAT_NAME_NETCDF4
+from xcube.constants import FORMAT_NAME_ZARR
 from xcube.util.config import NameDictPairList
 
 _LON_ATTRS_DATA = ('lon', 'lon_bnds', 'degrees_east',
@@ -191,4 +193,49 @@ def update_dataset_var_attrs(dataset: xr.Dataset,
             var = dataset[var_name]
             var.attrs.update(var_attrs)
 
+    return dataset
+
+
+def update_dataset_chunk_encoding(dataset: xr.Dataset,
+                                  chunk_sizes: Dict[str, int] = None,
+                                  format_name: str = None,
+                                  in_place: bool = False) -> xr.Dataset:
+    """
+    Update each variable's encoding in *dataset* with respect to *chunk_sizes*
+    so *dataset* is written in chunks for given *format_name*.
+
+    :param dataset: input dataset.
+    :param chunk_sizes: the chunk sizes to be used for the encoding.
+        If None, any chunking encoding is removed.
+    :param format_name: format name, e.g. "zarr" or "netcdf4".
+    :param in_place: If ``True``, *dataset* will be modified in place and returned.
+    """
+    if format_name == FORMAT_NAME_ZARR:
+        chunk_sizes_attr_name = "chunks"
+    elif format_name == FORMAT_NAME_NETCDF4:
+        chunk_sizes_attr_name = "chunksizes"
+    else:
+        return dataset
+    if not in_place:
+        dataset = dataset.copy()
+    for var_name in dataset.variables:
+        var = dataset[var_name]
+        if chunk_sizes is not None:
+            def get_size(i):
+                dim_name = var.dims[i]
+                size = chunk_sizes.get(dim_name)
+                if isinstance(size, int):
+                    return size
+                if var.chunks:
+                    size = var.chunks[i]
+                    if isinstance(size, int):
+                        return size
+                    if len(size):
+                        return size[0]
+                return var.shape[i]
+
+            var.encoding.update({chunk_sizes_attr_name: tuple(map(get_size, range(var.ndim)))})
+        elif chunk_sizes_attr_name in var.encoding:
+            # Remove any explicit and possibly unintended specification
+            del var.encoding[chunk_sizes_attr_name]
     return dataset
