@@ -127,9 +127,9 @@ def gen_cube(input_paths: Sequence[str] = None,
         def monitor(*args):
             pass
 
-    if no_sort_mode is True:
-        input_paths = [input_file for f in input_paths for input_file in glob.glob(f, recursive=True)]
-    else:
+    input_paths = [input_file for f in input_paths for input_file in glob.glob(f, recursive=True)]
+
+    if not no_sort_mode and len(input_paths) > 1:
         input_paths = _get_sorted_input_paths(
             [input_file for f in input_paths for input_file in glob.glob(f, recursive=True)])
 
