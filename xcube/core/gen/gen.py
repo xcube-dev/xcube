@@ -130,7 +130,7 @@ def gen_cube(input_paths: Sequence[str] = None,
     input_paths = [input_file for f in input_paths for input_file in glob.glob(f, recursive=True)]
 
     if not no_sort_mode and len(input_paths) > 1:
-        input_paths = _get_sorted_input_paths(input_paths)
+        input_paths = _get_sorted_input_paths(input_processor, input_paths)
 
     if not dry_run:
         output_dir = os.path.abspath(os.path.dirname(output_path))
@@ -349,13 +349,15 @@ def _update_cube_attrs(output_writer: DatasetIO, output_path: str,
     output_writer.update(output_path, global_attrs=global_attrs)
 
 
-def _get_sorted_input_paths(input_paths: Sequence[str]):
+def _get_sorted_input_paths(input_processor,input_paths: Sequence[str]):
     input_path_list = []
     time_list = []
     for input_file in input_paths:
         with xr.open_dataset(input_file) as dataset:
-            time_stamp = pd.to_datetime(str(dataset.time[0].values), utc=True)
+            time_string = input_processor.get_time_for_sorting(dataset)
+            time_stamp = pd.to_datetime(time_string, utc=True)
             time_list.append(time_stamp)
             input_path_list.append(input_file)
-    input_paths = [x for _, x in sorted(zip(time_list, input_path_list))]
+            tuple_seq = zip(time_list, input_path_list)
+    input_paths = [e[1] for e in sorted(tuple_seq, key=lambda e:e[0])]
     return input_paths

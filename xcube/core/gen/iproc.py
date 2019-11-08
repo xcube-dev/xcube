@@ -101,6 +101,13 @@ class InputProcessor(ExtensionComponent, metaclass=ABCMeta):
         return dict()
 
     @abstractmethod
+    def get_time_for_sorting(self, dataset: xr.Dataset) -> Optional[str]:
+        """
+        Return a string of the datasets time for presorting the input list.
+        :param dataset: The dataset.
+        :return: The time string of the dataset or None.
+        """
+
     def get_time_range(self, dataset: xr.Dataset) -> Optional[Tuple[float, float]]:
         """
         Return a tuple of two floats representing start/stop time (which may be same) in days since 1970.
@@ -251,6 +258,10 @@ class DefaultInputProcessor(XYInputProcessor):
     @property
     def input_reader(self) -> str:
         return self._input_reader
+
+    def get_time_for_sorting(self, dataset: xr.Dataset) -> Optional[str]:
+        time_sting = str(dataset.time[0].values)
+        return time_sting
 
     def pre_process(self, dataset: xr.Dataset) -> xr.Dataset:
         self._validate(dataset)
