@@ -15,7 +15,7 @@
 ### Enhancements
 
 * CLI commands execute much faster now when invoked with the `--help` and `--info` options.
-
+* Added `serverPID` property to response of web API info handler. 
 
 ### Incompatible changes
 
