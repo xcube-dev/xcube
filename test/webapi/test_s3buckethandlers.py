@@ -27,7 +27,7 @@ class S3BucketHandlersTest(unittest.TestCase):
 
     @unittest.skipUnless(XCUBE_SERVER_IS_RUNNING, SKIP_HELP)
     def test_open_cube_from_xube_server(self):
-        ds = open_cube('s3bucket/local', format_name='zarr', endpoint_url=SERVER_URL)
+        ds = open_cube('s3bucket/local', format_name='zarr', client_kwargs={'endpoint_url':SERVER_URL})
         self.assertIsNotNone(ds)
         self.assertEqual((5, 1000, 2000), ds.conc_chl.shape)
         self.assertEqual(('time', 'lat', 'lon'), ds.conc_chl.dims)
