@@ -20,7 +20,7 @@
 # SOFTWARE.
 
 import math
-from typing import Optional, Union, Dict, Tuple, Sequence, Any
+from typing import Optional, Union, Dict, Tuple, Sequence, Any, Mapping
 
 import affine
 import numpy as np
@@ -44,6 +44,58 @@ _INVALID_GEOMETRY_MSG = ('Geometry must be either a shapely geometry object, '
                          'or point coordinates (x, y)')
 
 _INVALID_BOX_COORDS_MSG = 'Invalid box coordinates'
+
+
+def rasterize_features_into_dataset(dataset: xr.Dataset,
+                                    features: Sequence[Mapping[str, Any]],
+                                    feature_property_names: Sequence[str],
+                                    feature_property_name_mapping: Dict[str, str] = None,
+                                    in_place: bool = False) -> Optional[xr.Dataset]:
+    feature_property_name_mapping = feature_property_name_mapping or {}
+    xy_var_names = get_dataset_xy_var_names(dataset, must_exist=True)
+    dataset_bounds = get_dataset_bounds(dataset, xy_var_names=xy_var_names)
+
+    ds_x_min, ds_y_min, ds_x_max, ds_y_max = dataset_bounds
+
+    x_var_name, y_var_name = xy_var_names
+    x_var, y_var = dataset[x_var_name], dataset[y_var_name]
+    x_dim, y_dim = x_var.dims[0], y_var.dims[0]
+
+    width = x_var.size
+    height = y_var.size
+    spatial_res = (ds_x_max - ds_x_min) / width
+
+    if not in_place:
+        dataset = xr.Dataset(coords=dataset.coords, attrs=dataset.attrs)
+
+    for feature in features:
+        geometry = convert_geometry(feature['geometry'])
+        intersection_geometry = intersect_geometries(dataset_bounds, geometry)
+        if intersection_geometry is None:
+            continue
+
+        mask_data = get_geometry_mask(width, height, intersection_geometry, ds_x_min, ds_y_min, spatial_res)
+        mask = xr.DataArray(mask_data,
+                            coords={y_var_name: y_var, x_var_name: x_var},
+                            dims=(y_dim, x_dim))
+
+        for feature_property_name in feature_property_names:
+            var_name = feature_property_name_mapping.get(feature_property_name, feature_property_name)
+            feature_property_value = float(feature['properties'].get(feature_property_name, float('nan')))
+            feature_property_var = xr.DataArray(np.full((height, width), feature_property_value, dtype=np.float64),
+                                                coords={y_var_name: y_var, x_var_name: x_var},
+                                                dims=(y_dim, x_dim))
+            if feature_property_name not in dataset:
+                feature_property_var_old = xr.DataArray(np.full((height, width), np.nan, dtype=np.float64),
+                                                        coords={y_var_name: y_var, x_var_name: x_var},
+                                                        dims=(y_dim, x_dim))
+                dataset[var_name] = feature_property_var_old
+            else:
+                feature_property_var_old = dataset[var_name]
+
+            dataset[var_name] = feature_property_var.where(mask, feature_property_var_old)
+
+    return dataset
 
 
 def mask_dataset_by_geometry(dataset: xr.Dataset,
@@ -93,7 +145,7 @@ def mask_dataset_by_geometry(dataset: xr.Dataset,
 
     mask_data = get_geometry_mask(width, height, intersection_geometry, ds_x_min, ds_y_min, spatial_res)
     mask = xr.DataArray(mask_data,
-                        coords=dict(lat=dataset.lat, lon=dataset.lon),
+                        coords={y_var_name: y_var, x_var_name: x_var},
                         dims=(y_var.dims[0], x_var.dims[0]))
 
     dataset_vars = {}
