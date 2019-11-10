@@ -36,7 +36,7 @@ class CubeSchemaTest(unittest.TestCase):
         self.assertIn('lon', schema.coords)
         self.assertEqual(('time', 'lat', 'lon'), schema.dims)
         self.assertEqual('time', schema.time_dim)
-        self.assertEqual(('lat', 'lon'), schema.spatial_dims)
+        self.assertEqual(('lon', 'lat'), schema.spatial_dims)
 
     def test_repr_html(self):
         cube = new_cube(variables=dict(a=2, b=3, c=4))

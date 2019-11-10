@@ -92,8 +92,8 @@ class CubeSchema:
 
     @property
     def spatial_dims(self) -> Tuple[str, str]:
-        """Tuple (pair) of spatial dimension names, will be either ('lat', 'lon') or ('y', 'x')."""
-        return self._dims[-2:]
+        """Tuple (pair) of spatial dimension names, will be either ('lon', 'lat') or ('x', 'y')."""
+        return self._dims[-1], self._dims[-2]
 
     @property
     def shape(self) -> Tuple[int, ...]:
