@@ -59,12 +59,14 @@ def new_cube(title="Test Cube",
 
     lon_data = np.linspace(lon_start + spatial_res_05, lon_end - spatial_res_05, width)
     lon = xr.DataArray(lon_data, dims="lon")
+    lon.attrs["long_name"] = "longitude"
     lon.attrs["units"] = "degrees_east"
 
     lat_data = np.linspace(lat_start + 0.5 * spatial_res, lat_end - 0.5 * spatial_res, height)
     lat = xr.DataArray(lat_data, dims="lat")
     if inverse_lat:
         lat = lat[::-1]
+    lat.attrs["long_name"] = "latitude"
     lat.attrs["units"] = "degrees_north"
 
     time_data_2 = pd.date_range(start=time_start, periods=time_periods + 1, freq=time_freq).values

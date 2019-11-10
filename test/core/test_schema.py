@@ -36,7 +36,15 @@ class CubeSchemaTest(unittest.TestCase):
         self.assertIn('lon', schema.coords)
         self.assertEqual(('time', 'lat', 'lon'), schema.dims)
         self.assertEqual('time', schema.time_dim)
-        self.assertEqual(('lon', 'lat'), schema.spatial_dims)
+        self.assertEqual('lon', schema.x_name)
+        self.assertEqual('lat', schema.y_name)
+        self.assertEqual('time', schema.time_name)
+        self.assertEqual('lon', schema.x_dim)
+        self.assertEqual('lat', schema.y_dim)
+        self.assertEqual('time', schema.time_dim)
+        self.assertEqual(expected_shape[-1], schema.x_var.size)
+        self.assertEqual(expected_shape[-2], schema.y_var.size)
+        self.assertEqual(expected_shape[0], schema.time_var.size)
 
     def test_repr_html(self):
         cube = new_cube(variables=dict(a=2, b=3, c=4))
@@ -65,6 +73,24 @@ class CubeSchemaTest(unittest.TestCase):
                          f'{cm.exception}')
 
         with self.assertRaises(ValueError) as cm:
+            # noinspection PyTypeChecker
+            CubeSchema(schema.shape, cube.coords, x_name=None)
+        self.assertEqual('x_name must be given',
+                         f'{cm.exception}')
+
+        with self.assertRaises(ValueError) as cm:
+            # noinspection PyTypeChecker
+            CubeSchema(schema.shape, cube.coords, y_name=None)
+        self.assertEqual('y_name must be given',
+                         f'{cm.exception}')
+
+        with self.assertRaises(ValueError) as cm:
+            # noinspection PyTypeChecker
+            CubeSchema(schema.shape, cube.coords, time_name=None)
+        self.assertEqual('time_name must be given',
+                         f'{cm.exception}')
+
+        with self.assertRaises(ValueError) as cm:
             CubeSchema(schema.shape[1:], schema.coords)
         self.assertEqual('shape must have at least three dimensions',
                          f'{cm.exception}')
@@ -76,12 +102,12 @@ class CubeSchemaTest(unittest.TestCase):
 
         with self.assertRaises(ValueError) as cm:
             CubeSchema(schema.shape, schema.coords, dims=('lat', 'lon', 'time'))
-        self.assertEqual("the first name in dims must be 'time'",
+        self.assertEqual("the first dimension in dims must be 'time'",
                          f'{cm.exception}')
 
         with self.assertRaises(ValueError) as cm:
             CubeSchema(schema.shape, schema.coords, dims=('time', 'lon', 'lat'))
-        self.assertEqual("the last two names in dims must be either ('lat', 'lon') or ('y', 'x')",
+        self.assertEqual("the last two dimensions in dims must be 'lat' and 'lon'",
                          f'{cm.exception}')
 
         with self.assertRaises(ValueError) as cm:
@@ -93,7 +119,7 @@ class CubeSchemaTest(unittest.TestCase):
             coords = dict(schema.coords)
             del coords['lat']
             CubeSchema(schema.shape, coords, dims=schema.dims, chunks=(1, 90, 90))
-        self.assertEqual("missing dimension 'lat' in coords",
+        self.assertEqual("missing variables 'lon', 'lat', 'time' in coords",
                          f'{cm.exception}')
 
         with self.assertRaises(ValueError) as cm:
@@ -101,7 +127,7 @@ class CubeSchemaTest(unittest.TestCase):
             lat = coords['lat']
             coords['lat'] = xr.DataArray(lat.values.reshape((1, len(lat))), dims=('b', lat.dims[0]), attrs=lat.attrs)
             CubeSchema(schema.shape, coords, dims=schema.dims, chunks=(1, 90, 90))
-        self.assertEqual("labels of 'lat' in coords must be one-dimensional",
+        self.assertEqual("variables 'lon', 'lat', 'time' in coords must be 1-D",
                          f'{cm.exception}')
 
         with self.assertRaises(ValueError) as cm:
@@ -117,6 +143,20 @@ class CubeSchemaTest(unittest.TestCase):
         with self.assertRaises(ValueError) as cm:
             CubeSchema.new(cube)
         self.assertEqual("cube is empty",
+                         f'{cm.exception}')
+
+        cube = new_cube()
+        del cube.coords['lon']
+        with self.assertRaises(ValueError) as cm:
+            CubeSchema.new(cube)
+        self.assertEqual("cube has no valid spatial coordinate variables",
+                         f'{cm.exception}')
+
+        cube = new_cube()
+        del cube.coords['time']
+        with self.assertRaises(ValueError) as cm:
+            CubeSchema.new(cube)
+        self.assertEqual("cube has no valid time coordinate variable",
                          f'{cm.exception}')
 
         cube = new_cube(variables=dict(a=1, b=2))
