@@ -41,11 +41,11 @@ VIEWER_ENV_VAR = 'XCUBE_VIEWER_PATH'
                    'For example "${name}/api/${version}".')
 @click.option('--name', metavar='NAME', hidden=True,
               help='Service name. Deprecated, use prefix option instead.')
-@click.option('--update', '-u', metavar='PERIOD', type=float,
+@click.option('--update', '-u', 'update_period', metavar='PERIOD', type=float,
               default=DEFAULT_UPDATE_PERIOD,
               help='Service will update after given seconds of inactivity. Zero or a negative value will '
                    'disable update checks. '
-              f'Defaults to {DEFAULT_UPDATE_PERIOD!r}.')
+                   f'Defaults to {DEFAULT_UPDATE_PERIOD!r}.')
 @click.option('--styles', '-S', metavar='STYLES', default=None,
               help='Color mapping styles for variables. '
                    'Used only, if one or more CUBE arguments are provided and CONFIG is not given. '
@@ -54,36 +54,36 @@ VIEWER_ENV_VAR = 'XCUBE_VIEWER_PATH'
 @click.option('--config', '-c', metavar='CONFIG', default=None,
               help='Use datasets configuration file CONFIG. '
                    'Cannot be used if CUBES are provided.')
-@click.option('--tilecache', metavar='SIZE', default=DEFAULT_TILE_CACHE_SIZE,
+@click.option('--tilecache', 'tile_cache_size', metavar='SIZE', default=DEFAULT_TILE_CACHE_SIZE,
               help=f'In-memory tile cache size in bytes. '
-              f'Unit suffixes {"K"!r}, {"M"!r}, {"G"!r} may be used. '
-              f'Defaults to {DEFAULT_TILE_CACHE_SIZE!r}. '
-              f'The special value {"OFF"!r} disables tile caching.')
-@click.option('--tilemode', metavar='MODE', default=None, type=int,
+                   f'Unit suffixes {"K"!r}, {"M"!r}, {"G"!r} may be used. '
+                   f'Defaults to {DEFAULT_TILE_CACHE_SIZE!r}. '
+                   f'The special value {"OFF"!r} disables tile caching.')
+@click.option('--tilemode', 'tile_comp_mode', metavar='MODE', default=None, type=int,
               help='Tile computation mode. '
                    'This is an internal option used to switch between different tile computation implementations. '
-              f'Defaults to {DEFAULT_TILE_COMP_MODE!r}.')
-@click.option('--show','-s',  is_flag=True,
+                   f'Defaults to {DEFAULT_TILE_COMP_MODE!r}.')
+@click.option('--show', '-s', is_flag=True,
               help=f"Run viewer app. Requires setting the environment variable {VIEWER_ENV_VAR} "
-              f"to a valid xcube-viewer deployment or build directory. "
-              f"Refer to https://github.com/dcs4cop/xcube-viewer for more information.")
+                   f"to a valid xcube-viewer deployment or build directory. "
+                   f"Refer to https://github.com/dcs4cop/xcube-viewer for more information.")
 @click.option('--verbose', '-v', is_flag=True,
               help="Delegate logging to the console (stderr).")
-@click.option('--traceperf', is_flag=True,
+@click.option('--traceperf', 'trace_perf', is_flag=True,
               help="Print performance diagnostics (stdout).")
 def serve(cube: List[str],
           address: str,
           port: int,
           prefix: str,
           name: str,
-          update: float,
+          update_period: float,
           styles: str,
           config: str,
-          tilecache: str,
-          tilemode: int,
+          tile_cache_size: str,
+          tile_comp_mode: int,
           show: bool,
           verbose: bool,
-          traceperf: bool):
+          trace_perf: bool):
     """
     Serve data cubes via web service.
 
@@ -116,13 +116,13 @@ def serve(cube: List[str],
                       cube_paths=cube,
                       styles=styles,
                       config_file=config,
-                      tile_cache_size=tilecache,
-                      tile_comp_mode=tilemode,
-                      update_period=update,
+                      tile_cache_size=tile_cache_size,
+                      tile_comp_mode=tile_comp_mode,
+                      update_period=update_period,
                       log_to_stderr=verbose,
-                      trace_perf=traceperf)
-
+                      trace_perf=trace_perf)
     service.start()
+
     return 0
 
 
