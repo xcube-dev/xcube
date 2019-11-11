@@ -20,7 +20,7 @@
 # SOFTWARE.
 
 import math
-from typing import Optional, Union, Dict, Tuple, Sequence, Any
+from typing import Optional, Union, Dict, Tuple, Sequence, Any, Mapping
 
 import affine
 import numpy as np
@@ -30,8 +30,9 @@ import shapely.geometry
 import shapely.wkt
 import xarray as xr
 
-from xcube.util.geojson import GeoJSON
+from xcube.core.schema import get_dataset_xy_var_names, get_dataset_bounds_var_name
 from xcube.core.update import update_dataset_spatial_attrs
+from xcube.util.geojson import GeoJSON
 
 GeometryLike = Union[shapely.geometry.base.BaseGeometry, Dict[str, Any], str, Sequence[Union[float, int]]]
 Bounds = Tuple[float, float, float, float]
@@ -43,6 +44,101 @@ _INVALID_GEOMETRY_MSG = ('Geometry must be either a shapely geometry object, '
                          'or point coordinates (x, y)')
 
 _INVALID_BOX_COORDS_MSG = 'Invalid box coordinates'
+
+Name = str
+Attrs = Dict[Name, Any]
+VarPropsTuple = Tuple[Name, Any, Any, Optional[Attrs]]
+
+
+def rasterize_features_into_dataset(dataset: xr.Dataset,
+                                    features: Sequence[Mapping[Name, Any]],
+                                    feature_property_names: Sequence[Name],
+                                    var_properties: Dict[Name, Union[Name, VarPropsTuple]] = None,
+                                    in_place: bool = False) -> Optional[xr.Dataset]:
+    """
+    Rasterize numeric feature properties of GeoJSON *features* as new variables into *dataset*.
+
+    Using *var_properties* the properties of newly created variables can be determined.
+    If provided, it must be a mapping from feature property name to a variable name
+    or a 4-tuple ``(name, dtype, fill_value, attributes)`` to be used for a new variable.
+    If only variable name is given, the defaults are
+    ``(name, dtype='float64', fill_value=float('nan'), attributes=None)``.
+
+    Currently, the coordinates of the geometries in the given *features* must use the same CRS as
+    the given *dataset*.
+
+    :param dataset: The xarray dataset.
+    :param features: Sequence of GeoJSON features.
+    :param feature_property_names: Sequence of names of numeric feature properties to be rasterized.
+    :param var_properties: Optional mapping of feature property name
+        to a name or a 4-tuple (name, dtype, fill_value, attributes) for the new variable.
+    :param in_place: Whether to add new variables to *dataset*.
+        If False, a copy will be created and returned.
+    :return: dataset with rasterized feature_property
+    """
+    var_properties = var_properties or {}
+    xy_var_names = get_dataset_xy_var_names(dataset, must_exist=True)
+    dataset_bounds = get_dataset_bounds(dataset, xy_var_names=xy_var_names)
+
+    ds_x_min, ds_y_min, ds_x_max, ds_y_max = dataset_bounds
+
+    x_var_name, y_var_name = xy_var_names
+    x_var, y_var = dataset[x_var_name], dataset[y_var_name]
+    x_dim, y_dim = x_var.dims[0], y_var.dims[0]
+    coords = {y_var_name: y_var, x_var_name: x_var}
+    dims = (y_dim, x_dim)
+
+    width = x_var.size
+    height = y_var.size
+    spatial_res = (ds_x_max - ds_x_min) / width
+
+    if not in_place:
+        dataset = xr.Dataset(coords=dataset.coords, attrs=dataset.attrs)
+
+    for feature in features:
+        geometry = feature.get('geometry')
+        if not geometry:
+            continue
+
+        geometry = convert_geometry(geometry)
+        if geometry.is_empty or not geometry.is_valid:
+            continue
+
+        # TODO (forman): allow transforming geometry into CRS of dataset here
+
+        intersection_geometry = intersect_geometries(dataset_bounds, geometry)
+        if intersection_geometry is None:
+            continue
+
+        mask_data = get_geometry_mask(width, height, intersection_geometry, ds_x_min, ds_y_min, spatial_res)
+        mask = xr.DataArray(mask_data, coords=coords, dims=dims)
+
+        for feature_property_name in feature_property_names:
+            feature_properties = feature.get('properties', {})
+            if not feature_properties:
+                continue
+
+            var_name = var_properties.get(feature_property_name, feature_property_name)
+            var_dtype = np.float64
+            var_fill_value = np.nan
+            var_attrs = None
+            if not isinstance(var_name, str):
+                var_name, var_dtype, var_fill_value, var_attrs = var_name
+
+            feature_property_value = float(feature_properties.get(feature_property_name, var_fill_value))
+            var_new = xr.DataArray(np.full((height, width), feature_property_value, dtype=var_dtype),
+                                   coords=coords, dims=dims, attrs=var_attrs)
+            if var_name not in dataset:
+                var_old = xr.DataArray(np.full((height, width), var_fill_value, dtype=var_dtype),
+                                       coords=coords, dims=dims, attrs=var_attrs)
+                dataset[var_name] = var_old
+            else:
+                var_old = dataset[var_name]
+
+            dataset[var_name] = var_new.where(mask, var_old)
+            dataset[var_name].encoding.update(fill_value=var_fill_value)
+
+    return dataset
 
 
 def mask_dataset_by_geometry(dataset: xr.Dataset,
@@ -72,24 +168,28 @@ def mask_dataset_by_geometry(dataset: xr.Dataset,
         intersection with the bounding box of the geometry.
     """
     geometry = convert_geometry(geometry)
-
-    intersection_geometry = intersect_geometries(get_dataset_bounds(dataset), geometry)
+    xy_var_names = get_dataset_xy_var_names(dataset, must_exist=True)
+    intersection_geometry = intersect_geometries(get_dataset_bounds(dataset, xy_var_names=xy_var_names),
+                                                 geometry)
     if intersection_geometry is None:
         return None
 
     if not no_clip:
-        dataset = _clip_dataset_by_geometry(dataset, intersection_geometry)
+        dataset = _clip_dataset_by_geometry(dataset, intersection_geometry, xy_var_names)
 
-    ds_x_min, ds_y_min, ds_x_max, ds_y_max = get_dataset_bounds(dataset)
+    ds_x_min, ds_y_min, ds_x_max, ds_y_max = get_dataset_bounds(dataset, xy_var_names=xy_var_names)
 
-    width = dataset.dims['lon']
-    height = dataset.dims['lat']
+    x_var_name, y_var_name = xy_var_names
+    x_var, y_var = dataset[x_var_name], dataset[y_var_name]
+
+    width = x_var.size
+    height = y_var.size
     spatial_res = (ds_x_max - ds_x_min) / width
 
     mask_data = get_geometry_mask(width, height, intersection_geometry, ds_x_min, ds_y_min, spatial_res)
     mask = xr.DataArray(mask_data,
-                        coords=dict(lat=dataset.lat, lon=dataset.lon),
-                        dims=('lat', 'lon'))
+                        coords={y_var_name: y_var, x_var_name: x_var},
+                        dims=(y_var.dims[0], x_var.dims[0]))
 
     dataset_vars = {}
     for var_name, var in dataset.data_vars.items():
@@ -120,34 +220,40 @@ def clip_dataset_by_geometry(dataset: xr.Dataset,
     :return: The dataset spatial subset, or None if the bounding box of the dataset has a no or a zero area
         intersection with the bounding box of the geometry.
     """
-    intersection_geometry = intersect_geometries(get_dataset_bounds(dataset), geometry)
+    xy_var_names = get_dataset_xy_var_names(dataset, must_exist=True)
+    intersection_geometry = intersect_geometries(get_dataset_bounds(dataset, xy_var_names=xy_var_names), geometry)
     if intersection_geometry is None:
         return None
-    return _clip_dataset_by_geometry(dataset, intersection_geometry, save_geometry_wkt=save_geometry_wkt)
+    return _clip_dataset_by_geometry(dataset, intersection_geometry, xy_var_names, save_geometry_wkt=save_geometry_wkt)
 
 
 def _clip_dataset_by_geometry(dataset: xr.Dataset,
                               intersection_geometry: shapely.geometry.base.BaseGeometry,
+                              xy_var_names: Tuple[str, str],
                               save_geometry_wkt: bool = False) -> Optional[xr.Dataset]:
     # TODO (forman): the following code is wrong, if the dataset bounds cross the anti-meridian!
 
-    ds_x_min, ds_y_min, ds_x_max, ds_y_max = get_dataset_bounds(dataset)
+    ds_x_min, ds_y_min, ds_x_max, ds_y_max = get_dataset_bounds(dataset, xy_var_names=xy_var_names)
 
-    width = dataset.lon.size
-    height = dataset.lat.size
+    x_var_name, y_var_name = xy_var_names
+    x_var = dataset[x_var_name]
+    y_var = dataset[y_var_name]
+
+    width = x_var.size
+    height = y_var.size
     res = (ds_y_max - ds_y_min) / height
 
-    g_lon_min, g_lat_min, g_lon_max, g_lat_max = intersection_geometry.bounds
-    x1 = _clamp(int(math.floor((g_lon_min - ds_x_min) / res)), 0, width - 1)
-    x2 = _clamp(int(math.ceil((g_lon_max - ds_x_min) / res)), 0, width - 1)
-    y1 = _clamp(int(math.floor((g_lat_min - ds_y_min) / res)), 0, height - 1)
-    y2 = _clamp(int(math.ceil((g_lat_max - ds_y_min) / res)), 0, height - 1)
-    if not is_dataset_y_axis_inverted(dataset):
+    g_x_min, g_y_min, g_x_max, g_y_max = intersection_geometry.bounds
+    x1 = _clamp(int(math.floor((g_x_min - ds_x_min) / res)), 0, width - 1)
+    x2 = _clamp(int(math.ceil((g_x_max - ds_x_min) / res)), 0, width - 1)
+    y1 = _clamp(int(math.floor((g_y_min - ds_y_min) / res)), 0, height - 1)
+    y2 = _clamp(int(math.ceil((g_y_max - ds_y_min) / res)), 0, height - 1)
+    if not is_dataset_y_axis_inverted(dataset, xy_var_names=xy_var_names):
         _y1, _y2 = y1, y2
         y1 = height - _y2 - 1
         y2 = height - _y1 - 1
 
-    dataset_subset = dataset.isel(lon=slice(x1, x2), lat=slice(y1, y2))
+    dataset_subset = dataset.isel(**{x_var_name: slice(x1, x2), y_var_name: slice(y1, y2)})
 
     update_dataset_spatial_attrs(dataset_subset, update_existing=True, in_place=True)
 
@@ -170,11 +276,11 @@ def _save_geometry_wkt(dataset, intersection_geometry, save_geometry):
 
 def get_geometry_mask(width: int, height: int,
                       geometry: GeometryLike,
-                      lon_min: float, lat_min: float, res: float) -> np.ndarray:
+                      x_min: float, y_min: float, res: float) -> np.ndarray:
     geometry = convert_geometry(geometry)
     # noinspection PyTypeChecker
-    transform = affine.Affine(res, 0.0, lon_min,
-                              0.0, -res, lat_min + res * height)
+    transform = affine.Affine(res, 0.0, x_min,
+                              0.0, -res, y_min + res * height)
     return rasterio.features.geometry_mask([geometry],
                                            out_shape=(height, width),
                                            transform=transform,
@@ -267,55 +373,71 @@ def convert_geometry(geometry: Optional[GeometryLike]) -> Optional[shapely.geome
     raise ValueError(_INVALID_GEOMETRY_MSG)
 
 
-def is_dataset_y_axis_inverted(dataset: Union[xr.Dataset, xr.DataArray]) -> bool:
-    if 'lat' in dataset.coords:
-        y = dataset.lat
-    elif 'y' in dataset.coords:
-        y = dataset.y
+def is_dataset_y_axis_inverted(dataset: Union[xr.Dataset, xr.DataArray],
+                               xy_var_names: Tuple[str, str] = None) -> bool:
+    if xy_var_names is None:
+        xy_var_names = get_dataset_xy_var_names(dataset, must_exist=True)
+    y_var = dataset[xy_var_names[1]]
+    return float(y_var[0]) < float(y_var[-1])
+
+
+def is_lon_lat_dataset(dataset: Union[xr.Dataset, xr.DataArray],
+                       xy_var_names: Tuple[str, str] = None) -> bool:
+    if xy_var_names is None:
+        xy_var_names = get_dataset_xy_var_names(dataset, must_exist=True)
+    x_var_name, y_var_name = xy_var_names
+    if x_var_name == 'lon' and y_var_name == 'lat':
+        return True
+    x_var = dataset[x_var_name]
+    y_var = dataset[y_var_name]
+    return x_var.attrs.get('long_name') == 'longitude' and y_var.attrs.get('long_name') == 'latitude'
+
+
+def get_dataset_geometry(dataset: Union[xr.Dataset, xr.DataArray],
+                         xy_var_names: Tuple[str, str] = None) -> shapely.geometry.base.BaseGeometry:
+    if xy_var_names is None:
+        xy_var_names = get_dataset_xy_var_names(dataset, must_exist=True)
+    geo_bounds = get_dataset_bounds(dataset, xy_var_names=xy_var_names)
+    if is_lon_lat_dataset(dataset, xy_var_names=xy_var_names):
+        return get_box_split_bounds_geometry(*geo_bounds)
     else:
-        raise ValueError("Neither 'lat' nor 'y' coordinate variable found.")
-    return float(y[0]) < float(y[-1])
+        return shapely.geometry.box(*geo_bounds)
 
 
-def get_dataset_geometry(dataset: Union[xr.Dataset, xr.DataArray]) -> shapely.geometry.base.BaseGeometry:
-    return get_box_split_bounds_geometry(*get_dataset_bounds(dataset))
+def get_dataset_bounds(dataset: Union[xr.Dataset, xr.DataArray],
+                       xy_var_names: Tuple[str, str] = None) -> Bounds:
+    if xy_var_names is None:
+        xy_var_names = get_dataset_xy_var_names(dataset, must_exist=True)
+    x_name, y_name = xy_var_names
+    x_var, y_var = dataset.coords[x_name], dataset.coords[y_name]
 
-
-def get_dataset_bounds(dataset: Union[xr.Dataset, xr.DataArray]) -> Bounds:
-    lon_var = dataset.coords.get("lon")
-    lat_var = dataset.coords.get("lat")
-    if lon_var is None:
-        raise ValueError('Missing coordinate variable "lon"')
-    if lat_var is None:
-        raise ValueError('Missing coordinate variable "lat"')
-
-    lon_bnds_name = lon_var.attrs["bounds"] if "bounds" in lon_var.attrs else "lon_bnds"
-    if lon_bnds_name in dataset.coords:
-        lon_bnds_var = dataset.coords[lon_bnds_name]
-        lon_min = lon_bnds_var[0][0]
-        lon_max = lon_bnds_var[-1][1]
+    x_bnds_name = get_dataset_bounds_var_name(dataset, x_name)
+    if x_bnds_name:
+        x_bnds_var = dataset.coords[x_bnds_name]
+        x_min = x_bnds_var[0][0]
+        x_max = x_bnds_var[-1][1]
     else:
-        lon_min = lon_var[0]
-        lon_max = lon_var[-1]
-        delta = min(abs(np.diff(lon_var)))
-        lon_min -= 0.5 * delta
-        lon_max += 0.5 * delta
+        x_min = x_var[0]
+        x_max = x_var[-1]
+        delta = min(abs(np.diff(x_var)))
+        x_min -= 0.5 * delta
+        x_max += 0.5 * delta
 
-    lat_bnds_name = lat_var.attrs["bounds"] if "bounds" in lat_var.attrs else "lat_bnds"
-    if lat_bnds_name in dataset.coords:
-        lat_bnds_var = dataset.coords[lat_bnds_name]
-        lat1 = lat_bnds_var[0][0]
-        lat2 = lat_bnds_var[-1][1]
-        lat_min = min(lat1, lat2)
-        lat_max = max(lat1, lat2)
+    y_bnds_name = get_dataset_bounds_var_name(dataset, y_name)
+    if y_bnds_name:
+        y_bnds_var = dataset.coords[y_bnds_name]
+        y1 = y_bnds_var[0][0]
+        y2 = y_bnds_var[-1][1]
+        y_min = min(y1, y2)
+        y_max = max(y1, y2)
     else:
-        lat1 = lat_var[0]
-        lat2 = lat_var[-1]
-        delta = min(abs(np.diff(lat_var)))
-        lat_min = min(lat1, lat2) - 0.5 * delta
-        lat_max = max(lat1, lat2) + 0.5 * delta
+        y1 = y_var[0]
+        y2 = y_var[-1]
+        delta = min(abs(np.diff(y_var)))
+        y_min = min(y1, y2) - 0.5 * delta
+        y_max = max(y1, y2) + 0.5 * delta
 
-    return float(lon_min), float(lat_min), float(lon_max), float(lat_max)
+    return float(x_min), float(y_min), float(x_max), float(y_max)
 
 
 def get_box_split_bounds(lon_min: float, lat_min: float,

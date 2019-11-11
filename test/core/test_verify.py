@@ -26,8 +26,7 @@ class AssertAndVerifyCubeTest(unittest.TestCase):
         with self.assertRaises(ValueError) as cm:
             assert_cube(cube)
         self.assertEqual("Dataset is not a valid xcube dataset, because:\n"
-                         "- coordinate variable 'lat' must have a single dimension 'lat';\n"
-                         "- coordinate variable 'lon' must have a single dimension 'lon'.",
+                         "- missing spatial x,y coordinate variables.",
                          f"{cm.exception}")
 
     def test_assert_cube_illegal_coord_bounds_var(self):
@@ -41,12 +40,11 @@ class AssertAndVerifyCubeTest(unittest.TestCase):
         with self.assertRaises(ValueError) as cm:
             assert_cube(cube)
         self.assertEqual("Dataset is not a valid xcube dataset, because:\n"
-                         "- bounds coordinate variable 'lat_bnds' must have dimensions ('lat', <bounds_dim>);\n"
-                         "- shape of bounds coordinate variable 'lat_bnds' must be (180, 2) but was (5, 180, 2);\n"
                          "- bounds coordinate variable 'lon_bnds' must have dimensions ('lon', <bounds_dim>);\n"
                          "- shape of bounds coordinate variable 'lon_bnds' must be (360, 2) but was (5, 360, 2);\n"
-                         "- type of bounds coordinate variable 'lon_bnds' must be dtype('float64')"
-                         " but was dtype('float16').",
+                         "- type of bounds coordinate variable 'lon_bnds' must be dtype('float64') but was dtype('float16');\n"
+                         "- bounds coordinate variable 'lat_bnds' must have dimensions ('lat', <bounds_dim>);\n"
+                         "- shape of bounds coordinate variable 'lat_bnds' must be (180, 2) but was (5, 180, 2).",
                          f"{cm.exception}")
 
     def test_assert_cube_illegal_data_var(self):
@@ -69,7 +67,7 @@ class AssertAndVerifyCubeTest(unittest.TestCase):
         cube = new_cube()
         self.assertEqual([], verify_cube(cube))
         ds = cube.drop("time")
-        self.assertEqual(["missing coordinate variable 'time'"], verify_cube(ds))
+        self.assertEqual(["missing time coordinate variable"], verify_cube(ds))
         ds = ds.drop("lat")
-        self.assertEqual(["missing coordinate variable 'time'",
-                          "missing coordinate variable 'lat'"], verify_cube(ds))
+        self.assertEqual(["missing spatial x,y coordinate variables",
+                          "missing time coordinate variable"], verify_cube(ds))

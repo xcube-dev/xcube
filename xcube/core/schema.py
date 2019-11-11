@@ -19,7 +19,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-from typing import Tuple, Sequence, Dict, Optional, Mapping
+from typing import Tuple, Sequence, Dict, Optional, Mapping, Union
 
 import numpy as np
 import xarray as xr
@@ -39,6 +39,9 @@ class CubeSchema:
     def __init__(self,
                  shape: Sequence[int],
                  coords: Mapping[str, np.array],
+                 x_name: str = 'lon',
+                 y_name: str = 'lat',
+                 time_name: str = 'time',
                  dims: Sequence[str] = None,
                  chunks: Sequence[int] = None):
 
@@ -46,17 +49,29 @@ class CubeSchema:
             raise ValueError('shape must be a sequence of integer sizes')
         if not coords:
             raise ValueError('coords must be a mapping from dimension names to label arrays')
+        if not x_name:
+            raise ValueError('x_name must be given')
+        if not y_name:
+            raise ValueError('y_name must be given')
+        if not time_name:
+            raise ValueError('time_name must be given')
 
         ndim = len(shape)
         if ndim < 3:
             raise ValueError('shape must have at least three dimensions')
-        dims = tuple(dims) or ('time', 'lat', 'lon')
+        dims = tuple(dims) or (time_name, y_name, x_name)
         if dims and len(dims) != ndim:
             raise ValueError('dims must have same length as shape')
-        if dims[0] != 'time':
-            raise ValueError("the first name in dims must be 'time'")
-        if dims[-2:] not in (('lat', 'lon'), ('y', 'x')):
-            raise ValueError("the last two names in dims must be either ('lat', 'lon') or ('y', 'x')")
+        if x_name not in coords or y_name not in coords or time_name not in coords:
+            raise ValueError(f'missing variables {x_name!r}, {y_name!r}, {time_name!r} in coords')
+        x_var, y_var, time_var = coords.get(x_name), coords.get(y_name), coords.get(time_name)
+        if x_var.ndim != 1 or y_var.ndim != 1 or time_var.ndim != 1:
+            raise ValueError(f'variables {x_name!r}, {y_name!r}, {time_name!r} in coords must be 1-D')
+        x_dim, y_dim, time_dim = x_var.dims[0], y_var.dims[0], time_var.dims[0]
+        if dims[0] != time_dim:
+            raise ValueError(f"the first dimension in dims must be {time_dim!r}")
+        if dims[-2:] != (y_dim, x_dim):
+            raise ValueError(f"the last two dimensions in dims must be {y_dim!r} and {x_dim!r}")
         if chunks and len(chunks) != ndim:
             raise ValueError('chunks must have same length as shape')
         for i in range(ndim):
@@ -71,6 +86,9 @@ class CubeSchema:
                 raise ValueError(f'number of labels of {dim_name!r} in coords does not match shape')
 
         self._shape = tuple(shape)
+        self._x_name = x_name
+        self._y_name = y_name
+        self._time_name = time_name
         self._dims = dims
         self._chunks = tuple(chunks) if chunks else None
         self._coords = dict(coords)
@@ -86,14 +104,49 @@ class CubeSchema:
         return self._dims
 
     @property
-    def time_dim(self) -> str:
-        """Name of time dimension."""
-        return self._dims[0]
+    def x_name(self) -> str:
+        """Name of the spatial x coordinate variable."""
+        return self._x_name
 
     @property
-    def spatial_dims(self) -> Tuple[str, str]:
-        """Tuple (pair) of spatial dimension names, will be either ('lon', 'lat') or ('x', 'y')."""
-        return self._dims[-1], self._dims[-2]
+    def y_name(self) -> str:
+        """Name of the spatial y coordinate variable."""
+        return self._y_name
+
+    @property
+    def time_name(self) -> str:
+        """Name of the time coordinate variable."""
+        return self._time_name
+
+    @property
+    def x_var(self) -> xr.DataArray:
+        """Spatial x coordinate variable."""
+        return self._coords[self._x_name]
+
+    @property
+    def y_var(self) -> xr.DataArray:
+        """Spatial y coordinate variable."""
+        return self._coords[self._y_name]
+
+    @property
+    def time_var(self) -> xr.DataArray:
+        """Time coordinate variable."""
+        return self._coords[self._time_name]
+
+    @property
+    def x_dim(self) -> str:
+        """Name of the spatial x dimension."""
+        return self._dims[-1]
+
+    @property
+    def y_dim(self) -> str:
+        """Name of the spatial y dimension."""
+        return self._dims[-2]
+
+    @property
+    def time_dim(self) -> str:
+        """Name of the time dimension."""
+        return self._dims[0]
 
     @property
     def shape(self) -> Tuple[int, ...]:
@@ -134,6 +187,10 @@ def get_cube_schema(cube: xr.Dataset) -> CubeSchema:
     :param cube: The data cube.
     :return: The cube schema.
     """
+
+    xy_var_names = get_dataset_xy_var_names(cube, must_exist=True, dataset_arg_name='cube')
+    time_var_name = get_dataset_time_var_name(cube, must_exist=True, dataset_arg_name='cube')
+
     first_dims = None
     first_shape = None
     first_chunks = None
@@ -180,4 +237,86 @@ def get_cube_schema(cube: xr.Dataset) -> CubeSchema:
     if first_dims is None:
         raise ValueError('cube is empty')
 
-    return CubeSchema(first_shape, first_coords, dims=tuple(str(d) for d in first_dims), chunks=first_chunks)
+    return CubeSchema(first_shape,
+                      first_coords,
+                      x_name=xy_var_names[0],
+                      y_name=xy_var_names[1],
+                      time_name=time_var_name,
+                      dims=tuple(str(d) for d in first_dims),
+                      chunks=first_chunks)
+
+
+def get_dataset_xy_var_names(dataset: Union[xr.Dataset, xr.DataArray],
+                             must_exist: bool = False,
+                             dataset_arg_name: str = 'dataset') -> Optional[Tuple[str, str]]:
+    x_var_name = None
+    y_var_name = None
+    for var_name, var in dataset.coords.items():
+        if var.attrs.get('standard_name') == 'projection_x_coordinate' \
+                or var.attrs.get('long_name') == 'x coordinate of projection':
+            if var.ndim == 1:
+                x_var_name = var_name
+        if var.attrs.get('standard_name') == 'projection_y_coordinate' \
+                or var.attrs.get('long_name') == 'y coordinate of projection':
+            if var.ndim == 1:
+                y_var_name = var_name
+        if x_var_name and y_var_name:
+            return str(x_var_name), str(y_var_name)
+
+    x_var_name = None
+    y_var_name = None
+    for var_name, var in dataset.coords.items():
+        if var.attrs.get('long_name') == 'longitude':
+            if var.ndim == 1:
+                x_var_name = var_name
+        if var.attrs.get('long_name') == 'latitude':
+            if var.ndim == 1:
+                y_var_name = var_name
+        if x_var_name and y_var_name:
+            return str(x_var_name), str(y_var_name)
+
+    for x_var_name, y_var_name in (('lon', 'lat'), ('x', 'y')):
+        if x_var_name in dataset.coords and y_var_name in dataset.coords:
+            x_var = dataset.coords[x_var_name]
+            y_var = dataset.coords[y_var_name]
+            if x_var.ndim == 1 and y_var.ndim == 1:
+                return x_var_name, y_var_name
+
+    if must_exist:
+        raise ValueError(f'{dataset_arg_name} has no valid spatial coordinate variables')
+
+    return None
+
+
+def get_dataset_time_var_name(dataset: Union[xr.Dataset, xr.DataArray],
+                              must_exist: bool = False,
+                              dataset_arg_name: str = 'dataset') -> Optional[str]:
+    time_var_name = 'time'
+    if time_var_name in dataset.coords:
+        time_var = dataset.coords[time_var_name]
+        if time_var.ndim == 1 and np.issubdtype(time_var.dtype, np.datetime64):
+            return time_var_name
+
+    if must_exist:
+        raise ValueError(f'{dataset_arg_name} has no valid time coordinate variable')
+
+    return None
+
+
+def get_dataset_bounds_var_name(dataset: Union[xr.Dataset, xr.DataArray],
+                                var_name: str,
+                                must_exist: bool = False,
+                                dataset_arg_name: str = 'dataset') -> Optional[str]:
+    if var_name in dataset.coords:
+        var = dataset[var_name]
+        bounds_var_name = var.attrs.get('bounds', f'{var_name}_bnds')
+        if bounds_var_name in dataset:
+            bounds_var = dataset[bounds_var_name]
+            if bounds_var.ndim == 2 \
+                    and bounds_var.shape[0] == var.shape[0] and bounds_var.shape[1] == 2:
+                return bounds_var_name
+
+    if must_exist:
+        raise ValueError(f'{dataset_arg_name} has no valid bounds variable for variable {var_name!r}')
+
+    return None
