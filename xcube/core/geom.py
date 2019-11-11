@@ -64,6 +64,9 @@ def rasterize_features_into_dataset(dataset: xr.Dataset,
     If only variable name is given, the defaults are
     ``(name, dtype='float64', fill_value=float('nan'), attributes=None)``.
 
+    Currently, the coordinates of the geometries in the given *features* must use the same CRS as
+    the given *dataset*.
+
     :param dataset: The xarray dataset.
     :param features: Sequence of GeoJSON features.
     :param feature_property_names: Sequence of names of numeric feature properties to be rasterized.
