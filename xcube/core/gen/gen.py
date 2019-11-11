@@ -29,7 +29,6 @@ import traceback
 import warnings
 from typing import Any, Callable, Dict, Sequence, Tuple
 
-import pandas as pd
 import xarray as xr
 
 from xcube.core.dsio import DatasetIO, find_dataset_io, guess_dataset_format, rimraf
@@ -349,15 +348,14 @@ def _update_cube_attrs(output_writer: DatasetIO, output_path: str,
     output_writer.update(output_path, global_attrs=global_attrs)
 
 
-def _get_sorted_input_paths(input_processor,input_paths: Sequence[str]):
+def _get_sorted_input_paths(input_processor, input_paths: Sequence[str]):
     input_path_list = []
     time_list = []
     for input_file in input_paths:
         with xr.open_dataset(input_file) as dataset:
-            time_string = input_processor.get_time_for_sorting(dataset)
-            time_stamp = pd.to_datetime(time_string, utc=True)
-            time_list.append(time_stamp)
+            t1, t2 = input_processor.get_time_range(dataset)
+            time_list.append((t1 + t2) / 2)
             input_path_list.append(input_file)
             tuple_seq = zip(time_list, input_path_list)
-    input_paths = [e[1] for e in sorted(tuple_seq, key=lambda e:e[0])]
+    input_paths = [e[1] for e in sorted(tuple_seq, key=lambda e: e[0])]
     return input_paths

@@ -20,7 +20,7 @@
 # SOFTWARE.
 
 from abc import ABCMeta, abstractmethod
-from typing import Tuple, Union, Optional, Collection
+from typing import Collection, Optional, Tuple, Union
 
 import numpy as np
 import xarray as xr
@@ -29,7 +29,7 @@ from xcube.constants import CRS_WKT_EPSG_4326
 from xcube.constants import EXTENSION_POINT_INPUT_PROCESSORS
 from xcube.core.reproject import reproject_xy_to_wgs84
 from xcube.core.timecoord import to_time_in_days_since_1970
-from xcube.util.plugin import get_extension_registry, ExtensionComponent
+from xcube.util.plugin import ExtensionComponent, get_extension_registry
 
 
 class ReprojectionInfo:
@@ -99,14 +99,6 @@ class InputProcessor(ExtensionComponent, metaclass=ABCMeta):
         :return: The input reader parameters for this input processor.
         """
         return dict()
-
-    @abstractmethod
-    def get_time_for_sorting(self, dataset: xr.Dataset) -> Optional[str]:
-        """
-        Return a string of the datasets time for presorting the input list.
-        :param dataset: The dataset.
-        :return: The time string of the dataset or None.
-        """
 
     def get_time_range(self, dataset: xr.Dataset) -> Optional[Tuple[float, float]]:
         """
@@ -259,20 +251,20 @@ class DefaultInputProcessor(XYInputProcessor):
     def input_reader(self) -> str:
         return self._input_reader
 
-    def get_time_for_sorting(self, dataset: xr.Dataset) -> Optional[str]:
-        time_string = None
-        if "time" in dataset:
-            time_string = str(dataset.time[0].values)
-        if time_string is None:
-            if "time_coverage_start" in dataset.attrs:
-                time_string = str(dataset.attrs["time_coverage_start"])
-            elif "time_start" in dataset.attrs:
-                time_string = str(dataset.attrs["time_start"])
-            elif "start_time" in dataset.attrs:
-                time_string = str(dataset.attrs["start_time"])
-        if time_string is None:
-            raise ValueError("invalid input: missing time coverage information in dataset")
-        return time_string
+    # def get_time_for_sorting(self, dataset: xr.Dataset) -> Optional[str]:
+    #     time_string = None
+    #     if "time" in dataset:
+    #         time_string = str(dataset.time[0].values)
+    #     if time_string is None:
+    #         if "time_coverage_start" in dataset.attrs:
+    #             time_string = str(dataset.attrs["time_coverage_start"])
+    #         elif "time_start" in dataset.attrs:
+    #             time_string = str(dataset.attrs["time_start"])
+    #         elif "start_time" in dataset.attrs:
+    #             time_string = str(dataset.attrs["start_time"])
+    #     if time_string is None:
+    #         raise ValueError("invalid input: missing time coverage information in dataset")
+    #     return time_string
 
     def pre_process(self, dataset: xr.Dataset) -> xr.Dataset:
         self._validate(dataset)
