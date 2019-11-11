@@ -14,6 +14,7 @@ from xcube.core.extract import get_cube_values_for_points, get_cube_point_indexe
 # noinspection PyUnresolvedReferences
 from xcube.core.level import compute_levels, read_levels, write_levels
 from xcube.core.new import new_cube
+from xcube.core.schema import CubeSchema, get_cube_schema
 from xcube.core.select import select_vars
 from xcube.core.vars2dim import vars_to_dim
 from xcube.core.verify import verify_cube
@@ -280,3 +281,7 @@ class DatasetAccessor:
         :return: A list of dataset instances representing the multi-level pyramid.
         """
         return compute_levels(self._dataset, **kwargs)
+
+    @property
+    def schema(self) -> CubeSchema:
+        return get_cube_schema(self._dataset)
