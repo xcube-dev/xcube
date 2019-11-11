@@ -45,13 +45,35 @@ _INVALID_GEOMETRY_MSG = ('Geometry must be either a shapely geometry object, '
 
 _INVALID_BOX_COORDS_MSG = 'Invalid box coordinates'
 
+Name = str
+Attrs = Dict[Name, Any]
+VarPropsTuple = Tuple[Name, Any, Any, Optional[Attrs]]
+
 
 def rasterize_features_into_dataset(dataset: xr.Dataset,
-                                    features: Sequence[Mapping[str, Any]],
-                                    feature_property_names: Sequence[str],
-                                    feature_property_name_mapping: Dict[str, str] = None,
+                                    features: Sequence[Mapping[Name, Any]],
+                                    feature_property_names: Sequence[Name],
+                                    var_properties: Dict[Name, Union[Name, VarPropsTuple]] = None,
                                     in_place: bool = False) -> Optional[xr.Dataset]:
-    feature_property_name_mapping = feature_property_name_mapping or {}
+    """
+    Rasterize numeric feature properties of GeoJSON *features* as new variables into *dataset*.
+
+    Using *var_properties* the properties of newly created variables can be determined.
+    If provided, it must be a mapping from feature property name to a variable name
+    or a 4-tuple ``(name, dtype, fill_value, attributes)`` to be used for a new variable.
+    If only variable name is given, the defaults are
+    ``(name, dtype='float64', fill_value=float('nan'), attributes=None)``.
+
+    :param dataset: The xarray dataset.
+    :param features: Sequence of GeoJSON features.
+    :param feature_property_names: Sequence of names of numeric feature properties to be rasterized.
+    :param var_properties: Optional mapping of feature property name
+        to a name or a 4-tuple (name, dtype, fill_value, attributes) for the new variable.
+    :param in_place: Whether to add new variables to *dataset*.
+        If False, a copy will be created and returned.
+    :return: dataset with rasterized feature_property
+    """
+    var_properties = var_properties or {}
     xy_var_names = get_dataset_xy_var_names(dataset, must_exist=True)
     dataset_bounds = get_dataset_bounds(dataset, xy_var_names=xy_var_names)
 
@@ -60,6 +82,8 @@ def rasterize_features_into_dataset(dataset: xr.Dataset,
     x_var_name, y_var_name = xy_var_names
     x_var, y_var = dataset[x_var_name], dataset[y_var_name]
     x_dim, y_dim = x_var.dims[0], y_var.dims[0]
+    coords = {y_var_name: y_var, x_var_name: x_var}
+    dims = (y_dim, x_dim)
 
     width = x_var.size
     height = y_var.size
@@ -69,31 +93,47 @@ def rasterize_features_into_dataset(dataset: xr.Dataset,
         dataset = xr.Dataset(coords=dataset.coords, attrs=dataset.attrs)
 
     for feature in features:
-        geometry = convert_geometry(feature['geometry'])
+        geometry = feature.get('geometry')
+        if not geometry:
+            continue
+
+        geometry = convert_geometry(geometry)
+        if geometry.is_empty or not geometry.is_valid:
+            continue
+
+        # TODO (forman): allow transforming geometry into CRS of dataset here
+
         intersection_geometry = intersect_geometries(dataset_bounds, geometry)
         if intersection_geometry is None:
             continue
 
         mask_data = get_geometry_mask(width, height, intersection_geometry, ds_x_min, ds_y_min, spatial_res)
-        mask = xr.DataArray(mask_data,
-                            coords={y_var_name: y_var, x_var_name: x_var},
-                            dims=(y_dim, x_dim))
+        mask = xr.DataArray(mask_data, coords=coords, dims=dims)
 
         for feature_property_name in feature_property_names:
-            var_name = feature_property_name_mapping.get(feature_property_name, feature_property_name)
-            feature_property_value = float(feature['properties'].get(feature_property_name, float('nan')))
-            feature_property_var = xr.DataArray(np.full((height, width), feature_property_value, dtype=np.float64),
-                                                coords={y_var_name: y_var, x_var_name: x_var},
-                                                dims=(y_dim, x_dim))
-            if feature_property_name not in dataset:
-                feature_property_var_old = xr.DataArray(np.full((height, width), np.nan, dtype=np.float64),
-                                                        coords={y_var_name: y_var, x_var_name: x_var},
-                                                        dims=(y_dim, x_dim))
-                dataset[var_name] = feature_property_var_old
-            else:
-                feature_property_var_old = dataset[var_name]
+            feature_properties = feature.get('properties', {})
+            if not feature_properties:
+                continue
 
-            dataset[var_name] = feature_property_var.where(mask, feature_property_var_old)
+            var_name = var_properties.get(feature_property_name, feature_property_name)
+            var_dtype = np.float64
+            var_fill_value = np.nan
+            var_attrs = None
+            if not isinstance(var_name, str):
+                var_name, var_dtype, var_fill_value, var_attrs = var_name
+
+            feature_property_value = float(feature_properties.get(feature_property_name, var_fill_value))
+            var_new = xr.DataArray(np.full((height, width), feature_property_value, dtype=var_dtype),
+                                   coords=coords, dims=dims, attrs=var_attrs)
+            if var_name not in dataset:
+                var_old = xr.DataArray(np.full((height, width), var_fill_value, dtype=var_dtype),
+                                       coords=coords, dims=dims, attrs=var_attrs)
+                dataset[var_name] = var_old
+            else:
+                var_old = dataset[var_name]
+
+            dataset[var_name] = var_new.where(mask, var_old)
+            dataset[var_name].encoding.update(fill_value=var_fill_value)
 
     return dataset
 

@@ -17,6 +17,8 @@
   function that can be used to generate an output cube computed from a Python
   function that is applied to one or more input cubes. Replaces the formerly 
   hidden `xcube apply` command. (#167)
+  
+* Added new function `xcube.core.geom.` to rasterize features (#222)
 
 ### Enhancements
 

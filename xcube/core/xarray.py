@@ -34,48 +34,13 @@ class DatasetAccessor:
         self._dataset = dataset
 
     @classmethod
-    def new(cls,
-            title="Test Cube",
-            width=360,
-            height=180,
-            spatial_res=1.0,
-            lon_start=-180.0,
-            lat_start=-90.0,
-            time_periods=5,
-            time_freq="D",
-            time_start='2010-01-01T00:00:00',
-            inverse_lat=False,
-            drop_bounds=False,
-            variables=None) -> xr.Dataset:
+    def new(cls, **kwargs) -> xr.Dataset:
         """
         Create a new empty cube. Useful for testing.
 
-        :param title: A title.
-        :param width: Horizontal number of grid cells
-        :param height: Vertical number of grid cells
-        :param spatial_res: Spatial resolution in degrees
-        :param lon_start: Minimum longitude value
-        :param lat_start: Minimum latitude value
-        :param time_periods: Number of time steps
-        :param time_freq: Duration of each time step
-        :param time_start: First time value
-        :param inverse_lat: Whether to create an inverse latitude axis
-        :param drop_bounds: If True, coordinate bounds variables are not created.
-        :param variables: Dictionary of data variables to be added.
-        :return: A cube instance
+        Refer to :func:`xcube.core.new.new_cube` for details.
         """
-        return new_cube(title=title,
-                        width=width,
-                        height=height,
-                        spatial_res=spatial_res,
-                        lon_start=lon_start,
-                        lat_start=lat_start,
-                        time_periods=time_periods,
-                        time_freq=time_freq,
-                        time_start=time_start,
-                        inverse_lat=inverse_lat,
-                        drop_bounds=drop_bounds,
-                        variables=variables)
+        return new_cube(**kwargs)
 
     @classmethod
     def open(cls, input_path: str, format_name: str = None, **kwargs) -> xr.Dataset:

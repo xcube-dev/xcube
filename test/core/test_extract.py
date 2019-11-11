@@ -13,9 +13,9 @@ class GetCubeValuesForPointsTest(unittest.TestCase):
     def _new_test_cube(self):
         return new_cube(width=2000,
                         height=1000,
-                        lon_start=0.0,
-                        lat_start=50.0,
-                        spatial_res=4.0 / 2000,
+                        x_start=0.0,
+                        y_start=50.0,
+                        x_res=4.0 / 2000,
                         time_start="2010-01-01",
                         time_periods=20,
                         variables=dict(precipitation=0.6, temperature=276.2))
@@ -107,11 +107,11 @@ class GetDatasetIndexesTest(unittest.TestCase):
         self._assert_get_dataset_indexes_works(dataset)
 
     def test_get_dataset_indexes_with_bounds_inverse_lat(self):
-        dataset = new_cube(width=360, height=180, inverse_lat=True, drop_bounds=False)
+        dataset = new_cube(width=360, height=180, inverse_y=True, drop_bounds=False)
         self._assert_get_dataset_indexes_works(dataset, inverse_lat=True)
 
     def test_get_dataset_indexes_without_bounds_inverse_lat(self):
-        dataset = new_cube(width=360, height=180, inverse_lat=True, drop_bounds=True)
+        dataset = new_cube(width=360, height=180, inverse_y=True, drop_bounds=True)
         self._assert_get_dataset_indexes_works(dataset, inverse_lat=True)
 
     def _assert_get_dataset_indexes_works(self, dataset, inverse_lat=False):
