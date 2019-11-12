@@ -251,21 +251,6 @@ class DefaultInputProcessor(XYInputProcessor):
     def input_reader(self) -> str:
         return self._input_reader
 
-    # def get_time_for_sorting(self, dataset: xr.Dataset) -> Optional[str]:
-    #     time_string = None
-    #     if "time" in dataset:
-    #         time_string = str(dataset.time[0].values)
-    #     if time_string is None:
-    #         if "time_coverage_start" in dataset.attrs:
-    #             time_string = str(dataset.attrs["time_coverage_start"])
-    #         elif "time_start" in dataset.attrs:
-    #             time_string = str(dataset.attrs["time_start"])
-    #         elif "start_time" in dataset.attrs:
-    #             time_string = str(dataset.attrs["start_time"])
-    #     if time_string is None:
-    #         raise ValueError("invalid input: missing time coverage information in dataset")
-    #     return time_string
-
     def pre_process(self, dataset: xr.Dataset) -> xr.Dataset:
         self._validate(dataset)
 
