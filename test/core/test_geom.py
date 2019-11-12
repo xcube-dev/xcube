@@ -4,10 +4,88 @@ import numpy as np
 import shapely.geometry
 import xarray as xr
 
-from xcube.core.new import new_cube
 from xcube.core.chunk import chunk_dataset
-from xcube.core.geom import get_dataset_geometry, get_dataset_bounds, get_geometry_mask, convert_geometry, \
-    mask_dataset_by_geometry, clip_dataset_by_geometry
+from xcube.core.geom import clip_dataset_by_geometry
+from xcube.core.geom import convert_geometry
+from xcube.core.geom import get_dataset_bounds
+from xcube.core.geom import get_dataset_geometry
+from xcube.core.geom import get_geometry_mask
+from xcube.core.geom import mask_dataset_by_geometry
+from xcube.core.geom import rasterize_features_into_dataset
+from xcube.core.new import new_cube
+
+
+class RasterizeFeaturesIntoDataset(unittest.TestCase):
+    def test_rasterize_features_into_dataset_lonlat(self):
+        self._test_rasterize_features_into_dataset('lon', 'lat')
+
+    def test_rasterize_features_into_dataset_xy(self):
+        self._test_rasterize_features_into_dataset('x', 'y')
+
+    def _test_rasterize_features_into_dataset(self, x_name, y_name):
+        dataset = new_cube(width=10, height=10, x_name=x_name, y_name=y_name, x_res=10, x_start=-50, y_start=-50)
+        feature1 = dict(type='Feature',
+                        geometry=dict(type='Polygon',
+                                      coordinates=[[(-180, 0), (-1, 0), (-1, 90), (-180, 90), (-180, 0)]]),
+                        properties=dict(a=0.5, b=2.1, c=9))
+        feature2 = dict(type='Feature',
+                        geometry=dict(type='Polygon',
+                                      coordinates=[[(-180, -90), (-1, -90), (-1, 0), (-180, 0), (-180, -90)]]),
+                        properties=dict(a=0.6, b=2.2, c=8))
+        feature3 = dict(type='Feature',
+                        geometry=dict(type='Polygon',
+                                      coordinates=[[(20, 0), (180, 0), (180, 90), (20, 90), (20, 0)]]),
+                        properties=dict(a=0.7, b=2.3, c=7))
+        feature4 = dict(type='Feature',
+                        geometry=dict(type='Polygon',
+                                      coordinates=[[(20, -90), (180, -90), (180, 0), (20, 0), (20, -90)]]),
+                        properties=dict(a=0.8, b=2.4, c=6))
+        dataset = rasterize_features_into_dataset(dataset,
+                                                  [feature1, feature2, feature3, feature4],
+                                                  ['a', 'b', 'c'],
+                                                  var_properties=dict(
+                                                      b=('b', np.float32, np.nan, dict(units='meters')),
+                                                      c=('c2', np.uint8, 0, None),
+                                                  ),
+                                                  in_place=False)
+        self.assertIsNotNone(dataset)
+        self.assertIn(x_name, dataset.coords)
+        self.assertIn(y_name, dataset.coords)
+        self.assertIn('time', dataset.coords)
+        self.assertIn('a', dataset)
+        self.assertIn('b', dataset)
+        self.assertIn('c2', dataset)
+        self.assertEquals((10, 10), dataset.a.shape)
+        self.assertEquals((10, 10), dataset.b.shape)
+        self.assertEquals((10, 10), dataset.c2.shape)
+        self.assertEquals(np.float64, dataset.a.dtype)
+        self.assertEquals(np.float32, dataset.b.dtype)
+        self.assertEquals(np.uint8, dataset.c2.dtype)
+        self.assertEquals({}, dataset.a.attrs)
+        self.assertEquals({'units': 'meters'}, dataset.b.attrs)
+        self.assertEquals({}, dataset.c2.attrs)
+        self.assertEquals((y_name, x_name), dataset.a.dims)
+        self.assertEquals((y_name, x_name), dataset.b.dims)
+        self.assertEquals((y_name, x_name), dataset.c2.dims)
+        self.assertEquals(np.array(0.5, dtype=np.float64), dataset.a.min())
+        self.assertEquals(np.array(0.8, dtype=np.float64), dataset.a.max())
+        self.assertEquals(np.array(2.1, dtype=np.float32), dataset.b.min())
+        self.assertEquals(np.array(2.4, dtype=np.float32), dataset.b.max())
+        self.assertEquals(np.array(0, dtype=np.uint8), dataset.c2.min())
+        self.assertEquals(np.array(9, dtype=np.uint8), dataset.c2.max())
+        nan = np.nan
+        np.testing.assert_almost_equal(
+            np.array([[0.5, 0.5, 0.5, 0.5, 0.5, nan, nan, 0.7, 0.7, 0.7],
+                      [0.5, 0.5, 0.5, 0.5, 0.5, nan, nan, 0.7, 0.7, 0.7],
+                      [0.5, 0.5, 0.5, 0.5, 0.5, nan, nan, 0.7, 0.7, 0.7],
+                      [0.5, 0.5, 0.5, 0.5, 0.5, nan, nan, 0.7, 0.7, 0.7],
+                      [0.5, 0.5, 0.5, 0.5, 0.5, nan, nan, 0.7, 0.7, 0.7],
+                      [0.6, 0.6, 0.6, 0.6, 0.6, nan, nan, 0.8, 0.8, 0.8],
+                      [0.6, 0.6, 0.6, 0.6, 0.6, nan, nan, 0.8, 0.8, 0.8],
+                      [0.6, 0.6, 0.6, 0.6, 0.6, nan, nan, 0.8, 0.8, 0.8],
+                      [0.6, 0.6, 0.6, 0.6, 0.6, nan, nan, 0.8, 0.8, 0.8],
+                      [0.6, 0.6, 0.6, 0.6, 0.6, nan, nan, 0.8, 0.8, 0.8]]),
+            dataset.a.values)
 
 
 class DatasetGeometryTest(unittest.TestCase):
@@ -28,7 +106,7 @@ class DatasetGeometryTest(unittest.TestCase):
 
         self.cube = new_cube(width=width,
                              height=height,
-                             spatial_res=spatial_res,
+                             x_res=spatial_res,
                              drop_bounds=True,
                              variables=dict(temp=273.9, precip=0.9))
 
