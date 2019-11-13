@@ -66,6 +66,11 @@ Cube masking
     :members:
 
 
+Rasterisation of Features
+=========================
+
+.. autofunction:: xcube.core.geom.rasterize_features
+
 
 Cube metadata
 =============
