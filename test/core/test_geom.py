@@ -11,43 +11,43 @@ from xcube.core.geom import get_dataset_bounds
 from xcube.core.geom import get_dataset_geometry
 from xcube.core.geom import get_geometry_mask
 from xcube.core.geom import mask_dataset_by_geometry
-from xcube.core.geom import rasterize_features_into_dataset
+from xcube.core.geom import rasterize_features
 from xcube.core.new import new_cube
 
+try:
+    import geopandas
+except ImportError:
+    geopandas = None
 
+
+@unittest.skipIf(geopandas is None, 'geopandas must be installed')
 class RasterizeFeaturesIntoDataset(unittest.TestCase):
-    def test_rasterize_features_into_dataset_lonlat(self):
-        self._test_rasterize_features_into_dataset('lon', 'lat')
+    def test_rasterize_geodataframe_features_into_dataset_lonlat(self):
+        features = self.get_geodataframe_features()
+        self._test_rasterize_features(features, 'lon', 'lat')
 
-    def test_rasterize_features_into_dataset_xy(self):
-        self._test_rasterize_features_into_dataset('x', 'y')
+    def test_rasterize_geodataframe_features_into_dataset_xy(self):
+        features = self.get_geodataframe_features()
+        self._test_rasterize_features(features, 'x', 'y')
 
-    def _test_rasterize_features_into_dataset(self, x_name, y_name):
+    def test_rasterize_geojson_features_into_dataset_lonlat(self):
+        features = self.get_geojson_features()
+        self._test_rasterize_features(features, 'lon', 'lat')
+
+    def test_rasterize_geojson_features_into_dataset_xy(self):
+        features = self.get_geojson_features()
+        self._test_rasterize_features(features, 'x', 'y')
+
+    def _test_rasterize_features(self, features, x_name, y_name):
         dataset = new_cube(width=10, height=10, x_name=x_name, y_name=y_name, x_res=10, x_start=-50, y_start=-50)
-        feature1 = dict(type='Feature',
-                        geometry=dict(type='Polygon',
-                                      coordinates=[[(-180, 0), (-1, 0), (-1, 90), (-180, 90), (-180, 0)]]),
-                        properties=dict(a=0.5, b=2.1, c=9))
-        feature2 = dict(type='Feature',
-                        geometry=dict(type='Polygon',
-                                      coordinates=[[(-180, -90), (-1, -90), (-1, 0), (-180, 0), (-180, -90)]]),
-                        properties=dict(a=0.6, b=2.2, c=8))
-        feature3 = dict(type='Feature',
-                        geometry=dict(type='Polygon',
-                                      coordinates=[[(20, 0), (180, 0), (180, 90), (20, 90), (20, 0)]]),
-                        properties=dict(a=0.7, b=2.3, c=7))
-        feature4 = dict(type='Feature',
-                        geometry=dict(type='Polygon',
-                                      coordinates=[[(20, -90), (180, -90), (180, 0), (20, 0), (20, -90)]]),
-                        properties=dict(a=0.8, b=2.4, c=6))
-        dataset = rasterize_features_into_dataset(dataset,
-                                                  [feature1, feature2, feature3, feature4],
-                                                  ['a', 'b', 'c'],
-                                                  var_properties=dict(
-                                                      b=('b', np.float32, np.nan, dict(units='meters')),
-                                                      c=('c2', np.uint8, 0, None),
-                                                  ),
-                                                  in_place=False)
+        dataset = rasterize_features(dataset,
+                                     features,
+                                     ['a', 'b', 'c'],
+                                     var_properties=dict(
+                                         b=('b', np.float32, np.nan, dict(units='meters')),
+                                         c=('c2', np.uint8, 0, None),
+                                     ),
+                                     in_place=False)
         self.assertIsNotNone(dataset)
         self.assertIn(x_name, dataset.coords)
         self.assertIn(y_name, dataset.coords)
@@ -86,6 +86,29 @@ class RasterizeFeaturesIntoDataset(unittest.TestCase):
                       [0.6, 0.6, 0.6, 0.6, 0.6, nan, nan, 0.8, 0.8, 0.8],
                       [0.6, 0.6, 0.6, 0.6, 0.6, nan, nan, 0.8, 0.8, 0.8]]),
             dataset.a.values)
+
+    def get_geodataframe_features(self):
+        features = self.get_geojson_features()
+        return geopandas.GeoDataFrame.from_features(features)
+
+    def get_geojson_features(self):
+        feature1 = dict(type='Feature',
+                        geometry=dict(type='Polygon',
+                                      coordinates=[[(-180, 0), (-1, 0), (-1, 90), (-180, 90), (-180, 0)]]),
+                        properties=dict(a=0.5, b=2.1, c=9))
+        feature2 = dict(type='Feature',
+                        geometry=dict(type='Polygon',
+                                      coordinates=[[(-180, -90), (-1, -90), (-1, 0), (-180, 0), (-180, -90)]]),
+                        properties=dict(a=0.6, b=2.2, c=8))
+        feature3 = dict(type='Feature',
+                        geometry=dict(type='Polygon',
+                                      coordinates=[[(20, 0), (180, 0), (180, 90), (20, 90), (20, 0)]]),
+                        properties=dict(a=0.7, b=2.3, c=7))
+        feature4 = dict(type='Feature',
+                        geometry=dict(type='Polygon',
+                                      coordinates=[[(20, -90), (180, -90), (180, 0), (20, 0), (20, -90)]]),
+                        properties=dict(a=0.8, b=2.4, c=6))
+        return [feature1, feature2, feature3, feature4]
 
 
 class DatasetGeometryTest(unittest.TestCase):
