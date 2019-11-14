@@ -462,6 +462,7 @@ class ZarrDatasetIO(DatasetIO):
         path_or_store = output_path
         acl = None
         s3 = None
+        root = None
 
         if client_kwargs is not None:
             client_kwargs, anon_mode = _get_s3_client_kwargs(client_kwargs)
@@ -476,12 +477,12 @@ class ZarrDatasetIO(DatasetIO):
             s3 = s3fs.S3FileSystem(anon=anon_mode,
                                    client_kwargs=client_kwargs)
             path_or_store = s3fs.S3Map(root=root, s3=s3, check=False)
-        if 'acl' in kwargs:
-            acl = kwargs.pop('acl')
+        # if 'acl' in kwargs:
+        #     acl = kwargs.pop('acl')
         encoding = self._get_write_encodings(dataset, compress, cname, clevel, shuffle, blocksize, chunksizes)
         dataset.to_zarr(path_or_store, mode="w", encoding=encoding)
-        if acl and client_kwargs and s3:
-            s3fs.core.S3FileSystem.chmod(s3, path=path_or_store, acl=acl, kwargs=client_kwargs)
+        # if acl and client_kwargs and s3:
+        #     s3.chmod(path=root, acl=acl, kwargs=client_kwargs)
 
     @classmethod
     def _get_write_encodings(cls, dataset, compress, cname, clevel, shuffle, blocksize, chunksizes):
