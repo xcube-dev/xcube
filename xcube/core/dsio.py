@@ -458,25 +458,8 @@ class ZarrDatasetIO(DatasetIO):
               chunksizes=None,
               client_kwargs=None,
               **kwargs):
-        anon_mode = True
-        path_or_store = output_path
-        acl = None
-        s3 = None
-        root = None
+        path_or_store = _get_path_or_store(output_path, client_kwargs)
 
-        if client_kwargs is not None:
-            client_kwargs, anon_mode = _get_s3_client_kwargs(client_kwargs)
-        if output_path.startswith("https://") or output_path.startswith("http://"):
-            import urllib3.util
-            url = urllib3.util.parse_url(path_or_store)
-            if url.port is not None:
-                client_kwargs['endpoint_url'] = f'{url.scheme}://{url.host}:{url.port}'
-            else:
-                client_kwargs['endpoint_url'] = f'{url.scheme}://{url.host}'
-            root = f's3:/{url.path}'
-            s3 = s3fs.S3FileSystem(anon=anon_mode,
-                                   client_kwargs=client_kwargs)
-            path_or_store = s3fs.S3Map(root=root, s3=s3, check=False)
         # if 'acl' in kwargs:
         #     acl = kwargs.pop('acl')
         encoding = self._get_write_encodings(dataset, compress, cname, clevel, shuffle, blocksize, chunksizes)
@@ -578,3 +561,22 @@ def _get_s3_client_kwargs(client_kwargs):
     if 'aws_access_key_id' in client_kwargs and 'aws_secret_access_key' in client_kwargs:
         anon_mode = False
     return client_kwargs, anon_mode
+
+
+def _get_path_or_store(output_path, client_kwargs):
+    path_or_store = output_path
+    anon_mode = True
+    if client_kwargs is not None:
+        client_kwargs, anon_mode = _get_s3_client_kwargs(client_kwargs)
+    if output_path.startswith("https://") or output_path.startswith("http://"):
+        import urllib3.util
+        url = urllib3.util.parse_url(path_or_store)
+        if url.port is not None:
+            client_kwargs['endpoint_url'] = f'{url.scheme}://{url.host}:{url.port}'
+        else:
+            client_kwargs['endpoint_url'] = f'{url.scheme}://{url.host}'
+        root = f's3:/{url.path}'
+        s3 = s3fs.S3FileSystem(anon=anon_mode,
+                               client_kwargs=client_kwargs)
+        path_or_store = s3fs.S3Map(root=root, s3=s3, check=False)
+    return path_or_store
