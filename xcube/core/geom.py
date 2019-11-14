@@ -20,7 +20,7 @@
 # SOFTWARE.
 
 import math
-from typing import Optional, Union, Dict, Tuple, Sequence, Any, Mapping, Callable
+from typing import Optional, Union, Dict, Tuple, Sequence, Any, Mapping
 
 import affine
 import numpy as np
@@ -38,6 +38,13 @@ GeometryLike = Union[shapely.geometry.base.BaseGeometry, Dict[str, Any], str, Se
 Bounds = Tuple[float, float, float, float]
 SplitBounds = Tuple[Bounds, Optional[Bounds]]
 
+Name = str
+Attrs = Mapping[Name, Any]
+GeoJSONFeature = Mapping[Name, Any]
+GeoJSONFeatures = Sequence[GeoJSONFeature]
+GeoDataFrame = 'pandas.geodataframe.GeoDataFrame'
+VarProps = Mapping[Name, Mapping[Name, Any]]
+
 _INVALID_GEOMETRY_MSG = ('Geometry must be either a shapely geometry object, '
                          'a GeoJSON-serializable dictionary, a geometry WKT string, '
                          'box coordinates (x1, y1, x2, y2), '
@@ -45,36 +52,35 @@ _INVALID_GEOMETRY_MSG = ('Geometry must be either a shapely geometry object, '
 
 _INVALID_BOX_COORDS_MSG = 'Invalid box coordinates'
 
-Name = str
-Attrs = Mapping[Name, Any]
-GeoJSONFeature = Mapping[Name, Any]
-GeoJSONFeatures = Sequence[GeoJSONFeature]
-GeoDataFrame = 'pandas.geodataframe.GeoDataFrame'
-AttrConverter = Callable[[Any], Any]
-VarPropsTuple = Tuple[Name, Any, Any, Optional[Attrs], AttrConverter]
-
 
 def rasterize_features(dataset: xr.Dataset,
                        features: Union[GeoDataFrame, GeoJSONFeatures],
                        feature_property_names: Sequence[Name],
-                       var_properties: Dict[Name, Union[Name, VarPropsTuple]] = None,
+                       var_props: Dict[Name, VarProps] = None,
                        in_place: bool = False) -> Optional[xr.Dataset]:
     """
     Rasterize numeric feature properties of GeoJSON *features* as new variables into *dataset*.
 
-    Using *var_properties* the properties of newly created variables can be determined.
-    If provided, it must be a mapping from feature property name to a variable name
-    or a 5-tuple ``(name, dtype, fill_value, attributes, converter)`` to be used for a new variable.
-    If only variable name is given, the defaults are
-    ``(name, dtype='float64', fill_value=float('nan'), attributes=None, converter=float)``.
+    Using the optional *var_props* the properties of newly created variables from feature properties
+    can be specified. It is a mapping of feature property names to mappings of variable
+    properties. Here is an example variable properties mapping:::
+
+    {
+        'name': 'land_class',  # (str) - the variable's name, default is the feature property name;
+        'dtype' np.int16,      # (str|np.dtype) - the variable's dtype, default is np.float64;
+        'fill_value': -1,      # (bool|int|float|np.nparray) - the variable's fill value, default is np.nan;
+        'attrs': {},           # (Mapping[str, Any]) - the variable's fill value, default is {};
+        'converter': int,      # (Callable[[Any], Any]) - a converter function used to convert from property
+                               # feature value to variable value, default is float.
+    }
 
     Currently, the coordinates of the geometries in the given *features* must use the same CRS as
     the given *dataset*.
 
     :param dataset: The xarray dataset.
-    :param features: Sequence of GeoJSON features.
+    :param features: A ``geopandas.GeoDataFrame`` instance or a sequence of GeoJSON features.
     :param feature_property_names: Sequence of names of numeric feature properties to be rasterized.
-    :param var_properties: Optional mapping of feature property name
+    :param var_props: Optional mapping of feature property name
         to a name or a 5-tuple (name, dtype, fill_value, attributes, converter) for the new variable.
     :param in_place: Whether to add new variables to *dataset*.
         If False, a copy will be created and returned.
@@ -82,7 +88,7 @@ def rasterize_features(dataset: xr.Dataset,
     """
     import geopandas
 
-    var_properties = var_properties or {}
+    var_props = var_props or {}
     xy_var_names = get_dataset_xy_var_names(dataset, must_exist=True)
     dataset_bounds = get_dataset_bounds(dataset, xy_var_names=xy_var_names)
 
@@ -126,18 +132,14 @@ def rasterize_features(dataset: xr.Dataset,
 
         for feature_property_name in feature_property_names:
 
-            var_name = var_properties.get(feature_property_name, feature_property_name)
-            var_dtype = np.float64
-            var_fill_value = None
-            var_attrs = None
-            attr_converter = None
-            if not isinstance(var_name, str):
-                var_name, var_dtype, var_fill_value, var_attrs, attr_converter = var_name
-            var_dtype = var_dtype if var_dtype is not None else np.float64
-            var_fill_value = var_fill_value if var_fill_value is not None else np.nan
-            attr_converter = attr_converter if attr_converter is not None else float
+            var_prop_mapping = var_props.get(feature_property_name, {})
+            var_name = var_prop_mapping.get('name', feature_property_name.replace(' ', '_'))
+            var_dtype = var_prop_mapping.get('dtype', np.float64)
+            var_fill_value = var_prop_mapping.get('fill_value', np.nan)
+            var_attrs = var_prop_mapping.get('attrs', {})
+            converter = var_prop_mapping.get('converter', float)
 
-            feature_property_value = attr_converter(geo_data_frame[feature_property_name][row])
+            feature_property_value = converter(geo_data_frame[feature_property_name][row])
 
             var_new = xr.DataArray(np.full((height, width), feature_property_value, dtype=var_dtype),
                                    coords=coords, dims=dims, attrs=var_attrs)

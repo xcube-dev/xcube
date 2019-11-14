@@ -39,13 +39,18 @@ class RasterizeFeaturesIntoDataset(unittest.TestCase):
         self._test_rasterize_features(features, 'x', 'y')
 
     def _test_rasterize_features(self, features, x_name, y_name):
-        dataset = new_cube(width=10, height=10, x_name=x_name, y_name=y_name, x_res=10, x_start=-50, y_start=-50)
+        dataset = new_cube(width=10, height=10,
+                           x_name=x_name, y_name=y_name,
+                           x_res=10,
+                           x_start=-50, y_start=-50)
         dataset = rasterize_features(dataset,
                                      features,
                                      ['a', 'b', 'c'],
-                                     var_properties=dict(
-                                         b=('b', np.float32, np.nan, dict(units='meters')),
-                                         c=('c2', np.uint8, 0, None),
+                                     var_props=dict(
+                                         b=dict(name='b', dtype=np.float32,
+                                                fill_value=np.nan, attrs=dict(units='meters')),
+                                         c=dict(name='c2', dtype=np.uint8,
+                                                fill_value=0, converter=int)
                                      ),
                                      in_place=False)
         self.assertIsNotNone(dataset)
