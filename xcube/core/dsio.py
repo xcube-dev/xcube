@@ -418,27 +418,16 @@ class ZarrDatasetIO(DatasetIO):
     def read(self, path: str, **kwargs) -> xr.Dataset:
         path_or_store = path
         consolidated = False
+        mode = "read"
 
         if isinstance(path, str):
-            root = None
-            anon_mode = True
-            client_kwargs = {}
-            if 'client_kwargs' in kwargs:
-                client_kwargs, anon_mode = _get_s3_client_kwargs(kwargs.pop('client_kwargs'))
-                root = path
-            if path.startswith("http://") or path.startswith("https://"):
-                import urllib3.util
-                url = urllib3.util.parse_url(path_or_store)
-                if url.port is not None:
-                    client_kwargs['endpoint_url'] = f'{url.scheme}://{url.host}:{url.port}'
-                else:
-                    client_kwargs['endpoint_url'] = f'{url.scheme}://{url.host}'
-                root = url.path
-                if root.startswith('/'):
-                    root = root[1:]
+            client_kwargs = None
+            if "client_kwargs" in kwargs:
+                client_kwargs = kwargs.pop('client_kwargs')
+            path_or_store, root = _get_path_or_store(path_or_store, client_kwargs, mode)
 
             if client_kwargs and root is not None:
-                s3 = s3fs.S3FileSystem(anon=anon_mode,
+                s3 = s3fs.S3FileSystem(anon=True,
                                        client_kwargs=client_kwargs)
                 consolidated = s3.exists(f'{root}/.zmetadata')
                 path_or_store = s3fs.S3Map(root=root, s3=s3, check=False)
@@ -458,8 +447,10 @@ class ZarrDatasetIO(DatasetIO):
               chunksizes=None,
               client_kwargs=None,
               **kwargs):
-        path_or_store = _get_path_or_store(output_path, client_kwargs)
+        mode = "write"
+        path_or_store, root = _get_path_or_store(output_path, client_kwargs, mode)
 
+        # keeping the code commented out below, because might be useful for makinging write able to change bucket policy
         # if 'acl' in kwargs:
         #     acl = kwargs.pop('acl')
         encoding = self._get_write_encodings(dataset, compress, cname, clevel, shuffle, blocksize, chunksizes)
@@ -556,27 +547,27 @@ def rimraf(path):
             pass
 
 
-def _get_s3_client_kwargs(client_kwargs):
+def _get_path_or_store(path, client_kwargs, mode):
+    path_or_store = path
     anon_mode = True
-    if 'aws_access_key_id' in client_kwargs and 'aws_secret_access_key' in client_kwargs:
-        anon_mode = False
-    return client_kwargs, anon_mode
+    root = None
 
-
-def _get_path_or_store(output_path, client_kwargs):
-    path_or_store = output_path
-    anon_mode = True
     if client_kwargs is not None:
-        client_kwargs, anon_mode = _get_s3_client_kwargs(client_kwargs)
-    if output_path.startswith("https://") or output_path.startswith("http://"):
+        if 'aws_access_key_id' in client_kwargs and 'aws_secret_access_key' in client_kwargs:
+            anon_mode = False
+    if path.startswith("https://") or path.startswith("http://"):
         import urllib3.util
         url = urllib3.util.parse_url(path_or_store)
         if url.port is not None:
             client_kwargs['endpoint_url'] = f'{url.scheme}://{url.host}:{url.port}'
         else:
             client_kwargs['endpoint_url'] = f'{url.scheme}://{url.host}'
-        root = f's3:/{url.path}'
+        root = url.path
+        if root.startswith('/'):
+            root = root[1:]
+        if "write" in mode:
+            root = f's3://{root}'
         s3 = s3fs.S3FileSystem(anon=anon_mode,
                                client_kwargs=client_kwargs)
         path_or_store = s3fs.S3Map(root=root, s3=s3, check=False)
-    return path_or_store
+    return path_or_store, root
