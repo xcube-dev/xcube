@@ -15,8 +15,8 @@
   function that can be used to generate an output cube computed from a Python
   function that is applied to one or more input cubes. Replaces the formerly 
   hidden `xcube apply` command. (#167) 
-* Added new function `xcube.core.geom.rasterize_features_into_dataset()` 
-  to rasterize features into a dataset. (#222)
+* Added new function `xcube.core.geom.rasterize_features()` 
+  to rasterize vector-data features into a dataset. (#222)
 
 ### Enhancements
 

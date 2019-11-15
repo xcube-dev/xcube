@@ -55,13 +55,22 @@ _INVALID_BOX_COORDS_MSG = 'Invalid box coordinates'
 
 def rasterize_features(dataset: xr.Dataset,
                        features: Union[GeoDataFrame, GeoJSONFeatures],
-                       feature_property_names: Sequence[Name],
+                       feature_props: Sequence[Name],
                        var_props: Dict[Name, VarProps] = None,
                        in_place: bool = False) -> Optional[xr.Dataset]:
     """
-    Rasterize numeric feature properties of GeoJSON *features* as new variables into *dataset*.
+    Rasterize feature properties given by *feature_props* of vector-data *features*
+    as new variables into *dataset*.
 
-    Using the optional *var_props* the properties of newly created variables from feature properties
+    *dataset* must have two spatial 1-D coordinates, either ``lon`` and ``lat`` in degrees,
+    reprojected coordinates, ``x`` and ``y``, or similar.
+
+    *feature_props* is a sequence of names of feature properties that must exists in each
+    feature of *features*.
+
+    *features* may be passed as pandas.GeoDataFrame`` or as an iterable of GeoJSON features.
+
+    Using the optional *var_props*, the properties of newly created variables from feature properties
     can be specified. It is a mapping of feature property names to mappings of variable
     properties. Here is an example variable properties mapping:::
 
@@ -79,7 +88,7 @@ def rasterize_features(dataset: xr.Dataset,
 
     :param dataset: The xarray dataset.
     :param features: A ``geopandas.GeoDataFrame`` instance or a sequence of GeoJSON features.
-    :param feature_property_names: Sequence of names of numeric feature properties to be rasterized.
+    :param feature_props: Sequence of names of numeric feature properties to be rasterized.
     :param var_props: Optional mapping of feature property name
         to a name or a 5-tuple (name, dtype, fill_value, attributes, converter) for the new variable.
     :param in_place: Whether to add new variables to *dataset*.
@@ -109,7 +118,7 @@ def rasterize_features(dataset: xr.Dataset,
     else:
         geo_data_frame = geopandas.GeoDataFrame.from_features(features)
 
-    for feature_property_name in feature_property_names:
+    for feature_property_name in feature_props:
         if feature_property_name not in geo_data_frame:
             raise ValueError(f'feature property {feature_property_name!r} not found')
 
@@ -122,15 +131,16 @@ def rasterize_features(dataset: xr.Dataset,
             continue
 
         # TODO (forman): allow transforming geometry into CRS of dataset here
-
         intersection_geometry = intersect_geometries(dataset_bounds, geometry)
         if intersection_geometry is None:
             continue
 
+        # TODO (forman): check, we should be able to drastically improve performance by generating
+        #                 the mask for a dataset subset genereated by clipping against geometry
         mask_data = get_geometry_mask(width, height, intersection_geometry, ds_x_min, ds_y_min, spatial_res)
         mask = xr.DataArray(mask_data, coords=coords, dims=dims)
 
-        for feature_property_name in feature_property_names:
+        for feature_property_name in feature_props:
 
             var_prop_mapping = var_props.get(feature_property_name, {})
             var_name = var_prop_mapping.get('name', feature_property_name.replace(' ', '_'))
