@@ -2,7 +2,7 @@
 
 ### New
 * Added ability to write xcube datasets in zarr format into s3 bucket using
-  xcube.core.dsio.write() #224
+  xcube.core.dsio.write_cube() #224
 * Added new parameter in `xcube gen` called `--no_sort`. Using `--no_sort`, 
   the input file list wont be sorted before creating the xcube dataset. 
   If `--no_sort` parameter is passed, order the input list will be kept. 
