@@ -421,9 +421,14 @@ class ZarrDatasetIO(DatasetIO):
         mode = "read"
 
         if isinstance(path, str):
-            client_kwargs = None
+            client_kwargs = {}
             if "client_kwargs" in kwargs:
                 client_kwargs = kwargs.pop('client_kwargs')
+            if 'endpoint_url' in kwargs:
+                client_kwargs['endpoint_url'] = kwargs.pop('endpoint_url')
+            if 'region_name' in kwargs:
+                client_kwargs['region_name'] = kwargs.pop('region_name')
+
             path_or_store, root = _get_path_or_store(path_or_store, client_kwargs, mode)
 
             if client_kwargs and root is not None:
