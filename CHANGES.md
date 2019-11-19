@@ -17,6 +17,8 @@
   hidden `xcube apply` command. (#167) 
 * Added new function `xcube.core.geom.rasterize_features()` 
   to rasterize vector-data features into a dataset. (#222)
+* Extended verify to check whether spatial coordinates are equidistant. (#231)
+
 
 ### Enhancements
 

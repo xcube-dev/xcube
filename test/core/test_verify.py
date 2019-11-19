@@ -71,3 +71,12 @@ class AssertAndVerifyCubeTest(unittest.TestCase):
         ds = ds.drop("lat")
         self.assertEqual(["missing spatial x,y coordinate variables",
                           "missing time coordinate variable"], verify_cube(ds))
+
+        ds['lat'] = ds['lat'] + np.random.rand(len(ds['lat']))
+        ds['lat_bnds'][:, 0] = ds['lat_bnds'][:, 0] + np.random.rand(len(ds['lat_bnds'][:, 0]))
+        ds['lat_bnds'][:, 1] = ds['lat_bnds'][:, 1] + np.random.rand(len(ds['lat_bnds'][:, 1]))
+
+        self.assertEqual(['missing time coordinate variable',
+                          'Coordinate lat is not equidistant',
+                          'Coordinate lat_bnds[:,0] is not equidistant',
+                          'Coordinate lat_bnds[:,1] is not equidistant'], verify_cube(ds))
