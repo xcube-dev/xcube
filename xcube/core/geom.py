@@ -435,30 +435,39 @@ def get_dataset_bounds(dataset: Union[xr.Dataset, xr.DataArray],
         xy_var_names = get_dataset_xy_var_names(dataset, must_exist=True)
     x_name, y_name = xy_var_names
     x_var, y_var = dataset.coords[x_name], dataset.coords[y_name]
+    is_lon = xy_var_names[0] == 'lon'
 
+    # Note, x_min > x_max then we intersect with the anti-meridian
     x_bnds_name = get_dataset_bounds_var_name(dataset, x_name)
     if x_bnds_name:
         x_bnds_var = dataset.coords[x_bnds_name]
-        x_min = x_bnds_var[0][0]
-        x_max = x_bnds_var[-1][1]
+        x1 = x_bnds_var[0, 0]
+        x2 = x_bnds_var[0, 1]
+        x3 = x_bnds_var[-1, 0]
+        x4 = x_bnds_var[-1, 1]
+        x_min = min(x1, x2)
+        x_max = max(x3, x4)
     else:
         x_min = x_var[0]
         x_max = x_var[-1]
-        delta = min(abs(np.diff(x_var)))
+        delta = (x_max - x_min + (0 if x_max >= x_min or not is_lon else 360)) / (x_var.size - 1)
         x_min -= 0.5 * delta
         x_max += 0.5 * delta
 
+    # Note, x-axis may be inverted
     y_bnds_name = get_dataset_bounds_var_name(dataset, y_name)
     if y_bnds_name:
         y_bnds_var = dataset.coords[y_bnds_name]
-        y1 = y_bnds_var[0][0]
-        y2 = y_bnds_var[-1][1]
-        y_min = min(y1, y2)
-        y_max = max(y1, y2)
+        y1 = y_bnds_var[0, 0]
+        y2 = y_bnds_var[0, 1]
+        y3 = y_bnds_var[-1, 0]
+        y4 = y_bnds_var[-1, 1]
+        y_min = min(y1, y2, y3, y4)
+        y_max = max(y1, y2, y3, y4)
     else:
         y1 = y_var[0]
         y2 = y_var[-1]
-        delta = min(abs(np.diff(y_var)))
+        delta = abs(y2 - y1) / (y_var.size - 1)
         y_min = min(y1, y2) - 0.5 * delta
         y_max = max(y1, y2) + 0.5 * delta
 

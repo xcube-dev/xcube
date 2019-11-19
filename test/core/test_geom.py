@@ -96,7 +96,8 @@ class RasterizeFeaturesIntoDataset(unittest.TestCase):
         features = self.get_geojson_features()
         return geopandas.GeoDataFrame.from_features(features)
 
-    def get_geojson_features(self):
+    @staticmethod
+    def get_geojson_features():
         feature1 = dict(type='Feature',
                         geometry=dict(type='Polygon',
                                       coordinates=[[(-180, 0), (-1, 0), (-1, 90), (-180, 90), (-180, 0)]]),
@@ -219,6 +220,7 @@ class DatasetGeometryTest(unittest.TestCase):
 
 
 class GetGeometryMaskTest(unittest.TestCase):
+    # noinspection PyMethodMayBeStatic
     def test_get_geometry_mask(self):
         w = 16
         h = 8
@@ -264,6 +266,13 @@ class GetDatasetGeometryTest(unittest.TestCase):
         bounds = get_dataset_geometry(ds2)
         self.assertEqual(shapely.geometry.box(-25.0, -15.0, 15.0, 15.0), bounds)
 
+    def test_inv_y(self):
+        ds1, ds2 = _get_inv_y_datasets()
+        bounds = get_dataset_geometry(ds1)
+        self.assertEqual(shapely.geometry.box(-25.0, -15.0, 15.0, 15.0), bounds)
+        bounds = get_dataset_geometry(ds2)
+        self.assertEqual(shapely.geometry.box(-25.0, -15.0, 15.0, 15.0), bounds)
+
     def test_antimeridian(self):
         ds1, ds2 = _get_antimeridian_datasets()
         bounds = get_dataset_geometry(ds1)
@@ -285,6 +294,20 @@ class GetDatasetGeometryTest(unittest.TestCase):
 class GetDatasetBoundsTest(unittest.TestCase):
     def test_nominal(self):
         ds1, ds2 = _get_nominal_datasets()
+        bounds = get_dataset_bounds(ds1)
+        self.assertEqual((-25.0, -15.0, 15.0, 15.0), bounds)
+        bounds = get_dataset_bounds(ds2)
+        self.assertEqual((-25.0, -15.0, 15.0, 15.0), bounds)
+
+    def test_inv_y(self):
+        ds1, ds2 = _get_inv_y_datasets()
+        bounds = get_dataset_bounds(ds1)
+        self.assertEqual((-25.0, -15.0, 15.0, 15.0), bounds)
+        bounds = get_dataset_bounds(ds2)
+        self.assertEqual((-25.0, -15.0, 15.0, 15.0), bounds)
+
+    def test_inv_y_wrong_order_bounds(self):
+        ds1, ds2 = _get_inv_y_wrong_order_bounds_datasets()
         bounds = get_dataset_bounds(ds1)
         self.assertEqual((-25.0, -15.0, 15.0, 15.0), bounds)
         bounds = get_dataset_bounds(ds2)
@@ -315,9 +338,26 @@ def _get_nominal_datasets():
     return ds1, ds2
 
 
+def _get_inv_y_datasets():
+    ds1, ds2 = _get_nominal_datasets()
+    ds1 = ds1.assign_coords(lat=(("lat",), ds1.lat.values[::-1]))
+    ds2 = ds2.assign_coords(lat=(("lat",), ds1.lat.values))
+    ds2 = ds2.assign_coords(lat_bnds=(("lat", "bnds"), ds2.lat_bnds.values[::-1, ::-1]))
+    return ds1, ds2
+
+
+def _get_inv_y_wrong_order_bounds_datasets():
+    ds1, ds2 = _get_nominal_datasets()
+    ds1 = ds1.assign_coords(lat=(("lat",), ds1.lat.values[::-1]))
+    ds2 = ds2.assign_coords(lat=(("lat",), ds1.lat.values))
+    ds2 = ds2.assign_coords(lat_bnds=(("lat", "bnds"), ds2.lat_bnds.values[::-1, ::]))
+    return ds1, ds2
+
+
 def _get_antimeridian_datasets():
     ds1, ds2 = _get_nominal_datasets()
     ds1 = ds1.assign_coords(lon=(("lon",), np.array([170., 180., -170., -160.])))
+    ds2 = ds2.assign_coords(lon=(("lon",), ds1.lon.values))
     ds2 = ds2.assign_coords(
         lon_bnds=(("lon", "bnds"), np.array([[165., 175], [175., -175.], [-175., -165], [-165., -155.]])))
     return ds1, ds2
