@@ -1,7 +1,8 @@
 ## Changes in 0.3.0 (in development)
 
 ### New
-
+* xcube now may first make a spatial subset input file according to the area of 
+  interest and then does the reprojection, if implementation is given in input processors.
 * Added new parameter in `xcube gen` called `--no_sort`. Using `--no_sort`, 
   the input file list wont be sorted before creating the xcube dataset. 
   If `--no_sort` parameter is passed, order the input list will be kept. 

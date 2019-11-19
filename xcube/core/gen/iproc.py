@@ -120,7 +120,7 @@ class InputProcessor(ExtensionComponent, metaclass=ABCMeta):
         """
         return None
 
-    def get_spatial_subest(self, dataset: xr.Dataset, dst_region: Tuple[float, float, float, float]) -> xr.Dataset:
+    def get_spatial_subset(self, dataset: xr.Dataset, dst_region: Tuple[float, float, float, float]) -> xr.Dataset:
         """
         Get spatial subset based on dst_region.
 
@@ -270,6 +270,24 @@ class DefaultInputProcessor(XYInputProcessor):
             dataset = dataset.squeeze("time")
 
         return _normalize_lon_360(dataset)
+
+    def get_spatial_subset(self, dataset: xr.Dataset, dst_region: Tuple[float, float, float, float]) -> xr.Dataset:
+        lon_min, lat_min, lon_max, lat_max = dst_region
+        dataset_subset = dataset.copy()
+        dataset_subset.coords['x'] = xr.DataArray(np.arange(0, dataset.lon.size), dims='lon')
+        dataset_subset.coords['y'] = xr.DataArray(np.arange(0, dataset.lat.size), dims='lat')
+        lon_subset = dataset_subset.lon.where((dataset_subset.lon >= lon_min) & (dataset_subset.lon <= lon_max),
+                                              drop=True)
+        lat_subset = dataset_subset.lat.where((dataset_subset.lat >= lat_min) & (dataset_subset.lat <= lat_max),
+                                              drop=True)
+        x1 = lon_subset.x[0]
+        x2 = lon_subset.x[-1]
+        y1 = lat_subset.y[0]
+        y2 = lat_subset.y[-1]
+        x1, y1, x2, y2 = tuple(map(int, (x1, y1, x2, y2)))
+        dataset_subset_with_x_y = dataset_subset.isel(lon=slice(x1, x2 + 1), lat=slice(y1, y2 + 1))
+        final_dataset_subset = dataset_subset_with_x_y.drop(['x', 'y'])
+        return final_dataset_subset
 
     def get_reprojection_info(self, dataset: xr.Dataset) -> ReprojectionInfo:
         return ReprojectionInfo(xy_var_names=('lon', 'lat'),
