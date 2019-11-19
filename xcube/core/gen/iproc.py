@@ -120,6 +120,17 @@ class InputProcessor(ExtensionComponent, metaclass=ABCMeta):
         """
         return None
 
+    def get_spatial_subest(self, dataset: xr.Dataset, dst_region: Tuple[float, float, float, float]) -> xr.Dataset:
+        """
+        Get spatial subset based on dst_region.
+
+        Returns ``dataset`` by default.
+        :param dataset: The dataset.
+        :param dst_region: The region taken for the spatial subset
+        :return: A spatial subset of the dataset.
+        """
+        return dataset
+
     def pre_process(self, dataset: xr.Dataset) -> xr.Dataset:
         """
         Do any pre-processing before reprojection.

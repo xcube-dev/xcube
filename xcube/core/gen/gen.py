@@ -238,6 +238,8 @@ def _process_input(input_processor: InputProcessor,
 
     # noinspection PyShadowingNames
     def step4(input_slice):
+        if output_region:
+            input_slice = input_processor.get_spatial_subest(input_slice, output_region)
         return input_processor.process(input_slice,
                                        dst_size=output_size,
                                        dst_region=output_region,
