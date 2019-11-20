@@ -56,8 +56,8 @@ def get_dataset_tile(ctx: ServiceContext,
         cmap_vmin = cmap_vmin or default_cmap_vmin
         cmap_vmax = cmap_vmax or default_cmap_vmax
 
-    image_id = '-'.join([ds_id, f"{z}", var_name]
-                        + [f'{dim_name}={dim_value}' for dim_name, dim_value in var_indexers.items()])
+    image_id = '-'.join(map(str, [ds_id, z, var_name, cmap_cbar, cmap_vmin, cmap_vmax]
+                            + [f'{dim_name}={dim_value}' for dim_name, dim_value in var_indexers.items()]))
 
     if image_id in ctx.image_cache:
         image = ctx.image_cache[image_id]

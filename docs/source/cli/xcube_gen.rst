@@ -68,10 +68,13 @@ Generate xcube dataset.
                                       slices.
       --prof                          Collect profiling information and dump
                                       results after processing.
-      --sort                          The input file list will be sorted before
-                                      creating the xcube dataset. If --sort
-                                      parameter is not passed, order of input list
-                                      will be kept.
+      --no_sort                       The input file list will not be sorted
+                                      before creating the xcube dataset. If
+                                      --no_sort parameter is passed, the order of
+                                      the input list will be kept. This parameter
+                                      should be used for better performance,
+                                      provided that the input file list is in
+                                      correct order (continuous time).
       -I, --info                      Displays additional information about format
                                       options or about input processors.
       --dry_run                       Just read and process inputs, but don't

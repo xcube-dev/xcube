@@ -20,7 +20,7 @@
 # SOFTWARE.
 
 from abc import ABCMeta, abstractmethod
-from typing import Tuple, Union, Optional, Collection
+from typing import Collection, Optional, Tuple, Union
 
 import numpy as np
 import xarray as xr
@@ -29,7 +29,7 @@ from xcube.constants import CRS_WKT_EPSG_4326
 from xcube.constants import EXTENSION_POINT_INPUT_PROCESSORS
 from xcube.core.reproject import reproject_xy_to_wgs84
 from xcube.core.timecoord import to_time_in_days_since_1970
-from xcube.util.plugin import get_extension_registry, ExtensionComponent
+from xcube.util.plugin import ExtensionComponent, get_extension_registry
 
 
 class ReprojectionInfo:
@@ -100,7 +100,6 @@ class InputProcessor(ExtensionComponent, metaclass=ABCMeta):
         """
         return dict()
 
-    @abstractmethod
     def get_time_range(self, dataset: xr.Dataset) -> Optional[Tuple[float, float]]:
         """
         Return a tuple of two floats representing start/stop time (which may be same) in days since 1970.

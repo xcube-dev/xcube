@@ -444,7 +444,8 @@ class InfoHandler(ServiceRequestHandler):
                                    description=SERVER_DESCRIPTION,
                                    version=version,
                                    configTime=config_time,
-                                   serverTime=server_time),
+                                   serverTime=server_time,
+                                   serverPID=os.getpid()),
                               indent=2))
 
 

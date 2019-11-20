@@ -138,7 +138,7 @@ class ServiceContext:
         return self._image_cache
 
     @property
-    def tile_cache(self) -> Dict[str, Any]:
+    def tile_cache(self) -> Optional[Cache]:
         return self._tile_cache
 
     @property

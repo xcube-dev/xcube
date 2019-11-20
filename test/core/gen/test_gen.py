@@ -1,14 +1,14 @@
 import os
 import unittest
-from typing import Tuple, Optional, Dict, Any
+from typing import Any, Dict, Optional, Tuple
 
 import numpy as np
 import xarray as xr
 
 from test.core.gen.helpers import get_inputdata_path
+from xcube.core.dsio import rimraf
 from xcube.core.gen.config import get_config_dict
 from xcube.core.gen.gen import gen_cube
-from xcube.core.dsio import rimraf
 
 
 def clean_up():
@@ -40,7 +40,7 @@ class DefaultProcessTest(unittest.TestCase):
     def test_process_inputs_append_multiple_nc(self):
         status, output = gen_cube_wrapper(
             [get_inputdata_path('201701??-IFR-L4_GHRSST-SSTfnd-ODYSSEA-NWE_002-v2.0-fv1.0.nc')], 'l2c.nc',
-            sort_mode=True)
+            no_sort_mode=False)
         self.assertEqual(True, status)
         self.assertTrue('\nstep 8 of 8: creating input slice in l2c.nc...\n' in output)
         self.assertTrue('\nstep 8 of 8: appending input slice to l2c.nc...\n' in output)
@@ -62,7 +62,7 @@ class DefaultProcessTest(unittest.TestCase):
     def test_process_inputs_append_multiple_zarr(self):
         status, output = gen_cube_wrapper(
             [get_inputdata_path('201701??-IFR-L4_GHRSST-SSTfnd-ODYSSEA-NWE_002-v2.0-fv1.0.nc')], 'l2c.zarr',
-            sort_mode=True)
+            no_sort_mode=False)
         self.assertEqual(True, status)
         self.assertTrue('\nstep 8 of 8: creating input slice in l2c.zarr...\n' in output)
         self.assertTrue('\nstep 8 of 8: appending input slice to l2c.zarr...\n' in output)
@@ -76,7 +76,7 @@ class DefaultProcessTest(unittest.TestCase):
             [get_inputdata_path('20170102-IFR-L4_GHRSST-SSTfnd-ODYSSEA-NWE_002-v2.0-fv1.0.nc'),
              get_inputdata_path('20170103-IFR-L4_GHRSST-SSTfnd-ODYSSEA-NWE_002-v2.0-fv1.0.nc'),
              get_inputdata_path('20170101-IFR-L4_GHRSST-SSTfnd-ODYSSEA-NWE_002-v2.0-fv1.0.nc')], 'l2c.zarr',
-            sort_mode=False)
+            no_sort_mode=True)
         self.assertEqual(True, status)
         self.assertTrue('\nstep 8 of 8: creating input slice in l2c.zarr...\n' in output)
         self.assertTrue('\nstep 8 of 8: appending input slice to l2c.zarr...\n' in output)
@@ -92,7 +92,7 @@ class DefaultProcessTest(unittest.TestCase):
              get_inputdata_path('20170102-IFR-L4_GHRSST-SSTfnd-ODYSSEA-NWE_002-v2.0-fv1.0.nc'),
              get_inputdata_path('20170103-IFR-L4_GHRSST-SSTfnd-ODYSSEA-NWE_002-v2.0-fv1.0.nc'),
              get_inputdata_path('20170102-IFR-L4_GHRSST-SSTfnd-ODYSSEA-NWE_002-v2.0-fv1.0.nc')], 'l2c.zarr',
-            sort_mode=False)
+            no_sort_mode=True)
         self.assertEqual(True, status)
         self.assertTrue('\nstep 8 of 8: creating input slice in l2c.zarr...\n' in output)
         self.assertTrue('\nstep 8 of 8: appending input slice to l2c.zarr...\n' in output)
@@ -105,11 +105,11 @@ class DefaultProcessTest(unittest.TestCase):
     def test_input_txt(self):
         f = open((os.path.join(os.path.dirname(__file__), 'inputdata', "input.txt")), "w+")
         for i in range(1, 4):
-            file_name = "2017010" + str(i) + "-IFR-L4_GHRSST-SSTfnd-ODYSSEA-NWE_002-v2.0-fv1.0.nc"
+            file_name = f"2017010{i}-IFR-L4_GHRSST-SSTfnd-ODYSSEA-NWE_002-v2.0-fv1.0.nc"
             file = get_inputdata_path(file_name)
             f.write("%s\n" % file)
         f.close()
-        status, output = gen_cube_wrapper([get_inputdata_path('input.txt')], 'l2c.zarr', sort_mode=True)
+        status, output = gen_cube_wrapper([get_inputdata_path('input.txt')], 'l2c.zarr', no_sort_mode=False)
         self.assertEqual(True, status)
         self.assert_cube_ok(xr.open_zarr('l2c.zarr'), 3,
                             dict(time_coverage_start='2016-12-31T12:00:00.000000000',
@@ -139,7 +139,7 @@ class DefaultProcessTest(unittest.TestCase):
     def test_handle_360_lon(self):
         status, output = gen_cube_wrapper(
             [get_inputdata_path('20170101120000-UKMO-L4_GHRSST-SSTfnd-OSTIAanom-GLOB-v02.0-fv02.0.nc')],
-            'l2c-single.zarr', sort_mode=True)
+            'l2c-single.zarr', no_sort_mode=False)
         self.assertEqual(True, status)
         ds = xr.open_zarr('l2c-single.zarr')
         self.assertIn('lon', ds.coords)
@@ -149,18 +149,18 @@ class DefaultProcessTest(unittest.TestCase):
         with self.assertRaises(ValueError) as e:
             gen_cube_wrapper(
                 [get_inputdata_path('20170101120000-UKMO-L4_GHRSST-SSTfnd-OSTIAanom-GLOB-v02.0-fv02.0.nc')],
-                'l2c-single.zarr', sort_mode=True, input_processor_name="")
+                'l2c-single.zarr', no_sort_mode=False, input_processor_name="")
         self.assertEqual('input_processor_name must not be empty', f'{e.exception}')
 
         with self.assertRaises(ValueError) as e:
             gen_cube_wrapper(
                 [get_inputdata_path('20170101120000-UKMO-L4_GHRSST-SSTfnd-OSTIAanom-GLOB-v02.0-fv02.0.nc')],
-                'l2c-single.zarr', sort_mode=True, input_processor_name='chris-proba')
+                'l2c-single.zarr', no_sort_mode=False, input_processor_name='chris-proba')
         self.assertEqual("Unknown input_processor_name 'chris-proba'", f'{e.exception}')
 
 
 # noinspection PyShadowingBuiltins
-def gen_cube_wrapper(input_paths, output_path, sort_mode=False, input_processor_name=None) \
+def gen_cube_wrapper(input_paths, output_path, no_sort_mode=False, input_processor_name=None) \
         -> Tuple[bool, Optional[str]]:
     output = None
 
@@ -179,7 +179,7 @@ def gen_cube_wrapper(input_paths, output_path, sort_mode=False, input_processor_
         output_region='-4,47,12,56',
         output_resampling='Nearest',
         output_variables='analysed_sst',
-        sort_mode=sort_mode,
+        no_sort_mode=no_sort_mode,
     )
 
     output_metadata = dict(

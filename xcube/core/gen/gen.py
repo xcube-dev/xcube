@@ -29,6 +29,8 @@ import traceback
 import warnings
 from typing import Any, Callable, Dict, Sequence, Tuple
 
+import xarray as xr
+
 from xcube.core.dsio import DatasetIO, find_dataset_io, guess_dataset_format, rimraf
 from xcube.core.evaluate import evaluate_dataset
 from xcube.core.gen.defaults import DEFAULT_OUTPUT_PATH, DEFAULT_OUTPUT_RESAMPLING, DEFAULT_OUTPUT_SIZE
@@ -36,7 +38,7 @@ from xcube.core.gen.iproc import InputProcessor, find_input_processor
 from xcube.core.select import select_vars
 from xcube.core.timecoord import add_time_coords, from_time_in_days_since_1970
 from xcube.core.timeslice import find_time_slice
-from xcube.core.update import update_dataset_attrs, update_dataset_var_attrs, update_dataset_temporal_attrs
+from xcube.core.update import update_dataset_attrs, update_dataset_temporal_attrs, update_dataset_var_attrs
 from xcube.util.config import NameAnyDict, NameDictPairList, to_resolved_name_dict_pairs
 
 
@@ -55,14 +57,14 @@ def gen_cube(input_paths: Sequence[str] = None,
              output_variables: NameDictPairList = None,
              processed_variables: NameDictPairList = None,
              profile_mode: bool = False,
-             sort_mode: bool = False,
+             no_sort_mode: bool = False,
              append_mode: bool = None,
              dry_run: bool = False,
              monitor: Callable[..., None] = None) -> bool:
     """
     Generate a xcube dataset from one or more input files.
 
-    :param sort_mode:
+    :param no_sort_mode:
     :param input_paths: The input paths.
     :param input_processor_name: Name of a registered input processor
         (xcube.core.gen.inputprocessor.InputProcessor) to be used to transform the inputs.
@@ -124,10 +126,10 @@ def gen_cube(input_paths: Sequence[str] = None,
         def monitor(*args):
             pass
 
-    if sort_mode is True:
-        input_paths = sorted([input_file for f in input_paths for input_file in glob.glob(f, recursive=True)])
-    else:
-        input_paths = [input_file for f in input_paths for input_file in glob.glob(f, recursive=True)]
+    input_paths = [input_file for f in input_paths for input_file in glob.glob(f, recursive=True)]
+
+    if not no_sort_mode and len(input_paths) > 1:
+        input_paths = _get_sorted_input_paths(input_processor, input_paths)
 
     if not dry_run:
         output_dir = os.path.abspath(os.path.dirname(output_path))
@@ -344,3 +346,16 @@ def _update_cube_attrs(output_writer: DatasetIO, output_path: str,
     global_attrs.update(cube.attrs)
     cube.close()
     output_writer.update(output_path, global_attrs=global_attrs)
+
+
+def _get_sorted_input_paths(input_processor, input_paths: Sequence[str]):
+    input_path_list = []
+    time_list = []
+    for input_file in input_paths:
+        with xr.open_dataset(input_file) as dataset:
+            t1, t2 = input_processor.get_time_range(dataset)
+            time_list.append((t1 + t2) / 2)
+            input_path_list.append(input_file)
+            tuple_seq = zip(time_list, input_path_list)
+    input_paths = [e[1] for e in sorted(tuple_seq, key=lambda e: e[0])]
+    return input_paths

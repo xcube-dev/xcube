@@ -2,20 +2,39 @@
 
 ### New
 
+* Added new parameter in `xcube gen` called `--no_sort`. Using `--no_sort`, 
+  the input file list wont be sorted before creating the xcube dataset. 
+  If `--no_sort` parameter is passed, order the input list will be kept. 
+  The parameter `--sort` is deprecated and the input files will be sorted 
+  by default. 
 * xcube now discovers plugin modules by module naming convention
   and by Setuptools entry points. See new chapter 
   [Plugins](https://xcube.readthedocs.io/en/latest/plugins.html) 
   in xcube's documentation for details. (#211)  
-
 * Added new `xcube compute` CLI command and `xcube.core.compute.compute_cube()` API 
   function that can be used to generate an output cube computed from a Python
   function that is applied to one or more input cubes. Replaces the formerly 
-  hidden `xcube apply` command. (#167)
+  hidden `xcube apply` command. (#167) 
+* Added new function `xcube.core.geom.rasterize_features()` 
+  to rasterize vector-data features into a dataset. (#222)
 
 ### Enhancements
 
 * CLI commands execute much faster now when invoked with the `--help` and `--info` options.
+* Added `serverPID` property to response of web API info handler. 
+* Functions and classes exported by following modules no longer require data cubes to use
+  the `lon` and `lat` coordinate variables, i.e. using WGS84 CRS coordinates. Instead, the 
+  coordinates' CRS may be a projected coordinate system and coordinate variables may be called
+  `x` and `y` (#112):
+  - `xcube.core.new`
+  - `xcube.core.geom`
+  - `xcube.core.schema`
+  - `xcube.core.verify`
+   
+### Fixes
 
+* `xcube resample` now correctly re-chunks its output. By default, chunking of the 
+  `time` dimension is set to one. (#212)
 
 ### Incompatible changes
 
