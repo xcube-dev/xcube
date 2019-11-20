@@ -40,6 +40,7 @@ def verify(cube):
       variables, if any;
     * has any data variables and that they are valid, e.g. min. 3-D, all have
       same dimensions, have at least dimensions "time", "lat", "lon".
+    * spatial coordinates and their corresponding bounds (if exist) are equidistant
 
     If INPUT is a valid xcube dataset, the tool returns exit code 0.
     Otherwise a violation report is written to stdout and the tool returns exit code 3.

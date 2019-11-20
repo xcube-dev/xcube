@@ -83,35 +83,27 @@ def verify_cube(dataset: xr.Dataset) -> List[str]:
 
     if xy_var_names:
         _check_coord_equidistance(dataset, xy_var_names[0], xy_var_names[0], report)
-        if xy_var_names[0] + '_bnds' in dataset.variables:
-            _check_coord_equidistance(dataset, xy_var_names[0] + '_bnds', xy_var_names[0], report)
         _check_coord_equidistance(dataset, xy_var_names[1], xy_var_names[1], report)
-        if xy_var_names[0] + '_bnds' in dataset.variables:
-            _check_coord_equidistance(dataset, xy_var_names[1] + '_bnds', xy_var_names[1], report)
 
     return report
 
 
 def _check_coord_equidistance(dataset, coord_name, dim_name, report, rtol=None):
-    coordinate = dataset[coord_name]
+    diff = dataset[coord_name].diff(dim=dim_name)
+    if not _check_equidistance_from_diff(diff, rtol=rtol):
+        report.append(f"Coordinate {coord_name} is not equidistant")
 
-    if 'bnds' in coord_name:
-        diff = coordinate[:, 0].diff(dim=dim_name)
-        if not _check_equidistance_from_diff(diff, rtol=rtol):
-            report.append(f"Coordinate {coord_name}[:,0] is not equidistant")
+    bnds_name = dataset.attrs.get('bounds', f'{coord_name}_bnds')
 
-        diff = coordinate[:, 1].diff(dim=dim_name)
-        if not _check_equidistance_from_diff(diff, rtol=rtol):
-            report.append(f"Coordinate {coord_name}[:,1] is not equidistant")
-    else:
+    if bnds_name in dataset.coords:
         diff = dataset[coord_name].diff(dim=dim_name)
         if not _check_equidistance_from_diff(diff, rtol=rtol):
-            report.append(f"Coordinate {coord_name} is not equidistant")
+            report.append(f"Coordinate {bnds_name} is not equidistant")
 
 
 def _check_equidistance_from_diff(diff, rtol=None):
     if rtol is None:
-        rtol = float(np.abs(diff[0].values) / 100.00)
+        rtol = np.abs(np.divide(diff[0], 100.00)).values
 
     return np.allclose(diff[0], diff, rtol=rtol)
 
