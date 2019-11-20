@@ -10,7 +10,7 @@ import matplotlib.colors
 import matplotlib.figure
 import numpy as np
 
-from xcube.util.cmaps import get_norm
+from xcube.util.cmaps import get_norm, get_cmap
 from xcube.util.perf import measure_time_cm
 from xcube.util.tiledimage import NdarrayImage, TransformArrayImage, ColorMappedRgbaImage, ColorMappedRgbaImage2
 from xcube.util.tilegrid import TileGrid
@@ -163,9 +163,9 @@ def get_legend(ctx: ServiceContext,
         cmap_h = cmap_h or DEFAULT_CMAP_HEIGHT
 
     try:
-        cmap = cm.get_cmap(cmap_cbar)
+        _, cmap = get_cmap(cmap_cbar)
     except ValueError:
-        raise ServiceResourceNotFoundError(f"color bar {cmap_cbar} not found")
+        raise ServiceResourceNotFoundError(f"color bar {cmap_cbar!r} not found")
 
     fig = matplotlib.figure.Figure(figsize=(cmap_w, cmap_h))
     ax1 = fig.add_subplot(1, 1, 1)
