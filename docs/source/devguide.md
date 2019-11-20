@@ -293,5 +293,23 @@ e.g. `coolguy-7633-div_by_zero_in_mean-fix`. After a pull request,
 the development branch will first be merged into the 
 `<major>.<minor>.x` branch then into `master`.
 
+## Release Process
+
+* Check issues in progress, close any open issues that have been fixed.
+* In `xcube/version.py` remove the `.dev` suffix from version name.
+* Make sure `CHANGELOG.md` is complete. Remove the suffix ` (in development)` from the last version headline.
+* Push changes to either master or a maintainenance new branch (see above).
+* Await results from Travis CI and ReadTheDocs builds. If broken, fix.
+* Goto [xcube/releases](https://github.com/dcs4cop/xcube/releases) and press button "Draft a new Release".
+  - Tag version is: `v${version}` (with a "v" prefix)
+  - Release title is: `${version}` 
+  - Paste latest changes from `CHANGELOG.md` into field "Describe this release"
+  - Press "Publish release" button
+* After the release on GitHub, if the branch was `master`, create a new maintenance branch (see above)
+
+Go through the same procedure for all xcube plugin packages dependent on this version of xcube.
+
+TODO: Describe deployment to xcube conda package after release
+TODO: Describe deployment of xcube Docker image after release
 
  
