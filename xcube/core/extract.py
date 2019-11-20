@@ -135,7 +135,7 @@ def get_cube_values_for_indexes(cube: xr.Dataset,
                 new_bounds_vars[var_name + "_lower"] = bnds_var[:, 0]
                 new_bounds_vars[var_name + "_upper"] = bnds_var[:, 1]
             cube = cube.assign_coords(**new_bounds_vars)
-        cube = cube.drop(bounds_var_names.values())
+        cube = cube.drop_vars(bounds_var_names.values())
         if not include_coords:
             drop_coords = set(cube.coords).difference(new_bounds_vars.keys())
     else:
@@ -183,7 +183,7 @@ def get_cube_values_for_indexes(cube: xr.Dataset,
         cube_values = xr.Dataset(new_bounds_vars)
 
     if drop_coords:
-        cube_values = cube_values.drop(drop_coords)
+        cube_values = cube_values.drop_vars(drop_coords)
 
     return cube_values
 
