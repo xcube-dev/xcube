@@ -17,6 +17,8 @@
   hidden `xcube apply` command. (#167) 
 * Added new function `xcube.core.geom.rasterize_features()` 
   to rasterize vector-data features into a dataset. (#222)
+* Made xarray version 0.14.1 minimum requirement due to dropping xarray's drop 
+  method and replacing it with drop_sel and drop_vars. 
 
 ### Enhancements
 

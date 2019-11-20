@@ -24,6 +24,6 @@ dependencies:
   - setuptools >=41.0
   - shapely >=1.6
   - tornado >=6.0
-  - xarray >=0.12.3
+  - xarray >=0.14.1
   - zarr >=2.3.2
   - pytest
