@@ -1,4 +1,4 @@
-from typing import Dict, Union, Tuple, Any, Optional, Mapping, Sequence
+from typing import Dict, Union, Tuple, Any, Optional, Mapping, Sequence, Hashable
 
 import numpy as np
 import pandas as pd
@@ -132,8 +132,8 @@ def get_cube_values_for_indexes(cube: xr.Dataset,
             # Flatten any coordinate bounds variables
             for var_name, bnds_var_name in bounds_var_names.items():
                 bnds_var = cube[bnds_var_name]
-                new_bounds_vars[var_name + "_lower"] = bnds_var[:, 0]
-                new_bounds_vars[var_name + "_upper"] = bnds_var[:, 1]
+                new_bounds_vars[f"{var_name}_lower"] = bnds_var[:, 0]
+                new_bounds_vars[f"{var_name}_upper"] = bnds_var[:, 1]
             cube = cube.assign_coords(**new_bounds_vars)
         cube = cube.drop_vars(bounds_var_names.values())
         if not include_coords:
@@ -221,7 +221,7 @@ def get_cube_point_indexes(cube: xr.Dataset,
     indexes = []
     for dim_name, col_name in zip(dim_names, col_names):
         col = points[col_name]
-        coord_indexes = get_dataset_indexes(cube, dim_name, col, index_dtype=index_dtype)
+        coord_indexes = get_dataset_indexes(cube, str(dim_name), col, index_dtype=index_dtype)
         indexes.append((index_name_pattern.format(name=dim_name),
                         xr.DataArray(coord_indexes, dims=[INDEX_DIM_NAME])))
 
@@ -345,11 +345,11 @@ def _validate_points(points: Union[xr.Dataset, pd.DataFrame, Mapping[str, Any]],
     return num_points
 
 
-def _get_coord_bounds_var_names(dataset: xr.Dataset) -> Dict[str, str]:
+def _get_coord_bounds_var_names(dataset: xr.Dataset) -> Dict[Hashable, str]:
     bnds_var_names = {}
     for var_name in dataset.coords:
         var = dataset[var_name]
-        bnds_var_name = var.attrs.get("bounds", var_name + "_bnds")
+        bnds_var_name = var.attrs.get("bounds", f"{var_name}_bnds")
         if bnds_var_name not in bnds_var_names and bnds_var_name in dataset:
             bnds_var = dataset[bnds_var_name]
             if bnds_var.shape == (var.shape[0], 2):
@@ -357,7 +357,7 @@ def _get_coord_bounds_var_names(dataset: xr.Dataset) -> Dict[str, str]:
     return bnds_var_names
 
 
-def _get_cube_data_var_dims(cube: xr.Dataset) -> Tuple[str, ...]:
+def _get_cube_data_var_dims(cube: xr.Dataset) -> Tuple[Hashable, ...]:
     for var in cube.data_vars.values():
         return var.dims
     raise ValueError("cube dataset is empty")

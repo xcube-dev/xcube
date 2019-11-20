@@ -96,7 +96,7 @@ def _check_coord_equidistance(dataset, coord_name, dim_name, report, rtol=None):
     bnds_name = dataset.attrs.get('bounds', f'{coord_name}_bnds')
 
     if bnds_name in dataset.coords:
-        diff = dataset[coord_name].diff(dim=dim_name)
+        diff = dataset[bnds_name].diff(dim=dim_name)
         if not _check_equidistance_from_diff(diff, rtol=rtol):
             report.append(f"Coordinate {bnds_name} is not equidistant")
 
@@ -104,6 +104,12 @@ def _check_coord_equidistance(dataset, coord_name, dim_name, report, rtol=None):
 def _check_equidistance_from_diff(diff, rtol=None):
     if rtol is None:
         rtol = np.abs(np.divide(diff[0], 100.00)).values
+
+    # Check whether teh bounding box intersect with the anti-meridian.
+    ct_neg = diff.where(diff < 0).count().values
+
+    if ct_neg == 1:
+        return np.allclose(diff[0], diff.where(diff > 0, drop=True), rtol=rtol)
 
     return np.allclose(diff[0], diff, rtol=rtol)
 

@@ -74,11 +74,21 @@ class AssertAndVerifyCubeTest(unittest.TestCase):
 
     def test_verify_cube_coord_equidistance(self):
         ds = new_cube()
-        self.assertEqual([], verify_cube(ds))
-
         ds['lat'] = ds['lat'] + np.random.rand(len(ds['lat']))
         ds['lat_bnds'][:, 0] = ds['lat_bnds'][:, 0] + np.random.rand(len(ds['lat_bnds'][:, 0]))
         ds['lat_bnds'][:, 1] = ds['lat_bnds'][:, 1] + np.random.rand(len(ds['lat_bnds'][:, 1]))
 
         self.assertEqual(['Coordinate lat is not equidistant', 'Coordinate lat_bnds is not equidistant'],
                          verify_cube(ds))
+
+    def test_verify_cube_coord_equidistance_reverse_lat(self):
+        ds = new_cube()
+        ds['lat'] = np.flip(ds.lat)
+        ds['lat_bnds'] = (['lat', 'bnds'], np.flip(ds.lat_bnds))
+
+        ds['lon'] = np.roll(ds.lon, 90)
+        ds['lon_bnds'] = (['lon', 'bnds'], np.roll(ds.lon_bnds, 180))
+
+        self.assertEqual([], verify_cube(ds))
+
+
