@@ -419,6 +419,7 @@ class ZarrDatasetIO(DatasetIO):
         path_or_store = path
         consolidated = False
         mode = "read"
+        root = None
 
         if isinstance(path, str):
             client_kwargs = {}
@@ -426,12 +427,13 @@ class ZarrDatasetIO(DatasetIO):
                 client_kwargs = kwargs.pop('client_kwargs')
             if 'endpoint_url' in kwargs:
                 client_kwargs['endpoint_url'] = kwargs.pop('endpoint_url')
+                root = path
             if 'region_name' in kwargs:
                 client_kwargs['region_name'] = kwargs.pop('region_name')
 
-            path_or_store, root = _get_path_or_store(path_or_store, client_kwargs, mode)
+            path_or_store, root = _get_path_or_store(path_or_store, client_kwargs, mode, root)
 
-            if client_kwargs and root is not None:
+            if "endpoint_url" in client_kwargs and root is not None:
                 s3 = s3fs.S3FileSystem(anon=True,
                                        client_kwargs=client_kwargs)
                 consolidated = s3.exists(f'{root}/.zmetadata')
@@ -453,7 +455,8 @@ class ZarrDatasetIO(DatasetIO):
               client_kwargs=None,
               **kwargs):
         mode = "write"
-        path_or_store, root = _get_path_or_store(output_path, client_kwargs, mode)
+        root = None
+        path_or_store, root = _get_path_or_store(output_path, client_kwargs, mode, root)
 
         # keeping the code commented out below, because might be useful for makinging write able to change bucket policy
         # if 'acl' in kwargs:
@@ -552,10 +555,9 @@ def rimraf(path):
             pass
 
 
-def _get_path_or_store(path, client_kwargs, mode):
+def _get_path_or_store(path, client_kwargs, mode, root):
     path_or_store = path
     anon_mode = True
-    root = None
 
     if client_kwargs is not None:
         if 'aws_access_key_id' in client_kwargs and 'aws_secret_access_key' in client_kwargs:
