@@ -92,7 +92,7 @@ def verify_cube(dataset: xr.Dataset) -> List[str]:
     return report
 
 
-def _check_coord_equidistance(dataset, coord_name, dim_name, report, rtol=1e-09):
+def _check_coord_equidistance(dataset, coord_name, dim_name, report, rtol=None):
     coordinate = dataset[coord_name]
 
     if 'bnds' in coord_name:
@@ -109,7 +109,10 @@ def _check_coord_equidistance(dataset, coord_name, dim_name, report, rtol=1e-09)
             report.append(f"Coordinate {coord_name} is not equidistant")
 
 
-def _check_equidistance_from_diff(diff, rtol=1e-09):
+def _check_equidistance_from_diff(diff, rtol=None):
+    if rtol is None:
+        rtol = float(np.abs(diff[0].values) / 100.00)
+
     return np.allclose(diff[0], diff, rtol=rtol)
 
 
