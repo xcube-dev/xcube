@@ -92,7 +92,7 @@ versions.
 * Reorganisation of the Documentation and Examples Section (partly addressing #106)
 * Loosened python conda environment to satisfy conda-forge requirements
 * xcube is now deployed on conda-forge
-* Changed the unittesting code to minimize 3rd party warning
+* Changed the unittesting code to minimize warnings reported by 3rd-party packages
 * Making CLI parameters consistent and removing or changing parameter abbreviations in case they were used twice for different params. (partly addressing #91)
   For every CLI command which is generating an output a path must be provided by the option `-o`, `--output`. If not provided by the user, a default output_path is generated.
   The following CLI parameter have changed and their abbreviation is not enabled anymore : 
