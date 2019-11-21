@@ -305,9 +305,10 @@ the development branch will first be merged into the
 * Goto [xcube/releases](https://github.com/dcs4cop/xcube/releases) and press button "Draft a new Release".
   - Tag version is: `v${version}` (with a "v" prefix)
   - Release title is: `${version}` 
-  - Paste latest changes from `CHANGELOG.md` into field "Describe this release"
+  - Paste latest changes from `CHANGES.md` into field "Describe this release"
   - Press "Publish release" button
-* After the release on GitHub, if the branch was `master`, create a new maintenance branch (see above)
+* After the release on GitHub, rebase sources, if the branch was `master`, 
+  create a new maintenance branch (see above)
 * In `xcube/version.py` increase version number and append a `.dev0` suffix to version name so 
   that it is still PEP-440 compatible.
 * In `CHANGES.md` add a new version headline and attach ` (in development)` to it.
