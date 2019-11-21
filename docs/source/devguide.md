@@ -305,9 +305,10 @@ the development branch will first be merged into the
 * Goto [xcube/releases](https://github.com/dcs4cop/xcube/releases) and press button "Draft a new Release".
   - Tag version is: `v${version}` (with a "v" prefix)
   - Release title is: `${version}` 
-  - Paste latest changes from `CHANGELOG.md` into field "Describe this release"
+  - Paste latest changes from `CHANGES.md` into field "Describe this release"
   - Press "Publish release" button
-* After the release on GitHub, if the branch was `master`, create a new maintenance branch (see above)
+* After the release on GitHub, rebase sources, if the branch was `master`, 
+  create a new maintenance branch (see above)
 * In `xcube/version.py` increase version number and append a `.dev0` suffix to version name so 
   that it is still PEP-440 compatible.
 * In `CHANGES.md` add a new version headline and attach ` (in development)` to it.
@@ -334,7 +335,7 @@ test viewer with latest xcube Web API. Then release a new xcube viewer.
 * Cd into viewer project directory (`.../xcube-viewer/.`).
 * Remove the `-dev` suffix from `version` property in `package.json`.
 * Remove the `-dev` suffix from `VIEWER_VERSION` constant in `src/config.ts`.
-* Make sure `CHANGELOG.md` is complete. Remove the suffix ` (in development)` 
+* Make sure `CHANGES.md` is complete. Remove the suffix ` (in development)` 
   from the last version headline.
 * Build the app and test the build using a local http-server, e.g.:
 
@@ -347,14 +348,12 @@ test viewer with latest xcube Web API. Then release a new xcube viewer.
   and press button "Draft a new Release".
   - Tag version is: `v${version}` (with a "v" prefix).
   - Release title is: `${version}`. 
-  - Paste latest changes from `CHANGELOG.md` into field "Describe this release".
+  - Paste latest changes from `CHANGES.md` into field "Describe this release".
   - Press "Publish release" button.
 * Deploy build contents to any relevant web content providers.
 * After the release on GitHub, if the branch was `master`, 
   create a new maintenance branch (see above).
-* In `package.json` and `VIEWER_VERSION` constant in `src/config.ts` append `-dev.0` suffix .
-  to version name so it is SemVer compatible.
-* In `CHANGELOG.md` add a new version headline and attach ` (in development)` to it.
+* Increase version in `package.json` and `VIEWER_VERSION` constant in `src/config.ts` 
+  and append `-dev.0` suffix to version name so it is SemVer compatible.
+* In `CHANGES.md` add a new version headline and attach ` (in development)` to it.
 * Push changes to either master or a new maintenance branch (see above).
-
- 
