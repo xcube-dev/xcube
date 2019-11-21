@@ -16,4 +16,4 @@ def select_vars(dataset: xr.Dataset, var_names: Collection[str] = None) -> xr.Da
     dropped_variables = set(dataset.data_vars.keys()).difference(var_names)
     if not dropped_variables:
         return dataset
-    return dataset.drop(dropped_variables)
+    return dataset.drop_vars(dropped_variables)
