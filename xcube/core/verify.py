@@ -90,20 +90,20 @@ def verify_cube(dataset: xr.Dataset) -> List[str]:
 
 def _check_coord_equidistance(dataset, coord_name, dim_name, report, rtol=None):
     diff = dataset[coord_name].diff(dim=dim_name)
-    if not _check_equidistance_from_diff(diff, rtol=rtol):
+    if not _check_equidistance_from_diff(dataset, diff, rtol=rtol):
         report.append(f"coordinate variable {coord_name!r} is not equidistant")
 
     bnds_name = dataset.attrs.get('bounds', f'{coord_name}_bnds')
 
     if bnds_name in dataset.coords:
         diff = dataset[bnds_name].diff(dim=dim_name)
-        if not _check_equidistance_from_diff(diff[:, 0], rtol=rtol):
+        if not _check_equidistance_from_diff(dataset, diff[:, 0], rtol=rtol):
             report.append(f"coordinate variable {bnds_name!r} is not equidistant")
-        elif not _check_equidistance_from_diff(diff[:, 1], rtol=rtol):
+        elif not _check_equidistance_from_diff(dataset, diff[:, 1], rtol=rtol):
             report.append(f"coordinate variable {bnds_name!r} is not equidistant")
 
 
-def _check_equidistance_from_diff(diff, rtol=None):
+def _check_equidistance_from_diff(dataset, diff, rtol=None):
     if rtol is None:
         rtol = np.abs(np.divide(diff[0], 100.00)).values
 
