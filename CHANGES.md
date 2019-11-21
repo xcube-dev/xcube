@@ -1,4 +1,4 @@
-## Changes in 0.3.0 (in development)
+## Changes in 0.3.0
 
 ### New
 
@@ -74,7 +74,7 @@ versions.
   - removed functions `read_cube` and `read_dataset` as `open_cube` and `open_dataset` are sufficient
   - all internal module imports are now absolute, rather than relative  
 
-## Changes in 0.2.1 (in development)
+## Changes in 0.2.1
 
 ### Enhancements
 
