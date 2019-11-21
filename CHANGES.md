@@ -38,6 +38,8 @@
   `lat_bnds` is decreasing for `lat_bnds[:, 0]` and `lat_bnds[:, 1]`, but `lat_bnds[i, 0] < lat_bnds[i, 1]`
   for all `i`. xcube is now more tolerant w.r.t. to such wrong ordering of cell boundaries and will 
   compute the correct spatial extent. (#233)
+* For `xcube serve`, any undefined color bar name will default to `"viridis"`. (#238)
+    
  
 ### Fixes
 

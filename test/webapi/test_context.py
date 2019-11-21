@@ -69,7 +69,7 @@ class ServiceContextTest(unittest.TestCase):
         cm = ctx.get_color_mapping('demo', 'kd489')
         self.assertEqual(('jet', 0., 6.), cm)
         cm = ctx.get_color_mapping('demo', '_')
-        self.assertEqual(('jet', 0., 1.), cm)
+        self.assertEqual(('viridis', 0., 1.), cm)
 
     def test_get_global_place_groups(self):
         ctx = new_test_service_context()
