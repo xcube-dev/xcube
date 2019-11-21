@@ -295,10 +295,12 @@ the development branch will first be merged into the
 
 ## Release Process
 
+### xcube
+
 * Check issues in progress, close any open issues that have been fixed.
 * In `xcube/version.py` remove the `.dev` suffix from version name.
 * Make sure `CHANGELOG.md` is complete. Remove the suffix ` (in development)` from the last version headline.
-* Push changes to either master or a maintainenance new branch (see above).
+* Push changes to either master or a new maintenance branch (see above).
 * Await results from Travis CI and ReadTheDocs builds. If broken, fix.
 * Goto [xcube/releases](https://github.com/dcs4cop/xcube/releases) and press button "Draft a new Release".
   - Tag version is: `v${version}` (with a "v" prefix)
@@ -306,10 +308,52 @@ the development branch will first be merged into the
   - Paste latest changes from `CHANGELOG.md` into field "Describe this release"
   - Press "Publish release" button
 * After the release on GitHub, if the branch was `master`, create a new maintenance branch (see above)
+* In `xcube/version.py` increase version number and append a `.dev0` suffix to version name so 
+  that it is still PEP-440 compatible.
+* In `CHANGELOG.md` add a new version headline and attach ` (in development)` to it.
+* Push changes to either master or a new maintenance branch (see above).
 
 Go through the same procedure for all xcube plugin packages dependent on this version of xcube.
 
 TODO: Describe deployment to xcube conda package after release
 TODO: Describe deployment of xcube Docker image after release
+
+If any changes apply to `xcube serve` and the xcube Web API:
+
+Make sure changes are reflected in `xcube/webapi/res/openapi.yml`. 
+If there are changes, sync `xcube/webapi/res/openapi.yml` with 
+xcube Web API docs on SwaggerHub.
+
+Check if changes affect the xcube-viewer code. If so
+make sure changes are reflected in xcube-viewer code and 
+test viewer with latest xcube Web API. Then release a new xcube viewer.
+
+### xcube Viewer 
+
+* Cd into viewer project directory (`.../xcube-viewer/.`).
+* Remove the `-dev` suffix from `version` property in `package.json`.
+* Remove the `-dev` suffix from `VIEWER_VERSION` constant in `src/config.ts`.
+* Make sure `CHANGELOG.md` is complete. Remove the suffix ` (in development)` 
+  from the last version headline.
+* Build the app and test the build using a local http-server, e.g.:
+
+    $ npm install -g http-server
+    $ cd build 
+    $ http-server -p 3000
+
+* Push changes to either master or a new maintenance branch (see above).
+* Goto [xcube-viewer/releases](https://github.com/dcs4cop/xcube-viewer/releases) 
+  and press button "Draft a new Release".
+  - Tag version is: `v${version}` (with a "v" prefix).
+  - Release title is: `${version}`. 
+  - Paste latest changes from `CHANGELOG.md` into field "Describe this release".
+  - Press "Publish release" button.
+* Deploy build contents to any relevant web content providers.
+* After the release on GitHub, if the branch was `master`, 
+  create a new maintenance branch (see above).
+* In `package.json` and `VIEWER_VERSION` constant in `src/config.ts` append `-dev.0` suffix .
+  to version name so it is SemVer compatible.
+* In `CHANGELOG.md` add a new version headline and attach ` (in development)` to it.
+* Push changes to either master or a new maintenance branch (see above).
 
  
