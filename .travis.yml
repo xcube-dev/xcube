@@ -29,7 +29,6 @@ install:
   - conda list
   - python setup.py install 
   
-  - pytest
   - py.test -v --cov=xcube
 
 after_success:
