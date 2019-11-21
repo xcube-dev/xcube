@@ -340,6 +340,7 @@ test viewer with latest xcube Web API. Then release a new xcube viewer.
   - Paste latest changes from `CHANGES.md` into field "Describe this release".
   - Press "Publish release" button.
 * Deploy build contents to any relevant web content providers.
+* Merge `master` branch into `master_dcs4cop` and `master_cyanoalert`, push both.
 * After the release on GitHub, if the branch was `master`, 
   create a new maintenance branch (see above).
 * Increase version in `package.json` and `VIEWER_VERSION` constant in `src/config.ts` 
