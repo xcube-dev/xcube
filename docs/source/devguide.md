@@ -299,7 +299,7 @@ the development branch will first be merged into the
 
 * Check issues in progress, close any open issues that have been fixed.
 * In `xcube/version.py` remove the `.dev` suffix from version name.
-* Make sure `CHANGELOG.md` is complete. Remove the suffix ` (in development)` from the last version headline.
+* Make sure `CHANGES.md` is complete. Remove the suffix ` (in development)` from the last version headline.
 * Push changes to either master or a new maintenance branch (see above).
 * Await results from Travis CI and ReadTheDocs builds. If broken, fix.
 * Goto [xcube/releases](https://github.com/dcs4cop/xcube/releases) and press button "Draft a new Release".
@@ -310,8 +310,9 @@ the development branch will first be merged into the
 * After the release on GitHub, if the branch was `master`, create a new maintenance branch (see above)
 * In `xcube/version.py` increase version number and append a `.dev0` suffix to version name so 
   that it is still PEP-440 compatible.
-* In `CHANGELOG.md` add a new version headline and attach ` (in development)` to it.
+* In `CHANGES.md` add a new version headline and attach ` (in development)` to it.
 * Push changes to either master or a new maintenance branch (see above).
+* Activate new doc version on ReadTheDocs. 
 
 Go through the same procedure for all xcube plugin packages dependent on this version of xcube.
 
