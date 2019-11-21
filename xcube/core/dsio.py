@@ -559,6 +559,15 @@ def _get_path_or_store(path, client_kwargs, mode, root):
     path_or_store = path
     anon_mode = True
 
+    aws_credentials = ['aws_access_key_id', 'aws_secret_access_key']
+    for credential_i in aws_credentials:
+        try:
+            credential_i_value = os.getenv(credential_i)
+            if credential_i not in client_kwargs:
+                client_kwargs[credential_i] = credential_i_value
+        except KeyError:
+            pass
+
     if client_kwargs is not None:
         if 'aws_access_key_id' in client_kwargs and 'aws_secret_access_key' in client_kwargs:
             anon_mode = False
