@@ -2,13 +2,15 @@ import os
 import unittest
 from typing import Set
 
+import fsspec
 import numpy as np
 import pandas as pd
 import xarray as xr
+import s3fs
 
 from test.sampledata import new_test_dataset
 from xcube.core.dsio import CsvDatasetIO, DatasetIO, MemDatasetIO, Netcdf4DatasetIO, ZarrDatasetIO, find_dataset_io, \
-    query_dataset_io
+    query_dataset_io, _get_path_or_store
 from xcube.core.dsio import open_dataset, write_dataset
 from xcube.core.new import new_cube
 
@@ -323,3 +325,34 @@ class ContextManagerTest(unittest.TestCase):
         a = open_a()
         self.assertIsInstance(a, A)
         self.assertEqual(False, a.closed)
+
+
+class GetPathOrStoreTest(unittest.TestCase):
+    def test_path_or_store_read_from_bucket(self):
+        path, root = _get_path_or_store(root=None,
+                                        path="http://obs.eu-de.otc.t-systems.com/dcs4cop-obs-02/OLCI-SNS-RAW-CUBE-2.zarr",
+                                        mode="read", client_kwargs=None)
+        self.assertIsInstance(path, fsspec.mapping.FSMap)
+
+    def test_path_or_store_write_to_bucket(self):
+        path, root = _get_path_or_store(root=None,
+                                        path="http://obs.eu-de.otc.t-systems.com/fake_bucket/fake_cube.zarr",
+                                        mode="write", client_kwargs={"aws_access_key_id": "some_fake_id",
+                                                                     "aws_secret_access_key": "some_fake_key"})
+        self.assertIsInstance(path, fsspec.mapping.FSMap)
+
+    def test_path_or_store_read_from_local(self):
+        path, root = _get_path_or_store(root=None,
+                                        path="../examples/serve/demo/cube-1-250-250.zarr",
+                                        mode="read", client_kwargs=None)
+        self.assertIsInstance(path, str)
+
+    def test_path_or_store_write_to_bucket_env_credentials(self):
+        os.environ['aws_access_key_id'] = 'some_fake_id'
+        os.environ['aws_secret_access_key'] = 'some_fake_key'
+        path, root = _get_path_or_store(root=None,
+                                path="http://obs.eu-de.otc.t-systems.com/fake_bucket/fake_cube.zarr",
+                                mode="write", client_kwargs=None)
+        self.assertIsInstance(path, fsspec.mapping.FSMap)
+        del os.environ['aws_access_key_id']
+        del os.environ['aws_secret_access_key']

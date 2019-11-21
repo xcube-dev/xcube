@@ -558,6 +558,8 @@ def rimraf(path):
 def _get_path_or_store(path, client_kwargs, mode, root):
     path_or_store = path
     anon_mode = True
+    if not client_kwargs:
+        client_kwargs = {}
 
     aws_credentials = ['aws_access_key_id', 'aws_secret_access_key']
     for credential_i in aws_credentials:
