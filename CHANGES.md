@@ -91,7 +91,7 @@ versions.
 
 * Reorganisation of the Documentation and Examples Section (partly addressing #106)
 * Loosened python conda environment to satisfy conda-forge requirements
-* xcube is now deployed on conda-forge
+* xcube is now available as a conda package on the conda-forge channel. To install latest xcube package, you can now type: `conda install -c conda-forge xcube`
 * Changed the unittesting code to minimize warnings reported by 3rd-party packages
 * Making CLI parameters consistent and removing or changing parameter abbreviations in case they were used twice for different params. (partly addressing #91)
   For every CLI command which is generating an output a path must be provided by the option `-o`, `--output`. If not provided by the user, a default output_path is generated.
