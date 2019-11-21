@@ -315,8 +315,46 @@ the development branch will first be merged into the
 
 Go through the same procedure for all xcube plugin packages dependent on this version of xcube.
 
-TODO: Describe deployment to xcube conda package after release
-TODO: Describe deployment of xcube Docker image after release
+### xcube conda-forge Release
+
+* The previous process is a prerequisite to deploy xcube on conda-forge
+* In Pycharm clone the GitHub reporitory https://github.com/dcs4cop/xcube-feedstock
+* Create a branch xcube_v{{version}}
+* Download [release](https://github.com/dcs4cop/xcube/archive/v[version].tar.gz) from GitHub
+  and compute its sha256 sum: ```sha256sum v[version].tar.gz```
+* Open ```recipe/meta.yaml```:
+  - Set the correct version at the top of the file (format without prefix 'v', e.g. 0.2.1)
+  - Exchange the sha256 sum in the section 'source'
+  - Bump the build number (if the version is unchanged!)
+  - Reset the build number to `0` (if the version is! changed)
+  - [Re-rendered]( https://conda-forge.org/docs/maintainer/updating_pkgs.html#rerendering-feedstocks ) with the latest `conda-smithy` (Use the phrase <code>@<space/>conda-forge-admin, please rerender</code> in a comment in this PR for automated rerendering)   
+  - Update any dependencies if necessary. Make sure that they are in sync with
+    xcube's environment.yaml.
+  - Ensure the license file is being packaged (in the xcube release archive) and that 
+    the file name of the license file in the archive and the in the meta.yml are the same.     
+  - Check whether all other info (e.g. the about section) is up-to-date and correct
+* Commit and push your changes
+* If you have changed the dependencies, conda-forge will automatically create a PR and 
+  start the re-render process 
+* Otherwise, create a pull request and check the upcoming checklist. 
+* Go to your PR on [the xcube's conda-forge feedstock on GitHub](https://github.com/conda-forge/xcube-feedstock)
+  and check whether the CI tests have run successfully  
+* If yes, merge your PR
+
+
+### xcube quay.io (docker) Release
+
+* The previous two processes are prerequisite to deploy xcube as a docker image on quay.io
+* Open the [Github repository](https://github.com/dcs4cop/xcube-docker/)
+* Create a branch xcube_v{version}
+* Change the xcube versions in `Dockerfile`, `Dockerfile.jupyterlab`, and `Dockerfile.serve` 
+* Commit and push your changes to your branch. This will trigger building the docker image on quay.io
+* Go to xcube's docker repository [quay.io](https://quay.io/repository/bcdev/xcube) and check
+  whether the image has been built
+* If so, go back to [xcube-docker Github repository](https://github.com/dcs4cop/xcube-docker/)
+  and create a tag/release using the same version number as before.
+* Check on quay.io whether the image xcube:`[version]` has been built
+* If so, test by running `docker run -it xcube:[version]`
 
 If any changes apply to `xcube serve` and the xcube Web API:
 
