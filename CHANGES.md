@@ -17,7 +17,7 @@
   hidden `xcube apply` command. (#167) 
 * Added new function `xcube.core.geom.rasterize_features()` 
   to rasterize vector-data features into a dataset. (#222)
-* Extended verify to check whether spatial coordinates and their bounds are equidistant. (#231)
+* Extended CLI command `xcube verify` and API function `xcube.core.verify.verify_cube` to check whether spatial coordinate variables and their associated bounds variables are equidistant. (#231)
 
 
 ### Enhancements
@@ -228,4 +228,3 @@ xcube's organisation. (#49)
 * Request for obtaining a legend for a layer of given by a variable of a data set was added.
 * Added a Dockerfile to build an xcube docker image and to run the demo
 * The RESTful time-series API now returns ISO-formatted UTC dates [#26](https://github.com/dcs4cop/xcube-server/issues/26)
-
