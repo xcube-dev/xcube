@@ -55,13 +55,22 @@ _INVALID_BOX_COORDS_MSG = 'Invalid box coordinates'
 
 def rasterize_features(dataset: xr.Dataset,
                        features: Union[GeoDataFrame, GeoJSONFeatures],
-                       feature_property_names: Sequence[Name],
+                       feature_props: Sequence[Name],
                        var_props: Dict[Name, VarProps] = None,
                        in_place: bool = False) -> Optional[xr.Dataset]:
     """
-    Rasterize numeric feature properties of GeoJSON *features* as new variables into *dataset*.
+    Rasterize feature properties given by *feature_props* of vector-data *features*
+    as new variables into *dataset*.
 
-    Using the optional *var_props* the properties of newly created variables from feature properties
+    *dataset* must have two spatial 1-D coordinates, either ``lon`` and ``lat`` in degrees,
+    reprojected coordinates, ``x`` and ``y``, or similar.
+
+    *feature_props* is a sequence of names of feature properties that must exists in each
+    feature of *features*.
+
+    *features* may be passed as pandas.GeoDataFrame`` or as an iterable of GeoJSON features.
+
+    Using the optional *var_props*, the properties of newly created variables from feature properties
     can be specified. It is a mapping of feature property names to mappings of variable
     properties. Here is an example variable properties mapping:::
 
@@ -79,7 +88,7 @@ def rasterize_features(dataset: xr.Dataset,
 
     :param dataset: The xarray dataset.
     :param features: A ``geopandas.GeoDataFrame`` instance or a sequence of GeoJSON features.
-    :param feature_property_names: Sequence of names of numeric feature properties to be rasterized.
+    :param feature_props: Sequence of names of numeric feature properties to be rasterized.
     :param var_props: Optional mapping of feature property name
         to a name or a 5-tuple (name, dtype, fill_value, attributes, converter) for the new variable.
     :param in_place: Whether to add new variables to *dataset*.
@@ -109,7 +118,7 @@ def rasterize_features(dataset: xr.Dataset,
     else:
         geo_data_frame = geopandas.GeoDataFrame.from_features(features)
 
-    for feature_property_name in feature_property_names:
+    for feature_property_name in feature_props:
         if feature_property_name not in geo_data_frame:
             raise ValueError(f'feature property {feature_property_name!r} not found')
 
@@ -122,15 +131,16 @@ def rasterize_features(dataset: xr.Dataset,
             continue
 
         # TODO (forman): allow transforming geometry into CRS of dataset here
-
         intersection_geometry = intersect_geometries(dataset_bounds, geometry)
         if intersection_geometry is None:
             continue
 
+        # TODO (forman): check, we should be able to drastically improve performance by generating
+        #                 the mask for a dataset subset genereated by clipping against geometry
         mask_data = get_geometry_mask(width, height, intersection_geometry, ds_x_min, ds_y_min, spatial_res)
         mask = xr.DataArray(mask_data, coords=coords, dims=dims)
 
-        for feature_property_name in feature_property_names:
+        for feature_property_name in feature_props:
 
             var_prop_mapping = var_props.get(feature_property_name, {})
             var_name = var_prop_mapping.get('name', feature_property_name.replace(' ', '_'))
@@ -425,30 +435,39 @@ def get_dataset_bounds(dataset: Union[xr.Dataset, xr.DataArray],
         xy_var_names = get_dataset_xy_var_names(dataset, must_exist=True)
     x_name, y_name = xy_var_names
     x_var, y_var = dataset.coords[x_name], dataset.coords[y_name]
+    is_lon = xy_var_names[0] == 'lon'
 
+    # Note, x_min > x_max then we intersect with the anti-meridian
     x_bnds_name = get_dataset_bounds_var_name(dataset, x_name)
     if x_bnds_name:
         x_bnds_var = dataset.coords[x_bnds_name]
-        x_min = x_bnds_var[0][0]
-        x_max = x_bnds_var[-1][1]
+        x1 = x_bnds_var[0, 0]
+        x2 = x_bnds_var[0, 1]
+        x3 = x_bnds_var[-1, 0]
+        x4 = x_bnds_var[-1, 1]
+        x_min = min(x1, x2)
+        x_max = max(x3, x4)
     else:
         x_min = x_var[0]
         x_max = x_var[-1]
-        delta = min(abs(np.diff(x_var)))
+        delta = (x_max - x_min + (0 if x_max >= x_min or not is_lon else 360)) / (x_var.size - 1)
         x_min -= 0.5 * delta
         x_max += 0.5 * delta
 
+    # Note, x-axis may be inverted
     y_bnds_name = get_dataset_bounds_var_name(dataset, y_name)
     if y_bnds_name:
         y_bnds_var = dataset.coords[y_bnds_name]
-        y1 = y_bnds_var[0][0]
-        y2 = y_bnds_var[-1][1]
-        y_min = min(y1, y2)
-        y_max = max(y1, y2)
+        y1 = y_bnds_var[0, 0]
+        y2 = y_bnds_var[0, 1]
+        y3 = y_bnds_var[-1, 0]
+        y4 = y_bnds_var[-1, 1]
+        y_min = min(y1, y2, y3, y4)
+        y_max = max(y1, y2, y3, y4)
     else:
         y1 = y_var[0]
         y2 = y_var[-1]
-        delta = min(abs(np.diff(y_var)))
+        delta = abs(y2 - y1) / (y_var.size - 1)
         y_min = min(y1, y2) - 0.5 * delta
         y_max = max(y1, y2) + 0.5 * delta
 

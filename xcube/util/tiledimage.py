@@ -25,14 +25,13 @@ import uuid
 from abc import ABCMeta, abstractmethod
 from typing import Tuple, Sequence, Union, Any, Callable, Optional
 
-import matplotlib.cm as cm
 import numba
 import numpy as np
 from PIL import Image
 
 from xcube.constants import GLOBAL_GEO_EXTENT
 from xcube.util.cache import Cache
-from xcube.util.cmaps import ensure_cmaps_loaded
+from xcube.util.cmaps import get_cmap
 from xcube.util.perf import measure_time_cm
 from xcube.util.tilegrid import TileGrid, GeoExtent
 
@@ -42,6 +41,10 @@ except ImportError:
     ocm = None
 
 __author__ = "Norman Fomferra (Brockmann Consult GmbH)"
+
+DEFAULT_COLOR_MAP_NAME = 'viridis'
+DEFAULT_COLOR_MAP_VALUE_RANGE = 0.0, 1.0
+DEFAULT_COLOR_MAP_NUM_COLORS = 256
 
 _LOG = logging.getLogger('xcube')
 
@@ -441,9 +444,9 @@ class ColorMappedRgbaImage(DecoratorImage):
     def __init__(self,
                  source_image: TiledImage,
                  image_id: str = None,
-                 value_range: Tuple[float, float] = (0.0, 1.0),
-                 cmap_name: str = None,
-                 num_colors: int = 256,
+                 value_range: Tuple[float, float] = DEFAULT_COLOR_MAP_VALUE_RANGE,
+                 cmap_name: str = DEFAULT_COLOR_MAP_NAME,
+                 num_colors: int = DEFAULT_COLOR_MAP_NUM_COLORS,
                  no_data_value: Union[int, float] = None,
                  encode: bool = False,
                  format: str = None,
@@ -451,19 +454,12 @@ class ColorMappedRgbaImage(DecoratorImage):
                  trace_perf: bool = False):
         super().__init__(source_image, image_id=image_id, format=format, mode='RGBA', tile_cache=tile_cache,
                          trace_perf=trace_perf)
-        self._value_range = value_range
-        self._cmap_name = cmap_name if cmap_name else 'jet'
-        ensure_cmaps_loaded()
-
-        try:
-            self._cmap = cm.get_cmap(self._cmap_name, num_colors)
-        except ValueError as e:
-            _LOG.warning(str(e))
-            _LOG.warning('reverting to colour map "jet"')
-            self._cmap_name = 'jet'
-            self._cmap = cm.get_cmap(self._cmap_name, num_colors)
-
-        self._cmap.set_bad('k', 0)
+        self._value_range = value_range or DEFAULT_COLOR_MAP_VALUE_RANGE
+        cmap_name, cmap = get_cmap(cmap_name or DEFAULT_COLOR_MAP_NAME,
+                                   default_cmap_name=DEFAULT_COLOR_MAP_NAME,
+                                   num_colors=num_colors or DEFAULT_COLOR_MAP_NUM_COLORS)
+        self._cmap_name = cmap_name
+        self._cmap = cmap
         self._no_data_value = no_data_value
         self._encode = encode
 
@@ -545,9 +541,9 @@ class ColorMappedRgbaImage2(OpImage):
                  array: np.ndarray,
                  tile_size: Size2D,
                  image_id: str = None,
-                 cmap_range: Tuple[float, float] = (0.0, 1.0),
-                 cmap_name: str = None,
-                 num_colors: int = 256,
+                 cmap_range: Tuple[float, float] = DEFAULT_COLOR_MAP_VALUE_RANGE,
+                 cmap_name: str = DEFAULT_COLOR_MAP_NAME,
+                 num_colors: int = DEFAULT_COLOR_MAP_NUM_COLORS,
                  no_data_value: Union[int, float] = None,
                  encode: bool = False,
                  format: str = None,
@@ -569,20 +565,18 @@ class ColorMappedRgbaImage2(OpImage):
         valid_range = valid_range if valid_range is not None else (-np.inf, np.inf)
         valid_range = tuple(map(float, valid_range))
         no_data_value = float(no_data_value) if no_data_value is not None else float(np.nan)
-        cmap_range = cmap_range if cmap_range is not None else (0.0, 1.0)
+        cmap_range = cmap_range if cmap_range is not None else DEFAULT_COLOR_MAP_VALUE_RANGE
         cmap_range = tuple(map(float, cmap_range))
-        cmap_name = cmap_name if cmap_name else 'jet'
         self._array = array
         self._valid_range = valid_range
         self._no_data_value = no_data_value
         self._encode = encode
         self._flip_y = flip_y
-        self._num_colors = num_colors
-        ensure_cmaps_loaded()
         self._cmap_range = cmap_range
-        cmap = cm.get_cmap(cmap_name, num_colors)
-        # cmap.set_bad('k', 0)
-        self._colors = cmap(np.linspace(0, 1, num_colors))
+        self._num_colors = num_colors or DEFAULT_COLOR_MAP_NUM_COLORS
+        cmap_name, cmap = get_cmap(cmap_name or DEFAULT_COLOR_MAP_NAME,
+                                   default_cmap_name=DEFAULT_COLOR_MAP_NAME)
+        self._colors = cmap(np.linspace(0, 1, num_colors or DEFAULT_COLOR_MAP_NUM_COLORS))
 
     def compute_tile(self,
                      tile_x: int, tile_y: int,
@@ -929,10 +923,6 @@ class NdarrayImage(OpImage):
         tile = self._array[..., y:y + h, x:x + w]
         # ensure that our tile size is w x h
         return trim_tile(tile, self.tile_size)
-
-
-LC_STANDARD_NAMES = {'land_cover_lccs algorithmic_confidence', 'land_cover_lccs status_flag', 'land_cover_lccs',
-                     'land_cover_lccs number_of_observations', 'land_cover_lccs status_flag'}
 
 
 class ImagePyramid:

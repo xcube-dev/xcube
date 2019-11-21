@@ -101,6 +101,34 @@ _CBARS_LOADED = False
 _LOCK = Lock()
 
 
+def get_cmap(cmap_name: str, default_cmap_name='viridis', num_colors: int = None):
+    """
+    Get color mapping for color bar name *cmap_name*.
+
+    If *num_colors* is a positive integer,
+    a resampled mapping will be returned that contains *num_colors* color entries.
+
+    If *cmap_name* is not defined, *default_cmap_name* is used.
+    If *default_cmap_name* is undefined too, a ValueError is raised.
+
+    Otherwise, a tuple (actual_cmap_name, cmap) is returned.
+
+    :param cmap_name: Color bar name.
+    :param num_colors: Number of colours in returned color mapping.
+    :param default_cmap_name: Default color bar name.
+    :return: A tuple (actual_cmap_name, cmap).
+    """
+    ensure_cmaps_loaded()
+    try:
+        cmap = cm.get_cmap(cmap_name, num_colors)
+    except ValueError as e:
+        _LOG.warning(str(e))
+        _LOG.warning(f'color map name {cmap_name!r} undefined, falling back to {default_cmap_name!r}')
+        cmap_name = default_cmap_name
+        cmap = cm.get_cmap(cmap_name, num_colors)
+    return cmap_name, cmap
+
+
 def get_cmaps():
     """
     Return a JSON-serializable tuple containing records of the form:

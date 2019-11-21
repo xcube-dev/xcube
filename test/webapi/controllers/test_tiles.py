@@ -4,7 +4,7 @@ from test.webapi.helpers import new_test_service_context, RequestParamsMock
 from xcube.webapi.context import ServiceContext
 from xcube.webapi.controllers.tiles import get_dataset_tile, get_ne2_tile, get_dataset_tile_grid, get_ne2_tile_grid, \
     get_legend
-from xcube.webapi.errors import ServiceBadRequestError, ServiceResourceNotFoundError
+from xcube.webapi.errors import ServiceBadRequestError
 
 
 class TilesControllerTest(unittest.TestCase):
@@ -89,9 +89,9 @@ class TilesControllerTest(unittest.TestCase):
         image = get_legend(ctx, 'demo', 'conc_chl', RequestParamsMock())
         self.assertEqual("<class 'bytes'>", str(type(image)))
 
-        with self.assertRaises(ServiceResourceNotFoundError) as cm:
-            get_legend(ctx, 'demo', 'conc_chl', RequestParamsMock(cbar='sun-shine'))
-        self.assertEqual('color bar sun-shine not found', cm.exception.reason)
+        # This is fine, because we fall back to "viridis".
+        image = get_legend(ctx, 'demo', 'conc_chl', RequestParamsMock(cbar='sun-shine'))
+        self.assertEqual("<class 'bytes'>", str(type(image)))
 
         with self.assertRaises(ServiceBadRequestError) as cm:
             get_legend(ctx, 'demo', 'conc_chl', RequestParamsMock(vmin='sun-shine'))

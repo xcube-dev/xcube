@@ -36,6 +36,7 @@ import zarr
 from xcube.core.dsio import guess_dataset_format
 from xcube.core.verify import assert_cube
 from xcube.constants import FORMAT_NAME_ZARR, FORMAT_NAME_NETCDF4, FORMAT_NAME_LEVELS
+from xcube.util.cmaps import get_cmap
 from xcube.util.perf import measure_time
 from xcube.version import version
 from xcube.util.cache import MemoryCacheStore, Cache
@@ -138,7 +139,7 @@ class ServiceContext:
         return self._image_cache
 
     @property
-    def tile_cache(self) -> Dict[str, Any]:
+    def tile_cache(self) -> Optional[Cache]:
         return self._tile_cache
 
     @property
@@ -227,7 +228,7 @@ class ServiceContext:
                             cmap_cbar = color_mapping.get('ColorFile', cmap_cbar)
                         else:
                             cmap_cbar = color_mapping.get('ColorBar', cmap_cbar)
-
+                            cmap_cbar, _ = get_cmap(cmap_cbar)
                         return cmap_cbar, cmap_vmin, cmap_vmax
             else:
                 ds = self.get_dataset(ds_id, expected_var_names=[var_name])
