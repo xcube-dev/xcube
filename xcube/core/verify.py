@@ -81,7 +81,40 @@ def verify_cube(dataset: xr.Dataset) -> List[str]:
     if xy_var_names and time_var_name:
         _check_data_variables(dataset, xy_var_names, time_var_name, report)
 
+    if xy_var_names:
+        _check_coord_equidistance(dataset, xy_var_names[0], xy_var_names[0], report)
+        _check_coord_equidistance(dataset, xy_var_names[1], xy_var_names[1], report)
+
     return report
+
+
+def _check_coord_equidistance(dataset, coord_name, dim_name, report, rtol=None):
+    diff = dataset[coord_name].diff(dim=dim_name)
+    if not _check_equidistance_from_diff(dataset, diff, rtol=rtol):
+        report.append(f"coordinate variable {coord_name!r} is not equidistant")
+
+    bnds_name = dataset.attrs.get('bounds', f'{coord_name}_bnds')
+
+    if bnds_name in dataset.coords:
+        diff = dataset[bnds_name].diff(dim=dim_name)
+        if not _check_equidistance_from_diff(dataset, diff[:, 0], rtol=rtol):
+            report.append(f"coordinate variable {bnds_name!r} is not equidistant")
+        elif not _check_equidistance_from_diff(dataset, diff[:, 1], rtol=rtol):
+            report.append(f"coordinate variable {bnds_name!r} is not equidistant")
+
+
+def _check_equidistance_from_diff(dataset, diff, rtol=None):
+    if rtol is None:
+        rtol = np.abs(np.divide(diff[0], 100.00)).values
+
+    # Check whether the bounding box intersect with the anti-meridian for lon/lat datasets.
+    # This is the case when exactly one difference is negative.
+    if is_lon_lat_dataset(dataset):
+        ct_neg = diff.where(diff < 0).count().values
+        if ct_neg == 1:
+            # If a bounding box intersects with the anti-meridian, compute its correct width
+            diff = xr.where(diff < 0, diff + 360., diff)
+    return np.allclose(diff[0], diff, rtol=rtol)
 
 
 def _check_data_variables(dataset, xy_var_names, time_var_name, report):
