@@ -351,8 +351,8 @@ class GetPathOrStoreTest(unittest.TestCase):
         os.environ['aws_access_key_id'] = 'some_fake_id'
         os.environ['aws_secret_access_key'] = 'some_fake_key'
         path, root = _get_path_or_store(root=None,
-                                path="http://obs.eu-de.otc.t-systems.com/fake_bucket/fake_cube.zarr",
-                                mode="write", client_kwargs=None)
+                                        path="http://obs.eu-de.otc.t-systems.com/fake_bucket/fake_cube.zarr",
+                                        mode="write", client_kwargs=None)
         self.assertIsInstance(path, fsspec.mapping.FSMap)
         del os.environ['aws_access_key_id']
         del os.environ['aws_secret_access_key']
