@@ -107,12 +107,12 @@ def _check_equidistance_from_diff(diff, rtol=None):
     if rtol is None:
         rtol = np.abs(np.divide(diff[0], 100.00)).values
 
-    # Check whether the bounding box intersects with the anti-meridian.
-    ct_neg = diff.where(diff < 0).count().values
-
-    if ct_neg == 1:
-        return np.allclose(diff[0], diff.where(diff > 0, drop=True), rtol=rtol)
-
+    # Check whether the bounding box intersect with the anti-meridian for lon/lat datasets.
+    if is_lon_lat_dataset(dataset):
+        ct_neg = diff.where(diff < 0).count().values
+        if ct_neg == 1:
+            # If the bounding box intersects with the anti-meridian, calculate the correct difference
+            diff = xr.where(diff < 0, diff + 360., diff)
     return np.allclose(diff[0], diff, rtol=rtol)
 
 
