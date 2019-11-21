@@ -18,6 +18,8 @@
 * Added new function `xcube.core.geom.rasterize_features()` 
   to rasterize vector-data features into a dataset. (#222)
 * Extended CLI command `xcube verify` and API function `xcube.core.verify.verify_cube` to check whether spatial coordinate variables and their associated bounds variables are equidistant. (#231)
+* Made xarray version 0.14.1 minimum requirement due to deprecation of xarray's `Dataset.drop`
+  method and replaced it with `drop_sel` and `drop_vars` accordingly. 
 
 
 ### Enhancements
@@ -32,7 +34,15 @@
   - `xcube.core.geom`
   - `xcube.core.schema`
   - `xcube.core.verify`
-   
+* Sometimes the cell bounds coordinate variables of a given coordinate variables are not in a proper, 
+  [CF compliant](http://cfconventions.org/Data/cf-conventions/cf-conventions-1.7/cf-conventions.html#cell-boundaries) 
+  order, e.g. for decreasing latitudes `lat` the respective bounds coordinate
+  `lat_bnds` is decreasing for `lat_bnds[:, 0]` and `lat_bnds[:, 1]`, but `lat_bnds[i, 0] < lat_bnds[i, 1]`
+  for all `i`. xcube is now more tolerant w.r.t. to such wrong ordering of cell boundaries and will 
+  compute the correct spatial extent. (#233)
+* For `xcube serve`, any undefined color bar name will default to `"viridis"`. (#238)
+    
+ 
 ### Fixes
 
 * `xcube resample` now correctly re-chunks its output. By default, chunking of the 

@@ -1,5 +1,6 @@
 import io
 import logging
+import warnings
 from typing import Dict, Any
 
 import matplotlib
@@ -9,7 +10,7 @@ import matplotlib.colors
 import matplotlib.figure
 import numpy as np
 
-from xcube.util.cmaps import get_norm
+from xcube.util.cmaps import get_norm, get_cmap
 from xcube.util.perf import measure_time_cm
 from xcube.util.tiledimage import NdarrayImage, TransformArrayImage, ColorMappedRgbaImage, ColorMappedRgbaImage2
 from xcube.util.tilegrid import TileGrid
@@ -162,9 +163,9 @@ def get_legend(ctx: ServiceContext,
         cmap_h = cmap_h or DEFAULT_CMAP_HEIGHT
 
     try:
-        cmap = cm.get_cmap(cmap_cbar)
+        _, cmap = get_cmap(cmap_cbar)
     except ValueError:
-        raise ServiceResourceNotFoundError(f"color bar {cmap_cbar} not found")
+        raise ServiceResourceNotFoundError(f"color bar {cmap_cbar!r} not found")
 
     fig = matplotlib.figure.Figure(figsize=(cmap_w, cmap_h))
     ax1 = fig.add_subplot(1, 1, 1)
@@ -257,9 +258,20 @@ def _tile_grid_to_ol4x_xyz_source_options(tile_grid: TileGrid, url: str):
     :return:
     """
     west, south, east, north = tile_grid.geo_extent
-    res0 = (north - south) / tile_grid.height(0)
-    #   https://openlayers.org/en/latest/examples/xyz.html
-    #   https://openlayers.org/en/latest/apidoc/ol.source.XYZ.html
+
+    delta_x = east - west + (0 if east >= west else 360)
+    delta_y = north - south
+    width = tile_grid.width(0)
+    height = tile_grid.height(0)
+    res0_x = delta_x / width
+    res0_y = delta_y / height
+    res0 = max(res0_x, res0_y)
+    if abs(res0_y - res0_x) >= 1.e-5:
+        warnings.warn(f'spatial resolutions in x and y direction differ significantly:'
+                      f' {res0_x} and {res0_y} degrees, using maximum {res0}')
+
+    # https://openlayers.org/en/latest/examples/xyz.html
+    # https://openlayers.org/en/latest/apidoc/ol.source.XYZ.html
     return dict(url=url,
                 projection='EPSG:4326',
                 minZoom=0,

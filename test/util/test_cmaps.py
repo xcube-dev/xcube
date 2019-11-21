@@ -1,12 +1,31 @@
 import os
 from unittest import TestCase
-from matplotlib.colors import LinearSegmentedColormap, ListedColormap
-import matplotlib.cm as cm
 
-from xcube.util.cmaps import get_cmaps, ensure_cmaps_loaded, _get_custom_colormap
+import matplotlib.cm as cm
+from matplotlib.colors import LinearSegmentedColormap, ListedColormap, Colormap
+
+from xcube.util.cmaps import get_cmaps, ensure_cmaps_loaded, _get_custom_colormap, get_cmap
 
 
 class CmapsTest(TestCase):
+
+    def test_get_cmap(self):
+        ensure_cmaps_loaded()
+
+        cmap_name, cmap = get_cmap('plasma')
+        self.assertEqual('plasma', cmap_name)
+        self.assertIsInstance(cmap, Colormap)
+
+        cmap_name, cmap = get_cmap('PLASMA')
+        self.assertEqual('viridis', cmap_name)
+        self.assertIsInstance(cmap, Colormap)
+
+        cmap_name, cmap = get_cmap('PLASMA', default_cmap_name='magma')
+        self.assertEqual('magma', cmap_name)
+        self.assertIsInstance(cmap, Colormap)
+
+        with self.assertRaises(ValueError):
+            get_cmap('PLASMA', default_cmap_name='MAGMA')
 
     def test_get_cmaps_returns_singleton(self):
         cmaps = get_cmaps()
@@ -90,7 +109,6 @@ class CmapsTest(TestCase):
 
 
 def main():
-
     cmaps = get_cmaps()
 
     html_head = '<!DOCTYPE html>\n' + \

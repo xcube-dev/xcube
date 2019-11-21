@@ -345,7 +345,7 @@ def _validate_points(points: Union[xr.Dataset, pd.DataFrame, Mapping[str, Any]],
     return num_points
 
 
-def _get_coord_bounds_var_names(dataset: xr.Dataset) -> Dict[Hashable, str]:
+def _get_coord_bounds_var_names(dataset: xr.Dataset) -> Dict[Hashable, Any]:
     bnds_var_names = {}
     for var_name in dataset.coords:
         var = dataset[var_name]
@@ -366,7 +366,7 @@ def _get_cube_data_var_dims(cube: xr.Dataset) -> Tuple[Hashable, ...]:
 def _get_bounds_var(dataset: xr.Dataset, var_name: str) -> Optional[xr.DataArray]:
     var = dataset[var_name]
     if len(var.shape) == 1:
-        bounds_var_name = var.attrs.get("bounds", var_name + "_bnds")
+        bounds_var_name = var.attrs.get("bounds", f"{var_name}_bnds")
         if bounds_var_name in dataset:
             bounds_var = dataset[bounds_var_name]
             if bounds_var.dtype == var.dtype and bounds_var.shape == (var.size, 2):
