@@ -5,95 +5,129 @@ Python API
 Cube I/O
 ========
 
-.. autofunction:: xcube.api.read_cube
+.. autofunction:: xcube.core.dsio.open_cube
 
-.. autofunction:: xcube.api.open_cube
-
-.. autofunction:: xcube.api.write_cube
+.. autofunction:: xcube.core.dsio.write_cube
 
 Cube generation
 ===============
 
-.. autofunction:: xcube.api.gen_cube
+.. autofunction:: xcube.core.gen.gen.gen_cube
 
-.. autofunction:: xcube.api.new_cube
+.. autofunction:: xcube.core.new.new_cube
 
+Cube computation
+================
+
+.. autofunction:: xcube.core.compute.compute_cube
+
+.. autofunction:: xcube.core.evaluate.evaluate_dataset
 
 Cube data extraction
 ====================
 
-.. autofunction:: xcube.api.get_cube_values_for_points
+.. autofunction:: xcube.core.extract.get_cube_values_for_points
 
-.. autofunction:: xcube.api.get_cube_point_indexes
+.. autofunction:: xcube.core.extract.get_cube_point_indexes
 
-.. autofunction:: xcube.api.get_cube_values_for_indexes
+.. autofunction:: xcube.core.extract.get_cube_values_for_indexes
 
-.. autofunction:: xcube.api.get_dataset_indexes
+.. autofunction:: xcube.core.extract.get_dataset_indexes
 
-.. autofunction:: xcube.api.get_time_series
+.. autofunction:: xcube.core.timeseries.get_time_series
 
 Cube manipulation
 =================
 
-.. autofunction:: xcube.api.resample_in_time
+.. autofunction:: xcube.core.resample.resample_in_time
 
-.. autofunction:: xcube.api.vars_to_dim
+.. autofunction:: xcube.core.vars2dim.vars_to_dim
 
-.. autofunction:: xcube.api.chunk_dataset
+.. autofunction:: xcube.core.chunk.chunk_dataset
 
-.. autofunction:: xcube.api.unchunk_dataset
+.. autofunction:: xcube.core.unchunk.unchunk_dataset
 
-.. autofunction:: xcube.api.vars_to_dim
+.. autofunction:: xcube.core.optimize.optimize_dataset
 
 Cube subsetting
 ===============
 
-.. autofunction:: xcube.api.select_vars
+.. autofunction:: xcube.core.select.select_vars
 
-.. autofunction:: xcube.api.clip_dataset_by_geometry
+.. autofunction:: xcube.core.geom.clip_dataset_by_geometry
 
 
 Cube masking
 ============
 
-.. autofunction:: xcube.api.mask_dataset_by_geometry
+.. autofunction:: xcube.core.geom.mask_dataset_by_geometry
 
-.. autoclass:: xcube.api.MaskSet
+.. autoclass:: xcube.core.maskset.MaskSet
+    :members:
 
 
-Cube optimization
-=================
+Rasterisation of Features
+=========================
 
-.. autofunction:: xcube.api.optimize_dataset
+.. autofunction:: xcube.core.geom.rasterize_features
 
 
 Cube metadata
 =============
 
-.. autofunction:: xcube.api.update_dataset_attrs
+.. autofunction:: xcube.core.edit.edit_metadata
 
-.. autofunction:: xcube.api.update_dataset_spatial_attrs
+.. autofunction:: xcube.core.update.update_dataset_attrs
 
-.. autofunction:: xcube.api.update_dataset_temporal_attrs
+.. autofunction:: xcube.core.update.update_dataset_spatial_attrs
+
+.. autofunction:: xcube.core.update.update_dataset_temporal_attrs
 
 
 Cube verification
 =================
 
-.. autofunction:: xcube.api.assert_cube
+.. autofunction:: xcube.core.verify.assert_cube
 
-.. autofunction:: xcube.api.verify_cube
+.. autofunction:: xcube.core.verify.verify_cube
 
 Multi-resolution pyramids
 =========================
 
-.. autofunction:: xcube.api.compute_levels
+.. autofunction:: xcube.core.level.compute_levels
 
-.. autofunction:: xcube.api.read_levels
+.. autofunction:: xcube.core.level.read_levels
 
-.. autofunction:: xcube.api.write_levels
+.. autofunction:: xcube.core.level.write_levels
 
 Utilities
 =========
 
-.. autofunction:: xcube.api.convert_geometry
+.. autofunction:: xcube.core.geom.convert_geometry
+
+.. autoclass:: xcube.core.store.CubeStore
+    :members:
+
+.. autoclass:: xcube.core.schema.CubeSchema
+    :members:
+
+Plugin Development
+==================
+
+.. autoclass:: xcube.util.extension.ExtensionRegistry
+    :members:
+
+.. autoclass:: xcube.util.extension.Extension
+    :members:
+
+.. autofunction:: xcube.util.extension.import_component
+
+.. autodata:: xcube.constants.EXTENSION_POINT_INPUT_PROCESSORS
+
+.. autodata:: xcube.constants.EXTENSION_POINT_DATASET_IOS
+
+.. autodata:: xcube.constants.EXTENSION_POINT_CLI_COMMANDS
+
+.. autofunction:: xcube.util.plugin.get_extension_registry
+
+.. autofunction:: xcube.util.plugin.get_plugins

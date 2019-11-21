@@ -1,8 +1,8 @@
 import unittest
 
+from test.webapi.helpers import RequestParamsMock
 from xcube.webapi.errors import ServiceBadRequestError
 from xcube.webapi.reqparams import RequestParams
-from .helpers import RequestParamsMock
 
 
 class RequestParamsTest(unittest.TestCase):

@@ -27,7 +27,7 @@ def extract(cube,
             bounds=False,
             indexes=False,
             refs=False,
-):
+            ):
     """
     Extract cube points.
 
@@ -51,8 +51,8 @@ def extract(cube,
     include_indexes = indexes
     include_refs = refs
 
-    from xcube.api.readwrite import open_dataset
-    from xcube.api.extract import get_cube_values_for_points, DEFAULT_INDEX_NAME_PATTERN, DEFAULT_REF_NAME_PATTERN
+    from xcube.core.dsio import open_dataset
+    from xcube.core.extract import get_cube_values_for_points, DEFAULT_INDEX_NAME_PATTERN, DEFAULT_REF_NAME_PATTERN
 
     # We may make the following CLI options
     index_name_pattern = DEFAULT_INDEX_NAME_PATTERN

@@ -4,7 +4,7 @@ from typing import List
 import xarray as xr
 
 from test.cli.helpers import CliTest, CliDataTest, TEST_ZARR_DIR
-from xcube.api import assert_cube
+from xcube.core.verify import assert_cube
 
 
 class ResampleTest(CliTest):

@@ -22,9 +22,10 @@ by Konrad Lorenz (translation is left to the reader)
 - [Versioning](#versioning)
 - [Coding Style](#coding-style)
 - [Main Packages](#main-packages)
+  - [Package `xcube.core`](#package-xcubecore)
   - [Package `xcube.cli`](#package-xcubecli)
-  - [Package `xcube.api`](#package-xcubeapi)
   - [Package `xcube.webapi`](#package-xcubewebapi)
+  - [Package `xcube.util`](#package-xcubeutil)
 - [Development Process](#development-process)
 
 ## Versioning
@@ -52,28 +53,27 @@ We try adhering to [PEP-8](https://www.python.org/dev/peps/pep-0008/).
 
 ## Main Packages
 
-* `xcube.cli` - Here live CLI commands that are required by someone. 
+* `xcube.core` - Hosts core API functions. 
+  Code in here should be maintained w.r.t. backward compatibility.
+  Therefore think twice before adding new or change existing core API. 
+* `xcube.cli` - Hosts CLI commands. 
   CLI command implementations should be lightweight. 
-  Move implementation code either into `api` or `util`.  
+  Move implementation code either into `core` or `util`.  
   CLI commands must be maintained w.r.t. backward compatibility.
   Therefore think twice before adding new or change existing CLI 
   commands. 
-* `xcube.api` - Here live API functions that are required by someone or 
-  that exists because a CLI command is implemented here. 
-  API code must be maintained w.r.t. backward compatibility.
-  Therefore think twice before adding new or change existing API. 
-* `xcube.webapi` - Here live Web API functions that are required by 
-  someone. Web API command implementations should be lightweight.
-  Move implementation code either into `api` or `util`.  
+* `xcube.webapi` - Hosts Web API functions. 
+  Web API command implementations should be lightweight.
+  Move implementation code either into `core` or `util`.  
   Web API interface must be maintained w.r.t. backward compatibility.
-  Therefore think twice before adding new or change existing API.
+  Therefore think twice before adding new or change existing web API.
 * `xcube.util` - Mainly implementation helpers. 
-  Comprises classes and functions that are used by `cli`, `api`, 
+  Comprises classes and functions that are used by `cli`, `core`, 
   `webapi` in order to maximize modularisation and testability but to 
   minimize code duplication.  
-  The code in here must not be dependent on any of `cli`, `api`,
-  `webapi`.The code in here may change often and in any way as desired 
-  by code implementing the `cli`, `api`, `webapi` packages.    
+  The code in here must not be dependent on any of `cli`, `core`,
+  `webapi`. The code in here may change often and in any way as desired 
+  by code implementing the `cli`, `core`, `webapi` packages.    
 
 The following sections will guide you through extending or changing the
 main packages that form xcube's public interface.
@@ -84,7 +84,7 @@ main packages that form xcube's public interface.
 
 Make sure your change
 
-1. is covered by unit-tests (package `test/api`); 
+1. is covered by unit-tests (package `test/cli`); 
 1. is reflected by the CLI's doc-strings and tools documentation 
    (currently in `README.md`);
 1. follows existing xcube CLI conventions;
@@ -149,23 +149,23 @@ to developers, not CLI users.
 There is a global option `--traceback` flag that user can set to dump 
 stack traces. You don't need to print stack traces from your code.  
 
-### Package `xcube.api`
+### Package `xcube.core`
 
 #### Checklist
 
 Make sure your change
 
-1. is covered by unit-tests (package `test/api`); 
+1. is covered by unit-tests (package `test/core`); 
 1. is covered by API documentation;
 1. follows existing xcube API conventions;
 1. follows PEP8 conventions;
-1. is reflected in xarray extension class `xcube.api.api.API`;
+1. is reflected in xarray extension class `xcube.core.xarray.DatasetAccessor`;
 1. is reflected in CLI and WebAPI if desired;
 1. is reflected in `CHANGES.md`.
 
 #### Hints
 
-Create new module in `xcube.api` and add your functions.
+Create new module in `xcube.core` and add your functions.
 For any functions added make sure naming is in line with other API.
 Add clear doc-string to the new API. Use Sphinx RST format.
 
@@ -185,7 +185,7 @@ In the implementation, if `not cube_asserted`,
 we must assert and verify the `cube` is a cube. 
 Pass `True` to `cube_asserted` argument of other API called later on: 
     
-    from .verify import assert_cube
+    from xcube.core.verify import assert_cube
 
     def frombosify_cube(cube: xr.Dataset, ..., cube_asserted: bool = False):  
         if not cube_asserted:
@@ -194,11 +194,11 @@ Pass `True` to `cube_asserted` argument of other API called later on:
         result = bibosify_cube(cube, ..., cube_asserted=True)
         ...
 
-If `import xcube.api` is used in client code, any `xarray.Dataset` 
+If `import xcube.core.xarray` is imported in client code, any `xarray.Dataset` 
 object will have an extra property `xcube` whose interface is defined 
-by the class `xcube.api.XCubeAPI`. This class is an 
+by the class `xcube.core.xarray.DatasetAccessor`. This class is an 
 [xarray extension](http://xarray.pydata.org/en/stable/internals.html#extending-xarray) 
-that is used to reflect `xcube.api` functions and make it directly 
+that is used to reflect `xcube.core` functions and make it directly 
 applicable to the `xarray.Dataset` object.
 
 Therefore any xcube API shall be reflected in this extension class.
@@ -225,7 +225,7 @@ Make sure your change
 * All handlers are implemented in `webapi.handlers`. Handler code just 
   delegates to dedicated controllers.
 * All controllers are implemented in `webapi.controllers.*`. They might
-  further delegate into `api.*`
+  further delegate into `core.*`
 
 ## Development Process
 
@@ -293,5 +293,67 @@ e.g. `coolguy-7633-div_by_zero_in_mean-fix`. After a pull request,
 the development branch will first be merged into the 
 `<major>.<minor>.x` branch then into `master`.
 
+## Release Process
+
+### xcube
+
+* Check issues in progress, close any open issues that have been fixed.
+* In `xcube/version.py` remove the `.dev` suffix from version name.
+* Make sure `CHANGELOG.md` is complete. Remove the suffix ` (in development)` from the last version headline.
+* Push changes to either master or a new maintenance branch (see above).
+* Await results from Travis CI and ReadTheDocs builds. If broken, fix.
+* Goto [xcube/releases](https://github.com/dcs4cop/xcube/releases) and press button "Draft a new Release".
+  - Tag version is: `v${version}` (with a "v" prefix)
+  - Release title is: `${version}` 
+  - Paste latest changes from `CHANGELOG.md` into field "Describe this release"
+  - Press "Publish release" button
+* After the release on GitHub, if the branch was `master`, create a new maintenance branch (see above)
+* In `xcube/version.py` increase version number and append a `.dev0` suffix to version name so 
+  that it is still PEP-440 compatible.
+* In `CHANGELOG.md` add a new version headline and attach ` (in development)` to it.
+* Push changes to either master or a new maintenance branch (see above).
+
+Go through the same procedure for all xcube plugin packages dependent on this version of xcube.
+
+TODO: Describe deployment to xcube conda package after release
+TODO: Describe deployment of xcube Docker image after release
+
+If any changes apply to `xcube serve` and the xcube Web API:
+
+Make sure changes are reflected in `xcube/webapi/res/openapi.yml`. 
+If there are changes, sync `xcube/webapi/res/openapi.yml` with 
+xcube Web API docs on SwaggerHub.
+
+Check if changes affect the xcube-viewer code. If so
+make sure changes are reflected in xcube-viewer code and 
+test viewer with latest xcube Web API. Then release a new xcube viewer.
+
+### xcube Viewer 
+
+* Cd into viewer project directory (`.../xcube-viewer/.`).
+* Remove the `-dev` suffix from `version` property in `package.json`.
+* Remove the `-dev` suffix from `VIEWER_VERSION` constant in `src/config.ts`.
+* Make sure `CHANGELOG.md` is complete. Remove the suffix ` (in development)` 
+  from the last version headline.
+* Build the app and test the build using a local http-server, e.g.:
+
+    $ npm install -g http-server
+    $ cd build 
+    $ http-server -p 3000
+
+* Push changes to either master or a new maintenance branch (see above).
+* Goto [xcube-viewer/releases](https://github.com/dcs4cop/xcube-viewer/releases) 
+  and press button "Draft a new Release".
+  - Tag version is: `v${version}` (with a "v" prefix).
+  - Release title is: `${version}`. 
+  - Paste latest changes from `CHANGELOG.md` into field "Describe this release".
+  - Press "Publish release" button.
+* Deploy build contents to any relevant web content providers.
+* After the release on GitHub, if the branch was `master`, 
+  create a new maintenance branch (see above).
+* In `package.json` and `VIEWER_VERSION` constant in `src/config.ts` append `-dev.0` suffix .
+  to version name so it is SemVer compatible.
+* In `CHANGELOG.md` add a new version headline and attach ` (in development)` to it.
+* Push changes to either master or a new maintenance branch (see above).
 
  

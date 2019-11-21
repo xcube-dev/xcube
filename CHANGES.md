@@ -2,20 +2,88 @@
 
 ### New
 
-- New CLI command `xcube var2rgb` allowing to generate RGB(A) imagery from given cube 
-  and variable. (#?) 
+* Added new parameter in `xcube gen` called `--no_sort`. Using `--no_sort`, 
+  the input file list wont be sorted before creating the xcube dataset. 
+  If `--no_sort` parameter is passed, order the input list will be kept. 
+  The parameter `--sort` is deprecated and the input files will be sorted 
+  by default. 
+* xcube now discovers plugin modules by module naming convention
+  and by Setuptools entry points. See new chapter 
+  [Plugins](https://xcube.readthedocs.io/en/latest/plugins.html) 
+  in xcube's documentation for details. (#211)  
+* Added new `xcube compute` CLI command and `xcube.core.compute.compute_cube()` API 
+  function that can be used to generate an output cube computed from a Python
+  function that is applied to one or more input cubes. Replaces the formerly 
+  hidden `xcube apply` command. (#167) 
+* Added new function `xcube.core.geom.rasterize_features()` 
+  to rasterize vector-data features into a dataset. (#222)
+* Made xarray version 0.14.1 minimum requirement due to deprecation of xarray's `Dataset.drop`
+  method and replaced it with `drop_sel` and `drop_vars` accordingly. 
+
+### Enhancements
+
+* CLI commands execute much faster now when invoked with the `--help` and `--info` options.
+* Added `serverPID` property to response of web API info handler. 
+* Functions and classes exported by following modules no longer require data cubes to use
+  the `lon` and `lat` coordinate variables, i.e. using WGS84 CRS coordinates. Instead, the 
+  coordinates' CRS may be a projected coordinate system and coordinate variables may be called
+  `x` and `y` (#112):
+  - `xcube.core.new`
+  - `xcube.core.geom`
+  - `xcube.core.schema`
+  - `xcube.core.verify`
+* Sometimes the cell bounds coordinate variables of a given coordinate variables are not in a proper, 
+  [CF compliant](http://cfconventions.org/Data/cf-conventions/cf-conventions-1.7/cf-conventions.html#cell-boundaries) 
+  order, e.g. for decreasing latitudes `lat` the respective bounds coordinate
+  `lat_bnds` is decreasing for `lat_bnds[:, 0]` and `lat_bnds[:, 1]`, but `lat_bnds[i, 0] < lat_bnds[i, 1]`
+  for all `i`. xcube is now more tolerant w.r.t. to such wrong ordering of cell boundaries and will 
+  compute the correct spatial extent. (#233)
+* For `xcube serve`, any undefined color bar name will default to `"viridis"`. (#238)
+    
+ 
+### Fixes
+
+* `xcube resample` now correctly re-chunks its output. By default, chunking of the 
+  `time` dimension is set to one. (#212)
+
+### Incompatible changes
+
+The following changes introduce incompatibilities with former xcube 0.2.x 
+versions. 
+
+* The function specified by `xcube_plugins` entry points now receives an single argument of 
+  type `xcube.api.ExtensionRegistry`. Plugins are asked to add their extensions
+  to this registry. As an example, have a look at the default `xcube_plugins` entry points 
+  in `./setup.py`.   
+ 
+* `xcube.api.compute_dataset()` function has been renamed to 
+  `xcube.api.evaluate_dataset()`. This has been done in order avoid confusion
+  with new API function `xcube.api.compute_cube()`.
   
+* xcube's package structure has been drastically changed: 
+  - all of xcube's `__init__.py` files are now empty and no longer 
+    have side effects such as sub-module aggregations. 
+    Therefore, components need to be imported from individual modules.
+  - renamed `xcube.api` into `xcube.core`
+  - moved several modules from `xcube.util` into `xcube.core`
+  - the new `xcube.constants` module contains package level constants
+  - the new `xcube.plugin` module now registers all standard extensions
+  - moved contents of module `xcube.api.readwrite` into `xcube.core.dsio`.
+  - removed functions `read_cube` and `read_dataset` as `open_cube` and `open_dataset` are sufficient
+  - all internal module imports are now absolute, rather than relative  
 
 ## Changes in 0.2.1 (in development)
 
 ### Enhancements
 
-- `xcube serve` now recognises xcube datasets with consolidated 
-  metadata. (#141) 
+- Added new CLI tool `xcube edit` and API function `xcube.api.edit_metadata`
+  which allows editing the metadata of an existing xcube dataset. (#170)
+- `xcube serve` now recognises xcube datasets with
+  metadata consolidated by the `xcube opmimize` command. (#141)
 
 ### Fixes
-
-- `.levels` can be stored in obs and are usable with `xcube serve` (#179)
+- `xcube gen` now parses time stamps correcly from input data. (#207)
+- Dataset multi-resolution pyramids (`*.levels` directories) can be stored in cloud object storage and are now usable with `xcube serve` (#179)
 - `xcube optimize` now consolidates metadata only after consolidating
   coordinate variables. (#194)
 - Removed broken links from `./README.md` (#197)

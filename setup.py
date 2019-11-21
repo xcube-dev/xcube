@@ -72,12 +72,12 @@ setup(
     packages=packages,
     entry_points={
         'console_scripts': [
-            'xcube = xcube.cli.cli:main',
+            # xcube's CLI
+            'xcube = xcube.cli.main:main',
         ],
-        # This is xcube's extension point for new plugins. Use this extension point to add your own
-        # xcube plugin in the setup.py of your Python package sources.
         'xcube_plugins': [
-            'xcube_genl2c_default = xcube.api.gen.default:init_plugin',
+            # xcube's standard extensions
+            'xcube_standard = xcube.plugin:init_plugin',
         ],
     },
     install_requires=requirements,

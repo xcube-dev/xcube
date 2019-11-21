@@ -5,7 +5,7 @@ FROM continuumio/miniconda3:latest
 MAINTAINER helge.dzierzon@brockmann-consult.de
 
 LABEL name=xcube
-LABEL version=0.2.0.dev
+LABEL version=0.3.0.dev1
 LABEL conda_env=xcube
 
 # Ensure usage of bash (simplifies source activate calls)

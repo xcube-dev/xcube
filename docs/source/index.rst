@@ -31,6 +31,7 @@ xcube has been developed to generate, manipulate, analyse, and publish data cube
 
    cubespec
    devguide
+   plugins
 
 
 Indices and tables

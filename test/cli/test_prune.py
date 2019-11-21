@@ -1,13 +1,15 @@
 import os.path
 import sys
+
 import numpy as np
 import xarray as xr
 
 from test.cli.helpers import CliTest
-from xcube.api import assert_cube, new_cube
-from xcube.api.readwrite import write_cube
 from xcube.cli.prune import _delete_block_file
-from xcube.util.dsio import rimraf
+from xcube.core.dsio import rimraf
+from xcube.core.dsio import write_cube
+from xcube.core.new import new_cube
+from xcube.core.verify import assert_cube
 
 
 class PruneTest(CliTest):

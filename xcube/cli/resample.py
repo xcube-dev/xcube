@@ -22,7 +22,7 @@ from typing import Sequence, Dict, Any
 
 import click
 
-from xcube.util.constants import FORMAT_NAME_ZARR, FORMAT_NAME_NETCDF4, FORMAT_NAME_MEM
+from xcube.constants import FORMAT_NAME_ZARR, FORMAT_NAME_NETCDF4, FORMAT_NAME_MEM
 
 UPSAMPLING_METHODS = ['asfreq', 'ffill', 'bfill', 'pad', 'nearest', 'interpolate']
 DOWNSAMPLING_METHODS = ['count', 'first', 'last', 'min', 'max', 'sum', 'prod', 'mean', 'median', 'std', 'var']
@@ -57,35 +57,35 @@ DEFAULT_INTERPOLATION_KIND = 'linear'
               help="Comma-separated list of names of variables to be included.")
 @click.option('--method', '-M', multiple=True,
               help=f"Temporal resampling method. "
-              f"Available downsampling methods are "
-              f"{', '.join(map(repr, DOWNSAMPLING_METHODS))}, "
-              f"the upsampling methods are "
-              f"{', '.join(map(repr, UPSAMPLING_METHODS))}. "
-              f"If the upsampling method is 'interpolate', "
-              f"the option '--kind' will be used, if given. "
-              f"Other upsampling methods that select existing values "
-              f"honour the '--tolerance' option. "
-              f'Defaults to {DEFAULT_RESAMPLING_METHOD!r}.')
+                   f"Available downsampling methods are "
+                   f"{', '.join(map(repr, DOWNSAMPLING_METHODS))}, "
+                   f"the upsampling methods are "
+                   f"{', '.join(map(repr, UPSAMPLING_METHODS))}. "
+                   f"If the upsampling method is 'interpolate', "
+                   f"the option '--kind' will be used, if given. "
+                   f"Other upsampling methods that select existing values "
+                   f"honour the '--tolerance' option. "
+                   f'Defaults to {DEFAULT_RESAMPLING_METHOD!r}.')
 @click.option('--frequency', '-F',
               help='Temporal aggregation frequency. Use format "<count><offset>" '
                    "where <offset> is one of 'H', 'D', 'W', 'M', 'Q', 'Y'. "
-              f'Defaults to {DEFAULT_RESAMPLING_FREQUENCY!r}.')
+                   f'Defaults to {DEFAULT_RESAMPLING_FREQUENCY!r}.')
 @click.option('--offset', '-O',
               help='Offset used to adjust the resampled time labels. Uses same syntax as frequency. '
                    'Some Pandas date offset strings are supported as well.')
 @click.option('--base', '-B', type=int, default=DEFAULT_RESAMPLING_BASE,
               help='For frequencies that evenly subdivide 1 day, the origin of the aggregated intervals. '
                    "For example, for '24H' frequency, base could range from 0 through 23. "
-              f'Defaults to {DEFAULT_RESAMPLING_BASE!r}.')
+                   f'Defaults to {DEFAULT_RESAMPLING_BASE!r}.')
 @click.option('--kind', '-K', type=str, default=DEFAULT_INTERPOLATION_KIND,
               help="Interpolation kind which will be used if upsampling method is 'interpolation'. "
-              f"May be one of {', '.join(map(repr, INTERPOLATION_KINDS))} where "
-              f"{', '.join(map(repr, SPLINE_INTERPOLATION_KINDS))} refer to a spline interpolation of "
-              f"zeroth, first, second or third order; 'previous' and 'next' "
-              f"simply return the previous or next value of the point. "
+                   f"May be one of {', '.join(map(repr, INTERPOLATION_KINDS))} where "
+                   f"{', '.join(map(repr, SPLINE_INTERPOLATION_KINDS))} refer to a spline interpolation of "
+                   f"zeroth, first, second or third order; 'previous' and 'next' "
+                   f"simply return the previous or next value of the point. "
                    "For more info "
                    "refer to scipy.interpolate.interp1d(). "
-              f'Defaults to {DEFAULT_INTERPOLATION_KIND!r}.')
+                   f'Defaults to {DEFAULT_INTERPOLATION_KIND!r}.')
 @click.option('--tolerance', '-T', type=str,
               help='Tolerance for selective upsampling methods. Uses same syntax as frequency. '
                    'If the time delta exceeds the tolerance, '
@@ -167,15 +167,16 @@ def _resample_in_time(input_path: str = None,
                       methods: Sequence[str] = (DEFAULT_RESAMPLING_METHOD,),
                       frequency: str = DEFAULT_RESAMPLING_FREQUENCY,
                       offset: str = None,
-                      base: str = DEFAULT_RESAMPLING_BASE,
+                      base: int = DEFAULT_RESAMPLING_BASE,
                       interp_kind: str = DEFAULT_INTERPOLATION_KIND,
                       tolerance: str = None,
                       dry_run: bool = False,
                       monitor=None):
-    from xcube.api import open_cube
-    from xcube.api.readwrite import write_cube
-    from xcube.api.resample import resample_in_time
-    from xcube.util.dsio import guess_dataset_format
+    from xcube.core.dsio import guess_dataset_format
+    from xcube.core.dsio import open_cube
+    from xcube.core.dsio import write_cube
+    from xcube.core.resample import resample_in_time
+    from xcube.core.update import update_dataset_chunk_encoding
 
     if not output_format:
         output_format = guess_dataset_format(output_path)
@@ -191,8 +192,14 @@ def _resample_in_time(input_path: str = None,
                                   base=base,
                                   interp_kind=interp_kind,
                                   tolerance=tolerance,
+                                  time_chunk_size=1,
                                   var_names=variables,
                                   metadata=metadata)
+
+        agg_ds = update_dataset_chunk_encoding(agg_ds,
+                                               chunk_sizes={},
+                                               format_name=output_format,
+                                               in_place=True)
 
         monitor(f'Writing resampled cube to {output_path!r}...')
         if not dry_run:

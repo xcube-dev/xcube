@@ -1,5 +1,5 @@
 # The MIT License (MIT)
-# Copyright (c) 2018 by the xcube development team and contributors
+# Copyright (c) 2019 by the xcube development team and contributors
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of
 # this software and associated documentation files (the "Software"), to deal in
@@ -33,7 +33,7 @@ DEFAULT_LOG_PREFIX = os.path.abspath('xcube_server.log')
 DEFAULT_TILE_COMP_MODE = 0
 DEFAULT_TRACE_PERF = False
 
-DEFAULT_CMAP_CBAR = 'jet'
+DEFAULT_CMAP_CBAR = 'viridis'
 DEFAULT_CMAP_VMIN = 0.
 DEFAULT_CMAP_VMAX = 1.
 DEFAULT_CMAP_WIDTH = 1

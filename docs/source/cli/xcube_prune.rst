@@ -23,4 +23,4 @@ Delete empty chunks.
       --help     Show this message and exit.
 
 
-A related Python API function is :py:func:`xcube.api.get_empty_dataset_chunks`.
+A related Python API function is :py:func:`xcube.core.optimize.get_empty_dataset_chunks`.

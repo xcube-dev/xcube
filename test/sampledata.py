@@ -13,7 +13,7 @@ def new_test_dataset(time, height=180, **indexers):
            Value may be a scalar or a vector of same length as *time*.
     :return: test dataset
     """
-    # TODO (forman): get rid of this code here, utilise xcube.api.new_cube() instead
+    # TODO (forman): get rid of this code here, utilise xcube.core.new_cube() instead
     time = [time] if isinstance(time, str) else time
     width = height * 2
     num_times = len(time)
@@ -29,8 +29,10 @@ def new_test_dataset(time, height=180, **indexers):
             raise ValueError()
         data_vars[name] = (['time', 'lat', 'lon'],
                            np.concatenate(tuple(np.full(shape, values[i]) for i in range(num_times))))
+    time = np.array(pd.to_datetime(time), dtype=np.datetime64)
     return xr.Dataset(data_vars,
-                      coords=dict(time=(['time'], pd.to_datetime(time)),
+                      coords=dict(time=(
+                      ['time'], time, dict(units='nanoseconds since 1970-01-01', calendar='proleptic_gregorian')),
                                   lat=(['lat'], np.linspace(-90 + res, +90 - res, height)),
                                   lon=(['lon'], np.linspace(-180 + res, +180 - res, width))))
 

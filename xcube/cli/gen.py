@@ -18,12 +18,16 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-from typing import Sequence
+
+from typing import List, Sequence
 
 import click
 
-from xcube.api.gen.defaults import DEFAULT_OUTPUT_PATH, DEFAULT_OUTPUT_RESAMPLING
-from xcube.util.constants import RESAMPLING_METHOD_NAMES
+from xcube.constants import EXTENSION_POINT_DATASET_IOS
+from xcube.constants import EXTENSION_POINT_INPUT_PROCESSORS
+from xcube.constants import RESAMPLING_METHOD_NAMES
+from xcube.core.gen.defaults import DEFAULT_OUTPUT_PATH, DEFAULT_OUTPUT_RESAMPLING
+from xcube.util.extension import Extension
 
 resampling_methods = sorted(RESAMPLING_METHOD_NAMES)
 
@@ -62,9 +66,11 @@ resampling_methods = sorted(RESAMPLING_METHOD_NAMES)
               help='Deprecated. The command will now always create, insert, replace, or append input slices.')
 @click.option('--prof', is_flag=True,
               help='Collect profiling information and dump results after processing.')
-@click.option('--sort', is_flag=True,
-              help='The input file list will be sorted before creating the xcube dataset. '
-                   'If --sort parameter is not passed, order of input list will be kept.')
+@click.option('--no_sort', is_flag=True,
+              help='The input file list will not be sorted before creating the xcube dataset. '
+                   'If --no_sort parameter is passed, the order of the input list will be kept. '
+                   'This parameter should be used for better performance, '
+                   'provided that the input file list is in correct order (continuous time).')
 @click.option('--info', '-I', is_flag=True,
               help='Displays additional information about format options or about input processors.')
 @click.option('--dry_run', is_flag=True,
@@ -82,7 +88,7 @@ def gen(input: Sequence[str],
         prof: bool,
         dry_run: bool,
         info: bool,
-        sort: bool):
+        no_sort: bool):
     """
     Generate xcube dataset.
     Data cubes may be created in one go or successively for all given inputs.
@@ -95,14 +101,12 @@ def gen(input: Sequence[str],
     dry_run = dry_run
     info_mode = info
 
-    from xcube.api.gen.config import get_config_dict
-    from xcube.api.gen.gen import gen_cube
-    # Force loading of plugins
-    __import__('xcube.util.plugin')
-
     if info_mode:
         print(_format_info())
         return 0
+
+    from xcube.core.gen.config import get_config_dict
+    from xcube.core.gen.gen import gen_cube
 
     config = get_config_dict(
         input_paths=input,
@@ -116,7 +120,7 @@ def gen(input: Sequence[str],
         output_resampling=resampling,
         profile_mode=prof,
         append_mode=append,
-        sort_mode=sort,
+        no_sort_mode=no_sort,
     )
 
     gen_cube(dry_run=dry_run,
@@ -127,37 +131,41 @@ def gen(input: Sequence[str],
 
 
 def _format_info():
-    from xcube.api.gen.iproc import InputProcessor
-    from xcube.util.dsio import query_dataset_io
-    from xcube.util.objreg import get_obj_registry
+    from xcube.util.plugin import get_extension_registry
 
-    input_processors = get_obj_registry().get_all(type=InputProcessor)
-    output_writers = query_dataset_io(lambda ds_io: 'w' in ds_io.modes)
+    iproc_extensions = get_extension_registry().find_extensions(EXTENSION_POINT_INPUT_PROCESSORS)
+    dsio_extensions = get_extension_registry().find_extensions(EXTENSION_POINT_DATASET_IOS,
+                                                               lambda e: 'w' in e.metadata.get('modes', set()))
 
-    help_text = '\ninput processors to be used with option --proc:\n'
-    help_text += _format_input_processors(input_processors)
+    help_text = '\nInput processors to be used with option --proc:\n'
+    help_text += _format_input_processors(iproc_extensions)
     help_text += '\nFor more input processors use existing "xcube-gen-..." plugins ' \
                  "from the xcube's GitHub organisation or write your own plugin.\n"
     help_text += '\n'
-    help_text += '\noutput formats to be used with option --format:\n'
-    help_text += _format_dataset_ios(output_writers)
+    help_text += '\nOutput formats to be used with option --format:\n'
+    help_text += _format_dataset_ios(dsio_extensions)
     help_text += '\n'
 
     return help_text
 
 
-def _format_input_processors(input_processors):
+def _format_input_processors(input_processors: List[Extension]):
     help_text = ''
     for input_processor in input_processors:
+        name = input_processor.name
+        description = input_processor.metadata.get('description', '')
         fill = ' ' * (34 - len(input_processor.name))
-        help_text += f'  {input_processor.name}{fill}{input_processor.description}\n'
+        help_text += f'  {name}{fill}{description}\n'
     return help_text
 
 
-def _format_dataset_ios(dataset_ios):
+def _format_dataset_ios(dataset_ios: List[Extension]):
     help_text = ''
     for ds_io in dataset_ios:
-        fill1 = ' ' * (24 - len(ds_io.name))
-        fill2 = ' ' * (10 - len(ds_io.ext))
-        help_text += f'  {ds_io.name}{fill1}(*.{ds_io.ext}){fill2}{ds_io.description}\n'
+        name = ds_io.name
+        description = ds_io.metadata.get('description', '')
+        ext = ds_io.metadata.get('ext', '?')
+        fill1 = ' ' * (24 - len(name))
+        fill2 = ' ' * (10 - len(ext))
+        help_text += f'  {name}{fill1}(*.{ext}){fill2}{description}\n'
     return help_text

@@ -21,7 +21,7 @@
 
 from typing import Any, Optional, Dict, Sequence
 
-from ..util.undefined import UNDEFINED
+from xcube.util.undefined import UNDEFINED
 
 
 class GeoJSON:

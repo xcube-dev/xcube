@@ -1,5 +1,5 @@
 # The MIT License (MIT)
-# Copyright (c) 2018 by the xcube development team and contributors
+# Copyright (c) 2019 by the xcube development team and contributors
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of
 # this software and associated documentation files (the "Software"), to deal in
@@ -33,19 +33,19 @@ import s3fs
 import xarray as xr
 import zarr
 
-from .cache import MemoryCacheStore, Cache
-from .defaults import DEFAULT_CMAP_CBAR, DEFAULT_CMAP_VMIN, DEFAULT_CMAP_VMAX, DEFAULT_TRACE_PERF
-from .errors import ServiceConfigError, ServiceError, ServiceBadRequestError, ServiceResourceNotFoundError
-from .im import TileGrid
-from .mldataset import FileStorageMultiLevelDataset, BaseMultiLevelDataset, MultiLevelDataset, \
+from xcube.core.dsio import guess_dataset_format
+from xcube.core.verify import assert_cube
+from xcube.constants import FORMAT_NAME_ZARR, FORMAT_NAME_NETCDF4, FORMAT_NAME_LEVELS
+from xcube.util.cmaps import get_cmap
+from xcube.util.perf import measure_time
+from xcube.version import version
+from xcube.util.cache import MemoryCacheStore, Cache
+from xcube.webapi.defaults import DEFAULT_CMAP_CBAR, DEFAULT_CMAP_VMIN, DEFAULT_CMAP_VMAX, DEFAULT_TRACE_PERF
+from xcube.webapi.errors import ServiceConfigError, ServiceError, ServiceBadRequestError, ServiceResourceNotFoundError
+from xcube.util.tilegrid import TileGrid
+from xcube.core.mldataset import FileStorageMultiLevelDataset, BaseMultiLevelDataset, MultiLevelDataset, \
     ComputedMultiLevelDataset, ObjectStorageMultiLevelDataset
-from .reqparams import RequestParams
-from ..api import assert_cube
-from ..util.dsio import guess_dataset_format
-from ..util.constants import FORMAT_NAME_ZARR, FORMAT_NAME_NETCDF4, FORMAT_NAME_LEVELS
-from ..util.perf import measure_time
-from ..version import version
-
+from xcube.webapi.reqparams import RequestParams
 
 COMPUTE_DATASET = 'compute_dataset'
 ALL_PLACES = "all"
@@ -139,7 +139,7 @@ class ServiceContext:
         return self._image_cache
 
     @property
-    def tile_cache(self) -> Dict[str, Any]:
+    def tile_cache(self) -> Optional[Cache]:
         return self._tile_cache
 
     @property
@@ -228,7 +228,7 @@ class ServiceContext:
                             cmap_cbar = color_mapping.get('ColorFile', cmap_cbar)
                         else:
                             cmap_cbar = color_mapping.get('ColorBar', cmap_cbar)
-
+                            cmap_cbar, _ = get_cmap(cmap_cbar)
                         return cmap_cbar, cmap_vmin, cmap_vmax
             else:
                 ds = self.get_dataset(ds_id, expected_var_names=[var_name])

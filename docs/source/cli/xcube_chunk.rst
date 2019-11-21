@@ -39,4 +39,4 @@ Example
 Python API
 ==========
 
-The related Python API function is :py:func:`xcube.api.chunk_dataset`.
+The related Python API function is :py:func:`xcube.core.chunk.chunk_dataset`.

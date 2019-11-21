@@ -1,5 +1,5 @@
 # The MIT License (MIT)
-# Copyright (c) 2018 by the xcube development team and contributors
+# Copyright (c) 2019 by the xcube development team and contributors
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of
 # this software and associated documentation files (the "Software"), to deal in
@@ -27,20 +27,22 @@ import pathlib
 
 from tornado.ioloop import IOLoop
 
-from .controllers.catalogue import get_datasets, get_dataset_coordinates, get_color_bars, get_dataset, \
+from xcube.core.timecoord import timestamp_to_iso_string
+from xcube.version import version
+from xcube.webapi.controllers.catalogue import get_datasets, get_dataset_coordinates, get_color_bars, get_dataset, \
     get_dataset_place_groups, get_dataset_place_group
-from .controllers.places import find_places, find_dataset_places
-from .controllers.tiles import get_dataset_tile, get_dataset_tile_grid, get_ne2_tile, get_ne2_tile_grid, get_legend
-from .controllers.time_series import get_time_series_info, get_time_series_for_point, get_time_series_for_geometry, \
+from xcube.webapi.controllers.places import find_places, find_dataset_places
+from xcube.webapi.controllers.tiles import get_dataset_tile, get_dataset_tile_grid, get_ne2_tile, get_ne2_tile_grid, \
+    get_legend
+from xcube.webapi.controllers.timeseries import get_time_series_info, get_time_series_for_point, \
+    get_time_series_for_geometry, \
     get_time_series_for_geometry_collection, get_time_series_for_feature_collection
-from .controllers.wmts import get_wmts_capabilities_xml
-from .defaults import SERVER_NAME, SERVER_DESCRIPTION
-from .errors import ServiceBadRequestError
-from .s3util import dict_to_xml, list_s3_bucket_v1, list_bucket_result_to_xml, list_s3_bucket_v2, \
+from xcube.webapi.controllers.wmts import get_wmts_capabilities_xml
+from xcube.webapi.defaults import SERVER_NAME, SERVER_DESCRIPTION
+from xcube.webapi.errors import ServiceBadRequestError
+from xcube.webapi.s3util import dict_to_xml, list_s3_bucket_v1, list_bucket_result_to_xml, list_s3_bucket_v2, \
     mtime_to_str, str_to_etag
-from .service import ServiceRequestHandler
-from ..util.timecoord import timestamp_to_iso_string
-from ..version import version
+from xcube.webapi.service import ServiceRequestHandler
 
 __author__ = "Norman Fomferra (Brockmann Consult GmbH)"
 
@@ -442,7 +444,8 @@ class InfoHandler(ServiceRequestHandler):
                                    description=SERVER_DESCRIPTION,
                                    version=version,
                                    configTime=config_time,
-                                   serverTime=server_time),
+                                   serverTime=server_time,
+                                   serverPID=os.getpid()),
                               indent=2))
 
 

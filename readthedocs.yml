@@ -10,8 +10,8 @@ sphinx:
   configuration: docs/source/conf.py
 
 # The path to the Conda environment file, relative to the root of the project.
-conda:
-  environment: environment.yml
+#conda:
+#  environment: docs/source/environment.yml
 
 # The path to the pip requirements file.
 # Optionally set the version of Python and requirements required to build your docs

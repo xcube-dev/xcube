@@ -24,7 +24,7 @@ import os.path
 
 import click
 
-from xcube.util.constants import FORMAT_NAME_ZARR
+from xcube.constants import FORMAT_NAME_ZARR
 
 
 # noinspection PyShadowingBuiltins
@@ -45,9 +45,9 @@ def prune(cube, dry_run):
 def _prune(input_path: str = None,
            dry_run: bool = False,
            monitor=None):
-    from xcube.api import open_cube
-    from xcube.util.chunk import get_empty_dataset_chunks
-    from xcube.util.dsio import guess_dataset_format
+    from xcube.core.chunk import get_empty_dataset_chunks
+    from xcube.core.dsio import guess_dataset_format
+    from xcube.core.dsio import open_cube
 
     input_format = guess_dataset_format(input_path)
     if input_format != FORMAT_NAME_ZARR:
