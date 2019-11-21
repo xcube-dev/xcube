@@ -91,7 +91,7 @@ def verify_cube(dataset: xr.Dataset) -> List[str]:
 def _check_coord_equidistance(dataset, coord_name, dim_name, report, rtol=None):
     diff = dataset[coord_name].diff(dim=dim_name)
     if not _check_equidistance_from_diff(diff, rtol=rtol):
-        report.append(f"Coordinate {coord_name} is not equidistant")
+        report.append(f"coordinate variable {coord_name!r} is not equidistant")
 
     bnds_name = dataset.attrs.get('bounds', f'{coord_name}_bnds')
 
