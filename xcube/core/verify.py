@@ -107,7 +107,7 @@ def _check_equidistance_from_diff(diff, rtol=None):
     if rtol is None:
         rtol = np.abs(np.divide(diff[0], 100.00)).values
 
-    # Check whether teh bounding box intersect with the anti-meridian.
+    # Check whether the bounding box intersects with the anti-meridian.
     ct_neg = diff.where(diff < 0).count().values
 
     if ct_neg == 1:
