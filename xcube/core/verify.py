@@ -100,7 +100,7 @@ def _check_coord_equidistance(dataset, coord_name, dim_name, report, rtol=None):
         if not _check_equidistance_from_diff(diff[:, 0], rtol=rtol):
             report.append(f"Coordinate {bnds_name} is not equidistant")
         elif not _check_equidistance_from_diff(diff[:, 1], rtol=rtol):
-            report.append(f"Coordinate {bnds_name} is not equidistant")
+            report.append(f"coordinate variable {bnds_name!r} is not equidistant")
 
 
 def _check_equidistance_from_diff(diff, rtol=None):
