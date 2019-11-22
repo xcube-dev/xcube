@@ -431,7 +431,7 @@ class ZarrDatasetIO(DatasetIO):
             if 'region_name' in kwargs:
                 client_kwargs['region_name'] = kwargs.pop('region_name')
 
-            path_or_store, root = _get_path_or_store(path_or_store, client_kwargs, mode, root)
+            path_or_store, root, client_kwargs = _get_path_or_store(path_or_store, client_kwargs, mode, root)
 
             if "endpoint_url" in client_kwargs and root is not None:
                 s3 = s3fs.S3FileSystem(anon=True,
@@ -456,7 +456,7 @@ class ZarrDatasetIO(DatasetIO):
               **kwargs):
         mode = "write"
         root = None
-        path_or_store, root = _get_path_or_store(output_path, client_kwargs, mode, root)
+        path_or_store, root, client_kwargs = _get_path_or_store(output_path, client_kwargs, mode, root)
 
         # keeping the code commented out below, because might be useful for makinging write able to change bucket policy
         # if 'acl' in kwargs:
@@ -588,4 +588,4 @@ def _get_path_or_store(path, client_kwargs, mode, root):
         s3 = s3fs.S3FileSystem(anon=anon_mode,
                                client_kwargs=client_kwargs)
         path_or_store = s3fs.S3Map(root=root, s3=s3, check=False)
-    return path_or_store, root
+    return path_or_store, root, client_kwargs

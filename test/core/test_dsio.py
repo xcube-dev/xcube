@@ -2,15 +2,16 @@ import os
 import unittest
 from typing import Set
 
+import boto3
 import fsspec
 import numpy as np
 import pandas as pd
 import xarray as xr
-import s3fs
+import moto
 
 from test.sampledata import new_test_dataset
 from xcube.core.dsio import CsvDatasetIO, DatasetIO, MemDatasetIO, Netcdf4DatasetIO, ZarrDatasetIO, find_dataset_io, \
-    query_dataset_io, _get_path_or_store
+    query_dataset_io, _get_path_or_store, open_cube, write_cube
 from xcube.core.dsio import open_dataset, write_dataset
 from xcube.core.new import new_cube
 
@@ -356,3 +357,17 @@ class GetPathOrStoreTest(unittest.TestCase):
         self.assertIsInstance(path, fsspec.mapping.FSMap)
         del os.environ['aws_access_key_id']
         del os.environ['aws_secret_access_key']
+
+
+class TestUploadToS3Bucket(unittest.TestCase):
+
+    def test_upload_to_s3(self):
+        with moto.mock_s3():
+            s3_conn = boto3.client('s3')
+            s3_conn.create_bucket(Bucket='upload_bucket', ACL="public-read")
+            client_kwargs = {"aws_access_key_id": "test_fake_id", "aws_secret_access_key": "test_fake_secret"}
+            ds1 = xr.open_zarr("../../examples/serve/demo/cube-1-250-250.zarr")
+            write_cube(ds1, "https://s3.amazonaws.com/upload_bucket/cube-1-250-250.zarr", "zarr",
+                       client_kwargs=client_kwargs)
+            self.assertIn('cube-1-250-250.zarr/.zattrs',
+                          s3_conn.list_objects(Bucket='upload_bucket')["Contents"][0]["Key"])
