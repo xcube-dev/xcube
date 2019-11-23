@@ -21,7 +21,7 @@ server instance locally then reload the viewer page, or configure the viewer wit
 To do so open the viewer's settings panels, select "Server". A "Select Server" panel is opened, click the "+"
 button to add a new server. Here are two demo servers that you may add for testing:
 
-* DCS4COP Demo Server (``https://xcube2.dcs4cop.eu/dcs4cop-dev/api/0.1.0.dev6/``) providing
+* DCS4COP Demo Server (``https://xcube2.dcs4cop.eu/dcs4cop-dev/api/latest``) providing
   ocean color variables in the North Sea area for the `Data Cube Service for Copernicus`_ (DCS4COP) EU project;
 * ESDL Server (``https://xcube.earthsystemdatalab.net``) providing global essential climate variables (ECVs)
   variables for the ESA `Earth System Data Lab`_.

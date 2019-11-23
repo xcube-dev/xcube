@@ -35,4 +35,3 @@ dependencies:
   - flake8 >=3.7
   - pytest >=4.4
   - pytest-cov >=2.6
-  
