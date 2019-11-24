@@ -1,16 +1,21 @@
 import os
 import threading
+import uuid
 from abc import abstractmethod, ABCMeta
-from typing import Sequence, Any, Dict, Callable
+from typing import Sequence, Any, Dict, Callable, Mapping
 
 import s3fs
 import xarray as xr
 import zarr
 
+from xcube.constants import FORMAT_NAME_LEVELS, FORMAT_NAME_ZARR, FORMAT_NAME_NETCDF4, FORMAT_NAME_SCRIPT
+from xcube.core.dsio import guess_dataset_format
 from xcube.core.geom import get_dataset_bounds
 from xcube.core.verify import assert_cube
 from xcube.util.perf import measure_time
 from xcube.util.tilegrid import TileGrid
+
+COMPUTE_DATASET = 'compute_dataset'
 
 
 class MultiLevelDataset(metaclass=ABCMeta):
@@ -25,6 +30,13 @@ class MultiLevelDataset(metaclass=ABCMeta):
     Any dataset chunks are assumed to be the same in all levels. Usually, the number of chunks is one
     in one of the spatial dimensions of the highest level.
     """
+
+    @property
+    @abstractmethod
+    def ds_id(self) -> str:
+        """
+        :return: the dataset identifier.
+        """
 
     @property
     @abstractmethod
@@ -79,13 +91,22 @@ class LazyMultiLevelDataset(MultiLevelDataset, metaclass=ABCMeta):
 
     :param tile_grid: The tile grid. If None, a new tile grid will be computed based on the dataset at level zero.
     :param kwargs: Extra keyword arguments that will be passed to the ``get_dataset_lazily`` method.
+    :param ds_id: Optional dataset identifier.
     """
 
-    def __init__(self, tile_grid: TileGrid = None, kwargs: Dict[str, Any] = None):
+    def __init__(self, tile_grid: TileGrid = None, ds_id: str = None, kwargs: Mapping[str, Any] = None):
         self._tile_grid = tile_grid
+        self._ds_id = ds_id
         self._level_datasets = {}
         self._kwargs = kwargs
         self._lock = threading.RLock()
+
+    @property
+    def ds_id(self) -> str:
+        if self._ds_id is None:
+            with self._lock:
+                self._ds_id = str(uuid.uuid4())
+        return self._ds_id
 
     @property
     def tile_grid(self) -> TileGrid:
@@ -140,9 +161,14 @@ class FileStorageMultiLevelDataset(LazyMultiLevelDataset):
 
     :param dir_path: The directory containing the level datasets.
     :param zarr_kwargs: Keyword arguments accepted by the ``xarray.open_zarr()`` function.
+    :param ds_id: Optional dataset identifier.
     """
 
-    def __init__(self, dir_path: str, zarr_kwargs: Dict[str, Any] = None):
+    def __init__(self,
+                 dir_path: str,
+                 ds_id: str = None,
+                 zarr_kwargs: Dict[str, Any] = None,
+                 exception_type: type = ValueError):
         file_paths = os.listdir(dir_path)
         level_paths = {}
         num_levels = -1
@@ -158,11 +184,11 @@ class FileStorageMultiLevelDataset(LazyMultiLevelDataset):
                     level_paths[index] = (ext, file_path)
 
         if num_levels != len(level_paths):
-            raise ValueError(f"Inconsistent levels directory:"
-                             f" expected {num_levels} but found {len(level_paths)} entries:"
-                             f" {dir_path}")
+            raise exception_type(f"Inconsistent levels directory:"
+                                 f" expected {num_levels} but found {len(level_paths)} entries:"
+                                 f" {dir_path}")
 
-        super().__init__(kwargs=zarr_kwargs)
+        super().__init__(ds_id=ds_id, kwargs=zarr_kwargs)
         self._dir_path = dir_path
         self._level_paths = level_paths
         self._num_levels = num_levels
@@ -205,12 +231,15 @@ class ObjectStorageMultiLevelDataset(LazyMultiLevelDataset):
 
     :param dir_path: The directory containing the level datasets.
     :param zarr_kwargs: Keyword arguments accepted by the ``xarray.open_zarr()`` function.
+    :param ds_id: Optional dataset identifier.
     """
 
-    def __init__(self, ds_id: str,
+    def __init__(self,
                  obs_file_system: s3fs.S3FileSystem,
                  dir_path: str,
-                 zarr_kwargs: Dict[str, Any] = None, exception_type=ValueError):
+                 zarr_kwargs: Dict[str, Any] = None,
+                 ds_id: str = None,
+                 exception_type: type = ValueError):
 
         level_paths = {}
         for entry in obs_file_system.walk(dir_path, directories=True):
@@ -227,9 +256,9 @@ class ObjectStorageMultiLevelDataset(LazyMultiLevelDataset):
         # Consistency check
         for level in range(num_levels):
             if level not in level_paths:
-                raise exception_type(f"Invalid dataset descriptor {ds_id!r}: missing level {level} in {dir_path}")
+                raise exception_type(f"Invalid multi-level dataset {ds_id!r}: missing level {level} in {dir_path}")
 
-        super().__init__(kwargs=zarr_kwargs)
+        super().__init__(ds_id=ds_id, kwargs=zarr_kwargs)
         self._obs_file_system = obs_file_system
         self._dir_path = dir_path
         self._level_paths = level_paths
@@ -276,10 +305,11 @@ class BaseMultiLevelDataset(LazyMultiLevelDataset):
     A multi-level dataset whose level datasets are a created by down-sampling a base dataset.
 
     :param base_dataset: The base dataset for the level at index zero.
+    :param ds_id: Optional dataset identifier.
     """
 
-    def __init__(self, base_dataset: xr.Dataset, tile_grid: TileGrid = None):
-        super().__init__(tile_grid=tile_grid)
+    def __init__(self, base_dataset: xr.Dataset, tile_grid: TileGrid = None, ds_id: str = None):
+        super().__init__(tile_grid=tile_grid, ds_id=ds_id)
         if base_dataset is None:
             raise ValueError("base_dataset must be given")
         self._base_dataset = base_dataset
@@ -313,14 +343,14 @@ class ComputedMultiLevelDataset(LazyMultiLevelDataset):
     """
 
     def __init__(self,
-                 ds_id: str,
                  script_path: str,
                  callable_name: str,
                  input_ml_dataset_ids: Sequence[str],
                  input_ml_dataset_getter: Callable[[str], MultiLevelDataset],
-                 input_parameters: Dict[str, Any],
-                 exception_type=ValueError):
-        super().__init__(kwargs=input_parameters)
+                 input_parameters: Mapping[str, Any],
+                 ds_id: str = None,
+                 exception_type: type = ValueError):
+        super().__init__(ds_id=ds_id, kwargs=input_parameters)
 
         try:
             with open(script_path) as fp:
@@ -358,7 +388,6 @@ class ComputedMultiLevelDataset(LazyMultiLevelDataset):
                 raise exception_type(f"Invalid in-memory dataset descriptor {ds_id!r}: "
                                      f"Input parameter {input_param_name!r} for callable {callable_name!r} "
                                      f"is not a valid Python identifier")
-        self._ds_id = ds_id
         self._callable_name = callable_name
         self._callable_obj = callable_obj
         self._input_ml_dataset_ids = input_ml_dataset_ids
@@ -372,16 +401,16 @@ class ComputedMultiLevelDataset(LazyMultiLevelDataset):
         input_datasets = [self._input_ml_dataset_getter(ds_id).get_dataset(index)
                           for ds_id in self._input_ml_dataset_ids]
         try:
-            with measure_time(tag=f"computed in-memory dataset {self._ds_id!r} at level {index}"):
+            with measure_time(tag=f"computed in-memory dataset {self.ds_id!r} at level {index}"):
                 computed_value = self._callable_obj(*input_datasets, **kwargs)
         except Exception as e:
-            raise self._exception_type(f"Failed to compute in-memory dataset {self._ds_id!r} at level {index} "
+            raise self._exception_type(f"Failed to compute in-memory dataset {self.ds_id!r} at level {index} "
                                        f"from function {self._callable_name!r}: {e}") from e
         if not isinstance(computed_value, xr.Dataset):
-            raise self._exception_type(f"Failed to compute in-memory dataset {self._ds_id!r} at level {index} "
+            raise self._exception_type(f"Failed to compute in-memory dataset {self.ds_id!r} at level {index} "
                                        f"from function {self._callable_name!r}: "
                                        f"expected an xarray.Dataset but got {type(computed_value)}")
-        return assert_cube(computed_value, name=self._ds_id)
+        return assert_cube(computed_value, name=self.ds_id)
 
 
 def _get_dataset_tile_grid(dataset: xr.Dataset, num_levels: int = None):
@@ -458,3 +487,116 @@ def _get_cube_spatial_sizes(dataset: xr.Dataset):
         tile_width, tile_height = spatial_chunks[-1], spatial_chunks[-2]
 
     return width, height, tile_width, tile_height
+
+
+def guess_ml_dataset_format(path: str) -> str:
+    """
+    Guess a multilevel-dataset format for a file system path or URL given by *path*.
+
+    :param path: A file system path or URL.
+    :return: The name of a dataset format guessed from *path*.
+    """
+    if path.endswith('.levels'):
+        return FORMAT_NAME_LEVELS
+    if path.endswith('.py'):
+        return FORMAT_NAME_SCRIPT
+    return guess_dataset_format(path)
+
+
+def open_ml_dataset(path: str,
+                    ds_id: str = None,
+                    exception_type: type = ValueError,
+                    **kwargs) -> MultiLevelDataset:
+    """
+    Open a multi-level dataset.
+
+    :param path: dataset path
+    :param ds_id: Optional dataset ID, if not given, a new UUID will be generated.
+    :param exception_type: The type of exception to be thrown, defaults to ValueError
+    :param kwargs: format specific parameters, e.g, "endpoint_url", "region_name"
+    :return: a multi-level dataset
+    """
+    if not path:
+        raise ValueError('path must be given')
+    if path.startswith('http://') \
+            or path.startswith('https://') \
+            or path.startswith('s3://') \
+            or 'endpoint_url' in kwargs:
+        return open_ml_dataset_from_object_storage(path, ds_id=ds_id, exception_type=exception_type, **kwargs)
+    elif path.endswith('.py'):
+        return open_ml_dataset_from_python_code(path, ds_id=ds_id, exception_type=exception_type, **kwargs)
+    else:
+        return open_ml_dataset_from_local_fs(path, ds_id=ds_id, exception_type=exception_type, **kwargs)
+
+
+# noinspection PyUnusedLocal
+def open_ml_dataset_from_object_storage(path: str,
+                                        data_format: str = None,
+                                        ds_id: str = None,
+                                        exception_type: type = ValueError,
+                                        client_kwargs: Mapping[str, Any] = None,
+                                        **kwargs) -> MultiLevelDataset:
+    data_format = data_format or guess_ml_dataset_format(path)
+
+    client_kwargs = dict(client_kwargs or {})
+    for arg_name in ['endpoint_url', 'region_name']:
+        if arg_name in kwargs:
+            client_kwargs[arg_name] = kwargs.pop(arg_name)
+
+    obs_file_system = s3fs.S3FileSystem(anon=True, client_kwargs=client_kwargs)
+
+    if data_format == FORMAT_NAME_ZARR:
+        store = s3fs.S3Map(root=path, s3=obs_file_system, check=False)
+        cached_store = zarr.LRUStoreCache(store, max_size=2 ** 28)
+        with measure_time(tag=f"opened remote zarr dataset {path}"):
+            consolidated = obs_file_system.exists(f'{path}/.zmetadata')
+            ds = assert_cube(xr.open_zarr(cached_store, consolidated=consolidated, **kwargs))
+        return BaseMultiLevelDataset(ds, ds_id=ds_id)
+    elif data_format == FORMAT_NAME_LEVELS:
+        with measure_time(tag=f"opened remote levels dataset {path}"):
+            return ObjectStorageMultiLevelDataset(obs_file_system,
+                                                  path,
+                                                  zarr_kwargs=kwargs,
+                                                  ds_id=ds_id,
+                                                  exception_type=exception_type)
+
+    raise exception_type(f'Unrecognized multi-level dataset format {data_format!r} for path {path!r}')
+
+
+def open_ml_dataset_from_local_fs(path: str,
+                                  data_format: str = None,
+                                  ds_id: str = None,
+                                  exception_type: type = ValueError,
+                                  **kwargs) -> MultiLevelDataset:
+    data_format = data_format or guess_ml_dataset_format(path)
+
+    if data_format == FORMAT_NAME_NETCDF4:
+        with measure_time(tag=f"opened local NetCDF dataset {path}"):
+            ds = assert_cube(xr.open_dataset(path, **kwargs))
+            return BaseMultiLevelDataset(ds, ds_id=ds_id)
+    elif data_format == FORMAT_NAME_ZARR:
+        with measure_time(tag=f"opened local zarr dataset {path}"):
+            ds = assert_cube(xr.open_zarr(path, **kwargs))
+            return BaseMultiLevelDataset(ds, ds_id=ds_id)
+    elif data_format == FORMAT_NAME_LEVELS:
+        with measure_time(tag=f"opened local levels dataset {path}"):
+            return FileStorageMultiLevelDataset(path, ds_id=ds_id, zarr_kwargs=kwargs)
+
+    raise exception_type(f'Unrecognized multi-level dataset format {data_format!r} for path {path!r}')
+
+
+def open_ml_dataset_from_python_code(path: str,
+                                     callable_name: str = COMPUTE_DATASET,
+                                     input_ml_dataset_ids: Sequence[str] = None,
+                                     input_ml_dataset_getter: Callable[[str], MultiLevelDataset] = None,
+                                     input_parameters: Mapping[str, Any] = None,
+                                     ds_id: str = None,
+                                     exception_type: type = ValueError) -> MultiLevelDataset:
+    with measure_time(tag=f"opened memory dataset {path}"):
+        return ComputedMultiLevelDataset(path,
+                                         callable_name,
+                                         input_ml_dataset_ids,
+                                         input_ml_dataset_getter,
+                                         input_parameters,
+                                         ds_id=ds_id,
+                                         exception_type=exception_type)

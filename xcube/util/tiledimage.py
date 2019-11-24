@@ -146,8 +146,13 @@ class AbstractTiledImage(TiledImage, metaclass=ABCMeta):
     :param image_id: optional unique image identifier
     """
 
-    def __init__(self, size: Size2D, tile_size: Size2D, num_tiles: Size2D,
-                 mode: str = None, format: str = None, image_id: str = None):
+    def __init__(self,
+                 size: Size2D,
+                 tile_size: Size2D,
+                 num_tiles: Size2D,
+                 mode: str = None,
+                 format: str = None,
+                 image_id: str = None):
         self._width = size[0]
         self._height = size[1]
         self._tile_width = tile_size[0]
@@ -206,9 +211,15 @@ class OpImage(AbstractTiledImage, metaclass=ABCMeta):
     :param trace_perf: whether to trace runtime performance information
     """
 
-    def __init__(self, size: Size2D, tile_size: Size2D, num_tiles: Size2D,
-                 mode: str = None, format: str = None, image_id: str = None, tile_cache: Cache = None,
-                 trace_perf=False):
+    def __init__(self,
+                 size: Size2D,
+                 tile_size: Size2D,
+                 num_tiles: Size2D,
+                 mode: str = None,
+                 format: str = None,
+                 image_id: str = None,
+                 tile_cache: Cache = None,
+                 trace_perf: bool = False):
         super().__init__(size, tile_size, num_tiles, mode=mode, format=format, image_id=image_id)
         self._tile_cache = tile_cache
         self._trace_perf = trace_perf
@@ -450,7 +461,7 @@ class ColorMappedRgbaImage(DecoratorImage):
                  no_data_value: Union[int, float] = None,
                  encode: bool = False,
                  format: str = None,
-                 tile_cache=None,
+                 tile_cache: Cache = None,
                  trace_perf: bool = False):
         super().__init__(source_image, image_id=image_id, format=format, mode='RGBA', tile_cache=tile_cache,
                          trace_perf=trace_perf)
@@ -547,7 +558,7 @@ class ColorMappedRgbaImage2(OpImage):
                  no_data_value: Union[int, float] = None,
                  encode: bool = False,
                  format: str = None,
-                 tile_cache=None,
+                 tile_cache: Cache = None,
                  flip_y: bool = False,
                  valid_range: Tuple[Number, Number] = None,
                  trace_perf: bool = False):
@@ -745,7 +756,7 @@ class PilDownsamplingImage(DownsamplingImage):
                  source_image: TiledImage,
                  image_id: str = None,
                  tile_cache: Cache = None,
-                 resampling=Image.ANTIALIAS):
+                 resampling: int = Image.ANTIALIAS):
         super().__init__(source_image, image_id=image_id, tile_cache=tile_cache)
         self._resampling = resampling
 
@@ -778,7 +789,7 @@ class NdarrayDownsamplingImage(DownsamplingImage):
                  source_image: TiledImage,
                  image_id: str = None,
                  tile_cache: Cache = None,
-                 aggregator=None):
+                 aggregator: Callable = None):
         super().__init__(source_image, image_id=image_id, tile_cache=tile_cache)
         self._aggregator = aggregator or aggregate_ndarray_first
 
@@ -818,7 +829,7 @@ class FastNdarrayDownsamplingImage(OpImage):
                  step_exp: int,
                  image_id: str = None,
                  tile_cache: Cache = None,
-                 trace_perf=False):
+                 trace_perf: bool = False):
         step_size = 1 << step_exp
         source_width, source_height = array.shape[-1], array.shape[-2]
         width, height = source_width // step_size, source_height // step_size
@@ -903,7 +914,7 @@ class NdarrayImage(OpImage):
                  tile_size: Size2D,
                  image_id: str = None,
                  tile_cache: Cache = None,
-                 trace_perf=False):
+                 trace_perf: bool = False):
         width, height = array.shape[-1], array.shape[-2]
         tile_width, tile_height = tile_size
         num_tiles = (width + tile_width - 1) // tile_width, (height + tile_height - 1) // tile_height

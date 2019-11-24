@@ -18,17 +18,17 @@ Datasets:
     Hidden: true
     Style: default
 
-  - Identifier: remote
-    Title: Remote OLCI L2C cube for region SNS
-    BoundingBox: [0.0, 50, 5.0, 52.5]
-    FileSystem: obs
-    Endpoint: "http://obs.eu-de.otc.t-systems.com"
-    Path: "dcs4cop-obs-02/OLCI-SNS-RAW-CUBE-2.zarr"
-    Region: "eu-de"
-    Style: default
-    PlaceGroups:
-      - PlaceGroupRef: inside-cube
-      - PlaceGroupRef: outside-cube
+#  - Identifier: remote
+#    Title: Remote OLCI L2C cube for region SNS
+#    BoundingBox: [0.0, 50, 5.0, 52.5]
+#    FileSystem: obs
+#    Endpoint: "http://obs.eu-de.otc.t-systems.com"
+#    Path: "dcs4cop-obs-02/OLCI-SNS-RAW-CUBE-2.zarr"
+#    Region: "eu-de"
+#    Style: default
+#    PlaceGroups:
+#      - PlaceGroupRef: inside-cube
+#      - PlaceGroupRef: outside-cube
 
   - Identifier: local_1w
     Title: OLCI weekly L3 cube for region SNS computed from local L2C cube
@@ -45,20 +45,20 @@ Datasets:
       - PlaceGroupRef: inside-cube
       - PlaceGroupRef: outside-cube
 
-  - Identifier: remote_1w
-    Title: OLCI weekly L3 cube for region SNS computed from remote L2C cube
-    BoundingBox: [0.0, 50, 5.0, 52.5]
-    FileSystem: memory
-    Path: "resample_in_time.py"
-    Function: "compute_dataset"
-    InputDatasets: ["remote"]
-    InputParameters:
-      period: "1W"
-      incl_stdev: True
-    Style: default
-    PlaceGroups:
-      - PlaceGroupRef: inside-cube
-      - PlaceGroupRef: outside-cube
+#  - Identifier: remote_1w
+#    Title: OLCI weekly L3 cube for region SNS computed from remote L2C cube
+#    BoundingBox: [0.0, 50, 5.0, 52.5]
+#    FileSystem: memory
+#    Path: "resample_in_time.py"
+#    Function: "compute_dataset"
+#    InputDatasets: ["remote"]
+#    InputParameters:
+#      period: "1W"
+#      incl_stdev: True
+#    Style: default
+#    PlaceGroups:
+#      - PlaceGroupRef: inside-cube
+#      - PlaceGroupRef: outside-cube
 
 PlaceGroups:
   - Identifier: inside-cube

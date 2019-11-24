@@ -98,6 +98,7 @@ def _register_cli_commands(ext_registry: extension.ExtensionRegistry):
         'prune',
         'resample',
         'serve',
+        'tile',
         'timeit',
         'vars2dim',
         'verify',

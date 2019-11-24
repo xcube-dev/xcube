@@ -1,5 +1,5 @@
 import os
-from typing import Optional, Dict
+from typing import Optional, Dict, Mapping
 
 import yaml
 
@@ -36,6 +36,9 @@ def get_res_demo_dir() -> str:
 class RequestParamsMock(RequestParams):
     def __init__(self, **kvp):
         self.kvp = kvp
+
+    def get_query_arguments(self) -> Mapping[str, str]:
+        return dict(self.kvp)
 
     def get_query_argument(self, name: str, default: Optional[str] = UNDEFINED) -> Optional[str]:
         value = self.kvp.get(name, default)
