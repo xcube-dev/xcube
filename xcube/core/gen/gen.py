@@ -348,7 +348,9 @@ def _update_cube_attrs(output_writer: DatasetIO, output_path: str,
     output_writer.update(output_path, global_attrs=global_attrs)
 
 
-def _get_sorted_input_paths(input_reader, input_reader_params, input_processor, input_paths: Sequence[str], monitor):
+def _get_sorted_input_paths(input_reader: DatasetIO, input_reader_params: Dict[str, Any],
+                            input_processor: InputProcessor, input_paths: Sequence[str],
+                            monitor: Callable[..., None] = None):
     input_path_list = []
     time_list = []
     for input_file in input_paths:
@@ -357,13 +359,10 @@ def _get_sorted_input_paths(input_reader, input_reader_params, input_processor, 
         except OSError as e:
             monitor(f'Error: something went wrong during opening input file {input_file}, skipping input slice: {e}')
             continue
-            t1, t2 = input_processor.get_time_range(dataset)
-            time_list.append((t1 + t2) / 2)
-            input_path_list.append(input_file)
-            tuple_seq = zip(time_list, input_path_list)
-        except OSError as e:
-            monitor(f'Error: something went wrong during opening input file {input_file}, skipping input slice: {e}')
-            pass
+        t1, t2 = input_processor.get_time_range(dataset)
+        time_list.append((t1 + t2) / 2)
+        input_path_list.append(input_file)
+        tuple_seq = zip(time_list, input_path_list)
 
     input_paths = [i[1] for i in sorted(tuple_seq, key=lambda i: i[0])]
     return input_paths
