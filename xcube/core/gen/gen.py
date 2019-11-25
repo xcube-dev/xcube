@@ -354,6 +354,9 @@ def _get_sorted_input_paths(input_reader, input_reader_params, input_processor, 
     for input_file in input_paths:
         try:
             dataset = input_reader.read(input_file, **input_reader_params)
+        except OSError as e:
+            monitor(f'Error: something went wrong during opening input file {input_file}, skipping input slice: {e}')
+            continue
             t1, t2 = input_processor.get_time_range(dataset)
             time_list.append((t1 + t2) / 2)
             input_path_list.append(input_file)
