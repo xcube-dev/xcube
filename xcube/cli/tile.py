@@ -18,17 +18,16 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-from typing import List
+
+from typing import List, Optional, Mapping, Any
 
 import click
 
 __author__ = "Norman Fomferra (Brockmann Consult GmbH)"
 
 DEFAULT_OUTPUT_PATH = 'out.tiles'
-
-DEFAULT_COLOR_BAR_NAME = 'viridis'
-DEFAULT_COLOR_BAR_VMIN = 0.
-DEFAULT_COLOR_BAR_VMAX = 1.
+DEFAULT_CONFIG_PATH = 'config.yml'
+DEFAULT_STYLE_ID = 'default'
 
 
 @click.command(name='tile')
@@ -39,33 +38,56 @@ DEFAULT_COLOR_BAR_VMAX = 1.
 @click.option('--labels', 'raw_labels', metavar='LABELS',
               help=f'Labels for non-spatial dimensions, e.g. "time=2019-20-03".'
                    f' Multiple values are separated by comma.')
-@click.option('--cbar', 'color_bar_name', metavar='COLOR_BAR', default=DEFAULT_COLOR_BAR_NAME,
-              help=f'Color bar name. Must be the name of a valid matplotlib color bar.'
-                   f' Defaults to {DEFAULT_COLOR_BAR_NAME}.')
-@click.option('--vmin', 'color_bar_vmin', metavar='MIN_VALUE', default=DEFAULT_COLOR_BAR_VMIN, type=float,
-              help=f'Variable value that maps to first color of the color bar.'
-                   f' Defaults to {DEFAULT_COLOR_BAR_VMIN}.')
-@click.option('--vmax', 'color_bar_vmax', metavar='MAX_VALUE', default=DEFAULT_COLOR_BAR_VMAX, type=float,
-              help=f'Variable value that maps to last color of the color bar.'
-                   f' Defaults to {DEFAULT_COLOR_BAR_VMAX}.')
+@click.option('--config', '-c', 'config_path', metavar='CONFIG',
+              help=f'Configuration file in YAML format.')
+@click.option('--style', '-s', 'style_id', metavar='STYLE', default=DEFAULT_STYLE_ID,
+              help=f'Name of a style identifier in CONFIG file. Only used if CONFIG is given.'
+                   f' Defaults to {DEFAULT_STYLE_ID!r}.')
 @click.option('--output', '-o', 'output_path', metavar='OUTPUT', default=DEFAULT_OUTPUT_PATH,
               help=f'Output path. Defaults to {DEFAULT_OUTPUT_PATH!r}')
+@click.option('--verbose', '-v', is_flag=True,
+              help=f'Report any files generated.')
 @click.option('--dry-run', 'dry_run', is_flag=True,
               help=f'Generate all tiles but don\'t write any files.')
 def tile(cube: str,
-         variables: str,
-         raw_labels: str,
-         color_bar_name: str,
-         color_bar_vmin: float,
-         color_bar_vmax: float,
-         output_path: str,
+         variables: Optional[str],
+         raw_labels: Optional[str],
+         config_path: Optional[str],
+         style_id: Optional[str],
+         output_path: Optional[str],
+         verbose: bool,
          dry_run: bool):
     """
     Create RGBA tiles from CUBE.
+
+    Color bars and value ranges for variables can be specified in a CONFIG file.
+    Here the color mappings are defined for a style named "ocean_color":
+
+    \b
+    Styles:
+      - Identifier: ocean_color
+        ColorMappings:
+          conc_chl:
+            ColorBar: "plasma"
+            ValueRange: [0., 24.]
+          conc_tsm:
+            ColorBar: "PuBuGn"
+            ValueRange: [0., 100.]
+          kd489:
+            ColorBar: "jet"
+            ValueRange: [0., 6.]
+
+    This is the same styles syntax as the configuration file for "xcube serve",
+    hence its configuration can be reused.
+
     """
     import itertools
+    import json
     import os.path
+    # noinspection PyPackageRequirements
+    import yaml
 
+    import xarray as xr
     import numpy as np
 
     from xcube.core.extract import get_dataset_indexes
@@ -75,13 +97,17 @@ def tile(cube: str,
     from xcube.core.tile import parse_non_spatial_labels
     from xcube.cli.common import parse_cli_kwargs
     from xcube.util.tilegrid import TileGrid
+    from xcube.util.tiledimage import DEFAULT_COLOR_MAP_NAME
+    from xcube.util.tiledimage import DEFAULT_COLOR_MAP_VALUE_RANGE
+    from xcube.util.tiledimage import DEFAULT_COLOR_MAP_NUM_COLORS
 
+    # noinspection PyShadowingNames
     def write_tile_map_resource(path: str,
                                 resolutions: List[float],
                                 tile_grid: TileGrid,
                                 title='',
                                 abstract='',
-                                srs='EPSG:4326'):
+                                srs='CRS:84'):
         num_levels = len(resolutions)
         z_and_upp = zip(range(num_levels), resolutions)
         if srs == 'EPSG:4326':
@@ -96,13 +122,50 @@ def tile(cube: str,
                f'  <Origin x="{x1}" y="{y1}"/>',
                f'  <TileFormat width="{tile_grid.tile_width}" height="{tile_grid.tile_height}"'
                f' mime-type="image/png" extension="png"/>',
-               f'  <TileSets profile="geodetic">\n'] + [
-                  f'    <TileSet href="{z}" order="{z}" units-per-pixel="{upp}"/>\n' for z, upp in z_and_upp] + [
+               f'  <TileSets profile="geodetic">'] + [
+                  f'    <TileSet href="{z}" order="{z}" units-per-pixel="{upp}"/>' for z, upp in z_and_upp] + [
                   f'  </TileSets>',
-                  f'</TileMap>\n']
+                  f'</TileMap>']
         with open(path, 'w') as fp:
             fp.write('\n'.join(xml))
 
+    # noinspection PyShadowingNames
+    def _convert_coord_var(coord_var: xr.DataArray):
+        values = coord_var.values
+        if np.issubdtype(values.dtype, np.datetime64):
+            return list(np.datetime_as_string(values, timezone='UTC'))
+        elif np.issubdtype(values.dtype, np.integer):
+            return [int(value) for value in values]
+        else:
+            return [float(value) for value in values]
+
+    # noinspection PyShadowingNames
+    def _get_color_mappings(var_name: str, config: Mapping[str, Any], style_id: str):
+        color_bar = DEFAULT_COLOR_MAP_NAME
+        value_range = DEFAULT_COLOR_MAP_VALUE_RANGE
+        if config:
+            style_id = style_id or 'default'
+            styles = config.get('Styles')
+            if styles:
+                color_mappings = None
+                for style in styles:
+                    if style.get('Identifier') == style_id:
+                        color_mappings = style.get('ColorMappings')
+                        break
+                if color_mappings:
+                    color_mapping = color_mappings.get(var_name)
+                    if color_mapping:
+                        color_bar = color_mapping.get('ColorBar', color_bar)
+                        value_range = color_mapping.get('ValueRange', value_range)
+        value_min, value_max = value_range
+        return color_bar, value_min, value_max
+
+    config = {}
+    if config_path:
+        if verbose:
+            print(f'opening {config_path}...')
+        with open(config_path, 'r') as fp:
+            config = yaml.safe_load(fp)
 
     variables = variables or None
     if variables is not None:
@@ -118,22 +181,26 @@ def tile(cube: str,
 
     raw_labels = parse_cli_kwargs(raw_labels, 'LABELS')
 
-    print(f'opening {cube}...')
+    if verbose:
+        print(f'opening {cube}...')
     ml_dataset = open_ml_dataset(cube)
 
     dataset = ml_dataset.base_dataset
     variables = set(variables or dataset.data_vars)
     schema = CubeSchema.new(dataset)
-    dims = list(schema.dims)
-    dims.remove(schema.x_dim)
-    dims.remove(schema.y_dim)
+    spatial_dims = schema.x_dim, schema.y_dim
     tile_grid = ml_dataset.tile_grid
+
+    x1, _, x2, _ = tile_grid.geo_extent
+    resolutions = [(x2 - x1) / tile_grid.width(z) for z in range(tile_grid.num_levels)]
 
     image_cache = {}
 
     for var_name, var in dataset.data_vars.items():
         if var_name not in variables:
             continue
+
+        color_bar, value_min, value_max = _get_color_mappings(str(var_name), config, style_id)
 
         labels = {}
         if raw_labels:
@@ -150,49 +217,63 @@ def tile(cube: str,
         label_names = []
         label_indexes = []
         for dim in var.dims:
-            if dim not in (schema.x_dim, schema.y_dim):
+            if dim not in spatial_dims:
                 label_names.append(dim)
                 if dim in labels:
-                    label_indexes.append([labels[dim]])
+                    label_indexes.append([labels[str(dim)]])
                 else:
                     label_indexes.append(list(range(var[dim].size)))
 
         var_path = os.path.join(output_path, str(var_name))
         metadata_path = os.path.join(var_path, 'metadata.json')
-        print(f'writing {metadata_path}')
+        metadata = dict(name=str(var_name),
+                        attrs={name: value
+                               for name, value in var.attrs.items()},
+                        dims=[str(dim)
+                              for dim in var.dims],
+                        dim_sizes={dim: int(var[dim].size)
+                                   for dim in var.dims},
+                        color_mapping=dict(color_bar=color_bar,
+                                           value_min=value_min,
+                                           value_max=value_max,
+                                           num_colors=DEFAULT_COLOR_MAP_NUM_COLORS),
+                        coordinates={name: _convert_coord_var(coord_var)
+                                     for name, coord_var in var.coords.items()})
+        if verbose:
+            print(f'writing {metadata_path}')
         if not dry_run:
             os.makedirs(var_path, exist_ok=True)
-            # TODO: write metadata_path incl. coordinates, dims
-            pass
+            with open(metadata_path, 'w') as fp:
+                json.dump(metadata, fp, indent=2)
 
         for label_index in itertools.product(*label_indexes):
             labels = {name: index for name, index in zip(label_names, label_index)}
             tilemap_path = os.path.join(var_path, *[str(l) for l in label_index])
             tilemap_resource_path = os.path.join(tilemap_path, 'tilemapresource.xml')
-            print(f'writing {tilemap_resource_path}')
+            if verbose:
+                print(f'writing {tilemap_resource_path}')
             if not dry_run:
                 os.makedirs(tilemap_path, exist_ok=True)
-                # TODO: compute correct resolutions
-                write_tile_map_resource(tilemap_resource_path, [0.1, 0.2, 0.4], tile_grid, title=f'{var_name}')
-            for level in range(tile_grid.num_levels):
-                for y in range(tile_grid.num_tiles_y(level)):
-                    for x in range(tile_grid.num_tiles_x(level)):
-                        z = tile_grid.num_levels - 1 - level
-                        tile = get_ml_dataset_tile(ml_dataset,
-                                                   str(var_name),
-                                                   x, y, z,
-                                                   labels=labels,
-                                                   labels_are_indices=True,
-                                                   cmap_cbar=color_bar_name,
-                                                   cmap_vmin=color_bar_vmin,
-                                                   cmap_vmax=color_bar_vmax,
-                                                   image_cache=image_cache,
-                                                   trace_perf=True,
-                                                   exception_type=click.ClickException)
+                write_tile_map_resource(tilemap_resource_path, resolutions, tile_grid, title=f'{var_name}')
+            for z in range(tile_grid.num_levels):
+                for y in range(tile_grid.num_tiles_y(z)):
+                    for x in range(tile_grid.num_tiles_x(z)):
+                        tile_bytes = get_ml_dataset_tile(ml_dataset,
+                                                         str(var_name),
+                                                         x, y, z,
+                                                         labels=labels,
+                                                         labels_are_indices=True,
+                                                         cmap_cbar=color_bar,
+                                                         cmap_vmin=value_min,
+                                                         cmap_vmax=value_max,
+                                                         image_cache=image_cache,
+                                                         trace_perf=True,
+                                                         exception_type=click.ClickException)
                         tile_zy_path = os.path.join(tilemap_path, *[str(i) for i in (z, y)])
                         tile_path = os.path.join(tile_zy_path, f'{x}.png')
-                        print(f'writing tile {tile_path}')
+                        if verbose:
+                            print(f'writing tile {tile_path}')
                         if not dry_run:
                             os.makedirs(tile_zy_path, exist_ok=True)
                             with open(tile_path, 'wb') as fp:
-                                fp.write(tile)
+                                fp.write(tile_bytes)
