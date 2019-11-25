@@ -352,10 +352,15 @@ def _get_sorted_input_paths(input_processor, input_paths: Sequence[str]):
     input_path_list = []
     time_list = []
     for input_file in input_paths:
-        with xr.open_dataset(input_file) as dataset:
-            t1, t2 = input_processor.get_time_range(dataset)
-            time_list.append((t1 + t2) / 2)
-            input_path_list.append(input_file)
-            tuple_seq = zip(time_list, input_path_list)
+        try:
+            with xr.open_dataset(input_file) as dataset:
+                t1, t2 = input_processor.get_time_range(dataset)
+                time_list.append((t1 + t2) / 2)
+                input_path_list.append(input_file)
+                tuple_seq = zip(time_list, input_path_list)
+        except OSError:
+            traceback.print_exc()
+            pass
+
     input_paths = [e[1] for e in sorted(tuple_seq, key=lambda e: e[0])]
     return input_paths
