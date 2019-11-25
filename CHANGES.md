@@ -1,5 +1,10 @@
 ## Changes in 0.4.0 (in development)
 
+## Changes in 0.3.1 (in development)
+
+### Fixes
+* `xcube gen` does not fail when a corrupt input file is among the input files. #246
+
 ## Changes in 0.3.0
 
 ### New
