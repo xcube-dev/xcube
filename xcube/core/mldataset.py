@@ -9,7 +9,7 @@ import xarray as xr
 import zarr
 
 from xcube.constants import FORMAT_NAME_LEVELS, FORMAT_NAME_ZARR, FORMAT_NAME_NETCDF4, FORMAT_NAME_SCRIPT
-from xcube.core.dsio import guess_dataset_format
+from xcube.core.dsio import guess_dataset_format, split_bucket_url
 from xcube.core.geom import get_dataset_bounds
 from xcube.core.verify import assert_cube
 from xcube.util.perf import measure_time
@@ -79,6 +79,14 @@ class MultiLevelDataset(metaclass=ABCMeta):
 
     def close(self):
         """ Close all datasets. Default implementation does nothing. """
+
+    def apply(self,
+              function: Callable[[xr.Dataset, Dict[str, Any]], xr.Dataset],
+              kwargs: Dict[str, Any] = None,
+              tile_grid: TileGrid = None,
+              ds_id: str = None) -> 'MultiLevelDataset':
+        """ Apply function to all level datasets and return a new multi-level dataset."""
+        return MappedMultiLevelDataset(self, function, tile_grid=tile_grid, ds_id=ds_id, kwargs=kwargs)
 
 
 class LazyMultiLevelDataset(MultiLevelDataset, metaclass=ABCMeta):
@@ -187,6 +195,21 @@ class CombinedMultiLevelDataset(LazyMultiLevelDataset):
     def close(self):
         for ml_dataset in self._ml_datasets:
             ml_dataset.close()
+
+
+class MappedMultiLevelDataset(LazyMultiLevelDataset):
+    def __init__(self,
+                 ml_dataset: MultiLevelDataset,
+                 mapper: Callable[[xr.Dataset, Dict[str, Any]], xr.Dataset],
+                 tile_grid: TileGrid = None,
+                 ds_id: str = None,
+                 kwargs: Dict[str, Any] = None):
+        super().__init__(tile_grid=tile_grid, ds_id=ds_id, kwargs=kwargs)
+        self._ml_dataset = ml_dataset
+        self._mapper = mapper
+
+    def _get_dataset_lazily(self, index: int, **kwargs) -> xr.Dataset:
+        return self._mapper(self._ml_dataset.get_dataset(index), **kwargs)
 
 
 class FileStorageMultiLevelDataset(LazyMultiLevelDataset):
@@ -573,6 +596,11 @@ def open_ml_dataset_from_object_storage(path: str,
                                         client_kwargs: Mapping[str, Any] = None,
                                         **kwargs) -> MultiLevelDataset:
     data_format = data_format or guess_ml_dataset_format(path)
+
+    endpoint_url, root = split_bucket_url(path)
+    if endpoint_url:
+        kwargs['endpoint_url'] = endpoint_url
+        path = root
 
     client_kwargs = dict(client_kwargs or {})
     for arg_name in ['endpoint_url', 'region_name']:

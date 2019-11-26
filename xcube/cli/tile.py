@@ -90,11 +90,11 @@ def tile(cube: str,
     import xarray as xr
     import numpy as np
 
-    from xcube.core.extract import get_dataset_indexes
     from xcube.core.mldataset import open_ml_dataset
     from xcube.core.schema import CubeSchema
     from xcube.core.tile import get_ml_dataset_tile
     from xcube.core.tile import parse_non_spatial_labels
+    from xcube.core.select import select_vars
     from xcube.cli.common import parse_cli_kwargs
     from xcube.util.tilegrid import TileGrid
     from xcube.util.tiledimage import DEFAULT_COLOR_MAP_NAME
@@ -183,46 +183,47 @@ def tile(cube: str,
 
     if verbose:
         print(f'opening {cube}...')
-    ml_dataset = open_ml_dataset(cube)
 
-    dataset = ml_dataset.base_dataset
-    variables = set(variables or dataset.data_vars)
-    schema = CubeSchema.new(dataset)
-    spatial_dims = schema.x_dim, schema.y_dim
+    ml_dataset = open_ml_dataset(cube, chunks='auto')
+    base_dataset = ml_dataset.base_dataset
+    schema = CubeSchema.new(base_dataset)
+
+    indexers = None
+    if raw_labels:
+        indexers = parse_non_spatial_labels(raw_labels,
+                                            schema.dims,
+                                            schema.coords,
+                                            allow_slices=True,
+                                            exception_type=click.ClickException)
+
+    def transform(ds: xr.Dataset) -> xr.Dataset:
+        if variables:
+            ds = select_vars(ds, var_names=variables)
+        if indexers:
+            ds = ds.sel(**indexers)
+        # TODO: pass tile size as parameter
+        return ds.chunk(dict(time=1, lat=270, lon=270))
+
+    ml_dataset = ml_dataset.apply(transform)
+    base_dataset = ml_dataset.base_dataset
     tile_grid = ml_dataset.tile_grid
+    schema = CubeSchema.new(base_dataset)
+    spatial_dims = schema.x_dim, schema.y_dim
 
     x1, _, x2, _ = tile_grid.geo_extent
     resolutions = [(x2 - x1) / tile_grid.width(z) for z in range(tile_grid.num_levels)]
 
     image_cache = {}
 
-    for var_name, var in dataset.data_vars.items():
-        if var_name not in variables:
-            continue
-
+    for var_name, var in base_dataset.data_vars.items():
         color_bar, value_min, value_max = _get_color_mappings(str(var_name), config, style_id)
-
-        labels = {}
-        if raw_labels:
-            default_labels = parse_non_spatial_labels(var,
-                                                      raw_labels,
-                                                      exception_type=click.ClickException)
-            for name, value in default_labels.items():
-                indexes = get_dataset_indexes(dataset, name, np.array([value]))
-                index = int(indexes[0])
-                if index < 0:
-                    raise ValueError(f'label value {value!r} for dimension {index!r} is out of range')
-                labels[name] = index
 
         label_names = []
         label_indexes = []
         for dim in var.dims:
             if dim not in spatial_dims:
                 label_names.append(dim)
-                if dim in labels:
-                    label_indexes.append([labels[str(dim)]])
-                else:
-                    label_indexes.append(list(range(var[dim].size)))
+                label_indexes.append(list(range(var[dim].size)))
 
         var_path = os.path.join(output_path, str(var_name))
         metadata_path = os.path.join(var_path, 'metadata.json')
@@ -238,7 +239,7 @@ def tile(cube: str,
                                            value_max=value_max,
                                            num_colors=DEFAULT_COLOR_MAP_NUM_COLORS),
                         coordinates={name: _convert_coord_var(coord_var)
-                                     for name, coord_var in var.coords.items()})
+                                     for name, coord_var in var.coords.items() if coord_var.ndim == 1})
         if verbose:
             print(f'writing {metadata_path}')
         if not dry_run:

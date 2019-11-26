@@ -20,7 +20,7 @@
 # SOFTWARE.
 
 import logging
-from typing import Any, Mapping, MutableMapping
+from typing import Any, Mapping, MutableMapping, Union, Sequence
 
 import numpy as np
 import pandas as pd
@@ -150,39 +150,49 @@ def get_ml_dataset_tile(ml_dataset: MultiLevelDataset,
     return tile
 
 
-def parse_non_spatial_labels(var: xr.DataArray,
-                             raw_labels: Mapping[str, str],
+def parse_non_spatial_labels(raw_labels: Mapping[str, str],
+                             dims: Sequence[str],
+                             coords: Mapping[str, xr.DataArray],
+                             allow_slices: bool = False,
                              exception_type: type = ValueError) -> Mapping[str, Any]:
-    xy_var_names = get_dataset_xy_var_names(var, must_exist=False)
+    xy_var_names = get_dataset_xy_var_names(coords, must_exist=False)
     if xy_var_names is None:
-        raise exception_type(f'missing spatial coordinate variables in variable {var.name!r}')
-    xy_dims = set(var.coords[xy_var_name].dims[0] for xy_var_name in xy_var_names)
+        raise exception_type(f'missing spatial coordinates')
+    xy_dims = set(coords[xy_var_name].dims[0] for xy_var_name in xy_var_names)
 
-    parsed_labels = dict()
-    for dim in var.dims:
+    parsed_labels = {}
+    for dim in dims:
         if dim in xy_dims:
             continue
-        dim_var = var[dim]
+        dim_var = coords[dim]
         label_str = raw_labels.get(dim)
         try:
             if label_str is None:
                 label = dim_var.values[0]
             elif label_str == 'current':
                 label = dim_var.values[-1]
-            elif np.issubdtype(dim_var.dtype, np.floating):
-                label = float(label_str)
-            elif np.issubdtype(dim_var.dtype, np.integer):
-                label = int(label_str)
-            elif np.issubdtype(dim_var.dtype, np.datetime64):
-                if '/' in label_str:
-                    time_1_str, time_2_str = label_str.split('/', maxsplit=1)
-                    time_1 = pd.to_datetime(time_1_str)
-                    time_2 = pd.to_datetime(time_2_str)
-                    label = time_1 + (time_2 - time_1) / 2
-                else:
-                    label = pd.to_datetime(label_str)
             else:
-                raise exception_type(f'unable to parse value {label_str!r} into a {dim_var.dtype!r}')
+                if '/' in label_str:
+                    label_strs = tuple(label_str.split('/', maxsplit=1))
+                else:
+                    label_strs = (label_str,)
+                if np.issubdtype(dim_var.dtype, np.floating):
+                    labels = tuple(map(float, label_strs))
+                elif np.issubdtype(dim_var.dtype, np.integer):
+                    labels = tuple(map(int, label_strs))
+                elif np.issubdtype(dim_var.dtype, np.datetime64):
+                    labels = tuple(map(pd.to_datetime, label_strs))
+                else:
+                    raise exception_type(f'unable to parse value {label_str!r} into a {dim_var.dtype!r}')
+                if len(labels) == 1:
+                    label = labels[0]
+                else:
+                    if allow_slices:
+                        label = slice(labels[0], labels[1])
+                    elif np.issubdtype(dim_var.dtype, np.integer):
+                        label = labels[0] + (labels[1] - labels[0]) // 2
+                    else:
+                        label = labels[0] + (labels[1] - labels[0]) / 2
             parsed_labels[str(dim)] = label
         except ValueError as e:
             raise exception_type(f'{label_str!r} is not a valid value for dimension {dim!r}') from e

@@ -246,12 +246,14 @@ def get_cube_schema(cube: xr.Dataset) -> CubeSchema:
                       chunks=first_chunks)
 
 
-def get_dataset_xy_var_names(dataset: Union[xr.Dataset, xr.DataArray],
+def get_dataset_xy_var_names(coords: Union[xr.Dataset, xr.DataArray, Mapping[str, xr.DataArray]],
                              must_exist: bool = False,
                              dataset_arg_name: str = 'dataset') -> Optional[Tuple[str, str]]:
+    if hasattr(coords, 'coords'):
+        coords = coords.coords
     x_var_name = None
     y_var_name = None
-    for var_name, var in dataset.coords.items():
+    for var_name, var in coords.items():
         if var.attrs.get('standard_name') == 'projection_x_coordinate' \
                 or var.attrs.get('long_name') == 'x coordinate of projection':
             if var.ndim == 1:
@@ -265,7 +267,7 @@ def get_dataset_xy_var_names(dataset: Union[xr.Dataset, xr.DataArray],
 
     x_var_name = None
     y_var_name = None
-    for var_name, var in dataset.coords.items():
+    for var_name, var in coords.items():
         if var.attrs.get('long_name') == 'longitude':
             if var.ndim == 1:
                 x_var_name = var_name
@@ -276,9 +278,9 @@ def get_dataset_xy_var_names(dataset: Union[xr.Dataset, xr.DataArray],
             return str(x_var_name), str(y_var_name)
 
     for x_var_name, y_var_name in (('lon', 'lat'), ('x', 'y')):
-        if x_var_name in dataset.coords and y_var_name in dataset.coords:
-            x_var = dataset.coords[x_var_name]
-            y_var = dataset.coords[y_var_name]
+        if x_var_name in coords and y_var_name in coords:
+            x_var = coords[x_var_name]
+            y_var = coords[y_var_name]
             if x_var.ndim == 1 and y_var.ndim == 1:
                 return x_var_name, y_var_name
 
