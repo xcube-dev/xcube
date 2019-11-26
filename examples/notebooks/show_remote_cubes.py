@@ -3,7 +3,7 @@ import os
 import pandas as pd
 import s3fs
 
-from xcube.core import open_cube
+from xcube.core.dsio import open_cube
 
 
 def show_remote_cubes(bucket, endpoint_url, region_name):
@@ -15,7 +15,8 @@ def show_remote_cubes(bucket, endpoint_url, region_name):
 
     cube_names = []
     df = pd.DataFrame(
-        columns=['cube_name', 'chunksize (time, lat, lon)', 'var_nums', 'variables', 'start_date', 'end_date'])
+        columns=['cube_name', 'chunks (time, lat, lon)', 'num_vars', 'variables', 
+                 'start_date', 'end_date', 'spatial coverage (lon_min, lat_min, lon_max, lat_max)'])
 
     for filepath in sorted(obs_file_system.ls(bucket)):
         if filepath.endswith('.zarr'):
@@ -29,10 +30,16 @@ def show_remote_cubes(bucket, endpoint_url, region_name):
                 ed = pd.to_datetime(str(ds.time.values[-1]))
                 end_date = ed.strftime('%Y-%m-%d')
                 chunksize = ds[var_list[0]].data.chunksize
+                try:
+                    spat_cov = (ds.attrs['geospatial_lon_min'], ds.attrs['geospatial_lat_min'],
+                                ds.attrs['geospatial_lon_max'], ds.attrs['geospatial_lat_max'])
+                except KeyError:
+                    spat_cov = None
                 df = df.append({'cube_name': filename,
                                 'chunks (time, lat, lon)': chunksize,
                                 'num_vars': len(var_list),
                                 'variables': (str(var_list)).replace('[', '').replace(']', '').replace("'", ""),
                                 'start_date': start_date,
-                                'end_date': end_date}, ignore_index=True)
+                                'end_date': end_date, 
+                                'spatial coverage (lon_min, lat_min, lon_max, lat_max)': str(spat_cov)}, ignore_index=True)
     return df
