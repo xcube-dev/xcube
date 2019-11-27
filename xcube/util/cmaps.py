@@ -160,8 +160,6 @@ def ensure_cmaps_loaded():
                 cbar_list = []
                 if cmap_category == 'Custom SNAP Colormaps':
                     cmap_names = _check_if_exists(SNAP_CPD_LIST)
-                    if len(cmap_names) == 0:
-                        _LOG.warning('No custom SNAP colormaps found in server configuration file.')
                 for cmap_name in cmap_names:
                     try:
                         if '.cpd' in cmap_name:
