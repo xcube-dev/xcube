@@ -35,9 +35,15 @@ DEFAULT_STYLE_ID = 'default'
 @click.option('--variables', '--vars', metavar='VARIABLES',
               help='Variables to be included in output. '
                    'Comma-separated list of names which may contain wildcard characters "*" and "?".')
-@click.option('--labels', 'raw_labels', metavar='LABELS',
+@click.option('--labels', 'labels', metavar='LABELS',
               help=f'Labels for non-spatial dimensions, e.g. "time=2019-20-03".'
                    f' Multiple values are separated by comma.')
+@click.option('--tile-size', '-t', 'tile_size', metavar='TILE_SIZE',
+              help=f'Tile size in pixels for individual or both x- and y-directions. '
+                   f'Separate by comma for individual tile sizes, e.g. "-t 360,180". '
+                   f'Defaults to the chunks sizes in x- and y-directions of CUBE, '
+                   f'which may not be ideal. Use option --dry-run and --verbose to '
+                   f'display the default tile sizes for CUBE.')
 @click.option('--config', '-c', 'config_path', metavar='CONFIG',
               help=f'Configuration file in YAML format.')
 @click.option('--style', '-s', 'style_id', metavar='STYLE', default=DEFAULT_STYLE_ID,
@@ -51,7 +57,8 @@ DEFAULT_STYLE_ID = 'default'
               help=f'Generate all tiles but don\'t write any files.')
 def tile(cube: str,
          variables: Optional[str],
-         raw_labels: Optional[str],
+         labels: Optional[str],
+         tile_size: Optional[str],
          config_path: Optional[str],
          style_id: Optional[str],
          output_path: Optional[str],
@@ -160,10 +167,21 @@ def tile(cube: str,
         value_min, value_max = value_range
         return color_bar, value_min, value_max
 
+    if tile_size:
+        try:
+            if ',' in tile_size:
+                tile_width, tile_height = map(int, tile_size.split(',', maxsplit=1))
+            else:
+                tile_width, tile_height = int(tile_size), int(tile_size)
+        except ValueError:
+            tile_width, tile_height = -1, -1
+        if tile_width <= 0 or tile_height <= 0:
+            raise click.ClickException(f'Invalid TILE_SIZE: {tile_size}')
+        tile_size = tile_width, tile_height
+
     config = {}
     if config_path:
-        if verbose:
-            print(f'opening {config_path}...')
+        print(f'opening {config_path}...')
         with open(config_path, 'r') as fp:
             config = yaml.safe_load(fp)
 
@@ -179,18 +197,23 @@ def tile(cube: str,
         if variables is None or len(variables) == 0:
             raise click.ClickException(f'invalid variables {variables!r}')
 
-    raw_labels = parse_cli_kwargs(raw_labels, 'LABELS')
+    labels = parse_cli_kwargs(labels, 'LABELS')
 
-    if verbose:
-        print(f'opening {cube}...')
+    print(f'opening {cube}...')
 
     ml_dataset = open_ml_dataset(cube, chunks='auto')
+    tile_grid = ml_dataset.tile_grid
     base_dataset = ml_dataset.base_dataset
     schema = CubeSchema.new(base_dataset)
+    spatial_dims = schema.x_dim, schema.y_dim
+
+    if not tile_size:
+        print(f'warning: using default tile sizes derived from CUBE')
+        tile_width, tile_height = tile_grid.tile_width, tile_grid.tile_height
 
     indexers = None
-    if raw_labels:
-        indexers = parse_non_spatial_labels(raw_labels,
+    if labels:
+        indexers = parse_non_spatial_labels(labels,
                                             schema.dims,
                                             schema.coords,
                                             allow_slices=True,
@@ -201,17 +224,24 @@ def tile(cube: str,
             ds = select_vars(ds, var_names=variables)
         if indexers:
             ds = ds.sel(**indexers)
-        # TODO: pass tile size as parameter
-        return ds.chunk(dict(time=1, lat=270, lon=270))
+        chunk_sizes = {dim: 1 for dim in ds.dims}
+        chunk_sizes[spatial_dims[0]] = tile_width
+        chunk_sizes[spatial_dims[1]] = tile_height
+        return ds.chunk(chunk_sizes)
 
     ml_dataset = ml_dataset.apply(transform)
-    base_dataset = ml_dataset.base_dataset
     tile_grid = ml_dataset.tile_grid
+    base_dataset = ml_dataset.base_dataset
     schema = CubeSchema.new(base_dataset)
     spatial_dims = schema.x_dim, schema.y_dim
 
     x1, _, x2, _ = tile_grid.geo_extent
     resolutions = [(x2 - x1) / tile_grid.width(z) for z in range(tile_grid.num_levels)]
+
+    print(f'writing tile sets...')
+    print(f'  zoom levels: {tile_grid.num_levels}')
+    print(f'  resolutions: {resolutions} units/pixel')
+    print(f'  tile size:   {tile_width} x {tile_height} pixels')
 
     image_cache = {}
 
@@ -278,3 +308,5 @@ def tile(cube: str,
                             os.makedirs(tile_zy_path, exist_ok=True)
                             with open(tile_path, 'wb') as fp:
                                 fp.write(tile_bytes)
+
+    print(f'done writing tile sets.')
