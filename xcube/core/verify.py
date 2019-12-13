@@ -204,6 +204,14 @@ def _check_lon_or_lat(dataset, var_name, min_value, max_value, report):
     if np.min(var) < min_value or np.max(var) > max_value:
         report.append(f"values of coordinate variable {var_name!r}"
                       f" must be in the range {min_value} to {max_value}")
+        
+    if max_value > 92. and var[0] > var[-1]:
+        report.append(f"values of coordinate variable {var_name!r}"
+                      f" must be in ascending order")
+
+    if max_value < 92. and var[0] < var[-1]:
+        report.append(f"values of coordinate variable {var_name!r}"
+                      f" must be in descending order")
 
 
 def _check_time(dataset, name, report):
