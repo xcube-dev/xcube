@@ -107,7 +107,7 @@ The user may change some of the default settings by selecting the `Settings`-ico
 There the server url may be changed, in order to view data which is available via a different server.
 The language - if available - may be changed and preferences of displaying data and graph of the time series.
 
-On the very bottom of the `Settings` pop-up window information about the viewer and server version is included. 
+On the very bottom of the `Settings` pop-up window information about the viewer and server version is included.
 
 Build and Deploy
 ================
