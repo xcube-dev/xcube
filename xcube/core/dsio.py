@@ -551,7 +551,7 @@ def rimraf(path):
         try:
             os.remove(path)
         except OSError:
-            warnings.warn(f"failed to remove file {path}")
+            warnings.warn(f'failed to remove file {path}')
             pass
 
 
