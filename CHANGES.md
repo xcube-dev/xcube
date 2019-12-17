@@ -1,9 +1,11 @@
 ## Changes in 0.4.0 (in development)
 
-### Fix
+## Changes in 0.3.1 (in development)
+
+### Fixes
 
 * Removing false user warning about custom SNAP colormaps when starting 
-  xcube serve
+  `xcube serve` command.
   
 ### Other
 
