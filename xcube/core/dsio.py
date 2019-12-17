@@ -423,7 +423,7 @@ class ZarrDatasetIO(DatasetIO):
 
         if isinstance(path, str):
             client_kwargs = {}
-            if "client_kwargs" in kwargs:
+            if 'client_kwargs' in kwargs:
                 client_kwargs = kwargs.pop('client_kwargs')
             if 'endpoint_url' in kwargs:
                 client_kwargs['endpoint_url'] = kwargs.pop('endpoint_url')
