@@ -462,7 +462,7 @@ class ZarrDatasetIO(DatasetIO):
         # if 'acl' in kwargs:
         #     acl = kwargs.pop('acl')
         encoding = self._get_write_encodings(dataset, compress, cname, clevel, shuffle, blocksize, chunksizes)
-        dataset.to_zarr(path_or_store, mode="w", encoding=encoding)
+        dataset.to_zarr(path_or_store, mode='w', encoding=encoding)
         # if acl and client_kwargs and s3:
         #     s3.chmod(path=root, acl=acl, kwargs=client_kwargs)
 
