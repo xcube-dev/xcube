@@ -433,7 +433,7 @@ class ZarrDatasetIO(DatasetIO):
 
             path_or_store, root, client_kwargs = _get_path_or_store(path_or_store, client_kwargs, mode, root)
 
-            if "endpoint_url" in client_kwargs and root is not None:
+            if 'endpoint_url' in client_kwargs and root is not None:
                 s3 = s3fs.S3FileSystem(anon=True,
                                        client_kwargs=client_kwargs)
                 consolidated = s3.exists(f'{root}/.zmetadata')
