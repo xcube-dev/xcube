@@ -418,7 +418,7 @@ class ZarrDatasetIO(DatasetIO):
     def read(self, path: str, **kwargs) -> xr.Dataset:
         path_or_store = path
         consolidated = False
-        mode = "read"
+        mode = 'read'
         root = None
 
         if isinstance(path, str):
