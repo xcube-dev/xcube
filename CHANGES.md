@@ -1,5 +1,9 @@
 ## Changes in 0.4.0 (in development)
 
+### Other
+
+* Renamed default log file for `xcube serve` command to `xcube-serve.log`.
+  
 ## Changes in 0.3.1 (in development)
 
 ### Fixes
