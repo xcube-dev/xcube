@@ -15,8 +15,8 @@ def show_remote_cubes(bucket, endpoint_url, region_name):
 
     cube_names = []
     df = pd.DataFrame(
-        columns=['cube_name', 'chunks (time, lat, lon)', 'num_vars', 'variables', 
-                 'start_date', 'end_date', 'spatial coverage (lon_min, lat_min, lon_max, lat_max)'])
+        columns=['cube name', 'chunks (time, lat, lon)', 'number of variables', 'variables', 
+                 'start date', 'end date', 'spatial coverage (lon_min, lat_min, lon_max, lat_max)'])
 
     for filepath in sorted(obs_file_system.ls(bucket)):
         if filepath.endswith('.zarr'):
@@ -35,11 +35,11 @@ def show_remote_cubes(bucket, endpoint_url, region_name):
                                 ds.attrs['geospatial_lon_max'], ds.attrs['geospatial_lat_max'])
                 except KeyError:
                     spat_cov = None
-                df = df.append({'cube_name': filename,
+                df = df.append({'cube name': filename,
                                 'chunks (time, lat, lon)': chunksize,
-                                'num_vars': len(var_list),
+                                'number of variables': len(var_list),
                                 'variables': (str(var_list)).replace('[', '').replace(']', '').replace("'", ""),
-                                'start_date': start_date,
-                                'end_date': end_date, 
+                                'start date': start_date,
+                                'end date': end_date, 
                                 'spatial coverage (lon_min, lat_min, lon_max, lat_max)': str(spat_cov)}, ignore_index=True)
     return df
