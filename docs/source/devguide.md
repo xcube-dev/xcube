@@ -330,7 +330,7 @@ test viewer with latest xcube Web API. Then release a new xcube viewer.
 
     $ npm install -g http-server
     $ cd build 
-    $ http-server -p 3000
+    $ http-server -p 3000 -c-1
 
 * Push changes to either master or a new maintenance branch (see above).
 * Goto [xcube-viewer/releases](https://github.com/dcs4cop/xcube-viewer/releases) 
@@ -339,11 +339,13 @@ test viewer with latest xcube Web API. Then release a new xcube viewer.
   - Release title is: `${version}`. 
   - Paste latest changes from `CHANGES.md` into field "Describe this release".
   - Press "Publish release" button.
-* Deploy build contents to any relevant web content providers.
-* Merge `master` branch into `master_dcs4cop` and `master_cyanoalert`, push both.
+* Merge `master` branch into `master_dcs4cop` and `master_cyanoalert`, 
+  adjust versions and `CHANGES.md` as described above and push both branches.
 * After the release on GitHub, if the branch was `master`, 
   create a new maintenance branch (see above).
 * Increase version in `package.json` and `VIEWER_VERSION` constant in `src/config.ts` 
   and append `-dev.0` suffix to version name so it is SemVer compatible.
 * In `CHANGES.md` add a new version headline and attach ` (in development)` to it.
 * Push changes to either master or a new maintenance branch (see above).
+* Deploy builds of `master`, `master_dcs4cop`, and `master_cyanoalert` branches 
+  to related web content providers.

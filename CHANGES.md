@@ -3,10 +3,22 @@
 ### Enhancements 
 * Added ability to write xcube datasets in zarr format into s3 bucket using
   `xcube.core.dsio.write_cube()`. (#224)
+  
+### Other
 
+* Renamed default log file for `xcube serve` command to `xcube-serve.log`.
+  
+## Changes in 0.3.1 (in development)
+
+### Fixes
+
+* Removing false user warning about custom SNAP colormaps when starting 
+  `xcube serve` command.
+  
 ## Changes in 0.3.0
 
 ### New
+
 * Added new parameter in `xcube gen` called `--no_sort`. Using `--no_sort`, 
   the input file list wont be sorted before creating the xcube dataset. 
   If `--no_sort` parameter is passed, order the input list will be kept. 
