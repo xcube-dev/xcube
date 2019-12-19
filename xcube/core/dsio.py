@@ -555,7 +555,7 @@ def rimraf(path):
             pass
 
 
-def _get_path_or_store(path, client_kwargs, mode, root):
+def _get_path_or_store(path: str, client_kwargs: Dict[str, Any], mode: str, root: str):
     path_or_store = path
     anon_mode = True
     if not client_kwargs:
