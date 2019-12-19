@@ -418,12 +418,12 @@ class ZarrDatasetIO(DatasetIO):
     def read(self, path: str, **kwargs) -> xr.Dataset:
         path_or_store = path
         consolidated = False
-        mode = "read"
+        mode = 'read'
         root = None
 
         if isinstance(path, str):
             client_kwargs = {}
-            if "client_kwargs" in kwargs:
+            if 'client_kwargs' in kwargs:
                 client_kwargs = kwargs.pop('client_kwargs')
             if 'endpoint_url' in kwargs:
                 client_kwargs['endpoint_url'] = kwargs.pop('endpoint_url')
@@ -433,7 +433,7 @@ class ZarrDatasetIO(DatasetIO):
 
             path_or_store, root, client_kwargs = _get_path_or_store(path_or_store, client_kwargs, mode, root)
 
-            if "endpoint_url" in client_kwargs and root is not None:
+            if 'endpoint_url' in client_kwargs and root is not None:
                 s3 = s3fs.S3FileSystem(anon=True,
                                        client_kwargs=client_kwargs)
                 consolidated = s3.exists(f'{root}/.zmetadata')
@@ -462,7 +462,7 @@ class ZarrDatasetIO(DatasetIO):
         # if 'acl' in kwargs:
         #     acl = kwargs.pop('acl')
         encoding = self._get_write_encodings(dataset, compress, cname, clevel, shuffle, blocksize, chunksizes)
-        dataset.to_zarr(path_or_store, mode="w", encoding=encoding)
+        dataset.to_zarr(path_or_store, mode='w', encoding=encoding)
         # if acl and client_kwargs and s3:
         #     s3.chmod(path=root, acl=acl, kwargs=client_kwargs)
 
@@ -551,7 +551,7 @@ def rimraf(path):
         try:
             os.remove(path)
         except OSError:
-            warnings.warn(f"failed to remove file {path}")
+            warnings.warn(f'failed to remove file {path}')
             pass
 
 

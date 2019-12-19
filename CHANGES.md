@@ -2,7 +2,7 @@
 
 ### Enhancements 
 * Added ability to write xcube datasets in zarr format into s3 bucket using
-  xcube.core.dsio.write_cube() #224
+  `xcube.core.dsio.write_cube()`. (#224)
 
 ## Changes in 0.3.0
 
