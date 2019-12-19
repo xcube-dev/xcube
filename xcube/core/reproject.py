@@ -20,11 +20,15 @@
 # SOFTWARE.
 
 import warnings
-from typing import Tuple, List, Union, Dict, Any
+from typing import Tuple, List, Union, Dict, Any, Mapping
 
 import numpy as np
 import xarray as xr
 from osgeo import gdal
+from rasterio import control as rio_control
+from rasterio import warp as rio_warp
+from rasterio import crs as rio_crs
+from rasterio import Affine as A
 
 from xcube.constants import CRS_WKT_EPSG_4326, GLOBAL_GEO_EXTENT
 
@@ -157,7 +161,7 @@ def reproject_crs_to_wgs84(src_dataset: xr.Dataset,
 def reproject_xy_to_wgs84(src_dataset: xr.Dataset,
                           src_xy_var_names: Tuple[str, str],
                           src_xy_tp_var_names: Tuple[str, str] = None,
-                          src_xy_crs: str = None,
+                          src_xy_crs: Union[str, Mapping, rio_crs.CRS] = None,
                           src_xy_gcp_step: Union[int, Tuple[int, int]] = 10,
                           src_xy_tp_gcp_step: Union[int, Tuple[int, int]] = 1,
                           dst_size: Tuple[int, int] = None,
@@ -210,7 +214,7 @@ def reproject_xy_to_wgs84(src_dataset: xr.Dataset,
     tp_x_name, tp_y_name = src_xy_tp_var_names or (None, None)
 
     # Set defaults
-    src_xy_crs = src_xy_crs or CRS_WKT_EPSG_4326
+    src_xy_crs = src_xy_crs or {'init': 'EPSG:4326'}
     gcp_i_step, gcp_j_step = (src_xy_gcp_step, src_xy_gcp_step) if isinstance(src_xy_gcp_step, int) \
         else src_xy_gcp_step
     tp_gcp_i_step, tp_gcp_j_step = (src_xy_tp_gcp_step, src_xy_tp_gcp_step) if src_xy_tp_gcp_step is None or isinstance(
@@ -237,9 +241,6 @@ def reproject_xy_to_wgs84(src_dataset: xr.Dataset,
     _assert(x_var.shape[-2] >= 2)
     _assert(y_var.shape == x_var.shape)
 
-    src_width = x_var.shape[-1]
-    src_height = x_var.shape[-2]
-
     dst_region = _ensure_valid_region(dst_region, GLOBAL_GEO_EXTENT, x_var, y_var)
     dst_x1, dst_y1, dst_x2, dst_y2 = dst_region
 
@@ -258,8 +259,6 @@ def reproject_xy_to_wgs84(src_dataset: xr.Dataset,
         tp_y_var = src_dataset[tp_y_name]
         _assert(len(tp_x_var.shape) == 2)
         _assert(tp_x_var.shape == tp_y_var.shape)
-        tp_width = tp_x_var.shape[-1]
-        tp_height = tp_x_var.shape[-2]
         _assert(tp_gcp_i_step is not None and tp_gcp_i_step > 0)
         _assert(tp_gcp_j_step is not None and tp_gcp_j_step > 0)
         # Extract GCPs also from tie-point lon/lat 2D variables
@@ -267,11 +266,7 @@ def reproject_xy_to_wgs84(src_dataset: xr.Dataset,
     else:
         # No tie-point variables
         tp_x_var = None
-        tp_width = None
-        tp_height = None
         tp_gcps = None
-
-    mem_driver = gdal.GetDriverByName("MEM")
 
     dst_x2 = dst_x1 + dst_res * dst_width
     dst_y1 = dst_y2 - dst_res * dst_height
@@ -286,34 +281,30 @@ def reproject_xy_to_wgs84(src_dataset: xr.Dataset,
     for var_name in src_dataset.variables:
         src_var = src_dataset[var_name]
 
+        effective_gcps = gcps
         if src_var.dims == x_var.dims:
             is_tp_var = False
             if var_name == x_name or var_name == y_name:
                 if not include_xy_vars:
                     # Don't store lat and lon 2D vars in destination
                     continue
-                dst_var_name = 'src_' + var_name
+                dst_var_name = f'src_{var_name}'
             else:
                 dst_var_name = var_name
             # PERF: collect variables of same type and size and set band_count accordingly to speed up reprojection
             band_count = 1
-            data_type = numpy_to_gdal_dtype(src_var.dtype)
-            src_var_dataset = mem_driver.Create(f'src_{var_name}', src_width, src_height, band_count, data_type, [])
-            src_var_dataset.SetGCPs(gcps, src_xy_crs)
         elif tp_x_var is not None and src_var.dims == tp_x_var.dims:
             is_tp_var = True
             if var_name == tp_x_name or var_name == tp_y_name:
                 if not include_xy_vars:
                     # Don't store lat and lon 2D vars in destination
                     continue
-                dst_var_name = 'src_' + var_name
+                dst_var_name = f'src_{var_name}'
             else:
                 dst_var_name = var_name
             # PERF: collect variables of same type and size and set band_count accordingly to speed up reprojection
             band_count = 1
-            data_type = numpy_to_gdal_dtype(src_var.dtype)
-            src_var_dataset = mem_driver.Create(f'src_{var_name}', tp_width, tp_height, band_count, data_type, [])
-            src_var_dataset.SetGCPs(tp_gcps, src_xy_crs)
+            effective_gcps = tp_gcps
         elif include_non_spatial_vars:
             # Store any variable as-is, that does not have the lat/lon 2D dims, then continue
             dst_dataset[var_name] = src_var
@@ -321,43 +312,25 @@ def reproject_xy_to_wgs84(src_dataset: xr.Dataset,
         else:
             continue
 
-        # We use GDT_Float64 to introduce NaN as no-data-value
-        dst_data_type = gdal.GDT_Float64
-        dst_var_dataset = mem_driver.Create(f'dst_{var_name}', dst_width, dst_height, band_count, dst_data_type, [])
-        dst_var_dataset.SetProjection(CRS_WKT_EPSG_4326)
-        dst_var_dataset.SetGeoTransform(dst_geo_transform)
-
         # TODO (forman): PERFORMANCE: stack multiple variables of same src_data_type
         #                to perform the reprojection only once per stack
-
-        # TODO (forman): CODE-DUPLICATION: refactor out common code block in reproject_crs_to_wgs84()
-
-        for band_index in range(1, band_count + 1):
-            src_var_dataset.GetRasterBand(band_index).SetNoDataValue(float('nan'))
-            src_var_dataset.GetRasterBand(band_index).WriteArray(src_var.values)
-            dst_var_dataset.GetRasterBand(band_index).SetNoDataValue(float('nan'))
 
         resample_alg, resample_alg_name = _get_resample_alg(dst_resampling,
                                                             var_name,
                                                             default=DEFAULT_TP_RESAMPLING if is_tp_var else DEFAULT_RESAMPLING)
 
-        warp_mem_limit = 0
-        error_threshold = 0
-        # See http://www.gdal.org/structGDALWarpOptions.html
-        options = ['INIT_DEST=NO_DATA']
-        gdal.ReprojectImage(src_var_dataset,
-                            dst_var_dataset,
-                            None,
-                            None,
-                            resample_alg,
-                            warp_mem_limit,
-                            error_threshold,
-                            None,  # callback,
-                            None,  # callback_data,
-                            options)  # options
+        src_values = src_var.values[..., :, :]
+        dst_values = np.zeros((dst_height, dst_width), dtype=np.float64)
 
-        dst_values = dst_var_dataset.GetRasterBand(1).ReadAsArray()
-        # print(var_name, dst_values.shape, np.nanmin(dst_values), np.nanmax(dst_values))
+        rio_warp.reproject(src_values,
+                           dst_values,
+                           gcps=effective_gcps,
+                           src_crs=src_xy_crs,
+                           src_nodata=np.nan if np.issubdtype(src_values.dtype, np.float) else None,
+                           dst_transform=A.from_gdal(*dst_geo_transform),
+                           dst_crs={'init': 'EPSG:4326'},
+                           dst_nodata=np.nan,
+                           resampling=rio_warp.Resampling.nearest)
 
         dst_dataset[dst_var_name] = _new_dst_variable(src_var, dst_values, resample_alg_name)
 
@@ -482,7 +455,7 @@ def _ensure_valid_region(region: CoordRange,
 def _get_gcps(x_var: xr.DataArray,
               y_var: xr.DataArray,
               i_step: int,
-              j_step: int) -> List[gdal.GCP]:
+              j_step: int) -> List[rio_control.GroundControlPoint]:
     x_values = x_var.values
     y_values = y_var.values
     i_size = x_var.shape[-1]
@@ -494,7 +467,7 @@ def _get_gcps(x_var: xr.DataArray,
     for j in np.linspace(0, j_size - 1, j_count, dtype=np.int32):
         for i in np.linspace(0, i_size - 1, i_count, dtype=np.int32):
             x, y = float(x_values[j, i]), float(y_values[j, i])
-            gcps.append(gdal.GCP(x, y, 0.0, i + 0.5, j + 0.5, '%s,%s' % (i, j), str(gcp_id)))
+            gcps.append(rio_control.GroundControlPoint(row=j + 0.5, col=i + 0.5, x=x, y=y, id=gcp_id))
             gcp_id += 1
     return gcps
 
