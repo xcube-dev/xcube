@@ -454,7 +454,7 @@ class ZarrDatasetIO(DatasetIO):
               chunksizes=None,
               client_kwargs=None,
               **kwargs):
-        mode = "write"
+        mode = 'write'
         root = None
         path_or_store, root, client_kwargs = _get_path_or_store(output_path, client_kwargs, mode, root)
 
