@@ -1,3 +1,4 @@
+import os.path
 import unittest
 
 import numpy as np
@@ -9,8 +10,28 @@ TEST_INPUT = '../xcube-gen-bc/test/inputdata/O_L2_0001_SNS_2017104102450_v1.0.nc
 
 nan = np.nan
 
+olci_path = 'C:\\Users\\Norman\\Downloads\\S3B_OL_1_EFR____20190728T103451_20190728T103751_20190729T141105_0179_028_108_1800_LN1_O_NT_002.SEN3'
+
 
 class ReprojectTest(unittest.TestCase):
+
+    @unittest.skipUnless(os.path.isdir(olci_path), f'missing OLCI scene {olci_path}')
+    def test_olci(self):
+        vars = dict()
+        for f in ('qualityFlags.nc', 'geo_coordinates.nc', 'Oa06_radiance.nc', 'Oa13_radiance.nc', 'Oa20_radiance.nc'):
+            ds = xr.open_dataset(olci_path + '\\' + f)
+            vars.update(ds.data_vars)
+        src_ds = xr.Dataset(vars)
+
+        src_ds['longitude'] = xr.DataArray(src_ds.longitude.values, dims=('rows', 'columns'))
+        src_ds['latitude'] = xr.DataArray(src_ds.latitude.values, dims=('rows', 'columns'))
+
+        output_geom = compute_output_geom(src_ds, x_name='longitude', y_name='latitude')
+        self.assertEqual(20259, output_geom.width)
+        self.assertEqual(7386, output_geom.height)
+        self.assertAlmostEqual(-11.918857, output_geom.x_min)
+        self.assertAlmostEqual(59.959791, output_geom.y_min)
+        self.assertAlmostEqual(0.00181345416, output_geom.res)
 
     def new_source_dataset(self):
         lon = np.array([[1.0, 6.0],
@@ -77,6 +98,30 @@ class ReprojectTest(unittest.TestCase):
                                            [nan, 1.0, nan, nan, nan, nan, nan],
                                        ], dtype=rad.dtype))
 
+    def test_reproject_2x2_to_7x7_subset(self):
+        src_ds = self.new_source_dataset()
+
+        output_geom = ImageGeom(width=7, height=7, x_min=2.0, y_min=51.0, res=1.0)
+
+        dst_ds = reproject_dataset(src_ds, output_geom=output_geom)
+        lon, lat, rad = self._assert_shape_and_dim(dst_ds, 7, 7)
+        np.testing.assert_almost_equal(lon.values,
+                                       np.array([2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0],
+                                                dtype=lon.dtype))
+        np.testing.assert_almost_equal(lat.values,
+                                       np.array([51.0, 52.0, 53.0, 54.0, 55.0, 56.0, 57.0],
+                                                dtype=lat.dtype))
+        np.testing.assert_almost_equal(rad.values,
+                                       np.array([
+                                           [4.0, 4.0, nan, nan, nan, nan, nan],
+                                           [3.0, 4.0, 2.0, nan, nan, nan, nan],
+                                           [3.0, 1.0, 2.0, 2.0, 2.0, nan, nan],
+                                           [1.0, 1.0, 2.0, nan, nan, nan, nan],
+                                           [1.0, nan, nan, nan, nan, nan, nan],
+                                           [nan, nan, nan, nan, nan, nan, nan],
+                                           [nan, nan, nan, nan, nan, nan, nan],
+                                       ], dtype=rad.dtype))
+
     def test_reproject_2x2_to_13x13(self):
         src_ds = self.new_source_dataset()
 
@@ -139,6 +184,25 @@ class ReprojectTest(unittest.TestCase):
                                            [nan, nan, 1.0, 1.0, nan, nan, nan, nan, nan, nan, nan, nan, nan],
                                            [nan, nan, 1.0, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan],
                                        ], dtype=rad.dtype))
+
+    def test_reproject_2x2_to_13x13_none(self):
+        src_ds = self.new_source_dataset()
+
+        output_geom = ImageGeom(width=13, height=13, x_min=10.0, y_min=50.0, res=0.5)
+        dst_ds = reproject_dataset(src_ds, output_geom=output_geom)
+        self.assertIsNone(dst_ds)
+
+        output_geom = ImageGeom(width=13, height=13, x_min=-10.0, y_min=50.0, res=0.5)
+        dst_ds = reproject_dataset(src_ds, output_geom=output_geom)
+        self.assertIsNone(dst_ds)
+
+        output_geom = ImageGeom(width=13, height=13, x_min=0.0, y_min=58.0, res=0.5)
+        dst_ds = reproject_dataset(src_ds, output_geom=output_geom)
+        self.assertIsNone(dst_ds)
+
+        output_geom = ImageGeom(width=13, height=13, x_min=0.0, y_min=42.0, res=0.5)
+        dst_ds = reproject_dataset(src_ds, output_geom=output_geom)
+        self.assertIsNone(dst_ds)
 
     def _assert_shape_and_dim(self, dst_ds, w, h):
         self.assertIn('lon', dst_ds)

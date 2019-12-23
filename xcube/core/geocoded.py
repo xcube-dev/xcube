@@ -1,6 +1,27 @@
+# The MIT License (MIT)
+# Copyright (c) 2019 by the xcube development team and contributors
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy of
+# this software and associated documentation files (the "Software"), to deal in
+# the Software without restriction, including without limitation the rights to
+# use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
+# of the Software, and to permit persons to whom the Software is furnished to do
+# so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
 import collections
 import math
-from typing import Sequence, Tuple
+from typing import Sequence, Tuple, Optional
 
 import numba as nb
 import numpy as np
@@ -13,17 +34,20 @@ class ImageGeom(collections.namedtuple('ImageGeometry', ['width', 'height', 'x_m
         return self.x_min + self.width * self.res > 180.0
 
 
-@nb.jit(nopython=True, inline='always')
+@nb.jit('float64(float64, float64, float64, float64, float64, float64)',
+        nopython=True, inline='always')
 def _fdet(px0: float, py0: float, px1: float, py1: float, px2: float, py2: float) -> float:
     return (px0 - px1) * (py0 - py2) - (px0 - px2) * (py0 - py1)
 
 
-@nb.jit(nopython=True, inline='always')
+@nb.jit('float64(float64, float64, float64, float64, float64, float64)',
+        nopython=True, inline='always')
 def _fu(px: float, py: float, px0: float, py0: float, px2: float, py2: float) -> float:
     return (px0 - px) * (py0 - py2) - (py0 - py) * (px0 - px2)
 
 
-@nb.jit(nopython=True, inline='always')
+@nb.jit('float64(float64, float64, float64, float64, float64, float64)',
+        nopython=True, inline='always')
 def _fv(px: float, py: float, px0: float, py0: float, px1: float, py1: float) -> float:
     return (py0 - py) * (px0 - px1) - (px0 - px) * (py0 - py1)
 
@@ -54,15 +78,15 @@ def reproject(src_values: np.ndarray,
             src_i1 = src_i0 + 1
             src_j1 = src_j0 + 1
 
-            dst_px[0] = dst_px0 = src_x[src_j0, src_i0]
-            dst_px[1] = dst_px1 = src_x[src_j0, src_i1]
-            dst_px[2] = dst_px2 = src_x[src_j1, src_i0]
-            dst_px[3] = dst_px3 = src_x[src_j1, src_i1]
+            dst_px[0] = dst_p0x = src_x[src_j0, src_i0]
+            dst_px[1] = dst_p1x = src_x[src_j0, src_i1]
+            dst_px[2] = dst_p2x = src_x[src_j1, src_i0]
+            dst_px[3] = dst_p3x = src_x[src_j1, src_i1]
 
-            dst_py[0] = dst_py0 = src_y[src_j0, src_i0]
-            dst_py[1] = dst_py1 = src_y[src_j0, src_i1]
-            dst_py[2] = dst_py2 = src_y[src_j1, src_i0]
-            dst_py[3] = dst_py3 = src_y[src_j1, src_i1]
+            dst_py[0] = dst_p0y = src_y[src_j0, src_i0]
+            dst_py[1] = dst_p1y = src_y[src_j0, src_i1]
+            dst_py[2] = dst_p2y = src_y[src_j1, src_i0]
+            dst_py[3] = dst_p3y = src_y[src_j1, src_i1]
 
             dst_pi = np.floor((dst_px - dst_x0) / dst_res).astype(np.int64)
             dst_pj = np.floor((dst_py - dst_y0) / dst_res).astype(np.int64)
@@ -90,31 +114,38 @@ def reproject(src_values: np.ndarray,
             if dst_j_max >= dst_height:
                 dst_j_max = dst_height - 1
 
-            det_a = _fdet(dst_px0, dst_py0, dst_px1, dst_py1, dst_px2, dst_py2)
-            det_b = _fdet(dst_px3, dst_py3, dst_px2, dst_py2, dst_px1, dst_py1)
+            # u from p0 right to p1, v from p0 down to p2
+            det_a = _fdet(dst_p0x, dst_p0y, dst_p1x, dst_p1y, dst_p2x, dst_p2y)
+            # u from p3 left to p2, v from p3 up to p1
+            det_b = _fdet(dst_p3x, dst_p3y, dst_p2x, dst_p2y, dst_p1x, dst_p1y)
             for dst_j in range(dst_j_min, dst_j_max + 1):
                 dst_y = dst_y0 + dst_j * dst_res
                 for dst_i in range(dst_i_min, dst_i_max + 1):
                     dst_x = dst_x0 + dst_i * dst_res
 
-                    # TODO: test which Ps are valid
+                    # TODO: use two other combinations,
+                    #       if one of the dst_px<n>,dst_py<n> pairs is missing.
+                    # TODO: allow returning just src_i + u, src_j + v.
+                    #       They can later be used to reproject all variables fast.
+                    # TODO: allow returning just src_i + u, src_j + v.
+                    #       They can later be used to reproject all variables fast.
 
                     src_i = -1
                     src_j = -1
                     if det_a != 0.0:
-                        u = _fu(dst_x, dst_y, dst_px0, dst_py0, dst_px2, dst_py2) / det_a
-                        v = _fv(dst_x, dst_y, dst_px0, dst_py0, dst_px1, dst_py1) / det_a
+                        u = _fu(dst_x, dst_y, dst_p0x, dst_p0y, dst_p2x, dst_p2y) / det_a
+                        v = _fv(dst_x, dst_y, dst_p0x, dst_p0y, dst_p1x, dst_p1y) / det_a
                         if u >= u_min and v >= v_min and u + v <= uv_max:
                             src_i = src_i0 if u < 0.5 else src_i1
                             src_j = src_j0 if v < 0.5 else src_j1
                     if src_i == -1 and det_b != 0.0:
-                        u = _fu(dst_x, dst_y, dst_px3, dst_py3, dst_px1, dst_py1) / det_b
-                        v = _fv(dst_x, dst_y, dst_px3, dst_py3, dst_px2, dst_py2) / det_b
+                        u = _fu(dst_x, dst_y, dst_p3x, dst_p3y, dst_p1x, dst_p1y) / det_b
+                        v = _fv(dst_x, dst_y, dst_p3x, dst_p3y, dst_p2x, dst_p2y) / det_b
                         if u >= u_min and v >= v_min and u + v <= uv_max:
                             src_i = src_i1 if u < 0.5 else src_i0
                             src_j = src_j1 if v < 0.5 else src_j0
                     if src_i != -1:
-                        dst_values[dst_j, dst_i] = src_values[src_j, src_i]
+                        dst_values[..., dst_j, dst_i] = src_values[..., src_j, src_i]
 
 
 def compute_output_geom(src_ds: xr.Dataset,
@@ -125,10 +156,11 @@ def compute_output_geom(src_ds: xr.Dataset,
                         denom_y: int = 1,
                         delta: float = 1e-10) -> ImageGeom:
     src_x, src_y, normalized_lon = _get_2d_coords(src_ds, x_name=x_name, y_name=y_name)
-    src_x_x_diff = src_x.diff(dim='x')
-    src_x_y_diff = src_x.diff(dim='y')
-    src_y_x_diff = src_y.diff(dim='x')
-    src_y_y_diff = src_y.diff(dim='y')
+    dim_y, dim_x = src_x.dims
+    src_x_x_diff = src_x.diff(dim=dim_x)
+    src_x_y_diff = src_x.diff(dim=dim_y)
+    src_y_x_diff = src_y.diff(dim=dim_x)
+    src_y_y_diff = src_y.diff(dim=dim_y)
     src_x_x_diff_sq = np.square(src_x_x_diff)
     src_x_y_diff_sq = np.square(src_x_y_diff)
     src_y_x_diff_sq = np.square(src_y_x_diff)
@@ -185,8 +217,8 @@ def _is_2d_var(var: xr.DataArray, coord_var: xr.DataArray) -> bool:
 
 
 def _is_crossing_antimeridian(lon_var: xr.DataArray):
-    dim_x = lon_var.dims[-1]
-    dim_y = lon_var.dims[-2]
+    dim_y, dim_x = lon_var.dims
+    # noinspection PyTypeChecker
     return abs(lon_var.diff(dim=dim_x)).max() > 180.0 or \
            abs(lon_var.diff(dim=dim_y)).max() > 180.0
 
@@ -213,7 +245,7 @@ def reproject_dataset(src_ds: xr.Dataset,
                       x_name: str = 'lon',
                       y_name: str = 'lat',
                       output_geom: ImageGeom = None,
-                      delta: float = 1e-3):
+                      delta: float = 1e-3) -> Optional[xr.Dataset]:
     src_x, src_y, normalized_lon = _get_2d_coords(src_ds, x_name=x_name, y_name=y_name)
 
     if var_names is None:
@@ -234,26 +266,64 @@ def reproject_dataset(src_ds: xr.Dataset,
         src_vars.append(src_var)
 
     if output_geom is None:
-        output_geom = compute_output_geom(src_ds)
-    dst_width, dst_height, dst_x_min, dst_y_min, dst_res = output_geom
+        output_geom = compute_output_geom(src_ds, x_name=x_name, y_name=y_name)
+        dst_width, dst_height, dst_x_min, dst_y_min, dst_res = output_geom
+    else:
+        dst_width, dst_height, dst_x_min, dst_y_min, dst_res = output_geom
+        dst_x_max = dst_x_min + dst_res * dst_width
+        dst_y_max = dst_y_min + dst_res * dst_height
+        bbox = np.logical_and(np.logical_and(src_x >= dst_x_min, src_x <= dst_x_max),
+                              np.logical_and(src_y >= dst_y_min, src_y <= dst_y_max))
+        dim_y, dim_x = src_x.dims
+        src_i = src_ds[dim_x].where(bbox)
+        src_j = src_ds[dim_y].where(bbox)
+        i_min = src_i.min()
+        i_max = src_i.max()
+        j_min = src_j.min()
+        j_max = src_j.max()
+        if not np.isfinite(i_min) or not np.isfinite(j_min) \
+                or not np.isfinite(i_max) or not np.isfinite(j_max):
+            return None
+        src_width, src_height = src_x.shape
+        i1 = int(i_min)
+        if i1 > 0:
+            i1 -= 1
+        i2 = int(i_max + 1)
+        if i2 < src_width:
+            i2 += 1
+        j1 = int(j_min)
+        if j1 > 0:
+            j1 -= 1
+        j2 = int(j_max + 1)
+        if j2 < src_height:
+            j2 += 1
+        if i1 > 0 or j1 > 0 or i2 < src_width or j2 < src_height:
+            print(80 * '_')
+            i_slice = slice(i1, i2)
+            j_slice = slice(j1, j2)
+            dim_y, dim_x = src_x.dims
+            indexers = {dim_x: i_slice, dim_y: j_slice}
+            src_x = src_x.isel(**indexers)
+            src_y = src_y.isel(**indexers)
+            src_vars = tuple(src_var.isel(**indexers) for src_var in src_vars)
 
-    dims = (y_name, x_name)
-    # TODO: add bnds vars too
-    x_var = xr.DataArray(np.linspace(dst_x_min, dst_x_min + (dst_width - 1) * dst_res,
+    x_var = xr.DataArray(np.linspace(dst_x_min, dst_x_min + dst_res * (dst_width - 1),
                                      num=dst_width, dtype=np.float64), dims=x_name)
-    y_var = xr.DataArray(np.linspace(dst_y_min, dst_y_min + (dst_height - 1) * dst_res,
+    y_var = xr.DataArray(np.linspace(dst_y_min, dst_y_min + dst_res * (dst_height - 1),
                                      num=dst_height, dtype=np.float64), dims=y_name)
     coords = {
         x_name: _denormalize_lon(x_var) if normalized_lon else x_var,
         y_name: y_var
     }
+    dims = (y_name, x_name)
 
     src_x_values = src_x.values
     src_y_values = src_y.values
 
     dst_vars = dict()
     for src_var in src_vars:
-        dst_var_values = np.full((dst_height, dst_width), np.nan, dtype=src_var.dtype)
+        dst_var_shape = src_var.shape[0:-2] + (dst_height, dst_width)
+        dst_var_values = np.full(dst_var_shape, np.nan, dtype=src_var.dtype)
         reproject(src_var.values,
                   src_x_values,
                   src_y_values,
@@ -262,6 +332,12 @@ def reproject_dataset(src_ds: xr.Dataset,
                   dst_y_min,
                   dst_res,
                   delta=delta)
-        dst_vars[src_var.name] = xr.DataArray(dst_var_values, dims=dims, coords=coords, attrs=src_var.attrs)
+        dst_var_dims = src_var.dims[0:-2] + dims
+        dst_var_coords = dict(src_var.coords)
+        dst_var_coords.update(**coords)
+        dst_vars[src_var.name] = xr.DataArray(dst_var_values,
+                                              dims=dst_var_dims,
+                                              coords=dst_var_coords,
+                                              attrs=src_var.attrs)
 
     return xr.Dataset(dst_vars, attrs=src_ds.attrs)
