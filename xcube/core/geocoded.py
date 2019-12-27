@@ -73,6 +73,113 @@ def reproject(src_values: np.ndarray,
     u_min = v_min = -delta
     uv_max = 1.0 + 2 * delta
 
+    dst_values[..., :, :] = np.nan
+
+    for src_j0 in range(src_height - 1):
+        for src_i0 in range(src_width - 1):
+            src_i1 = src_i0 + 1
+            src_j1 = src_j0 + 1
+
+            dst_px[0] = dst_p0x = src_x[src_j0, src_i0]
+            dst_px[1] = dst_p1x = src_x[src_j0, src_i1]
+            dst_px[2] = dst_p2x = src_x[src_j1, src_i0]
+            dst_px[3] = dst_p3x = src_x[src_j1, src_i1]
+
+            dst_py[0] = dst_p0y = src_y[src_j0, src_i0]
+            dst_py[1] = dst_p1y = src_y[src_j0, src_i1]
+            dst_py[2] = dst_p2y = src_y[src_j1, src_i0]
+            dst_py[3] = dst_p3y = src_y[src_j1, src_i1]
+
+            dst_pi = np.floor((dst_px - dst_x0) / dst_res).astype(np.int64)
+            dst_pj = np.floor((dst_py - dst_y0) / dst_res).astype(np.int64)
+
+            dst_i_min = np.min(dst_pi)
+            dst_i_max = np.max(dst_pi)
+            dst_j_min = np.min(dst_pj)
+            dst_j_max = np.max(dst_pj)
+
+            if dst_i_max < 0 \
+                    or dst_j_max < 0 \
+                    or dst_i_min >= dst_width \
+                    or dst_j_min >= dst_height:
+                continue
+
+            if dst_i_min < 0:
+                dst_i_min = 0
+
+            if dst_i_max >= dst_width:
+                dst_i_max = dst_width - 1
+
+            if dst_j_min < 0:
+                dst_j_min = 0
+
+            if dst_j_max >= dst_height:
+                dst_j_max = dst_height - 1
+
+            # u from p0 right to p1, v from p0 down to p2
+            det_a = _fdet(dst_p0x, dst_p0y, dst_p1x, dst_p1y, dst_p2x, dst_p2y)
+            # u from p3 left to p2, v from p3 up to p1
+            det_b = _fdet(dst_p3x, dst_p3y, dst_p2x, dst_p2y, dst_p1x, dst_p1y)
+
+            if np.isnan(det_a) or np.isnan(det_b):
+                # print('no plane at:', src_i0, src_j0)
+                continue
+
+            for dst_j in range(dst_j_min, dst_j_max + 1):
+                dst_y = dst_y0 + dst_j * dst_res
+                for dst_i in range(dst_i_min, dst_i_max + 1):
+                    dst_x = dst_x0 + dst_i * dst_res
+
+                    # TODO: use two other combinations,
+                    #       if one of the dst_px<n>,dst_py<n> pairs is missing.
+
+                    if not np.isnan(dst_values[..., dst_j, dst_i]):
+                        # print('already set:', src_i0, src_j0, '-->', dst_i, dst_j)
+                        continue
+
+                    src_i = -1
+                    src_j = -1
+                    if det_a != 0.0:
+                        u = _fu(dst_x, dst_y, dst_p0x, dst_p0y, dst_p2x, dst_p2y) / det_a
+                        v = _fv(dst_x, dst_y, dst_p0x, dst_p0y, dst_p1x, dst_p1y) / det_a
+                        if u >= u_min and v >= v_min and u + v <= uv_max:
+                            src_i = src_i0 if u < 0.5 else src_i1
+                            src_j = src_j0 if v < 0.5 else src_j1
+                    if src_i == -1 and det_b != 0.0:
+                        u = _fu(dst_x, dst_y, dst_p3x, dst_p3y, dst_p1x, dst_p1y) / det_b
+                        v = _fv(dst_x, dst_y, dst_p3x, dst_p3y, dst_p2x, dst_p2y) / det_b
+                        if u >= u_min and v >= v_min and u + v <= uv_max:
+                            src_i = src_i1 if u < 0.5 else src_i0
+                            src_j = src_j1 if v < 0.5 else src_j0
+                    if src_i != -1:
+                        dst_values[..., dst_j, dst_i] = src_values[..., src_j, src_i]
+
+
+@nb.jit(nopython=True, cache=True)
+def compute_source_pixels(src_x: np.ndarray,
+                          src_y: np.ndarray,
+                          dst_src_i: np.ndarray,
+                          dst_src_j: np.ndarray,
+                          dst_x0: float,
+                          dst_y0: float,
+                          dst_res: float,
+                          fractions: bool = False,
+                          delta: float = 1e-3):
+    src_width = src_x.shape[-1]
+    src_height = src_x.shape[-2]
+
+    dst_width = dst_src_i.shape[-1]
+    dst_height = dst_src_i.shape[-2]
+
+    dst_px = np.zeros(4, dtype=src_x.dtype)
+    dst_py = np.zeros(4, dtype=src_y.dtype)
+
+    dst_src_i[:, :] = np.nan
+    dst_src_j[:, :] = np.nan
+
+    u_min = v_min = -delta
+    uv_max = 1.0 + 2 * delta
+
     for src_j0 in range(src_height - 1):
         for src_i0 in range(src_width - 1):
             src_i1 = src_i0 + 1
@@ -125,27 +232,70 @@ def reproject(src_values: np.ndarray,
 
                     # TODO: use two other combinations,
                     #       if one of the dst_px<n>,dst_py<n> pairs is missing.
-                    # TODO: allow returning just src_i + u, src_j + v.
-                    #       They can later be used to reproject all variables fast.
-                    # TODO: allow returning just src_i + u, src_j + v.
-                    #       They can later be used to reproject all variables fast.
 
-                    src_i = -1
-                    src_j = -1
+                    src_i = src_j = -1
+
                     if det_a != 0.0:
                         u = _fu(dst_x, dst_y, dst_p0x, dst_p0y, dst_p2x, dst_p2y) / det_a
                         v = _fv(dst_x, dst_y, dst_p0x, dst_p0y, dst_p1x, dst_p1y) / det_a
                         if u >= u_min and v >= v_min and u + v <= uv_max:
-                            src_i = src_i0 if u < 0.5 else src_i1
-                            src_j = src_j0 if v < 0.5 else src_j1
+                            if fractions:
+                                src_i = src_i0 + u
+                                src_j = src_j0 + v
+                            else:
+                                src_i = src_i0 if u < 0.5 else src_i1
+                                src_j = src_j0 if v < 0.5 else src_j1
                     if src_i == -1 and det_b != 0.0:
                         u = _fu(dst_x, dst_y, dst_p3x, dst_p3y, dst_p1x, dst_p1y) / det_b
                         v = _fv(dst_x, dst_y, dst_p3x, dst_p3y, dst_p2x, dst_p2y) / det_b
                         if u >= u_min and v >= v_min and u + v <= uv_max:
-                            src_i = src_i1 if u < 0.5 else src_i0
-                            src_j = src_j1 if v < 0.5 else src_j0
+                            if fractions:
+                                src_i = src_i1 - u
+                                src_j = src_j1 - v
+                            else:
+                                src_i = src_i1 if u < 0.5 else src_i0
+                                src_j = src_j1 if v < 0.5 else src_j0
                     if src_i != -1:
-                        dst_values[..., dst_j, dst_i] = src_values[..., src_j, src_i]
+                        dst_src_i[dst_j, dst_i] = src_i
+                        dst_src_j[dst_j, dst_i] = src_j
+
+
+@nb.jit(nopython=True, cache=True)
+def extract_source_pixels(src_values: np.ndarray,
+                          dst_src_i: np.ndarray,
+                          dst_src_j: np.ndarray,
+                          dst_values: np.ndarray,
+                          fill_value: float = np.nan):
+    src_width = src_values.shape[-1]
+    src_height = src_values.shape[-2]
+
+    dst_width = dst_values.shape[-1]
+    dst_height = dst_values.shape[-2]
+
+    # noinspection PyUnusedLocal
+    src_i: int = 0
+    # noinspection PyUnusedLocal
+    src_j: int = 0
+
+    for dst_j in range(dst_height):
+        for dst_i in range(dst_width):
+            src_i_f = dst_src_i[dst_j, dst_i]
+            src_j_f = dst_src_j[dst_j, dst_i]
+            if np.isnan(src_i_f) or np.isnan(src_j_f):
+                dst_values[..., dst_j, dst_i] = fill_value
+            else:
+                # TODO: this corresponds to method "nearest": allow for other methods
+                src_i = int(src_i_f + 0.49999)
+                src_j = int(src_j_f + 0.49999)
+                if src_i < 0:
+                    src_i = 0
+                elif src_i >= src_width:
+                    src_i = src_width - 1
+                if src_j < 0:
+                    src_j = 0
+                elif src_j >= src_height:
+                    src_j = src_height - 1
+                dst_values[..., dst_j, dst_i] = src_values[..., src_j, src_i]
 
 
 def compute_output_geom(src_ds: xr.Dataset,
@@ -242,10 +392,23 @@ def _denormalize_lon(lon_var: xr.DataArray):
 
 def reproject_dataset(src_ds: xr.Dataset,
                       var_names: Sequence[str] = None,
-                      x_name: str = 'lon',
-                      y_name: str = 'lat',
+                      x_name: str = None,
+                      y_name: str = None,
                       output_geom: ImageGeom = None,
                       delta: float = 1e-3) -> Optional[xr.Dataset]:
+    if not x_name:
+        for x_name in ('x', 'xc', 'lon', 'long', 'longitude'):
+            if x_name in src_ds and src_ds[x_name].ndim == 2:
+                break
+    if not y_name:
+        for y_name in ('y', 'yc', 'lat', 'latitude'):
+            if y_name in src_ds and src_ds[y_name].ndim == 2:
+                break
+    if not x_name:
+        raise ValueError('cannot detect two-dimensional X coordinate variable')
+    if not y_name:
+        raise ValueError('cannot detect two-dimensional Y coordinate variable')
+
     src_x, src_y, normalized_lon = _get_2d_coords(src_ds, x_name=x_name, y_name=y_name)
 
     if var_names is None:
@@ -298,7 +461,6 @@ def reproject_dataset(src_ds: xr.Dataset,
         if j2 < src_height:
             j2 += 1
         if i1 > 0 or j1 > 0 or i2 < src_width or j2 < src_height:
-            print(80 * '_')
             i_slice = slice(i1, i2)
             j_slice = slice(j1, j2)
             dim_y, dim_x = src_x.dims

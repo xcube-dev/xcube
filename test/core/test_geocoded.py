@@ -4,7 +4,8 @@ import unittest
 import numpy as np
 import xarray as xr
 
-from xcube.core.geocoded import compute_output_geom, reproject_dataset, ImageGeom
+from xcube.core.geocoded import compute_output_geom, reproject_dataset, ImageGeom, compute_source_pixels, \
+    extract_source_pixels
 
 TEST_INPUT = '../xcube-gen-bc/test/inputdata/O_L2_0001_SNS_2017104102450_v1.0.nc'
 
@@ -144,7 +145,7 @@ class ReprojectTest(unittest.TestCase):
                                            [nan, 3.0, 3.0, 3.0, 4.0, 4.0, 4.0, 4.0, 2.0, nan, nan, nan, nan],
                                            [3.0, 3.0, 3.0, 3.0, 3.0, 4.0, 4.0, 2.0, 2.0, 2.0, nan, nan, nan],
                                            [nan, 3.0, 3.0, 3.0, 3.0, 3.0, 4.0, 2.0, 2.0, 2.0, 2.0, nan, nan],
-                                           [nan, 3.0, 3.0, 3.0, 3.0, 1.0, 1.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.],
+                                           [nan, 3.0, 3.0, 3.0, 3.0, 1.0, 1.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0],
                                            [nan, 3.0, 3.0, 1.0, 1.0, 1.0, 1.0, 2.0, 2.0, 2.0, 2.0, nan, nan],
                                            [nan, 3.0, 1.0, 1.0, 1.0, 1.0, 1.0, 2.0, 2.0, nan, nan, nan, nan],
                                            [nan, nan, 1.0, 1.0, 1.0, 1.0, 1.0, 2.0, nan, nan, nan, nan, nan],
@@ -221,6 +222,80 @@ class ReprojectTest(unittest.TestCase):
         self.assertEqual(('lat', 'lon'), rad.dims)
 
         return lon, lat, rad
+
+    def test_compute_source_pixels(self):
+        src_ds = self.new_source_dataset()
+
+        src_i = np.full((13, 13), np.nan, dtype=np.float64)
+        src_j = np.full((13, 13), np.nan, dtype=np.float64)
+        compute_source_pixels(src_ds.lon.values,
+                              src_ds.lat.values,
+                              src_i,
+                              src_j,
+                              0.0,
+                              50.0,
+                              0.5)
+
+        # print(xr.DataArray(src_i, dims=('y', 'x')))
+        print(xr.DataArray(src_j, dims=('y', 'x')))
+
+        np.testing.assert_almost_equal(np.floor(src_i + 0.5),
+                                       np.array([[nan, nan, nan, nan, 1.0, nan, nan, nan, nan, nan, nan, nan, nan],
+                                                 [nan, nan, nan, 1.0, 1.0, 1.0, nan, nan, nan, nan, nan, nan, nan],
+                                                 [nan, nan, 0.0, 1.0, 1.0, 1.0, 1.0, nan, nan, nan, nan, nan, nan],
+                                                 [nan, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 1.0, 1.0, nan, nan, nan, nan],
+                                                 [0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 1.0, 1.0, nan, nan, nan],
+                                                 [nan, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 1.0, 1.0, nan, nan],
+                                                 [nan, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0],
+                                                 [nan, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 1.0, nan, nan],
+                                                 [nan, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 1.0, nan, nan, nan, nan],
+                                                 [nan, nan, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, nan, nan, nan, nan, nan],
+                                                 [nan, nan, 0.0, 0.0, 0.0, 0.0, nan, nan, nan, nan, nan, nan, nan],
+                                                 [nan, nan, 0.0, 0.0, nan, nan, nan, nan, nan, nan, nan, nan, nan],
+                                                 [nan, nan, 0.0, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan]],
+                                                dtype=np.float64))
+        np.testing.assert_almost_equal(np.floor(src_j + 0.5),
+                                       np.array([[nan, nan, nan, nan, 1.0, nan, nan, nan, nan, nan, nan, nan, nan],
+                                                 [nan, nan, nan, 1.0, 1.0, 1.0, nan, nan, nan, nan, nan, nan, nan],
+                                                 [nan, nan, 1.0, 1.0, 1.0, 1.0, 1.0, nan, nan, nan, nan, nan, nan],
+                                                 [nan, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.0, nan, nan, nan, nan],
+                                                 [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0, nan, nan, nan],
+                                                 [nan, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0, nan, nan],
+                                                 [nan, 1.0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+                                                 [nan, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, nan, nan],
+                                                 [nan, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, nan, nan, nan, nan],
+                                                 [nan, nan, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, nan, nan, nan, nan, nan],
+                                                 [nan, nan, 0.0, 0.0, 0.0, 0.0, nan, nan, nan, nan, nan, nan, nan],
+                                                 [nan, nan, 0.0, 0.0, nan, nan, nan, nan, nan, nan, nan, nan, nan],
+                                                 [nan, nan, 0.0, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan]],
+                                                dtype=np.float64))
+
+        dst_rad = np.zeros((13, 13), dtype=np.float64)
+
+        extract_source_pixels(src_ds.rad.values,
+                              src_i,
+                              src_j,
+                              dst_rad)
+
+        print(xr.DataArray(dst_rad, dims=('y', 'x')))
+
+        np.testing.assert_almost_equal(dst_rad,
+                                       np.array([
+                                           [nan, nan, nan, nan, 4.0, nan, nan, nan, nan, nan, nan, nan, nan],
+                                           [nan, nan, nan, 4.0, 4.0, 4.0, nan, nan, nan, nan, nan, nan, nan],
+                                           [nan, nan, 3.0, 4.0, 4.0, 4.0, 4.0, nan, nan, nan, nan, nan, nan],
+                                           [nan, 3.0, 3.0, 3.0, 4.0, 4.0, 4.0, 4.0, 2.0, nan, nan, nan, nan],
+                                           [3.0, 3.0, 3.0, 3.0, 3.0, 4.0, 4.0, 2.0, 2.0, 2.0, nan, nan, nan],
+                                           [nan, 3.0, 3.0, 3.0, 3.0, 3.0, 4.0, 2.0, 2.0, 2.0, 2.0, nan, nan],
+                                           [nan, 3.0, 3.0, 3.0, 3.0, 1.0, 1.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0],
+                                           [nan, 3.0, 3.0, 1.0, 1.0, 1.0, 1.0, 2.0, 2.0, 2.0, 2.0, nan, nan],
+                                           [nan, 3.0, 1.0, 1.0, 1.0, 1.0, 1.0, 2.0, 2.0, nan, nan, nan, nan],
+                                           [nan, nan, 1.0, 1.0, 1.0, 1.0, 1.0, 2.0, nan, nan, nan, nan, nan],
+                                           [nan, nan, 1.0, 1.0, 1.0, 1.0, nan, nan, nan, nan, nan, nan, nan],
+                                           [nan, nan, 1.0, 1.0, nan, nan, nan, nan, nan, nan, nan, nan, nan],
+                                           [nan, nan, 1.0, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan]
+                                       ],
+                                           dtype=np.float64))
 
     def test_compute_output_geom(self):
         src_ds = self.new_source_dataset()
