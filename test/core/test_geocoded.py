@@ -27,7 +27,7 @@ class ReprojectTest(unittest.TestCase):
         src_ds['longitude'] = xr.DataArray(src_ds.longitude.values, dims=('rows', 'columns'))
         src_ds['latitude'] = xr.DataArray(src_ds.latitude.values, dims=('rows', 'columns'))
 
-        output_geom = compute_output_geom(src_ds, x_name='longitude', y_name='latitude')
+        output_geom = compute_output_geom(src_ds, xy_names=('longitude', 'latitude'))
         self.assertEqual(20259, output_geom.width)
         self.assertEqual(7386, output_geom.height)
         self.assertAlmostEqual(-11.918857, output_geom.x_min)

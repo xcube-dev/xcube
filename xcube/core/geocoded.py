@@ -1,5 +1,5 @@
 # The MIT License (MIT)
-# Copyright (c) 2019 by the xcube development team and contributors
+# Copyright (c) 2020 by the xcube development team and contributors
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of
 # this software and associated documentation files (the "Software"), to deal in
@@ -32,7 +32,16 @@ LAT_COORD_VAR_NAMES = ('lat', 'latitude')
 X_COORD_VAR_NAMES = ('x', 'xc') + LON_COORD_VAR_NAMES
 Y_COORD_VAR_NAMES = ('y', 'yc') + LAT_COORD_VAR_NAMES
 
-GeoCoding = collections.namedtuple('GeoCoding', ['x', 'y', 'x_name', 'y_name', 'is_lon_normalized'])
+
+class GeoCoding(collections.namedtuple('GeoCoding', ['x', 'y', 'x_name', 'y_name', 'is_lon_normalized'])):
+
+    @property
+    def xy(self) -> Tuple[xr.DataArray, xr.DataArray]:
+        return self.x, self.y
+
+    @property
+    def xy_names(self) -> Tuple[str, str]:
+        return self.x_name, self.y_name
 
 
 class ImageGeom(collections.namedtuple('GeoCoding', ['width', 'height', 'x_min', 'y_min', 'res'])):
@@ -59,8 +68,7 @@ class ImageGeom(collections.namedtuple('GeoCoding', ['width', 'height', 'x_min',
 def reproject_dataset(src_ds: xr.Dataset,
                       var_names: Union[str, Sequence[str]] = None,
                       geo_coding: GeoCoding = None,
-                      x_name: str = None,
-                      y_name: str = None,
+                      xy_names: Tuple[str, str] = None,
                       output_geom: ImageGeom = None,
                       delta: float = 1e-3) -> Optional[xr.Dataset]:
     """
@@ -69,15 +77,16 @@ def reproject_dataset(src_ds: xr.Dataset,
     :param src_ds: Source dataset.
     :param var_names: Optional variable name or sequence of variable names.
     :param geo_coding: Optional dataset geo-coding.
-    :param x_name: Name of the x-coordinates in *dataset*. Ignored if *geo_coding* is given.
-    :param y_name: Name of the y-coordinates in *dataset*. Ignored if *geo_coding* is given.
+    :param xy_names: Optional tuple of the x- and y-coordinate variables in *dataset*. Ignored if *geo_coding* is given.
     :param output_geom: Optional output geometry. If not given, output geometry will be computed
         to spatially fit *dataset* and to retain its spatial resolution.
     :param delta:
     :return:
     """
-    src_geo_coding = geo_coding if geo_coding is not None else get_geo_coding(src_ds, x_name=x_name, y_name=y_name)
-    src_x, src_y, x_name, y_name, is_lon_normalized = src_geo_coding
+    src_geo_coding = geo_coding if geo_coding is not None else get_geo_coding(src_ds, xy_names=xy_names)
+    src_x, src_y = src_geo_coding.xy
+    x_name, y_name = src_geo_coding.xy_names
+    is_lon_normalized = src_geo_coding.is_lon_normalized
 
     src_vars = select_variables(src_ds, var_names, geo_coding=src_geo_coding)
 
@@ -88,8 +97,10 @@ def reproject_dataset(src_ds: xr.Dataset,
         src_ds = select_spatial_subset(src_ds, output_geom.bbox, geo_coding=src_geo_coding)
         if src_ds is None:
             return None
-        src_geo_coding = get_geo_coding(src_ds, x_name=src_geo_coding.x_name, y_name=src_geo_coding.y_name)
-        src_x, src_y = src_geo_coding.x, src_geo_coding.y
+        src_geo_coding = GeoCoding(x=src_ds[x_name], y=src_ds[y_name],
+                                   x_name=x_name, y_name=y_name,
+                                   is_lon_normalized=is_lon_normalized)
+        src_x, src_y = src_geo_coding.xy
 
     dst_width, dst_height, dst_x_min, dst_y_min, dst_res = output_geom
 
@@ -132,20 +143,19 @@ def reproject_dataset(src_ds: xr.Dataset,
 def select_variables(dataset,
                      var_names: Union[str, Sequence[str]] = None,
                      geo_coding: GeoCoding = None,
-                     x_name: str = None,
-                     y_name: str = None) -> Mapping[str, xr.DataArray]:
+                     xy_names: Tuple[str, str] = None) -> Mapping[str, xr.DataArray]:
     """
     Select variables from *dataset*.
 
     :param dataset: Source dataset.
     :param var_names: Optional variable name or sequence of variable names.
     :param geo_coding: Optional dataset geo-coding.
-    :param x_name: Name of the x-coordinates in *dataset*. Ignored if *geo_coding* is given.
-    :param y_name: Name of the y-coordinates in *dataset*. Ignored if *geo_coding* is given.
+    :param xy_names: Optional tuple of the x- and y-coordinate variables in *dataset*. Ignored if *geo_coding* is given.
     :return: The selected variables as a variable name to ``xr.DataArray`` mapping
     """
-    geo_coding = geo_coding if geo_coding is not None else get_geo_coding(dataset, x_name=x_name, y_name=y_name)
-    src_x, _, x_name, y_name, _ = geo_coding
+    geo_coding = geo_coding if geo_coding is not None else get_geo_coding(dataset, xy_names=xy_names)
+    src_x = geo_coding.x
+    x_name, y_name = geo_coding.xy_names
     if var_names is None:
         var_names = [var_name for var_name, var in dataset.data_vars.items()
                      if var_name not in (x_name, y_name) and _is_2d_var(var, src_x)]
@@ -167,26 +177,24 @@ def select_variables(dataset,
 def select_spatial_subset(dataset: xr.Dataset,
                           bbox: Tuple[float, float, float, float],
                           geo_coding: GeoCoding = None,
-                          x_name: str = None,
-                          y_name: str = None) -> Optional[xr.Dataset]:
+                          xy_names: Tuple[str, str] = None) -> Optional[xr.Dataset]:
     """
     Select a spatial subset of *dataset* for the bounding box *bbox*.
 
     :param dataset: Source dataset.
     :param bbox: Bounding box (x_min, y_min, x_max, y_max) given in the same CS as the *dataset* geo-coding.
     :param geo_coding: Optional dataset geo-coding.
-    :param x_name: Name of the x-coordinates in *dataset*. Ignored if *geo_coding* is given.
-    :param y_name: Name of the y-coordinates in *dataset*. Ignored if *geo_coding* is given.
+    :param xy_names: Optional tuple of the x- and y-coordinate variables in *dataset*. Ignored if *geo_coding* is given.
     :return: Spatial dataset subset
     """
-    geo_coding = geo_coding if geo_coding is not None else get_geo_coding(dataset, x_name=x_name, y_name=y_name)
-    src_x, src_y = geo_coding.x, geo_coding.y
+    geo_coding = geo_coding if geo_coding is not None else get_geo_coding(dataset, xy_names=xy_names)
+    src_x, src_y = geo_coding.xy
     dst_x_min, dst_y_min, dst_x_max, dst_y_max = bbox
     if dst_x_min > dst_x_max:
         dst_x_max += 360.0
     bbox = np.logical_and(np.logical_and(src_x >= dst_x_min, src_x <= dst_x_max),
                           np.logical_and(src_y >= dst_y_min, src_y <= dst_y_max))
-    width, height = src_x.shape
+    height, width = src_x.shape
     dim_y, dim_x = src_x.dims
     src_i = dataset[dim_x].where(bbox)
     src_j = dataset[dim_y].where(bbox)
@@ -220,8 +228,7 @@ def select_spatial_subset(dataset: xr.Dataset,
 
 def compute_output_geom(dataset: xr.Dataset,
                         geo_coding: GeoCoding = None,
-                        x_name: str = None,
-                        y_name: str = None,
+                        xy_names: Tuple[str, str] = None,
                         oversampling: float = 1.0,
                         denom_x: int = 1,
                         denom_y: int = 1,
@@ -232,16 +239,15 @@ def compute_output_geom(dataset: xr.Dataset,
 
     :param dataset: Source dataset.
     :param geo_coding: Optional dataset geo-coding.
-    :param x_name: Name of the x-coordinates in *dataset*. Ignored if *geo_coding* is given.
-    :param y_name: Name of the y-coordinates in *dataset*. Ignored if *geo_coding* is given.
+    :param xy_names: Optional tuple of the x- and y-coordinate variables in *dataset*. Ignored if *geo_coding* is given.
     :param oversampling:
     :param denom_x:
     :param denom_y:
     :param delta:
     :return: A new image geometry (class ImageGeometry).
     """
-    geo_coding = geo_coding if geo_coding is not None else get_geo_coding(dataset, x_name=x_name, y_name=y_name)
-    src_x, src_y = geo_coding.x, geo_coding.y
+    geo_coding = geo_coding if geo_coding is not None else get_geo_coding(dataset, xy_names=xy_names)
+    src_x, src_y = geo_coding.xy
     dim_y, dim_x = src_x.dims
     src_x_x_diff = src_x.diff(dim=dim_x)
     src_x_y_diff = src_x.diff(dim=dim_y)
@@ -270,17 +276,15 @@ def compute_output_geom(dataset: xr.Dataset,
 
 
 def get_geo_coding(dataset: xr.Dataset,
-                   x_name: str = None,
-                   y_name: str = None) -> GeoCoding:
+                   xy_names: Tuple[str, str] = None) -> GeoCoding:
     """
     Get the geo-coding for given *dataset*.
 
-    :param dataset:
-    :param x_name:
-    :param y_name:
-    :return:
+    :param dataset: Source dataset.
+    :param xy_names: Optional tuple of the x- and y-coordinate variables in *dataset*.
+    :return: The source dataset's geo-coding.
     """
-    x_name, y_name = _get_dataset_xy_names(dataset, x_name=x_name, y_name=y_name)
+    x_name, y_name = _get_dataset_xy_names(dataset, xy_names=xy_names)
 
     x = _get_var(dataset, x_name)
     y = _get_var(dataset, y_name)
@@ -304,7 +308,8 @@ def get_geo_coding(dataset: xr.Dataset,
     return GeoCoding(x=x, y=y, x_name=x_name, y_name=y_name, is_lon_normalized=is_lon_normalized)
 
 
-def _get_dataset_xy_names(dataset: xr.Dataset, x_name: str = None, y_name: str = None) -> Tuple[str, str]:
+def _get_dataset_xy_names(dataset: xr.Dataset, xy_names: Tuple[str, str] = None) -> Tuple[str, str]:
+    x_name, y_name = xy_names if xy_names is not None else (None, None)
     return (_get_coord_var_name(dataset, x_name, X_COORD_VAR_NAMES, 'x'),
             _get_coord_var_name(dataset, y_name, Y_COORD_VAR_NAMES, 'y'))
 
