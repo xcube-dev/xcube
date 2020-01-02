@@ -192,12 +192,11 @@ def select_spatial_subset(dataset: xr.Dataset,
     dst_x_min, dst_y_min, dst_x_max, dst_y_max = bbox
     if dst_x_min > dst_x_max:
         dst_x_max += 360.0
-    bbox = np.logical_and(np.logical_and(src_x >= dst_x_min, src_x <= dst_x_max),
-                          np.logical_and(src_y >= dst_y_min, src_y <= dst_y_max))
-    height, width = src_x.shape
     dim_y, dim_x = src_x.dims
-    src_i = dataset[dim_x].where(bbox)
-    src_j = dataset[dim_y].where(bbox)
+    src_bbox = np.logical_and(np.logical_and(src_x >= dst_x_min, src_x <= dst_x_max),
+                          np.logical_and(src_y >= dst_y_min, src_y <= dst_y_max))
+    src_i = dataset[dim_x].where(src_bbox)
+    src_j = dataset[dim_y].where(src_bbox)
     src_i_min = src_i.min()
     src_i_max = src_i.max()
     src_j_min = src_j.min()
@@ -205,6 +204,7 @@ def select_spatial_subset(dataset: xr.Dataset,
     if not np.isfinite(src_i_min) or not np.isfinite(src_j_min) \
             or not np.isfinite(src_i_max) or not np.isfinite(src_j_max):
         return None
+    height, width = src_x.shape
     src_i1 = int(src_i_min)
     if src_i1 > 0:
         src_i1 -= 1
