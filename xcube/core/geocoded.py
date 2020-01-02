@@ -21,17 +21,345 @@
 
 import collections
 import math
-from typing import Sequence, Tuple, Optional
+from typing import Sequence, Tuple, Optional, Union, Mapping
 
 import numba as nb
 import numpy as np
 import xarray as xr
 
+LON_COORD_VAR_NAMES = ('lon', 'long', 'longitude')
+LAT_COORD_VAR_NAMES = ('lat', 'latitude')
+X_COORD_VAR_NAMES = ('x', 'xc') + LON_COORD_VAR_NAMES
+Y_COORD_VAR_NAMES = ('y', 'yc') + LAT_COORD_VAR_NAMES
 
-class ImageGeom(collections.namedtuple('ImageGeometry', ['width', 'height', 'x_min', 'y_min', 'res'])):
+GeoCoding = collections.namedtuple('GeoCoding', ['x', 'y', 'x_name', 'y_name', 'is_lon_normalized'])
+
+
+class ImageGeom(collections.namedtuple('GeoCoding', ['width', 'height', 'x_min', 'y_min', 'res'])):
     @property
     def is_crossing_antimeridian(self):
-        return self.x_min + self.width * self.res > 180.0
+        return self.x_min > self.x_max
+
+    @property
+    def x_max(self):
+        x_max = self.x_min + self.res * self.width
+        if x_max > 180.0:
+            x_max -= 360.0
+        return x_max
+
+    @property
+    def y_max(self):
+        return self.y_min + self.res * self.height
+
+    @property
+    def bbox(self):
+        return self.x_min, self.y_min, self.x_max, self.y_max
+
+
+def reproject_dataset(src_ds: xr.Dataset,
+                      var_names: Union[str, Sequence[str]] = None,
+                      geo_coding: GeoCoding = None,
+                      x_name: str = None,
+                      y_name: str = None,
+                      output_geom: ImageGeom = None,
+                      delta: float = 1e-3) -> Optional[xr.Dataset]:
+    """
+    Reproject *dataset* using its per-pixel x,y coordinates or the given *geo_coding*.
+
+    :param src_ds: Source dataset.
+    :param var_names: Optional variable name or sequence of variable names.
+    :param geo_coding: Optional dataset geo-coding.
+    :param x_name: Name of the x-coordinates in *dataset*. Ignored if *geo_coding* is given.
+    :param y_name: Name of the y-coordinates in *dataset*. Ignored if *geo_coding* is given.
+    :param output_geom: Optional output geometry. If not given, output geometry will be computed
+        to spatially fit *dataset* and to retain its spatial resolution.
+    :param delta:
+    :return:
+    """
+    src_geo_coding = geo_coding if geo_coding is not None else get_geo_coding(src_ds, x_name=x_name, y_name=y_name)
+    src_x, src_y, x_name, y_name, is_lon_normalized = src_geo_coding
+
+    src_vars = select_variables(src_ds, var_names, geo_coding=src_geo_coding)
+
+    if output_geom is None:
+        output_geom = compute_output_geom(src_ds, geo_coding=src_geo_coding)
+    else:
+        src_ds = xr.Dataset({x_name: src_x, y_name: src_y, **src_vars}, attrs=src_ds.attrs)
+        src_ds = select_spatial_subset(src_ds, output_geom.bbox, geo_coding=src_geo_coding)
+        if src_ds is None:
+            return None
+        src_geo_coding = get_geo_coding(src_ds, x_name=src_geo_coding.x_name, y_name=src_geo_coding.y_name)
+        src_x, src_y = src_geo_coding.x, src_geo_coding.y
+
+    dst_width, dst_height, dst_x_min, dst_y_min, dst_res = output_geom
+
+    x_var = xr.DataArray(np.linspace(dst_x_min, dst_x_min + dst_res * (dst_width - 1),
+                                     num=dst_width, dtype=np.float64), dims=x_name)
+    y_var = xr.DataArray(np.linspace(dst_y_min, dst_y_min + dst_res * (dst_height - 1),
+                                     num=dst_height, dtype=np.float64), dims=y_name)
+    dst_coords = {
+        x_name: _denormalize_lon(x_var) if is_lon_normalized else x_var,
+        y_name: y_var
+    }
+    dst_dims = (y_name, x_name)
+
+    src_x_values = src_x.values
+    src_y_values = src_y.values
+
+    dst_vars = dict()
+    for src_var_name, src_var in src_vars.items():
+        dst_var_shape = src_var.shape[0:-2] + (dst_height, dst_width)
+        dst_var_values = np.full(dst_var_shape, np.nan, dtype=src_var.dtype)
+        reproject(src_var.values,
+                  src_x_values,
+                  src_y_values,
+                  dst_var_values,
+                  dst_x_min,
+                  dst_y_min,
+                  dst_res,
+                  delta=delta)
+        dst_var_dims = src_var.dims[0:-2] + dst_dims
+        dst_var_coords = dict(src_var.coords)
+        dst_var_coords.update(**dst_coords)
+        dst_vars[src_var_name] = xr.DataArray(dst_var_values,
+                                              dims=dst_var_dims,
+                                              coords=dst_var_coords,
+                                              attrs=src_var.attrs)
+
+    return xr.Dataset(dst_vars, attrs=src_ds.attrs)
+
+
+def select_variables(dataset,
+                     var_names: Union[str, Sequence[str]] = None,
+                     geo_coding: GeoCoding = None,
+                     x_name: str = None,
+                     y_name: str = None) -> Mapping[str, xr.DataArray]:
+    """
+    Select variables from *dataset*.
+
+    :param dataset: Source dataset.
+    :param var_names: Optional variable name or sequence of variable names.
+    :param geo_coding: Optional dataset geo-coding.
+    :param x_name: Name of the x-coordinates in *dataset*. Ignored if *geo_coding* is given.
+    :param y_name: Name of the y-coordinates in *dataset*. Ignored if *geo_coding* is given.
+    :return: The selected variables as a variable name to ``xr.DataArray`` mapping
+    """
+    geo_coding = geo_coding if geo_coding is not None else get_geo_coding(dataset, x_name=x_name, y_name=y_name)
+    src_x, _, x_name, y_name, _ = geo_coding
+    if var_names is None:
+        var_names = [var_name for var_name, var in dataset.data_vars.items()
+                     if var_name not in (x_name, y_name) and _is_2d_var(var, src_x)]
+    elif isinstance(var_names, str):
+        var_names = (var_names,)
+    elif len(var_names) == 0:
+        raise ValueError(f'empty var_names')
+    src_vars = {}
+    for var_name in var_names:
+        src_var = dataset[var_name]
+        if not _is_2d_var(src_var, src_x):
+            raise ValueError(
+                f"cannot reproject variable {var_name!r} as its shape or dimensions "
+                f"do not match those of {x_name!r} and {y_name!r}")
+        src_vars[var_name] = src_var
+    return src_vars
+
+
+def select_spatial_subset(dataset: xr.Dataset,
+                          bbox: Tuple[float, float, float, float],
+                          geo_coding: GeoCoding = None,
+                          x_name: str = None,
+                          y_name: str = None) -> Optional[xr.Dataset]:
+    """
+    Select a spatial subset of *dataset* for the bounding box *bbox*.
+
+    :param dataset: Source dataset.
+    :param bbox: Bounding box (x_min, y_min, x_max, y_max) given in the same CS as the *dataset* geo-coding.
+    :param geo_coding: Optional dataset geo-coding.
+    :param x_name: Name of the x-coordinates in *dataset*. Ignored if *geo_coding* is given.
+    :param y_name: Name of the y-coordinates in *dataset*. Ignored if *geo_coding* is given.
+    :return: Spatial dataset subset
+    """
+    geo_coding = geo_coding if geo_coding is not None else get_geo_coding(dataset, x_name=x_name, y_name=y_name)
+    src_x, src_y = geo_coding.x, geo_coding.y
+    dst_x_min, dst_y_min, dst_x_max, dst_y_max = bbox
+    if dst_x_min > dst_x_max:
+        dst_x_max += 360.0
+    bbox = np.logical_and(np.logical_and(src_x >= dst_x_min, src_x <= dst_x_max),
+                          np.logical_and(src_y >= dst_y_min, src_y <= dst_y_max))
+    width, height = src_x.shape
+    dim_y, dim_x = src_x.dims
+    src_i = dataset[dim_x].where(bbox)
+    src_j = dataset[dim_y].where(bbox)
+    src_i_min = src_i.min()
+    src_i_max = src_i.max()
+    src_j_min = src_j.min()
+    src_j_max = src_j.max()
+    if not np.isfinite(src_i_min) or not np.isfinite(src_j_min) \
+            or not np.isfinite(src_i_max) or not np.isfinite(src_j_max):
+        return None
+    src_i1 = int(src_i_min)
+    if src_i1 > 0:
+        src_i1 -= 1
+    src_i2 = int(src_i_max + 1)
+    if src_i2 < width:
+        src_i2 += 1
+    src_j1 = int(src_j_min)
+    if src_j1 > 0:
+        src_j1 -= 1
+    src_j2 = int(src_j_max + 1)
+    if src_j2 < height:
+        src_j2 += 1
+    if src_i1 > 0 or src_j1 > 0 or src_i2 < width or src_j2 < height:
+        src_i_slice = slice(src_i1, src_i2)
+        src_j_slice = slice(src_j1, src_j2)
+        indexers = {dim_y: src_j_slice, dim_x: src_i_slice}
+        return xr.Dataset({var_name: var.isel(**indexers) for var_name, var in dataset.variables.items()
+                           if var.shape == (height, width) and var.dims[-2:] == (dim_y, dim_x)})
+    return dataset
+
+
+def compute_output_geom(dataset: xr.Dataset,
+                        geo_coding: GeoCoding = None,
+                        x_name: str = None,
+                        y_name: str = None,
+                        oversampling: float = 1.0,
+                        denom_x: int = 1,
+                        denom_y: int = 1,
+                        delta: float = 1e-10) -> ImageGeom:
+    """
+    Compute image geometry for a rectified output image that retains the source's bounding box and its
+    spatial resolution in both x and y.
+
+    :param dataset: Source dataset.
+    :param geo_coding: Optional dataset geo-coding.
+    :param x_name: Name of the x-coordinates in *dataset*. Ignored if *geo_coding* is given.
+    :param y_name: Name of the y-coordinates in *dataset*. Ignored if *geo_coding* is given.
+    :param oversampling:
+    :param denom_x:
+    :param denom_y:
+    :param delta:
+    :return: A new image geometry (class ImageGeometry).
+    """
+    geo_coding = geo_coding if geo_coding is not None else get_geo_coding(dataset, x_name=x_name, y_name=y_name)
+    src_x, src_y = geo_coding.x, geo_coding.y
+    dim_y, dim_x = src_x.dims
+    src_x_x_diff = src_x.diff(dim=dim_x)
+    src_x_y_diff = src_x.diff(dim=dim_y)
+    src_y_x_diff = src_y.diff(dim=dim_x)
+    src_y_y_diff = src_y.diff(dim=dim_y)
+    src_x_x_diff_sq = np.square(src_x_x_diff)
+    src_x_y_diff_sq = np.square(src_x_y_diff)
+    src_y_x_diff_sq = np.square(src_y_x_diff)
+    src_y_y_diff_sq = np.square(src_y_y_diff)
+    src_x_diff = np.sqrt(src_x_x_diff_sq + src_y_x_diff_sq)
+    src_y_diff = np.sqrt(src_x_y_diff_sq + src_y_y_diff_sq)
+    src_x_res = float(src_x_diff.where(src_x_diff > delta).min())
+    src_y_res = float(src_y_diff.where(src_y_diff > delta).min())
+    src_res = min(src_x_res, src_y_res) / (math.sqrt(2.0) * oversampling)
+    src_x_min = float(src_x.min())
+    src_x_max = float(src_x.max())
+    src_y_min = float(src_y.min())
+    src_y_max = float(src_y.max())
+    dst_width = 1 + math.floor((src_x_max - src_x_min) / src_res)
+    dst_height = 1 + math.floor((src_y_max - src_y_min) / src_res)
+    return ImageGeom(width=denom_x * ((dst_width + denom_x - 1) // denom_x),
+                     height=denom_y * ((dst_height + denom_y - 1) // denom_y),
+                     x_min=src_x_min,
+                     y_min=src_y_min,
+                     res=src_res)
+
+
+def get_geo_coding(dataset: xr.Dataset,
+                   x_name: str = None,
+                   y_name: str = None) -> GeoCoding:
+    """
+    Get the geo-coding for given *dataset*.
+
+    :param dataset:
+    :param x_name:
+    :param y_name:
+    :return:
+    """
+    x_name, y_name = _get_dataset_xy_names(dataset, x_name=x_name, y_name=y_name)
+
+    x = _get_var(dataset, x_name)
+    y = _get_var(dataset, y_name)
+
+    if x.ndim == 1 and y.ndim == 1:
+        x, y = xr.broadcast(y, x)
+    if x.ndim != 2 or y.ndim != 2:
+        raise ValueError(f'coordinate variables {x_name!r} and {y_name!r} must both have either one or two dimensions')
+
+    if x.shape != y.shape or x.dims != y.dims:
+        raise ValueError(f"coordinate variables {x_name!r} and {y_name!r} must have same shape and dimensions")
+
+    height, width = x.shape
+    if width < 2 or height < 2:
+        raise ValueError(f"size in each dimension of {x_name!r} and {y_name!r} must be greater two")
+
+    is_lon_normalized = False
+    if x_name in LON_COORD_VAR_NAMES:
+        x, is_lon_normalized = _maybe_normalise_2d_lon(x)
+
+    return GeoCoding(x=x, y=y, x_name=x_name, y_name=y_name, is_lon_normalized=is_lon_normalized)
+
+
+def _get_dataset_xy_names(dataset: xr.Dataset, x_name: str = None, y_name: str = None) -> Tuple[str, str]:
+    return (_get_coord_var_name(dataset, x_name, X_COORD_VAR_NAMES, 'x'),
+            _get_coord_var_name(dataset, y_name, Y_COORD_VAR_NAMES, 'y'))
+
+
+def _get_coord_var_name(dataset: xr.Dataset, coord_name: Optional[str], coord_var_names: Sequence[str], dim_name: str):
+    if not coord_name:
+        coord_name = _find_coord_var_name(dataset, coord_var_names, 2)
+        if coord_name is None:
+            coord_name = _find_coord_var_name(dataset, coord_var_names, 1)
+            if not coord_name:
+                raise ValueError(f'cannot detect {dim_name!r}-coordinate variable in dataset')
+    elif coord_name not in dataset:
+        raise ValueError(f'missing coordinate variable {coord_name!r} in dataset')
+    return coord_name
+
+
+def _find_coord_var_name(dataset: xr.Dataset, coord_var_names: Sequence[str], ndim: int) -> Optional[str]:
+    for coord_var_name in coord_var_names:
+        if coord_var_name in dataset and dataset[coord_var_name].ndim == ndim:
+            return coord_var_name
+    return None
+
+
+def _get_var(src_ds: xr.Dataset, name: str) -> xr.DataArray:
+    if name not in src_ds:
+        raise ValueError(f'missing 2D coordinate variable {name!r}')
+    return src_ds[name]
+
+
+def _is_2d_var(var: xr.DataArray, two_d_coord_var: xr.DataArray) -> bool:
+    return var.ndim >= 2 and var.shape[-2:] == two_d_coord_var.shape and var.dims[-2:] == two_d_coord_var.dims
+
+
+def _is_crossing_antimeridian(lon_var: xr.DataArray):
+    dim_y, dim_x = lon_var.dims
+    # noinspection PyTypeChecker
+    return abs(lon_var.diff(dim=dim_x)).max() > 180.0 or \
+           abs(lon_var.diff(dim=dim_y)).max() > 180.0
+
+
+def _maybe_normalise_2d_lon(lon_var: xr.DataArray):
+    if _is_crossing_antimeridian(lon_var):
+        lon_var = _normalize_lon(lon_var)
+        if _is_crossing_antimeridian(lon_var):
+            raise ValueError('cannot account for longitudial anti-meridian crossing')
+        return lon_var, True
+    return lon_var, False
+
+
+def _normalize_lon(lon_var: xr.DataArray):
+    return lon_var.where(lon_var >= 0.0, lon_var + 360.0)
+
+
+def _denormalize_lon(lon_var: xr.DataArray):
+    return lon_var.where(lon_var <= 180.0, lon_var - 360.0)
 
 
 @nb.jit('float64(float64, float64, float64, float64, float64, float64)',
@@ -296,210 +624,3 @@ def extract_source_pixels(src_values: np.ndarray,
                 elif src_j >= src_height:
                     src_j = src_height - 1
                 dst_values[..., dst_j, dst_i] = src_values[..., src_j, src_i]
-
-
-def compute_output_geom(src_ds: xr.Dataset,
-                        x_name: str = 'lon',
-                        y_name: str = 'lat',
-                        oversampling: float = 1.0,
-                        denom_x: int = 1,
-                        denom_y: int = 1,
-                        delta: float = 1e-10) -> ImageGeom:
-    src_x, src_y, normalized_lon = _get_2d_coords(src_ds, x_name=x_name, y_name=y_name)
-    dim_y, dim_x = src_x.dims
-    src_x_x_diff = src_x.diff(dim=dim_x)
-    src_x_y_diff = src_x.diff(dim=dim_y)
-    src_y_x_diff = src_y.diff(dim=dim_x)
-    src_y_y_diff = src_y.diff(dim=dim_y)
-    src_x_x_diff_sq = np.square(src_x_x_diff)
-    src_x_y_diff_sq = np.square(src_x_y_diff)
-    src_y_x_diff_sq = np.square(src_y_x_diff)
-    src_y_y_diff_sq = np.square(src_y_y_diff)
-    src_x_diff = np.sqrt(src_x_x_diff_sq + src_y_x_diff_sq)
-    src_y_diff = np.sqrt(src_x_y_diff_sq + src_y_y_diff_sq)
-    src_x_res = float(src_x_diff.where(src_x_diff > delta).min())
-    src_y_res = float(src_y_diff.where(src_y_diff > delta).min())
-    src_res = min(src_x_res, src_y_res) / (math.sqrt(2.0) * oversampling)
-    src_x_min = float(src_x.min())
-    src_x_max = float(src_x.max())
-    src_y_min = float(src_y.min())
-    src_y_max = float(src_y.max())
-    dst_width = 1 + math.floor((src_x_max - src_x_min) / src_res)
-    dst_height = 1 + math.floor((src_y_max - src_y_min) / src_res)
-    return ImageGeom(width=denom_x * ((dst_width + denom_x - 1) // denom_x),
-                     height=denom_y * ((dst_height + denom_y - 1) // denom_y),
-                     x_min=src_x_min,
-                     y_min=src_y_min,
-                     res=src_res)
-
-
-def _get_2d_coord(src_ds: xr.Dataset, name: str) -> xr.DataArray:
-    if name not in src_ds:
-        raise ValueError(f'missing 2D coordinate variable {name!r}')
-    var = src_ds[name]
-    if var.ndim != 2:
-        raise ValueError(f'coordinate variable {name!r} must have two dimensions')
-    return var
-
-
-def _get_2d_coords(src_ds: xr.Dataset,
-                   x_name: str = 'lon',
-                   y_name: str = 'lat') -> Tuple[xr.DataArray, xr.DataArray, bool]:
-    src_x = _get_2d_coord(src_ds, x_name)
-    src_y = _get_2d_coord(src_ds, y_name)
-
-    if src_x.shape != src_y.shape or src_x.dims != src_y.dims:
-        raise ValueError(f"coordinate variables {x_name!r} and {y_name!r} must have same shape and dimensions")
-
-    src_width, src_height = src_x.shape
-    if src_width < 2 or src_height < 2:
-        raise ValueError(f"size in each dimension of {x_name!r} and {y_name!r} must be greater two")
-
-    normalized_lon = False
-    if x_name in ('lon', 'long', 'longitude'):
-        src_x, normalized_lon = _maybe_normalise_lon(src_x)
-
-    return src_x, src_y, normalized_lon
-
-
-def _is_2d_var(var: xr.DataArray, coord_var: xr.DataArray) -> bool:
-    return var.ndim >= 2 and var.shape[-2:] == coord_var.shape and var.dims[-2:] == coord_var.dims
-
-
-def _is_crossing_antimeridian(lon_var: xr.DataArray):
-    dim_y, dim_x = lon_var.dims
-    # noinspection PyTypeChecker
-    return abs(lon_var.diff(dim=dim_x)).max() > 180.0 or \
-           abs(lon_var.diff(dim=dim_y)).max() > 180.0
-
-
-def _maybe_normalise_lon(lon_var: xr.DataArray):
-    if _is_crossing_antimeridian(lon_var):
-        lon_var = _normalize_lon(lon_var)
-        if _is_crossing_antimeridian(lon_var):
-            raise ValueError('cannot account for longitudial anti-meridian crossing')
-        return lon_var, True
-    return lon_var, False
-
-
-def _normalize_lon(lon_var: xr.DataArray):
-    return lon_var.where(lon_var >= 0.0, lon_var + 360.0)
-
-
-def _denormalize_lon(lon_var: xr.DataArray):
-    return lon_var.where(lon_var <= 180.0, lon_var - 360.0)
-
-
-def reproject_dataset(src_ds: xr.Dataset,
-                      var_names: Sequence[str] = None,
-                      x_name: str = None,
-                      y_name: str = None,
-                      output_geom: ImageGeom = None,
-                      delta: float = 1e-3) -> Optional[xr.Dataset]:
-    if not x_name:
-        for x_name in ('x', 'xc', 'lon', 'long', 'longitude'):
-            if x_name in src_ds and src_ds[x_name].ndim == 2:
-                break
-    if not y_name:
-        for y_name in ('y', 'yc', 'lat', 'latitude'):
-            if y_name in src_ds and src_ds[y_name].ndim == 2:
-                break
-    if not x_name:
-        raise ValueError('cannot detect two-dimensional X coordinate variable')
-    if not y_name:
-        raise ValueError('cannot detect two-dimensional Y coordinate variable')
-
-    src_x, src_y, normalized_lon = _get_2d_coords(src_ds, x_name=x_name, y_name=y_name)
-
-    if var_names is None:
-        var_names = [var_name for var_name, var in src_ds.data_vars.items()
-                     if var_name not in (x_name, y_name) and _is_2d_var(var, src_x)]
-    elif isinstance(var_names, str):
-        var_names = (var_names,)
-    elif len(var_names) == 0:
-        raise ValueError(f'empty var_names')
-
-    src_vars = []
-    for var_name in var_names:
-        src_var = src_ds[var_name]
-        if not _is_2d_var(src_var, src_x):
-            raise ValueError(
-                f"cannot reproject variable {var_name!r} as its shape or dimensions "
-                f"do not match those of {x_name!r} and {y_name!r}")
-        src_vars.append(src_var)
-
-    if output_geom is None:
-        output_geom = compute_output_geom(src_ds, x_name=x_name, y_name=y_name)
-        dst_width, dst_height, dst_x_min, dst_y_min, dst_res = output_geom
-    else:
-        dst_width, dst_height, dst_x_min, dst_y_min, dst_res = output_geom
-        dst_x_max = dst_x_min + dst_res * dst_width
-        dst_y_max = dst_y_min + dst_res * dst_height
-        bbox = np.logical_and(np.logical_and(src_x >= dst_x_min, src_x <= dst_x_max),
-                              np.logical_and(src_y >= dst_y_min, src_y <= dst_y_max))
-        dim_y, dim_x = src_x.dims
-        src_i = src_ds[dim_x].where(bbox)
-        src_j = src_ds[dim_y].where(bbox)
-        i_min = src_i.min()
-        i_max = src_i.max()
-        j_min = src_j.min()
-        j_max = src_j.max()
-        if not np.isfinite(i_min) or not np.isfinite(j_min) \
-                or not np.isfinite(i_max) or not np.isfinite(j_max):
-            return None
-        src_width, src_height = src_x.shape
-        i1 = int(i_min)
-        if i1 > 0:
-            i1 -= 1
-        i2 = int(i_max + 1)
-        if i2 < src_width:
-            i2 += 1
-        j1 = int(j_min)
-        if j1 > 0:
-            j1 -= 1
-        j2 = int(j_max + 1)
-        if j2 < src_height:
-            j2 += 1
-        if i1 > 0 or j1 > 0 or i2 < src_width or j2 < src_height:
-            i_slice = slice(i1, i2)
-            j_slice = slice(j1, j2)
-            dim_y, dim_x = src_x.dims
-            indexers = {dim_x: i_slice, dim_y: j_slice}
-            src_x = src_x.isel(**indexers)
-            src_y = src_y.isel(**indexers)
-            src_vars = tuple(src_var.isel(**indexers) for src_var in src_vars)
-
-    x_var = xr.DataArray(np.linspace(dst_x_min, dst_x_min + dst_res * (dst_width - 1),
-                                     num=dst_width, dtype=np.float64), dims=x_name)
-    y_var = xr.DataArray(np.linspace(dst_y_min, dst_y_min + dst_res * (dst_height - 1),
-                                     num=dst_height, dtype=np.float64), dims=y_name)
-    coords = {
-        x_name: _denormalize_lon(x_var) if normalized_lon else x_var,
-        y_name: y_var
-    }
-    dims = (y_name, x_name)
-
-    src_x_values = src_x.values
-    src_y_values = src_y.values
-
-    dst_vars = dict()
-    for src_var in src_vars:
-        dst_var_shape = src_var.shape[0:-2] + (dst_height, dst_width)
-        dst_var_values = np.full(dst_var_shape, np.nan, dtype=src_var.dtype)
-        reproject(src_var.values,
-                  src_x_values,
-                  src_y_values,
-                  dst_var_values,
-                  dst_x_min,
-                  dst_y_min,
-                  dst_res,
-                  delta=delta)
-        dst_var_dims = src_var.dims[0:-2] + dims
-        dst_var_coords = dict(src_var.coords)
-        dst_var_coords.update(**coords)
-        dst_vars[src_var.name] = xr.DataArray(dst_var_values,
-                                              dims=dst_var_dims,
-                                              coords=dst_var_coords,
-                                              attrs=src_var.attrs)
-
-    return xr.Dataset(dst_vars, attrs=src_ds.attrs)
