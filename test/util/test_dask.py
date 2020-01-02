@@ -2,15 +2,15 @@ import unittest
 
 import numpy as np
 
-from xcube.util.dask import ArrayContext, compute_array_from_func, get_chunks, get_chunk_slices_tuples
+from xcube.util.dask import ChunkContext, compute_array_from_func, get_chunks, get_chunk_slices_tuples
 
 
 class DaskTest(unittest.TestCase):
     def test_from_func(self):
-        def my_func(context: ArrayContext):
+        def my_func(context: ChunkContext):
             csy, csx = context.chunk_slices
             ch, cw = context.chunk_shape
-            _, w = context.shape
+            w = context.array_shape[-1]
             a = np.ndarray((ch, cw), dtype=context.dtype)
             for j in range(ch):
                 for i in range(cw):

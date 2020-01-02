@@ -7,16 +7,16 @@ import dask.array as da
 import dask.base as db
 import numpy as np
 
-ArrayContext = collections.namedtuple('ArrayContext',
+ChunkContext = collections.namedtuple('ChunkContext',
                                       ['chunk_shape',
                                        'chunk_index',
                                        'chunk_slices',
-                                       'shape',
-                                       'chunks',
+                                       'array_shape',
+                                       'array_chunks',
                                        'dtype'])
 
 
-def compute_array_from_func(func: Callable[[ArrayContext], np.ndarray],
+def compute_array_from_func(func: Callable[[ChunkContext], np.ndarray],
                             shape: Tuple[int, ...],
                             chunks: Tuple[int, ...],
                             dtype: Any,
@@ -32,11 +32,11 @@ def compute_array_from_func(func: Callable[[ArrayContext], np.ndarray],
     name = 'from_func-' + db.tokenize(shape, chunks, dtype)
     dsk = {}
     for chunk_index, chunk_slices, chunk_shape in zip(chunk_indexes, chunk_slices, chunk_shapes):
-        context = ArrayContext(chunk_index=chunk_index,
+        context = ChunkContext(chunk_index=chunk_index,
                                chunk_slices=chunk_slices,
                                chunk_shape=chunk_shape,
-                               shape=shape,
-                               chunks=chunk_size_tuples,
+                               array_shape=shape,
+                               array_chunks=chunk_size_tuples,
                                dtype=dtype)
         key = (name,) + chunk_index
         value = (functools.partial(func, context, *args, **kwargs),)

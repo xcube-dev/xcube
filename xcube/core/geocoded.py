@@ -27,6 +27,8 @@ import numba as nb
 import numpy as np
 import xarray as xr
 
+from xcube.util.dask import compute_array_from_func, ChunkContext
+
 LON_COORD_VAR_NAMES = ('lon', 'long', 'longitude')
 LAT_COORD_VAR_NAMES = ('lat', 'latitude')
 X_COORD_VAR_NAMES = ('x', 'xc') + LON_COORD_VAR_NAMES
@@ -69,6 +71,7 @@ def reproject_dataset(src_ds: xr.Dataset,
                       var_names: Union[str, Sequence[str]] = None,
                       geo_coding: GeoCoding = None,
                       xy_names: Tuple[str, str] = None,
+                      tile_sizes: Union[int, Tuple[int, int]] = None,
                       output_geom: ImageGeom = None,
                       delta: float = 1e-3) -> Optional[xr.Dataset]:
     """
@@ -87,6 +90,9 @@ def reproject_dataset(src_ds: xr.Dataset,
     src_x, src_y = src_geo_coding.xy
     x_name, y_name = src_geo_coding.xy_names
     is_lon_normalized = src_geo_coding.is_lon_normalized
+
+    if isinstance(tile_sizes, int):
+        tile_sizes = tile_sizes, tile_sizes
 
     src_vars = select_variables(src_ds, var_names, geo_coding=src_geo_coding)
 
@@ -114,29 +120,70 @@ def reproject_dataset(src_ds: xr.Dataset,
     }
     dst_dims = (y_name, x_name)
 
-    src_x_values = src_x.values
-    src_y_values = src_y.values
+    if tile_sizes is None:
+        src_x_values = src_x.values
+        src_y_values = src_y.values
+    else:
+        src_x_values = src_x
+        src_y_values = src_y
 
     dst_vars = dict()
     for src_var_name, src_var in src_vars.items():
         dst_var_shape = src_var.shape[0:-2] + (dst_height, dst_width)
-        dst_var_values = np.full(dst_var_shape, np.nan, dtype=src_var.dtype)
-        reproject(src_var.values,
-                  src_x_values,
-                  src_y_values,
-                  dst_var_values,
-                  dst_x_min,
-                  dst_y_min,
-                  dst_res,
-                  delta=delta)
         dst_var_dims = src_var.dims[0:-2] + dst_dims
         dst_var_coords = dict(src_var.coords)
         dst_var_coords.update(**dst_coords)
-        dst_vars[src_var_name] = xr.DataArray(dst_var_values,
-                                              dims=dst_var_dims,
-                                              coords=dst_var_coords,
-                                              attrs=src_var.attrs)
+        if tile_sizes is None:
+            dst_var_array = np.full(dst_var_shape, np.nan, dtype=src_var.dtype)
+            reproject(src_var.values,
+                      src_x_values,
+                      src_y_values,
+                      dst_var_array,
+                      dst_x_min,
+                      dst_y_min,
+                      dst_res,
+                      delta=delta)
+        else:
+            def reproject_func(context: ChunkContext,
+                               src_var: xr.DataArray,
+                               src_x_var: xr.DataArray,
+                               src_y_var: xr.DataArray,
+                               dst_x_min: float,
+                               dst_y_min: float,
+                               dst_res: float,
+                               delta: float) -> np.ndarray:
+                slice_y, slice_x = context.chunk_slices
+                dst_block = np.full(context.chunk_shape, np.nan, dtype=context.dtype)
+                reproject(src_var.values,
+                          src_x_values,
+                          src_y_values,
+                          dst_var_array,
+                          dst_x_min + slice_x.start * dst_res,
+                          dst_y_min + slice_y.start * dst_res,
+                          dst_res,
+                          delta=delta)
+                # TODO (forman): implement me
+                return dst_block
 
+            tile_height, tile_width = tile_sizes
+            dst_var_chunks = src_var.shape[0:-2] + (tile_height, tile_width)
+            dst_var_array = compute_array_from_func(reproject_func,
+                                                    dst_var_shape,
+                                                    dst_var_chunks,
+                                                    src_var.dtype,
+                                                    src_var,
+                                                    src_x_values,
+                                                    src_y_values,
+                                                    dst_x_min,
+                                                    dst_y_min,
+                                                    dst_res,
+                                                    delta)
+
+        dst_var = xr.DataArray(dst_var_array,
+                               dims=dst_var_dims,
+                               coords=dst_var_coords,
+                               attrs=src_var.attrs)
+        dst_vars[src_var_name] = dst_var
     return xr.Dataset(dst_vars, attrs=src_ds.attrs)
 
 
@@ -194,7 +241,7 @@ def select_spatial_subset(dataset: xr.Dataset,
         dst_x_max += 360.0
     dim_y, dim_x = src_x.dims
     src_bbox = np.logical_and(np.logical_and(src_x >= dst_x_min, src_x <= dst_x_max),
-                          np.logical_and(src_y >= dst_y_min, src_y <= dst_y_max))
+                              np.logical_and(src_y >= dst_y_min, src_y <= dst_y_max))
     src_i = dataset[dim_x].where(src_bbox)
     src_j = dataset[dim_y].where(src_bbox)
     src_i_min = src_i.min()
