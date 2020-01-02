@@ -1,10 +1,6 @@
-import functools
-import itertools
 import os.path
 import unittest
 
-import dask.array as da
-import dask.base as db
 import numpy as np
 import xarray as xr
 
@@ -348,53 +344,3 @@ class ReprojectTest(unittest.TestCase):
 
         output_geom = ImageGeom(width=13, height=13, x_min=178.0, y_min=+50.0, res=0.5)
         self.assertTrue(output_geom.is_crossing_antimeridian)
-
-
-def get_chunks(shape, chunks):
-    _chunks = []
-    for s, c in zip(shape, chunks):
-        n = s // c
-        if n * c < s:
-            _chunks.append((c,) * n + (s % c,))
-        else:
-            _chunks.append((c,) * n)
-    return tuple(_chunks)
-
-
-def from_func(func, shape, chunks, dtype, *args, **kwargs):
-    chunk_size_tuples = get_chunks(shape, chunks)
-    chunk_indexes = itertools.product(*(range(len(chunk_size_tuple)) for chunk_size_tuple in chunk_size_tuples))
-    chunk_shapes = itertools.product(*chunk_size_tuples)
-
-    name = 'from_func-' + db.tokenize(shape, chunks, dtype)
-    dsk = {}
-    for chunk_index, chunk_shape in zip(chunk_indexes, chunk_shapes):
-        key = (name,) + chunk_index
-        value = (functools.partial(func, chunk_index, chunk_shape, dtype, *args, **kwargs),)
-        print(key)
-        dsk[key] = value
-
-    return da.Array(dsk, name, chunks=chunk_size_tuples, dtype=dtype)
-
-
-class DaskTest(unittest.TestCase):
-    def test_from_func(self):
-        def my_func(index, shape, dtype):
-            print(index, shape)
-            return np.zeros(shape, dtype=dtype)
-
-        a = from_func(my_func, (100, 100), (30, 40), dtype=np.float64)
-
-        self.assertIsNotNone(a)
-        self.assertEqual((100, 100), a.shape)
-        self.assertEqual(((30, 30, 30, 10), (40, 40, 20)), a.chunks)
-        self.assertEqual(np.float64, a.dtype)
-
-        # Compute result
-        np_a = np.array(a)
-        self.assertEqual((100, 100), np_a.shape)
-        self.assertTrue(np.allclose(np_a, 0.0))
-
-    def test_get_chunks(self):
-        chunks = get_chunks((100, 100, 40), (30, 25, 50))
-        self.assertEqual(((30, 30, 30, 10), (25, 25, 25, 25), (40,)), chunks)
