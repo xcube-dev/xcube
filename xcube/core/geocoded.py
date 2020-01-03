@@ -38,12 +38,103 @@ Y_COORD_VAR_NAMES = ('y', 'yc') + LAT_COORD_VAR_NAMES
 class GeoCoding(collections.namedtuple('GeoCoding', ['x', 'y', 'x_name', 'y_name', 'is_lon_normalized'])):
 
     @property
+    def size(self) -> Tuple[int, int]:
+        height, width = self.x.shape
+        return width, height
+
+    @property
+    def dims(self) -> Tuple[str, str]:
+        y_dim, x_dim = self.x.dims
+        return x_dim, y_dim
+
+    @property
     def xy(self) -> Tuple[xr.DataArray, xr.DataArray]:
         return self.x, self.y
 
     @property
     def xy_names(self) -> Tuple[str, str]:
         return self.x_name, self.y_name
+
+    @classmethod
+    def from_dataset(cls,
+                     dataset: xr.Dataset,
+                     xy_names: Tuple[str, str] = None) -> 'GeoCoding':
+        """
+        Return new geo-coding for given *dataset*.
+
+        :param dataset: Source dataset.
+        :param xy_names: Optional tuple of the x- and y-coordinate variables in *dataset*.
+        :return: The source dataset's geo-coding.
+        """
+        x_name, y_name = _get_dataset_xy_names(dataset, xy_names=xy_names)
+
+        x = _get_var(dataset, x_name)
+        y = _get_var(dataset, y_name)
+
+        if x.ndim == 1 and y.ndim == 1:
+            x, y = xr.broadcast(y, x)
+        if x.ndim != 2 or y.ndim != 2:
+            raise ValueError(
+                f'coordinate variables {x_name!r} and {y_name!r} must both have either one or two dimensions')
+
+        if x.shape != y.shape or x.dims != y.dims:
+            raise ValueError(f"coordinate variables {x_name!r} and {y_name!r} must have same shape and dimensions")
+
+        height, width = x.shape
+        if width < 2 or height < 2:
+            raise ValueError(f"size in each dimension of {x_name!r} and {y_name!r} must be greater two")
+
+        is_lon_normalized = False
+        if x_name in LON_COORD_VAR_NAMES:
+            x, is_lon_normalized = _maybe_normalise_2d_lon(x)
+
+        return GeoCoding(x=x, y=y, x_name=x_name, y_name=y_name, is_lon_normalized=is_lon_normalized)
+
+    def pixel_bbox(self,
+                   bbox: Tuple[float, float, float, float],
+                   border: int = 0) -> Optional[Tuple[int, int, int, int]]:
+        """
+        Get a bounding box in pixel coordinates given a bounding box in x,y coordinates.
+
+        :param bbox: Bounding box (x_min, y_min, x_max, y_max) given in the same CS as x and y.
+        :param border: Extra border to be added to returned pixel bounding box. Defaults to 0.
+        :return: Bounding box in (i_min, j_min, i_max, j_max) in pixel coordinates.
+        """
+        src_x, src_y = self.xy
+        dst_x_min, dst_y_min, dst_x_max, dst_y_max = bbox
+        if self.is_lon_normalized:
+            if dst_x_min < 0.0:
+                dst_x_min += 360.0
+            if dst_x_max < 0.0:
+                dst_x_max += 360.0
+        if dst_x_min > dst_x_max:
+            dst_x_max += 360.0
+        dim_y, dim_x = src_x.dims
+        src_bbox = np.logical_and(np.logical_and(src_x >= dst_x_min, src_x <= dst_x_max),
+                                  np.logical_and(src_y >= dst_y_min, src_y <= dst_y_max))
+        src_i = src_x[dim_x].where(src_bbox)
+        src_j = src_y[dim_y].where(src_bbox)
+        src_i_min = src_i.min()
+        src_i_max = src_i.max()
+        src_j_min = src_j.min()
+        src_j_max = src_j.max()
+        if not np.isfinite(src_i_min) or not np.isfinite(src_j_min) \
+                or not np.isfinite(src_i_max) or not np.isfinite(src_j_max):
+            return None
+        height, width = src_x.shape
+        src_i1 = int(src_i_min - border)
+        src_i2 = int(src_i_max + border)
+        src_j1 = int(src_j_min - border)
+        src_j2 = int(src_j_max + border)
+        if src_i1 < 0:
+            src_i1 = 0
+        if src_j1 < 0:
+            src_j1 = 0
+        if src_i2 >= width:
+            src_i2 = width - 1
+        if src_j2 >= height:
+            src_j2 = height - 1
+        return src_i1, src_j1, src_i2, src_j2
 
 
 class ImageGeom(collections.namedtuple('GeoCoding', ['width', 'height', 'x_min', 'y_min', 'res'])):
@@ -66,6 +157,10 @@ class ImageGeom(collections.namedtuple('GeoCoding', ['width', 'height', 'x_min',
     def bbox(self):
         return self.x_min, self.y_min, self.x_max, self.y_max
 
+    @property
+    def size(self) -> Tuple[int, int]:
+        return self.width, self.height
+
 
 def reproject_dataset(src_ds: xr.Dataset,
                       var_names: Union[str, Sequence[str]] = None,
@@ -86,39 +181,43 @@ def reproject_dataset(src_ds: xr.Dataset,
     :param delta:
     :return:
     """
-    src_geo_coding = geo_coding if geo_coding is not None else get_geo_coding(src_ds, xy_names=xy_names)
+    src_geo_coding = geo_coding if geo_coding is not None else GeoCoding.from_dataset(src_ds, xy_names=xy_names)
     src_x, src_y = src_geo_coding.xy
-    x_name, y_name = src_geo_coding.xy_names
+    src_x_dim, src_y_dim = src_geo_coding.dims
+    src_x_name, src_y_name = src_geo_coding.xy_names
     is_lon_normalized = src_geo_coding.is_lon_normalized
 
     if isinstance(tile_sizes, int):
         tile_sizes = tile_sizes, tile_sizes
 
-    src_vars = select_variables(src_ds, var_names, geo_coding=src_geo_coding)
-
+    src_i_min_0 = 0
+    src_j_min_0 = 0
     if output_geom is None:
         output_geom = compute_output_geom(src_ds, geo_coding=src_geo_coding)
     else:
-        src_ds = xr.Dataset({x_name: src_x, y_name: src_y, **src_vars}, attrs=src_ds.attrs)
-        src_ds = select_spatial_subset(src_ds, output_geom.bbox, geo_coding=src_geo_coding)
-        if src_ds is None:
+        src_bbox = src_geo_coding.pixel_bbox(output_geom.bbox, border=1)
+        if src_bbox is None:
             return None
-        src_geo_coding = GeoCoding(x=src_ds[x_name], y=src_ds[y_name],
-                                   x_name=x_name, y_name=y_name,
-                                   is_lon_normalized=is_lon_normalized)
-        src_x, src_y = src_geo_coding.xy
+        src_i_min_0, src_j_min_0 = src_bbox[0:2]
+        if is_lon_normalized:
+            src_ds = src_ds.copy()
+            src_ds[src_x_name] = src_x
+        src_ds = select_spatial_subset(src_ds, src_bbox, geo_coding=src_geo_coding)
+        src_x, src_y = src_ds[src_x_name], src_ds[src_y_name]
+
+    src_vars = select_variables(src_ds, var_names, geo_coding=src_geo_coding)
 
     dst_width, dst_height, dst_x_min, dst_y_min, dst_res = output_geom
 
-    x_var = xr.DataArray(np.linspace(dst_x_min, dst_x_min + dst_res * (dst_width - 1),
-                                     num=dst_width, dtype=np.float64), dims=x_name)
-    y_var = xr.DataArray(np.linspace(dst_y_min, dst_y_min + dst_res * (dst_height - 1),
-                                     num=dst_height, dtype=np.float64), dims=y_name)
+    dst_x_var = xr.DataArray(np.linspace(dst_x_min, dst_x_min + dst_res * (dst_width - 1),
+                                         num=dst_width, dtype=np.float64), dims=src_x_name)
+    dst_y_var = xr.DataArray(np.linspace(dst_y_min, dst_y_min + dst_res * (dst_height - 1),
+                                         num=dst_height, dtype=np.float64), dims=src_y_name)
     dst_coords = {
-        x_name: _denormalize_lon(x_var) if is_lon_normalized else x_var,
-        y_name: y_var
+        src_x_name: _denormalize_lon(dst_x_var) if is_lon_normalized else dst_x_var,
+        src_y_name: dst_y_var
     }
-    dst_dims = (y_name, x_name)
+    dst_dims = (src_y_name, src_x_name)
 
     if tile_sizes is None:
         src_x_values = src_x.values
@@ -138,31 +237,38 @@ def reproject_dataset(src_ds: xr.Dataset,
             reproject(src_var.values,
                       src_x_values,
                       src_y_values,
+                      src_i_min_0,
+                      src_j_min_0,
                       dst_var_array,
                       dst_x_min,
                       dst_y_min,
                       dst_res,
                       delta=delta)
         else:
-            def reproject_func(context: ChunkContext,
-                               src_var: xr.DataArray,
-                               src_x_var: xr.DataArray,
-                               src_y_var: xr.DataArray,
-                               dst_x_min: float,
-                               dst_y_min: float,
-                               dst_res: float,
-                               delta: float) -> np.ndarray:
-                slice_y, slice_x = context.chunk_slices
+            def reproject_func(context: ChunkContext) -> np.ndarray:
                 dst_block = np.full(context.chunk_shape, np.nan, dtype=context.dtype)
-                reproject(src_var.values,
-                          src_x_values,
-                          src_y_values,
-                          dst_var_array,
-                          dst_x_min + slice_x.start * dst_res,
-                          dst_y_min + slice_y.start * dst_res,
+                dst_y_slice, dst_x_slice = context.chunk_slices
+                dst_chunk_bbox = (dst_x_min + dst_x_slice.start * dst_res,
+                                  dst_y_min + dst_y_slice.start * dst_res,
+                                  dst_x_min + dst_x_slice.stop * dst_res,
+                                  dst_y_min + dst_y_slice.stop * dst_res)
+                src_chunk_bbox = geo_coding.pixel_bbox(dst_chunk_bbox, border=1)
+                if src_chunk_bbox is None:
+                    return dst_block
+                src_i_min, src_j_min, src_i_max, src_j_max = src_chunk_bbox
+                src_i_slice = slice(src_i_min, src_i_max + 1)
+                src_j_slice = slice(src_j_min, src_j_max + 1)
+                src_indexers = {src_x_dim: src_i_slice, src_y_dim: src_j_slice}
+                reproject(src_var.isel(**src_indexers).values,
+                          src_x.isel(**src_indexers).values,
+                          src_y.isel(**src_indexers).values,
+                          src_i_min_0 + src_i_min,
+                          src_j_min_0 + src_j_min,
+                          dst_block,
+                          dst_x_min + dst_x_slice.start * dst_res,
+                          dst_y_min + dst_y_slice.start * dst_res,
                           dst_res,
                           delta=delta)
-                # TODO (forman): implement me
                 return dst_block
 
             tile_height, tile_width = tile_sizes
@@ -170,14 +276,7 @@ def reproject_dataset(src_ds: xr.Dataset,
             dst_var_array = compute_array_from_func(reproject_func,
                                                     dst_var_shape,
                                                     dst_var_chunks,
-                                                    src_var.dtype,
-                                                    src_var,
-                                                    src_x_values,
-                                                    src_y_values,
-                                                    dst_x_min,
-                                                    dst_y_min,
-                                                    dst_res,
-                                                    delta)
+                                                    src_var.dtype)
 
         dst_var = xr.DataArray(dst_var_array,
                                dims=dst_var_dims,
@@ -200,7 +299,7 @@ def select_variables(dataset,
     :param xy_names: Optional tuple of the x- and y-coordinate variables in *dataset*. Ignored if *geo_coding* is given.
     :return: The selected variables as a variable name to ``xr.DataArray`` mapping
     """
-    geo_coding = geo_coding if geo_coding is not None else get_geo_coding(dataset, xy_names=xy_names)
+    geo_coding = geo_coding if geo_coding is not None else GeoCoding.from_dataset(dataset, xy_names=xy_names)
     src_x = geo_coding.x
     x_name, y_name = geo_coding.xy_names
     if var_names is None:
@@ -222,51 +321,25 @@ def select_variables(dataset,
 
 
 def select_spatial_subset(dataset: xr.Dataset,
-                          bbox: Tuple[float, float, float, float],
+                          bbox: Tuple[int, int, int, int],
                           geo_coding: GeoCoding = None,
                           xy_names: Tuple[str, str] = None) -> Optional[xr.Dataset]:
     """
     Select a spatial subset of *dataset* for the bounding box *bbox*.
 
     :param dataset: Source dataset.
-    :param bbox: Bounding box (x_min, y_min, x_max, y_max) given in the same CS as the *dataset* geo-coding.
+    :param bbox: Bounding box (i_min, i_min, j_max, j_max) in pixel coordinates.
     :param geo_coding: Optional dataset geo-coding.
     :param xy_names: Optional tuple of the x- and y-coordinate variables in *dataset*. Ignored if *geo_coding* is given.
     :return: Spatial dataset subset
     """
-    geo_coding = geo_coding if geo_coding is not None else get_geo_coding(dataset, xy_names=xy_names)
-    src_x, src_y = geo_coding.xy
-    dst_x_min, dst_y_min, dst_x_max, dst_y_max = bbox
-    if dst_x_min > dst_x_max:
-        dst_x_max += 360.0
-    dim_y, dim_x = src_x.dims
-    src_bbox = np.logical_and(np.logical_and(src_x >= dst_x_min, src_x <= dst_x_max),
-                              np.logical_and(src_y >= dst_y_min, src_y <= dst_y_max))
-    src_i = dataset[dim_x].where(src_bbox)
-    src_j = dataset[dim_y].where(src_bbox)
-    src_i_min = src_i.min()
-    src_i_max = src_i.max()
-    src_j_min = src_j.min()
-    src_j_max = src_j.max()
-    if not np.isfinite(src_i_min) or not np.isfinite(src_j_min) \
-            or not np.isfinite(src_i_max) or not np.isfinite(src_j_max):
-        return None
-    height, width = src_x.shape
-    src_i1 = int(src_i_min)
-    if src_i1 > 0:
-        src_i1 -= 1
-    src_i2 = int(src_i_max + 1)
-    if src_i2 < width:
-        src_i2 += 1
-    src_j1 = int(src_j_min)
-    if src_j1 > 0:
-        src_j1 -= 1
-    src_j2 = int(src_j_max + 1)
-    if src_j2 < height:
-        src_j2 += 1
-    if src_i1 > 0 or src_j1 > 0 or src_i2 < width or src_j2 < height:
-        src_i_slice = slice(src_i1, src_i2)
-        src_j_slice = slice(src_j1, src_j2)
+    geo_coding = geo_coding if geo_coding is not None else GeoCoding.from_dataset(dataset, xy_names=xy_names)
+    width, height = geo_coding.size
+    i_min, j_min, i_max, j_max = bbox
+    if i_min > 0 or j_min > 0 or i_max < width - 1 or j_max < height - 1:
+        src_i_slice = slice(i_min, i_max + 1)
+        src_j_slice = slice(j_min, j_max + 1)
+        dim_x, dim_y = geo_coding.dims
         indexers = {dim_y: src_j_slice, dim_x: src_i_slice}
         return xr.Dataset({var_name: var.isel(**indexers) for var_name, var in dataset.variables.items()
                            if var.shape == (height, width) and var.dims[-2:] == (dim_y, dim_x)})
@@ -293,7 +366,7 @@ def compute_output_geom(dataset: xr.Dataset,
     :param delta:
     :return: A new image geometry (class ImageGeometry).
     """
-    geo_coding = geo_coding if geo_coding is not None else get_geo_coding(dataset, xy_names=xy_names)
+    geo_coding = geo_coding if geo_coding is not None else GeoCoding.from_dataset(dataset, xy_names=xy_names)
     src_x, src_y = geo_coding.xy
     dim_y, dim_x = src_x.dims
     src_x_x_diff = src_x.diff(dim=dim_x)
@@ -320,39 +393,6 @@ def compute_output_geom(dataset: xr.Dataset,
                      x_min=src_x_min,
                      y_min=src_y_min,
                      res=src_res)
-
-
-def get_geo_coding(dataset: xr.Dataset,
-                   xy_names: Tuple[str, str] = None) -> GeoCoding:
-    """
-    Get the geo-coding for given *dataset*.
-
-    :param dataset: Source dataset.
-    :param xy_names: Optional tuple of the x- and y-coordinate variables in *dataset*.
-    :return: The source dataset's geo-coding.
-    """
-    x_name, y_name = _get_dataset_xy_names(dataset, xy_names=xy_names)
-
-    x = _get_var(dataset, x_name)
-    y = _get_var(dataset, y_name)
-
-    if x.ndim == 1 and y.ndim == 1:
-        x, y = xr.broadcast(y, x)
-    if x.ndim != 2 or y.ndim != 2:
-        raise ValueError(f'coordinate variables {x_name!r} and {y_name!r} must both have either one or two dimensions')
-
-    if x.shape != y.shape or x.dims != y.dims:
-        raise ValueError(f"coordinate variables {x_name!r} and {y_name!r} must have same shape and dimensions")
-
-    height, width = x.shape
-    if width < 2 or height < 2:
-        raise ValueError(f"size in each dimension of {x_name!r} and {y_name!r} must be greater two")
-
-    is_lon_normalized = False
-    if x_name in LON_COORD_VAR_NAMES:
-        x, is_lon_normalized = _maybe_normalise_2d_lon(x)
-
-    return GeoCoding(x=x, y=y, x_name=x_name, y_name=y_name, is_lon_normalized=is_lon_normalized)
 
 
 def _get_dataset_xy_names(dataset: xr.Dataset, xy_names: Tuple[str, str] = None) -> Tuple[str, str]:
@@ -436,6 +476,8 @@ def _fv(px: float, py: float, px0: float, py0: float, px1: float, py1: float) ->
 def reproject(src_values: np.ndarray,
               src_x: np.ndarray,
               src_y: np.ndarray,
+              src_i_min: int,
+              src_j_min: int,
               dst_values: np.ndarray,
               dst_x0: float,
               dst_y0: float,
@@ -538,6 +580,8 @@ def reproject(src_values: np.ndarray,
 @nb.jit(nopython=True, cache=True)
 def compute_source_pixels(src_x: np.ndarray,
                           src_y: np.ndarray,
+                          src_i_min: int,
+                          src_j_min: int,
                           dst_src_i: np.ndarray,
                           dst_src_j: np.ndarray,
                           dst_x0: float,
@@ -636,8 +680,8 @@ def compute_source_pixels(src_x: np.ndarray,
                                 src_i = src_i1 if u < 0.5 else src_i0
                                 src_j = src_j1 if v < 0.5 else src_j0
                     if src_i != -1:
-                        dst_src_i[dst_j, dst_i] = src_i
-                        dst_src_j[dst_j, dst_i] = src_j
+                        dst_src_i[dst_j, dst_i] = src_i_min + src_i
+                        dst_src_j[dst_j, dst_i] = src_j_min + src_j
 
 
 @nb.jit(nopython=True, cache=True)

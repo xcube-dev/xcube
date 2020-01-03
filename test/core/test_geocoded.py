@@ -5,13 +5,68 @@ import numpy as np
 import xarray as xr
 
 from xcube.core.geocoded import compute_output_geom, reproject_dataset, ImageGeom, compute_source_pixels, \
-    extract_source_pixels
+    extract_source_pixels, GeoCoding
 
 TEST_INPUT = '../xcube-gen-bc/test/inputdata/O_L2_0001_SNS_2017104102450_v1.0.nc'
 
 nan = np.nan
 
 olci_path = 'C:\\Users\\Norman\\Downloads\\S3B_OL_1_EFR____20190728T103451_20190728T103751_20190729T141105_0179_028_108_1800_LN1_O_NT_002.SEN3'
+
+
+class GeoCodingTest(unittest.TestCase):
+    def test_from_dataset_1d(self):
+        x = xr.DataArray(np.linspace(10.0, 20.0, 21), dims='x')
+        y = xr.DataArray(np.linspace(53.0, 58.0, 11), dims='y')
+        gc = GeoCoding.from_dataset(xr.Dataset(dict(x=x, y=y)))
+        self.assertIsInstance(gc.x, xr.DataArray)
+        self.assertIsInstance(gc.y, xr.DataArray)
+        self.assertEqual('x', gc.x_name)
+        self.assertEqual('y', gc.y_name)
+        self.assertEqual(False, gc.is_lon_normalized)
+
+    def test_from_dataset_2d(self):
+        x = xr.DataArray(np.linspace(10.0, 20.0, 21), dims='columns')
+        y = xr.DataArray(np.linspace(53.0, 58.0, 11), dims='rows')
+        y, x = xr.broadcast(y, x)
+        print(x, y)
+        gc = GeoCoding.from_dataset(xr.Dataset(dict(x=x, y=y)))
+        self.assertIsInstance(gc.x, xr.DataArray)
+        self.assertIsInstance(gc.y, xr.DataArray)
+        self.assertEqual('x', gc.x_name)
+        self.assertEqual('y', gc.y_name)
+        self.assertEqual(False, gc.is_lon_normalized)
+
+    def test_pixel_bbox(self):
+        x = xr.DataArray(np.linspace(10.0, 20.0, 21), dims='x')
+        y = xr.DataArray(np.linspace(53.0, 58.0, 11), dims='y')
+        y, x = xr.broadcast(y, x)
+        gc = GeoCoding(x=x, y=y, x_name='x', y_name='y', is_lon_normalized=False)
+        self.assertEqual(None, gc.pixel_bbox((0, -50, 30, 0)))
+        self.assertEqual((0, 0, 20, 10), gc.pixel_bbox((0, 50, 30, 60)))
+        self.assertEqual((0, 0, 20, 6), gc.pixel_bbox((0, 50, 30, 56)))
+        self.assertEqual((10, 0, 20, 6), gc.pixel_bbox((15, 50, 30, 56)))
+        self.assertEqual((10, 0, 16, 6), gc.pixel_bbox((15, 50, 18, 56)))
+        self.assertEqual((10, 1, 16, 6), gc.pixel_bbox((15, 53.5, 18, 56)))
+        self.assertEqual((8, 0, 18, 8), gc.pixel_bbox((15, 53.5, 18, 56), border=2))
+
+    def test_pixel_bbox_antimeridian(self):
+        def denorm(x):
+            return x if x <= 180 else x - 360
+
+        lon = xr.DataArray(np.linspace(175.0, 185.0, 21), dims='columns')
+        lat = xr.DataArray(np.linspace(53.0, 58.0, 11), dims='rows')
+        lat, lon = xr.broadcast(lat, lon)
+        gc = GeoCoding(x=lon, y=lat, x_name='lon', y_name='lat', is_lon_normalized=True)
+        self.assertEqual(None, gc.pixel_bbox((0, -50, 30, 0)))
+        self.assertEqual((0, 0, 20, 10), gc.pixel_bbox((denorm(160), 50, denorm(200), 60)))
+        self.assertEqual((0, 0, 20, 6), gc.pixel_bbox((denorm(160), 50, denorm(200), 56)))
+        self.assertEqual((10, 0, 20, 6), gc.pixel_bbox((denorm(180), 50, denorm(200), 56)))
+        self.assertEqual((10, 0, 16, 6), gc.pixel_bbox((denorm(180), 50, denorm(183), 56)))
+        self.assertEqual((10, 1, 16, 6), gc.pixel_bbox((denorm(180), 53.5, denorm(183), 56)))
+        self.assertEqual((8, 0, 18, 8), gc.pixel_bbox((denorm(180), 53.5, denorm(183), 56), border=2))
+        self.assertEqual((12, 1, 20, 6), gc.pixel_bbox((denorm(181), 53.5, denorm(200), 56)))
+        self.assertEqual((12, 1, 18, 6), gc.pixel_bbox((denorm(181), 53.5, denorm(184), 56)))
 
 
 class ReprojectTest(unittest.TestCase):
@@ -226,20 +281,22 @@ class ReprojectTest(unittest.TestCase):
     def test_compute_source_pixels(self):
         src_ds = self.new_source_dataset()
 
-        src_i = np.full((13, 13), np.nan, dtype=np.float64)
-        src_j = np.full((13, 13), np.nan, dtype=np.float64)
+        dst_src_i = np.full((13, 13), np.nan, dtype=np.float64)
+        dst_src_j = np.full((13, 13), np.nan, dtype=np.float64)
         compute_source_pixels(src_ds.lon.values,
                               src_ds.lat.values,
-                              src_i,
-                              src_j,
+                              0,
+                              0,
+                              dst_src_i,
+                              dst_src_j,
                               0.0,
                               50.0,
                               0.5)
 
         # print(xr.DataArray(src_i, dims=('y', 'x')))
-        print(xr.DataArray(src_j, dims=('y', 'x')))
+        # print(xr.DataArray(dst_src_j, dims=('y', 'x')))
 
-        np.testing.assert_almost_equal(np.floor(src_i + 0.5),
+        np.testing.assert_almost_equal(np.floor(dst_src_i + 0.5),
                                        np.array([[nan, nan, nan, nan, 1.0, nan, nan, nan, nan, nan, nan, nan, nan],
                                                  [nan, nan, nan, 1.0, 1.0, 1.0, nan, nan, nan, nan, nan, nan, nan],
                                                  [nan, nan, 0.0, 1.0, 1.0, 1.0, 1.0, nan, nan, nan, nan, nan, nan],
@@ -254,7 +311,7 @@ class ReprojectTest(unittest.TestCase):
                                                  [nan, nan, 0.0, 0.0, nan, nan, nan, nan, nan, nan, nan, nan, nan],
                                                  [nan, nan, 0.0, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan]],
                                                 dtype=np.float64))
-        np.testing.assert_almost_equal(np.floor(src_j + 0.5),
+        np.testing.assert_almost_equal(np.floor(dst_src_j + 0.5),
                                        np.array([[nan, nan, nan, nan, 1.0, nan, nan, nan, nan, nan, nan, nan, nan],
                                                  [nan, nan, nan, 1.0, 1.0, 1.0, nan, nan, nan, nan, nan, nan, nan],
                                                  [nan, nan, 1.0, 1.0, 1.0, 1.0, 1.0, nan, nan, nan, nan, nan, nan],
@@ -273,8 +330,8 @@ class ReprojectTest(unittest.TestCase):
         dst_rad = np.zeros((13, 13), dtype=np.float64)
 
         extract_source_pixels(src_ds.rad.values,
-                              src_i,
-                              src_j,
+                              dst_src_i,
+                              dst_src_j,
                               dst_rad)
 
         print(xr.DataArray(dst_rad, dims=('y', 'x')))
