@@ -209,6 +209,37 @@ class ReprojectTest(unittest.TestCase):
                                            [nan, nan, 1.0, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan],
                                        ], dtype=rad.dtype))
 
+    def test_reproject_2x2_to_13x13_dask(self):
+        src_ds = self.new_source_dataset()
+
+        output_geom = ImageGeom(width=13, height=13, x_min=0.0, y_min=50.0, res=0.5)
+
+        dst_ds = reproject_dataset(src_ds, output_geom=output_geom, tile_size=7)
+        lon, lat, rad = self._assert_shape_and_dim(dst_ds, 13, 13)
+        np.testing.assert_almost_equal(lon.values,
+                                       np.array([0.0, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0, 5.5, 6.0],
+                                                dtype=lon.dtype))
+        np.testing.assert_almost_equal(lat.values,
+                                       np.array([50.0, 50.5, 51.0, 51.5, 52.0, 52.5, 53.0, 53.5, 54.0, 54.5, 55.0, 55.5,
+                                                 56.0],
+                                                dtype=lat.dtype))
+        np.testing.assert_almost_equal(rad.values,
+                                       np.array([
+                                           [nan, nan, nan, nan, 4.0, nan, nan, nan, nan, nan, nan, nan, nan],
+                                           [nan, nan, nan, 4.0, 4.0, 4.0, nan, nan, nan, nan, nan, nan, nan],
+                                           [nan, nan, 3.0, 4.0, 4.0, 4.0, 4.0, nan, nan, nan, nan, nan, nan],
+                                           [nan, 3.0, 3.0, 3.0, 4.0, 4.0, 4.0, 4.0, 2.0, nan, nan, nan, nan],
+                                           [3.0, 3.0, 3.0, 3.0, 3.0, 4.0, 4.0, 2.0, 2.0, 2.0, nan, nan, nan],
+                                           [nan, 3.0, 3.0, 3.0, 3.0, 3.0, 4.0, 2.0, 2.0, 2.0, 2.0, nan, nan],
+                                           [nan, 3.0, 3.0, 3.0, 3.0, 1.0, 1.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0],
+                                           [nan, 3.0, 3.0, 1.0, 1.0, 1.0, 1.0, 2.0, 2.0, 2.0, 2.0, nan, nan],
+                                           [nan, 3.0, 1.0, 1.0, 1.0, 1.0, 1.0, 2.0, 2.0, nan, nan, nan, nan],
+                                           [nan, nan, 1.0, 1.0, 1.0, 1.0, 1.0, 2.0, nan, nan, nan, nan, nan],
+                                           [nan, nan, 1.0, 1.0, 1.0, 1.0, nan, nan, nan, nan, nan, nan, nan],
+                                           [nan, nan, 1.0, 1.0, nan, nan, nan, nan, nan, nan, nan, nan, nan],
+                                           [nan, nan, 1.0, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan],
+                                       ], dtype=rad.dtype))
+
     def test_reproject_2x2_to_13x13_antimeridian(self):
         src_ds = self.new_source_dataset_antimeridian()
 

@@ -21,6 +21,7 @@ def compute_array_from_func(func: Callable[[ChunkContext], np.ndarray],
                             chunks: Tuple[int, ...],
                             dtype: Any,
                             *args,
+                            name: str = None,
                             **kwargs):
     chunk_size_tuples = tuple(get_chunks(shape, chunks))
     chunk_slices_tuples = get_chunk_slices_tuples(chunk_size_tuples)
@@ -29,7 +30,7 @@ def compute_array_from_func(func: Callable[[ChunkContext], np.ndarray],
     chunk_slices = itertools.product(*chunk_slices_tuples)
     chunk_shapes = itertools.product(*chunk_size_tuples)
 
-    name = 'from_func-' + db.tokenize(shape, chunks, dtype)
+    name = (name or 'from_func') + '-' + db.tokenize(shape, chunks, dtype)
     dsk = {}
     for chunk_index, chunk_slices, chunk_shape in zip(chunk_indexes, chunk_slices, chunk_shapes):
         context = ChunkContext(chunk_index=chunk_index,

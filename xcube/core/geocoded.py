@@ -55,6 +55,18 @@ class GeoCoding(collections.namedtuple('GeoCoding', ['x', 'y', 'x_name', 'y_name
     def xy_names(self) -> Tuple[str, str]:
         return self.x_name, self.y_name
 
+    def derive(self,
+               x: xr.DataArray = None,
+               y: xr.DataArray = None,
+               x_name: str = None,
+               y_name: str = None,
+               is_lon_normalized: bool = None):
+        return GeoCoding(x=x if x is not None else self.x,
+                         y=y if y is not None else self.y,
+                         x_name=x_name if x_name is not None else self.x_name,
+                         y_name=y_name if y_name is not None else self.y_name,
+                         is_lon_normalized=is_lon_normalized if is_lon_normalized is not None else self.is_lon_normalized)
+
     @classmethod
     def from_dataset(cls,
                      dataset: xr.Dataset,
@@ -67,9 +79,28 @@ class GeoCoding(collections.namedtuple('GeoCoding', ['x', 'y', 'x_name', 'y_name
         :return: The source dataset's geo-coding.
         """
         x_name, y_name = _get_dataset_xy_names(dataset, xy_names=xy_names)
-
         x = _get_var(dataset, x_name)
         y = _get_var(dataset, y_name)
+        return cls.from_xy((x, y), xy_names=(x_name, y_name))
+
+    @classmethod
+    def from_xy(cls,
+                xy: Tuple[xr.DataArray, xr.DataArray],
+                xy_names: Tuple[str, str] = None) -> 'GeoCoding':
+        """
+        Return new geo-coding for given *dataset*.
+
+        :param xy: Tuple of x and y coordinate variables.
+        :param xy_names: Optional tuple of the x- and y-coordinate variables in *dataset*.
+        :return: The source dataset's geo-coding.
+        """
+        x, y = xy
+
+        if xy_names is None:
+            xy_names = x.name, y.name
+        x_name, y_name = xy_names
+        if x_name is None or y_name is None:
+            raise ValueError(f'unable to determine x and y coordinate variable names')
 
         if x.ndim == 1 and y.ndim == 1:
             x, y = xr.broadcast(y, x)
@@ -166,7 +197,7 @@ def reproject_dataset(src_ds: xr.Dataset,
                       var_names: Union[str, Sequence[str]] = None,
                       geo_coding: GeoCoding = None,
                       xy_names: Tuple[str, str] = None,
-                      tile_sizes: Union[int, Tuple[int, int]] = None,
+                      tile_size: Union[int, Tuple[int, int]] = None,
                       output_geom: ImageGeom = None,
                       delta: float = 1e-3) -> Optional[xr.Dataset]:
     """
@@ -176,6 +207,7 @@ def reproject_dataset(src_ds: xr.Dataset,
     :param var_names: Optional variable name or sequence of variable names.
     :param geo_coding: Optional dataset geo-coding.
     :param xy_names: Optional tuple of the x- and y-coordinate variables in *dataset*. Ignored if *geo_coding* is given.
+    :param tile_size: Optional tile size, an integer or tuple (tile_width, tile_height).
     :param output_geom: Optional output geometry. If not given, output geometry will be computed
         to spatially fit *dataset* and to retain its spatial resolution.
     :param delta:
@@ -187,8 +219,8 @@ def reproject_dataset(src_ds: xr.Dataset,
     src_x_name, src_y_name = src_geo_coding.xy_names
     is_lon_normalized = src_geo_coding.is_lon_normalized
 
-    if isinstance(tile_sizes, int):
-        tile_sizes = tile_sizes, tile_sizes
+    if isinstance(tile_size, int):
+        tile_size = tile_size, tile_size
 
     src_i_min_0 = 0
     src_j_min_0 = 0
@@ -204,7 +236,7 @@ def reproject_dataset(src_ds: xr.Dataset,
             src_ds[src_x_name] = src_x
         src_ds = select_spatial_subset(src_ds, src_bbox, geo_coding=src_geo_coding)
         src_x, src_y = src_ds[src_x_name], src_ds[src_y_name]
-
+        src_geo_coding = src_geo_coding.derive(x=src_x, y=src_y)
     src_vars = select_variables(src_ds, var_names, geo_coding=src_geo_coding)
 
     dst_width, dst_height, dst_x_min, dst_y_min, dst_res = output_geom
@@ -219,7 +251,7 @@ def reproject_dataset(src_ds: xr.Dataset,
     }
     dst_dims = (src_y_name, src_x_name)
 
-    if tile_sizes is None:
+    if tile_size is None:
         src_x_values = src_x.values
         src_y_values = src_y.values
     else:
@@ -232,7 +264,7 @@ def reproject_dataset(src_ds: xr.Dataset,
         dst_var_dims = src_var.dims[0:-2] + dst_dims
         dst_var_coords = dict(src_var.coords)
         dst_var_coords.update(**dst_coords)
-        if tile_sizes is None:
+        if tile_size is None:
             dst_var_array = np.full(dst_var_shape, np.nan, dtype=src_var.dtype)
             reproject(src_var.values,
                       src_x_values,
@@ -246,37 +278,44 @@ def reproject_dataset(src_ds: xr.Dataset,
                       delta=delta)
         else:
             def reproject_func(context: ChunkContext) -> np.ndarray:
-                dst_block = np.full(context.chunk_shape, np.nan, dtype=context.dtype)
-                dst_y_slice, dst_x_slice = context.chunk_slices
-                dst_chunk_bbox = (dst_x_min + dst_x_slice.start * dst_res,
-                                  dst_y_min + dst_y_slice.start * dst_res,
-                                  dst_x_min + dst_x_slice.stop * dst_res,
-                                  dst_y_min + dst_y_slice.stop * dst_res)
-                src_chunk_bbox = geo_coding.pixel_bbox(dst_chunk_bbox, border=1)
-                if src_chunk_bbox is None:
+                try:
+                    dst_block = np.full(context.chunk_shape, np.nan, dtype=context.dtype)
+                    dst_y_slice, dst_x_slice = context.chunk_slices
+                    dst_chunk_bbox = (dst_x_min + dst_x_slice.start * dst_res,
+                                      dst_y_min + dst_y_slice.start * dst_res,
+                                      dst_x_min + dst_x_slice.stop * dst_res,
+                                      dst_y_min + dst_y_slice.stop * dst_res)
+                    src_chunk_bbox = src_geo_coding.pixel_bbox(dst_chunk_bbox, border=1)
+                    if src_chunk_bbox is None:
+                        return dst_block
+                    src_i_min, src_j_min, src_i_max, src_j_max = src_chunk_bbox
+                    src_i_slice = slice(src_i_min, src_i_max + 1)
+                    src_j_slice = slice(src_j_min, src_j_max + 1)
+                    src_indexers = {src_x_dim: src_i_slice, src_y_dim: src_j_slice}
+                    reproject(src_var.isel(**src_indexers).values,
+                              src_x.isel(**src_indexers).values,
+                              src_y.isel(**src_indexers).values,
+                              src_i_min_0 + src_i_min,
+                              src_j_min_0 + src_j_min,
+                              dst_block,
+                              dst_x_min + dst_x_slice.start * dst_res,
+                              dst_y_min + dst_y_slice.start * dst_res,
+                              dst_res,
+                              delta=delta)
                     return dst_block
-                src_i_min, src_j_min, src_i_max, src_j_max = src_chunk_bbox
-                src_i_slice = slice(src_i_min, src_i_max + 1)
-                src_j_slice = slice(src_j_min, src_j_max + 1)
-                src_indexers = {src_x_dim: src_i_slice, src_y_dim: src_j_slice}
-                reproject(src_var.isel(**src_indexers).values,
-                          src_x.isel(**src_indexers).values,
-                          src_y.isel(**src_indexers).values,
-                          src_i_min_0 + src_i_min,
-                          src_j_min_0 + src_j_min,
-                          dst_block,
-                          dst_x_min + dst_x_slice.start * dst_res,
-                          dst_y_min + dst_y_slice.start * dst_res,
-                          dst_res,
-                          delta=delta)
-                return dst_block
+                except BaseException as e:
+                    print(80 * '#')
+                    print(e)
+                    print(80 * '#')
+                    raise e
 
-            tile_height, tile_width = tile_sizes
+            tile_height, tile_width = tile_size
             dst_var_chunks = src_var.shape[0:-2] + (tile_height, tile_width)
             dst_var_array = compute_array_from_func(reproject_func,
                                                     dst_var_shape,
                                                     dst_var_chunks,
-                                                    src_var.dtype)
+                                                    src_var.dtype,
+                                                    name=src_var_name)
 
         dst_var = xr.DataArray(dst_var_array,
                                dims=dst_var_dims,
