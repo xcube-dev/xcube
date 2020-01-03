@@ -255,11 +255,8 @@ def reproject_dataset(src_ds: xr.Dataset,
     dst_dims = (src_y_name, src_x_name)
 
     if tile_size is None:
-        src_x_values = src_x.values
-        src_y_values = src_y.values
-    else:
-        src_x_values = src_x
-        src_y_values = src_y
+        src_x.load()
+        src_y.load()
 
     dst_vars = dict()
     for src_var_name, src_var in src_vars.items():
@@ -270,8 +267,8 @@ def reproject_dataset(src_ds: xr.Dataset,
         if tile_size is None:
             dst_var_array = np.full(dst_var_shape, np.nan, dtype=src_var.dtype)
             reproject(src_var.values,
-                      src_x_values,
-                      src_y_values,
+                      src_x.values,
+                      src_y.values,
                       src_i_min_0,
                       src_j_min_0,
                       dst_var_array,
@@ -297,11 +294,11 @@ def reproject_dataset(src_ds: xr.Dataset,
                     src_i_slice = slice(src_i_min, src_i_max + 1)
                     src_j_slice = slice(src_j_min, src_j_max + 1)
                     src_indexers = {src_x_dim: src_i_slice, src_y_dim: src_j_slice}
-                    src_values = src_var.isel(**src_indexers).values
+                    src_var_values = src_var.isel(**src_indexers).values
                     src_x_values = src_x.isel(**src_indexers).values
                     src_y_values = src_y.isel(**src_indexers).values
                     t3 = time.perf_counter()
-                    reproject(src_values,
+                    reproject(src_var_values,
                               src_x_values,
                               src_y_values,
                               src_i_min_0 + src_i_min,
@@ -771,3 +768,36 @@ def extract_source_pixels(src_values: np.ndarray,
                 elif src_j >= src_height:
                     src_j = src_height - 1
                 dst_values[..., dst_j, dst_i] = src_values[..., src_j, src_i]
+
+
+@nb.jit(nopython=True, cache=True)
+def compute_pixel_bboxes(x: np.ndarray,
+                         y: np.ndarray,
+                         dst_bboxes: np.ndarray,
+                         delta: float = 0.0) -> np.ndarray:
+    h, w = x.shape
+    n, _ = dst_bboxes.shape
+    src_bboxes = np.full_like(dst_bboxes, -1, dtype=np.int64)
+    for j in range(h):
+        for i in range(w):
+            src_x = x[j, i]
+            src_y = y[j, i]
+            for k in range(n):
+                src_bbox = src_bboxes[k]
+                dst_bbox = dst_bboxes[k]
+                dst_x_min = dst_bbox[0]
+                dst_y_min = dst_bbox[1]
+                dst_x_max = dst_bbox[2]
+                dst_y_max = dst_bbox[3]
+                within_x = dst_x_min - delta <= src_x <= dst_x_max + delta
+                within_y = dst_y_min - delta <= src_y <= dst_y_max + delta
+                if within_x and within_y:
+                    src_x_min = src_bbox[0]
+                    src_y_min = src_bbox[1]
+                    src_x_max = src_bbox[2]
+                    src_y_max = src_bbox[3]
+                    src_bbox[0] = i if src_x_min == -1 else min(src_x_min, i)
+                    src_bbox[1] = j if src_y_min == -1 else min(src_y_min, j)
+                    src_bbox[2] = i if src_x_max == -1 else max(src_x_max, i)
+                    src_bbox[3] = j if src_y_max == -1 else max(src_y_max, j)
+    return src_bboxes

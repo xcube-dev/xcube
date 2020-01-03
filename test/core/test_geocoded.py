@@ -3,15 +3,86 @@ import unittest
 import numpy as np
 import xarray as xr
 
-from xcube.core.geocoded import compute_output_geom, reproject_dataset, ImageGeom, compute_source_pixels, \
-    extract_source_pixels, GeoCoding
-from xcube.core.sentinel3 import is_sentinel3_product, open_sentinel3_product
+from xcube.core.geocoded import GeoCoding
+from xcube.core.geocoded import ImageGeom
+from xcube.core.geocoded import compute_output_geom
+from xcube.core.geocoded import compute_pixel_bboxes
+from xcube.core.geocoded import compute_source_pixels
+from xcube.core.geocoded import extract_source_pixels
+from xcube.core.geocoded import reproject_dataset
+from xcube.core.sentinel3 import is_sentinel3_product
+from xcube.core.sentinel3 import open_sentinel3_product
 
 TEST_INPUT = '../xcube-gen-bc/test/inputdata/O_L2_0001_SNS_2017104102450_v1.0.nc'
 
 nan = np.nan
 
 olci_path = 'C:\\Users\\Norman\\Downloads\\S3B_OL_1_EFR____20190728T103451_20190728T103751_20190729T141105_0179_028_108_1800_LN1_O_NT_002.SEN3'
+
+
+class ComputePixelBBoxesTest(unittest.TestCase):
+
+    def setUp(self) -> None:
+        lon = xr.DataArray(np.linspace(10., 20., 11), dims='x')
+        lat = xr.DataArray(np.linspace(50., 60., 11), dims='y')
+        lat, lon = xr.broadcast(lat, lon)
+        self.lon_values = lon.values
+        self.lat_values = lat.values
+
+    def test_all_included(self):
+        dst_bboxes = np.array([[10., 50., 20., 60.]])
+        src_bboxes = compute_pixel_bboxes(self.lon_values, self.lat_values, dst_bboxes)
+        np.testing.assert_almost_equal(src_bboxes,
+                                       np.array([[0, 0, 10, 10]], dtype=np.int64))
+
+    def test_tiles(self):
+        a0 = 0.
+        a1 = a0 + 5.
+        a2 = a1 + 5.
+        dst_bboxes = np.array([[10. + a0, 50. + a0, 10. + a1, 50. + a1],
+                               [10. + a1, 50. + a0, 10. + a2, 50. + a1],
+                               [10. + a0, 50. + a1, 10. + a1, 50. + a2],
+                               [10. + a1, 50. + a1, 10. + a2, 50. + a2]])
+        src_bboxes = compute_pixel_bboxes(self.lon_values, self.lat_values, dst_bboxes)
+        np.testing.assert_almost_equal(src_bboxes,
+                                       np.array([[0, 0, 5, 5],
+                                                 [5, 0, 10, 5],
+                                                 [0, 5, 5, 10],
+                                                 [5, 5, 10, 10]], dtype=np.int64))
+
+    def test_none_found(self):
+        a0 = 11.
+        a1 = a0 + 5.
+        a2 = a1 + 5.
+        dst_bboxes = np.array([[10. + a0, 50. + a0, 10. + a1, 50. + a1],
+                               [10. + a1, 50. + a0, 10. + a2, 50. + a1],
+                               [10. + a0, 50. + a1, 10. + a1, 50. + a2],
+                               [10. + a1, 50. + a1, 10. + a2, 50. + a2]])
+        src_bboxes = compute_pixel_bboxes(self.lon_values, self.lat_values, dst_bboxes)
+        np.testing.assert_almost_equal(src_bboxes,
+                                       np.array([[-1, -1, -1, -1],
+                                                 [-1, -1, -1, -1],
+                                                 [-1, -1, -1, -1],
+                                                 [-1, -1, -1, -1]], dtype=np.int64))
+
+    def test_with_delta(self):
+        dst_bboxes = np.array([[12.4, 51.6, 12.6, 51.7]])
+
+        src_bboxes = compute_pixel_bboxes(self.lon_values, self.lat_values, dst_bboxes)
+        np.testing.assert_almost_equal(src_bboxes,
+                                       np.array([[-1, -1, -1, -1]], dtype=np.int64))
+
+        src_bboxes = compute_pixel_bboxes(self.lon_values, self.lat_values, dst_bboxes, delta=0.5)
+        np.testing.assert_almost_equal(src_bboxes,
+                                       np.array([[2, 2, 3, 2]], dtype=np.int64))
+
+        src_bboxes = compute_pixel_bboxes(self.lon_values, self.lat_values, dst_bboxes, delta=1)
+        np.testing.assert_almost_equal(src_bboxes,
+                                       np.array([[2, 1, 3, 2]], dtype=np.int64))
+
+        src_bboxes = compute_pixel_bboxes(self.lon_values, self.lat_values, dst_bboxes, delta=2)
+        np.testing.assert_almost_equal(src_bboxes,
+                                       np.array([[1, 0, 4, 3]], dtype=np.int64))
 
 
 class GeoCodingTest(unittest.TestCase):
