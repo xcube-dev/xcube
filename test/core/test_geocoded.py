@@ -1,4 +1,3 @@
-import os.path
 import unittest
 
 import numpy as np
@@ -6,6 +5,7 @@ import xarray as xr
 
 from xcube.core.geocoded import compute_output_geom, reproject_dataset, ImageGeom, compute_source_pixels, \
     extract_source_pixels, GeoCoding
+from xcube.core.sentinel3 import is_sentinel3_product, open_sentinel3_product
 
 TEST_INPUT = '../xcube-gen-bc/test/inputdata/O_L2_0001_SNS_2017104102450_v1.0.nc'
 
@@ -71,16 +71,11 @@ class GeoCodingTest(unittest.TestCase):
 
 class ReprojectTest(unittest.TestCase):
 
-    @unittest.skipUnless(os.path.isdir(olci_path), f'missing OLCI scene {olci_path}')
-    def test_olci(self):
-        vars = dict()
-        for f in ('qualityFlags.nc', 'geo_coordinates.nc', 'Oa06_radiance.nc', 'Oa13_radiance.nc', 'Oa20_radiance.nc'):
-            ds = xr.open_dataset(olci_path + '\\' + f)
-            vars.update(ds.data_vars)
-        src_ds = xr.Dataset(vars)
-
-        src_ds['longitude'] = xr.DataArray(src_ds.longitude.values, dims=('rows', 'columns'))
-        src_ds['latitude'] = xr.DataArray(src_ds.latitude.values, dims=('rows', 'columns'))
+    @unittest.skipUnless(is_sentinel3_product(olci_path), f'missing OLCI scene {olci_path}')
+    def test_compute_output_geom_from_olci(self):
+        src_ds = open_sentinel3_product(olci_path, {'Oa06_radiance', 'Oa13_radiance', 'Oa20_radiance'})
+        src_ds.longitude.load()
+        src_ds.latitude.load()
 
         output_geom = compute_output_geom(src_ds, xy_names=('longitude', 'latitude'))
         self.assertEqual(20259, output_geom.width)
@@ -223,6 +218,7 @@ class ReprojectTest(unittest.TestCase):
                                        np.array([50.0, 50.5, 51.0, 51.5, 52.0, 52.5, 53.0, 53.5, 54.0, 54.5, 55.0, 55.5,
                                                  56.0],
                                                 dtype=lat.dtype))
+        print(xr.DataArray(rad.values))
         np.testing.assert_almost_equal(rad.values,
                                        np.array([
                                            [nan, nan, nan, nan, 4.0, nan, nan, nan, nan, nan, nan, nan, nan],

@@ -18,9 +18,9 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-
 import collections
 import math
+import time
 from typing import Sequence, Tuple, Optional, Union, Mapping
 
 import numba as nb
@@ -123,13 +123,15 @@ class GeoCoding(collections.namedtuple('GeoCoding', ['x', 'y', 'x_name', 'y_name
 
     def pixel_bbox(self,
                    bbox: Tuple[float, float, float, float],
-                   border: int = 0) -> Optional[Tuple[int, int, int, int]]:
+                   border: int = 0,
+                   delta: float = 0.0) -> Optional[Tuple[int, int, int, int]]:
         """
         Get a bounding box in pixel coordinates given a bounding box in x,y coordinates.
 
         :param bbox: Bounding box (x_min, y_min, x_max, y_max) given in the same CS as x and y.
         :param border: Extra border to be added to returned pixel bounding box. Defaults to 0.
         :return: Bounding box in (i_min, j_min, i_max, j_max) in pixel coordinates.
+            Returns None if *bbox* isn't intersecting any of the x,y coordinates.
         """
         src_x, src_y = self.xy
         dst_x_min, dst_y_min, dst_x_max, dst_y_max = bbox
@@ -140,9 +142,9 @@ class GeoCoding(collections.namedtuple('GeoCoding', ['x', 'y', 'x_name', 'y_name
                 dst_x_max += 360.0
         if dst_x_min > dst_x_max:
             dst_x_max += 360.0
+        src_bbox = np.logical_and(np.logical_and(src_x >= dst_x_min - delta, src_x <= dst_x_max + delta),
+                                  np.logical_and(src_y >= dst_y_min - delta, src_y <= dst_y_max + delta))
         dim_y, dim_x = src_x.dims
-        src_bbox = np.logical_and(np.logical_and(src_x >= dst_x_min, src_x <= dst_x_max),
-                                  np.logical_and(src_y >= dst_y_min, src_y <= dst_y_max))
         src_i = src_x[dim_x].where(src_bbox)
         src_j = src_y[dim_y].where(src_bbox)
         src_i_min = src_i.min()
@@ -227,7 +229,7 @@ def reproject_dataset(src_ds: xr.Dataset,
     if output_geom is None:
         output_geom = compute_output_geom(src_ds, geo_coding=src_geo_coding)
     else:
-        src_bbox = src_geo_coding.pixel_bbox(output_geom.bbox, border=1)
+        src_bbox = src_geo_coding.pixel_bbox(output_geom.bbox, border=1, delta=output_geom.res)
         if src_bbox is None:
             return None
         src_i_min_0, src_j_min_0 = src_bbox[0:2]
@@ -237,6 +239,7 @@ def reproject_dataset(src_ds: xr.Dataset,
         src_ds = select_spatial_subset(src_ds, src_bbox, geo_coding=src_geo_coding)
         src_x, src_y = src_ds[src_x_name], src_ds[src_y_name]
         src_geo_coding = src_geo_coding.derive(x=src_x, y=src_y)
+
     src_vars = select_variables(src_ds, var_names, geo_coding=src_geo_coding)
 
     dst_width, dst_height, dst_x_min, dst_y_min, dst_res = output_geom
@@ -285,16 +288,22 @@ def reproject_dataset(src_ds: xr.Dataset,
                                       dst_y_min + dst_y_slice.start * dst_res,
                                       dst_x_min + dst_x_slice.stop * dst_res,
                                       dst_y_min + dst_y_slice.stop * dst_res)
-                    src_chunk_bbox = src_geo_coding.pixel_bbox(dst_chunk_bbox, border=1)
+                    t1 = time.perf_counter()
+                    src_chunk_bbox = src_geo_coding.pixel_bbox(dst_chunk_bbox, border=1, delta=dst_res)
+                    t2 = time.perf_counter()
                     if src_chunk_bbox is None:
                         return dst_block
                     src_i_min, src_j_min, src_i_max, src_j_max = src_chunk_bbox
                     src_i_slice = slice(src_i_min, src_i_max + 1)
                     src_j_slice = slice(src_j_min, src_j_max + 1)
                     src_indexers = {src_x_dim: src_i_slice, src_y_dim: src_j_slice}
-                    reproject(src_var.isel(**src_indexers).values,
-                              src_x.isel(**src_indexers).values,
-                              src_y.isel(**src_indexers).values,
+                    src_values = src_var.isel(**src_indexers).values
+                    src_x_values = src_x.isel(**src_indexers).values
+                    src_y_values = src_y.isel(**src_indexers).values
+                    t3 = time.perf_counter()
+                    reproject(src_values,
+                              src_x_values,
+                              src_y_values,
                               src_i_min_0 + src_i_min,
                               src_j_min_0 + src_j_min,
                               dst_block,
@@ -302,6 +311,9 @@ def reproject_dataset(src_ds: xr.Dataset,
                               dst_y_min + dst_y_slice.start * dst_res,
                               dst_res,
                               delta=delta)
+                    t4 = time.perf_counter()
+                    print(f'chunk {context.name}-{context.chunk_index}, shape {context.chunk_shape} '
+                          f'took {t2 - t1}, {t3 - t2}, {t4 - t3} seconds, total {t4 - t1}')
                     return dst_block
                 except BaseException as e:
                     print(80 * '#')
