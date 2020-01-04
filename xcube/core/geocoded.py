@@ -27,7 +27,7 @@ import numba as nb
 import numpy as np
 import xarray as xr
 
-from xcube.util.dask import compute_array_from_func, ChunkContext
+from xcube.util.dask import compute_array_from_func, ChunkContext, get_chunk_sizes, get_chunk_iterators
 
 LON_COORD_VAR_NAMES = ('lon', 'long', 'longitude')
 LAT_COORD_VAR_NAMES = ('lat', 'latitude')
@@ -170,37 +170,128 @@ class GeoCoding(collections.namedtuple('GeoCoding', ['x', 'y', 'x_name', 'y_name
         return src_i1, src_j1, src_i2, src_j2
 
 
-class ImageGeom(collections.namedtuple('GeoCoding', ['width', 'height', 'x_min', 'y_min', 'res'])):
+class ImageGeom:
+    def __init__(self,
+                 size: Tuple[int, int],
+                 x_min: float,
+                 y_min: float,
+                 xy_res: float,
+                 tile_size: Union[int, Tuple[int, int]] = None):
+        w, h = size
+        self._size = w, h
+        if isinstance(tile_size, int):
+            self._tile_size = min(w, tile_size), min(h, tile_size)
+        elif tile_size is not None:
+            tw, th = tile_size
+            self._tile_size = min(w, tw) or w, min(h, th) or h
+        else:
+            self._tile_size = w, h
+        self._x_min = x_min
+        self._y_min = y_min
+        self._xy_res = xy_res
+
+    def derive(self,
+               size: Tuple[int, int] = None,
+               x_min: float = None,
+               y_min: float = None,
+               xy_res: float = None,
+               tile_size: Union[int, Tuple[int, int]] = None):
+        return ImageGeom(self.size if size is None else size,
+                         self.x_min if x_min is None else x_min,
+                         self.y_min if y_min is None else y_min,
+                         self.xy_res if xy_res is None else xy_res,
+                         tile_size=self.tile_size if tile_size is None else tile_size)
+
     @property
-    def is_crossing_antimeridian(self):
+    def size(self) -> Tuple[int, int]:
+        return self._size
+
+    @property
+    def width(self) -> int:
+        return self._size[0]
+
+    @property
+    def height(self) -> int:
+        return self._size[1]
+
+    @property
+    def is_tiled(self) -> bool:
+        return self._size == self._tile_size
+
+    @property
+    def tile_size(self) -> Tuple[int, int]:
+        return self._tile_size
+
+    @property
+    def tile_width(self) -> int:
+        return self._tile_size[0]
+
+    @property
+    def tile_height(self) -> int:
+        return self._tile_size[1]
+
+    @property
+    def is_crossing_antimeridian(self) -> bool:
+        # TODO (forman): this test is only valid for a geographical CRS
         return self.x_min > self.x_max
 
     @property
-    def x_max(self):
-        x_max = self.x_min + self.res * self.width
+    def x_min(self) -> float:
+        return self._x_min
+
+    @property
+    def x_max(self) -> float:
+        x_max = self.x_min + self.xy_res * self.width
         if x_max > 180.0:
+            # TODO (forman): this test is only valid for a geographical CRS
             x_max -= 360.0
         return x_max
 
     @property
-    def y_max(self):
-        return self.y_min + self.res * self.height
+    def y_min(self) -> float:
+        return self._y_min
 
     @property
-    def bbox(self):
+    def y_max(self) -> float:
+        return self.y_min + self.xy_res * self.height
+
+    @property
+    def xy_res(self) -> float:
+        return self._xy_res
+
+    @property
+    def xy_bbox(self) -> Tuple[float, float, float, float]:
         return self.x_min, self.y_min, self.x_max, self.y_max
 
     @property
-    def size(self) -> Tuple[int, int]:
-        return self.width, self.height
+    def xy_tile_bboxes(self) -> np.ndarray:
+        xy_offset = np.array([self.x_min, self.y_min, self.x_min, self.y_min])
+        tile_bboxes = self.tile_bboxes
+        return xy_offset + self.xy_res * tile_bboxes
+
+    @property
+    def tile_bboxes(self) -> np.ndarray:
+        chunk_sizes = get_chunk_sizes((self.height, self.width),
+                                      (self.tile_height, self.tile_width))
+        _, _, chunk_slice_tuples = get_chunk_iterators(chunk_sizes)
+        chunk_slice_tuples = tuple(chunk_slice_tuples)
+        n = len(chunk_slice_tuples)
+        tile_bboxes = np.ndarray((n, 4), dtype=np.int64)
+        for i in range(n):
+            y_slice, x_slice = chunk_slice_tuples[i]
+            tile_bboxes[i, 0] = x_slice.start
+            tile_bboxes[i, 1] = y_slice.start
+            tile_bboxes[i, 2] = x_slice.stop - 1
+            tile_bboxes[i, 3] = y_slice.stop - 1
+        return tile_bboxes
 
 
 def reproject_dataset(src_ds: xr.Dataset,
                       var_names: Union[str, Sequence[str]] = None,
                       geo_coding: GeoCoding = None,
                       xy_names: Tuple[str, str] = None,
-                      tile_size: Union[int, Tuple[int, int]] = None,
                       output_geom: ImageGeom = None,
+                      tile_size: Union[int, Tuple[int, int]] = None,
                       delta: float = 1e-3) -> Optional[xr.Dataset]:
     """
     Reproject *dataset* using its per-pixel x,y coordinates or the given *geo_coding*.
@@ -209,7 +300,6 @@ def reproject_dataset(src_ds: xr.Dataset,
     :param var_names: Optional variable name or sequence of variable names.
     :param geo_coding: Optional dataset geo-coding.
     :param xy_names: Optional tuple of the x- and y-coordinate variables in *dataset*. Ignored if *geo_coding* is given.
-    :param tile_size: Optional tile size, an integer or tuple (tile_width, tile_height).
     :param output_geom: Optional output geometry. If not given, output geometry will be computed
         to spatially fit *dataset* and to retain its spatial resolution.
     :param delta:
@@ -221,15 +311,12 @@ def reproject_dataset(src_ds: xr.Dataset,
     src_x_name, src_y_name = src_geo_coding.xy_names
     is_lon_normalized = src_geo_coding.is_lon_normalized
 
-    if isinstance(tile_size, int):
-        tile_size = tile_size, tile_size
-
     src_i_min_0 = 0
     src_j_min_0 = 0
     if output_geom is None:
         output_geom = compute_output_geom(src_ds, geo_coding=src_geo_coding)
     else:
-        src_bbox = src_geo_coding.pixel_bbox(output_geom.bbox, border=1, delta=output_geom.res)
+        src_bbox = src_geo_coding.pixel_bbox(output_geom.xy_bbox, border=1, delta=output_geom.xy_res)
         if src_bbox is None:
             return None
         src_i_min_0, src_j_min_0 = src_bbox[0:2]
@@ -240,13 +327,18 @@ def reproject_dataset(src_ds: xr.Dataset,
         src_x, src_y = src_ds[src_x_name], src_ds[src_y_name]
         src_geo_coding = src_geo_coding.derive(x=src_x, y=src_y)
 
+    if tile_size is not None:
+        output_geom = output_geom.derive(tile_size=tile_size)
+
     src_vars = select_variables(src_ds, var_names, geo_coding=src_geo_coding)
 
-    dst_width, dst_height, dst_x_min, dst_y_min, dst_res = output_geom
+    dst_width, dst_height = output_geom.size
+    dst_x_min, dst_y_min = output_geom.x_min, output_geom.y_min
+    dst_xy_res = output_geom.xy_res
 
-    dst_x_var = xr.DataArray(np.linspace(dst_x_min, dst_x_min + dst_res * (dst_width - 1),
+    dst_x_var = xr.DataArray(np.linspace(dst_x_min, dst_x_min + dst_xy_res * (dst_width - 1),
                                          num=dst_width, dtype=np.float64), dims=src_x_name)
-    dst_y_var = xr.DataArray(np.linspace(dst_y_min, dst_y_min + dst_res * (dst_height - 1),
+    dst_y_var = xr.DataArray(np.linspace(dst_y_min, dst_y_min + dst_xy_res * (dst_height - 1),
                                          num=dst_height, dtype=np.float64), dims=src_y_name)
     dst_coords = {
         src_x_name: _denormalize_lon(dst_x_var) if is_lon_normalized else dst_x_var,
@@ -254,7 +346,8 @@ def reproject_dataset(src_ds: xr.Dataset,
     }
     dst_dims = (src_y_name, src_x_name)
 
-    if tile_size is None:
+    is_output_tiled = output_geom.is_tiled
+    if not is_output_tiled:
         src_x.load()
         src_y.load()
 
@@ -264,7 +357,7 @@ def reproject_dataset(src_ds: xr.Dataset,
         dst_var_dims = src_var.dims[0:-2] + dst_dims
         dst_var_coords = dict(src_var.coords)
         dst_var_coords.update(**dst_coords)
-        if tile_size is None:
+        if not is_output_tiled:
             dst_var_array = np.full(dst_var_shape, np.nan, dtype=src_var.dtype)
             reproject(src_var.values,
                       src_x.values,
@@ -274,19 +367,19 @@ def reproject_dataset(src_ds: xr.Dataset,
                       dst_var_array,
                       dst_x_min,
                       dst_y_min,
-                      dst_res,
+                      dst_xy_res,
                       delta=delta)
         else:
             def reproject_func(context: ChunkContext) -> np.ndarray:
                 try:
                     dst_block = np.full(context.chunk_shape, np.nan, dtype=context.dtype)
                     dst_y_slice, dst_x_slice = context.chunk_slices
-                    dst_chunk_bbox = (dst_x_min + dst_x_slice.start * dst_res,
-                                      dst_y_min + dst_y_slice.start * dst_res,
-                                      dst_x_min + dst_x_slice.stop * dst_res,
-                                      dst_y_min + dst_y_slice.stop * dst_res)
+                    dst_chunk_bbox = (dst_x_min + dst_x_slice.start * dst_xy_res,
+                                      dst_y_min + dst_y_slice.start * dst_xy_res,
+                                      dst_x_min + dst_x_slice.stop * dst_xy_res,
+                                      dst_y_min + dst_y_slice.stop * dst_xy_res)
                     t1 = time.perf_counter()
-                    src_chunk_bbox = src_geo_coding.pixel_bbox(dst_chunk_bbox, border=1, delta=dst_res)
+                    src_chunk_bbox = src_geo_coding.pixel_bbox(dst_chunk_bbox, border=1, delta=dst_xy_res)
                     t2 = time.perf_counter()
                     if src_chunk_bbox is None:
                         return dst_block
@@ -304,9 +397,9 @@ def reproject_dataset(src_ds: xr.Dataset,
                               src_i_min_0 + src_i_min,
                               src_j_min_0 + src_j_min,
                               dst_block,
-                              dst_x_min + dst_x_slice.start * dst_res,
-                              dst_y_min + dst_y_slice.start * dst_res,
-                              dst_res,
+                              dst_x_min + dst_x_slice.start * dst_xy_res,
+                              dst_y_min + dst_y_slice.start * dst_xy_res,
+                              dst_xy_res,
                               delta=delta)
                     t4 = time.perf_counter()
                     print(f'chunk {context.name}-{context.chunk_index}, shape {context.chunk_shape} '
@@ -318,7 +411,7 @@ def reproject_dataset(src_ds: xr.Dataset,
                     print(80 * '#')
                     raise e
 
-            tile_height, tile_width = tile_size
+            tile_width, tile_height = output_geom.tile_size
             dst_var_chunks = src_var.shape[0:-2] + (tile_height, tile_width)
             dst_var_array = compute_array_from_func(reproject_func,
                                                     dst_var_shape,
@@ -429,18 +522,19 @@ def compute_output_geom(dataset: xr.Dataset,
     src_y_diff = np.sqrt(src_x_y_diff_sq + src_y_y_diff_sq)
     src_x_res = float(src_x_diff.where(src_x_diff > delta).min())
     src_y_res = float(src_y_diff.where(src_y_diff > delta).min())
-    src_res = min(src_x_res, src_y_res) / (math.sqrt(2.0) * oversampling)
+    src_xy_res = min(src_x_res, src_y_res) / (math.sqrt(2.0) * oversampling)
     src_x_min = float(src_x.min())
     src_x_max = float(src_x.max())
     src_y_min = float(src_y.min())
     src_y_max = float(src_y.max())
-    dst_width = 1 + math.floor((src_x_max - src_x_min) / src_res)
-    dst_height = 1 + math.floor((src_y_max - src_y_min) / src_res)
-    return ImageGeom(width=denom_x * ((dst_width + denom_x - 1) // denom_x),
-                     height=denom_y * ((dst_height + denom_y - 1) // denom_y),
+    dst_width = 1 + math.floor((src_x_max - src_x_min) / src_xy_res)
+    dst_height = 1 + math.floor((src_y_max - src_y_min) / src_xy_res)
+    dst_width = denom_x * ((dst_width + denom_x - 1) // denom_x)
+    dst_height = denom_y * ((dst_height + denom_y - 1) // denom_y)
+    return ImageGeom((dst_width, dst_height),
                      x_min=src_x_min,
                      y_min=src_y_min,
-                     res=src_res)
+                     xy_res=src_xy_res)
 
 
 def _get_dataset_xy_names(dataset: xr.Dataset, xy_names: Tuple[str, str] = None) -> Tuple[str, str]:

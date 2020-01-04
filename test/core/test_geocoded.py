@@ -153,7 +153,7 @@ class ReprojectTest(unittest.TestCase):
         self.assertEqual(7386, output_geom.height)
         self.assertAlmostEqual(-11.918857, output_geom.x_min)
         self.assertAlmostEqual(59.959791, output_geom.y_min)
-        self.assertAlmostEqual(0.00181345416, output_geom.res)
+        self.assertAlmostEqual(0.00181345416, output_geom.xy_res)
 
     def new_source_dataset(self):
         lon = np.array([[1.0, 6.0],
@@ -199,7 +199,7 @@ class ReprojectTest(unittest.TestCase):
     def test_reproject_2x2_to_7x7(self):
         src_ds = self.new_source_dataset()
 
-        output_geom = ImageGeom(width=7, height=7, x_min=0.0, y_min=50.0, res=1.0)
+        output_geom = ImageGeom(size=(7, 7), x_min=0.0, y_min=50.0, xy_res=1.0)
 
         dst_ds = reproject_dataset(src_ds, output_geom=output_geom)
         lon, lat, rad = self._assert_shape_and_dim(dst_ds, 7, 7)
@@ -223,7 +223,7 @@ class ReprojectTest(unittest.TestCase):
     def test_reproject_2x2_to_7x7_subset(self):
         src_ds = self.new_source_dataset()
 
-        output_geom = ImageGeom(width=7, height=7, x_min=2.0, y_min=51.0, res=1.0)
+        output_geom = ImageGeom(size=(7, 7), x_min=2.0, y_min=51.0, xy_res=1.0)
 
         dst_ds = reproject_dataset(src_ds, output_geom=output_geom)
         lon, lat, rad = self._assert_shape_and_dim(dst_ds, 7, 7)
@@ -247,7 +247,7 @@ class ReprojectTest(unittest.TestCase):
     def test_reproject_2x2_to_13x13(self):
         src_ds = self.new_source_dataset()
 
-        output_geom = ImageGeom(width=13, height=13, x_min=0.0, y_min=50.0, res=0.5)
+        output_geom = ImageGeom(size=(13, 13), x_min=0.0, y_min=50.0, xy_res=0.5)
 
         dst_ds = reproject_dataset(src_ds, output_geom=output_geom)
         lon, lat, rad = self._assert_shape_and_dim(dst_ds, 13, 13)
@@ -278,9 +278,9 @@ class ReprojectTest(unittest.TestCase):
     def test_reproject_2x2_to_13x13_dask(self):
         src_ds = self.new_source_dataset()
 
-        output_geom = ImageGeom(width=13, height=13, x_min=0.0, y_min=50.0, res=0.5)
+        output_geom = ImageGeom(size=(13, 13), x_min=0.0, y_min=50.0, xy_res=0.5, tile_size=7)
 
-        dst_ds = reproject_dataset(src_ds, output_geom=output_geom, tile_size=7)
+        dst_ds = reproject_dataset(src_ds, output_geom=output_geom)
         lon, lat, rad = self._assert_shape_and_dim(dst_ds, 13, 13)
         np.testing.assert_almost_equal(lon.values,
                                        np.array([0.0, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0, 5.5, 6.0],
@@ -310,7 +310,7 @@ class ReprojectTest(unittest.TestCase):
     def test_reproject_2x2_to_13x13_antimeridian(self):
         src_ds = self.new_source_dataset_antimeridian()
 
-        output_geom = ImageGeom(width=13, height=13, x_min=+178.0, y_min=+50.0, res=0.5)
+        output_geom = ImageGeom(size=(13, 13), x_min=+178.0, y_min=+50.0, xy_res=0.5)
 
         dst_ds = reproject_dataset(src_ds, output_geom=output_geom)
         lon, lat, rad = self._assert_shape_and_dim(dst_ds, 13, 13)
@@ -342,19 +342,19 @@ class ReprojectTest(unittest.TestCase):
     def test_reproject_2x2_to_13x13_none(self):
         src_ds = self.new_source_dataset()
 
-        output_geom = ImageGeom(width=13, height=13, x_min=10.0, y_min=50.0, res=0.5)
+        output_geom = ImageGeom(size=(13, 13), x_min=10.0, y_min=50.0, xy_res=0.5)
         dst_ds = reproject_dataset(src_ds, output_geom=output_geom)
         self.assertIsNone(dst_ds)
 
-        output_geom = ImageGeom(width=13, height=13, x_min=-10.0, y_min=50.0, res=0.5)
+        output_geom = ImageGeom(size=(13, 13), x_min=-10.0, y_min=50.0, xy_res=0.5)
         dst_ds = reproject_dataset(src_ds, output_geom=output_geom)
         self.assertIsNone(dst_ds)
 
-        output_geom = ImageGeom(width=13, height=13, x_min=0.0, y_min=58.0, res=0.5)
+        output_geom = ImageGeom(size=(13, 13), x_min=0.0, y_min=58.0, xy_res=0.5)
         dst_ds = reproject_dataset(src_ds, output_geom=output_geom)
         self.assertIsNone(dst_ds)
 
-        output_geom = ImageGeom(width=13, height=13, x_min=0.0, y_min=42.0, res=0.5)
+        output_geom = ImageGeom(size=(13, 13), x_min=0.0, y_min=42.0, xy_res=0.5)
         dst_ds = reproject_dataset(src_ds, output_geom=output_geom)
         self.assertIsNone(dst_ds)
 
@@ -455,14 +455,14 @@ class ReprojectTest(unittest.TestCase):
     def test_compute_output_geom(self):
         src_ds = self.new_source_dataset()
 
-        self._assert_image_geom(ImageGeom(4, 4, 0.0, 50.0, 2.0),
+        self._assert_image_geom(ImageGeom((4, 4), 0.0, 50.0, 2.0),
                                 compute_output_geom(src_ds))
 
-        self._assert_image_geom(ImageGeom(7, 7, 0.0, 50.0, 1.0),
+        self._assert_image_geom(ImageGeom((7, 7), 0.0, 50.0, 1.0),
                                 compute_output_geom(src_ds,
                                                     oversampling=2.0))
 
-        self._assert_image_geom(ImageGeom(8, 8, 0.0, 50.0, 1.0),
+        self._assert_image_geom(ImageGeom((8, 8), 0.0, 50.0, 1.0),
                                 compute_output_geom(src_ds,
                                                     denom_x=4,
                                                     denom_y=4,
@@ -471,14 +471,14 @@ class ReprojectTest(unittest.TestCase):
     def test_compute_output_geom_antimeridian(self):
         src_ds = self.new_source_dataset_antimeridian()
 
-        self._assert_image_geom(ImageGeom(4, 4, 178.0, 50.0, 2.0),
+        self._assert_image_geom(ImageGeom((4, 4), 178.0, 50.0, 2.0),
                                 compute_output_geom(src_ds))
 
-        self._assert_image_geom(ImageGeom(7, 7, 178.0, 50.0, 1.0),
+        self._assert_image_geom(ImageGeom((7, 7), 178.0, 50.0, 1.0),
                                 compute_output_geom(src_ds,
                                                     oversampling=2.0))
 
-        self._assert_image_geom(ImageGeom(8, 8, 178.0, 50.0, 1.0),
+        self._assert_image_geom(ImageGeom((8, 8), 178.0, 50.0, 1.0),
                                 compute_output_geom(src_ds,
                                                     denom_x=4,
                                                     denom_y=4,
@@ -491,11 +491,11 @@ class ReprojectTest(unittest.TestCase):
         self.assertEqual(expected.height, actual.height)
         self.assertAlmostEqual(actual.x_min, actual.x_min, delta=1e-5)
         self.assertAlmostEqual(actual.y_min, actual.y_min, delta=1e-5)
-        self.assertAlmostEqual(actual.res, actual.res, delta=1e-6)
+        self.assertAlmostEqual(actual.xy_res, actual.xy_res, delta=1e-6)
 
     def test_image_geom_is_crossing_antimeridian(self):
-        output_geom = ImageGeom(width=13, height=13, x_min=0.0, y_min=+50.0, res=0.5)
+        output_geom = ImageGeom(size=(13, 13), x_min=0.0, y_min=+50.0, xy_res=0.5)
         self.assertFalse(output_geom.is_crossing_antimeridian)
 
-        output_geom = ImageGeom(width=13, height=13, x_min=178.0, y_min=+50.0, res=0.5)
+        output_geom = ImageGeom(size=(13, 13), x_min=178.0, y_min=+50.0, xy_res=0.5)
         self.assertTrue(output_geom.is_crossing_antimeridian)
