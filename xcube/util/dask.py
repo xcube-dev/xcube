@@ -56,6 +56,7 @@ def compute_array_from_func(func: Callable[[ChunkContext], np.ndarray],
 
 def get_chunk_iterators(chunk_sizes: IntTupleIterable) -> \
         Tuple[IntTupleIterable, IntTupleIterable, SliceTupleIterable]:
+    chunk_sizes = tuple(chunk_sizes)
     chunk_slices_tuples = get_chunk_slice_tuples(chunk_sizes)
     chunk_ranges = get_chunk_ranges(chunk_sizes)
     chunk_indexes = itertools.product(*chunk_ranges)
