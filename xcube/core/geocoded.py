@@ -296,14 +296,29 @@ def reproject_dataset(src_ds: xr.Dataset,
     """
     Reproject *dataset* using its per-pixel x,y coordinates or the given *geo_coding*.
 
+    The function expects *dataset* to have either one- or two-dimensional coordinate variables
+    that provide spatial x,y coordinates for every data variable with the same spatial dimensions.
+
+    For example, a dataset may comprise variables with spatial dimensions ``var(..., y_dim, x_dim)``, then one
+    the function expects coordinates to be provided in two forms:
+
+    1. One-dimensional ``x_var(x_dim)`` and ``y_var(y_dim)`` (coordinate) variables.
+    2. Two-dimensional ``x_var(y_dim, x_dim)`` and ``y_var(y_dim, x_dim)`` (coordinate) variables.
+
+    If *output_geom* is given and defines a tile size or *tile_size* is given, and the number of tiles
+    is greater than one in the output's x- or y-direction, then the returned dataset will be composed of lazy,
+    chunked dask arrays. Otherwise the returned dataset will be composed of ordinary numpy arrays.
+
     :param src_ds: Source dataset.
     :param var_names: Optional variable name or sequence of variable names.
     :param geo_coding: Optional dataset geo-coding.
+    :param tile_size: Optional tile size.
     :param xy_names: Optional tuple of the x- and y-coordinate variables in *dataset*. Ignored if *geo_coding* is given.
     :param output_geom: Optional output geometry. If not given, output geometry will be computed
         to spatially fit *dataset* and to retain its spatial resolution.
-    :param delta:
-    :return:
+    :param delta: A normalized value that is used to determine whether x,y coordinates in the output are contained
+        in the triangles defined by the input x,y coordinates.
+    :return: a reprojected dataset
     """
     src_geo_coding = geo_coding if geo_coding is not None else GeoCoding.from_dataset(src_ds, xy_names=xy_names)
     src_x, src_y = src_geo_coding.xy
