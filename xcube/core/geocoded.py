@@ -18,7 +18,7 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-import collections
+
 import math
 import time
 from typing import Sequence, Tuple, Optional, Union, Mapping
@@ -35,7 +35,47 @@ X_COORD_VAR_NAMES = ('x', 'xc') + LON_COORD_VAR_NAMES
 Y_COORD_VAR_NAMES = ('y', 'yc') + LAT_COORD_VAR_NAMES
 
 
-class GeoCoding(collections.namedtuple('GeoCoding', ['x', 'y', 'x_name', 'y_name', 'is_lon_normalized'])):
+class GeoCoding:
+
+    def __init__(self,
+                 x: xr.DataArray,
+                 y: xr.DataArray,
+                 x_name: str,
+                 y_name: str,
+                 is_lon_normalized: bool = False):
+        self._x = x
+        self._y = y
+        self._x_name = x_name
+        self._y_name = y_name
+        self._is_lon_normalized = is_lon_normalized
+
+    @property
+    def x(self) -> xr.DataArray:
+        return self._x
+
+    @property
+    def y(self) -> xr.DataArray:
+        return self._y
+
+    @property
+    def xy(self) -> Tuple[xr.DataArray, xr.DataArray]:
+        return self.x, self.y
+
+    @property
+    def x_name(self) -> str:
+        return self._x_name
+
+    @property
+    def y_name(self) -> str:
+        return self._y_name
+
+    @property
+    def xy_names(self) -> Tuple[str, str]:
+        return self.x_name, self.y_name
+
+    @property
+    def is_lon_normalized(self) -> bool:
+        return self._is_lon_normalized
 
     @property
     def size(self) -> Tuple[int, int]:
@@ -45,15 +85,7 @@ class GeoCoding(collections.namedtuple('GeoCoding', ['x', 'y', 'x_name', 'y_name
     @property
     def dims(self) -> Tuple[str, str]:
         y_dim, x_dim = self.x.dims
-        return x_dim, y_dim
-
-    @property
-    def xy(self) -> Tuple[xr.DataArray, xr.DataArray]:
-        return self.x, self.y
-
-    @property
-    def xy_names(self) -> Tuple[str, str]:
-        return self.x_name, self.y_name
+        return str(x_dim), str(y_dim)
 
     def derive(self,
                x: xr.DataArray = None,
@@ -65,7 +97,8 @@ class GeoCoding(collections.namedtuple('GeoCoding', ['x', 'y', 'x_name', 'y_name
                          y=y if y is not None else self.y,
                          x_name=x_name if x_name is not None else self.x_name,
                          y_name=y_name if y_name is not None else self.y_name,
-                         is_lon_normalized=is_lon_normalized if is_lon_normalized is not None else self.is_lon_normalized)
+                         is_lon_normalized=is_lon_normalized if is_lon_normalized is not None
+                         else self.is_lon_normalized)
 
     @classmethod
     def from_dataset(cls,
@@ -121,20 +154,21 @@ class GeoCoding(collections.namedtuple('GeoCoding', ['x', 'y', 'x_name', 'y_name
 
         return GeoCoding(x=x, y=y, x_name=x_name, y_name=y_name, is_lon_normalized=is_lon_normalized)
 
-    def pixel_bbox(self,
-                   bbox: Tuple[float, float, float, float],
-                   border: int = 0,
-                   delta: float = 0.0) -> Optional[Tuple[int, int, int, int]]:
+    def ij_bbox(self,
+                xy_bbox: Tuple[float, float, float, float],
+                xy_delta: float = 0.0,
+                ij_border: int = 0) -> Optional[Tuple[int, int, int, int]]:
         """
-        Get a bounding box in pixel coordinates given a bounding box in x,y coordinates.
+        Get a bounding box in pixel coordinates given a bounding box *xy_bbox* in x,y coordinates.
 
-        :param bbox: Bounding box (x_min, y_min, x_max, y_max) given in the same CS as x and y.
-        :param border: Extra border to be added to returned pixel bounding box. Defaults to 0.
+        :param xy_bbox: Bounding box (x_min, y_min, x_max, y_max) given in the same CS as x and y.
+        :param xy_delta: Absolute delta in x,y units used for comparisons. Defaults to 0.
+        :param ij_border: Extra border to be added to returned pixel i,j bounding box. Defaults to 0.
         :return: Bounding box in (i_min, j_min, i_max, j_max) in pixel coordinates.
-            Returns None if *bbox* isn't intersecting any of the x,y coordinates.
+            Returns None if *xy_bbox* isn't intersecting any of the x,y coordinates.
         """
         src_x, src_y = self.xy
-        dst_x_min, dst_y_min, dst_x_max, dst_y_max = bbox
+        dst_x_min, dst_y_min, dst_x_max, dst_y_max = xy_bbox
         if self.is_lon_normalized:
             if dst_x_min < 0.0:
                 dst_x_min += 360.0
@@ -142,8 +176,8 @@ class GeoCoding(collections.namedtuple('GeoCoding', ['x', 'y', 'x_name', 'y_name
                 dst_x_max += 360.0
         if dst_x_min > dst_x_max:
             dst_x_max += 360.0
-        src_bbox = np.logical_and(np.logical_and(src_x >= dst_x_min - delta, src_x <= dst_x_max + delta),
-                                  np.logical_and(src_y >= dst_y_min - delta, src_y <= dst_y_max + delta))
+        src_bbox = np.logical_and(np.logical_and(src_x >= dst_x_min - xy_delta, src_x <= dst_x_max + xy_delta),
+                                  np.logical_and(src_y >= dst_y_min - xy_delta, src_y <= dst_y_max + xy_delta))
         dim_y, dim_x = src_x.dims
         src_i = src_x[dim_x].where(src_bbox)
         src_j = src_y[dim_y].where(src_bbox)
@@ -155,10 +189,10 @@ class GeoCoding(collections.namedtuple('GeoCoding', ['x', 'y', 'x_name', 'y_name
                 or not np.isfinite(src_i_max) or not np.isfinite(src_j_max):
             return None
         height, width = src_x.shape
-        src_i1 = int(src_i_min - border)
-        src_i2 = int(src_i_max + border)
-        src_j1 = int(src_j_min - border)
-        src_j2 = int(src_j_max + border)
+        src_i1 = int(src_i_min - ij_border)
+        src_i2 = int(src_i_max + ij_border)
+        src_j1 = int(src_j_min - ij_border)
+        src_j2 = int(src_j_max + ij_border)
         if src_i1 < 0:
             src_i1 = 0
         if src_j1 < 0:
@@ -168,6 +202,21 @@ class GeoCoding(collections.namedtuple('GeoCoding', ['x', 'y', 'x_name', 'y_name
         if src_j2 >= height:
             src_j2 = height - 1
         return src_i1, src_j1, src_i2, src_j2
+
+    def ij_bboxes(self,
+                  xy_bboxes: np.ndarray,
+                  ij_bboxes: np.ndarray = None,
+                  xy_delta: float = 0.0) -> np.ndarray:
+        if ij_bboxes is None:
+            ij_bboxes = np.full_like(xy_bboxes, -1)
+        else:
+            ij_bboxes[:, :] = -1
+        compute_ij_bboxes(self.x.values,
+                          self.y.values,
+                          xy_bboxes,
+                          ij_bboxes,
+                          xy_delta=xy_delta)
+        return ij_bboxes
 
 
 class ImageGeom:
@@ -337,7 +386,7 @@ def reproject_dataset(src_ds: xr.Dataset,
     if output_geom is None:
         output_geom = compute_output_geom(src_ds, geo_coding=src_geo_coding)
     else:
-        src_bbox = src_geo_coding.pixel_bbox(output_geom.xy_bbox, border=1, delta=output_geom.xy_res)
+        src_bbox = src_geo_coding.ij_bbox(output_geom.xy_bbox, ij_border=1, xy_delta=output_geom.xy_res)
         if src_bbox is None:
             return None
         src_i_min_0, src_j_min_0 = src_bbox[0:2]
@@ -400,7 +449,7 @@ def reproject_dataset(src_ds: xr.Dataset,
                                       dst_x_min + dst_x_slice.stop * dst_xy_res,
                                       dst_y_min + dst_y_slice.stop * dst_xy_res)
                     t1 = time.perf_counter()
-                    src_chunk_bbox = src_geo_coding.pixel_bbox(dst_chunk_bbox, border=1, delta=dst_xy_res)
+                    src_chunk_bbox = src_geo_coding.ij_bbox(dst_chunk_bbox, ij_border=1, xy_delta=dst_xy_res)
                     t2 = time.perf_counter()
                     if src_chunk_bbox is None:
                         return dst_block
@@ -886,33 +935,32 @@ def extract_source_pixels(src_values: np.ndarray,
 
 
 @nb.jit(nopython=True, cache=True)
-def compute_pixel_bboxes(x: np.ndarray,
-                         y: np.ndarray,
-                         dst_bboxes: np.ndarray,
-                         delta: float = 0.0) -> np.ndarray:
+def compute_ij_bboxes(x: np.ndarray,
+                      y: np.ndarray,
+                      xy_bboxes: np.ndarray,
+                      ij_bboxes: np.ndarray,
+                      xy_delta: float = 0.0):
     h, w = x.shape
-    n, _ = dst_bboxes.shape
-    src_bboxes = np.full_like(dst_bboxes, -1, dtype=np.int64)
+    n, _ = xy_bboxes.shape
     for j in range(h):
         for i in range(w):
             src_x = x[j, i]
             src_y = y[j, i]
             for k in range(n):
-                src_bbox = src_bboxes[k]
-                dst_bbox = dst_bboxes[k]
-                dst_x_min = dst_bbox[0]
-                dst_y_min = dst_bbox[1]
-                dst_x_max = dst_bbox[2]
-                dst_y_max = dst_bbox[3]
-                within_x = dst_x_min - delta <= src_x <= dst_x_max + delta
-                within_y = dst_y_min - delta <= src_y <= dst_y_max + delta
+                ij_bbox = ij_bboxes[k]
+                xy_bbox = xy_bboxes[k]
+                x_min = xy_bbox[0]
+                y_min = xy_bbox[1]
+                x_max = xy_bbox[2]
+                y_max = xy_bbox[3]
+                within_x = x_min - xy_delta <= src_x <= x_max + xy_delta
+                within_y = y_min - xy_delta <= src_y <= y_max + xy_delta
                 if within_x and within_y:
-                    src_x_min = src_bbox[0]
-                    src_y_min = src_bbox[1]
-                    src_x_max = src_bbox[2]
-                    src_y_max = src_bbox[3]
-                    src_bbox[0] = i if src_x_min == -1 else min(src_x_min, i)
-                    src_bbox[1] = j if src_y_min == -1 else min(src_y_min, j)
-                    src_bbox[2] = i if src_x_max == -1 else max(src_x_max, i)
-                    src_bbox[3] = j if src_y_max == -1 else max(src_y_max, j)
-    return src_bboxes
+                    i_min = ij_bbox[0]
+                    j_min = ij_bbox[1]
+                    i_max = ij_bbox[2]
+                    j_max = ij_bbox[3]
+                    ij_bbox[0] = i if i_min < 0 else min(i_min, i)
+                    ij_bbox[1] = j if j_min < 0 else min(j_min, j)
+                    ij_bbox[2] = i if i_max < 0 else max(i_max, i)
+                    ij_bbox[3] = j if j_max < 0 else max(j_max, j)
