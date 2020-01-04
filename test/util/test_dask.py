@@ -36,6 +36,13 @@ class DaskTest(unittest.TestCase):
                           (40,)],
                          list(chunks))
 
+        chunks = get_chunk_sizes((100, 100, 40), (100, 100, 40))
+        self.assertEqual([(100,),
+                          (100,),
+                          (40,)],
+                         list(chunks))
+
+
     def test_get_chunk_slices_tuples(self):
         chunk_slices_tuples = get_chunk_slice_tuples([(30, 30, 30, 10),
                                                       (25, 25, 25, 25),
