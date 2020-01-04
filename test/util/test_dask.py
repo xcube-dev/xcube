@@ -2,7 +2,7 @@ import unittest
 
 import numpy as np
 
-from xcube.util.dask import ChunkContext, compute_array_from_func, get_chunks, get_chunk_slices_tuples
+from xcube.util.dask import ChunkContext, compute_array_from_func, get_chunk_sizes, get_chunk_slice_tuples
 
 
 class DaskTest(unittest.TestCase):
@@ -29,14 +29,17 @@ class DaskTest(unittest.TestCase):
         expected = (0.1 * np.linspace(0, 8 * 10 - 1, 8 * 10, dtype=np.float64)).reshape((8, 10))
         np.testing.assert_almost_equal(actual, expected)
 
-    def test_get_chunks(self):
-        chunks = get_chunks((100, 100, 40), (30, 25, 50))
-        self.assertEqual([(30, 30, 30, 10), (25, 25, 25, 25), (40,)],
+    def test_get_chunk_sizes(self):
+        chunks = get_chunk_sizes((100, 100, 40), (30, 25, 50))
+        self.assertEqual([(30, 30, 30, 10),
+                          (25, 25, 25, 25),
+                          (40,)],
                          list(chunks))
 
     def test_get_chunk_slices_tuples(self):
-        chunks = get_chunks((100, 100, 40), (30, 25, 50))
-        chunk_slices_tuples = get_chunk_slices_tuples(chunks)
+        chunk_slices_tuples = get_chunk_slice_tuples([(30, 30, 30, 10),
+                                                      (25, 25, 25, 25),
+                                                      (40,)])
         self.assertEqual([(slice(0, 30),
                            slice(30, 60),
                            slice(60, 90),
