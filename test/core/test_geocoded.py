@@ -20,6 +20,97 @@ nan = np.nan
 olci_path = 'C:\\Users\\Norman\\Downloads\\S3B_OL_1_EFR____20190728T103451_20190728T103751_20190729T141105_0179_028_108_1800_LN1_O_NT_002.SEN3'
 
 
+class ImageGeomTest(unittest.TestCase):
+    def test_size(self):
+        image_geom = ImageGeom((3600, 1800))
+        self.assertEqual((3600, 1800), image_geom.size)
+
+        image_geom = ImageGeom(3600)
+        self.assertEqual((3600, 3600), image_geom.size)
+
+        with self.assertRaises(TypeError):
+            # noinspection PyTypeChecker
+            ImageGeom(None)
+
+        with self.assertRaises(ValueError):
+            # noinspection PyTypeChecker
+            ImageGeom((3600, 1800, 4))
+
+    def test_tile_size(self):
+        image_geom = ImageGeom(size=(3600, 1800))
+        self.assertEqual((3600, 1800), image_geom.size)
+        self.assertEqual((3600, 1800), image_geom.tile_size)
+        self.assertEqual(False, image_geom.is_tiled)
+
+        image_geom = ImageGeom(size=(3600, 1800), tile_size=None)
+        self.assertEqual((3600, 1800), image_geom.size)
+        self.assertEqual((3600, 1800), image_geom.tile_size)
+        self.assertEqual(False, image_geom.is_tiled)
+
+        image_geom = ImageGeom(size=(3600, 1800), tile_size=(512, 256))
+        self.assertEqual((3600, 1800), image_geom.size)
+        self.assertEqual((512, 256), image_geom.tile_size)
+        self.assertEqual(True, image_geom.is_tiled)
+
+        image_geom = ImageGeom(size=(3600, 1800), tile_size=270)
+        self.assertEqual((3600, 1800), image_geom.size)
+        self.assertEqual((270, 270), image_geom.tile_size)
+        self.assertEqual(True, image_geom.is_tiled)
+
+        image_geom = ImageGeom(size=(360, 180), tile_size=(512, 256))
+        self.assertEqual((360, 180), image_geom.size)
+        self.assertEqual((360, 180), image_geom.tile_size)
+        self.assertEqual(False, image_geom.is_tiled)
+
+        with self.assertRaises(ValueError):
+            # noinspection PyTypeChecker
+            ImageGeom((3600, 1800), ((512,)))
+
+    def test_derive(self):
+        image_geom = ImageGeom((2048, 1024))
+        self.assertEqual((2048, 1024), image_geom.tile_size)
+        new_image_geom = image_geom.derive(tile_size=512)
+        self.assertIsNot(new_image_geom, image_geom)
+        self.assertEqual((2048, 1024), new_image_geom.size)
+        self.assertEqual((512, 512), new_image_geom.tile_size)
+
+    def test_tile_bboxes(self):
+        image_geom = ImageGeom(size=(2000, 1000), x_min=10.0, y_min=20.0, xy_res=0.1)
+        np.testing.assert_almost_equal(image_geom.tile_bboxes,
+                                       np.array([[0, 0, 1999, 999]], dtype=np.int64))
+
+        image_geom = ImageGeom(size=(2000, 1000), x_min=10.0, y_min=20.0, xy_res=0.1, tile_size=500)
+        np.testing.assert_almost_equal(image_geom.tile_bboxes,
+                                       np.array([
+                                           [0, 0, 499, 499],
+                                           [500, 0, 999, 499],
+                                           [1000, 0, 1499, 499],
+                                           [1500, 0, 1999, 499],
+                                           [0, 500, 499, 999],
+                                           [500, 500, 999, 999],
+                                           [1000, 500, 1499, 999],
+                                           [1500, 500, 1999, 999]
+                                       ], dtype=np.int64))
+
+    def test_tile_xy_bboxes(self):
+        image_geom = ImageGeom(size=(2000, 1000), x_min=10.0, y_min=20.0, xy_res=0.1)
+        np.testing.assert_almost_equal(image_geom.tile_xy_bboxes,
+                                       np.array([[10., 20., 209.9, 119.9]], dtype=np.float64))
+
+        image_geom = ImageGeom(size=(2000, 1000), x_min=10.0, y_min=20.0, xy_res=0.1, tile_size=500)
+        np.testing.assert_almost_equal(image_geom.tile_xy_bboxes,
+                                       np.array([
+                                           [10., 20., 59.9, 69.9],
+                                           [60., 20., 109.9, 69.9],
+                                           [110., 20., 159.9, 69.9],
+                                           [160., 20., 209.9, 69.9],
+                                           [10., 70., 59.9, 119.9],
+                                           [60., 70., 109.9, 119.9],
+                                           [110., 70., 159.9, 119.9],
+                                           [160., 70., 209.9, 119.9]
+                                       ], dtype=np.float64))
+
+
 class ComputePixelBBoxesTest(unittest.TestCase):
 
     def setUp(self) -> None:
@@ -100,7 +191,6 @@ class GeoCodingTest(unittest.TestCase):
         x = xr.DataArray(np.linspace(10.0, 20.0, 21), dims='columns')
         y = xr.DataArray(np.linspace(53.0, 58.0, 11), dims='rows')
         y, x = xr.broadcast(y, x)
-        print(x, y)
         gc = GeoCoding.from_dataset(xr.Dataset(dict(x=x, y=y)))
         self.assertIsInstance(gc.x, xr.DataArray)
         self.assertIsInstance(gc.y, xr.DataArray)
@@ -289,7 +379,6 @@ class ReprojectTest(unittest.TestCase):
                                        np.array([50.0, 50.5, 51.0, 51.5, 52.0, 52.5, 53.0, 53.5, 54.0, 54.5, 55.0, 55.5,
                                                  56.0],
                                                 dtype=lat.dtype))
-        print(xr.DataArray(rad.values))
         np.testing.assert_almost_equal(rad.values,
                                        np.array([
                                            [nan, nan, nan, nan, 4.0, nan, nan, nan, nan, nan, nan, nan, nan],
@@ -432,8 +521,6 @@ class ReprojectTest(unittest.TestCase):
                               dst_src_j,
                               dst_rad)
 
-        print(xr.DataArray(dst_rad, dims=('y', 'x')))
-
         np.testing.assert_almost_equal(dst_rad,
                                        np.array([
                                            [nan, nan, nan, nan, 4.0, nan, nan, nan, nan, nan, nan, nan, nan],
@@ -455,14 +542,14 @@ class ReprojectTest(unittest.TestCase):
     def test_compute_output_geom(self):
         src_ds = self.new_source_dataset()
 
-        self._assert_image_geom(ImageGeom((4, 4), 0.0, 50.0, 2.0),
+        self._assert_image_geom(ImageGeom((4, 4), None, 0.0, 50.0, 2.0),
                                 compute_output_geom(src_ds))
 
-        self._assert_image_geom(ImageGeom((7, 7), 0.0, 50.0, 1.0),
+        self._assert_image_geom(ImageGeom((7, 7), None, 0.0, 50.0, 1.0),
                                 compute_output_geom(src_ds,
                                                     oversampling=2.0))
 
-        self._assert_image_geom(ImageGeom((8, 8), 0.0, 50.0, 1.0),
+        self._assert_image_geom(ImageGeom((8, 8), None, 0.0, 50.0, 1.0),
                                 compute_output_geom(src_ds,
                                                     denom_x=4,
                                                     denom_y=4,
@@ -471,14 +558,14 @@ class ReprojectTest(unittest.TestCase):
     def test_compute_output_geom_antimeridian(self):
         src_ds = self.new_source_dataset_antimeridian()
 
-        self._assert_image_geom(ImageGeom((4, 4), 178.0, 50.0, 2.0),
+        self._assert_image_geom(ImageGeom((4, 4), None, 178.0, 50.0, 2.0),
                                 compute_output_geom(src_ds))
 
-        self._assert_image_geom(ImageGeom((7, 7), 178.0, 50.0, 1.0),
+        self._assert_image_geom(ImageGeom((7, 7), None, 178.0, 50.0, 1.0),
                                 compute_output_geom(src_ds,
                                                     oversampling=2.0))
 
-        self._assert_image_geom(ImageGeom((8, 8), 178.0, 50.0, 1.0),
+        self._assert_image_geom(ImageGeom((8, 8), None, 178.0, 50.0, 1.0),
                                 compute_output_geom(src_ds,
                                                     denom_x=4,
                                                     denom_y=4,

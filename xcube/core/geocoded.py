@@ -172,35 +172,41 @@ class GeoCoding(collections.namedtuple('GeoCoding', ['x', 'y', 'x_name', 'y_name
 
 class ImageGeom:
     def __init__(self,
-                 size: Tuple[int, int],
-                 x_min: float,
-                 y_min: float,
-                 xy_res: float,
-                 tile_size: Union[int, Tuple[int, int]] = None):
-        w, h = size
-        self._size = w, h
+                 size: Union[int, Tuple[int, int]],
+                 tile_size: Union[int, Tuple[int, int]] = None,
+                 x_min: float = 0.0,
+                 y_min: float = 0.0,
+                 xy_res: float = 1.0):
+
+        if isinstance(size, int):
+            w, h = size, size
+        else:
+            w, h = size
+
         if isinstance(tile_size, int):
-            self._tile_size = min(w, tile_size), min(h, tile_size)
+            tw, th = tile_size, tile_size
         elif tile_size is not None:
             tw, th = tile_size
-            self._tile_size = min(w, tw) or w, min(h, th) or h
         else:
-            self._tile_size = w, h
+            tw, th = w, h
+
+        self._size = w, h
+        self._tile_size = min(w, tw) or w, min(h, th) or h
         self._x_min = x_min
         self._y_min = y_min
         self._xy_res = xy_res
 
     def derive(self,
                size: Tuple[int, int] = None,
+               tile_size: Union[int, Tuple[int, int]] = None,
                x_min: float = None,
                y_min: float = None,
-               xy_res: float = None,
-               tile_size: Union[int, Tuple[int, int]] = None):
+               xy_res: float = None):
         return ImageGeom(self.size if size is None else size,
-                         self.x_min if x_min is None else x_min,
-                         self.y_min if y_min is None else y_min,
-                         self.xy_res if xy_res is None else xy_res,
-                         tile_size=self.tile_size if tile_size is None else tile_size)
+                         tile_size=self.tile_size if tile_size is None else tile_size,
+                         x_min=self.x_min if x_min is None else x_min,
+                         y_min=self.y_min if y_min is None else y_min,
+                         xy_res=self.xy_res if xy_res is None else xy_res)
 
     @property
     def size(self) -> Tuple[int, int]:
@@ -216,7 +222,7 @@ class ImageGeom:
 
     @property
     def is_tiled(self) -> bool:
-        return self._size == self._tile_size
+        return self._size != self._tile_size
 
     @property
     def tile_size(self) -> Tuple[int, int]:
@@ -264,7 +270,7 @@ class ImageGeom:
         return self.x_min, self.y_min, self.x_max, self.y_max
 
     @property
-    def xy_tile_bboxes(self) -> np.ndarray:
+    def tile_xy_bboxes(self) -> np.ndarray:
         xy_offset = np.array([self.x_min, self.y_min, self.x_min, self.y_min])
         tile_bboxes = self.tile_bboxes
         return xy_offset + self.xy_res * tile_bboxes
