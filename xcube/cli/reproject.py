@@ -150,7 +150,7 @@ def _reproject(input_path: str,
                                   xy_names=xy_names,
                                   var_names=var_names,
                                   output_geom=output_geom,
-                                  delta=delta)
+                                  uv_delta=delta)
 
     if reproj_ds is None:
         monitor(f'Dataset {input_path} does not seem to have an intersection with bounding box')

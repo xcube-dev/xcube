@@ -14,7 +14,8 @@ IntTupleIterable = Iterable[IntTuple]
 SliceTupleIterable = Iterable[SliceTuple]
 
 ChunkContext = collections.namedtuple('ChunkContext',
-                                      ['chunk_shape',
+                                      ['chunk_id',
+                                       'chunk_shape',
                                        'chunk_index',
                                        'chunk_slices',
                                        'array_shape',
@@ -37,8 +38,10 @@ def compute_array_from_func(func: Callable[[ChunkContext], np.ndarray],
     array_name = name + '-' + db.tokenize(shape, chunks, dtype)
 
     dsk = {}
+    chunk_id = 0
     for chunk_index, chunk_slices, chunk_shape in zip(chunk_indexes, chunk_slices, chunk_shapes):
-        context = ChunkContext(chunk_index=chunk_index,
+        context = ChunkContext(chunk_id=chunk_id,
+                               chunk_index=chunk_index,
                                chunk_slices=chunk_slices,
                                chunk_shape=chunk_shape,
                                array_shape=shape,
@@ -48,6 +51,7 @@ def compute_array_from_func(func: Callable[[ChunkContext], np.ndarray],
         key = (array_name,) + chunk_index
         value = (functools.partial(func, context, *args, **kwargs),)
         dsk[key] = value
+        chunk_id += 1
 
     return da.Array(dsk, array_name, chunk_sizes,
                     dtype=dtype,

@@ -156,66 +156,78 @@ class GeoCoding:
 
     def ij_bbox(self,
                 xy_bbox: Tuple[float, float, float, float],
-                xy_delta: float = 0.0,
-                ij_border: int = 0) -> Optional[Tuple[int, int, int, int]]:
+                xy_border: float = 0.0,
+                ij_border: int = 0,
+                gu: bool = False) -> Tuple[int, int, int, int]:
         """
-        Get a bounding box in pixel coordinates given a bounding box *xy_bbox* in x,y coordinates.
+        Compute bounding box in i,j pixel coordinates given a bounding box *xy_bbox* in x,y coordinates.
 
         :param xy_bbox: Bounding box (x_min, y_min, x_max, y_max) given in the same CS as x and y.
-        :param xy_delta: Absolute delta in x,y units used for comparisons. Defaults to 0.
-        :param ij_border: Extra border to be added to returned pixel i,j bounding box. Defaults to 0.
+        :param xy_border: If non-zero, grows the bounding box *xy_bbox* before using it for comparisons. Defaults to 0.
+        :param ij_border: If non-zero, grows the returned i,j bounding box and clips it to size. Defaults to 0.
+        :param gu: Use generic ufunc for the computation (may be faster). Defaults to False.
         :return: Bounding box in (i_min, j_min, i_max, j_max) in pixel coordinates.
             Returns None if *xy_bbox* isn't intersecting any of the x,y coordinates.
         """
-        src_x, src_y = self.xy
-        dst_x_min, dst_y_min, dst_x_max, dst_y_max = xy_bbox
-        if self.is_lon_normalized:
-            if dst_x_min < 0.0:
-                dst_x_min += 360.0
-            if dst_x_max < 0.0:
-                dst_x_max += 360.0
-        if dst_x_min > dst_x_max:
-            dst_x_max += 360.0
-        src_bbox = np.logical_and(np.logical_and(src_x >= dst_x_min - xy_delta, src_x <= dst_x_max + xy_delta),
-                                  np.logical_and(src_y >= dst_y_min - xy_delta, src_y <= dst_y_max + xy_delta))
-        dim_y, dim_x = src_x.dims
-        src_i = src_x[dim_x].where(src_bbox)
-        src_j = src_y[dim_y].where(src_bbox)
-        src_i_min = src_i.min()
-        src_i_max = src_i.max()
-        src_j_min = src_j.min()
-        src_j_max = src_j.max()
-        if not np.isfinite(src_i_min) or not np.isfinite(src_j_min) \
-                or not np.isfinite(src_i_max) or not np.isfinite(src_j_max):
-            return None
-        height, width = src_x.shape
-        src_i1 = int(src_i_min - ij_border)
-        src_i2 = int(src_i_max + ij_border)
-        src_j1 = int(src_j_min - ij_border)
-        src_j2 = int(src_j_max + ij_border)
-        if src_i1 < 0:
-            src_i1 = 0
-        if src_j1 < 0:
-            src_j1 = 0
-        if src_i2 >= width:
-            src_i2 = width - 1
-        if src_j2 >= height:
-            src_j2 = height - 1
-        return src_i1, src_j1, src_i2, src_j2
+        xy_bboxes = np.array([xy_bbox], dtype=np.float64)
+        ij_bboxes = np.full_like(xy_bboxes, -1, dtype=np.int64)
+        self.ij_bboxes(xy_bboxes, xy_border=xy_border, ij_border=ij_border, ij_bboxes=ij_bboxes, gu=gu)
+        # noinspection PyTypeChecker
+        return tuple(map(int, ij_bboxes[0]))
 
     def ij_bboxes(self,
                   xy_bboxes: np.ndarray,
+                  xy_border: float = 0.0,
                   ij_bboxes: np.ndarray = None,
-                  xy_delta: float = 0.0) -> np.ndarray:
+                  ij_border: int = 0,
+                  gu: bool = False) -> np.ndarray:
+        """
+        Compute bounding boxes in i,j pixel coordinates given bounding boxes *xy_bboxes* in x,y coordinates.
+
+        :param xy_bboxes: Numpy array of x,y bounding boxes [[x_min, y_min, x_max, y_max], ...]
+            given in the same CS as x and y.
+        :param xy_border: If non-zero, grows the bounding box *xy_bbox* before using it for comparisons. Defaults to 0.
+        :param ij_bboxes: Numpy array of pixel i,j bounding boxes [[x_min, y_min, x_max, y_max], ...].
+            If given, must have same shape as *xy_bboxes*.
+        :param ij_border: If non-zero, grows the returned i,j bounding box and clips it to size. Defaults to 0.
+        :param gu: Use generic ufunc for the computation (may be faster). Defaults to False.
+        :return: Bounding box in (i_min, j_min, i_max, j_max) in pixel coordinates.
+            Returns None if *xy_bbox* isn't intersecting any of the x,y coordinates.
+        """
+        if self.is_lon_normalized:
+            xy_bboxes = xy_bboxes.copy()
+            c0 = xy_bboxes[:, 0]
+            c2 = xy_bboxes[:, 2]
+            c0 = np.where(c0 < 0.0, c0 + 360.0, c0)
+            c2 = np.where(c2 < 0.0, c2 + 360.0, c2)
+            xy_bboxes[:, 0] = c0
+            xy_bboxes[:, 2] = c2
+
+        c0 = xy_bboxes[:, 0]
+        c2 = xy_bboxes[:, 2]
+        cond = c0 > c2
+        if np.any(cond):
+            xy_bboxes = xy_bboxes.copy()
+            xy_bboxes[:, 2] += 360.0
+
         if ij_bboxes is None:
-            ij_bboxes = np.full_like(xy_bboxes, -1)
+            ij_bboxes = np.full_like(xy_bboxes, -1, dtype=np.int64)
         else:
             ij_bboxes[:, :] = -1
-        compute_ij_bboxes(self.x.values,
-                          self.y.values,
-                          xy_bboxes,
-                          ij_bboxes,
-                          xy_delta=xy_delta)
+        if gu:
+            gu_compute_ij_bboxes(self.x.values,
+                                 self.y.values,
+                                 xy_bboxes,
+                                 xy_border,
+                                 ij_border,
+                                 ij_bboxes)
+        else:
+            compute_ij_bboxes(self.x.values,
+                              self.y.values,
+                              xy_bboxes,
+                              xy_border,
+                              ij_border,
+                              ij_bboxes)
         return ij_bboxes
 
 
@@ -319,13 +331,13 @@ class ImageGeom:
         return self.x_min, self.y_min, self.x_max, self.y_max
 
     @property
-    def tile_xy_bboxes(self) -> np.ndarray:
+    def xy_bboxes(self) -> np.ndarray:
         xy_offset = np.array([self.x_min, self.y_min, self.x_min, self.y_min])
-        tile_bboxes = self.tile_bboxes
+        tile_bboxes = self.ij_bboxes
         return xy_offset + self.xy_res * tile_bboxes
 
     @property
-    def tile_bboxes(self) -> np.ndarray:
+    def ij_bboxes(self) -> np.ndarray:
         chunk_sizes = get_chunk_sizes((self.height, self.width),
                                       (self.tile_height, self.tile_width))
         _, _, chunk_slice_tuples = get_chunk_iterators(chunk_sizes)
@@ -347,7 +359,7 @@ def reproject_dataset(src_ds: xr.Dataset,
                       xy_names: Tuple[str, str] = None,
                       output_geom: ImageGeom = None,
                       tile_size: Union[int, Tuple[int, int]] = None,
-                      delta: float = 1e-3) -> Optional[xr.Dataset]:
+                      uv_delta: float = 1e-3) -> Optional[xr.Dataset]:
     """
     Reproject *dataset* using its per-pixel x,y coordinates or the given *geo_coding*.
 
@@ -371,13 +383,12 @@ def reproject_dataset(src_ds: xr.Dataset,
     :param xy_names: Optional tuple of the x- and y-coordinate variables in *dataset*. Ignored if *geo_coding* is given.
     :param output_geom: Optional output geometry. If not given, output geometry will be computed
         to spatially fit *dataset* and to retain its spatial resolution.
-    :param delta: A normalized value that is used to determine whether x,y coordinates in the output are contained
+    :param uv_delta: A normalized value that is used to determine whether x,y coordinates in the output are contained
         in the triangles defined by the input x,y coordinates.
     :return: a reprojected dataset
     """
     src_geo_coding = geo_coding if geo_coding is not None else GeoCoding.from_dataset(src_ds, xy_names=xy_names)
     src_x, src_y = src_geo_coding.xy
-    src_x_dim, src_y_dim = src_geo_coding.dims
     src_x_name, src_y_name = src_geo_coding.xy_names
     is_lon_normalized = src_geo_coding.is_lon_normalized
 
@@ -386,8 +397,8 @@ def reproject_dataset(src_ds: xr.Dataset,
     if output_geom is None:
         output_geom = compute_output_geom(src_ds, geo_coding=src_geo_coding)
     else:
-        src_bbox = src_geo_coding.ij_bbox(output_geom.xy_bbox, ij_border=1, xy_delta=output_geom.xy_res)
-        if src_bbox is None:
+        src_bbox = src_geo_coding.ij_bbox(output_geom.xy_bbox, ij_border=1, xy_border=output_geom.xy_res)
+        if src_bbox[0] == -1:
             return None
         src_i_min_0, src_j_min_0 = src_bbox[0:2]
         if is_lon_normalized:
@@ -418,16 +429,13 @@ def reproject_dataset(src_ds: xr.Dataset,
 
     is_output_tiled = output_geom.is_tiled
     if not is_output_tiled:
+        t1 = time.perf_counter()
         src_x.load()
         src_y.load()
+        t2 = time.perf_counter()
+        print(f'loading x,y took {t2 - t1} seconds')
 
-    dst_vars = dict()
-    for src_var_name, src_var in src_vars.items():
-        dst_var_shape = src_var.shape[0:-2] + (dst_height, dst_width)
-        dst_var_dims = src_var.dims[0:-2] + dst_dims
-        dst_var_coords = dict(src_var.coords)
-        dst_var_coords.update(**dst_coords)
-        if not is_output_tiled:
+        def get_dst_var_array(src_var):
             dst_var_array = np.full(dst_var_shape, np.nan, dtype=src_var.dtype)
             reproject(src_var.values,
                       src_x.values,
@@ -438,29 +446,49 @@ def reproject_dataset(src_ds: xr.Dataset,
                       dst_x_min,
                       dst_y_min,
                       dst_xy_res,
-                      delta=delta)
-        else:
+                      uv_delta=uv_delta)
+            return dst_var_array
+    else:
+        # t1 = time.perf_counter()
+        # src_x.load()
+        # src_y.load()
+        # t2 = time.perf_counter()
+        # print(f'loading x,y took {t2 - t1} seconds')
+
+        t1 = time.perf_counter()
+        dst_xy_bboxes = output_geom.xy_bboxes
+        src_ij_bboxes = src_geo_coding.ij_bboxes(dst_xy_bboxes, xy_border=dst_xy_res, ij_border=1)
+        t2 = time.perf_counter()
+        print(f'computing src_ij_bboxes took {t2 - t1} seconds')
+        print(xr.DataArray(src_ij_bboxes))
+
+        def get_dst_var_array(src_var):
+
+            # This is NOT faster:
+            # src_var = src_var.compute()
+
             def reproject_func(context: ChunkContext) -> np.ndarray:
                 try:
                     dst_block = np.full(context.chunk_shape, np.nan, dtype=context.dtype)
                     dst_y_slice, dst_x_slice = context.chunk_slices
-                    dst_chunk_bbox = (dst_x_min + dst_x_slice.start * dst_xy_res,
-                                      dst_y_min + dst_y_slice.start * dst_xy_res,
-                                      dst_x_min + dst_x_slice.stop * dst_xy_res,
-                                      dst_y_min + dst_y_slice.stop * dst_xy_res)
-                    t1 = time.perf_counter()
-                    src_chunk_bbox = src_geo_coding.ij_bbox(dst_chunk_bbox, ij_border=1, xy_delta=dst_xy_res)
-                    t2 = time.perf_counter()
-                    if src_chunk_bbox is None:
+                    src_ij_bbox = src_ij_bboxes[context.chunk_id]
+                    src_i_min, src_j_min, src_i_max, src_j_max = src_ij_bbox
+                    if src_i_min == -1:
                         return dst_block
-                    src_i_min, src_j_min, src_i_max, src_j_max = src_chunk_bbox
                     src_i_slice = slice(src_i_min, src_i_max + 1)
                     src_j_slice = slice(src_j_min, src_j_max + 1)
-                    src_indexers = {src_x_dim: src_i_slice, src_y_dim: src_j_slice}
-                    src_var_values = src_var.isel(**src_indexers).values
-                    src_x_values = src_x.isel(**src_indexers).values
-                    src_y_values = src_y.isel(**src_indexers).values
-                    t3 = time.perf_counter()
+                    # This is NOT faster:
+                    # t1 = time.perf_counter()
+                    # src_indexers = {src_x_dim: src_i_slice, src_y_dim: src_j_slice}
+                    # src_var_values = src_var.isel(**src_indexers).values
+                    # src_x_values = src_x.isel(**src_indexers).values
+                    # src_y_values = src_y.isel(**src_indexers).values
+                    # t2 = time.perf_counter()
+                    t1 = time.perf_counter()
+                    src_var_values = src_var[..., src_j_slice, src_i_slice].values
+                    src_x_values = src_x[src_j_slice, src_i_slice].values
+                    src_y_values = src_y[src_j_slice, src_i_slice].values
+                    t2 = time.perf_counter()
                     reproject(src_var_values,
                               src_x_values,
                               src_y_values,
@@ -470,10 +498,11 @@ def reproject_dataset(src_ds: xr.Dataset,
                               dst_x_min + dst_x_slice.start * dst_xy_res,
                               dst_y_min + dst_y_slice.start * dst_xy_res,
                               dst_xy_res,
-                              delta=delta)
-                    t4 = time.perf_counter()
-                    print(f'chunk {context.name}-{context.chunk_index}, shape {context.chunk_shape} '
-                          f'took {t2 - t1}, {t3 - t2}, {t4 - t3} seconds, total {t4 - t1}')
+                              uv_delta=uv_delta)
+                    t3 = time.perf_counter()
+                    print(f'target chunk {context.name}-{context.chunk_index}, shape {context.chunk_shape} '
+                          f'for source shape {src_i_max - src_i_min + 1, src_j_max - src_j_min + 1} '
+                          f'took {t2 - t1}, {t3 - t2} seconds, total {t3 - t1}')
                     return dst_block
                 except BaseException as e:
                     print(80 * '#')
@@ -483,12 +512,19 @@ def reproject_dataset(src_ds: xr.Dataset,
 
             tile_width, tile_height = output_geom.tile_size
             dst_var_chunks = src_var.shape[0:-2] + (tile_height, tile_width)
-            dst_var_array = compute_array_from_func(reproject_func,
-                                                    dst_var_shape,
-                                                    dst_var_chunks,
-                                                    src_var.dtype,
-                                                    name=src_var_name)
+            return compute_array_from_func(reproject_func,
+                                           dst_var_shape,
+                                           dst_var_chunks,
+                                           src_var.dtype,
+                                           name=src_var_name)
 
+    dst_vars = dict()
+    for src_var_name, src_var in src_vars.items():
+        dst_var_shape = src_var.shape[0:-2] + (dst_height, dst_width)
+        dst_var_dims = src_var.dims[0:-2] + dst_dims
+        dst_var_coords = dict(src_var.coords)
+        dst_var_coords.update(**dst_coords)
+        dst_var_array = get_dst_var_array(src_var)
         dst_var = xr.DataArray(dst_var_array,
                                dims=dst_var_dims,
                                coords=dst_var_coords,
@@ -694,7 +730,7 @@ def reproject(src_values: np.ndarray,
               dst_x0: float,
               dst_y0: float,
               dst_res: float,
-              delta: float = 1e-3):
+              uv_delta: float = 1e-3):
     src_width = src_values.shape[-1]
     src_height = src_values.shape[-2]
 
@@ -704,8 +740,8 @@ def reproject(src_values: np.ndarray,
     dst_px = np.zeros(4, dtype=src_x.dtype)
     dst_py = np.zeros(4, dtype=src_y.dtype)
 
-    u_min = v_min = -delta
-    uv_max = 1.0 + 2 * delta
+    u_min = v_min = -uv_delta
+    uv_max = 1.0 + 2 * uv_delta
 
     dst_values[..., :, :] = np.nan
 
@@ -934,33 +970,107 @@ def extract_source_pixels(src_values: np.ndarray,
                 dst_values[..., dst_j, dst_i] = src_values[..., src_j, src_i]
 
 
-@nb.jit(nopython=True, cache=True)
-def compute_ij_bboxes(x: np.ndarray,
-                      y: np.ndarray,
+@nb.jit(nopython=True, cache=True, target='cpu')
+def compute_ij_bboxes(x_image: np.ndarray,
+                      y_image: np.ndarray,
                       xy_bboxes: np.ndarray,
-                      ij_bboxes: np.ndarray,
-                      xy_delta: float = 0.0):
-    h, w = x.shape
-    n, _ = xy_bboxes.shape
-    for j in range(h):
-        for i in range(w):
-            src_x = x[j, i]
-            src_y = y[j, i]
-            for k in range(n):
-                ij_bbox = ij_bboxes[k]
-                xy_bbox = xy_bboxes[k]
-                x_min = xy_bbox[0]
-                y_min = xy_bbox[1]
-                x_max = xy_bbox[2]
-                y_max = xy_bbox[3]
-                within_x = x_min - xy_delta <= src_x <= x_max + xy_delta
-                within_y = y_min - xy_delta <= src_y <= y_max + xy_delta
-                if within_x and within_y:
-                    i_min = ij_bbox[0]
-                    j_min = ij_bbox[1]
-                    i_max = ij_bbox[2]
-                    j_max = ij_bbox[3]
-                    ij_bbox[0] = i if i_min < 0 else min(i_min, i)
-                    ij_bbox[1] = j if j_min < 0 else min(j_min, j)
-                    ij_bbox[2] = i if i_max < 0 else max(i_max, i)
-                    ij_bbox[3] = j if j_max < 0 else max(j_max, j)
+                      xy_border: float,
+                      ij_border: int,
+                      ij_bboxes: np.ndarray):
+    h = x_image.shape[0]
+    w = x_image.shape[1]
+    n = xy_bboxes.shape[0]
+    for k in range(n):
+        ij_bbox = ij_bboxes[k]
+        xy_bbox = xy_bboxes[k]
+        x_min = xy_bbox[0] - xy_border
+        y_min = xy_bbox[1] - xy_border
+        x_max = xy_bbox[2] + xy_border
+        y_max = xy_bbox[3] + xy_border
+        for j in range(h):
+            for i in range(w):
+                x = x_image[j, i]
+                if x_min <= x <= x_max:
+                    y = y_image[j, i]
+                    if y_min <= y <= y_max:
+                        i_min = ij_bbox[0]
+                        j_min = ij_bbox[1]
+                        i_max = ij_bbox[2]
+                        j_max = ij_bbox[3]
+                        ij_bbox[0] = i if i_min < 0 else min(i_min, i)
+                        ij_bbox[1] = j if j_min < 0 else min(j_min, j)
+                        ij_bbox[2] = i if i_max < 0 else max(i_max, i)
+                        ij_bbox[3] = j if j_max < 0 else max(j_max, j)
+        if ij_border != 0 and ij_bbox[0] != -1:
+            i_min = ij_bbox[0] - ij_border
+            j_min = ij_bbox[1] - ij_border
+            i_max = ij_bbox[2] + ij_border
+            j_max = ij_bbox[3] + ij_border
+            if i_min < 0:
+                i_min = 0
+            if j_min < 0:
+                j_min = 0
+            if i_max >= w:
+                i_max = w - 1
+            if j_max >= h:
+                j_max = h - 1
+            ij_bbox[0] = i_min
+            ij_bbox[1] = j_min
+            ij_bbox[2] = i_max
+            ij_bbox[3] = j_max
+
+
+# This is NOT faster:
+@nb.guvectorize([(nb.float64[:, :],
+                  nb.float64[:, :],
+                  nb.float64[:, :],
+                  nb.float64,
+                  nb.int64,
+                  nb.int64[:, :])],
+                '(h,w),(h,w),(n,m),(),()->(n,m)',
+                cache=True, target='cpu')
+def gu_compute_ij_bboxes(x_image: np.ndarray,
+                         y_image: np.ndarray,
+                         xy_bboxes: np.ndarray,
+                         xy_border: float,
+                         ij_border: int,
+                         ij_bboxes: np.ndarray):
+    h = x_image.shape[0]
+    w = x_image.shape[1]
+    n = xy_bboxes.shape[0]
+    for k in range(n):
+        x_min = xy_bboxes[k, 0] - xy_border
+        y_min = xy_bboxes[k, 1] - xy_border
+        x_max = xy_bboxes[k, 2] + xy_border
+        y_max = xy_bboxes[k, 3] + xy_border
+        for j in range(h):
+            for i in range(w):
+                x = x_image[j, i]
+                if x_min <= x <= x_max:
+                    y = y_image[j, i]
+                    if y_min <= y <= y_max:
+                        i_min = ij_bboxes[k, 0]
+                        j_min = ij_bboxes[k, 1]
+                        i_max = ij_bboxes[k, 2]
+                        j_max = ij_bboxes[k, 3]
+                        ij_bboxes[k, 0] = i if i_min < 0 else min(i_min, i)
+                        ij_bboxes[k, 1] = j if j_min < 0 else min(j_min, j)
+                        ij_bboxes[k, 2] = i if i_max < 0 else max(i_max, i)
+                        ij_bboxes[k, 3] = j if j_max < 0 else max(j_max, j)
+        if ij_border != 0 and ij_bboxes[k, 0] != -1:
+            i_min = ij_bboxes[k, 0] - ij_border
+            j_min = ij_bboxes[k, 1] - ij_border
+            i_max = ij_bboxes[k, 2] + ij_border
+            j_max = ij_bboxes[k, 3] + ij_border
+            if i_min < 0:
+                i_min = 0
+            if j_min < 0:
+                j_min = 0
+            if i_max >= w:
+                i_max = w - 1
+            if j_max >= h:
+                j_max = h - 1
+            ij_bboxes[k, 0] = i_min
+            ij_bboxes[k, 1] = j_min
+            ij_bboxes[k, 2] = i_max
+            ij_bboxes[k, 3] = j_max

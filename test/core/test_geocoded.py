@@ -5,10 +5,11 @@ import xarray as xr
 
 from xcube.core.geocoded import GeoCoding
 from xcube.core.geocoded import ImageGeom
-from xcube.core.geocoded import compute_output_geom
 from xcube.core.geocoded import compute_ij_bboxes
+from xcube.core.geocoded import compute_output_geom
 from xcube.core.geocoded import compute_source_pixels
 from xcube.core.geocoded import extract_source_pixels
+from xcube.core.geocoded import gu_compute_ij_bboxes
 from xcube.core.geocoded import reproject_dataset
 from xcube.core.sentinel3 import is_sentinel3_product
 from xcube.core.sentinel3 import open_sentinel3_product
@@ -76,11 +77,11 @@ class ImageGeomTest(unittest.TestCase):
 
     def test_tile_bboxes(self):
         image_geom = ImageGeom(size=(2000, 1000), x_min=10.0, y_min=20.0, xy_res=0.1)
-        np.testing.assert_almost_equal(image_geom.tile_bboxes,
+        np.testing.assert_almost_equal(image_geom.ij_bboxes,
                                        np.array([[0, 0, 1999, 999]], dtype=np.int64))
 
         image_geom = ImageGeom(size=(2000, 1000), x_min=10.0, y_min=20.0, xy_res=0.1, tile_size=500)
-        np.testing.assert_almost_equal(image_geom.tile_bboxes,
+        np.testing.assert_almost_equal(image_geom.ij_bboxes,
                                        np.array([
                                            [0, 0, 499, 499],
                                            [500, 0, 999, 499],
@@ -94,11 +95,11 @@ class ImageGeomTest(unittest.TestCase):
 
     def test_tile_xy_bboxes(self):
         image_geom = ImageGeom(size=(2000, 1000), x_min=10.0, y_min=20.0, xy_res=0.1)
-        np.testing.assert_almost_equal(image_geom.tile_xy_bboxes,
+        np.testing.assert_almost_equal(image_geom.xy_bboxes,
                                        np.array([[10., 20., 209.9, 119.9]], dtype=np.float64))
 
         image_geom = ImageGeom(size=(2000, 1000), x_min=10.0, y_min=20.0, xy_res=0.1, tile_size=500)
-        np.testing.assert_almost_equal(image_geom.tile_xy_bboxes,
+        np.testing.assert_almost_equal(image_geom.xy_bboxes,
                                        np.array([
                                            [10., 20., 59.9, 69.9],
                                            [60., 20., 109.9, 69.9],
@@ -111,7 +112,7 @@ class ImageGeomTest(unittest.TestCase):
                                        ], dtype=np.float64))
 
 
-class ComputePixelBBoxesTest(unittest.TestCase):
+class ComputeIJBBoxesTest(unittest.TestCase):
 
     def setUp(self) -> None:
         lon = xr.DataArray(np.linspace(10., 20., 11), dims='x')
@@ -121,66 +122,95 @@ class ComputePixelBBoxesTest(unittest.TestCase):
         self.lat_values = lat.values
 
     def test_all_included(self):
-        xy_bboxes = np.array([[10., 50., 20., 60.]])
-        src_bboxes = np.full_like(xy_bboxes, -1, dtype=np.int64)
-        compute_ij_bboxes(self.lon_values, self.lat_values, xy_bboxes, src_bboxes)
-        np.testing.assert_almost_equal(src_bboxes,
-                                       np.array([[0, 0, 10, 10]], dtype=np.int64))
+        self._assert_all_included(compute_ij_bboxes)
 
     def test_tiles(self):
+        self._assert_tiles(compute_ij_bboxes)
+
+    def test_none_found(self):
+        self._assert_none_found(compute_ij_bboxes)
+
+    def test_with_border(self):
+        self._assert_with_border(compute_ij_bboxes)
+
+    def test_all_included_gu(self):
+        self._assert_all_included(gu_compute_ij_bboxes)
+
+    def test_tiles_gu(self):
+        self._assert_tiles(gu_compute_ij_bboxes)
+
+    def test_none_found_gu(self):
+        self._assert_none_found(gu_compute_ij_bboxes)
+
+    def test_with_border_gu(self):
+        self._assert_with_border(gu_compute_ij_bboxes)
+
+    def _assert_all_included(self, compute_ij_bboxes):
+        xy_bboxes = np.array([[10., 50., 20., 60.]])
+        ij_bboxes = np.full_like(xy_bboxes, -1, dtype=np.int64)
+        compute_ij_bboxes(self.lon_values, self.lat_values, xy_bboxes, 0.0, 0, ij_bboxes)
+        np.testing.assert_almost_equal(ij_bboxes,
+                                       np.array([[0, 0, 10, 10]], dtype=np.int64))
+
+    def _assert_tiles(self, compute_ij_bboxes):
         a0 = 0.
         a1 = a0 + 5.
         a2 = a1 + 5.
         xy_bboxes = np.array([[10. + a0, 50. + a0, 10. + a1, 50. + a1],
-                               [10. + a1, 50. + a0, 10. + a2, 50. + a1],
-                               [10. + a0, 50. + a1, 10. + a1, 50. + a2],
-                               [10. + a1, 50. + a1, 10. + a2, 50. + a2]])
-        src_bboxes = np.full_like(xy_bboxes, -1, dtype=np.int64)
-        compute_ij_bboxes(self.lon_values, self.lat_values, xy_bboxes, src_bboxes)
-        np.testing.assert_almost_equal(src_bboxes,
+                              [10. + a1, 50. + a0, 10. + a2, 50. + a1],
+                              [10. + a0, 50. + a1, 10. + a1, 50. + a2],
+                              [10. + a1, 50. + a1, 10. + a2, 50. + a2]])
+        ij_bboxes = np.full_like(xy_bboxes, -1, dtype=np.int64)
+        compute_ij_bboxes(self.lon_values, self.lat_values, xy_bboxes, 0.0, 0, ij_bboxes)
+        np.testing.assert_almost_equal(ij_bboxes,
                                        np.array([[0, 0, 5, 5],
                                                  [5, 0, 10, 5],
                                                  [0, 5, 5, 10],
                                                  [5, 5, 10, 10]], dtype=np.int64))
 
-    def test_none_found(self):
+    def _assert_none_found(self, compute_ij_bboxes):
         a0 = 11.
         a1 = a0 + 5.
         a2 = a1 + 5.
         xy_bboxes = np.array([[10. + a0, 50. + a0, 10. + a1, 50. + a1],
-                               [10. + a1, 50. + a0, 10. + a2, 50. + a1],
-                               [10. + a0, 50. + a1, 10. + a1, 50. + a2],
-                               [10. + a1, 50. + a1, 10. + a2, 50. + a2]])
-        src_bboxes = np.full_like(xy_bboxes, -1, dtype=np.int64)
-        compute_ij_bboxes(self.lon_values, self.lat_values, xy_bboxes, src_bboxes)
-        np.testing.assert_almost_equal(src_bboxes,
+                              [10. + a1, 50. + a0, 10. + a2, 50. + a1],
+                              [10. + a0, 50. + a1, 10. + a1, 50. + a2],
+                              [10. + a1, 50. + a1, 10. + a2, 50. + a2]])
+        ij_bboxes = np.full_like(xy_bboxes, -1, dtype=np.int64)
+        compute_ij_bboxes(self.lon_values, self.lat_values, xy_bboxes, 0.0, 0, ij_bboxes)
+        np.testing.assert_almost_equal(ij_bboxes,
                                        np.array([[-1, -1, -1, -1],
                                                  [-1, -1, -1, -1],
                                                  [-1, -1, -1, -1],
                                                  [-1, -1, -1, -1]], dtype=np.int64))
 
-    def test_with_delta(self):
+    def _assert_with_border(self, compute_ij_bboxes):
         xy_bboxes = np.array([[12.4, 51.6, 12.6, 51.7]])
 
-        src_bboxes = np.full_like(xy_bboxes, -1, dtype=np.int64)
-        compute_ij_bboxes(self.lon_values, self.lat_values, xy_bboxes, src_bboxes)
-        np.testing.assert_almost_equal(src_bboxes,
+        ij_bboxes = np.full_like(xy_bboxes, -1, dtype=np.int64)
+        compute_ij_bboxes(self.lon_values, self.lat_values, xy_bboxes, 0.0, 0, ij_bboxes)
+        np.testing.assert_almost_equal(ij_bboxes,
                                        np.array([[-1, -1, -1, -1]], dtype=np.int64))
 
-        src_bboxes = np.full_like(xy_bboxes, -1, dtype=np.int64)
-        compute_ij_bboxes(self.lon_values, self.lat_values, xy_bboxes, src_bboxes, xy_delta=0.5)
-        np.testing.assert_almost_equal(src_bboxes,
+        ij_bboxes = np.full_like(xy_bboxes, -1, dtype=np.int64)
+        compute_ij_bboxes(self.lon_values, self.lat_values, xy_bboxes, 0.5, 0, ij_bboxes)
+        np.testing.assert_almost_equal(ij_bboxes,
                                        np.array([[2, 2, 3, 2]], dtype=np.int64))
 
-        src_bboxes = np.full_like(xy_bboxes, -1, dtype=np.int64)
-        compute_ij_bboxes(self.lon_values, self.lat_values, xy_bboxes, src_bboxes, xy_delta=1)
-        np.testing.assert_almost_equal(src_bboxes,
+        ij_bboxes = np.full_like(xy_bboxes, -1, dtype=np.int64)
+        compute_ij_bboxes(self.lon_values, self.lat_values, xy_bboxes, 1.0, 0, ij_bboxes)
+        np.testing.assert_almost_equal(ij_bboxes,
                                        np.array([[2, 1, 3, 2]], dtype=np.int64))
 
-        src_bboxes = np.full_like(xy_bboxes, -1, dtype=np.int64)
-        compute_ij_bboxes(self.lon_values, self.lat_values, xy_bboxes, src_bboxes, xy_delta=2)
-        np.testing.assert_almost_equal(src_bboxes,
+        ij_bboxes = np.full_like(xy_bboxes, -1, dtype=np.int64)
+        compute_ij_bboxes(self.lon_values, self.lat_values, xy_bboxes, 2.0, 0, ij_bboxes)
+        np.testing.assert_almost_equal(ij_bboxes,
                                        np.array([[1, 0, 4, 3]], dtype=np.int64))
+
+        ij_bboxes = np.full_like(xy_bboxes, -1, dtype=np.int64)
+        compute_ij_bboxes(self.lon_values, self.lat_values, xy_bboxes, 2.0, 2, ij_bboxes)
+        np.testing.assert_almost_equal(ij_bboxes,
+                                       np.array([[0, 0, 6, 5]], dtype=np.int64))
 
 
 class GeoCodingTest(unittest.TestCase):
@@ -210,7 +240,7 @@ class GeoCodingTest(unittest.TestCase):
         y = xr.DataArray(np.linspace(53.0, 58.0, 11), dims='y')
         y, x = xr.broadcast(y, x)
         gc = GeoCoding(x=x, y=y, x_name='x', y_name='y', is_lon_normalized=False)
-        self.assertEqual(None, gc.ij_bbox((0, -50, 30, 0)))
+        self.assertEqual((-1, -1, -1, -1), gc.ij_bbox((0, -50, 30, 0)))
         self.assertEqual((0, 0, 20, 10), gc.ij_bbox((0, 50, 30, 60)))
         self.assertEqual((0, 0, 20, 6), gc.ij_bbox((0, 50, 30, 56)))
         self.assertEqual((10, 0, 20, 6), gc.ij_bbox((15, 50, 30, 56)))
@@ -226,7 +256,7 @@ class GeoCodingTest(unittest.TestCase):
         lat = xr.DataArray(np.linspace(53.0, 58.0, 11), dims='rows')
         lat, lon = xr.broadcast(lat, lon)
         gc = GeoCoding(x=lon, y=lat, x_name='lon', y_name='lat', is_lon_normalized=True)
-        self.assertEqual(None, gc.ij_bbox((0, -50, 30, 0)))
+        self.assertEqual((-1, -1, -1, -1), gc.ij_bbox((0, -50, 30, 0)))
         self.assertEqual((0, 0, 20, 10), gc.ij_bbox((denorm(160), 50, denorm(200), 60)))
         self.assertEqual((0, 0, 20, 6), gc.ij_bbox((denorm(160), 50, denorm(200), 56)))
         self.assertEqual((10, 0, 20, 6), gc.ij_bbox((denorm(180), 50, denorm(200), 56)))
@@ -235,6 +265,50 @@ class GeoCodingTest(unittest.TestCase):
         self.assertEqual((8, 0, 18, 8), gc.ij_bbox((denorm(180), 53.5, denorm(183), 56), ij_border=2))
         self.assertEqual((12, 1, 20, 6), gc.ij_bbox((denorm(181), 53.5, denorm(200), 56)))
         self.assertEqual((12, 1, 18, 6), gc.ij_bbox((denorm(181), 53.5, denorm(184), 56)))
+
+    def test_ij_bboxes(self):
+        x = xr.DataArray(np.linspace(10.0, 20.0, 21), dims='x')
+        y = xr.DataArray(np.linspace(53.0, 58.0, 11), dims='y')
+        y, x = xr.broadcast(y, x)
+        gc = GeoCoding(x=x, y=y, x_name='x', y_name='y', is_lon_normalized=False)
+
+        ij_bboxes = gc.ij_bboxes(np.array([(0.0, -50.0, 30.0, 0.0)]))
+        np.testing.assert_almost_equal(ij_bboxes,
+                                       np.array([(-1, -1, -1, -1)], dtype=np.int64))
+
+        ij_bboxes = gc.ij_bboxes(np.array([(0.0, 50, 30, 60),
+                                           (0.0, 50, 30, 56),
+                                           (15, 50, 30, 56),
+                                           (15, 50, 18, 56),
+                                           (15, 53.5, 18, 56)]))
+        np.testing.assert_almost_equal(ij_bboxes,
+                                       np.array([(0, 0, 20, 10),
+                                                 (0, 0, 20, 6),
+                                                 (10, 0, 20, 6),
+                                                 (10, 0, 16, 6),
+                                                 (10, 1, 16, 6)], dtype=np.int64))
+
+    def test_ij_bboxes_gu(self):
+        x = xr.DataArray(np.linspace(10.0, 20.0, 21), dims='x')
+        y = xr.DataArray(np.linspace(53.0, 58.0, 11), dims='y')
+        y, x = xr.broadcast(y, x)
+        gc = GeoCoding(x=x, y=y, x_name='x', y_name='y', is_lon_normalized=False)
+
+        ij_bboxes = gc.ij_bboxes(np.array([(0.0, -50.0, 30.0, 0.0)]), gu=True)
+        np.testing.assert_almost_equal(ij_bboxes,
+                                       np.array([(-1, -1, -1, -1)], dtype=np.int64))
+
+        ij_bboxes = gc.ij_bboxes(np.array([(0.0, 50, 30, 60),
+                                           (0.0, 50, 30, 56),
+                                           (15, 50, 30, 56),
+                                           (15, 50, 18, 56),
+                                           (15, 53.5, 18, 56)]), gu=True)
+        np.testing.assert_almost_equal(ij_bboxes,
+                                       np.array([(0, 0, 20, 10),
+                                                 (0, 0, 20, 6),
+                                                 (10, 0, 20, 6),
+                                                 (10, 0, 16, 6),
+                                                 (10, 1, 16, 6)], dtype=np.int64))
 
 
 class ReprojectTest(unittest.TestCase):
@@ -409,6 +483,7 @@ class ReprojectTest(unittest.TestCase):
         output_geom = ImageGeom(size=(13, 13), x_min=+178.0, y_min=+50.0, xy_res=0.5)
 
         dst_ds = reproject_dataset(src_ds, output_geom=output_geom)
+        self.assertIsNotNone(dst_ds)
         lon, lat, rad = self._assert_shape_and_dim(dst_ds, 13, 13)
         np.testing.assert_almost_equal(lon.values,
                                        np.array([+178.0, +178.5, +179.0, +179.5, +180.0,
