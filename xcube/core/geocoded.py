@@ -352,13 +352,13 @@ class ImageGeom:
             tile_bboxes[i, 3] = y_slice.stop - 1
         return tile_bboxes
 
-# TODO: add kwarg to set whether user wants an inverse y axis
 
 def reproject_dataset(dataset: xr.Dataset,
                       var_names: Union[str, Sequence[str]] = None,
                       geo_coding: GeoCoding = None,
                       xy_names: Tuple[str, str] = None,
                       output_geom: ImageGeom = None,
+                      is_y_axis_inverted: bool = False,
                       tile_size: Union[int, Tuple[int, int]] = None,
                       uv_delta: float = 1e-3) -> Optional[xr.Dataset]:
     """
@@ -380,10 +380,11 @@ def reproject_dataset(dataset: xr.Dataset,
     :param dataset: Source dataset.
     :param var_names: Optional variable name or sequence of variable names.
     :param geo_coding: Optional dataset geo-coding.
-    :param tile_size: Optional tile size.
     :param xy_names: Optional tuple of the x- and y-coordinate variables in *dataset*. Ignored if *geo_coding* is given.
     :param output_geom: Optional output geometry. If not given, output geometry will be computed
         to spatially fit *dataset* and to retain its spatial resolution.
+    :param is_y_axis_inverted: Whether the y-axis labels in the output should be in inverse order.
+    :param tile_size: Optional tile size for the output.
     :param uv_delta: A normalized value that is used to determine whether x,y coordinates in the output are contained
         in the triangles defined by the input x,y coordinates.
     :return: a reprojected dataset, or None if the requested output does not intersect with *dataset*.
@@ -418,14 +419,17 @@ def reproject_dataset(dataset: xr.Dataset,
     dst_x_min, dst_y_min = output_geom.x_min, output_geom.y_min
     dst_xy_res = output_geom.xy_res
 
-    dst_x_var = xr.DataArray(np.linspace(dst_x_min, dst_x_min + dst_xy_res * (dst_width - 1),
-                                         num=dst_width, dtype=np.float64), dims=src_x_name)
-    dst_y_var = xr.DataArray(np.linspace(dst_y_min, dst_y_min + dst_xy_res * (dst_height - 1),
-                                         num=dst_height, dtype=np.float64), dims=src_y_name)
-    dst_coords = {
-        src_x_name: _denormalize_lon(dst_x_var) if is_lon_normalized else dst_x_var,
-        src_y_name: dst_y_var
-    }
+    dst_x_var_values = np.linspace(dst_x_min, dst_x_min + dst_xy_res * (dst_width - 1),
+                                   num=dst_width, dtype=np.float64)
+    dst_y_var_values = np.linspace(dst_y_min, dst_y_min + dst_xy_res * (dst_height - 1),
+                                   num=dst_height, dtype=np.float64)
+    dst_x_var = xr.DataArray(dst_x_var_values, dims=src_x_name)
+    dst_y_var = xr.DataArray(dst_y_var_values, dims=src_y_name)
+    if is_lon_normalized:
+        dst_x_var = _denormalize_lon(dst_x_var)
+    if is_y_axis_inverted:
+        dst_y_var = dst_y_var[::-1]
+    dst_coords = {src_x_name: dst_x_var, src_y_name: dst_y_var}
     dst_dims = (src_y_name, src_x_name)
 
     is_output_tiled = output_geom.is_tiled
@@ -516,6 +520,8 @@ def reproject_dataset(dataset: xr.Dataset,
         dst_var_coords = dict(src_var.coords)
         dst_var_coords.update(**dst_coords)
         dst_var_array = get_dst_var_array(src_var)
+        if is_y_axis_inverted:
+            dst_var_array = dst_var_array[..., ::-1, :]
         dst_var = xr.DataArray(dst_var_array,
                                dims=dst_var_dims,
                                coords=dst_var_coords,

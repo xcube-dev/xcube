@@ -228,6 +228,7 @@ class XYInputProcessor(InputProcessor, metaclass=ABCMeta):
             return reproject_geocoded_dataset(dataset,
                                               xy_names=reprojection_info.xy_var_names,
                                               output_geom=output_geom,
+                                              is_y_axis_inverted=True,
                                               uv_delta=0.01)
         else:
             return reproject_xy_to_wgs84(dataset,
