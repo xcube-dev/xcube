@@ -19,6 +19,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+import warnings
 from abc import ABCMeta, abstractmethod
 from typing import Collection, Optional, Tuple, Union
 
@@ -27,10 +28,13 @@ import xarray as xr
 
 from xcube.constants import CRS_WKT_EPSG_4326
 from xcube.constants import EXTENSION_POINT_INPUT_PROCESSORS
+from xcube.core.geocoded import reproject_dataset as reproject_geocoded_dataset, ImageGeom
 from xcube.core.reproject import reproject_xy_to_wgs84
 from xcube.core.timecoord import to_time_in_days_since_1970
 from xcube.util.plugin import ExtensionComponent, get_extension_registry
 
+# TODO: make this an argument to XYInputProcessor.process()
+terrain_corrected_xy = True
 
 class ReprojectionInfo:
 
@@ -209,16 +213,33 @@ class XYInputProcessor(InputProcessor, metaclass=ABCMeta):
         reprojection_info = self.get_reprojection_info(dataset)
         if reprojection_info is None:
             return dataset
-        return reproject_xy_to_wgs84(dataset,
-                                     src_xy_var_names=reprojection_info.xy_var_names,
-                                     src_xy_tp_var_names=reprojection_info.xy_tp_var_names,
-                                     src_xy_crs=reprojection_info.xy_crs,
-                                     src_xy_gcp_step=reprojection_info.xy_gcp_step or 1,
-                                     src_xy_tp_gcp_step=reprojection_info.xy_tp_gcp_step or 1,
-                                     dst_size=dst_size,
-                                     dst_region=dst_region,
-                                     dst_resampling=dst_resampling,
-                                     include_non_spatial_vars=include_non_spatial_vars)
+
+        if terrain_corrected_xy:
+            warn_prefix = 'unsupported argument if terrain_corrected_xy=True: '
+            if include_non_spatial_vars:
+                warnings.warn(warn_prefix + f'ignoring include_non_spatial_vars = {include_non_spatial_vars!r}')
+            if dst_resampling != 'Nearest':
+                warnings.warn(warn_prefix + f'ignoring dst_resampling = {dst_resampling!r}')
+            # TODO: add more
+            dst_width, dst_height = dst_size
+            dst_x1, dst_y1, dst_x2, dst_y2 = dst_region
+            dst_res = max((dst_x2 - dst_x1) / dst_width, (dst_y2 - dst_y1) / dst_height)
+            output_geom = ImageGeom(size=(dst_width, dst_height), x_min=dst_x1, y_min=dst_y1, xy_res=dst_res)
+            return reproject_geocoded_dataset(dataset,
+                                              xy_names=reprojection_info.xy_var_names,
+                                              output_geom=output_geom,
+                                              uv_delta=0.01)
+        else:
+            return reproject_xy_to_wgs84(dataset,
+                                         src_xy_var_names=reprojection_info.xy_var_names,
+                                         src_xy_tp_var_names=reprojection_info.xy_tp_var_names,
+                                         src_xy_crs=reprojection_info.xy_crs,
+                                         src_xy_gcp_step=reprojection_info.xy_gcp_step or 1,
+                                         src_xy_tp_gcp_step=reprojection_info.xy_tp_gcp_step or 1,
+                                         dst_size=dst_size,
+                                         dst_region=dst_region,
+                                         dst_resampling=dst_resampling,
+                                         include_non_spatial_vars=include_non_spatial_vars)
 
 
 class DefaultInputProcessor(XYInputProcessor):

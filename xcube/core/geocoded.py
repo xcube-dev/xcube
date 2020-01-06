@@ -352,8 +352,9 @@ class ImageGeom:
             tile_bboxes[i, 3] = y_slice.stop - 1
         return tile_bboxes
 
+# TODO: add kwarg to set whether user wants an inverse y axis
 
-def reproject_dataset(src_ds: xr.Dataset,
+def reproject_dataset(dataset: xr.Dataset,
                       var_names: Union[str, Sequence[str]] = None,
                       geo_coding: GeoCoding = None,
                       xy_names: Tuple[str, str] = None,
@@ -376,7 +377,7 @@ def reproject_dataset(src_ds: xr.Dataset,
     is greater than one in the output's x- or y-direction, then the returned dataset will be composed of lazy,
     chunked dask arrays. Otherwise the returned dataset will be composed of ordinary numpy arrays.
 
-    :param src_ds: Source dataset.
+    :param dataset: Source dataset.
     :param var_names: Optional variable name or sequence of variable names.
     :param geo_coding: Optional dataset geo-coding.
     :param tile_size: Optional tile size.
@@ -385,9 +386,9 @@ def reproject_dataset(src_ds: xr.Dataset,
         to spatially fit *dataset* and to retain its spatial resolution.
     :param uv_delta: A normalized value that is used to determine whether x,y coordinates in the output are contained
         in the triangles defined by the input x,y coordinates.
-    :return: a reprojected dataset
+    :return: a reprojected dataset, or None if the requested output does not intersect with *dataset*.
     """
-    src_geo_coding = geo_coding if geo_coding is not None else GeoCoding.from_dataset(src_ds, xy_names=xy_names)
+    src_geo_coding = geo_coding if geo_coding is not None else GeoCoding.from_dataset(dataset, xy_names=xy_names)
     src_x, src_y = src_geo_coding.xy
     src_x_name, src_y_name = src_geo_coding.xy_names
     is_lon_normalized = src_geo_coding.is_lon_normalized
@@ -395,23 +396,23 @@ def reproject_dataset(src_ds: xr.Dataset,
     src_i_min_0 = 0
     src_j_min_0 = 0
     if output_geom is None:
-        output_geom = compute_output_geom(src_ds, geo_coding=src_geo_coding)
+        output_geom = compute_output_geom(dataset, geo_coding=src_geo_coding)
     else:
         src_bbox = src_geo_coding.ij_bbox(output_geom.xy_bbox, ij_border=1, xy_border=output_geom.xy_res)
         if src_bbox[0] == -1:
             return None
         src_i_min_0, src_j_min_0 = src_bbox[0:2]
         if is_lon_normalized:
-            src_ds = src_ds.copy()
-            src_ds[src_x_name] = src_x
-        src_ds = select_spatial_subset(src_ds, src_bbox, geo_coding=src_geo_coding)
-        src_x, src_y = src_ds[src_x_name], src_ds[src_y_name]
+            dataset = dataset.copy()
+            dataset[src_x_name] = src_x
+        dataset = select_spatial_subset(dataset, src_bbox, geo_coding=src_geo_coding)
+        src_x, src_y = dataset[src_x_name], dataset[src_y_name]
         src_geo_coding = src_geo_coding.derive(x=src_x, y=src_y)
 
     if tile_size is not None:
         output_geom = output_geom.derive(tile_size=tile_size)
 
-    src_vars = select_variables(src_ds, var_names, geo_coding=src_geo_coding)
+    src_vars = select_variables(dataset, var_names, geo_coding=src_geo_coding)
 
     dst_width, dst_height = output_geom.size
     dst_x_min, dst_y_min = output_geom.x_min, output_geom.y_min
@@ -520,7 +521,7 @@ def reproject_dataset(src_ds: xr.Dataset,
                                coords=dst_var_coords,
                                attrs=src_var.attrs)
         dst_vars[src_var_name] = dst_var
-    return xr.Dataset(dst_vars, attrs=src_ds.attrs)
+    return xr.Dataset(dst_vars, attrs=dataset.attrs)
 
 
 def select_variables(dataset,
