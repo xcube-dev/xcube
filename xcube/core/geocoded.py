@@ -429,11 +429,8 @@ def reproject_dataset(src_ds: xr.Dataset,
 
     is_output_tiled = output_geom.is_tiled
     if not is_output_tiled:
-        t1 = time.perf_counter()
         src_x.load()
         src_y.load()
-        t2 = time.perf_counter()
-        print(f'loading x,y took {t2 - t1} seconds')
 
         def get_dst_var_array(src_var):
             dst_var_array = np.full(dst_var_shape, np.nan, dtype=src_var.dtype)
@@ -449,18 +446,11 @@ def reproject_dataset(src_ds: xr.Dataset,
                       uv_delta=uv_delta)
             return dst_var_array
     else:
-        # t1 = time.perf_counter()
         # src_x.load()
         # src_y.load()
-        # t2 = time.perf_counter()
-        # print(f'loading x,y took {t2 - t1} seconds')
 
-        t1 = time.perf_counter()
         dst_xy_bboxes = output_geom.xy_bboxes
         src_ij_bboxes = src_geo_coding.ij_bboxes(dst_xy_bboxes, xy_border=dst_xy_res, ij_border=1)
-        t2 = time.perf_counter()
-        print(f'computing src_ij_bboxes took {t2 - t1} seconds')
-        print(xr.DataArray(src_ij_bboxes))
 
         def get_dst_var_array(src_var):
 
@@ -502,7 +492,7 @@ def reproject_dataset(src_ds: xr.Dataset,
                     t3 = time.perf_counter()
                     print(f'target chunk {context.name}-{context.chunk_index}, shape {context.chunk_shape} '
                           f'for source shape {src_i_max - src_i_min + 1, src_j_max - src_j_min + 1} '
-                          f'took {t2 - t1}, {t3 - t2} seconds, total {t3 - t1}')
+                          f'took {_millis(t2 - t1)}, {_millis(t3 - t2)} milliseconds, total {_millis(t3 - t1)}')
                     return dst_block
                 except BaseException as e:
                     print(80 * '#')
@@ -1074,3 +1064,7 @@ def gu_compute_ij_bboxes(x_image: np.ndarray,
             ij_bboxes[k, 1] = j_min
             ij_bboxes[k, 2] = i_max
             ij_bboxes[k, 3] = j_max
+
+
+def _millis(seconds: float) -> int:
+    return round(1000 * seconds)
