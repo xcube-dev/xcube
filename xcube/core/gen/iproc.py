@@ -28,7 +28,7 @@ import xarray as xr
 
 from xcube.constants import CRS_WKT_EPSG_4326
 from xcube.constants import EXTENSION_POINT_INPUT_PROCESSORS
-from xcube.core.geocoded import reproject_dataset as reproject_geocoded_dataset, ImageGeom
+from xcube.core.rectify import rectify_dataset as reproject_geocoded_dataset, ImageGeom
 from xcube.core.reproject import reproject_xy_to_wgs84
 from xcube.core.timecoord import to_time_in_days_since_1970
 from xcube.util.plugin import ExtensionComponent, get_extension_registry

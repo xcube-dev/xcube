@@ -96,7 +96,7 @@ def _register_cli_commands(ext_registry: extension.ExtensionRegistry):
         'level',
         'optimize',
         'prune',
-        'reproject',
+        'rectify',
         'resample',
         'serve',
         'timeit',
