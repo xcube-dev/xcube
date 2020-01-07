@@ -224,7 +224,10 @@ class XYInputProcessor(InputProcessor, metaclass=ABCMeta):
             dst_width, dst_height = dst_size
             dst_x1, dst_y1, dst_x2, dst_y2 = dst_region
             dst_res = max((dst_x2 - dst_x1) / dst_width, (dst_y2 - dst_y1) / dst_height)
-            output_geom = ImageGeom(size=(dst_width, dst_height), x_min=dst_x1, y_min=dst_y1, xy_res=dst_res)
+            output_geom = ImageGeom(size=(dst_width, dst_height),
+                                    x_min=dst_x1 + dst_res / 2,
+                                    y_min=dst_y1 + dst_res / 2,
+                                    xy_res=dst_res)
             return reproject_geocoded_dataset(dataset,
                                               xy_names=reprojection_info.xy_var_names,
                                               output_geom=output_geom,
