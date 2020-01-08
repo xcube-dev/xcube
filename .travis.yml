@@ -28,7 +28,8 @@ install:
   - source activate xcube
   - conda list
   - python setup.py install 
-  
+
+  - export NUMBA_DISABLE_JIT=1
   - py.test -v --cov=xcube
 
 after_success:
