@@ -136,7 +136,7 @@ class GeoCoding:
             raise ValueError(f'unable to determine x and y coordinate variable names')
 
         if x.ndim == 1 and y.ndim == 1:
-            x, y = xr.broadcast(y, x)
+            y, x = xr.broadcast(y, x)
         if x.ndim != 2 or y.ndim != 2:
             raise ValueError(
                 f'coordinate variables {x_name!r} and {y_name!r} must both have either one or two dimensions')
