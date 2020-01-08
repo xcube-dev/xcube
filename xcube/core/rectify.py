@@ -34,8 +34,11 @@ LAT_COORD_VAR_NAMES = ('lat', 'latitude')
 X_COORD_VAR_NAMES = ('x', 'xc') + LON_COORD_VAR_NAMES
 Y_COORD_VAR_NAMES = ('y', 'yc') + LAT_COORD_VAR_NAMES
 
+# TODO (forman): move into its own module xcube.core.geocoding
 
 class GeoCoding:
+
+    # TODO (forman): add docs
 
     def __init__(self,
                  x: xr.DataArray,
@@ -43,6 +46,7 @@ class GeoCoding:
                  x_name: str,
                  y_name: str,
                  is_lon_normalized: bool = False):
+        # TODO (forman): validate args & kwargs
         self._x = x
         self._y = y
         self._x_name = x_name
@@ -230,6 +234,7 @@ class GeoCoding:
                               ij_bboxes)
         return ij_bboxes
 
+# TODO (forman): move intow its own module xcube.core.image or into xcube.core.geom
 
 class ImageGeom:
 
@@ -270,6 +275,8 @@ class ImageGeom:
                  x_min: float = 0.0,
                  y_min: float = 0.0,
                  xy_res: float = 1.0):
+
+        # TODO (forman): validate args & kwargs
 
         if isinstance(size, int):
             w, h = size, size
@@ -663,6 +670,7 @@ def _compute_output_geom(dataset: xr.Dataset,
 
 
 def _get_dataset_xy_names(dataset: xr.Dataset, xy_names: Tuple[str, str] = None) -> Tuple[str, str]:
+    # TODO (forman): merge logic with xcube.core.schema.get_dataset_xy_var_names(dataset) and use it instead
     x_name, y_name = xy_names if xy_names is not None else (None, None)
     return (_get_coord_var_name(dataset, x_name, X_COORD_VAR_NAMES, 'x'),
             _get_coord_var_name(dataset, y_name, Y_COORD_VAR_NAMES, 'y'))
