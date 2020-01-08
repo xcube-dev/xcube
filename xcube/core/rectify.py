@@ -27,7 +27,6 @@ import numpy as np
 import xarray as xr
 
 from xcube.core.geocoding import GeoCoding
-from xcube.core.geocoding import denormalize_lon
 from xcube.core.imgeom import ImageGeom
 from xcube.util.dask import ChunkContext
 from xcube.util.dask import compute_array_from_func
@@ -71,8 +70,7 @@ def rectify_dataset(dataset: xr.Dataset,
     """
     src_geo_coding = geo_coding if geo_coding is not None else GeoCoding.from_dataset(dataset, xy_names=xy_names)
     src_x, src_y = src_geo_coding.xy
-    src_x_name, src_y_name = src_geo_coding.xy_names
-    is_lon_normalized = src_geo_coding.is_lon_normalized
+    src_attrs = dict(dataset.attrs)
 
     src_i_min_0 = 0
     src_j_min_0 = 0
@@ -82,13 +80,12 @@ def rectify_dataset(dataset: xr.Dataset,
         src_bbox = src_geo_coding.ij_bbox(output_geom.xy_bbox, ij_border=1, xy_border=output_geom.xy_res)
         if src_bbox[0] == -1:
             return None
-        src_i_min_0, src_j_min_0 = src_bbox[0:2]
-        if is_lon_normalized:
-            dataset = dataset.copy()
-            dataset[src_x_name] = src_x
-        dataset = select_spatial_subset(dataset, src_bbox, geo_coding=src_geo_coding)
-        src_x, src_y = dataset[src_x_name], dataset[src_y_name]
-        src_geo_coding = src_geo_coding.derive(x=src_x, y=src_y)
+        dataset_subset = select_spatial_subset(dataset, src_bbox, geo_coding=src_geo_coding)
+        if dataset_subset is not dataset:
+            src_i_min_0, src_j_min_0 = src_bbox[0:2]
+            src_geo_coding = GeoCoding.from_dataset(dataset_subset)
+            src_x, src_y = src_geo_coding.x, src_geo_coding.y
+            dataset = dataset_subset
 
     if tile_size is not None:
         output_geom = output_geom.derive(tile_size=tile_size)
@@ -98,19 +95,6 @@ def rectify_dataset(dataset: xr.Dataset,
     dst_width, dst_height = output_geom.size
     dst_x_min, dst_y_min = output_geom.x_min, output_geom.y_min
     dst_xy_res = output_geom.xy_res
-
-    dst_x_var_values = np.linspace(dst_x_min, dst_x_min + dst_xy_res * (dst_width - 1),
-                                   num=dst_width, dtype=np.float64)
-    dst_y_var_values = np.linspace(dst_y_min, dst_y_min + dst_xy_res * (dst_height - 1),
-                                   num=dst_height, dtype=np.float64)
-    dst_x_var = xr.DataArray(dst_x_var_values, dims=src_x_name)
-    dst_y_var = xr.DataArray(dst_y_var_values, dims=src_y_name)
-    if is_lon_normalized:
-        dst_x_var = denormalize_lon(dst_x_var)
-    if is_y_axis_inverted:
-        dst_y_var = dst_y_var[::-1]
-    dst_coords = {src_x_name: dst_x_var, src_y_name: dst_y_var}
-    dst_dims = (src_y_name, src_x_name)
 
     is_output_tiled = output_geom.is_tiled
     if not is_output_tiled:
@@ -185,6 +169,7 @@ def rectify_dataset(dataset: xr.Dataset,
                         dst_block = dst_block[..., ::-1, :]
                     return dst_block
                 except BaseException as e:
+                    # TODO (forman): find better way to report errors from chunk computations
                     print(80 * '#')
                     print(e)
                     print(80 * '#')
@@ -198,19 +183,23 @@ def rectify_dataset(dataset: xr.Dataset,
                                            src_var.dtype,
                                            name=src_var_name)
 
+    dst_dims = src_geo_coding.xy_names[::-1]
+    dst_ds_coords = output_geom.coord_vars(xy_names=src_geo_coding.xy_names,
+                                           is_lon_normalized=src_geo_coding.is_lon_normalized,
+                                           is_y_axis_inverted=is_y_axis_inverted)
     dst_vars = dict()
     for src_var_name, src_var in src_vars.items():
         dst_var_shape = src_var.shape[0:-2] + (dst_height, dst_width)
         dst_var_dims = src_var.dims[0:-2] + dst_dims
-        dst_var_coords = dict(src_var.coords)
-        dst_var_coords.update(**dst_coords)
+        dst_var_coords = {d: src_var.coords[d] for d in dst_var_dims if d in src_var.coords}
+        dst_var_coords.update({d: dst_ds_coords[d] for d in dst_var_dims if d in dst_ds_coords})
         dst_var_array = _get_dst_var_array(src_var)
         dst_var = xr.DataArray(dst_var_array,
                                dims=dst_var_dims,
                                coords=dst_var_coords,
                                attrs=src_var.attrs)
         dst_vars[src_var_name] = dst_var
-    return xr.Dataset(dst_vars, attrs=dataset.attrs)
+    return xr.Dataset(dst_vars, coords=dst_ds_coords, attrs=src_attrs)
 
 
 def select_variables(dataset,
@@ -264,12 +253,10 @@ def select_spatial_subset(dataset: xr.Dataset,
     width, height = geo_coding.size
     i_min, j_min, i_max, j_max = bbox
     if i_min > 0 or j_min > 0 or i_max < width - 1 or j_max < height - 1:
-        src_i_slice = slice(i_min, i_max + 1)
-        src_j_slice = slice(j_min, j_max + 1)
-        dim_x, dim_y = geo_coding.dims
-        indexers = {dim_y: src_j_slice, dim_x: src_i_slice}
-        return xr.Dataset({var_name: var.isel(**indexers) for var_name, var in dataset.variables.items()
-                           if var.shape == (height, width) and var.dims[-2:] == (dim_y, dim_x)})
+        x_dim, y_dim = geo_coding.dims
+        i_slice = slice(i_min, i_max + 1)
+        j_slice = slice(j_min, j_max + 1)
+        return dataset.isel({x_dim: i_slice, y_dim: j_slice})
     return dataset
 
 

@@ -20,18 +20,16 @@
 # SOFTWARE.
 
 import math
-from typing import Tuple, Union
+from typing import Tuple, Union, Mapping
 
 import numpy as np
 import xarray as xr
 
-from xcube.core.geocoding import GeoCoding
+from xcube.core.geocoding import GeoCoding, LON_COORD_VAR_NAMES, LAT_COORD_VAR_NAMES, denormalize_lon
 from xcube.util.dask import get_chunk_sizes, get_chunk_iterators
 
-LON_COORD_VAR_NAMES = ('lon', 'long', 'longitude')
-LAT_COORD_VAR_NAMES = ('lat', 'latitude')
-X_COORD_VAR_NAMES = ('x', 'xc') + LON_COORD_VAR_NAMES
-Y_COORD_VAR_NAMES = ('y', 'yc') + LAT_COORD_VAR_NAMES
+_LON_ATTRS = dict(long_name='longitude', standard_name='longitude', units='degrees_east')
+_LAT_ATTRS = dict(long_name='latitude', standard_name='latitude', units='degrees_north')
 
 
 class ImageGeom:
@@ -188,6 +186,47 @@ class ImageGeom:
             tile_bboxes[i, 2] = x_slice.stop - 1
             tile_bboxes[i, 3] = y_slice.stop - 1
         return tile_bboxes
+
+    def coord_vars(self,
+                   xy_names: Tuple[str, str],
+                   is_lon_normalized: bool = False,
+                   is_y_axis_inverted: bool = False) -> Mapping[str, xr.DataArray]:
+        x_name, y_name = xy_names
+        x_attrs = _LON_ATTRS if x_name in LON_COORD_VAR_NAMES else {}
+        y_attrs = _LAT_ATTRS if y_name in LAT_COORD_VAR_NAMES else {}
+        w, h = self.size
+        x1, y1, x2, y2 = self.xy_bbox
+        res = self.xy_res
+        res05 = self.xy_res / 2
+
+        x_data = np.linspace(x1, x2, w)
+        x_bnds_0_data = np.linspace(x1 - res05, x2 - res05, w)
+        x_bnds_1_data = np.linspace(x1 + res05, x2 + res05, w)
+
+        if is_lon_normalized:
+            x_data = denormalize_lon(x_data)
+            x_bnds_0_data = denormalize_lon(x_bnds_0_data)
+            x_bnds_1_data = denormalize_lon(x_bnds_1_data)
+
+        y_data = np.linspace(y1, y2, h)
+        y_bnds_0_data = np.linspace(y1 - res05, y2 - res, h)
+        y_bnds_1_data = np.linspace(y1 + res05, y2 + res05, h)
+
+        if is_y_axis_inverted:
+            y_data = y_data[::-1]
+            y_bnds_0_data = y_bnds_0_data[::-1]
+            y_bnds_1_data = y_bnds_1_data[::-1]
+
+        bnds_name = 'bnds'
+        x_bnds_name = f'{x_name}_bnds'
+        y_bnds_name = f'{y_name}_bnds'
+
+        return {
+            x_name: xr.DataArray(x_data, dims=x_name, attrs=dict(**x_attrs, bounds=x_bnds_name)),
+            y_name: xr.DataArray(y_data, dims=y_name, attrs=dict(**y_attrs, bounds=y_bnds_name)),
+            x_bnds_name: xr.DataArray(list(zip(x_bnds_0_data, x_bnds_1_data)), dims=[x_name, bnds_name], attrs=x_attrs),
+            y_bnds_name: xr.DataArray(list(zip(y_bnds_0_data, y_bnds_1_data)), dims=[y_name, bnds_name], attrs=y_attrs),
+        }
 
 
 def _compute_output_geom(dataset: xr.Dataset,

@@ -19,7 +19,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-from typing import Sequence, Tuple, Optional
+from typing import Sequence, Tuple, Optional, Union
 
 import numba as nb
 import numpy as np
@@ -230,12 +230,18 @@ class GeoCoding:
         return ij_bboxes
 
 
-def normalize_lon(lon_var: xr.DataArray):
-    return lon_var.where(lon_var >= 0.0, lon_var + 360.0)
+def normalize_lon(lon_var: Union[np.ndarray, xr.DataArray]):
+    if isinstance(lon_var, xr.DataArray):
+        return lon_var.where(lon_var >= 0.0, lon_var + 360.0)
+    else:
+        return np.where(lon_var >= 0.0, lon_var, lon_var + 360.0)
 
 
-def denormalize_lon(lon_var: xr.DataArray):
-    return lon_var.where(lon_var <= 180.0, lon_var - 360.0)
+def denormalize_lon(lon_var: Union[np.ndarray, xr.DataArray]):
+    if isinstance(lon_var, xr.DataArray):
+        return lon_var.where(lon_var <= 180.0, lon_var - 360.0)
+    else:
+        return np.where(lon_var <= 180.0, lon_var, lon_var - 360.0)
 
 
 @nb.jit(nopython=True, cache=True, target='cpu')
