@@ -293,7 +293,7 @@ class DefaultInputProcessor(XYInputProcessor):
     def pre_process(self, dataset: xr.Dataset) -> xr.Dataset:
         self._validate(dataset)
 
-        if "time" in dataset:
+        if "time" in dataset.dims:
             # Remove time dimension of length 1.
             dataset = dataset.squeeze("time")
 
