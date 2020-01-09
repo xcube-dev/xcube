@@ -28,7 +28,9 @@ import xarray as xr
 
 from xcube.constants import CRS_WKT_EPSG_4326
 from xcube.constants import EXTENSION_POINT_INPUT_PROCESSORS
-from xcube.core.rectify import rectify_dataset, ImageGeom
+from xcube.core.geocoding import GeoCoding
+from xcube.core.imgeom import ImageGeom
+from xcube.core.rectify import rectify_dataset
 from xcube.core.reproject import reproject_xy_to_wgs84
 from xcube.core.timecoord import to_time_in_days_since_1970
 from xcube.util.plugin import ExtensionComponent, get_extension_registry
@@ -222,18 +224,29 @@ class XYInputProcessor(InputProcessor, metaclass=ABCMeta):
             if dst_resampling != 'Nearest':
                 warnings.warn(warn_prefix + f'ignoring dst_resampling = {dst_resampling!r}')
             # TODO: add more
+
+            geo_coding = GeoCoding.from_dataset(dataset, xy_names=reprojection_info.xy_var_names)
+
             dst_width, dst_height = dst_size
             dst_x1, dst_y1, dst_x2, dst_y2 = dst_region
             dst_res = max((dst_x2 - dst_x1) / dst_width, (dst_y2 - dst_y1) / dst_height)
+
             output_geom = ImageGeom(size=(dst_width, dst_height),
-                                    x_min=dst_x1 + dst_res / 2,
-                                    y_min=dst_y1 + dst_res / 2,
-                                    xy_res=dst_res)
-            return rectify_dataset(dataset,
-                                   xy_names=reprojection_info.xy_var_names,
-                                   output_geom=output_geom,
-                                   is_y_axis_inverted=True,
-                                   uv_delta=0.01)
+                                    x_min=dst_x1,
+                                    y_min=dst_y1,
+                                    xy_res=dst_res,
+                                    is_geo_crs=geo_coding.is_geo_crs)
+
+            dataset = rectify_dataset(dataset,
+                                      geo_coding=geo_coding,
+                                      output_geom=output_geom,
+                                      is_y_axis_inverted=True)
+
+            if dataset is not None and geo_coding.is_geo_crs and geo_coding.xy_names != ('lon', 'lat'):
+                dataset = dataset.rename({geo_coding.x_name: 'lon', geo_coding.y_name: 'lat'})
+
+            return dataset
+
         else:
             return reproject_xy_to_wgs84(dataset,
                                          src_xy_var_names=reprojection_info.xy_var_names,

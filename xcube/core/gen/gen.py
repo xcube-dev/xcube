@@ -303,6 +303,7 @@ def _process_input(input_processor: InputProcessor,
         pr = cProfile.Profile()
         pr.enable()
 
+    status = True
     try:
         num_steps = len(steps)
         dataset = input_dataset
@@ -313,13 +314,17 @@ def _process_input(input_processor: InputProcessor,
             monitor(f'step {step_index + 1} of {num_steps}: {label}...')
             dataset = transform(dataset)
             step_t2 = time.perf_counter()
+            if dataset is None:
+                monitor(f'  {label} terminated after {step_t2 - step_t1} seconds, skipping input slice')
+                status = False
+                break
             monitor(f'  {label} completed in {step_t2 - step_t1} seconds')
         total_t2 = time.perf_counter()
         monitor(f'{num_steps} steps took {total_t2 - total_t1} seconds to complete')
     except RuntimeError as e:
         monitor(f'Error: something went wrong during processing, skipping input slice: {e}')
         traceback.print_exc()
-        return False
+        status = False
     finally:
         input_dataset.close()
 
@@ -329,9 +334,9 @@ def _process_input(input_processor: InputProcessor,
         s = io.StringIO()
         ps = pstats.Stats(pr, stream=s).sort_stats('cumtime')
         ps.print_stats()
-        print(s.getvalue())
+        monitor(s.getvalue())
 
-    return True
+    return status
 
 
 def _update_cube_attrs(output_writer: DatasetIO, output_path: str,
@@ -342,10 +347,13 @@ def _update_cube_attrs(output_writer: DatasetIO, output_path: str,
         cube = update_dataset_temporal_attrs(cube, update_existing=True, in_place=True)
     else:
         cube = update_dataset_attrs(cube, update_existing=True, in_place=True)
-    global_attrs = dict(global_attrs) if global_attrs else {}
-    global_attrs.update(cube.attrs)
+    cube_attrs = dict(cube.attrs)
     cube.close()
-    output_writer.update(output_path, global_attrs=global_attrs)
+
+    if global_attrs:
+        cube_attrs.update(global_attrs)
+
+    output_writer.update(output_path, global_attrs=cube_attrs)
 
 
 def _get_sorted_input_paths(input_processor, input_paths: Sequence[str]):
