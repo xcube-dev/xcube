@@ -34,7 +34,7 @@ import xarray as xr
 from xcube.core.dsio import DatasetIO, find_dataset_io, guess_dataset_format, rimraf
 from xcube.core.evaluate import evaluate_dataset
 from xcube.core.gen.defaults import DEFAULT_OUTPUT_PATH, DEFAULT_OUTPUT_RESAMPLING, DEFAULT_OUTPUT_SIZE
-from xcube.core.gen.iproc import InputProcessor, find_input_processor
+from xcube.core.gen.iproc import InputProcessor, find_input_processor_class
 from xcube.core.select import select_vars
 from xcube.core.timecoord import add_time_coords, from_time_in_days_since_1970
 from xcube.core.timeslice import find_time_slice
@@ -97,15 +97,18 @@ def gen_cube(input_paths: Sequence[str] = None,
     elif input_processor_name == '':
         raise ValueError('input_processor_name must not be empty')
 
-    input_processor = find_input_processor(input_processor_name)
-    if not input_processor:
+    input_processor_class = find_input_processor_class(input_processor_name)
+    if not input_processor_class:
         raise ValueError(f'Unknown input_processor_name {input_processor_name!r}')
 
-    if input_processor_params:
-        try:
-            input_processor.configure(**input_processor_params)
-        except TypeError as e:
-            raise ValueError(f'Invalid input_processor_params {input_processor_params!r}') from e
+    if not issubclass(input_processor_class, InputProcessor):
+        raise ValueError(f'Invalid input_processor_name {input_processor_name!r}: '
+                         f'must name a sub-class of {InputProcessor.__qualname__}')
+
+    try:
+        input_processor = input_processor_class(**(input_processor_params or {}))
+    except (ValueError, TypeError) as e:
+        raise ValueError(f'Invalid input_processor_name or input_processor_params: {e}') from e
 
     input_reader = find_dataset_io(input_reader_name or input_processor.input_reader)
     if not input_reader:
