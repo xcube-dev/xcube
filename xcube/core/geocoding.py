@@ -38,14 +38,23 @@ class GeoCoding:
     def __init__(self,
                  x: xr.DataArray,
                  y: xr.DataArray,
-                 x_name: str,
-                 y_name: str,
+                 x_name: str = None,
+                 y_name: str = None,
+                 is_geo_crs: bool = None,
                  is_lon_normalized: bool = False):
+        is_geo_crs = True if is_geo_crs is None and is_lon_normalized else bool(is_geo_crs)
+        if is_lon_normalized and not is_geo_crs:
+            raise ValueError('is_lon_normalized cannot be True while is_geo_crs is False')
+        x_name = x_name or x.name
+        y_name = y_name or y.name
+        if not x_name or not y_name:
+            raise ValueError('failed to determine x_name, y_name from x, y')
         # TODO (forman): validate args & kwargs
         self._x = x
         self._y = y
         self._x_name = x_name
         self._y_name = y_name
+        self._is_geo_crs = is_geo_crs
         self._is_lon_normalized = is_lon_normalized
 
     @property
@@ -73,6 +82,10 @@ class GeoCoding:
         return self.x_name, self.y_name
 
     @property
+    def is_geo_crs(self) -> bool:
+        return self._is_geo_crs
+
+    @property
     def is_lon_normalized(self) -> bool:
         return self._is_lon_normalized
 
@@ -91,11 +104,14 @@ class GeoCoding:
                y: xr.DataArray = None,
                x_name: str = None,
                y_name: str = None,
+               is_geo_crs: bool = None,
                is_lon_normalized: bool = None):
         return GeoCoding(x=x if x is not None else self.x,
                          y=y if y is not None else self.y,
                          x_name=x_name if x_name is not None else self.x_name,
                          y_name=y_name if y_name is not None else self.y_name,
+                         is_geo_crs=is_geo_crs if is_geo_crs is not None
+                         else self.is_geo_crs,
                          is_lon_normalized=is_lon_normalized if is_lon_normalized is not None
                          else self.is_lon_normalized)
 
@@ -147,11 +163,16 @@ class GeoCoding:
         if width < 2 or height < 2:
             raise ValueError(f"size in each dimension of {x_name!r} and {y_name!r} must be greater two")
 
+        is_geo_crs = _is_geo_crs(x_name, y_name)
         is_lon_normalized = False
-        if x_name in LON_COORD_VAR_NAMES:
+        if is_geo_crs:
             x, is_lon_normalized = _maybe_normalise_2d_lon(x)
 
-        return GeoCoding(x=x, y=y, x_name=x_name, y_name=y_name, is_lon_normalized=is_lon_normalized)
+        return GeoCoding(x=x, y=y,
+                         x_name=x_name,
+                         y_name=y_name,
+                         is_geo_crs=is_geo_crs,
+                         is_lon_normalized=is_lon_normalized)
 
     def ij_bbox(self,
                 xy_bbox: Tuple[float, float, float, float],
@@ -229,6 +250,8 @@ class GeoCoding:
                               ij_bboxes)
         return ij_bboxes
 
+def _is_geo_crs(x_name: str, y_name: str) -> bool:
+    return x_name in LON_COORD_VAR_NAMES and y_name in LAT_COORD_VAR_NAMES
 
 def normalize_lon(lon_var: Union[np.ndarray, xr.DataArray]):
     if isinstance(lon_var, xr.DataArray):

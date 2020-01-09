@@ -44,6 +44,21 @@ class SourceDatasetMixin:
 
 
 class GeoCodingTest(SourceDatasetMixin, unittest.TestCase):
+
+    def test_is_geo_crs_and_is_lon_normalized(self):
+        x = xr.DataArray(np.linspace(10.0, 20.0, 21), dims='columns', name='lon')
+        y = xr.DataArray(np.linspace(53.0, 58.0, 11), dims='rows', name='lat')
+        y, x = xr.broadcast(y, x)
+        gc = GeoCoding(x, y)
+        self.assertEqual(False, gc.is_geo_crs)
+        self.assertEqual(False, gc.is_lon_normalized)
+        gc = GeoCoding(x, y, is_geo_crs=True)
+        self.assertEqual(True, gc.is_geo_crs)
+        self.assertEqual(False, gc.is_lon_normalized)
+        gc = GeoCoding(x, y, is_lon_normalized=True)
+        self.assertEqual(True, gc.is_geo_crs)
+        self.assertEqual(True, gc.is_lon_normalized)
+
     def test_from_dataset_1d(self):
         x = xr.DataArray(np.linspace(10.0, 20.0, 21), dims='x')
         y = xr.DataArray(np.linspace(53.0, 58.0, 11), dims='y')
@@ -69,7 +84,7 @@ class GeoCodingTest(SourceDatasetMixin, unittest.TestCase):
         x = xr.DataArray(np.linspace(10.0, 20.0, 21), dims='x')
         y = xr.DataArray(np.linspace(53.0, 58.0, 11), dims='y')
         y, x = xr.broadcast(y, x)
-        gc = GeoCoding(x=x, y=y, x_name='x', y_name='y', is_lon_normalized=False)
+        gc = GeoCoding(x=x, y=y, x_name='x', y_name='y', is_geo_crs=True)
         self.assertEqual((-1, -1, -1, -1), gc.ij_bbox((0, -50, 30, 0)))
         self.assertEqual((0, 0, 20, 10), gc.ij_bbox((0, 50, 30, 60)))
         self.assertEqual((0, 0, 20, 6), gc.ij_bbox((0, 50, 30, 56)))
@@ -100,7 +115,7 @@ class GeoCodingTest(SourceDatasetMixin, unittest.TestCase):
         x = xr.DataArray(np.linspace(10.0, 20.0, 21), dims='x')
         y = xr.DataArray(np.linspace(53.0, 58.0, 11), dims='y')
         y, x = xr.broadcast(y, x)
-        gc = GeoCoding(x=x, y=y, x_name='x', y_name='y', is_lon_normalized=False)
+        gc = GeoCoding(x=x, y=y, x_name='x', y_name='y', is_geo_crs=True)
 
         ij_bboxes = gc.ij_bboxes(np.array([(0.0, -50.0, 30.0, 0.0)]))
         np.testing.assert_almost_equal(ij_bboxes,
@@ -122,7 +137,7 @@ class GeoCodingTest(SourceDatasetMixin, unittest.TestCase):
         x = xr.DataArray(np.linspace(10.0, 20.0, 21), dims='x')
         y = xr.DataArray(np.linspace(53.0, 58.0, 11), dims='y')
         y, x = xr.broadcast(y, x)
-        gc = GeoCoding(x=x, y=y, x_name='x', y_name='y', is_lon_normalized=False)
+        gc = GeoCoding(x=x, y=y, x_name='x', y_name='y', is_geo_crs=True)
 
         ij_bboxes = gc.ij_bboxes(np.array([(0.0, -50.0, 30.0, 0.0)]), gu=True)
         np.testing.assert_almost_equal(ij_bboxes,
