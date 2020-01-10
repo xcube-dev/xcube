@@ -131,6 +131,10 @@ class InputProcessor(ExtensionComponent, metaclass=ABCMeta):
     """
     Read and process inputs for the gen tool.
 
+    An InputProcessor can be configured by the following parameters:
+
+    * ``input_reader``: The input format identifier. Required, no default.
+
     :param name: A unique input processor identifier.
     """
 
@@ -240,6 +244,23 @@ class InputProcessor(ExtensionComponent, metaclass=ABCMeta):
 class XYInputProcessor(InputProcessor, metaclass=ABCMeta):
     """
     Read and process inputs for the gen tool.
+
+    An XYInputProcessor can be configured by the following parameters:
+
+    * ``input_reader``: The input format identifier.
+        Required, no default.
+    * ``xy_names``: A tuple of names of the variable providing x,y geo-locations.
+        Optional, looked up automatically if not given e.g. ``("lon", "lat")``.
+    * ``xy_tp_names``: A tuple of names of the variable providing x,y tie-point geo-locations.
+        Optional, no default.
+    * ``xy_crs``: A WKT string that identifies the x,y coordinate reference system (CRS).
+        Optional, no default.
+    * ``xy_gcp_step``: An integer or tuple of integers that is used to sub-sample x,y coordinate variables
+        for extracting ground control points (GCP).
+        Optional, no default.
+    * ``xy_tp_gcp_step``: An integer or tuple of integers that is used to sub-sample x,y tie-point coordinate variables
+        for extracting ground control points (GCP).
+        Optional, no default.
     """
 
     @property
@@ -350,10 +371,20 @@ class DefaultInputProcessor(XYInputProcessor):
 
     The default input processor can be configured by the following parameters:
 
-    * ``input_reader`` the input format identifier, default is "netcdf4".
-    * ``xy_names`` the names of the variable providing x,y geo-locations, default is ("lon", "lat").
-    * ``xy_crs`` the input format identifier, default is "EPSG:4326".
-
+    * ``input_reader``: The input format identifier.
+        Required, defaults to ``"netcdf4"``.
+    * ``xy_names``: A tuple of names of the variable providing x,y geo-locations.
+        Optional, defaults to ``("lon", "lat")``.
+    * ``xy_tp_names``: A tuple of names of the variable providing x,y tie-point geo-locations.
+        Optional, no default.
+    * ``xy_crs``: A WKT string that identifies the x,y coordinate reference system (CRS).
+        Optional, defaults to WKT for EPSG:4326 (see ``xcube.constants.CRS_WKT_EPSG_4326`` constant).
+    * ``xy_gcp_step``: An integer or tuple of integers that is used to sub-sample x,y coordinate variables
+        for extracting ground control points (GCP).
+        Optional, no default.
+    * ``xy_tp_gcp_step``: An integer or tuple of integers that is used to sub-sample x,y tie-point coordinate variables
+        for extracting ground control points (GCP).
+        Optional, no default.
     """
 
     def __init__(self, **parameters):
@@ -363,6 +394,7 @@ class DefaultInputProcessor(XYInputProcessor):
     def default_parameters(self) -> Dict[str, Any]:
         default_parameters = super().default_parameters
         default_parameters.update(input_reader='netcdf4',
+                                  xy_names=('lon', 'lat'),
                                   xy_crs=CRS_WKT_EPSG_4326)
         return default_parameters
 
