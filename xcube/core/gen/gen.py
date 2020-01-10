@@ -35,7 +35,7 @@ from xcube.core.dsio import DatasetIO, find_dataset_io, guess_dataset_format, ri
 from xcube.core.evaluate import evaluate_dataset
 from xcube.core.gen.defaults import DEFAULT_OUTPUT_PATH, DEFAULT_OUTPUT_RESAMPLING, DEFAULT_OUTPUT_SIZE
 from xcube.core.gen.iproc import InputProcessor, find_input_processor_class
-from xcube.core.select import select_vars
+from xcube.core.select import select_variables_subset
 from xcube.core.timecoord import add_time_coords, from_time_in_days_since_1970
 from xcube.core.timeslice import find_time_slice
 from xcube.core.update import update_dataset_attrs, update_dataset_temporal_attrs, update_dataset_var_attrs
@@ -235,7 +235,7 @@ def _process_input(input_processor: InputProcessor,
         extra_vars = input_processor.get_extra_vars(input_slice)
         selected_variables = set([var_name for var_name, _ in output_variables])
         selected_variables.update(extra_vars or set())
-        return select_vars(input_slice, selected_variables)
+        return select_variables_subset(input_slice, selected_variables)
 
     steps.append((step3, 'selecting input slice variables'))
 

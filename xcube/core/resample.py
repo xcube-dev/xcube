@@ -24,7 +24,7 @@ from typing import Dict, Any, Sequence, Union
 import xarray as xr
 
 from xcube.core.schema import CubeSchema
-from xcube.core.select import select_vars
+from xcube.core.select import select_variables_subset
 from xcube.core.verify import assert_cube
 
 
@@ -62,7 +62,7 @@ def resample_in_time(cube: xr.Dataset,
         assert_cube(cube)
 
     if var_names:
-        cube = select_vars(cube, var_names)
+        cube = select_variables_subset(cube, var_names)
 
     resampler = cube.resample(skipna=True,
                               closed='left',
