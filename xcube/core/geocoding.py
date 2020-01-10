@@ -401,7 +401,7 @@ def _find_coord_var_name(dataset: xr.Dataset, coord_var_names: Sequence[str], nd
 
 def _get_var(src_ds: xr.Dataset, name: str) -> xr.DataArray:
     if name not in src_ds:
-        raise ValueError(f'missing 2D coordinate variable {name!r}')
+        raise ValueError(f'missing coordinate variable {name!r} in dataset')
     return src_ds[name]
 
 
