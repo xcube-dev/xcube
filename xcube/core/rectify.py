@@ -358,9 +358,9 @@ def _reproject(src_values: np.ndarray,
                 continue
 
             for dst_j in range(dst_j_min, dst_j_max + 1):
-                dst_y = dst_y0 + dst_j * dst_res
+                dst_y = dst_y0 + (dst_j + 0.5) * dst_res
                 for dst_i in range(dst_i_min, dst_i_max + 1):
-                    dst_x = dst_x0 + dst_i * dst_res
+                    dst_x = dst_x0 + (dst_i + 0.5) * dst_res
 
                     # TODO: use two other combinations,
                     #       if one of the dst_px<n>,dst_py<n> pairs is missing.
@@ -459,10 +459,15 @@ def compute_source_pixels(src_x: np.ndarray,
             det_a = _fdet(dst_p0x, dst_p0y, dst_p1x, dst_p1y, dst_p2x, dst_p2y)
             # u from p3 left to p2, v from p3 up to p1
             det_b = _fdet(dst_p3x, dst_p3y, dst_p2x, dst_p2y, dst_p1x, dst_p1y)
+
+            if np.isnan(det_a) or np.isnan(det_b):
+                # print('no plane at:', src_i0, src_j0)
+                continue
+
             for dst_j in range(dst_j_min, dst_j_max + 1):
-                dst_y = dst_y0 + dst_j * dst_res
+                dst_y = dst_y0 + (dst_j + 0.5) * dst_res
                 for dst_i in range(dst_i_min, dst_i_max + 1):
-                    dst_x = dst_x0 + dst_i * dst_res
+                    dst_x = dst_x0 + (dst_i + 0.5) * dst_res
 
                     # TODO: use two other combinations,
                     #       if one of the dst_px<n>,dst_py<n> pairs is missing.

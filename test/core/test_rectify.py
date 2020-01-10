@@ -26,24 +26,24 @@ class RectifyDatasetTest(SourceDatasetMixin, unittest.TestCase):
                                                 dtype=lat.dtype))
         np.testing.assert_almost_equal(rad.values,
                                        np.array([
-                                           [nan, 4.0, nan, nan],
-                                           [3.0, 3.0, 2.0, nan],
-                                           [nan, 1.0, 2.0, nan],
-                                           [nan, nan, nan, nan]
-                                       ], dtype=rad.dtype))
+                                           [3.0, 4.0, nan, nan],
+                                           [3.0, 1.0, 2.0, nan],
+                                           [1.0, nan, nan, nan],
+                                           [nan, nan, nan, nan]],
+                                           dtype=rad.dtype))
 
     def test_rectify_2x2_to_7x7(self):
         src_ds = self.new_source_dataset()
 
-        output_geom = ImageGeom(size=(7, 7), x_min=0.0, y_min=50.0, xy_res=1.0)
+        output_geom = ImageGeom(size=(7, 7), x_min=-0.5, y_min=49.5, xy_res=1.0)
 
         dst_ds = rectify_dataset(src_ds, output_geom=output_geom)
         lon, lat, rad = self._assert_shape_and_dim(dst_ds, 7, 7)
         np.testing.assert_almost_equal(lon.values,
-                                       np.array([0.5, 1.5, 2.5, 3.5, 4.5, 5.5, 6.5],
+                                       np.array([0., 1., 2., 3., 4., 5., 6.],
                                                 dtype=lon.dtype))
         np.testing.assert_almost_equal(lat.values,
-                                       np.array([50.5, 51.5, 52.5, 53.5, 54.5, 55.5, 56.5],
+                                       np.array([50., 51., 52., 53., 54., 55., 56.],
                                                 dtype=lat.dtype))
         np.testing.assert_almost_equal(rad.values,
                                        np.array([
@@ -59,15 +59,15 @@ class RectifyDatasetTest(SourceDatasetMixin, unittest.TestCase):
     def test_rectify_2x2_to_7x7_subset(self):
         src_ds = self.new_source_dataset()
 
-        output_geom = ImageGeom(size=(7, 7), x_min=2.0, y_min=51.0, xy_res=1.0)
+        output_geom = ImageGeom(size=(7, 7), x_min=1.5, y_min=50.5, xy_res=1.0)
 
         dst_ds = rectify_dataset(src_ds, output_geom=output_geom)
         lon, lat, rad = self._assert_shape_and_dim(dst_ds, 7, 7)
         np.testing.assert_almost_equal(lon.values,
-                                       np.array([2.5, 3.5, 4.5, 5.5, 6.5, 7.5, 8.5],
+                                       np.array([2., 3., 4., 5., 6., 7., 8.],
                                                 dtype=lon.dtype))
         np.testing.assert_almost_equal(lat.values,
-                                       np.array([51.5, 52.5, 53.5, 54.5, 55.5, 56.5, 57.5],
+                                       np.array([51., 52., 53., 54., 55., 56., 57.],
                                                 dtype=lat.dtype))
         np.testing.assert_almost_equal(rad.values,
                                        np.array([
@@ -83,17 +83,16 @@ class RectifyDatasetTest(SourceDatasetMixin, unittest.TestCase):
     def test_rectify_2x2_to_13x13(self):
         src_ds = self.new_source_dataset()
 
-        output_geom = ImageGeom(size=(13, 13), x_min=0.0, y_min=50.0, xy_res=0.5)
+        output_geom = ImageGeom(size=(13, 13), x_min=-0.25, y_min=49.75, xy_res=0.5)
 
         dst_ds = rectify_dataset(src_ds, output_geom=output_geom)
         lon, lat, rad = self._assert_shape_and_dim(dst_ds, 13, 13)
         np.testing.assert_almost_equal(lon.values,
-                                       np.array([0.25, 0.75, 1.25, 1.75, 2.25, 2.75, 3.25, 3.75, 4.25, 4.75, 5.25,
-                                                 5.75, 6.25],
+                                       np.array([0., 0.5, 1., 1.5, 2., 2.5, 3., 3.5, 4., 4.5, 5., 5.5, 6.],
                                                 dtype=lon.dtype))
         np.testing.assert_almost_equal(lat.values,
-                                       np.array([50.25, 50.75, 51.25, 51.75, 52.25, 52.75, 53.25, 53.75, 54.25,
-                                                 54.75, 55.25, 55.75, 56.25],
+                                       np.array([50., 50.5, 51., 51.5, 52., 52.5, 53., 53.5, 54., 54.5, 55.,
+                                                 55.5, 56.],
                                                 dtype=lat.dtype))
         np.testing.assert_almost_equal(rad.values,
                                        np.array([
@@ -115,17 +114,16 @@ class RectifyDatasetTest(SourceDatasetMixin, unittest.TestCase):
     def test_rectify_2x2_to_13x13_inverse_y_axis(self):
         src_ds = self.new_source_dataset()
 
-        output_geom = ImageGeom(size=(13, 13), x_min=0.0, y_min=50.0, xy_res=0.5)
+        output_geom = ImageGeom(size=(13, 13), x_min=-0.25, y_min=49.75, xy_res=0.5)
 
         dst_ds = rectify_dataset(src_ds, output_geom=output_geom, is_y_axis_inverted=True)
         lon, lat, rad = self._assert_shape_and_dim(dst_ds, 13, 13)
         np.testing.assert_almost_equal(lon.values,
-                                       np.array([0.25, 0.75, 1.25, 1.75, 2.25, 2.75, 3.25, 3.75, 4.25, 4.75, 5.25,
-                                                 5.75, 6.25],
+                                       np.array([0., 0.5, 1., 1.5, 2., 2.5, 3., 3.5, 4., 4.5, 5., 5.5, 6.],
                                                 dtype=lon.dtype))
         np.testing.assert_almost_equal(lat.values,
-                                       np.array([56.25, 55.75, 55.25, 54.75, 54.25, 53.75, 53.25, 52.75, 52.25,
-                                                 51.75, 51.25, 50.75, 50.25],
+                                       np.array([56., 55.5, 55., 54.5, 54., 53.5, 53., 52.5, 52., 51.5, 51.,
+                                                 50.5, 50.],
                                                 dtype=lat.dtype))
         np.testing.assert_almost_equal(rad.values,
                                        np.array([
@@ -147,17 +145,16 @@ class RectifyDatasetTest(SourceDatasetMixin, unittest.TestCase):
     def test_rectify_2x2_to_13x13_dask(self):
         src_ds = self.new_source_dataset()
 
-        output_geom = ImageGeom(size=(13, 13), x_min=0.0, y_min=50.0, xy_res=0.5, tile_size=7)
+        output_geom = ImageGeom(size=(13, 13), x_min=-0.25, y_min=49.75, xy_res=0.5, tile_size=7)
 
         dst_ds = rectify_dataset(src_ds, output_geom=output_geom)
         lon, lat, rad = self._assert_shape_and_dim(dst_ds, 13, 13)
         np.testing.assert_almost_equal(lon.values,
-                                       np.array([0.25, 0.75, 1.25, 1.75, 2.25, 2.75, 3.25, 3.75, 4.25, 4.75, 5.25,
-                                                 5.75, 6.25],
+                                       np.array([0., 0.5, 1., 1.5, 2., 2.5, 3., 3.5, 4., 4.5, 5., 5.5, 6.],
                                                 dtype=lon.dtype))
         np.testing.assert_almost_equal(lat.values,
-                                       np.array([50.25, 50.75, 51.25, 51.75, 52.25, 52.75, 53.25, 53.75, 54.25,
-                                                 54.75, 55.25, 55.75, 56.25],
+                                       np.array([50., 50.5, 51., 51.5, 52., 52.5, 53., 53.5, 54., 54.5, 55.,
+                                                 55.5, 56.],
                                                 dtype=lat.dtype))
         np.testing.assert_almost_equal(rad.values,
                                        np.array([
@@ -179,18 +176,18 @@ class RectifyDatasetTest(SourceDatasetMixin, unittest.TestCase):
     def test_rectify_2x2_to_13x13_antimeridian(self):
         src_ds = self.new_source_dataset_antimeridian()
 
-        output_geom = ImageGeom(size=(13, 13), x_min=+178.0, y_min=+50.0, xy_res=0.5)
+        output_geom = ImageGeom(size=(13, 13), x_min=177.75, y_min=49.75, xy_res=0.5)
 
         dst_ds = rectify_dataset(src_ds, output_geom=output_geom)
         self.assertIsNotNone(dst_ds)
         lon, lat, rad = self._assert_shape_and_dim(dst_ds, 13, 13)
         np.testing.assert_almost_equal(lon.values,
-                                       np.array([178.25, 178.75, 179.25, 179.75, -179.75, -179.25, -178.75,
-                                                 -178.25, -177.75, -177.25, -176.75, -176.25, -175.75],
+                                       np.array([178., 178.5, 179., 179.5, 180., -179.5, -179., -178.5,
+                                                 -178., -177.5, -177., -176.5, -176.],
                                                 dtype=lon.dtype))
         np.testing.assert_almost_equal(lat.values,
-                                       np.array([50.25, 50.75, 51.25, 51.75, 52.25, 52.75, 53.25, 53.75, 54.25,
-                                                 54.75, 55.25, 55.75, 56.25],
+                                       np.array([50., 50.5, 51., 51.5, 52., 52.5, 53., 53.5, 54., 54.5, 55.,
+                                                 55.5, 56.],
                                                 dtype=lat.dtype))
         np.testing.assert_almost_equal(rad.values,
                                        np.array([
@@ -257,8 +254,8 @@ class RectifyDatasetTest(SourceDatasetMixin, unittest.TestCase):
                               0,
                               dst_src_i,
                               dst_src_j,
-                              0.0,
-                              50.0,
+                              -0.25,
+                              49.75,
                               0.5)
 
         # print(xr.DataArray(src_i, dims=('y', 'x')))
