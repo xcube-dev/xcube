@@ -263,7 +263,7 @@ class XYInputProcessor(InputProcessor, metaclass=ABCMeta):
 
     def get_extra_vars(self, dataset: xr.Dataset) -> Optional[Collection[str]]:
         """
-        Return the names of variables containing tie-points.
+        Return the names of variables containing spatial coordinates.
         They should not be removed, as they are required for the reprojection.
         """
         reprojection_info = self.get_reprojection_info(dataset)
@@ -271,9 +271,9 @@ class XYInputProcessor(InputProcessor, metaclass=ABCMeta):
             return dataset
         extra_vars = set()
         if reprojection_info.xy_names:
-            extra_vars.update(reprojection_info.xy_names)
+            extra_vars.update(set(reprojection_info.xy_names))
         if reprojection_info.xy_tp_names:
-            extra_vars.update(reprojection_info.xy_tp_names)
+            extra_vars.update(set(reprojection_info.xy_tp_names))
         return extra_vars
 
     def process(self,
