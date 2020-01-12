@@ -1,5 +1,6 @@
 import unittest
 
+import dask.array as da
 import numpy as np
 
 from xcube.core.rectify import ImageGeom
@@ -149,6 +150,10 @@ class RectifyDatasetTest(SourceDatasetMixin, unittest.TestCase):
 
         dst_ds = rectify_dataset(src_ds, output_geom=output_geom)
         lon, lat, rad = self._assert_shape_and_dim(dst_ds, 13, 13)
+
+        self.assertIsInstance(rad.data, da.Array)
+        self.assertEqual(((7, 6), (7, 6)), rad.chunks)
+
         np.testing.assert_almost_equal(lon.values,
                                        np.array([0., 0.5, 1., 1.5, 2., 2.5, 3., 3.5, 4., 4.5, 5., 5.5, 6.],
                                                 dtype=lon.dtype))
