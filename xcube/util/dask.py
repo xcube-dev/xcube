@@ -13,6 +13,9 @@ IntIterable = Iterable[int]
 IntTupleIterable = Iterable[IntTuple]
 SliceTupleIterable = Iterable[SliceTuple]
 
+# TODO (forman): add docs
+# TODO (forman): allow passing properties individually to client function
+
 ChunkContext = collections.namedtuple('ChunkContext',
                                       ['chunk_id',
                                        'chunk_shape',
@@ -23,6 +26,9 @@ ChunkContext = collections.namedtuple('ChunkContext',
                                        'dtype',
                                        'name'])
 
+
+# TODO (forman): add docs
+# TODO (forman): add "block_info" which will allow passing block info properties individually to client function
 
 def compute_array_from_func(func: Callable[[ChunkContext], np.ndarray],
                             shape: IntTuple,
@@ -52,7 +58,7 @@ def compute_array_from_func(func: Callable[[ChunkContext], np.ndarray],
         array = dac.from_func(func,
                               shape=chunk_shape,
                               dtype=dtype,
-                              name= f'rectify_{name}-{uuid.uuid4()}',
+                              name=f'rectify_{name}-{uuid.uuid4()}',
                               args=(context, *(args or ())),
                               kwargs=(kwargs or {}))
 
