@@ -19,9 +19,9 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-import time
 from typing import Sequence, Tuple, Optional, Union, Mapping
 
+import dask.array as da
 import numba as nb
 import numpy as np
 import xarray as xr
@@ -39,6 +39,8 @@ def rectify_dataset(dataset: xr.Dataset,
                     output_geom: ImageGeom = None,
                     is_y_axis_inverted: bool = False,
                     tile_size: Union[int, Tuple[int, int]] = None,
+                    compute_xy: bool = False,
+                    compute_vars: bool = False,
                     uv_delta: float = 1e-3) -> Optional[xr.Dataset]:
     """
     Reproject *dataset* using its per-pixel x,y coordinates or the given *geo_coding*.
@@ -64,16 +66,19 @@ def rectify_dataset(dataset: xr.Dataset,
         to spatially fit *dataset* and to retain its spatial resolution.
     :param is_y_axis_inverted: Whether the y-axis labels in the output should be in inverse order.
     :param tile_size: Optional tile size for the output.
+    :param compute_xy: Compute x,y coordinates and load into memory before the actual rectification process.
+        May improve runtime performance at the cost of higher memory consumption.
+    :param compute_vars: Compute source variables and load into memory before the actual rectification process.
+        May improve runtime performance at the cost of higher memory consumption.
     :param uv_delta: A normalized value that is used to determine whether x,y coordinates in the output are contained
         in the triangles defined by the input x,y coordinates.
+        The higher this value, the more inaccurate the rectification will be.
     :return: a reprojected dataset, or None if the requested output does not intersect with *dataset*.
     """
     src_geo_coding = geo_coding if geo_coding is not None else GeoCoding.from_dataset(dataset, xy_names=xy_names)
     src_x, src_y = src_geo_coding.xy
     src_attrs = dict(dataset.attrs)
 
-    src_i_min_0 = 0
-    src_j_min_0 = 0
     if output_geom is None:
         output_geom = ImageGeom.from_dataset(dataset, geo_coding=src_geo_coding)
     else:
@@ -82,7 +87,6 @@ def rectify_dataset(dataset: xr.Dataset,
             return None
         dataset_subset = select_spatial_subset(dataset, src_bbox, geo_coding=src_geo_coding)
         if dataset_subset is not dataset:
-            src_i_min_0, src_j_min_0 = src_bbox[0:2]
             src_geo_coding = GeoCoding.from_dataset(dataset_subset)
             src_x, src_y = src_geo_coding.x, src_geo_coding.y
             dataset = dataset_subset
@@ -92,96 +96,17 @@ def rectify_dataset(dataset: xr.Dataset,
 
     src_vars = select_variables(dataset, var_names, geo_coding=src_geo_coding)
 
-    dst_width, dst_height = output_geom.size
-    dst_x_min, dst_y_min = output_geom.x_min, output_geom.y_min
-    dst_xy_res = output_geom.xy_res
+    if compute_xy:
+        # This is NOT faster:
+        src_x = src_x.compute()
+        src_y = src_y.compute()
+        src_geo_coding = src_geo_coding.derive(x=src_x, y=src_y)
 
     is_output_tiled = output_geom.is_tiled
     if not is_output_tiled:
-        src_x.load()
-        src_y.load()
-
-        def _get_dst_var_array(src_var):
-            dst_var_array = np.full(dst_var_shape, np.nan, dtype=src_var.dtype)
-            _reproject(src_var.values,
-                       src_x.values,
-                       src_y.values,
-                       src_i_min_0,
-                       src_j_min_0,
-                       dst_var_array,
-                       dst_x_min,
-                       dst_y_min,
-                       dst_xy_res,
-                       uv_delta=uv_delta)
-            if is_y_axis_inverted:
-                dst_var_array = dst_var_array[..., ::-1, :]
-            return dst_var_array
+        get_dst_var_array = get_dst_var_array_numpy
     else:
-        # This is NOT faster:
-        # src_x.load()
-        # src_y.load()
-
-        dst_xy_bboxes = output_geom.xy_bboxes
-        src_ij_bboxes = src_geo_coding.ij_bboxes(dst_xy_bboxes, xy_border=dst_xy_res, ij_border=1)
-
-        def _get_dst_var_array(src_var):
-
-            # This is NOT faster:
-            src_var = src_var.compute()
-
-            def _reproject_func(context: ChunkContext) -> np.ndarray:
-                try:
-                    dst_block = np.full(dst_var_shape[:-2] + context.chunk_shape, np.nan, dtype=context.dtype)
-                    dst_y_slice, dst_x_slice = context.chunk_slices
-                    src_ij_bbox = src_ij_bboxes[context.chunk_id]
-                    src_i_min, src_j_min, src_i_max, src_j_max = src_ij_bbox
-                    if src_i_min == -1:
-                        return dst_block
-                    src_i_slice = slice(src_i_min, src_i_max + 1)
-                    src_j_slice = slice(src_j_min, src_j_max + 1)
-                    # This is NOT faster:
-                    # t1 = time.perf_counter()
-                    # src_indexers = {src_x_dim: src_i_slice, src_y_dim: src_j_slice}
-                    # src_var_values = src_var.isel(**src_indexers).values
-                    # src_x_values = src_x.isel(**src_indexers).values
-                    # src_y_values = src_y.isel(**src_indexers).values
-                    # t2 = time.perf_counter()
-                    t1 = time.perf_counter()
-                    src_var_values = src_var[..., src_j_slice, src_i_slice].values
-                    src_x_values = src_x[src_j_slice, src_i_slice].values
-                    src_y_values = src_y[src_j_slice, src_i_slice].values
-                    t2 = time.perf_counter()
-                    _reproject(src_var_values,
-                               src_x_values,
-                               src_y_values,
-                               src_i_min_0 + src_i_min,
-                               src_j_min_0 + src_j_min,
-                               dst_block,
-                               dst_x_min + dst_x_slice.start * dst_xy_res,
-                               dst_y_min + dst_y_slice.start * dst_xy_res,
-                               dst_xy_res,
-                               uv_delta=uv_delta)
-                    t3 = time.perf_counter()
-                    print(f'target chunk {context.name}-{context.chunk_index}, shape {context.chunk_shape} '
-                          f'for source shape {src_i_max - src_i_min + 1, src_j_max - src_j_min + 1} '
-                          f'took {_millis(t2 - t1)}, {_millis(t3 - t2)} milliseconds, total {_millis(t3 - t1)}')
-                    if is_y_axis_inverted:
-                        dst_block = dst_block[..., ::-1, :]
-                    return dst_block
-                except BaseException as e:
-                    # TODO (forman): find better way to report errors from chunk computations
-                    print(80 * '#')
-                    print(e)
-                    print(80 * '#')
-                    raise e
-
-            tile_width, tile_height = output_geom.tile_size
-            dst_var_chunks = src_var.shape[0:-2] + (tile_height, tile_width)
-            return compute_array_from_func(_reproject_func,
-                                           dst_var_shape,
-                                           dst_var_chunks,
-                                           src_var.dtype,
-                                           name=src_var_name)
+        get_dst_var_array = get_dst_var_array_dask
 
     dst_dims = src_geo_coding.xy_names[::-1]
     dst_ds_coords = output_geom.coord_vars(xy_names=src_geo_coding.xy_names,
@@ -189,17 +114,134 @@ def rectify_dataset(dataset: xr.Dataset,
                                            is_y_axis_inverted=is_y_axis_inverted)
     dst_vars = dict()
     for src_var_name, src_var in src_vars.items():
-        dst_var_shape = src_var.shape[0:-2] + (dst_height, dst_width)
+        if compute_vars:
+            # This is NOT faster:
+            src_var = src_var.compute()
+
         dst_var_dims = src_var.dims[0:-2] + dst_dims
         dst_var_coords = {d: src_var.coords[d] for d in dst_var_dims if d in src_var.coords}
         dst_var_coords.update({d: dst_ds_coords[d] for d in dst_var_dims if d in dst_ds_coords})
-        dst_var_array = _get_dst_var_array(src_var)
+        dst_var_array = get_dst_var_array(src_var,
+                                          src_geo_coding,
+                                          output_geom,
+                                          is_y_axis_inverted,
+                                          uv_delta)
         dst_var = xr.DataArray(dst_var_array,
                                dims=dst_var_dims,
                                coords=dst_var_coords,
                                attrs=src_var.attrs)
         dst_vars[src_var_name] = dst_var
     return xr.Dataset(dst_vars, coords=dst_ds_coords, attrs=src_attrs)
+
+
+def get_dst_var_array_numpy(src_var: xr.DataArray,
+                            src_geo_coding: GeoCoding,
+                            output_geom: ImageGeom,
+                            is_dst_y_axis_inverted: bool,
+                            uv_delta: float) -> np.ndarray:
+    dst_width = output_geom.width
+    dst_height = output_geom.height
+    dst_var_shape = src_var.shape[0:-2] + (dst_height, dst_width)
+    dst_var_array = np.full(dst_var_shape, np.nan, dtype=src_var.dtype)
+    dst_x_min = output_geom.x_min
+    dst_y_min = output_geom.y_min
+    dst_xy_res = output_geom.xy_res
+    _reproject(src_var.values,
+               src_geo_coding.x.values,
+               src_geo_coding.y.values,
+               dst_var_array,
+               dst_x_min,
+               dst_y_min,
+               dst_xy_res,
+               uv_delta=uv_delta)
+    if is_dst_y_axis_inverted:
+        dst_var_array = dst_var_array[..., ::-1, :]
+    return dst_var_array
+
+
+def get_dst_var_array_dask(src_var: xr.DataArray,
+                           src_geo_coding: GeoCoding,
+                           output_geom: ImageGeom,
+                           is_dst_y_axis_inverted: bool,
+                           uv_delta: float) -> da.Array:
+    dst_width = output_geom.width
+    dst_height = output_geom.height
+    dst_tile_width = output_geom.tile_width
+    dst_tile_height = output_geom.tile_height
+    dst_var_shape = src_var.shape[0:-2] + (dst_height, dst_width)
+    dst_var_chunks = src_var.shape[0:-2] + (dst_tile_height, dst_tile_width)
+
+    dst_x_min = output_geom.x_min
+    dst_y_min = output_geom.y_min
+    dst_xy_res = output_geom.xy_res
+
+    dst_xy_bboxes = output_geom.xy_bboxes
+    src_ij_bboxes = src_geo_coding.ij_bboxes(dst_xy_bboxes, xy_border=dst_xy_res, ij_border=1)
+
+    return compute_array_from_func(_rectify_func_dask,
+                                   dst_var_shape,
+                                   dst_var_chunks,
+                                   src_var.dtype,
+                                   args=(
+                                       src_var,
+                                       src_geo_coding.x,
+                                       src_geo_coding.y,
+                                       src_ij_bboxes,
+                                       dst_x_min,
+                                       dst_y_min,
+                                       dst_xy_res,
+                                       is_dst_y_axis_inverted,
+                                       uv_delta
+                                   ),
+                                   name=src_var.name,
+                                   )
+
+
+def _rectify_func_dask(context: ChunkContext,
+                       src_var: xr.DataArray,
+                       src_x: xr.DataArray,
+                       src_y: xr.DataArray,
+                       src_ij_bboxes: np.ndarray,
+                       dst_x_min: float,
+                       dst_y_min: float,
+                       dst_xy_res: float,
+                       is_dst_y_axis_inverted: bool,
+                       uv_delta: float) -> np.ndarray:
+    dst_block = np.full(src_var.shape[:-2] + context.chunk_shape, np.nan, dtype=context.dtype)
+    dst_y_slice, dst_x_slice = context.chunk_slices
+    src_ij_bbox = src_ij_bboxes[context.chunk_id]
+    src_i_min, src_j_min, src_i_max, src_j_max = src_ij_bbox
+    if src_i_min == -1:
+        return dst_block
+    src_i_slice = slice(src_i_min, src_i_max + 1)
+    src_j_slice = slice(src_j_min, src_j_max + 1)
+    # This is NOT faster:
+    # t1 = time.perf_counter()
+    # src_indexers = {src_x_dim: src_i_slice, src_y_dim: src_j_slice}
+    # src_var_values = src_var.isel(**src_indexers).values
+    # src_x_values = src_x.isel(**src_indexers).values
+    # src_y_values = src_y.isel(**src_indexers).values
+    # t2 = time.perf_counter()
+    # t1 = time.perf_counter()
+    src_var_values = src_var[..., src_j_slice, src_i_slice].values
+    src_x_values = src_x[src_j_slice, src_i_slice].values
+    src_y_values = src_y[src_j_slice, src_i_slice].values
+    # t2 = time.perf_counter()
+    _reproject(src_var_values,
+               src_x_values,
+               src_y_values,
+               dst_block,
+               dst_x_min + dst_x_slice.start * dst_xy_res,
+               dst_y_min + dst_y_slice.start * dst_xy_res,
+               dst_xy_res,
+               uv_delta)
+    # t3 = time.perf_counter()
+    # print(f'target chunk {context.name}-{context.chunk_index}, shape {context.chunk_shape} '
+    #       f'for source shape {src_i_max - src_i_min + 1, src_j_max - src_j_min + 1} '
+    #       f'took {_millis(t2 - t1)}, {_millis(t3 - t2)} milliseconds, total {_millis(t3 - t1)}')
+    if is_dst_y_axis_inverted:
+        dst_block = dst_block[..., ::-1, :]
+    return dst_block
 
 
 def select_variables(dataset,
@@ -265,34 +307,32 @@ def _is_2d_var(var: xr.DataArray, two_d_coord_var: xr.DataArray) -> bool:
 
 
 @nb.jit('float64(float64, float64, float64, float64, float64, float64)',
-        nopython=True, inline='always')
+        nopython=True, nogil=True, inline='always')
 def _fdet(px0: float, py0: float, px1: float, py1: float, px2: float, py2: float) -> float:
     return (px0 - px1) * (py0 - py2) - (px0 - px2) * (py0 - py1)
 
 
 @nb.jit('float64(float64, float64, float64, float64, float64, float64)',
-        nopython=True, inline='always')
+        nopython=True, nogil=True, inline='always')
 def _fu(px: float, py: float, px0: float, py0: float, px2: float, py2: float) -> float:
     return (px0 - px) * (py0 - py2) - (py0 - py) * (px0 - px2)
 
 
 @nb.jit('float64(float64, float64, float64, float64, float64, float64)',
-        nopython=True, inline='always')
+        nopython=True, nogil=True, inline='always')
 def _fv(px: float, py: float, px0: float, py0: float, px1: float, py1: float) -> float:
     return (py0 - py) * (px0 - px1) - (px0 - px) * (py0 - py1)
 
 
-@nb.jit(nopython=True, cache=True)
+@nb.jit(nopython=True, nogil=True, cache=True)
 def _reproject(src_values: np.ndarray,
                src_x: np.ndarray,
                src_y: np.ndarray,
-               src_i_min: int,
-               src_j_min: int,
                dst_values: np.ndarray,
                dst_x0: float,
                dst_y0: float,
                dst_res: float,
-               uv_delta: float = 1e-3):
+               uv_delta: float):
     src_width = src_values.shape[-1]
     src_height = src_values.shape[-2]
 
@@ -535,112 +575,6 @@ def extract_source_pixels(src_values: np.ndarray,
                 elif src_j >= src_height:
                     src_j = src_height - 1
                 dst_values[..., dst_j, dst_i] = src_values[..., src_j, src_i]
-
-
-@nb.jit(nopython=True, cache=True, target='cpu')
-def compute_ij_bboxes(x_image: np.ndarray,
-                      y_image: np.ndarray,
-                      xy_bboxes: np.ndarray,
-                      xy_border: float,
-                      ij_border: int,
-                      ij_bboxes: np.ndarray):
-    h = x_image.shape[0]
-    w = x_image.shape[1]
-    n = xy_bboxes.shape[0]
-    for k in range(n):
-        ij_bbox = ij_bboxes[k]
-        xy_bbox = xy_bboxes[k]
-        x_min = xy_bbox[0] - xy_border
-        y_min = xy_bbox[1] - xy_border
-        x_max = xy_bbox[2] + xy_border
-        y_max = xy_bbox[3] + xy_border
-        for j in range(h):
-            for i in range(w):
-                x = x_image[j, i]
-                if x_min <= x <= x_max:
-                    y = y_image[j, i]
-                    if y_min <= y <= y_max:
-                        i_min = ij_bbox[0]
-                        j_min = ij_bbox[1]
-                        i_max = ij_bbox[2]
-                        j_max = ij_bbox[3]
-                        ij_bbox[0] = i if i_min < 0 else min(i_min, i)
-                        ij_bbox[1] = j if j_min < 0 else min(j_min, j)
-                        ij_bbox[2] = i if i_max < 0 else max(i_max, i)
-                        ij_bbox[3] = j if j_max < 0 else max(j_max, j)
-        if ij_border != 0 and ij_bbox[0] != -1:
-            i_min = ij_bbox[0] - ij_border
-            j_min = ij_bbox[1] - ij_border
-            i_max = ij_bbox[2] + ij_border
-            j_max = ij_bbox[3] + ij_border
-            if i_min < 0:
-                i_min = 0
-            if j_min < 0:
-                j_min = 0
-            if i_max >= w:
-                i_max = w - 1
-            if j_max >= h:
-                j_max = h - 1
-            ij_bbox[0] = i_min
-            ij_bbox[1] = j_min
-            ij_bbox[2] = i_max
-            ij_bbox[3] = j_max
-
-
-# This is NOT faster:
-@nb.guvectorize([(nb.float64[:, :],
-                  nb.float64[:, :],
-                  nb.float64[:, :],
-                  nb.float64,
-                  nb.int64,
-                  nb.int64[:, :])],
-                '(h,w),(h,w),(n,m),(),()->(n,m)',
-                cache=True, target='cpu')
-def gu_compute_ij_bboxes(x_image: np.ndarray,
-                         y_image: np.ndarray,
-                         xy_bboxes: np.ndarray,
-                         xy_border: float,
-                         ij_border: int,
-                         ij_bboxes: np.ndarray):
-    h = x_image.shape[0]
-    w = x_image.shape[1]
-    n = xy_bboxes.shape[0]
-    for k in range(n):
-        x_min = xy_bboxes[k, 0] - xy_border
-        y_min = xy_bboxes[k, 1] - xy_border
-        x_max = xy_bboxes[k, 2] + xy_border
-        y_max = xy_bboxes[k, 3] + xy_border
-        for j in range(h):
-            for i in range(w):
-                x = x_image[j, i]
-                if x_min <= x <= x_max:
-                    y = y_image[j, i]
-                    if y_min <= y <= y_max:
-                        i_min = ij_bboxes[k, 0]
-                        j_min = ij_bboxes[k, 1]
-                        i_max = ij_bboxes[k, 2]
-                        j_max = ij_bboxes[k, 3]
-                        ij_bboxes[k, 0] = i if i_min < 0 else min(i_min, i)
-                        ij_bboxes[k, 1] = j if j_min < 0 else min(j_min, j)
-                        ij_bboxes[k, 2] = i if i_max < 0 else max(i_max, i)
-                        ij_bboxes[k, 3] = j if j_max < 0 else max(j_max, j)
-        if ij_border != 0 and ij_bboxes[k, 0] != -1:
-            i_min = ij_bboxes[k, 0] - ij_border
-            j_min = ij_bboxes[k, 1] - ij_border
-            i_max = ij_bboxes[k, 2] + ij_border
-            j_max = ij_bboxes[k, 3] + ij_border
-            if i_min < 0:
-                i_min = 0
-            if j_min < 0:
-                j_min = 0
-            if i_max >= w:
-                i_max = w - 1
-            if j_max >= h:
-                j_max = h - 1
-            ij_bboxes[k, 0] = i_min
-            ij_bboxes[k, 1] = j_min
-            ij_bboxes[k, 2] = i_max
-            ij_bboxes[k, 3] = j_max
 
 
 def _millis(seconds: float) -> int:

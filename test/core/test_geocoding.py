@@ -3,9 +3,9 @@ import unittest
 import numpy as np
 import xarray as xr
 
-from xcube.core.rectify import GeoCoding
-from xcube.core.rectify import compute_ij_bboxes
-from xcube.core.rectify import gu_compute_ij_bboxes
+from xcube.core.geocoding import GeoCoding
+from xcube.core.geocoding import compute_ij_bboxes
+from xcube.core.geocoding import gu_compute_ij_bboxes
 
 
 def _new_source_dataset():

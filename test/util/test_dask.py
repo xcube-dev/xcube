@@ -2,7 +2,11 @@ import unittest
 
 import numpy as np
 
-from xcube.util.dask import ChunkContext, compute_array_from_func, get_chunk_sizes, get_chunk_slice_tuples
+from xcube.util.dask import ChunkContext
+from xcube.util.dask import _NestedList
+from xcube.util.dask import compute_array_from_func
+from xcube.util.dask import get_chunk_sizes
+from xcube.util.dask import get_chunk_slice_tuples
 
 
 class DaskTest(unittest.TestCase):
@@ -42,7 +46,6 @@ class DaskTest(unittest.TestCase):
                           (40,)],
                          list(chunks))
 
-
     def test_get_chunk_slices_tuples(self):
         chunk_slices_tuples = get_chunk_slice_tuples([(30, 30, 30, 10),
                                                       (25, 25, 25, 25),
@@ -57,3 +60,64 @@ class DaskTest(unittest.TestCase):
                            slice(75, 100)),
                           (slice(0, 40),)],
                          list(chunk_slices_tuples))
+
+
+class NestedListTest(unittest.TestCase):
+    def test_len(self):
+        nl = _NestedList((4,))
+        self.assertEqual(4, len(nl))
+
+        nl = _NestedList((3, 4))
+        self.assertEqual(3, len(nl))
+
+        nl = _NestedList((2, 3, 4))
+        self.assertEqual(2, len(nl))
+
+    def test_shape(self):
+        nl = _NestedList([4])
+        self.assertEqual((4,), nl.shape)
+
+        nl = _NestedList([3, 4])
+        self.assertEqual((3, 4), nl.shape)
+
+        nl = _NestedList([2, 3, 4])
+        self.assertEqual((2, 3, 4), nl.shape)
+
+    def test_data(self):
+        nl = _NestedList((4,))
+        self.assertEqual([None, None, None, None], nl.data)
+
+        nl = _NestedList((3, 4))
+        self.assertEqual([[None, None, None, None],
+                          [None, None, None, None],
+                          [None, None, None, None]], nl.data)
+
+        nl = _NestedList((2, 3, 4))
+        self.assertEqual([[[None, None, None, None],
+                           [None, None, None, None],
+                           [None, None, None, None]],
+                          [[None, None, None, None],
+                           [None, None, None, None],
+                           [None, None, None, None]]], nl.data)
+
+    def test_setget(self):
+        nl = _NestedList((4,), fill_value=0)
+        nl[1] = 2
+        self.assertEqual([0, 2, 0, 0], nl.data)
+        self.assertEqual(0, nl.data[0])
+        self.assertEqual(2, nl.data[1])
+        self.assertEqual(0, nl.data[2])
+        nl[2:4] = [6, 7]
+        self.assertEqual([0, 2, 6, 7], nl.data)
+
+        nl = _NestedList((4, 3), fill_value=True)
+        nl[2, 1] = False
+        self.assertEqual([[True, True, True],
+                          [True, True, True],
+                          [True, False, True],
+                          [True, True, True]], nl.data)
+        nl[0, 0:2] = [False, False]
+        self.assertEqual([[False, False, True],
+                          [True, True, True],
+                          [True, False, True],
+                          [True, True, True]], nl.data)

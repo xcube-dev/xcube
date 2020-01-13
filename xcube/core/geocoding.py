@@ -250,8 +250,10 @@ class GeoCoding:
                               ij_bboxes)
         return ij_bboxes
 
+
 def _is_geo_crs(x_name: str, y_name: str) -> bool:
     return x_name in LON_COORD_VAR_NAMES and y_name in LAT_COORD_VAR_NAMES
+
 
 def normalize_lon(lon_var: Union[np.ndarray, xr.DataArray]):
     if isinstance(lon_var, xr.DataArray):
@@ -267,7 +269,7 @@ def denormalize_lon(lon_var: Union[np.ndarray, xr.DataArray]):
         return np.where(lon_var <= 180.0, lon_var, lon_var - 360.0)
 
 
-@nb.jit(nopython=True, cache=True, target='cpu')
+@nb.jit(nopython=True, nogil=True, parallel=True, cache=True)
 def compute_ij_bboxes(x_image: np.ndarray,
                       y_image: np.ndarray,
                       xy_bboxes: np.ndarray,
@@ -277,15 +279,15 @@ def compute_ij_bboxes(x_image: np.ndarray,
     h = x_image.shape[0]
     w = x_image.shape[1]
     n = xy_bboxes.shape[0]
-    for k in range(n):
+    for k in nb.prange(n):
         ij_bbox = ij_bboxes[k]
         xy_bbox = xy_bboxes[k]
         x_min = xy_bbox[0] - xy_border
         y_min = xy_bbox[1] - xy_border
         x_max = xy_bbox[2] + xy_border
         y_max = xy_bbox[3] + xy_border
-        for j in range(h):
-            for i in range(w):
+        for j in nb.prange(h):
+            for i in nb.prange(w):
                 x = x_image[j, i]
                 if x_min <= x <= x_max:
                     y = y_image[j, i]
@@ -317,7 +319,8 @@ def compute_ij_bboxes(x_image: np.ndarray,
             ij_bbox[3] = j_max
 
 
-# This is NOT faster:
+# TODO (forman): remove gu_compute_ij_bboxes(), it is NOT faster:
+
 @nb.guvectorize([(nb.float64[:, :],
                   nb.float64[:, :],
                   nb.float64[:, :],
@@ -325,7 +328,7 @@ def compute_ij_bboxes(x_image: np.ndarray,
                   nb.int64,
                   nb.int64[:, :])],
                 '(h,w),(h,w),(n,m),(),()->(n,m)',
-                cache=True, target='cpu')
+                cache=True)
 def gu_compute_ij_bboxes(x_image: np.ndarray,
                          y_image: np.ndarray,
                          xy_bboxes: np.ndarray,
