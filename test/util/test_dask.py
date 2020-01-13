@@ -24,7 +24,7 @@ class DaskTest(unittest.TestCase):
                                     (8, 10),
                                     (3, 4),
                                     np.float64,
-                                    block_info_arg_names=['array_shape', 'array_dtype', 'block_shape','block_slices'])
+                                    ctx_arg_names=['shape', 'dtype', 'block_shape', 'block_slices'])
 
         self.assertIsNotNone(a)
         self.assertEqual((8, 10), a.shape)
