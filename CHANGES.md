@@ -3,6 +3,7 @@
 ### Other
 
 * Renamed default log file for `xcube serve` command to `xcube-serve.log`.
+* `xcube gen` now immediately flushes logging output to standard out
   
 ## Changes in 0.3.1 (in development)
 
