@@ -21,11 +21,10 @@
 
 import warnings
 from abc import ABCMeta, abstractmethod
-from typing import Collection, Optional, Tuple, Union, Any, Mapping, Dict
+from typing import Any, Collection, Dict, Mapping, Optional, Tuple, Union
 
 import numpy as np
 import xarray as xr
-
 from xcube.constants import CRS_WKT_EPSG_4326
 from xcube.constants import EXTENSION_POINT_INPUT_PROCESSORS
 from xcube.core.geocoding import GeoCoding
@@ -208,9 +207,9 @@ class InputProcessor(ExtensionComponent, metaclass=ABCMeta):
     @abstractmethod
     def process(self,
                 dataset: xr.Dataset,
-                dst_size: Tuple[int, int],
-                dst_region: Tuple[float, float, float, float],
-                dst_resampling: str,
+                geo_coding: GeoCoding,
+                output_geom: ImageGeom,
+                output_resampling: str,
                 include_non_spatial_vars=False) -> xr.Dataset:
         """
         Perform spatial transformation into the cube's WGS84 SRS such that all variables in the output dataset
@@ -219,9 +218,9 @@ class InputProcessor(ExtensionComponent, metaclass=ABCMeta):
         * must have *dst_region* as their bounding box in geographic coordinates.
 
         :param dataset: The input dataset.
-        :param dst_size: The output size in pixels as tuple (width ,height).
-        :param dst_region: The output region in coordinates of the target CRS. A tuple (x_min, y_min, x_max, y_max).
-        :param dst_resampling: The spatial resampling method.
+        :param geo_coding: The input's geo-coding.
+        :param output_geom: The output's spatial image geometry.
+        :param output_resampling: The output's spatial resampling method.
         :param include_non_spatial_vars: Whether to include non-spatial variables in the output.
         :return: The transformed output dataset or the original one, if no transformation is required.
         """
@@ -299,9 +298,9 @@ class XYInputProcessor(InputProcessor, metaclass=ABCMeta):
 
     def process(self,
                 dataset: xr.Dataset,
-                dst_size: Tuple[int, int],
-                dst_region: Tuple[float, float, float, float],
-                dst_resampling: str,
+                geo_coding: GeoCoding,
+                output_geom: ImageGeom,
+                output_resampling: str,
                 include_non_spatial_vars=False) -> xr.Dataset:
         """
         Perform reprojection using tie-points / ground control points.
@@ -314,24 +313,14 @@ class XYInputProcessor(InputProcessor, metaclass=ABCMeta):
             if reprojection_info.xy_tp_gcp_step is not None:
                 warnings.warn(f'{warn_prefix}: ignoring '
                               f'reprojection_info.xy_tp_gcp_step = {reprojection_info.xy_tp_gcp_step!r}')
-            if dst_resampling != 'Nearest':
+            if output_resampling != 'Nearest':
                 warnings.warn(f'{warn_prefix}: ignoring '
-                              f'dst_resampling = {dst_resampling!r}')
+                              f'dst_resampling = {output_resampling!r}')
             if include_non_spatial_vars:
                 warnings.warn(f'{warn_prefix}: ignoring '
                               f'include_non_spatial_vars = {include_non_spatial_vars!r}')
 
-            geo_coding = GeoCoding.from_dataset(dataset, xy_names=reprojection_info.xy_names)
-
-            dst_width, dst_height = dst_size
-            dst_x1, dst_y1, dst_x2, dst_y2 = dst_region
-            dst_res = max((dst_x2 - dst_x1) / dst_width, (dst_y2 - dst_y1) / dst_height)
-
-            output_geom = ImageGeom(size=(dst_width, dst_height),
-                                    x_min=dst_x1,
-                                    y_min=dst_y1,
-                                    xy_res=dst_res,
-                                    is_geo_crs=geo_coding.is_geo_crs)
+            geo_coding = geo_coding.derive(x_name=reprojection_info.xy_names[0], y_name=reprojection_info.xy_names[1])
 
             dataset = rectify_dataset(dataset,
                                       geo_coding=geo_coding,
@@ -350,9 +339,9 @@ class XYInputProcessor(InputProcessor, metaclass=ABCMeta):
                                          src_xy_crs=reprojection_info.xy_crs,
                                          src_xy_gcp_step=reprojection_info.xy_gcp_step or 1,
                                          src_xy_tp_gcp_step=reprojection_info.xy_tp_gcp_step or 1,
-                                         dst_size=dst_size,
-                                         dst_region=dst_region,
-                                         dst_resampling=dst_resampling,
+                                         dst_size=output_geom.size,
+                                         dst_region=output_geom.xy_bbox,
+                                         dst_resampling=output_resampling,
                                          include_non_spatial_vars=include_non_spatial_vars)
 
 

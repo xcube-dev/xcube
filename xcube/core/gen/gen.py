@@ -30,12 +30,13 @@ import warnings
 from typing import Any, Callable, Dict, Sequence, Tuple
 
 import xarray as xr
-
 from xcube.core.dsio import DatasetIO, find_dataset_io, guess_dataset_format, rimraf
 from xcube.core.evaluate import evaluate_dataset
 from xcube.core.gen.defaults import DEFAULT_OUTPUT_PATH, DEFAULT_OUTPUT_RESAMPLING, DEFAULT_OUTPUT_SIZE
 from xcube.core.gen.iproc import InputProcessor, find_input_processor_class
-from xcube.core.select import select_variables_subset
+from xcube.core.geocoding import GeoCoding
+from xcube.core.imgeom import ImageGeom
+from xcube.core.select import select_spatial_subset, select_variables_subset
 from xcube.core.timecoord import add_time_coords, from_time_in_days_since_1970
 from xcube.core.timeslice import find_time_slice
 from xcube.core.update import update_dataset_attrs, update_dataset_temporal_attrs, update_dataset_var_attrs
@@ -216,6 +217,13 @@ def _process_input(input_processor: InputProcessor,
     time_index, update_mode = find_time_slice(output_path,
                                               from_time_in_days_since_1970((time_range[0] + time_range[1]) / 2))
 
+    geo_coding = GeoCoding.from_dataset(input_dataset)
+
+    width, height = output_size
+    x_min, y_min, x_max, y_max = output_region
+    xy_res = max((x_max - x_min) / width, (y_max - y_min) / height)
+    output_geom = ImageGeom(size=output_size, x_min=x_min, y_min=y_min, xy_res=xy_res, is_geo_crs=True)
+
     steps = []
 
     # noinspection PyShadowingNames
@@ -223,6 +231,19 @@ def _process_input(input_processor: InputProcessor,
         return input_processor.pre_process(input_slice)
 
     steps.append((step1, 'pre-processing input slice'))
+
+    # noinspection PyShadowingNames
+    def step1a(input_slice):
+        subset = select_spatial_subset(input_slice,
+                                       xy_bbox=output_geom.xy_bbox,
+                                       xy_border=output_geom.xy_res,
+                                       ij_border=1,
+                                       geo_coding=geo_coding)
+        if subset is None:
+            monitor('no spatial overlap with input')
+        return subset
+
+    steps.append((step1a, 'spatial subsetting'))
 
     # noinspection PyShadowingNames
     def step2(input_slice):
@@ -242,9 +263,9 @@ def _process_input(input_processor: InputProcessor,
     # noinspection PyShadowingNames
     def step4(input_slice):
         return input_processor.process(input_slice,
-                                       dst_size=output_size,
-                                       dst_region=output_region,
-                                       dst_resampling=output_resampling,
+                                       geo_coding=geo_coding,
+                                       output_geom=output_geom,
+                                       output_resampling=output_resampling,
                                        include_non_spatial_vars=False)
 
     steps.append((step4, 'transforming input slice'))
