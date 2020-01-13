@@ -28,7 +28,6 @@ import xarray as xr
 
 from xcube.core.geocoding import GeoCoding
 from xcube.core.imgeom import ImageGeom
-from xcube.util.dask import ChunkContext
 from xcube.util.dask import compute_array_from_func
 
 
@@ -104,9 +103,9 @@ def rectify_dataset(dataset: xr.Dataset,
 
     is_output_tiled = output_geom.is_tiled
     if not is_output_tiled:
-        get_dst_var_array = get_dst_var_array_numpy
+        get_dst_var_array = _get_dst_var_array_numpy
     else:
-        get_dst_var_array = get_dst_var_array_dask
+        get_dst_var_array = _get_dst_var_array_dask
 
     dst_dims = src_geo_coding.xy_names[::-1]
     dst_ds_coords = output_geom.coord_vars(xy_names=src_geo_coding.xy_names,
@@ -134,11 +133,11 @@ def rectify_dataset(dataset: xr.Dataset,
     return xr.Dataset(dst_vars, coords=dst_ds_coords, attrs=src_attrs)
 
 
-def get_dst_var_array_numpy(src_var: xr.DataArray,
-                            src_geo_coding: GeoCoding,
-                            output_geom: ImageGeom,
-                            is_dst_y_axis_inverted: bool,
-                            uv_delta: float) -> np.ndarray:
+def _get_dst_var_array_numpy(src_var: xr.DataArray,
+                             src_geo_coding: GeoCoding,
+                             output_geom: ImageGeom,
+                             is_dst_y_axis_inverted: bool,
+                             uv_delta: float) -> np.ndarray:
     dst_width = output_geom.width
     dst_height = output_geom.height
     dst_var_shape = src_var.shape[0:-2] + (dst_height, dst_width)
@@ -159,11 +158,11 @@ def get_dst_var_array_numpy(src_var: xr.DataArray,
     return dst_var_array
 
 
-def get_dst_var_array_dask(src_var: xr.DataArray,
-                           src_geo_coding: GeoCoding,
-                           output_geom: ImageGeom,
-                           is_dst_y_axis_inverted: bool,
-                           uv_delta: float) -> da.Array:
+def _get_dst_var_array_dask(src_var: xr.DataArray,
+                            src_geo_coding: GeoCoding,
+                            output_geom: ImageGeom,
+                            is_dst_y_axis_inverted: bool,
+                            uv_delta: float) -> da.Array:
     dst_width = output_geom.width
     dst_height = output_geom.height
     dst_tile_width = output_geom.tile_width
@@ -182,6 +181,12 @@ def get_dst_var_array_dask(src_var: xr.DataArray,
                                    dst_var_shape,
                                    dst_var_chunks,
                                    src_var.dtype,
+                                   ctx_arg_names=[
+                                       'dtype',
+                                       'block_id',
+                                       'block_shape',
+                                       'block_slices',
+                                   ],
                                    args=(
                                        src_var,
                                        src_geo_coding.x,
@@ -197,7 +202,10 @@ def get_dst_var_array_dask(src_var: xr.DataArray,
                                    )
 
 
-def _rectify_func_dask(context: ChunkContext,
+def _rectify_func_dask(array_dtype: np.dtype,
+                       block_id: int,
+                       block_shape: Tuple[int, int],
+                       block_slices: Tuple[Tuple[int, int], Tuple[int, int]],
                        src_var: xr.DataArray,
                        src_x: xr.DataArray,
                        src_y: xr.DataArray,
@@ -207,38 +215,23 @@ def _rectify_func_dask(context: ChunkContext,
                        dst_xy_res: float,
                        is_dst_y_axis_inverted: bool,
                        uv_delta: float) -> np.ndarray:
-    dst_block = np.full(src_var.shape[:-2] + context.chunk_shape, np.nan, dtype=context.dtype)
-    dst_y_slice, dst_x_slice = context.chunk_slices
-    src_ij_bbox = src_ij_bboxes[context.chunk_id]
+    dst_block = np.full(src_var.shape[:-2] + block_shape, np.nan, dtype=array_dtype)
+    (dst_y_slice_start, _), (dst_x_slice_start, _) = block_slices
+    src_ij_bbox = src_ij_bboxes[block_id]
     src_i_min, src_j_min, src_i_max, src_j_max = src_ij_bbox
     if src_i_min == -1:
         return dst_block
-    src_i_slice = slice(src_i_min, src_i_max + 1)
-    src_j_slice = slice(src_j_min, src_j_max + 1)
-    # This is NOT faster:
-    # t1 = time.perf_counter()
-    # src_indexers = {src_x_dim: src_i_slice, src_y_dim: src_j_slice}
-    # src_var_values = src_var.isel(**src_indexers).values
-    # src_x_values = src_x.isel(**src_indexers).values
-    # src_y_values = src_y.isel(**src_indexers).values
-    # t2 = time.perf_counter()
-    # t1 = time.perf_counter()
-    src_var_values = src_var[..., src_j_slice, src_i_slice].values
-    src_x_values = src_x[src_j_slice, src_i_slice].values
-    src_y_values = src_y[src_j_slice, src_i_slice].values
-    # t2 = time.perf_counter()
+    src_var_values = src_var[..., src_j_min:src_j_max + 1, src_i_min:src_i_max + 1].values
+    src_x_values = src_x[src_j_min:src_j_max + 1, src_i_min:src_i_max + 1].values
+    src_y_values = src_y[src_j_min:src_j_max + 1, src_i_min:src_i_max + 1].values
     _reproject(src_var_values,
                src_x_values,
                src_y_values,
                dst_block,
-               dst_x_min + dst_x_slice.start * dst_xy_res,
-               dst_y_min + dst_y_slice.start * dst_xy_res,
+               dst_x_min + dst_x_slice_start * dst_xy_res,
+               dst_y_min + dst_y_slice_start * dst_xy_res,
                dst_xy_res,
                uv_delta)
-    # t3 = time.perf_counter()
-    # print(f'target chunk {context.name}-{context.chunk_index}, shape {context.chunk_shape} '
-    #       f'for source shape {src_i_max - src_i_min + 1, src_j_max - src_j_min + 1} '
-    #       f'took {_millis(t2 - t1)}, {_millis(t3 - t2)} milliseconds, total {_millis(t3 - t1)}')
     if is_dst_y_axis_inverted:
         dst_block = dst_block[..., ::-1, :]
     return dst_block
