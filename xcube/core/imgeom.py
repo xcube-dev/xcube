@@ -26,8 +26,7 @@ import numpy as np
 import xarray as xr
 
 from xcube.core.geocoding import GeoCoding, denormalize_lon
-from xcube.util.dask import get_chunk_sizes, get_chunk_iterators
-
+from xcube.util.dask import get_chunk_sizes, get_block_iterators
 
 _LON_ATTRS = dict(long_name='longitude', standard_name='longitude', units='degrees_east')
 _LAT_ATTRS = dict(long_name='latitude', standard_name='latitude', units='degrees_north')
@@ -158,31 +157,30 @@ class ImageGeom:
     @property
     def xy_bboxes(self) -> np.ndarray:
         xy_offset = np.array([self.x_min, self.y_min, self.x_min, self.y_min])
-        tile_bboxes = self.ij_bboxes
-        return xy_offset + self.xy_res * tile_bboxes
+        return xy_offset + self.xy_res * self.ij_bboxes
 
     @property
     def ij_bboxes(self) -> np.ndarray:
         chunk_sizes = get_chunk_sizes((self.height, self.width),
                                       (self.tile_height, self.tile_width))
-        _, _, chunk_slice_tuples = get_chunk_iterators(chunk_sizes)
-        chunk_slice_tuples = tuple(chunk_slice_tuples)
-        n = len(chunk_slice_tuples)
-        tile_bboxes = np.ndarray((n, 4), dtype=np.int64)
+        _, _, block_slices = get_block_iterators(chunk_sizes)
+        block_slices = tuple(block_slices)
+        n = len(block_slices)
+        ij_bboxes = np.ndarray((n, 4), dtype=np.int64)
         for i in range(n):
-            y_slice, x_slice = chunk_slice_tuples[i]
-            tile_bboxes[i, 0] = x_slice.start
-            tile_bboxes[i, 1] = y_slice.start
-            tile_bboxes[i, 2] = x_slice.stop - 1
-            tile_bboxes[i, 3] = y_slice.stop - 1
-        return tile_bboxes
+            y_slice, x_slice = block_slices[i]
+            ij_bboxes[i, 0] = x_slice.start
+            ij_bboxes[i, 1] = y_slice.start
+            ij_bboxes[i, 2] = x_slice.stop - 1
+            ij_bboxes[i, 3] = y_slice.stop - 1
+        return ij_bboxes
 
     def coord_vars(self,
                    xy_names: Tuple[str, str],
                    is_lon_normalized: bool = False,
                    is_y_axis_inverted: bool = False) -> Mapping[str, xr.DataArray]:
         x_name, y_name = xy_names
-        x_attrs, y_attrs = (_LON_ATTRS, _LAT_ATTRS) if self.is_geo_crs else ({},{})
+        x_attrs, y_attrs = (_LON_ATTRS, _LAT_ATTRS) if self.is_geo_crs else ({}, {})
         w, h = self.size
         x1, y1, x2, y2 = self.xy_bbox
         res = self.xy_res
