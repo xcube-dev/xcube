@@ -46,7 +46,7 @@ class DefaultProcessTest(unittest.TestCase):
                 ('analysed_sst', dict(valid_pixel_expression=None)),
                 ('analysis_error', dict(valid_pixel_expression=None)),
                 ('sea_ice_fraction', dict(valid_pixel_expression=None)),
-                ('water_mask', dict(expression='(mask.sea or mask.lake) and not mask.ice')),
+                ('water_mask', dict(expression='(mask.sea or mask.lake) and not mask.ice', cache=True)),
                 ('ice_mask', dict(expression='mask.sea and mask.ice')),
                 ('analysed_sst', dict(valid_pixel_expression='water_mask')),
                 ('analysis_error', dict(valid_pixel_expression='water_mask')),
