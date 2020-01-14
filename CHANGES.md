@@ -1,5 +1,10 @@
 ## Changes in 0.4.0 (in development)
 
+### New
+
+* Now supporting xarray and numpy functions in expressions. You can now use 
+  `xr` and `np` contexts, e.g. `xr.where(CHL >= 0.0, CHL)`. (#257)
+
 ### Other
 
 * Renamed default log file for `xcube serve` command to `xcube-serve.log`.

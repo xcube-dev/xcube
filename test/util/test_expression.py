@@ -1,6 +1,7 @@
 import unittest
 
 import numpy as np
+import xarray as xr
 
 from xcube.util.expression import transpile_expr, compute_expr, compute_array_expr
 
@@ -10,7 +11,8 @@ class ComputeArrayExprTest(unittest.TestCase):
     def test_valid_exprs(self):
         namespace = dict(a=np.array([0.1, 0.3, 0.1, 0.7, 0.4, 0.9]),
                          b=np.array([0.2, 0.1, 0.3, 0.2, 0.4, 0.8]),
-                         np=np)
+                         np=np,
+                         xr=xr)
 
         value = compute_array_expr('a + 1', namespace=namespace)
         np.testing.assert_array_almost_equal(value,
@@ -31,6 +33,16 @@ class ComputeArrayExprTest(unittest.TestCase):
         value = compute_array_expr('a == b', namespace=namespace)
         np.testing.assert_equal(value,
                                 np.array([False, False, False, False, True, False]))
+
+        # This weirdo expression is a result of translating SNAP conditional expressions to Python.
+        value = compute_array_expr('a > 0.35 if a else b', namespace=namespace)
+        np.testing.assert_equal(value,
+                                np.array([0.2, 0.1, 0.3, 0.7, 0.4, 0.9]))
+
+        # We actually mean
+        value = compute_array_expr('where(a > 0.35, a, b)', namespace=namespace)
+        np.testing.assert_equal(value,
+                                np.array([0.2, 0.1, 0.3, 0.7, 0.4, 0.9]))
 
     def test_invalid_exprs(self):
         with self.assertRaises(ValueError) as cm:
@@ -148,9 +160,17 @@ class TranspileExprTest(unittest.TestCase):
         # The following conditional expr looks wrong but this is how it looks like after translating
         # from SNAP expression 'a >= 0.0 ? a : NaN'
         self.assertEqual(transpile_expr('a >= 0.0 if a else NaN'),
-                         'np.where(a >= 0.0, a, NaN)')
+                         'xr.where(a >= 0.0, a, NaN)')
         self.assertEqual(transpile_expr('a >= 0.0 if a else b >= 0.0 if b else NaN'),
-                         'np.where(a >= 0.0, a, np.where(b >= 0.0, b, NaN))')
+                         'xr.where(a >= 0.0, a, xr.where(b >= 0.0, b, NaN))')
+
+    def test_where(self):
+        self.assertEqual(transpile_expr('where(a >= 0.0, a, NaN)'),
+                         'xr.where(a >= 0.0, a, NaN)')
+        self.assertEqual(transpile_expr('xr.where(a >= 0.0, a, NaN)'),
+                         'xr.where(a >= 0.0, a, NaN)')
+        self.assertEqual(transpile_expr('np.where(a >= 0.0, a, NaN)'),
+                         'np.where(a >= 0.0, a, NaN)')
 
     def test_mixed(self):
         self.assertEqual(transpile_expr('a+sin(x + 2.8)'),
