@@ -217,8 +217,6 @@ def _process_input(input_processor: InputProcessor,
     time_index, update_mode = find_time_slice(output_path,
                                               from_time_in_days_since_1970((time_range[0] + time_range[1]) / 2))
 
-    geo_coding = GeoCoding.from_dataset(input_dataset)
-
     width, height = output_size
     x_min, y_min, x_max, y_max = output_region
     xy_res = max((x_max - x_min) / width, (y_max - y_min) / height)
@@ -232,8 +230,12 @@ def _process_input(input_processor: InputProcessor,
 
     steps.append((step1, 'pre-processing input slice'))
 
+    geo_coding = None
+
     # noinspection PyShadowingNames
     def step1a(input_slice):
+        nonlocal geo_coding
+        geo_coding = GeoCoding.from_dataset(input_slice)
         subset = select_spatial_subset(input_slice,
                                        xy_bbox=output_geom.xy_bbox,
                                        xy_border=output_geom.xy_res,
@@ -241,6 +243,8 @@ def _process_input(input_processor: InputProcessor,
                                        geo_coding=geo_coding)
         if subset is None:
             monitor('no spatial overlap with input')
+        elif subset is not input_slice:
+            geo_coding = GeoCoding.from_dataset(subset)
         return subset
 
     steps.append((step1a, 'spatial subsetting'))
@@ -262,6 +266,7 @@ def _process_input(input_processor: InputProcessor,
 
     # noinspection PyShadowingNames
     def step4(input_slice):
+        # noinspection PyTypeChecker
         return input_processor.process(input_slice,
                                        geo_coding=geo_coding,
                                        output_geom=output_geom,

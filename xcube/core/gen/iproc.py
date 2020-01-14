@@ -323,6 +323,7 @@ class XYInputProcessor(InputProcessor, metaclass=ABCMeta):
             geo_coding = geo_coding.derive(x_name=reprojection_info.xy_names[0], y_name=reprojection_info.xy_names[1])
 
             dataset = rectify_dataset(dataset,
+                                      compute_subset=False,
                                       geo_coding=geo_coding,
                                       output_geom=output_geom,
                                       is_y_axis_inverted=True)
