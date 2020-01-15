@@ -29,7 +29,6 @@ import xarray as xr
 from xcube.core.geocoding import GeoCoding
 from xcube.core.imgeom import ImageGeom
 from xcube.core.select import select_spatial_subset
-from xcube.util.dask import ChunkContext
 from xcube.util.dask import compute_array_from_func
 
 

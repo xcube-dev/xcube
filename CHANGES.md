@@ -2,7 +2,10 @@
 
 ### New
 
-
+* Integrated new rectification in default input processor. It is now the default reprojection method in 
+  `xcube.core.gen.iproc.XYInputProcessor`, if ground controll points are not specified, i.e. the input processor 
+  is configured with `xy_gcp_step` being None
+* Introduced new function `xcube.core.select.select_spatial_subset`
 * Introduced new (ortho-)rectification algorithm allowing reprojection of 
   satellite images that come with (terrain-corrected) geo-locations for every pixel.
 
