@@ -18,7 +18,7 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-
+import math
 from typing import Mapping, Optional, Sequence, Tuple, Union
 
 import dask.array as da
@@ -39,8 +39,8 @@ def rectify_dataset(dataset: xr.Dataset,
                     output_geom: ImageGeom = None,
                     is_y_axis_inverted: bool = False,
                     tile_size: Union[int, Tuple[int, int]] = None,
-                    compute_xy: bool = False,
-                    compute_vars: bool = False,
+                    load_xy: bool = False,
+                    load_vars: bool = False,
                     compute_subset: bool = True,
                     uv_delta: float = 1e-3) -> Optional[xr.Dataset]:
     """
@@ -67,9 +67,9 @@ def rectify_dataset(dataset: xr.Dataset,
         to spatially fit *dataset* and to retain its spatial resolution.
     :param is_y_axis_inverted: Whether the y-axis labels in the output should be in inverse order.
     :param tile_size: Optional tile size for the output.
-    :param compute_xy: Compute x,y coordinates and load into memory before the actual rectification process.
+    :param load_xy: Compute x,y coordinates and load into memory before the actual rectification process.
         May improve runtime performance at the cost of higher memory consumption.
-    :param compute_vars: Compute source variables and load into memory before the actual rectification process.
+    :param load_vars: Compute source variables and load into memory before the actual rectification process.
         May improve runtime performance at the cost of higher memory consumption.
     :param uv_delta: A normalized value that is used to determine whether x,y coordinates in the output are contained
         in the triangles defined by the input x,y coordinates.
@@ -100,17 +100,23 @@ def rectify_dataset(dataset: xr.Dataset,
 
     src_vars = select_variables(dataset, var_names, geo_coding=src_geo_coding)
 
-    if compute_xy:
+    if load_xy:
         # This is NOT faster:
         src_x = src_x.compute()
         src_y = src_y.compute()
         src_geo_coding = src_geo_coding.derive(x=src_x, y=src_y)
 
-    is_output_tiled = output_geom.is_tiled
-    if not is_output_tiled:
-        get_dst_var_array = _get_dst_var_array_numpy
-    else:
+    if output_geom.is_tiled:
+        get_dst_src_ij_array = _get_dst_src_ij_array_dask
         get_dst_var_array = _get_dst_var_array_dask
+    else:
+        get_dst_src_ij_array = _get_dst_src_ij_array_numpy
+        get_dst_var_array = _get_dst_var_array_numpy
+
+    dst_src_ij_array = get_dst_src_ij_array(src_geo_coding,
+                                            output_geom,
+                                            is_y_axis_inverted,
+                                            uv_delta)
 
     dst_dims = src_geo_coding.xy_names[::-1]
     dst_ds_coords = output_geom.coord_vars(xy_names=src_geo_coding.xy_names,
@@ -118,7 +124,7 @@ def rectify_dataset(dataset: xr.Dataset,
                                            is_y_axis_inverted=is_y_axis_inverted)
     dst_vars = dict()
     for src_var_name, src_var in src_vars.items():
-        if compute_vars:
+        if load_vars:
             # This is NOT faster:
             src_var = src_var.compute()
 
@@ -126,10 +132,8 @@ def rectify_dataset(dataset: xr.Dataset,
         dst_var_coords = {d: src_var.coords[d] for d in dst_var_dims if d in src_var.coords}
         dst_var_coords.update({d: dst_ds_coords[d] for d in dst_var_dims if d in dst_ds_coords})
         dst_var_array = get_dst_var_array(src_var,
-                                          src_geo_coding,
-                                          output_geom,
-                                          is_y_axis_inverted,
-                                          uv_delta)
+                                          dst_src_ij_array,
+                                          fill_value=np.nan)
         dst_var = xr.DataArray(dst_var_array,
                                dims=dst_var_dims,
                                coords=dst_var_coords,
@@ -138,42 +142,41 @@ def rectify_dataset(dataset: xr.Dataset,
     return xr.Dataset(dst_vars, coords=dst_ds_coords, attrs=src_attrs)
 
 
-def _get_dst_var_array_numpy(src_var: xr.DataArray,
-                             src_geo_coding: GeoCoding,
-                             output_geom: ImageGeom,
-                             is_dst_y_axis_inverted: bool,
-                             uv_delta: float) -> np.ndarray:
+def _get_dst_src_ij_array_numpy(src_geo_coding: GeoCoding,
+                                output_geom: ImageGeom,
+                                is_dst_y_axis_inverted: bool,
+                                uv_delta: float) -> np.ndarray:
     dst_width = output_geom.width
     dst_height = output_geom.height
-    dst_var_shape = src_var.shape[0:-2] + (dst_height, dst_width)
-    dst_var_array = np.full(dst_var_shape, np.nan, dtype=src_var.dtype)
+    dst_shape = 2, dst_height, dst_width
+    dst_src_ij_values = np.full(dst_shape, np.nan, dtype=np.float64)
     dst_x_min = output_geom.x_min
     dst_y_min = output_geom.y_min
     dst_xy_res = output_geom.xy_res
-    _reproject(src_var.values,
-               src_geo_coding.x.values,
-               src_geo_coding.y.values,
-               dst_var_array,
-               dst_x_min,
-               dst_y_min,
-               dst_xy_res,
-               uv_delta=uv_delta)
+    _compute_source_pixels(src_geo_coding.x.values,
+                           src_geo_coding.y.values,
+                           0,
+                           0,
+                           dst_src_ij_values,
+                           dst_x_min,
+                           dst_y_min,
+                           dst_xy_res,
+                           uv_delta=uv_delta)
     if is_dst_y_axis_inverted:
-        dst_var_array = dst_var_array[..., ::-1, :]
-    return dst_var_array
+        dst_src_ij_values = dst_src_ij_values[:, ::-1, :]
+    return dst_src_ij_values
 
 
-def _get_dst_var_array_dask(src_var: xr.DataArray,
-                            src_geo_coding: GeoCoding,
-                            output_geom: ImageGeom,
-                            is_dst_y_axis_inverted: bool,
-                            uv_delta: float) -> da.Array:
+def _get_dst_src_ij_array_dask(src_geo_coding: GeoCoding,
+                               output_geom: ImageGeom,
+                               is_dst_y_axis_inverted: bool,
+                               uv_delta: float) -> da.Array:
     dst_width = output_geom.width
     dst_height = output_geom.height
     dst_tile_width = output_geom.tile_width
     dst_tile_height = output_geom.tile_height
-    dst_var_shape = src_var.shape[0:-2] + (dst_height, dst_width)
-    dst_var_chunks = src_var.shape[0:-2] + (dst_tile_height, dst_tile_width)
+    dst_var_shape = 2, dst_height, dst_width
+    dst_var_chunks = 2, dst_tile_height, dst_tile_width
 
     dst_x_min = output_geom.x_min
     dst_y_min = output_geom.y_min
@@ -182,10 +185,10 @@ def _get_dst_var_array_dask(src_var: xr.DataArray,
     dst_xy_bboxes = output_geom.xy_bboxes
     src_ij_bboxes = src_geo_coding.ij_bboxes(dst_xy_bboxes, xy_border=dst_xy_res, ij_border=1)
 
-    return compute_array_from_func(_rectify_func_dask,
+    return compute_array_from_func(_compute_source_pixels_block,
                                    dst_var_shape,
                                    dst_var_chunks,
-                                   src_var.dtype,
+                                   np.float64,
                                    ctx_arg_names=[
                                        'dtype',
                                        'block_id',
@@ -193,7 +196,6 @@ def _get_dst_var_array_dask(src_var: xr.DataArray,
                                        'block_slices',
                                    ],
                                    args=(
-                                       src_var,
                                        src_geo_coding.x,
                                        src_geo_coding.y,
                                        src_ij_bboxes,
@@ -203,43 +205,73 @@ def _get_dst_var_array_dask(src_var: xr.DataArray,
                                        is_dst_y_axis_inverted,
                                        uv_delta
                                    ),
-                                   name=src_var.name,
+                                   name='ij_pixels',
                                    )
 
 
-def _rectify_func_dask(array_dtype: np.dtype,
-                       block_id: int,
-                       block_shape: Tuple[int, int],
-                       block_slices: Tuple[Tuple[int, int], Tuple[int, int]],
-                       src_var: xr.DataArray,
-                       src_x: xr.DataArray,
-                       src_y: xr.DataArray,
-                       src_ij_bboxes: np.ndarray,
-                       dst_x_min: float,
-                       dst_y_min: float,
-                       dst_xy_res: float,
-                       is_dst_y_axis_inverted: bool,
-                       uv_delta: float) -> np.ndarray:
-    dst_block = np.full(src_var.shape[:-2] + block_shape, np.nan, dtype=array_dtype)
-    (dst_y_slice_start, _), (dst_x_slice_start, _) = block_slices
+def _get_dst_var_array_numpy(src_var: xr.DataArray,
+                             dst_src_ij_array: np.ndarray,
+                             fill_value: Union[int, float, complex] = np.nan) -> np.ndarray:
+    return _get_dst_var_array_numpy_numba(src_var.values, dst_src_ij_array, fill_value)
+
+
+@nb.njit(nogil=True, cache=True)
+def _get_dst_var_array_numpy_numba(src_var: np.ndarray,
+                                   dst_src_ij_array: np.ndarray,
+                                   fill_value: Union[int, float, complex] = np.nan) -> np.ndarray:
+    dst_width = dst_src_ij_array.shape[-1]
+    dst_height = dst_src_ij_array.shape[-2]
+    dst_shape = src_var.shape[:-2] + (dst_height, dst_width)
+    dst_values = np.full(dst_shape, fill_value, dtype=src_var.dtype)
+    _extract_source_pixels(src_var,
+                           dst_src_ij_array,
+                           dst_values)
+    return dst_values
+
+
+def _get_dst_var_array_dask(src_var: xr.DataArray,
+                            dst_src_ij_array: np.ndarray,
+                            fill_value: Union[int, float, complex] = np.nan) -> da.Array:
+    return da.map_blocks(_get_dst_var_array_numpy_numba,
+                         src_var.values,
+                         dst_src_ij_array,
+                         fill_value,
+                         dtype=src_var.dtype,
+                         drop_axis=0)
+
+
+def _compute_source_pixels_block(dtype: np.dtype,
+                                 block_id: int,
+                                 block_shape: Tuple[int, int],
+                                 block_slices: Tuple[Tuple[int, int], Tuple[int, int]],
+                                 src_x: xr.DataArray,
+                                 src_y: xr.DataArray,
+                                 src_ij_bboxes: np.ndarray,
+                                 dst_x_min: float,
+                                 dst_y_min: float,
+                                 dst_xy_res: float,
+                                 is_dst_y_axis_inverted: bool,
+                                 uv_delta: float) -> np.ndarray:
+    dst_src_ij_block = np.full(block_shape, np.nan, dtype=dtype)
+    _, (dst_y_slice_start, _), (dst_x_slice_start, _) = block_slices
     src_ij_bbox = src_ij_bboxes[block_id]
     src_i_min, src_j_min, src_i_max, src_j_max = src_ij_bbox
     if src_i_min == -1:
-        return dst_block
-    src_var_values = src_var[..., src_j_min:src_j_max + 1, src_i_min:src_i_max + 1].values
+        return dst_src_ij_block
     src_x_values = src_x[src_j_min:src_j_max + 1, src_i_min:src_i_max + 1].values
     src_y_values = src_y[src_j_min:src_j_max + 1, src_i_min:src_i_max + 1].values
-    _reproject(src_var_values,
-               src_x_values,
-               src_y_values,
-               dst_block,
-               dst_x_min + dst_x_slice_start * dst_xy_res,
-               dst_y_min + dst_y_slice_start * dst_xy_res,
-               dst_xy_res,
-               uv_delta)
+    _compute_source_pixels(src_x_values,
+                           src_y_values,
+                           src_i_min,
+                           src_j_min,
+                           dst_src_ij_block,
+                           dst_x_min + dst_x_slice_start * dst_xy_res,
+                           dst_y_min + dst_y_slice_start * dst_xy_res,
+                           dst_xy_res,
+                           uv_delta)
     if is_dst_y_axis_inverted:
-        dst_block = dst_block[..., ::-1, :]
-    return dst_block
+        dst_src_ij_block = dst_src_ij_block[:, ::-1, :]
+    return dst_src_ij_block
 
 
 def select_variables(dataset,
@@ -296,6 +328,18 @@ def _fu(px: float, py: float, px0: float, py0: float, px2: float, py2: float) ->
         nopython=True, nogil=True, inline='always')
 def _fv(px: float, py: float, px0: float, py0: float, px1: float, py1: float) -> float:
     return (py0 - py) * (px0 - px1) - (px0 - px) * (py0 - py1)
+
+
+@nb.jit('float64(float64, float64, float64)',
+        nopython=True, nogil=True, inline='always')
+def _fclamp(x: float, x_min: float, x_max: float) -> float:
+    return x_min if x < x_min else (x_max if x > x_max else x)
+
+
+@nb.jit('int64(int64, int64, int64)',
+        nopython=True, nogil=True, inline='always')
+def _iclamp(x: int, x_min: int, x_max: int) -> int:
+    return x_min if x < x_min else (x_max if x > x_max else x)
 
 
 @nb.jit(nopython=True, nogil=True, cache=True)
@@ -401,32 +445,29 @@ def _reproject(src_values: np.ndarray,
                         dst_values[..., dst_j, dst_i] = src_values[..., src_j, src_i]
 
 
-@nb.jit(nopython=True, cache=True)
-def compute_source_pixels(src_x: np.ndarray,
-                          src_y: np.ndarray,
-                          src_i_min: int,
-                          src_j_min: int,
-                          dst_src_i: np.ndarray,
-                          dst_src_j: np.ndarray,
-                          dst_x0: float,
-                          dst_y0: float,
-                          dst_res: float,
-                          fractions: bool = False,
-                          delta: float = 1e-3):
+@nb.njit(cache=True)
+def _compute_source_pixels(src_x: np.ndarray,
+                           src_y: np.ndarray,
+                           src_i_min: int,
+                           src_j_min: int,
+                           dst_src_ij: np.ndarray,
+                           dst_x0: float,
+                           dst_y0: float,
+                           dst_res: float,
+                           uv_delta: float = 1e-3):
     src_width = src_x.shape[-1]
     src_height = src_x.shape[-2]
 
-    dst_width = dst_src_i.shape[-1]
-    dst_height = dst_src_i.shape[-2]
+    dst_width = dst_src_ij.shape[-1]
+    dst_height = dst_src_ij.shape[-2]
 
     dst_px = np.zeros(4, dtype=src_x.dtype)
     dst_py = np.zeros(4, dtype=src_y.dtype)
 
-    dst_src_i[:, :] = np.nan
-    dst_src_j[:, :] = np.nan
+    dst_src_ij[:, :, :] = np.nan
 
-    u_min = v_min = -delta
-    uv_max = 1.0 + 2 * delta
+    u_min = v_min = -uv_delta
+    uv_max = 1.0 + 2 * uv_delta
 
     for src_j0 in range(src_height - 1):
         for src_i0 in range(src_width - 1):
@@ -492,63 +533,49 @@ def compute_source_pixels(src_x: np.ndarray,
                         u = _fu(dst_x, dst_y, dst_p0x, dst_p0y, dst_p2x, dst_p2y) / det_a
                         v = _fv(dst_x, dst_y, dst_p0x, dst_p0y, dst_p1x, dst_p1y) / det_a
                         if u >= u_min and v >= v_min and u + v <= uv_max:
-                            if fractions:
-                                src_i = src_i0 + u
-                                src_j = src_j0 + v
-                            else:
-                                src_i = src_i0 if u < 0.5 else src_i1
-                                src_j = src_j0 if v < 0.5 else src_j1
+                            src_i = src_i0 + _fclamp(u, 0.0, 1.0)
+                            src_j = src_j0 + _fclamp(v, 0.0, 1.0)
                     if src_i == -1 and det_b != 0.0:
                         u = _fu(dst_x, dst_y, dst_p3x, dst_p3y, dst_p1x, dst_p1y) / det_b
                         v = _fv(dst_x, dst_y, dst_p3x, dst_p3y, dst_p2x, dst_p2y) / det_b
                         if u >= u_min and v >= v_min and u + v <= uv_max:
-                            if fractions:
-                                src_i = src_i1 - u
-                                src_j = src_j1 - v
-                            else:
-                                src_i = src_i1 if u < 0.5 else src_i0
-                                src_j = src_j1 if v < 0.5 else src_j0
+                            src_i = src_i1 - _fclamp(u, 0.0, 1.0)
+                            src_j = src_j1 - _fclamp(v, 0.0, 1.0)
                     if src_i != -1:
-                        dst_src_i[dst_j, dst_i] = src_i_min + src_i
-                        dst_src_j[dst_j, dst_i] = src_j_min + src_j
+                        dst_src_ij[0, dst_j, dst_i] = src_i_min + src_i
+                        dst_src_ij[1, dst_j, dst_i] = src_j_min + src_j
 
 
-@nb.jit(nopython=True, cache=True)
-def extract_source_pixels(src_values: np.ndarray,
-                          dst_src_i: np.ndarray,
-                          dst_src_j: np.ndarray,
-                          dst_values: np.ndarray,
-                          fill_value: float = np.nan):
+@nb.njit(cache=True)
+def _extract_source_pixels(src_values: np.ndarray,
+                           dst_src_ij: np.ndarray,
+                           dst_values: np.ndarray):
     src_width = src_values.shape[-1]
     src_height = src_values.shape[-2]
 
     dst_width = dst_values.shape[-1]
     dst_height = dst_values.shape[-2]
 
-    # noinspection PyUnusedLocal
-    src_i: int = 0
-    # noinspection PyUnusedLocal
-    src_j: int = 0
+    src_i_min = 0
+    src_j_min = 0
+    src_i_max = src_width - 1
+    src_j_max = src_height - 1
 
     for dst_j in range(dst_height):
         for dst_i in range(dst_width):
-            src_i_f = dst_src_i[dst_j, dst_i]
-            src_j_f = dst_src_j[dst_j, dst_i]
+            src_i_f = dst_src_ij[0, dst_j, dst_i]
+            src_j_f = dst_src_ij[1, dst_j, dst_i]
             if np.isnan(src_i_f) or np.isnan(src_j_f):
-                dst_values[..., dst_j, dst_i] = fill_value
-            else:
-                # TODO: this corresponds to method "nearest": allow for other methods
-                src_i = int(src_i_f + 0.49999)
-                src_j = int(src_j_f + 0.49999)
-                if src_i < 0:
-                    src_i = 0
-                elif src_i >= src_width:
-                    src_i = src_width - 1
-                if src_j < 0:
-                    src_j = 0
-                elif src_j >= src_height:
-                    src_j = src_height - 1
-                dst_values[..., dst_j, dst_i] = src_values[..., src_j, src_i]
+                continue
+            src_i = math.floor(src_i_f + 0.49999)
+            src_j = math.floor(src_j_f + 0.49999)
+            u = src_i_f - src_i
+            v = src_j_f - src_j
+            if u > 0.5:
+                src_i = _iclamp(src_i + 1, src_i_min, src_i_max)
+            if v > 0.5:
+                src_j = _iclamp(src_j + 1, src_j_min, src_j_max)
+            dst_values[..., dst_j, dst_i] = src_values[..., src_j, src_i]
 
 
 def _millis(seconds: float) -> int:
