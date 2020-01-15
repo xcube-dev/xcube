@@ -62,7 +62,7 @@ def compute_expr(expr: str,
 
 def transpile_expr(expr: str, warn=False) -> str:
     """
-    Transpile a Python expression into a numpy array expression.
+    Transpile a Python expression into a numpy/xarray array expression.
 
     :param expr: The Python expression
     :param warn: If warnings shall be emitted
@@ -74,7 +74,7 @@ def transpile_expr(expr: str, warn=False) -> str:
 # noinspection PyMethodMayBeStatic
 class _ExprTranspiler:
     """
-    Transpiles a BEAM/SNAP expression into a numpy array expression.
+    Transpile a Python expression into a numpy/xarray array expression.
 
     See https://greentreesnakes.readthedocs.io/en/latest/nodes.html#expressions
     """
@@ -182,8 +182,14 @@ class _ExprTranspiler:
         return "%s(%s)" % (self.transform_function_name(func), args)
 
     def transform_function_name(self, func: ast.Name):
-        name = dict(min='fmin', max='fmax').get(func.id, func.id)
-        return 'np.%s' % name
+        if isinstance(func, ast.Attribute):
+            return '%s.%s' % (func.value.id, func.attr)
+        else:
+            if func.id in ('where',):
+                return 'xr.%s' % func.id
+            else:
+                name = dict(min='fmin', max='fmax').get(func.id, func.id)
+                return 'np.%s' % name
 
     # noinspection PyUnusedLocal
     def transform_attribute(self, value: ast.AST, attr: str, ctx):
@@ -237,7 +243,7 @@ class _ExprTranspiler:
 
     # noinspection PyUnusedLocal
     def transform_if_exp(self, test, body, orelse):
-        return 'np.where({y}, {x}, {z})'
+        return 'xr.where({y}, {x}, {z})'
 
     def transform_bool_op(self, op, values):
         name, precedence, assoc = _ExprTranspiler.get_op_info(op)

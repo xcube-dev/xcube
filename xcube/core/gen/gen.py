@@ -210,7 +210,7 @@ def _process_input(input_processor: InputProcessor,
         return False
 
     if output_variables:
-        output_variables = to_resolved_name_dict_pairs(output_variables, input_dataset)
+        output_variables = to_resolved_name_dict_pairs(output_variables, input_dataset, keep=True)
     else:
         output_variables = [(var_name, None) for var_name in input_dataset.data_vars]
 
