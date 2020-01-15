@@ -1,6 +1,6 @@
 import os
 import unittest
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Dict, Optional, Tuple, Sequence
 
 import numpy as np
 import xarray as xr
@@ -32,10 +32,40 @@ class DefaultProcessTest(unittest.TestCase):
             [get_inputdata_path('20170101-IFR-L4_GHRSST-SSTfnd-ODYSSEA-NWE_002-v2.0-fv1.0.nc')], 'l2c-single.nc')
         self.assertEqual(True, status)
         self.assertTrue('\nstep 8 of 8: creating input slice in l2c-single.nc...\n' in output)
-        self.assert_cube_ok(xr.open_dataset('l2c-single.nc', autoclose=True), 1,
-                            dict(date_modified=None,
-                                 time_coverage_start='2016-12-31T12:00:00.000000000',
-                                 time_coverage_end='2017-01-01T12:00:00.000000000'))
+        self.assert_cube_ok(xr.open_dataset('l2c-single.nc', autoclose=True),
+                            expected_time_dim=1,
+                            expected_extra_attrs=dict(date_modified=None,
+                                                      time_coverage_start='2016-12-31T12:00:00.000000000',
+                                                      time_coverage_end='2017-01-01T12:00:00.000000000'))
+
+    def test_process_inputs_single_nc_processed_vars(self):
+        status, output = gen_cube_wrapper(
+            [get_inputdata_path('20170101-IFR-L4_GHRSST-SSTfnd-ODYSSEA-NWE_002-v2.0-fv1.0.nc')],
+            'l2c-single.nc',
+            processed_variables=(
+                ('analysed_sst', dict(valid_pixel_expression=None)),
+                ('analysis_error', dict(valid_pixel_expression=None)),
+                ('sea_ice_fraction', dict(valid_pixel_expression=None)),
+                ('water_mask', dict(expression='(mask.sea or mask.lake) and not mask.ice')),
+                ('ice_mask', dict(expression='mask.sea and mask.ice')),
+                ('analysed_sst', dict(valid_pixel_expression='water_mask')),
+                ('analysis_error', dict(valid_pixel_expression='water_mask')),
+                ('sea_ice_fraction', dict(valid_pixel_expression='ice_mask')),
+            ),
+            output_variables=(
+                ('analysed_sst', dict(name='SST')),
+                ('analysis_error', dict(name='SST_uncertainty')),
+                ('sea_ice_fraction', None),
+            ),
+        )
+        self.assertEqual(True, status)
+        self.assertTrue('\nstep 8 of 8: creating input slice in l2c-single.nc...\n' in output)
+        self.assert_cube_ok(xr.open_dataset('l2c-single.nc', autoclose=True),
+                            expected_time_dim=1,
+                            expected_output_vars=('SST', 'SST_uncertainty', 'sea_ice_fraction'),
+                            expected_extra_attrs=dict(date_modified=None,
+                                                      time_coverage_start='2016-12-31T12:00:00.000000000',
+                                                      time_coverage_end='2017-01-01T12:00:00.000000000'))
 
     def test_process_inputs_append_multiple_nc(self):
         status, output = gen_cube_wrapper(
@@ -44,20 +74,22 @@ class DefaultProcessTest(unittest.TestCase):
         self.assertEqual(True, status)
         self.assertTrue('\nstep 8 of 8: creating input slice in l2c.nc...\n' in output)
         self.assertTrue('\nstep 8 of 8: appending input slice to l2c.nc...\n' in output)
-        self.assert_cube_ok(xr.open_dataset('l2c.nc', autoclose=True), 3,
-                            dict(date_modified=None,
-                                 time_coverage_start='2016-12-31T12:00:00.000000000',
-                                 time_coverage_end='2017-01-03T12:00:00.000000000'))
+        self.assert_cube_ok(xr.open_dataset('l2c.nc', autoclose=True),
+                            expected_time_dim=3,
+                            expected_extra_attrs=dict(date_modified=None,
+                                                      time_coverage_start='2016-12-31T12:00:00.000000000',
+                                                      time_coverage_end='2017-01-03T12:00:00.000000000'))
 
     def test_process_inputs_single_zarr(self):
         status, output = gen_cube_wrapper(
             [get_inputdata_path('20170101-IFR-L4_GHRSST-SSTfnd-ODYSSEA-NWE_002-v2.0-fv1.0.nc')], 'l2c-single.zarr')
         self.assertEqual(True, status)
         self.assertTrue('\nstep 8 of 8: creating input slice in l2c-single.zarr...\n' in output)
-        self.assert_cube_ok(xr.open_zarr('l2c-single.zarr'), 1,
-                            dict(date_modified=None,
-                                 time_coverage_start='2016-12-31T12:00:00.000000000',
-                                 time_coverage_end='2017-01-01T12:00:00.000000000'))
+        self.assert_cube_ok(xr.open_zarr('l2c-single.zarr'),
+                            expected_time_dim=1,
+                            expected_extra_attrs=dict(date_modified=None,
+                                                      time_coverage_start='2016-12-31T12:00:00.000000000',
+                                                      time_coverage_end='2017-01-01T12:00:00.000000000'))
 
     def test_process_inputs_append_multiple_zarr(self):
         status, output = gen_cube_wrapper(
@@ -66,10 +98,11 @@ class DefaultProcessTest(unittest.TestCase):
         self.assertEqual(True, status)
         self.assertTrue('\nstep 8 of 8: creating input slice in l2c.zarr...\n' in output)
         self.assertTrue('\nstep 8 of 8: appending input slice to l2c.zarr...\n' in output)
-        self.assert_cube_ok(xr.open_zarr('l2c.zarr'), 3,
-                            dict(date_modified=None,
-                                 time_coverage_start='2016-12-31T12:00:00.000000000',
-                                 time_coverage_end='2017-01-03T12:00:00.000000000'))
+        self.assert_cube_ok(xr.open_zarr('l2c.zarr'),
+                            expected_time_dim=3,
+                            expected_extra_attrs=dict(date_modified=None,
+                                                      time_coverage_start='2016-12-31T12:00:00.000000000',
+                                                      time_coverage_end='2017-01-03T12:00:00.000000000'))
 
     def test_process_inputs_insert_multiple_zarr(self):
         status, output = gen_cube_wrapper(
@@ -81,10 +114,11 @@ class DefaultProcessTest(unittest.TestCase):
         self.assertTrue('\nstep 8 of 8: creating input slice in l2c.zarr...\n' in output)
         self.assertTrue('\nstep 8 of 8: appending input slice to l2c.zarr...\n' in output)
         self.assertTrue('\nstep 8 of 8: inserting input slice before index 0 in l2c.zarr...\n' in output)
-        self.assert_cube_ok(xr.open_zarr('l2c.zarr'), 3,
-                            dict(date_modified=None,
-                                 time_coverage_start='2016-12-31T12:00:00.000000000',
-                                 time_coverage_end='2017-01-03T12:00:00.000000000'))
+        self.assert_cube_ok(xr.open_zarr('l2c.zarr'),
+                            expected_time_dim=3,
+                            expected_extra_attrs=dict(date_modified=None,
+                                                      time_coverage_start='2016-12-31T12:00:00.000000000',
+                                                      time_coverage_end='2017-01-03T12:00:00.000000000'))
 
     def test_process_inputs_replace_multiple_zarr(self):
         status, output = gen_cube_wrapper(
@@ -97,10 +131,11 @@ class DefaultProcessTest(unittest.TestCase):
         self.assertTrue('\nstep 8 of 8: creating input slice in l2c.zarr...\n' in output)
         self.assertTrue('\nstep 8 of 8: appending input slice to l2c.zarr...\n' in output)
         self.assertTrue('\nstep 8 of 8: replacing input slice at index 1 in l2c.zarr...\n' in output)
-        self.assert_cube_ok(xr.open_zarr('l2c.zarr'), 3,
-                            dict(date_modified=None,
-                                 time_coverage_start='2016-12-31T12:00:00.000000000',
-                                 time_coverage_end='2017-01-03T12:00:00.000000000'))
+        self.assert_cube_ok(xr.open_zarr('l2c.zarr'),
+                            expected_time_dim=3,
+                            expected_extra_attrs=dict(date_modified=None,
+                                                      time_coverage_start='2016-12-31T12:00:00.000000000',
+                                                      time_coverage_end='2017-01-03T12:00:00.000000000'))
 
     def test_input_txt(self):
         f = open((os.path.join(os.path.dirname(__file__), 'inputdata', "input.txt")), "w+")
@@ -111,14 +146,18 @@ class DefaultProcessTest(unittest.TestCase):
         f.close()
         status, output = gen_cube_wrapper([get_inputdata_path('input.txt')], 'l2c.zarr', no_sort_mode=False)
         self.assertEqual(True, status)
-        self.assert_cube_ok(xr.open_zarr('l2c.zarr'), 3,
-                            dict(time_coverage_start='2016-12-31T12:00:00.000000000',
-                                 time_coverage_end='2017-01-03T12:00:00.000000000'))
+        self.assert_cube_ok(xr.open_zarr('l2c.zarr'),
+                            expected_time_dim=3,
+                            expected_extra_attrs=dict(time_coverage_start='2016-12-31T12:00:00.000000000',
+                                                      time_coverage_end='2017-01-03T12:00:00.000000000'))
 
-    def assert_cube_ok(self, cube: xr.Dataset, expected_time_dim: int, expected_extra_attrs: Dict[str, Any]):
+    def assert_cube_ok(self, cube: xr.Dataset,
+                       expected_time_dim: int,
+                       expected_extra_attrs: Dict[str, Any],
+                       expected_output_vars: Sequence[str] = ('analysed_sst',)):
         self.assertEqual({'lat': 180, 'lon': 320, 'bnds': 2, 'time': expected_time_dim}, cube.dims)
         self.assertEqual({'lon', 'lat', 'time', 'lon_bnds', 'lat_bnds', 'time_bnds'}, set(cube.coords))
-        self.assertEqual({'analysed_sst'}, set(cube.data_vars))
+        self.assertEqual(set(expected_output_vars), set(cube.data_vars))
         expected_attrs = dict(title='Test Cube',
                               project='xcube',
                               date_modified=None,
@@ -160,8 +199,13 @@ class DefaultProcessTest(unittest.TestCase):
 
 
 # noinspection PyShadowingBuiltins
-def gen_cube_wrapper(input_paths, output_path, no_sort_mode=False, input_processor_name=None) \
-        -> Tuple[bool, Optional[str]]:
+def gen_cube_wrapper(input_paths,
+                     output_path,
+                     no_sort_mode=False,
+                     input_processor_name=None,
+                     processed_variables=None,
+                     output_variables=(('analysed_sst', None),),
+                     ) -> Tuple[bool, Optional[str]]:
     output = None
 
     def output_monitor(msg):
@@ -178,9 +222,12 @@ def gen_cube_wrapper(input_paths, output_path, no_sort_mode=False, input_process
         output_size='320,180',
         output_region='-4,47,12,56',
         output_resampling='Nearest',
-        output_variables='analysed_sst',
         no_sort_mode=no_sort_mode,
     )
+    if processed_variables is not None:
+        config.update(processed_variables=processed_variables)
+    if output_variables is not None:
+        config.update(output_variables=output_variables)
 
     output_metadata = dict(
         title='Test Cube',

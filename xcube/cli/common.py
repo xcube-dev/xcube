@@ -1,4 +1,4 @@
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, Union, Sequence, Type, Tuple
 
 import click
 
@@ -88,6 +88,76 @@ def parse_cli_kwargs(value: str, metavar: str = None) -> Dict[str, Any]:
             raise click.ClickException(message)
     else:
         return dict()
+
+
+def parse_cli_sequence(seq_value: Union[None, str, Sequence[Any]],
+                       metavar: str = 'parameter',
+                       item_parser=None,
+                       item_validator=None,
+                       allow_none: bool = True,
+                       allow_empty_items: bool = False,
+                       strip_items: bool = True,
+                       item_plural_name: str = 'items',
+                       num_items: int = None,
+                       num_items_min: int = None,
+                       num_items_max: int = None,
+                       separator: str = ',',
+                       error_type: Type[Exception] = ValueError) -> Optional[Tuple[Any, ...]]:
+    """
+    Parse a sequence.
+
+    :param seq_value:
+    :param metavar:
+    :param item_parser:
+    :param item_validator:
+    :param allow_none:
+    :param allow_empty_items:
+    :param strip_items:
+    :param item_plural_name:
+    :param num_items:
+    :param num_items_min:
+    :param num_items_max:
+    :param separator:
+    :param error_type:
+    :return:
+    """
+    if seq_value is None:
+        if allow_none:
+            return None
+        raise error_type(f'{metavar} must be given')
+    if isinstance(seq_value, str):
+        if ',' in seq_value:
+            items = seq_value.split(',')
+        elif num_items is not None:
+            items = num_items * (seq_value,)
+        else:
+            items = (seq_value,)
+    else:
+        items = seq_value
+    item_count = len(items)
+    if num_items is not None and item_count != num_items:
+        raise error_type(f'{metavar} must have {num_items} {item_plural_name} separated by {separator!r}')
+    if num_items_min is not None and item_count < num_items_min:
+        raise error_type(f'{metavar} must have at least {num_items} {item_plural_name} separated by {separator!r}')
+    if num_items_max is not None and item_count > num_items_max:
+        raise error_type(f'{metavar} must have no more than {num_items} {item_plural_name} separated by {separator!r}')
+    if strip_items:
+        items = tuple(item.strip() for item in items)
+    if not allow_empty_items:
+        for item in items:
+            if not item:
+                raise ValueError(f'{item_plural_name} in {metavar} must not be empty')
+    if item_parser:
+        try:
+            items = map(item_parser, items)
+        except ValueError as e:
+            raise error_type(f'Invalid {item_plural_name} in {metavar} found: {e}')
+    if item_validator:
+        try:
+            map(item_validator, items)
+        except ValueError as e:
+            raise error_type(f'Invalid {item_plural_name} in {metavar} found: {e}')
+    return tuple(items)
 
 
 def handle_cli_exception(e: BaseException, exit_code: int = None, traceback_mode: bool = False) -> int:
