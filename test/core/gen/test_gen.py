@@ -31,7 +31,7 @@ class DefaultProcessTest(unittest.TestCase):
         status, output = gen_cube_wrapper(
             [get_inputdata_path('20170101-IFR-L4_GHRSST-SSTfnd-ODYSSEA-NWE_002-v2.0-fv1.0.nc')], 'l2c-single.nc')
         self.assertEqual(True, status)
-        self.assertTrue('\nstep 8 of 8: creating input slice in l2c-single.nc...\n' in output)
+        self.assertTrue('\nstep 9 of 9: creating input slice in l2c-single.nc...\n' in output)
         self.assert_cube_ok(xr.open_dataset('l2c-single.nc', autoclose=True),
                             expected_time_dim=1,
                             expected_extra_attrs=dict(date_modified=None,
@@ -46,7 +46,7 @@ class DefaultProcessTest(unittest.TestCase):
                 ('analysed_sst', dict(valid_pixel_expression=None)),
                 ('analysis_error', dict(valid_pixel_expression=None)),
                 ('sea_ice_fraction', dict(valid_pixel_expression=None)),
-                ('water_mask', dict(expression='(mask.sea or mask.lake) and not mask.ice')),
+                ('water_mask', dict(expression='(mask.sea or mask.lake) and not mask.ice', load=True)),
                 ('ice_mask', dict(expression='mask.sea and mask.ice')),
                 ('analysed_sst', dict(valid_pixel_expression='water_mask')),
                 ('analysis_error', dict(valid_pixel_expression='water_mask')),
@@ -59,7 +59,7 @@ class DefaultProcessTest(unittest.TestCase):
             ),
         )
         self.assertEqual(True, status)
-        self.assertTrue('\nstep 8 of 8: creating input slice in l2c-single.nc...\n' in output)
+        self.assertTrue('\nstep 9 of 9: creating input slice in l2c-single.nc...\n' in output)
         self.assert_cube_ok(xr.open_dataset('l2c-single.nc', autoclose=True),
                             expected_time_dim=1,
                             expected_output_vars=('SST', 'SST_uncertainty', 'sea_ice_fraction'),
@@ -72,8 +72,8 @@ class DefaultProcessTest(unittest.TestCase):
             [get_inputdata_path('201701??-IFR-L4_GHRSST-SSTfnd-ODYSSEA-NWE_002-v2.0-fv1.0.nc')], 'l2c.nc',
             no_sort_mode=False)
         self.assertEqual(True, status)
-        self.assertTrue('\nstep 8 of 8: creating input slice in l2c.nc...\n' in output)
-        self.assertTrue('\nstep 8 of 8: appending input slice to l2c.nc...\n' in output)
+        self.assertTrue('\nstep 9 of 9: creating input slice in l2c.nc...\n' in output)
+        self.assertTrue('\nstep 9 of 9: appending input slice to l2c.nc...\n' in output)
         self.assert_cube_ok(xr.open_dataset('l2c.nc', autoclose=True),
                             expected_time_dim=3,
                             expected_extra_attrs=dict(date_modified=None,
@@ -84,7 +84,7 @@ class DefaultProcessTest(unittest.TestCase):
         status, output = gen_cube_wrapper(
             [get_inputdata_path('20170101-IFR-L4_GHRSST-SSTfnd-ODYSSEA-NWE_002-v2.0-fv1.0.nc')], 'l2c-single.zarr')
         self.assertEqual(True, status)
-        self.assertTrue('\nstep 8 of 8: creating input slice in l2c-single.zarr...\n' in output)
+        self.assertTrue('\nstep 9 of 9: creating input slice in l2c-single.zarr...\n' in output)
         self.assert_cube_ok(xr.open_zarr('l2c-single.zarr'),
                             expected_time_dim=1,
                             expected_extra_attrs=dict(date_modified=None,
@@ -96,8 +96,8 @@ class DefaultProcessTest(unittest.TestCase):
             [get_inputdata_path('201701??-IFR-L4_GHRSST-SSTfnd-ODYSSEA-NWE_002-v2.0-fv1.0.nc')], 'l2c.zarr',
             no_sort_mode=False)
         self.assertEqual(True, status)
-        self.assertTrue('\nstep 8 of 8: creating input slice in l2c.zarr...\n' in output)
-        self.assertTrue('\nstep 8 of 8: appending input slice to l2c.zarr...\n' in output)
+        self.assertTrue('\nstep 9 of 9: creating input slice in l2c.zarr...\n' in output)
+        self.assertTrue('\nstep 9 of 9: appending input slice to l2c.zarr...\n' in output)
         self.assert_cube_ok(xr.open_zarr('l2c.zarr'),
                             expected_time_dim=3,
                             expected_extra_attrs=dict(date_modified=None,
@@ -111,9 +111,9 @@ class DefaultProcessTest(unittest.TestCase):
              get_inputdata_path('20170101-IFR-L4_GHRSST-SSTfnd-ODYSSEA-NWE_002-v2.0-fv1.0.nc')], 'l2c.zarr',
             no_sort_mode=True)
         self.assertEqual(True, status)
-        self.assertTrue('\nstep 8 of 8: creating input slice in l2c.zarr...\n' in output)
-        self.assertTrue('\nstep 8 of 8: appending input slice to l2c.zarr...\n' in output)
-        self.assertTrue('\nstep 8 of 8: inserting input slice before index 0 in l2c.zarr...\n' in output)
+        self.assertTrue('\nstep 9 of 9: creating input slice in l2c.zarr...\n' in output)
+        self.assertTrue('\nstep 9 of 9: appending input slice to l2c.zarr...\n' in output)
+        self.assertTrue('\nstep 9 of 9: inserting input slice before index 0 in l2c.zarr...\n' in output)
         self.assert_cube_ok(xr.open_zarr('l2c.zarr'),
                             expected_time_dim=3,
                             expected_extra_attrs=dict(date_modified=None,
@@ -128,9 +128,9 @@ class DefaultProcessTest(unittest.TestCase):
              get_inputdata_path('20170102-IFR-L4_GHRSST-SSTfnd-ODYSSEA-NWE_002-v2.0-fv1.0.nc')], 'l2c.zarr',
             no_sort_mode=True)
         self.assertEqual(True, status)
-        self.assertTrue('\nstep 8 of 8: creating input slice in l2c.zarr...\n' in output)
-        self.assertTrue('\nstep 8 of 8: appending input slice to l2c.zarr...\n' in output)
-        self.assertTrue('\nstep 8 of 8: replacing input slice at index 1 in l2c.zarr...\n' in output)
+        self.assertTrue('\nstep 9 of 9: creating input slice in l2c.zarr...\n' in output)
+        self.assertTrue('\nstep 9 of 9: appending input slice to l2c.zarr...\n' in output)
+        self.assertTrue('\nstep 9 of 9: replacing input slice at index 1 in l2c.zarr...\n' in output)
         self.assert_cube_ok(xr.open_zarr('l2c.zarr'),
                             expected_time_dim=3,
                             expected_extra_attrs=dict(date_modified=None,

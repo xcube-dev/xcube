@@ -19,7 +19,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-from typing import Sequence, Tuple, Optional, Union, Mapping
+from typing import Mapping, Optional, Sequence, Tuple, Union
 
 import dask.array as da
 import numba as nb
@@ -28,6 +28,7 @@ import xarray as xr
 
 from xcube.core.geocoding import GeoCoding
 from xcube.core.imgeom import ImageGeom
+from xcube.core.select import select_spatial_subset
 from xcube.util.dask import compute_array_from_func
 
 
@@ -40,6 +41,7 @@ def rectify_dataset(dataset: xr.Dataset,
                     tile_size: Union[int, Tuple[int, int]] = None,
                     compute_xy: bool = False,
                     compute_vars: bool = False,
+                    compute_subset: bool = True,
                     uv_delta: float = 1e-3) -> Optional[xr.Dataset]:
     """
     Reproject *dataset* using its per-pixel x,y coordinates or the given *geo_coding*.
@@ -80,11 +82,14 @@ def rectify_dataset(dataset: xr.Dataset,
 
     if output_geom is None:
         output_geom = ImageGeom.from_dataset(dataset, geo_coding=src_geo_coding)
-    else:
-        src_bbox = src_geo_coding.ij_bbox(output_geom.xy_bbox, ij_border=1, xy_border=output_geom.xy_res)
-        if src_bbox[0] == -1:
+    elif compute_subset:
+        dataset_subset = select_spatial_subset(dataset,
+                                               xy_bbox=output_geom.xy_bbox,
+                                               ij_border=1,
+                                               xy_border=output_geom.xy_res,
+                                               geo_coding=src_geo_coding)
+        if dataset_subset is None:
             return None
-        dataset_subset = select_spatial_subset(dataset, src_bbox, geo_coding=src_geo_coding)
         if dataset_subset is not dataset:
             src_geo_coding = GeoCoding.from_dataset(dataset_subset)
             src_x, src_y = src_geo_coding.x, src_geo_coding.y
@@ -269,30 +274,6 @@ def select_variables(dataset,
                 f"do not match those of {x_name!r} and {y_name!r}")
         src_vars[var_name] = src_var
     return src_vars
-
-
-def select_spatial_subset(dataset: xr.Dataset,
-                          bbox: Tuple[int, int, int, int],
-                          geo_coding: GeoCoding = None,
-                          xy_names: Tuple[str, str] = None) -> Optional[xr.Dataset]:
-    """
-    Select a spatial subset of *dataset* for the bounding box *bbox*.
-
-    :param dataset: Source dataset.
-    :param bbox: Bounding box (i_min, i_min, j_max, j_max) in pixel coordinates.
-    :param geo_coding: Optional dataset geo-coding.
-    :param xy_names: Optional tuple of the x- and y-coordinate variables in *dataset*. Ignored if *geo_coding* is given.
-    :return: Spatial dataset subset
-    """
-    geo_coding = geo_coding if geo_coding is not None else GeoCoding.from_dataset(dataset, xy_names=xy_names)
-    width, height = geo_coding.size
-    i_min, j_min, i_max, j_max = bbox
-    if i_min > 0 or j_min > 0 or i_max < width - 1 or j_max < height - 1:
-        x_dim, y_dim = geo_coding.dims
-        i_slice = slice(i_min, i_max + 1)
-        j_slice = slice(j_min, j_max + 1)
-        return dataset.isel({x_dim: i_slice, y_dim: j_slice})
-    return dataset
 
 
 def _is_2d_var(var: xr.DataArray, two_d_coord_var: xr.DataArray) -> bool:
