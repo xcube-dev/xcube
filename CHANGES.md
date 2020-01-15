@@ -1,5 +1,15 @@
 ## Changes in 0.4.0 (in development)
 
+### New
+
+* Introduced new (ortho-)rectification algorithm allowing reprojection of 
+  satellite images that come with (terrain-corrected) geo-locations for every pixel.
+
+  - new CLI tool `xcube rectify`
+  - new API function `xcube.core.rectify.rectify_dataset`
+
+  The requirement for a new reprojection approach originates from #206.   
+
 ### Other
 
 * Renamed default log file for `xcube serve` command to `xcube-serve.log`.
