@@ -171,6 +171,9 @@ class TranspileExprTest(unittest.TestCase):
                          'xr.where(a >= 0.0, a, NaN)')
         self.assertEqual(transpile_expr('np.where(a >= 0.0, a, NaN)'),
                          'np.where(a >= 0.0, a, NaN)')
+        # xarray.DataArray.where() method:
+        self.assertEqual(transpile_expr('a.where(a.x >= 0.0)'),
+                         'a.where(a.x >= 0.0)')
 
     def test_mixed(self):
         self.assertEqual(transpile_expr('a+sin(x + 2.8)'),
