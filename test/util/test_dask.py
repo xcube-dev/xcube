@@ -2,7 +2,6 @@ import unittest
 
 import numpy as np
 
-from xcube.util.dask import ChunkContext
 from xcube.util.dask import _NestedList
 from xcube.util.dask import compute_array_from_func
 from xcube.util.dask import get_chunk_sizes
@@ -11,17 +10,21 @@ from xcube.util.dask import get_chunk_slice_tuples
 
 class DaskTest(unittest.TestCase):
     def test_from_func(self):
-        def my_func(context: ChunkContext):
-            csy, csx = context.chunk_slices
-            ch, cw = context.chunk_shape
-            w = context.array_shape[-1]
-            a = np.ndarray((ch, cw), dtype=context.dtype)
+        def my_func(array_shape, array_dtype, block_shape, block_slices):
+            csy, csx = block_slices
+            ch, cw = block_shape
+            w = array_shape[-1]
+            a = np.ndarray((ch, cw), dtype=array_dtype)
             for j in range(ch):
                 for i in range(cw):
-                    a[j, i] = 0.1 * ((csy.start + j) * w + csx.start + i)
+                    a[j, i] = 0.1 * ((csy[0] + j) * w + csx[0] + i)
             return a
 
-        a = compute_array_from_func(my_func, (8, 10), (3, 4), np.float64)
+        a = compute_array_from_func(my_func,
+                                    (8, 10),
+                                    (3, 4),
+                                    np.float64,
+                                    ctx_arg_names=['shape', 'dtype', 'block_shape', 'block_slices'])
 
         self.assertIsNotNone(a)
         self.assertEqual((8, 10), a.shape)
