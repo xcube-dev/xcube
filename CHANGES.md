@@ -22,6 +22,22 @@
   `xcube gen` tool. You can now use `xr` and `np` contexts in expressions, e.g. 
   `xr.where(CHL >= 0.0, CHL)`. (#257)
 
+* The performance of the `xcube gen` tool for the case that expressions or 
+  expression parts are reused across multiple variables can now be improved. 
+  Such as expressions can now be assigned to intermediate variables and loaded 
+  into memory, so they are not recomputed again.
+  For example, let the expression `quality_flags.cloudy and CHL > 25.0` occur often
+  in the configuration, then this is how recomputation can be avoided:
+  ```
+    processed_variables:
+      no_cloud_risk:
+        expression: not (quality_flags.cloudy and CHL_raw > 25.0)
+        load: True
+      CHL:
+        expression: CHL_raw
+        valid_pixel_expression: no_cloud_risk
+      ...        
+  ```      
 
 ### Other
 
