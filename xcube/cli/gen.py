@@ -123,8 +123,11 @@ def gen(input: Sequence[str],
         no_sort_mode=no_sort,
     )
 
+    def flushing_monitor(*args, **kwargs):
+        print(*args, flush=True, **kwargs)
+
     gen_cube(dry_run=dry_run,
-             monitor=print,
+             monitor=flushing_monitor,
              **config)
 
     return 0

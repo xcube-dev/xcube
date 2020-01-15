@@ -2,6 +2,7 @@
 
 ### New
 
+
 * Introduced new (ortho-)rectification algorithm allowing reprojection of 
   satellite images that come with (terrain-corrected) geo-locations for every pixel.
 
@@ -9,10 +10,15 @@
   - new API function `xcube.core.rectify.rectify_dataset`
 
   The requirement for a new reprojection approach originates from #206.   
+  
+* Now supporting xarray and numpy functions in expressions. You can now use 
+  `xr` and `np` contexts, e.g. `xr.where(CHL >= 0.0, CHL)`. (#257)
+
 
 ### Other
 
 * Renamed default log file for `xcube serve` command to `xcube-serve.log`.
+* `xcube gen` now immediately flushes logging output to standard out
   
 ## Changes in 0.3.1 (in development)
 
