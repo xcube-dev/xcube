@@ -2,20 +2,25 @@
 
 ### New
 
-* Integrated new rectification in default input processor. It is now the default reprojection method in 
-  `xcube.core.gen.iproc.XYInputProcessor`, if ground control points are not specified, i.e. the input processor 
-  is configured with `xy_gcp_step` being None.
-* Introduced new function `xcube.core.select.select_spatial_subset`.
 * Introduced new (ortho-)rectification algorithm allowing reprojection of 
   satellite images that come with (terrain-corrected) geo-locations for every pixel.
 
   - new CLI tool `xcube rectify`
-  - new API function `xcube.core.rectify.rectify_dataset`
+  - new API function `xcube.core.rectify.rectify_dataset()`
 
-  The requirement for a new reprojection approach originates from #206.   
+* Utilizing the new rectification in `xcube gen` tool. It is now the default 
+  reprojection method in `xcube.core.gen.iproc.XYInputProcessor` and
+  `xcube.core.gen.iproc.DefaultInputProcessor`, if ground control points are not 
+  specified, i.e. the input processor is configured with `xy_gcp_step=None`. (#206)
+
+* Introduced new function `xcube.core.select.select_spatial_subset()`.
+
+* Renamed function `xcube.core.select.select_vars()` into `xcube.core.select.select_variables_subset()`.
   
-* Now supporting xarray and numpy functions in expressions. You can now use 
-  `xr` and `np` contexts, e.g. `xr.where(CHL >= 0.0, CHL)`. (#257)
+* Now supporting xarray and numpy functions in expressions used by the
+  `xcube.core.evaluate.evaluate_dataset()` function and in the configuration of the 
+  `xcube gen` tool. You can now use `xr` and `np` contexts in expressions, e.g. 
+  `xr.where(CHL >= 0.0, CHL)`. (#257)
 
 
 ### Other
