@@ -286,8 +286,8 @@ def compute_ij_bboxes(x_image: np.ndarray,
         y_min = xy_bbox[1] - xy_border
         x_max = xy_bbox[2] + xy_border
         y_max = xy_bbox[3] + xy_border
-        for j in nb.prange(h):
-            for i in nb.prange(w):
+        for j in range(h):
+            for i in range(w):
                 x = x_image[j, i]
                 if x_min <= x <= x_max:
                     y = y_image[j, i]
