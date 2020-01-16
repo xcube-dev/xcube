@@ -6,8 +6,6 @@ import numpy as np
 import xarray as xr
 
 from xcube.core.rectify import ImageGeom
-from xcube.core.rectify import _compute_source_pixels
-from xcube.core.rectify import _extract_source_pixels
 from xcube.core.rectify import rectify_dataset
 from .test_geocoding import SourceDatasetMixin
 
@@ -213,6 +211,70 @@ class RectifyDatasetTest(SourceDatasetMixin, unittest.TestCase):
                                            [nan, nan, 1.0, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan]
                                        ], dtype=rad.dtype))
 
+    def test_rectify_2x2_to_13x13_output_ij_names(self):
+        src_ds = self.new_source_dataset()
+
+        output_geom = ImageGeom(size=(13, 13), x_min=-0.25, y_min=49.75, xy_res=0.5)
+
+        dst_ds = rectify_dataset(src_ds, output_geom=output_geom, output_ij_names=('source_i', 'source_j'))
+        lon, lat, rad, source_i, source_j = self._assert_shape_and_dim(dst_ds, 13, 13,
+                                                                       var_names=('rad', 'source_i', 'source_j'))
+        np.testing.assert_almost_equal(lon.values,
+                                       np.array([0.0, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5., 5.5, 6.],
+                                                dtype=lon.dtype))
+        np.testing.assert_almost_equal(lat.values,
+                                       np.array([50., 50.5, 51.0, 51.5, 52.0, 52.5, 53.0, 53.5, 54.0, 54.5, 55.,
+                                                 55.5, 56.],
+                                                dtype=lat.dtype))
+        np.testing.assert_almost_equal(rad.values,
+                                       np.array([
+                                           [nan, nan, nan, nan, 4.0, nan, nan, nan, nan, nan, nan, nan, nan],
+                                           [nan, nan, nan, 4.0, 4.0, 4.0, nan, nan, nan, nan, nan, nan, nan],
+                                           [nan, nan, 3.0, 4.0, 4.0, 4.0, 4.0, nan, nan, nan, nan, nan, nan],
+                                           [nan, 3.0, 3.0, 3.0, 4.0, 4.0, 4.0, 4.0, 2.0, nan, nan, nan, nan],
+                                           [3.0, 3.0, 3.0, 3.0, 3.0, 4.0, 4.0, 2.0, 2.0, 2.0, nan, nan, nan],
+                                           [nan, 3.0, 3.0, 3.0, 3.0, 3.0, 1.0, 2.0, 2.0, 2.0, 2.0, nan, nan],
+                                           [nan, 3.0, 3.0, 3.0, 3.0, 1.0, 1.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0],
+                                           [nan, 3.0, 3.0, 1.0, 1.0, 1.0, 1.0, 2.0, 2.0, 2.0, 2.0, nan, nan],
+                                           [nan, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 2.0, 2.0, nan, nan, nan, nan],
+                                           [nan, nan, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, nan, nan, nan, nan, nan],
+                                           [nan, nan, 1.0, 1.0, 1.0, 1.0, nan, nan, nan, nan, nan, nan, nan],
+                                           [nan, nan, 1.0, 1.0, nan, nan, nan, nan, nan, nan, nan, nan, nan],
+                                           [nan, nan, 1.0, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan]
+                                       ], dtype=rad.dtype))
+        np.testing.assert_almost_equal(np.floor(source_i.values + 0.5),
+                                       np.array([
+                                           [nan, nan, nan, nan, 1.0, nan, nan, nan, nan, nan, nan, nan, nan],
+                                           [nan, nan, nan, 1.0, 1.0, 1.0, nan, nan, nan, nan, nan, nan, nan],
+                                           [nan, nan, 1.0, 1.0, 1.0, 1.0, 1.0, nan, nan, nan, nan, nan, nan],
+                                           [nan, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 1.0, 1.0, nan, nan, nan, nan],
+                                           [0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 1.0, 1.0, nan, nan, nan],
+                                           [nan, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 1.0, 1.0, nan, nan],
+                                           [nan, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.],
+                                           [nan, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 1.0, nan, nan],
+                                           [nan, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 1.0, nan, nan, nan, nan],
+                                           [nan, nan, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, nan, nan, nan, nan, nan],
+                                           [nan, nan, 0.0, 0.0, 0.0, 0.0, nan, nan, nan, nan, nan, nan, nan],
+                                           [nan, nan, 0.0, 0.0, nan, nan, nan, nan, nan, nan, nan, nan, nan],
+                                           [nan, nan, 0.0, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan]
+                                       ], dtype=rad.dtype))
+        np.testing.assert_almost_equal(np.floor(source_j.values + 0.5),
+                                       np.array([
+                                           [nan, nan, nan, nan, 1.0, nan, nan, nan, nan, nan, nan, nan, nan],
+                                           [nan, nan, nan, 1.0, 1.0, 1.0, nan, nan, nan, nan, nan, nan, nan],
+                                           [nan, nan, 1.0, 1.0, 1.0, 1.0, 1.0, nan, nan, nan, nan, nan, nan],
+                                           [nan, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, nan, nan, nan, nan],
+                                           [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.0, 0.0, nan, nan, nan],
+                                           [nan, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0, nan, nan],
+                                           [nan, 1.0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+                                           [nan, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, nan, nan],
+                                           [nan, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, nan, nan, nan, nan],
+                                           [nan, nan, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, nan, nan, nan, nan, nan],
+                                           [nan, nan, 0.0, 0.0, 0.0, 0.0, nan, nan, nan, nan, nan, nan, nan],
+                                           [nan, nan, 0.0, 0.0, nan, nan, nan, nan, nan, nan, nan, nan, nan],
+                                           [nan, nan, 0.0, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan]
+                                       ], dtype=rad.dtype))
+
     def test_rectify_2x2_to_13x13_none(self):
         src_ds = self.new_source_dataset()
 
@@ -232,7 +294,7 @@ class RectifyDatasetTest(SourceDatasetMixin, unittest.TestCase):
         dst_ds = rectify_dataset(src_ds, output_geom=output_geom)
         self.assertIsNone(dst_ds)
 
-    def _assert_shape_and_dim(self, dst_ds, w, h):
+    def _assert_shape_and_dim(self, dst_ds, w, h, var_names=('rad',)):
         self.assertIn('lon', dst_ds)
         lon = dst_ds['lon']
         self.assertEqual((w,), lon.shape)
@@ -243,25 +305,39 @@ class RectifyDatasetTest(SourceDatasetMixin, unittest.TestCase):
         self.assertEqual((h,), lat.shape)
         self.assertEqual(('lat',), lat.dims)
 
-        self.assertIn('rad', dst_ds)
-        rad = dst_ds['rad']
-        self.assertEqual((h, w), rad.shape)
-        self.assertEqual(('lat', 'lon'), rad.dims)
+        vars = []
+        for var_name in var_names:
+            self.assertIn(var_name, dst_ds)
+            var = dst_ds[var_name]
+            self.assertEqual((h, w), var.shape)
+            self.assertEqual(('lat', 'lon'), var.dims)
+            vars.append(var)
 
-        return lon, lat, rad
+        return (lon, lat, *vars)
 
     def test_compute_and_extract_source_pixels(self):
+        from xcube.core.rectify import _compute_ij_images_numpy_parallel
+        from xcube.core.rectify import _compute_var_image_numpy_parallel
+        self._assert_compute_and_extract_source_pixels(_compute_ij_images_numpy_parallel,
+                                                       _compute_var_image_numpy_parallel)
+        from xcube.core.rectify import _compute_ij_images_numpy_sequential
+        from xcube.core.rectify import _compute_var_image_numpy_sequential
+        self._assert_compute_and_extract_source_pixels(_compute_ij_images_numpy_sequential,
+                                                       _compute_var_image_numpy_sequential)
+
+    def _assert_compute_and_extract_source_pixels(self, compute_ij_images, compute_var_image):
         src_ds = self.new_source_dataset()
 
         dst_src_ij = np.full((2, 13, 13), np.nan, dtype=np.float64)
-        _compute_source_pixels(src_ds.lon.values,
-                               src_ds.lat.values,
-                               0,
-                               0,
-                               dst_src_ij,
-                               -0.25,
-                               49.75,
-                               0.5)
+        compute_ij_images(src_ds.lon.values,
+                          src_ds.lat.values,
+                          0,
+                          0,
+                          dst_src_ij,
+                          -0.25,
+                          49.75,
+                          0.5,
+                          1e-5)
 
         # print(xr.DataArray(np.floor(dst_src_i + 0.5), dims=('y', 'x')))
         # print(xr.DataArray(np.floor(dst_src_j + 0.5), dims=('y', 'x')))
@@ -303,9 +379,9 @@ class RectifyDatasetTest(SourceDatasetMixin, unittest.TestCase):
 
         dst_rad = np.full((13, 13), np.nan, dtype=np.float64)
 
-        _extract_source_pixels(src_ds.rad.values,
-                               dst_src_ij,
-                               dst_rad)
+        compute_var_image(src_ds.rad.values,
+                          dst_src_ij,
+                          dst_rad)
 
         # print(xr.DataArray(dst_rad))
 
