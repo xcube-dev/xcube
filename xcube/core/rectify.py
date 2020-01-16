@@ -243,7 +243,7 @@ def _get_dst_var_array_dask(src_var: xr.DataArray,
 def _compute_source_pixels_block(dtype: np.dtype,
                                  block_id: int,
                                  block_shape: Tuple[int, int],
-                                 block_slices: Tuple[Tuple[int, int], Tuple[int, int]],
+                                 block_slices: Tuple[Tuple[int, int], Tuple[int, int], Tuple[int, int]],
                                  src_x: xr.DataArray,
                                  src_y: xr.DataArray,
                                  src_ij_bboxes: np.ndarray,
@@ -312,140 +312,7 @@ def _is_2d_var(var: xr.DataArray, two_d_coord_var: xr.DataArray) -> bool:
     return var.ndim >= 2 and var.shape[-2:] == two_d_coord_var.shape and var.dims[-2:] == two_d_coord_var.dims
 
 
-@nb.jit('float64(float64, float64, float64, float64, float64, float64)',
-        nopython=True, nogil=True, inline='always')
-def _fdet(px0: float, py0: float, px1: float, py1: float, px2: float, py2: float) -> float:
-    return (px0 - px1) * (py0 - py2) - (px0 - px2) * (py0 - py1)
-
-
-@nb.jit('float64(float64, float64, float64, float64, float64, float64)',
-        nopython=True, nogil=True, inline='always')
-def _fu(px: float, py: float, px0: float, py0: float, px2: float, py2: float) -> float:
-    return (px0 - px) * (py0 - py2) - (py0 - py) * (px0 - px2)
-
-
-@nb.jit('float64(float64, float64, float64, float64, float64, float64)',
-        nopython=True, nogil=True, inline='always')
-def _fv(px: float, py: float, px0: float, py0: float, px1: float, py1: float) -> float:
-    return (py0 - py) * (px0 - px1) - (px0 - px) * (py0 - py1)
-
-
-@nb.jit('float64(float64, float64, float64)',
-        nopython=True, nogil=True, inline='always')
-def _fclamp(x: float, x_min: float, x_max: float) -> float:
-    return x_min if x < x_min else (x_max if x > x_max else x)
-
-
-@nb.jit('int64(int64, int64, int64)',
-        nopython=True, nogil=True, inline='always')
-def _iclamp(x: int, x_min: int, x_max: int) -> int:
-    return x_min if x < x_min else (x_max if x > x_max else x)
-
-
-@nb.jit(nopython=True, nogil=True, cache=True)
-def _reproject(src_values: np.ndarray,
-               src_x: np.ndarray,
-               src_y: np.ndarray,
-               dst_values: np.ndarray,
-               dst_x0: float,
-               dst_y0: float,
-               dst_res: float,
-               uv_delta: float):
-    src_width = src_values.shape[-1]
-    src_height = src_values.shape[-2]
-
-    dst_width = dst_values.shape[-1]
-    dst_height = dst_values.shape[-2]
-
-    dst_px = np.zeros(4, dtype=src_x.dtype)
-    dst_py = np.zeros(4, dtype=src_y.dtype)
-
-    u_min = v_min = -uv_delta
-    uv_max = 1.0 + 2 * uv_delta
-
-    dst_values[..., :, :] = np.nan
-
-    for src_j0 in range(src_height - 1):
-        for src_i0 in range(src_width - 1):
-            src_i1 = src_i0 + 1
-            src_j1 = src_j0 + 1
-
-            dst_px[0] = dst_p0x = src_x[src_j0, src_i0]
-            dst_px[1] = dst_p1x = src_x[src_j0, src_i1]
-            dst_px[2] = dst_p2x = src_x[src_j1, src_i0]
-            dst_px[3] = dst_p3x = src_x[src_j1, src_i1]
-
-            dst_py[0] = dst_p0y = src_y[src_j0, src_i0]
-            dst_py[1] = dst_p1y = src_y[src_j0, src_i1]
-            dst_py[2] = dst_p2y = src_y[src_j1, src_i0]
-            dst_py[3] = dst_p3y = src_y[src_j1, src_i1]
-
-            dst_pi = np.floor((dst_px - dst_x0) / dst_res).astype(np.int64)
-            dst_pj = np.floor((dst_py - dst_y0) / dst_res).astype(np.int64)
-
-            dst_i_min = np.min(dst_pi)
-            dst_i_max = np.max(dst_pi)
-            dst_j_min = np.min(dst_pj)
-            dst_j_max = np.max(dst_pj)
-
-            if dst_i_max < 0 \
-                    or dst_j_max < 0 \
-                    or dst_i_min >= dst_width \
-                    or dst_j_min >= dst_height:
-                continue
-
-            if dst_i_min < 0:
-                dst_i_min = 0
-
-            if dst_i_max >= dst_width:
-                dst_i_max = dst_width - 1
-
-            if dst_j_min < 0:
-                dst_j_min = 0
-
-            if dst_j_max >= dst_height:
-                dst_j_max = dst_height - 1
-
-            # u from p0 right to p1, v from p0 down to p2
-            det_a = _fdet(dst_p0x, dst_p0y, dst_p1x, dst_p1y, dst_p2x, dst_p2y)
-            # u from p3 left to p2, v from p3 up to p1
-            det_b = _fdet(dst_p3x, dst_p3y, dst_p2x, dst_p2y, dst_p1x, dst_p1y)
-
-            if np.isnan(det_a) or np.isnan(det_b):
-                # print('no plane at:', src_i0, src_j0)
-                continue
-
-            for dst_j in range(dst_j_min, dst_j_max + 1):
-                dst_y = dst_y0 + (dst_j + 0.5) * dst_res
-                for dst_i in range(dst_i_min, dst_i_max + 1):
-                    dst_x = dst_x0 + (dst_i + 0.5) * dst_res
-
-                    # TODO: use two other combinations,
-                    #       if one of the dst_px<n>,dst_py<n> pairs is missing.
-
-                    if not np.isnan(dst_values[..., dst_j, dst_i]):
-                        # print('already set:', src_i0, src_j0, '-->', dst_i, dst_j)
-                        continue
-
-                    src_i = -1
-                    src_j = -1
-                    if det_a != 0.0:
-                        u = _fu(dst_x, dst_y, dst_p0x, dst_p0y, dst_p2x, dst_p2y) / det_a
-                        v = _fv(dst_x, dst_y, dst_p0x, dst_p0y, dst_p1x, dst_p1y) / det_a
-                        if u >= u_min and v >= v_min and u + v <= uv_max:
-                            src_i = src_i0 if u < 0.5 else src_i1
-                            src_j = src_j0 if v < 0.5 else src_j1
-                    if src_i == -1 and det_b != 0.0:
-                        u = _fu(dst_x, dst_y, dst_p3x, dst_p3y, dst_p1x, dst_p1y) / det_b
-                        v = _fv(dst_x, dst_y, dst_p3x, dst_p3y, dst_p2x, dst_p2y) / det_b
-                        if u >= u_min and v >= v_min and u + v <= uv_max:
-                            src_i = src_i1 if u < 0.5 else src_i0
-                            src_j = src_j1 if v < 0.5 else src_j0
-                    if src_i != -1:
-                        dst_values[..., dst_j, dst_i] = src_values[..., src_j, src_i]
-
-
-@nb.njit(cache=True)
+@nb.njit(nogil=True, cache=True)
 def _compute_source_pixels(src_x: np.ndarray,
                            src_y: np.ndarray,
                            src_i_min: int,
@@ -546,7 +413,7 @@ def _compute_source_pixels(src_x: np.ndarray,
                         dst_src_ij[1, dst_j, dst_i] = src_j_min + src_j
 
 
-@nb.njit(cache=True)
+@nb.njit(nogil=True, cache=True)
 def _extract_source_pixels(src_values: np.ndarray,
                            dst_src_ij: np.ndarray,
                            dst_values: np.ndarray):
@@ -576,6 +443,31 @@ def _extract_source_pixels(src_values: np.ndarray,
             if v > 0.5:
                 src_j = _iclamp(src_j + 1, src_j_min, src_j_max)
             dst_values[..., dst_j, dst_i] = src_values[..., src_j, src_i]
+
+
+@nb.njit('float64(float64, float64, float64, float64, float64, float64)', nogil=True, inline='always')
+def _fdet(px0: float, py0: float, px1: float, py1: float, px2: float, py2: float) -> float:
+    return (px0 - px1) * (py0 - py2) - (px0 - px2) * (py0 - py1)
+
+
+@nb.njit('float64(float64, float64, float64, float64, float64, float64)', nogil=True, inline='always')
+def _fu(px: float, py: float, px0: float, py0: float, px2: float, py2: float) -> float:
+    return (px0 - px) * (py0 - py2) - (py0 - py) * (px0 - px2)
+
+
+@nb.njit('float64(float64, float64, float64, float64, float64, float64)', nogil=True, inline='always')
+def _fv(px: float, py: float, px0: float, py0: float, px1: float, py1: float) -> float:
+    return (py0 - py) * (px0 - px1) - (px0 - px) * (py0 - py1)
+
+
+@nb.njit('float64(float64, float64, float64)', nogil=True, inline='always')
+def _fclamp(x: float, x_min: float, x_max: float) -> float:
+    return x_min if x < x_min else (x_max if x > x_max else x)
+
+
+@nb.njit('int64(int64, int64, int64)', nogil=True, inline='always')
+def _iclamp(x: int, x_min: int, x_max: int) -> int:
+    return x_min if x < x_min else (x_max if x > x_max else x)
 
 
 def _millis(seconds: float) -> int:

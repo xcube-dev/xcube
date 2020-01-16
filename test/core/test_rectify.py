@@ -250,7 +250,7 @@ class RectifyDatasetTest(SourceDatasetMixin, unittest.TestCase):
 
         return lon, lat, rad
 
-    def test_compute_source_pixels(self):
+    def test_compute_and_extract_source_pixels(self):
         src_ds = self.new_source_dataset()
 
         dst_src_ij = np.full((2, 13, 13), np.nan, dtype=np.float64)
