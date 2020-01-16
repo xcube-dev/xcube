@@ -1,4 +1,5 @@
 import unittest
+from typing import Tuple
 
 import dask.array as da
 import numpy as np
@@ -294,7 +295,7 @@ class RectifyDatasetTest(SourceDatasetMixin, unittest.TestCase):
         dst_ds = rectify_dataset(src_ds, output_geom=output_geom)
         self.assertIsNone(dst_ds)
 
-    def _assert_shape_and_dim(self, dst_ds, w, h, var_names=('rad',)):
+    def _assert_shape_and_dim(self, dst_ds, w, h, var_names=('rad',)) -> Tuple[xr.DataArray, ...]:
         self.assertIn('lon', dst_ds)
         lon = dst_ds['lon']
         self.assertEqual((w,), lon.shape)
@@ -305,6 +306,7 @@ class RectifyDatasetTest(SourceDatasetMixin, unittest.TestCase):
         self.assertEqual((h,), lat.shape)
         self.assertEqual(('lat',), lat.dims)
 
+        # noinspection PyShadowingBuiltins
         vars = []
         for var_name in var_names:
             self.assertIn(var_name, dst_ds)

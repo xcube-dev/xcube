@@ -18,7 +18,7 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-import math
+
 from typing import Mapping, Optional, Sequence, Tuple, Union
 
 import dask.array as da
@@ -535,8 +535,9 @@ def _compute_var_image_for_dest_line(dst_j: int,
         src_j_f = dst_src_ij_images[1, dst_j, dst_i]
         if np.isnan(src_i_f) or np.isnan(src_j_f):
             continue
-        src_i = math.floor(src_i_f + 0.49999)
-        src_j = math.floor(src_j_f + 0.49999)
+        # Note int() is 2x faster than math.floor() and should yield the same results for only positive i,j.
+        src_i = int(src_i_f)
+        src_j = int(src_j_f)
         u = src_i_f - src_i
         v = src_j_f - src_j
         if u > 0.5:
