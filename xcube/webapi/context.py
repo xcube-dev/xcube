@@ -329,14 +329,14 @@ class ServiceContext:
         place_group_id = place_group_descriptor.get("PlaceGroupRef")
         if place_group_id:
             if is_global:
-                raise ServiceError("'PlaceGroupRef' cannot be used in a global place group")
+                raise ServiceConfigError("'PlaceGroupRef' cannot be used in a global place group")
             if len(place_group_descriptor) > 1:
-                raise ServiceError("'PlaceGroupRef' if present, must be the only entry in a 'PlaceGroups' item")
+                raise ServiceConfigError("'PlaceGroupRef' if present, must be the only entry in a 'PlaceGroups' item")
             return self.get_global_place_group(place_group_id, load_features=load_features)
 
         place_group_id = place_group_descriptor.get("Identifier")
         if not place_group_id:
-            raise ServiceError("Missing 'Identifier' entry in a 'PlaceGroups' item")
+            raise ServiceConfigError("Missing 'Identifier' entry in a 'PlaceGroups' item")
 
         if place_group_id in self._place_group_cache:
             place_group = self._place_group_cache[place_group_id]
@@ -345,7 +345,7 @@ class ServiceContext:
 
             place_path_wc = place_group_descriptor.get("Path")
             if not place_path_wc:
-                raise ServiceError("Missing 'Path' entry in a 'PlaceGroups' item")
+                raise ServiceConfigError("Missing 'Path' entry in a 'PlaceGroups' item")
             if not os.path.isabs(place_path_wc):
                 place_path_wc = os.path.join(self._base_dir, place_path_wc)
             source_paths = glob.glob(place_path_wc)
@@ -363,7 +363,7 @@ class ServiceContext:
 
             sub_place_group_configs = place_group_descriptor.get("Places")
             if sub_place_group_configs:
-                raise ServiceError("Invalid 'Places' entry in a 'PlaceGroups' item: not implemented yet")
+                raise ServiceConfigError("Invalid 'Places' entry in a 'PlaceGroups' item: not implemented yet")
             # sub_place_group_descriptors = place_group_config.get("Places")
             # if sub_place_group_descriptors:
             #     sub_place_groups = self._load_place_groups(sub_place_group_descriptors)
