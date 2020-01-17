@@ -29,6 +29,7 @@ from tornado.ioloop import IOLoop
 
 from xcube.core.timecoord import timestamp_to_iso_string
 from xcube.version import version
+from xcube.webapi.auth import AuthMixin
 from xcube.webapi.controllers.catalogue import get_datasets, get_dataset_coordinates, get_color_bars, get_dataset, \
     get_dataset_place_groups, get_dataset_place_group
 from xcube.webapi.controllers.places import find_places, find_dataset_places
@@ -119,9 +120,13 @@ class GetWMTSCapabilitiesXmlHandler(ServiceRequestHandler):
 
 
 # noinspection PyAbstractClass
-class GetDatasetsHandler(ServiceRequestHandler):
+class GetDatasetsHandler(ServiceRequestHandler, AuthMixin):
 
     def get(self):
+        access_token = self.get_access_token()
+        if access_token:
+            id_token = self.get_id_token()
+
         details = bool(int(self.params.get_query_argument('details', '0')))
         tile_client = self.params.get_query_argument('tiles', None)
         point = self.params.get_query_argument_point('point', None)
@@ -132,7 +137,7 @@ class GetDatasetsHandler(ServiceRequestHandler):
 
 
 # noinspection PyAbstractClass
-class GetDatasetHandler(ServiceRequestHandler):
+class GetDatasetHandler(ServiceRequestHandler, AuthMixin):
 
     def get(self, ds_id: str):
         tile_client = self.params.get_query_argument('tiles', None)

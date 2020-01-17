@@ -1,3 +1,7 @@
+Authentication:
+  Domain: xcube-dev.eu.auth0.com
+  Audience: https://xcube-dev/api/
+
 Datasets:
   - Identifier: local
     Title: "Local OLCI L2C cube for region SNS"
@@ -9,6 +13,8 @@ Datasets:
     PlaceGroups:
       - PlaceGroupRef: inside-cube
       - PlaceGroupRef: outside-cube
+    AccessControl:
+      Public: True
 
   - Identifier: local_ts
     Title: "'local' optimized for time-series"
@@ -17,6 +23,8 @@ Datasets:
     Path: cube-5-100-200.zarr
     Hidden: true
     Style: default
+    AccessControl:
+      Public: True
 
   - Identifier: remote
     Title: Remote OLCI L2C cube for region SNS
@@ -29,6 +37,9 @@ Datasets:
     PlaceGroups:
       - PlaceGroupRef: inside-cube
       - PlaceGroupRef: outside-cube
+    AccessControl:
+      RequiredScopes:
+        - read:datasets
 
   - Identifier: local_1w
     Title: OLCI weekly L3 cube for region SNS computed from local L2C cube
@@ -44,6 +55,8 @@ Datasets:
     PlaceGroups:
       - PlaceGroupRef: inside-cube
       - PlaceGroupRef: outside-cube
+    AccessControl:
+      Public: True
 
   - Identifier: remote_1w
     Title: OLCI weekly L3 cube for region SNS computed from remote L2C cube
@@ -59,6 +72,9 @@ Datasets:
     PlaceGroups:
       - PlaceGroupRef: inside-cube
       - PlaceGroupRef: outside-cube
+    AccessControl:
+      RequiredScopes:
+        - read:datasets
 
 PlaceGroups:
   - Identifier: inside-cube
