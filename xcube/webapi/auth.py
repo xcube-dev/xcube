@@ -2,7 +2,7 @@
 """
 
 import json
-from typing import Optional, Mapping, List, Dict, Any
+from typing import Optional, Mapping, List, Dict, Any, Set, Tuple
 
 import jwt
 import requests
@@ -50,7 +50,7 @@ class AuthConfig:
             raise ServiceConfigError('Missing key "Audience" in section "Authentication"')
         algorithms = authentication.get('Algorithms', ['RS256'])
         if not algorithms:
-            raise ServiceConfigError('Missing key "Algorithms" in section "Authentication"')
+            raise ServiceConfigError('Value for key "Algorithms" in section "Authentication" must not be empty')
         return AuthConfig(domain, audience, algorithms)
 
 
@@ -61,25 +61,23 @@ class AuthMixin:
         # noinspection PyUnresolvedReferences
         return AuthConfig.from_config(self.service_context.config)
 
-    def authorize_for(self, *required_permissions: List[str], fail_fast: bool = False) -> bool:
-        id_token = self.get_id_token(require=True)
-        granted_permissions = set(id_token.get('permissions', []))
-        if not granted_permissions:
-            raise ServiceAuthError('Token without permissions', log_message='Token is missing permissions')
-        for required_permission in required_permissions:
-            if required_permission not in granted_permissions:
-                if fail_fast:
-                    raise ServiceAuthError('Missing permission', log_message='Permissions are not sufficient')
-                return False
-        return True
+    @property
+    def granted_scopes(self) -> Set[str]:
+        id_token = self.get_id_token(require_auth=False)
+        if not id_token:
+            return set()
+        return set(id_token.get('permissions', []))
 
-    def get_access_token(self, require: bool = False) -> Optional[str]:
+    def require_scopes(self, *required_scopes: str):
+        assert_scopes(required_scopes, self.granted_scopes)
+
+    def get_access_token(self, require_auth: bool = False) -> Optional[str]:
         """Obtains the access token from the Authorization Header
         """
         # noinspection PyUnresolvedReferences
         auth = self.request.headers.get("Authorization", None)
         if not auth:
-            if require:
+            if require_auth:
                 raise ServiceAuthError("Authorization header missing",
                                        log_message="Authorization header is expected")
             return None
@@ -88,28 +86,27 @@ class AuthMixin:
 
         if parts[0].lower() != "bearer":
             raise ServiceAuthError("Invalid header",
-                                   log_message="Authorization header must start with Bearer")
+                                   log_message='Authorization header must start with "Bearer"')
         elif len(parts) == 1:
             raise ServiceAuthError("Invalid header",
-                                   log_message="Token not found")
+                                   log_message="Bearer token not found")
         elif len(parts) > 2:
             raise ServiceAuthError("Invalid header",
                                    log_message="Authorization header must be Bearer token")
 
-        token = parts[1]
-        return token
+        return parts[1]
 
-    def get_id_token(self, require: bool = False) -> Optional[Mapping[str, str]]:
+    def get_id_token(self, require_auth: bool = False) -> Optional[Mapping[str, str]]:
         """
         Decodes the access token is valid.
         """
-        access_token = self.get_access_token(require=require)
+        access_token = self.get_access_token(require_auth=require_auth)
         if access_token is None:
             return None
 
         auth_config = self.auth_config
         if auth_config is None:
-            if require:
+            if require_auth:
                 raise ServiceAuthError("Invalid header",
                                        log_message="Received access token, "
                                                    "but this server doesn't support authentication.")
@@ -120,13 +117,16 @@ class AuthMixin:
         except jwt.InvalidTokenError:
             raise ServiceAuthError("Invalid header",
                                    log_message="Invalid header. Use an RS256 signed JWT Access Token")
-        if unverified_header["alg"] == "HS256":
+        if unverified_header["alg"] != "RS256":  # e.g. "HS256"
             raise ServiceAuthError("Invalid header",
                                    log_message="Invalid header. Use an RS256 signed JWT Access Token")
 
         # TODO: read jwks from cache
         response = requests.get(auth_config.well_known_jwks)
+        print(response.content)
         jwks = json.loads(response.content)
+
+        print(json.dumps(jwks))
 
         rsa_key = {}
         for key in jwks["keys"]:
@@ -144,7 +144,7 @@ class AuthMixin:
             try:
                 id_token = jwt.decode(
                     access_token,
-                    # TODO: this is stupid: we convert rsa_key to JWT JSON only to produce the public key
+                    # TODO: this is stupid: we convert rsa_key to JWT JSON only to produce the public key JSON string
                     RSAAlgorithm.from_jwk(json.dumps(rsa_key)),
                     algorithms=auth_config.algorithms,
                     audience=auth_config.audience,
@@ -163,3 +163,9 @@ class AuthMixin:
 
         raise ServiceAuthError("Invalid header",
                                log_message="Unable to find appropriate key")
+
+
+def assert_scopes(required_scopes: Tuple[str], granted_scopes: Set[str]):
+    for required_scope in required_scopes:
+        if required_scope not in granted_scopes:
+            raise ServiceAuthError('Missing permission', log_message=f'Missing permission {required_scope}')
