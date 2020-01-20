@@ -40,7 +40,7 @@ class AuthMixinIdTokenTest(unittest.TestCase):
         self.assertEqual('w2NoDEryIpNRtAQVH1ToU6XTurE549FW', id_token.get('azp'))
         self.assertEqual('client-credentials', id_token.get('gty'))
         self.assertEqual('w2NoDEryIpNRtAQVH1ToU6XTurE549FW@clients', id_token.get('sub'))
-        self.assertEqual([], id_token.get('permissions'))
+        self.assertEqual(['read:datasets'], id_token.get('permissions'))
         self.assertEqual(86400, id_token.get('exp') - id_token.get('iat'))
 
     def _fetch_access_token(self):
