@@ -50,6 +50,10 @@ def resample_in_time(cube: xr.Dataset,
     In value ``'percentile_<p>'`` is a placeholder, where ``'<p>'`` must be replaced by an
     integer percentage value, e.g. ``'percentile_90'`` is the 90%-percentile.
 
+    *Important note:* As of xarray 0.14 and dask 2.8, the methods ``'median'`` and ``'percentile_<p>'`
+    cannot be used if the variables in *cube* comprise chunked dask arrays.
+    In this case, use the ``compute()`` or ``load()`` method to convert dask arrays into numpy arrays.
+
     :param cube: The xcube dataset.
     :param frequency: Temporal aggregation frequency. Use format "<count><offset>"
         "where <offset> is one of 'H', 'D', 'W', 'M', 'Q', 'Y'.
