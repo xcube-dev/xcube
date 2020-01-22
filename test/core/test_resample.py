@@ -27,7 +27,7 @@ class ResampleInTimeTest(unittest.TestCase):
         input_cube = chunk_dataset(input_cube, chunk_sizes=dict(time=1, lat=90, lon=180))
         self.input_cube = input_cube
 
-    def test_resample_in_time(self):
+    def test_resample_in_time_min_max(self):
         resampled_cube = resample_in_time(self.input_cube, '2W', ['min', 'max'])
         self.assertIsNot(resampled_cube, self.input_cube)
         self.assertIn('time', resampled_cube)
@@ -57,6 +57,38 @@ class ResampleInTimeTest(unittest.TestCase):
         np.testing.assert_allclose(resampled_cube.precipitation_min.values[..., 0, 0],
                                    np.array([119.4, 118.2, 116.6, 115.4, 114.4, 114.2]))
         np.testing.assert_allclose(resampled_cube.precipitation_max.values[..., 0, 0],
+                                   np.array([120.0, 119.2, 118.0, 116.4, 115.2, 114.2]))
+
+        schema = CubeSchema.new(resampled_cube)
+        self.assertEqual(3, schema.ndim)
+        self.assertEqual(('time', 'lat', 'lon'), schema.dims)
+        self.assertEqual((6, 180, 360), schema.shape)
+        self.assertEqual((1, 90, 180), schema.chunks)
+
+    def test_resample_in_time_p90(self):
+        with self.assertRaises(TypeError):
+            # noinspection PyUnusedLocal
+            resampled_cube = resample_in_time(self.input_cube, '2W', ['percentile_90'])
+
+        resampled_cube = resample_in_time(self.input_cube.compute(), '2W', ['percentile_90'])
+        self.assertIsNot(resampled_cube, self.input_cube)
+        self.assertIn('time', resampled_cube)
+        self.assertIn('temperature_p90', resampled_cube)
+        self.assertIn('precipitation_p90', resampled_cube)
+        self.assertEqual(('time',), resampled_cube.time.dims)
+        self.assertEqual(('time', 'lat', 'lon'), resampled_cube.temperature_p90.dims)
+        self.assertEqual(('time', 'lat', 'lon'), resampled_cube.precipitation_p90.dims)
+        self.assertEqual((6,), resampled_cube.time.shape)
+        self.assertEqual((6, 180, 360), resampled_cube.temperature_p90.shape)
+        self.assertEqual((6, 180, 360), resampled_cube.precipitation_p90.shape)
+        np.testing.assert_equal(resampled_cube.time.values,
+                                np.array(
+                                    ['2017-06-25T00:00:00Z', '2017-07-09T00:00:00Z',
+                                     '2017-07-23T00:00:00Z', '2017-08-06T00:00:00Z',
+                                     '2017-08-20T00:00:00Z', '2017-09-03T00:00:00Z'], dtype=np.datetime64))
+        np.testing.assert_allclose(resampled_cube.temperature_p90.values[..., 0, 0],
+                                   np.array([272.3, 272.9, 273.7, 274.3, 274.8, 274.9]))
+        np.testing.assert_allclose(resampled_cube.precipitation_p90.values[..., 0, 0],
                                    np.array([120.0, 119.2, 118.0, 116.4, 115.2, 114.2]))
 
         schema = CubeSchema.new(resampled_cube)

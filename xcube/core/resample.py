@@ -42,6 +42,14 @@ def resample_in_time(cube: xr.Dataset,
     """
     Resample a xcube dataset in the time dimension.
 
+    The argument *method* may be one or a sequence of ``'all'``, ``'any'``,
+    ``'argmax'``, ``'argmin'``, ``'argmax'``, ``'count'``,
+    ``'first'``, ``'last'``, ``'max'``, ``'min'``, ``'mean'``, ``'median'``,
+    ``'percentile_<p>'``, ``'std'``, ``'sum'``, ``'var'``.
+
+    In value ``'percentile_<p>'`` is a placeholder, where ``'<p>'`` must be replaced by an
+    integer percentage value, e.g. ``'percentile_90'`` is the 90%-percentile.
+
     :param cube: The xcube dataset.
     :param frequency: Temporal aggregation frequency. Use format "<count><offset>"
         "where <offset> is one of 'H', 'D', 'W', 'M', 'Q', 'Y'.
@@ -77,13 +85,23 @@ def resample_in_time(cube: xr.Dataset,
     else:
         methods = list(method)
 
+    percentile_prefix = 'percentile_'
+
     resampled_cubes = []
     for method in methods:
+        method_args = []
+        method_postfix = method
+        if method.startswith(percentile_prefix):
+            p = int(method[len(percentile_prefix):])
+            q = p / 100.0
+            method_args = [q]
+            method_postfix = f'p{p}'
+            method = 'quantile'
         resampling_method = getattr(resampler, method)
-        kwargs = get_method_kwargs(method, frequency, interp_kind, tolerance)
-        resampled_cube = resampling_method(**kwargs)
+        method_kwargs = get_method_kwargs(method, frequency, interp_kind, tolerance)
+        resampled_cube = resampling_method(*method_args, **method_kwargs)
         resampled_cube = resampled_cube.rename(
-            {var_name: f'{var_name}_{method}' for var_name in resampled_cube.data_vars})
+            {var_name: f'{var_name}_{method_postfix}' for var_name in resampled_cube.data_vars})
         resampled_cubes.append(resampled_cube)
 
     if len(resampled_cubes) == 1:
