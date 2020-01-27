@@ -67,6 +67,12 @@ PlaceGroups:
   - Identifier: outside-cube
     Title: Points outside the cube
     Path: "places/outside-cube.geojson"
+    Join:
+      ID: ""
+      ForeignID: ""
+      Path: "places/outside-cube.geojson"
+    PropertyMapping:
+      image: "${base_url}/images/outside-cube/${ID}.jpg"
 
 Styles:
   - Identifier: default

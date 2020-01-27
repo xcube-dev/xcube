@@ -33,18 +33,18 @@ import s3fs
 import xarray as xr
 import zarr
 
-from xcube.core.dsio import guess_dataset_format
-from xcube.core.verify import assert_cube
 from xcube.constants import FORMAT_NAME_ZARR, FORMAT_NAME_NETCDF4, FORMAT_NAME_LEVELS
-from xcube.util.cmaps import get_cmap
-from xcube.util.perf import measure_time
-from xcube.version import version
-from xcube.util.cache import MemoryCacheStore, Cache
-from xcube.webapi.defaults import DEFAULT_CMAP_CBAR, DEFAULT_CMAP_VMIN, DEFAULT_CMAP_VMAX, DEFAULT_TRACE_PERF
-from xcube.webapi.errors import ServiceConfigError, ServiceError, ServiceBadRequestError, ServiceResourceNotFoundError
-from xcube.util.tilegrid import TileGrid
+from xcube.core.dsio import guess_dataset_format
 from xcube.core.mldataset import FileStorageMultiLevelDataset, BaseMultiLevelDataset, MultiLevelDataset, \
     ComputedMultiLevelDataset, ObjectStorageMultiLevelDataset
+from xcube.core.verify import assert_cube
+from xcube.util.cache import MemoryCacheStore, Cache
+from xcube.util.cmaps import get_cmap
+from xcube.util.perf import measure_time
+from xcube.util.tilegrid import TileGrid
+from xcube.version import version
+from xcube.webapi.defaults import DEFAULT_CMAP_CBAR, DEFAULT_CMAP_VMIN, DEFAULT_CMAP_VMAX, DEFAULT_TRACE_PERF
+from xcube.webapi.errors import ServiceConfigError, ServiceError, ServiceBadRequestError, ServiceResourceNotFoundError
 from xcube.webapi.reqparams import RequestParams
 
 COMPUTE_DATASET = 'compute_dataset'
@@ -270,7 +270,7 @@ class ServiceContext:
             return units
         raise ServiceResourceNotFoundError(f'Variable "{var_name}" not found in dataset "{ds_name}"')
 
-    def get_dataset_place_groups(self, ds_id: str, load_features=False) -> List[Dict]:
+    def get_dataset_place_groups(self, ds_id: str, base_url: str, load_features=False) -> List[Dict]:
         dataset_descriptor = self.get_dataset_descriptor(ds_id)
 
         place_group_id_prefix = f"DS-{ds_id}-"
@@ -283,15 +283,15 @@ class ServiceContext:
         if place_groups:
             return place_groups
 
-        place_groups = self._load_place_groups(dataset_descriptor.get("PlaceGroups", []),
+        place_groups = self._load_place_groups(dataset_descriptor.get("PlaceGroups", []), base_url,
                                                is_global=False, load_features=load_features)
         for place_group in place_groups:
             self._place_group_cache[place_group_id_prefix + place_group["id"]] = place_group
 
         return place_groups
 
-    def get_dataset_place_group(self, ds_id: str, place_group_id: str, load_features=False) -> Dict:
-        place_groups = self.get_dataset_place_groups(ds_id, load_features=False)
+    def get_dataset_place_group(self, ds_id: str, place_group_id: str, base_url: str, load_features=False) -> Dict:
+        place_groups = self.get_dataset_place_groups(ds_id, base_url, load_features=False)
         for place_group in place_groups:
             if place_group_id == place_group['id']:
                 if load_features:
@@ -299,12 +299,13 @@ class ServiceContext:
                 return place_group
         raise ServiceResourceNotFoundError(f'Place group "{place_group_id}" not found')
 
-    def get_global_place_groups(self, load_features=False) -> List[Dict]:
-        return self._load_place_groups(self._config.get("PlaceGroups", []), is_global=True, load_features=load_features)
+    def get_global_place_groups(self, base_url: str, load_features=False) -> List[Dict]:
+        return self._load_place_groups(self._config.get("PlaceGroups", []), base_url, is_global=True,
+                                       load_features=load_features)
 
-    def get_global_place_group(self, place_group_id: str, load_features: bool = False) -> Dict:
+    def get_global_place_group(self, place_group_id: str, base_url: str, load_features: bool = False) -> Dict:
         place_group_descriptor = self._get_place_group_descriptor(place_group_id)
-        return self._load_place_group(place_group_descriptor, is_global=True, load_features=load_features)
+        return self._load_place_group(place_group_descriptor, base_url, is_global=True, load_features=load_features)
 
     def _get_place_group_descriptor(self, place_group_id: str) -> Dict:
         place_group_descriptors = self._config.get("PlaceGroups", [])
@@ -315,16 +316,17 @@ class ServiceContext:
 
     def _load_place_groups(self,
                            place_group_descriptors: Dict,
+                           base_url: str,
                            is_global: bool = False,
                            load_features: bool = False) -> List[Dict]:
         place_groups = []
         for place_group_descriptor in place_group_descriptors:
-            place_group = self._load_place_group(place_group_descriptor, is_global=is_global,
+            place_group = self._load_place_group(place_group_descriptor, base_url, is_global=is_global,
                                                  load_features=load_features)
             place_groups.append(place_group)
         return place_groups
 
-    def _load_place_group(self, place_group_descriptor: Dict[str, Any], is_global: bool = False,
+    def _load_place_group(self, place_group_descriptor: Dict[str, Any], base_url: str, is_global: bool = False,
                           load_features: bool = False) -> Dict[str, Any]:
         place_group_id = place_group_descriptor.get("PlaceGroupRef")
         if place_group_id:
@@ -332,7 +334,7 @@ class ServiceContext:
                 raise ServiceError("'PlaceGroupRef' cannot be used in a global place group")
             if len(place_group_descriptor) > 1:
                 raise ServiceError("'PlaceGroupRef' if present, must be the only entry in a 'PlaceGroups' item")
-            return self.get_global_place_group(place_group_id, load_features=load_features)
+            return self.get_global_place_group(place_group_id, base_url, load_features=load_features)
 
         place_group_id = place_group_descriptor.get("Identifier")
         if not place_group_id:
@@ -352,6 +354,11 @@ class ServiceContext:
             source_encoding = place_group_descriptor.get("CharacterEncoding", "utf-8")
 
             property_mapping = place_group_descriptor.get("PropertyMapping")
+            if property_mapping:
+                property_mapping = dict(property_mapping)
+                for key, value in property_mapping.items():
+                    if isinstance(value, str) and '${base_url}' in value:
+                        property_mapping[key] = value.replace('${base_url}', base_url)
 
             place_group = dict(type="FeatureCollection",
                                features=None,
@@ -396,8 +403,8 @@ class ServiceContext:
     @classmethod
     def _remove_feature_id(cls, feature: Dict):
         cls._remove_id(feature)
-        if "properties" in feature:
-            cls._remove_id(feature["properties"])
+        # if "properties" in feature:
+        #    cls._remove_id(feature["properties"])
 
     @classmethod
     def _remove_id(cls, properties: Dict):

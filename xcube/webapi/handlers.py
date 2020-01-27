@@ -152,7 +152,7 @@ class GetDatasetPlaceGroupsHandler(ServiceRequestHandler):
 class GetDatasetPlaceGroupHandler(ServiceRequestHandler):
 
     def get(self, ds_id: str, place_group_id: str):
-        response = get_dataset_place_group(self.service_context, ds_id, place_group_id)
+        response = get_dataset_place_group(self.service_context, ds_id, place_group_id, self.base_url)
         self.set_header('Content-Type', 'application/json')
         self.write(json.dumps(response))
 
