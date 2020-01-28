@@ -65,8 +65,10 @@ PlaceGroups:
     Title: Points inside the cube
     Path: "places/inside-cube.geojson"
     Join:
+      Property: "ID"
       Path: "places/inside-cube-media.geojson"
-      PropertyName: ""
+    PropertyMapping:
+      image: "${base_url}/images/inside-cube/${image}"
   - Identifier: outside-cube
     Title: Points outside the cube
     Path: "places/outside-cube.geojson"
