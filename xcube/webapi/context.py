@@ -24,7 +24,7 @@ import logging
 import os
 import os.path
 import threading
-from typing import Any, Dict, List, Optional, Tuple, Callable, Collection
+from typing import Any, Dict, List, Optional, Tuple, Callable, Collection, Sequence
 
 import fiona
 import numpy as np
@@ -353,6 +353,20 @@ class ServiceContext:
             source_paths = glob.glob(place_path_wc)
             source_encoding = place_group_descriptor.get("CharacterEncoding", "utf-8")
 
+            join = None
+            place_join = place_group_descriptor.get("Join")
+            if isinstance(place_join, dict):
+                join_path = place_join.get("Path")
+                if not join_path:
+                    raise ServiceError("Missing 'Path' entry in 'Join' of a 'PlaceGroups' item")
+                if not os.path.isabs(join_path):
+                    join_path = os.path.join(self._base_dir, join_path)
+                join_property = place_join.get("Property")
+                if not join_property:
+                    raise ServiceError("Missing 'Property' entry in 'Join' of a 'PlaceGroups' item")
+                join_encoding = place_join.get("CharacterEncoding", "utf-8")
+                join = dict(path=join_path, property=join_property, encoding=join_encoding)
+
             property_mapping = place_group_descriptor.get("PropertyMapping")
             if property_mapping:
                 property_mapping = dict(property_mapping)
@@ -366,7 +380,8 @@ class ServiceContext:
                                title=place_group_title,
                                propertyMapping=property_mapping,
                                sourcePaths=source_paths,
-                               sourceEncoding=source_encoding)
+                               sourceEncoding=source_encoding,
+                               join=join)
 
             sub_place_group_configs = place_group_descriptor.get("Places")
             if sub_place_group_configs:
@@ -397,8 +412,38 @@ class ServiceContext:
                     feature["id"] = str(self._feature_index)
                     self._feature_index += 1
                     features.append(feature)
+
+        join = place_group['join']
+        if join:
+            join_path = join['path']
+            join_property = join['property']
+            join_encoding = join['encoding']
+            with fiona.open(join_path, encoding=join_encoding) as feature_collection:
+                indexed_join_features = self._get_indexed_features(feature_collection, join_property)
+            for feature in features:
+                properties = feature.get('properties')
+                if isinstance(properties, dict) and join_property in properties:
+                    join_value = properties[join_property]
+                    join_feature = indexed_join_features.get(join_value)
+                    if join_feature:
+                        join_properties = join_feature.get('properties')
+                        if join_properties:
+                            properties.update(join_properties)
+                            feature['properties'] = properties
+
         place_group['features'] = features
         return features
+
+    @classmethod
+    def _get_indexed_features(cls, features: Sequence[Dict[str, Any]], property_name: str) -> Dict[Any, Any]:
+        feature_index = {}
+        for feature in features:
+            properties = feature.get('properties')
+            if properties and property_name in properties:
+                property_value = properties[property_name]
+                feature_index[property_value] = feature
+        return feature_index
+
 
     @classmethod
     def _remove_feature_id(cls, feature: Dict):
