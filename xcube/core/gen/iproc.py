@@ -19,56 +19,129 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+import warnings
 from abc import ABCMeta, abstractmethod
-from typing import Collection, Optional, Tuple, Union
+from typing import Any, Collection, Dict, Mapping, Optional, Tuple, Union
 
 import numpy as np
 import xarray as xr
-
 from xcube.constants import CRS_WKT_EPSG_4326
 from xcube.constants import EXTENSION_POINT_INPUT_PROCESSORS
+from xcube.core.geocoding import GeoCoding
+from xcube.core.imgeom import ImageGeom
+from xcube.core.rectify import rectify_dataset
 from xcube.core.reproject import reproject_xy_to_wgs84
 from xcube.core.timecoord import to_time_in_days_since_1970
 from xcube.util.plugin import ExtensionComponent, get_extension_registry
 
 
 class ReprojectionInfo:
+    """
+    Characterize input datasets so we can reproject.
+
+    :param xy_names: Names of variables providing the spatial x- and y-coordinates,
+           e.g. ('longitude', 'latitude')
+    :param xy_tp_names: Optional names of tie-point variables providing the spatial y- and y-coordinates,
+           e.g. ('TP_longitude', 'TP_latitude')
+    :param xy_crs: Optional spatial reference system, e.g. 'EPSG:4326' or WKT or proj4 mapping
+    :param xy_gcp_step: Optional step size for collecting ground control points from spatial
+           coordinate arrays denoted by *xy_names*.
+    :param xy_tp_gcp_step: Optional step size for collecting ground control points from spatial
+           coordinate arrays denoted by *xy_tp_names*.
+    """
 
     def __init__(self,
-                 xy_var_names: Tuple[str, str],
-                 xy_tp_var_names: Tuple[str, str] = None,
-                 xy_crs: str = None,
+                 xy_names: Tuple[str, str] = None,
+                 xy_tp_names: Tuple[str, str] = None,
+                 xy_crs: Any = None,
                  xy_gcp_step: Union[int, Tuple[int, int]] = None,
                  xy_tp_gcp_step: Union[int, Tuple[int, int]] = None):
-        """
-        Characterize input datasets so we can reproject.
+        self._xy_names = self._assert_name_pair('xy_names', xy_names)
+        self._xy_tp_names = self._assert_name_pair('xy_tp_names', xy_tp_names)
+        self._xy_crs = xy_crs
+        self._xy_gcp_step = self._assert_step_pair('xy_gcp_step', xy_gcp_step)
+        self._xy_tp_gcp_step = self._assert_step_pair('xy_tp_gcp_step', xy_tp_gcp_step)
 
-        :param xy_var_names: Name of variable providing the spatial x- and y-coordinates,
-               e.g. ('lon', 'lat')
-        :param xy_tp_var_names: Name of tie-point variable providing the spatial y- and y-coordinates,
-               e.g. ('TP_longitude', 'TP_latitude')
-        :param xy_crs: Spatial reference system, e.g. 'EPSG:4326'
-        :param xy_gcp_step: Step size for collecting ground control points from spatial
-               coordinate arrays given by **xy_var_names**.
-        :param xy_tp_gcp_step: Step size for collecting ground control points from spatial
-               coordinate arrays given by **xy_tp_var_names**.
-        """
-        self.xy_var_names = xy_var_names
-        self.xy_tp_var_names = xy_tp_var_names
-        self.xy_crs = xy_crs
-        self.xy_gcp_step = xy_gcp_step
-        self.xy_tp_gcp_step = xy_tp_gcp_step
+    def derive(self,
+               xy_names: Tuple[str, str] = None,
+               xy_tp_names: Tuple[str, str] = None,
+               xy_crs: Any = None,
+               xy_gcp_step: Union[int, Tuple[int, int]] = None,
+               xy_tp_gcp_step: Union[int, Tuple[int, int]] = None):
+        return ReprojectionInfo(self.xy_names if xy_names is None else xy_names,
+                                xy_tp_names=self.xy_tp_names if xy_tp_names is None else xy_tp_names,
+                                xy_crs=self.xy_crs if xy_crs is None else xy_crs,
+                                xy_gcp_step=self.xy_gcp_step if xy_gcp_step is None else xy_gcp_step,
+                                xy_tp_gcp_step=self.xy_tp_gcp_step if xy_tp_gcp_step is None else xy_tp_gcp_step)
+
+    @property
+    def xy_names(self) -> Optional[Tuple[str, str]]:
+        return self._xy_names
+
+    @property
+    def xy_tp_names(self) -> Optional[Tuple[str, str]]:
+        return self._xy_tp_names
+
+    @property
+    def xy_crs(self) -> Any:
+        return self._xy_crs
+
+    @property
+    def xy_gcp_step(self) -> Optional[int]:
+        return self._xy_gcp_step
+
+    @property
+    def xy_tp_gcp_step(self) -> Optional[int]:
+        return self._xy_tp_gcp_step
+
+    def _assert_name_pair(self, keyword: str, value):
+        if value is not None:
+            v1, v2 = value
+            self._assert_name(keyword, v1)
+            self._assert_name(keyword, v2)
+            return v1, v2
+        return value
+
+    def _assert_step_pair(self, keyword: str, value):
+        if value is not None:
+            if isinstance(value, int):
+                v1, v2 = value, value
+            else:
+                v1, v2 = value
+            self._assert_step(keyword, v1)
+            self._assert_step(keyword, v2)
+            return v1, v2
+        return value
+
+    def _assert_name(self, keyword: str, value):
+        if value is None:
+            raise ValueError(f'invalid {keyword}, missing name')
+        if not isinstance(value, str) or not value:
+            raise ValueError(f'invalid {keyword}, name must be a non-empty string')
+
+    def _assert_step(self, keyword: str, value):
+        if value is None:
+            raise ValueError(f'invalid {keyword}, missing name')
+        if not isinstance(value, int) or value <= 0:
+            raise ValueError(f'invalid {keyword}, step must be an integer number')
 
 
 class InputProcessor(ExtensionComponent, metaclass=ABCMeta):
     """
     Read and process inputs for the gen tool.
 
+    An InputProcessor can be configured by the following parameters:
+
+    * ``input_reader``: The input format identifier. Required, no default.
+
     :param name: A unique input processor identifier.
     """
 
-    def __init__(self, name: str):
+    def __init__(self, name: str, **parameters):
         super().__init__(EXTENSION_POINT_INPUT_PROCESSORS, name)
+        self._parameters = {**self.default_parameters, **parameters}
+        if 'input_reader' not in self._parameters:
+            raise ValueError('missing input_reader in input processor parameters')
 
     @property
     def description(self) -> str:
@@ -77,35 +150,33 @@ class InputProcessor(ExtensionComponent, metaclass=ABCMeta):
         """
         return self.get_metadata_attr('description', '')
 
-    def configure(self, **parameters):
-        """
-        Configure this input processor.
-        :param parameters: The configuration parameters.
-        :return: The description of this input processor
-        """
-        if parameters:
-            raise TypeError(f"got unexpected input processor parameters {parameters!r}")
+    @property
+    def default_parameters(self) -> Dict[str, Any]:
+        return {}
 
     @property
-    @abstractmethod
+    def parameters(self) -> Mapping[str, Any]:
+        return self._parameters
+
+    @property
     def input_reader(self) -> str:
-        """
-        :return: The input reader for this input processor.
-        """
+        return self.parameters['input_reader']
 
     @property
     def input_reader_params(self) -> dict:
         """
         :return: The input reader parameters for this input processor.
         """
-        return dict()
+        return self.parameters.get('input_reader_params', {})
 
+    @abstractmethod
     def get_time_range(self, dataset: xr.Dataset) -> Optional[Tuple[float, float]]:
         """
         Return a tuple of two floats representing start/stop time (which may be same) in days since 1970.
         :param dataset: The dataset.
         :return: The time-range tuple of the dataset or None.
         """
+        raise NotImplementedError()
 
     def get_extra_vars(self, dataset: xr.Dataset) -> Optional[Collection[str]]:
         """
@@ -136,9 +207,9 @@ class InputProcessor(ExtensionComponent, metaclass=ABCMeta):
     @abstractmethod
     def process(self,
                 dataset: xr.Dataset,
-                dst_size: Tuple[int, int],
-                dst_region: Tuple[float, float, float, float],
-                dst_resampling: str,
+                geo_coding: GeoCoding,
+                output_geom: ImageGeom,
+                output_resampling: str,
                 include_non_spatial_vars=False) -> xr.Dataset:
         """
         Perform spatial transformation into the cube's WGS84 SRS such that all variables in the output dataset
@@ -147,9 +218,9 @@ class InputProcessor(ExtensionComponent, metaclass=ABCMeta):
         * must have *dst_region* as their bounding box in geographic coordinates.
 
         :param dataset: The input dataset.
-        :param dst_size: The output size in pixels as tuple (width ,height).
-        :param dst_region: The output region in coordinates of the target CRS. A tuple (x_min, y_min, x_max, y_max).
-        :param dst_resampling: The spatial resampling method.
+        :param geo_coding: The input's geo-coding.
+        :param output_geom: The output's spatial image geometry.
+        :param output_resampling: The output's spatial resampling method.
         :param include_non_spatial_vars: Whether to include non-spatial variables in the output.
         :return: The transformed output dataset or the original one, if no transformation is required.
         """
@@ -172,53 +243,107 @@ class InputProcessor(ExtensionComponent, metaclass=ABCMeta):
 class XYInputProcessor(InputProcessor, metaclass=ABCMeta):
     """
     Read and process inputs for the gen tool.
+
+    An XYInputProcessor can be configured by the following parameters:
+
+    * ``input_reader``: The input format identifier.
+        Required, no default.
+    * ``xy_names``: A tuple of names of the variable providing x,y geo-locations.
+        Optional, looked up automatically if not given e.g. ``("lon", "lat")``.
+    * ``xy_tp_names``: A tuple of names of the variable providing x,y tie-point geo-locations.
+        Optional, no default.
+    * ``xy_crs``: A WKT string that identifies the x,y coordinate reference system (CRS).
+        Optional, no default.
+    * ``xy_gcp_step``: An integer or tuple of integers that is used to sub-sample x,y coordinate variables
+        for extracting ground control points (GCP).
+        Optional, no default.
+    * ``xy_tp_gcp_step``: An integer or tuple of integers that is used to sub-sample x,y tie-point coordinate variables
+        for extracting ground control points (GCP).
+        Optional, no default.
     """
 
-    @abstractmethod
-    def get_reprojection_info(self, dataset: xr.Dataset) -> Optional[ReprojectionInfo]:
+    @property
+    def default_parameters(self) -> Dict[str, Any]:
+        default_parameters = super().default_parameters
+        default_parameters.update(xy_names=('lon', 'lat'))
+        return default_parameters
+
+    def get_reprojection_info(self, dataset: xr.Dataset) -> ReprojectionInfo:
         """
         Information about special fields in input datasets used for reprojection.
         :param dataset: The dataset.
         :return: The reprojection information of the dataset or None.
         """
+        parameters = self.parameters
+        return ReprojectionInfo(xy_names=parameters.get('xy_names', ('lon', 'lat')),
+                                xy_tp_names=parameters.get('xy_tp_names'),
+                                xy_crs=parameters.get('xy_crs'),
+                                xy_gcp_step=parameters.get('xy_gcp_step'),
+                                xy_tp_gcp_step=parameters.get('xy_tp_gcp_step'))
 
     def get_extra_vars(self, dataset: xr.Dataset) -> Optional[Collection[str]]:
         """
-        Return the names of variables containing tie-points.
+        Return the names of variables containing spatial coordinates.
         They should not be removed, as they are required for the reprojection.
         """
         reprojection_info = self.get_reprojection_info(dataset)
         if reprojection_info is None:
             return dataset
         extra_vars = set()
-        if reprojection_info.xy_var_names:
-            extra_vars.update(reprojection_info.xy_var_names)
-        if reprojection_info.xy_tp_var_names:
-            extra_vars.update(reprojection_info.xy_tp_var_names)
+        if reprojection_info.xy_names:
+            extra_vars.update(set(reprojection_info.xy_names))
+        if reprojection_info.xy_tp_names:
+            extra_vars.update(set(reprojection_info.xy_tp_names))
         return extra_vars
 
     def process(self,
                 dataset: xr.Dataset,
-                dst_size: Tuple[int, int],
-                dst_region: Tuple[float, float, float, float],
-                dst_resampling: str,
+                geo_coding: GeoCoding,
+                output_geom: ImageGeom,
+                output_resampling: str,
                 include_non_spatial_vars=False) -> xr.Dataset:
         """
         Perform reprojection using tie-points / ground control points.
         """
         reprojection_info = self.get_reprojection_info(dataset)
-        if reprojection_info is None:
+
+        in_rectification_mode = reprojection_info.xy_gcp_step is None
+        if in_rectification_mode:
+            warn_prefix = 'unsupported argument in np-GCP rectification mode'
+            if reprojection_info.xy_tp_gcp_step is not None:
+                warnings.warn(f'{warn_prefix}: ignoring '
+                              f'reprojection_info.xy_tp_gcp_step = {reprojection_info.xy_tp_gcp_step!r}')
+            if output_resampling != 'Nearest':
+                warnings.warn(f'{warn_prefix}: ignoring '
+                              f'dst_resampling = {output_resampling!r}')
+            if include_non_spatial_vars:
+                warnings.warn(f'{warn_prefix}: ignoring '
+                              f'include_non_spatial_vars = {include_non_spatial_vars!r}')
+
+            geo_coding = geo_coding.derive(x_name=reprojection_info.xy_names[0], y_name=reprojection_info.xy_names[1])
+
+            dataset = rectify_dataset(dataset,
+                                      compute_subset=False,
+                                      geo_coding=geo_coding,
+                                      output_geom=output_geom,
+                                      is_y_axis_inverted=True)
+
+            if dataset is not None and geo_coding.is_geo_crs and geo_coding.xy_names != ('lon', 'lat'):
+                dataset = dataset.rename({geo_coding.x_name: 'lon', geo_coding.y_name: 'lat'})
+
             return dataset
-        return reproject_xy_to_wgs84(dataset,
-                                     src_xy_var_names=reprojection_info.xy_var_names,
-                                     src_xy_tp_var_names=reprojection_info.xy_tp_var_names,
-                                     src_xy_crs=reprojection_info.xy_crs,
-                                     src_xy_gcp_step=reprojection_info.xy_gcp_step or 1,
-                                     src_xy_tp_gcp_step=reprojection_info.xy_tp_gcp_step or 1,
-                                     dst_size=dst_size,
-                                     dst_region=dst_region,
-                                     dst_resampling=dst_resampling,
-                                     include_non_spatial_vars=include_non_spatial_vars)
+
+        else:
+            return reproject_xy_to_wgs84(dataset,
+                                         src_xy_var_names=reprojection_info.xy_names,
+                                         src_xy_tp_var_names=reprojection_info.xy_tp_names,
+                                         src_xy_crs=reprojection_info.xy_crs,
+                                         src_xy_gcp_step=reprojection_info.xy_gcp_step or 1,
+                                         src_xy_tp_gcp_step=reprojection_info.xy_tp_gcp_step or 1,
+                                         dst_size=output_geom.size,
+                                         dst_region=output_geom.xy_bbox,
+                                         dst_resampling=output_resampling,
+                                         include_non_spatial_vars=include_non_spatial_vars)
 
 
 class DefaultInputProcessor(XYInputProcessor):
@@ -236,35 +361,41 @@ class DefaultInputProcessor(XYInputProcessor):
 
     The default input processor can be configured by the following parameters:
 
-    * ``input_reader`` the input reader identifier, default is "netcdf4".
-
+    * ``input_reader``: The input format identifier.
+        Required, defaults to ``"netcdf4"``.
+    * ``xy_names``: A tuple of names of the variable providing x,y geo-locations.
+        Optional, defaults to ``("lon", "lat")``.
+    * ``xy_tp_names``: A tuple of names of the variable providing x,y tie-point geo-locations.
+        Optional, no default.
+    * ``xy_crs``: A WKT string that identifies the x,y coordinate reference system (CRS).
+        Optional, defaults to WKT for EPSG:4326 (see ``xcube.constants.CRS_WKT_EPSG_4326`` constant).
+    * ``xy_gcp_step``: An integer or tuple of integers that is used to sub-sample x,y coordinate variables
+        for extracting ground control points (GCP).
+        Optional, no default.
+    * ``xy_tp_gcp_step``: An integer or tuple of integers that is used to sub-sample x,y tie-point coordinate variables
+        for extracting ground control points (GCP).
+        Optional, no default.
     """
 
-    def __init__(self):
-        super().__init__('default')
-        self._input_reader = 'netcdf4'
-
-    def configure(self, input_reader: str = 'netcdf4'):
-        self._input_reader = input_reader
+    def __init__(self, **parameters):
+        super().__init__('default', **parameters)
 
     @property
-    def input_reader(self) -> str:
-        return self._input_reader
+    def default_parameters(self) -> Dict[str, Any]:
+        default_parameters = super().default_parameters
+        default_parameters.update(input_reader='netcdf4',
+                                  xy_names=('lon', 'lat'),
+                                  xy_crs=CRS_WKT_EPSG_4326)
+        return default_parameters
 
     def pre_process(self, dataset: xr.Dataset) -> xr.Dataset:
         self._validate(dataset)
 
-        if "time" in dataset:
+        if "time" in dataset.dims:
             # Remove time dimension of length 1.
             dataset = dataset.squeeze("time")
 
         return _normalize_lon_360(dataset)
-
-    def get_reprojection_info(self, dataset: xr.Dataset) -> ReprojectionInfo:
-        return ReprojectionInfo(xy_var_names=('lon', 'lat'),
-                                xy_crs=CRS_WKT_EPSG_4326,
-                                xy_gcp_step=(max(1, len(dataset.lon) // 4),
-                                             max(1, len(dataset.lat) // 4)))
 
     def get_time_range(self, dataset: xr.Dataset) -> Tuple[float, float]:
         time_coverage_start, time_coverage_end = None, None
@@ -372,7 +503,7 @@ def _normalize_lon_360(dataset: xr.Dataset) -> xr.Dataset:
     return dataset
 
 
-def find_input_processor(name: str):
+def find_input_processor_class(name: str):
     extension = get_extension_registry().get_extension(EXTENSION_POINT_INPUT_PROCESSORS, name)
     if not extension:
         return None

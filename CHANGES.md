@@ -1,9 +1,55 @@
-## Changes in 0.3.1. (in development)
+## Changes in 0.4.0 (in development)
 
-### Fix
+### New
+
+* Introduced new (ortho-)rectification algorithm allowing reprojection of 
+  satellite images that come with (terrain-corrected) geo-locations for every pixel.
+
+  - new CLI tool `xcube rectify`
+  - new API function `xcube.core.rectify.rectify_dataset()`
+
+* Utilizing the new rectification in `xcube gen` tool. It is now the default 
+  reprojection method in `xcube.core.gen.iproc.XYInputProcessor` and
+  `xcube.core.gen.iproc.DefaultInputProcessor`, if ground control points are not 
+  specified, i.e. the input processor is configured with `xy_gcp_step=None`. (#206)
+
+* Introduced new function `xcube.core.select.select_spatial_subset()`.
+
+* Renamed function `xcube.core.select.select_vars()` into `xcube.core.select.select_variables_subset()`.
+  
+* Now supporting xarray and numpy functions in expressions used by the
+  `xcube.core.evaluate.evaluate_dataset()` function and in the configuration of the 
+  `xcube gen` tool. You can now use `xr` and `np` contexts in expressions, e.g. 
+  `xr.where(CHL >= 0.0, CHL)`. (#257)
+
+* The performance of the `xcube gen` tool for the case that expressions or 
+  expression parts are reused across multiple variables can now be improved. 
+  Such as expressions can now be assigned to intermediate variables and loaded 
+  into memory, so they are not recomputed again.
+  For example, let the expression `quality_flags.cloudy and CHL > 25.0` occur often
+  in the configuration, then this is how recomputation can be avoided:
+  ```
+    processed_variables:
+      no_cloud_risk:
+        expression: not (quality_flags.cloudy and CHL_raw > 25.0)
+        load: True
+      CHL:
+        expression: CHL_raw
+        valid_pixel_expression: no_cloud_risk
+      ...        
+  ```      
+
+### Other
+
+* Renamed default log file for `xcube serve` command to `xcube-serve.log`.
+* `xcube gen` now immediately flushes logging output to standard out
+  
+## Changes in 0.3.1 (in development)
+
+### Fixes
 
 * Removing false user warning about custom SNAP colormaps when starting 
-  xcube serve
+  `xcube serve` command.
   
 ## Changes in 0.3.0
 

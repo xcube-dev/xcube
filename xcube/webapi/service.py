@@ -91,7 +91,7 @@ class Service:
         :param cube_paths: optional list of cube paths
         :param config_file: optional configuration file
         :param update_period: if not-None, time of idleness in seconds before service is updated
-        :param log_file_prefix: Log file prefix, default is "xcube_server.log"
+        :param log_file_prefix: Log file prefix, default is "xcube-serve.log"
         :param log_to_stderr: Whether logging should be shown on stderr
         :return: service information dictionary
         """
@@ -109,7 +109,7 @@ class Service:
             os.makedirs(log_dir, exist_ok=True)
 
         options = tornado.options.options
-        options.log_file_prefix = log_file_prefix or 'xcube_server.log'
+        options.log_file_prefix = log_file_prefix or DEFAULT_LOG_PREFIX
         options.log_to_stderr = log_to_stderr
         enable_pretty_logging()
 
