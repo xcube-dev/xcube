@@ -310,7 +310,9 @@ class ServiceRequestParams(RequestParams):
         self.handler = handler
 
     def get_query_arguments(self) -> Mapping[str, str]:
-        return dict(self.handler.request.query_arguments)
+        handler = self.handler
+        request = handler.request
+        return {name: handler.get_query_argument(name) for name in request.query_arguments.keys()}
 
     def get_query_argument(self, name: str, default: Optional[str] = UNDEFINED) -> Optional[str]:
         """
