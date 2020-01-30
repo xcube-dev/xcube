@@ -124,7 +124,8 @@ class LevelDataTest(CliDataTest):
                                   TEST_NC_FILE,
                                   ])
         self._assert_result_not_ok(result,
-                                   "Error\\: Invalid tile sizes in TILE_SIZE found\\: must be positive\n")
+                                   "Error\\: Invalid tile sizes in TILE_SIZE found\\: "
+                                   "all items must be positive integer numbers\n")
 
         result = self.invoke_cli(["level",
                                   "-t", "45,45,45",

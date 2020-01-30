@@ -146,7 +146,7 @@ def parse_cli_sequence(seq_value: Union[None, str, Sequence[Any]],
     if not allow_empty_items:
         for item in items:
             if not item:
-                raise ValueError(f'{item_plural_name} in {metavar} must not be empty')
+                raise error_type(f'{item_plural_name} in {metavar} must not be empty')
     if item_parser:
         try:
             items = tuple(map(item_parser, items))
