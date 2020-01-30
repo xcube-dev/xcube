@@ -51,8 +51,8 @@ DEFAULT_STYLE_ID = 'default'
                    f' Defaults to {DEFAULT_STYLE_ID!r}.')
 @click.option('--output', '-o', 'output_path', metavar='OUTPUT', default=DEFAULT_OUTPUT_PATH,
               help=f'Output path. Defaults to {DEFAULT_OUTPUT_PATH!r}')
-@click.option('--verbose', '-v', is_flag=True,
-              help=f'Report any files generated.')
+@click.option('--verbose', '-v', is_flag=True, multiple=True,
+              help=f'Use -vv to report all files generated, -v to report less.')
 @click.option('--dry-run', 'dry_run', is_flag=True,
               help=f'Generate all tiles but don\'t write any files.')
 def tile(cube: str,
@@ -62,7 +62,7 @@ def tile(cube: str,
          config_path: Optional[str],
          style_id: Optional[str],
          output_path: Optional[str],
-         verbose: bool,
+         verbose: List[bool],
          dry_run: bool):
     """
     Create RGBA tiles from CUBE.
@@ -88,12 +88,12 @@ def tile(cube: str,
     hence its configuration can be reused.
 
     """
+    import fractions
     import itertools
     import json
     import os.path
     # noinspection PyPackageRequirements
     import yaml
-
     import xarray as xr
     import numpy as np
 
@@ -101,8 +101,10 @@ def tile(cube: str,
     from xcube.core.schema import CubeSchema
     from xcube.core.tile import get_ml_dataset_tile
     from xcube.core.tile import parse_non_spatial_labels
-    from xcube.core.select import select_vars
+    from xcube.core.select import select_variables_subset
     from xcube.cli.common import parse_cli_kwargs
+    from xcube.cli.common import parse_cli_sequence
+    from xcube.cli.common import assert_positive_int_item
     from xcube.util.tilegrid import TileGrid
     from xcube.util.tiledimage import DEFAULT_COLOR_MAP_NAME
     from xcube.util.tiledimage import DEFAULT_COLOR_MAP_VALUE_RANGE
@@ -110,17 +112,14 @@ def tile(cube: str,
 
     # noinspection PyShadowingNames
     def write_tile_map_resource(path: str,
-                                resolutions: List[float],
+                                resolutions: List[fractions.Fraction],
                                 tile_grid: TileGrid,
                                 title='',
                                 abstract='',
                                 srs='CRS:84'):
         num_levels = len(resolutions)
-        z_and_upp = zip(range(num_levels), resolutions)
-        if srs == 'EPSG:4326':
-            y1, x1, y2, x2 = tile_grid.geo_extent
-        else:
-            x1, y1, x2, y2 = tile_grid.geo_extent
+        z_and_upp = zip(range(num_levels), map(float, resolutions))
+        x1, y1, x2, y2 = tile_grid.geo_extent
         xml = [f'<TileMap version="1.0.0" tilemapservice="http://tms.osgeo.org/1.0.0">',
                f'  <Title>{title}</Title>',
                f'  <Abstract>{abstract}</Abstract>',
@@ -129,7 +128,7 @@ def tile(cube: str,
                f'  <Origin x="{x1}" y="{y1}"/>',
                f'  <TileFormat width="{tile_grid.tile_width}" height="{tile_grid.tile_height}"'
                f' mime-type="image/png" extension="png"/>',
-               f'  <TileSets profile="geodetic">'] + [
+               f'  <TileSets profile="local">'] + [
                   f'    <TileSet href="{z}" order="{z}" units-per-pixel="{upp}"/>' for z, upp in z_and_upp] + [
                   f'  </TileSets>',
                   f'</TileMap>']
@@ -167,39 +166,27 @@ def tile(cube: str,
         value_min, value_max = value_range
         return color_bar, value_min, value_max
 
-    if tile_size:
-        try:
-            if ',' in tile_size:
-                tile_width, tile_height = map(int, tile_size.split(',', maxsplit=1))
-            else:
-                tile_width, tile_height = int(tile_size), int(tile_size)
-        except ValueError:
-            tile_width, tile_height = -1, -1
-        if tile_width <= 0 or tile_height <= 0:
-            raise click.ClickException(f'Invalid TILE_SIZE: {tile_size}')
-        tile_size = tile_width, tile_height
+    variables = parse_cli_sequence(variables, metavar='VARIABLES', num_items_min=1,
+                                   item_plural_name='variables')
+
+    tile_size = parse_cli_sequence(tile_size, num_items=2, metavar='TILE_SIZE',
+                                   item_parser=int,
+                                   item_validator=assert_positive_int_item,
+                                   item_plural_name='tile sizes')
+
+    labels = parse_cli_kwargs(labels, metavar='LABELS')
+
+    verbosity = len(verbose)
 
     config = {}
     if config_path:
-        print(f'opening {config_path}...')
+        if verbosity:
+            print(f'Opening {config_path}...')
         with open(config_path, 'r') as fp:
             config = yaml.safe_load(fp)
 
-    variables = variables or None
-    if variables is not None:
-        try:
-            variables = list(map(lambda c: str(c).strip(), variables.split(',')))
-        except ValueError:
-            variables = None
-        if variables is not None \
-                and next(iter(True for var_name in variables if var_name == ''), False):
-            variables = None
-        if variables is None or len(variables) == 0:
-            raise click.ClickException(f'invalid variables {variables!r}')
-
-    labels = parse_cli_kwargs(labels, 'LABELS')
-
-    print(f'opening {cube}...')
+    if verbosity:
+        print(f'Opening {cube}...')
 
     ml_dataset = open_ml_dataset(cube, chunks='auto')
     tile_grid = ml_dataset.tile_grid
@@ -207,8 +194,11 @@ def tile(cube: str,
     schema = CubeSchema.new(base_dataset)
     spatial_dims = schema.x_dim, schema.y_dim
 
-    if not tile_size:
-        print(f'warning: using default tile sizes derived from CUBE')
+    if tile_size:
+        tile_width, tile_height = tile_size
+    else:
+        if verbosity:
+            print(f'Warning: using default tile sizes derived from CUBE')
         tile_width, tile_height = tile_grid.tile_width, tile_grid.tile_height
 
     indexers = None
@@ -221,7 +211,7 @@ def tile(cube: str,
 
     def transform(ds: xr.Dataset) -> xr.Dataset:
         if variables:
-            ds = select_vars(ds, var_names=variables)
+            ds = select_variables_subset(ds, var_names=variables)
         if indexers:
             ds = ds.sel(**indexers)
         chunk_sizes = {dim: 1 for dim in ds.dims}
@@ -236,12 +226,15 @@ def tile(cube: str,
     spatial_dims = schema.x_dim, schema.y_dim
 
     x1, _, x2, _ = tile_grid.geo_extent
-    resolutions = [(x2 - x1) / tile_grid.width(z) for z in range(tile_grid.num_levels)]
+    num_levels = tile_grid.num_levels
+    resolutions = [fractions.Fraction(fractions.Fraction(x2 - x1), tile_grid.width(z))
+                   for z in range(num_levels)]
 
-    print(f'writing tile sets...')
-    print(f'  zoom levels: {tile_grid.num_levels}')
-    print(f'  resolutions: {resolutions} units/pixel')
-    print(f'  tile size:   {tile_width} x {tile_height} pixels')
+    if verbosity:
+        print(f'Writing tile sets...')
+        print(f'  Zoom levels: {num_levels}')
+        print(f'  Resolutions: {", ".join(map(str, resolutions))} units/pixel')
+        print(f'  Tile size:   {tile_width} x {tile_height} pixels')
 
     image_cache = {}
 
@@ -270,8 +263,8 @@ def tile(cube: str,
                                            num_colors=DEFAULT_COLOR_MAP_NUM_COLORS),
                         coordinates={name: _convert_coord_var(coord_var)
                                      for name, coord_var in var.coords.items() if coord_var.ndim == 1})
-        if verbose:
-            print(f'writing {metadata_path}')
+        if verbosity:
+            print(f'Writing {metadata_path}')
         if not dry_run:
             os.makedirs(var_path, exist_ok=True)
             with open(metadata_path, 'w') as fp:
@@ -281,14 +274,22 @@ def tile(cube: str,
             labels = {name: index for name, index in zip(label_names, label_index)}
             tilemap_path = os.path.join(var_path, *[str(l) for l in label_index])
             tilemap_resource_path = os.path.join(tilemap_path, 'tilemapresource.xml')
-            if verbose:
-                print(f'writing {tilemap_resource_path}')
+            if verbosity > 1:
+                print(f'Writing {tilemap_resource_path}')
             if not dry_run:
                 os.makedirs(tilemap_path, exist_ok=True)
                 write_tile_map_resource(tilemap_resource_path, resolutions, tile_grid, title=f'{var_name}')
-            for z in range(tile_grid.num_levels):
-                for y in range(tile_grid.num_tiles_y(z)):
-                    for x in range(tile_grid.num_tiles_x(z)):
+            for z in range(num_levels):
+                num_tiles_x = tile_grid.num_tiles_x(z)
+                num_tiles_y = tile_grid.num_tiles_y(z)
+                tile_z_path = os.path.join(tilemap_path, str(z))
+                if not dry_run and not os.path.exists(tile_z_path):
+                    os.mkdir(tile_z_path)
+                for x in range(num_tiles_x):
+                    tile_zx_path = os.path.join(tile_z_path, str(x))
+                    if not dry_run and not os.path.exists(tile_zx_path):
+                        os.mkdir(tile_zx_path)
+                    for y in range(num_tiles_y):
                         tile_bytes = get_ml_dataset_tile(ml_dataset,
                                                          str(var_name),
                                                          x, y, z,
@@ -300,13 +301,11 @@ def tile(cube: str,
                                                          image_cache=image_cache,
                                                          trace_perf=True,
                                                          exception_type=click.ClickException)
-                        tile_zy_path = os.path.join(tilemap_path, *[str(i) for i in (z, y)])
-                        tile_path = os.path.join(tile_zy_path, f'{x}.png')
-                        if verbose:
-                            print(f'writing tile {tile_path}')
+                        tile_path = os.path.join(tile_zx_path, f'{num_tiles_y - 1 - y}.png')
+                        if verbosity > 2:
+                            print(f'Writing tile {tile_path}')
                         if not dry_run:
-                            os.makedirs(tile_zy_path, exist_ok=True)
                             with open(tile_path, 'wb') as fp:
                                 fp.write(tile_bytes)
 
-    print(f'done writing tile sets.')
+    print(f'Done writing tile sets.')
