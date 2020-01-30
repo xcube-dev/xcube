@@ -42,8 +42,11 @@ def get_dataset_tile(ctx: ServiceContext,
         cmap_vmax = cmap_vmax or default_cmap_vmax
 
     ml_dataset = ctx.get_ml_dataset(ds_id)
-    labels = parse_non_spatial_labels(ml_dataset.base_dataset[var_name],
-                                      params.get_query_arguments(),
+    var = ml_dataset.base_dataset[var_name]
+    labels = parse_non_spatial_labels(params.get_query_arguments(),
+                                      var.dims,
+                                      var.coords,
+                                      allow_slices=False,
                                       exception_type=ServiceBadRequestError)
 
     return get_ml_dataset_tile(ml_dataset,

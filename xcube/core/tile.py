@@ -20,7 +20,7 @@
 # SOFTWARE.
 
 import logging
-from typing import Any, Mapping, MutableMapping, Union, Sequence
+from typing import Any, Mapping, MutableMapping, Sequence, Hashable
 
 import numpy as np
 import pandas as pd
@@ -88,13 +88,15 @@ def get_ml_dataset_tile(ml_dataset: MultiLevelDataset,
                                  'must be an N-D Dataset with N >= 2, '
                                  f'but "{var_name}" is only {var.ndim}-D')
 
-        cmap_vmin = np.nanmin(array.values) if np.isnan(cmap_vmin) else cmap_vmin
-        cmap_vmax = np.nanmax(array.values) if np.isnan(cmap_vmax) else cmap_vmax
+        array.load()
+
+        cmap_vmin = array.min() if np.isnan(cmap_vmin) else cmap_vmin
+        cmap_vmax = array.max() if np.isnan(cmap_vmax) else cmap_vmax
 
         tile_grid = ml_dataset.tile_grid
 
         if not tile_comp_mode:
-            image = NdarrayImage(array,
+            image = NdarrayImage(array.values,
                                  image_id=f'ndai-{image_id}',
                                  tile_size=tile_grid.tile_size,
                                  trace_perf=trace_perf)
@@ -114,7 +116,7 @@ def get_ml_dataset_tile(ml_dataset: MultiLevelDataset,
                                          tile_cache=tile_cache,
                                          trace_perf=trace_perf)
         else:
-            image = ColorMappedRgbaImage2(array,
+            image = ColorMappedRgbaImage2(array.values,
                                           image_id=f'rgb-{image_id}',
                                           tile_size=tile_grid.tile_size,
                                           cmap_range=(cmap_vmin, cmap_vmax),
@@ -151,14 +153,20 @@ def get_ml_dataset_tile(ml_dataset: MultiLevelDataset,
 
 
 def parse_non_spatial_labels(raw_labels: Mapping[str, str],
-                             dims: Sequence[str],
-                             coords: Mapping[str, xr.DataArray],
+                             dims: Sequence[Hashable],
+                             coords: Mapping[Hashable, xr.DataArray],
                              allow_slices: bool = False,
                              exception_type: type = ValueError) -> Mapping[str, Any]:
     xy_var_names = get_dataset_xy_var_names(coords, must_exist=False)
     if xy_var_names is None:
         raise exception_type(f'missing spatial coordinates')
     xy_dims = set(coords[xy_var_name].dims[0] for xy_var_name in xy_var_names)
+
+    def to_datetime(datetime_str: str, dim_var: xr.DataArray):
+        if datetime_str == 'current':
+            return dim_var[-1]
+        else:
+            return pd.to_datetime(datetime_str)
 
     parsed_labels = {}
     for dim in dims:
@@ -181,7 +189,7 @@ def parse_non_spatial_labels(raw_labels: Mapping[str, str],
                 elif np.issubdtype(dim_var.dtype, np.integer):
                     labels = tuple(map(int, label_strs))
                 elif np.issubdtype(dim_var.dtype, np.datetime64):
-                    labels = tuple(map(pd.to_datetime, label_strs))
+                    labels = tuple(to_datetime(label, dim_var) for label in label_strs)
                 else:
                     raise exception_type(f'unable to parse value {label_str!r} into a {dim_var.dtype!r}')
                 if len(labels) == 1:

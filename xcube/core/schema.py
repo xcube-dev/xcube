@@ -19,7 +19,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-from typing import Tuple, Sequence, Dict, Optional, Mapping, Union
+from typing import Tuple, Sequence, Dict, Optional, Mapping, Union, Hashable
 
 import numpy as np
 import xarray as xr
@@ -246,7 +246,7 @@ def get_cube_schema(cube: xr.Dataset) -> CubeSchema:
                       chunks=first_chunks)
 
 
-def get_dataset_xy_var_names(coords: Union[xr.Dataset, xr.DataArray, Mapping[str, xr.DataArray]],
+def get_dataset_xy_var_names(coords: Union[xr.Dataset, xr.DataArray, Mapping[Hashable, xr.DataArray]],
                              must_exist: bool = False,
                              dataset_arg_name: str = 'dataset') -> Optional[Tuple[str, str]]:
     if hasattr(coords, 'coords'):
