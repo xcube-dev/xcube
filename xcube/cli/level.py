@@ -75,7 +75,7 @@ def level(input, output, link, tile_size, num_levels_max):
     if tile_size is not None:
         tile_size = parse_cli_sequence(tile_size, metavar='TILE_SIZE', num_items=2, item_plural_name='tile sizes',
                                        item_parser=int,
-                                       item_validator=positive_int, error_type=click.ClickException)
+                                       item_validator=positive_int)
         spatial_tile_shape = tile_size[1], tile_size[0]
 
     start_time = t0 = time.perf_counter()

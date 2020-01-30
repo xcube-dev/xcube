@@ -25,9 +25,13 @@ class CliDataTest(CliTest, metaclass=ABCMeta):
     def outputs(self) -> List[str]:
         return []
 
+    def time_periods(self) -> int:
+        return 5
+
     def setUp(self):
         self._rm_outputs()
-        dataset = new_cube(variables=dict(precipitation=0.4, temperature=275.2, soil_moisture=0.5))
+        dataset = new_cube(variables=dict(precipitation=0.4, temperature=275.2, soil_moisture=0.5),
+                           time_periods=self.time_periods())
         dataset.to_netcdf(TEST_NC_FILE, mode="w")
         dataset.to_zarr(TEST_ZARR_DIR, mode="w")
 
