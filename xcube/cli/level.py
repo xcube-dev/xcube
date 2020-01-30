@@ -21,7 +21,6 @@
 
 import click
 
-
 DEFAULT_TILE_SIZE = 512
 
 
@@ -34,12 +33,12 @@ DEFAULT_TILE_SIZE = 512
               help='Link the INPUT instead of converting it to a level zero dataset. '
                    'Use with care, as the INPUT\'s internal spatial chunk sizes may be inappropriate '
                    'for imaging purposes.')
-@click.option('--tile-size', '-t', metavar='TILE-SIZE',
+@click.option('--tile-size', '-t', metavar='TILE_SIZE',
               help=f'Tile size, given as single integer number or as <tile-width>,<tile-height>. '
                    f'If omitted, the tile size will be derived from the INPUT\'s '
                    f'internal spatial chunk sizes. '
                    f'If the INPUT is not chunked, tile size will be {DEFAULT_TILE_SIZE}.')
-@click.option('--num-levels-max', '-n', metavar='NUM-LEVELS-MAX', type=int,
+@click.option('--num-levels-max', '-n', metavar='NUM_LEVELS_MAX', type=int,
               help=f'Maximum number of levels to generate. '
                    f'If not given, the number of levels will be derived from '
                    f'spatial dimension and tile sizes.')
@@ -51,6 +50,7 @@ def level(input, output, link, tile_size, num_levels_max):
     """
     import time
     import os
+    from xcube.cli.common import parse_cli_sequence
     from xcube.core.level import write_levels
 
     input_path = input
@@ -58,7 +58,7 @@ def level(input, output, link, tile_size, num_levels_max):
     link_input = link
 
     if num_levels_max is not None and num_levels_max < 1:
-        raise click.ClickException(f"NUM-LEVELS-MAX must be a positive integer")
+        raise click.ClickException(f"NUM_LEVELS_MAX must be a positive integer")
 
     if not output_path:
         basename, ext = os.path.splitext(input_path)
@@ -67,17 +67,15 @@ def level(input, output, link, tile_size, num_levels_max):
     if os.path.exists(output_path):
         raise click.ClickException(f"output {output_path!r} already exists")
 
+    def positive_int(v):
+        if v <= 0:
+            raise ValueError('must be positive')
+
     spatial_tile_shape = None
     if tile_size is not None:
-        try:
-            tile_size = int(tile_size)
-            tile_size = tile_size, tile_size
-        except ValueError:
-            tile_size = map(int, tile_size.split(","))
-            if tile_size != 2:
-                raise click.ClickException("Expected a pair of positive integers <tile-width>,<tile-height>")
-        if tile_size[0] < 1 or tile_size[1] < 1:
-            raise click.ClickException("TILE-SIZE must comprise positive integers")
+        tile_size = parse_cli_sequence(tile_size, metavar='TILE_SIZE', num_items=2, item_plural_name='tile sizes',
+                                       item_parser=int,
+                                       item_validator=positive_int, error_type=click.ClickException)
         spatial_tile_shape = tile_size[1], tile_size[0]
 
     start_time = t0 = time.perf_counter()
@@ -85,7 +83,7 @@ def level(input, output, link, tile_size, num_levels_max):
     # noinspection PyUnusedLocal
     def progress_monitor(dataset, index, num_levels):
         nonlocal t0
-        print(f"level {index + 1} of {num_levels} written after {time.perf_counter() - t0} seconds")
+        print(f"Level {index + 1} of {num_levels} written after {time.perf_counter() - t0} seconds")
         t0 = time.perf_counter()
 
     levels = write_levels(output_path,

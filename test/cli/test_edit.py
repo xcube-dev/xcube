@@ -1,7 +1,7 @@
 import yaml
 import zarr
 
-from test.cli.test_cli import CliDataTest
+from test.cli.helpers import CliDataTest
 from test.core.test_edit import TEST_CUBE, TEST_CUBE_ZARR, TEST_CUBE_ZARR_EDIT, TEST_NEW_META, TEST_NEW_META_YML, \
     TEST_CUBE_ZARR_COORDS, TEST_CUBE_COORDS
 from xcube.core.dsio import rimraf
