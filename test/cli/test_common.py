@@ -2,7 +2,10 @@ import unittest
 
 import click
 
-from xcube.cli.common import parse_cli_kwargs, handle_cli_exception, parse_cli_sequence
+from xcube.cli.common import assert_positive_int_item
+from xcube.cli.common import handle_cli_exception
+from xcube.cli.common import parse_cli_kwargs
+from xcube.cli.common import parse_cli_sequence
 
 
 class ClickUtilTest(unittest.TestCase):
@@ -27,10 +30,6 @@ class ClickUtilTest(unittest.TestCase):
                          f"{cm.exception}")
 
     def test_parse_cli_sequence(self):
-        def is_pos_int(v):
-            if v <= 0:
-                raise ValueError('must be positve')
-
         self.assertEqual((512, 1024),
                          parse_cli_sequence('512, 1024',
                                             metavar='X',
@@ -84,19 +83,19 @@ class ClickUtilTest(unittest.TestCase):
             parse_cli_sequence('11,12,-13',
                                metavar='X',
                                item_parser=int,
-                               item_validator=is_pos_int,
+                               item_validator=assert_positive_int_item,
                                num_items=3,
                                item_plural_name='lollies')
-        self.assertEqual("Invalid lollies in X found: must be positve", f'{cm.exception}')
+        self.assertEqual("Invalid lollies in X found: all items must be positive integer numbers", f'{cm.exception}')
         with self.assertRaises(ValueError) as cm:
             parse_cli_sequence('11,12,-13',
                                metavar='X',
                                item_parser=int,
-                               item_validator=is_pos_int,
+                               item_validator=assert_positive_int_item,
                                num_items=3,
                                item_plural_name='lollies',
                                error_type=ValueError)
-        self.assertEqual("Invalid lollies in X found: must be positve", f'{cm.exception}')
+        self.assertEqual("Invalid lollies in X found: all items must be positive integer numbers", f'{cm.exception}')
 
     def test_handle_cli_exception(self):
         self.assertEqual(1, handle_cli_exception(click.Abort(), traceback_mode=True))
