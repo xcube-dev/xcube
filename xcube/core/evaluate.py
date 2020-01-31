@@ -89,6 +89,8 @@ def evaluate_dataset(dataset: xr.Dataset,
             if var_props is None:
                 var_props = dict()
 
+        do_load = var_props.get('load', False)
+
         expression = var_props.get('expression')
         if expression:
             # Compute new variable
@@ -100,6 +102,8 @@ def evaluate_dataset(dataset: xr.Dataset,
                 if hasattr(computed_array, 'attrs'):
                     var = computed_array
                     var.attrs.update(var_props)
+                if do_load:
+                    computed_array.load()
                 namespace[var_name] = computed_array
 
         valid_pixel_expression = var_props.get('valid_pixel_expression')
@@ -115,6 +119,8 @@ def evaluate_dataset(dataset: xr.Dataset,
                 masked_var = var.where(valid_mask)
                 if hasattr(masked_var, 'attrs'):
                     masked_var.attrs.update(var_props)
+                if do_load:
+                    masked_var.load()
                 namespace[var_name] = masked_var
 
     computed_dataset = dataset.copy()

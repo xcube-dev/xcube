@@ -27,7 +27,7 @@ import shapely.wkt
 import xarray as xr
 
 from xcube.core.geom import mask_dataset_by_geometry, convert_geometry, GeometryLike, get_dataset_geometry
-from xcube.core.select import select_vars
+from xcube.core.select import select_variables_subset
 from xcube.core.verify import assert_cube
 
 Date = Union[np.datetime64, str]
@@ -78,7 +78,7 @@ def get_time_series(cube: xr.Dataset,
 
     geometry = convert_geometry(geometry)
 
-    dataset = select_vars(cube, var_names)
+    dataset = select_variables_subset(cube, var_names)
     if len(dataset.data_vars) == 0:
         return None
 

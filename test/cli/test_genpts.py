@@ -4,8 +4,8 @@ from typing import List
 import fiona
 import pandas as pd
 
-from test.cli.test_cli import CliDataTest
-from test.cli.test_cli import TEST_ZARR_DIR
+from test.cli.helpers import CliDataTest
+from test.cli.helpers import TEST_ZARR_DIR
 
 TEST_CSV = os.path.join(os.path.dirname(__file__), 'out.csv')
 TEST_GEOJSON = os.path.join(os.path.dirname(__file__), 'out.geojson')

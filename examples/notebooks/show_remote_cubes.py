@@ -4,7 +4,7 @@ import s3fs
 from xcube.core.dsio import open_cube
 
 
-def show_remote_cubes(bucket, endpoint_url, region_name):
+def show_remote_cubes(bucket, endpoint_url, region_name='eu-central-1'):
     s3_client_kwargs = {}
     s3_client_kwargs['endpoint_url'] = endpoint_url
     s3_client_kwargs['region_name'] = region_name
@@ -44,4 +44,6 @@ def show_remote_cubes(bucket, endpoint_url, region_name):
                                 'end_date': end_date,
                                 'spatial_coverage': ', '.join(spat_cov)},
                                ignore_index=True)
+    # Make the variables column wide enough:
+    df.style.set_properties(subset=['variables'], width='300px')                        
     return df

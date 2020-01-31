@@ -192,8 +192,8 @@ def reproject_xy_to_wgs84(src_dataset: xr.Dataset,
     * ``Q3``
 
     :param src_dataset:
-    :param src_xy_var_names: 
-    :param src_xy_tp_var_names: 
+    :param src_xy_var_names:
+    :param src_xy_tp_var_names:
     :param src_xy_crs:
     :param src_xy_gcp_step:
     :param src_xy_tp_gcp_step:

@@ -24,7 +24,7 @@ from typing import Dict, Any, Sequence, Union
 import xarray as xr
 
 from xcube.core.schema import CubeSchema
-from xcube.core.select import select_vars
+from xcube.core.select import select_variables_subset
 from xcube.core.verify import assert_cube
 
 
@@ -41,6 +41,18 @@ def resample_in_time(cube: xr.Dataset,
                      cube_asserted: bool = False) -> xr.Dataset:
     """
     Resample a xcube dataset in the time dimension.
+
+    The argument *method* may be one or a sequence of ``'all'``, ``'any'``,
+    ``'argmax'``, ``'argmin'``, ``'argmax'``, ``'count'``,
+    ``'first'``, ``'last'``, ``'max'``, ``'min'``, ``'mean'``, ``'median'``,
+    ``'percentile_<p>'``, ``'std'``, ``'sum'``, ``'var'``.
+
+    In value ``'percentile_<p>'`` is a placeholder, where ``'<p>'`` must be replaced by an
+    integer percentage value, e.g. ``'percentile_90'`` is the 90%-percentile.
+
+    *Important note:* As of xarray 0.14 and dask 2.8, the methods ``'median'`` and ``'percentile_<p>'`
+    cannot be used if the variables in *cube* comprise chunked dask arrays.
+    In this case, use the ``compute()`` or ``load()`` method to convert dask arrays into numpy arrays.
 
     :param cube: The xcube dataset.
     :param frequency: Temporal aggregation frequency. Use format "<count><offset>"
@@ -62,7 +74,7 @@ def resample_in_time(cube: xr.Dataset,
         assert_cube(cube)
 
     if var_names:
-        cube = select_vars(cube, var_names)
+        cube = select_variables_subset(cube, var_names)
 
     resampler = cube.resample(skipna=True,
                               closed='left',
@@ -77,13 +89,23 @@ def resample_in_time(cube: xr.Dataset,
     else:
         methods = list(method)
 
+    percentile_prefix = 'percentile_'
+
     resampled_cubes = []
     for method in methods:
+        method_args = []
+        method_postfix = method
+        if method.startswith(percentile_prefix):
+            p = int(method[len(percentile_prefix):])
+            q = p / 100.0
+            method_args = [q]
+            method_postfix = f'p{p}'
+            method = 'quantile'
         resampling_method = getattr(resampler, method)
-        kwargs = get_method_kwargs(method, frequency, interp_kind, tolerance)
-        resampled_cube = resampling_method(**kwargs)
+        method_kwargs = get_method_kwargs(method, frequency, interp_kind, tolerance)
+        resampled_cube = resampling_method(*method_args, **method_kwargs)
         resampled_cube = resampled_cube.rename(
-            {var_name: f'{var_name}_{method}' for var_name in resampled_cube.data_vars})
+            {var_name: f'{var_name}_{method_postfix}' for var_name in resampled_cube.data_vars})
         resampled_cubes.append(resampled_cube)
 
     if len(resampled_cubes) == 1:

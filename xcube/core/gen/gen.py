@@ -30,12 +30,13 @@ import warnings
 from typing import Any, Callable, Dict, Sequence, Tuple
 
 import xarray as xr
-
 from xcube.core.dsio import DatasetIO, find_dataset_io, guess_dataset_format, rimraf
 from xcube.core.evaluate import evaluate_dataset
 from xcube.core.gen.defaults import DEFAULT_OUTPUT_PATH, DEFAULT_OUTPUT_RESAMPLING, DEFAULT_OUTPUT_SIZE
-from xcube.core.gen.iproc import InputProcessor, find_input_processor
-from xcube.core.select import select_vars
+from xcube.core.gen.iproc import InputProcessor, find_input_processor_class
+from xcube.core.geocoding import GeoCoding
+from xcube.core.imgeom import ImageGeom
+from xcube.core.select import select_spatial_subset, select_variables_subset
 from xcube.core.timecoord import add_time_coords, from_time_in_days_since_1970
 from xcube.core.timeslice import find_time_slice
 from xcube.core.update import update_dataset_attrs, update_dataset_temporal_attrs, update_dataset_var_attrs
@@ -97,15 +98,18 @@ def gen_cube(input_paths: Sequence[str] = None,
     elif input_processor_name == '':
         raise ValueError('input_processor_name must not be empty')
 
-    input_processor = find_input_processor(input_processor_name)
-    if not input_processor:
+    input_processor_class = find_input_processor_class(input_processor_name)
+    if not input_processor_class:
         raise ValueError(f'Unknown input_processor_name {input_processor_name!r}')
 
-    if input_processor_params:
-        try:
-            input_processor.configure(**input_processor_params)
-        except TypeError as e:
-            raise ValueError(f'Invalid input_processor_params {input_processor_params!r}') from e
+    if not issubclass(input_processor_class, InputProcessor):
+        raise ValueError(f'Invalid input_processor_name {input_processor_name!r}: '
+                         f'must name a sub-class of {InputProcessor.__qualname__}')
+
+    try:
+        input_processor = input_processor_class(**(input_processor_params or {}))
+    except (ValueError, TypeError) as e:
+        raise ValueError(f'Invalid input_processor_name or input_processor_params: {e}') from e
 
     input_reader = find_dataset_io(input_reader_name or input_processor.input_reader)
     if not input_reader:
@@ -206,12 +210,17 @@ def _process_input(input_processor: InputProcessor,
         return False
 
     if output_variables:
-        output_variables = to_resolved_name_dict_pairs(output_variables, input_dataset)
+        output_variables = to_resolved_name_dict_pairs(output_variables, input_dataset, keep=True)
     else:
         output_variables = [(var_name, None) for var_name in input_dataset.data_vars]
 
     time_index, update_mode = find_time_slice(output_path,
                                               from_time_in_days_since_1970((time_range[0] + time_range[1]) / 2))
+
+    width, height = output_size
+    x_min, y_min, x_max, y_max = output_region
+    xy_res = max((x_max - x_min) / width, (y_max - y_min) / height)
+    output_geom = ImageGeom(size=output_size, x_min=x_min, y_min=y_min, xy_res=xy_res, is_geo_crs=True)
 
     steps = []
 
@@ -220,6 +229,25 @@ def _process_input(input_processor: InputProcessor,
         return input_processor.pre_process(input_slice)
 
     steps.append((step1, 'pre-processing input slice'))
+
+    geo_coding = None
+
+    # noinspection PyShadowingNames
+    def step1a(input_slice):
+        nonlocal geo_coding
+        geo_coding = GeoCoding.from_dataset(input_slice)
+        subset = select_spatial_subset(input_slice,
+                                       xy_bbox=output_geom.xy_bbox,
+                                       xy_border=output_geom.xy_res,
+                                       ij_border=1,
+                                       geo_coding=geo_coding)
+        if subset is None:
+            monitor('no spatial overlap with input')
+        elif subset is not input_slice:
+            geo_coding = GeoCoding.from_dataset(subset)
+        return subset
+
+    steps.append((step1a, 'spatial subsetting'))
 
     # noinspection PyShadowingNames
     def step2(input_slice):
@@ -232,16 +260,17 @@ def _process_input(input_processor: InputProcessor,
         extra_vars = input_processor.get_extra_vars(input_slice)
         selected_variables = set([var_name for var_name, _ in output_variables])
         selected_variables.update(extra_vars or set())
-        return select_vars(input_slice, selected_variables)
+        return select_variables_subset(input_slice, selected_variables)
 
     steps.append((step3, 'selecting input slice variables'))
 
     # noinspection PyShadowingNames
     def step4(input_slice):
+        # noinspection PyTypeChecker
         return input_processor.process(input_slice,
-                                       dst_size=output_size,
-                                       dst_region=output_region,
-                                       dst_resampling=output_resampling,
+                                       geo_coding=geo_coding,
+                                       output_geom=output_geom,
+                                       output_resampling=output_resampling,
                                        include_non_spatial_vars=False)
 
     steps.append((step4, 'transforming input slice'))
@@ -303,6 +332,7 @@ def _process_input(input_processor: InputProcessor,
         pr = cProfile.Profile()
         pr.enable()
 
+    status = True
     try:
         num_steps = len(steps)
         dataset = input_dataset
@@ -313,13 +343,17 @@ def _process_input(input_processor: InputProcessor,
             monitor(f'step {step_index + 1} of {num_steps}: {label}...')
             dataset = transform(dataset)
             step_t2 = time.perf_counter()
+            if dataset is None:
+                monitor(f'  {label} terminated after {step_t2 - step_t1} seconds, skipping input slice')
+                status = False
+                break
             monitor(f'  {label} completed in {step_t2 - step_t1} seconds')
         total_t2 = time.perf_counter()
         monitor(f'{num_steps} steps took {total_t2 - total_t1} seconds to complete')
     except RuntimeError as e:
         monitor(f'Error: something went wrong during processing, skipping input slice: {e}')
         traceback.print_exc()
-        return False
+        status = False
     finally:
         input_dataset.close()
 
@@ -329,9 +363,9 @@ def _process_input(input_processor: InputProcessor,
         s = io.StringIO()
         ps = pstats.Stats(pr, stream=s).sort_stats('cumtime')
         ps.print_stats()
-        print(s.getvalue())
+        monitor(s.getvalue())
 
-    return True
+    return status
 
 
 def _update_cube_attrs(output_writer: DatasetIO, output_path: str,
@@ -342,10 +376,13 @@ def _update_cube_attrs(output_writer: DatasetIO, output_path: str,
         cube = update_dataset_temporal_attrs(cube, update_existing=True, in_place=True)
     else:
         cube = update_dataset_attrs(cube, update_existing=True, in_place=True)
-    global_attrs = dict(global_attrs) if global_attrs else {}
-    global_attrs.update(cube.attrs)
+    cube_attrs = dict(cube.attrs)
     cube.close()
-    output_writer.update(output_path, global_attrs=global_attrs)
+
+    if global_attrs:
+        cube_attrs.update(global_attrs)
+
+    output_writer.update(output_path, global_attrs=cube_attrs)
 
 
 def _get_sorted_input_paths(input_processor, input_paths: Sequence[str]):

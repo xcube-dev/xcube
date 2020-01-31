@@ -1,8 +1,0 @@
-command: xcube dump ${input}
-
-params:
-  - input
-
-input:
-  - test.zarr
-  - test.nc

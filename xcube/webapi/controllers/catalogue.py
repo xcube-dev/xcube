@@ -104,6 +104,9 @@ def get_dataset(ctx: ServiceContext, ds_id: str, client=None, base_url: str = No
         variable_dict["colorBarMin"] = vmin
         variable_dict["colorBarMax"] = vmax
 
+        if hasattr(var.data, '_repr_html_'):
+            variable_dict["htmlRepr"] = var.data._repr_html_()
+
         variable_dicts.append(variable_dict)
 
     dataset_dict["variables"] = variable_dicts
