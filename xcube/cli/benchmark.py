@@ -24,15 +24,36 @@ import click
 __author__ = "Norman Fomferra (Brockmann Consult GmbH)"
 
 
-@click.command(name='timeit', hidden=True)
+@click.command(name='benchmark', hidden=True)
 @click.argument('config')
 @click.option('--repeats', '-R', metavar='REPEATS', type=int, default=1,
               help="Number of repetitions")
-def timeit(config: str, repeats: int):
+def benchmark(config: str, repeats: int):
     """
-    Time an executable.
-    Record the processing time of the executable with varying parameters defined <CONFIG>.
-    Repeat the executions <REPEATS> times.
+    Measure runtime performance of an executable.
+    Record the processing time of the executable with varying parameters defined CONFIG.
+    Repeat the executions REPEATS times.
+
+    CONFIG is a YAML file that specifies the command to be executed and the parameter combinations
+    to be benchmarked. The CONFIG
+
+    \b
+    command: my_exec --p1 ${param_1} --p2 ${param_2}
+    params:
+    - param_1
+    - param_2
+    param_1: [1, 2, 3]
+    param_2: ['a', 'b']
+
+    will benchmark all combinations of my_exec:
+
+    \b
+    my_exec --p1 1 --p2 a
+    my_exec --p1 1 --p2 b
+    my_exec --p1 2 --p2 a
+    my_exec --p1 2 --p2 b
+    my_exec --p1 3 --p2 a
+    my_exec --p1 3 --p2 b
     """
 
     config_path = config
