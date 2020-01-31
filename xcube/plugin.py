@@ -87,6 +87,7 @@ def _register_cli_commands(ext_registry: extension.ExtensionRegistry):
     cli_command_names = [
         'chunk',
         'compute',
+        'benchmark',
         'dump',
         'edit',
         'extract',
@@ -99,7 +100,6 @@ def _register_cli_commands(ext_registry: extension.ExtensionRegistry):
         'rectify',
         'resample',
         'serve',
-        'timeit',
         'vars2dim',
         'verify',
     ]
