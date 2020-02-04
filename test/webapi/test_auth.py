@@ -97,7 +97,9 @@ class AuthMixinIdTokenTest(unittest.TestCase):
                         "S4zKVlH025F-bDvytuwXD-rFmYVElCg7u2uOZKqjpF3lZCWc50_F1jSGcEQZv4daQJY-3lfU6TnEQAuGWlOVRrCN" \
                         "u05nlUBFPz6G82tB_nsP1uTa8uElOzoalVttXufLIeU0FL8Sv-lC6wUJTZAFpykLNmpA-vhkSeTqMv4g"
         auth_mixin.request = RequestMock(headers={'Authorization': f'Bearer {expired_token}'})
-        auth_mixin.get_id_token()
+        with self.assertRaises(ServiceAuthError) as cm:
+            auth_mixin.get_id_token()
+        self.assertEqual('HTTP 401: Token expired (Token is expired)', f'{cm.exception}')
 
 
 class AuthMixinAccessTokenTest(unittest.TestCase):

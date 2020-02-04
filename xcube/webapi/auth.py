@@ -68,9 +68,6 @@ class AuthMixin:
             return set()
         return set(id_token.get('permissions', []))
 
-    def require_scopes(self, *required_scopes: str):
-        assert_scopes(required_scopes, self.granted_scopes)
-
     def get_access_token(self, require_auth: bool = False) -> Optional[str]:
         """Obtains the access token from the Authorization Header
         """
@@ -165,7 +162,51 @@ class AuthMixin:
                                log_message="Unable to find appropriate key")
 
 
-def assert_scopes(required_scopes: Tuple[str], granted_scopes: Set[str]):
+def assert_scopes(required_scopes: Tuple[str],
+                  granted_scopes: Set[str]):
+    """
+    Assert scopes.
+    Raise ServiceAuthError if one of *required_scopes* is not in *granted_scopes*.
+
+    :param required_scopes: The list of required scopes
+    :param granted_scopes: The set of granted scopes
+    """
+    missing_scope = _get_missing_scope(required_scopes, granted_scopes)
+    if missing_scope is not None:
+        raise ServiceAuthError('Missing permission', log_message=f'Missing permission {missing_scope}')
+
+
+def check_scopes(required_scopes: Tuple[str],
+                 granted_scopes: Set[str],
+                 is_substitute: bool = False) -> bool:
+    """
+    Check scopes.
+
+    This function is used to filter out a resource's sub-resources for which a given client has no permission.
+
+    If one of *required_scopes* is not in *granted_scopes*, fail.
+    If *granted_scopes* exists and *is_substitute*, fail too.
+    Else succeed.
+
+    :param required_scopes: The list of required scopes
+    :param granted_scopes: The set of granted scopes
+    :param is_substitute: True, if the resource to be checked is a substitute.
+    :return: True, if scopes are ok.
+    """
+    return _get_missing_scope(required_scopes, granted_scopes, is_substitute=is_substitute) is None
+
+
+def _get_missing_scope(required_scopes: Tuple[str],
+                       granted_scopes: Set[str],
+                       is_substitute: bool = False) -> Optional[str]:
     for required_scope in required_scopes:
         if required_scope not in granted_scopes:
-            raise ServiceAuthError('Missing permission', log_message=f'Missing permission {required_scope}')
+            # If the required scope is not a granted scope, fail
+            return required_scope
+    # If there are granted scopes then the client is authorized,
+    # hence fail for substitute resources (e.g. demo resources) as there is usually
+    # a better (non-demo) resource that replaces it.
+    if granted_scopes and is_substitute:
+        return '<is_substitute>'
+    # All ok.
+    return None

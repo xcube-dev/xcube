@@ -1,13 +1,13 @@
 import functools
 import json
-from typing import Dict, Tuple, List, Set, Any
+from typing import Dict, Tuple, List, Set
 
 import numpy as np
 
 from xcube.core.geom import get_dataset_bounds
 from xcube.core.timecoord import timestamp_to_iso_string
 from xcube.util.cmaps import get_cmaps
-from xcube.webapi.auth import assert_scopes
+from xcube.webapi.auth import assert_scopes, check_scopes
 from xcube.webapi.context import ServiceContext
 from xcube.webapi.controllers.places import GeoJsonFeatureCollection
 from xcube.webapi.controllers.tiles import get_tile_source_options, get_dataset_tile_url
@@ -30,19 +30,11 @@ def get_datasets(ctx: ServiceContext,
         if dataset_descriptor.get('Hidden'):
             continue
 
-        access_control = dataset_descriptor.get('AccessControl')
-        if access_control:
-            required_scopes = access_control.get('RequiredScopes', [])
-            ok = True
-            for required_scope in required_scopes:
-                if required_scope not in granted_scopes:
-                    ok = False
-                    break
-            if ok and granted_scopes:
-                if access_control.get('IsSubstitute'):
-                    ok = False
-            if not ok:
-                continue
+        access_control = dataset_descriptor.get('AccessControl', {})
+        required_scopes = access_control.get('RequiredScopes', [])
+        is_substitute = access_control.get('IsSubstitute', False)
+        if not check_scopes(required_scopes, granted_scopes, is_substitute=is_substitute):
+            continue
 
         dataset_dict = dict(id=ds_id)
 
@@ -87,10 +79,9 @@ def get_dataset(ctx: ServiceContext,
                 granted_scopes: Set[str] = None) -> Dict:
     dataset_descriptor = ctx.get_dataset_descriptor(ds_id)
 
-    access_control = dataset_descriptor.get('AccessControl')
-    if access_control:
-        required_scopes = access_control.get('RequiredScopes', [])
-        assert_scopes(required_scopes, granted_scopes or set())
+    access_control = dataset_descriptor.get('AccessControl', {})
+    required_scopes = access_control.get('RequiredScopes', [])
+    assert_scopes(required_scopes, granted_scopes or set())
 
     ds_id = dataset_descriptor['Identifier']
     ds_title = dataset_descriptor['Title']
@@ -106,6 +97,13 @@ def get_dataset(ctx: ServiceContext,
         var = ds.data_vars[var_name]
         dims = var.dims
         if len(dims) < 3 or dims[0] != 'time' or dims[-2] != 'lat' or dims[-1] != 'lon':
+            continue
+
+        variables_access_control = access_control.get('Variables', {})
+        variable_access_control = variables_access_control.get(var_name, {})
+        required_scopes = variable_access_control.get('RequiredScopes', [])
+        is_substitute = variable_access_control.get('IsSubstitute', False)
+        if not check_scopes(required_scopes, granted_scopes, is_substitute=is_substitute):
             continue
 
         variable_dict = dict(id=f'{ds_id}.{var_name}',
