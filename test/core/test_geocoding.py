@@ -81,19 +81,32 @@ class GeoCodingTest(SourceDatasetMixin, unittest.TestCase):
         self.assertEqual(False, gc.is_lon_normalized)
 
     def test_ij_bbox(self):
+        self._test_ij_bbox(conservative=False)
+
+    def test_ij_bbox_antimeridian(self):
+        self._test_ij_bbox_antimeridian(conservative=False)
+
+    def test_ij_bbox_conservative(self):
+        self._test_ij_bbox(conservative=True)
+
+    def test_ij_bbox_conservative_antimeridian(self):
+        self._test_ij_bbox_antimeridian(conservative=True)
+
+    def _test_ij_bbox(self, conservative: bool):
         x = xr.DataArray(np.linspace(10.0, 20.0, 21), dims='x')
         y = xr.DataArray(np.linspace(53.0, 58.0, 11), dims='y')
         y, x = xr.broadcast(y, x)
         gc = GeoCoding(x=x, y=y, x_name='x', y_name='y', is_geo_crs=True)
-        self.assertEqual((-1, -1, -1, -1), gc.ij_bbox((0, -50, 30, 0)))
-        self.assertEqual((0, 0, 20, 10), gc.ij_bbox((0, 50, 30, 60)))
-        self.assertEqual((0, 0, 20, 6), gc.ij_bbox((0, 50, 30, 56)))
-        self.assertEqual((10, 0, 20, 6), gc.ij_bbox((15, 50, 30, 56)))
-        self.assertEqual((10, 0, 16, 6), gc.ij_bbox((15, 50, 18, 56)))
-        self.assertEqual((10, 1, 16, 6), gc.ij_bbox((15, 53.5, 18, 56)))
-        self.assertEqual((8, 0, 18, 8), gc.ij_bbox((15, 53.5, 18, 56), ij_border=2))
+        ij_bbox = gc.ij_bbox_conservative if conservative else gc.ij_bbox
+        self.assertEqual((-1, -1, -1, -1), ij_bbox((0, -50, 30, 0)))
+        self.assertEqual((0, 0, 20, 10), ij_bbox((0, 50, 30, 60)))
+        self.assertEqual((0, 0, 20, 6), ij_bbox((0, 50, 30, 56)))
+        self.assertEqual((10, 0, 20, 6), ij_bbox((15, 50, 30, 56)))
+        self.assertEqual((10, 0, 16, 6), ij_bbox((15, 50, 18, 56)))
+        self.assertEqual((10, 1, 16, 6), ij_bbox((15, 53.5, 18, 56)))
+        self.assertEqual((8, 0, 18, 8), ij_bbox((15, 53.5, 18, 56), ij_border=2))
 
-    def test_ij_bbox_antimeridian(self):
+    def _test_ij_bbox_antimeridian(self, conservative: bool):
         def denorm(x):
             return x if x <= 180 else x - 360
 
@@ -101,15 +114,16 @@ class GeoCodingTest(SourceDatasetMixin, unittest.TestCase):
         lat = xr.DataArray(np.linspace(53.0, 58.0, 11), dims='rows')
         lat, lon = xr.broadcast(lat, lon)
         gc = GeoCoding(x=lon, y=lat, x_name='lon', y_name='lat', is_lon_normalized=True)
-        self.assertEqual((-1, -1, -1, -1), gc.ij_bbox((0, -50, 30, 0)))
-        self.assertEqual((0, 0, 20, 10), gc.ij_bbox((denorm(160), 50, denorm(200), 60)))
-        self.assertEqual((0, 0, 20, 6), gc.ij_bbox((denorm(160), 50, denorm(200), 56)))
-        self.assertEqual((10, 0, 20, 6), gc.ij_bbox((denorm(180), 50, denorm(200), 56)))
-        self.assertEqual((10, 0, 16, 6), gc.ij_bbox((denorm(180), 50, denorm(183), 56)))
-        self.assertEqual((10, 1, 16, 6), gc.ij_bbox((denorm(180), 53.5, denorm(183), 56)))
-        self.assertEqual((8, 0, 18, 8), gc.ij_bbox((denorm(180), 53.5, denorm(183), 56), ij_border=2))
-        self.assertEqual((12, 1, 20, 6), gc.ij_bbox((denorm(181), 53.5, denorm(200), 56)))
-        self.assertEqual((12, 1, 18, 6), gc.ij_bbox((denorm(181), 53.5, denorm(184), 56)))
+        ij_bbox = gc.ij_bbox_conservative if conservative else gc.ij_bbox
+        self.assertEqual((-1, -1, -1, -1), ij_bbox((0, -50, 30, 0)))
+        self.assertEqual((0, 0, 20, 10), ij_bbox((denorm(160), 50, denorm(200), 60)))
+        self.assertEqual((0, 0, 20, 6), ij_bbox((denorm(160), 50, denorm(200), 56)))
+        self.assertEqual((10, 0, 20, 6), ij_bbox((denorm(180), 50, denorm(200), 56)))
+        self.assertEqual((10, 0, 16, 6), ij_bbox((denorm(180), 50, denorm(183), 56)))
+        self.assertEqual((10, 1, 16, 6), ij_bbox((denorm(180), 53.5, denorm(183), 56)))
+        self.assertEqual((8, 0, 18, 8), ij_bbox((denorm(180), 53.5, denorm(183), 56), ij_border=2))
+        self.assertEqual((12, 1, 20, 6), ij_bbox((denorm(181), 53.5, denorm(200), 56)))
+        self.assertEqual((12, 1, 18, 6), ij_bbox((denorm(181), 53.5, denorm(184), 56)))
 
     def test_ij_bboxes(self):
         x = xr.DataArray(np.linspace(10.0, 20.0, 21), dims='x')
