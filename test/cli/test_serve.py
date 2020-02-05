@@ -1,4 +1,4 @@
-from test.cli.test_cli import CliDataTest
+from test.cli.helpers import CliDataTest
 
 from xcube.cli.serve import VIEWER_ENV_VAR
 from xcube.cli.serve import main

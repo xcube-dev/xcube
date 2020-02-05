@@ -3,7 +3,7 @@ from typing import List
 
 import xarray as xr
 
-from test.cli.test_cli import CliDataTest, TEST_ZARR_DIR
+from test.cli.helpers import CliDataTest, TEST_ZARR_DIR
 
 OUTPUT_PATH = 'out.zarr'
 

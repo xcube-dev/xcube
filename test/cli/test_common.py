@@ -2,7 +2,7 @@ import unittest
 
 import click
 
-from xcube.cli.common import parse_cli_kwargs, handle_cli_exception
+from xcube.cli.common import parse_cli_kwargs, handle_cli_exception, parse_cli_sequence
 
 
 class ClickUtilTest(unittest.TestCase):
@@ -25,6 +25,69 @@ class ClickUtilTest(unittest.TestCase):
             parse_cli_kwargs("9==2")
         self.assertEqual("Invalid value: '9==2'",
                          f"{cm.exception}")
+
+    def test_parse_cli_sequence(self):
+        def is_pos_int(v):
+            if v <= 0:
+                raise ValueError('must be positve')
+
+        self.assertEqual((512, 1024),
+                         parse_cli_sequence('512, 1024',
+                                            metavar='X',
+                                            item_parser=int))
+        self.assertEqual((11, 11, 11),
+                         parse_cli_sequence('11',
+                                            metavar='X',
+                                            item_parser=int,
+                                            num_items=3))
+        self.assertEqual((11, 12, 13),
+                         parse_cli_sequence(['11', '12 ', ' 13'],
+                                            metavar='X',
+                                            item_parser=int))
+        self.assertEqual(None,
+                         parse_cli_sequence(None, allow_none=True))
+        with self.assertRaises(ValueError) as cm:
+            parse_cli_sequence(None,
+                               metavar='X',
+                               allow_none=False)
+        self.assertEqual("X must be given", f'{cm.exception}')
+        with self.assertRaises(ValueError) as cm:
+            parse_cli_sequence('11',
+                               metavar='X',
+                               item_parser=int,
+                               num_items_min=3,
+                               item_plural_name='lollies')
+        self.assertEqual("X must have at least 3 lollies separated by ','", f'{cm.exception}')
+        with self.assertRaises(ValueError) as cm:
+            parse_cli_sequence('11,12,13',
+                               metavar='X',
+                               item_parser=int,
+                               num_items_max=2,
+                               item_plural_name='lollies')
+        self.assertEqual("X must have no more than 2 lollies separated by ','", f'{cm.exception}')
+        with self.assertRaises(ValueError) as cm:
+            parse_cli_sequence('11,12,13',
+                               metavar='X',
+                               item_parser=int,
+                               num_items=2,
+                               item_plural_name='lollies')
+        self.assertEqual("X must have 2 lollies separated by ','", f'{cm.exception}')
+        with self.assertRaises(ValueError) as cm:
+            parse_cli_sequence('11,,13',
+                               metavar='X',
+                               item_parser=int,
+                               num_items=3,
+                               item_plural_name='lollies',
+                               allow_empty_items=False)
+        self.assertEqual("lollies in X must not be empty", f'{cm.exception}')
+        with self.assertRaises(ValueError) as cm:
+            parse_cli_sequence('11,12,-13',
+                               metavar='X',
+                               item_parser=int,
+                               item_validator=is_pos_int,
+                               num_items=3,
+                               item_plural_name='lollies')
+        self.assertEqual("Invalid lollies in X found: must be positve", f'{cm.exception}')
 
     def test_handle_cli_exception(self):
         self.assertEqual(1, handle_cli_exception(click.Abort(), traceback_mode=True))
