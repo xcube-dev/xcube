@@ -68,7 +68,8 @@ DEFAULT_INTERPOLATION_KIND = 'linear'
                    f'Defaults to {DEFAULT_RESAMPLING_METHOD!r}.')
 @click.option('--frequency', '-F',
               help='Temporal aggregation frequency. Use format "<count><offset>" '
-                   "where <offset> is one of 'H', 'D', 'W', 'M', 'Q', 'Y'. "
+                   "where <offset> is one of 'H', 'D', 'W', 'M', 'Q', 'Y'."
+                   "Use 'ALL' to set a single time interval englobing the whole dataset" 
                    f'Defaults to {DEFAULT_RESAMPLING_FREQUENCY!r}.')
 @click.option('--offset', '-O',
               help='Offset used to adjust the resampled time labels. Uses same syntax as frequency. '
