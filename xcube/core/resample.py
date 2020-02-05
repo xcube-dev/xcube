@@ -22,6 +22,7 @@
 from typing import Dict, Any, Sequence, Union
 
 import xarray as xr
+import numpy as np
 
 from xcube.core.schema import CubeSchema
 from xcube.core.select import select_vars
@@ -63,6 +64,11 @@ def resample_in_time(cube: xr.Dataset,
 
     if var_names:
         cube = select_vars(cube, var_names)
+        
+    if frequency == 'ALL':
+        time_gap = np.array(cube.time[-1]) - np.array(cube.time[0])
+        days = int((np.timedelta64(time_gap, 'D')/np.timedelta64(1, 'D'))+1)
+        frequency = ''.join([str(days), 'D'])
 
     resampler = cube.resample(skipna=True,
                               closed='left',
