@@ -300,10 +300,15 @@ class ServiceContext:
         raise ServiceResourceNotFoundError(f'Place group "{place_group_id}" not found')
 
     def get_global_place_groups(self, base_url: str, load_features=False) -> List[Dict]:
-        return self._load_place_groups(self._config.get("PlaceGroups", []), base_url, is_global=True,
+        return self._load_place_groups(self._config.get("PlaceGroups", []),
+                                       base_url,
+                                       is_global=True,
                                        load_features=load_features)
 
-    def get_global_place_group(self, place_group_id: str, base_url: str, load_features: bool = False) -> Dict:
+    def get_global_place_group(self,
+                               place_group_id: str,
+                               base_url: str,
+                               load_features: bool = False) -> Dict:
         place_group_descriptor = self._get_place_group_descriptor(place_group_id)
         return self._load_place_group(place_group_descriptor, base_url, is_global=True, load_features=load_features)
 
@@ -321,12 +326,17 @@ class ServiceContext:
                            load_features: bool = False) -> List[Dict]:
         place_groups = []
         for place_group_descriptor in place_group_descriptors:
-            place_group = self._load_place_group(place_group_descriptor, base_url, is_global=is_global,
+            place_group = self._load_place_group(place_group_descriptor,
+                                                 base_url,
+                                                 is_global=is_global,
                                                  load_features=load_features)
             place_groups.append(place_group)
         return place_groups
 
-    def _load_place_group(self, place_group_descriptor: Dict[str, Any], base_url: str, is_global: bool = False,
+    def _load_place_group(self,
+                          place_group_descriptor: Dict[str, Any],
+                          base_url: str,
+                          is_global: bool = False,
                           load_features: bool = False) -> Dict[str, Any]:
         place_group_id = place_group_descriptor.get("PlaceGroupRef")
         if place_group_id:

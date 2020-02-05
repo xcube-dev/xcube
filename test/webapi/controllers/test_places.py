@@ -9,29 +9,29 @@ class FeaturesControllerTest(unittest.TestCase):
 
     def test_find_places_all(self):
         ctx = new_test_service_context()
-        places = find_places(ctx, "all")
+        places = find_places(ctx, "all", "http://localhost:9090")
         self._assertPlaceGroup(places, 6, {'0', '1', '2', '3', '4', '5'})
 
     def test_find_places_by_box(self):
         ctx = new_test_service_context()
-        places = find_places(ctx, "all", box_coords="-1,49,2,55")
+        places = find_places(ctx, "all", "http://localhost:9090", box_coords="-1,49,2,55")
         self._assertPlaceGroup(places, 2, {'0', '3'})
 
         with self.assertRaises(ServiceBadRequestError) as cm:
-            find_places(ctx, "all", box_coords="-1,49,55")
+            find_places(ctx, "all", "http://localhost:9090", box_coords="-1,49,55")
         self.assertEqual("HTTP 400: Received invalid bounding box geometry", f"{cm.exception}")
 
         with self.assertRaises(ServiceBadRequestError) as cm:
-            find_places(ctx, "all", box_coords="-1,49,x,55")
+            find_places(ctx, "all", "http://localhost:9090", box_coords="-1,49,x,55")
         self.assertEqual("HTTP 400: Received invalid bounding box geometry", f"{cm.exception}")
 
     def test_find_places_by_wkt(self):
         ctx = new_test_service_context()
-        places = find_places(ctx, "all", geom_wkt="POLYGON ((2 49, 2 55, -1 55, -1 49, 2 49))")
+        places = find_places(ctx, "all", "http://localhost:9090", geom_wkt="POLYGON ((2 49, 2 55, -1 55, -1 49, 2 49))")
         self._assertPlaceGroup(places, 2, {'0', '3'})
 
         with self.assertRaises(ServiceBadRequestError) as cm:
-            find_places(ctx, "all", geom_wkt="POLYGLON ((2 49, 2 55, -1 55, -1 49, 2 49))")
+            find_places(ctx, "all", "http://localhost:9090", geom_wkt="POLYGLON ((2 49, 2 55, -1 55, -1 49, 2 49))")
         self.assertEqual("HTTP 400: Received invalid geometry WKT", f"{cm.exception}")
 
     def test_find_places_by_geojson(self):
@@ -39,25 +39,25 @@ class FeaturesControllerTest(unittest.TestCase):
 
         geojson_obj = {'type': 'Polygon',
                        'coordinates': (((2.0, 49.0), (2.0, 55.0), (-1.0, 55.0), (-1.0, 49.0), (2.0, 49.0)),)}
-        places = find_places(ctx, "all", geojson_obj=geojson_obj)
+        places = find_places(ctx, "all", "http://localhost:9090", geojson_obj=geojson_obj)
         self._assertPlaceGroup(places, 2, {'0', '3'})
 
         geojson_obj = {'type': 'Feature', 'properties': {}, 'geometry': geojson_obj}
-        places = find_places(ctx, "all", geojson_obj=geojson_obj)
+        places = find_places(ctx, "all", "http://localhost:9090", geojson_obj=geojson_obj)
         self._assertPlaceGroup(places, 2, {'0', '3'})
 
         geojson_obj = {'type': 'FeatureCollection', 'features': [geojson_obj]}
-        places = find_places(ctx, "all", geojson_obj=geojson_obj)
+        places = find_places(ctx, "all", "http://localhost:9090", geojson_obj=geojson_obj)
         self._assertPlaceGroup(places, 2, {'0', '3'})
 
         with self.assertRaises(ServiceBadRequestError) as cm:
             geojson_obj = {'type': 'FeatureCollection', 'features': []}
-            find_places(ctx, "all", geojson_obj=geojson_obj)
+            find_places(ctx, "all", "http://localhost:9090", geojson_obj=geojson_obj)
         self.assertEqual("HTTP 400: Received invalid GeoJSON object", f"{cm.exception}")
 
     def test_find_dataset_features(self):
         ctx = new_test_service_context()
-        places = find_dataset_places(ctx, "all", "demo")
+        places = find_dataset_places(ctx, "all", "demo", "http://localhost:8080")
         self._assertPlaceGroup(places, 3, {'0', '1', '2'})
 
     def _assertPlaceGroup(self, feature_collection, expected_count, expected_ids):

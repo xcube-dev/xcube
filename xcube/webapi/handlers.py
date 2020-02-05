@@ -144,7 +144,7 @@ class GetDatasetHandler(ServiceRequestHandler):
 class GetDatasetPlaceGroupsHandler(ServiceRequestHandler):
 
     def get(self, ds_id: str):
-        response = get_dataset_place_groups(self.service_context, ds_id)
+        response = get_dataset_place_groups(self.service_context, ds_id, self.base_url)
         self.set_header('Content-Type', 'application/json')
         self.write(json.dumps(response))
 
@@ -382,7 +382,7 @@ class GetPlaceGroupsHandler(ServiceRequestHandler):
 
     # noinspection PyShadowingBuiltins
     def get(self):
-        response = self.service_context.get_global_place_groups()
+        response = self.service_context.get_global_place_groups(self.base_url)
         self.set_header('Content-Type', "application/json")
         self.write(json.dumps(response, indent=2))
 
@@ -400,6 +400,7 @@ class FindPlacesHandler(ServiceRequestHandler):
             raise ServiceBadRequestError('Only one of "geom" and "bbox" may be given')
         response = find_places(self.service_context,
                                place_group_id,
+                               self.base_url,
                                geom_wkt=geom_wkt, box_coords=box_coords,
                                query_expr=query_expr, comb_op=comb_op)
         self.set_header('Content-Type', "application/json")
@@ -412,6 +413,7 @@ class FindPlacesHandler(ServiceRequestHandler):
         geojson_obj = self.get_body_as_json_object()
         response = find_places(self.service_context,
                                place_group_id,
+                               self.base_url,
                                geojson_obj=geojson_obj,
                                query_expr=query_expr, comb_op=comb_op)
         self.set_header('Content-Type', "application/json")
@@ -426,8 +428,11 @@ class FindDatasetPlacesHandler(ServiceRequestHandler):
         query_expr = self.params.get_query_argument("query", None)
         comb_op = self.params.get_query_argument("comb", "and")
         response = find_dataset_places(self.service_context,
-                                       place_group_id, ds_id,
-                                       query_expr=query_expr, comb_op=comb_op)
+                                       place_group_id,
+                                       ds_id,
+                                       self.base_url,
+                                       query_expr=query_expr,
+                                       comb_op=comb_op)
         self.set_header('Content-Type', "application/json")
         self.write(json.dumps(response, indent=2))
 
