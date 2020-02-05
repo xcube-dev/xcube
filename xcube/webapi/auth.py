@@ -2,12 +2,11 @@
 """
 
 import json
-from typing import Optional, Mapping, List, Dict, Any, Set, Tuple
+from typing import Optional, Mapping, List, Dict, Any, Set
 
 import jwt
 import requests
 from jwt.algorithms import RSAAlgorithm
-
 from xcube.webapi.errors import ServiceAuthError, ServiceConfigError
 
 
@@ -162,7 +161,7 @@ class AuthMixin:
                                log_message="Unable to find appropriate key")
 
 
-def assert_scopes(required_scopes: Tuple[str],
+def assert_scopes(required_scopes: Set[str],
                   granted_scopes: Set[str]):
     """
     Assert scopes.
@@ -176,7 +175,7 @@ def assert_scopes(required_scopes: Tuple[str],
         raise ServiceAuthError('Missing permission', log_message=f'Missing permission {missing_scope}')
 
 
-def check_scopes(required_scopes: Tuple[str],
+def check_scopes(required_scopes: Set[str],
                  granted_scopes: Set[str],
                  is_substitute: bool = False) -> bool:
     """
@@ -196,7 +195,7 @@ def check_scopes(required_scopes: Tuple[str],
     return _get_missing_scope(required_scopes, granted_scopes, is_substitute=is_substitute) is None
 
 
-def _get_missing_scope(required_scopes: Tuple[str],
+def _get_missing_scope(required_scopes: Set[str],
                        granted_scopes: Set[str],
                        is_substitute: bool = False) -> Optional[str]:
     for required_scope in required_scopes:

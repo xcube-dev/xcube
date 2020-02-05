@@ -30,11 +30,11 @@ def get_datasets(ctx: ServiceContext,
         if dataset_descriptor.get('Hidden'):
             continue
 
-        access_control = dataset_descriptor.get('AccessControl', {})
-        required_scopes = access_control.get('RequiredScopes', [])
-        is_substitute = access_control.get('IsSubstitute', False)
-        if not check_scopes(required_scopes, granted_scopes, is_substitute=is_substitute):
-            continue
+        if 'read:dataset:*' not in granted_scopes:
+            required_scopes = ctx.get_required_dataset_scopes(dataset_descriptor)
+            is_substitute = dataset_descriptor.get('AccessControl', {}).get('IsSubstitute', False)
+            if not check_scopes(required_scopes, granted_scopes, is_substitute=is_substitute):
+                continue
 
         dataset_dict = dict(id=ds_id)
 
@@ -78,12 +78,12 @@ def get_dataset(ctx: ServiceContext,
                 base_url: str = None,
                 granted_scopes: Set[str] = None) -> Dict:
     dataset_descriptor = ctx.get_dataset_descriptor(ds_id)
-
-    access_control = dataset_descriptor.get('AccessControl', {})
-    required_scopes = access_control.get('RequiredScopes', [])
-    assert_scopes(required_scopes, granted_scopes or set())
-
     ds_id = dataset_descriptor['Identifier']
+
+    if 'read:dataset:*' not in granted_scopes:
+        required_scopes = ctx.get_required_dataset_scopes(dataset_descriptor)
+        assert_scopes(required_scopes, granted_scopes or set())
+
     ds_title = dataset_descriptor['Title']
     dataset_dict = dict(id=ds_id, title=ds_title)
 
@@ -99,12 +99,10 @@ def get_dataset(ctx: ServiceContext,
         if len(dims) < 3 or dims[0] != 'time' or dims[-2] != 'lat' or dims[-1] != 'lon':
             continue
 
-        variables_access_control = access_control.get('Variables', {})
-        variable_access_control = variables_access_control.get(var_name, {})
-        required_scopes = variable_access_control.get('RequiredScopes', [])
-        is_substitute = variable_access_control.get('IsSubstitute', False)
-        if not check_scopes(required_scopes, granted_scopes, is_substitute=is_substitute):
-            continue
+        if 'read:variable:*' not in granted_scopes:
+            required_scopes = ctx.get_required_variable_scopes(dataset_descriptor, var_name)
+            if not check_scopes(required_scopes, granted_scopes):
+                continue
 
         variable_dict = dict(id=f'{ds_id}.{var_name}',
                              name=var_name,

@@ -24,7 +24,7 @@ import logging
 import os
 import os.path
 import threading
-from typing import Any, Dict, List, Optional, Tuple, Callable, Collection
+from typing import Any, Dict, List, Optional, Tuple, Callable, Collection, Set
 
 import fiona
 import numpy as np
@@ -32,19 +32,18 @@ import pandas as pd
 import s3fs
 import xarray as xr
 import zarr
-
-from xcube.core.dsio import guess_dataset_format
-from xcube.core.verify import assert_cube
 from xcube.constants import FORMAT_NAME_ZARR, FORMAT_NAME_NETCDF4, FORMAT_NAME_LEVELS
-from xcube.util.cmaps import get_cmap
-from xcube.util.perf import measure_time
-from xcube.version import version
-from xcube.util.cache import MemoryCacheStore, Cache
-from xcube.webapi.defaults import DEFAULT_CMAP_CBAR, DEFAULT_CMAP_VMIN, DEFAULT_CMAP_VMAX, DEFAULT_TRACE_PERF
-from xcube.webapi.errors import ServiceConfigError, ServiceError, ServiceBadRequestError, ServiceResourceNotFoundError
-from xcube.util.tilegrid import TileGrid
+from xcube.core.dsio import guess_dataset_format
 from xcube.core.mldataset import FileStorageMultiLevelDataset, BaseMultiLevelDataset, MultiLevelDataset, \
     ComputedMultiLevelDataset, ObjectStorageMultiLevelDataset
+from xcube.core.verify import assert_cube
+from xcube.util.cache import MemoryCacheStore, Cache
+from xcube.util.cmaps import get_cmap
+from xcube.util.perf import measure_time
+from xcube.util.tilegrid import TileGrid
+from xcube.version import version
+from xcube.webapi.defaults import DEFAULT_CMAP_CBAR, DEFAULT_CMAP_VMIN, DEFAULT_CMAP_VMAX, DEFAULT_TRACE_PERF
+from xcube.webapi.errors import ServiceConfigError, ServiceBadRequestError, ServiceResourceNotFoundError
 from xcube.webapi.reqparams import RequestParams
 
 COMPUTE_DATASET = 'compute_dataset'
@@ -145,6 +144,42 @@ class ServiceContext:
     @property
     def trace_perf(self) -> bool:
         return self._trace_perf
+
+    @property
+    def access_control(self) -> Dict[str, Any]:
+        return dict(self._config.get('AccessControl', {}))
+
+    @property
+    def required_scopes(self) -> List[str]:
+        return self.access_control.get('RequiredScopes', [])
+
+    def get_required_dataset_scopes(self,
+                                    dataset_descriptor: DatasetDescriptor) -> Set[str]:
+        return self._get_required_scopes(dataset_descriptor, 'read:dataset', 'Dataset',
+                                         dataset_descriptor['Identifier'])
+
+    def get_required_variable_scopes(self,
+                                     dataset_descriptor: DatasetDescriptor,
+                                     var_name: str) -> Set[str]:
+        return self._get_required_scopes(dataset_descriptor, 'read:variable', 'Variable',
+                                         var_name)
+
+    def _get_required_scopes(self,
+                             dataset_descriptor: DatasetDescriptor,
+                             base_scope: str,
+                             value_name: str,
+                             value: str) -> Set[str]:
+        base_scope_prefix = base_scope + ':'
+        pattern_scope = base_scope_prefix + '{' + value_name + '}'
+        dataset_access_control = dataset_descriptor.get('AccessControl', {})
+        dataset_required_scopes = dataset_access_control.get('RequiredScopes', [])
+        dataset_required_scopes = set(self.required_scopes + dataset_required_scopes)
+        dataset_required_scopes = {scope for scope in dataset_required_scopes
+                                   if scope == base_scope or scope.startswith(base_scope_prefix)}
+        if pattern_scope in dataset_required_scopes:
+            dataset_required_scopes.remove(pattern_scope)
+            dataset_required_scopes.add(base_scope_prefix + value)
+        return dataset_required_scopes
 
     def get_service_url(self, base_url, *path: str):
         if self._prefix:
