@@ -20,6 +20,8 @@ def get_datasets(ctx: ServiceContext,
                  point: Tuple[float, float] = None,
                  base_url: str = None,
                  granted_scopes: Set[str] = None) -> Dict:
+    granted_scopes = granted_scopes or set()
+
     dataset_descriptors = ctx.get_dataset_descriptors()
 
     dataset_dicts = list()
@@ -77,6 +79,8 @@ def get_dataset(ctx: ServiceContext,
                 client=None,
                 base_url: str = None,
                 granted_scopes: Set[str] = None) -> Dict:
+    granted_scopes = granted_scopes or set()
+
     dataset_descriptor = ctx.get_dataset_descriptor(ds_id)
     ds_id = dataset_descriptor['Identifier']
 
