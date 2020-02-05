@@ -1,4 +1,4 @@
-from test.cli.test_cli import CliDataTest
+from test.cli.helpers import CliDataTest
 from test.core.test_optimize import TEST_CUBE, TEST_CUBE_ZARR, TEST_CUBE_FILE_SET, list_file_set
 from xcube.core.dsio import rimraf
 
