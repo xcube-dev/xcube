@@ -8,6 +8,7 @@ Datasets:
     Title: xcube-server Demonstration L3 Cube
     FileSystem: memory
     Path: script.py
+    Function: compute_dataset
     InputDatasets: ["demo"]
     InputParameters:
       period: "1W"

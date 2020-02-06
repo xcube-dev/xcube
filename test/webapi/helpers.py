@@ -9,17 +9,10 @@ from xcube.webapi.errors import ServiceBadRequestError
 from xcube.webapi.reqparams import RequestParams
 
 
-def new_test_service_context(ml_dataset_openers: Dict[str, MultiLevelDatasetOpener] = None) -> ServiceContext:
+def new_test_service_context(config_file_name: str = 'config.yml',
+                             ml_dataset_openers: Dict[str, MultiLevelDatasetOpener] = None) -> ServiceContext:
     ctx = ServiceContext(base_dir=get_res_test_dir(), ml_dataset_openers=ml_dataset_openers)
-    config_file = os.path.join(ctx.base_dir, 'config.yml')
-    with open(config_file) as fp:
-        ctx.config = yaml.safe_load(fp)
-    return ctx
-
-
-def new_demo_service_context(ml_dataset_openers: Dict[str, MultiLevelDatasetOpener] = None) -> ServiceContext:
-    ctx = ServiceContext(base_dir=get_res_demo_dir(), ml_dataset_openers=ml_dataset_openers)
-    config_file = os.path.join(ctx.base_dir, 'config.yml')
+    config_file = os.path.join(ctx.base_dir, config_file_name)
     with open(config_file) as fp:
         ctx.config = yaml.safe_load(fp)
     return ctx

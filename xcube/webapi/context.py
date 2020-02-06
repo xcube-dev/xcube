@@ -170,7 +170,10 @@ class ServiceContext:
 
     def get_variable_for_z(self, ds_id: str, var_name: str, z_index: int) -> xr.DataArray:
         ml_dataset = self.get_ml_dataset(ds_id)
-        dataset = ml_dataset.get_dataset(ml_dataset.num_levels - 1 - z_index)
+        index = ml_dataset.num_levels - 1 - z_index
+        if index < 0 or index >= ml_dataset.num_levels:
+            raise ServiceResourceNotFoundError(f'Variable "{var_name}" has no z-index {z_index} in dataset "{ds_id}"')
+        dataset = ml_dataset.get_dataset(index)
         if var_name not in dataset:
             raise ServiceResourceNotFoundError(f'Variable "{var_name}" not found in dataset "{ds_id}"')
         return dataset[var_name]
