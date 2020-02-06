@@ -141,7 +141,7 @@ class CombinedMultiLevelDataset(LazyMultiLevelDataset):
     :param ml_datasets: The multi-level datasets to be combined. At least two must be provided.
     :param combiner_function: A function used to combine the datasets. It receives a list of
         datasets (``xarray.Dataset`` instances) and *combiner_params* as keyword arguments.
-        Defaults to function ``combine_dataset_variables()``.
+        Defaults to function ``xarray.merge()`` with default parameters.
     :param combiner_params: Parameters to the *combiner_function* passed as keyword arguments.
     """
 
@@ -153,7 +153,7 @@ class CombinedMultiLevelDataset(LazyMultiLevelDataset):
         if not ml_datasets or len(ml_datasets) < 2:
             raise ValueError('ml_datasets must have at least two elements')
         self._ml_datasets = ml_datasets
-        self._combiner_function = combiner_function or combine_dataset_variables
+        self._combiner_function = combiner_function or xr.merge
         self._combiner_params = combiner_params or {}
 
     def _get_tile_grid_lazily(self) -> TileGrid:
@@ -166,13 +166,6 @@ class CombinedMultiLevelDataset(LazyMultiLevelDataset):
     def close(self):
         for ml_dataset in self._ml_datasets:
             ml_dataset.close()
-
-
-def combine_dataset_variables(datasets: Sequence[xr.Dataset]) -> xr.Dataset:
-    dataset = datasets[0].copy()
-    for i in range(1, len(datasets)):
-        dataset.update(datasets[i])
-    return dataset
 
 
 class FileStorageMultiLevelDataset(LazyMultiLevelDataset):
