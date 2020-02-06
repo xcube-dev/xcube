@@ -41,6 +41,10 @@
 
 ### Other
 
+* The `xcube serve` API operations `datasets/` and `datasets/{ds_id}` now also
+  return the metadata attributes of a given dataset and it variables in a property
+  named `attrs`. For variables we added a new metadata property `htmlRepr` that is
+  a string returned by a variable's `var.data._repr_html_()` method, if any.
 * Renamed default log file for `xcube serve` command to `xcube-serve.log`.
 * `xcube gen` now immediately flushes logging output to standard out
   

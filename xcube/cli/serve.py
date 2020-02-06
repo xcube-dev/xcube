@@ -92,6 +92,7 @@ def serve(cube: List[str],
     """
 
     from xcube.cli.common import parse_cli_kwargs
+    import os.path
 
     prefix = prefix or name
 
@@ -109,7 +110,7 @@ def serve(cube: List[str],
 
     from xcube.webapi.app import new_application
     from xcube.webapi.service import Service
-    service = Service(new_application(prefix),
+    service = Service(new_application(prefix, os.path.dirname(config)),
                       prefix=prefix,
                       port=port,
                       address=address,
