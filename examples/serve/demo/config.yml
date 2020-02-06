@@ -6,6 +6,12 @@ Datasets:
     Path: cube-1-250-250.zarr
     Style: default
     TimeSeriesDataset: local_ts
+    Augmentation:
+      Path: "compute_extra_vars.py"
+      Function: "compute_variables"
+      InputParameters:
+        factor_chl: 0.2
+        factor_tsm: 0.7
     PlaceGroups:
       - PlaceGroupRef: inside-cube
       - PlaceGroupRef: outside-cube

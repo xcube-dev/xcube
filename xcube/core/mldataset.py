@@ -119,7 +119,7 @@ class LazyMultiLevelDataset(MultiLevelDataset, metaclass=ABCMeta):
         :return: the dataset for the level at *index*.
         """
 
-    def _get_tile_grid_lazily(self):
+    def _get_tile_grid_lazily(self) -> TileGrid:
         """
         Retrieve, i.e. read or compute, the tile grid used by the multi-level dataset.
 
@@ -132,6 +132,47 @@ class LazyMultiLevelDataset(MultiLevelDataset, metaclass=ABCMeta):
             for dataset in self._level_datasets.values():
                 if dataset is not None:
                     dataset.close()
+
+
+class CombinedMultiLevelDataset(LazyMultiLevelDataset):
+    """
+    A multi-level dataset that is a combination of other multi-level datasets.
+
+    :param ml_datasets: The multi-level datasets to be combined. At least two must be provided.
+    :param combiner_function: A function used to combine the datasets. It receives a list of
+        datasets (``xarray.Dataset`` instances) and *combiner_params* as keyword arguments.
+        Defaults to function ``combine_dataset_variables()``.
+    :param combiner_params: Parameters to the *combiner_function* passed as keyword arguments.
+    """
+
+    def __init__(self,
+                 ml_datasets: Sequence[MultiLevelDataset],
+                 combiner_function: Callable = None,
+                 combiner_params: Dict[str, Any] = None):
+        super().__init__()
+        if not ml_datasets or len(ml_datasets) < 2:
+            raise ValueError('ml_datasets must have at least two elements')
+        self._ml_datasets = ml_datasets
+        self._combiner_function = combiner_function or combine_dataset_variables
+        self._combiner_params = combiner_params or {}
+
+    def _get_tile_grid_lazily(self) -> TileGrid:
+        return self._ml_datasets[0].tile_grid
+
+    def _get_dataset_lazily(self, index: int, **kwargs) -> xr.Dataset:
+        datasets = [ml_dataset.get_dataset(index) for ml_dataset in self._ml_datasets]
+        return self._combiner_function(datasets, **self._combiner_params)
+
+    def close(self):
+        for ml_dataset in self._ml_datasets:
+            ml_dataset.close()
+
+
+def combine_dataset_variables(datasets: Sequence[xr.Dataset]) -> xr.Dataset:
+    dataset = datasets[0].copy()
+    for i in range(1, len(datasets)):
+        dataset.update(datasets[i])
+    return dataset
 
 
 class FileStorageMultiLevelDataset(LazyMultiLevelDataset):
@@ -384,7 +425,7 @@ class ComputedMultiLevelDataset(LazyMultiLevelDataset):
         return assert_cube(computed_value, name=self._ds_id)
 
 
-def _get_dataset_tile_grid(dataset: xr.Dataset, num_levels: int = None):
+def _get_dataset_tile_grid(dataset: xr.Dataset, num_levels: int = None) -> TileGrid:
     geo_extent = get_dataset_bounds(dataset)
     inv_y = float(dataset.lat[0]) < float(dataset.lat[-1])
     width, height, tile_width, tile_height = _get_cube_spatial_sizes(dataset)
