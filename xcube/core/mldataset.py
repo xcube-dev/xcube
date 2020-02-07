@@ -365,17 +365,16 @@ class ComputedMultiLevelDataset(LazyMultiLevelDataset):
             raise exception_type(
                 f"Failed to read Python code for in-memory dataset {ds_id!r} from {script_path!r}: {e}") from e
 
-        local_env = dict()
-        global_env = None
+        global_env = dict()
         try:
-            exec(python_code, global_env, local_env)
+            exec(python_code, global_env, None)
         except Exception as e:
             raise exception_type(f"Failed to compute in-memory dataset {ds_id!r} from {script_path!r}: {e}") from e
 
         if not callable_name or not callable_name.isidentifier():
             raise exception_type(f"Invalid dataset descriptor {ds_id!r}: "
                                  f"{callable_name!r} is not a valid Python identifier")
-        callable_obj = local_env.get(callable_name)
+        callable_obj = global_env.get(callable_name)
         if callable_obj is None:
             raise exception_type(f"Invalid in-memory dataset descriptor {ds_id!r}: "
                                  f"no callable named {callable_name!r} found in {script_path!r}")
