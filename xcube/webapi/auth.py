@@ -119,10 +119,7 @@ class AuthMixin:
 
         # TODO: read jwks from cache
         response = requests.get(auth_config.well_known_jwks)
-        print(response.content)
         jwks = json.loads(response.content)
-
-        print(json.dumps(jwks))
 
         rsa_key = {}
         for key in jwks["keys"]:

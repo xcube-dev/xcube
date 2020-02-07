@@ -4,6 +4,7 @@ import unittest
 import xarray as xr
 
 from test.webapi.helpers import new_test_service_context
+from xcube.core.mldataset import MultiLevelDataset
 from xcube.webapi.errors import ServiceResourceNotFoundError
 
 
@@ -14,6 +15,25 @@ class ServiceContextTest(unittest.TestCase):
         ds = ctx.get_dataset('demo')
         self.assertIsInstance(ds, xr.Dataset)
 
+        ml_ds = ctx.get_ml_dataset('demo')
+        self.assertIsInstance(ml_ds, MultiLevelDataset)
+        self.assertIs(3, ml_ds.num_levels)
+        self.assertIs(ds, ml_ds.get_dataset(0))
+
+        for var_name in ('conc_chl', 'conc_tsm'):
+            for z in range(ml_ds.num_levels):
+                conc_chl_z = ctx.get_variable_for_z('demo', var_name, z)
+                self.assertIsInstance(conc_chl_z, xr.DataArray)
+            with self.assertRaises(ServiceResourceNotFoundError) as cm:
+                ctx.get_variable_for_z('demo', var_name, 3)
+            self.assertEqual(404, cm.exception.status_code)
+            self.assertEqual(f'Variable "{var_name}" has no z-index 3 in dataset "demo"', cm.exception.reason)
+
+        with self.assertRaises(ServiceResourceNotFoundError) as cm:
+            ctx.get_variable_for_z('demo', 'conc_ys', 0)
+        self.assertEqual(404, cm.exception.status_code)
+        self.assertEqual('Variable "conc_ys" not found in dataset "demo"', cm.exception.reason)
+
         with self.assertRaises(ServiceResourceNotFoundError) as cm:
             ctx.get_dataset('demox')
         self.assertEqual(404, cm.exception.status_code)
@@ -23,6 +43,22 @@ class ServiceContextTest(unittest.TestCase):
             ctx.get_dataset('demo', expected_var_names=['conc_ys'])
         self.assertEqual(404, cm.exception.status_code)
         self.assertEqual('Variable "conc_ys" not found in dataset "demo"', cm.exception.reason)
+
+    def test_get_dataset_with_augmentation(self):
+        ctx = new_test_service_context(config_file_name='config-aug.yml')
+
+        ds = ctx.get_dataset('demo-aug')
+        self.assertIsInstance(ds, xr.Dataset)
+
+        ml_ds = ctx.get_ml_dataset('demo-aug')
+        self.assertIsInstance(ml_ds, MultiLevelDataset)
+        self.assertIs(3, ml_ds.num_levels)
+        self.assertIs(ds, ml_ds.get_dataset(0))
+
+        for var_name in ('conc_chl', 'conc_tsm', 'chl_tsm_sum'):
+            for z in range(ml_ds.num_levels):
+                conc_chl_z = ctx.get_variable_for_z('demo-aug', var_name, z)
+                self.assertIsInstance(conc_chl_z, xr.DataArray)
 
     def test_config_and_dataset_cache(self):
         ctx = new_test_service_context()

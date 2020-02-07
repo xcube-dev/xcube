@@ -24,6 +24,7 @@ import logging
 import os
 import os.path
 import threading
+import uuid
 from typing import Any, Dict, List, Optional, Tuple, Callable, Collection, Set
 from typing import Sequence
 
@@ -33,12 +34,12 @@ import pandas as pd
 import s3fs
 import xarray as xr
 import zarr
-
 from xcube.constants import FORMAT_NAME_LEVELS
 from xcube.constants import FORMAT_NAME_NETCDF4
 from xcube.constants import FORMAT_NAME_ZARR
 from xcube.core.dsio import guess_dataset_format
 from xcube.core.mldataset import BaseMultiLevelDataset
+from xcube.core.mldataset import CombinedMultiLevelDataset
 from xcube.core.mldataset import ComputedMultiLevelDataset
 from xcube.core.mldataset import FileStorageMultiLevelDataset
 from xcube.core.mldataset import MultiLevelDataset
@@ -60,6 +61,8 @@ from xcube.webapi.errors import ServiceResourceNotFoundError
 from xcube.webapi.reqparams import RequestParams
 
 COMPUTE_DATASET = 'compute_dataset'
+COMPUTE_VARIABLES = 'compute_variables'
+
 ALL_PLACES = "all"
 
 _LOG = logging.getLogger('xcube')
@@ -215,7 +218,10 @@ class ServiceContext:
 
     def get_variable_for_z(self, ds_id: str, var_name: str, z_index: int) -> xr.DataArray:
         ml_dataset = self.get_ml_dataset(ds_id)
-        dataset = ml_dataset.get_dataset(ml_dataset.num_levels - 1 - z_index)
+        index = ml_dataset.num_levels - 1 - z_index
+        if index < 0 or index >= ml_dataset.num_levels:
+            raise ServiceResourceNotFoundError(f'Variable "{var_name}" has no z-index {z_index} in dataset "{ds_id}"')
+        dataset = ml_dataset.get_dataset(index)
         if var_name not in dataset:
             raise ServiceResourceNotFoundError(f'Variable "{var_name}" not found in dataset "{ds_id}"')
         return dataset[var_name]
@@ -241,9 +247,7 @@ class ServiceContext:
             ds_id = descriptor.get('Identifier')
             file_system = descriptor.get('FileSystem', 'local')
             if file_system == 'local':
-                local_path = descriptor.get('Path')
-                if not os.path.isabs(local_path):
-                    local_path = os.path.join(self.base_dir, local_path)
+                local_path = self.get_descriptor_path(descriptor, f'dataset descriptor {ds_id}')
                 local_path = os.path.normpath(local_path)
                 if os.path.isdir(local_path):
                     s3_bucket_mapping[ds_id] = local_path
@@ -300,15 +304,38 @@ class ServiceContext:
         return ml_dataset, dataset_descriptor
 
     def _open_ml_dataset(self, dataset_descriptor: DatasetDescriptor) -> MultiLevelDataset:
+        ds_id = dataset_descriptor.get('Identifier')
         fs_type = dataset_descriptor.get('FileSystem', 'local')
         if self._ml_dataset_openers and fs_type in self._ml_dataset_openers:
             ml_dataset_opener = self._ml_dataset_openers[fs_type]
         elif fs_type in _DEFAULT_MULTI_LEVEL_DATASET_OPENERS:
             ml_dataset_opener = _DEFAULT_MULTI_LEVEL_DATASET_OPENERS[fs_type]
         else:
-            ds_id = dataset_descriptor.get('Identifier')
             raise ServiceConfigError(f"Invalid fs={fs_type!r} in dataset descriptor {ds_id!r}")
-        return ml_dataset_opener(self, dataset_descriptor)
+        ml_dataset = ml_dataset_opener(self, dataset_descriptor)
+        augmentation = dataset_descriptor.get('Augmentation')
+        if augmentation:
+            path = self.get_descriptor_path(augmentation,
+                                            f"'Augmentation' of dataset descriptor {ds_id}")
+            input_parameters = augmentation.get('InputParameters')
+            callable_name = augmentation.get('Function', COMPUTE_VARIABLES)
+            with measure_time(tag=f"added augmentation from {path}"):
+                aug_id = uuid.uuid4()
+                aug_inp_id = f'augmentation-input-{aug_id}'
+                aug_inp_descriptor = dict(dataset_descriptor)
+                del aug_inp_descriptor['Augmentation']
+                aug_inp_descriptor['Identifier'] = aug_inp_id
+                self._dataset_cache[aug_inp_id] = ml_dataset, aug_inp_descriptor
+                extra_vars = ComputedMultiLevelDataset(f'augmentation-{aug_id}',
+                                                       path,
+                                                       callable_name,
+                                                       [aug_inp_id],
+                                                       self.get_ml_dataset,
+                                                       input_parameters,
+                                                       exception_type=ServiceConfigError)
+                ml_dataset = CombinedMultiLevelDataset([ml_dataset, extra_vars])
+
+        return ml_dataset
 
     def get_legend_label(self, ds_name: str, var_name: str):
         dataset = self.get_dataset(ds_name)
@@ -402,12 +429,7 @@ class ServiceContext:
             place_group = self._place_group_cache[place_group_id]
         else:
             place_group_title = place_group_descriptor.get("Title", place_group_id)
-
-            place_path_wc = place_group_descriptor.get("Path")
-            if not place_path_wc:
-                raise ServiceConfigError("Missing 'Path' entry in a 'PlaceGroups' item")
-            if not os.path.isabs(place_path_wc):
-                place_path_wc = os.path.join(self._base_dir, place_path_wc)
+            place_path_wc = self.get_descriptor_path(place_group_descriptor, f"'PlaceGroups' item")
             source_paths = glob.glob(place_path_wc)
             source_encoding = place_group_descriptor.get("CharacterEncoding", "utf-8")
 
@@ -566,6 +588,18 @@ class ServiceContext:
         # Note: can be optimized by dict/key lookup
         return next((dsd for dsd in dataset_descriptors if dsd['Identifier'] == ds_name), None)
 
+    def get_descriptor_path(self,
+                            descriptor: Dict[str, Any],
+                            descriptor_name: str,
+                            path_entry_name: str = 'Path',
+                            is_url: bool = False) -> str:
+        path = descriptor.get(path_entry_name)
+        if not path:
+            raise ServiceError(f"Missing entry {path_entry_name!r} in {descriptor_name}")
+        if not is_url and not os.path.isabs(path):
+            path = os.path.join(self._base_dir, path)
+        return path
+
 
 def normalize_prefix(prefix: Optional[str]):
     if not prefix:
@@ -588,11 +622,7 @@ def guess_cube_format(path: str) -> str:
 def open_ml_dataset_from_object_storage(ctx: ServiceContext,
                                         dataset_descriptor: DatasetDescriptor) -> MultiLevelDataset:
     ds_id = dataset_descriptor.get('Identifier')
-
-    path = dataset_descriptor.get('Path')
-    if not path:
-        raise ServiceConfigError(f"Missing 'path' entry in dataset descriptor {ds_id}")
-
+    path = ctx.get_descriptor_path(dataset_descriptor, f"dataset descriptor {ds_id}", is_url=True)
     data_format = dataset_descriptor.get('Format', FORMAT_NAME_ZARR)
 
     s3_client_kwargs = {}
@@ -618,14 +648,7 @@ def open_ml_dataset_from_object_storage(ctx: ServiceContext,
 
 def open_ml_dataset_from_local_fs(ctx: ServiceContext, dataset_descriptor: DatasetDescriptor) -> MultiLevelDataset:
     ds_id = dataset_descriptor.get('Identifier')
-
-    path = dataset_descriptor.get('Path')
-    if not path:
-        raise ServiceConfigError(f"Missing 'path' entry in dataset descriptor {ds_id}")
-
-    if not os.path.isabs(path):
-        path = os.path.join(ctx.base_dir, path)
-
+    path = ctx.get_descriptor_path(dataset_descriptor, f"dataset descriptor {ds_id}")
     data_format = dataset_descriptor.get('Format', guess_cube_format(path))
 
     if data_format == FORMAT_NAME_NETCDF4:
@@ -647,14 +670,7 @@ def open_ml_dataset_from_local_fs(ctx: ServiceContext, dataset_descriptor: Datas
 
 def open_ml_dataset_from_python_code(ctx: ServiceContext, dataset_descriptor: DatasetDescriptor) -> MultiLevelDataset:
     ds_id = dataset_descriptor.get('Identifier')
-
-    path = dataset_descriptor.get('Path')
-    if not path:
-        raise ServiceConfigError(f"Missing 'path' entry in dataset descriptor {ds_id}")
-
-    if not os.path.isabs(path):
-        path = os.path.join(ctx.base_dir, path)
-
+    path = ctx.get_descriptor_path(dataset_descriptor, f"dataset descriptor {ds_id}")
     callable_name = dataset_descriptor.get('Function', COMPUTE_DATASET)
     input_dataset_ids = dataset_descriptor.get('InputDatasets', [])
     input_parameters = dataset_descriptor.get('InputParameters', {})

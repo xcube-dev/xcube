@@ -39,6 +39,25 @@
       ...        
   ```      
 
+* The configuration of `xcube serve` has been enhanced to support
+  augmentation of data cubes by new variables computed on-the-fly (#272).
+  You can now add a section `Augmentation` into a dataset descriptor, e.g.:
+  
+  ```yaml 
+    Datasets:
+      - Identifier: abc
+        ...
+        Augmentation:
+          Path: compute_new_vars.py
+          Function: compute_variables
+          InputParameters:
+            ...
+      - ...
+  ```
+  
+  where `compute_variables` is a function that receives the parent xcube dataset
+  and is expected to return a new dataset with new variables. 
+  
 * `xcube serve` now provides basic access control via OAuth2 bearer tokens (#263).
   To configure a service instance with access control, add the following to the 
   `xcube serve` configuration file:
