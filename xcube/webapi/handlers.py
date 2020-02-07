@@ -28,7 +28,9 @@ import pathlib
 from tornado.ioloop import IOLoop
 
 from xcube.core.timecoord import timestamp_to_iso_string
+from xcube.util.perf import measure_time
 from xcube.version import version
+from xcube.webapi.auth import AuthMixin
 from xcube.webapi.controllers.catalogue import get_datasets, get_dataset_coordinates, get_color_bars, get_dataset, \
     get_dataset_place_groups, get_dataset_place_group
 from xcube.webapi.controllers.places import find_places, find_dataset_places
@@ -119,24 +121,34 @@ class GetWMTSCapabilitiesXmlHandler(ServiceRequestHandler):
 
 
 # noinspection PyAbstractClass
-class GetDatasetsHandler(ServiceRequestHandler):
+class GetDatasetsHandler(ServiceRequestHandler, AuthMixin):
 
     def get(self):
+        with measure_time('get granted scopes'):
+            granted_scopes = self.granted_scopes
         details = bool(int(self.params.get_query_argument('details', '0')))
         tile_client = self.params.get_query_argument('tiles', None)
         point = self.params.get_query_argument_point('point', None)
-        response = get_datasets(self.service_context, details=details, client=tile_client,
-                                point=point, base_url=self.base_url)
+        response = get_datasets(self.service_context,
+                                details=details,
+                                client=tile_client,
+                                point=point,
+                                base_url=self.base_url,
+                                granted_scopes=granted_scopes)
         self.set_header('Content-Type', 'application/json')
         self.write(json.dumps(response, indent=None if details else 2))
 
 
 # noinspection PyAbstractClass
-class GetDatasetHandler(ServiceRequestHandler):
+class GetDatasetHandler(ServiceRequestHandler, AuthMixin):
 
     def get(self, ds_id: str):
         tile_client = self.params.get_query_argument('tiles', None)
-        response = get_dataset(self.service_context, ds_id, client=tile_client, base_url=self.base_url)
+        response = get_dataset(self.service_context,
+                               ds_id,
+                               client=tile_client,
+                               base_url=self.base_url,
+                               granted_scopes=self.granted_scopes)
         self.set_header('Content-Type', 'application/json')
         self.write(json.dumps(response, indent=2))
 

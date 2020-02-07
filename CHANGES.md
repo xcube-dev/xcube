@@ -39,6 +39,42 @@
       ...        
   ```      
 
+* `xcube serve` now provides basic access control via OAuth2 bearer tokens (#263).
+  To configure a service instance with access control, add the following to the 
+  `xcube serve` configuration file:
+  
+  ```
+    Authentication:
+      Domain: "<your oauth2 domain>"
+      Audience: "<your audience or API identifier>"
+  ```
+  
+  Individual datasets can now be protected using the new `AccessControl` entry
+  by configuring the `RequiredScopes` entry whose value is a list
+  of required scopes, e.g. "read:datasets":
+  
+  ```
+    Datasets:
+      ...
+      - Identifier: <some dataset id>
+        ...
+        AccessControl:
+          RequiredScopes:
+            - "read:datasets"
+  ```
+  
+  If you want a dataset to disappear for authorized requests, set the 
+  `IsSubstitute` flag:
+  
+  ```
+    Datasets:
+      ...
+      - Identifier: <some dataset id>
+        ...
+        AccessControl:
+          IsSubstitute: true
+  ```
+
 ### Other
 
 * The `xcube serve` API operations `datasets/` and `datasets/{ds_id}` now also

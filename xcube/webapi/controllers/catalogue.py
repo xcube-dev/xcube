@@ -1,12 +1,13 @@
 import functools
 import json
-from typing import Dict, Tuple, List
+from typing import Dict, Tuple, List, Set
 
 import numpy as np
 
 from xcube.core.geom import get_dataset_bounds
 from xcube.core.timecoord import timestamp_to_iso_string
 from xcube.util.cmaps import get_cmaps
+from xcube.webapi.auth import assert_scopes, check_scopes
 from xcube.webapi.context import ServiceContext
 from xcube.webapi.controllers.places import GeoJsonFeatureCollection
 from xcube.webapi.controllers.tiles import get_tile_source_options, get_dataset_tile_url
@@ -17,15 +18,25 @@ def get_datasets(ctx: ServiceContext,
                  details: bool = False,
                  client: str = None,
                  point: Tuple[float, float] = None,
-                 base_url: str = None) -> Dict:
+                 base_url: str = None,
+                 granted_scopes: Set[str] = None) -> Dict:
+    granted_scopes = granted_scopes or set()
+
     dataset_descriptors = ctx.get_dataset_descriptors()
 
     dataset_dicts = list()
     for dataset_descriptor in dataset_descriptors:
+
+        ds_id = dataset_descriptor['Identifier']
+
         if dataset_descriptor.get('Hidden'):
             continue
 
-        ds_id = dataset_descriptor['Identifier']
+        if 'read:dataset:*' not in granted_scopes:
+            required_scopes = ctx.get_required_dataset_scopes(dataset_descriptor)
+            is_substitute = dataset_descriptor.get('AccessControl', {}).get('IsSubstitute', False)
+            if not check_scopes(required_scopes, granted_scopes, is_substitute=is_substitute):
+                continue
 
         dataset_dict = dict(id=ds_id)
 
@@ -53,7 +64,7 @@ def get_datasets(ctx: ServiceContext,
                 if "bbox" not in dataset_dict:
                     dataset_dict["bbox"] = list(get_dataset_bounds(ds))
             if details:
-                dataset_dict.update(get_dataset(ctx, ds_id, client, base_url))
+                dataset_dict.update(get_dataset(ctx, ds_id, client, base_url, granted_scopes=granted_scopes))
 
     if point:
         is_point_in_dataset_bbox = functools.partial(_is_point_in_dataset_bbox, point)
@@ -63,10 +74,20 @@ def get_datasets(ctx: ServiceContext,
     return dict(datasets=dataset_dicts)
 
 
-def get_dataset(ctx: ServiceContext, ds_id: str, client=None, base_url: str = None) -> GeoJsonFeatureCollection:
-    dataset_descriptor = ctx.get_dataset_descriptor(ds_id)
+def get_dataset(ctx: ServiceContext,
+                ds_id: str,
+                client=None,
+                base_url: str = None,
+                granted_scopes: Set[str] = None) -> Dict:
+    granted_scopes = granted_scopes or set()
 
+    dataset_descriptor = ctx.get_dataset_descriptor(ds_id)
     ds_id = dataset_descriptor['Identifier']
+
+    if 'read:dataset:*' not in granted_scopes:
+        required_scopes = ctx.get_required_dataset_scopes(dataset_descriptor)
+        assert_scopes(required_scopes, granted_scopes or set())
+
     ds_title = dataset_descriptor['Title']
     dataset_dict = dict(id=ds_id, title=ds_title)
 
@@ -81,6 +102,11 @@ def get_dataset(ctx: ServiceContext, ds_id: str, client=None, base_url: str = No
         dims = var.dims
         if len(dims) < 3 or dims[0] != 'time' or dims[-2] != 'lat' or dims[-1] != 'lon':
             continue
+
+        if 'read:variable:*' not in granted_scopes:
+            required_scopes = ctx.get_required_variable_scopes(dataset_descriptor, var_name)
+            if not check_scopes(required_scopes, granted_scopes):
+                continue
 
         variable_dict = dict(id=f'{ds_id}.{var_name}',
                              name=var_name,
