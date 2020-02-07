@@ -65,7 +65,7 @@ def resample_in_time(cube: xr.Dataset,
     if var_names:
         cube = select_vars(cube, var_names)
         
-    if frequency == 'ALL':
+    if frequency == 'all':
         time_gap = np.array(cube.time[-1]) - np.array(cube.time[0])
         days = int((np.timedelta64(time_gap, 'D')/np.timedelta64(1, 'D'))+1)
         frequency = ''.join([str(days), 'D'])
