@@ -73,7 +73,7 @@ class ResampleInTimeTest(unittest.TestCase):
         self.assertEqual((33, 180, 360), schema.shape)
         self.assertEqual((5, 90, 180), schema.chunks)
         
-   def test_resample_f_all(self):
+    def test_resample_f_all(self):
         resampled_cube = resample_in_time(self.input_cube, 'all', ['min', 'max'])
         self.assertIsNot(resampled_cube, self.input_cube)
         self.assertIn('time', resampled_cube)
