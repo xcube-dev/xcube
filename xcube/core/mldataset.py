@@ -354,6 +354,8 @@ class ComputedMultiLevelDataset(LazyMultiLevelDataset):
                  input_ml_dataset_getter: Callable[[str], MultiLevelDataset],
                  input_parameters: Dict[str, Any],
                  exception_type=ValueError):
+
+        input_parameters = input_parameters or {}
         super().__init__(kwargs=input_parameters)
 
         try:

@@ -24,6 +24,7 @@ import logging
 import os
 import os.path
 import threading
+import uuid
 from typing import Any, Dict, List, Optional, Tuple, Callable, Collection, Set
 from typing import Sequence
 
@@ -33,7 +34,6 @@ import pandas as pd
 import s3fs
 import xarray as xr
 import zarr
-
 from xcube.constants import FORMAT_NAME_LEVELS
 from xcube.constants import FORMAT_NAME_NETCDF4
 from xcube.constants import FORMAT_NAME_ZARR
