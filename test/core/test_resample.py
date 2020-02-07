@@ -72,3 +72,35 @@ class ResampleInTimeTest(unittest.TestCase):
         self.assertEqual(('time', 'lat', 'lon'), schema.dims)
         self.assertEqual((33, 180, 360), schema.shape)
         self.assertEqual((5, 90, 180), schema.chunks)
+        
+   def test_resample_f_all(self):
+        resampled_cube = resample_in_time(self.input_cube, 'all', ['min', 'max'])
+        self.assertIsNot(resampled_cube, self.input_cube)
+        self.assertIn('time', resampled_cube)
+        self.assertIn('temperature_min', resampled_cube)
+        self.assertIn('temperature_max', resampled_cube)
+        self.assertIn('precipitation_min', resampled_cube)
+        self.assertIn('precipitation_max', resampled_cube)
+        self.assertEqual(('time',), resampled_cube.time.dims)
+        self.assertEqual(('time', 'lat', 'lon'), resampled_cube.temperature_min.dims)
+        self.assertEqual(('time', 'lat', 'lon'), resampled_cube.temperature_max.dims)
+        self.assertEqual(('time', 'lat', 'lon'), resampled_cube.precipitation_min.dims)
+        self.assertEqual(('time', 'lat', 'lon'), resampled_cube.precipitation_max.dims)
+        self.assertEqual((1,), resampled_cube.time.shape)
+        self.assertEqual((1, 180, 360), resampled_cube.temperature_min.shape)
+        self.assertEqual((1, 180, 360), resampled_cube.temperature_max.shape)
+        self.assertEqual((1, 180, 360), resampled_cube.precipitation_min.shape)
+        self.assertEqual((1, 180, 360), resampled_cube.precipitation_max.shape)
+        np.testing.assert_allclose(resampled_cube.temperature_min.values[..., 0, 0],
+                                   np.array([272.0]))
+        np.testing.assert_allclose(resampled_cube.temperature_max.values[..., 0, 0],
+                                   np.array([274.9]))
+        np.testing.assert_allclose(resampled_cube.precipitation_min.values[..., 0, 0],
+                                   np.array([114.2]))
+        np.testing.assert_allclose(resampled_cube.precipitation_max.values[..., 0, 0],
+                                   np.array([120.0]))
+
+        schema = CubeSchema.new(resampled_cube)
+        self.assertEqual(3, schema.ndim)
+        self.assertEqual(('time', 'lat', 'lon'), schema.dims)
+        self.assertEqual((1, 180, 360), schema.shape)
