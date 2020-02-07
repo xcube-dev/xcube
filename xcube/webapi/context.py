@@ -24,8 +24,8 @@ import logging
 import os
 import os.path
 import threading
-from typing import Any, Dict, List, Optional, Tuple, Callable, Collection, Sequence
 from typing import Any, Dict, List, Optional, Tuple, Callable, Collection, Set
+from typing import Sequence
 
 import fiona
 import numpy as np
@@ -34,20 +34,29 @@ import s3fs
 import xarray as xr
 import zarr
 
-from xcube.constants import FORMAT_NAME_ZARR, FORMAT_NAME_NETCDF4, FORMAT_NAME_LEVELS
-from xcube.constants import FORMAT_NAME_ZARR, FORMAT_NAME_NETCDF4, FORMAT_NAME_LEVELS
+from xcube.constants import FORMAT_NAME_LEVELS
+from xcube.constants import FORMAT_NAME_NETCDF4
+from xcube.constants import FORMAT_NAME_ZARR
 from xcube.core.dsio import guess_dataset_format
-from xcube.core.mldataset import FileStorageMultiLevelDataset, BaseMultiLevelDataset, MultiLevelDataset, \
-    ComputedMultiLevelDataset, ObjectStorageMultiLevelDataset
+from xcube.core.mldataset import BaseMultiLevelDataset
+from xcube.core.mldataset import ComputedMultiLevelDataset
+from xcube.core.mldataset import FileStorageMultiLevelDataset
+from xcube.core.mldataset import MultiLevelDataset
+from xcube.core.mldataset import ObjectStorageMultiLevelDataset
 from xcube.core.verify import assert_cube
 from xcube.util.cache import MemoryCacheStore, Cache
 from xcube.util.cmaps import get_cmap
 from xcube.util.perf import measure_time
 from xcube.util.tilegrid import TileGrid
 from xcube.version import version
-from xcube.webapi.defaults import DEFAULT_CMAP_CBAR, DEFAULT_CMAP_VMIN, DEFAULT_CMAP_VMAX, DEFAULT_TRACE_PERF
-from xcube.webapi.errors import ServiceConfigError, ServiceError, ServiceBadRequestError, ServiceResourceNotFoundError
-from xcube.webapi.errors import ServiceConfigError, ServiceBadRequestError, ServiceResourceNotFoundError
+from xcube.webapi.defaults import DEFAULT_CMAP_CBAR
+from xcube.webapi.defaults import DEFAULT_CMAP_VMAX
+from xcube.webapi.defaults import DEFAULT_CMAP_VMIN
+from xcube.webapi.defaults import DEFAULT_TRACE_PERF
+from xcube.webapi.errors import ServiceBadRequestError
+from xcube.webapi.errors import ServiceConfigError
+from xcube.webapi.errors import ServiceError
+from xcube.webapi.errors import ServiceResourceNotFoundError
 from xcube.webapi.reqparams import RequestParams
 
 COMPUTE_DATASET = 'compute_dataset'
@@ -492,7 +501,6 @@ class ServiceContext:
                 property_value = properties[property_name]
                 feature_index[property_value] = feature
         return feature_index
-
 
     @classmethod
     def _remove_feature_id(cls, feature: Dict):
