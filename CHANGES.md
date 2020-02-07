@@ -58,8 +58,48 @@
   where `compute_variables` is a function that receives the parent xcube dataset
   and is expected to return a new dataset with new variables. 
   
+* `xcube serve` now provides basic access control via OAuth2 bearer tokens (#263).
+  To configure a service instance with access control, add the following to the 
+  `xcube serve` configuration file:
+  
+  ```
+    Authentication:
+      Domain: "<your oauth2 domain>"
+      Audience: "<your audience or API identifier>"
+  ```
+  
+  Individual datasets can now be protected using the new `AccessControl` entry
+  by configuring the `RequiredScopes` entry whose value is a list
+  of required scopes, e.g. "read:datasets":
+  
+  ```
+    Datasets:
+      ...
+      - Identifier: <some dataset id>
+        ...
+        AccessControl:
+          RequiredScopes:
+            - "read:datasets"
+  ```
+  
+  If you want a dataset to disappear for authorized requests, set the 
+  `IsSubstitute` flag:
+  
+  ```
+    Datasets:
+      ...
+      - Identifier: <some dataset id>
+        ...
+        AccessControl:
+          IsSubstitute: true
+  ```
+
 ### Other
 
+* The `xcube serve` API operations `datasets/` and `datasets/{ds_id}` now also
+  return the metadata attributes of a given dataset and it variables in a property
+  named `attrs`. For variables we added a new metadata property `htmlRepr` that is
+  a string returned by a variable's `var.data._repr_html_()` method, if any.
 * Renamed default log file for `xcube serve` command to `xcube-serve.log`.
 * `xcube gen` now immediately flushes logging output to standard out
   

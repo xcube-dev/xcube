@@ -109,7 +109,7 @@ class ServiceContextTest(unittest.TestCase):
 
     def test_get_global_place_groups(self):
         ctx = new_test_service_context()
-        place_groups = ctx.get_global_place_groups(load_features=False)
+        place_groups = ctx.get_global_place_groups("http://localhost:9090", load_features=False)
         self.assertIsInstance(place_groups, list)
         self.assertEqual(2, len(place_groups))
         for place_group in place_groups:
@@ -129,7 +129,7 @@ class ServiceContextTest(unittest.TestCase):
         self.assertEqual('Points outside the cube', place_group['title'])
         self.assertEqual(None, place_group['features'])
 
-        place_groups = ctx.get_global_place_groups(load_features=True)
+        place_groups = ctx.get_global_place_groups("http://localhost:9090", load_features=True)
         self.assertIsInstance(place_groups, list)
         self.assertEqual(2, len(place_groups))
         for place_group in place_groups:
@@ -151,16 +151,16 @@ class ServiceContextTest(unittest.TestCase):
 
     def test_get_global_place_group(self):
         ctx = new_test_service_context()
-        place_group = ctx.get_global_place_group("inside-cube", load_features=True)
+        place_group = ctx.get_global_place_group("inside-cube", "http://localhost:9090", load_features=True)
         self.assertIsInstance(place_group, dict)
         self.assertIn("type", place_group)
         self.assertEqual("FeatureCollection", place_group["type"])
         self.assertIn("features", place_group)
         self.assertIsInstance(place_group["features"], list)
         self.assertEqual(3, len(place_group["features"]))
-        self.assertIs(place_group, ctx.get_global_place_group(place_group_id="inside-cube"))
-        self.assertIsNot(place_group, ctx.get_global_place_group(place_group_id="outside-cube"))
+        self.assertIs(place_group, ctx.get_global_place_group("inside-cube", "http://localhost:9090"))
+        self.assertIsNot(place_group, ctx.get_global_place_group("outside-cube", "http://localhost:9090"))
 
         with self.assertRaises(ServiceResourceNotFoundError) as cm:
-            ctx.get_global_place_group("bibo")
+            ctx.get_global_place_group("bibo", "http://localhost:9090")
         self.assertEqual('HTTP 404: Place group "bibo" not found', f"{cm.exception}")
