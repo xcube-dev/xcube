@@ -55,7 +55,7 @@ class ServiceContextTest(unittest.TestCase):
         self.assertIs(3, ml_ds.num_levels)
         self.assertIs(ds, ml_ds.get_dataset(0))
 
-        for var_name in ('conc_chl', 'conc_tsm', 'chl_tsm_sum'):
+        for var_name in ('conc_chl', 'conc_tsm', 'chl_tsm_sum', 'chl_category'):
             for z in range(ml_ds.num_levels):
                 conc_chl_z = ctx.get_variable_for_z('demo-aug', var_name, z)
                 self.assertIsInstance(conc_chl_z, xr.DataArray)
