@@ -133,6 +133,8 @@ def get_dataset(ctx: ServiceContext,
         if hasattr(var.data, '_repr_html_'):
             variable_dict["htmlRepr"] = var.data._repr_html_()
 
+        variable_dict["attrs"] = {key: var.attrs[key] for key in sorted(list(var.attrs.keys()))}
+
         variable_dicts.append(variable_dict)
 
     dataset_dict["variables"] = variable_dicts
@@ -140,22 +142,24 @@ def get_dataset(ctx: ServiceContext,
     dim_names = ds.data_vars[list(ds.data_vars)[0]].dims if len(ds.data_vars) > 0 else ds.dims.keys()
     dataset_dict["dimensions"] = [get_dataset_coordinates(ctx, ds_id, dim_name) for dim_name in dim_names]
 
-    place_groups = ctx.get_dataset_place_groups(ds_id)
+    dataset_dict["attrs"] = {key: ds.attrs[key] for key in sorted(list(ds.attrs.keys()))}
+
+    place_groups = ctx.get_dataset_place_groups(ds_id, base_url)
     if place_groups:
         dataset_dict["placeGroups"] = _filter_place_groups(place_groups, del_features=True)
 
     return dataset_dict
 
 
-def get_dataset_place_groups(ctx: ServiceContext, ds_id: str) -> List[GeoJsonFeatureCollection]:
+def get_dataset_place_groups(ctx: ServiceContext, ds_id: str, base_url: str) -> List[GeoJsonFeatureCollection]:
     # Do not load or return features, just place group (metadata).
-    place_groups = ctx.get_dataset_place_groups(ds_id, load_features=False)
+    place_groups = ctx.get_dataset_place_groups(ds_id, base_url, load_features=False)
     return _filter_place_groups(place_groups, del_features=True)
 
 
-def get_dataset_place_group(ctx: ServiceContext, ds_id: str, place_group_id: str) -> GeoJsonFeatureCollection:
+def get_dataset_place_group(ctx: ServiceContext, ds_id: str, place_group_id: str, base_url: str) -> GeoJsonFeatureCollection:
     # Load and return features for specific place group.
-    place_group = ctx.get_dataset_place_group(ds_id, place_group_id, load_features=True)
+    place_group = ctx.get_dataset_place_group(ds_id, place_group_id, base_url, load_features=True)
     return _filter_place_group(place_group, del_features=False)
 
 

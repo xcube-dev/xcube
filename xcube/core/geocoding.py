@@ -187,7 +187,7 @@ class GeoCoding:
         :param ij_border: If non-zero, grows the returned i,j bounding box and clips it to size. Defaults to 0.
         :param gu: Use generic ufunc for the computation (may be faster). Defaults to False.
         :return: Bounding box in (i_min, j_min, i_max, j_max) in pixel coordinates.
-            Returns None if *xy_bbox* isn't intersecting any of the x,y coordinates.
+            Returns ``(-1, -1, -1, -1)`` if *xy_bbox* isn't intersecting any of the x,y coordinates.
         """
         xy_bboxes = np.array([xy_bbox], dtype=np.float64)
         ij_bboxes = np.full_like(xy_bboxes, -1, dtype=np.int64)
@@ -249,6 +249,49 @@ class GeoCoding:
                               ij_border,
                               ij_bboxes)
         return ij_bboxes
+
+    def ij_bbox_conservative(self,
+                             xy_bbox: Tuple[float, float, float, float],
+                             xy_border: float = 0.0,
+                             ij_border: int = 0) -> Tuple[int, int, int, int]:
+        """
+        Compute bounding box in i,j pixel coordinates given a bounding box *xy_bbox* in x,y coordinates.
+
+        Should behave the same way as ``self.ij_box(xy_bbox, xy_border, ij_border)``, but uses a
+        "conservative", xarray/dask/numpy-based implementation (which may be slower) rather than the standard
+        numba-based implementation.
+
+        :param xy_bbox: Bounding box (x_min, y_min, x_max, y_max) given in the same CS as x and y.
+        :param xy_border: If non-zero, grows the bounding box *xy_bbox* before using it for comparisons. Defaults to 0.
+        :param ij_border: If non-zero, grows the returned i,j bounding box and clips it to size. Defaults to 0.
+        :return: Bounding box in (i_min, j_min, i_max, j_max) in pixel coordinates.
+            Returns ``(-1, -1, -1, -1)`` if *xy_bbox* isn't intersecting any of the x,y coordinates.
+        """
+        x1, y1, x2, y2 = xy_bbox
+        if self.is_lon_normalized:
+            x1 = x1 + 360.0 if x1 < 0.0 else x1
+            x2 = x2 + 360.0 if x2 < 0.0 else x2
+
+        xy_valid = np.logical_and(np.logical_and(self.x >= x1 - xy_border, self.x <= x2 + xy_border),
+                                  np.logical_and(self.y >= y1 - xy_border, self.y <= y2 + xy_border))
+
+        i_values, = xy_valid.any(axis=0).values.nonzero()
+        if i_values.size == 0:
+            return -1, -1, -1, -1
+        j_values, = xy_valid.any(axis=1).values.nonzero()
+        if j_values.size == 0:
+            return -1, -1, -1, -1
+
+        width, height = self.size
+        i_min = _clip(int(i_values[0]) - ij_border, 0, width - 1)
+        j_min = _clip(int(j_values[0]) - ij_border, 0, height - 1)
+        i_max = _clip(int(i_values[-1]) + ij_border, 0, width - 1)
+        j_max = _clip(int(j_values[-1]) + ij_border, 0, height - 1)
+        return i_min, j_min, i_max, j_max
+
+
+def _clip(x, x_min, x_max):
+    return x_min if x < x_min else x_max if x > x_max else x
 
 
 def _is_geo_crs(x_name: str, y_name: str) -> bool:
