@@ -2,9 +2,6 @@
 
 ### New
 
-* Added new CLI command `xcube tile` allowing to generate RGB(A) imagery from given cube 
-  and variable. (#?) 
-
 * Introduced new (ortho-)rectification algorithm allowing reprojection of 
   satellite images that come with (terrain-corrected) geo-locations for every pixel.
 
@@ -41,6 +38,11 @@
         valid_pixel_expression: no_cloud_risk
       ...        
   ```      
+
+* Added new CLI tool `xcube tile` which is used to generate a tiled RGB image 
+  pyramid from any xcube dataset. The format and file organisation of the generated 
+  tile sets conforms to the [TMS 1.0 Specification](https://wiki.osgeo.org/wiki/Tile_Map_Service_Specification) 
+  (#209).
 
 * Added new CLI tool `xcube tile` which is used to generate a tiled RGB image 
   pyramid from any xcube dataset. The format and file organisation of the generated 
