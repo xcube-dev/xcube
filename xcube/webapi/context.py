@@ -199,6 +199,9 @@ class ServiceContext:
         ml_dataset, _ = self._get_dataset_entry(ds_id)
         return ml_dataset
 
+    def set_ml_dataset(self, ml_dataset: MultiLevelDataset):
+        self._set_dataset_entry((ml_dataset, dict(Identifier=ml_dataset.ds_id, Hidden=True)))
+
     def get_dataset(self, ds_id: str, expected_var_names: Collection[str] = None) -> xr.Dataset:
         ml_dataset, _ = self._get_dataset_entry(ds_id)
         dataset = ml_dataset.base_dataset
@@ -284,11 +287,15 @@ class ServiceContext:
         _LOG.warning(f'color mapping for variable {var_name!r} of dataset {ds_id!r} undefined: using defaults')
         return cmap_cbar, cmap_vmin, cmap_vmax
 
-    def _get_dataset_entry(self, ds_id: str) -> Tuple[MultiLevelDataset, Dict[str, Any]]:
+    def _get_dataset_entry(self, ds_id: str) -> Tuple[MultiLevelDataset, DatasetDescriptor]:
         if ds_id not in self._dataset_cache:
             with self._lock:
-                self._dataset_cache[ds_id] = self._create_dataset_entry(ds_id)
+                self._set_dataset_entry(self._create_dataset_entry(ds_id))
         return self._dataset_cache[ds_id]
+
+    def _set_dataset_entry(self, dataset_entry: Tuple[MultiLevelDataset, DatasetDescriptor]):
+        ml_dataset, dataset_descriptor = dataset_entry
+        self._dataset_cache[ml_dataset.ds_id] = ml_dataset, dataset_descriptor
 
     def _create_dataset_entry(self, ds_id: str) -> Tuple[MultiLevelDataset, Dict[str, Any]]:
         dataset_descriptor = self.get_dataset_descriptor(ds_id)
@@ -315,13 +322,9 @@ class ServiceContext:
                                             script_path,
                                             callable_name,
                                             self.get_ml_dataset,
+                                            self.set_ml_dataset,
                                             input_parameters=input_parameters,
                                             exception_type=ServiceConfigError)
-            aug_inp_descriptor = dict(dataset_descriptor)
-            del aug_inp_descriptor['Augmentation']
-            aug_inp_descriptor['Identifier'] = ml_dataset.ds_id
-            self._dataset_cache[ml_dataset.ds_id] = ml_dataset, aug_inp_descriptor
-
         return ml_dataset
 
     def get_legend_label(self, ds_name: str, var_name: str):

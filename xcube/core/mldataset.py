@@ -86,7 +86,7 @@ class MultiLevelDataset(metaclass=ABCMeta):
               tile_grid: TileGrid = None,
               ds_id: str = None) -> 'MultiLevelDataset':
         """ Apply function to all level datasets and return a new multi-level dataset."""
-        return MappedMultiLevelDataset(self, function, tile_grid=tile_grid, ds_id=ds_id, kwargs=kwargs)
+        return MappedMultiLevelDataset(self, function, tile_grid=tile_grid, ds_id=ds_id, mapper_params=kwargs)
 
 
 class LazyMultiLevelDataset(MultiLevelDataset, metaclass=ABCMeta):
@@ -99,17 +99,17 @@ class LazyMultiLevelDataset(MultiLevelDataset, metaclass=ABCMeta):
 
     :param tile_grid: The tile grid. If None, a new tile grid will be computed based on the dataset at level zero.
     :param ds_id: Optional dataset identifier.
-    :param kwargs: Optional keyword arguments that will be passed to the ``get_dataset_lazily`` method.
+    :param parameters: Optional keyword arguments that will be passed to the ``get_dataset_lazily`` method.
     """
 
     def __init__(self,
                  tile_grid: TileGrid = None,
                  ds_id: str = None,
-                 kwargs: Mapping[str, Any] = None):
+                 parameters: Mapping[str, Any] = None):
         self._tile_grid = tile_grid
         self._ds_id = ds_id
         self._level_datasets = {}
-        self._kwargs = kwargs
+        self._parameters = parameters or {}
         self._lock = threading.RLock()
 
     @property
@@ -134,20 +134,19 @@ class LazyMultiLevelDataset(MultiLevelDataset, metaclass=ABCMeta):
         :return: the dataset for the level at *index*.
         """
         if index not in self._level_datasets:
-            kwargs = self._kwargs if self._kwargs is not None else {}
             with self._lock:
                 # noinspection PyTypeChecker
-                self._level_datasets[index] = self._get_dataset_lazily(index, **kwargs)
+                self._level_datasets[index] = self._get_dataset_lazily(index, self._parameters)
         # noinspection PyTypeChecker
         return self._level_datasets[index]
 
     @abstractmethod
-    def _get_dataset_lazily(self, index: int, **kwargs) -> xr.Dataset:
+    def _get_dataset_lazily(self, index: int, parameters: Dict[str, Any]) -> xr.Dataset:
         """
         Retrieve, i.e. read or compute, the dataset for the level at given *index*.
 
         :param index: the level index
-        :param kwargs: Extra keyword arguments passed to constructor.
+        :param parameters: *parameters* keyword argument that was passed to constructor.
         :return: the dataset for the level at *index*.
         """
 
@@ -184,19 +183,15 @@ class CombinedMultiLevelDataset(LazyMultiLevelDataset):
                  ds_id: str = None,
                  combiner_function: Callable = None,
                  combiner_params: Dict[str, Any] = None):
-        super().__init__(tile_grid=tile_grid, ds_id=ds_id)
+        super().__init__(tile_grid=tile_grid, ds_id=ds_id, parameters=combiner_params)
         if not ml_datasets or len(ml_datasets) < 2:
             raise ValueError('ml_datasets must have at least two elements')
         self._ml_datasets = ml_datasets
         self._combiner_function = combiner_function or xr.merge
-        self._combiner_params = combiner_params or {}
 
-    def _get_tile_grid_lazily(self) -> TileGrid:
-        return self._ml_datasets[0].tile_grid
-
-    def _get_dataset_lazily(self, index: int, **kwargs) -> xr.Dataset:
+    def _get_dataset_lazily(self, index: int, combiner_params: Dict[str, Any]) -> xr.Dataset:
         datasets = [ml_dataset.get_dataset(index) for ml_dataset in self._ml_datasets]
-        return self._combiner_function(datasets, **self._combiner_params)
+        return self._combiner_function(datasets, **combiner_params)
 
     def close(self):
         for ml_dataset in self._ml_datasets:
@@ -206,16 +201,24 @@ class CombinedMultiLevelDataset(LazyMultiLevelDataset):
 class MappedMultiLevelDataset(LazyMultiLevelDataset):
     def __init__(self,
                  ml_dataset: MultiLevelDataset,
-                 mapper: Callable[[xr.Dataset, Dict[str, Any]], xr.Dataset],
+                 mapper_function: Callable[[xr.Dataset, Dict[str, Any]], xr.Dataset],
                  tile_grid: TileGrid = None,
                  ds_id: str = None,
-                 kwargs: Dict[str, Any] = None):
-        super().__init__(tile_grid=tile_grid, ds_id=ds_id, kwargs=kwargs)
+                 mapper_params: Dict[str, Any] = None):
+        super().__init__(tile_grid=tile_grid, ds_id=ds_id, parameters=mapper_params)
         self._ml_dataset = ml_dataset
-        self._mapper = mapper
+        self._mapper_function = mapper_function
 
-    def _get_dataset_lazily(self, index: int, **kwargs) -> xr.Dataset:
-        return self._mapper(self._ml_dataset.get_dataset(index), **kwargs)
+    def _get_dataset_lazily(self, index: int, mapper_params: Dict[str, Any]) -> xr.Dataset:
+        return self._mapper_function(self._ml_dataset.get_dataset(index), **mapper_params)
+
+    def close(self):
+        self._ml_dataset.close()
+
+
+class IdentityMultiLevelDataset(MappedMultiLevelDataset):
+    def __init__(self, ml_dataset: MultiLevelDataset, ds_id: str = None):
+        super().__init__(ml_dataset, lambda ds: ds, ds_id=ds_id)
 
 
 class FileStorageMultiLevelDataset(LazyMultiLevelDataset):
@@ -251,7 +254,7 @@ class FileStorageMultiLevelDataset(LazyMultiLevelDataset):
                                  f" expected {num_levels} but found {len(level_paths)} entries:"
                                  f" {dir_path}")
 
-        super().__init__(ds_id=ds_id, kwargs=zarr_kwargs)
+        super().__init__(ds_id=ds_id, parameters=zarr_kwargs)
         self._dir_path = dir_path
         self._level_paths = level_paths
         self._num_levels = num_levels
@@ -260,12 +263,12 @@ class FileStorageMultiLevelDataset(LazyMultiLevelDataset):
     def num_levels(self) -> int:
         return self._num_levels
 
-    def _get_dataset_lazily(self, index: int, **zarr_kwargs) -> xr.Dataset:
+    def _get_dataset_lazily(self, index: int, parameters: Dict[str, Any]) -> xr.Dataset:
         """
         Read the dataset for the level at given *index*.
 
         :param index: the level index
-        :param zarr_kwargs: kwargs passed to xr.open_zarr()
+        :param parameters: keyword arguments passed to xr.open_zarr()
         :return: the dataset for the level at *index*.
         """
         ext, level_path = self._level_paths[index]
@@ -277,7 +280,7 @@ class FileStorageMultiLevelDataset(LazyMultiLevelDataset):
                     base_dir = os.path.dirname(self._dir_path)
                     level_path = os.path.join(base_dir, level_path)
         with measure_time(tag=f"opened local dataset {level_path} for level {index}"):
-            return assert_cube(xr.open_zarr(level_path, **zarr_kwargs), name=level_path)
+            return assert_cube(xr.open_zarr(level_path, **parameters), name=level_path)
 
     def _get_tile_grid_lazily(self):
         """
@@ -321,7 +324,7 @@ class ObjectStorageMultiLevelDataset(LazyMultiLevelDataset):
             if level not in level_paths:
                 raise exception_type(f"Invalid multi-level dataset {ds_id!r}: missing level {level} in {dir_path}")
 
-        super().__init__(ds_id=ds_id, kwargs=zarr_kwargs)
+        super().__init__(ds_id=ds_id, parameters=zarr_kwargs)
         self._obs_file_system = obs_file_system
         self._dir_path = dir_path
         self._level_paths = level_paths
@@ -331,12 +334,12 @@ class ObjectStorageMultiLevelDataset(LazyMultiLevelDataset):
     def num_levels(self) -> int:
         return self._num_levels
 
-    def _get_dataset_lazily(self, index: int, **zarr_kwargs) -> xr.Dataset:
+    def _get_dataset_lazily(self, index: int, parameters: Dict[str, Any]) -> xr.Dataset:
         """
         Read the dataset for the level at given *index*.
 
         :param index: the level index
-        :param zarr_kwargs: kwargs passed to xr.open_zarr()
+        :param parameters: keyword arguments passed to xr.open_zarr()
         :return: the dataset for the level at *index*.
         """
         ext, level_path = self._level_paths[index]
@@ -352,7 +355,7 @@ class ObjectStorageMultiLevelDataset(LazyMultiLevelDataset):
         cached_store = zarr.LRUStoreCache(store, max_size=2 ** 28)
         with measure_time(tag=f"opened remote dataset {level_path} for level {index}"):
             consolidated = self._obs_file_system.exists(f'{level_path}/.zmetadata')
-            return assert_cube(xr.open_zarr(cached_store, consolidated=consolidated, **zarr_kwargs), name=level_path)
+            return assert_cube(xr.open_zarr(cached_store, consolidated=consolidated, **parameters), name=level_path)
 
     def _get_tile_grid_lazily(self):
         """
@@ -377,13 +380,13 @@ class BaseMultiLevelDataset(LazyMultiLevelDataset):
             raise ValueError("base_dataset must be given")
         self._base_dataset = base_dataset
 
-    def _get_dataset_lazily(self, index: int, **kwargs) -> xr.Dataset:
+    def _get_dataset_lazily(self, index: int, parameters: Dict[str, Any]) -> xr.Dataset:
         """
         Compute the dataset at level *index*: If *index* is zero, return the base image passed to constructor,
         otherwise down-sample the dataset for the level at given *index*.
 
         :param index: the level index
-        :param kwargs: currently unused
+        :param parameters: currently unused
         :return: the dataset for the level at *index*.
         """
         if index == 0:
@@ -415,10 +418,9 @@ class ComputedMultiLevelDataset(LazyMultiLevelDataset):
                  input_parameters: Mapping[str, Any],
                  ds_id: str = None,
                  exception_type: type = ValueError):
-        super().__init__(ds_id=ds_id, kwargs=input_parameters)
 
         input_parameters = input_parameters or {}
-        super().__init__(kwargs=input_parameters)
+        super().__init__(ds_id=ds_id, parameters=input_parameters)
 
         try:
             with open(script_path) as fp:
@@ -464,12 +466,12 @@ class ComputedMultiLevelDataset(LazyMultiLevelDataset):
     def _get_tile_grid_lazily(self) -> TileGrid:
         return self._input_ml_dataset_getter(self._input_ml_dataset_ids[0]).tile_grid
 
-    def _get_dataset_lazily(self, index: int, **kwargs) -> xr.Dataset:
+    def _get_dataset_lazily(self, index: int, parameters: Dict[str, Any]) -> xr.Dataset:
         input_datasets = [self._input_ml_dataset_getter(ds_id).get_dataset(index)
                           for ds_id in self._input_ml_dataset_ids]
         try:
             with measure_time(tag=f"computed in-memory dataset {self.ds_id!r} at level {index}"):
-                computed_value = self._callable_obj(*input_datasets, **kwargs)
+                computed_value = self._callable_obj(*input_datasets, **parameters)
         except Exception as e:
             raise self._exception_type(f"Failed to compute in-memory dataset {self.ds_id!r} at level {index} "
                                        f"from function {self._callable_name!r}: {e}") from e
@@ -677,17 +679,21 @@ def open_ml_dataset_from_python_code(script_path: str,
 def augment_ml_dataset(ml_dataset: MultiLevelDataset,
                        script_path: str,
                        callable_name: str,
-                       input_ml_dataset_getter: Callable[[str], MultiLevelDataset] = None,
+                       input_ml_dataset_getter: Callable[[str], MultiLevelDataset],
+                       input_ml_dataset_setter: Callable[[MultiLevelDataset], None],
                        input_parameters: Mapping[str, Any] = None,
                        exception_type: type = ValueError):
     with measure_time(tag=f"added augmentation from {script_path}"):
+        orig_id = ml_dataset.ds_id
         aug_id = uuid.uuid4()
         aug_inp_id = f'aug-input-{aug_id}'
-        ml_dataset_aug = ComputedMultiLevelDataset(script_path,
-                                                   callable_name,
-                                                   [ml_dataset.ds_id],
-                                                   input_ml_dataset_getter,
-                                                   input_parameters,
-                                                   ds_id=f'aug-{aug_id}',
-                                                   exception_type=exception_type)
-        return CombinedMultiLevelDataset([ml_dataset, ml_dataset_aug], ds_id=aug_inp_id)
+        aug_inp_ds = IdentityMultiLevelDataset(ml_dataset, ds_id=aug_inp_id)
+        input_ml_dataset_setter(aug_inp_ds)
+        aug_ds = ComputedMultiLevelDataset(script_path,
+                                           callable_name,
+                                           [aug_inp_id],
+                                           input_ml_dataset_getter,
+                                           input_parameters,
+                                           ds_id=f'aug-{aug_id}',
+                                           exception_type=exception_type)
+        return CombinedMultiLevelDataset([ml_dataset, aug_ds], ds_id=orig_id)

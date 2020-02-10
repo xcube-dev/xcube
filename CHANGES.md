@@ -44,11 +44,6 @@
   tile sets conforms to the [TMS 1.0 Specification](https://wiki.osgeo.org/wiki/Tile_Map_Service_Specification) 
   (#209).
 
-* Added new CLI tool `xcube tile` which is used to generate a tiled RGB image 
-  pyramid from any xcube dataset. The format and file organisation of the generated 
-  tile sets conforms to the [TMS 1.0 Specification](https://wiki.osgeo.org/wiki/Tile_Map_Service_Specification) 
-  (#209).
-
 * The configuration of `xcube serve` has been enhanced to support
   augmentation of data cubes by new variables computed on-the-fly (#272).
   You can now add a section `Augmentation` into a dataset descriptor, e.g.:
