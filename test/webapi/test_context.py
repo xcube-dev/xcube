@@ -104,8 +104,8 @@ class ServiceContextTest(unittest.TestCase):
         self.assertEqual(('PuBuGn', 0., 100.), cm)
         cm = ctx.get_color_mapping('demo', 'kd489')
         self.assertEqual(('jet', 0., 6.), cm)
-        cm = ctx.get_color_mapping('demo', '_')
-        self.assertEqual(('viridis', 0., 1.), cm)
+        with self.assertRaises(ServiceResourceNotFoundError):
+            ctx.get_color_mapping('demo', '_')
 
     def test_get_global_place_groups(self):
         ctx = new_test_service_context()

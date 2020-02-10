@@ -98,16 +98,17 @@ def tile(cube: str,
     import numpy as np
 
     from xcube.core.mldataset import open_ml_dataset
+    from xcube.core.mldataset import MultiLevelDataset
     from xcube.core.schema import CubeSchema
     from xcube.core.tile import get_ml_dataset_tile
+    from xcube.core.tile import get_var_valid_range
+    from xcube.core.tile import get_var_cmap_params
     from xcube.core.tile import parse_non_spatial_labels
     from xcube.core.select import select_variables_subset
     from xcube.cli.common import parse_cli_kwargs
     from xcube.cli.common import parse_cli_sequence
     from xcube.cli.common import assert_positive_int_item
     from xcube.util.tilegrid import TileGrid
-    from xcube.util.tiledimage import DEFAULT_COLOR_MAP_NAME
-    from xcube.util.tiledimage import DEFAULT_COLOR_MAP_VALUE_RANGE
     from xcube.util.tiledimage import DEFAULT_COLOR_MAP_NUM_COLORS
 
     # noinspection PyShadowingNames
@@ -146,9 +147,13 @@ def tile(cube: str,
             return [float(value) for value in values]
 
     # noinspection PyShadowingNames
-    def _get_color_mappings(var_name: str, config: Mapping[str, Any], style_id: str):
-        color_bar = DEFAULT_COLOR_MAP_NAME
-        value_range = DEFAULT_COLOR_MAP_VALUE_RANGE
+    def _get_color_mappings(ml_dataset: MultiLevelDataset,
+                            var_name: str,
+                            config: Mapping[str, Any],
+                            style_id: str):
+        cmap_name = None
+        cmap_vmin, cmap_vmax = None, None
+
         if config:
             style_id = style_id or 'default'
             styles = config.get('Styles')
@@ -161,10 +166,15 @@ def tile(cube: str,
                 if color_mappings:
                     color_mapping = color_mappings.get(var_name)
                     if color_mapping:
-                        color_bar = color_mapping.get('ColorBar', color_bar)
-                        value_range = color_mapping.get('ValueRange', value_range)
-        value_min, value_max = value_range
-        return color_bar, value_min, value_max
+                        cmap_name = color_mapping.get('ColorBar')
+                        cmap_vmin, cmap_vmax = color_mapping.get('ValueRange', (None, None))
+
+        cmap_params = cmap_name, cmap_vmin, cmap_vmax
+        if None not in cmap_params:
+            return cmap_params
+        var = ml_dataset.base_dataset[var_name]
+        valid_range = get_var_valid_range(var)
+        return get_var_cmap_params(var, cmap_name, cmap_vmin, cmap_vmax, valid_range)
 
     variables = parse_cli_sequence(variables, metavar='VARIABLES', num_items_min=1,
                                    item_plural_name='variables')
@@ -239,7 +249,7 @@ def tile(cube: str,
     image_cache = {}
 
     for var_name, var in base_dataset.data_vars.items():
-        color_bar, value_min, value_max = _get_color_mappings(str(var_name), config, style_id)
+        color_bar, value_min, value_max = _get_color_mappings(ml_dataset, str(var_name), config, style_id)
 
         label_names = []
         label_indexes = []
@@ -295,7 +305,7 @@ def tile(cube: str,
                                                          x, y, z,
                                                          labels=labels,
                                                          labels_are_indices=True,
-                                                         cmap_cbar=color_bar,
+                                                         cmap_name=color_bar,
                                                          cmap_vmin=value_min,
                                                          cmap_vmax=value_max,
                                                          image_cache=image_cache,

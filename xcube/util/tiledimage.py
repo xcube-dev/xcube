@@ -442,7 +442,7 @@ class ColorMappedRgbaImage(DecoratorImage):
     :param source_image: the source image
     :param image_id: optional unique image identifier
     :param no_data_value: optional no-data value for mask creation
-    :param value_range: The display value range.
+    :param cmap_range: The display value range.
     :param cmap_name: A Matplotlib color map name
     :param num_colors: Number of colors
     :param no_data_value: No-data value
@@ -455,7 +455,7 @@ class ColorMappedRgbaImage(DecoratorImage):
     def __init__(self,
                  source_image: TiledImage,
                  image_id: str = None,
-                 value_range: Tuple[float, float] = DEFAULT_COLOR_MAP_VALUE_RANGE,
+                 cmap_range: Tuple[float, float] = DEFAULT_COLOR_MAP_VALUE_RANGE,
                  cmap_name: str = DEFAULT_COLOR_MAP_NAME,
                  num_colors: int = DEFAULT_COLOR_MAP_NUM_COLORS,
                  no_data_value: Union[int, float] = None,
@@ -465,7 +465,7 @@ class ColorMappedRgbaImage(DecoratorImage):
                  trace_perf: bool = False):
         super().__init__(source_image, image_id=image_id, format=format, mode='RGBA', tile_cache=tile_cache,
                          trace_perf=trace_perf)
-        self._value_range = value_range or DEFAULT_COLOR_MAP_VALUE_RANGE
+        self._cmap_range = cmap_range or DEFAULT_COLOR_MAP_VALUE_RANGE
         cmap_name, cmap = get_cmap(cmap_name or DEFAULT_COLOR_MAP_NAME,
                                    default_cmap_name=DEFAULT_COLOR_MAP_NAME,
                                    num_colors=num_colors or DEFAULT_COLOR_MAP_NUM_COLORS)
@@ -481,18 +481,18 @@ class ColorMappedRgbaImage(DecoratorImage):
         tile_tag = self._get_tile_tag(tile_x, tile_y)
 
         with measure_time(tile_tag + "mask"):
-            value_min, value_max = self._value_range
+            cmap_min, cmap_max = self._cmap_range
             if not np.ma.is_masked(source_tile):
                 if self._no_data_value is not None:
                     array = np.ma.masked_equal(source_tile, self._no_data_value)
-                    array = array.clip(value_min, value_max, out=array)
+                    array = array.clip(cmap_min, cmap_max, out=array)
                 elif np.issubdtype(source_tile.dtype, np.floating):
                     array = np.ma.masked_invalid(source_tile)
-                    array = array.clip(value_min, value_max, out=array)
+                    array = array.clip(cmap_min, cmap_max, out=array)
                 else:
-                    array = source_tile.clip(value_min, value_max)
+                    array = source_tile.clip(cmap_min, cmap_max)
             else:
-                array = source_tile.clip(value_min, value_max)
+                array = source_tile.clip(cmap_min, cmap_max)
 
         old_shape = array.shape
         height = old_shape[-2]
@@ -507,8 +507,8 @@ class ColorMappedRgbaImage(DecoratorImage):
         # check if we can optimize the following calls by using Numexpr
         # see https://github.com/pydata/numexpr/wiki/Numexpr-Users-Guide
         with measure_time(tile_tag + "normalise"):
-            array -= value_min
-            array *= 1.0 / (value_max - value_min)
+            array -= cmap_min
+            array *= 1.0 / (cmap_max - cmap_min)
 
         with measure_time(tile_tag + "map colors"):
             array = self._cmap(array, bytes=True)

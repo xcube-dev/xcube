@@ -32,12 +32,12 @@ def get_dataset_tile(ctx: ServiceContext,
     tile_comp_mode = params.get_query_argument_int('mode', ctx.tile_comp_mode)
     trace_perf = params.get_query_argument_int('debug', ctx.trace_perf) != 0
 
-    cmap_cbar = params.get_query_argument('cbar', default=None)
+    cmap_name = params.get_query_argument('cbar', default=None)
     cmap_vmin = params.get_query_argument_float('vmin', default=None)
     cmap_vmax = params.get_query_argument_float('vmax', default=None)
-    if cmap_cbar is None or cmap_vmin is None or cmap_vmax is None:
-        default_cmap_cbar, default_cmap_vmin, default_cmap_vmax = ctx.get_color_mapping(ds_id, var_name)
-        cmap_cbar = cmap_cbar or default_cmap_cbar
+    if cmap_name is None or cmap_vmin is None or cmap_vmax is None:
+        default_cmap_name, default_cmap_vmin, default_cmap_vmax = ctx.get_color_mapping(ds_id, var_name)
+        cmap_name = cmap_name or default_cmap_name
         cmap_vmin = cmap_vmin or default_cmap_vmin
         cmap_vmax = cmap_vmax or default_cmap_vmax
 
@@ -53,7 +53,7 @@ def get_dataset_tile(ctx: ServiceContext,
                                var_name,
                                x, y, z,
                                labels=labels,
-                               cmap_cbar=cmap_cbar,
+                               cmap_name=cmap_name,
                                cmap_vmin=cmap_vmin,
                                cmap_vmax=cmap_vmax,
                                image_cache=ctx.image_cache,
@@ -67,28 +67,28 @@ def get_legend(ctx: ServiceContext,
                ds_id: str,
                var_name: str,
                params: RequestParams):
-    cmap_cbar = params.get_query_argument('cbar', default=None)
+    cmap_name = params.get_query_argument('cbar', default=None)
     cmap_vmin = params.get_query_argument_float('vmin', default=None)
     cmap_vmax = params.get_query_argument_float('vmax', default=None)
     cmap_w = params.get_query_argument_int('width', default=None)
     cmap_h = params.get_query_argument_int('height', default=None)
-    if cmap_cbar is None or cmap_vmin is None or cmap_vmax is None or cmap_w is None or cmap_h is None:
+    if cmap_name is None or cmap_vmin is None or cmap_vmax is None or cmap_w is None or cmap_h is None:
         default_cmap_cbar, default_cmap_vmin, default_cmap_vmax = ctx.get_color_mapping(ds_id, var_name)
-        cmap_cbar = cmap_cbar or default_cmap_cbar
+        cmap_name = cmap_name or default_cmap_cbar
         cmap_vmin = cmap_vmin or default_cmap_vmin
         cmap_vmax = cmap_vmax or default_cmap_vmax
         cmap_w = cmap_w or DEFAULT_CMAP_WIDTH
         cmap_h = cmap_h or DEFAULT_CMAP_HEIGHT
 
     try:
-        _, cmap = get_cmap(cmap_cbar)
+        _, cmap = get_cmap(cmap_name)
     except ValueError:
-        raise ServiceResourceNotFoundError(f"color bar {cmap_cbar!r} not found")
+        raise ServiceResourceNotFoundError(f"color bar {cmap_name!r} not found")
 
     fig = matplotlib.figure.Figure(figsize=(cmap_w, cmap_h))
     ax1 = fig.add_subplot(1, 1, 1)
-    if '.cpd' in cmap_cbar:
-        norm, ticks = get_norm(cmap_cbar)
+    if '.cpd' in cmap_name:
+        norm, ticks = get_norm(cmap_name)
     else:
         norm = matplotlib.colors.Normalize(vmin=cmap_vmin, vmax=cmap_vmax)
         ticks = None
