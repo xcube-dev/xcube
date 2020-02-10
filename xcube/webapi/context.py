@@ -24,30 +24,22 @@ import logging
 import os
 import os.path
 import threading
-import uuid
 from typing import Any, Dict, List, Optional, Tuple, Callable, Collection, Set
 from typing import Sequence
 
 import fiona
 import numpy as np
 import pandas as pd
-import s3fs
 import xarray as xr
-import zarr
-from xcube.constants import FORMAT_NAME_LEVELS
-from xcube.constants import FORMAT_NAME_NETCDF4
+
 from xcube.constants import FORMAT_NAME_ZARR
-from xcube.core.dsio import guess_dataset_format
-from xcube.core.mldataset import BaseMultiLevelDataset
-from xcube.core.mldataset import CombinedMultiLevelDataset
-from xcube.core.mldataset import ComputedMultiLevelDataset
-from xcube.core.mldataset import FileStorageMultiLevelDataset
 from xcube.core.mldataset import MultiLevelDataset
-from xcube.core.mldataset import ObjectStorageMultiLevelDataset
-from xcube.core.verify import assert_cube
+from xcube.core.mldataset import augment_ml_dataset
+from xcube.core.mldataset import open_ml_dataset_from_local_fs
+from xcube.core.mldataset import open_ml_dataset_from_object_storage
+from xcube.core.mldataset import open_ml_dataset_from_python_code
 from xcube.util.cache import MemoryCacheStore, Cache
 from xcube.util.cmaps import get_cmap
-from xcube.util.perf import measure_time
 from xcube.util.tilegrid import TileGrid
 from xcube.version import version
 from xcube.webapi.defaults import DEFAULT_CMAP_CBAR
@@ -315,25 +307,20 @@ class ServiceContext:
         ml_dataset = ml_dataset_opener(self, dataset_descriptor)
         augmentation = dataset_descriptor.get('Augmentation')
         if augmentation:
-            path = self.get_descriptor_path(augmentation,
-                                            f"'Augmentation' of dataset descriptor {ds_id}")
+            script_path = self.get_descriptor_path(augmentation,
+                                                   f"'Augmentation' of dataset descriptor {ds_id}")
             input_parameters = augmentation.get('InputParameters')
             callable_name = augmentation.get('Function', COMPUTE_VARIABLES)
-            with measure_time(tag=f"added augmentation from {path}"):
-                aug_id = uuid.uuid4()
-                aug_inp_id = f'augmentation-input-{aug_id}'
-                aug_inp_descriptor = dict(dataset_descriptor)
-                del aug_inp_descriptor['Augmentation']
-                aug_inp_descriptor['Identifier'] = aug_inp_id
-                self._dataset_cache[aug_inp_id] = ml_dataset, aug_inp_descriptor
-                extra_vars = ComputedMultiLevelDataset(f'augmentation-{aug_id}',
-                                                       path,
-                                                       callable_name,
-                                                       [aug_inp_id],
-                                                       self.get_ml_dataset,
-                                                       input_parameters,
-                                                       exception_type=ServiceConfigError)
-                ml_dataset = CombinedMultiLevelDataset([ml_dataset, extra_vars])
+            ml_dataset = augment_ml_dataset(ml_dataset,
+                                            script_path,
+                                            callable_name,
+                                            self.get_ml_dataset,
+                                            input_parameters=input_parameters,
+                                            exception_type=ServiceConfigError)
+            aug_inp_descriptor = dict(dataset_descriptor)
+            del aug_inp_descriptor['Augmentation']
+            aug_inp_descriptor['Identifier'] = ml_dataset.ds_id
+            self._dataset_cache[ml_dataset.ds_id] = ml_dataset, aug_inp_descriptor
 
         return ml_dataset
 
@@ -436,11 +423,7 @@ class ServiceContext:
             join = None
             place_join = place_group_descriptor.get("Join")
             if isinstance(place_join, dict):
-                join_path = place_join.get("Path")
-                if not join_path:
-                    raise ServiceError("Missing 'Path' entry in 'Join' of a 'PlaceGroups' item")
-                if not os.path.isabs(join_path):
-                    join_path = os.path.join(self._base_dir, join_path)
+                join_path = self.get_descriptor_path(place_join, "'Join' of a 'PlaceGroups' item")
                 join_property = place_join.get("Property")
                 if not join_property:
                     raise ServiceError("Missing 'Property' entry in 'Join' of a 'PlaceGroups' item")

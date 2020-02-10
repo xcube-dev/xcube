@@ -98,11 +98,14 @@ class LazyMultiLevelDataset(MultiLevelDataset, metaclass=ABCMeta):
     which may be overridden.The default implementation computes a new tile grid based on the dataset at level zero.
 
     :param tile_grid: The tile grid. If None, a new tile grid will be computed based on the dataset at level zero.
-    :param kwargs: Extra keyword arguments that will be passed to the ``get_dataset_lazily`` method.
     :param ds_id: Optional dataset identifier.
+    :param kwargs: Optional keyword arguments that will be passed to the ``get_dataset_lazily`` method.
     """
 
-    def __init__(self, tile_grid: TileGrid = None, ds_id: str = None, kwargs: Mapping[str, Any] = None):
+    def __init__(self,
+                 tile_grid: TileGrid = None,
+                 ds_id: str = None,
+                 kwargs: Mapping[str, Any] = None):
         self._tile_grid = tile_grid
         self._ds_id = ds_id
         self._level_datasets = {}
@@ -168,6 +171,7 @@ class CombinedMultiLevelDataset(LazyMultiLevelDataset):
     A multi-level dataset that is a combination of other multi-level datasets.
 
     :param ml_datasets: The multi-level datasets to be combined. At least two must be provided.
+    :param ds_id: Optional dataset identifier.
     :param combiner_function: A function used to combine the datasets. It receives a list of
         datasets (``xarray.Dataset`` instances) and *combiner_params* as keyword arguments.
         Defaults to function ``xarray.merge()`` with default parameters.
@@ -176,9 +180,11 @@ class CombinedMultiLevelDataset(LazyMultiLevelDataset):
 
     def __init__(self,
                  ml_datasets: Sequence[MultiLevelDataset],
+                 tile_grid: TileGrid = None,
+                 ds_id: str = None,
                  combiner_function: Callable = None,
                  combiner_params: Dict[str, Any] = None):
-        super().__init__()
+        super().__init__(tile_grid=tile_grid, ds_id=ds_id)
         if not ml_datasets or len(ml_datasets) < 2:
             raise ValueError('ml_datasets must have at least two elements')
         self._ml_datasets = ml_datasets
@@ -394,9 +400,11 @@ class BaseMultiLevelDataset(LazyMultiLevelDataset):
         return level_dataset
 
 
+# TODO (forman): rename to ScriptedMultiLevelDataset
+
 class ComputedMultiLevelDataset(LazyMultiLevelDataset):
     """
-    A multi-level dataset whose level datasets are a computed from the levels of other multi-level datasets.
+    A multi-level dataset whose level datasets are a computed from a Python script.
     """
 
     def __init__(self,
@@ -649,18 +657,37 @@ def open_ml_dataset_from_local_fs(path: str,
     raise exception_type(f'Unrecognized multi-level dataset format {data_format!r} for path {path!r}')
 
 
-def open_ml_dataset_from_python_code(path: str,
-                                     callable_name: str = COMPUTE_DATASET,
+def open_ml_dataset_from_python_code(script_path: str,
+                                     callable_name: str,
                                      input_ml_dataset_ids: Sequence[str] = None,
                                      input_ml_dataset_getter: Callable[[str], MultiLevelDataset] = None,
                                      input_parameters: Mapping[str, Any] = None,
                                      ds_id: str = None,
                                      exception_type: type = ValueError) -> MultiLevelDataset:
-    with measure_time(tag=f"opened memory dataset {path}"):
-        return ComputedMultiLevelDataset(path,
+    with measure_time(tag=f"opened memory dataset {script_path}"):
+        return ComputedMultiLevelDataset(script_path,
                                          callable_name,
                                          input_ml_dataset_ids,
                                          input_ml_dataset_getter,
                                          input_parameters,
                                          ds_id=ds_id,
                                          exception_type=exception_type)
+
+
+def augment_ml_dataset(ml_dataset: MultiLevelDataset,
+                       script_path: str,
+                       callable_name: str,
+                       input_ml_dataset_getter: Callable[[str], MultiLevelDataset] = None,
+                       input_parameters: Mapping[str, Any] = None,
+                       exception_type: type = ValueError):
+    with measure_time(tag=f"added augmentation from {script_path}"):
+        aug_id = uuid.uuid4()
+        aug_inp_id = f'aug-input-{aug_id}'
+        ml_dataset_aug = ComputedMultiLevelDataset(script_path,
+                                                   callable_name,
+                                                   [ml_dataset.ds_id],
+                                                   input_ml_dataset_getter,
+                                                   input_parameters,
+                                                   ds_id=f'aug-{aug_id}',
+                                                   exception_type=exception_type)
+        return CombinedMultiLevelDataset([ml_dataset, ml_dataset_aug], ds_id=aug_inp_id)
