@@ -51,6 +51,7 @@ def level(input, output, link, tile_size, num_levels_max):
     import time
     import os
     from xcube.cli.common import parse_cli_sequence
+    from xcube.cli.common import assert_positive_int_item
     from xcube.core.level import write_levels
 
     input_path = input
@@ -67,15 +68,12 @@ def level(input, output, link, tile_size, num_levels_max):
     if os.path.exists(output_path):
         raise click.ClickException(f"output {output_path!r} already exists")
 
-    def positive_int(v):
-        if v <= 0:
-            raise ValueError('must be positive')
-
     spatial_tile_shape = None
     if tile_size is not None:
-        tile_size = parse_cli_sequence(tile_size, metavar='TILE_SIZE', num_items=2, item_plural_name='tile sizes',
+        tile_size = parse_cli_sequence(tile_size, metavar='TILE_SIZE', num_items=2,
+                                       item_plural_name='tile sizes',
                                        item_parser=int,
-                                       item_validator=positive_int, error_type=click.ClickException)
+                                       item_validator=assert_positive_int_item)
         spatial_tile_shape = tile_size[1], tile_size[0]
 
     start_time = t0 = time.perf_counter()

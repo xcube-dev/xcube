@@ -43,6 +43,7 @@ class TileGrid:
     :param tile_width: The tile width.
     :param tile_height: The tile height.
     :param geo_extent: The geographical extent.
+    :param inv_y: Whether thy y-axis is inverted.
     """
 
     def __init__(self,
@@ -53,15 +54,15 @@ class TileGrid:
                  tile_height: int,
                  geo_extent: GeoExtent,
                  inv_y: bool = False):
-        if num_levels < 1:
+        if not num_levels or num_levels < 1:
             raise ValueError(f"{num_levels} is an invalid value for num_levels")
-        if num_level_zero_tiles_x < 1:
+        if not num_level_zero_tiles_x or num_level_zero_tiles_x < 1:
             raise ValueError(f"{num_level_zero_tiles_x} is an invalid value for num_level_zero_tiles_x")
-        if num_level_zero_tiles_y < 1:
-            raise ValueError(f"{num_level_zero_tiles_y} is an invalid value for num_level_zero_tiles_x")
-        if tile_width < 1:
+        if not num_level_zero_tiles_y or num_level_zero_tiles_y < 1:
+            raise ValueError(f"{num_level_zero_tiles_y} is an invalid value for num_level_zero_tiles_y")
+        if not tile_width or tile_width < 1:
             raise ValueError(f"{tile_width} is an invalid value for tile_width")
-        if tile_height < 1:
+        if not tile_height or tile_height < 1:
             raise ValueError(f"{tile_height} is an invalid value for tile_height")
         west, south, east, north = geo_extent
         if west < -180.0 or south < -90.0 or east > 180.0 or north > 90.0 \

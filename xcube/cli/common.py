@@ -102,7 +102,7 @@ def parse_cli_sequence(seq_value: Union[None, str, Sequence[Any]],
                        num_items_min: int = None,
                        num_items_max: int = None,
                        separator: str = ',',
-                       error_type: Type[Exception] = ValueError) -> Optional[Tuple[Any, ...]]:
+                       error_type: Type[Exception] = click.ClickException) -> Optional[Tuple[Any, ...]]:
     """
     Parse a CLI argument that is supposed to be a sequence.
 
@@ -118,7 +118,7 @@ def parse_cli_sequence(seq_value: Union[None, str, Sequence[Any]],
     :param num_items_min: expected minimum number of items
     :param num_items_max: expected maximum number of items
     :param separator: expected separator if *seq_value* is a string, default is ','.
-    :param error_type: value error to be raised in case, defaults to ValueError
+    :param error_type: value error to be raised in case, defaults to ``click.ClickException``
     :return: parsed and validated *seq_value* as a tuple of values
     """
     if seq_value is None:
@@ -146,7 +146,7 @@ def parse_cli_sequence(seq_value: Union[None, str, Sequence[Any]],
     if not allow_empty_items:
         for item in items:
             if not item:
-                raise ValueError(f'{item_plural_name} in {metavar} must not be empty')
+                raise error_type(f'{item_plural_name} in {metavar} must not be empty')
     if item_parser:
         try:
             items = tuple(map(item_parser, items))
@@ -159,6 +159,16 @@ def parse_cli_sequence(seq_value: Union[None, str, Sequence[Any]],
         except ValueError as e:
             raise error_type(f'Invalid {item_plural_name} in {metavar} found: {e}')
     return tuple(items)
+
+
+def assert_positive_int_item(item: int):
+    """
+    A validator for positive integer number sequences.
+    Frequently used to validate counts or image and tile sizes passes as args to the CLI.
+    """
+    if item <= 0:
+        raise ValueError('all items must be positive integer numbers')
+
 
 
 def handle_cli_exception(e: BaseException, exit_code: int = None, traceback_mode: bool = False) -> int:

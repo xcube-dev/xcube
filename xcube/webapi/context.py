@@ -24,35 +24,26 @@ import logging
 import os
 import os.path
 import threading
-import uuid
 from typing import Any, Dict, List, Optional, Tuple, Callable, Collection, Set
 from typing import Sequence
 
 import fiona
 import numpy as np
 import pandas as pd
-import s3fs
 import xarray as xr
-import zarr
-from xcube.constants import FORMAT_NAME_LEVELS
-from xcube.constants import FORMAT_NAME_NETCDF4
+
 from xcube.constants import FORMAT_NAME_ZARR
-from xcube.core.dsio import guess_dataset_format
-from xcube.core.mldataset import BaseMultiLevelDataset
-from xcube.core.mldataset import CombinedMultiLevelDataset
-from xcube.core.mldataset import ComputedMultiLevelDataset
-from xcube.core.mldataset import FileStorageMultiLevelDataset
 from xcube.core.mldataset import MultiLevelDataset
-from xcube.core.mldataset import ObjectStorageMultiLevelDataset
-from xcube.core.verify import assert_cube
+from xcube.core.mldataset import augment_ml_dataset
+from xcube.core.mldataset import open_ml_dataset_from_local_fs
+from xcube.core.mldataset import open_ml_dataset_from_object_storage
+from xcube.core.mldataset import open_ml_dataset_from_python_code
+from xcube.core.tile import get_var_cmap_params
+from xcube.core.tile import get_var_valid_range
 from xcube.util.cache import MemoryCacheStore, Cache
 from xcube.util.cmaps import get_cmap
-from xcube.util.perf import measure_time
 from xcube.util.tilegrid import TileGrid
 from xcube.version import version
-from xcube.webapi.defaults import DEFAULT_CMAP_CBAR
-from xcube.webapi.defaults import DEFAULT_CMAP_VMAX
-from xcube.webapi.defaults import DEFAULT_CMAP_VMIN
 from xcube.webapi.defaults import DEFAULT_TRACE_PERF
 from xcube.webapi.errors import ServiceBadRequestError
 from xcube.webapi.errors import ServiceConfigError
@@ -207,6 +198,9 @@ class ServiceContext:
         ml_dataset, _ = self._get_dataset_entry(ds_id)
         return ml_dataset
 
+    def set_ml_dataset(self, ml_dataset: MultiLevelDataset):
+        self._set_dataset_entry((ml_dataset, dict(Identifier=ml_dataset.ds_id, Hidden=True)))
+
     def get_dataset(self, ds_id: str, expected_var_names: Collection[str] = None) -> xr.Dataset:
         ml_dataset, _ = self._get_dataset_entry(ds_id)
         dataset = ml_dataset.base_dataset
@@ -258,7 +252,9 @@ class ServiceContext:
         return ml_dataset.tile_grid
 
     def get_color_mapping(self, ds_id: str, var_name: str):
-        cmap_cbar, cmap_vmin, cmap_vmax = DEFAULT_CMAP_CBAR, DEFAULT_CMAP_VMIN, DEFAULT_CMAP_VMAX
+        cmap_name = None
+        cmap_vmin, cmap_vmax = None, None
+
         dataset_descriptor = self.get_dataset_descriptor(ds_id)
         style_name = dataset_descriptor.get('Style', 'default')
         styles = self._config.get('Styles')
@@ -268,35 +264,36 @@ class ServiceContext:
                 if style_name == s['Identifier']:
                     style = s
                     break
-            # TODO: check color_mappings is not None
             if style:
                 color_mappings = style.get('ColorMappings')
                 if color_mappings:
-                    # TODO: check color_mappings is not None
                     color_mapping = color_mappings.get(var_name)
                     if color_mapping:
-                        cmap_vmin, cmap_vmax = color_mapping.get('ValueRange', (cmap_vmin, cmap_vmax))
+                        cmap_vmin, cmap_vmax = color_mapping.get('ValueRange', (None, None))
                         if color_mapping.get('ColorFile') is not None:
-                            cmap_cbar = color_mapping.get('ColorFile', cmap_cbar)
+                            cmap_name = color_mapping.get('ColorFile', cmap_name)
                         else:
-                            cmap_cbar = color_mapping.get('ColorBar', cmap_cbar)
-                            cmap_cbar, _ = get_cmap(cmap_cbar)
-                        return cmap_cbar, cmap_vmin, cmap_vmax
-            else:
-                ds = self.get_dataset(ds_id, expected_var_names=[var_name])
-                var = ds[var_name]
-                cmap_cbar = var.attrs.get('color_bar_name', cmap_cbar)
-                cmap_vmin = var.attrs.get('color_value_min', cmap_vmin)
-                cmap_vmax = var.attrs.get('color_value_max', cmap_vmax)
+                            cmap_name = color_mapping.get('ColorBar', cmap_name)
+                            cmap_name, _ = get_cmap(cmap_name)
 
-        _LOG.warning(f'color mapping for variable {var_name!r} of dataset {ds_id!r} undefined: using defaults')
-        return cmap_cbar, cmap_vmin, cmap_vmax
+        cmap_params = cmap_name, cmap_vmin, cmap_vmax
+        if None not in cmap_params:
+            return cmap_params
 
-    def _get_dataset_entry(self, ds_id: str) -> Tuple[MultiLevelDataset, Dict[str, Any]]:
+        ds = self.get_dataset(ds_id, expected_var_names=[var_name])
+        var = ds[var_name]
+        valid_range = get_var_valid_range(var)
+        return get_var_cmap_params(var, cmap_name, cmap_vmin, cmap_vmax, valid_range)
+
+    def _get_dataset_entry(self, ds_id: str) -> Tuple[MultiLevelDataset, DatasetDescriptor]:
         if ds_id not in self._dataset_cache:
             with self._lock:
-                self._dataset_cache[ds_id] = self._create_dataset_entry(ds_id)
+                self._set_dataset_entry(self._create_dataset_entry(ds_id))
         return self._dataset_cache[ds_id]
+
+    def _set_dataset_entry(self, dataset_entry: Tuple[MultiLevelDataset, DatasetDescriptor]):
+        ml_dataset, dataset_descriptor = dataset_entry
+        self._dataset_cache[ml_dataset.ds_id] = ml_dataset, dataset_descriptor
 
     def _create_dataset_entry(self, ds_id: str) -> Tuple[MultiLevelDataset, Dict[str, Any]]:
         dataset_descriptor = self.get_dataset_descriptor(ds_id)
@@ -315,35 +312,26 @@ class ServiceContext:
         ml_dataset = ml_dataset_opener(self, dataset_descriptor)
         augmentation = dataset_descriptor.get('Augmentation')
         if augmentation:
-            path = self.get_descriptor_path(augmentation,
-                                            f"'Augmentation' of dataset descriptor {ds_id}")
+            script_path = self.get_descriptor_path(augmentation,
+                                                   f"'Augmentation' of dataset descriptor {ds_id}")
             input_parameters = augmentation.get('InputParameters')
             callable_name = augmentation.get('Function', COMPUTE_VARIABLES)
-            with measure_time(tag=f"added augmentation from {path}"):
-                aug_id = uuid.uuid4()
-                aug_inp_id = f'augmentation-input-{aug_id}'
-                aug_inp_descriptor = dict(dataset_descriptor)
-                del aug_inp_descriptor['Augmentation']
-                aug_inp_descriptor['Identifier'] = aug_inp_id
-                self._dataset_cache[aug_inp_id] = ml_dataset, aug_inp_descriptor
-                extra_vars = ComputedMultiLevelDataset(f'augmentation-{aug_id}',
-                                                       path,
-                                                       callable_name,
-                                                       [aug_inp_id],
-                                                       self.get_ml_dataset,
-                                                       input_parameters,
-                                                       exception_type=ServiceConfigError)
-                ml_dataset = CombinedMultiLevelDataset([ml_dataset, extra_vars])
-
+            ml_dataset = augment_ml_dataset(ml_dataset,
+                                            script_path,
+                                            callable_name,
+                                            self.get_ml_dataset,
+                                            self.set_ml_dataset,
+                                            input_parameters=input_parameters,
+                                            exception_type=ServiceConfigError)
         return ml_dataset
 
-    def get_legend_label(self, ds_name: str, var_name: str):
-        dataset = self.get_dataset(ds_name)
+    def get_legend_label(self, ds_id: str, var_name: str):
+        dataset = self.get_dataset(ds_id)
         if var_name in dataset:
-            ds = self.get_dataset(ds_name)
+            ds = self.get_dataset(ds_id)
             units = ds[var_name].units
             return units
-        raise ServiceResourceNotFoundError(f'Variable "{var_name}" not found in dataset "{ds_name}"')
+        raise ServiceResourceNotFoundError(f'Variable "{var_name}" not found in dataset "{ds_id}"')
 
     def get_dataset_place_groups(self, ds_id: str, base_url: str, load_features=False) -> List[Dict]:
         dataset_descriptor = self.get_dataset_descriptor(ds_id)
@@ -436,11 +424,7 @@ class ServiceContext:
             join = None
             place_join = place_group_descriptor.get("Join")
             if isinstance(place_join, dict):
-                join_path = place_join.get("Path")
-                if not join_path:
-                    raise ServiceError("Missing 'Path' entry in 'Join' of a 'PlaceGroups' item")
-                if not os.path.isabs(join_path):
-                    join_path = os.path.join(self._base_dir, join_path)
+                join_path = self.get_descriptor_path(place_join, "'Join' of a 'PlaceGroups' item")
                 join_property = place_join.get("Property")
                 if not join_property:
                     raise ServiceError("Missing 'Property' entry in 'Join' of a 'PlaceGroups' item")
@@ -612,63 +596,34 @@ def normalize_prefix(prefix: Optional[str]):
     return prefix
 
 
-def guess_cube_format(path: str) -> str:
-    if path.endswith('.levels'):
-        return FORMAT_NAME_LEVELS
-    return guess_dataset_format(path)
-
-
 # noinspection PyUnusedLocal
-def open_ml_dataset_from_object_storage(ctx: ServiceContext,
-                                        dataset_descriptor: DatasetDescriptor) -> MultiLevelDataset:
+def _open_ml_dataset_from_object_storage(ctx: ServiceContext,
+                                         dataset_descriptor: DatasetDescriptor) -> MultiLevelDataset:
     ds_id = dataset_descriptor.get('Identifier')
     path = ctx.get_descriptor_path(dataset_descriptor, f"dataset descriptor {ds_id}", is_url=True)
     data_format = dataset_descriptor.get('Format', FORMAT_NAME_ZARR)
 
-    s3_client_kwargs = {}
+    endpoint_url = None
     if 'Endpoint' in dataset_descriptor:
-        s3_client_kwargs['endpoint_url'] = dataset_descriptor['Endpoint']
+        endpoint_url = dataset_descriptor['Endpoint']
+
+    region_name = None
     if 'Region' in dataset_descriptor:
-        s3_client_kwargs['region_name'] = dataset_descriptor['Region']
-    obs_file_system = s3fs.S3FileSystem(anon=True, client_kwargs=s3_client_kwargs)
+        region_name = dataset_descriptor['Region']
 
-    if data_format == FORMAT_NAME_ZARR:
-        store = s3fs.S3Map(root=path, s3=obs_file_system, check=False)
-        cached_store = zarr.LRUStoreCache(store, max_size=2 ** 28)
-        with measure_time(tag=f"opened remote zarr dataset {path}"):
-            consolidated = obs_file_system.exists(f'{path}/.zmetadata')
-            ds = assert_cube(xr.open_zarr(cached_store, consolidated=consolidated))
-        return BaseMultiLevelDataset(ds)
-
-    if data_format == FORMAT_NAME_LEVELS:
-        with measure_time(tag=f"opened remote levels dataset {path}"):
-            return ObjectStorageMultiLevelDataset(ds_id, obs_file_system, path,
-                                                  exception_type=ServiceConfigError)
+    return open_ml_dataset_from_object_storage(path, data_format=data_format,
+                                               ds_id=ds_id, exception_type=ServiceConfigError,
+                                               endpoint_url=endpoint_url, region_name=region_name)
 
 
-def open_ml_dataset_from_local_fs(ctx: ServiceContext, dataset_descriptor: DatasetDescriptor) -> MultiLevelDataset:
+def _open_ml_dataset_from_local_fs(ctx: ServiceContext, dataset_descriptor: DatasetDescriptor) -> MultiLevelDataset:
     ds_id = dataset_descriptor.get('Identifier')
     path = ctx.get_descriptor_path(dataset_descriptor, f"dataset descriptor {ds_id}")
-    data_format = dataset_descriptor.get('Format', guess_cube_format(path))
-
-    if data_format == FORMAT_NAME_NETCDF4:
-        with measure_time(tag=f"opened local NetCDF dataset {path}"):
-            ds = assert_cube(xr.open_dataset(path))
-            return BaseMultiLevelDataset(ds)
-
-    if data_format == FORMAT_NAME_ZARR:
-        with measure_time(tag=f"opened local zarr dataset {path}"):
-            ds = assert_cube(xr.open_zarr(path))
-            return BaseMultiLevelDataset(ds)
-
-    if data_format == FORMAT_NAME_LEVELS:
-        with measure_time(tag=f"opened local levels dataset {path}"):
-            return FileStorageMultiLevelDataset(path)
-
-    raise ServiceConfigError(f"Illegal data format {data_format!r} for dataset {ds_id}")
+    data_format = dataset_descriptor.get('Format')
+    return open_ml_dataset_from_local_fs(path, data_format=data_format, ds_id=ds_id, exception_type=ServiceConfigError)
 
 
-def open_ml_dataset_from_python_code(ctx: ServiceContext, dataset_descriptor: DatasetDescriptor) -> MultiLevelDataset:
+def _open_ml_dataset_from_python_code(ctx: ServiceContext, dataset_descriptor: DatasetDescriptor) -> MultiLevelDataset:
     ds_id = dataset_descriptor.get('Identifier')
     path = ctx.get_descriptor_path(dataset_descriptor, f"dataset descriptor {ds_id}")
     callable_name = dataset_descriptor.get('Function', COMPUTE_DATASET)
@@ -681,18 +636,17 @@ def open_ml_dataset_from_python_code(ctx: ServiceContext, dataset_descriptor: Da
                                      f"Input dataset {input_dataset_id!r} of callable {callable_name!r} "
                                      f"must reference another dataset")
 
-    with measure_time(tag=f"opened memory dataset {path}"):
-        return ComputedMultiLevelDataset(ds_id,
-                                         path,
-                                         callable_name,
-                                         input_dataset_ids,
-                                         ctx.get_ml_dataset,
-                                         input_parameters,
-                                         exception_type=ServiceConfigError)
+    return open_ml_dataset_from_python_code(path,
+                                            callable_name=callable_name,
+                                            input_ml_dataset_ids=input_dataset_ids,
+                                            input_ml_dataset_getter=ctx.get_ml_dataset,
+                                            input_parameters=input_parameters,
+                                            ds_id=ds_id,
+                                            exception_type=ServiceConfigError)
 
 
 _DEFAULT_MULTI_LEVEL_DATASET_OPENERS = {
-    "obs": open_ml_dataset_from_object_storage,
-    "local": open_ml_dataset_from_local_fs,
-    "memory": open_ml_dataset_from_python_code,
+    "obs": _open_ml_dataset_from_object_storage,
+    "local": _open_ml_dataset_from_local_fs,
+    "memory": _open_ml_dataset_from_python_code,
 }
