@@ -22,6 +22,7 @@
 from typing import Dict, Any, Sequence, Union
 
 import xarray as xr
+import numpy as np
 
 from xcube.core.schema import CubeSchema
 from xcube.core.select import select_variables_subset
@@ -73,9 +74,14 @@ def resample_in_time(cube: xr.Dataset,
     if not cube_asserted:
         assert_cube(cube)
 
+    if frequency == 'all':
+        time_gap = np.array(cube.time[-1]) - np.array(cube.time[0])
+        days = int((np.timedelta64(time_gap, 'D') / np.timedelta64(1, 'D')) + 1)
+        frequency = f'{days}D'
+
     if var_names:
         cube = select_variables_subset(cube, var_names)
-
+        
     resampler = cube.resample(skipna=True,
                               closed='left',
                               label='left',

@@ -20,7 +20,7 @@
 # SOFTWARE.
 
 from abc import abstractmethod, ABCMeta
-from typing import Optional, Tuple
+from typing import Optional, Tuple, Mapping
 
 import numpy as np
 
@@ -77,6 +77,11 @@ class RequestParams(metaclass=ABCMeta):
             return np.datetime64(value)
         except ValueError as e:
             raise ServiceBadRequestError(f'Parameter "{name}" must be a date/time, but was {value!r}') from e
+
+    @abstractmethod
+    def get_query_arguments(self) -> Mapping[str, str]:
+        """ Get representation as mapping. """
+        pass
 
     @abstractmethod
     def get_query_argument(self,

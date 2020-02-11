@@ -27,6 +27,7 @@ from typing import Callable, Dict, Iterable, List, Optional, Set, Tuple, Any
 
 import pandas as pd
 import s3fs
+import urllib3.util
 import xarray as xr
 import zarr
 
@@ -420,27 +421,18 @@ class ZarrDatasetIO(DatasetIO):
         consolidated = False
 
         if isinstance(path, str):
-            endpoint_url = None
             region_name = None
-            root = None
 
             if 'endpoint_url' in kwargs:
                 endpoint_url = kwargs.pop('endpoint_url')
                 root = path
+            else:
+                endpoint_url, root = split_bucket_url(path)
+
             if 'region_name' in kwargs:
                 region_name = kwargs.pop('region_name')
-            if path.startswith("http://") or path.startswith("https://"):
-                import urllib3.util
-                url = urllib3.util.parse_url(path_or_store)
-                if url.port is not None:
-                    endpoint_url = f'{url.scheme}://{url.host}:{url.port}'
-                else:
-                    endpoint_url = f'{url.scheme}://{url.host}'
-                root = url.path
-                if root.startswith('/'):
-                    root = root[1:]
 
-            if endpoint_url and root is not None:
+            if endpoint_url and root:
                 s3 = s3fs.S3FileSystem(anon=True,
                                        client_kwargs=dict(endpoint_url=endpoint_url, region_name=region_name))
                 consolidated = s3.exists(f'{root}/.zmetadata')
@@ -549,3 +541,19 @@ def rimraf(path):
         except OSError:
             warnings.warn(f"failed to remove file {path}")
             pass
+
+
+def split_bucket_url(path: str):
+    """If *path* is a URL, return tuple (endpoint_url, root), otherwise (None, *path*)"""
+    url = urllib3.util.parse_url(path)
+    if all((url.scheme, url.host, url.path)):
+        if url.port is not None:
+            endpoint_url = f'{url.scheme}://{url.host}:{url.port}'
+        else:
+            endpoint_url = f'{url.scheme}://{url.host}'
+        root = url.path
+        if root.startswith('/'):
+            root = root[1:]
+        return endpoint_url, root
+    else:
+        return None, path

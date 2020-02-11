@@ -58,6 +58,7 @@ FORMAT_NAME_NETCDF4 = "netcdf4"
 FORMAT_NAME_CSV = "csv"
 FORMAT_NAME_MEM = "mem"
 FORMAT_NAME_LEVELS = "levels"
+FORMAT_NAME_SCRIPT = "script"
 FORMAT_NAME_EXCEL = "excel"
 
 # Note: this list must be kept in-sync with xcube.core.reproject:NAME_TO_GDAL_RESAMPLE_ALG

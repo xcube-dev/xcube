@@ -52,6 +52,9 @@ class BaseMultiLevelDatasetTest(unittest.TestCase):
         ds = _get_test_dataset()
 
         ml_ds = BaseMultiLevelDataset(ds)
+
+        self.assertIsInstance(ml_ds.ds_id, str)
+
         self.assertEqual(3, ml_ds.num_levels)
         self.assertEqual(TileGrid(3, 2, 1, 180, 180, (-180, -90, 180, 90), inv_y=False),
                          ml_ds.tile_grid)
@@ -83,13 +86,13 @@ class ComputedMultiLevelDatasetTest(unittest.TestCase):
                 return ml_ds1
             self.fail(f"unexpected ds_id={ds_id!r}")
 
-        ml_ds2 = ComputedMultiLevelDataset("ml_ds2",
-                                           os.path.join(os.path.dirname(__file__),
+        ml_ds2 = ComputedMultiLevelDataset(os.path.join(os.path.dirname(__file__),
                                                         "..", "webapi", "res", "test", "script.py"),
                                            "compute_dataset",
                                            ["ml_ds1"],
                                            input_ml_dataset_getter,
-                                           input_parameters=dict(period='1W'))
+                                           input_parameters=dict(period='1W'),
+                                           ds_id="ml_ds2")
         self.assertEqual(3, ml_ds2.num_levels)
         self.assertEqual(TileGrid(3, 2, 1, 180, 180, (-180, -90, 180, 90), inv_y=False),
                          ml_ds2.tile_grid)
