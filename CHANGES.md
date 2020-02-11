@@ -95,7 +95,7 @@
   ```
 
 ### Other
-
+* 'xcube gen' can now append input time slices to optimized (consolidated) zarr xcube datasets
 * The `xcube serve` API operations `datasets/` and `datasets/{ds_id}` now also
   return the metadata attributes of a given dataset and it variables in a property
   named `attrs`. For variables we added a new metadata property `htmlRepr` that is

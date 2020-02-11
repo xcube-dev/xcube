@@ -30,6 +30,8 @@ import warnings
 from typing import Any, Callable, Dict, Sequence, Tuple
 
 import xarray as xr
+
+from xcube.core.optimize import optimize_dataset
 from xcube.core.dsio import DatasetIO, find_dataset_io, guess_dataset_format, rimraf
 from xcube.core.evaluate import evaluate_dataset
 from xcube.core.gen.defaults import DEFAULT_OUTPUT_PATH, DEFAULT_OUTPUT_RESAMPLING, DEFAULT_OUTPUT_SIZE
@@ -371,6 +373,9 @@ def _process_input(input_processor: InputProcessor,
 def _update_cube_attrs(output_writer: DatasetIO, output_path: str,
                        global_attrs: Dict = None,
                        temporal_only: bool = False):
+    consolidated = os.path.exists(os.path.join(output_path, '.zmetadata'))
+    if consolidated:
+        optimize_dataset(input_path=output_path, in_place=True)
     cube = output_writer.read(output_path)
     if temporal_only:
         cube = update_dataset_temporal_attrs(cube, update_existing=True, in_place=True)

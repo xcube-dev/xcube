@@ -9,6 +9,7 @@ from test.core.gen.helpers import get_inputdata_path
 from xcube.core.dsio import rimraf
 from xcube.core.gen.config import get_config_dict
 from xcube.core.gen.gen import gen_cube
+from xcube.core.optimize import optimize_dataset
 
 
 def clean_up():
@@ -148,6 +149,22 @@ class DefaultProcessTest(unittest.TestCase):
         self.assertEqual(True, status)
         self.assert_cube_ok(xr.open_zarr('l2c.zarr'),
                             expected_time_dim=3,
+                            expected_extra_attrs=dict(time_coverage_start='2016-12-31T12:00:00.000000000',
+                                                      time_coverage_end='2017-01-03T12:00:00.000000000'))
+
+    def test_process_inputs_to_consolidated_zarr(self):
+        status, output = gen_cube_wrapper(
+            [get_inputdata_path('20170101-IFR-L4_GHRSST-SSTfnd-ODYSSEA-NWE_002-v2.0-fv1.0.nc')], 'l2c.zarr',
+            no_sort_mode=True)
+        optimize_dataset(input_path='l2c.zarr', in_place=True, unchunk_coords=True)
+        self.assertTrue(os.path.exists(os.path.join('l2c.zarr', '.zmetadata')))
+        status, output = gen_cube_wrapper(
+            [get_inputdata_path('20170103-IFR-L4_GHRSST-SSTfnd-ODYSSEA-NWE_002-v2.0-fv1.0.nc')], 'l2c.zarr',
+            no_sort_mode=True)
+        self.assertEqual(True, status)
+        self.assertTrue(os.path.exists(os.path.join('l2c.zarr', '.zmetadata')))
+        self.assert_cube_ok(xr.open_zarr('l2c.zarr'),
+                            expected_time_dim=2,
                             expected_extra_attrs=dict(time_coverage_start='2016-12-31T12:00:00.000000000',
                                                       time_coverage_end='2017-01-03T12:00:00.000000000'))
 
