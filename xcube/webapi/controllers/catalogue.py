@@ -125,10 +125,10 @@ def get_dataset(ctx: ServiceContext,
                                                               client=client)
             variable_dict["tileSourceOptions"] = tile_xyz_source_options
 
-        cbar, vmin, vmax = ctx.get_color_mapping(ds_id, var_name)
-        variable_dict["colorBarName"] = cbar
-        variable_dict["colorBarMin"] = vmin
-        variable_dict["colorBarMax"] = vmax
+        cmap_name, cmap_vmin, cmap_vmax = ctx.get_color_mapping(ds_id, var_name)
+        variable_dict["colorBarName"] = cmap_name
+        variable_dict["colorBarMin"] = cmap_vmin
+        variable_dict["colorBarMax"] = cmap_vmax
 
         if hasattr(var.data, '_repr_html_'):
             variable_dict["htmlRepr"] = var.data._repr_html_()
@@ -157,7 +157,8 @@ def get_dataset_place_groups(ctx: ServiceContext, ds_id: str, base_url: str) -> 
     return _filter_place_groups(place_groups, del_features=True)
 
 
-def get_dataset_place_group(ctx: ServiceContext, ds_id: str, place_group_id: str, base_url: str) -> GeoJsonFeatureCollection:
+def get_dataset_place_group(ctx: ServiceContext, ds_id: str, place_group_id: str,
+                            base_url: str) -> GeoJsonFeatureCollection:
     # Load and return features for specific place group.
     place_group = ctx.get_dataset_place_group(ds_id, place_group_id, base_url, load_features=True)
     return _filter_place_group(place_group, del_features=False)

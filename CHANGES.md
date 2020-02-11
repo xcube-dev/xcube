@@ -41,6 +41,11 @@
 * Added ability to write xcube datasets in Zarr format into object storage bucket using
   `xcube.core.dsio.write_cube()`. (#224)
   
+* Added new CLI tool `xcube tile` which is used to generate a tiled RGB image 
+  pyramid from any xcube dataset. The format and file organisation of the generated 
+  tile sets conforms to the [TMS 1.0 Specification](https://wiki.osgeo.org/wiki/Tile_Map_Service_Specification) 
+  (#209).
+
 * The configuration of `xcube serve` has been enhanced to support
   augmentation of data cubes by new variables computed on-the-fly (#272).
   You can now add a section `Augmentation` into a dataset descriptor, e.g.:
@@ -96,6 +101,15 @@
           IsSubstitute: true
   ```
 
+### Enhancements
+
+* CLI command `xcube resample` has been enhanced by a new value for the 
+  frequency option `--frequency all`
+  With this value it will be possible to create mean, max , std, ... of the whole dataset,
+  in other words, create an overview of a cube. 
+  By [Alberto S. Rabaneda](https://github.com/rabaneda).
+ 
+
 ### Other
 
 * The `xcube serve` API operations `datasets/` and `datasets/{ds_id}` now also
@@ -105,7 +119,7 @@
 * Renamed default log file for `xcube serve` command to `xcube-serve.log`.
 * `xcube gen` now immediately flushes logging output to standard out
   
-## Changes in 0.3.1 (in development)
+## Changes in 0.3.1 
 
 ### Fixes
 

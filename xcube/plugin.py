@@ -1,5 +1,5 @@
 # The MIT License (MIT)
-# Copyright (c) 2019 by the xcube development team and contributors
+# Copyright (c) 2020 by the xcube development team and contributors
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of
 # this software and associated documentation files (the "Software"), to deal in
@@ -100,6 +100,7 @@ def _register_cli_commands(ext_registry: extension.ExtensionRegistry):
         'rectify',
         'resample',
         'serve',
+        'tile',
         'vars2dim',
         'verify',
     ]

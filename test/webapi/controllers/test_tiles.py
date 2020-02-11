@@ -39,8 +39,7 @@ class TilesControllerTest(unittest.TestCase):
         with self.assertRaises(ServiceBadRequestError) as cm:
             get_dataset_tile(ctx, 'demo', 'conc_tsm', '0', '0', '0', RequestParamsMock(time='Gnaaark!'))
         self.assertEqual(400, cm.exception.status_code)
-        self.assertEqual("'Gnaaark!' is not a valid value for "
-                         "dimension 'time' of variable 'conc_tsm' of dataset 'demo'",
+        self.assertEqual("'Gnaaark!' is not a valid value for dimension 'time'",
                          cm.exception.reason)
 
     def test_get_ne2_tile(self):

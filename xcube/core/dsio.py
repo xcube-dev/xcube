@@ -23,18 +23,19 @@ import os
 import shutil
 import warnings
 from abc import ABCMeta, abstractmethod
-from typing import Any, Callable, Dict, Iterable, List, Optional, Set, Tuple
+from typing import Callable, Dict, Iterable, List, Optional, Set, Tuple, Any
 
 import pandas as pd
 import s3fs
+import urllib3.util
 import xarray as xr
 import zarr
 
 from xcube.constants import EXTENSION_POINT_DATASET_IOS
-from xcube.constants import FORMAT_NAME_CSV, FORMAT_NAME_MEM, FORMAT_NAME_NETCDF4, FORMAT_NAME_ZARR
+from xcube.constants import FORMAT_NAME_MEM, FORMAT_NAME_NETCDF4, FORMAT_NAME_ZARR, FORMAT_NAME_CSV
 from xcube.core.timeslice import append_time_slice, insert_time_slice, replace_time_slice
 from xcube.core.verify import assert_cube
-from xcube.util.plugin import ExtensionComponent, get_extension_registry
+from xcube.util.plugin import get_extension_registry, ExtensionComponent
 
 
 def open_cube(input_path: str,
@@ -418,6 +419,9 @@ class ZarrDatasetIO(DatasetIO):
     def read(self, path: str, **kwargs) -> xr.Dataset:
         path_or_store = path
         consolidated = False
+
+        if isinstance(path, str):
+            region_name = None
         mode = 'read'
         root = None
 
@@ -428,9 +432,14 @@ class ZarrDatasetIO(DatasetIO):
             if 'endpoint_url' in kwargs:
                 client_kwargs['endpoint_url'] = kwargs.pop('endpoint_url')
                 root = path
+            else:
+                endpoint_url, root = split_bucket_url(path)
+
             if 'region_name' in kwargs:
+                region_name = kwargs.pop('region_name')
                 client_kwargs['region_name'] = kwargs.pop('region_name')
 
+            if endpoint_url and root:
             path_or_store, root, client_kwargs = _get_path_or_store(path_or_store, client_kwargs, mode, root)
 
             if 'endpoint_url' in client_kwargs and root is not None:
@@ -569,8 +578,7 @@ def _get_path_or_store(path: str, client_kwargs: Dict[str, Any], mode: str, root
                 client_kwargs[credential_i] = credential_i_value
         except KeyError:
             pass
-
-    if client_kwargs is not None:
+   if client_kwargs is not None:
         if 'aws_access_key_id' in client_kwargs and 'aws_secret_access_key' in client_kwargs:
             anon_mode = False
     if path.startswith("https://") or path.startswith("http://"):
@@ -589,3 +597,20 @@ def _get_path_or_store(path: str, client_kwargs: Dict[str, Any], mode: str, root
                                client_kwargs=client_kwargs)
         path_or_store = s3fs.S3Map(root=root, s3=s3, check=False)
     return path_or_store, root, client_kwargs
+
+
+def split_bucket_url(path: str):
+    """If *path* is a URL, return tuple (endpoint_url, root), otherwise (None, *path*)"""
+    url = urllib3.util.parse_url(path)
+    if all((url.scheme, url.host, url.path)):
+        if url.port is not None:
+            endpoint_url = f'{url.scheme}://{url.host}:{url.port}'
+        else:
+            endpoint_url = f'{url.scheme}://{url.host}'
+        root = url.path
+        if root.startswith('/'):
+            root = root[1:]
+        return endpoint_url, root
+    else:
+        return None, path
+

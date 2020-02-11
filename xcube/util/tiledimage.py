@@ -146,8 +146,13 @@ class AbstractTiledImage(TiledImage, metaclass=ABCMeta):
     :param image_id: optional unique image identifier
     """
 
-    def __init__(self, size: Size2D, tile_size: Size2D, num_tiles: Size2D,
-                 mode: str = None, format: str = None, image_id: str = None):
+    def __init__(self,
+                 size: Size2D,
+                 tile_size: Size2D,
+                 num_tiles: Size2D,
+                 mode: str = None,
+                 format: str = None,
+                 image_id: str = None):
         self._width = size[0]
         self._height = size[1]
         self._tile_width = tile_size[0]
@@ -206,9 +211,15 @@ class OpImage(AbstractTiledImage, metaclass=ABCMeta):
     :param trace_perf: whether to trace runtime performance information
     """
 
-    def __init__(self, size: Size2D, tile_size: Size2D, num_tiles: Size2D,
-                 mode: str = None, format: str = None, image_id: str = None, tile_cache: Cache = None,
-                 trace_perf=False):
+    def __init__(self,
+                 size: Size2D,
+                 tile_size: Size2D,
+                 num_tiles: Size2D,
+                 mode: str = None,
+                 format: str = None,
+                 image_id: str = None,
+                 tile_cache: Cache = None,
+                 trace_perf: bool = False):
         super().__init__(size, tile_size, num_tiles, mode=mode, format=format, image_id=image_id)
         self._tile_cache = tile_cache
         self._trace_perf = trace_perf
@@ -431,7 +442,7 @@ class ColorMappedRgbaImage(DecoratorImage):
     :param source_image: the source image
     :param image_id: optional unique image identifier
     :param no_data_value: optional no-data value for mask creation
-    :param value_range: The display value range.
+    :param cmap_range: The display value range.
     :param cmap_name: A Matplotlib color map name
     :param num_colors: Number of colors
     :param no_data_value: No-data value
@@ -444,17 +455,17 @@ class ColorMappedRgbaImage(DecoratorImage):
     def __init__(self,
                  source_image: TiledImage,
                  image_id: str = None,
-                 value_range: Tuple[float, float] = DEFAULT_COLOR_MAP_VALUE_RANGE,
+                 cmap_range: Tuple[float, float] = DEFAULT_COLOR_MAP_VALUE_RANGE,
                  cmap_name: str = DEFAULT_COLOR_MAP_NAME,
                  num_colors: int = DEFAULT_COLOR_MAP_NUM_COLORS,
                  no_data_value: Union[int, float] = None,
                  encode: bool = False,
                  format: str = None,
-                 tile_cache=None,
+                 tile_cache: Cache = None,
                  trace_perf: bool = False):
         super().__init__(source_image, image_id=image_id, format=format, mode='RGBA', tile_cache=tile_cache,
                          trace_perf=trace_perf)
-        self._value_range = value_range or DEFAULT_COLOR_MAP_VALUE_RANGE
+        self._cmap_range = cmap_range or DEFAULT_COLOR_MAP_VALUE_RANGE
         cmap_name, cmap = get_cmap(cmap_name or DEFAULT_COLOR_MAP_NAME,
                                    default_cmap_name=DEFAULT_COLOR_MAP_NAME,
                                    num_colors=num_colors or DEFAULT_COLOR_MAP_NUM_COLORS)
@@ -470,18 +481,18 @@ class ColorMappedRgbaImage(DecoratorImage):
         tile_tag = self._get_tile_tag(tile_x, tile_y)
 
         with measure_time(tile_tag + "mask"):
-            value_min, value_max = self._value_range
+            cmap_min, cmap_max = self._cmap_range
             if not np.ma.is_masked(source_tile):
                 if self._no_data_value is not None:
                     array = np.ma.masked_equal(source_tile, self._no_data_value)
-                    array = array.clip(value_min, value_max, out=array)
+                    array = array.clip(cmap_min, cmap_max, out=array)
                 elif np.issubdtype(source_tile.dtype, np.floating):
                     array = np.ma.masked_invalid(source_tile)
-                    array = array.clip(value_min, value_max, out=array)
+                    array = array.clip(cmap_min, cmap_max, out=array)
                 else:
-                    array = source_tile.clip(value_min, value_max)
+                    array = source_tile.clip(cmap_min, cmap_max)
             else:
-                array = source_tile.clip(value_min, value_max)
+                array = source_tile.clip(cmap_min, cmap_max)
 
         old_shape = array.shape
         height = old_shape[-2]
@@ -496,8 +507,8 @@ class ColorMappedRgbaImage(DecoratorImage):
         # check if we can optimize the following calls by using Numexpr
         # see https://github.com/pydata/numexpr/wiki/Numexpr-Users-Guide
         with measure_time(tile_tag + "normalise"):
-            array -= value_min
-            array *= 1.0 / (value_max - value_min)
+            array -= cmap_min
+            array *= 1.0 / (cmap_max - cmap_min)
 
         with measure_time(tile_tag + "map colors"):
             array = self._cmap(array, bytes=True)
@@ -547,7 +558,7 @@ class ColorMappedRgbaImage2(OpImage):
                  no_data_value: Union[int, float] = None,
                  encode: bool = False,
                  format: str = None,
-                 tile_cache=None,
+                 tile_cache: Cache = None,
                  flip_y: bool = False,
                  valid_range: Tuple[Number, Number] = None,
                  trace_perf: bool = False):
@@ -745,7 +756,7 @@ class PilDownsamplingImage(DownsamplingImage):
                  source_image: TiledImage,
                  image_id: str = None,
                  tile_cache: Cache = None,
-                 resampling=Image.ANTIALIAS):
+                 resampling: int = Image.ANTIALIAS):
         super().__init__(source_image, image_id=image_id, tile_cache=tile_cache)
         self._resampling = resampling
 
@@ -778,7 +789,7 @@ class NdarrayDownsamplingImage(DownsamplingImage):
                  source_image: TiledImage,
                  image_id: str = None,
                  tile_cache: Cache = None,
-                 aggregator=None):
+                 aggregator: Callable = None):
         super().__init__(source_image, image_id=image_id, tile_cache=tile_cache)
         self._aggregator = aggregator or aggregate_ndarray_first
 
@@ -818,7 +829,7 @@ class FastNdarrayDownsamplingImage(OpImage):
                  step_exp: int,
                  image_id: str = None,
                  tile_cache: Cache = None,
-                 trace_perf=False):
+                 trace_perf: bool = False):
         step_size = 1 << step_exp
         source_width, source_height = array.shape[-1], array.shape[-2]
         width, height = source_width // step_size, source_height // step_size
@@ -903,7 +914,7 @@ class NdarrayImage(OpImage):
                  tile_size: Size2D,
                  image_id: str = None,
                  tile_cache: Cache = None,
-                 trace_perf=False):
+                 trace_perf: bool = False):
         width, height = array.shape[-1], array.shape[-2]
         tile_width, tile_height = tile_size
         num_tiles = (width + tile_width - 1) // tile_width, (height + tile_height - 1) // tile_height

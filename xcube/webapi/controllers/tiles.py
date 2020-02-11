@@ -4,15 +4,12 @@ import warnings
 from typing import Dict, Any
 
 import matplotlib
-import matplotlib.cm as cm
 import matplotlib.colorbar
 import matplotlib.colors
 import matplotlib.figure
-import numpy as np
 
+from xcube.core.tile import get_ml_dataset_tile, parse_non_spatial_labels
 from xcube.util.cmaps import get_norm, get_cmap
-from xcube.util.perf import measure_time_cm
-from xcube.util.tiledimage import NdarrayImage, TransformArrayImage, ColorMappedRgbaImage, ColorMappedRgbaImage2
 from xcube.util.tilegrid import TileGrid
 from xcube.webapi.context import ServiceContext
 from xcube.webapi.defaults import DEFAULT_CMAP_WIDTH, DEFAULT_CMAP_HEIGHT
@@ -35,142 +32,63 @@ def get_dataset_tile(ctx: ServiceContext,
     tile_comp_mode = params.get_query_argument_int('mode', ctx.tile_comp_mode)
     trace_perf = params.get_query_argument_int('debug', ctx.trace_perf) != 0
 
-    measure_time = measure_time_cm(logger=_LOG, disabled=not trace_perf)
-
-    var = ctx.get_variable_for_z(ds_id, var_name, z)
-
-    dim_names = list(var.dims)
-    if 'lon' not in dim_names or 'lat' not in dim_names:
-        raise ServiceBadRequestError(f'Variable "{var_name}" of dataset "{ds_id}" is not geo-spatial')
-
-    dim_names.remove('lon')
-    dim_names.remove('lat')
-
-    var_indexers = ctx.get_var_indexers(ds_id, var_name, var, dim_names, params)
-
-    cmap_cbar = params.get_query_argument('cbar', default=None)
+    cmap_name = params.get_query_argument('cbar', default=None)
     cmap_vmin = params.get_query_argument_float('vmin', default=None)
     cmap_vmax = params.get_query_argument_float('vmax', default=None)
-    if cmap_cbar is None or cmap_vmin is None or cmap_vmax is None:
-        default_cmap_cbar, default_cmap_vmin, default_cmap_vmax = ctx.get_color_mapping(ds_id, var_name)
-        cmap_cbar = cmap_cbar or default_cmap_cbar
+    if cmap_name is None or cmap_vmin is None or cmap_vmax is None:
+        default_cmap_name, default_cmap_vmin, default_cmap_vmax = ctx.get_color_mapping(ds_id, var_name)
+        cmap_name = cmap_name or default_cmap_name
         cmap_vmin = cmap_vmin or default_cmap_vmin
         cmap_vmax = cmap_vmax or default_cmap_vmax
 
-    image_id = '-'.join(map(str, [ds_id, z, var_name, cmap_cbar, cmap_vmin, cmap_vmax]
-                            + [f'{dim_name}={dim_value}' for dim_name, dim_value in var_indexers.items()]))
+    ml_dataset = ctx.get_ml_dataset(ds_id)
+    var = ml_dataset.base_dataset[var_name]
+    labels = parse_non_spatial_labels(params.get_query_arguments(),
+                                      var.dims,
+                                      var.coords,
+                                      allow_slices=False,
+                                      exception_type=ServiceBadRequestError)
 
-    if image_id in ctx.image_cache:
-        image = ctx.image_cache[image_id]
-    else:
-        no_data_value = var.attrs.get('_FillValue')
-        valid_range = var.attrs.get('valid_range')
-        if valid_range is None:
-            valid_min = var.attrs.get('valid_min')
-            valid_max = var.attrs.get('valid_max')
-            if valid_min is not None and valid_max is not None:
-                valid_range = [valid_min, valid_max]
-
-        # Make sure we work with 2D image arrays only
-        if var.ndim == 2:
-            assert len(var_indexers) == 0
-            array = var
-        elif var.ndim > 2:
-            assert len(var_indexers) == var.ndim - 2
-            array = var.sel(method='nearest', **var_indexers)
-        else:
-            raise ServiceBadRequestError(f'Variable "{var_name}" of dataset "{var_name}" '
-                                         'must be an N-D Dataset with N >= 2, '
-                                         f'but "{var_name}" is only {var.ndim}-D')
-
-        cmap_vmin = np.nanmin(array.values) if np.isnan(cmap_vmin) else cmap_vmin
-        cmap_vmax = np.nanmax(array.values) if np.isnan(cmap_vmax) else cmap_vmax
-
-        tile_grid = ctx.get_tile_grid(ds_id)
-
-        if not tile_comp_mode:
-            image = NdarrayImage(array,
-                                 image_id=f'ndai-{image_id}',
-                                 tile_size=tile_grid.tile_size,
-                                 # tile_cache=ctx.tile_cache,
-                                 trace_perf=trace_perf)
-            image = TransformArrayImage(image,
-                                        image_id=f'tai-{image_id}',
-                                        flip_y=tile_grid.inv_y,
-                                        force_masked=True,
-                                        no_data_value=no_data_value,
-                                        valid_range=valid_range,
-                                        # tile_cache=ctx.tile_cache,
-                                        trace_perf=trace_perf)
-            image = ColorMappedRgbaImage(image,
-                                         image_id=f'rgb-{image_id}',
-                                         value_range=(cmap_vmin, cmap_vmax),
-                                         cmap_name=cmap_cbar,
-                                         encode=True,
-                                         format='PNG',
-                                         tile_cache=ctx.tile_cache,
-                                         trace_perf=trace_perf)
-        else:
-            image = ColorMappedRgbaImage2(array,
-                                          image_id=f'rgb-{image_id}',
-                                          tile_size=tile_grid.tile_size,
-                                          cmap_range=(cmap_vmin, cmap_vmax),
-                                          cmap_name=cmap_cbar,
-                                          encode=True,
-                                          format='PNG',
-                                          flip_y=tile_grid.inv_y,
-                                          no_data_value=no_data_value,
-                                          valid_range=valid_range,
-                                          tile_cache=ctx.tile_cache,
-                                          trace_perf=trace_perf)
-
-        ctx.image_cache[image_id] = image
-        if trace_perf:
-            _LOG.info(f'Created tiled image {image_id!r} of size {image.size} with tile grid:')
-            _LOG.info(f'  num_levels: {tile_grid.num_levels}')
-            _LOG.info(f'  num_level_zero_tiles: {tile_grid.num_tiles(0)}')
-            _LOG.info(f'  tile_size: {tile_grid.tile_size}')
-            _LOG.info(f'  geo_extent: {tile_grid.geo_extent}')
-            _LOG.info(f'  inv_y: {tile_grid.inv_y}')
-
-    if trace_perf:
-        _LOG.info(f'>>> tile {image_id}/{z}/{y}/{x}')
-
-    with measure_time() as measured_time:
-        tile = image.get_tile(x, y)
-
-    if trace_perf:
-        _LOG.info(f'<<< tile {image_id}/{z}/{y}/{x}: took ' + '%.2f seconds' % measured_time.duration)
-
-    return tile
+    return get_ml_dataset_tile(ml_dataset,
+                               var_name,
+                               x, y, z,
+                               labels=labels,
+                               cmap_name=cmap_name,
+                               cmap_vmin=cmap_vmin,
+                               cmap_vmax=cmap_vmax,
+                               image_cache=ctx.image_cache,
+                               tile_cache=ctx.tile_cache,
+                               tile_comp_mode=tile_comp_mode,
+                               trace_perf=trace_perf,
+                               exception_type=ServiceBadRequestError)
 
 
 def get_legend(ctx: ServiceContext,
                ds_id: str,
                var_name: str,
                params: RequestParams):
-    cmap_cbar = params.get_query_argument('cbar', default=None)
+    cmap_name = params.get_query_argument('cbar', default=None)
     cmap_vmin = params.get_query_argument_float('vmin', default=None)
     cmap_vmax = params.get_query_argument_float('vmax', default=None)
     cmap_w = params.get_query_argument_int('width', default=None)
     cmap_h = params.get_query_argument_int('height', default=None)
-    if cmap_cbar is None or cmap_vmin is None or cmap_vmax is None or cmap_w is None or cmap_h is None:
+    if cmap_name is None or cmap_vmin is None or cmap_vmax is None or cmap_w is None or cmap_h is None:
         default_cmap_cbar, default_cmap_vmin, default_cmap_vmax = ctx.get_color_mapping(ds_id, var_name)
-        cmap_cbar = cmap_cbar or default_cmap_cbar
+        cmap_name = cmap_name or default_cmap_cbar
         cmap_vmin = cmap_vmin or default_cmap_vmin
         cmap_vmax = cmap_vmax or default_cmap_vmax
         cmap_w = cmap_w or DEFAULT_CMAP_WIDTH
         cmap_h = cmap_h or DEFAULT_CMAP_HEIGHT
 
     try:
-        _, cmap = get_cmap(cmap_cbar)
+        _, cmap = get_cmap(cmap_name)
     except ValueError:
-        raise ServiceResourceNotFoundError(f"color bar {cmap_cbar!r} not found")
+        raise ServiceResourceNotFoundError(f"color bar {cmap_name!r} not found")
 
     fig = matplotlib.figure.Figure(figsize=(cmap_w, cmap_h))
     ax1 = fig.add_subplot(1, 1, 1)
-    if '.cpd' in cmap_cbar:
-        norm, ticks = get_norm(cmap_cbar)
+    if '.cpd' in cmap_name:
+        norm, ticks = get_norm(cmap_name)
     else:
         norm = matplotlib.colors.Normalize(vmin=cmap_vmin, vmax=cmap_vmax)
         ticks = None
@@ -288,7 +206,7 @@ def _tile_grid_to_cesium1x_source_options(tile_grid: TileGrid, url: str):
 
     See
 
-    * https://cesiumjs.org/Cesium/Build/Documentation/UrlTemplateImageryProvider.html?classFilter=UrlTemplateImageryProvider
+    * https://cesiumjs.org/Cesium/Build/Documentation/UrlTemplateImageryProvider.html
 
     :param tile_grid: tile grid
     :param url: source url

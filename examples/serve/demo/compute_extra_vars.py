@@ -9,9 +9,15 @@ def compute_variables(ds, factor_chl, factor_tsm):
                                   description='Nonsense variable, for demo purpose only'))
 
     chl_category = _categorize_chl(ds.conc_chl)
-    chl_category.attrs.update(dict(units='-',
-                                   long_name='Categorized CHL',
-                                   description='0: 0<=CHL<3, 1: 3<=CHL<4, 2: CHL>4 mg/m^3'))
+    chl_category.attrs.update(color_value_min=0.0,
+                              color_value_max=2.0,
+                              color_bar_name='spring',
+                              units='-',
+                              long_name='Cyano bloom risk',
+                              description='Cyano bloom risk in three categories: '
+                                          '0: CHL < 3, '
+                                          '1: 3 <= CHL < 4, '
+                                          '2: CHL >= 4 mg/m^3')
 
     return xr.Dataset(dict(chl_tsm_sum=chl_tsm_sum,
                            chl_category=chl_category))

@@ -22,7 +22,7 @@ from typing import Sequence, Optional, Tuple
 
 import click
 
-from xcube.cli.common import parse_cli_sequence
+from xcube.cli.common import parse_cli_sequence, assert_positive_int_item
 from xcube.constants import FORMAT_NAME_ZARR, FORMAT_NAME_NETCDF4, FORMAT_NAME_MEM
 
 OUTPUT_FORMAT_NAMES = [FORMAT_NAME_ZARR, FORMAT_NAME_NETCDF4, FORMAT_NAME_MEM]
@@ -84,22 +84,16 @@ def rectify(dataset: str,
 
     input_path = dataset
 
-    def positive_int(v):
-        if v <= 0:
-            raise ValueError('must be positive')
-
-    xy_var_names = parse_cli_sequence(xy_var_names, metavar='VARIABLES', num_items=2, item_plural_name='names',
-                                      error_type=click.ClickException)
-    var_names = parse_cli_sequence(var_names, metavar='VARIABLES', item_plural_name='names',
-                                   error_type=click.ClickException)
+    xy_var_names = parse_cli_sequence(xy_var_names, metavar='VARIABLES', num_items=2, item_plural_name='names')
+    var_names = parse_cli_sequence(var_names, metavar='VARIABLES', item_plural_name='names')
     output_size = parse_cli_sequence(output_size, metavar='SIZE', num_items=2, item_plural_name='sizes',
                                      item_parser=int,
-                                     item_validator=positive_int, error_type=click.ClickException)
+                                     item_validator=assert_positive_int_item)
     output_tile_size = parse_cli_sequence(output_size, metavar='TILE_SIZE', num_items=2, item_plural_name='tile sizes',
                                           item_parser=int,
-                                          item_validator=positive_int, error_type=click.ClickException)
+                                          item_validator=assert_positive_int_item)
     output_point = parse_cli_sequence(output_point, metavar='POINT', num_items=2, item_plural_name='coordinates',
-                                      item_parser=float, error_type=click.ClickException)
+                                      item_parser=float)
 
     # noinspection PyBroadException
     _rectify(input_path,
