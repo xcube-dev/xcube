@@ -4,6 +4,7 @@ import unittest
 import xarray as xr
 
 from test.webapi.helpers import new_test_service_context
+from xcube.core.mldataset import MultiLevelDataset
 from xcube.webapi.errors import ServiceResourceNotFoundError
 
 
@@ -14,6 +15,25 @@ class ServiceContextTest(unittest.TestCase):
         ds = ctx.get_dataset('demo')
         self.assertIsInstance(ds, xr.Dataset)
 
+        ml_ds = ctx.get_ml_dataset('demo')
+        self.assertIsInstance(ml_ds, MultiLevelDataset)
+        self.assertIs(3, ml_ds.num_levels)
+        self.assertIs(ds, ml_ds.get_dataset(0))
+
+        for var_name in ('conc_chl', 'conc_tsm'):
+            for z in range(ml_ds.num_levels):
+                conc_chl_z = ctx.get_variable_for_z('demo', var_name, z)
+                self.assertIsInstance(conc_chl_z, xr.DataArray)
+            with self.assertRaises(ServiceResourceNotFoundError) as cm:
+                ctx.get_variable_for_z('demo', var_name, 3)
+            self.assertEqual(404, cm.exception.status_code)
+            self.assertEqual(f'Variable "{var_name}" has no z-index 3 in dataset "demo"', cm.exception.reason)
+
+        with self.assertRaises(ServiceResourceNotFoundError) as cm:
+            ctx.get_variable_for_z('demo', 'conc_ys', 0)
+        self.assertEqual(404, cm.exception.status_code)
+        self.assertEqual('Variable "conc_ys" not found in dataset "demo"', cm.exception.reason)
+
         with self.assertRaises(ServiceResourceNotFoundError) as cm:
             ctx.get_dataset('demox')
         self.assertEqual(404, cm.exception.status_code)
@@ -23,6 +43,22 @@ class ServiceContextTest(unittest.TestCase):
             ctx.get_dataset('demo', expected_var_names=['conc_ys'])
         self.assertEqual(404, cm.exception.status_code)
         self.assertEqual('Variable "conc_ys" not found in dataset "demo"', cm.exception.reason)
+
+    def test_get_dataset_with_augmentation(self):
+        ctx = new_test_service_context(config_file_name='config-aug.yml')
+
+        ds = ctx.get_dataset('demo-aug')
+        self.assertIsInstance(ds, xr.Dataset)
+
+        ml_ds = ctx.get_ml_dataset('demo-aug')
+        self.assertIsInstance(ml_ds, MultiLevelDataset)
+        self.assertIs(3, ml_ds.num_levels)
+        self.assertIs(ds, ml_ds.get_dataset(0))
+
+        for var_name in ('conc_chl', 'conc_tsm', 'chl_tsm_sum', 'chl_category'):
+            for z in range(ml_ds.num_levels):
+                conc_chl_z = ctx.get_variable_for_z('demo-aug', var_name, z)
+                self.assertIsInstance(conc_chl_z, xr.DataArray)
 
     def test_config_and_dataset_cache(self):
         ctx = new_test_service_context()
@@ -68,12 +104,12 @@ class ServiceContextTest(unittest.TestCase):
         self.assertEqual(('PuBuGn', 0., 100.), cm)
         cm = ctx.get_color_mapping('demo', 'kd489')
         self.assertEqual(('jet', 0., 6.), cm)
-        cm = ctx.get_color_mapping('demo', '_')
-        self.assertEqual(('viridis', 0., 1.), cm)
+        with self.assertRaises(ServiceResourceNotFoundError):
+            ctx.get_color_mapping('demo', '_')
 
     def test_get_global_place_groups(self):
         ctx = new_test_service_context()
-        place_groups = ctx.get_global_place_groups(load_features=False)
+        place_groups = ctx.get_global_place_groups("http://localhost:9090", load_features=False)
         self.assertIsInstance(place_groups, list)
         self.assertEqual(2, len(place_groups))
         for place_group in place_groups:
@@ -93,7 +129,7 @@ class ServiceContextTest(unittest.TestCase):
         self.assertEqual('Points outside the cube', place_group['title'])
         self.assertEqual(None, place_group['features'])
 
-        place_groups = ctx.get_global_place_groups(load_features=True)
+        place_groups = ctx.get_global_place_groups("http://localhost:9090", load_features=True)
         self.assertIsInstance(place_groups, list)
         self.assertEqual(2, len(place_groups))
         for place_group in place_groups:
@@ -115,16 +151,16 @@ class ServiceContextTest(unittest.TestCase):
 
     def test_get_global_place_group(self):
         ctx = new_test_service_context()
-        place_group = ctx.get_global_place_group("inside-cube", load_features=True)
+        place_group = ctx.get_global_place_group("inside-cube", "http://localhost:9090", load_features=True)
         self.assertIsInstance(place_group, dict)
         self.assertIn("type", place_group)
         self.assertEqual("FeatureCollection", place_group["type"])
         self.assertIn("features", place_group)
         self.assertIsInstance(place_group["features"], list)
         self.assertEqual(3, len(place_group["features"]))
-        self.assertIs(place_group, ctx.get_global_place_group(place_group_id="inside-cube"))
-        self.assertIsNot(place_group, ctx.get_global_place_group(place_group_id="outside-cube"))
+        self.assertIs(place_group, ctx.get_global_place_group("inside-cube", "http://localhost:9090"))
+        self.assertIsNot(place_group, ctx.get_global_place_group("outside-cube", "http://localhost:9090"))
 
         with self.assertRaises(ServiceResourceNotFoundError) as cm:
-            ctx.get_global_place_group("bibo")
+            ctx.get_global_place_group("bibo", "http://localhost:9090")
         self.assertEqual('HTTP 404: Place group "bibo" not found', f"{cm.exception}")

@@ -32,7 +32,7 @@ from xcube.core.timecoord import timestamp_to_iso_string
 from xcube.util.geojson import GeoJSON
 from xcube.util.perf import measure_time_cm
 from xcube.webapi.context import ServiceContext
-from xcube.webapi.errors import ServiceBadRequestError
+from xcube.webapi.errors import ServiceBadRequestError, ServiceResourceNotFoundError
 
 
 def get_time_series_info(ctx: ServiceContext) -> Dict:
@@ -366,7 +366,13 @@ def _get_time_series_for_geometries(dataset: xr.Dataset,
     return {'results': time_series}
 
 
-def _get_time_series_dataset(ctx: ServiceContext, ds_name: str, var_name: str = None):
-    descriptor = ctx.get_dataset_descriptor(ds_name)
-    ts_ds_name = descriptor.get('TimeSeriesDataset', ds_name)
-    return ctx.get_dataset(ts_ds_name, expected_var_names=[var_name] if var_name else None)
+def _get_time_series_dataset(ctx: ServiceContext, ds_id: str, var_name: str = None):
+    descriptor = ctx.get_dataset_descriptor(ds_id)
+    ts_ds_name = descriptor.get('TimeSeriesDataset', ds_id)
+    try:
+        # Try to get more efficient, time-chunked dataset
+        return ctx.get_dataset(ts_ds_name, expected_var_names=[var_name] if var_name else None)
+    except ServiceResourceNotFoundError:
+        # This happens, if the dataset pointed to by 'TimeSeriesDataset'
+        # does not contain the variable given by var_name.
+        return ctx.get_dataset(ds_id, expected_var_names=[var_name] if var_name else None)

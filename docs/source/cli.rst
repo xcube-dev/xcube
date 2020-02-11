@@ -68,6 +68,15 @@ Cube manipulation
    cli/xcube_resample
    cli/xcube_vars2dim
 
+Cube conversion
+===============
+
+.. toctree::
+   :maxdepth: 1
+
+   cli/xcube_tile
+   cli/xcube_level
+
 Cube publication
 ================
 

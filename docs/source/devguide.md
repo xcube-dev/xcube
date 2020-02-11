@@ -323,7 +323,7 @@ test viewer with latest xcube Web API. Then release a new xcube viewer.
 
 * Cd into viewer project directory (`.../xcube-viewer/.`).
 * Remove the `-dev` suffix from `version` property in `package.json`.
-* Remove the `-dev` suffix from `VIEWER_VERSION` constant in `src/config.ts`.
+* Remove the `-dev` suffix from `version` constant in `src/config.ts`.
 * Make sure `CHANGES.md` is complete. Remove the suffix ` (in development)` 
   from the last version headline.
 * Build the app and test the build using a local http-server, e.g.:
@@ -339,13 +339,10 @@ test viewer with latest xcube Web API. Then release a new xcube viewer.
   - Release title is: `${version}`. 
   - Paste latest changes from `CHANGES.md` into field "Describe this release".
   - Press "Publish release" button.
-* Merge `master` branch into `master_dcs4cop` and `master_cyanoalert`, 
-  adjust versions and `CHANGES.md` as described above and push both branches.
 * After the release on GitHub, if the branch was `master`, 
   create a new maintenance branch (see above).
-* Increase version in `package.json` and `VIEWER_VERSION` constant in `src/config.ts` 
+* Increase `version` property and `version` constant in `package.json` and `src/config.ts` 
   and append `-dev.0` suffix to version name so it is SemVer compatible.
 * In `CHANGES.md` add a new version headline and attach ` (in development)` to it.
 * Push changes to either master or a new maintenance branch (see above).
-* Deploy builds of `master`, `master_dcs4cop`, and `master_cyanoalert` branches 
-  to related web content providers.
+* Deploy builds of `master` branches to related web content providers.

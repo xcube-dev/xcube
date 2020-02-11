@@ -29,6 +29,9 @@ def get_cube_values_for_points(cube: xr.Dataset,
     """
     Extract values from *cube* variables at given coordinates in *points*.
 
+    Returns a new dataset with values of variables from *cube* selected by the coordinate columns
+    provided in *points*. All variables will be 1-D and have the same order as the rows in points.
+
     :param cube: The cube dataset.
     :param points: Dictionary that maps dimension name to coordinate arrays.
     :param var_names: An optional list of names of data variables in *cube* whose values shall be extracted.
@@ -37,7 +40,7 @@ def get_cube_values_for_points(cube: xr.Dataset,
     :param include_indexes: Whether to include computed indexes into the cube for each point in return value.
     :param index_name_pattern: A naming pattern for the computed index columns.
            Must include "{name}" which will be replaced by the index' dimension name.
-    :param include_refs: Whether to include point (reference) values in return value.
+    :param include_refs: Whether to include point (reference) values from *points* in return value.
     :param ref_name_pattern: A naming pattern for the computed point data columns.
            Must include "{name}" which will be replaced by the point's attribute name.
     :param method: "nearest" or "linear".

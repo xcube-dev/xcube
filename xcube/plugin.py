@@ -1,5 +1,5 @@
 # The MIT License (MIT)
-# Copyright (c) 2019 by the xcube development team and contributors
+# Copyright (c) 2020 by the xcube development team and contributors
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of
 # this software and associated documentation files (the "Software"), to deal in
@@ -43,7 +43,7 @@ def _register_input_processors(ext_registry: extension.ExtensionRegistry):
     Register xcube's standard input processors used by "xcube gen" and gen_cube().
     """
     ext_registry.add_extension(
-        loader=extension.import_component('xcube.core.gen.iproc:DefaultInputProcessor', call=True),
+        loader=extension.import_component('xcube.core.gen.iproc:DefaultInputProcessor'),
         point=EXTENSION_POINT_INPUT_PROCESSORS, name='default',
         description='Single-scene NetCDF/CF inputs in xcube standard format'
     )
@@ -87,6 +87,7 @@ def _register_cli_commands(ext_registry: extension.ExtensionRegistry):
     cli_command_names = [
         'chunk',
         'compute',
+        'benchmark',
         'dump',
         'edit',
         'extract',
@@ -96,9 +97,10 @@ def _register_cli_commands(ext_registry: extension.ExtensionRegistry):
         'level',
         'optimize',
         'prune',
+        'rectify',
         'resample',
         'serve',
-        'timeit',
+        'tile',
         'vars2dim',
         'verify',
     ]

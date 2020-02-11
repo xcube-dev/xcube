@@ -29,7 +29,7 @@ import time
 import traceback
 from datetime import datetime
 from json import JSONDecodeError
-from typing import Optional, Any, Dict, List, Tuple
+from typing import Optional, Any, Dict, List, Tuple, Mapping
 
 import tornado.escape
 import tornado.options
@@ -38,11 +38,12 @@ from tornado.ioloop import IOLoop
 from tornado.log import enable_pretty_logging
 from tornado.web import RequestHandler, Application
 
+from xcube.core.mldataset import guess_ml_dataset_format
 from xcube.util.caseless import caseless_dict
 from xcube.util.config import load_configs
 from xcube.util.undefined import UNDEFINED
 from xcube.version import version
-from xcube.webapi.context import ServiceContext, guess_cube_format
+from xcube.webapi.context import ServiceContext
 from xcube.webapi.defaults import DEFAULT_ADDRESS, DEFAULT_PORT, DEFAULT_UPDATE_PERIOD, DEFAULT_LOG_PREFIX, \
     DEFAULT_TILE_CACHE_SIZE, DEFAULT_TRACE_PERF, DEFAULT_TILE_COMP_MODE
 from xcube.webapi.errors import ServiceBadRequestError
@@ -90,7 +91,7 @@ class Service:
         :param cube_paths: optional list of cube paths
         :param config_file: optional configuration file
         :param update_period: if not-None, time of idleness in seconds before service is updated
-        :param log_file_prefix: Log file prefix, default is "xcube_server.log"
+        :param log_file_prefix: Log file prefix, default is "xcube-serve.log"
         :param log_to_stderr: Whether logging should be shown on stderr
         :return: service information dictionary
         """
@@ -108,7 +109,7 @@ class Service:
             os.makedirs(log_dir, exist_ok=True)
 
         options = tornado.options.options
-        options.log_file_prefix = log_file_prefix or 'xcube_server.log'
+        options.log_file_prefix = log_file_prefix or DEFAULT_LOG_PREFIX
         options.log_to_stderr = log_to_stderr
         enable_pretty_logging()
 
@@ -308,6 +309,11 @@ class ServiceRequestParams(RequestParams):
     def __init__(self, handler: RequestHandler):
         self.handler = handler
 
+    def get_query_arguments(self) -> Mapping[str, str]:
+        handler = self.handler
+        request = handler.request
+        return {name: handler.get_query_argument(name) for name in request.query_arguments.keys()}
+
     def get_query_argument(self, name: str, default: Optional[str] = UNDEFINED) -> Optional[str]:
         """
         Get query argument.
@@ -413,7 +419,7 @@ def new_default_config(cube_paths: List[str], styles: Dict[str, Tuple] = None):
     for cube_path in cube_paths:
         dataset_list.append(dict(Identifier=f"dataset_{index + 1}",
                                  Title=f"Dataset #{index + 1}",
-                                 Format=guess_cube_format(cube_path),
+                                 Format=guess_ml_dataset_format(cube_path),
                                  Path=cube_path,
                                  FileSystem='local'))
         index += 1

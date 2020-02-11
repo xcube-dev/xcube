@@ -1,8 +1,8 @@
 import unittest
 
+import dask.array as da
 import numpy as np
 import xarray as xr
-
 from xcube.core.evaluate import evaluate_dataset
 
 nan = float('nan')
@@ -17,7 +17,7 @@ class EvaluateDatasetTest(unittest.TestCase):
                                c=((), 1.0),
                                d=((), 1.0, dict(expression='a * b'))),
                           coords=dict(x=(('x',), [1, 2, 3, 4]), y=(('y',), [1, 2])),
-                          attrs=dict(title='test_compute_dataset'))
+                          attrs=dict(title='test_compute_dataset')).chunk(dict(x=2, y=2))
 
     def test_compute_dataset_without_processed_variables(self):
         dataset = self.get_test_dataset()
@@ -52,9 +52,11 @@ class EvaluateDatasetTest(unittest.TestCase):
         dataset = self.get_test_dataset()
         computed_dataset = evaluate_dataset(dataset,
                                             processed_variables=[('a', None),
-                                                                ('b', dict(valid_pixel_expression=None)),
-                                                                ('c', dict(expression='a + b')),
-                                                                ('d', dict(valid_pixel_expression='c > 0.4'))])
+                                                                 ('b', dict(valid_pixel_expression=None)),
+                                                                 ('c', dict(expression='a + b',
+                                                                            load=True)),
+                                                                 ('d', dict(valid_pixel_expression='c > 0.4',
+                                                                            load=True))])
         self.assertIsNot(computed_dataset, dataset)
         self.assertIn('x', computed_dataset)
         self.assertIn('y', computed_dataset)
@@ -68,6 +70,10 @@ class EvaluateDatasetTest(unittest.TestCase):
         self.assertEqual((2, 4), computed_dataset.a.shape)
         self.assertEqual((2, 4), computed_dataset.b.shape)
         self.assertEqual((2, 4), computed_dataset.c.shape)
+        self.assertIsInstance(computed_dataset.a.data, da.Array)
+        self.assertIsInstance(computed_dataset.b.data, da.Array)
+        self.assertIsInstance(computed_dataset.c.data, np.ndarray)  # load=True --> load c as numpy array
+        self.assertIsInstance(computed_dataset.d.data, np.ndarray)  # load=True --> load d as numpy array
         self.assertIn('expression', computed_dataset.c.attrs)
         self.assertEqual((2, 4), computed_dataset.d.shape)
         self.assertIn('expression', computed_dataset.d.attrs)

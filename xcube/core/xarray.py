@@ -15,7 +15,7 @@ from xcube.core.extract import get_cube_values_for_points, get_cube_point_indexe
 from xcube.core.level import compute_levels, read_levels, write_levels
 from xcube.core.new import new_cube
 from xcube.core.schema import CubeSchema, get_cube_schema
-from xcube.core.select import select_vars
+from xcube.core.select import select_variables_subset
 from xcube.core.vars2dim import vars_to_dim
 from xcube.core.verify import verify_cube
 
@@ -219,14 +219,14 @@ class DatasetAccessor:
         """
         return verify_cube(self._dataset)
 
-    def select_vars(self, var_names: Sequence[str] = None):
+    def select_variables_subset(self, var_names: Sequence[str] = None):
         """
         Select data variable from given *dataset* and create new dataset.
 
         :param var_names: The names of data variables to select.
         :return: A new dataset. It is empty, if *var_names* is empty. It is *dataset*, if *var_names* is None.
         """
-        return select_vars(self._dataset, var_names)
+        return select_variables_subset(self._dataset, var_names)
 
     def levels(self, **kwargs) -> List[xr.Dataset]:
         """

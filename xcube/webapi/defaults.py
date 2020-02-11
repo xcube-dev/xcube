@@ -19,8 +19,6 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-import os
-
 SERVER_NAME = 'xcube Server'
 SERVER_DESCRIPTION = f'WMTS, catalogue, data access, tile, feature, time-series services for' \
                      ' xarray-enabled data cubes'
@@ -29,11 +27,11 @@ DEFAULT_ADDRESS = 'localhost'
 DEFAULT_PORT = 8080
 DEFAULT_TILE_CACHE_SIZE = "512M"
 DEFAULT_UPDATE_PERIOD = 2.
-DEFAULT_LOG_PREFIX = os.path.abspath('xcube_server.log')
+DEFAULT_LOG_PREFIX = 'xcube-serve.log'
 DEFAULT_TILE_COMP_MODE = 0
 DEFAULT_TRACE_PERF = False
 
-DEFAULT_CMAP_CBAR = 'viridis'
+DEFAULT_CMAP_NAME = 'viridis'
 DEFAULT_CMAP_VMIN = 0.
 DEFAULT_CMAP_VMAX = 1.
 DEFAULT_CMAP_WIDTH = 1

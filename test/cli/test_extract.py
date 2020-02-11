@@ -4,7 +4,7 @@ from io import StringIO
 
 import pandas as pd
 
-from test.cli.test_cli import CliDataTest
+from test.cli.helpers import CliDataTest
 
 VAR_COLS = [
     'c2rcc_flags',
