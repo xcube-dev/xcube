@@ -1,10 +1,10 @@
 import os.path
 import unittest
 
-from xcube.core.new import new_cube
-from xcube.core.chunk import chunk_dataset
 from xcube.constants import FORMAT_NAME_ZARR
+from xcube.core.chunk import chunk_dataset
 from xcube.core.dsio import rimraf
+from xcube.core.new import new_cube
 from xcube.core.unchunk import unchunk_dataset
 
 
@@ -93,7 +93,16 @@ class UnchunkDatasetTest(unittest.TestCase):
     def test_unchunk_invalid_path(self):
         with self.assertRaises(ValueError) as cm:
             unchunk_dataset(self.TEST_ZARR + '.zip')
-        self.assertEqual("'test.zarr.zip' is not a valid ZARR directory", f'{cm.exception}')
+        self.assertEqual("'test.zarr.zip' is not a valid Zarr directory", f'{cm.exception}')
+
+    def test_unchunk_invalid_vars(self):
+        with self.assertRaises(ValueError) as cm:
+            unchunk_dataset(self.TEST_ZARR, var_names=['times'], coords_only=True)
+        self.assertEqual("variable 'times' is not a coordinate variable in 'test.zarr'", f'{cm.exception}')
+
+        with self.assertRaises(ValueError) as cm:
+            unchunk_dataset(self.TEST_ZARR, var_names=['CHL'], coords_only=False)
+        self.assertEqual("variable 'CHL' is not a variable in 'test.zarr'", f'{cm.exception}')
 
     def _assert_cube_files(self,
                            expected_a_files, expected_b_files,
