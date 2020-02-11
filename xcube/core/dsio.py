@@ -448,13 +448,8 @@ class ZarrDatasetIO(DatasetIO):
         root = None
         path_or_store, root, client_kwargs = _get_path_or_store(output_path, client_kwargs, mode, root)
 
-        # keeping the code commented out below, because might be useful for makinging write able to change bucket policy
-        # if 'acl' in kwargs:
-        #     acl = kwargs.pop('acl')
         encoding = self._get_write_encodings(dataset, compress, cname, clevel, shuffle, blocksize, chunksizes)
         dataset.to_zarr(path_or_store, mode='w', encoding=encoding)
-        # if acl and client_kwargs and s3:
-        #     s3.chmod(path=root, acl=acl, kwargs=client_kwargs)
 
     @classmethod
     def _get_write_encodings(cls, dataset, compress, cname, clevel, shuffle, blocksize, chunksizes):
