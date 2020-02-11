@@ -344,20 +344,11 @@ class GetPathOrStoreTest(unittest.TestCase):
         self.assertIsInstance(path, fsspec.mapping.FSMap)
 
     def test_path_or_store_read_from_local(self):
-        path = _get_path_or_store(root=None,
-                                  path="../examples/serve/demo/cube-1-250-250.zarr",
-                                  mode="read", client_kwargs=None)[0]
+        path = _get_path_or_store(path="../examples/serve/demo/cube-1-250-250.zarr",
+                                  client_kwargs=None,
+                                  mode="read",
+                                  root=None)[0]
         self.assertIsInstance(path, str)
-
-    def test_path_or_store_write_to_bucket_env_credentials(self):
-        os.environ['aws_access_key_id'] = 'some_fake_id'
-        os.environ['aws_secret_access_key'] = 'some_fake_key'
-        path = _get_path_or_store(root=None,
-                                  path="http://obs.eu-de.otc.t-systems.com/fake_bucket/fake_cube.zarr",
-                                  mode="write", client_kwargs=None)[0]
-        self.assertIsInstance(path, fsspec.mapping.FSMap)
-        del os.environ['aws_access_key_id']
-        del os.environ['aws_secret_access_key']
 
 
 class TestUploadToS3Bucket(unittest.TestCase):
@@ -366,8 +357,8 @@ class TestUploadToS3Bucket(unittest.TestCase):
         with moto.mock_s3():
             s3_conn = boto3.client('s3')
             s3_conn.create_bucket(Bucket='upload_bucket', ACL="public-read")
-            client_kwargs = {"aws_access_key_id": "test_fake_id", "aws_secret_access_key": "test_fake_secret"}
-            ds1 = xr.open_zarr("examples/serve/demo/cube-1-250-250.zarr")
+            client_kwargs = {"cloud_provider_access_key_id": "test_fake_id", "cloud_provider_secret_access_key": "test_fake_secret"}
+            ds1 = xr.open_zarr("/home/alicja/Desktop/projects/xcube/examples/serve/demo/cube-1-250-250.zarr")
             write_cube(ds1, "https://s3.amazonaws.com/upload_bucket/cube-1-250-250.zarr", "zarr",
                        client_kwargs=client_kwargs)
             self.assertIn('cube-1-250-250.zarr/.zattrs',
