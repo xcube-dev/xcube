@@ -67,7 +67,9 @@ class ResampleInTimeTest(unittest.TestCase):
 
     def test_resample_in_time_p90_dask(self):
         # "percentile_<p>" can currently only be used with numpy rather than chunked dask arrays:
-        with self.assertRaises(TypeError):
+
+        # TypeError raised on Windows, ValueError on Linux
+        with self.assertRaises(Exception):
             # noinspection PyUnusedLocal
             resampled_cube = resample_in_time(self.input_cube, '2W', 'percentile_90')
 

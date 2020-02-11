@@ -1,0 +1,37 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "ID": "0",
+        "image": "0.jpg",
+        "description": "1889 bis 1891 zog es in ein ehemaliges Kloster im Parc Léopold, doch schon bald waren Erweiterungen nötig. Der Südflügel entstand 1898 bis 1905 (Architekt Charles-Émile Janlet). 1950 erfolgten weitere Anbauten."
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "ID": "1",
+        "image": "1.jpg",
+        "description": "Das Museum für Naturwissenschaften (niederländisch Museum voor Natuurwetenschappen, französisch Muséum des sciences naturelles de Belgique) ist ein Naturkundemuseum und zugleich Forschungsinstitut im Parc Léopold in Brüssel. "
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "ID": "2",
+        "image": "2.jpg",
+        "description": "Es gehört zum Königlich-Belgischen Institut für Naturwissenschaften und stellt einen Teil der Sammlung des Instituts aus, die insgesamt 37 Millionen Stücke umfasst."
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "ID": "3",
+        "image": "3.jpg",
+        "description": "Das Museum ist eines der größten Naturkundemuseen Europas. Es wurde 1846 gegründet, wobei die Sammlungen bis auf die des Fürsten Karl Alexander von Lothringen vom Ende des 18. Jahrhunderts zurückgehen."
+      }
+    }
+  ]
+}

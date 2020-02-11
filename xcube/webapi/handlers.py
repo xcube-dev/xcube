@@ -28,7 +28,9 @@ import pathlib
 from tornado.ioloop import IOLoop
 
 from xcube.core.timecoord import timestamp_to_iso_string
+from xcube.util.perf import measure_time
 from xcube.version import version
+from xcube.webapi.auth import AuthMixin
 from xcube.webapi.controllers.catalogue import get_datasets, get_dataset_coordinates, get_color_bars, get_dataset, \
     get_dataset_place_groups, get_dataset_place_group
 from xcube.webapi.controllers.places import find_places, find_dataset_places
@@ -119,24 +121,34 @@ class GetWMTSCapabilitiesXmlHandler(ServiceRequestHandler):
 
 
 # noinspection PyAbstractClass
-class GetDatasetsHandler(ServiceRequestHandler):
+class GetDatasetsHandler(ServiceRequestHandler, AuthMixin):
 
     def get(self):
+        with measure_time('get granted scopes'):
+            granted_scopes = self.granted_scopes
         details = bool(int(self.params.get_query_argument('details', '0')))
         tile_client = self.params.get_query_argument('tiles', None)
         point = self.params.get_query_argument_point('point', None)
-        response = get_datasets(self.service_context, details=details, client=tile_client,
-                                point=point, base_url=self.base_url)
+        response = get_datasets(self.service_context,
+                                details=details,
+                                client=tile_client,
+                                point=point,
+                                base_url=self.base_url,
+                                granted_scopes=granted_scopes)
         self.set_header('Content-Type', 'application/json')
         self.write(json.dumps(response, indent=None if details else 2))
 
 
 # noinspection PyAbstractClass
-class GetDatasetHandler(ServiceRequestHandler):
+class GetDatasetHandler(ServiceRequestHandler, AuthMixin):
 
     def get(self, ds_id: str):
         tile_client = self.params.get_query_argument('tiles', None)
-        response = get_dataset(self.service_context, ds_id, client=tile_client, base_url=self.base_url)
+        response = get_dataset(self.service_context,
+                               ds_id,
+                               client=tile_client,
+                               base_url=self.base_url,
+                               granted_scopes=self.granted_scopes)
         self.set_header('Content-Type', 'application/json')
         self.write(json.dumps(response, indent=2))
 
@@ -144,7 +156,7 @@ class GetDatasetHandler(ServiceRequestHandler):
 class GetDatasetPlaceGroupsHandler(ServiceRequestHandler):
 
     def get(self, ds_id: str):
-        response = get_dataset_place_groups(self.service_context, ds_id)
+        response = get_dataset_place_groups(self.service_context, ds_id, self.base_url)
         self.set_header('Content-Type', 'application/json')
         self.write(json.dumps(response))
 
@@ -152,7 +164,7 @@ class GetDatasetPlaceGroupsHandler(ServiceRequestHandler):
 class GetDatasetPlaceGroupHandler(ServiceRequestHandler):
 
     def get(self, ds_id: str, place_group_id: str):
-        response = get_dataset_place_group(self.service_context, ds_id, place_group_id)
+        response = get_dataset_place_group(self.service_context, ds_id, place_group_id, self.base_url)
         self.set_header('Content-Type', 'application/json')
         self.write(json.dumps(response))
 
@@ -382,7 +394,7 @@ class GetPlaceGroupsHandler(ServiceRequestHandler):
 
     # noinspection PyShadowingBuiltins
     def get(self):
-        response = self.service_context.get_global_place_groups()
+        response = self.service_context.get_global_place_groups(self.base_url)
         self.set_header('Content-Type', "application/json")
         self.write(json.dumps(response, indent=2))
 
@@ -400,6 +412,7 @@ class FindPlacesHandler(ServiceRequestHandler):
             raise ServiceBadRequestError('Only one of "geom" and "bbox" may be given')
         response = find_places(self.service_context,
                                place_group_id,
+                               self.base_url,
                                geom_wkt=geom_wkt, box_coords=box_coords,
                                query_expr=query_expr, comb_op=comb_op)
         self.set_header('Content-Type', "application/json")
@@ -412,6 +425,7 @@ class FindPlacesHandler(ServiceRequestHandler):
         geojson_obj = self.get_body_as_json_object()
         response = find_places(self.service_context,
                                place_group_id,
+                               self.base_url,
                                geojson_obj=geojson_obj,
                                query_expr=query_expr, comb_op=comb_op)
         self.set_header('Content-Type', "application/json")
@@ -426,8 +440,11 @@ class FindDatasetPlacesHandler(ServiceRequestHandler):
         query_expr = self.params.get_query_argument("query", None)
         comb_op = self.params.get_query_argument("comb", "and")
         response = find_dataset_places(self.service_context,
-                                       place_group_id, ds_id,
-                                       query_expr=query_expr, comb_op=comb_op)
+                                       place_group_id,
+                                       ds_id,
+                                       self.base_url,
+                                       query_expr=query_expr,
+                                       comb_op=comb_op)
         self.set_header('Content-Type', "application/json")
         self.write(json.dumps(response, indent=2))
 

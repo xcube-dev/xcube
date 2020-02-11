@@ -36,12 +36,16 @@ from xcube.webapi.service import url_pattern
 __author__ = "Norman Fomferra (Brockmann Consult GmbH)"
 
 
-def new_application(prefix: str = None):
+def new_application(prefix: str = None, base_dir: str = '.'):
     prefix = normalize_prefix(prefix)
 
     application = Application([
         (prefix + '/res/(.*)',
          StaticFileHandler, {'path': os.path.join(os.path.dirname(__file__), 'res')}),
+
+        (prefix + '/images/(.*)',
+         StaticFileHandler, {'path': os.path.join(base_dir, 'images')}),
+
         (prefix + url_pattern('/'),
          InfoHandler),
 
