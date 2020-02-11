@@ -207,7 +207,7 @@ class ServiceContext:
         if expected_var_names:
             for var_name in expected_var_names:
                 if var_name not in dataset:
-                    raise ServiceResourceNotFoundError(f'Variable "{var_name}" 1 not found in dataset "{ds_id}"')
+                    raise ServiceResourceNotFoundError(f'Variable "{var_name}" not found in dataset "{ds_id}"')
         return dataset
 
     def get_variable_for_z(self, ds_id: str, var_name: str, z_index: int) -> xr.DataArray:
@@ -217,7 +217,7 @@ class ServiceContext:
             raise ServiceResourceNotFoundError(f'Variable "{var_name}" has no z-index {z_index} in dataset "{ds_id}"')
         dataset = ml_dataset.get_dataset(index)
         if var_name not in dataset:
-            raise ServiceResourceNotFoundError(f'Variable "{var_name}" 2 not found in dataset "{ds_id}"')
+            raise ServiceResourceNotFoundError(f'Variable "{var_name}" not found in dataset "{ds_id}"')
         return dataset[var_name]
 
     def get_dataset_descriptors(self):
@@ -331,7 +331,7 @@ class ServiceContext:
             ds = self.get_dataset(ds_id)
             units = ds[var_name].units
             return units
-        raise ServiceResourceNotFoundError(f'Variable "{var_name}" 3 not found in dataset "{ds_id}"')
+        raise ServiceResourceNotFoundError(f'Variable "{var_name}" not found in dataset "{ds_id}"')
 
     def get_dataset_place_groups(self, ds_id: str, base_url: str, load_features=False) -> List[Dict]:
         dataset_descriptor = self.get_dataset_descriptor(ds_id)
