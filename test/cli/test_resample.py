@@ -56,8 +56,7 @@ class ResampleDataTest(CliDataTest):
     def test_downsample_with_multiple_methods(self):
         result = self.invoke_cli(['resample',
                                   '--variables', 'temperature',
-                                  # '-F', '3D',
-                                  '-F, 'all', 
+                                  '-F', 'all',
                                   '-M', 'mean',
                                   '-M', 'count',
                                   '-M', 'prod',

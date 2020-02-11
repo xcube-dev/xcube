@@ -99,6 +99,15 @@
           IsSubstitute: true
   ```
 
+### Enhancements
+
+* CLI command `xcube resample` has been enhanced by a new value for the 
+  frequency option `--frequency all`
+  With this value it will be possible to create mean, max , std, ... of the whole dataset,
+  in other words, create an overview of a cube. 
+  By [Alberto S. Rabaneda](https://github.com/rabaneda).
+ 
+
 ### Other
 
 * The `xcube serve` API operations `datasets/` and `datasets/{ds_id}` now also
@@ -108,7 +117,7 @@
 * Renamed default log file for `xcube serve` command to `xcube-serve.log`.
 * `xcube gen` now immediately flushes logging output to standard out
   
-## Changes in 0.3.1 (in development)
+## Changes in 0.3.1 
 
 ### Fixes
 
