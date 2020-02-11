@@ -358,7 +358,7 @@ class TestUploadToS3Bucket(unittest.TestCase):
             s3_conn = boto3.client('s3')
             s3_conn.create_bucket(Bucket='upload_bucket', ACL="public-read")
             client_kwargs = {"cloud_provider_access_key_id": "test_fake_id", "cloud_provider_secret_access_key": "test_fake_secret"}
-            ds1 = xr.open_zarr("/home/alicja/Desktop/projects/xcube/examples/serve/demo/cube-1-250-250.zarr")
+            ds1 = xr.open_zarr("examples/serve/demo/cube-1-250-250.zarr")
             write_cube(ds1, "https://s3.amazonaws.com/upload_bucket/cube-1-250-250.zarr", "zarr",
                        client_kwargs=client_kwargs)
             self.assertIn('cube-1-250-250.zarr/.zattrs',
