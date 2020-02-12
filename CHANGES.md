@@ -63,7 +63,7 @@
   where `compute_variables` is a function that receives the parent xcube dataset
   and is expected to return a new dataset with new variables. 
   
-* `xcube serve` now provides basic access control via OAuth2 bearer tokens (#263).
+* The `xcube serve` tool now provides basic access control via OAuth2 bearer tokens (#263).
   To configure a service instance with access control, add the following to the 
   `xcube serve` configuration file:
   
@@ -107,8 +107,16 @@
   in other words, create an overview of a cube. 
   By [Alberto S. Rabaneda](https://github.com/rabaneda).
  
-
-### Other
+* The `xcube serve` tool now also serves dataset attribution information which will be 
+  displayed in the xcube-viewer's map. To add attribution information, use the `DatasetAttribution` 
+  in to your `xcube serve` configuration. It can be used on top-level (for all dataset), 
+  or on individual datasets. Its value may be a single text entry or a list of texts:
+  For example: 
+  ```yaml
+  DatasetAttribution: 
+    - "© by Brockmann Consult GmbH 2020, contains modified Copernicus Data 2019, processed by ESA."
+    - "Funded by EU H2020 DCS4COP project."
+  ```
 * The `xcube gen` tool now always produces consolidated xcube datasets when the output format is zarr. 
   Furthermore when appending to an existing zarr xcube dataset, the output now will be consolidated as well. 
   In addition, `xcube gen` can now append input time slices to existing optimized (consolidated) zarr xcube datasets.
