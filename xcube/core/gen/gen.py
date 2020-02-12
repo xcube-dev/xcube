@@ -298,7 +298,7 @@ def _process_input(input_processor: InputProcessor,
             if not dry_run:
                 rimraf(output_path)
                 output_writer.write(input_slice, output_path, **output_writer_params)
-                _update_cube_attrs(output_writer, output_path, global_attrs=output_metadata, temporal_only=False)
+                _update_cube(output_writer, output_path, global_attrs=output_metadata, temporal_only=False)
             return input_slice
 
         steps.append((step8, f'creating input slice in {output_path}'))
@@ -307,7 +307,7 @@ def _process_input(input_processor: InputProcessor,
         def step8(input_slice):
             if not dry_run:
                 output_writer.append(input_slice, output_path, **output_writer_params)
-                _update_cube_attrs(output_writer, output_path, temporal_only=True)
+                _update_cube(output_writer, output_path, temporal_only=True, consolidate=True)
             return input_slice
 
         steps.append((step8, f'appending input slice to {output_path}'))
@@ -316,7 +316,7 @@ def _process_input(input_processor: InputProcessor,
         def step8(input_slice):
             if not dry_run:
                 output_writer.insert(input_slice, time_index, output_path)
-                _update_cube_attrs(output_writer, output_path, temporal_only=True)
+                _update_cube(output_writer, output_path, temporal_only=True, consolidate=True)
             return input_slice
 
         steps.append((step8, f'inserting input slice before index {time_index} in {output_path}'))
@@ -325,7 +325,7 @@ def _process_input(input_processor: InputProcessor,
         def step8(input_slice):
             if not dry_run:
                 output_writer.replace(input_slice, time_index, output_path)
-                _update_cube_attrs(output_writer, output_path, temporal_only=True)
+                _update_cube(output_writer, output_path, temporal_only=True, consolidate=True)
             return input_slice
 
         steps.append((step8, f'replacing input slice at index {time_index} in {output_path}'))
@@ -370,12 +370,10 @@ def _process_input(input_processor: InputProcessor,
     return status
 
 
-def _update_cube_attrs(output_writer: DatasetIO, output_path: str,
-                       global_attrs: Dict = None,
-                       temporal_only: bool = False):
-    consolidated = os.path.exists(os.path.join(output_path, '.zmetadata'))
-    if consolidated:
-        optimize_dataset(input_path=output_path, in_place=True)
+def _update_cube(output_writer: DatasetIO, output_path: str, global_attrs: Dict = None, temporal_only: bool = False,
+                 consolidate: bool = True):
+    if consolidate and os.path.isfile(os.path.join(output_path, '.zgroup')):
+        optimize_dataset(input_path=output_path, in_place=True, unchunk_coords=True)
     cube = output_writer.read(output_path)
     if temporal_only:
         cube = update_dataset_temporal_attrs(cube, update_existing=True, in_place=True)

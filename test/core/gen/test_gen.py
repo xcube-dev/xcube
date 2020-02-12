@@ -137,6 +137,7 @@ class DefaultProcessTest(unittest.TestCase):
                             expected_extra_attrs=dict(date_modified=None,
                                                       time_coverage_start='2016-12-31T12:00:00.000000000',
                                                       time_coverage_end='2017-01-03T12:00:00.000000000'))
+        self.assertTrue(os.path.exists(os.path.join('l2c.zarr', '.zmetadata')))
 
     def test_input_txt(self):
         f = open((os.path.join(os.path.dirname(__file__), 'inputdata', "input.txt")), "w+")
@@ -151,22 +152,7 @@ class DefaultProcessTest(unittest.TestCase):
                             expected_time_dim=3,
                             expected_extra_attrs=dict(time_coverage_start='2016-12-31T12:00:00.000000000',
                                                       time_coverage_end='2017-01-03T12:00:00.000000000'))
-
-    def test_process_inputs_to_consolidated_zarr(self):
-        status, output = gen_cube_wrapper(
-            [get_inputdata_path('20170101-IFR-L4_GHRSST-SSTfnd-ODYSSEA-NWE_002-v2.0-fv1.0.nc')], 'l2c.zarr',
-            no_sort_mode=True)
-        optimize_dataset(input_path='l2c.zarr', in_place=True, unchunk_coords=True)
         self.assertTrue(os.path.exists(os.path.join('l2c.zarr', '.zmetadata')))
-        status, output = gen_cube_wrapper(
-            [get_inputdata_path('20170103-IFR-L4_GHRSST-SSTfnd-ODYSSEA-NWE_002-v2.0-fv1.0.nc')], 'l2c.zarr',
-            no_sort_mode=True)
-        self.assertEqual(True, status)
-        self.assertTrue(os.path.exists(os.path.join('l2c.zarr', '.zmetadata')))
-        self.assert_cube_ok(xr.open_zarr('l2c.zarr'),
-                            expected_time_dim=2,
-                            expected_extra_attrs=dict(time_coverage_start='2016-12-31T12:00:00.000000000',
-                                                      time_coverage_end='2017-01-03T12:00:00.000000000'))
 
     def assert_cube_ok(self, cube: xr.Dataset,
                        expected_time_dim: int,
