@@ -109,7 +109,7 @@
  
 
 ### Other
-* `xcube gen` now always produces consolidated xcube datasets when the output format is zarr. 
+* The `xcube gen` tool now always produces consolidated xcube datasets when the output format is zarr. 
   Furthermore when appending to an existing zarr xcube dataset, the output now will be consolidated as well. 
   `xcube gen` can now append input time slices to existing optimized (consolidated) zarr xcube datasets.
 * The `unchunk_coords` keyword argument of Python API function 
