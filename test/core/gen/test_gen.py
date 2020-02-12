@@ -1,15 +1,13 @@
 import os
 import unittest
-from typing import Any, Dict, Optional, Tuple, Sequence
+from typing import Any, Dict, Optional, Sequence, Tuple
 
 import numpy as np
 import xarray as xr
-
 from test.core.gen.helpers import get_inputdata_path
 from xcube.core.dsio import rimraf
 from xcube.core.gen.config import get_config_dict
 from xcube.core.gen.gen import gen_cube
-from xcube.core.optimize import optimize_dataset
 
 
 def clean_up():
