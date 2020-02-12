@@ -1,10 +1,9 @@
 import os
 import unittest
-from typing import Any, Dict, Optional, Tuple, Sequence
+from typing import Any, Dict, Optional, Sequence, Tuple
 
 import numpy as np
 import xarray as xr
-
 from test.core.gen.helpers import get_inputdata_path
 from xcube.core.dsio import rimraf
 from xcube.core.gen.config import get_config_dict
@@ -136,6 +135,7 @@ class DefaultProcessTest(unittest.TestCase):
                             expected_extra_attrs=dict(date_modified=None,
                                                       time_coverage_start='2016-12-31T12:00:00.000000000',
                                                       time_coverage_end='2017-01-03T12:00:00.000000000'))
+        self.assertTrue(os.path.exists(os.path.join('l2c.zarr', '.zmetadata')))
 
     def test_input_txt(self):
         f = open((os.path.join(os.path.dirname(__file__), 'inputdata', "input.txt")), "w+")
@@ -150,6 +150,7 @@ class DefaultProcessTest(unittest.TestCase):
                             expected_time_dim=3,
                             expected_extra_attrs=dict(time_coverage_start='2016-12-31T12:00:00.000000000',
                                                       time_coverage_end='2017-01-03T12:00:00.000000000'))
+        self.assertTrue(os.path.exists(os.path.join('l2c.zarr', '.zmetadata')))
 
     def assert_cube_ok(self, cube: xr.Dataset,
                        expected_time_dim: int,
