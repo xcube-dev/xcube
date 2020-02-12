@@ -19,6 +19,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+import json
 import os.path
 from typing import List, Sequence
 
@@ -38,7 +39,7 @@ def unchunk_dataset(dataset_path: str, var_names: Sequence[str] = None, coords_o
 
     is_zarr = os.path.isfile(os.path.join(dataset_path, '.zgroup'))
     if not is_zarr:
-        raise ValueError(f'{dataset_path!r} is not a valid ZARR directory')
+        raise ValueError(f'{dataset_path!r} is not a valid Zarr directory')
 
     with xr.open_zarr(dataset_path) as dataset:
         if var_names is None:
@@ -46,14 +47,14 @@ def unchunk_dataset(dataset_path: str, var_names: Sequence[str] = None, coords_o
                 var_names = list(dataset.coords)
             else:
                 var_names = list(dataset.variables)
-
-        for var_name in var_names:
-            if coords_only:
-                if var_name not in dataset.coords:
-                    raise ValueError(f'variable {var_name!r} is not a coordinate variable in {dataset_path!r}')
-            else:
-                if var_name not in dataset.variables:
-                    raise ValueError(f'variable {var_name!r} is not a variable in {dataset_path!r}')
+        else:
+            for var_name in var_names:
+                if coords_only:
+                    if var_name not in dataset.coords:
+                        raise ValueError(f'variable {var_name!r} is not a coordinate variable in {dataset_path!r}')
+                else:
+                    if var_name not in dataset.variables:
+                        raise ValueError(f'variable {var_name!r} is not a variable in {dataset_path!r}')
 
     _unchunk_vars(dataset_path, var_names)
 
@@ -61,6 +62,15 @@ def unchunk_dataset(dataset_path: str, var_names: Sequence[str] = None, coords_o
 def _unchunk_vars(dataset_path: str, var_names: List[str]):
     for var_name in var_names:
         var_path = os.path.join(dataset_path, var_name)
+
+        # Optimization: if "shape" and "chunks" are equal in ${var}/.zarray, we are done
+        var_array_info_path = os.path.join(var_path, '.zarray')
+        with open(var_array_info_path, 'r') as fp:
+            var_array_info = json.load(fp)
+            if var_array_info.get('shape') == var_array_info.get('chunks'):
+                continue
+
+        # Open array and remove chunks from the data
         var_array = zarr.convenience.open_array(var_path, 'r+')
         if var_array.shape != var_array.chunks:
             # TODO (forman): Fully loading data is inefficient and dangerous for large arrays.
