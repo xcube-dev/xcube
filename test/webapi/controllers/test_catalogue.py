@@ -15,12 +15,13 @@ class CatalogueControllerTest(unittest.TestCase):
         self.assertIn("datasets", response)
         self.assertIsInstance(response["datasets"], list)
         self.assertEqual(2, len(response["datasets"]))
-        dataset = response["datasets"][0]
-        self.assertIsInstance(dataset, dict)
-        self.assertIn("id", dataset)
-        self.assertIn("title", dataset)
-        self.assertNotIn("variables", dataset)
-        self.assertNotIn("dimensions", dataset)
+
+        for dataset in response["datasets"]:
+            self.assertIsInstance(dataset, dict)
+            self.assertIn("id", dataset)
+            self.assertIn("title", dataset)
+            self.assertNotIn("variables", dataset)
+            self.assertNotIn("dimensions", dataset)
 
     def test_dataset_with_details(self):
         ctx = new_test_service_context()
@@ -30,12 +31,26 @@ class CatalogueControllerTest(unittest.TestCase):
         self.assertIn("datasets", response)
         self.assertIsInstance(response["datasets"], list)
         self.assertEqual(2, len(response["datasets"]))
-        dataset = response["datasets"][0]
-        self.assertIsInstance(dataset, dict)
-        self.assertIn("id", dataset)
-        self.assertIn("title", dataset)
-        self.assertIn("variables", dataset)
-        self.assertIn("dimensions", dataset)
+
+        demo_dataset = None
+        demo_1w_dataset = None
+        for dataset in response["datasets"]:
+            self.assertIsInstance(dataset, dict)
+            self.assertIn("id", dataset)
+            self.assertIn("title", dataset)
+            self.assertIn("attributions", dataset)
+            self.assertIn("variables", dataset)
+            self.assertIn("dimensions", dataset)
+            if dataset["id"] == "demo":
+                demo_dataset = dataset
+            if dataset["id"] == "demo-1w":
+                demo_1w_dataset = dataset
+
+        self.assertIsNotNone(demo_dataset)
+        self.assertIsNotNone(demo_1w_dataset)
+        self.assertEqual(["© by EU H2020 CyanoAlert project"], demo_dataset['attributions'])
+        self.assertEqual(["© by Brockmann Consult GmbH 2020, "
+                          "contains modified Copernicus Data 2019, processed by ESA"], demo_1w_dataset['attributions'])
 
     def test_dataset_with_point(self):
         ctx = new_test_service_context()

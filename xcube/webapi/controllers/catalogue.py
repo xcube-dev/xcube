@@ -3,7 +3,6 @@ import json
 from typing import Dict, Tuple, List, Set
 
 import numpy as np
-
 from xcube.core.geom import get_dataset_bounds
 from xcube.core.timecoord import timestamp_to_iso_string
 from xcube.util.cmaps import get_cmaps
@@ -143,6 +142,12 @@ def get_dataset(ctx: ServiceContext,
     dataset_dict["dimensions"] = [get_dataset_coordinates(ctx, ds_id, dim_name) for dim_name in dim_names]
 
     dataset_dict["attrs"] = {key: ds.attrs[key] for key in sorted(list(ds.attrs.keys()))}
+
+    dataset_attributions = dataset_descriptor.get('DatasetAttribution', ctx.config.get('DatasetAttribution'))
+    if dataset_attributions is not None:
+        if isinstance(dataset_attributions, str):
+            dataset_attributions = [dataset_attributions]
+        dataset_dict['attributions'] = dataset_attributions
 
     place_groups = ctx.get_dataset_place_groups(ds_id, base_url)
     if place_groups:

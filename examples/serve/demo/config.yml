@@ -2,6 +2,10 @@ Authentication:
   Domain: xcube-dev.eu.auth0.com
   Audience: https://xcube-dev/api/
 
+DatasetAttribution:
+  - "© by Brockmann Consult GmbH 2020, contains modified Copernicus Data 2019, processed by ESA"
+  - "© by EU H2020 CyanoAlert project"
+
 Datasets:
   # Will only appear for unauthorized clients
   - Identifier: local
