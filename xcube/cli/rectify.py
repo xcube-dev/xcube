@@ -53,14 +53,14 @@ DEFAULT_DRY_RUN = False
               help='Output size in pixels using format "WIDTH,HEIGHT", e.g. "2048,1024". '
                    'If omitted, a size will be computed so spatial resolution of INPUT is preserved.')
 @click.option('--tile_size', '-t', 'output_tile_size', metavar='TILE_SIZE',
-              help='Output size in pixels using format "WIDTH,HEIGHT", e.g. "512,512". '
+              help='Output tile size in pixels using format "WIDTH,HEIGHT", e.g. "512,512". '
                    'If given, the output will be chunked w.r.t. TILE_SIZE. Otherwise the output will NOT be chunked.')
 @click.option('--point', '-p', 'output_point', metavar='POINT',
               help='Output spatial coordinates of the point referring to pixel col=0.5,row=0.5 '
                    'using format "LON,LAT" or "X,Y", e.g. "1.2,53.5". '
                    'If omitted, the default reference point will the INPUT\'s minimum spatial coordinates.')
 @click.option('--res', '-r', 'output_res', type=float,
-              help='Output spatial resolution. '
+              help='Output spatial resolution in decimal degrees. '
                    'If omitted, the default resolution will be close to the spatial resolution of INPUT.')
 @click.option('--delta', '-d', type=float, default=DEFAULT_DELTA,
               help='Relative maximum delta for detection whether a '
@@ -84,15 +84,18 @@ def rectify(dataset: str,
 
     input_path = dataset
 
-    xy_var_names = parse_cli_sequence(xy_var_names, metavar='VARIABLES', num_items=2, item_plural_name='names')
-    var_names = parse_cli_sequence(var_names, metavar='VARIABLES', item_plural_name='names')
-    output_size = parse_cli_sequence(output_size, metavar='SIZE', num_items=2, item_plural_name='sizes',
-                                     item_parser=int,
-                                     item_validator=assert_positive_int_item)
-    output_tile_size = parse_cli_sequence(output_size, metavar='TILE_SIZE', num_items=2, item_plural_name='tile sizes',
-                                          item_parser=int,
-                                          item_validator=assert_positive_int_item)
-    output_point = parse_cli_sequence(output_point, metavar='POINT', num_items=2, item_plural_name='coordinates',
+    xy_var_names = parse_cli_sequence(xy_var_names,
+                                      metavar='VARIABLES', num_items=2, item_plural_name='names')
+    var_names = parse_cli_sequence(var_names,
+                                   metavar='VARIABLES', item_plural_name='names')
+    output_size = parse_cli_sequence(output_size,
+                                     metavar='SIZE', num_items=2, item_plural_name='sizes',
+                                     item_parser=int, item_validator=assert_positive_int_item)
+    output_tile_size = parse_cli_sequence(output_tile_size,
+                                          metavar='TILE_SIZE', num_items=2, item_plural_name='tile sizes',
+                                          item_parser=int, item_validator=assert_positive_int_item)
+    output_point = parse_cli_sequence(output_point,
+                                      metavar='POINT', num_items=2, item_plural_name='coordinates',
                                       item_parser=float)
 
     # noinspection PyBroadException
