@@ -23,19 +23,19 @@ import os
 import shutil
 import warnings
 from abc import ABCMeta, abstractmethod
-from typing import Callable, Dict, Iterable, List, Optional, Set, Tuple, Any
+from typing import Any, Callable, Dict, Iterable, List, Optional, Set, Tuple
 
 import pandas as pd
 import s3fs
-import urllib3.util
 import xarray as xr
 import zarr
+import urllib3.util
 
 from xcube.constants import EXTENSION_POINT_DATASET_IOS
-from xcube.constants import FORMAT_NAME_MEM, FORMAT_NAME_NETCDF4, FORMAT_NAME_ZARR, FORMAT_NAME_CSV
+from xcube.constants import FORMAT_NAME_CSV, FORMAT_NAME_MEM, FORMAT_NAME_NETCDF4, FORMAT_NAME_ZARR
 from xcube.core.timeslice import append_time_slice, insert_time_slice, replace_time_slice
 from xcube.core.verify import assert_cube
-from xcube.util.plugin import get_extension_registry, ExtensionComponent
+from xcube.util.plugin import ExtensionComponent, get_extension_registry
 
 
 def open_cube(input_path: str,
@@ -44,7 +44,6 @@ def open_cube(input_path: str,
     """
     Open a xcube dataset from *input_path*.
     If *format* is not provided it will be guessed from *input_path*.
-
     :param input_path: input path
     :param format_name: format, e.g. "zarr" or "netcdf4"
     :param kwargs: format-specific keyword arguments
@@ -61,7 +60,6 @@ def write_cube(cube: xr.Dataset,
     """
     Write a xcube dataset to *output_path*.
     If *format* is not provided it will be guessed from *output_path*.
-
     :param cube: xcube dataset to be written.
     :param output_path: output path
     :param format_name: format, e.g. "zarr" or "netcdf4"
@@ -81,7 +79,6 @@ def open_dataset(input_path: str,
     """
     Open a dataset from *input_path*.
     If *format* is not provided it will be guessed from *output_path*.
-
     :param input_path: input path
     :param format_name: format, e.g. "zarr" or "netcdf4"
     :param is_cube: Whether a ValueError will be raised, if the dataset read from *input_path* is not a xcube dataset.
@@ -107,7 +104,6 @@ def write_dataset(dataset: xr.Dataset,
     """
     Write dataset to *output_path*.
     If *format* is not provided it will be guessed from *output_path*.
-
     :param dataset: Dataset to be written.
     :param output_path: output path
     :param format_name: format, e.g. "zarr" or "netcdf4"
@@ -129,7 +125,6 @@ def write_dataset(dataset: xr.Dataset,
 class DatasetIO(ExtensionComponent, metaclass=ABCMeta):
     """
     An abstract base class that represents dataset input/output.
-
     :param name: A unique dataset I/O identifier.
     """
 
@@ -161,7 +156,6 @@ class DatasetIO(ExtensionComponent, metaclass=ABCMeta):
         """
         Compute a fitness of this dataset I/O in the interval [0 to 1]
         for reading/writing from/to the given *path*.
-
         :param path: The path or URL.
         :param path_type: Either "file", "dir", "url", or None.
         :return: the chance in range [0 to 1]
@@ -226,7 +220,6 @@ def find_dataset_io(format_name: str, modes: Iterable[str] = None, default: Data
 def guess_dataset_format(path: str) -> Optional[str]:
     """
     Guess a dataset format for a file system path or URL given by *path*.
-
     :param path: A file system path or URL.
     :return: The name of a dataset format guessed from *path*.
     """
@@ -239,12 +232,9 @@ def guess_dataset_format(path: str) -> Optional[str]:
 def guess_dataset_ios(path: str) -> List[Tuple[DatasetIO, float]]:
     """
     Guess suitable DatasetIO objects for a file system path or URL given by *path*.
-
     Returns a list of (DatasetIO, fitness) tuples, sorted by descending fitness values.
     Fitness values are in the interval (0, 1].
-
     The first entry is the most appropriate DatasetIO object.
-
     :param path: A file system path or URL.
     :return: A list of (DatasetIO, fitness) tuples.
     """
@@ -285,7 +275,6 @@ def query_dataset_io(filter_fn: Callable[[DatasetIO], bool] = None) -> List[Data
 class MemDatasetIO(DatasetIO):
     """
     An in-memory  dataset I/O. Keeps all datasets in a dictionary.
-
     :param datasets: The initial datasets as a path to dataset mapping.
     """
 
@@ -419,22 +408,24 @@ class ZarrDatasetIO(DatasetIO):
     def read(self, path: str, **kwargs) -> xr.Dataset:
         path_or_store = path
         consolidated = False
+        mode = 'read'
+        root = None
 
         if isinstance(path, str):
-            region_name = None
-
+            client_kwargs = {}
+            if 'client_kwargs' in kwargs:
+                client_kwargs = kwargs.pop('client_kwargs')
             if 'endpoint_url' in kwargs:
-                endpoint_url = kwargs.pop('endpoint_url')
+                client_kwargs['endpoint_url'] = kwargs.pop('endpoint_url')
                 root = path
-            else:
-                endpoint_url, root = split_bucket_url(path)
-
             if 'region_name' in kwargs:
-                region_name = kwargs.pop('region_name')
+                client_kwargs['region_name'] = kwargs.pop('region_name')
 
-            if endpoint_url and root:
+            path_or_store, root, client_kwargs = _get_path_or_store(path_or_store, client_kwargs, mode, root)
+
+            if 'endpoint_url' in client_kwargs and root is not None:
                 s3 = s3fs.S3FileSystem(anon=True,
-                                       client_kwargs=dict(endpoint_url=endpoint_url, region_name=region_name))
+                                       client_kwargs=client_kwargs)
                 consolidated = s3.exists(f'{root}/.zmetadata')
                 path_or_store = s3fs.S3Map(root=root, s3=s3, check=False)
                 if 'max_cache_size' in kwargs:
@@ -450,9 +441,15 @@ class ZarrDatasetIO(DatasetIO):
               output_path: str,
               compress=True,
               cname=None, clevel=None, shuffle=None, blocksize=None,
-              chunksizes=None):
+              chunksizes=None,
+              client_kwargs=None,
+              **kwargs):
+        mode = 'write'
+        root = None
+        path_or_store, root, client_kwargs = _get_path_or_store(output_path, client_kwargs, mode, root)
+
         encoding = self._get_write_encodings(dataset, compress, cname, clevel, shuffle, blocksize, chunksizes)
-        dataset.to_zarr(output_path, mode="w", encoding=encoding)
+        dataset.to_zarr(path_or_store, mode='w', encoding=encoding)
 
     @classmethod
     def _get_write_encodings(cls, dataset, compress, cname, clevel, shuffle, blocksize, chunksizes):
@@ -527,7 +524,6 @@ def rimraf(path):
     """
     The UNIX command `rm -rf` for xcube.
     Recursively remove directory or single file.
-
     :param path:  directory or single file
     """
     if os.path.isdir(path):
@@ -539,8 +535,38 @@ def rimraf(path):
         try:
             os.remove(path)
         except OSError:
-            warnings.warn(f"failed to remove file {path}")
+            warnings.warn(f'failed to remove file {path}')
             pass
+
+
+def _get_path_or_store(path: str, client_kwargs: Dict[str, Any], mode: str, root: str):
+    path_or_store = path
+    anon_mode = True
+    if not client_kwargs:
+        client_kwargs = {}
+
+    if client_kwargs is not None:
+        if 'provider_access_key_id' in client_kwargs and 'provider_secret_access_key' in client_kwargs:
+            anon_mode = False
+            client_kwargs['aws_access_key_id'] = client_kwargs.pop('provider_access_key_id')
+            client_kwargs['aws_secret_access_key'] = client_kwargs.pop('provider_secret_access_key')
+
+    if path.startswith("https://") or path.startswith("http://"):
+        import urllib3.util
+        url = urllib3.util.parse_url(path_or_store)
+        if url.port is not None:
+            client_kwargs['endpoint_url'] = f'{url.scheme}://{url.host}:{url.port}'
+        else:
+            client_kwargs['endpoint_url'] = f'{url.scheme}://{url.host}'
+        root = url.path
+        if root.startswith('/'):
+            root = root[1:]
+        if "write" in mode:
+            root = f's3://{root}'
+        s3 = s3fs.S3FileSystem(anon=anon_mode,
+                               client_kwargs=client_kwargs)
+        path_or_store = s3fs.S3Map(root=root, s3=s3, check=False)
+    return path_or_store, root, client_kwargs
 
 
 def split_bucket_url(path: str):

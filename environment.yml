@@ -35,5 +35,6 @@ dependencies:
   - sphinx >=2.0.1
   # Testing
   - flake8 >=3.7
+  - moto >=1.3
   - pytest >=4.4
   - pytest-cov >=2.6

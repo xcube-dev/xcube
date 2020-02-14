@@ -38,7 +38,18 @@
         valid_pixel_expression: no_cloud_risk
       ...        
   ```      
-
+* Added ability to write xcube datasets in Zarr format into object storage bucket using the xcube python api
+  `xcube.core.dsio.write_cube()`. (#224) The user needs to pass provide user credentials via 
+  ```
+  client_kwargs = {'provider_access_key_id': 'user_id', 'provider_secret_access_key': 'user_secret'}
+  ```
+  and 
+  write to existing bucket by executing 
+  
+  ```
+  write_cube(ds1, 'https://s3.amazonaws.com/upload_bucket/cube-1-250-250.zarr', 'zarr',
+                       client_kwargs=client_kwargs)
+  ```
 * Added new CLI tool `xcube tile` which is used to generate a tiled RGB image 
   pyramid from any xcube dataset. The format and file organisation of the generated 
   tile sets conforms to the [TMS 1.0 Specification](https://wiki.osgeo.org/wiki/Tile_Map_Service_Specification) 
