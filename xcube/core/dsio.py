@@ -546,10 +546,10 @@ def _get_path_or_store(path: str, client_kwargs: Dict[str, Any], mode: str, root
         client_kwargs = {}
 
     if client_kwargs is not None:
-        if 'cloud_provider_access_key_id' in client_kwargs and 'cloud_provider_secret_access_key' in client_kwargs:
+        if 'provider_access_key_id' in client_kwargs and 'provider_secret_access_key' in client_kwargs:
             anon_mode = False
-            client_kwargs['aws_access_key_id'] = client_kwargs.pop('cloud_provider_access_key_id')
-            client_kwargs['aws_secret_access_key'] = client_kwargs.pop('cloud_provider_secret_access_key')
+            client_kwargs['aws_access_key_id'] = client_kwargs.pop('provider_access_key_id')
+            client_kwargs['aws_secret_access_key'] = client_kwargs.pop('provider_secret_access_key')
 
     if path.startswith("https://") or path.startswith("http://"):
         import urllib3.util

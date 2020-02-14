@@ -331,22 +331,22 @@ class ContextManagerTest(unittest.TestCase):
 class GetPathOrStoreTest(unittest.TestCase):
     def test_path_or_store_read_from_bucket(self):
         path = _get_path_or_store(root=None,
-                                  path="http://obs.eu-de.otc.t-systems.com/dcs4cop-obs-02/OLCI-SNS-RAW-CUBE-2.zarr",
-                                  mode="read", client_kwargs=None)[0]
+                                  path='http://obs.eu-de.otc.t-systems.com/dcs4cop-obs-02/OLCI-SNS-RAW-CUBE-2.zarr',
+                                  mode='read', client_kwargs=None)[0]
         self.assertIsInstance(path, fsspec.mapping.FSMap)
 
     def test_path_or_store_write_to_bucket(self):
         path = _get_path_or_store(root=None,
-                                  path="http://obs.eu-de.otc.t-systems.com/fake_bucket/fake_cube.zarr",
-                                  mode="write",
-                                  client_kwargs={"aws_access_key_id": "some_fake_id",
-                                                 "aws_secret_access_key": "some_fake_key"})[0]
+                                  path='http://obs.eu-de.otc.t-systems.com/fake_bucket/fake_cube.zarr',
+                                  mode='write',
+                                  client_kwargs={'aws_access_key_id': 'some_fake_id',
+                                                 'aws_secret_access_key': 'some_fake_key'})[0]
         self.assertIsInstance(path, fsspec.mapping.FSMap)
 
     def test_path_or_store_read_from_local(self):
-        path = _get_path_or_store(path="../examples/serve/demo/cube-1-250-250.zarr",
+        path = _get_path_or_store(path='../examples/serve/demo/cube-1-250-250.zarr',
                                   client_kwargs=None,
-                                  mode="read",
+                                  mode='read',
                                   root=None)[0]
         self.assertIsInstance(path, str)
 
@@ -356,10 +356,10 @@ class TestUploadToS3Bucket(unittest.TestCase):
     def test_upload_to_s3(self):
         with moto.mock_s3():
             s3_conn = boto3.client('s3')
-            s3_conn.create_bucket(Bucket='upload_bucket', ACL="public-read")
-            client_kwargs = {"cloud_provider_access_key_id": "test_fake_id", "cloud_provider_secret_access_key": "test_fake_secret"}
-            ds1 = xr.open_zarr("examples/serve/demo/cube-1-250-250.zarr")
-            write_cube(ds1, "https://s3.amazonaws.com/upload_bucket/cube-1-250-250.zarr", "zarr",
+            s3_conn.create_bucket(Bucket='upload_bucket', ACL='public-read')
+            client_kwargs = {'provider_access_key_id': 'test_fake_id', 'provider_secret_access_key': 'test_fake_secret'}
+            ds1 = xr.open_zarr('examples/serve/demo/cube-1-250-250.zarr')
+            write_cube(ds1, 'https://s3.amazonaws.com/upload_bucket/cube-1-250-250.zarr', 'zarr',
                        client_kwargs=client_kwargs)
             self.assertIn('cube-1-250-250.zarr/.zattrs',
-                          s3_conn.list_objects(Bucket='upload_bucket')["Contents"][0]["Key"])
+                          s3_conn.list_objects(Bucket='upload_bucket')['Contents'][0]['Key'])
