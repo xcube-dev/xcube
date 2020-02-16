@@ -75,8 +75,7 @@ class WMTSKvpHandler(ServiceRequestHandler):
                                                                   self.service_context,
                                                                   self.base_url)
             self.set_header("Content-Type", "application/xml")
-            # TODO: await self.finish(capabilities)
-            self.finish(capabilities)
+            await self.finish(capabilities)
 
         elif request == "GetTile":
             version = self.params.get_query_argument("version", _WMTS_VERSION)
@@ -103,8 +102,7 @@ class WMTSKvpHandler(ServiceRequestHandler):
                                                           x, y, z,
                                                           self.params)
             self.set_header("Content-Type", "image/png")
-            # TODO: await self.finish(capabilities)
-            self.finish(tile)
+            await self.finish(tile)
         elif request == "GetFeatureInfo":
             raise ServiceBadRequestError('Request type "GetFeatureInfo" not yet implemented')
         else:
@@ -120,8 +118,7 @@ class GetWMTSCapabilitiesXmlHandler(ServiceRequestHandler):
                                                               self.service_context,
                                                               self.base_url)
         self.set_header('Content-Type', 'application/xml')
-        # TODO: await self.finish(capabilities)
-        self.finish(capabilities)
+        await self.finish(capabilities)
 
 
 # noinspection PyAbstractClass
@@ -306,8 +303,7 @@ class GetWMTSTileHandler(ServiceRequestHandler):
                                                       x, y, z,
                                                       self.params)
         self.set_header('Content-Type', 'image/png')
-        # TODO: await self.finish(capabilities)
-        self.finish(tile)
+        await self.finish(tile)
 
 
 # noinspection PyAbstractClass,PyBroadException
@@ -321,8 +317,7 @@ class GetDatasetVarTileHandler(ServiceRequestHandler):
                                                       x, y, z,
                                                       self.params)
         self.set_header('Content-Type', 'image/png')
-        # TODO: await self.finish(capabilities)
-        self.finish(tile)
+        await self.finish(tile)
 
 
 # noinspection PyAbstractClass,PyBroadException
@@ -335,8 +330,7 @@ class GetDatasetVarLegendHandler(ServiceRequestHandler):
                                                       ds_id, var_name,
                                                       self.params)
         self.set_header('Content-Type', 'image/png')
-        # TODO: await self.finish(capabilities)
-        self.finish(tile)
+        await self.finish(tile)
 
 
 # noinspection PyAbstractClass
@@ -361,8 +355,7 @@ class GetNE2TileHandler(ServiceRequestHandler):
                                                           x, y, z,
                                                           self.params)
         self.set_header('Content-Type', 'image/jpg')
-        # TODO: await self.finish(capabilities)
-        self.finish(response)
+        await self.finish(response)
 
 
 # noinspection PyAbstractClass
@@ -480,8 +473,7 @@ class GetTimeSeriesInfoHandler(ServiceRequestHandler):
     async def get(self):
         response = await IOLoop.current().run_in_executor(None, get_time_series_info, self.service_context)
         self.set_header('Content-Type', 'application/json')
-        # TODO: await self.finish(capabilities)
-        self.finish(response)
+        await self.finish(response)
 
 
 # noinspection PyAbstractClass
@@ -504,8 +496,7 @@ class GetTimeSeriesForPointHandler(ServiceRequestHandler):
                                                           end_date,
                                                           max_valids)
         self.set_header('Content-Type', 'application/json')
-        # TODO: await self.finish(capabilities)
-        self.finish(response)
+        await self.finish(response)
 
 
 # noinspection PyAbstractClass
@@ -529,8 +520,7 @@ class GetTimeSeriesForGeometryHandler(ServiceRequestHandler):
                                                           incl_count, incl_stdev,
                                                           max_valids)
         self.set_header('Content-Type', 'application/json')
-        # TODO: await self.finish(capabilities)
-        self.finish(response)
+        await self.finish(response)
 
 
 # noinspection PyAbstractClass
@@ -554,8 +544,7 @@ class GetTimeSeriesForGeometriesHandler(ServiceRequestHandler):
                                                           incl_count, incl_stdev,
                                                           max_valids)
         self.set_header('Content-Type', 'application/json')
-        # TODO: await self.finish(capabilities)
-        self.finish(response)
+        await self.finish(response)
 
 
 # noinspection PyAbstractClass
@@ -579,8 +568,7 @@ class GetTimeSeriesForFeaturesHandler(ServiceRequestHandler):
                                                           incl_count, incl_stdev,
                                                           max_valids)
         self.set_header('Content-Type', 'application/json')
-        # TODO: await self.finish(capabilities)
-        self.finish(response)
+        await self.finish(response)
 
 
 def _check_max_valids(max_valids):
