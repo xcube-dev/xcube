@@ -32,17 +32,45 @@ def get_dataset_tile(ctx: ServiceContext,
     tile_comp_mode = params.get_query_argument_int('mode', ctx.tile_comp_mode)
     trace_perf = params.get_query_argument_int('debug', ctx.trace_perf) != 0
 
-    cmap_name = params.get_query_argument('cbar', default=None)
-    cmap_vmin = params.get_query_argument_float('vmin', default=None)
-    cmap_vmax = params.get_query_argument_float('vmax', default=None)
-    if cmap_name is None or cmap_vmin is None or cmap_vmax is None:
-        default_cmap_name, default_cmap_vmin, default_cmap_vmax = ctx.get_color_mapping(ds_id, var_name)
-        cmap_name = cmap_name or default_cmap_name
-        cmap_vmin = cmap_vmin or default_cmap_vmin
-        cmap_vmax = cmap_vmax or default_cmap_vmax
-
     ml_dataset = ctx.get_ml_dataset(ds_id)
-    var = ml_dataset.base_dataset[var_name]
+    if var_name == 'rgb':
+        cmap_vmin = params.get_query_argument_float('vmin', default=0.0)
+        cmap_vmax = params.get_query_argument_float('vmax', default=1.0)
+        cmap_rgb_names, cmap_rgb_vmin, cmap_rgb_vmax = ctx.get_rgb_color_mapping(ds_id,
+                                                                                 cmap_vmin=cmap_vmin,
+                                                                                 cmap_vmax=cmap_vmax)
+        components = ('r', 'g', 'b')
+        for i in range(3):
+            c = components[i]
+            cmap_rgb_names[i] = params.get_query_argument(c, default=cmap_rgb_names[i])
+            cmap_rgb_vmin[i] = params.get_query_argument_float(f'{c}vmin', default=cmap_rgb_vmin[i])
+            cmap_rgb_vmax[i] = params.get_query_argument_float(f'{c}vmax', default=cmap_rgb_vmax[i])
+        cmap_name = cmap_rgb_names
+        cmap_vmin = cmap_rgb_vmin
+        cmap_vmax = cmap_rgb_vmax
+        for name in cmap_rgb_names:
+            if name and name not in ml_dataset.base_dataset:
+                raise ServiceBadRequestError(f'variable {name!r} not found in dataset {ds_id}')
+        var = None
+        for name in cmap_rgb_names:
+            if name and name in ml_dataset.base_dataset:
+                var = ml_dataset.base_dataset[name]
+                break
+        if var is None:
+            raise ServiceBadRequestError(f'no variable in dataset {ds_id} specified for RGB')
+    else:
+        cmap_name = params.get_query_argument('cbar', default=None)
+        cmap_vmin = params.get_query_argument_float('vmin', default=None)
+        cmap_vmax = params.get_query_argument_float('vmax', default=None)
+        if cmap_name is None or cmap_vmin is None or cmap_vmax is None:
+            default_cmap_name, default_cmap_vmin, default_cmap_vmax = ctx.get_color_mapping(ds_id, var_name)
+            cmap_name = cmap_name or default_cmap_name
+            cmap_vmin = cmap_vmin or default_cmap_vmin
+            cmap_vmax = cmap_vmax or default_cmap_vmax
+        if var_name not in ml_dataset.base_dataset:
+            raise ServiceBadRequestError(f'variable {var_name!r} not found in dataset {ds_id}')
+        var = ml_dataset.base_dataset[var_name]
+
     labels = parse_non_spatial_labels(params.get_query_arguments(),
                                       var.dims,
                                       var.coords,

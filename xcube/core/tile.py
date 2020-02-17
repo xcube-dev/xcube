@@ -20,7 +20,7 @@
 # SOFTWARE.
 
 import logging
-from typing import Any, Mapping, MutableMapping, Sequence, Hashable, Type, Dict, Optional, Tuple
+from typing import Any, Mapping, MutableMapping, Sequence, Hashable, Type, Dict, Optional, Tuple, Union
 
 import numpy as np
 import pandas as pd
@@ -32,12 +32,11 @@ from xcube.util.cache import Cache
 from xcube.util.perf import measure_time_cm
 from xcube.util.tiledimage import ColorMappedRgbaImage
 from xcube.util.tiledimage import ColorMappedRgbaImage2
+from xcube.util.tiledimage import DEFAULT_COLOR_MAP_NAME
+from xcube.util.tiledimage import DEFAULT_COLOR_MAP_VALUE_RANGE
 from xcube.util.tiledimage import NdarrayImage
 from xcube.util.tiledimage import TiledImage
 from xcube.util.tiledimage import TransformArrayImage
-from xcube.util.tiledimage import DEFAULT_COLOR_MAP_NAME
-from xcube.util.tiledimage import DEFAULT_COLOR_MAP_VALUE_RANGE
-from xcube.util.tiledimage import DEFAULT_COLOR_MAP_NUM_COLORS
 
 _LOG = logging.getLogger('xcube')
 
@@ -49,9 +48,9 @@ def get_ml_dataset_tile(ml_dataset: MultiLevelDataset,
                         z: int,
                         labels: Mapping[str, Any] = None,
                         labels_are_indices: bool = False,
-                        cmap_name: str = None,
-                        cmap_vmin: float = None,
-                        cmap_vmax: float = None,
+                        cmap_name: Union[str, Sequence[str]] = None,
+                        cmap_vmin: Union[float, Sequence[float]] = None,
+                        cmap_vmax: Union[float, Sequence[float]] = None,
                         image_cache: MutableMapping[str, TiledImage] = None,
                         tile_cache: Cache = None,
                         tile_comp_mode: int = 0,

@@ -244,9 +244,14 @@ class HandlersTest(AsyncHTTPTestCase):
         response = self.fetch(self.prefix + '/datasets/demo/vars/conc_chl/tiles/0/0/0.png')
         self.assertResponseOK(response)
 
+    def test_fetch_dataset_rgb_tile(self):
+        response = self.fetch(self.prefix + '/datasets/demo/vars/rgb/tiles/0/0/0.png?'
+                                            'r=kd489&g=conc_chl&b=conc_tsm&time=current')
+        self.assertResponseOK(response)
+
     def test_fetch_dataset_tile_with_params(self):
-        response = self.fetch(
-            self.prefix + '/datasets/demo/vars/conc_chl/tiles/0/0/0.png?time=current&cbar=jet&debug=1')
+        response = self.fetch(self.prefix + '/datasets/demo/vars/conc_chl/tiles/0/0/0.png?'
+                                            'time=current&cbar=jet&debug=1')
         self.assertResponseOK(response)
 
     def test_fetch_dataset_tile_grid_ol4_json(self):
