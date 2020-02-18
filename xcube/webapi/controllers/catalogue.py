@@ -124,7 +124,7 @@ def get_dataset(ctx: ServiceContext,
                                                               client=client)
             variable_dict["tileSourceOptions"] = tile_xyz_source_options
 
-        cmap_name, cmap_vmin, cmap_vmax = ctx.get_color_mapping(ds_id, var_name)
+        cmap_name, (cmap_vmin, cmap_vmax) = ctx.get_color_mapping(ds_id, var_name)
         variable_dict["colorBarName"] = cmap_name
         variable_dict["colorBarMin"] = cmap_vmin
         variable_dict["colorBarMax"] = cmap_vmax

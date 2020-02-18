@@ -99,11 +99,11 @@ class ServiceContextTest(unittest.TestCase):
     def test_get_color_mapping(self):
         ctx = new_test_service_context()
         cm = ctx.get_color_mapping('demo', 'conc_chl')
-        self.assertEqual(('plasma', 0., 24.), cm)
+        self.assertEqual(('plasma', (0., 24.)), cm)
         cm = ctx.get_color_mapping('demo', 'conc_tsm')
-        self.assertEqual(('PuBuGn', 0., 100.), cm)
+        self.assertEqual(('PuBuGn', (0., 100.)), cm)
         cm = ctx.get_color_mapping('demo', 'kd489')
-        self.assertEqual(('jet', 0., 6.), cm)
+        self.assertEqual(('jet', (0., 6.)), cm)
         with self.assertRaises(ServiceResourceNotFoundError):
             ctx.get_color_mapping('demo', '_')
 

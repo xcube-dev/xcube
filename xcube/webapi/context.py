@@ -255,11 +255,9 @@ class ServiceContext:
                               ds_id: str,
                               cmap_vmin: float = 0.0,
                               cmap_vmax: float = 0.0) -> Tuple[List[Optional[str]],
-                                                               List[float],
-                                                               List[float]]:
-        cmap_rgb_vars = 3 * [None]
-        cmap_rgb_vmin = 3 * [cmap_vmin]
-        cmap_rgb_vmax = 3 * [cmap_vmax]
+                                                               List[List[float, float]]]:
+        cmap_rgb_vars = [None, None, None]
+        cmap_rgb_ranges = [[cmap_vmin, cmap_vmax], [cmap_vmin, cmap_vmax], [cmap_vmin, cmap_vmax]]
         color_mappings = self.get_color_mappings(ds_id)
         if color_mappings:
             rgb_mapping = color_mappings.get('rgb')
@@ -269,10 +267,10 @@ class ServiceContext:
                     c = components[i]
                     c_descriptor = rgb_mapping.get(c, {})
                     cmap_rgb_vars[i] = c_descriptor.get('Variable')
-                    cmap_rgb_vmin[i], cmap_rgb_vmax[i] = c_descriptor.get('ValueRange', [cmap_vmin, cmap_vmax])
-        return cmap_rgb_vars, cmap_rgb_vmin, cmap_rgb_vmax
+                    cmap_rgb_ranges[i] = c_descriptor.get('ValueRange', [cmap_vmin, cmap_vmax])
+        return cmap_rgb_vars, cmap_rgb_ranges
 
-    def get_color_mapping(self, ds_id: str, var_name: str):
+    def get_color_mapping(self, ds_id: str, var_name: str) -> Tuple[str, Tuple[float, float]]:
         cmap_name = None
         cmap_vmin, cmap_vmax = None, None
         color_mappings = self.get_color_mappings(ds_id)
@@ -286,14 +284,15 @@ class ServiceContext:
                     cmap_name = color_mapping.get('ColorBar', cmap_name)
                     cmap_name, _ = get_cmap(cmap_name)
 
-        cmap_params = cmap_name, cmap_vmin, cmap_vmax
-        if None not in cmap_params:
-            return cmap_params
+        cmap_range = cmap_vmin, cmap_vmax
+        if cmap_name is not None and None not in cmap_range:
+            # noinspection PyTypeChecker
+            return cmap_name, cmap_range
 
         ds = self.get_dataset(ds_id, expected_var_names=[var_name])
         var = ds[var_name]
         valid_range = get_var_valid_range(var)
-        return get_var_cmap_params(var, cmap_name, cmap_vmin, cmap_vmax, valid_range)
+        return get_var_cmap_params(var, cmap_name, cmap_range, valid_range)
 
     def get_style(self, ds_id: str):
         dataset_descriptor = self.get_dataset_descriptor(ds_id)

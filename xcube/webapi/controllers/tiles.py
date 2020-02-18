@@ -36,18 +36,17 @@ def get_dataset_tile(ctx: ServiceContext,
     if var_name == 'rgb':
         cmap_vmin = params.get_query_argument_float('vmin', default=0.0)
         cmap_vmax = params.get_query_argument_float('vmax', default=1.0)
-        cmap_rgb_names, cmap_rgb_vmin, cmap_rgb_vmax = ctx.get_rgb_color_mapping(ds_id,
-                                                                                 cmap_vmin=cmap_vmin,
-                                                                                 cmap_vmax=cmap_vmax)
+        cmap_rgb_names, cmap_rgb_ranges = ctx.get_rgb_color_mapping(ds_id,
+                                                                    cmap_vmin=cmap_vmin,
+                                                                    cmap_vmax=cmap_vmax)
         components = ('r', 'g', 'b')
         for i in range(3):
             c = components[i]
             cmap_rgb_names[i] = params.get_query_argument(c, default=cmap_rgb_names[i])
-            cmap_rgb_vmin[i] = params.get_query_argument_float(f'{c}vmin', default=cmap_rgb_vmin[i])
-            cmap_rgb_vmax[i] = params.get_query_argument_float(f'{c}vmax', default=cmap_rgb_vmax[i])
-        cmap_name = cmap_rgb_names
-        cmap_vmin = cmap_rgb_vmin
-        cmap_vmax = cmap_rgb_vmax
+            cmap_rgb_ranges[i] = params.get_query_argument_float(f'{c}vmin', default=cmap_rgb_ranges[i][0]), \
+                                 params.get_query_argument_float(f'{c}vmax', default=cmap_rgb_ranges[i][1])
+        cmap_name = tuple(cmap_rgb_names)
+        cmap_range = tuple(cmap_rgb_ranges)
         for name in cmap_rgb_names:
             if name and name not in ml_dataset.base_dataset:
                 raise ServiceBadRequestError(f'variable {name!r} not found in dataset {ds_id}')
@@ -63,10 +62,11 @@ def get_dataset_tile(ctx: ServiceContext,
         cmap_vmin = params.get_query_argument_float('vmin', default=None)
         cmap_vmax = params.get_query_argument_float('vmax', default=None)
         if cmap_name is None or cmap_vmin is None or cmap_vmax is None:
-            default_cmap_name, default_cmap_vmin, default_cmap_vmax = ctx.get_color_mapping(ds_id, var_name)
+            default_cmap_name, (default_cmap_vmin, default_cmap_vmax) = ctx.get_color_mapping(ds_id, var_name)
             cmap_name = cmap_name or default_cmap_name
             cmap_vmin = cmap_vmin or default_cmap_vmin
             cmap_vmax = cmap_vmax or default_cmap_vmax
+        cmap_range = cmap_vmin, cmap_vmax
         if var_name not in ml_dataset.base_dataset:
             raise ServiceBadRequestError(f'variable {var_name!r} not found in dataset {ds_id}')
         var = ml_dataset.base_dataset[var_name]
@@ -82,8 +82,7 @@ def get_dataset_tile(ctx: ServiceContext,
                                x, y, z,
                                labels=labels,
                                cmap_name=cmap_name,
-                               cmap_vmin=cmap_vmin,
-                               cmap_vmax=cmap_vmax,
+                               cmap_range=cmap_range,
                                image_cache=ctx.image_cache,
                                tile_cache=ctx.tile_cache,
                                tile_comp_mode=tile_comp_mode,
@@ -101,7 +100,7 @@ def get_legend(ctx: ServiceContext,
     cmap_w = params.get_query_argument_int('width', default=None)
     cmap_h = params.get_query_argument_int('height', default=None)
     if cmap_name is None or cmap_vmin is None or cmap_vmax is None or cmap_w is None or cmap_h is None:
-        default_cmap_cbar, default_cmap_vmin, default_cmap_vmax = ctx.get_color_mapping(ds_id, var_name)
+        default_cmap_cbar, (default_cmap_vmin, default_cmap_vmax) = ctx.get_color_mapping(ds_id, var_name)
         cmap_name = cmap_name or default_cmap_cbar
         cmap_vmin = cmap_vmin or default_cmap_vmin
         cmap_vmax = cmap_vmax or default_cmap_vmax

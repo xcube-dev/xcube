@@ -174,7 +174,7 @@ def tile(cube: str,
             return cmap_params
         var = ml_dataset.base_dataset[var_name]
         valid_range = get_var_valid_range(var)
-        return get_var_cmap_params(var, cmap_name, cmap_vmin, cmap_vmax, valid_range)
+        return get_var_cmap_params(var, cmap_name, (cmap_vmin, cmap_vmax), valid_range)
 
     variables = parse_cli_sequence(variables, metavar='VARIABLES', num_items_min=1,
                                    item_plural_name='variables')
@@ -249,7 +249,7 @@ def tile(cube: str,
     image_cache = {}
 
     for var_name, var in base_dataset.data_vars.items():
-        color_bar, value_min, value_max = _get_color_mappings(ml_dataset, str(var_name), config, style_id)
+        color_bar, (value_min, value_max) = _get_color_mappings(ml_dataset, str(var_name), config, style_id)
 
         label_names = []
         label_indexes = []
