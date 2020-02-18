@@ -253,11 +253,10 @@ class ServiceContext:
 
     def get_rgb_color_mapping(self,
                               ds_id: str,
-                              cmap_vmin: float = 0.0,
-                              cmap_vmax: float = 0.0) -> Tuple[List[Optional[str]],
-                                                               List[List[float, float]]]:
-        cmap_rgb_vars = [None, None, None]
-        cmap_rgb_ranges = [[cmap_vmin, cmap_vmax], [cmap_vmin, cmap_vmax], [cmap_vmin, cmap_vmax]]
+                              norm_range: Tuple[float, float] = (0., 1.)) -> Tuple[List[Optional[str]],
+                                                                                   List[Tuple[float, float]]]:
+        var_names = [None, None, None]
+        norm_ranges = [norm_range, norm_range, norm_range]
         color_mappings = self.get_color_mappings(ds_id)
         if color_mappings:
             rgb_mapping = color_mappings.get('rgb')
@@ -266,9 +265,11 @@ class ServiceContext:
                 for i in range(3):
                     c = components[i]
                     c_descriptor = rgb_mapping.get(c, {})
-                    cmap_rgb_vars[i] = c_descriptor.get('Variable')
-                    cmap_rgb_ranges[i] = c_descriptor.get('ValueRange', [cmap_vmin, cmap_vmax])
-        return cmap_rgb_vars, cmap_rgb_ranges
+                    var_name = c_descriptor.get('Variable')
+                    norm_vmin, norm_vmax = c_descriptor.get('ValueRange', norm_range)
+                    var_names[i] = var_name
+                    norm_ranges[i] = norm_vmin, norm_vmax
+        return var_names, norm_ranges
 
     def get_color_mapping(self, ds_id: str, var_name: str) -> Tuple[str, Tuple[float, float]]:
         cmap_name = None

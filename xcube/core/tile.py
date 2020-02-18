@@ -30,12 +30,11 @@ from xcube.core.mldataset import MultiLevelDataset
 from xcube.core.schema import get_dataset_xy_var_names
 from xcube.util.cache import Cache
 from xcube.util.perf import measure_time_cm
+from xcube.util.tiledimage import ArrayImage
 from xcube.util.tiledimage import ColorMappedRgbaImage
-from xcube.util.tiledimage import ColorMappedRgbaImage2
-from xcube.util.tiledimage import DirectRgbaImage
 from xcube.util.tiledimage import DEFAULT_COLOR_MAP_NAME
 from xcube.util.tiledimage import DEFAULT_COLOR_MAP_VALUE_RANGE
-from xcube.util.tiledimage import ArrayImage
+from xcube.util.tiledimage import DirectRgbaImage
 from xcube.util.tiledimage import TiledImage
 from xcube.util.tiledimage import TransformArrayImage
 
@@ -50,7 +49,8 @@ def get_ml_dataset_tile(ml_dataset: MultiLevelDataset,
                         labels: Mapping[str, Any] = None,
                         labels_are_indices: bool = False,
                         cmap_name: Union[str, Tuple[Optional[str]]] = None,
-                        cmap_range: Union[Tuple[float, float], Tuple[Tuple[float, float], Tuple[float, float], Tuple[float, float]]] = None,
+                        cmap_range: Union[Tuple[float, float], Tuple[
+                            Tuple[float, float], Tuple[float, float], Tuple[float, float]]] = None,
                         image_cache: MutableMapping[str, TiledImage] = None,
                         tile_cache: Cache = None,
                         tile_comp_mode: int = 0,
@@ -76,18 +76,8 @@ def get_ml_dataset_tile(ml_dataset: MultiLevelDataset,
                                   trace_perf,
                                   exception_type)
         else:
-            image = new_color_mapped_image(ml_dataset,
-                                           image_id,
-                                           var_name,
-                                           cmap_name,
-                                           cmap_range,
-                                           z,
-                                           labels,
-                                           labels_are_indices,
-                                           tile_cache,
-                                           tile_comp_mode,
-                                           trace_perf,
-                                           exception_type)
+            image = new_color_mapped_image(ml_dataset, image_id, var_name, cmap_name, cmap_range, z, labels,
+                                           labels_are_indices, tile_cache, trace_perf, exception_type)
 
         if image_cache:
             image_cache[image_id] = image
@@ -116,15 +106,15 @@ def get_ml_dataset_tile(ml_dataset: MultiLevelDataset,
 
 def new_rgb_image(ml_dataset, image_id, var_names, norm_ranges, z, labels,
                   labels_are_indices, tile_cache, trace_perf, exception_type):
-
     tile_grid = ml_dataset.tile_grid
     images = []
     for i in range(3):
         var_name = var_names[i]
-        array, no_data_value, valid_range, _ = ralla_ralla(ml_dataset, var_name, z, labels, labels_are_indices,
-                                                           exception_type)
-        image = ArrayImage(array.values,
-                           image_id=f'ndai-{image_id}',
+        array, no_data_value, valid_range, _ = _get_var_2d_array_and_mask_info(ml_dataset, var_name, z, labels,
+                                                                               labels_are_indices,
+                                                                               exception_type)
+        image = ArrayImage(array,
+                           image_id=f'ai-{image_id}',
                            tile_size=tile_grid.tile_size,
                            trace_perf=trace_perf)
         image = TransformArrayImage(image,
@@ -137,71 +127,56 @@ def new_rgb_image(ml_dataset, image_id, var_names, norm_ranges, z, labels,
                                     trace_perf=trace_perf)
         images.append(image)
 
-    return DirectRgbaImage(images,
-                           image_id=f'rgb-{image_id}',
-                           tile_size=tile_grid.tile_size,
+    return DirectRgbaImage((images[0], images[1], images[2]),
+                           image_id=f'drgba-{image_id}',
                            encode=True,
                            format='PNG',
                            tile_cache=tile_cache,
                            trace_perf=trace_perf)
 
 
-def new_color_mapped_image(ml_dataset, image_id, var_name, cmap_name, cmap_range, z, labels,
-                           labels_are_indices, tile_cache, tile_comp_mode, trace_perf, exception_type):
-    array, no_data_value, valid_range, var = ralla_ralla(ml_dataset, var_name, z, labels, labels_are_indices,
-                                                         exception_type)
+def new_color_mapped_image(ml_dataset, image_id, var_name, cmap_name, cmap_range, z, labels, labels_are_indices,
+                           tile_cache, trace_perf, exception_type):
+    array, no_data_value, valid_range, var = _get_var_2d_array_and_mask_info(ml_dataset, var_name, z, labels,
+                                                                             labels_are_indices,
+                                                                             exception_type)
     cmap_name, cmap_range = get_var_cmap_params(var, cmap_name, cmap_range, valid_range)
     tile_grid = ml_dataset.tile_grid
-    if not tile_comp_mode:
-        image = ArrayImage(array.values,
-                           image_id=f'ndai-{image_id}',
-                           tile_size=tile_grid.tile_size,
-                           trace_perf=trace_perf)
-        image = TransformArrayImage(image,
-                                    image_id=f'tai-{image_id}',
-                                    flip_y=tile_grid.inv_y,
-                                    force_masked=True,
-                                    no_data_value=no_data_value,
-                                    valid_range=valid_range,
-                                    norm_range=cmap_range,
-                                    trace_perf=trace_perf)
-        image = ColorMappedRgbaImage(image,
-                                     image_id=f'rgb-{image_id}',
-                                     cmap_name=cmap_name,
-                                     encode=True,
-                                     format='PNG',
-                                     tile_cache=tile_cache,
-                                     trace_perf=trace_perf)
-    else:
-        image = ColorMappedRgbaImage2(array,
-                                      image_id=f'rgb-{image_id}',
-                                      tile_size=tile_grid.tile_size,
-                                      cmap_range=(cmap_vmin, cmap_vmax),
-                                      cmap_name=cmap_name,
-                                      encode=True,
-                                      format='PNG',
-                                      flip_y=tile_grid.inv_y,
-                                      no_data_value=no_data_value,
-                                      valid_range=valid_range,
-                                      tile_cache=tile_cache,
-                                      trace_perf=trace_perf)
-    return image
+    image = ArrayImage(array.values,
+                       image_id=f'ai-{image_id}',
+                       tile_size=tile_grid.tile_size,
+                       trace_perf=trace_perf)
+    image = TransformArrayImage(image,
+                                image_id=f'tai-{image_id}',
+                                flip_y=tile_grid.inv_y,
+                                force_masked=True,
+                                no_data_value=no_data_value,
+                                valid_range=valid_range,
+                                norm_range=cmap_range,
+                                trace_perf=trace_perf)
+    return ColorMappedRgbaImage(image,
+                                image_id=f'cmrgbai-{image_id}',
+                                cmap_name=cmap_name,
+                                encode=True,
+                                format='PNG',
+                                tile_cache=tile_cache,
+                                trace_perf=trace_perf)
 
 
-def ralla_ralla(ml_dataset, var_name, z, labels, labels_are_indices, exception_type):
+def _get_var_2d_array_and_mask_info(ml_dataset, var_name, z, labels, labels_are_indices, exception_type):
     dataset = ml_dataset.get_dataset(ml_dataset.num_levels - 1 - z)
     var = dataset[var_name]
     no_data_value = var.attrs.get('_FillValue')
     valid_range = get_var_valid_range(var)
-    array = get_var_2d_array(var, labels, labels_are_indices, exception_type, ml_dataset.ds_id)
+    array = _get_var_2d_array(var, labels, labels_are_indices, exception_type, ml_dataset.ds_id)
     return array, no_data_value, valid_range, var
 
 
-def get_var_2d_array(var: xr.DataArray,
-                     labels: Dict[str, Any],
-                     labels_are_indices: bool,
-                     exception_type: Type[Exception],
-                     ds_id: str) -> xr.DataArray:
+def _get_var_2d_array(var: xr.DataArray,
+                      labels: Dict[str, Any],
+                      labels_are_indices: bool,
+                      exception_type: Type[Exception],
+                      ds_id: str) -> xr.DataArray:
     # Make sure we work with 2D image arrays only
     if var.ndim == 2:
         assert len(labels) == 0
@@ -222,7 +197,7 @@ def get_var_2d_array(var: xr.DataArray,
 
 def get_var_cmap_params(var: xr.DataArray,
                         cmap_name: Optional[str],
-                        cmap_range: Tuple[Optional[float],Optional[float]],
+                        cmap_range: Tuple[Optional[float], Optional[float]],
                         valid_range: Optional[Tuple[float, float]]) -> Tuple[str, Tuple[float, float]]:
     if cmap_name is None:
         cmap_name = var.attrs.get('color_bar_name')

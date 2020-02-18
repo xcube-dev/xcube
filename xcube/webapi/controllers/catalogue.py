@@ -136,6 +136,8 @@ def get_dataset(ctx: ServiceContext,
 
         variable_dicts.append(variable_dict)
 
+    ctx.get_rgb_color_mapping(ds_id)
+
     dataset_dict["variables"] = variable_dicts
 
     dim_names = ds.data_vars[list(ds.data_vars)[0]].dims if len(ds.data_vars) > 0 else ds.dims.keys()

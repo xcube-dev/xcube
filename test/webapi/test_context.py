@@ -107,6 +107,27 @@ class ServiceContextTest(unittest.TestCase):
         with self.assertRaises(ServiceResourceNotFoundError):
             ctx.get_color_mapping('demo', '_')
 
+    def test_get_rgb_color_mapping(self):
+        ctx = new_test_service_context()
+        rgb_cm = ctx.get_rgb_color_mapping('demo')
+        self.assertEqual(([None, None, None], [(0.0, 1.0), (0.0, 1.0), (0.0, 1.0)]), rgb_cm)
+        rgb_cm = ctx.get_rgb_color_mapping('demo', norm_range=(1.0, 2.5))
+        self.assertEqual(([None, None, None], [(1.0, 2.5), (1.0, 2.5), (1.0, 2.5)]), rgb_cm)
+        ctx = new_test_service_context('config-rgb.yml')
+        rgb_cm = ctx.get_rgb_color_mapping('demo-rgb')
+        self.assertEqual((['conc_chl', 'conc_tsm', 'kd489'], [(0.0, 24.0), (0.0, 100.0), (0.0, 6.0)]), rgb_cm)
+
+    def test_get_style(self):
+        ctx = new_test_service_context()
+        style = ctx.get_style('demo-1w')
+        self.assertEqual({'Identifier': 'default',
+                          'ColorMappings': {'conc_chl': {'ColorBar': 'plasma',
+                                                         'ValueRange': [0.0, 24.0]},
+                                            'conc_tsm': {'ColorBar': 'PuBuGn',
+                                                         'ValueRange': [0.0, 100.0]},
+                                            'kd489': {'ColorBar': 'jet', 'ValueRange': [0.0, 6.0]}}},
+                         style)
+
     def test_get_global_place_groups(self):
         ctx = new_test_service_context()
         place_groups = ctx.get_global_place_groups("http://localhost:9090", load_features=False)
