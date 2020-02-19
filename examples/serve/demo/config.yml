@@ -116,17 +116,16 @@ Styles:
       kd489:
         ColorBar: "jet"
         ValueRange: [0., 6.]
-    RgbMappings:
-      - Identifier: rgb
+      rgb:
         Red:
-          Variable: refl_9
-          ValueRange: [0., 1.]
+          Variable: conc_chl
+          ValueRange: [0., 24.]
         Green:
-          Variable: refl_7
-          ValueRange: [0., 1.]
+          Variable: conc_tsm
+          ValueRange: [0., 100.]
         Blue:
-          Variable: refl_6
-          ValueRange: [0., 1.]
+          Variable: kd489
+          ValueRange: [0., 6.]
 
 ServiceProvider:
   ProviderName: "Brockmann Consult GmbH"
