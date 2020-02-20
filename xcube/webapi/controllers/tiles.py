@@ -32,17 +32,43 @@ def get_dataset_tile(ctx: ServiceContext,
     tile_comp_mode = params.get_query_argument_int('mode', ctx.tile_comp_mode)
     trace_perf = params.get_query_argument_int('debug', ctx.trace_perf) != 0
 
-    cmap_name = params.get_query_argument('cbar', default=None)
-    cmap_vmin = params.get_query_argument_float('vmin', default=None)
-    cmap_vmax = params.get_query_argument_float('vmax', default=None)
-    if cmap_name is None or cmap_vmin is None or cmap_vmax is None:
-        default_cmap_name, default_cmap_vmin, default_cmap_vmax = ctx.get_color_mapping(ds_id, var_name)
-        cmap_name = cmap_name or default_cmap_name
-        cmap_vmin = cmap_vmin or default_cmap_vmin
-        cmap_vmax = cmap_vmax or default_cmap_vmax
-
     ml_dataset = ctx.get_ml_dataset(ds_id)
-    var = ml_dataset.base_dataset[var_name]
+    if var_name == 'rgb':
+        norm_vmin = params.get_query_argument_float('vmin', default=0.0)
+        norm_vmax = params.get_query_argument_float('vmax', default=1.0)
+        var_names, norm_ranges = ctx.get_rgb_color_mapping(ds_id, norm_range=(norm_vmin, norm_vmax))
+        components = ('r', 'g', 'b')
+        for i in range(3):
+            c = components[i]
+            var_names[i] = params.get_query_argument(c, default=var_names[i])
+            norm_ranges[i] = params.get_query_argument_float(f'{c}vmin', default=norm_ranges[i][0]), \
+                             params.get_query_argument_float(f'{c}vmax', default=norm_ranges[i][1])
+        cmap_name = tuple(var_names)
+        cmap_range = tuple(norm_ranges)
+        for name in var_names:
+            if name and name not in ml_dataset.base_dataset:
+                raise ServiceBadRequestError(f'Variable {name!r} not found in dataset {ds_id!r}')
+        var = None
+        for name in var_names:
+            if name and name in ml_dataset.base_dataset:
+                var = ml_dataset.base_dataset[name]
+                break
+        if var is None:
+            raise ServiceBadRequestError(f'No variable in dataset {ds_id!r} specified for RGB')
+    else:
+        cmap_name = params.get_query_argument('cbar', default=None)
+        cmap_vmin = params.get_query_argument_float('vmin', default=None)
+        cmap_vmax = params.get_query_argument_float('vmax', default=None)
+        if cmap_name is None or cmap_vmin is None or cmap_vmax is None:
+            default_cmap_name, (default_cmap_vmin, default_cmap_vmax) = ctx.get_color_mapping(ds_id, var_name)
+            cmap_name = cmap_name or default_cmap_name
+            cmap_vmin = cmap_vmin or default_cmap_vmin
+            cmap_vmax = cmap_vmax or default_cmap_vmax
+        cmap_range = cmap_vmin, cmap_vmax
+        if var_name not in ml_dataset.base_dataset:
+            raise ServiceBadRequestError(f'Variable {var_name!r} not found in dataset {ds_id!r}')
+        var = ml_dataset.base_dataset[var_name]
+
     labels = parse_non_spatial_labels(params.get_query_arguments(),
                                       var.dims,
                                       var.coords,
@@ -54,8 +80,7 @@ def get_dataset_tile(ctx: ServiceContext,
                                x, y, z,
                                labels=labels,
                                cmap_name=cmap_name,
-                               cmap_vmin=cmap_vmin,
-                               cmap_vmax=cmap_vmax,
+                               cmap_range=cmap_range,
                                image_cache=ctx.image_cache,
                                tile_cache=ctx.tile_cache,
                                tile_comp_mode=tile_comp_mode,
@@ -73,7 +98,7 @@ def get_legend(ctx: ServiceContext,
     cmap_w = params.get_query_argument_int('width', default=None)
     cmap_h = params.get_query_argument_int('height', default=None)
     if cmap_name is None or cmap_vmin is None or cmap_vmax is None or cmap_w is None or cmap_h is None:
-        default_cmap_cbar, default_cmap_vmin, default_cmap_vmax = ctx.get_color_mapping(ds_id, var_name)
+        default_cmap_cbar, (default_cmap_vmin, default_cmap_vmax) = ctx.get_color_mapping(ds_id, var_name)
         cmap_name = cmap_name or default_cmap_cbar
         cmap_vmin = cmap_vmin or default_cmap_vmin
         cmap_vmax = cmap_vmax or default_cmap_vmax

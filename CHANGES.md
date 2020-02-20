@@ -2,6 +2,36 @@
 
 ### New
 
+* The xcube web API provided through `xcube serve` can now serve RGBA tiles using the 
+  `dataset/{dataset}/variable/rgb/tiles/{z}/{y}/{x}` endpoint. The reg, green, blue 
+  channels are computed from three configurable variables and normalisation ranges, 
+  the alpha channel provides transparency for missing values. To specify a default
+  RGB schema for a dataset, a colour mapping for the "pseudo-variable" named `rbg` 
+  is provided in the configuration of `xcube serve`:
+  ```yaml  
+  Datasets:
+    - Identifyer: my_dataset
+      Style: my_style
+      ...
+    ...
+  Styles:
+    - Identifier: my_style
+      ColorMappings:
+        rgb:
+          Red:
+            Variable: rtoa_8
+            ValueRange: [0., 0.25]
+          Green:
+            Variable: rtoa_6
+            ValueRange: [0., 0.25]
+          Blue:
+            Variable: rtoa_4
+            ValueRange: [0., 0.25]
+        ...
+  ```
+  Note that this concept works nicely in conjunction with the new `Augmentation` feature (#272) used
+  to compute new variables that could be input to the RGB generation. 
+  
 * Introduced new (ortho-)rectification algorithm allowing reprojection of 
   satellite images that come with (terrain-corrected) geo-locations for every pixel.
 

@@ -251,39 +251,65 @@ class ServiceContext:
         ml_dataset, _ = self._get_dataset_entry(ds_id)
         return ml_dataset.tile_grid
 
-    def get_color_mapping(self, ds_id: str, var_name: str):
+    def get_rgb_color_mapping(self,
+                              ds_id: str,
+                              norm_range: Tuple[float, float] = (0., 1.)) -> Tuple[List[Optional[str]],
+                                                                                   List[Tuple[float, float]]]:
+        var_names = [None, None, None]
+        norm_ranges = [norm_range, norm_range, norm_range]
+        color_mappings = self.get_color_mappings(ds_id)
+        if color_mappings:
+            rgb_mapping = color_mappings.get('rgb')
+            if rgb_mapping:
+                components = 'Red', 'Green', 'Blue'
+                for i in range(3):
+                    c = components[i]
+                    c_descriptor = rgb_mapping.get(c, {})
+                    var_name = c_descriptor.get('Variable')
+                    norm_vmin, norm_vmax = c_descriptor.get('ValueRange', norm_range)
+                    var_names[i] = var_name
+                    norm_ranges[i] = norm_vmin, norm_vmax
+        return var_names, norm_ranges
+
+    def get_color_mapping(self, ds_id: str, var_name: str) -> Tuple[str, Tuple[float, float]]:
         cmap_name = None
         cmap_vmin, cmap_vmax = None, None
+        color_mappings = self.get_color_mappings(ds_id)
+        if color_mappings:
+            color_mapping = color_mappings.get(var_name)
+            if color_mapping:
+                cmap_vmin, cmap_vmax = color_mapping.get('ValueRange', (None, None))
+                if color_mapping.get('ColorFile') is not None:
+                    cmap_name = color_mapping.get('ColorFile', cmap_name)
+                else:
+                    cmap_name = color_mapping.get('ColorBar', cmap_name)
+                    cmap_name, _ = get_cmap(cmap_name)
 
-        dataset_descriptor = self.get_dataset_descriptor(ds_id)
-        style_name = dataset_descriptor.get('Style', 'default')
-        styles = self._config.get('Styles')
-        if styles:
-            style = None
-            for s in styles:
-                if style_name == s['Identifier']:
-                    style = s
-                    break
-            if style:
-                color_mappings = style.get('ColorMappings')
-                if color_mappings:
-                    color_mapping = color_mappings.get(var_name)
-                    if color_mapping:
-                        cmap_vmin, cmap_vmax = color_mapping.get('ValueRange', (None, None))
-                        if color_mapping.get('ColorFile') is not None:
-                            cmap_name = color_mapping.get('ColorFile', cmap_name)
-                        else:
-                            cmap_name = color_mapping.get('ColorBar', cmap_name)
-                            cmap_name, _ = get_cmap(cmap_name)
-
-        cmap_params = cmap_name, cmap_vmin, cmap_vmax
-        if None not in cmap_params:
-            return cmap_params
+        cmap_range = cmap_vmin, cmap_vmax
+        if cmap_name is not None and None not in cmap_range:
+            # noinspection PyTypeChecker
+            return cmap_name, cmap_range
 
         ds = self.get_dataset(ds_id, expected_var_names=[var_name])
         var = ds[var_name]
         valid_range = get_var_valid_range(var)
-        return get_var_cmap_params(var, cmap_name, cmap_vmin, cmap_vmax, valid_range)
+        return get_var_cmap_params(var, cmap_name, cmap_range, valid_range)
+
+    def get_style(self, ds_id: str):
+        dataset_descriptor = self.get_dataset_descriptor(ds_id)
+        style_name = dataset_descriptor.get('Style', 'default')
+        styles = self._config.get('Styles')
+        if styles:
+            for style in styles:
+                if style_name == style['Identifier']:
+                    return style
+        return None
+
+    def get_color_mappings(self, ds_id: str) -> Optional[Dict[str, Dict[str, Any]]]:
+        style = self.get_style(ds_id)
+        if style:
+            return style.get('ColorMappings')
+        return None
 
     def _get_dataset_entry(self, ds_id: str) -> Tuple[MultiLevelDataset, DatasetDescriptor]:
         if ds_id not in self._dataset_cache:

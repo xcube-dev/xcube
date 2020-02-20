@@ -152,7 +152,7 @@ def tile(cube: str,
                             config: Mapping[str, Any],
                             style_id: str):
         cmap_name = None
-        cmap_vmin, cmap_vmax = None, None
+        cmap_range = None, None
 
         if config:
             style_id = style_id or 'default'
@@ -168,13 +168,13 @@ def tile(cube: str,
                     if color_mapping:
                         cmap_name = color_mapping.get('ColorBar')
                         cmap_vmin, cmap_vmax = color_mapping.get('ValueRange', (None, None))
+                        cmap_range = cmap_vmin, cmap_vmax
 
-        cmap_params = cmap_name, cmap_vmin, cmap_vmax
-        if None not in cmap_params:
-            return cmap_params
+        if cmap_name is not None and None not in cmap_range:
+            return cmap_name, cmap_range
         var = ml_dataset.base_dataset[var_name]
         valid_range = get_var_valid_range(var)
-        return get_var_cmap_params(var, cmap_name, cmap_vmin, cmap_vmax, valid_range)
+        return get_var_cmap_params(var, cmap_name, cmap_range, valid_range)
 
     variables = parse_cli_sequence(variables, metavar='VARIABLES', num_items_min=1,
                                    item_plural_name='variables')
@@ -249,7 +249,7 @@ def tile(cube: str,
     image_cache = {}
 
     for var_name, var in base_dataset.data_vars.items():
-        color_bar, value_min, value_max = _get_color_mappings(ml_dataset, str(var_name), config, style_id)
+        color_bar, (value_min, value_max) = _get_color_mappings(ml_dataset, str(var_name), config, style_id)
 
         label_names = []
         label_indexes = []
@@ -306,8 +306,7 @@ def tile(cube: str,
                                                          labels=labels,
                                                          labels_are_indices=True,
                                                          cmap_name=color_bar,
-                                                         cmap_vmin=value_min,
-                                                         cmap_vmax=value_max,
+                                                         cmap_range=(value_min, value_max),
                                                          image_cache=image_cache,
                                                          trace_perf=True,
                                                          exception_type=click.ClickException)

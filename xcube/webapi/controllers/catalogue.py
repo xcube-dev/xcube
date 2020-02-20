@@ -3,6 +3,7 @@ import json
 from typing import Dict, Tuple, List, Set
 
 import numpy as np
+
 from xcube.core.geom import get_dataset_bounds
 from xcube.core.timecoord import timestamp_to_iso_string
 from xcube.util.cmaps import get_cmaps
@@ -124,7 +125,7 @@ def get_dataset(ctx: ServiceContext,
                                                               client=client)
             variable_dict["tileSourceOptions"] = tile_xyz_source_options
 
-        cmap_name, cmap_vmin, cmap_vmax = ctx.get_color_mapping(ds_id, var_name)
+        cmap_name, (cmap_vmin, cmap_vmax) = ctx.get_color_mapping(ds_id, var_name)
         variable_dict["colorBarName"] = cmap_name
         variable_dict["colorBarMin"] = cmap_vmin
         variable_dict["colorBarMax"] = cmap_vmax
@@ -136,7 +137,22 @@ def get_dataset(ctx: ServiceContext,
 
         variable_dicts.append(variable_dict)
 
+    ctx.get_rgb_color_mapping(ds_id)
+
     dataset_dict["variables"] = variable_dicts
+
+    rgb_var_names, rgb_norm_ranges = ctx.get_rgb_color_mapping(ds_id)
+    if any(rgb_var_names):
+        rgb_schema = {'varNames': rgb_var_names, 'normRanges': rgb_norm_ranges}
+        if client is not None:
+            tile_grid = ctx.get_tile_grid(ds_id)
+            tile_xyz_source_options = get_tile_source_options(tile_grid,
+                                                              get_dataset_tile_url(ctx, ds_id,
+                                                                                   'rgb',
+                                                                                   base_url),
+                                                              client=client)
+            rgb_schema["tileSourceOptions"] = tile_xyz_source_options
+        dataset_dict["rgbSchema"] = rgb_schema
 
     dim_names = ds.data_vars[list(ds.data_vars)[0]].dims if len(ds.data_vars) > 0 else ds.dims.keys()
     dataset_dict["dimensions"] = [get_dataset_coordinates(ctx, ds_id, dim_name) for dim_name in dim_names]

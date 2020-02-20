@@ -25,6 +25,7 @@ import uuid
 from abc import ABCMeta, abstractmethod
 from typing import Tuple, Sequence, Union, Any, Callable, Optional
 
+import dask.array as da
 import numba
 import numpy as np
 from PIL import Image
@@ -55,6 +56,7 @@ Height = int
 Size2D = Tuple[Width, Height]
 Rectangle2D = Tuple[X, Y, Width, Height]
 Number = Union[int, float]
+NDArrayLike = Union[da.Array, np.ndarray]
 Tile = Any
 TileQuad = Tuple[Tile, Tile, Tile, Tile]
 TiledImageCollection = Sequence['TiledImage']
@@ -368,6 +370,7 @@ class TransformArrayImage(DecoratorImage):
                  force_2d: bool = False,
                  no_data_value: Number = None,
                  valid_range: Tuple[Number, Number] = None,
+                 norm_range: Tuple[Number, Number] = None,
                  tile_cache: Cache = None,
                  trace_perf: bool = False):
         super().__init__(source_image, image_id=image_id, tile_cache=tile_cache, trace_perf=trace_perf)
@@ -376,6 +379,7 @@ class TransformArrayImage(DecoratorImage):
         self._flip_y = flip_y
         self._no_data_value = no_data_value
         self._valid_range = valid_range
+        self._norm_range = norm_range
 
     @property
     def no_data_value(self) -> Optional[Number]:
@@ -403,13 +407,6 @@ class TransformArrayImage(DecoratorImage):
         measure_time = self.measure_time
         tile_tag = self._get_tile_tag(tile_x, tile_y)
 
-        if self._force_2d and tile.ndim > 2:
-            with measure_time(tile_tag + "index"):
-                # Create 2D subset using basic indexing
-                # noinspection PyTypeChecker
-                index = (tile.ndim - 2) * [0] + [slice(None), slice(None)]
-                tile = tile[index]
-
         if self._flip_y:
             with measure_time(tile_tag + "flip y"):
                 # Flip tile using fancy indexing
@@ -417,6 +414,7 @@ class TransformArrayImage(DecoratorImage):
 
         if self._force_masked and not np.ma.is_masked(tile):
             with measure_time(tile_tag + "mask"):
+                # TODO (forman): optimize: remove code block, assume xarray did the masking
                 # if tile is not masked
                 if self._no_data_value is not None:
                     # and we have a fill value, return a masked tile
@@ -432,20 +430,22 @@ class TransformArrayImage(DecoratorImage):
                     # and it is of float type, return a masked tile with a mask from invalids, i.e. NaN, -Inf, +Inf
                     tile = np.ma.masked_invalid(tile)
 
+        if self._norm_range is not None:
+            norm_min, norm_max = self._norm_range
+            with measure_time(tile_tag + "normalize_min_max"):
+                tile = np.clip(tile, norm_min, norm_max)
+                tile -= norm_min
+                tile *= 1.0 / (norm_max - norm_min)
+
         return tile
 
 
-class ColorMappedRgbaImage(DecoratorImage):
+class DirectRgbaImage(OpImage):
     """
-    Creates a color-mapped image from a source image that provide tiles as numpy-like image arrays.
+    Creates an RGBA image from a three source images that provide tiles as normalized, numpy-like 2D arrays.
 
-    :param source_image: the source image
+    :param source_images: the source images
     :param image_id: optional unique image identifier
-    :param no_data_value: optional no-data value for mask creation
-    :param cmap_range: The display value range.
-    :param cmap_name: A Matplotlib color map name
-    :param num_colors: Number of colors
-    :param no_data_value: No-data value
     :param encode: Whether to create tiles that are encoded image bytes according to *format*.
     :param format: Image format, e.g. "JPEG", "PNG"
     :param tile_cache: optional tile cache
@@ -453,68 +453,45 @@ class ColorMappedRgbaImage(DecoratorImage):
     """
 
     def __init__(self,
-                 source_image: TiledImage,
+                 source_images: Tuple[TiledImage, TiledImage, TiledImage],
                  image_id: str = None,
-                 cmap_range: Tuple[float, float] = DEFAULT_COLOR_MAP_VALUE_RANGE,
-                 cmap_name: str = DEFAULT_COLOR_MAP_NAME,
-                 num_colors: int = DEFAULT_COLOR_MAP_NUM_COLORS,
-                 no_data_value: Union[int, float] = None,
                  encode: bool = False,
                  format: str = None,
                  tile_cache: Cache = None,
                  trace_perf: bool = False):
-        super().__init__(source_image, image_id=image_id, format=format, mode='RGBA', tile_cache=tile_cache,
+        proto_source_image = source_images[0]
+        super().__init__(size=proto_source_image.size,
+                         tile_size=proto_source_image.tile_size,
+                         num_tiles=proto_source_image.num_tiles,
+                         image_id=image_id,
+                         format=format,
+                         mode='RGBA',
+                         tile_cache=tile_cache,
                          trace_perf=trace_perf)
-        self._cmap_range = cmap_range or DEFAULT_COLOR_MAP_VALUE_RANGE
-        cmap_name, cmap = get_cmap(cmap_name or DEFAULT_COLOR_MAP_NAME,
-                                   default_cmap_name=DEFAULT_COLOR_MAP_NAME,
-                                   num_colors=num_colors or DEFAULT_COLOR_MAP_NUM_COLORS)
-        self._cmap_name = cmap_name
-        self._cmap = cmap
-        self._no_data_value = no_data_value
+        self._source_images = source_images
         self._encode = encode
 
-    def compute_tile_from_source_tile(self,
-                                      tile_x: int, tile_y: int,
-                                      rectangle: Rectangle2D, source_tile: Tile) -> Tile:
+    def compute_tile(self, tile_x: int, tile_y: int, rectangle: Rectangle2D) -> Tile:
+
         measure_time = self.measure_time
         tile_tag = self._get_tile_tag(tile_x, tile_y)
 
-        with measure_time(tile_tag + "mask"):
-            cmap_min, cmap_max = self._cmap_range
-            if not np.ma.is_masked(source_tile):
-                if self._no_data_value is not None:
-                    array = np.ma.masked_equal(source_tile, self._no_data_value)
-                    array = array.clip(cmap_min, cmap_max, out=array)
-                elif np.issubdtype(source_tile.dtype, np.floating):
-                    array = np.ma.masked_invalid(source_tile)
-                    array = array.clip(cmap_min, cmap_max, out=array)
-                else:
-                    array = source_tile.clip(cmap_min, cmap_max)
-            else:
-                array = source_tile.clip(cmap_min, cmap_max)
+        with measure_time(tile_tag + "get tiles"):
+            imr, img, imb = self._source_images
+            tr = imr.get_tile(tile_x, tile_y)
+            tg = img.get_tile(tile_x, tile_y)
+            tb = imb.get_tile(tile_x, tile_y)
 
-        old_shape = array.shape
-        height = old_shape[-2]
-        width = old_shape[-1]
-        if width * height == array.size:
-            array = np.reshape(array, (height, width))
-        else:
-            # noinspection PyTypeChecker
-            index = [0] * (array.ndim - 2) + [slice(None), slice(None)]
-            array = array[index]
-
-        # check if we can optimize the following calls by using Numexpr
-        # see https://github.com/pydata/numexpr/wiki/Numexpr-Users-Guide
-        with measure_time(tile_tag + "normalise"):
-            array -= cmap_min
-            array *= 1.0 / (cmap_max - cmap_min)
-
-        with measure_time(tile_tag + "map colors"):
-            array = self._cmap(array, bytes=True)
+        w, h = self.tile_size
+        with measure_time(tile_tag + "construct rgba array"):
+            tile = np.zeros((h, w, 4), dtype=np.uint8)
+            tile[..., 0] = tr * 255.9999
+            tile[..., 1] = tg * 255.9999
+            tile[..., 2] = tb * 255.9999
+            tile[..., 3] = np.where(np.isfinite(tr + tg + tb), 255, 0)
 
         with measure_time(tile_tag + "create image"):
-            image = Image.fromarray(array, mode=self.mode)
+            image = Image.fromarray(tile, mode=self.mode)
 
         if self._encode and self.format:
             with measure_time(tile_tag + "encode PNG"):
@@ -532,16 +509,14 @@ class ColorMappedRgbaImage(DecoratorImage):
         return ImagePyramid.create_from_image(self, create_pil_downsampling_image, **kwargs)
 
 
-class ColorMappedRgbaImage2(OpImage):
+class ColorMappedRgbaImage(DecoratorImage):
     """
-    Creates a color-mapped image from a single numpy-like array source.
+    Creates a color-mapped image from a source image that provide tiles as numpy-like image arrays.
 
+    :param source_image: the source image
     :param image_id: optional unique image identifier
-    :param no_data_value: optional no-data value for mask creation
-    :param cmap_range: The display value range.
     :param cmap_name: A Matplotlib color map name
     :param num_colors: Number of colors
-    :param no_data_value: No-data value
     :param encode: Whether to create tiles that are encoded image bytes according to *format*.
     :param format: Image format, e.g. "JPEG", "PNG"
     :param tile_cache: optional tile cache
@@ -549,139 +524,51 @@ class ColorMappedRgbaImage2(OpImage):
     """
 
     def __init__(self,
-                 array: np.ndarray,
-                 tile_size: Size2D,
+                 source_image: TiledImage,
                  image_id: str = None,
-                 cmap_range: Tuple[float, float] = DEFAULT_COLOR_MAP_VALUE_RANGE,
                  cmap_name: str = DEFAULT_COLOR_MAP_NAME,
                  num_colors: int = DEFAULT_COLOR_MAP_NUM_COLORS,
-                 no_data_value: Union[int, float] = None,
                  encode: bool = False,
                  format: str = None,
                  tile_cache: Cache = None,
-                 flip_y: bool = False,
-                 valid_range: Tuple[Number, Number] = None,
                  trace_perf: bool = False):
-        width, height = array.shape[-1], array.shape[-2]
-        tile_width, tile_height = tile_size
-        num_tiles = (width + tile_width - 1) // tile_width, (height + tile_height - 1) // tile_height
-        super().__init__((width, height),
-                         tile_size=tile_size,
-                         num_tiles=num_tiles,
-                         image_id=image_id,
-                         format=format,
-                         mode='RGBA',
-                         tile_cache=tile_cache,
+        super().__init__(source_image, image_id=image_id, format=format, mode='RGBA', tile_cache=tile_cache,
                          trace_perf=trace_perf)
-        valid_range = valid_range if valid_range is not None else (-np.inf, np.inf)
-        valid_range = tuple(map(float, valid_range))
-        no_data_value = float(no_data_value) if no_data_value is not None else float(np.nan)
-        cmap_range = cmap_range if cmap_range is not None else DEFAULT_COLOR_MAP_VALUE_RANGE
-        cmap_range = tuple(map(float, cmap_range))
-        self._array = array
-        self._valid_range = valid_range
-        self._no_data_value = no_data_value
-        self._encode = encode
-        self._flip_y = flip_y
-        self._cmap_range = cmap_range
-        self._num_colors = num_colors or DEFAULT_COLOR_MAP_NUM_COLORS
         cmap_name, cmap = get_cmap(cmap_name or DEFAULT_COLOR_MAP_NAME,
-                                   default_cmap_name=DEFAULT_COLOR_MAP_NAME)
-        self._colors = cmap(np.linspace(0, 1, num_colors or DEFAULT_COLOR_MAP_NUM_COLORS))
+                                   default_cmap_name=DEFAULT_COLOR_MAP_NAME,
+                                   num_colors=num_colors or DEFAULT_COLOR_MAP_NUM_COLORS)
+        self._cmap_name = cmap_name
+        self._cmap = cmap
+        self._encode = encode
 
-    def compute_tile(self,
-                     tile_x: int, tile_y: int,
-                     rectangle: Rectangle2D) -> Tile:
-
+    def compute_tile_from_source_tile(self,
+                                      tile_x: int, tile_y: int,
+                                      rectangle: Rectangle2D, source_tile: Tile) -> Tile:
         measure_time = self.measure_time
         tile_tag = self._get_tile_tag(tile_x, tile_y)
 
-        valid_min, valid_max = self._valid_range
-        no_data_value = self._no_data_value
-        cmap_min, cmap_max = self._cmap_range
-
-        x, y, w, h = rectangle
-        sy = 1
-        if self._flip_y:
-            num_tiles_y = self.num_tiles[1]
-            tile_size_y = self.tile_size[1]
-            tile_y = num_tiles_y - 1 - tile_y
-            y = tile_y * tile_size_y
-            sy = -1
-
-        with measure_time(tile_tag + "subset"):
-            tile = self._array[..., y:y + h:sy, x:x + w]
-
-        with measure_time(tile_tag + "values"):
-            # convert tile into numpy array
-            if hasattr(tile, "values"):
-                tile = tile.values
-
-        with measure_time(tile_tag + "trim"):
-            # ensure that our tile size is w x h
-            tile = trim_tile(tile, self.tile_size)
-
+        tile = source_tile
         with measure_time(tile_tag + "map colors"):
-            shape = tile.shape
-            tile = tile.flatten()
-            tile = map_colors(tile,
-                              self._colors,
-                              self._num_colors,
-                              cmap_min,
-                              cmap_max,
-                              valid_min,
-                              valid_max,
-                              no_data_value)
-            tile = tile.reshape(shape + (4,))
+            tile = self._cmap(tile, bytes=True)
 
-        with measure_time(tile_tag + "make image"):
+        with measure_time(tile_tag + "create image"):
             image = Image.fromarray(tile, mode=self.mode)
 
-        with measure_time(tile_tag + "save PNG"):
-            if self._encode and self.format:
-                # Saving a PNG file is slow: https://github.com/python-pillow/Pillow/issues/1211
+        if self._encode and self.format:
+            with measure_time(tile_tag + "encode PNG"):
                 ostream = io.BytesIO()
-                image.save(ostream, format=self.format, compress_level=1)
+                image.save(ostream, format=self.format)
                 encoded_image = ostream.getvalue()
                 ostream.close()
                 return encoded_image
-            else:
-                return image
+        else:
+            return image
 
     def create_pyramid(self, **kwargs) -> 'ImagePyramid':
         if self._encode:
             raise TypeError("can't create pyramid from encoded hi-res tiles")
         return ImagePyramid.create_from_image(self, create_pil_downsampling_image, **kwargs)
 
-
-@numba.njit(parallel=True)
-def map_colors(tile,
-               colors,
-               num_colors,
-               cmap_min,
-               cmap_max,
-               valid_min,
-               valid_max,
-               fill_value):
-    output = np.zeros((tile.size, 4), np.uint8)
-    fill_value_not_nan = not np.isnan(fill_value)
-    transparency = np.zeros(4, np.uint8)
-    for i in range(tile.size):
-        v = tile[i]
-        if v < valid_min or v > valid_max or np.isnan(v) or (fill_value_not_nan and v == fill_value):
-            output[i] = transparency
-        else:
-            if v <= cmap_min:
-                j = 0
-            elif v >= cmap_max:
-                j = num_colors - 1
-            else:
-                j = int(num_colors * (v - cmap_min) / (cmap_max - cmap_min))
-            output[i][0] = int(255 * colors[j][0])
-            output[i][1] = int(255 * colors[j][1])
-            output[i][2] = int(255 * colors[j][2])
-            output[i][3] = int(255 * colors[j][3])
-    return output
 
 
 class DownsamplingImage(OpImage):
@@ -899,24 +786,30 @@ class FastNdarrayDownsamplingImage(OpImage):
         return tile
 
 
-class NdarrayImage(OpImage):
+class ArrayImage(OpImage):
     """
     A tiled image created an numpy ndarray-like data array.
 
-    :param array: a numpy ndarray-like data array
+    :param array: a numpy-ndarray-like data array
     :param tile_size: the tile size
     :param image_id: optional unique image identifier
     :param tile_cache: an optional tile cache
     """
 
     def __init__(self,
-                 array,
+                 array: Union[NDArrayLike, Any],
                  tile_size: Size2D,
                  image_id: str = None,
                  tile_cache: Cache = None,
                  trace_perf: bool = False):
+        if len(array.shape) != 2:
+            raise ValueError('array must be 2D')
         width, height = array.shape[-1], array.shape[-2]
+        if width <= 0 or height <= 0:
+            raise ValueError('array sizes must be positive')
         tile_width, tile_height = tile_size
+        if tile_width <= 0 or tile_width <= 0:
+            raise ValueError('tile sizes must be positive')
         num_tiles = (width + tile_width - 1) // tile_width, (height + tile_height - 1) // tile_height
         super().__init__((width, height),
                          tile_size=tile_size,
@@ -926,12 +819,12 @@ class NdarrayImage(OpImage):
                          image_id=image_id,
                          tile_cache=tile_cache,
                          trace_perf=trace_perf)
-        self._array = array
-        self._empty_tile = None
+        is_xarray_like = hasattr(array, 'data') and hasattr(array, 'dims') and hasattr(array, 'attrs')
+        self._array = array.data if is_xarray_like else array
 
-    def compute_tile(self, tile_x: int, tile_y: int, rectangle: Rectangle2D) -> Tile:
+    def compute_tile(self, tile_x: int, tile_y: int, rectangle: Rectangle2D) -> NDArrayLike:
         x, y, w, h = rectangle
-        tile = self._array[..., y:y + h, x:x + w]
+        tile = self._array[y:y + h, x:x + w]
         # ensure that our tile size is w x h
         return trim_tile(tile, self.tile_size)
 
@@ -1070,7 +963,7 @@ def create_ndarray_downsampling_image(source_image: TiledImage,
     return NdarrayDownsamplingImage(higher_level_image, **kwargs)
 
 
-def trim_tile(tile: Tile, expected_tile_size: Size2D, fill_value: float = np.nan) -> Tile:
+def trim_tile(tile: NDArrayLike, expected_tile_size: Size2D, fill_value: float = np.nan) -> NDArrayLike:
     """
     Trim a tile.
 
@@ -1095,7 +988,7 @@ def trim_tile(tile: Tile, expected_tile_size: Size2D, fill_value: float = np.nan
         tile = np.vstack((tile, v_pad))
     if expected_width < actual_width or expected_height < actual_height:
         # crop
-        tile = tile[..., 0:expected_height, 0:expected_width]
+        tile = tile[0:expected_height, 0:expected_width]
     return tile
 
 
