@@ -221,7 +221,11 @@ def _process_input(input_processor: InputProcessor,
     width, height = output_size
     x_min, y_min, x_max, y_max = output_region
     xy_res = max((x_max - x_min) / width, (y_max - y_min) / height)
-    output_geom = ImageGeom(size=output_size, x_min=x_min, y_min=y_min, xy_res=xy_res, is_geo_crs=True)
+    if 'chunksizes' in output_writer_params:
+        tile_size =[output_writer_params['chunksizes']['lon'], output_writer_params['chunksizes']['lat']]
+    else:
+        tile_size = None
+    output_geom = ImageGeom(size=output_size, tile_size=tile_size, x_min=x_min, y_min=y_min, xy_res=xy_res, is_geo_crs=True)
 
     steps = []
 
