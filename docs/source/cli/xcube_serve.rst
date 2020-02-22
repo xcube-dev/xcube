@@ -1,3 +1,6 @@
+.. _demo configuration file: https://github.com/dcs4cop/xcube/blob/master/examples/serve/demo/config.yml
+.. _Auth0: https://auth0.com/
+
 ===============
 ``xcube serve``
 ===============
@@ -78,7 +81,9 @@ The xcube server supports xcube datasets stored as local NetCDF files, as well a
 Remote Zarr datasets must be stored in publicly accessible, AWS S3 compatible object storage (OBS).
 
 As an example, here is the `configuration of the demo server <https://github.com/dcs4cop/xcube/blob/master/examples/serve/demo/config.yml>`_.
+The parts of the demo configuration file are explained in detail further down.
 
+Some hints before, which are not addressed in the server demo configuration file.
 To increase imaging performance, xcube datasets can be converted to multi-resolution pyramids using the
 :doc:`cli/xcube_level` tool. In the configuration, the format must be set to ``'level'``.
 Leveled xcube datasets are configured this way:
@@ -118,6 +123,272 @@ and the it is referred to by the non-hidden, actual dataset using the ``TimeSeri
 
       - ...
 
+
+Server Demo Configuration File
+==============================
+The server configuration file consists of various parts, some of them are necessary others are optional.
+Below the `demo configuration file`_ used in the example above is explained in detail.
+
+The configuration file consists of 5 main parts Authentication, DatasetAttribution, Datasets, PlaceGroups and Styles.
+
+.. _authentication-[optional]:
+Authentication [Optional]
+-------------------------
+In order to display data via xcube-viewer exclusively to registered and authorized users, the data served by xcube serve
+may be protected by adding Authentication to the server configuration. In order to ensure protection, a `Domain` and an `Audience` needs to be provided.
+Here authentication by `Auth0`_ is used.
+
+.. code:: yaml
+
+    Authentication:
+      Domain: xcube-dev.eu.auth0.com
+      Audience: https://xcube-dev/api/
+
+Dataset Attribution [Optional]
+------------------------------
+
+Dataset Attribution may be added to the server via `DatasetAttribution`.
+
+.. code:: yaml
+
+    DatasetAttribution:
+      - "© by Brockmann Consult GmbH 2020, contains modified Copernicus Data 2019, processed by ESA"
+      - "© by EU H2020 CyanoAlert project"
+
+
+The first part of the server configuration file contains information about the data cubes to be served:
+
+
+Datasets [Mandatory]
+--------------------
+In order to publish selected xcube datasets via xcube serve the datasets need to be specified in the configuration
+file of the server. Several xcube datasets may be served within one server, by providing a list of information
+concerning the xcube datasets.
+
+.. _remotely-stored-xcube-datasets:
+Remotely Stored xcube Datasets
+-----------------------------
+.. code:: yaml
+
+    Datasets:
+      - Identifier: remote
+        Title: Remote OLCI L2C cube for region SNS
+        BoundingBox: [0.0, 50, 5.0, 52.5]
+        FileSystem: obs
+        Endpoint: "http://obs.eu-de.otc.t-systems.com"
+        Path: "dcs4cop-obs-02/OLCI-SNS-RAW-CUBE-2.zarr"
+        Region: "eu-de"
+        Style: default
+        PlaceGroups:
+          - PlaceGroupRef: inside-cube
+          - PlaceGroupRef: outside-cube
+        AccessControl:
+          RequiredScopes:
+            - read:datasets
+
+
+The above example of how to specify a xcube dataset to be serverd above is using a datacube stored in
+an S3 bucket within the OpenTelekomCloud.
+Further down an example for a :ref:`locally-stored-xcube-datasets` will be given,
+as well as an example of a :ref:`on-the-fly-generation-of-xcube-datasets`.
+
+`Identifier` [mandatory] is a unique ID for each xcube dataset, it is ment for machine-to-machine interaction
+and therefore does not have to be a fancy human-readable name.
+
+`Title` [mandatory] should be understandable for humans and this is the title that will be displayed within the viewer
+for the dataset selection.
+
+`BoundingBox` [optional] may be set in order to restrict the region which is served from a certain datacube. The
+notation of the `BoundingBox` is [lon_min,lat_min,lon_max,lat_max].
+
+`FileSystem` [mandatory] is set to `obs` which is letting xcube serve know, that the datacube is located in the cloud
+(*obs* is the abbreviation for object storage).
+
+`Endpoint` [mandatory] contains information about the cloud provider endpoint, this will differ if you use a different
+cloud provider.
+
+`Path` [mandatory] leads to the specific location of the datacube. The particular datacube is stored in an
+OpenTelecomCloud S3 bucket called `dcs4cop-obs-02` and the datacube is called `OLCI-SNS-RAW-CUBE-2.zarr`.
+
+`Region` [mandatory] is the region where the specified cloud provider is operating.
+
+`Styles` [optional] influence the visualization of the xucbe dataset in the xcube viewer if specified
+in the server configuration file.
+
+`PlaceGroups` [optional] allow to associate places (e.g. polygons or point-location) with a particular xcube dataset.
+Several different place groups may be connected to the xcube dataset, which are distinguished by the `PlaceGroupRef`.
+
+`AccessControl` [optional] can only be used when providing :ref:`authentication-[optional]`. By configuring the
+`RequiredScopes` entry whose value is a list of required scopes, e.g. "read:datasets" datasets may be protected.
+
+.. _locallly-stored-xcube-datasets:
+Locally Stored xcube Datasets
+-----------------------------
+
+To serve a locally stored the configuration of it would look like the example below:
+
+.. code:: yaml
+
+      - Identifier: local
+        Title: "Local OLCI L2C cube for region SNS"
+        BoundingBox: [0.0, 50, 5.0, 52.5]
+        FileSystem: local
+        Path: cube-1-250-250.zarr
+        Style: default
+        TimeSeriesDataset: local_ts
+        Augmentation:
+          Path: "compute_extra_vars.py"
+          Function: "compute_variables"
+          InputParameters:
+            factor_chl: 0.2
+            factor_tsm: 0.7
+        PlaceGroups:
+          - PlaceGroupRef: inside-cube
+          - PlaceGroupRef: outside-cube
+        AccessControl:
+          IsSubstitute: true
+
+Most of the configuration of locally stored datasets is equal to the configuration of
+:ref:`locallly-stored-xcube-datasets`.
+
+`FileSystem` [mandatory] is set to `local` which is letting xcube serve know, that the datacube is locally stored.
+
+`TimeSeriesDataset` [optional] is not bound to local datasets, this parameter may be used for remotely stored datasets
+as well. By using this parameter a time optimized datacube will be used for generating the time series. The configuration
+of this time optimized datacube is below. By adding `Hidden` with `true` to the dataset configuration, the time optimized
+datacube will not appear among the displayed datasets in xucbe viewer.
+
+.. code:: yaml
+
+  # Will not appear at all, because it is a "hidden" resource
+  - Identifier: local_ts
+    Title: "'local' optimized for time-series"
+    BoundingBox: [0.0, 50, 5.0, 52.5]
+    FileSystem: local
+    Path: cube-5-100-200.zarr
+    Hidden: true
+    Style: default
+
+`Augmentation` [optional] augments data cubes by new variables computed on-the-fly, the generation of the on-the-fly
+variables depends on the implementation of the python module specified in the `Path` within the `Augmentation`
+configuration.
+
+`AccessControl` [optional] can only be used when providing :ref:`authentication-[optional]`. By passing the `IsSubstitute` flag
+a dataset disappears for authorized requests. This might be useful for showing a demo dataset in the viewer for
+not logged user.
+
+.. _on-the-fly-generation-of-xcube-datasets:
+On-the-fly Generation of xcube Datasets
+---------------------------------------
+
+There is the possibility of generating resampled xcube datasets on-the-fly, e.g. in order to
+obtain daily or weekly averages of a xcube dataset.
+
+.. code:: yaml
+
+  - Identifier: local_1w
+    Title: OLCI weekly L3 cube for region SNS computed from local L2C cube
+    BoundingBox: [0.0, 50, 5.0, 52.5]
+    FileSystem: memory
+    Path: "resample_in_time.py"
+    Function: "compute_dataset"
+    InputDatasets: ["local"]
+    InputParameters:
+      period: "1W"
+      incl_stdev: True
+    Style: default
+    PlaceGroups:
+      - PlaceGroupRef: inside-cube
+      - PlaceGroupRef: outside-cube
+    AccessControl:
+      IsSubstitute: True
+
+For the on-the-fly generated dataset the `FileSystem` is defined as 'memory'.
+
+The `Path` is leading to the resample python module. There might be several functions specified in the
+python module, therefore the particular `Function` needs to be included into the configuration.
+
+Via `InputDatasets` the dataset to be resampled is specified.
+
+The `InputParameter` defines which kind of resampling should be performed.
+In the example a weekly average is computed.
+
+Again, the dataset may be associated with place groups.
+
+Place Groups
+------------
+
+Place groups are specified in a similar manner compared to specifying datasets within a server.
+Place groups may be stored e.g. in shapefiles or a geoJson.
+
+.. code:: yaml
+
+PlaceGroups:
+  - Identifier: Germany_NS
+    Title: "Deutsche Nordsee"
+    Path: "places/NorthSea_MSRL_WRRL.shp"
+    CharacterEncoding: utf-8
+    PropertyMapping:
+      label: "NAME"
+
+
+`Identifier` is a unique ID for each place group, it is the one xcube serve uses to associate
+a place group to a particular dataset.
+
+`Title` should be understandable for humans and this is the title that will be displayed within the viewer
+for the place selection if the selected xcube dataset contains a place group.
+
+`Path` defines where the file storing the place group is located.
+Please note that the paths within the example config are relative.
+
+`CharacterEncoding` specifies the encoding which might be useful when passing a place group which contains special
+characters of a certain language.
+
+`PropertyMapping` determines which information contained within the place group
+should be used for selecting a certain location of the given place group. This depends very
+strongly of the data used. In the above example the `lable` to select a certain location is retrieved
+from the property 'NAME'
+
+Styles
+------
+
+
+Within the `Styles` section colorbars may be defined which should be used initially for a certain variable of a dataset,
+as well as the value ranges.
+For xcube viewer version 0.3.0 or higher the colorbars and the value ranges may be adjusted by the user
+within the xcube viewer.
+
+.. code:: yaml
+
+Styles:
+  - Identifier: default
+    ColorMappings:
+      conc_chl:
+        ColorBar: "summer"
+        ValueRange: [0., 40.]
+      chl_gilerson_2010_red_edge:
+        ColorBar: "summer"
+        ValueRange: [0., 40.]
+
+The `ColorMapping` may be specified for each variable of the datasets to be served.
+If not specified, the server uses a default colorbar as well as a default value range.
+
+Additionally
+If the dataset contains variables which represent the bands red, green and blue, they may be combined to an RGB-Image
+within the viewer on-the-fly. This can be done by adding the following part to the `Styles` configuration:
+
+.. code:: yaml
+
+      rgb:
+        Red:
+          Variable: rtoa_8
+          ValueRange: [0., 0.25]
+        Green:
+          Variable: rtoa_6
+          ValueRange: [0., 0.25]
+        Blue:
+          Variable: rtoa_4
+          ValueRange: [0., 0.25]
 
 Example
 =======
