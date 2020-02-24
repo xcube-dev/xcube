@@ -133,11 +133,11 @@ The configuration file consists of 5 main parts :ref:`authentication`, :ref:`dat
 :ref:`place-groups` and :ref:`styles`.
 
 .. _authentication:
-Authentication [Optional]
+Authentication [optional]
 -------------------------
 In order to display data via xcube-viewer exclusively to registered and authorized users, the data served by xcube serve
-may be protected by adding Authentication to the server configuration. In order to ensure protection, a `Domain` and an
-`Audience` needs to be provided. Here authentication by `Auth0`_ is used.
+may be protected by adding Authentication to the server configuration. In order to ensure protection, a *Domain* and an
+*Audience* needs to be provided. Here authentication by `Auth0`_ is used.
 
 .. code:: yaml
 
@@ -146,10 +146,10 @@ may be protected by adding Authentication to the server configuration. In order 
       Audience: https://xcube-dev/api/
 
 .. _dataset-attribution:
-Dataset Attribution [Optional]
+Dataset Attribution [optional]
 ------------------------------
 
-Dataset Attribution may be added to the server via `DatasetAttribution`.
+Dataset Attribution may be added to the server via *DatasetAttribution*.
 
 .. code:: yaml
 
@@ -159,7 +159,7 @@ Dataset Attribution may be added to the server via `DatasetAttribution`.
 
 
 .. _datasets:
-Datasets [Mandatory]
+Datasets [mandatory]
 --------------------
 In order to publish selected xcube datasets via xcube serve the datasets need to be specified in the configuration
 file of the server. Several xcube datasets may be served within one server, by providing a list of information
@@ -192,35 +192,35 @@ an S3 bucket within the OpenTelekomCloud.
 Further down an example for a :ref:`locally-stored-xcube-datasets` will be given,
 as well as an example of a :ref:`on-the-fly-generation-of-xcube-datasets`.
 
-`Identifier` [mandatory] is a unique ID for each xcube dataset, it is ment for machine-to-machine interaction
+*Identifier* [mandatory] is a unique ID for each xcube dataset, it is ment for machine-to-machine interaction
 and therefore does not have to be a fancy human-readable name.
 
-`Title` [mandatory] should be understandable for humans and this is the title that will be displayed within the viewer
+*Title* [mandatory] should be understandable for humans and this is the title that will be displayed within the viewer
 for the dataset selection.
 
-`BoundingBox` [optional] may be set in order to restrict the region which is served from a certain datacube. The
-notation of the `BoundingBox` is [lon_min,lat_min,lon_max,lat_max].
+*BoundingBox* [optional] may be set in order to restrict the region which is served from a certain datacube. The
+notation of the *BoundingBox* is [lon_min,lat_min,lon_max,lat_max].
 
-`FileSystem` [mandatory] is set to `obs` which lets xcube serve know, that the datacube is located in the cloud
+*FileSystem* [mandatory] is set to "obs" which lets xcube serve know, that the datacube is located in the cloud
 (*obs* is the abbreviation for object storage).
 
-`Endpoint` [mandatory] contains information about the cloud provider endpoint, this will differ if you use a different
+*Endpoint* [mandatory] contains information about the cloud provider endpoint, this will differ if you use a different
 cloud provider.
 
-`Path` [mandatory] leads to the specific location of the datacube. The particular datacube is stored in an
-OpenTelecomCloud S3 bucket called `dcs4cop-obs-02` and the datacube is called `OLCI-SNS-RAW-CUBE-2.zarr`.
+*Path* [mandatory] leads to the specific location of the datacube. The particular datacube is stored in an
+OpenTelecomCloud S3 bucket called "dcs4cop-obs-02" and the datacube is called "OLCI-SNS-RAW-CUBE-2.zarr".
 
-`Region` [mandatory] is the region where the specified cloud provider is operating.
+*Region* [mandatory] is the region where the specified cloud provider is operating.
 
-`Styles` [optional] influence the visualization of the xucbe dataset in the xcube viewer if specified
-in the server configuration file. The usage of `Styles` is described in section :ref:`styles`.
+*Styles* [optional] influence the visualization of the xucbe dataset in the xcube viewer if specified
+in the server configuration file. The usage of *Styles* is described in section :ref:`styles`.
 
-`PlaceGroups` [optional] allow to associate places (e.g. polygons or point-location) with a particular xcube dataset.
+*PlaceGroups* [optional] allow to associate places (e.g. polygons or point-location) with a particular xcube dataset.
 Several different place groups may be connected to a xcube dataset, these different place groups are distinguished by
-the `PlaceGroupRef`. The configuration of `PlaceGroups` is described in section :ref:`place-groups`.
+the *PlaceGroupRef*. The configuration of *PlaceGroups* is described in section :ref:`place-groups`.
 
-`AccessControl` [optional] can only be used when providing :ref:`authentication`. Datasets may be protected by
-configuring the `RequiredScopes` entry whose value is a list of required scopes, e.g. "read:datasets".
+*AccessControl* [optional] can only be used when providing :ref:`authentication`. Datasets may be protected by
+configuring the *RequiredScopes* entry whose value is a list of required scopes, e.g. "read:datasets".
 
 .. _locallly-stored-xcube-datasets:
 Locally Stored xcube Datasets
@@ -252,11 +252,11 @@ To serve a locally stored dataset the configuration of it would look like the ex
 Most of the configuration of locally stored datasets is equal to the configuration of
 :ref:`remotely-stored-xcube-datasets`.
 
-`FileSystem` [mandatory] is set to `local` which lets xcube serve know, that the datacube is locally stored.
+*FileSystem* [mandatory] is set to "local" which lets xcube serve know, that the datacube is locally stored.
 
-`TimeSeriesDataset` [optional] is not bound to local datasets, this parameter may be used for remotely stored datasets
+*TimeSeriesDataset* [optional] is not bound to local datasets, this parameter may be used for remotely stored datasets
 as well. By using this parameter a time optimized datacube will be used for generating the time series. The configuration
-of this time optimized datacube is shown below. By adding `Hidden` with `true` to the dataset configuration, the time optimized
+of this time optimized datacube is shown below. By adding *Hidden* with *true* to the dataset configuration, the time optimized
 datacube will not appear among the displayed datasets in xucbe viewer.
 
 .. code:: yaml
@@ -270,11 +270,11 @@ datacube will not appear among the displayed datasets in xucbe viewer.
     Hidden: true
     Style: default
 
-`Augmentation` [optional] augments data cubes by new variables computed on-the-fly, the generation of the on-the-fly
-variables depends on the implementation of the python module specified in the `Path` within the `Augmentation`
+*Augmentation* [optional] augments data cubes by new variables computed on-the-fly, the generation of the on-the-fly
+variables depends on the implementation of the python module specified in the *Path* within the *Augmentation*
 configuration.
 
-`AccessControl` [optional] can only be used when providing :ref:`authentication`. By passing the `IsSubstitute` flag
+*AccessControl* [optional] can only be used when providing :ref:`authentication`. By passing the *IsSubstitute* flag
 a dataset disappears for authorized requests. This might be useful for showing a demo dataset in the viewer for
 user who are not logged in.
 
@@ -304,93 +304,121 @@ obtain daily or weekly averages of a xcube dataset.
     AccessControl:
       IsSubstitute: True
 
-For the on-the-fly generated dataset the `FileSystem` is defined as 'memory'.
+*FileSystem* [mandatory] is defined as "memory" for the on-the-fly generated dataset.
 
-The `Path` is leading to the resample python module. There might be several functions specified in the
-python module, therefore the particular `Function` needs to be included into the configuration.
+*Path* [mandatory] leads to the resample python module. There might be several functions specified in the
+python module, therefore the particular *Function* needs to be included into the configuration.
 
-Via `InputDatasets` the dataset to be resampled is specified.
+*InputDatasets* [mandatory] specifies the dataset to be resampled.
 
-The `InputParameter` defines which kind of resampling should be performed.
+*InputParameter* [mandatory] defines which kind of resampling should be performed.
 In the example a weekly average is computed.
 
 Again, the dataset may be associated with place groups.
 
 .. _place-groups:
-Place Groups
-------------
+Place Groups [optional]
+-----------------------
 
 Place groups are specified in a similar manner compared to specifying datasets within a server.
 Place groups may be stored e.g. in shapefiles or a geoJson.
 
 .. code:: yaml
 
-PlaceGroups:
-  - Identifier: outside-cube
-    Title: Points outside the cube
-    Path: "places/outside-cube.geojson"
-    PropertyMapping:
-      image: "${base_url}/images/outside-cube/${ID}.jpg"
+    PlaceGroups:
+      - Identifier: outside-cube
+        Title: Points outside the cube
+        Path: "places/outside-cube.geojson"
+        PropertyMapping:
+          image: "${base_url}/images/outside-cube/${ID}.jpg"
 
 
-`Identifier` is a unique ID for each place group, it is the one xcube serve uses to associate
+*Identifier* [mandatory] is a unique ID for each place group, it is the one xcube serve uses to associate
 a place group to a particular dataset.
 
-`Title` should be understandable for humans and this is the title that will be displayed within the viewer
+*Title* [mandatory] should be understandable for humans and this is the title that will be displayed within the viewer
 for the place selection if the selected xcube dataset contains a place group.
 
-`Path` defines where the file storing the place group is located.
+*Path* [mandatory] defines where the file storing the place group is located.
 Please note that the paths within the example config are relative.
 
-`PropertyMapping` determines which information contained within the place group
+*PropertyMapping* [mandatory] determines which information contained within the place group
 should be used for selecting a certain location of the given place group. This depends very
-strongly of the data used. In the above example the `lable` to select a certain location is retrieved
-from the property 'NAME'
+strongly of the data used. In the above example, the image URL is determined by a feature's ``ID`` property.
 
-Additionally:
+Property Mappings
+-----------------
 
-`CharacterEncoding` may specify the encoding which might be useful when passing a place group which contains special
-characters of a certain language.
+The entry *PropertyMapping* is used to map a set of well-known properties (or roles) to the actual properties provided
+by a place feature in a place group. For example, the well-known properties are used to in xcube viewer to display
+information about the currently selected place.
+The possible well-known properties are:
+
+* ``label``: The property that provides a label for the place, if any.
+  Defaults to to case-insensitive names ``label``, ``title``, ``name``, ``id`` in xcube viewer.
+* ``color``: The property that provides a place's color.
+  Defaults to the case-insensitive name ``color`` in xcube viewer.
+* ``image``: The property that provides a place's image URL, if any.
+  Defaults to case-insensitive names ``image``, ``img``, ``picture``, ``pic`` in xcube viewer.
+* ``description``: The property that provides a place's description text, if any.
+  Defaults to case-insensitive names ``description``, ``desc``, ``abstract``, ``comment`` in xcube viewer.
+
+
+In the following example, a place's label is provided by the place feature's ``NAME`` property,
+while an image is provided by the place feature's ``IMG_URL`` property:
+
+.. code:: yaml
+
+    PlaceGroups:
+        Identifier: my_group
+        ...
+        PropertyMapping:
+            label: NAME
+            image: IMG_URL
+
+
+The values on the right side may either **be** feature property names or **contain** them as placeholders in the form
+``${PROPERTY}``. A special placeholder is ``${base_url}`` which is replaced by the server's current base URL.
 
 .. _styles:
-Styles
-------
+Styles [optional]
+-----------------
 
 
-Within the `Styles` section colorbars may be defined which should be used initially for a certain variable of a dataset,
+Within the *Styles* section colorbars may be defined which should be used initially for a certain variable of a dataset,
 as well as the value ranges.
 For xcube viewer version 0.3.0 or higher the colorbars and the value ranges may be adjusted by the user
 within the xcube viewer.
 
 .. code:: yaml
 
-Styles:
-  - Identifier: default
-    ColorMappings:
-      conc_chl:
-        ColorBar: "plasma"
-        ValueRange: [0., 24.]
-      conc_tsm:
-        ColorBar: "PuBuGn"
-        ValueRange: [0., 100.]
-      kd489:
-        ColorBar: "jet"
-        ValueRange: [0., 6.]
-      rgb:
-        Red:
-          Variable: conc_chl
-          ValueRange: [0., 24.]
-        Green:
-          Variable: conc_tsm
-          ValueRange: [0., 100.]
-        Blue:
-          Variable: kd489
-          ValueRange: [0., 6.]
+    Styles:
+      - Identifier: default
+        ColorMappings:
+          conc_chl:
+            ColorBar: "plasma"
+            ValueRange: [0., 24.]
+          conc_tsm:
+            ColorBar: "PuBuGn"
+            ValueRange: [0., 100.]
+          kd489:
+            ColorBar: "jet"
+            ValueRange: [0., 6.]
+          rgb:
+            Red:
+              Variable: conc_chl
+              ValueRange: [0., 24.]
+            Green:
+              Variable: conc_tsm
+              ValueRange: [0., 100.]
+            Blue:
+              Variable: kd489
+              ValueRange: [0., 6.]
 
-The `ColorMapping` may be specified for each variable of the datasets to be served.
+The *ColorMapping* may be specified for each variable of the datasets to be served.
 If not specified, the server uses a default colorbar as well as a default value range.
 
-`rgb` may be used to generate an RGB-Image on-the-fly within xcube viewer. This may be done if  the dataset contains
+*rgb* may be used to generate an RGB-Image on-the-fly within xcube viewer. This may be done if  the dataset contains
 variables which represent the bands red, green and blue, they may be combined to an RGB-Image. Or three variables
 of the dataset may be combined to an RGB-Image, as shown in the configuration above.
 
