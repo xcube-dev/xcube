@@ -127,9 +127,9 @@ and the it is referred to by the non-hidden, actual dataset using the ``TimeSeri
 Server Demo Configuration File
 ==============================
 The server configuration file consists of various parts, some of them are necessary others are optional.
-Below the `demo configuration file`_ used in the example above is explained in detail.
+Here the `demo configuration file`_ used in the :ref:`example` is explained in detail.
 
-The configuration file consists of 5 main parts :ref:`authentication`, :ref:`dataset-attribution`, :ref:`datasets`,
+The configuration file consists of five main parts :ref:`authentication`, :ref:`dataset-attribution`, :ref:`datasets`,
 :ref:`place-groups` and :ref:`styles`.
 
 .. _authentication:
@@ -422,6 +422,7 @@ If not specified, the server uses a default colorbar as well as a default value 
 variables which represent the bands red, green and blue, they may be combined to an RGB-Image. Or three variables
 of the dataset may be combined to an RGB-Image, as shown in the configuration above.
 
+.. _example:
 Example
 =======
 
