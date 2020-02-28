@@ -221,10 +221,8 @@ def _process_input(input_processor: InputProcessor,
     width, height = output_size
     x_min, y_min, x_max, y_max = output_region
     xy_res = max((x_max - x_min) / width, (y_max - y_min) / height)
-    if 'chunksizes' in output_writer_params:
-        tile_size = [output_writer_params['chunksizes']['lon'], output_writer_params['chunksizes']['lat']]
-    else:
-        tile_size = None
+    tile_size = _get_tile_size(output_writer_params)
+
     output_geom = ImageGeom(size=output_size, tile_size=tile_size, x_min=x_min, y_min=y_min, xy_res=xy_res,
                             is_geo_crs=True)
 
@@ -372,6 +370,17 @@ def _process_input(input_processor: InputProcessor,
         monitor(s.getvalue())
 
     return status
+
+
+def _get_tile_size(output_writer_params):
+    tile_size = None
+    if 'chunksizes' in output_writer_params:
+        chunksizes = output_writer_params['chunksizes']
+        if 'lon' in chunksizes or 'lat' in chunksizes:
+            tile_size = chunksizes.get('lon', 512), chunksizes.get('lat', 512)
+        elif 'x' in chunksizes or 'y' in chunksizes:
+            tile_size = chunksizes.get('x', 512), chunksizes.get('y', 512)
+    return tile_size
 
 
 def _update_cube(output_writer: DatasetIO, output_path: str, global_attrs: Dict = None, temporal_only: bool = False,
