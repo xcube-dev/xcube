@@ -178,7 +178,7 @@ class ImageGeom:
     def coord_vars(self,
                    xy_names: Tuple[str, str],
                    is_lon_normalized: bool = False,
-                   is_y_axis_inverted: bool = False) -> Mapping[str, xr.DataArray]:
+                   is_y_reversed: bool = False) -> Mapping[str, xr.DataArray]:
         x_name, y_name = xy_names
         x_attrs, y_attrs = (_LON_ATTRS, _LAT_ATTRS) if self.is_geo_crs else ({}, {})
         w, h = self.size
@@ -199,7 +199,7 @@ class ImageGeom:
         y_bnds_0_data = np.linspace(y1, y2 - res, h)
         y_bnds_1_data = np.linspace(y1 + res, y2, h)
 
-        if is_y_axis_inverted:
+        if is_y_reversed:
             y_data = y_data[::-1]
             y_bnds_1_data, y_bnds_0_data = y_bnds_0_data[::-1], y_bnds_1_data[::-1]
 
