@@ -230,12 +230,22 @@ def _compute_ij_images_xarray_dask(src_geo_coding: GeoCoding,
     dst_var_shape = 2, dst_height, dst_width
     dst_var_chunks = 2, dst_tile_height, dst_tile_width
 
-    dst_x_min = output_geom.x_min
-    dst_y_min = output_geom.y_min
+    dst_x_min, dst_y_min, dst_x_max, dst_y_max = output_geom.xy_bbox
     dst_xy_res = output_geom.xy_res
 
+    # Compute an empirical xy_border as a function of the number of tiles, because the more tiles we have
+    # the smaller the destination xy-bboxes and the higher the risk to not find any source ij-bbox for
+    # a given xy-bbox.
+    #
+    num_tiles_x = (dst_width + dst_tile_width - 1) / dst_tile_width
+    num_tiles_y = (dst_height + dst_tile_height - 1) / dst_tile_height
+    max_num_tiles = max(num_tiles_x, num_tiles_y)
+    xy_border = min(2 * max_num_tiles * dst_xy_res,
+                    min(0.5 * (dst_x_max - dst_x_min),
+                        0.5 * (dst_y_max - dst_y_min)))
+
     dst_xy_bboxes = output_geom.xy_bboxes
-    src_ij_bboxes = src_geo_coding.ij_bboxes(dst_xy_bboxes, xy_border=dst_xy_res, ij_border=1)
+    src_ij_bboxes = src_geo_coding.ij_bboxes(dst_xy_bboxes, xy_border=xy_border, ij_border=1)
 
     return compute_array_from_func(_compute_ij_images_xarray_dask_block,
                                    dst_var_shape,
