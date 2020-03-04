@@ -97,13 +97,29 @@ class RectifyDatasetTest(SourceDatasetMixin, unittest.TestCase):
                                                 dtype=lat.dtype))
         np.testing.assert_almost_equal(rad.values, self.expected_rad_13x13(rad.dtype))
 
-    def test_rectify_2x2_to_13x13_inverse_y_axis(self):
+    def test_rectify_2x2_to_13x13_y_reversed(self):
         src_ds = self.new_source_dataset()
 
         output_geom = ImageGeom(size=(13, 13), x_min=-0.25, y_min=49.75, xy_res=0.5)
 
-        dst_ds = rectify_dataset(src_ds, output_geom=output_geom, is_y_axis_inverted=True)
+        dst_ds = rectify_dataset(src_ds, output_geom=output_geom, is_y_reversed=True)
         lon, lat, rad = self._assert_shape_and_dim(dst_ds, (13, 13))
+        np.testing.assert_almost_equal(lon.values,
+                                       np.array([0.0, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5., 5.5, 6.],
+                                                dtype=lon.dtype))
+        np.testing.assert_almost_equal(lat.values,
+                                       np.array([56., 55.5, 55., 54.5, 54.0, 53.5, 53.0, 52.5, 52.0, 51.5, 51.,
+                                                 50.5, 50.],
+                                                dtype=lat.dtype))
+        np.testing.assert_almost_equal(rad.values, self.expected_rad_13x13(rad.dtype)[::-1])
+
+    def test_rectify_2x2_to_13x13_y_reversed_dask_5x5(self):
+        src_ds = self.new_source_dataset()
+
+        output_geom = ImageGeom(size=(13, 13), x_min=-0.25, y_min=49.75, xy_res=0.5, tile_size=5)
+
+        dst_ds = rectify_dataset(src_ds, output_geom=output_geom, is_y_reversed=True)
+        lon, lat, rad = self._assert_shape_and_dim(dst_ds, (13, 13), chunks=((3, 5, 5), (5, 5, 3)))
         np.testing.assert_almost_equal(lon.values,
                                        np.array([0.0, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5., 5.5, 6.],
                                                 dtype=lon.dtype))
@@ -141,7 +157,6 @@ class RectifyDatasetTest(SourceDatasetMixin, unittest.TestCase):
                                        np.array([50., 50.5, 51.0, 51.5, 52.0, 52.5, 53.0, 53.5, 54.0, 54.5, 55.,
                                                  55.5, 56.],
                                                 dtype=lat.dtype))
-        print(rad.values)
         np.testing.assert_almost_equal(rad.values, self.expected_rad_13x13(rad.dtype))
 
     def test_rectify_2x2_to_13x13_dask_3x13(self):
@@ -384,10 +399,20 @@ class RectifySentinel2DatasetTest(SourceDatasetMixin, unittest.TestCase):
              [nan, nan, nan, nan, nan, nan, nan, nan, nan, nan]])
 
         dst_ds = rectify_dataset(src_ds, tile_size=None)
+        self.assertEqual(None, dst_ds.rrs_665.chunks)
         np.testing.assert_almost_equal(dst_ds.rrs_665.values, expected_data)
 
         dst_ds = rectify_dataset(src_ds, tile_size=5)
+        self.assertEqual(((5, 2), (5, 5)), dst_ds.rrs_665.chunks)
         np.testing.assert_almost_equal(dst_ds.rrs_665.values, expected_data)
+
+        dst_ds = rectify_dataset(src_ds, tile_size=None, is_y_reversed=True)
+        self.assertEqual(None, dst_ds.rrs_665.chunks)
+        np.testing.assert_almost_equal(dst_ds.rrs_665.values, expected_data[::-1])
+
+        dst_ds = rectify_dataset(src_ds, tile_size=5, is_y_reversed=True)
+        self.assertEqual(((2, 5), (5, 5)), dst_ds.rrs_665.chunks)
+        np.testing.assert_almost_equal(dst_ds.rrs_665.values, expected_data[::-1])
 
 
 def create_s2plus_dataset():

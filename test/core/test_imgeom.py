@@ -160,10 +160,10 @@ class ImageGeomTest(SourceDatasetMixin, unittest.TestCase):
                                     (1250., 1260.),
                                 ))
 
-    def test_coord_vars_y_axis_inverted(self):
+    def test_coord_vars_y_reversed(self):
         image_geom = ImageGeom(size=(10, 6), x_min=-2600.0, y_min=1200.0, xy_res=10.0)
 
-        cv = image_geom.coord_vars(xy_names=('x', 'y'), is_y_axis_inverted=True)
+        cv = image_geom.coord_vars(xy_names=('x', 'y'), is_y_reversed=True)
         self._assert_coord_vars(cv,
                                 (10, 6),
                                 ('x', 'y'),
