@@ -11,7 +11,7 @@ from xcube.core.gen.gen import gen_cube
 
 
 def clean_up():
-    files = ['l2c-single.nc', 'l2c-single.zarr', 'l2c.nc', 'l2c.zarr']
+    files = ['l2c-single.nc', 'l2c-single.zarr', 'l2c.nc', 'l2c.zarr', 'l2c_1x80x60.zarr', 'l2c_1x80x80.zarr']
     for file in files:
         rimraf(file)
         rimraf(file + '.temp.nc')  # May remain from Netcdf4DatasetIO.append()
@@ -152,6 +152,46 @@ class DefaultProcessTest(unittest.TestCase):
                                                       time_coverage_end='2017-01-03T12:00:00.000000000'))
         self.assertTrue(os.path.exists(os.path.join('l2c.zarr', '.zmetadata')))
 
+    def test_process_chunked_zarr(self):
+        status, output = gen_cube_wrapper(
+            [get_inputdata_path('201701??-IFR-L4_GHRSST-SSTfnd-ODYSSEA-NWE_002-v2.0-fv1.0.nc')],
+            'l2c.zarr',
+            no_sort_mode=False)
+        self.assertEqual(True, status)
+        self.assert_cube_ok(xr.open_zarr('l2c.zarr'),
+                            expected_time_dim=3,
+                            expected_extra_attrs=dict(time_coverage_start='2016-12-31T12:00:00.000000000',
+                                                      time_coverage_end='2017-01-03T12:00:00.000000000'))
+        status, output = gen_cube_wrapper(
+            [get_inputdata_path('201701??-IFR-L4_GHRSST-SSTfnd-ODYSSEA-NWE_002-v2.0-fv1.0.nc')],
+            'l2c_1x80x60.zarr',
+            output_writer_params={'chunksizes': {'lon': 80, 'lat': 60}},
+            no_sort_mode=False)
+        self.assertEqual(True, status)
+        self.assert_cube_ok(xr.open_zarr('l2c_1x80x60.zarr'),
+                            expected_time_dim=3,
+                            expected_extra_attrs=dict(time_coverage_start='2016-12-31T12:00:00.000000000',
+                                                      time_coverage_end='2017-01-03T12:00:00.000000000'))
+        ds_unchunked = xr.open_zarr('l2c.zarr')
+        ds_chunked = xr.open_zarr('l2c_1x80x60.zarr')
+        np.testing.assert_allclose(ds_unchunked.analysed_sst.values, ds_chunked.analysed_sst.values)
+        self.assertEqual(((1, 1, 1), (60, 60, 60), (80, 80, 80, 80)), ds_chunked.analysed_sst.chunks)
+
+        status, output = gen_cube_wrapper(
+            [get_inputdata_path('201701??-IFR-L4_GHRSST-SSTfnd-ODYSSEA-NWE_002-v2.0-fv1.0.nc')],
+            'l2c_1x80x80.zarr',
+            output_writer_params={'chunksizes': {'lon': 80, 'lat': 80}},
+            no_sort_mode=False)
+        self.assertEqual(True, status)
+        self.assert_cube_ok(xr.open_zarr('l2c_1x80x80.zarr'),
+                            expected_time_dim=3,
+                            expected_extra_attrs=dict(time_coverage_start='2016-12-31T12:00:00.000000000',
+                                                      time_coverage_end='2017-01-03T12:00:00.000000000'))
+        ds_unchunked = xr.open_zarr('l2c.zarr')
+        ds_chunked = xr.open_zarr('l2c_1x80x80.zarr')
+        np.testing.assert_allclose(ds_unchunked.analysed_sst.values, ds_chunked.analysed_sst.values)
+        self.assertEqual(((1, 1, 1), (80, 80, 20), (80, 80, 80, 80)), ds_chunked.analysed_sst.chunks)
+
     def assert_cube_ok(self, cube: xr.Dataset,
                        expected_time_dim: int,
                        expected_extra_attrs: Dict[str, Any],
@@ -202,6 +242,7 @@ class DefaultProcessTest(unittest.TestCase):
 # noinspection PyShadowingBuiltins
 def gen_cube_wrapper(input_paths,
                      output_path,
+                     output_writer_params=None,
                      no_sort_mode=False,
                      input_processor_name=None,
                      processed_variables=None,
@@ -229,6 +270,8 @@ def gen_cube_wrapper(input_paths,
         config.update(processed_variables=processed_variables)
     if output_variables is not None:
         config.update(output_variables=output_variables)
+    if output_writer_params is not None:
+        config.update(output_writer_params=output_writer_params)
 
     output_metadata = dict(
         title='Test Cube',
