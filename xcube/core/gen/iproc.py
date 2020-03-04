@@ -329,6 +329,9 @@ class XYInputProcessor(InputProcessor, metaclass=ABCMeta):
                                       output_geom=output_geom,
                                       is_y_reversed=True)
             if output_geom.is_tiled:
+                # The following condition may become true, if we have used rectified_dataset(input, ..., is_y_reverse=True)
+                # In this case y-chunksizes will also be reversed. So that the first chunk is smaller than any other.
+                # Zarr will reject such datasets, when written.
                 if dataset.chunks.get('lat')[0] < dataset.chunks.get('lat')[-1]:
                   dataset = dataset.chunk({'lat': output_geom.tile_height, 'lon': output_geom.tile_width})
             if dataset is not None and geo_coding.is_geo_crs and geo_coding.xy_names != ('lon', 'lat'):
