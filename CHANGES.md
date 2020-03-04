@@ -42,7 +42,8 @@
   reprojection method in `xcube.core.gen.iproc.XYInputProcessor` and
   `xcube.core.gen.iproc.DefaultInputProcessor`, if ground control points are not 
   specified, i.e. the input processor is configured with `xy_gcp_step=None`. (#206)
-
+* Tile sizes for rectification in `xcube gen`are now derived from output_writer_params if given and 
+  if it contains chunksizes for 'lat' or 'lon', in order to use dask.  
 * Introduced new function `xcube.core.select.select_spatial_subset()`.
 
 * Renamed function `xcube.core.select.select_vars()` into `xcube.core.select.select_variables_subset()`.
