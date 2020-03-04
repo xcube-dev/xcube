@@ -43,7 +43,7 @@
   `xcube.core.gen.iproc.DefaultInputProcessor`, if ground control points are not 
   specified, i.e. the input processor is configured with `xy_gcp_step=None`. (#206)
 * Tile sizes for rectification in `xcube gen` are now derived from `output_writer_params` if given in configuration and 
-  if it contains chunksizes for 'lat' or 'lon', in order to use dask.  
+  if it contains a `chunksizes` parameter for 'lat' or 'lon'. This will force the generation of a chunked xcube dataset and will utilize Dask arrays for out-of-core computations. This is very useful for large data cubes whose time slices would otherwise not fit into memory.
 * Introduced new function `xcube.core.select.select_spatial_subset()`.
 
 * Renamed function `xcube.core.select.select_vars()` into `xcube.core.select.select_variables_subset()`.
