@@ -25,6 +25,7 @@ from typing import Any, Collection, Dict, Mapping, Optional, Tuple, Union
 
 import numpy as np
 import xarray as xr
+
 from xcube.constants import CRS_WKT_EPSG_4326
 from xcube.constants import EXTENSION_POINT_INPUT_PROCESSORS
 from xcube.core.geocoding import GeoCoding
@@ -326,7 +327,7 @@ class XYInputProcessor(InputProcessor, metaclass=ABCMeta):
                                       compute_subset=False,
                                       geo_coding=geo_coding,
                                       output_geom=output_geom,
-                                      is_y_axis_inverted=True)
+                                      is_y_reversed=True)
 
             if dataset is not None and geo_coding.is_geo_crs and geo_coding.xy_names != ('lon', 'lat'):
                 dataset = dataset.rename({geo_coding.x_name: 'lon', geo_coding.y_name: 'lat'})

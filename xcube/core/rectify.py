@@ -37,7 +37,7 @@ def rectify_dataset(dataset: xr.Dataset,
                     geo_coding: GeoCoding = None,
                     xy_names: Tuple[str, str] = None,
                     output_geom: ImageGeom = None,
-                    is_y_axis_inverted: bool = False,
+                    is_y_reversed: bool = False,
                     tile_size: Union[int, Tuple[int, int]] = None,
                     output_ij_names: Tuple[str, str] = None,
                     load_xy: bool = False,
@@ -66,7 +66,7 @@ def rectify_dataset(dataset: xr.Dataset,
     :param xy_names: Optional tuple of the x- and y-coordinate variables in *dataset*. Ignored if *geo_coding* is given.
     :param output_geom: Optional output geometry. If not given, output geometry will be computed
         to spatially fit *dataset* and to retain its spatial resolution.
-    :param is_y_axis_inverted: Whether the y-axis labels in the output should be in inverse order.
+    :param is_y_reversed: Whether the y-axis labels in the output should be in reverse order.
     :param tile_size: Optional tile size for the output.
     :param output_ij_names: If given, a tuple of variable names in which to store the computed source pixel
         coordinates in the returned output.
@@ -120,13 +120,18 @@ def rectify_dataset(dataset: xr.Dataset,
 
     dst_src_ij_array = get_dst_src_ij_images(src_geo_coding,
                                              output_geom,
-                                             is_y_axis_inverted,
                                              uv_delta)
+
+    if is_y_reversed:
+        # Note that the following reverse operation may change any y-axis' chunking.
+        # This is the case if the y-chunksize does not integer-divide y-size, e.g.
+        # y-chunksizes (512, 512, 512, 273) will change into (273, 512, 512, 512).
+        dst_src_ij_array = dst_src_ij_array[:, ::-1]
 
     dst_dims = src_geo_coding.xy_names[::-1]
     dst_ds_coords = output_geom.coord_vars(xy_names=src_geo_coding.xy_names,
                                            is_lon_normalized=src_geo_coding.is_lon_normalized,
-                                           is_y_axis_inverted=is_y_axis_inverted)
+                                           is_y_reversed=is_y_reversed)
     dst_vars = dict()
     for src_var_name, src_var in src_vars.items():
         if load_vars:
@@ -194,7 +199,6 @@ def _is_2d_var(var: xr.DataArray, two_d_coord_var: xr.DataArray) -> bool:
 
 def _compute_ij_images_xarray_numpy(src_geo_coding: GeoCoding,
                                     output_geom: ImageGeom,
-                                    is_dst_y_axis_inverted: bool,
                                     uv_delta: float) -> np.ndarray:
     """Compute numpy.ndarray destination image with source pixel i,j coords from xarray.DataArray x,y sources """
     dst_width = output_geom.width
@@ -213,14 +217,11 @@ def _compute_ij_images_xarray_numpy(src_geo_coding: GeoCoding,
                                       dst_y_min,
                                       dst_xy_res,
                                       uv_delta)
-    if is_dst_y_axis_inverted:
-        dst_src_ij_images = dst_src_ij_images[:, ::-1, :]
     return dst_src_ij_images
 
 
 def _compute_ij_images_xarray_dask(src_geo_coding: GeoCoding,
                                    output_geom: ImageGeom,
-                                   is_dst_y_axis_inverted: bool,
                                    uv_delta: float) -> da.Array:
     """Compute dask.array.Array destination image with source pixel i,j coords from xarray.DataArray x,y sources """
     dst_width = output_geom.width
@@ -230,12 +231,22 @@ def _compute_ij_images_xarray_dask(src_geo_coding: GeoCoding,
     dst_var_shape = 2, dst_height, dst_width
     dst_var_chunks = 2, dst_tile_height, dst_tile_width
 
-    dst_x_min = output_geom.x_min
-    dst_y_min = output_geom.y_min
+    dst_x_min, dst_y_min, dst_x_max, dst_y_max = output_geom.xy_bbox
     dst_xy_res = output_geom.xy_res
 
+    # Compute an empirical xy_border as a function of the number of tiles, because the more tiles we have
+    # the smaller the destination xy-bboxes and the higher the risk to not find any source ij-bbox for
+    # a given xy-bbox.
+    # xy_border will not be larger than half of the coverage of a tile.
+    #
+    num_tiles_x = dst_width / dst_tile_width
+    num_tiles_y = dst_height / dst_tile_height
+    max_num_tiles = max(num_tiles_x, num_tiles_y)
+    xy_border = min(2 * max_num_tiles * dst_xy_res,
+                    min(0.5 * (dst_x_max - dst_x_min), 0.5 * (dst_y_max - dst_y_min)))
+
     dst_xy_bboxes = output_geom.xy_bboxes
-    src_ij_bboxes = src_geo_coding.ij_bboxes(dst_xy_bboxes, xy_border=dst_xy_res, ij_border=1)
+    src_ij_bboxes = src_geo_coding.ij_bboxes(dst_xy_bboxes, xy_border=xy_border, ij_border=1)
 
     return compute_array_from_func(_compute_ij_images_xarray_dask_block,
                                    dst_var_shape,
@@ -254,7 +265,6 @@ def _compute_ij_images_xarray_dask(src_geo_coding: GeoCoding,
                                        dst_x_min,
                                        dst_y_min,
                                        dst_xy_res,
-                                       is_dst_y_axis_inverted,
                                        uv_delta
                                    ),
                                    name='ij_pixels',
@@ -271,7 +281,6 @@ def _compute_ij_images_xarray_dask_block(dtype: np.dtype,
                                          dst_x_min: float,
                                          dst_y_min: float,
                                          dst_xy_res: float,
-                                         is_dst_y_axis_inverted: bool,
                                          uv_delta: float) -> np.ndarray:
     """Compute dask.array.Array destination block with source pixel i,j coords from xarray.DataArray x,y sources """
     dst_src_ij_block = np.full(block_shape, np.nan, dtype=dtype)
@@ -291,8 +300,6 @@ def _compute_ij_images_xarray_dask_block(dtype: np.dtype,
                                         dst_y_min + dst_y_slice_start * dst_xy_res,
                                         dst_xy_res,
                                         uv_delta)
-    if is_dst_y_axis_inverted:
-        dst_src_ij_block = dst_src_ij_block[:, ::-1, :]
     return dst_src_ij_block
 
 

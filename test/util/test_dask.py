@@ -9,31 +9,48 @@ from xcube.util.dask import get_chunk_slice_tuples
 
 
 class DaskTest(unittest.TestCase):
-    def test_from_func(self):
+    def test_from_func_8x10_3x4(self):
+        self._assert_from_func(shape=(8, 10), chunks=(3, 4))
+
+    def test_from_func_80x100_3x4(self):
+        self._assert_from_func(shape=(80, 100), chunks=(3, 4))
+
+    def test_from_func_80x100_7x10(self):
+        self._assert_from_func(shape=(80, 100), chunks=(7, 10))
+
+    def test_from_func_80x100_40x25(self):
+        self._assert_from_func(shape=(80, 100), chunks=(40, 25))
+
+    def _assert_from_func(self, shape, chunks):
         def my_func(array_shape, array_dtype, block_shape, block_slices):
-            csy, csx = block_slices
-            ch, cw = block_shape
+            bsy, bsx = block_slices
+            bh, bw = block_shape
             w = array_shape[-1]
-            a = np.ndarray((ch, cw), dtype=array_dtype)
-            for j in range(ch):
-                for i in range(cw):
-                    a[j, i] = 0.1 * ((csy[0] + j) * w + csx[0] + i)
+            i0 = bsx[0]
+            j0 = bsy[0]
+            a = np.ndarray((bh, bw), dtype=array_dtype)
+            for j in range(bh):
+                for i in range(bw):
+                    a[j, i] = 0.1 * (i0 + i + (j0 + j) * w)
             return a
 
         a = compute_array_from_func(my_func,
-                                    (8, 10),
-                                    (3, 4),
+                                    shape,
+                                    chunks,
                                     np.float64,
                                     ctx_arg_names=['shape', 'dtype', 'block_shape', 'block_slices'])
 
         self.assertIsNotNone(a)
-        self.assertEqual((8, 10), a.shape)
-        self.assertEqual(((3, 3, 2), (4, 4, 2)), a.chunks)
+        self.assertEqual(shape, a.shape)
+        self.assertEqual(tuple(get_chunk_sizes(shape, chunks)), a.chunks)
         self.assertEqual(np.float64, a.dtype)
+
+        h, w = shape
+        n = w * h
 
         # Compute result
         actual = np.array(a)
-        expected = (0.1 * np.linspace(0, 8 * 10 - 1, 8 * 10, dtype=np.float64)).reshape((8, 10))
+        expected = (0.1 * np.linspace(0, n - 1, n, dtype=np.float64)).reshape(shape)
         np.testing.assert_almost_equal(actual, expected)
 
     def test_get_chunk_sizes(self):
