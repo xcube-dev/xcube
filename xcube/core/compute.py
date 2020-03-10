@@ -54,6 +54,7 @@ def compute_cube(cube_func: CubeFunc,
     input data cubes in *input_cubes* using a cube factory function *cube_func*.
 
     *cube_func* is called concurrently for each of the chunks of the input variables.
+    It is expected to return a chunk block whith is type ``np.ndarray``.
 
     If *input_cubes* is not empty, *cube_func* receives variables as specified by *input_var_names*.
     If *input_cubes* is empty, *input_var_names* must be empty too, and *input_cube_schema*
