@@ -57,8 +57,8 @@ def get_ml_dataset_tile(ml_dataset: MultiLevelDataset,
                         trace_perf: bool = False,
                         exception_type: Type[Exception] = ValueError):
     labels = labels or {}
-    ds_id = hex(id(ml_dataset))
-    image_id = '-'.join(map(str, [ds_id, z, var_name, cmap_name, cmap_range]
+    ds_cache_id = hex(id(ml_dataset))
+    image_id = '-'.join(map(str, [ds_cache_id, z, ml_dataset.ds_id, var_name, cmap_name, cmap_range]
                             + [f'{dim_name}={dim_value}' for dim_name, dim_value in labels.items()]))
 
     if image_cache and image_id in image_cache:
