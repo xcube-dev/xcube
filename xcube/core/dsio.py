@@ -27,9 +27,9 @@ from typing import Any, Callable, Dict, Iterable, List, Optional, Set, Tuple
 
 import pandas as pd
 import s3fs
+import urllib3.util
 import xarray as xr
 import zarr
-import urllib3.util
 
 from xcube.constants import EXTENSION_POINT_DATASET_IOS
 from xcube.constants import FORMAT_NAME_CSV, FORMAT_NAME_MEM, FORMAT_NAME_NETCDF4, FORMAT_NAME_ZARR
@@ -408,7 +408,6 @@ class ZarrDatasetIO(DatasetIO):
     def read(self, path: str, **kwargs) -> xr.Dataset:
         path_or_store = path
         consolidated = False
-        mode = 'read'
         root = None
 
         if isinstance(path, str):
@@ -421,7 +420,10 @@ class ZarrDatasetIO(DatasetIO):
             if 'region_name' in kwargs:
                 client_kwargs['region_name'] = kwargs.pop('region_name')
 
-            path_or_store, root, client_kwargs = _get_path_or_store(path_or_store, client_kwargs, mode, root)
+            path_or_store, root, client_kwargs = _get_path_or_store(path_or_store,
+                                                                    client_kwargs=client_kwargs,
+                                                                    mode='read',
+                                                                    root=root)
 
             if 'endpoint_url' in client_kwargs and root is not None:
                 s3 = s3fs.S3FileSystem(anon=True,
@@ -444,10 +446,9 @@ class ZarrDatasetIO(DatasetIO):
               chunksizes=None,
               client_kwargs=None,
               **kwargs):
-        mode = 'write'
-        root = None
-        path_or_store, root, client_kwargs = _get_path_or_store(output_path, client_kwargs, mode, root)
-
+        path_or_store, root, client_kwargs = _get_path_or_store(output_path,
+                                                                client_kwargs=client_kwargs,
+                                                                mode='write')
         encoding = self._get_write_encodings(dataset, compress, cname, clevel, shuffle, blocksize, chunksizes)
         dataset.to_zarr(path_or_store, mode='w', encoding=encoding)
 
@@ -539,7 +540,10 @@ def rimraf(path):
             pass
 
 
-def _get_path_or_store(path: str, client_kwargs: Dict[str, Any], mode: str, root: str):
+def _get_path_or_store(path: str,
+                       client_kwargs: Dict[str, Any] = None,
+                       mode: str = None,
+                       root: str = None):
     path_or_store = path
     anon_mode = True
     if not client_kwargs:
