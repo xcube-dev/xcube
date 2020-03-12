@@ -125,21 +125,18 @@ def get_time_series_for_geometry(ctx: ServiceContext,
            if it is a positive integer, the most recent valid values are returned.
     :return: Time-series data structure.
     """
-    measure_time = measure_time_cm(disabled=not ctx.trace_perf)
-    with measure_time(f'get_time_series_for_geometry for dataset identifier {ds_name} and variable {var_name}, '
-                      f'geometry type {geometry.get("type")} with coordinates {geometry.get("coordinates")}'):
-        dataset = _get_time_series_dataset(ctx, ds_name, var_name)
-        if not GeoJSON.is_geometry(geometry):
-            raise ServiceBadRequestError("Invalid GeoJSON geometry")
-        if isinstance(geometry, dict):
-            geometry = shapely.geometry.shape(geometry)
-        return _get_time_series_for_geometry(dataset, var_name,
-                                             geometry,
-                                             start_date=start_date,
-                                             end_date=end_date,
-                                             include_count=include_count,
-                                             include_stdev=include_stdev,
-                                             max_valids=max_valids)
+    dataset = _get_time_series_dataset(ctx, ds_name, var_name)
+    if not GeoJSON.is_geometry(geometry):
+        raise ServiceBadRequestError("Invalid GeoJSON geometry")
+    if isinstance(geometry, dict):
+        geometry = shapely.geometry.shape(geometry)
+    return _get_time_series_for_geometry(dataset, var_name,
+                                         geometry,
+                                         start_date=start_date,
+                                         end_date=end_date,
+                                         include_count=include_count,
+                                         include_stdev=include_stdev,
+                                         max_valids=max_valids)
 
 
 def get_time_series_for_geometry_collection(ctx: ServiceContext,
