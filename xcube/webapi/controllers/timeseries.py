@@ -30,7 +30,7 @@ from xcube.core.ancvar import find_ancillary_var_names
 from xcube.core.geom import get_dataset_bounds
 from xcube.core.timecoord import timestamp_to_iso_string
 from xcube.util.geojson import GeoJSON
-from xcube.util.perf import measure_time_cm
+from xcube.util.perf import measure_time_cm, measure_time
 from xcube.webapi.context import ServiceContext
 from xcube.webapi.errors import ServiceBadRequestError, ServiceResourceNotFoundError
 
@@ -261,34 +261,37 @@ def _get_time_series_for_geometry(dataset: xr.Dataset,
                                   include_count=True,
                                   include_stdev=False,
                                   max_valids: int = None) -> Dict:
-    if isinstance(geometry, shapely.geometry.Point):
-        return _get_time_series_for_point(dataset, var_name,
-                                          geometry,
-                                          start_date=start_date, end_date=end_date)
+    with measure_time(f'get time series for dataset id {dataset.attrs.get("id")} and variable {var_name}, '
+                      f'geometry type {geometry.geom_type} with wkt {geometry.wkt} and start_date {start_date}, '
+                      f'end_date {end_date}'):
+        if isinstance(geometry, shapely.geometry.Point):
+            return _get_time_series_for_point(dataset, var_name,
+                                              geometry,
+                                              start_date=start_date, end_date=end_date)
 
-    ts_ds = timeseries.get_time_series(dataset, geometry, [var_name],
-                                       include_count=include_count,
-                                       include_stdev=include_stdev,
-                                       start_date=start_date,
-                                       end_date=end_date)
-    if ts_ds is None:
-        return {'results': []}
+        ts_ds = timeseries.get_time_series(dataset, geometry, [var_name],
+                                           include_count=include_count,
+                                           include_stdev=include_stdev,
+                                           start_date=start_date,
+                                           end_date=end_date)
+        if ts_ds is None:
+            return {'results': []}
 
-    ancillary_var_names = find_ancillary_var_names(ts_ds, var_name)
+        ancillary_var_names = find_ancillary_var_names(ts_ds, var_name)
 
-    uncert_var_name = None
-    if 'standard_error' in ancillary_var_names:
-        uncert_var_name = next(iter(ancillary_var_names['standard_error']))
+        uncert_var_name = None
+        if 'standard_error' in ancillary_var_names:
+            uncert_var_name = next(iter(ancillary_var_names['standard_error']))
 
-    count_var_name = None
-    if 'number_of_observations' in ancillary_var_names:
-        count_var_name = next(iter(ancillary_var_names['number_of_observations']))
+        count_var_name = None
+        if 'number_of_observations' in ancillary_var_names:
+            count_var_name = next(iter(ancillary_var_names['number_of_observations']))
 
-    return _collect_ts_result(ts_ds,
-                              var_name,
-                              uncert_var_name=uncert_var_name,
-                              count_var_name=count_var_name,
-                              max_valids=max_valids)
+        return _collect_ts_result(ts_ds,
+                                  var_name,
+                                  uncert_var_name=uncert_var_name,
+                                  count_var_name=count_var_name,
+                                  max_valids=max_valids)
 
 
 def _collect_ts_result(ts_ds: xr.Dataset,
