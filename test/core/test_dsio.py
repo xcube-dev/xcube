@@ -1,13 +1,14 @@
 import os
+import os.path
 import unittest
 from typing import Set
 
 import boto3
 import fsspec
+import moto
 import numpy as np
 import pandas as pd
 import xarray as xr
-import moto
 
 from test.sampledata import new_test_dataset
 from xcube.core.dsio import CsvDatasetIO, DatasetIO, MemDatasetIO, Netcdf4DatasetIO, ZarrDatasetIO, find_dataset_io, \
@@ -330,24 +331,20 @@ class ContextManagerTest(unittest.TestCase):
 
 class GetPathOrStoreTest(unittest.TestCase):
     def test_path_or_store_read_from_bucket(self):
-        path = _get_path_or_store(root=None,
-                                  path='http://obs.eu-de.otc.t-systems.com/dcs4cop-obs-02/OLCI-SNS-RAW-CUBE-2.zarr',
-                                  mode='read', client_kwargs=None)[0]
+        path = _get_path_or_store('http://obs.eu-de.otc.t-systems.com/dcs4cop-obs-02/OLCI-SNS-RAW-CUBE-2.zarr',
+                                  mode='read')[0]
         self.assertIsInstance(path, fsspec.mapping.FSMap)
 
     def test_path_or_store_write_to_bucket(self):
-        path = _get_path_or_store(root=None,
-                                  path='http://obs.eu-de.otc.t-systems.com/fake_bucket/fake_cube.zarr',
+        path = _get_path_or_store('http://obs.eu-de.otc.t-systems.com/fake_bucket/fake_cube.zarr',
                                   mode='write',
                                   client_kwargs={'aws_access_key_id': 'some_fake_id',
                                                  'aws_secret_access_key': 'some_fake_key'})[0]
         self.assertIsInstance(path, fsspec.mapping.FSMap)
 
     def test_path_or_store_read_from_local(self):
-        path = _get_path_or_store(path='../examples/serve/demo/cube-1-250-250.zarr',
-                                  client_kwargs=None,
-                                  mode='read',
-                                  root=None)[0]
+        path = _get_path_or_store('../examples/serve/demo/cube-1-250-250.zarr',
+                                  mode='read')[0]
         self.assertIsInstance(path, str)
 
 
@@ -358,7 +355,8 @@ class TestUploadToS3Bucket(unittest.TestCase):
             s3_conn = boto3.client('s3')
             s3_conn.create_bucket(Bucket='upload_bucket', ACL='public-read')
             client_kwargs = {'provider_access_key_id': 'test_fake_id', 'provider_secret_access_key': 'test_fake_secret'}
-            ds1 = xr.open_zarr('examples/serve/demo/cube-1-250-250.zarr')
+            zarr_path = os.path.join(os.path.dirname(__file__), '../../examples/serve/demo/cube-1-250-250.zarr')
+            ds1 = xr.open_zarr(zarr_path)
             write_cube(ds1, 'https://s3.amazonaws.com/upload_bucket/cube-1-250-250.zarr', 'zarr',
                        client_kwargs=client_kwargs)
             self.assertIn('cube-1-250-250.zarr/.zattrs',

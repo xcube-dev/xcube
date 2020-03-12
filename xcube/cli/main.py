@@ -1,5 +1,5 @@
 # The MIT License (MIT)
-# Copyright (c) 2019 by the xcube development team and contributors
+# Copyright (c) 2020 by the xcube development team and contributors
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of
 # this software and associated documentation files (the "Software"), to deal in
@@ -51,7 +51,7 @@ def main(args=None):
     try:
         exit_code = cli.main(args=args, obj=ctx_obj, standalone_mode=False)
     except Exception as e:
-        exit_code = handle_cli_exception(e, traceback_mode=ctx_obj.get(False, "traceback"))
+        exit_code = handle_cli_exception(e, traceback_mode=ctx_obj.get("traceback", False))
     sys.exit(exit_code)
 
 

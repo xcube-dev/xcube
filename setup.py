@@ -76,8 +76,8 @@ setup(
             'xcube = xcube.cli.main:main',
         ],
         'xcube_plugins': [
-            # xcube's standard extensions
-            'xcube_standard = xcube.plugin:init_plugin',
+            # xcube's default extensions
+            'xcube = xcube.plugin:init_plugin',
         ],
     },
     install_requires=requirements,
