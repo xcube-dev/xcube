@@ -5,7 +5,7 @@ FROM continuumio/miniconda3:latest
 MAINTAINER helge.dzierzon@brockmann-consult.de
 
 LABEL name=xcube
-LABEL version=0.3.0.dev1
+LABEL version=0.4.0.dev0
 LABEL conda_env=xcube
 
 # Ensure usage of bash (simplifies source activate calls)
@@ -42,4 +42,4 @@ EXPOSE 8000
 
 # Start server
 ENTRYPOINT ["/bin/bash", "-c"]
-CMD ["source activate xcube && xcube"]
+CMD ["source activate xcube && xcube serve --address 0.0.0.0 --port 8000 --config ./examples/serve/demo/config.yml --verbose"]
