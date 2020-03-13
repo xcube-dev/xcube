@@ -326,15 +326,11 @@ def _collect_ts_result(ts_ds: xr.Dataset,
     else:
         time_indexes = range(num_times)
 
+    values = var.values
+
     for time_index in time_indexes:
         if len(time_series) == max_valids:
             break
-
-        values = var.values
-
-        for time_index in time_indexes:
-            if len(time_series) == max_valids:
-                break
 
         value = float(values[time_index])
         if np.isnan(value):
