@@ -31,7 +31,7 @@ from xcube.core.geom import get_dataset_bounds
 from xcube.core.timecoord import timestamp_to_iso_string
 from xcube.util.geojson import GeoJSON
 from xcube.util.perf import measure_time_cm, measure_time
-from xcube.webapi.context import ServiceContext
+from xcube.webapi.context import ServiceContext, _LOG
 from xcube.webapi.errors import ServiceBadRequestError, ServiceResourceNotFoundError
 
 
@@ -97,9 +97,9 @@ def get_time_series_for_point(ctx: ServiceContext,
                                             start_date=start_date,
                                             end_date=end_date,
                                             max_valids=max_valids)
-    print(f'get_time_series_for_point:: dataset id {ds_name}, variable {var_name}, '
-          f'geometry type {shapely.geometry.Point(lon, lat)}, size={len(result["results"])}, '
-          f'took {time_result.duration} seconds')
+    _LOG.info(f'get_time_series_for_point:: dataset id {ds_name}, variable {var_name}, '
+              f'geometry type {shapely.geometry.Point(lon, lat)}, size={len(result["results"])}, '
+              f'took {time_result.duration} seconds')
     return result
 
 
@@ -142,9 +142,10 @@ def get_time_series_for_geometry(ctx: ServiceContext,
                                                include_count=include_count,
                                                include_stdev=include_stdev,
                                                max_valids=max_valids)
-    print(f'get_time_series_for_geomery: dataset id {ds_name}, variable {var_name}, '
-          f'geometry type {geometry},'
-          f'size={len(result["results"])}, took {time_result.duration} seconds')
+
+    _LOG.info(f'get_time_series_for_geomery: dataset id {ds_name}, variable {var_name}, '
+              f'geometry type {geometry},'
+              f'size={len(result["results"])}, took {time_result.duration} seconds')
     return result
 
 
