@@ -90,14 +90,17 @@ def get_time_series_for_point(ctx: ServiceContext,
     :return: Time-series data structure.
     """
     measure_time = measure_time_cm(disabled=not ctx.trace_perf)
-    with measure_time(f'get_time_series_for_point for dataset identifier {ds_name}, '
-                      f'variable {var_name} for lon {lon} and lat {lat}'):
+    with measure_time() as time_result:
         dataset = _get_time_series_dataset(ctx, ds_name, var_name)
-        return _get_time_series_for_point(dataset, var_name,
-                                          shapely.geometry.Point(lon, lat),
-                                          start_date=start_date,
-                                          end_date=end_date,
-                                          max_valids=max_valids)
+        result = _get_time_series_for_point(dataset, var_name,
+                                            shapely.geometry.Point(lon, lat),
+                                            start_date=start_date,
+                                            end_date=end_date,
+                                            max_valids=max_valids)
+    print(f'get_time_series_for_point:: dataset id {ds_name}, variable {var_name}, '
+          f'geometry type {shapely.geometry.Point(lon, lat)}, size={len(result["results"])}, '
+          f'took {time_result.duration} seconds')
+    return result
 
 
 def get_time_series_for_geometry(ctx: ServiceContext,
@@ -125,18 +128,24 @@ def get_time_series_for_geometry(ctx: ServiceContext,
            if it is a positive integer, the most recent valid values are returned.
     :return: Time-series data structure.
     """
-    dataset = _get_time_series_dataset(ctx, ds_name, var_name)
-    if not GeoJSON.is_geometry(geometry):
-        raise ServiceBadRequestError("Invalid GeoJSON geometry")
-    if isinstance(geometry, dict):
-        geometry = shapely.geometry.shape(geometry)
-    return _get_time_series_for_geometry(dataset, var_name,
-                                         geometry,
-                                         start_date=start_date,
-                                         end_date=end_date,
-                                         include_count=include_count,
-                                         include_stdev=include_stdev,
-                                         max_valids=max_valids)
+    measure_time = measure_time_cm(disabled=not ctx.trace_perf)
+    with measure_time() as time_result:
+        dataset = _get_time_series_dataset(ctx, ds_name, var_name)
+        if not GeoJSON.is_geometry(geometry):
+            raise ServiceBadRequestError("Invalid GeoJSON geometry")
+        if isinstance(geometry, dict):
+            geometry = shapely.geometry.shape(geometry)
+        result = _get_time_series_for_geometry(dataset, var_name,
+                                               geometry,
+                                               start_date=start_date,
+                                               end_date=end_date,
+                                               include_count=include_count,
+                                               include_stdev=include_stdev,
+                                               max_valids=max_valids)
+    print(f'get_time_series_for_geomery: dataset id {ds_name}, variable {var_name}, '
+          f'geometry type {geometry},'
+          f'size={len(result["results"])}, took {time_result.duration} seconds')
+    return result
 
 
 def get_time_series_for_geometry_collection(ctx: ServiceContext,
@@ -261,37 +270,37 @@ def _get_time_series_for_geometry(dataset: xr.Dataset,
                                   include_count=True,
                                   include_stdev=False,
                                   max_valids: int = None) -> Dict:
-    with measure_time(f'get time series for dataset id {dataset.attrs.get("id")} and variable {var_name}, '
-                      f'geometry type {geometry.geom_type} with wkt {geometry.wkt} and start_date {start_date}, '
-                      f'end_date {end_date}'):
-        if isinstance(geometry, shapely.geometry.Point):
-            return _get_time_series_for_point(dataset, var_name,
-                                              geometry,
-                                              start_date=start_date, end_date=end_date)
+    # with measure_time(f'get time series for dataset id {dataset.attrs.get("id")} and variable {var_name}, '
+    #                   f'geometry type {geometry.geom_type} with wkt {geometry.wkt} and start_date {start_date}, '
+    #                   f'end_date {end_date}'):
+    if isinstance(geometry, shapely.geometry.Point):
+        return _get_time_series_for_point(dataset, var_name,
+                                          geometry,
+                                          start_date=start_date, end_date=end_date)
 
-        ts_ds = timeseries.get_time_series(dataset, geometry, [var_name],
-                                           include_count=include_count,
-                                           include_stdev=include_stdev,
-                                           start_date=start_date,
-                                           end_date=end_date)
-        if ts_ds is None:
-            return {'results': []}
+    ts_ds = timeseries.get_time_series(dataset, geometry, [var_name],
+                                       include_count=include_count,
+                                       include_stdev=include_stdev,
+                                       start_date=start_date,
+                                       end_date=end_date)
+    if ts_ds is None:
+        return {'results': []}
 
-        ancillary_var_names = find_ancillary_var_names(ts_ds, var_name)
+    ancillary_var_names = find_ancillary_var_names(ts_ds, var_name)
 
-        uncert_var_name = None
-        if 'standard_error' in ancillary_var_names:
-            uncert_var_name = next(iter(ancillary_var_names['standard_error']))
+    uncert_var_name = None
+    if 'standard_error' in ancillary_var_names:
+        uncert_var_name = next(iter(ancillary_var_names['standard_error']))
 
-        count_var_name = None
-        if 'number_of_observations' in ancillary_var_names:
-            count_var_name = next(iter(ancillary_var_names['number_of_observations']))
+    count_var_name = None
+    if 'number_of_observations' in ancillary_var_names:
+        count_var_name = next(iter(ancillary_var_names['number_of_observations']))
 
-        return _collect_ts_result(ts_ds,
-                                  var_name,
-                                  uncert_var_name=uncert_var_name,
-                                  count_var_name=count_var_name,
-                                  max_valids=max_valids)
+    return _collect_ts_result(ts_ds,
+                              var_name,
+                              uncert_var_name=uncert_var_name,
+                              count_var_name=count_var_name,
+                              max_valids=max_valids)
 
 
 def _collect_ts_result(ts_ds: xr.Dataset,
@@ -321,7 +330,13 @@ def _collect_ts_result(ts_ds: xr.Dataset,
         if len(time_series) == max_valids:
             break
 
-        value = float(var[time_index])
+        values = var.values
+
+        for time_index in time_indexes:
+            if len(time_series) == max_valids:
+                break
+
+        value = float(values[time_index])
         if np.isnan(value):
             if max_valids is not None:
                 continue
