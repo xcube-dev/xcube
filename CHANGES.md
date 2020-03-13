@@ -142,7 +142,8 @@
   ```
 
 ### Enhancements
-
+* time series for points are generated in a faster manner and timers are added to 
+  better track performance of time series generation, which now appear in the xcube-server.log
 * CLI command `xcube resample` has been enhanced by a new value for the 
   frequency option `--frequency all`
   With this value it will be possible to create mean, max , std, ... of the whole dataset,

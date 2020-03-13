@@ -143,7 +143,7 @@ def get_time_series_for_geometry(ctx: ServiceContext,
                                                include_stdev=include_stdev,
                                                max_valids=max_valids)
 
-    _LOG.info(f'get_time_series_for_geomery: dataset id {ds_name}, variable {var_name}, '
+    _LOG.info(f'get_time_series_for_geometry: dataset id {ds_name}, variable {var_name}, '
               f'geometry type {geometry},'
               f'size={len(result["results"])}, took {time_result.duration} seconds')
     return result
@@ -174,23 +174,28 @@ def get_time_series_for_geometry_collection(ctx: ServiceContext,
            if it is a positive integer, the most recent valid values are returned.
     :return: Time-series data structure.
     """
-    dataset = _get_time_series_dataset(ctx, ds_name, var_name)
-    geometries = GeoJSON.get_geometry_collection_geometries(geometry_collection)
-    if geometries is None:
-        raise ServiceBadRequestError("Invalid GeoJSON geometry collection")
-    shapes = []
-    for geometry in geometries:
-        try:
-            geometry = shapely.geometry.shape(geometry)
-        except (TypeError, ValueError) as e:
-            raise ServiceBadRequestError("Invalid GeoJSON geometry collection") from e
-        shapes.append(geometry)
-    return _get_time_series_for_geometries(dataset, var_name, shapes,
-                                           start_date=start_date,
-                                           end_date=end_date,
-                                           include_count=include_count,
-                                           include_stdev=include_stdev,
-                                           max_valids=max_valids)
+    measure_time = measure_time_cm(disabled=not ctx.trace_perf)
+    with measure_time() as time_result:
+        dataset = _get_time_series_dataset(ctx, ds_name, var_name)
+        geometries = GeoJSON.get_geometry_collection_geometries(geometry_collection)
+        if geometries is None:
+            raise ServiceBadRequestError("Invalid GeoJSON geometry collection")
+        shapes = []
+        for geometry in geometries:
+            try:
+                geometry = shapely.geometry.shape(geometry)
+            except (TypeError, ValueError) as e:
+                raise ServiceBadRequestError("Invalid GeoJSON geometry collection") from e
+            shapes.append(geometry)
+        result = _get_time_series_for_geometries(dataset, var_name, shapes,
+                                                 start_date=start_date,
+                                                 end_date=end_date,
+                                                 include_count=include_count,
+                                                 include_stdev=include_stdev,
+                                                 max_valids=max_valids)
+    _LOG.info(f'get_time_series_for_geometry_collection: dataset id {ds_name}, variable {var_name},'
+              f'size={len(result["results"])}, took {time_result.duration} seconds')
+    return result
 
 
 def get_time_series_for_feature_collection(ctx: ServiceContext,
@@ -218,24 +223,29 @@ def get_time_series_for_feature_collection(ctx: ServiceContext,
            if it is a positive integer, the most recent valid values are returned.
     :return: Time-series data structure.
     """
-    dataset = _get_time_series_dataset(ctx, ds_name, var_name)
-    features = GeoJSON.get_feature_collection_features(feature_collection)
-    if features is None:
-        raise ServiceBadRequestError("Invalid GeoJSON feature collection")
-    shapes = []
-    for feature in features:
-        geometry = GeoJSON.get_feature_geometry(feature)
-        try:
-            geometry = shapely.geometry.shape(geometry)
-        except (TypeError, ValueError) as e:
-            raise ServiceBadRequestError("Invalid GeoJSON feature collection") from e
-        shapes.append(geometry)
-    return _get_time_series_for_geometries(dataset, var_name, shapes,
-                                           start_date=start_date,
-                                           end_date=end_date,
-                                           include_count=include_count,
-                                           include_stdev=include_stdev,
-                                           max_valids=max_valids)
+    measure_time = measure_time_cm(disabled=not ctx.trace_perf)
+    with measure_time() as time_result:
+        dataset = _get_time_series_dataset(ctx, ds_name, var_name)
+        features = GeoJSON.get_feature_collection_features(feature_collection)
+        if features is None:
+            raise ServiceBadRequestError("Invalid GeoJSON feature collection")
+        shapes = []
+        for feature in features:
+            geometry = GeoJSON.get_feature_geometry(feature)
+            try:
+                geometry = shapely.geometry.shape(geometry)
+            except (TypeError, ValueError) as e:
+                raise ServiceBadRequestError("Invalid GeoJSON feature collection") from e
+            shapes.append(geometry)
+        result = _get_time_series_for_geometries(dataset, var_name, shapes,
+                                                 start_date=start_date,
+                                                 end_date=end_date,
+                                                 include_count=include_count,
+                                                 include_stdev=include_stdev,
+                                                 max_valids=max_valids)
+    _LOG.info(f'get_time_series_for_feature_collection: dataset id {ds_name}, variable {var_name},'
+              f'size={len(result["results"])}, took {time_result.duration} seconds')
+    return result
 
 
 def _get_time_series_for_point(dataset: xr.Dataset,
