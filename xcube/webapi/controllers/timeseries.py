@@ -30,7 +30,7 @@ from xcube.core.ancvar import find_ancillary_var_names
 from xcube.core.geom import get_dataset_bounds
 from xcube.core.timecoord import timestamp_to_iso_string
 from xcube.util.geojson import GeoJSON
-from xcube.util.perf import measure_time_cm, measure_time
+from xcube.util.perf import measure_time_cm
 from xcube.webapi.context import ServiceContext, _LOG
 from xcube.webapi.errors import ServiceBadRequestError, ServiceResourceNotFoundError
 
@@ -271,9 +271,6 @@ def _get_time_series_for_geometry(dataset: xr.Dataset,
                                   include_count=True,
                                   include_stdev=False,
                                   max_valids: int = None) -> Dict:
-    # with measure_time(f'get time series for dataset id {dataset.attrs.get("id")} and variable {var_name}, '
-    #                   f'geometry type {geometry.geom_type} with wkt {geometry.wkt} and start_date {start_date}, '
-    #                   f'end_date {end_date}'):
     if isinstance(geometry, shapely.geometry.Point):
         return _get_time_series_for_point(dataset, var_name,
                                           geometry,
