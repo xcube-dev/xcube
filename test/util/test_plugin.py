@@ -38,7 +38,7 @@ class PluginTest(unittest.TestCase):
     def test_get_xcube_default_plugins(self):
         plugins = get_plugins()
         self.assertIsNotNone(plugins)
-        self.assertIn('xcube_standard', plugins)
+        self.assertIn('xcube', plugins)
 
     def test_load_plugins_by_entry_points(self):
         plugins = load_plugins([EntryPoint('test', init_plugin)], ext_registry=self.ext_registry)
