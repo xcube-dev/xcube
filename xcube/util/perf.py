@@ -63,6 +63,10 @@ class measure_time(AbstractContextManager):
         self._start_time = None
         self.duration = None
 
+    @property
+    def logger(self):
+        return self._logger
+
     def __enter__(self):
         self._start_time = time.perf_counter()
         return self
@@ -78,6 +82,7 @@ class _do_not_measure_time_cm(AbstractContextManager):
     # noinspection PyUnusedLocal
     def __init__(self, tag: str = None, logger=None):
         self.duration = None
+        self.logger = None
 
     def __enter__(self):
         return self

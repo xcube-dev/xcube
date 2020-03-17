@@ -33,6 +33,7 @@ import pandas as pd
 import xarray as xr
 
 from xcube.constants import FORMAT_NAME_ZARR
+from xcube.constants import LOG
 from xcube.core.mldataset import MultiLevelDataset
 from xcube.core.mldataset import augment_ml_dataset
 from xcube.core.mldataset import open_ml_dataset_from_local_fs
@@ -43,6 +44,7 @@ from xcube.core.tile import get_var_valid_range
 from xcube.util.cache import MemoryCacheStore, Cache
 from xcube.util.cmaps import get_cmap
 from xcube.util.tilegrid import TileGrid
+from xcube.util.perf import measure_time_cm
 from xcube.version import version
 from xcube.webapi.defaults import DEFAULT_TRACE_PERF
 from xcube.webapi.errors import ServiceBadRequestError
@@ -151,6 +153,10 @@ class ServiceContext:
     @property
     def trace_perf(self) -> bool:
         return self._trace_perf
+
+    @property
+    def measure_time(self):
+        return measure_time_cm(disabled=not self.trace_perf, logger=LOG)
 
     @property
     def access_control(self) -> Dict[str, Any]:

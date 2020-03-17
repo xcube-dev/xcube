@@ -19,6 +19,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+import logging
 import math
 
 PLUGIN_ENTRY_POINT_GROUP_NAME = 'xcube_plugins'
@@ -79,3 +80,6 @@ RESAMPLING_METHOD_NAMES = {
     'Q1',
     'Q3',
 }
+
+# xcube's standard logger
+LOG = logging.getLogger('xcube')
