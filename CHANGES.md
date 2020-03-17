@@ -143,7 +143,7 @@
 
 ### Enhancements
 * Retrieval of time series in Python API function `xcube.core.timeseries.get_time_series()` has been optimized and is now much faster for point geometries. This enhances time-series performance of `xcube serve`. 
-  better track performance of time series generation, which now appear in the xcube-server.log
+  * The log-output of `xcube serve` now contains some more details time-series request so performance bottlenecks can be identified more easily from `xcube-serve.log`.
 * CLI command `xcube resample` has been enhanced by a new value for the 
   frequency option `--frequency all`
   With this value it will be possible to create mean, max , std, ... of the whole dataset,
