@@ -25,13 +25,14 @@ import numpy as np
 import shapely.geometry
 import xarray as xr
 
+from xcube.constants import LOG
 from xcube.core import timeseries
 from xcube.core.ancvar import find_ancillary_var_names
 from xcube.core.geom import get_dataset_bounds
 from xcube.core.timecoord import timestamp_to_iso_string
 from xcube.util.geojson import GeoJSON
-from xcube.util.perf import measure_time_cm
-from xcube.webapi.context import ServiceContext, _LOG
+from xcube.util.perf import measure_time_cm, measure_time
+from xcube.webapi.context import ServiceContext
 from xcube.webapi.errors import ServiceBadRequestError, ServiceResourceNotFoundError
 
 
@@ -89,17 +90,17 @@ def get_time_series_for_point(ctx: ServiceContext,
            if it is a positive integer, the most recent valid values are returned.
     :return: Time-series data structure.
     """
-    measure_time = measure_time_cm(disabled=not ctx.trace_perf)
+    dataset = _get_time_series_dataset(ctx, ds_name, var_name)
     with measure_time() as time_result:
-        dataset = _get_time_series_dataset(ctx, ds_name, var_name)
         result = _get_time_series_for_point(dataset, var_name,
                                             shapely.geometry.Point(lon, lat),
                                             start_date=start_date,
                                             end_date=end_date,
                                             max_valids=max_valids)
-    _LOG.info(f'get_time_series_for_point:: dataset id {ds_name}, variable {var_name}, '
-              f'geometry type {shapely.geometry.Point(lon, lat)}, size={len(result["results"])}, '
-              f'took {time_result.duration} seconds')
+    if ctx.trace_perf:
+        LOG.info(f'get_time_series_for_point:: dataset id {ds_name}, variable {var_name}, '
+                 f'geometry type {shapely.geometry.Point(lon, lat)}, size={len(result["results"])}, '
+                 f'took {time_result.duration} seconds')
     return result
 
 
@@ -128,13 +129,12 @@ def get_time_series_for_geometry(ctx: ServiceContext,
            if it is a positive integer, the most recent valid values are returned.
     :return: Time-series data structure.
     """
-    measure_time = measure_time_cm(disabled=not ctx.trace_perf)
+    dataset = _get_time_series_dataset(ctx, ds_name, var_name)
+    if not GeoJSON.is_geometry(geometry):
+        raise ServiceBadRequestError("Invalid GeoJSON geometry")
+    if isinstance(geometry, dict):
+        geometry = shapely.geometry.shape(geometry)
     with measure_time() as time_result:
-        dataset = _get_time_series_dataset(ctx, ds_name, var_name)
-        if not GeoJSON.is_geometry(geometry):
-            raise ServiceBadRequestError("Invalid GeoJSON geometry")
-        if isinstance(geometry, dict):
-            geometry = shapely.geometry.shape(geometry)
         result = _get_time_series_for_geometry(dataset, var_name,
                                                geometry,
                                                start_date=start_date,
@@ -143,9 +143,10 @@ def get_time_series_for_geometry(ctx: ServiceContext,
                                                include_stdev=include_stdev,
                                                max_valids=max_valids)
 
-    _LOG.info(f'get_time_series_for_geometry: dataset id {ds_name}, variable {var_name}, '
-              f'geometry type {geometry},'
-              f'size={len(result["results"])}, took {time_result.duration} seconds')
+    if ctx.trace_perf:
+        LOG.info(f'get_time_series_for_geometry: dataset id {ds_name}, variable {var_name}, '
+                 f'geometry type {geometry},'
+                 f'size={len(result["results"])}, took {time_result.duration} seconds')
     return result
 
 
@@ -174,27 +175,27 @@ def get_time_series_for_geometry_collection(ctx: ServiceContext,
            if it is a positive integer, the most recent valid values are returned.
     :return: Time-series data structure.
     """
-    measure_time = measure_time_cm(disabled=not ctx.trace_perf)
+    dataset = _get_time_series_dataset(ctx, ds_name, var_name)
+    geometries = GeoJSON.get_geometry_collection_geometries(geometry_collection)
+    if geometries is None:
+        raise ServiceBadRequestError("Invalid GeoJSON geometry collection")
+    shapes = []
+    for geometry in geometries:
+        try:
+            geometry = shapely.geometry.shape(geometry)
+        except (TypeError, ValueError) as e:
+            raise ServiceBadRequestError("Invalid GeoJSON geometry collection") from e
+        shapes.append(geometry)
     with measure_time() as time_result:
-        dataset = _get_time_series_dataset(ctx, ds_name, var_name)
-        geometries = GeoJSON.get_geometry_collection_geometries(geometry_collection)
-        if geometries is None:
-            raise ServiceBadRequestError("Invalid GeoJSON geometry collection")
-        shapes = []
-        for geometry in geometries:
-            try:
-                geometry = shapely.geometry.shape(geometry)
-            except (TypeError, ValueError) as e:
-                raise ServiceBadRequestError("Invalid GeoJSON geometry collection") from e
-            shapes.append(geometry)
         result = _get_time_series_for_geometries(dataset, var_name, shapes,
                                                  start_date=start_date,
                                                  end_date=end_date,
                                                  include_count=include_count,
                                                  include_stdev=include_stdev,
                                                  max_valids=max_valids)
-    _LOG.info(f'get_time_series_for_geometry_collection: dataset id {ds_name}, variable {var_name},'
-              f'size={len(result["results"])}, took {time_result.duration} seconds')
+    if ctx.trace_perf:
+        LOG.info(f'get_time_series_for_geometry_collection: dataset id {ds_name}, variable {var_name},'
+                 f'size={len(result["results"])}, took {time_result.duration} seconds')
     return result
 
 
@@ -223,28 +224,28 @@ def get_time_series_for_feature_collection(ctx: ServiceContext,
            if it is a positive integer, the most recent valid values are returned.
     :return: Time-series data structure.
     """
-    measure_time = measure_time_cm(disabled=not ctx.trace_perf)
+    dataset = _get_time_series_dataset(ctx, ds_name, var_name)
+    features = GeoJSON.get_feature_collection_features(feature_collection)
+    if features is None:
+        raise ServiceBadRequestError("Invalid GeoJSON feature collection")
+    shapes = []
+    for feature in features:
+        geometry = GeoJSON.get_feature_geometry(feature)
+        try:
+            geometry = shapely.geometry.shape(geometry)
+        except (TypeError, ValueError) as e:
+            raise ServiceBadRequestError("Invalid GeoJSON feature collection") from e
+        shapes.append(geometry)
     with measure_time() as time_result:
-        dataset = _get_time_series_dataset(ctx, ds_name, var_name)
-        features = GeoJSON.get_feature_collection_features(feature_collection)
-        if features is None:
-            raise ServiceBadRequestError("Invalid GeoJSON feature collection")
-        shapes = []
-        for feature in features:
-            geometry = GeoJSON.get_feature_geometry(feature)
-            try:
-                geometry = shapely.geometry.shape(geometry)
-            except (TypeError, ValueError) as e:
-                raise ServiceBadRequestError("Invalid GeoJSON feature collection") from e
-            shapes.append(geometry)
         result = _get_time_series_for_geometries(dataset, var_name, shapes,
                                                  start_date=start_date,
                                                  end_date=end_date,
                                                  include_count=include_count,
                                                  include_stdev=include_stdev,
                                                  max_valids=max_valids)
-    _LOG.info(f'get_time_series_for_feature_collection: dataset id {ds_name}, variable {var_name},'
-              f'size={len(result["results"])}, took {time_result.duration} seconds')
+    if ctx.trace_perf:
+        LOG.info(f'get_time_series_for_feature_collection: dataset id {ds_name}, variable {var_name},'
+                 f'size={len(result["results"])}, took {time_result.duration} seconds')
     return result
 
 

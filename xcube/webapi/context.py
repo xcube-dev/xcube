@@ -20,7 +20,6 @@
 # SOFTWARE.
 
 import glob
-import logging
 import os
 import os.path
 import threading
@@ -32,8 +31,7 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 
-from xcube.constants import FORMAT_NAME_ZARR
-from xcube.constants import LOG
+from xcube.constants import FORMAT_NAME_ZARR, LOG
 from xcube.core.mldataset import MultiLevelDataset
 from xcube.core.mldataset import augment_ml_dataset
 from xcube.core.mldataset import open_ml_dataset_from_local_fs
@@ -57,8 +55,6 @@ COMPUTE_DATASET = 'compute_dataset'
 COMPUTE_VARIABLES = 'compute_variables'
 
 ALL_PLACES = "all"
-
-_LOG = logging.getLogger('xcube')
 
 Config = Dict[str, Any]
 DatasetDescriptor = Dict[str, Any]

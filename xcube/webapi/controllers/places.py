@@ -1,16 +1,14 @@
-import logging
 from typing import Any, Dict
 
 import shapely.geometry
 import shapely.wkt
 from shapely.errors import WKTReadingError
 
+from xcube.constants import LOG
 from xcube.core.geom import get_dataset_geometry, get_box_split_bounds_geometry
 from xcube.util.perf import measure_time
 from xcube.webapi.context import ServiceContext, ALL_PLACES
 from xcube.webapi.errors import ServiceBadRequestError
-
-_LOG = logging.getLogger('xcube')
 
 GeoJsonFeatureCollection = Dict
 GeoJsonFeature = Dict
@@ -76,7 +74,7 @@ def _find_places(ctx: ServiceContext,
                  comb_op: str = "and") -> GeoJsonFeatureCollection:
     with measure_time() as cm:
         features = __find_places(ctx, place_group_id, base_url, query_geometry, query_expr, comb_op)
-    _LOG.info(f"{len(features)} places found within {cm.duration} seconds")
+    LOG.info(f"{len(features)} places found within {cm.duration} seconds")
     return features
 
 
