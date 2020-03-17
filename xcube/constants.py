@@ -79,3 +79,6 @@ RESAMPLING_METHOD_NAMES = {
     'Q1',
     'Q3',
 }
+
+# xcube's standard logger
+LOG = logging.getLogger('xcube')
