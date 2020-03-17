@@ -43,7 +43,9 @@
   `xcube.core.gen.iproc.DefaultInputProcessor`, if ground control points are not 
   specified, i.e. the input processor is configured with `xy_gcp_step=None`. (#206)
 * Tile sizes for rectification in `xcube gen` are now derived from `output_writer_params` if given in configuration and 
-  if it contains a `chunksizes` parameter for 'lat' or 'lon'. This will force the generation of a chunked xcube dataset and will utilize Dask arrays for out-of-core computations. This is very useful for large data cubes whose time slices would otherwise not fit into memory.
+  if it contains a `chunksizes` parameter for 'lat' or 'lon'. This will force the generation of a chunked xcube dataset 
+  and will utilize Dask arrays for out-of-core computations. This is very useful for large data cubes whose time slices 
+  would otherwise not fit into memory.
 * Introduced new function `xcube.core.select.select_spatial_subset()`.
 
 * Renamed function `xcube.core.select.select_vars()` into `xcube.core.select.select_variables_subset()`.
@@ -142,8 +144,12 @@
   ```
 
 ### Enhancements
-* Retrieval of time series in Python API function `xcube.core.timeseries.get_time_series()` has been optimized and is now much faster for point geometries. This enhances time-series performance of `xcube serve`. 
-  * The log-output of `xcube serve` now contains some more details time-series request so performance bottlenecks can be identified more easily from `xcube-serve.log`.
+* Retrieval of time series in Python API function `xcube.core.timeseries.get_time_series()` 
+  has been optimized and is now much faster for point geometries. 
+  This enhances time-series performance of `xcube serve`. 
+  * The log-output of `xcube serve` now contains some more details time-series request 
+    so performance bottlenecks can be identified more easily from `xcube-serve.log`, 
+    if the server is started together with the flag `--traceperf`.
 * CLI command `xcube resample` has been enhanced by a new value for the 
   frequency option `--frequency all`
   With this value it will be possible to create mean, max , std, ... of the whole dataset,
@@ -200,7 +206,8 @@
   hidden `xcube apply` command. (#167) 
 * Added new function `xcube.core.geom.rasterize_features()` 
   to rasterize vector-data features into a dataset. (#222)
-* Extended CLI command `xcube verify` and API function `xcube.core.verify.verify_cube` to check whether spatial coordinate variables and their associated bounds variables are equidistant. (#231)
+* Extended CLI command `xcube verify` and API function `xcube.core.verify.verify_cube` to check whether spatial
+  coordinate variables and their associated bounds variables are equidistant. (#231)
 * Made xarray version 0.14.1 minimum requirement due to deprecation of xarray's `Dataset.drop`
   method and replaced it with `drop_sel` and `drop_vars` accordingly. 
 
