@@ -406,7 +406,6 @@ class ZarrDatasetIO(DatasetIO):
         return (3 * ext_value + type_value) / 4
 
     def read(self, path: str, **kwargs) -> xr.Dataset:
-        path_or_store = path
         consolidated = False
         root = None
 
@@ -420,7 +419,7 @@ class ZarrDatasetIO(DatasetIO):
             if 'region_name' in kwargs:
                 client_kwargs['region_name'] = kwargs.pop('region_name')
 
-            path_or_store, root, client_kwargs = _get_path_or_store(path_or_store,
+            path_or_store, root, client_kwargs = _get_path_or_store(path,
                                                                     client_kwargs=client_kwargs,
                                                                     mode='read',
                                                                     root=root)
@@ -544,7 +543,6 @@ def _get_path_or_store(path: str,
                        client_kwargs: Dict[str, Any] = None,
                        mode: str = None,
                        root: str = None):
-    path_or_store = path
     anon_mode = True
     if not client_kwargs:
         client_kwargs = {}
@@ -556,21 +554,15 @@ def _get_path_or_store(path: str,
             client_kwargs['aws_secret_access_key'] = client_kwargs.pop('provider_secret_access_key')
 
     if path.startswith("https://") or path.startswith("http://"):
-        import urllib3.util
-        url = urllib3.util.parse_url(path_or_store)
-        if url.port is not None:
-            client_kwargs['endpoint_url'] = f'{url.scheme}://{url.host}:{url.port}'
-        else:
-            client_kwargs['endpoint_url'] = f'{url.scheme}://{url.host}'
-        root = url.path
-        if root.startswith('/'):
-            root = root[1:]
+        endpoint_url, root = split_bucket_url(path)
+        if endpoint_url:
+            client_kwargs['endpoint_url'] = endpoint_url
         if "write" in mode:
             root = f's3://{root}'
         s3 = s3fs.S3FileSystem(anon=anon_mode,
                                client_kwargs=client_kwargs)
-        path_or_store = s3fs.S3Map(root=root, s3=s3, check=False)
-    return path_or_store, root, client_kwargs
+        path = s3fs.S3Map(root=root, s3=s3, check=False)
+    return path, root, client_kwargs
 
 
 def split_bucket_url(path: str):
