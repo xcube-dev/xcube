@@ -25,12 +25,13 @@ import numpy as np
 import shapely.geometry
 import xarray as xr
 
+from xcube.constants import LOG
 from xcube.core import timeseries
 from xcube.core.ancvar import find_ancillary_var_names
 from xcube.core.geom import get_dataset_bounds
 from xcube.core.timecoord import timestamp_to_iso_string
 from xcube.util.geojson import GeoJSON
-from xcube.util.perf import measure_time_cm
+from xcube.util.perf import measure_time_cm, measure_time
 from xcube.webapi.context import ServiceContext
 from xcube.webapi.errors import ServiceBadRequestError, ServiceResourceNotFoundError
 
@@ -89,14 +90,18 @@ def get_time_series_for_point(ctx: ServiceContext,
            if it is a positive integer, the most recent valid values are returned.
     :return: Time-series data structure.
     """
-    measure_time = measure_time_cm(disabled=not ctx.trace_perf)
-    with measure_time('get_time_series_for_point'):
-        dataset = _get_time_series_dataset(ctx, ds_name, var_name)
-        return _get_time_series_for_point(dataset, var_name,
-                                          shapely.geometry.Point(lon, lat),
-                                          start_date=start_date,
-                                          end_date=end_date,
-                                          max_valids=max_valids)
+    dataset = _get_time_series_dataset(ctx, ds_name, var_name)
+    with measure_time() as time_result:
+        result = _get_time_series_for_point(dataset, var_name,
+                                            shapely.geometry.Point(lon, lat),
+                                            start_date=start_date,
+                                            end_date=end_date,
+                                            max_valids=max_valids)
+    if ctx.trace_perf:
+        LOG.info(f'get_time_series_for_point:: dataset id {ds_name}, variable {var_name}, '
+                 f'geometry type {shapely.geometry.Point(lon, lat)}, size={len(result["results"])}, '
+                 f'took {time_result.duration} seconds')
+    return result
 
 
 def get_time_series_for_geometry(ctx: ServiceContext,
@@ -129,13 +134,20 @@ def get_time_series_for_geometry(ctx: ServiceContext,
         raise ServiceBadRequestError("Invalid GeoJSON geometry")
     if isinstance(geometry, dict):
         geometry = shapely.geometry.shape(geometry)
-    return _get_time_series_for_geometry(dataset, var_name,
-                                         geometry,
-                                         start_date=start_date,
-                                         end_date=end_date,
-                                         include_count=include_count,
-                                         include_stdev=include_stdev,
-                                         max_valids=max_valids)
+    with measure_time() as time_result:
+        result = _get_time_series_for_geometry(dataset, var_name,
+                                               geometry,
+                                               start_date=start_date,
+                                               end_date=end_date,
+                                               include_count=include_count,
+                                               include_stdev=include_stdev,
+                                               max_valids=max_valids)
+
+    if ctx.trace_perf:
+        LOG.info(f'get_time_series_for_geometry: dataset id {ds_name}, variable {var_name}, '
+                 f'geometry type {geometry},'
+                 f'size={len(result["results"])}, took {time_result.duration} seconds')
+    return result
 
 
 def get_time_series_for_geometry_collection(ctx: ServiceContext,
@@ -174,12 +186,17 @@ def get_time_series_for_geometry_collection(ctx: ServiceContext,
         except (TypeError, ValueError) as e:
             raise ServiceBadRequestError("Invalid GeoJSON geometry collection") from e
         shapes.append(geometry)
-    return _get_time_series_for_geometries(dataset, var_name, shapes,
-                                           start_date=start_date,
-                                           end_date=end_date,
-                                           include_count=include_count,
-                                           include_stdev=include_stdev,
-                                           max_valids=max_valids)
+    with measure_time() as time_result:
+        result = _get_time_series_for_geometries(dataset, var_name, shapes,
+                                                 start_date=start_date,
+                                                 end_date=end_date,
+                                                 include_count=include_count,
+                                                 include_stdev=include_stdev,
+                                                 max_valids=max_valids)
+    if ctx.trace_perf:
+        LOG.info(f'get_time_series_for_geometry_collection: dataset id {ds_name}, variable {var_name},'
+                 f'size={len(result["results"])}, took {time_result.duration} seconds')
+    return result
 
 
 def get_time_series_for_feature_collection(ctx: ServiceContext,
@@ -219,12 +236,17 @@ def get_time_series_for_feature_collection(ctx: ServiceContext,
         except (TypeError, ValueError) as e:
             raise ServiceBadRequestError("Invalid GeoJSON feature collection") from e
         shapes.append(geometry)
-    return _get_time_series_for_geometries(dataset, var_name, shapes,
-                                           start_date=start_date,
-                                           end_date=end_date,
-                                           include_count=include_count,
-                                           include_stdev=include_stdev,
-                                           max_valids=max_valids)
+    with measure_time() as time_result:
+        result = _get_time_series_for_geometries(dataset, var_name, shapes,
+                                                 start_date=start_date,
+                                                 end_date=end_date,
+                                                 include_count=include_count,
+                                                 include_stdev=include_stdev,
+                                                 max_valids=max_valids)
+    if ctx.trace_perf:
+        LOG.info(f'get_time_series_for_feature_collection: dataset id {ds_name}, variable {var_name},'
+                 f'size={len(result["results"])}, took {time_result.duration} seconds')
+    return result
 
 
 def _get_time_series_for_point(dataset: xr.Dataset,
@@ -313,11 +335,13 @@ def _collect_ts_result(ts_ds: xr.Dataset,
     else:
         time_indexes = range(num_times)
 
+    values = var.values
+
     for time_index in time_indexes:
         if len(time_series) == max_valids:
             break
 
-        value = float(var[time_index])
+        value = float(values[time_index])
         if np.isnan(value):
             if max_valids is not None:
                 continue

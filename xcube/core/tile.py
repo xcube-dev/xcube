@@ -19,13 +19,13 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-import logging
 from typing import Any, Mapping, MutableMapping, Sequence, Hashable, Type, Dict, Optional, Tuple, Union
 
 import numpy as np
 import pandas as pd
 import xarray as xr
 
+from xcube.constants import LOG
 from xcube.core.mldataset import MultiLevelDataset
 from xcube.core.schema import get_dataset_xy_var_names
 from xcube.util.cache import Cache
@@ -37,8 +37,6 @@ from xcube.util.tiledimage import DEFAULT_COLOR_MAP_VALUE_RANGE
 from xcube.util.tiledimage import DirectRgbaImage
 from xcube.util.tiledimage import TiledImage
 from xcube.util.tiledimage import TransformArrayImage
-
-_LOG = logging.getLogger('xcube')
 
 
 def get_ml_dataset_tile(ml_dataset: MultiLevelDataset,
@@ -57,8 +55,8 @@ def get_ml_dataset_tile(ml_dataset: MultiLevelDataset,
                         trace_perf: bool = False,
                         exception_type: Type[Exception] = ValueError):
     labels = labels or {}
-    ds_id = hex(id(ml_dataset))
-    image_id = '-'.join(map(str, [ds_id, z, var_name, cmap_name, cmap_range]
+    ds_cache_id = hex(id(ml_dataset))
+    image_id = '-'.join(map(str, [ds_cache_id, z, ml_dataset.ds_id, var_name, cmap_name, cmap_range]
                             + [f'{dim_name}={dim_value}' for dim_name, dim_value in labels.items()]))
 
     if image_cache and image_id in image_cache:
@@ -84,22 +82,22 @@ def get_ml_dataset_tile(ml_dataset: MultiLevelDataset,
 
         if trace_perf:
             tile_grid = ml_dataset.tile_grid
-            _LOG.info(f'Created tiled image {image_id!r} of size {image.size} with tile grid:')
-            _LOG.info(f'  num_levels: {tile_grid.num_levels}')
-            _LOG.info(f'  num_level_zero_tiles: {tile_grid.num_tiles(0)}')
-            _LOG.info(f'  tile_size: {tile_grid.tile_size}')
-            _LOG.info(f'  geo_extent: {tile_grid.geo_extent}')
-            _LOG.info(f'  inv_y: {tile_grid.inv_y}')
+            LOG.info(f'Created tiled image {image_id!r} of size {image.size} with tile grid:')
+            LOG.info(f'  num_levels: {tile_grid.num_levels}')
+            LOG.info(f'  num_level_zero_tiles: {tile_grid.num_tiles(0)}')
+            LOG.info(f'  tile_size: {tile_grid.tile_size}')
+            LOG.info(f'  geo_extent: {tile_grid.geo_extent}')
+            LOG.info(f'  inv_y: {tile_grid.inv_y}')
 
     if trace_perf:
-        _LOG.info(f'>>> tile {image_id}/{z}/{y}/{x}')
+        LOG.info(f'>>> tile {image_id}/{z}/{y}/{x}')
 
-    measure_time = measure_time_cm(logger=_LOG, disabled=not trace_perf)
+    measure_time = measure_time_cm(logger=LOG, disabled=not trace_perf)
     with measure_time() as measured_time:
         tile = image.get_tile(x, y)
 
     if trace_perf:
-        _LOG.info(f'<<< tile {image_id}/{z}/{y}/{x}: took ' + '%.2f seconds' % measured_time.duration)
+        LOG.info(f'<<< tile {image_id}/{z}/{y}/{x}: took ' + '%.2f seconds' % measured_time.duration)
 
     return tile
 

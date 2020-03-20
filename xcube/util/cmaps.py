@@ -21,7 +21,6 @@
 
 import base64
 import io
-import logging
 import os
 import re
 from threading import Lock
@@ -33,14 +32,14 @@ import matplotlib.pyplot as plt
 import numpy as np
 from PIL import Image
 
+from xcube.constants import LOG
+
 try:
     import cmocean.cm as ocm
 except ImportError:
     ocm = None
 
 __author__ = "Norman Fomferra (Brockmann Consult GmbH)"
-
-_LOG = logging.getLogger('xcube')
 
 # Have colormaps separated into categories:
 # (taken from http://matplotlib.org/examples/color/colormaps_reference.html)
@@ -122,8 +121,8 @@ def get_cmap(cmap_name: str, default_cmap_name='viridis', num_colors: int = None
     try:
         cmap = cm.get_cmap(cmap_name, num_colors)
     except ValueError as e:
-        _LOG.warning(str(e))
-        _LOG.warning(f'color map name {cmap_name!r} undefined, falling back to {default_cmap_name!r}')
+        LOG.warning(str(e))
+        LOG.warning(f'color map name {cmap_name!r} undefined, falling back to {default_cmap_name!r}')
         cmap_name = default_cmap_name
         cmap = cm.get_cmap(cmap_name, num_colors)
     return cmap_name, cmap
@@ -171,7 +170,7 @@ def ensure_cmaps_loaded():
                         else:
                             cmap = cm.get_cmap(cmap_name)
                     except ValueError:
-                        _LOG.warning('detected invalid colormap "%s"' % cmap_name)
+                        LOG.warning('detected invalid colormap "%s"' % cmap_name)
                         continue
                     # Add extra colormaps with alpha gradient
                     # see http://matplotlib.org/api/colors_api.html
@@ -205,8 +204,8 @@ def ensure_cmaps_loaded():
                         cm.register_cmap(cmap=new_cmap)
                     else:
                         new_name = cmap.name + '_alpha' if hasattr(cmap, 'name') else 'unknown'
-                        _LOG.warning('could not create colormap "{}" because "{}" is of unknown type {}'
-                                     .format(new_name, cmap.name, type(cmap)))
+                        LOG.warning('could not create colormap "{}" because "{}" is of unknown type {}'
+                                    .format(new_name, cmap.name, type(cmap)))
 
                     cbar_list.append((cmap_name, _get_cbar_png_bytes(cmap)))
                     cbar_list.append((new_name, _get_cbar_png_bytes(new_cmap)))
@@ -250,7 +249,7 @@ def _get_custom_colormap(colortext):
         tuples = list(zip(map(norm, values), colors))
         cmap = matplotlib.colors.LinearSegmentedColormap.from_list(colortext, tuples)
     except FileNotFoundError:
-        _LOG.warning('No such file or directory: "%s"' % colortext)
+        LOG.warning('No such file or directory: "%s"' % colortext)
         return
     return cmap
 
@@ -266,7 +265,7 @@ def _get_color(colortext):
                 hex_col = ('#%02x%02x%02x' % (int(r), int(g), int(b)))
                 c.append(hex_col)
     else:
-        _LOG.warning('Keyword "color" not found. SNAP .cpd file invalid.')
+        LOG.warning('Keyword "color" not found. SNAP .cpd file invalid.')
         return
     f.close()
     return c
@@ -282,7 +281,7 @@ def get_tick_val_col(colortext):
                 value = ((re.split(r'\W+', line, 1)[1:])[0].strip())
                 values.append(float(value))
     else:
-        _LOG.warning('Keyword "sample" not found. SNAP .cpd file invalid.')
+        LOG.warning('Keyword "sample" not found. SNAP .cpd file invalid.')
         return
     f.close()
     return values

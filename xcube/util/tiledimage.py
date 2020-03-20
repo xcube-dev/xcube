@@ -20,17 +20,15 @@
 # SOFTWARE.
 
 import io
-import logging
 import uuid
 from abc import ABCMeta, abstractmethod
 from typing import Tuple, Sequence, Union, Any, Callable, Optional
 
 import dask.array as da
-import numba
 import numpy as np
 from PIL import Image
 
-from xcube.constants import GLOBAL_GEO_EXTENT
+from xcube.constants import GLOBAL_GEO_EXTENT, LOG
 from xcube.util.cache import Cache
 from xcube.util.cmaps import get_cmap
 from xcube.util.perf import measure_time_cm
@@ -46,8 +44,6 @@ __author__ = "Norman Fomferra (Brockmann Consult GmbH)"
 DEFAULT_COLOR_MAP_NAME = 'viridis'
 DEFAULT_COLOR_MAP_VALUE_RANGE = 0.0, 1.0
 DEFAULT_COLOR_MAP_NUM_COLORS = 256
-
-_LOG = logging.getLogger('xcube')
 
 X = int
 Y = int
@@ -242,7 +238,7 @@ class OpImage(AbstractTiledImage, metaclass=ABCMeta):
                 tile = tile_cache.get_value(tile_id)
             if tile is not None:
                 if self._trace_perf:
-                    _LOG.info(tile_tag + 'restored from tile cache')
+                    LOG.info(tile_tag + 'restored from tile cache')
                 return tile
 
         with measure_time(tile_tag + 'computed'):

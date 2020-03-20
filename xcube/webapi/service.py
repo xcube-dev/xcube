@@ -21,7 +21,6 @@
 
 import asyncio
 import json
-import logging
 import os
 import signal
 import sys
@@ -38,6 +37,7 @@ from tornado.ioloop import IOLoop
 from tornado.log import enable_pretty_logging
 from tornado.web import RequestHandler, Application
 
+from xcube.constants import LOG
 from xcube.core.mldataset import guess_ml_dataset_format
 from xcube.util.caseless import caseless_dict
 from xcube.util.config import load_configs
@@ -50,8 +50,6 @@ from xcube.webapi.errors import ServiceBadRequestError
 from xcube.webapi.reqparams import RequestParams
 
 __author__ = "Norman Fomferra (Brockmann Consult GmbH)"
-
-_LOG = logging.getLogger('xcube')
 
 SNAP_CPD_LIST = list()
 
@@ -156,10 +154,10 @@ class Service:
         address = self.service_info['address']
         port = self.service_info['port']
         test_url = self.context.get_service_url(f"http://{address}:{port}", "datasets")
-        _LOG.info(f'service running, listening on {address}:{port}, try {test_url}')
-        _LOG.info(f'press CTRL+C to stop service')
+        LOG.info(f'service running, listening on {address}:{port}, try {test_url}')
+        LOG.info(f'press CTRL+C to stop service')
         if len(self.context.config.get('Datasets', {})) == 0:
-            _LOG.warning('no datasets configured')
+            LOG.warning('no datasets configured')
         tornado.ioloop.PeriodicCallback(self._try_shutdown, 100).start()
         IOLoop.current().start()
 
@@ -174,7 +172,7 @@ class Service:
 
     def _on_shutdown(self):
 
-        _LOG.info('stopping service...')
+        LOG.info('stopping service...')
 
         # noinspection PyUnresolvedReferences,PyBroadException
         try:
@@ -187,7 +185,7 @@ class Service:
             self.server = None
 
         IOLoop.current().stop()
-        _LOG.info('service stopped.')
+        LOG.info('service stopped.')
 
     def _try_shutdown(self):
         if self._shutdown_requested:
@@ -195,7 +193,7 @@ class Service:
 
     # noinspection PyUnusedLocal
     def _sig_handler(self, sig, frame):
-        _LOG.warning(f'caught signal {sig}')
+        LOG.warning(f'caught signal {sig}')
         self._shutdown_requested = True
 
     def _maybe_install_update_check(self):
@@ -216,7 +214,7 @@ class Service:
             stat = os.stat(config_file)
         except OSError as e:
             if self.config_error is None:
-                _LOG.error(f'configuration file {config_file!r}: {e}')
+                LOG.error(f'configuration file {config_file!r}: {e}')
                 self.config_error = e
             return
 
@@ -226,10 +224,10 @@ class Service:
                 with open(config_file, encoding='utf-8') as stream:
                     self.context.config = yaml.safe_load(stream)
                 self.config_error = None
-                _LOG.info(f'configuration file {config_file!r} successfully loaded')
+                LOG.info(f'configuration file {config_file!r} successfully loaded')
             except (yaml.YAMLError, OSError) as e:
                 if self.config_error is None:
-                    _LOG.error(f'configuration file {config_file!r}: {e}')
+                    LOG.error(f'configuration file {config_file!r}: {e}')
                     self.config_error = e
 
 
