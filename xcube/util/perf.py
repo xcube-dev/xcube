@@ -24,6 +24,8 @@ import logging
 import time
 from contextlib import AbstractContextManager
 
+from xcube.constants import LOG
+
 
 def measure_time_cm(logger=None, disabled=False):
     """
@@ -57,7 +59,7 @@ class measure_time(AbstractContextManager):
         if isinstance(logger, str):
             self._logger = logging.getLogger(logger)
         elif logger is None:
-            self._logger = logging.getLogger("xcube")
+            self._logger = LOG
         else:
             self._logger = logger
         self._start_time = None

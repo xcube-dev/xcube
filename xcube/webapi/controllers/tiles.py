@@ -1,5 +1,4 @@
 import io
-import logging
 import warnings
 from typing import Dict, Any
 
@@ -16,8 +15,6 @@ from xcube.webapi.defaults import DEFAULT_CMAP_WIDTH, DEFAULT_CMAP_HEIGHT
 from xcube.webapi.errors import ServiceBadRequestError, ServiceResourceNotFoundError
 from xcube.webapi.ne2 import NaturalEarth2Image
 from xcube.webapi.reqparams import RequestParams
-
-_LOG = logging.getLogger('xcube')
 
 
 def get_dataset_tile(ctx: ServiceContext,
