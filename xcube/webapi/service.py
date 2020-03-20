@@ -113,7 +113,7 @@ class Service:
         options.log_to_stderr = log_to_stderr
         enable_pretty_logging()
 
-        tile_cache_config = parse_tile_cache_config(tile_cache_size)
+        tile_cache_config = parse_mem_size(tile_cache_size)
 
         config = None
         if cube_paths:
@@ -394,22 +394,22 @@ def url_pattern(pattern: str):
     return reg_expr
 
 
-def parse_tile_cache_config(tile_cache_size: str) -> Dict[str, Any]:
-    tile_cache_size = tile_cache_size.upper()
-    if tile_cache_size != "" and tile_cache_size != "OFF":
-        unit = tile_cache_size[-1]
+def parse_mem_size(mem_size_text: str) -> Dict[str, Any]:
+    mem_size_text = mem_size_text.upper()
+    if mem_size_text != "" and mem_size_text != "OFF":
+        unit = mem_size_text[-1]
         factors = {"B": 10 ** 0, "K": 10 ** 3, "M": 10 ** 6, "G": 10 ** 9, "T": 10 ** 12}
         try:
             if unit in factors:
-                capacity = int(tile_cache_size[0: -1]) * factors[unit]
+                capacity = int(mem_size_text[0: -1]) * factors[unit]
             else:
-                capacity = int(tile_cache_size)
+                capacity = int(mem_size_text)
         except ValueError:
-            raise ValueError(f"invalid tile cache size: {tile_cache_size!r}")
+            raise ValueError(f"invalid memory size: {mem_size_text!r}")
         if capacity > 0:
             return dict(capacity=capacity)
         elif capacity < 0:
-            raise ValueError(f"negative tile cache size: {tile_cache_size!r}")
+            raise ValueError(f"negative memory size: {mem_size_text!r}")
     return dict(no_cache=True)
 
 

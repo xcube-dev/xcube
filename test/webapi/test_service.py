@@ -1,31 +1,31 @@
 import re
 import unittest
 
-from xcube.webapi.service import url_pattern, parse_tile_cache_config, new_default_config
+from xcube.webapi.service import url_pattern, parse_mem_size, new_default_config
 
 
 class TileCacheConfigTest(unittest.TestCase):
-    def test_parse_tile_cache_config(self):
-        self.assertEqual({'no_cache': True}, parse_tile_cache_config(""))
-        self.assertEqual({'no_cache': True}, parse_tile_cache_config("0"))
-        self.assertEqual({'no_cache': True}, parse_tile_cache_config("0M"))
-        self.assertEqual({'no_cache': True}, parse_tile_cache_config("off"))
-        self.assertEqual({'no_cache': True}, parse_tile_cache_config("OFF"))
-        self.assertEqual({'capacity': 200001}, parse_tile_cache_config("200001"))
-        self.assertEqual({'capacity': 200001}, parse_tile_cache_config("200001B"))
-        self.assertEqual({'capacity': 300000}, parse_tile_cache_config("300K"))
-        self.assertEqual({'capacity': 3000000}, parse_tile_cache_config("3M"))
-        self.assertEqual({'capacity': 7000000}, parse_tile_cache_config("7m"))
-        self.assertEqual({'capacity': 2000000000}, parse_tile_cache_config("2g"))
-        self.assertEqual({'capacity': 2000000000}, parse_tile_cache_config("2G"))
-        self.assertEqual({'capacity': 1000000000000}, parse_tile_cache_config("1T"))
+    def test_parse_mem_size(self):
+        self.assertEqual({'no_cache': True}, parse_mem_size(""))
+        self.assertEqual({'no_cache': True}, parse_mem_size("0"))
+        self.assertEqual({'no_cache': True}, parse_mem_size("0M"))
+        self.assertEqual({'no_cache': True}, parse_mem_size("off"))
+        self.assertEqual({'no_cache': True}, parse_mem_size("OFF"))
+        self.assertEqual({'capacity': 200001}, parse_mem_size("200001"))
+        self.assertEqual({'capacity': 200001}, parse_mem_size("200001B"))
+        self.assertEqual({'capacity': 300000}, parse_mem_size("300K"))
+        self.assertEqual({'capacity': 3000000}, parse_mem_size("3M"))
+        self.assertEqual({'capacity': 7000000}, parse_mem_size("7m"))
+        self.assertEqual({'capacity': 2000000000}, parse_mem_size("2g"))
+        self.assertEqual({'capacity': 2000000000}, parse_mem_size("2G"))
+        self.assertEqual({'capacity': 1000000000000}, parse_mem_size("1T"))
 
         with self.assertRaises(ValueError) as cm:
-            parse_tile_cache_config("7n")
+            parse_mem_size("7n")
         self.assertEqual("invalid tile cache size: '7N'", f"{cm.exception}")
 
         with self.assertRaises(ValueError) as cm:
-            parse_tile_cache_config("-2g")
+            parse_mem_size("-2g")
         self.assertEqual("negative tile cache size: '-2G'", f"{cm.exception}")
 
 
