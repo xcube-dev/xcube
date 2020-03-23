@@ -24,6 +24,7 @@ import logging
 import os
 import os.path
 import threading
+import warnings
 from typing import Any, Dict, List, Optional, Tuple, Callable, Collection, Set
 from typing import Sequence
 
@@ -41,10 +42,10 @@ from xcube.core.mldataset import open_ml_dataset_from_object_storage
 from xcube.core.mldataset import open_ml_dataset_from_python_code
 from xcube.core.tile import get_var_cmap_params
 from xcube.core.tile import get_var_valid_range
-from xcube.util.cache import MemoryCacheStore, Cache
+from xcube.util.cache import MemoryCacheStore, Cache, parse_mem_size
 from xcube.util.cmaps import get_cmap
-from xcube.util.tilegrid import TileGrid
 from xcube.util.perf import measure_time_cm
+from xcube.util.tilegrid import TileGrid
 from xcube.version import version
 from xcube.webapi.defaults import DEFAULT_TRACE_PERF
 from xcube.webapi.errors import ServiceBadRequestError
@@ -89,7 +90,7 @@ class ServiceContext:
         self._lock = threading.RLock()
         self._dataset_cache = dict()  # contains tuples of form (MultiLevelDataset, ds_descriptor)
         self._image_cache = dict()
-        if tile_cache_capacity and tile_cache_capacity > 0:
+        if tile_cache_capacity:
             self._tile_cache = Cache(MemoryCacheStore(),
                                      capacity=tile_cache_capacity,
                                      threshold=0.75)
@@ -616,6 +617,26 @@ class ServiceContext:
             path = os.path.join(self._base_dir, path)
         return path
 
+    def get_dataset_chunk_cache_capacity(self, dataset_descriptor: DatasetDescriptor) -> Optional[int]:
+        cache_size = self.get_chunk_cache_capacity(dataset_descriptor, 'ChunkCacheSize')
+        if cache_size is None:
+            cache_size = self.get_chunk_cache_capacity(self.config, 'DatasetChunkCacheSize')
+        return cache_size
+
+    @classmethod
+    def get_chunk_cache_capacity(cls, config: Dict[str, Any], cache_size_key: str) -> Optional[int]:
+        cache_size = config.get(cache_size_key, None)
+        if not cache_size:
+            return None
+        elif isinstance(cache_size, str):
+            try:
+                cache_size = parse_mem_size(cache_size)
+            except ValueError:
+                raise ServiceConfigError(f'Invalid {cache_size_key}')
+        elif not isinstance(cache_size, int) or cache_size < 0:
+            raise ServiceConfigError(f'Invalid {cache_size_key}')
+        return cache_size
+
 
 def normalize_prefix(prefix: Optional[str]):
     if not prefix:
@@ -634,40 +655,51 @@ def _open_ml_dataset_from_object_storage(ctx: ServiceContext,
     ds_id = dataset_descriptor.get('Identifier')
     path = ctx.get_descriptor_path(dataset_descriptor, f"dataset descriptor {ds_id}", is_url=True)
     data_format = dataset_descriptor.get('Format', FORMAT_NAME_ZARR)
-
     endpoint_url = None
     if 'Endpoint' in dataset_descriptor:
         endpoint_url = dataset_descriptor['Endpoint']
-
     region_name = None
     if 'Region' in dataset_descriptor:
         region_name = dataset_descriptor['Region']
+    chunk_cache_capacity = self.get_dataset_chunk_cache_capacity(dataset_descriptor)
+    return open_ml_dataset_from_object_storage(path,
+                                               data_format=data_format,
+                                               ds_id=ds_id,
+                                               exception_type=ServiceConfigError,
+                                               endpoint_url=endpoint_url,
+                                               region_name=region_name,
+                                               chunk_cache_capacity=chunk_cache_capacity)
 
-    return open_ml_dataset_from_object_storage(path, data_format=data_format,
-                                               ds_id=ds_id, exception_type=ServiceConfigError,
-                                               endpoint_url=endpoint_url, region_name=region_name)
 
-
-def _open_ml_dataset_from_local_fs(ctx: ServiceContext, dataset_descriptor: DatasetDescriptor) -> MultiLevelDataset:
+def _open_ml_dataset_from_local_fs(ctx: ServiceContext,
+                                   dataset_descriptor: DatasetDescriptor) -> MultiLevelDataset:
     ds_id = dataset_descriptor.get('Identifier')
     path = ctx.get_descriptor_path(dataset_descriptor, f"dataset descriptor {ds_id}")
     data_format = dataset_descriptor.get('Format')
-    return open_ml_dataset_from_local_fs(path, data_format=data_format, ds_id=ds_id, exception_type=ServiceConfigError)
+    chunk_cache_capacity = self.get_dataset_chunk_cache_capacity(dataset_descriptor)
+    if chunk_cache_capacity:
+        warnings.warn('chunk cache size is not effective for datasets stored in local file systems')
+    return open_ml_dataset_from_local_fs(path,
+                                         data_format=data_format,
+                                         ds_id=ds_id,
+                                         exception_type=ServiceConfigError)
 
 
-def _open_ml_dataset_from_python_code(ctx: ServiceContext, dataset_descriptor: DatasetDescriptor) -> MultiLevelDataset:
+def _open_ml_dataset_from_python_code(ctx: ServiceContext,
+                                      dataset_descriptor: DatasetDescriptor) -> MultiLevelDataset:
     ds_id = dataset_descriptor.get('Identifier')
     path = ctx.get_descriptor_path(dataset_descriptor, f"dataset descriptor {ds_id}")
     callable_name = dataset_descriptor.get('Function', COMPUTE_DATASET)
     input_dataset_ids = dataset_descriptor.get('InputDatasets', [])
     input_parameters = dataset_descriptor.get('InputParameters', {})
-
+    chunk_cache_capacity = self.get_dataset_chunk_cache_capacity(dataset_descriptor)
+    if chunk_cache_capacity:
+        warnings.warn('chunk cache size is not effective for datasets computed from scripts')
     for input_dataset_id in input_dataset_ids:
         if not ctx.get_dataset_descriptor(input_dataset_id):
             raise ServiceConfigError(f"Invalid dataset descriptor {ds_id!r}: "
                                      f"Input dataset {input_dataset_id!r} of callable {callable_name!r} "
                                      f"must reference another dataset")
-
     return open_ml_dataset_from_python_code(path,
                                             callable_name=callable_name,
                                             input_ml_dataset_ids=input_dataset_ids,

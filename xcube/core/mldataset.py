@@ -2,14 +2,19 @@ import os
 import threading
 import uuid
 from abc import abstractmethod, ABCMeta
-from typing import Sequence, Any, Dict, Callable, Mapping
+from typing import Sequence, Any, Dict, Callable, Mapping, Optional
 
 import s3fs
 import xarray as xr
 import zarr
 
-from xcube.constants import FORMAT_NAME_LEVELS, FORMAT_NAME_ZARR, FORMAT_NAME_NETCDF4, FORMAT_NAME_SCRIPT
-from xcube.core.dsio import guess_dataset_format, split_bucket_url
+from xcube.constants import FORMAT_NAME_LEVELS
+from xcube.constants import FORMAT_NAME_NETCDF4
+from xcube.constants import FORMAT_NAME_SCRIPT
+from xcube.constants import FORMAT_NAME_ZARR
+from xcube.core.dsio import guess_dataset_format
+from xcube.core.dsio import split_bucket_url
+from xcube.core.dsio import write_cube
 from xcube.core.geom import get_dataset_bounds
 from xcube.core.verify import assert_cube
 from xcube.util.perf import measure_time
@@ -301,21 +306,23 @@ class ObjectStorageMultiLevelDataset(LazyMultiLevelDataset):
     """
 
     def __init__(self,
-                 obs_file_system: s3fs.S3FileSystem,
+                 s3_file_system: s3fs.S3FileSystem,
                  dir_path: str,
                  zarr_kwargs: Dict[str, Any] = None,
                  ds_id: str = None,
+                 chunk_cache_capacity: int = None,
                  exception_type: type = ValueError):
 
         level_paths = {}
-        for entry in obs_file_system.walk(dir_path, directories=True):
+        entries = s3_file_system.ls(dir_path, detail=False)
+        for entry in entries:
             level_dir = entry.split("/")[-1]
             basename, ext = os.path.splitext(level_dir)
             if basename.isdigit():
                 level = int(basename)
-                if entry.endswith(".zarr") and obs_file_system.isdir(entry):
+                if entry.endswith(".zarr") and s3_file_system.isdir(entry):
                     level_paths[level] = (ext, dir_path + "/" + level_dir)
-                elif entry.endswith(".link") and obs_file_system.isfile(entry):
+                elif entry.endswith(".link") and s3_file_system.isfile(entry):
                     level_paths[level] = (ext, dir_path + "/" + level_dir)
 
         num_levels = len(level_paths)
@@ -325,14 +332,35 @@ class ObjectStorageMultiLevelDataset(LazyMultiLevelDataset):
                 raise exception_type(f"Invalid multi-level dataset {ds_id!r}: missing level {level} in {dir_path}")
 
         super().__init__(ds_id=ds_id, parameters=zarr_kwargs)
-        self._obs_file_system = obs_file_system
+        self._s3_file_system = s3_file_system
         self._dir_path = dir_path
         self._level_paths = level_paths
         self._num_levels = num_levels
 
+        self._chunk_cache_capacities = None
+        if chunk_cache_capacity:
+            weights = []
+            weigth_sum = 0
+            for level in range(num_levels):
+                weight = 2 ** (num_levels - 1 - level)
+                weight *= weight
+                weigth_sum += weight
+                weights.append(weight)
+            self._chunk_cache_capacities = [round(chunk_cache_capacity * weight / weigth_sum)
+                                            for weight in weights]
+
     @property
     def num_levels(self) -> int:
         return self._num_levels
+
+    def get_chunk_cache_capacity(self, index: int) -> Optional[int]:
+        """
+        Get the chunk cache capacity for given level.
+
+        :param index: The level index.
+        :return: The chunk cache capacity for given level or None.
+        """
+        return self._chunk_cache_capacities[index] if self._chunk_cache_capacities else None
 
     def _get_dataset_lazily(self, index: int, parameters: Dict[str, Any]) -> xr.Dataset:
         """
@@ -344,18 +372,19 @@ class ObjectStorageMultiLevelDataset(LazyMultiLevelDataset):
         """
         ext, level_path = self._level_paths[index]
         if ext == ".link":
-            with self._obs_file_system.open(level_path, "w") as fp:
+            with self._s3_file_system.open(level_path, "w") as fp:
                 level_path = fp.read()
                 # if file_path is a relative path, resolve it against the levels directory
                 if not os.path.isabs(level_path):
                     base_dir = os.path.dirname(self._dir_path)
                     level_path = os.path.join(base_dir, level_path)
-
-        store = s3fs.S3Map(root=level_path, s3=self._obs_file_system, check=False)
-        cached_store = zarr.LRUStoreCache(store, max_size=2 ** 28)
+        store = s3fs.S3Map(root=level_path, s3=self._s3_file_system, check=False)
+        max_size = self.get_chunk_cache_capacity(index)
+        if max_size:
+            store = zarr.LRUStoreCache(store, max_size=max_size)
         with measure_time(tag=f"opened remote dataset {level_path} for level {index}"):
-            consolidated = self._obs_file_system.exists(f'{level_path}/.zmetadata')
-            return assert_cube(xr.open_zarr(cached_store, consolidated=consolidated, **parameters), name=level_path)
+            consolidated = self._s3_file_system.exists(f'{level_path}/.zmetadata')
+            return assert_cube(xr.open_zarr(store, consolidated=consolidated, **parameters), name=level_path)
 
     def _get_tile_grid_lazily(self):
         """
@@ -604,6 +633,7 @@ def open_ml_dataset_from_object_storage(path: str,
                                         ds_id: str = None,
                                         exception_type: type = ValueError,
                                         client_kwargs: Mapping[str, Any] = None,
+                                        chunk_cache_capacity: int = None,
                                         **kwargs) -> MultiLevelDataset:
     data_format = data_format or guess_ml_dataset_format(path)
 
@@ -621,10 +651,11 @@ def open_ml_dataset_from_object_storage(path: str,
 
     if data_format == FORMAT_NAME_ZARR:
         store = s3fs.S3Map(root=path, s3=obs_file_system, check=False)
-        cached_store = zarr.LRUStoreCache(store, max_size=2 ** 28)
+        if chunk_cache_capacity:
+            store = zarr.LRUStoreCache(store, max_size=chunk_cache_capacity)
         with measure_time(tag=f"opened remote zarr dataset {path}"):
             consolidated = obs_file_system.exists(f'{path}/.zmetadata')
-            ds = assert_cube(xr.open_zarr(cached_store, consolidated=consolidated, **kwargs))
+            ds = assert_cube(xr.open_zarr(store, consolidated=consolidated, **kwargs))
         return BaseMultiLevelDataset(ds, ds_id=ds_id)
     elif data_format == FORMAT_NAME_LEVELS:
         with measure_time(tag=f"opened remote levels dataset {path}"):
@@ -632,6 +663,7 @@ def open_ml_dataset_from_object_storage(path: str,
                                                   path,
                                                   zarr_kwargs=kwargs,
                                                   ds_id=ds_id,
+                                                  chunk_cache_capacity=chunk_cache_capacity,
                                                   exception_type=exception_type)
 
     raise exception_type(f'Unrecognized multi-level dataset format {data_format!r} for path {path!r}')
@@ -697,3 +729,19 @@ def augment_ml_dataset(ml_dataset: MultiLevelDataset,
                                            ds_id=f'aug-{aug_id}',
                                            exception_type=exception_type)
         return CombinedMultiLevelDataset([ml_dataset, aug_ds], ds_id=orig_id)
+
+
+def write_levels(ml_dataset: MultiLevelDataset,
+                 levels_path: str,
+                 client_kwargs: Dict[str, Any] = None):
+    tile_w, tile_h = ml_dataset.tile_grid.tile_size
+    chunks = dict(time=1, lat=tile_h, lon=tile_w)
+    for level in range(ml_dataset.num_levels):
+        level_dataset = ml_dataset.get_dataset(level)
+        level_dataset = level_dataset.chunk(chunks)
+        print(f'writing level {level + 1}...')
+        write_cube(level_dataset,
+                   f'{levels_path}/{level}.zarr',
+                   'zarr',
+                   client_kwargs=client_kwargs)
+        print(f'written level {level + 1}')

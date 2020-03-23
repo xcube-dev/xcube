@@ -1,13 +1,18 @@
 import os
 import unittest
 
+import boto3
+import moto
 import numpy as np
 import pandas as pd
+import s3fs
 import xarray as xr
 
 from xcube.core.mldataset import BaseMultiLevelDataset
 from xcube.core.mldataset import CombinedMultiLevelDataset
 from xcube.core.mldataset import ComputedMultiLevelDataset
+from xcube.core.mldataset import ObjectStorageMultiLevelDataset
+from xcube.core.mldataset import write_levels
 from xcube.util.tilegrid import TileGrid
 
 
@@ -141,3 +146,39 @@ def _get_test_dataset(var_names=('noise',)):
                   lon_bnds=(("lon", "bnds"), lon_bnds))
 
     return xr.Dataset(coords=coords, data_vars=data_vars)
+
+
+class ObjectStorageMultiLevelDatasetTest(unittest.TestCase):
+    def test_it(self):
+        with moto.mock_s3():
+            self._write_test_levels()
+
+            s3 = s3fs.S3FileSystem(client_kwargs=dict(endpoint_url="https://s3.amazonaws.com",
+                                                      aws_access_key_id='test_fake_id',
+                                                      aws_secret_access_key='test_fake_secret'))
+            ml_dataset = ObjectStorageMultiLevelDataset(s3,
+                                                        "xcube-test/cube-1-250-250.levels",
+                                                        chunk_cache_capacity=1000 * 1000 * 1000)
+            self.assertIsNotNone(ml_dataset)
+            self.assertEqual(3, ml_dataset.num_levels)
+            self.assertEqual((250, 250), ml_dataset.tile_grid.tile_size)
+            self.assertEqual(1, ml_dataset.tile_grid.num_level_zero_tiles_x)
+            self.assertEqual(1, ml_dataset.tile_grid.num_level_zero_tiles_y)
+            self.assertEqual(761904762, ml_dataset.get_chunk_cache_capacity(0))
+            self.assertEqual(190476190, ml_dataset.get_chunk_cache_capacity(1))
+            self.assertEqual(47619048, ml_dataset.get_chunk_cache_capacity(2))
+
+    @classmethod
+    def _write_test_levels(cls):
+        s3_conn = boto3.client('s3')
+        s3_conn.create_bucket(Bucket='xcube-test', ACL='public-read')
+
+        zarr_path = os.path.join(os.path.dirname(__file__), '../../examples/serve/demo/cube-1-250-250.zarr')
+        base_dataset = xr.open_zarr(zarr_path)
+        base_dataset = xr.Dataset(dict(conc_chl=base_dataset.conc_chl))
+        ml_dataset = BaseMultiLevelDataset(base_dataset)
+
+        write_levels(ml_dataset,
+                     'https://s3.amazonaws.com/xcube-test/cube-1-250-250.levels',
+                     client_kwargs=dict(provider_access_key_id='test_fake_id',
+                                        provider_secret_access_key='test_fake_secret'))

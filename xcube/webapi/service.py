@@ -29,7 +29,7 @@ import time
 import traceback
 from datetime import datetime
 from json import JSONDecodeError
-from typing import Optional, Any, Dict, List, Tuple, Mapping
+from typing import Optional, Dict, List, Tuple, Mapping
 
 import tornado.escape
 import tornado.options
@@ -39,6 +39,7 @@ from tornado.log import enable_pretty_logging
 from tornado.web import RequestHandler, Application
 
 from xcube.core.mldataset import guess_ml_dataset_format
+from xcube.util.cache import parse_mem_size
 from xcube.util.caseless import caseless_dict
 from xcube.util.config import load_configs
 from xcube.util.undefined import UNDEFINED
@@ -113,7 +114,7 @@ class Service:
         options.log_to_stderr = log_to_stderr
         enable_pretty_logging()
 
-        tile_cache_config = parse_mem_size(tile_cache_size)
+        tile_cache_capacity = parse_mem_size(tile_cache_size)
 
         config = None
         if cube_paths:
@@ -134,7 +135,7 @@ class Service:
                                       base_dir=base_dir,
                                       trace_perf=trace_perf,
                                       tile_comp_mode=tile_comp_mode,
-                                      tile_cache_capacity=tile_cache_config.get("capacity"))
+                                      tile_cache_capacity=tile_cache_capacity)
         self._maybe_load_config()
 
         application.service_context = self.context
@@ -392,25 +393,6 @@ def url_pattern(pattern: str):
             reg_expr += pattern[pos:]
             break
     return reg_expr
-
-
-def parse_mem_size(mem_size_text: str) -> Dict[str, Any]:
-    mem_size_text = mem_size_text.upper()
-    if mem_size_text != "" and mem_size_text != "OFF":
-        unit = mem_size_text[-1]
-        factors = {"B": 10 ** 0, "K": 10 ** 3, "M": 10 ** 6, "G": 10 ** 9, "T": 10 ** 12}
-        try:
-            if unit in factors:
-                capacity = int(mem_size_text[0: -1]) * factors[unit]
-            else:
-                capacity = int(mem_size_text)
-        except ValueError:
-            raise ValueError(f"invalid memory size: {mem_size_text!r}")
-        if capacity > 0:
-            return dict(capacity=capacity)
-        elif capacity < 0:
-            raise ValueError(f"negative memory size: {mem_size_text!r}")
-    return dict(no_cache=True)
 
 
 def new_default_config(cube_paths: List[str], styles: Dict[str, Tuple] = None):
