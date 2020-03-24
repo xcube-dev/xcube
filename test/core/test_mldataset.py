@@ -151,7 +151,7 @@ def _get_test_dataset(var_names=('noise',)):
 class ObjectStorageMultiLevelDatasetTest(unittest.TestCase):
     def test_it(self):
         with moto.mock_s3():
-            self._write_test_levels()
+            self._write_test_pyramid()
 
             s3 = s3fs.S3FileSystem(client_kwargs=dict(endpoint_url="https://s3.amazonaws.com",
                                                       aws_access_key_id='test_fake_id',
@@ -169,15 +169,18 @@ class ObjectStorageMultiLevelDatasetTest(unittest.TestCase):
             self.assertEqual(47619048, ml_dataset.get_chunk_cache_capacity(2))
 
     @classmethod
-    def _write_test_levels(cls):
+    def _write_test_pyramid(cls):
+        # Create bucket 'xcube-test', so it exists before we write a test pyramid
         s3_conn = boto3.client('s3')
         s3_conn.create_bucket(Bucket='xcube-test', ACL='public-read')
 
+        # Create a test pyramid with just one variable "conc_chl"
         zarr_path = os.path.join(os.path.dirname(__file__), '../../examples/serve/demo/cube-1-250-250.zarr')
         base_dataset = xr.open_zarr(zarr_path)
         base_dataset = xr.Dataset(dict(conc_chl=base_dataset.conc_chl))
         ml_dataset = BaseMultiLevelDataset(base_dataset)
 
+        # Write test pyramid
         write_levels(ml_dataset,
                      'https://s3.amazonaws.com/xcube-test/cube-1-250-250.levels',
                      client_kwargs=dict(provider_access_key_id='test_fake_id',
