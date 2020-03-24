@@ -688,7 +688,7 @@ def _open_ml_dataset_from_python_code(ctx: ServiceContext,
     callable_name = dataset_descriptor.get('Function', COMPUTE_DATASET)
     input_dataset_ids = dataset_descriptor.get('InputDatasets', [])
     input_parameters = dataset_descriptor.get('InputParameters', {})
-    chunk_cache_capacity = self.get_dataset_chunk_cache_capacity(dataset_descriptor)
+    chunk_cache_capacity = ctx.get_dataset_chunk_cache_capacity(dataset_descriptor)
     if chunk_cache_capacity:
         warnings.warn('chunk cache size is not effective for datasets computed from scripts')
     for input_dataset_id in input_dataset_ids:
