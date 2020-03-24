@@ -194,9 +194,9 @@ class ComputeCubeTest(unittest.TestCase):
 
     def test_xarray_apply_with_dim_reduction(self):
         def compute_block(block: np.ndarray, axis: int = None):
-            print('--> block:', block.shape)
+            #print('--> block:', block.shape)
             result = np.nanmean(block, axis=axis)
-            print('<-- result:', result.shape)
+            #print('<-- result:', result.shape)
             return result
 
         def compute(obj: xr.Dataset, dim: str):
@@ -204,7 +204,7 @@ class ComputeCubeTest(unittest.TestCase):
                                   kwargs=dict(axis=-1),  # note: apply always moves core dimensions to the end
                                   dask='parallelized',
                                   input_core_dims=[[dim]],
-                                  output_sizes=dict(lat=1000, lon=2000),
+                                  #output_sizes=dict(lat=1000, lon=2000),
                                   output_dtypes=[np.float64])
 
         ds = xr.open_zarr(os.path.join(os.path.dirname(__file__), '../../examples/serve/demo/cube-1-250-250.zarr'))
@@ -221,3 +221,26 @@ class ComputeCubeTest(unittest.TestCase):
         # This assertion succeeds fails, because values.shape is now (250, 250).
         # This must be an error in xarray or dask.
         self.assertEqual((1000, 2000), values.shape)
+
+
+    def test_xarray_map_blocks(self):
+        def compute_block(block: xr.Dataset):
+            #print('--> block:', block)
+            return block
+
+        def compute(obj: xr.Dataset, dim: str):
+            return obj.map_blocks(compute_block)
+
+        ds = xr.open_zarr(os.path.join(os.path.dirname(__file__), '../../examples/serve/demo/cube-1-250-250.zarr'))
+        var = ds.conc_chl
+
+        var_computed = compute(var, 'time')
+
+        # This assertion succeeds
+        self.assertEqual((5, 1000, 2000), var_computed.shape)
+
+        # Trigger computations of all chunks
+        values = var_computed.values
+        # This assertion succeeds fails, because values.shape is now (250, 250).
+        # This must be an error in xarray or dask.
+        self.assertEqual((5, 1000, 2000), values.shape)
