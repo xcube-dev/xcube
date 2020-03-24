@@ -1,3 +1,4 @@
+import os
 import unittest
 from typing import Any, Dict, Tuple
 
@@ -126,6 +127,8 @@ class ComputeCubeTest(unittest.TestCase):
                          f'{cm.exception}')
 
     def test_inspect(self):
+        """This test is about making sure we get expected results from inspect.getfullargspec(func)"""
+
         def func():
             pass
 
@@ -188,3 +191,33 @@ class ComputeCubeTest(unittest.TestCase):
         self.assertEqual(exp_kwonlyargs, argspec[4], msg='kwonlyargs')
         self.assertEqual(exp_kwonlydefaults, argspec[5], msg='kwonlydefaults')
         self.assertEqual(exp_annotations, argspec[6], msg='annotations')
+
+    def test_xarray_apply_with_dim_reduction(self):
+        def compute_block(block: np.ndarray, axis: int = None):
+            print('--> block:', block.shape)
+            result = np.nanmean(block, axis=axis)
+            print('<-- result:', result.shape)
+            return result
+
+        def compute(obj: xr.Dataset, dim: str):
+            return xr.apply_ufunc(compute_block, obj,
+                                  kwargs=dict(axis=-1),  # note: apply always moves core dimensions to the end
+                                  dask='parallelized',
+                                  input_core_dims=[[dim]],
+                                  output_sizes=dict(lat=1000, lon=2000),
+                                  output_dtypes=[np.float64])
+
+        ds = xr.open_zarr(os.path.join(os.path.dirname(__file__), '../../examples/serve/demo/cube-1-250-250.zarr'))
+        var = ds.conc_chl
+
+        var_rechunked = var.chunk({'time': -1, 'lat': 250, 'lon': 250})
+        var_computed = compute(var_rechunked, 'time')
+
+        # This assertion succeeds
+        self.assertEqual((1000, 2000), var_computed.shape)
+
+        # Trigger computations of all chunks
+        values = var_computed.values
+        # This assertion succeeds fails, because values.shape is now (250, 250).
+        # This must be an error in xarray or dask.
+        self.assertEqual((1000, 2000), values.shape)
