@@ -28,7 +28,7 @@ import time
 import traceback
 from datetime import datetime
 from json import JSONDecodeError
-from typing import Optional, Any, Dict, List, Tuple, Mapping
+from typing import Optional, Dict, List, Tuple, Mapping
 
 import tornado.escape
 import tornado.options
@@ -39,6 +39,7 @@ from tornado.web import RequestHandler, Application
 
 from xcube.constants import LOG
 from xcube.core.mldataset import guess_ml_dataset_format
+from xcube.util.cache import parse_mem_size
 from xcube.util.caseless import caseless_dict
 from xcube.util.config import load_configs
 from xcube.util.undefined import UNDEFINED
@@ -111,7 +112,7 @@ class Service:
         options.log_to_stderr = log_to_stderr
         enable_pretty_logging()
 
-        tile_cache_config = parse_tile_cache_config(tile_cache_size)
+        tile_cache_capacity = parse_mem_size(tile_cache_size)
 
         config = None
         if cube_paths:
@@ -132,7 +133,7 @@ class Service:
                                       base_dir=base_dir,
                                       trace_perf=trace_perf,
                                       tile_comp_mode=tile_comp_mode,
-                                      tile_cache_capacity=tile_cache_config.get("capacity"))
+                                      tile_cache_capacity=tile_cache_capacity)
         self._maybe_load_config()
 
         application.service_context = self.context
@@ -390,25 +391,6 @@ def url_pattern(pattern: str):
             reg_expr += pattern[pos:]
             break
     return reg_expr
-
-
-def parse_tile_cache_config(tile_cache_size: str) -> Dict[str, Any]:
-    tile_cache_size = tile_cache_size.upper()
-    if tile_cache_size != "" and tile_cache_size != "OFF":
-        unit = tile_cache_size[-1]
-        factors = {"B": 10 ** 0, "K": 10 ** 3, "M": 10 ** 6, "G": 10 ** 9, "T": 10 ** 12}
-        try:
-            if unit in factors:
-                capacity = int(tile_cache_size[0: -1]) * factors[unit]
-            else:
-                capacity = int(tile_cache_size)
-        except ValueError:
-            raise ValueError(f"invalid tile cache size: {tile_cache_size!r}")
-        if capacity > 0:
-            return dict(capacity=capacity)
-        elif capacity < 0:
-            raise ValueError(f"negative tile cache size: {tile_cache_size!r}")
-    return dict(no_cache=True)
 
 
 def new_default_config(cube_paths: List[str], styles: Dict[str, Tuple] = None):

@@ -3,7 +3,7 @@
 ### New
 
 * The xcube web API provided through `xcube serve` can now serve RGBA tiles using the 
-  `dataset/{dataset}/variable/rgb/tiles/{z}/{y}/{x}` endpoint. The reg, green, blue 
+  `dataset/{dataset}/variable/rgb/tiles/{z}/{y}/{x}` endpoint. The red, green, blue 
   channels are computed from three configurable variables and normalisation ranges, 
   the alpha channel provides transparency for missing values. To specify a default
   RGB schema for a dataset, a colour mapping for the "pseudo-variable" named `rbg` 
@@ -144,6 +144,23 @@
   ```
 
 ### Enhancements
+
+* The `xcube serve` tool now also allows for per-dataset configuration
+  of *chunk caches* for datasets read from remote object storage locations. 
+  Chunk caching avoids recurring fetching of remote data chunks for same
+  region of interest.
+  It can be configured as default for all remote datasets at top-level of 
+  the configuration file:
+  ```
+  DatasetChunkCacheSize: 100M
+  ```
+  or in individual dataset definitions:
+  ```
+  Datasets: 
+     - Identifier: ...
+       ChunkCacheSize: 2G
+       ...
+  ```
 * Retrieval of time series in Python API function `xcube.core.timeseries.get_time_series()` 
   has been optimized and is now much faster for point geometries. 
   This enhances time-series performance of `xcube serve`. 

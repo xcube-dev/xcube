@@ -27,9 +27,10 @@ import time
 from abc import ABCMeta, abstractmethod
 from threading import RLock
 
+from typing import Optional
+
 __author__ = "Norman Fomferra (Brockmann Consult GmbH)"
 
-# _DEBUG_CACHE = True
 _DEBUG_CACHE = False
 
 
@@ -428,3 +429,22 @@ def _compute_object_size(obj):
                         1)
     else:
         return sys.getsizeof(obj)
+
+
+def parse_mem_size(mem_size_text: str) -> Optional[int]:
+    mem_size_text = mem_size_text.upper()
+    if mem_size_text != "" and mem_size_text not in ("OFF", "NONE", "NULL", "FALSE"):
+        unit = mem_size_text[-1]
+        factors = {"B": 10 ** 0, "K": 10 ** 3, "M": 10 ** 6, "G": 10 ** 9, "T": 10 ** 12}
+        try:
+            if unit in factors:
+                capacity = int(mem_size_text[0: -1]) * factors[unit]
+            else:
+                capacity = int(mem_size_text)
+        except ValueError:
+            raise ValueError(f"invalid memory size: {mem_size_text!r}")
+        if capacity > 0:
+            return capacity
+        elif capacity < 0:
+            raise ValueError(f"negative memory size: {mem_size_text!r}")
+    return None
