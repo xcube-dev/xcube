@@ -21,12 +21,12 @@
 
 import datetime
 import json
-import logging
 import os.path
 import pathlib
 
 from tornado.ioloop import IOLoop
 
+from xcube.constants import LOG
 from xcube.core.timecoord import timestamp_to_iso_string
 from xcube.util.perf import measure_time
 from xcube.version import version
@@ -50,7 +50,6 @@ __author__ = "Norman Fomferra (Brockmann Consult GmbH)"
 
 _WMTS_VERSION = "1.0.0"
 _WMTS_TILE_FORMAT = "image/png"
-_LOG = logging.getLogger('xcube')
 
 _LOG_S3BUCKET_HANDLER = False
 
@@ -203,12 +202,12 @@ class ListS3BucketHandler(ServiceRequestHandler):
             raise ServiceBadRequestError(f'Unknown bucket list type {list_type!r}')
 
         if _LOG_S3BUCKET_HANDLER:
-            _LOG.info(f'GET: list_s3_bucket_params={list_s3_bucket_params}')
+            LOG.info(f'GET: list_s3_bucket_params={list_s3_bucket_params}')
         bucket_mapping = self.service_context.get_s3_bucket_mapping()
         list_bucket_result = list_s3_bucket(bucket_mapping, **list_s3_bucket_params)
         if _LOG_S3BUCKET_HANDLER:
             import json
-            _LOG.info(f'-->\n{json.dumps(list_bucket_result, indent=2)}')
+            LOG.info(f'-->\n{json.dumps(list_bucket_result, indent=2)}')
 
         xml = list_bucket_result_to_xml(list_bucket_result)
         self.set_header('Content-Type', 'application/xml')
@@ -221,7 +220,7 @@ class GetS3BucketObjectHandler(ServiceRequestHandler):
     async def head(self, ds_id: str, path: str = ''):
         key, local_path = self._get_key_and_local_path(ds_id, path)
         if _LOG_S3BUCKET_HANDLER:
-            _LOG.info(f'HEAD: key={key!r}, local_path={local_path!r}')
+            LOG.info(f'HEAD: key={key!r}, local_path={local_path!r}')
         if local_path is None or not local_path.exists():
             await self._key_not_found(key)
             return
@@ -236,7 +235,7 @@ class GetS3BucketObjectHandler(ServiceRequestHandler):
     async def get(self, ds_id: str, path: str = ''):
         key, local_path = self._get_key_and_local_path(ds_id, path)
         if _LOG_S3BUCKET_HANDLER:
-            _LOG.info(f'GET: key={key!r}, local_path={local_path!r}')
+            LOG.info(f'GET: key={key!r}, local_path={local_path!r}')
         if local_path is None or not local_path.exists():
             await self._key_not_found(key)
             return
