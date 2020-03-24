@@ -150,7 +150,7 @@
   It can be configured as default for all remote datasets at top-level of 
   the configuration file:
   ```
-  DatasetChunkCacheSize = 100M
+  DatasetChunkCacheSize: 100M
   ```
   or in individual dataset definitions:
   ```
