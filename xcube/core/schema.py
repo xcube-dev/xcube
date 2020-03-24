@@ -149,6 +149,21 @@ class CubeSchema:
         return self._dims[0]
 
     @property
+    def x_size(self) -> int:
+        """Size of the spatial x dimension."""
+        return self._shape[-1]
+
+    @property
+    def y_size(self) -> int:
+        """Size of the spatial y dimension."""
+        return self._shape[-2]
+
+    @property
+    def time_size(self) -> int:
+        """Size of the time dimension."""
+        return self._shape[0]
+
+    @property
     def shape(self) -> Tuple[int, ...]:
         """Tuple of dimension sizes."""
         return self._shape
