@@ -406,18 +406,14 @@ class ZarrDatasetIO(DatasetIO):
         return (3 * ext_value + type_value) / 4
 
     def read(self, path: str, **kwargs) -> xr.Dataset:
+        path_or_store = path
         consolidated = False
         root = None
 
         if isinstance(path, str):
-            client_kwargs = {}
-            if 'client_kwargs' in kwargs:
-                client_kwargs = kwargs.pop('client_kwargs')
-            if 'endpoint_url' in kwargs:
-                client_kwargs['endpoint_url'] = kwargs.pop('endpoint_url')
-                root = path
-            if 'region_name' in kwargs:
-                client_kwargs['region_name'] = kwargs.pop('region_name')
+            client_kwargs = get_client_kwargs(kwargs)
+            if 'endpoint_url' in client_kwargs:
+                path = root
 
             path_or_store, root, client_kwargs = _get_path_or_store(path,
                                                                     client_kwargs=client_kwargs,
@@ -443,8 +439,8 @@ class ZarrDatasetIO(DatasetIO):
               compress=True,
               cname=None, clevel=None, shuffle=None, blocksize=None,
               chunksizes=None,
-              client_kwargs=None,
               **kwargs):
+        client_kwargs = get_client_kwargs(kwargs)
         path_or_store, root, client_kwargs = _get_path_or_store(output_path,
                                                                 client_kwargs=client_kwargs,
                                                                 mode='write')
@@ -537,6 +533,17 @@ def rimraf(path):
         except OSError:
             warnings.warn(f'failed to remove file {path}')
             pass
+
+
+def get_client_kwargs(kwargs):
+    client_kwargs = {}
+    if 'client_kwargs' in kwargs:
+        client_kwargs = kwargs.pop('client_kwargs')
+    if 'endpoint_url' in kwargs:
+        client_kwargs['endpoint_url'] = kwargs.pop('endpoint_url')
+    if 'region_name' in kwargs:
+        client_kwargs['region_name'] = kwargs.pop('region_name')
+    return client_kwargs
 
 
 def _get_path_or_store(path: str,
