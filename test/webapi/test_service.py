@@ -1,32 +1,7 @@
 import re
 import unittest
 
-from xcube.webapi.service import url_pattern, parse_tile_cache_config, new_default_config
-
-
-class TileCacheConfigTest(unittest.TestCase):
-    def test_parse_tile_cache_config(self):
-        self.assertEqual({'no_cache': True}, parse_tile_cache_config(""))
-        self.assertEqual({'no_cache': True}, parse_tile_cache_config("0"))
-        self.assertEqual({'no_cache': True}, parse_tile_cache_config("0M"))
-        self.assertEqual({'no_cache': True}, parse_tile_cache_config("off"))
-        self.assertEqual({'no_cache': True}, parse_tile_cache_config("OFF"))
-        self.assertEqual({'capacity': 200001}, parse_tile_cache_config("200001"))
-        self.assertEqual({'capacity': 200001}, parse_tile_cache_config("200001B"))
-        self.assertEqual({'capacity': 300000}, parse_tile_cache_config("300K"))
-        self.assertEqual({'capacity': 3000000}, parse_tile_cache_config("3M"))
-        self.assertEqual({'capacity': 7000000}, parse_tile_cache_config("7m"))
-        self.assertEqual({'capacity': 2000000000}, parse_tile_cache_config("2g"))
-        self.assertEqual({'capacity': 2000000000}, parse_tile_cache_config("2G"))
-        self.assertEqual({'capacity': 1000000000000}, parse_tile_cache_config("1T"))
-
-        with self.assertRaises(ValueError) as cm:
-            parse_tile_cache_config("7n")
-        self.assertEqual("invalid tile cache size: '7N'", f"{cm.exception}")
-
-        with self.assertRaises(ValueError) as cm:
-            parse_tile_cache_config("-2g")
-        self.assertEqual("negative tile cache size: '-2G'", f"{cm.exception}")
+from xcube.webapi.service import url_pattern, new_default_config
 
 
 class DefaultConfigTest(unittest.TestCase):

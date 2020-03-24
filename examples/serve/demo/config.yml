@@ -6,6 +6,8 @@ DatasetAttribution:
   - "© by Brockmann Consult GmbH 2020, contains modified Copernicus Data 2019, processed by ESA"
   - "© by EU H2020 CyanoAlert project"
 
+DatasetChunkCacheSize: 100M
+
 Datasets:
   # Will only appear for unauthorized clients
   - Identifier: local
@@ -45,6 +47,7 @@ Datasets:
     Path: "dcs4cop-obs-02/OLCI-SNS-RAW-CUBE-2.zarr"
     Region: "eu-de"
     Style: default
+    ChunkCacheSize: 250M
     PlaceGroups:
       - PlaceGroupRef: inside-cube
       - PlaceGroupRef: outside-cube

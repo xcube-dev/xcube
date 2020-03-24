@@ -1,11 +1,11 @@
 import os
 import shutil
-from unittest import TestCase
+import unittest
 
-from xcube.util.cache import CacheStore, Cache, MemoryCacheStore, FileCacheStore
+from xcube.util.cache import CacheStore, Cache, MemoryCacheStore, FileCacheStore, parse_mem_size
 
 
-class MemoryCacheStoreTest(TestCase):
+class MemoryCacheStoreTest(unittest.TestCase):
     def setUp(self):
         self.cache_store = MemoryCacheStore()
         stored_value_a, size_a = self.cache_store.store_value('a', 42)
@@ -42,7 +42,7 @@ class MemoryCacheStoreTest(TestCase):
             self.cache_store.discard_value('e', self.stored_value_b)
 
 
-class FileCacheStoreTest(TestCase):
+class FileCacheStoreTest(unittest.TestCase):
     DIR = '__test_file_cache__'
 
     def setUp(self):
@@ -119,7 +119,7 @@ class TracingCacheStore(CacheStore):
         self.trace += 'discard(%s, %s);' % (key, stored_value)
 
 
-class CacheTest(TestCase):
+class CacheTest(unittest.TestCase):
     def setUp(self):
         pass
 
@@ -188,3 +188,31 @@ class CacheTest(TestCase):
         self.assertEqual(cache.get_value('k5'), 'yyyy')
         self.assertEqual(cache.size, 600)
         self.assertEqual(cache_store.trace, 'can_load_from_key(k5);load_from_key(k5);restore(k5, S/yyyy);')
+
+
+class ParseMemSizeTest(unittest.TestCase):
+    def test_parse_mem_size(self):
+        self.assertEqual(None, parse_mem_size(""))
+        self.assertEqual(None, parse_mem_size("0"))
+        self.assertEqual(None, parse_mem_size("0M"))
+        self.assertEqual(None, parse_mem_size("off"))
+        self.assertEqual(None, parse_mem_size("OFF"))
+        self.assertEqual(None, parse_mem_size("None"))
+        self.assertEqual(None, parse_mem_size("null"))
+        self.assertEqual(None, parse_mem_size("False"))
+        self.assertEqual(200001, parse_mem_size("200001"))
+        self.assertEqual(200001, parse_mem_size("200001B"))
+        self.assertEqual(300000, parse_mem_size("300K"))
+        self.assertEqual(3000000, parse_mem_size("3M"))
+        self.assertEqual(7000000, parse_mem_size("7m"))
+        self.assertEqual(2000000000, parse_mem_size("2g"))
+        self.assertEqual(2000000000, parse_mem_size("2G"))
+        self.assertEqual(1000000000000, parse_mem_size("1T"))
+
+        with self.assertRaises(ValueError) as cm:
+            parse_mem_size("7n")
+        self.assertEqual("invalid memory size: '7N'", f"{cm.exception}")
+
+        with self.assertRaises(ValueError) as cm:
+            parse_mem_size("-2g")
+        self.assertEqual("negative memory size: '-2G'", f"{cm.exception}")

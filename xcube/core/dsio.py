@@ -116,9 +116,7 @@ def write_dataset(dataset: xr.Dataset,
     dataset_io = find_dataset_io(format_name, modes=["w"])
     if dataset_io is None:
         raise ValueError(f"Unknown output format {format_name!r} for {output_path}")
-
     dataset_io.write(dataset, output_path, **kwargs)
-
     return dataset
 
 
@@ -411,18 +409,20 @@ class ZarrDatasetIO(DatasetIO):
         root = None
 
         if isinstance(path, str):
-            client_kwargs = get_client_kwargs(kwargs)
-            if 'endpoint_url' in client_kwargs:
-                path = root
-
-            path_or_store, root, client_kwargs = _get_path_or_store(path,
+            client_kwargs = {}
+            if 'client_kwargs' in kwargs:
+                client_kwargs = kwargs.pop('client_kwargs')
+            if 'endpoint_url' in kwargs:
+                client_kwargs['endpoint_url'] = kwargs.pop('endpoint_url')
+                root = path
+            if 'region_name' in kwargs:
+                client_kwargs['region_name'] = kwargs.pop('region_name')
+            path_or_store, root, client_kwargs = _get_path_or_store(path_or_store,
                                                                     client_kwargs=client_kwargs,
                                                                     mode='read',
                                                                     root=root)
-
             if 'endpoint_url' in client_kwargs and root is not None:
-                s3 = s3fs.S3FileSystem(anon=True,
-                                       client_kwargs=client_kwargs)
+                s3 = s3fs.S3FileSystem(anon=True, client_kwargs=client_kwargs)
                 consolidated = s3.exists(f'{root}/.zmetadata')
                 path_or_store = s3fs.S3Map(root=root, s3=s3, check=False)
                 if 'max_cache_size' in kwargs:
@@ -437,10 +437,13 @@ class ZarrDatasetIO(DatasetIO):
               dataset: xr.Dataset,
               output_path: str,
               compress=True,
-              cname=None, clevel=None, shuffle=None, blocksize=None,
+              cname=None,
+              clevel=None,
+              shuffle=None,
+              blocksize=None,
               chunksizes=None,
+              client_kwargs=None,
               **kwargs):
-        client_kwargs = get_client_kwargs(kwargs)
         path_or_store, root, client_kwargs = _get_path_or_store(output_path,
                                                                 client_kwargs=client_kwargs,
                                                                 mode='write')
@@ -535,41 +538,33 @@ def rimraf(path):
             pass
 
 
-def get_client_kwargs(kwargs):
-    client_kwargs = {}
-    if 'client_kwargs' in kwargs:
-        client_kwargs = kwargs.pop('client_kwargs')
-    if 'endpoint_url' in kwargs:
-        client_kwargs['endpoint_url'] = kwargs.pop('endpoint_url')
-    if 'region_name' in kwargs:
-        client_kwargs['region_name'] = kwargs.pop('region_name')
-    return client_kwargs
-
-
 def _get_path_or_store(path: str,
                        client_kwargs: Dict[str, Any] = None,
                        mode: str = None,
                        root: str = None):
+    path_or_store = path
     anon_mode = True
-    if not client_kwargs:
-        client_kwargs = {}
-
+    client_kwargs = dict(client_kwargs) if client_kwargs else {}
     if client_kwargs is not None:
         if 'provider_access_key_id' in client_kwargs and 'provider_secret_access_key' in client_kwargs:
             anon_mode = False
             client_kwargs['aws_access_key_id'] = client_kwargs.pop('provider_access_key_id')
             client_kwargs['aws_secret_access_key'] = client_kwargs.pop('provider_secret_access_key')
-
     if path.startswith("https://") or path.startswith("http://"):
-        endpoint_url, root = split_bucket_url(path)
-        if endpoint_url:
-            client_kwargs['endpoint_url'] = endpoint_url
-        if "write" in mode:
+        import urllib3.util
+        url = urllib3.util.parse_url(path_or_store)
+        if url.port is not None:
+            client_kwargs['endpoint_url'] = f'{url.scheme}://{url.host}:{url.port}'
+        else:
+            client_kwargs['endpoint_url'] = f'{url.scheme}://{url.host}'
+        root = url.path
+        if root.startswith('/'):
+            root = root[1:]
+        if mode == "write":
             root = f's3://{root}'
-        s3 = s3fs.S3FileSystem(anon=anon_mode,
-                               client_kwargs=client_kwargs)
-        path = s3fs.S3Map(root=root, s3=s3, check=False)
-    return path, root, client_kwargs
+        s3 = s3fs.S3FileSystem(anon=anon_mode, client_kwargs=client_kwargs)
+        path_or_store = s3fs.S3Map(root=root, s3=s3, create=mode == "write")
+    return path_or_store, root, client_kwargs
 
 
 def split_bucket_url(path: str):
