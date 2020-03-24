@@ -676,7 +676,7 @@ def _open_ml_dataset_from_local_fs(ctx: ServiceContext,
     ds_id = dataset_descriptor.get('Identifier')
     path = ctx.get_descriptor_path(dataset_descriptor, f"dataset descriptor {ds_id}")
     data_format = dataset_descriptor.get('Format')
-    chunk_cache_capacity = self.get_dataset_chunk_cache_capacity(dataset_descriptor)
+    chunk_cache_capacity = ctx.get_dataset_chunk_cache_capacity(dataset_descriptor)
     if chunk_cache_capacity:
         warnings.warn('chunk cache size is not effective for datasets stored in local file systems')
     return open_ml_dataset_from_local_fs(path,
