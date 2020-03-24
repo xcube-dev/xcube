@@ -657,7 +657,7 @@ def _open_ml_dataset_from_object_storage(ctx: ServiceContext,
     region_name = None
     if 'Region' in dataset_descriptor:
         region_name = dataset_descriptor['Region']
-    chunk_cache_capacity = self.get_dataset_chunk_cache_capacity(dataset_descriptor)
+    chunk_cache_capacity = ctx.get_dataset_chunk_cache_capacity(dataset_descriptor)
     return open_ml_dataset_from_object_storage(path,
                                                data_format=data_format,
                                                ds_id=ds_id,
