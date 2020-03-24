@@ -331,20 +331,20 @@ class ContextManagerTest(unittest.TestCase):
 
 class GetPathOrStoreTest(unittest.TestCase):
     def test_path_or_store_read_from_bucket(self):
-        path = _get_path_or_store('http://obs.eu-de.otc.t-systems.com/dcs4cop-obs-02/OLCI-SNS-RAW-CUBE-2.zarr',
-                                  mode='read')[0]
+        path, _, _ = _get_path_or_store('http://obs.eu-de.otc.t-systems.com/dcs4cop-obs-02/OLCI-SNS-RAW-CUBE-2.zarr',
+                                        mode='read')
         self.assertIsInstance(path, fsspec.mapping.FSMap)
 
     def test_path_or_store_write_to_bucket(self):
-        path = _get_path_or_store('http://obs.eu-de.otc.t-systems.com/fake_bucket/fake_cube.zarr',
-                                  mode='write',
-                                  client_kwargs={'aws_access_key_id': 'some_fake_id',
-                                                 'aws_secret_access_key': 'some_fake_key'})[0]
+        path, _, _ = _get_path_or_store('http://obs.eu-de.otc.t-systems.com/fake_bucket/fake_cube.zarr',
+                                        mode='write',
+                                        client_kwargs={'aws_access_key_id': 'some_fake_id',
+                                                       'aws_secret_access_key': 'some_fake_key'})
         self.assertIsInstance(path, fsspec.mapping.FSMap)
 
     def test_path_or_store_read_from_local(self):
-        path = _get_path_or_store('../examples/serve/demo/cube-1-250-250.zarr',
-                                  mode='read')[0]
+        path, _, _ = _get_path_or_store('../examples/serve/demo/cube-1-250-250.zarr',
+                                        mode='read')
         self.assertIsInstance(path, str)
 
 
