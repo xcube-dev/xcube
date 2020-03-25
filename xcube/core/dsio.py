@@ -23,7 +23,7 @@ import os
 import shutil
 import warnings
 from abc import ABCMeta, abstractmethod
-from typing import Any, Callable, Dict, Iterable, List, Optional, Set, Tuple
+from typing import Any, Callable, Dict, Iterable, List, Optional, Set, Tuple, MutableMapping
 
 import pandas as pd
 import s3fs
@@ -403,34 +403,22 @@ class ZarrDatasetIO(DatasetIO):
                     type_value = 0.5
         return (3 * ext_value + type_value) / 4
 
-    def read(self, path: str, **kwargs) -> xr.Dataset:
+    def read(self, path: str, client_kwargs: Dict[str, Any] = None, **kwargs) -> xr.Dataset:
         path_or_store = path
-        consolidated = False
         root = None
+        consolidated = False
 
         if isinstance(path, str):
-            client_kwargs = {}
-            if 'client_kwargs' in kwargs:
-                client_kwargs = kwargs.pop('client_kwargs')
-            if 'endpoint_url' in kwargs:
-                client_kwargs['endpoint_url'] = kwargs.pop('endpoint_url')
-                root = path
-            if 'region_name' in kwargs:
-                client_kwargs['region_name'] = kwargs.pop('region_name')
-            path_or_store, root, client_kwargs = _get_path_or_store(path_or_store,
-                                                                    client_kwargs=client_kwargs,
-                                                                    mode='read',
-                                                                    root=root)
-            if 'endpoint_url' in client_kwargs and root is not None:
-                s3 = s3fs.S3FileSystem(anon=True, client_kwargs=client_kwargs)
-                consolidated = s3.exists(f'{root}/.zmetadata')
-                path_or_store = s3fs.S3Map(root=root, s3=s3, check=False)
-                if 'max_cache_size' in kwargs:
-                    max_cache_size = kwargs.pop('max_cache_size')
-                    if max_cache_size > 0:
-                        path_or_store = zarr.LRUStoreCache(path_or_store, max_size=max_cache_size)
-            else:
-                consolidated = os.path.exists(os.path.join(path_or_store, '.zmetadata'))
+            client_kwargs, anon_mode = get_client_kwargs(kwargs)
+            if 'endpoint_url' in client_kwargs:
+                path_or_store = root
+            path_or_store, consolidated = _get_path_or_store(path_or_store,
+                                                             client_kwargs=client_kwargs,
+                                                             mode='r')
+            if 'max_cache_size' in kwargs:
+                max_cache_size = kwargs.pop('max_cache_size')
+                if max_cache_size > 0:
+                    path_or_store = zarr.LRUStoreCache(path_or_store, max_size=max_cache_size)
         return xr.open_zarr(path_or_store, consolidated=consolidated, **kwargs)
 
     def write(self,
@@ -444,11 +432,13 @@ class ZarrDatasetIO(DatasetIO):
               chunksizes=None,
               client_kwargs=None,
               **kwargs):
-        path_or_store, root, client_kwargs = _get_path_or_store(output_path,
-                                                                client_kwargs=client_kwargs,
-                                                                mode='write')
+        client_kwargs, anon_mode = get_client_kwargs(client_kwargs)
+        path_or_store, consolidated = _get_path_or_store(output_path,
+                                                         client_kwargs=client_kwargs,
+                                                         anon_mode=anon_mode,
+                                                         mode='w')
         encoding = self._get_write_encodings(dataset, compress, cname, clevel, shuffle, blocksize, chunksizes)
-        dataset.to_zarr(path_or_store, mode='w', encoding=encoding)
+        dataset.to_zarr(path_or_store, mode='w', encoding=encoding, consolidated=consolidated)
 
     @classmethod
     def _get_write_encodings(cls, dataset, compress, cname, clevel, shuffle, blocksize, chunksizes):
@@ -538,37 +528,50 @@ def rimraf(path):
             pass
 
 
+def get_client_kwargs(kwargs) -> Tuple[dict, bool]:
+    anon_mode = True
+    client_kwargs = dict(kwargs) if kwargs else {}
+    if 'client_kwargs' in client_kwargs:
+        client_kwargs = client_kwargs.pop('client_kwargs')
+    if 'endpoint_url' in client_kwargs:
+        client_kwargs['endpoint_url'] = client_kwargs.pop('endpoint_url')
+    if 'region_name' in client_kwargs:
+        client_kwargs['region_name'] = kwargs.pop('region_name')
+    if 'provider_access_key_id' in client_kwargs and 'provider_secret_access_key' in client_kwargs:
+        anon_mode = False
+        client_kwargs['aws_access_key_id'] = client_kwargs.pop('provider_access_key_id')
+        client_kwargs['aws_secret_access_key'] = client_kwargs.pop('provider_secret_access_key')
+    return client_kwargs, anon_mode
+
+
 def _get_path_or_store(path: str,
                        client_kwargs: Dict[str, Any] = None,
-                       mode: str = None,
-                       root: str = None):
+                       anon_mode: bool = None,
+                       mode: str = None) -> Tuple[MutableMapping, bool]:
     path_or_store = path
-    anon_mode = True
+    consolidated = False
     client_kwargs = dict(client_kwargs) if client_kwargs else {}
-    if client_kwargs is not None:
-        if 'provider_access_key_id' in client_kwargs and 'provider_secret_access_key' in client_kwargs:
-            anon_mode = False
-            client_kwargs['aws_access_key_id'] = client_kwargs.pop('provider_access_key_id')
-            client_kwargs['aws_secret_access_key'] = client_kwargs.pop('provider_secret_access_key')
-    if path.startswith("https://") or path.startswith("http://"):
-        import urllib3.util
-        url = urllib3.util.parse_url(path_or_store)
-        if url.port is not None:
-            client_kwargs['endpoint_url'] = f'{url.scheme}://{url.host}:{url.port}'
-        else:
-            client_kwargs['endpoint_url'] = f'{url.scheme}://{url.host}'
-        root = url.path
-        if root.startswith('/'):
-            root = root[1:]
-        if mode == "write":
-            root = f's3://{root}'
+    if path.startswith("https://") or path.startswith("http://") or path.startswith("s3://"):
+        endpoint_url, root = split_bucket_url(path)
+        if endpoint_url:
+            client_kwargs['endpoint_url'] = endpoint_url
         s3 = s3fs.S3FileSystem(anon=anon_mode, client_kwargs=client_kwargs)
-        path_or_store = s3fs.S3Map(root=root, s3=s3, create=mode == "write")
-    return path_or_store, root, client_kwargs
+        if mode == "w":
+            if not path.startswith("s3://"):
+                root = f's3://{root}'
+            consolidated = True
+        if mode == "r":
+            consolidated = s3.exists(f'{root}/.zmetadata')
+        path_or_store = s3fs.S3Map(root=root, s3=s3, check=False)
+    else:
+        consolidated = os.path.exists(os.path.join(path_or_store, '.zmetadata'))
+    return path_or_store, consolidated
 
 
 def split_bucket_url(path: str):
     """If *path* is a URL, return tuple (endpoint_url, root), otherwise (None, *path*)"""
+    if path.startswith("s3://"):
+        return None, path
     url = urllib3.util.parse_url(path)
     if all((url.scheme, url.host, url.path)):
         if url.port is not None:
