@@ -21,7 +21,7 @@
 
 import inspect
 import warnings
-from typing import Tuple, Sequence, Dict, Any, Callable, Union
+from typing import Tuple, Sequence, Dict, Any, Callable, Union, AbstractSet
 
 import numpy as np
 import xarray as xr
@@ -36,8 +36,6 @@ CubeFunc = Callable[..., CubeFuncOutput]
 _PREDEFINED_KEYWORDS = ['input_params', 'dim_coords', 'dim_ranges']
 
 
-# TODO: support vectorize = all cubes have same variables and cube_func receives variables as vectors (with extra dim)
-
 def compute_cube(cube_func: CubeFunc,
                  *input_cubes: xr.Dataset,
                  input_cube_schema: CubeSchema = None,
@@ -50,6 +48,49 @@ def compute_cube(cube_func: CubeFunc,
                  cube_asserted: bool = False) -> xr.Dataset:
     """
     Compute a new output data cube with a single variable named *output_var_name*
+    from variables named *input_var_names* contained in zero, one, or more
+    input data cubes in *input_cubes* using a cube factory function *cube_func*.
+
+    TODO: describe me
+
+    :param cube_func: The cube factory function.
+    :param input_cubes: An optional sequence of input cube datasets, must be provided if *input_cube_schema* is not.
+    :param input_cube_schema: An optional input cube schema, must be provided if *input_cubes* is not.
+    :param input_var_names: A sequence of variable names
+    :param input_params: Optional dictionary with processing parameters passed to *cube_func*.
+    :param output_var_name: Optional name of the output variable, defaults to ``'output'``.
+    :param output_var_dtype: Optional numpy datatype of the output variable, defaults to ``'float32'``.
+    :param output_var_attrs: Optional metadata attributes for the output variable.
+    :param vectorize: Whether all *input_cubes* have the same variables which are concatenated and passed as vectors
+        to *cube_func*. Not implemented yet.
+    :param cube_asserted: If False, *cube* will be verified, otherwise it is expected to be a valid cube.
+    :return: A new dataset that contains the computed output variable.
+    """
+    return compute_dataset(cube_func,
+                           *input_cubes,
+                           input_cube_schema=input_cube_schema,
+                           input_var_names=input_var_names,
+                           input_params=input_params,
+                           output_var_name=output_var_name,
+                           output_var_dtype=output_var_dtype,
+                           output_var_attrs=output_var_attrs,
+                           vectorize=vectorize,
+                           cube_asserted=cube_asserted)
+
+
+def compute_dataset(cube_func: CubeFunc,
+                    *input_cubes: xr.Dataset,
+                    input_cube_schema: CubeSchema = None,
+                    input_var_names: Sequence[str] = None,
+                    input_params: Dict[str, Any] = None,
+                    output_var_name: str = 'output',
+                    output_var_dims: AbstractSet[str] = None,
+                    output_var_dtype: Any = np.float64,
+                    output_var_attrs: Dict[str, Any] = None,
+                    vectorize: bool = None,
+                    cube_asserted: bool = False) -> xr.Dataset:
+    """
+    Compute a new output dataset with a single variable named *output_var_name*
     from variables named *input_var_names* contained in zero, one, or more
     input data cubes in *input_cubes* using a cube factory function *cube_func*.
 
@@ -78,12 +119,17 @@ def compute_cube(cube_func: CubeFunc,
     Only the ``input_vars`` argument is mandatory. The keyword arguments
     ``input_params``, ``input_params``, ``input_params`` do need to be present at all.
 
+    *output_var_dims* my be given in the case, where ...
+    TODO: describe new output_var_dims...
+
     :param cube_func: The cube factory function.
     :param input_cubes: An optional sequence of input cube datasets, must be provided if *input_cube_schema* is not.
     :param input_cube_schema: An optional input cube schema, must be provided if *input_cubes* is not.
     :param input_var_names: A sequence of variable names
     :param input_params: Optional dictionary with processing parameters passed to *cube_func*.
     :param output_var_name: Optional name of the output variable, defaults to ``'output'``.
+    :param output_var_dims: Optional set of names of the output dimensions,
+        used in the case *cube_func* reduces dimensions.
     :param output_var_dtype: Optional numpy datatype of the output variable, defaults to ``'float32'``.
     :param output_var_attrs: Optional metadata attributes for the output variable.
     :param vectorize: Whether all *input_cubes* have the same variables which are concatenated and passed as vectors
@@ -92,12 +138,15 @@ def compute_cube(cube_func: CubeFunc,
     :return: A new dataset that contains the computed output variable.
     """
     if vectorize is not None:
+        # TODO: support vectorize = all cubes have same variables and cube_func
+        #       receives variables as vectors (with extra dim)
         raise NotImplementedError('vectorize is not supported yet')
 
     if not cube_asserted:
         for cube in input_cubes:
             assert_cube(cube)
 
+    # Check compatibility of inputs
     if input_cubes:
         input_cube_schema = CubeSchema.new(input_cubes[0])
         for cube in input_cubes:
@@ -110,41 +159,53 @@ def compute_cube(cube_func: CubeFunc,
     elif input_cube_schema is None:
         raise ValueError('input_cube_schema must be given')
 
-    if output_var_name is None:
-        output_var_name = 'output'
+    output_var_name = output_var_name or 'output'
 
+    # Collect named input variables, raise if not found
     input_var_names = input_var_names or []
     input_vars = []
     for var_name in input_var_names:
-        var = None
+        input_var = None
         for cube in input_cubes:
             if var_name in cube.data_vars:
-                var = cube[var_name]
+                input_var = cube[var_name]
                 break
-        if var is None:
+        if input_var is None:
             raise ValueError(f'variable {var_name!r} not found in any of cubes')
-        input_vars.append(var)
+        input_vars.append(input_var)
 
+    # Find out, if cube_func uses any of _PREDEFINED_KEYWORDS
     has_input_params, has_dim_coords, has_dim_ranges = _inspect_cube_func(cube_func, input_var_names)
 
     def cube_func_wrapper(index_chunk, *input_var_chunks):
         nonlocal input_cube_schema, input_var_names, input_params, input_vars
         nonlocal has_input_params, has_dim_coords, has_dim_ranges
 
-        index_chunk = index_chunk.ravel()
+        # Note, xarray.apply_ufunc does a test call with empty input arrays,
+        # so index_chunk.size == 0 is a valid case
+        empty_call = index_chunk.size == 0
+
+        # TODO: when output_var_dims is given, index_chunk must be reordered
+        #   as core dimensions are moved to the and of index_chunk and input_var_chunks
+        if not empty_call:
+            index_chunk = index_chunk.ravel()
 
         if index_chunk.size < 2 * input_cube_schema.ndim:
-            warnings.warn(f"weird index_chunk of size {index_chunk.size} received!")
-            return
+            if not empty_call:
+                warnings.warn(f"weird index_chunk of size {index_chunk.size} received!")
+                return None
 
         dim_ranges = None
         if has_dim_ranges or has_dim_coords:
             dim_ranges = {}
             for i in range(input_cube_schema.ndim):
                 dim_name = input_cube_schema.dims[i]
-                start = int(index_chunk[2 * i + 0])
-                end = int(index_chunk[2 * i + 1])
-                dim_ranges[dim_name] = start, end
+                if not empty_call:
+                    start = int(index_chunk[2 * i + 0])
+                    end = int(index_chunk[2 * i + 1])
+                    dim_ranges[dim_name] = start, end
+                else:
+                    dim_ranges[dim_name] = ()
 
         dim_coords = None
         if has_dim_coords:
@@ -170,10 +231,37 @@ def compute_cube(cube_func: CubeFunc,
 
     index_var = _gen_index_var(input_cube_schema)
 
+    all_input_vars = [index_var] + input_vars
+
+    input_core_dims = None
+    if output_var_dims:
+        input_core_dims = []
+        has_warned = False
+        for i in range(len(all_input_vars)):
+            input_var = all_input_vars[i]
+            var_core_dims = [dim for dim in input_var.dims if dim not in output_var_dims]
+            must_rechunk = False
+            if var_core_dims and input_var.chunks:
+                for var_core_dim in var_core_dims:
+                    dim_index = input_var.dims.index(var_core_dim)
+                    dim_chunk_size = input_var.chunks[dim_index][0]
+                    dim_shape_size = input_var.shape[dim_index]
+                    if dim_chunk_size != dim_shape_size:
+                        must_rechunk = True
+                        break
+            if must_rechunk:
+                if not has_warned:
+                    warnings.warn(f'Input variables must not be chunked in dimension(s): {", ".join(var_core_dims)}.\n'
+                                  f'Rechunking applies, which may drastically decrease runtime performance '
+                                  f'and increase memory usage.')
+                    has_warned = True
+                all_input_vars[i] = input_var.chunk({var_core_dim: -1 for var_core_dim in var_core_dims})
+            input_core_dims.append(var_core_dims)
+
     output_var = xr.apply_ufunc(cube_func_wrapper,
-                                index_var,
-                                *input_vars,
+                                *all_input_vars,
                                 dask='parallelized',
+                                input_core_dims=input_core_dims,
                                 output_dtypes=[output_var_dtype])
     if output_var_attrs:
         output_var.attrs.update(output_var_attrs)
