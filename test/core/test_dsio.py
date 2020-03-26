@@ -12,7 +12,7 @@ import xarray as xr
 
 from test.sampledata import new_test_dataset
 from xcube.core.dsio import CsvDatasetIO, DatasetIO, MemDatasetIO, Netcdf4DatasetIO, ZarrDatasetIO, find_dataset_io, \
-    query_dataset_io, _get_path_or_store, write_cube
+    query_dataset_io, get_path_or_store, write_cube
 from xcube.core.dsio import open_dataset, write_dataset
 from xcube.core.new import new_cube
 
@@ -331,20 +331,20 @@ class ContextManagerTest(unittest.TestCase):
 
 class GetPathOrStoreTest(unittest.TestCase):
     def test_path_or_store_read_from_bucket(self):
-        path, _ = _get_path_or_store('http://obs.eu-de.otc.t-systems.com/dcs4cop-obs-02/OLCI-SNS-RAW-CUBE-2.zarr',
-                                     mode='r')
+        path, _ = get_path_or_store('http://obs.eu-de.otc.t-systems.com/dcs4cop-obs-02/OLCI-SNS-RAW-CUBE-2.zarr',
+                                    mode='r')
         self.assertIsInstance(path, fsspec.mapping.FSMap)
 
     def test_path_or_store_write_to_bucket(self):
-        path, _ = _get_path_or_store('http://obs.eu-de.otc.t-systems.com/fake_bucket/fake_cube.zarr',
-                                     mode='w',
-                                     client_kwargs={'aws_access_key_id': 'some_fake_id',
+        path, _ = get_path_or_store('http://obs.eu-de.otc.t-systems.com/fake_bucket/fake_cube.zarr',
+                                    mode='w',
+                                    client_kwargs={'aws_access_key_id': 'some_fake_id',
                                                     'aws_secret_access_key': 'some_fake_key'})
         self.assertIsInstance(path, fsspec.mapping.FSMap)
 
     def test_path_or_store_read_from_local(self):
-        path, _ = _get_path_or_store('../examples/serve/demo/cube-1-250-250.zarr',
-                                     mode='r')
+        path, _ = get_path_or_store('../examples/serve/demo/cube-1-250-250.zarr',
+                                    mode='r')
         self.assertIsInstance(path, str)
 
 

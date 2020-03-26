@@ -12,7 +12,7 @@ from xcube.constants import FORMAT_NAME_LEVELS
 from xcube.constants import FORMAT_NAME_NETCDF4
 from xcube.constants import FORMAT_NAME_SCRIPT
 from xcube.constants import FORMAT_NAME_ZARR
-from xcube.core.dsio import guess_dataset_format
+from xcube.core.dsio import guess_dataset_format, get_client_kwargs
 from xcube.core.dsio import split_bucket_url
 from xcube.core.dsio import write_cube
 from xcube.core.geom import get_dataset_bounds
@@ -638,15 +638,12 @@ def open_ml_dataset_from_object_storage(path: str,
     data_format = data_format or guess_ml_dataset_format(path)
 
     endpoint_url, root = split_bucket_url(path)
+    client_kwargs = dict(client_kwargs or {})
     if endpoint_url:
-        kwargs['endpoint_url'] = endpoint_url
+        client_kwargs['endpoint_url'] = endpoint_url
         path = root
 
-    client_kwargs = dict(client_kwargs or {})
-    for arg_name in ['endpoint_url', 'region_name']:
-        if arg_name in kwargs:
-            client_kwargs[arg_name] = kwargs.pop(arg_name)
-
+    client_kwargs, _ = get_client_kwargs(client_kwargs)
     obs_file_system = s3fs.S3FileSystem(anon=True, client_kwargs=client_kwargs)
 
     if data_format == FORMAT_NAME_ZARR:

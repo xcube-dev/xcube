@@ -409,12 +409,12 @@ class ZarrDatasetIO(DatasetIO):
         consolidated = False
 
         if isinstance(path, str):
-            client_kwargs, anon_mode = get_client_kwargs(kwargs)
+            client_kwargs, anon_mode = get_client_kwargs(client_kwargs)
             if 'endpoint_url' in client_kwargs:
                 path_or_store = root
-            path_or_store, consolidated = _get_path_or_store(path_or_store,
-                                                             client_kwargs=client_kwargs,
-                                                             mode='r')
+            path_or_store, consolidated = get_path_or_store(path_or_store,
+                                                            client_kwargs=client_kwargs,
+                                                            mode='r')
             if 'max_cache_size' in kwargs:
                 max_cache_size = kwargs.pop('max_cache_size')
                 if max_cache_size > 0:
@@ -433,10 +433,10 @@ class ZarrDatasetIO(DatasetIO):
               client_kwargs=None,
               **kwargs):
         client_kwargs, anon_mode = get_client_kwargs(client_kwargs)
-        path_or_store, consolidated = _get_path_or_store(output_path,
-                                                         client_kwargs=client_kwargs,
-                                                         anon_mode=anon_mode,
-                                                         mode='w')
+        path_or_store, consolidated = get_path_or_store(output_path,
+                                                        client_kwargs=client_kwargs,
+                                                        anon_mode=anon_mode,
+                                                        mode='w')
         encoding = self._get_write_encodings(dataset, compress, cname, clevel, shuffle, blocksize, chunksizes)
         dataset.to_zarr(path_or_store, mode='w', encoding=encoding, consolidated=consolidated)
 
@@ -544,10 +544,10 @@ def get_client_kwargs(kwargs) -> Tuple[dict, bool]:
     return client_kwargs, anon_mode
 
 
-def _get_path_or_store(path: str,
-                       client_kwargs: Dict[str, Any] = None,
-                       anon_mode: bool = None,
-                       mode: str = None) -> Tuple[MutableMapping, bool]:
+def get_path_or_store(path: str,
+                      client_kwargs: Dict[str, Any] = None,
+                      anon_mode: bool = None,
+                      mode: str = None) -> Tuple[MutableMapping, bool]:
     path_or_store = path
     consolidated = False
     client_kwargs = dict(client_kwargs) if client_kwargs else {}

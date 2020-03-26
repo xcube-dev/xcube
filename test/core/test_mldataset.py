@@ -8,7 +8,8 @@ import pandas as pd
 import s3fs
 import xarray as xr
 
-from xcube.core.mldataset import BaseMultiLevelDataset
+from xcube.core.dsio import write_cube
+from xcube.core.mldataset import BaseMultiLevelDataset, open_ml_dataset_from_object_storage
 from xcube.core.mldataset import CombinedMultiLevelDataset
 from xcube.core.mldataset import ComputedMultiLevelDataset
 from xcube.core.mldataset import ObjectStorageMultiLevelDataset
@@ -185,3 +186,10 @@ class ObjectStorageMultiLevelDatasetTest(unittest.TestCase):
                      'https://s3.amazonaws.com/xcube-test/cube-1-250-250.levels',
                      client_kwargs=dict(provider_access_key_id='test_fake_id',
                                         provider_secret_access_key='test_fake_secret'))
+
+    def test_open_ml_dataset_from_object_storage(self):
+        path = 'http://obs.eu-de.otc.t-systems.com/dcs4cop-obs-02/OLCI-SNS-RAW-CUBE-2.zarr'
+        ml_ds_from_object_storage = open_ml_dataset_from_object_storage(path)
+        self.assertIsNotNone(ml_ds_from_object_storage)
+        self.assertIn('conc_chl', ml_ds_from_object_storage.base_dataset.variables)
+        self.assertEqual((216, 1000, 2000), ml_ds_from_object_storage.base_dataset.conc_chl.shape)
