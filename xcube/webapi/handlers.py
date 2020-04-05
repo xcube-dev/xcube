@@ -36,7 +36,7 @@ from xcube.webapi.controllers.catalogue import get_datasets, get_dataset_coordin
 from xcube.webapi.controllers.places import find_places, find_dataset_places
 from xcube.webapi.controllers.tiles import get_dataset_tile, get_dataset_tile_grid, get_ne2_tile, get_ne2_tile_grid, \
     get_legend
-from xcube.webapi.controllers.timeseries import get_time_series_info, get_time_series_for_point, \
+from xcube.webapi.controllers.ts_legacy import get_time_series_info, get_time_series_for_point, \
     get_time_series_for_geometry, \
     get_time_series_for_geometry_collection, get_time_series_for_feature_collection
 from xcube.webapi.controllers.wmts import get_wmts_capabilities_xml
@@ -66,8 +66,8 @@ class WMTSKvpHandler(ServiceRequestHandler):
             raise ServiceBadRequestError('Value for "service" parameter must be "WMTS"')
         request = self.params.get_query_argument('request')
         if request == "GetCapabilities":
-            version = self.params.get_query_argument("version", _WMTS_VERSION)
-            if version != _WMTS_VERSION:
+            wmts_version = self.params.get_query_argument("version", _WMTS_VERSION)
+            if wmts_version != _WMTS_VERSION:
                 raise ServiceBadRequestError(f'Value for "version" parameter must be "{_WMTS_VERSION}"')
             capabilities = await IOLoop.current().run_in_executor(None,
                                                                   get_wmts_capabilities_xml,
@@ -77,8 +77,8 @@ class WMTSKvpHandler(ServiceRequestHandler):
             await self.finish(capabilities)
 
         elif request == "GetTile":
-            version = self.params.get_query_argument("version", _WMTS_VERSION)
-            if version != _WMTS_VERSION:
+            wmts_version = self.params.get_query_argument("version", _WMTS_VERSION)
+            if wmts_version != _WMTS_VERSION:
                 raise ServiceBadRequestError(f'Value for "version" parameter must be "{_WMTS_VERSION}"')
             layer = self.params.get_query_argument("layer")
             try:
@@ -467,7 +467,7 @@ class InfoHandler(ServiceRequestHandler):
 
 
 # noinspection PyAbstractClass
-class GetTimeSeriesInfoHandler(ServiceRequestHandler):
+class GetTsLegacyInfoHandler(ServiceRequestHandler):
 
     async def get(self):
         response = await IOLoop.current().run_in_executor(None, get_time_series_info, self.service_context)
@@ -476,7 +476,7 @@ class GetTimeSeriesInfoHandler(ServiceRequestHandler):
 
 
 # noinspection PyAbstractClass
-class GetTimeSeriesForPointHandler(ServiceRequestHandler):
+class GetTsLegacyForPointHandler(ServiceRequestHandler):
 
     async def get(self, ds_id: str, var_name: str):
         lon = self.params.get_query_argument_float('lon')
@@ -499,7 +499,7 @@ class GetTimeSeriesForPointHandler(ServiceRequestHandler):
 
 
 # noinspection PyAbstractClass
-class GetTimeSeriesForGeometryHandler(ServiceRequestHandler):
+class GetTsLegacyForGeometryHandler(ServiceRequestHandler):
 
     async def post(self, ds_id: str, var_name: str):
         start_date = self.params.get_query_argument_datetime('startDate', default=None)
@@ -523,7 +523,7 @@ class GetTimeSeriesForGeometryHandler(ServiceRequestHandler):
 
 
 # noinspection PyAbstractClass
-class GetTimeSeriesForGeometriesHandler(ServiceRequestHandler):
+class GetTsLegacyForGeometriesHandler(ServiceRequestHandler):
 
     async def post(self, ds_id: str, var_name: str):
         start_date = self.params.get_query_argument_datetime('startDate', default=None)
@@ -547,7 +547,7 @@ class GetTimeSeriesForGeometriesHandler(ServiceRequestHandler):
 
 
 # noinspection PyAbstractClass
-class GetTimeSeriesForFeaturesHandler(ServiceRequestHandler):
+class GetTsLegacyForFeaturesHandler(ServiceRequestHandler):
 
     async def post(self, ds_id: str, var_name: str):
         start_date = self.params.get_query_argument_datetime('startDate', default=None)

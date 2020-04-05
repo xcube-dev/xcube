@@ -19,7 +19,12 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-from typing import Dict, List
+"""
+This module implements the controller for the "/ts" handler.
+It is maintained for legacy reasons only (DCS4COP VITO viewer).
+"""
+
+from typing import Dict, List, Optional
 
 import numpy as np
 import shapely.geometry
@@ -31,7 +36,7 @@ from xcube.core.ancvar import find_ancillary_var_names
 from xcube.core.geom import get_dataset_bounds
 from xcube.core.timecoord import timestamp_to_iso_string
 from xcube.util.geojson import GeoJSON
-from xcube.util.perf import measure_time_cm, measure_time
+from xcube.util.perf import measure_time
 from xcube.webapi.context import ServiceContext
 from xcube.webapi.errors import ServiceBadRequestError, ServiceResourceNotFoundError
 
@@ -287,15 +292,27 @@ def _get_time_series_for_geometry(dataset: xr.Dataset,
                                           geometry,
                                           start_date=start_date, end_date=end_date)
 
-    ts_ds = timeseries.get_time_series(dataset, geometry, [var_name],
-                                       include_count=include_count,
-                                       include_stdev=include_stdev,
+    agg_methods = set()
+    agg_methods.add('mean')
+    if include_stdev:
+        agg_methods.add('std')
+    if include_count:
+        agg_methods.add('count')
+
+    ts_ds = timeseries.get_time_series(dataset,
+                                       geometry,
+                                       [var_name],
+                                       agg_methods=agg_methods,
                                        start_date=start_date,
                                        end_date=end_date)
     if ts_ds is None:
         return {'results': []}
 
     ancillary_var_names = find_ancillary_var_names(ts_ds, var_name)
+
+    mean_var_name = None
+    if var_name + '_mean' in ts_ds:
+        mean_var_name = var_name + '_mean'
 
     uncert_var_name = None
     if 'standard_error' in ancillary_var_names:
@@ -320,13 +337,13 @@ def _collect_ts_result(ts_ds: xr.Dataset,
     if not (max_valids is None or max_valids == -1 or max_valids > 0):
         raise ValueError('max_valids must be either None, -1 or positive')
 
-    var = ts_ds[var_name]
-    uncert_var = ts_ds[uncert_var_name] if uncert_var_name else None
-    count_var = ts_ds[count_var_name] if count_var_name else None
+    average_var = ts_ds.get(var_name, ts_ds.get(var_name + '_mean'))
+    uncert_var = ts_ds.get(uncert_var_name) if uncert_var_name else None
+    count_var = ts_ds.get(count_var_name) if count_var_name else None
 
-    total_count = ts_ds.attrs.get('max_number_of_observations', 1)
+    total_count_value = ts_ds.attrs.get('max_number_of_observations', 1)
 
-    num_times = var.time.size
+    num_times = average_var.time.size
     time_series = []
 
     pos_max_valids = max_valids is not None and max_valids > 0
@@ -335,38 +352,44 @@ def _collect_ts_result(ts_ds: xr.Dataset,
     else:
         time_indexes = range(num_times)
 
-    values = var.values
+    average_values = average_var.values
+    count_values = count_var.values if count_var is not None else None
+    uncert_values = uncert_var.values if uncert_var is not None else None
 
     for time_index in time_indexes:
         if len(time_series) == max_valids:
             break
 
-        value = float(values[time_index])
-        if np.isnan(value):
+        average_value = _get_float_value(average_values, time_index)
+        if average_value is None:
             if max_valids is not None:
                 continue
-            statistics = dict(average=None,
-                              validCount=0,
-                              totalCount=total_count)
+            count_value = 0
         else:
-            statistics = dict(average=value,
-                              validCount=int(count_var[time_index]) if count_var is not None else 1,
-                              totalCount=total_count)
-        if uncert_var is not None:
-            value = float(uncert_var[time_index])
-            # TODO (forman): agree with Dirk on how we call provided uncertainty
-            if np.isnan(value):
-                statistics['uncertainty'] = None
-            else:
-                statistics['uncertainty'] = float(value)
+            count_value = int(count_values[time_index]) if count_values is not None else 1
+
+        statistics = {
+            'average': average_value,
+            'validCount': count_value,
+            'totalCount': total_count_value
+        }
+        if uncert_values is not None:
+            statistics['uncertainty'] = _get_float_value(uncert_values, time_index)
 
         time_series.append(dict(result=statistics,
-                                date=timestamp_to_iso_string(var.time[time_index].values)))
+                                date=timestamp_to_iso_string(average_var.time[time_index].values)))
 
     if pos_max_valids:
         return {'results': time_series[::-1]}
     else:
         return {'results': time_series}
+
+
+def _get_float_value(values: Optional[np.ndarray], index: int) -> Optional[float]:
+    if values is None:
+        return None
+    value = float(values[index])
+    return None if np.isnan(value) else value
 
 
 def _get_time_series_for_geometries(dataset: xr.Dataset,

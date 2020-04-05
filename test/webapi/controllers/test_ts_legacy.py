@@ -3,11 +3,12 @@ import unittest
 import numpy as np
 
 from test.webapi.helpers import new_test_service_context
-from xcube.webapi.controllers.timeseries import get_time_series_info, get_time_series_for_point, \
+from xcube.webapi.controllers.ts_legacy import get_time_series_info, get_time_series_for_point, \
     get_time_series_for_geometry, get_time_series_for_geometry_collection
+from test.mixins import AlmostEqualDeepMixin
 
 
-class TimeSeriesControllerTest(unittest.TestCase):
+class TimeSeriesControllerTest(unittest.TestCase, AlmostEqualDeepMixin):
 
     def setUp(self) -> None:
         self.maxDiff = None
@@ -37,7 +38,7 @@ class TimeSeriesControllerTest(unittest.TestCase):
                                         'result': {'average': 20.12085723876953,
                                                    'totalCount': 1,
                                                    'validCount': 1}}]}
-        self.assertEqual(expected_result, actual_result)
+        self.assertAlmostEqualDeep(expected_result, actual_result)
 
     def test_get_time_series_for_point_one_valid(self):
         ctx = new_test_service_context()
@@ -50,7 +51,7 @@ class TimeSeriesControllerTest(unittest.TestCase):
                                         'result': {'average': 20.12085723876953,
                                                    'totalCount': 1,
                                                    'validCount': 1}}]}
-        self.assertEqual(expected_result, actual_result)
+        self.assertAlmostEqualDeep(expected_result, actual_result)
 
     def test_get_time_series_for_point_only_valids(self):
         ctx = new_test_service_context()
@@ -67,7 +68,7 @@ class TimeSeriesControllerTest(unittest.TestCase):
                                         'result': {'average': 20.12085723876953,
                                                    'totalCount': 1,
                                                    'validCount': 1}}]}
-        self.assertEqual(expected_result, actual_result)
+        self.assertAlmostEqualDeep(expected_result, actual_result)
 
     def test_get_time_series_for_point_with_uncertainty(self):
         ctx = new_test_service_context()
@@ -77,16 +78,14 @@ class TimeSeriesControllerTest(unittest.TestCase):
                                                   end_date=np.datetime64('2017-01-29'))
         expected_result = {'results': [{'date': '2017-01-22T00:00:00Z',
                                         'result': {'average': 3.534773588180542,
-                                                   'uncertainty': 0.0,
                                                    'totalCount': 1,
                                                    'validCount': 1}},
                                        {'date': '2017-01-29T00:00:00Z',
                                         'result': {'average': 20.12085723876953,
-                                                   'uncertainty': 0.0,
                                                    'totalCount': 1,
                                                    'validCount': 1}}]}
 
-        self.assertEqual(expected_result, actual_result)
+        self.assertAlmostEqualDeep(expected_result, actual_result)
 
     def test_get_time_series_for_geometry_point(self):
         ctx = new_test_service_context()
@@ -107,7 +106,7 @@ class TimeSeriesControllerTest(unittest.TestCase):
                                         'result': {'average': 20.12085723876953,
                                                    'totalCount': 1,
                                                    'validCount': 1}}]}
-        self.assertEqual(expected_result, actual_result)
+        self.assertAlmostEqualDeep(expected_result, actual_result)
 
     def test_get_time_series_for_geometry_polygon(self):
         ctx = new_test_service_context()
@@ -136,7 +135,7 @@ class TimeSeriesControllerTest(unittest.TestCase):
                                         'result': {'average': None,
                                                    'totalCount': 159600,
                                                    'validCount': 0}}]}
-        self.assertEqual(expected_result, actual_result)
+        self.assertAlmostEqualDeep(expected_result, actual_result)
 
     def test_get_time_series_for_geometry_polygon_with_stdev(self):
         ctx = new_test_service_context()
@@ -173,7 +172,7 @@ class TimeSeriesControllerTest(unittest.TestCase):
                                                    'uncertainty': None,
                                                    'validCount': 0}}]}
 
-        self.assertEqual(expected_result, actual_result)
+        self.assertAlmostEqualDeep(expected_result, actual_result)
 
     def test_get_time_series_for_geometry_polygon_one_valid(self):
         ctx = new_test_service_context()
@@ -188,7 +187,7 @@ class TimeSeriesControllerTest(unittest.TestCase):
                                                    'totalCount': 159600,
                                                    'validCount': 132066}}]}
 
-        self.assertEqual(expected_result, actual_result)
+        self.assertAlmostEqualDeep(expected_result, actual_result)
 
     def test_get_time_series_for_geometry_polygon_only_valids(self):
         ctx = new_test_service_context()
@@ -206,7 +205,7 @@ class TimeSeriesControllerTest(unittest.TestCase):
                                         'result': {'average': 49.70755256053988,
                                                    'totalCount': 159600,
                                                    'validCount': 132066}}]}
-        self.assertEqual(expected_result, actual_result)
+        self.assertAlmostEqualDeep(expected_result, actual_result)
 
     def test_get_time_series_for_geometries_incl_point(self):
         ctx = new_test_service_context()
@@ -230,7 +229,7 @@ class TimeSeriesControllerTest(unittest.TestCase):
                                          'result': {'average': 20.12085723876953,
                                                     'totalCount': 1,
                                                     'validCount': 1}}]]}
-        self.assertEqual(expected_result, actual_result)
+        self.assertAlmostEqualDeep(expected_result, actual_result)
 
     def test_get_time_series_for_geometries_incl_polygon(self):
         ctx = new_test_service_context()
@@ -263,7 +262,7 @@ class TimeSeriesControllerTest(unittest.TestCase):
                                                     'totalCount': 159600,
                                                     'validCount': 0}}]]}
 
-        self.assertEqual(expected_result, actual_result)
+        self.assertAlmostEqualDeep(expected_result, actual_result)
 
     def test_get_time_series_info(self):
         self.maxDiff = None
