@@ -544,12 +544,18 @@ def _get_path_or_store(path: str,
                        root: str = None):
     path_or_store = path
     anon_mode = True
-    client_kwargs = dict(client_kwargs) if client_kwargs else {}
-    if client_kwargs is not None:
-        if 'provider_access_key_id' in client_kwargs and 'provider_secret_access_key' in client_kwargs:
+    client_kwargs = dict(client_kwargs) if client_kwargs else dict()
+    key = None
+    secret = None
+    if client_kwargs:
+        if 'provider_access_key_id' in client_kwargs:
+            key = client_kwargs.pop('provider_access_key_id')
+        if 'provider_secret_access_key' in client_kwargs:
+            secret = client_kwargs.pop('provider_secret_access_key')
+        if key and secret:
             anon_mode = False
-            client_kwargs['aws_access_key_id'] = client_kwargs.pop('provider_access_key_id')
-            client_kwargs['aws_secret_access_key'] = client_kwargs.pop('provider_secret_access_key')
+        else:
+            key = secret = None
     if path.startswith("https://") or path.startswith("http://"):
         import urllib3.util
         url = urllib3.util.parse_url(path_or_store)
@@ -562,7 +568,7 @@ def _get_path_or_store(path: str,
             root = root[1:]
         if mode == "write":
             root = f's3://{root}'
-        s3 = s3fs.S3FileSystem(anon=anon_mode, client_kwargs=client_kwargs)
+        s3 = s3fs.S3FileSystem(anon=anon_mode, key=key, secret=secret, client_kwargs=client_kwargs)
         path_or_store = s3fs.S3Map(root=root, s3=s3, create=mode == "write")
     return path_or_store, root, client_kwargs
 
