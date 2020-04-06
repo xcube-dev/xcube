@@ -27,7 +27,7 @@ from xcube.webapi.context import normalize_prefix
 from xcube.webapi.handlers import GetNE2TileHandler, GetDatasetVarTileHandler, InfoHandler, GetNE2TileGridHandler, \
     GetDatasetVarTileGridHandler, GetWMTSCapabilitiesXmlHandler, GetColorBarsJsonHandler, GetColorBarsHtmlHandler, \
     GetDatasetsHandler, FindPlacesHandler, FindDatasetPlacesHandler, \
-    GetDatasetCoordsHandler, GetTsLegacyInfoHandler, GetTsLegacyForPointHandler, WMTSKvpHandler, \
+    GetDatasetCoordsHandler, GetTimeSeriesHandler, GetTsLegacyInfoHandler, GetTsLegacyForPointHandler, WMTSKvpHandler, \
     GetTsLegacyForGeometryHandler, GetTsLegacyForFeaturesHandler, GetTsLegacyForGeometriesHandler, \
     GetPlaceGroupsHandler, GetDatasetVarLegendHandler, GetDatasetHandler, GetWMTSTileHandler, GetS3BucketObjectHandler, \
     ListS3BucketHandler, GetDatasetPlaceGroupsHandler, GetDatasetPlaceGroupHandler
@@ -104,6 +104,11 @@ def new_application(prefix: str = None, base_dir: str = '.'):
          FindPlacesHandler),
         (prefix + url_pattern('/places/{{place_group_id}}/{{ds_id}}'),
          FindDatasetPlacesHandler),
+
+        # Time-Series API
+
+        (prefix + url_pattern('/timeseries/{{ds_id}}/{{var_name}}'),
+         GetTimeSeriesHandler),
 
         # Legacy time-series API (for VITO's DCS4COP viewer only)
 

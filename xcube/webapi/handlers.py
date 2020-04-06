@@ -1,5 +1,5 @@
 # The MIT License (MIT)
-# Copyright (c) 2019 by the xcube development team and contributors
+# Copyright (c) 2020 by the xcube development team and contributors
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of
 # this software and associated documentation files (the "Software"), to deal in
@@ -36,6 +36,7 @@ from xcube.webapi.controllers.catalogue import get_datasets, get_dataset_coordin
 from xcube.webapi.controllers.places import find_places, find_dataset_places
 from xcube.webapi.controllers.tiles import get_dataset_tile, get_dataset_tile_grid, get_ne2_tile, get_ne2_tile_grid, \
     get_legend
+from xcube.webapi.controllers.timeseries import get_time_series
 from xcube.webapi.controllers.ts_legacy import get_time_series_info, get_time_series_for_point, \
     get_time_series_for_geometry, \
     get_time_series_for_geometry_collection, get_time_series_for_feature_collection
@@ -464,6 +465,32 @@ class InfoHandler(ServiceRequestHandler):
                                    serverTime=server_time,
                                    serverPID=os.getpid()),
                               indent=2))
+
+
+# noinspection PyAbstractClass
+class GetTimeSeriesHandler(ServiceRequestHandler):
+
+    async def post(self, ds_id: str, var_name: str):
+        geo_json_object = self.get_body_as_json_object("GeoJSON object")
+        agg_methods = self.params.get_query_argument('aggMethods', default=None)
+        agg_methods = agg_methods.split(',') if agg_methods else None
+        start_date = self.params.get_query_argument_datetime('startDate', default=None)
+        end_date = self.params.get_query_argument_datetime('endDate', default=None)
+        max_valids = self.params.get_query_argument_int('maxValids', default=None)
+        _check_max_valids(max_valids)
+
+        result = await IOLoop.current().run_in_executor(None,
+                                                        get_time_series,
+                                                        self.service_context,
+                                                        ds_id,
+                                                        var_name,
+                                                        geo_json_object,
+                                                        agg_methods,
+                                                        start_date,
+                                                        end_date,
+                                                        max_valids)
+        self.set_header('Content-Type', 'application/json')
+        await self.finish(dict(result=result))
 
 
 # noinspection PyAbstractClass

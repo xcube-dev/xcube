@@ -8,7 +8,7 @@ from xcube.webapi.controllers.ts_legacy import get_time_series_info, get_time_se
 from test.mixins import AlmostEqualDeepMixin
 
 
-class TimeSeriesControllerTest(unittest.TestCase, AlmostEqualDeepMixin):
+class TsLegacyControllerTest(unittest.TestCase, AlmostEqualDeepMixin):
 
     def setUp(self) -> None:
         self.maxDiff = None

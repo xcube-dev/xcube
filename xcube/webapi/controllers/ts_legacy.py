@@ -38,7 +38,7 @@ from xcube.core.timecoord import timestamp_to_iso_string
 from xcube.util.geojson import GeoJSON
 from xcube.util.perf import measure_time
 from xcube.webapi.context import ServiceContext
-from xcube.webapi.errors import ServiceBadRequestError, ServiceResourceNotFoundError
+from xcube.webapi.errors import ServiceBadRequestError
 
 
 def get_time_series_info(ctx: ServiceContext) -> Dict:
@@ -95,7 +95,7 @@ def get_time_series_for_point(ctx: ServiceContext,
            if it is a positive integer, the most recent valid values are returned.
     :return: Time-series data structure.
     """
-    dataset = _get_time_series_dataset(ctx, ds_name, var_name)
+    dataset = ctx.get_time_series_dataset(ds_name, var_name=var_name)
     with measure_time() as time_result:
         result = _get_time_series_for_point(dataset, var_name,
                                             shapely.geometry.Point(lon, lat),
@@ -134,7 +134,7 @@ def get_time_series_for_geometry(ctx: ServiceContext,
            if it is a positive integer, the most recent valid values are returned.
     :return: Time-series data structure.
     """
-    dataset = _get_time_series_dataset(ctx, ds_name, var_name)
+    dataset = ctx.get_time_series_dataset(ds_name, var_name=var_name)
     if not GeoJSON.is_geometry(geometry):
         raise ServiceBadRequestError("Invalid GeoJSON geometry")
     if isinstance(geometry, dict):
@@ -180,7 +180,7 @@ def get_time_series_for_geometry_collection(ctx: ServiceContext,
            if it is a positive integer, the most recent valid values are returned.
     :return: Time-series data structure.
     """
-    dataset = _get_time_series_dataset(ctx, ds_name, var_name)
+    dataset = ctx.get_time_series_dataset(ds_name, var_name=var_name)
     geometries = GeoJSON.get_geometry_collection_geometries(geometry_collection)
     if geometries is None:
         raise ServiceBadRequestError("Invalid GeoJSON geometry collection")
@@ -229,7 +229,7 @@ def get_time_series_for_feature_collection(ctx: ServiceContext,
            if it is a positive integer, the most recent valid values are returned.
     :return: Time-series data structure.
     """
-    dataset = _get_time_series_dataset(ctx, ds_name, var_name)
+    dataset = ctx.get_time_series_dataset(ds_name, var_name=var_name)
     features = GeoJSON.get_feature_collection_features(feature_collection)
     if features is None:
         raise ServiceBadRequestError("Invalid GeoJSON feature collection")
@@ -309,10 +309,6 @@ def _get_time_series_for_geometry(dataset: xr.Dataset,
         return {'results': []}
 
     ancillary_var_names = find_ancillary_var_names(ts_ds, var_name)
-
-    mean_var_name = None
-    if var_name + '_mean' in ts_ds:
-        mean_var_name = var_name + '_mean'
 
     uncert_var_name = None
     if 'standard_error' in ancillary_var_names:
@@ -411,15 +407,3 @@ def _get_time_series_for_geometries(dataset: xr.Dataset,
                                                max_valids=max_valids)
         time_series.append(result["results"])
     return {'results': time_series}
-
-
-def _get_time_series_dataset(ctx: ServiceContext, ds_id: str, var_name: str = None):
-    descriptor = ctx.get_dataset_descriptor(ds_id)
-    ts_ds_name = descriptor.get('TimeSeriesDataset', ds_id)
-    try:
-        # Try to get more efficient, time-chunked dataset
-        return ctx.get_dataset(ts_ds_name, expected_var_names=[var_name] if var_name else None)
-    except ServiceResourceNotFoundError:
-        # This happens, if the dataset pointed to by 'TimeSeriesDataset'
-        # does not contain the variable given by var_name.
-        return ctx.get_dataset(ds_id, expected_var_names=[var_name] if var_name else None)

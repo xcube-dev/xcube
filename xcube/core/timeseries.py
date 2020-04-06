@@ -20,7 +20,7 @@
 # SOFTWARE.
 
 import warnings
-from typing import Union, Sequence, Optional, AbstractSet
+from typing import Union, Sequence, Optional, AbstractSet, Set
 
 import numpy as np
 import shapely.geometry
@@ -102,10 +102,7 @@ def get_time_series(cube: xr.Dataset,
 
     geometry = convert_geometry(geometry)
 
-    agg_methods = agg_methods or [AGG_MEAN]
-    if isinstance(agg_methods, str):
-        agg_methods = [agg_methods]
-    agg_methods = set(agg_methods)
+    agg_methods = normalize_agg_methods(agg_methods)
     if include_count:
         warnings.warn("keyword argument 'include_count' has been deprecated, "
                       f"use 'agg_methods=[{AGG_COUNT!r}, ...]' instead")
@@ -114,10 +111,6 @@ def get_time_series(cube: xr.Dataset,
         warnings.warn("keyword argument 'include_stdev' has been deprecated, "
                       f"use 'agg_methods=[{AGG_STD!r}, ...]' instead")
         agg_methods.add(AGG_STD)
-    invalid_agg_methods = agg_methods - set(AGG_METHODS.keys())
-    if invalid_agg_methods:
-        s = 's' if len(invalid_agg_methods) > 1 else ''
-        raise ValueError(f'invalid aggregation method{s}: {", ".join(sorted(list(invalid_agg_methods)))}')
 
     dataset = select_variables_subset(cube, var_names)
     if len(dataset.data_vars) == 0:
@@ -174,3 +167,16 @@ def get_time_series(cube: xr.Dataset,
     ts_dataset = ts_dataset.assign_attrs(max_number_of_observations=max_number_of_observations)
 
     return ts_dataset
+
+
+def normalize_agg_methods(agg_methods: Union[str, Sequence[str]],
+                          exception_type = ValueError) -> Set[str]:
+    agg_methods = agg_methods or [AGG_MEAN]
+    if isinstance(agg_methods, str):
+        agg_methods = [agg_methods]
+    agg_methods = set(agg_methods)
+    invalid_agg_methods = agg_methods - set(AGG_METHODS.keys())
+    if invalid_agg_methods:
+        s = 's' if len(invalid_agg_methods) > 1 else ''
+        raise exception_type(f'invalid aggregation method{s}: {", ".join(sorted(list(invalid_agg_methods)))}')
+    return agg_methods
