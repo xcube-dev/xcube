@@ -13,8 +13,7 @@ from xcube.constants import FORMAT_NAME_NETCDF4
 from xcube.constants import FORMAT_NAME_SCRIPT
 from xcube.constants import FORMAT_NAME_ZARR
 from xcube.core.dsio import guess_dataset_format
-from xcube.core.dsio import get_client_kwargs
-from xcube.core.dsio import split_bucket_url
+from xcube.core.dsio import parse_obs_url_and_kwargs
 from xcube.core.dsio import write_cube
 from xcube.core.geom import get_dataset_bounds
 from xcube.core.verify import assert_cube
@@ -638,27 +637,21 @@ def open_ml_dataset_from_object_storage(path: str,
                                         **kwargs) -> MultiLevelDataset:
     data_format = data_format or guess_ml_dataset_format(path)
 
-    endpoint_url, root = split_bucket_url(path)
-    client_kwargs = dict(client_kwargs or {})
-    if endpoint_url:
-        client_kwargs['endpoint_url'] = endpoint_url
-        path = root
-
-    client_kwargs, _, key, secret = get_client_kwargs(client_kwargs)
-    obs_file_system = s3fs.S3FileSystem(anon=True, key=key, secret=secret, client_kwargs=client_kwargs)
+    root, obs_fs_kwargs, obs_fs_client_kwargs = parse_obs_url_and_kwargs(path, client_kwargs)
+    obs_fs = s3fs.S3FileSystem(**obs_fs_kwargs, client_kwargs=obs_fs_client_kwargs)
 
     if data_format == FORMAT_NAME_ZARR:
-        store = s3fs.S3Map(root=path, s3=obs_file_system, check=False)
+        store = s3fs.S3Map(root=root, s3=obs_fs, check=False)
         if chunk_cache_capacity:
             store = zarr.LRUStoreCache(store, max_size=chunk_cache_capacity)
         with measure_time(tag=f"opened remote zarr dataset {path}"):
-            consolidated = obs_file_system.exists(f'{path}/.zmetadata')
+            consolidated = obs_fs.exists(f'{root}/.zmetadata')
             ds = assert_cube(xr.open_zarr(store, consolidated=consolidated, **kwargs))
         return BaseMultiLevelDataset(ds, ds_id=ds_id)
     elif data_format == FORMAT_NAME_LEVELS:
         with measure_time(tag=f"opened remote levels dataset {path}"):
-            return ObjectStorageMultiLevelDataset(obs_file_system,
-                                                  path,
+            return ObjectStorageMultiLevelDataset(obs_fs,
+                                                  root,
                                                   zarr_kwargs=kwargs,
                                                   ds_id=ds_id,
                                                   chunk_cache_capacity=chunk_cache_capacity,
