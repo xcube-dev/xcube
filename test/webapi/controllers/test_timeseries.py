@@ -259,3 +259,17 @@ class CollectTimeSeriesResultTest(unittest.TestCase, AlmostEqualDeepMixin):
         self.assertEqual([{'a': 2.0, 'b': None, 'c': 0.7, 'time': '2010-04-08T00:00:00Z'},
                           {'a': 3.0, 'b': 23.0, 'c': None, 'time': '2010-04-09T00:00:00Z'}],
                          result)
+
+    def test_count(self):
+        self.maxDiff = None
+
+        time_series_ds = xr.Dataset(
+            data_vars=dict(time=xr.DataArray(pd.date_range(start='2010-04-05', periods=3, freq='1D'), dims='time'),
+                           c=xr.DataArray([23, 78, 74], dims='time')),
+            attrs=dict(max_number_of_observations=82))
+
+        result = _collect_timeseries_result(time_series_ds, {'count': 'c'}, max_valids=-1)
+        self.assertEqual([{'count': 23, 'count_tot': 82, 'time': '2010-04-05T00:00:00Z'},
+                          {'count': 78, 'count_tot': 82, 'time': '2010-04-06T00:00:00Z'},
+                          {'count': 74, 'count_tot': 82, 'time': '2010-04-07T00:00:00Z'}],
+                         result)
