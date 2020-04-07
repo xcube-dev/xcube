@@ -662,19 +662,19 @@ def _open_ml_dataset_from_object_storage(ctx: ServiceContext,
     ds_id = dataset_descriptor.get('Identifier')
     path = ctx.get_descriptor_path(dataset_descriptor, f"dataset descriptor {ds_id}", is_url=True)
     data_format = dataset_descriptor.get('Format', FORMAT_NAME_ZARR)
+    client_kwargs = dict()
     endpoint_url = None
     if 'Endpoint' in dataset_descriptor:
-        endpoint_url = dataset_descriptor['Endpoint']
+        client_kwargs['endpoint_url'] = dataset_descriptor['Endpoint']
     region_name = None
     if 'Region' in dataset_descriptor:
-        region_name = dataset_descriptor['Region']
+        client_kwargs['region_name'] = dataset_descriptor['Region']
     chunk_cache_capacity = ctx.get_dataset_chunk_cache_capacity(dataset_descriptor)
     return open_ml_dataset_from_object_storage(path,
                                                data_format=data_format,
                                                ds_id=ds_id,
                                                exception_type=ServiceConfigError,
-                                               endpoint_url=endpoint_url,
-                                               region_name=region_name,
+                                               client_kwargs=client_kwargs,
                                                chunk_cache_capacity=chunk_cache_capacity)
 
 
