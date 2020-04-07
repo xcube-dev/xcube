@@ -13,8 +13,10 @@ from xcube.core.mldataset import BaseMultiLevelDataset
 from xcube.core.mldataset import CombinedMultiLevelDataset
 from xcube.core.mldataset import ComputedMultiLevelDataset
 from xcube.core.mldataset import ObjectStorageMultiLevelDataset
+from xcube.core.mldataset import get_dataset_tile_grid
 from xcube.core.mldataset import open_ml_dataset_from_object_storage
 from xcube.core.mldataset import write_levels
+from xcube.core.new import new_cube
 from xcube.util.tilegrid import TileGrid
 
 
@@ -164,7 +166,7 @@ class ObjectStorageMultiLevelDatasetTest(unittest.TestCase):
             )
             self.assertIsNotNone(ml_ds_from_object_storage)
             self.assertIn('conc_chl', ml_ds_from_object_storage.base_dataset.variables)
-            self.assertEqual((5, 1000, 2000), ml_ds_from_object_storage.base_dataset.conc_chl.shape) \
+            self.assertEqual((5, 1000, 2000), ml_ds_from_object_storage.base_dataset.conc_chl.shape)
 
     @classmethod
     def _write_test_cube(cls):
@@ -196,7 +198,7 @@ class ObjectStorageMultiLevelDatasetTest(unittest.TestCase):
             self.assertIsNotNone(ml_dataset)
             self.assertEqual(3, ml_dataset.num_levels)
             self.assertEqual((250, 250), ml_dataset.tile_grid.tile_size)
-            self.assertEqual(1, ml_dataset.tile_grid.num_level_zero_tiles_x)
+            self.assertEqual(2, ml_dataset.tile_grid.num_level_zero_tiles_x)
             self.assertEqual(1, ml_dataset.tile_grid.num_level_zero_tiles_y)
             self.assertEqual(761904762, ml_dataset.get_chunk_cache_capacity(0))
             self.assertEqual(190476190, ml_dataset.get_chunk_cache_capacity(1))
@@ -219,3 +221,78 @@ class ObjectStorageMultiLevelDatasetTest(unittest.TestCase):
                      'https://s3.amazonaws.com/xcube-test/cube-1-250-250.levels',
                      client_kwargs=dict(provider_access_key_id='test_fake_id',
                                         provider_secret_access_key='test_fake_secret'))
+
+
+class GetDatasetTileGridTest(unittest.TestCase):
+
+    def setUp(self) -> None:
+        self.cube = new_cube(width=2000, height=1000,
+                             x_start=0, x_res=0.0025,
+                             y_start=50, y_res=0.0025,
+                             inverse_y=True,
+                             variables={'a': 0.5})
+
+    def test_no_chunks(self):
+        tile_grid = get_dataset_tile_grid(self.cube)
+        self.assertEqual(3, tile_grid.num_levels)
+        self.assertEqual((250, 250), tile_grid.tile_size)
+        self.assertEqual(2, tile_grid.num_level_zero_tiles_x)
+        self.assertEqual(1, tile_grid.num_level_zero_tiles_y)
+        self.assertEqual((0, 50, 5, 52.5), tile_grid.geo_extent)
+        self.assertEqual((500, 250), tile_grid.size(0))
+        self.assertEqual((1000, 500), tile_grid.size(1))
+        self.assertEqual((2000, 1000), tile_grid.size(2))
+
+    def test_no_chunks_num_levels(self):
+        tile_grid = get_dataset_tile_grid(self.cube, num_levels=3)
+        self.assertEqual(3, tile_grid.num_levels)
+        self.assertEqual((250, 250), tile_grid.tile_size)
+        self.assertEqual(2, tile_grid.num_level_zero_tiles_x)
+        self.assertEqual(1, tile_grid.num_level_zero_tiles_y)
+        self.assertEqual((0, 50, 5, 52.5), tile_grid.geo_extent)
+        self.assertEqual((500, 250), tile_grid.size(0))
+        self.assertEqual((1000, 500), tile_grid.size(1))
+        self.assertEqual((2000, 1000), tile_grid.size(2))
+
+    def test_chunks(self):
+        tile_grid = get_dataset_tile_grid(self.cube.chunk(dict(time=1, lat=250, lon=250)))
+        self.assertEqual(3, tile_grid.num_levels)
+        self.assertEqual((250, 250), tile_grid.tile_size)
+        self.assertEqual(2, tile_grid.num_level_zero_tiles_x)
+        self.assertEqual(1, tile_grid.num_level_zero_tiles_y)
+        self.assertEqual((0, 50, 5, 52.5), tile_grid.geo_extent)
+        self.assertEqual((500, 250), tile_grid.size(0))
+        self.assertEqual((1000, 500), tile_grid.size(1))
+        self.assertEqual((2000, 1000), tile_grid.size(2))
+
+        tile_grid = get_dataset_tile_grid(self.cube.chunk(dict(time=1, lat=256, lon=512)))
+        self.assertEqual(3, tile_grid.num_levels)
+        self.assertEqual((500, 250), tile_grid.tile_size)
+        self.assertEqual(1, tile_grid.num_level_zero_tiles_x)
+        self.assertEqual(1, tile_grid.num_level_zero_tiles_y)
+        self.assertEqual((0, 50, 5, 52.5), tile_grid.geo_extent)
+        self.assertEqual((500, 250), tile_grid.size(0))
+        self.assertEqual((1000, 500), tile_grid.size(1))
+        self.assertEqual((2000, 1000), tile_grid.size(2))
+
+    def test_chunks_num_levels(self):
+        tile_grid = get_dataset_tile_grid(self.cube.chunk(dict(time=1, lat=250, lon=250)), num_levels=3)
+        self.assertEqual(3, tile_grid.num_levels)
+        self.assertEqual((250, 250), tile_grid.tile_size)
+        self.assertEqual(2, tile_grid.num_level_zero_tiles_x)
+        self.assertEqual(1, tile_grid.num_level_zero_tiles_y)
+        self.assertEqual((0, 50, 5, 52.5), tile_grid.geo_extent)
+        self.assertEqual((500, 250), tile_grid.size(0))
+        self.assertEqual((1000, 500), tile_grid.size(1))
+        self.assertEqual((2000, 1000), tile_grid.size(2))
+
+        tile_grid = get_dataset_tile_grid(self.cube.chunk(dict(time=1, lat=256, lon=256)), num_levels=4)
+        self.assertEqual(4, tile_grid.num_levels)
+        self.assertEqual((256, 256), tile_grid.tile_size)
+        self.assertEqual(1, tile_grid.num_level_zero_tiles_x)
+        self.assertEqual(1, tile_grid.num_level_zero_tiles_y)
+        self.assertEqual((0, 50, 5, 52.5), tile_grid.geo_extent)
+        self.assertEqual((256, 256), tile_grid.size(0))
+        self.assertEqual((512, 512), tile_grid.size(1))
+        self.assertEqual((1024, 1024), tile_grid.size(2))
+        self.assertEqual((2048, 2048), tile_grid.size(3))

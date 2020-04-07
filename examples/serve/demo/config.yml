@@ -29,6 +29,18 @@ Datasets:
     AccessControl:
       IsSubstitute: true
 
+# To create a tile-optimized pyramid version of "./cube-1-250-250.zarr"
+# run following command in this directory:
+#
+# $ xcube level ./cube-1-250-250.zarr
+#
+#  - Identifier: local_levels
+#    Title: "Local OLCI L2C cube for region SNS (levels)"
+#    BoundingBox: [0.0, 50, 5.0, 52.5]
+#    FileSystem: local
+#    Path: cube-1-250-250.levels
+#    Style: default
+
   # Will not appear at all, because it is a "hidden" resource
   - Identifier: local_ts
     Title: "'local' optimized for time-series"
