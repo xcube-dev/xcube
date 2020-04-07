@@ -2,8 +2,13 @@
 
 ### New
 
+* Added new `/timeseries/{dataset}/{variable}` POST operation to xcube web API.
+  It extracts time-series for a given GeoJSON object provided as body.
+  It replaces all of the `/ts/{dataset}/{variable}/{geom-type}` operations.
+  The latter are still maintained for compatibility with the "VITO viewer". 
+  
 * The xcube web API provided through `xcube serve` can now serve RGBA tiles using the 
-  `dataset/{dataset}/variable/rgb/tiles/{z}/{y}/{x}` endpoint. The red, green, blue 
+  `dataset/{dataset}/rgb/tiles/{z}/{y}/{x}` operation. The red, green, blue 
   channels are computed from three configurable variables and normalisation ranges, 
   the alpha channel provides transparency for missing values. To specify a default
   RGB schema for a dataset, a colour mapping for the "pseudo-variable" named `rbg` 

@@ -438,7 +438,7 @@ class ZarrDatasetIO(DatasetIO):
                                                         anon_mode=anon_mode,
                                                         mode='w')
         encoding = self._get_write_encodings(dataset, compress, cname, clevel, shuffle, blocksize, chunksizes)
-        dataset.to_zarr(path_or_store, mode='w', encoding=encoding, consolidated=consolidated)
+        dataset.to_zarr(path_or_store, mode='w', encoding=encoding)
 
     @classmethod
     def _get_write_encodings(cls, dataset, compress, cname, clevel, shuffle, blocksize, chunksizes):
@@ -530,7 +530,7 @@ def rimraf(path):
 
 def get_client_kwargs(kwargs) -> Tuple[dict, bool]:
     anon_mode = True
-    client_kwargs = dict(kwargs) if kwargs else {}
+    client_kwargs = dict(kwargs) if kwargs else dict()
     if 'client_kwargs' in client_kwargs:
         client_kwargs = client_kwargs.pop('client_kwargs')
     if 'endpoint_url' in client_kwargs:

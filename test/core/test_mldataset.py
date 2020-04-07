@@ -154,9 +154,9 @@ class ObjectStorageMultiLevelDatasetTest(unittest.TestCase):
         with moto.mock_s3():
             self._write_test_pyramid()
 
-            s3 = s3fs.S3FileSystem(client_kwargs=dict(endpoint_url="https://s3.amazonaws.com",
-                                                      aws_access_key_id='test_fake_id',
-                                                      aws_secret_access_key='test_fake_secret'))
+            s3 = s3fs.S3FileSystem(key='test_fake_id',
+                                   secret='test_fake_secret',
+                                   client_kwargs=dict(endpoint_url="https://s3.amazonaws.com"))
             ml_dataset = ObjectStorageMultiLevelDataset(s3,
                                                         "xcube-test/cube-1-250-250.levels",
                                                         chunk_cache_capacity=1000 * 1000 * 1000)
