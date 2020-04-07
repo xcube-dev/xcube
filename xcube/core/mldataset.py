@@ -15,6 +15,7 @@ from xcube.constants import FORMAT_NAME_ZARR
 from xcube.core.dsio import guess_dataset_format
 from xcube.core.dsio import parse_obs_url_and_kwargs
 from xcube.core.dsio import write_cube
+from xcube.core.dsio import is_obs_url
 from xcube.core.geom import get_dataset_bounds
 from xcube.core.verify import assert_cube
 from xcube.util.perf import measure_time
@@ -616,10 +617,7 @@ def open_ml_dataset(path: str,
     """
     if not path:
         raise ValueError('path must be given')
-    if path.startswith('http://') \
-            or path.startswith('https://') \
-            or path.startswith('s3://') \
-            or 'endpoint_url' in kwargs:
+    if is_obs_url(path):
         return open_ml_dataset_from_object_storage(path, ds_id=ds_id, exception_type=exception_type, **kwargs)
     elif path.endswith('.py'):
         return open_ml_dataset_from_python_code(path, ds_id=ds_id, exception_type=exception_type, **kwargs)
