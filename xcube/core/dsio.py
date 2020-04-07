@@ -560,7 +560,7 @@ def get_path_or_store(path: str,
             if not path.startswith("s3://"):
                 root = f's3://{root}'
             consolidated = True
-        if mode == "r":
+        elif mode == "r":
             consolidated = s3.exists(f'{root}/.zmetadata')
         path_or_store = s3fs.S3Map(root=root, s3=s3, check=False, create=mode == "w")
     else:
