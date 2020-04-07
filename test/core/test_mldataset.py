@@ -9,7 +9,8 @@ import s3fs
 import xarray as xr
 
 from xcube.core.dsio import write_cube
-from xcube.core.mldataset import BaseMultiLevelDataset, open_ml_dataset_from_object_storage
+from xcube.core.mldataset import open_ml_dataset_from_object_storage
+from xcube.core.mldataset import BaseMultiLevelDataset
 from xcube.core.mldataset import CombinedMultiLevelDataset
 from xcube.core.mldataset import ComputedMultiLevelDataset
 from xcube.core.mldataset import ObjectStorageMultiLevelDataset
