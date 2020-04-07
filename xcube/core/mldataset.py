@@ -12,7 +12,8 @@ from xcube.constants import FORMAT_NAME_LEVELS
 from xcube.constants import FORMAT_NAME_NETCDF4
 from xcube.constants import FORMAT_NAME_SCRIPT
 from xcube.constants import FORMAT_NAME_ZARR
-from xcube.core.dsio import guess_dataset_format, get_client_kwargs
+from xcube.core.dsio import guess_dataset_format
+from xcube.core.dsio import get_client_kwargs
 from xcube.core.dsio import split_bucket_url
 from xcube.core.dsio import write_cube
 from xcube.core.geom import get_dataset_bounds
