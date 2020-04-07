@@ -23,7 +23,7 @@ import os
 import shutil
 import warnings
 from abc import ABCMeta, abstractmethod
-from typing import Any, Callable, Dict, Iterable, List, Optional, Set, Tuple, MutableMapping
+from typing import Any, Callable, Dict, Iterable, List, Optional, Set, Tuple, MutableMapping, Union
 
 import pandas as pd
 import s3fs
@@ -409,7 +409,7 @@ class ZarrDatasetIO(DatasetIO):
         consolidated = False
 
         if isinstance(path, str):
-            client_kwargs, anon_mode = get_client_kwargs(client_kwargs)
+            client_kwargs, anon_mode, key, secret = get_client_kwargs(client_kwargs)
             if 'endpoint_url' in client_kwargs:
                 path_or_store = root
             path_or_store, consolidated = get_path_or_store(path_or_store,
@@ -432,10 +432,12 @@ class ZarrDatasetIO(DatasetIO):
               chunksizes=None,
               client_kwargs=None,
               **kwargs):
-        client_kwargs, anon_mode = get_client_kwargs(client_kwargs)
+        client_kwargs, anon_mode, key, secret = get_client_kwargs(client_kwargs)
         path_or_store, consolidated = get_path_or_store(output_path,
                                                         client_kwargs=client_kwargs,
                                                         anon_mode=anon_mode,
+                                                        key=key,
+                                                        secret=secret,
                                                         mode='w')
         encoding = self._get_write_encodings(dataset, compress, cname, clevel, shuffle, blocksize, chunksizes)
         dataset.to_zarr(path_or_store, mode='w', encoding=encoding)
@@ -528,25 +530,34 @@ def rimraf(path):
             pass
 
 
-def get_client_kwargs(kwargs) -> Tuple[dict, bool]:
+def get_client_kwargs(kwargs) -> Tuple[Union[dict, Any], bool, Optional[Any], Optional[Any]]:
     anon_mode = True
     client_kwargs = dict(kwargs) if kwargs else dict()
+    key = None
+    secret = None
     if 'client_kwargs' in client_kwargs:
         client_kwargs = client_kwargs.pop('client_kwargs')
     if 'endpoint_url' in client_kwargs:
         client_kwargs['endpoint_url'] = client_kwargs.pop('endpoint_url')
     if 'region_name' in client_kwargs:
         client_kwargs['region_name'] = kwargs.pop('region_name')
-    if 'provider_access_key_id' in client_kwargs and 'provider_secret_access_key' in client_kwargs:
-        anon_mode = False
-        client_kwargs['aws_access_key_id'] = client_kwargs.pop('provider_access_key_id')
-        client_kwargs['aws_secret_access_key'] = client_kwargs.pop('provider_secret_access_key')
-    return client_kwargs, anon_mode
+    if client_kwargs:
+        if 'provider_access_key_id' in client_kwargs:
+            key = client_kwargs.pop('provider_access_key_id')
+        if 'provider_secret_access_key' in client_kwargs:
+            secret = client_kwargs.pop('provider_secret_access_key')
+        if key and secret:
+            anon_mode = False
+        else:
+            key = secret = None
+    return client_kwargs, anon_mode, key, secret
 
 
 def get_path_or_store(path: str,
                       client_kwargs: Dict[str, Any] = None,
                       anon_mode: bool = None,
+                      key: str = None,
+                      secret: str = None,
                       mode: str = None) -> Tuple[MutableMapping, bool]:
     path_or_store = path
     consolidated = False
@@ -555,7 +566,7 @@ def get_path_or_store(path: str,
         endpoint_url, root = split_bucket_url(path)
         if endpoint_url:
             client_kwargs['endpoint_url'] = endpoint_url
-        s3 = s3fs.S3FileSystem(anon=anon_mode, client_kwargs=client_kwargs)
+        s3 = s3fs.S3FileSystem(anon=anon_mode, key=key, secret=secret, client_kwargs=client_kwargs)
         if mode == "w":
             if not path.startswith("s3://"):
                 root = f's3://{root}'

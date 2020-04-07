@@ -644,8 +644,8 @@ def open_ml_dataset_from_object_storage(path: str,
         client_kwargs['endpoint_url'] = endpoint_url
         path = root
 
-    client_kwargs, _ = get_client_kwargs(client_kwargs)
-    obs_file_system = s3fs.S3FileSystem(anon=True, client_kwargs=client_kwargs)
+    client_kwargs, _, key, secret = get_client_kwargs(client_kwargs)
+    obs_file_system = s3fs.S3FileSystem(anon=True, key=key, secret=secret, client_kwargs=client_kwargs)
 
     if data_format == FORMAT_NAME_ZARR:
         store = s3fs.S3Map(root=path, s3=obs_file_system, check=False)
