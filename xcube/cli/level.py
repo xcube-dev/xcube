@@ -62,8 +62,9 @@ def level(input, output, link, tile_size, num_levels_max):
         raise click.ClickException(f"NUM_LEVELS_MAX must be a positive integer")
 
     if not output_path:
-        basename, ext = os.path.splitext(input_path)
-        output_path = os.path.join(os.path.dirname(input_path), basename + ".levels")
+        dir_path = os.path.dirname(input_path)
+        basename, ext = os.path.splitext(os.path.basename(input_path))
+        output_path = os.path.join(dir_path, basename + ".levels")
 
     if os.path.exists(output_path):
         raise click.ClickException(f"output {output_path!r} already exists")
