@@ -154,11 +154,11 @@ def _get_time_series_for_geometry(dataset: xr.Dataset,
     if time_series_ds is None:
         return []
 
-    variables = {agg_method: time_series_ds[f'{var_name}_{agg_method}'] for agg_method in agg_methods}
+    var_names = {agg_method: f'{var_name}_{agg_method}' for agg_method in agg_methods}
 
-    return _collect_ts_result(time_series_ds,
-                              variables,
-                              max_valids=max_valids)
+    return _collect_timeseries_result(time_series_ds,
+                                      var_names,
+                                      max_valids=max_valids)
 
 
 def _get_time_series_for_point(dataset: xr.Dataset,
@@ -192,23 +192,24 @@ def _get_time_series_for_point(dataset: xr.Dataset,
     if time_series_ds is None:
         return []
 
-    variables = {var_key: time_series_ds[var_name]}
+    key_to_var_names = {var_key: var_name}
     for role, anc_var_name in roles_to_anc_var_names.items():
-        variables[role] = time_series_ds[anc_var_name]
+        key_to_var_names[role] = anc_var_name
 
-    return _collect_ts_result(time_series_ds,
-                              variables,
-                              max_valids=max_valids)
+    return _collect_timeseries_result(time_series_ds,
+                                      key_to_var_names,
+                                      max_valids=max_valids)
 
 
-def _collect_ts_result(time_series_ts: xr.Dataset,
-                       variables: Dict[str, xr.DataArray],
-                       max_valids: int = None) -> TimeSeries:
+def _collect_timeseries_result(time_series_ds: xr.Dataset,
+                               key_to_var_names: Dict[str, str],
+                               max_valids: int = None) -> TimeSeries:
     if not (max_valids is None or max_valids == -1 or max_valids > 0):
         raise ValueError('max_valids must be either None, -1 or positive')
 
-    time = time_series_ts.time
-    max_number_of_observations = time_series_ts.attrs.get('max_number_of_observations', 1)
+    vars = {key: time_series_ds[var_name] for key, var_name in key_to_var_names.items()}
+    time = time_series_ds.time
+    max_number_of_observations = time_series_ds.attrs.get('max_number_of_observations', 1)
     num_times = time.size
     time_series = []
 
@@ -225,20 +226,22 @@ def _collect_ts_result(time_series_ts: xr.Dataset,
 
         time_series_value = dict()
         all_null = True
-        for time_series_key, var in variables.items():
+        for key, var in vars.items():
             var_values = var.values
             var_value = var_values[time_index]
             if np.isfinite(var_value):
                 all_null = False
-                if np.issubdtype(var_value.dtype, np.dtype(bool)):
-                    var_value = bool(var_value)
-                elif np.issubdtype(var_value.dtype, np.dtype(int)):
-                    var_value = int(var_value)
-                elif np.issubdtype(var_value.dtype, np.dtype(float)):
+                if np.issubdtype(var_value.dtype, np.floating):
                     var_value = float(var_value)
+                elif np.issubdtype(var_value.dtype, np.integer):
+                    var_value = int(var_value)
+                elif np.issubdtype(var_value.dtype, np.dtype(bool)):
+                    var_value = bool(var_value)
+                else:
+                    raise ValueError(f'cannot convert {var_value.dtype} into JSON-convertible value')
             else:
                 var_value = None
-            time_series_value[time_series_key] = var_value
+            time_series_value[key] = var_value
 
         has_count = 'count' in time_series_value
         no_obs = all_null or (has_count and time_series_value['count'] == 0)

@@ -1,10 +1,13 @@
+import json
 import unittest
 
 import numpy as np
+import pandas as pd
+import xarray as xr
 
 from test.mixins import AlmostEqualDeepMixin
 from test.webapi.helpers import new_test_service_context
-from xcube.webapi.controllers.timeseries import get_time_series
+from xcube.webapi.controllers.timeseries import get_time_series, _collect_timeseries_result
 
 
 class TimeSeriesControllerTest(unittest.TestCase, AlmostEqualDeepMixin):
@@ -213,3 +216,46 @@ class TimeSeriesControllerTest(unittest.TestCase, AlmostEqualDeepMixin):
                              'time': '2017-01-30T10:46:34Z'}]]
 
         self.assertAlmostEqualDeep(expected_result, actual_result)
+
+
+class CollectTimeSeriesResultTest(unittest.TestCase, AlmostEqualDeepMixin):
+
+    def test_all_types_converted_correctly(self):
+        self.maxDiff = None
+
+        time_series_ds = xr.Dataset(
+            data_vars=dict(time=xr.DataArray(pd.date_range(start='2010-04-05', periods=4, freq='1D'), dims='time'),
+                           a=xr.DataArray([True, False, False, True], dims='time'),
+                           b=xr.DataArray([32, 33, 35, 34], dims='time'),
+                           c=xr.DataArray([0.4, 0.2, np.nan, 0.7], dims='time')))
+        result = _collect_timeseries_result(time_series_ds, {'a': 'a', 'b': 'b', 'c': 'c'}, max_valids=None)
+        self.assertEqual([{'a': True, 'b': 32, 'c': 0.4, 'time': '2010-04-05T00:00:00Z'},
+                          {'a': False, 'b': 33, 'c': 0.2, 'time': '2010-04-06T00:00:00Z'},
+                          {'a': False, 'b': 35, 'c': None, 'time': '2010-04-07T00:00:00Z'},
+                          {'a': True, 'b': 34, 'c': 0.7, 'time': '2010-04-08T00:00:00Z'}],
+                         result)
+        self.assertEqual('[{"a": true, "b": 32, "c": 0.4, "time": "2010-04-05T00:00:00Z"},'
+                         ' {"a": false, "b": 33, "c": 0.2, "time": "2010-04-06T00:00:00Z"},'
+                         ' {"a": false, "b": 35, "c": null, "time": "2010-04-07T00:00:00Z"},'
+                         ' {"a": true, "b": 34, "c": 0.7, "time": "2010-04-08T00:00:00Z"}]',
+                         json.dumps(result))
+
+    def test_num_valids(self):
+        self.maxDiff = None
+
+        time_series_ds = xr.Dataset(
+            data_vars=dict(time=xr.DataArray(pd.date_range(start='2010-04-05', periods=5, freq='1D'), dims='time'),
+                           a=xr.DataArray([np.nan, 5, np.nan, 2, 3], dims='time'),
+                           b=xr.DataArray([np.nan, 33, np.nan, np.nan, 23], dims='time'),
+                           c=xr.DataArray([np.nan, 0.2, np.nan, 0.7, np.nan], dims='time')))
+
+        result = _collect_timeseries_result(time_series_ds, {'a': 'a', 'b': 'b', 'c': 'c'}, max_valids=-1)
+        self.assertEqual([{'a': 5.0, 'b': 33.0, 'c': 0.2, 'time': '2010-04-06T00:00:00Z'},
+                          {'a': 2.0, 'b': None, 'c': 0.7, 'time': '2010-04-08T00:00:00Z'},
+                          {'a': 3.0, 'b': 23.0, 'c': None, 'time': '2010-04-09T00:00:00Z'}],
+                         result)
+
+        result = _collect_timeseries_result(time_series_ds, {'a': 'a', 'b': 'b', 'c': 'c'}, max_valids=2)
+        self.assertEqual([{'a': 2.0, 'b': None, 'c': 0.7, 'time': '2010-04-08T00:00:00Z'},
+                          {'a': 3.0, 'b': 23.0, 'c': None, 'time': '2010-04-09T00:00:00Z'}],
+                         result)
