@@ -31,6 +31,8 @@ tags:
     description: Tiles API
   - name: time-series
     description: Time-series API
+  - name: ts-legacy
+    description: Time-series API (Legacy)
   - name: places
     description: Places API
 
@@ -398,14 +400,42 @@ paths:
         '404':
           description: Resource not found.
 
+  '/timeseries/{dataset}/{variable}':
+    post:
+      tags:
+        - time-series
+      operationId: getTimeSeries
+      summary: Compute time-series for GeoJSON object
+      description: Compute a time series given a GeoJSON object.
+      parameters:
+        - $ref: '#/components/parameters/dataset'
+        - $ref: '#/components/parameters/variable'
+        - $ref: '#/components/parameters/aggMethod'
+        - $ref: '#/components/parameters/startDate'
+        - $ref: '#/components/parameters/endDate'
+        - $ref: '#/components/parameters/maxValids'
+      requestBody:
+        $ref: '#/components/requestBodies/GeoJsonObject'
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TsLegacy'
+        '400':
+          description: Invalid query parameters
+        '500':
+          description: Unexpected error.
+
   ########################################################################################
-  # Time-Series (PRELIMINARY & UNSTABLE - will be revised soon)
+  # Time-Series Legacy API (for compatibility with VITO viewer)
   ########################################################################################
 
   '/ts':
     get:
       tags:
-        - time-series
+        - ts-legacy
       operationId: getTimeSeriesInfo
       summary: List time stamps for variables
       description: Returns for each variable the times in UTC format for which data is available.
@@ -415,14 +445,14 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/TimeSeriesInfo'
+                $ref: '#/components/schemas/TsLegacyInfo'
         '500':
           description: Unexpected error.
 
   '/ts/{dataset}/{variable}/point':
     get:
       tags:
-        - time-series
+        - ts-legacy
       operationId: getTimeSeriesForPoint
       summary: Compute time-series for point
       description: Compute a time series given a coordinate and a product.
@@ -440,7 +470,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/TimeSeries'
+                $ref: '#/components/schemas/TsLegacy'
         '400':
           description: Invalid query parameters
         '500':
@@ -449,7 +479,7 @@ paths:
   '/ts/{dataset}/{variable}/geometry':
     post:
       tags:
-        - time-series
+        - ts-legacy
       operationId: getTimeSeriesForGeometry
       summary: Compute time-series for geometry
       description: Compute a time series given a GeoJSON geometry object.
@@ -467,7 +497,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/TimeSeries'
+                $ref: '#/components/schemas/TsLegacy'
         '400':
           description: Invalid query parameters
         '500':
@@ -476,7 +506,7 @@ paths:
   '/ts/{dataset}/{variable}/geometries':
     post:
       tags:
-        - time-series
+        - ts-legacy
       operationId: getTimeSeriesForGeometries
       summary: Compute time-series for geometries
       description: Compute a time series given a GeoJSON geometry collection object.
@@ -494,7 +524,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/TimeSeries'
+                $ref: '#/components/schemas/TsLegacy'
         '400':
           description: Invalid query parameters
         '500':
@@ -503,7 +533,7 @@ paths:
   '/ts/{dataset}/{variable}/features':
     post:
       tags:
-        - time-series
+        - ts-legacy
       operationId: getTimeSeriesForFeature
       summary: Compute time-series for feature collection
       description: Compute a time series given a GeoJSON feature collection object.
@@ -521,7 +551,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/TimeSeries'
+                $ref: '#/components/schemas/TsLegacy'
         '400':
           description: Invalid query parameters
         '500':
@@ -1041,14 +1071,60 @@ components:
             minItems: 0
             items:
               $ref: '#/components/schemas/GeoJsonFeature'
-    TimeSeriesInfo:
+    TimeSeriesResponse:
+      type: object
+      properties:
+        result:
+          type: array
+          items:
+            $ref: '#/components/schemas/TimeSeries'
+    TimeSeries:
+      type: object
+      properties:
+        result:
+          type: array
+          minItems: 0
+          items:
+            $ref: '#/components/schemas/TimeSeriesValue'
+    TimeSeriesValue:
+      type: object
+      required:
+        - time
+      properties:
+        time:
+          type: string
+          example: 1970-01-01T10:30:24Z
+        count:
+          type: number
+          format: int64
+          minimum: 0
+        countTot:
+          type: number
+          format: int64
+          minimum: 0
+        mean:
+          type: number
+          format: double
+        std:
+          type: number
+          format: double
+        median:
+          type: number
+          format: double
+        min:
+          type: number
+          format: double
+        max:
+          type: number
+          format: double
+    TsLegacyInfo:
       type: object
       properties:
         layers:
           type: array
           items:
-            $ref: '#/components/schemas/TimeSeriesVariableInfo'
-    TimeSeriesVariableInfo:
+            $ref: '#/components/schemas/TsLegacyVariableInfo'
+    TsLegacyVariableInfo:
       type: object
       properties:
         name:
@@ -1072,21 +1148,21 @@ components:
             ymax:
               type: number
               format: double
-    TimeSeries:
+    TsLegacy:
       type: object
       properties:
         results:
           type: array
           items:
-            $ref: '#/components/schemas/TimeSeriesEntry'
-    TimeSeriesEntry:
+            $ref: '#/components/schemas/TsLegacyEntry'
+    TsLegacyEntry:
       type: object
       properties:
         result:
-          $ref: '#/components/schemas/ArithmeticMean'
+          $ref: '#/components/schemas/TsLegacyResult'
         date:
           type: string
-    ArithmeticMean:
+    TsLegacyResult:
       type: object
       properties:
         totalCount:

@@ -213,6 +213,17 @@ class ServiceContext:
                     raise ServiceResourceNotFoundError(f'Variable "{var_name}" not found in dataset "{ds_id}"')
         return dataset
 
+    def get_time_series_dataset(self, ds_id: str, var_name: str = None) -> xr.Dataset:
+        descriptor = self.get_dataset_descriptor(ds_id)
+        ts_ds_name = descriptor.get('TimeSeriesDataset', ds_id)
+        try:
+            # Try to get more efficient, time-chunked dataset
+            return self.get_dataset(ts_ds_name, expected_var_names=[var_name] if var_name else None)
+        except ServiceResourceNotFoundError:
+            # This happens, if the dataset pointed to by 'TimeSeriesDataset'
+            # does not contain the variable given by var_name.
+            return self.get_dataset(ds_id, expected_var_names=[var_name] if var_name else None)
+
     def get_variable_for_z(self, ds_id: str, var_name: str, z_index: int) -> xr.DataArray:
         ml_dataset = self.get_ml_dataset(ds_id)
         index = ml_dataset.num_levels - 1 - z_index

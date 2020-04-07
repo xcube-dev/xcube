@@ -24,7 +24,7 @@ from typing import Dict, Set
 import xarray as xr
 
 ANCILLARY_VAR_NAME_PREFIXES_TO_STANDARD_NAME_MODIFIERS = [
-    ('stdev', 'standard_error'),
+    ('std', 'standard_error'),
     ('count', 'number_of_observations'),
 ]
 
@@ -33,14 +33,14 @@ def find_ancillary_var_names(dataset: xr.Dataset,
                              var_name: str,
                              same_shape: bool = False,
                              same_dims: bool = False) -> Dict[str, Set[str]]:
-    variable = dataset.data_vars[var_name]
+    variable = dataset.data_vars.get(var_name)
 
     results = {}
 
     # Check for CF compatibility according to
     # http://cfconventions.org/Data/cf-conventions/cf-conventions-1.7/cf-conventions.html#ancillary-data
     #
-    if 'ancillary_variables' in variable.attrs:
+    if variable is not None and 'ancillary_variables' in variable.attrs:
         ancillary_var_names = variable.attrs['ancillary_variables'].split(" ")
         for ancillary_var_name in ancillary_var_names:
             if ancillary_var_name in dataset.data_vars:
@@ -52,8 +52,8 @@ def find_ancillary_var_names(dataset: xr.Dataset,
                         results[standard_name_modifier] = set()
                     results[standard_name_modifier].add(ancillary_var_name)
 
-    if not results:
-
+    if variable is not None and not results:
+        #
         # Check for less strict CF compatibility (missing attribute 'ancillary_variables')
         #
         if 'standard_name' in variable.attrs:
@@ -66,16 +66,16 @@ def find_ancillary_var_names(dataset: xr.Dataset,
                         results[standard_name_modifier] = set()
                     results[standard_name_modifier].add(ancillary_var_name)
 
-        if not results:
-
-            # Search for variables with xcube-specific prefixes that indicate uncertainty:
-            #
-            for prefix, standard_name_modifier in ANCILLARY_VAR_NAME_PREFIXES_TO_STANDARD_NAME_MODIFIERS:
-                ancillary_var_name = f"{var_name}_{prefix}"
-                if ancillary_var_name in dataset.data_vars:
-                    if standard_name_modifier not in results:
-                        results[standard_name_modifier] = set()
-                    results[standard_name_modifier].add(ancillary_var_name)
+    if not results:
+        #
+        # Search for variables with xcube-specific prefixes that indicate uncertainty:
+        #
+        for prefix, standard_name_modifier in ANCILLARY_VAR_NAME_PREFIXES_TO_STANDARD_NAME_MODIFIERS:
+            ancillary_var_name = f"{var_name}_{prefix}"
+            if ancillary_var_name in dataset.data_vars:
+                if standard_name_modifier not in results:
+                    results[standard_name_modifier] = set()
+                results[standard_name_modifier].add(ancillary_var_name)
 
     return results
 

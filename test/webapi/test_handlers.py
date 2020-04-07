@@ -300,11 +300,69 @@ class HandlersTest(AsyncHTTPTestCase):
         response = self.fetch(self.prefix + '/places/inside-cube/bibo')
         self.assertResourceNotFoundResponse(response, 'Dataset "bibo" not found')
 
-    def test_fetch_time_series_info(self):
+    def test_fetch_timeseries_invalid_body(self):
+        response = self.fetch(self.prefix + '/timeseries/demo/conc_chl', method="POST",
+                              body='')
+        self.assertBadRequestResponse(response, 'Invalid or missing GeoJSON object in request body')
+
+        response = self.fetch(self.prefix + '/timeseries/demo/conc_chl', method="POST",
+                              body='{"type":"Point"}')
+        self.assertBadRequestResponse(response, 'GeoJSON object expected')
+
+    def test_fetch_timeseries_geometry(self):
+        response = self.fetch(self.prefix + '/timeseries/demo/conc_chl', method="POST",
+                              body='{"type": "Point", "coordinates": [1, 51]}')
+        self.assertResponseOK(response)
+
+        response = self.fetch(self.prefix + '/timeseries/demo/conc_chl', method="POST",
+                              body='{"type":"Polygon", "coordinates": [[[1, 51], [2, 51], [2, 52], [1, 51]]]}')
+        self.assertResponseOK(response)
+
+    def test_fetch_timeseries_geometry_collection(self):
+        response = self.fetch(self.prefix + '/timeseries/demo/conc_chl', method="POST",
+                              body='{"type": "GeometryCollection", "geometries": null}')
+        self.assertResponseOK(response)
+
+        response = self.fetch(self.prefix + '/timeseries/demo/conc_chl', method="POST",
+                              body='{"type": "GeometryCollection", "geometries": []}')
+        self.assertResponseOK(response)
+
+        response = self.fetch(self.prefix + '/timeseries/demo/conc_chl', method="POST",
+                              body='{"type": "GeometryCollection", "geometries": '
+                                   '[{"type": "Point", "coordinates": [1, 51]}]}')
+        self.assertResponseOK(response)
+
+    def test_fetch_timeseries_feature(self):
+        response = self.fetch(self.prefix + '/timeseries/demo/conc_chl', method="POST",
+                              body='{"type": "Feature", '
+                                   ' "properties": {}, '
+                                   ' "geometry": {"type": "Point", "coordinates": [1, 51]}'
+                                   '}')
+        self.assertResponseOK(response)
+
+
+    def test_fetch_timeseries_feature_collection(self):
+        response = self.fetch(self.prefix + '/timeseries/demo/conc_chl', method="POST",
+                              body='{"type": "FeatureCollection", "features": null}')
+        self.assertResponseOK(response)
+
+        response = self.fetch(self.prefix + '/timeseries/demo/conc_chl', method="POST",
+                              body='{"type": "FeatureCollection", "features": []}')
+        self.assertResponseOK(response)
+
+        response = self.fetch(self.prefix + '/timeseries/demo/conc_chl', method="POST",
+                              body='{"type": "FeatureCollection", "features": ['
+                                   '  {"type": "Feature", "properties": {}, '
+                                   '   "geometry": {"type": "Point", "coordinates": [1, 51]}}'
+                                   ']}')
+        self.assertResponseOK(response)
+
+
+    def test_fetch_ts_legacy_info(self):
         response = self.fetch(self.prefix + '/ts')
         self.assertResponseOK(response)
 
-    def test_fetch_time_series_point(self):
+    def test_fetch_ts_legacy_point(self):
         response = self.fetch(self.prefix + '/ts/demo/conc_chl/point')
         self.assertBadRequestResponse(response, 'Missing query parameter "lon"')
         response = self.fetch(self.prefix + '/ts/demo/conc_chl/point?lon=2.1')
@@ -316,7 +374,7 @@ class HandlersTest(AsyncHTTPTestCase):
         response = self.fetch(self.prefix + '/ts/demo/conc_chl/point?lon=2.1&lat=51.1')
         self.assertResponseOK(response)
 
-    def test_fetch_time_series_geometry(self):
+    def test_fetch_ts_legacy_geometry(self):
         response = self.fetch(self.prefix + '/ts/demo/conc_chl/geometry', method="POST",
                               body='')
         self.assertBadRequestResponse(response, 'Invalid or missing GeoJSON geometry in request body')
@@ -331,7 +389,7 @@ class HandlersTest(AsyncHTTPTestCase):
 
         self.assertResponseOK(response)
 
-    def test_fetch_time_series_geometries(self):
+    def test_fetch_ts_legacy_geometries(self):
         response = self.fetch(self.prefix + '/ts/demo/conc_chl/geometries', method="POST",
                               body='')
         self.assertBadRequestResponse(response, 'Invalid or missing GeoJSON geometry collection in request body')
@@ -349,7 +407,7 @@ class HandlersTest(AsyncHTTPTestCase):
                                    '[{"type": "Point", "coordinates": [1, 51]}]}')
         self.assertResponseOK(response)
 
-    def test_fetch_time_series_features(self):
+    def test_fetch_ts_legacy_features(self):
         response = self.fetch(self.prefix + '/ts/demo/conc_chl/features', method="POST",
                               body='')
         self.assertBadRequestResponse(response, 'Invalid or missing GeoJSON feature collection in request body')
