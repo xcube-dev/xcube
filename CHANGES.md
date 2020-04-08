@@ -1,4 +1,4 @@
-## Changes in 0.4.0 (in development)
+## Changes in 0.4.0
 
 ### New
 
