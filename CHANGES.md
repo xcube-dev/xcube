@@ -1,5 +1,26 @@
 ## Changes in 0.5.0.dev0 (in development)
 
+### New
+
+### Enhancements
+
+* Added possibility to specify packing of variables within the configuration of
+  `xcube gen` (#269). Currently it is only implemented for zarr format.
+  This might be useful for reducing the storage size of the datacubes.
+  This may be done by passing the parameters for packing as the following:  
+   
+   
+  ```yaml  
+  output_writer_params: 
+
+    packing: 
+      analysed_sst: 
+        scale_factor: 0.07324442274239326
+        add_offset: -300.0
+        dtype: 'uint16'
+        _FillValue: 0.65535
+  ```
+
 ## Changes in 0.4.0
 
 ### New
