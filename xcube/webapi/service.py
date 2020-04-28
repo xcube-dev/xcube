@@ -433,12 +433,12 @@ def new_default_config(cube_paths: List[str],
                                   Format=guess_ml_dataset_format(cube_path),
                                   Path=cube_path)
         if is_obs_url(cube_path):
-            dataset_descriptor.update(FileSystem='local')
-        else:
             dataset_descriptor.update(FileSystem='obs')
             if aws_access_key_id and aws_secret_access_key:
                 dataset_descriptor.update(AccessKeyId=aws_access_key_id,
                                           SecretAccessKey=aws_secret_access_key)
+        else:
+            dataset_descriptor.update(FileSystem='local')
         dataset_list.append(dataset_descriptor)
         index += 1
 
