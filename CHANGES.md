@@ -2,7 +2,7 @@
 
 ### New in 0.5.0.dev1
 
-* `xcube serve` can now be run with AWS credentials. 
+* `xcube serve` can now be run with AWS credentials (#296). 
   - In the form `xcube serve --config CONFIG`, a `Datasets` entry in `CONFIG`
     may now contain the two new keys `AccessKeyId: ...` and `SecretAccessKey: ...` 
     given that `FileSystem: obs`.
@@ -13,10 +13,6 @@
     the cube stored in bucket with URL `CUBE` will be accessed using the
     credentials found in environment variables `AWS_ACCESS_KEY_ID` and
     `AWS_SECRET_ACCESS_KEY`.
-
-```
-
-   (#296)
 
 ## Changes in 0.4.0
 
