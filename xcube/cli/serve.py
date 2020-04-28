@@ -18,6 +18,7 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+
 from typing import List
 
 import click
@@ -71,6 +72,12 @@ VIEWER_ENV_VAR = 'XCUBE_VIEWER_PATH'
               help="Delegate logging to the console (stderr).")
 @click.option('--traceperf', 'trace_perf', is_flag=True,
               help="Print performance diagnostics (stdout).")
+@click.option('--aws-prof', 'aws_prof', metavar='PROFILE',
+              help="To publish remote CUBEs, use AWS credentials from section "
+                   "[PROFILE] found in ~/.aws/credentials.")
+@click.option('--aws-env', 'aws_env', is_flag=True,
+              help="To publish remote CUBEs, use AWS credentials from environment "
+                   "variables AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY")
 def serve(cube: List[str],
           address: str,
           port: int,
@@ -83,7 +90,9 @@ def serve(cube: List[str],
           tile_comp_mode: int,
           show: bool,
           verbose: bool,
-          trace_perf: bool):
+          trace_perf: bool,
+          aws_prof: str,
+          aws_env: bool):
     """
     Serve data cubes via web service.
 
@@ -100,6 +109,8 @@ def serve(cube: List[str],
         raise click.ClickException("CONFIG and CUBES cannot be used at the same time.")
     if styles:
         styles = parse_cli_kwargs(styles, "STYLES")
+    if (aws_prof or aws_env) and not cube:
+        raise click.ClickException("AWS credentials are only valid in combination with given CUBE argument(s).")
 
     from xcube.version import version
     from xcube.webapi.defaults import SERVER_NAME, SERVER_DESCRIPTION
@@ -110,7 +121,7 @@ def serve(cube: List[str],
 
     from xcube.webapi.app import new_application
     from xcube.webapi.service import Service
-    service = Service(new_application(prefix, os.path.dirname(config)),
+    service = Service(new_application(prefix, os.path.dirname(config) if config else '.'),
                       prefix=prefix,
                       port=port,
                       address=address,
@@ -121,7 +132,9 @@ def serve(cube: List[str],
                       tile_comp_mode=tile_comp_mode,
                       update_period=update_period,
                       log_to_stderr=verbose,
-                      trace_perf=trace_perf)
+                      trace_perf=trace_perf,
+                      aws_prof=aws_prof,
+                      aws_env=aws_env)
     service.start()
 
     return 0

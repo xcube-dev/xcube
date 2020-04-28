@@ -669,6 +669,10 @@ def _open_ml_dataset_from_object_storage(ctx: ServiceContext,
     region_name = None
     if 'Region' in dataset_descriptor:
         client_kwargs['region_name'] = dataset_descriptor['Region']
+    if 'AccessKeyId' in dataset_descriptor:
+        client_kwargs['aws_access_key_id'] = dataset_descriptor['AccessKeyId']
+    if 'SecretAccessKey' in dataset_descriptor:
+        client_kwargs['aws_secret_access_key'] = dataset_descriptor['SecretAccessKey']
     chunk_cache_capacity = ctx.get_dataset_chunk_cache_capacity(dataset_descriptor)
     return open_ml_dataset_from_object_storage(path,
                                                data_format=data_format,

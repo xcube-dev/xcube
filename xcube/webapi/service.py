@@ -20,8 +20,10 @@
 # SOFTWARE.
 
 import asyncio
+import configparser
 import json
 import os
+import os.path
 import signal
 import sys
 import time
@@ -38,6 +40,7 @@ from tornado.log import enable_pretty_logging
 from tornado.web import RequestHandler, Application
 
 from xcube.constants import LOG
+from xcube.core.dsio import is_obs_url
 from xcube.core.mldataset import guess_ml_dataset_format
 from xcube.util.cache import parse_mem_size
 from xcube.util.caseless import caseless_dict
@@ -73,7 +76,9 @@ class Service:
                  update_period: Optional[float] = DEFAULT_UPDATE_PERIOD,
                  trace_perf: bool = DEFAULT_TRACE_PERF,
                  log_file_prefix: str = DEFAULT_LOG_PREFIX,
-                 log_to_stderr: bool = False) -> None:
+                 log_to_stderr: bool = False,
+                 aws_prof: str = None,
+                 aws_env: bool = False) -> None:
 
         """
         Start a tile service.
@@ -98,6 +103,10 @@ class Service:
             raise ValueError("config_file and cube_paths cannot be given both")
         if config_file and styles:
             raise ValueError("config_file and styles cannot be given both")
+        if config_file and aws_prof:
+            raise ValueError("config_file and aws_profile cannot be given both")
+        if config_file and aws_env:
+            raise ValueError("config_file and aws_env cannot be given both")
 
         global SNAP_CPD_LIST
         if config_file:
@@ -116,7 +125,7 @@ class Service:
 
         config = None
         if cube_paths:
-            config = new_default_config(cube_paths, styles)
+            config = new_default_config(cube_paths, styles, aws_prof=aws_prof, aws_env=aws_env)
 
         self.config_file = os.path.abspath(config_file) if config_file else None
         self.update_period = update_period
@@ -393,16 +402,46 @@ def url_pattern(pattern: str):
     return reg_expr
 
 
-def new_default_config(cube_paths: List[str], styles: Dict[str, Tuple] = None):
+def new_default_config(cube_paths: List[str],
+                       styles: Dict[str, Tuple] = None,
+                       aws_prof: str = None,
+                       aws_env: bool = False):
+    aws_access_key_id = None
+    aws_secret_access_key = None
+    if aws_prof:
+        aws_credentials_config = configparser.ConfigParser()
+        aws_credentials_config.read(os.path.expanduser(os.path.join('~', '.aws', 'credentials')))
+        aws_access_key_id = aws_credentials_config.get(aws_prof, 'aws_access_key_id', fallback=None)
+        aws_secret_access_key = aws_credentials_config.get(aws_prof, 'aws_secret_access_key', fallback=None)
+        if aws_access_key_id is None:
+            raise ValueError(f'missing aws_access_key_id in AWS credentials')
+        if aws_secret_access_key is None:
+            raise ValueError(f'missing aws_secret_access_key in AWS credentials')
+    if aws_env:
+        aws_access_key_id = os.environ.get('AWS_ACCESS_KEY_ID', aws_access_key_id)
+        aws_secret_access_key = os.environ.get('AWS_SECRET_ACCESS_KEY', aws_secret_access_key)
+        if aws_access_key_id is None:
+            raise ValueError(f'environment variable AWS_ACCESS_KEY_ID not set')
+        if aws_secret_access_key is None:
+            raise ValueError(f'environment variable AWS_SECRET_ACCESS_KEY not set')
+
     dataset_list = list()
     index = 0
     for cube_path in cube_paths:
-        dataset_list.append(dict(Identifier=f"dataset_{index + 1}",
-                                 Title=f"Dataset #{index + 1}",
-                                 Format=guess_ml_dataset_format(cube_path),
-                                 Path=cube_path,
-                                 FileSystem='local'))
+        dataset_descriptor = dict(Identifier=f"dataset_{index + 1}",
+                                  Title=f"Dataset #{index + 1}",
+                                  Format=guess_ml_dataset_format(cube_path),
+                                  Path=cube_path)
+        if is_obs_url(cube_path):
+            dataset_descriptor.update(FileSystem='obs')
+            if aws_access_key_id and aws_secret_access_key:
+                dataset_descriptor.update(AccessKeyId=aws_access_key_id,
+                                          SecretAccessKey=aws_secret_access_key)
+        else:
+            dataset_descriptor.update(FileSystem='local')
+        dataset_list.append(dataset_descriptor)
         index += 1
+
     config = dict(Datasets=dataset_list)
     if styles:
         color_mappings = {}
