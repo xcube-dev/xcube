@@ -1,5 +1,9 @@
 ## Changes in 0.5.0.devX (in development)
 
+### New in 0.5.0.dev2
+
+* `xcube serve CUBE` will now use the last path component of `CUBE`as dataset title.
+
 ### New in 0.5.0.dev1
 
 * `xcube serve` can now be run with AWS credentials (#296). 
@@ -13,7 +17,7 @@
     the cube stored in bucket with URL `CUBE` will be accessed using the
     credentials found in environment variables `AWS_ACCESS_KEY_ID` and
     `AWS_SECRET_ACCESS_KEY`.
-
+ 
 ## Changes in 0.4.0
 
 ### New

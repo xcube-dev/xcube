@@ -429,18 +429,20 @@ def new_default_config(cube_paths: List[str],
     index = 0
     for cube_path in cube_paths:
         dataset_descriptor = dict(Identifier=f"dataset_{index + 1}",
-                                  Title=f"Dataset #{index + 1}",
                                   Format=guess_ml_dataset_format(cube_path),
                                   Path=cube_path)
         if is_obs_url(cube_path):
-            dataset_descriptor.update(FileSystem='obs')
+            dataset_descriptor.update(Title=cube_path.split('/')[-1],
+                                      FileSystem='obs')
             if aws_access_key_id and aws_secret_access_key:
                 dataset_descriptor.update(AccessKeyId=aws_access_key_id,
                                           SecretAccessKey=aws_secret_access_key)
         else:
-            dataset_descriptor.update(FileSystem='local')
+            dataset_descriptor.update(Title=os.path.split(cube_path)[-1],
+                                      FileSystem='local')
         dataset_list.append(dataset_descriptor)
         index += 1
+
 
     config = dict(Datasets=dataset_list)
     if styles:
