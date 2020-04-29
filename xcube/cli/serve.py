@@ -18,10 +18,10 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-
 from typing import List
 
 import click
+import re
 
 from xcube.webapi.defaults import DEFAULT_PORT, DEFAULT_ADDRESS, DEFAULT_UPDATE_PERIOD, \
     DEFAULT_TILE_CACHE_SIZE, DEFAULT_TILE_COMP_MODE
@@ -51,7 +51,10 @@ VIEWER_ENV_VAR = 'XCUBE_VIEWER_PATH'
               help='Color mapping styles for variables. '
                    'Used only, if one or more CUBE arguments are provided and CONFIG is not given. '
                    'Comma-separated list with elements of the form '
-                   '<var>=(<vmin>,<vmax>) or <var>=(<vmin>,<vmax>,"<cmap>")')
+                   '<var>=(<vmin>,<vmax>) or <var>=(<vmin>,<vmax>,"<cmap>"). '
+                   'In order to configure an RGB image based on three variables, '
+                   'please use rgb=(Red=(<var>=(<vmin>,<vmax>)),Green=(<var>=(<vmin>,<vmax>)),'
+                   'Blue=(<var>=(<vmin>,<vmax>))).')
 @click.option('--config', '-c', metavar='CONFIG', default=None,
               help='Use datasets configuration file CONFIG. '
                    'Cannot be used if CUBES are provided.')
@@ -108,7 +111,10 @@ def serve(cube: List[str],
     if config and cube:
         raise click.ClickException("CONFIG and CUBES cannot be used at the same time.")
     if styles:
-        styles = parse_cli_kwargs(styles, "STYLES")
+        if 'rgb' in styles:
+            styles = _handle_rgb_styles(styles)
+        else:
+            styles = parse_cli_kwargs(styles, "STYLES")
     if (aws_prof or aws_env) and not cube:
         raise click.ClickException("AWS credentials are only valid in combination with given CUBE argument(s).")
 
@@ -138,6 +144,35 @@ def serve(cube: List[str],
     service.start()
 
     return 0
+
+
+def _handle_rgb_styles(styles):
+    from xcube.cli.common import parse_cli_kwargs
+
+    rgb = re.search(r"rgb=\(Red=\(.*\),Green=\(.*\),Blue=\(.*\)\)", styles)
+    colors = re.split('rgb=\(', rgb.group())[1][:-1]
+    rgb_dict = {'rgb': {}}
+    for element in re.findall('[^\)\)]+\)\)', colors):
+        for color in ['Red', 'Green', 'Blue']:
+            if color in element:
+                var_and_range = re.split(f'{color}=\(', element)[1][:-1]
+                rgb_dict['rgb'][color] = parse_cli_kwargs(var_and_range, "STYLES")
+
+    none_rgb_vars = styles.split(rgb.group())
+    none_rgb_vars = list(filter(any, none_rgb_vars))
+    if none_rgb_vars:
+        vars_styles = []
+        for element in none_rgb_vars:
+            var_style = re.search(r".*=\(.*\)", element)
+            if var_style.group()[0] == ',':
+                vars_styles.append(var_style.group()[1:])
+            else:
+                vars_styles.append(var_style.group())
+        vars_styles = ','.join(vars_styles)
+        vars_dict = parse_cli_kwargs(vars_styles, "STYLES")
+        rgb_dict.update(vars_dict)
+    styles = rgb_dict.copy()
+    return styles
 
 
 def _run_viewer():

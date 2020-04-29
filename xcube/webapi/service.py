@@ -443,21 +443,31 @@ def new_default_config(cube_paths: List[str],
         dataset_list.append(dataset_descriptor)
         index += 1
 
-
     config = dict(Datasets=dataset_list)
     if styles:
         color_mappings = {}
         for var_name, style_data in styles.items():
-            try:
-                value_min, value_max, color_bar_name = style_data
-                style = dict(ValueRange=[value_min, value_max], ColorBar=color_bar_name)
-            except (TypeError, ValueError):
+            if var_name == 'rgb':
+                color_mappings[var_name] = {}
+                for key in style_data.keys():
+                    for style_variable in style_data[key].keys():
+                        try:
+                            value_min, value_max = style_data[key][style_variable]
+                            style = dict(Variable=style_variable, ValueRange=[value_min, value_max])
+                        except (TypeError, ValueError):
+                            raise ValueError(f"illegal style: {var_name}={style_data!r}")
+                        color_mappings[var_name][key] = style
+            else:
                 try:
-                    value_min, value_max = style_data
-                    style = dict(ValueRange=[value_min, value_max])
+                    value_min, value_max, color_bar_name = style_data
+                    style = dict(ValueRange=[value_min, value_max], ColorBar=color_bar_name)
                 except (TypeError, ValueError):
-                    raise ValueError(f"illegal style: {var_name}={style_data!r}")
-            color_mappings[var_name] = style
+                    try:
+                        value_min, value_max = style_data
+                        style = dict(ValueRange=[value_min, value_max])
+                    except (TypeError, ValueError):
+                        raise ValueError(f"illegal style: {var_name}={style_data!r}")
+                color_mappings[var_name] = style
         config["Styles"] = [dict(Identifier="default", ColorMappings=color_mappings)]
     return config
 
