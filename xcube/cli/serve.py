@@ -150,6 +150,11 @@ def _handle_rgb_styles(styles):
     from xcube.cli.common import parse_cli_kwargs
 
     rgb = re.search(r"rgb=\(Red=\(.*\),Green=\(.*\),Blue=\(.*\)\)", styles)
+    if not rgb:
+        raise click.ClickException("For a default RGB schema, Red, Green and Blue need to be specified: "
+                                   "rgb=(Red=(<var>=(<vmin>,<vmax>)),Green=(<var>=(<vmin>,<vmax>)),"
+                                   "Blue=(<var>=(<vmin>,<vmax>)))")
+
     colors = re.split('rgb=\(', rgb.group())[1][:-1]
     rgb_dict = {'rgb': {}}
     for element in re.findall('[^\)\)]+\)\)', colors):

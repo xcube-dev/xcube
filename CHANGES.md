@@ -4,6 +4,13 @@
 
 * `xcube serve CUBE` will now use the last path component of `CUBE`as dataset title.
 
+### Enhancements in 0.5.0.dev2
+
+* `xcube serve` now allows to specify a default RGB schema for a dataset, 
+  a colour mapping for the "pseudo-variable" named `rbg` via the `--style` cli parameter:
+  In order to configure an RGB image based on three variables, please use:
+  `rgb=(Red=(<var>=(<vmin>,<vmax>)),Green=(<var>=(<vmin>,<vmax>)),Blue=(<var>=(<vmin>,<vmax>)))`.
+
 ### New in 0.5.0.dev1
 
 * `xcube serve` can now be run with AWS credentials (#296). 

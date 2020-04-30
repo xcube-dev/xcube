@@ -44,3 +44,13 @@ class ServerCliTest(CliDataTest):
     def test_help(self):
         with self.assertRaises(SystemExit):
             main(args=["--help"])
+
+    def test_styles_with_rgb(self):
+        result = self.invoke_cli(["serve", "examples/serve/demo/cube-1-250-250.zarr", "--styles",
+                                  "rgb=(Yellow=(conc_chl=(.0,0.25)),Green=(conc_tsm=(.0,0.25)),"
+                                  "Blue=(kd389=(.0,0.25)))"])
+        self.assertEqual(1, result.exit_code)
+        self.assertEqual('Error: For a default RGB schema, Red, Green and Blue need to be specified: '
+                         'rgb=(Red=(<var>=(<vmin>,<vmax>)),Green=(<var>=(<vmin>,<vmax>)),'
+                         'Blue=(<var>=(<vmin>,<vmax>)))\n',
+                         result.output[:])
