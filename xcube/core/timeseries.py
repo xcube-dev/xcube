@@ -102,16 +102,6 @@ def get_time_series(cube: xr.Dataset,
 
     geometry = convert_geometry(geometry)
 
-    agg_methods = normalize_agg_methods(agg_methods)
-    if include_count:
-        warnings.warn("keyword argument 'include_count' has been deprecated, "
-                      f"use 'agg_methods=[{AGG_COUNT!r}, ...]' instead")
-        agg_methods.add(AGG_COUNT)
-    if include_stdev:
-        warnings.warn("keyword argument 'include_stdev' has been deprecated, "
-                      f"use 'agg_methods=[{AGG_STD!r}, ...]' instead")
-        agg_methods.add(AGG_STD)
-
     dataset = select_variables_subset(cube, var_names)
     if len(dataset.data_vars) == 0:
         return None
@@ -126,6 +116,16 @@ def get_time_series(cube: xr.Dataset,
             return None
         dataset = dataset.sel(lon=geometry.x, lat=geometry.y, method='Nearest')
         return dataset.assign_attrs(max_number_of_observations=1)
+
+    agg_methods = normalize_agg_methods(agg_methods)
+    if include_count:
+        warnings.warn("keyword argument 'include_count' has been deprecated, "
+                      f"use 'agg_methods=[{AGG_COUNT!r}, ...]' instead")
+        agg_methods.add(AGG_COUNT)
+    if include_stdev:
+        warnings.warn("keyword argument 'include_stdev' has been deprecated, "
+                      f"use 'agg_methods=[{AGG_STD!r}, ...]' instead")
+        agg_methods.add(AGG_STD)
 
     if geometry is not None:
         dataset = mask_dataset_by_geometry(dataset, geometry, save_geometry_mask='__mask__')
@@ -170,7 +170,7 @@ def get_time_series(cube: xr.Dataset,
 
 
 def normalize_agg_methods(agg_methods: Union[str, Sequence[str]],
-                          exception_type = ValueError) -> Set[str]:
+                          exception_type=ValueError) -> Set[str]:
     agg_methods = agg_methods or [AGG_MEAN]
     if isinstance(agg_methods, str):
         agg_methods = [agg_methods]

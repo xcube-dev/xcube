@@ -1,4 +1,5 @@
 import json
+import os
 import unittest
 
 import numpy as np
@@ -7,6 +8,7 @@ import xarray as xr
 
 from test.mixins import AlmostEqualDeepMixin
 from test.webapi.helpers import new_test_service_context
+from xcube.webapi.context import ServiceContext
 from xcube.webapi.controllers.timeseries import get_time_series, _collect_timeseries_result
 
 
@@ -273,3 +275,48 @@ class CollectTimeSeriesResultTest(unittest.TestCase, AlmostEqualDeepMixin):
                           {'count': 78, 'count_tot': 82, 'time': '2010-04-06T00:00:00Z'},
                           {'count': 74, 'count_tot': 82, 'time': '2010-04-07T00:00:00Z'}],
                          result)
+
+
+@unittest.skipUnless(os.environ.get('XCUBE_TS_PERF_TEST') == '1', 'XCUBE_TS_PERF_TEST is not 1')
+class TsPerfTest(unittest.TestCase):
+
+    def test_point_ts_perf(self):
+        TEST_CUBE = 'ts_test.zarr'
+
+        if not os.path.isdir(TEST_CUBE):
+            from xcube.core.new import new_cube
+            cube = new_cube(time_periods=2000, variables=dict(analysed_sst=280.4))
+            cube = cube.chunk(dict(time=1, lon=90, lat=90))
+            cube.to_zarr(TEST_CUBE)
+
+        ctx = ServiceContext(
+            base_dir='.',
+            config=dict(
+                Datasets=[
+                    dict(Identifier='ts_test',
+                         FileSystem='local',
+                         Path=TEST_CUBE,
+                         Format='zarr')
+                ]
+            ))
+
+        N = 5
+        import random
+        import time
+        time_sum = 0.0
+        for i in range(N):
+            lon = -180 + 360 * random.random()
+            lat = -90 + 180 * random.random()
+
+            t1 = time.perf_counter()
+            result = get_time_series(ctx, 'ts_test', 'analysed_sst', dict(type='Point', coordinates=[lon, lat]))
+            t2 = time.perf_counter()
+
+            self.assertIsInstance(result, list)
+            self.assertEqual(2000, len(result))
+
+            time_delta = t2 - t1
+            time_sum += time_delta
+            print(f'test {i + 1} took {time_delta} seconds')
+
+        print(f'all tests took {time_sum / N} seconds in average')
