@@ -27,13 +27,13 @@ It is maintained for legacy reasons only (DCS4COP VITO viewer).
 from typing import Dict, List, Optional, Union, Sequence, Any, Set, Tuple
 
 import numpy as np
+import pandas as pd
 import shapely.geometry
 import xarray as xr
 
 from xcube.constants import LOG
 from xcube.core import timeseries
 from xcube.core.ancvar import find_ancillary_var_names
-from xcube.core.timecoord import timestamp_to_iso_string
 from xcube.util.geojson import GeoJSON
 from xcube.util.perf import measure_time
 from xcube.webapi.context import ServiceContext
@@ -207,14 +207,27 @@ def _collect_timeseries_result(time_series_ds: xr.Dataset,
     if not (max_valids is None or max_valids == -1 or max_valids > 0):
         raise ValueError('max_valids must be either None, -1 or positive')
 
-    vars = {key: time_series_ds[var_name] for key, var_name in key_to_var_names.items()}
-    time = time_series_ds.time
+    var_values_map = dict()
+    for key, var_name in key_to_var_names.items():
+        values = time_series_ds[var_name].values
+        if np.issubdtype(values.dtype, np.floating):
+            num_type = float
+        elif np.issubdtype(values.dtype, np.integer):
+            num_type = int
+        elif np.issubdtype(values.dtype, np.dtype(bool)):
+            num_type = bool
+        else:
+            raise ValueError(f'cannot convert {values.dtype} into JSON-convertible value')
+        var_values_map[key] = [(num_type(v) if f else None) for f, v in zip(np.isfinite(values), values)]
+
+    time_values = [t.isoformat() + 'Z' for t in pd.DatetimeIndex(time_series_ds.time.values).round('s')]
+
     max_number_of_observations = time_series_ds.attrs.get('max_number_of_observations', 1)
-    num_times = time.size
+    num_times = len(time_values)
     time_series = []
 
-    max_valids_is_pos = max_valids is not None and max_valids > 0
-    if max_valids_is_pos:
+    max_valids_is_positive = max_valids is not None and max_valids > 0
+    if max_valids_is_positive:
         time_indexes = range(num_times - 1, -1, -1)
     else:
         time_indexes = range(num_times)
@@ -226,21 +239,10 @@ def _collect_timeseries_result(time_series_ds: xr.Dataset,
 
         time_series_value = dict()
         all_null = True
-        for key, var in vars.items():
-            var_values = var.values
+        for key, var_values in var_values_map.items():
             var_value = var_values[time_index]
-            if np.isfinite(var_value):
+            if var_value is not None:
                 all_null = False
-                if np.issubdtype(var_value.dtype, np.floating):
-                    var_value = float(var_value)
-                elif np.issubdtype(var_value.dtype, np.integer):
-                    var_value = int(var_value)
-                elif np.issubdtype(var_value.dtype, np.dtype(bool)):
-                    var_value = bool(var_value)
-                else:
-                    raise ValueError(f'cannot convert {var_value.dtype} into JSON-convertible value')
-            else:
-                var_value = None
             time_series_value[key] = var_value
 
         has_count = 'count' in time_series_value
@@ -248,13 +250,13 @@ def _collect_timeseries_result(time_series_ds: xr.Dataset,
         if no_obs and max_valids is not None:
             continue
 
-        time_series_value['time'] = timestamp_to_iso_string(time[time_index].values)
+        time_series_value['time'] = time_values[time_index]
         if has_count:
             time_series_value['count_tot'] = max_number_of_observations
 
         time_series.append(time_series_value)
 
-    if max_valids_is_pos:
+    if max_valids_is_positive:
         time_series = time_series[::-1]
 
     return time_series
