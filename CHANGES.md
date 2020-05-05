@@ -1,5 +1,9 @@
 ## Changes in 0.5.0.devX (in development)
 
+### New in 0.5.0.dev3
+
+* From 0.4.1: Fixed time-series performance drop (#299). 
+
 ### New in 0.5.0.dev2
 
 * `xcube serve CUBE` will now use the last path component of `CUBE` as dataset title.
