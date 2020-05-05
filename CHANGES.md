@@ -2,7 +2,7 @@
 
 ### New in 0.5.0.dev2
 
-* `xcube serve CUBE` will now use the last path component of `CUBE`as dataset title.
+* `xcube serve CUBE` will now use the last path component of `CUBE` as dataset title.
 
 ### New in 0.5.0.dev1
 
@@ -17,7 +17,11 @@
     the cube stored in bucket with URL `CUBE` will be accessed using the
     credentials found in environment variables `AWS_ACCESS_KEY_ID` and
     `AWS_SECRET_ACCESS_KEY`.
- 
+
+## Changes in 0.4.1
+
+* Fixed time-series performance drop (#299). 
+
 ## Changes in 0.4.0
 
 ### New
