@@ -1,5 +1,9 @@
-## Changes in 0.5.0.devX (in development)
+## Changes in 0.5.0.dev3 (in development)
 
+* From 0.4.3: Extended `xcube serve` by reverse URL prefix option `--revprefix REFPREFIX`.
+  This can be used in cases where only URLs returned by the service need to be prefixed, 
+  e.g. by a web server's proxy pass.
+  
 * From 0.4.1: Fixed time-series performance drop (#299). 
 
 ### New in 0.5.0.dev2
@@ -20,6 +24,16 @@
     credentials found in environment variables `AWS_ACCESS_KEY_ID` and
     `AWS_SECRET_ACCESS_KEY`.
 
+## Changes in 0.4.3
+
+* Extended `xcube serve` by reverse URL prefix option `--revprefix REFPREFIX`.
+  This can be used in cases where only URLs returned by the service need to be prefixed, 
+  e.g. by a web server's proxy pass.
+
+## Changes in 0.4.2
+
+* Release process fix.
+  
 ## Changes in 0.4.1
 
 * Fixed time-series performance drop (#299). 
