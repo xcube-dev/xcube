@@ -1,4 +1,28 @@
-## Changes in 0.5.0.dev0 (in development)
+## Changes in 0.5.0.devX (in development)
+
+* From 0.4.1: Fixed time-series performance drop (#299). 
+
+### New in 0.5.0.dev2
+
+* `xcube serve CUBE` will now use the last path component of `CUBE` as dataset title.
+
+### New in 0.5.0.dev1
+
+* `xcube serve` can now be run with AWS credentials (#296). 
+  - In the form `xcube serve --config CONFIG`, a `Datasets` entry in `CONFIG`
+    may now contain the two new keys `AccessKeyId: ...` and `SecretAccessKey: ...` 
+    given that `FileSystem: obs`.
+  - In the form `xcube serve --aws-prof PROFILE CUBE`
+    the cube stored in bucket with URL `CUBE` will be accessed using the
+    credentials found in section `[PROFILE]` of your `~/.aws/credentials` file.
+  - In the form `xcube serve --aws-env CUBE`
+    the cube stored in bucket with URL `CUBE` will be accessed using the
+    credentials found in environment variables `AWS_ACCESS_KEY_ID` and
+    `AWS_SECRET_ACCESS_KEY`.
+
+## Changes in 0.4.1
+
+* Fixed time-series performance drop (#299). 
 
 ### New
 
