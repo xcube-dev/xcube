@@ -178,7 +178,44 @@ The following parameters can be used in the configuration files:
     :Default: ``'zarr'``
 
 ``output_writer_params`` : str
-    A mapping that defines parameters that are passed to output writer denoted by ``output_writer_name``.
+   A mapping that defines parameters that are passed to output writer denoted by ``output_writer_name``.
+   Through the ``output_writer_params`` a packing of the variables may be defined.
+   If not specified the default does not apply any packing which results in: ::
+
+        _FillValue:  nan
+        dtype:       dtype('float32')
+
+   and for coordinate variables ::
+
+
+        dtype:       dtype('int64')
+
+   The user may specify a different packing variables,
+   which might be useful for reducing the storage size of the datacubes.
+   Currently it is only implemented for zarr format.
+   This may be done by passing the parameters for packing as the following: ::
+
+      output_writer_params:
+
+        packing:
+          analysed_sst:
+            scale_factor: 0.07324442274239326
+            add_offset: -300.0
+            dtype: 'uint16'
+            _FillValue: 0.65535
+
+
+   Furthermore the compressor may be defined as well by,
+   if not specified the default compressor
+   (cname='lz4', clevel=5, shuffle=SHUFFLE, blocksize=0) is used. ::
+
+
+      output_writer_params:
+
+        compressor:
+          cname: 'zstd'
+          clevel: 1
+          shuffle: 2
 
 
 ``output_metadata`` : [*attribute-definitions*]

@@ -420,20 +420,17 @@ class ZarrDatasetIO(DatasetIO):
     def write(self,
               dataset: xr.Dataset,
               output_path: str,
-              compress: bool = True,
-              cname: str = None,
-              clevel: int = None,
-              shuffle: int = None,
-              blocksize: int = None,
+              compressor: Dict[str, Any] = None,
               chunksizes: Dict[str, int] = None,
+              packing: Dict[str, Dict[str, Any]] = None,
               client_kwargs: Dict[str, Any] = None,
               **kwargs):
         path_or_store, consolidated = get_path_or_obs_store(output_path, client_kwargs, mode='w')
-        encoding = self._get_write_encodings(dataset, compress, cname, clevel, shuffle, blocksize, chunksizes)
+        encoding = self._get_write_encodings(dataset, compressor, chunksizes, packing)
         dataset.to_zarr(path_or_store, mode='w', encoding=encoding, **kwargs)
 
     @classmethod
-    def _get_write_encodings(cls, dataset, compress, cname, clevel, shuffle, blocksize, chunksizes):
+    def _get_write_encodings(cls, dataset, compressor, chunksizes, packing):
         encoding = None
         if chunksizes:
             encoding = {}
@@ -447,12 +444,20 @@ class ZarrDatasetIO(DatasetIO):
                     else:
                         chunks.append(var.shape[i])
                 encoding[var_name] = dict(chunks=chunks)
-        if compress:
-            blosc_kwargs = dict(cname=cname, clevel=clevel, shuffle=shuffle, blocksize=blocksize)
-            for k in list(blosc_kwargs.keys()):
-                if blosc_kwargs[k] is None:
-                    del blosc_kwargs[k]
-            compressor = zarr.Blosc(**blosc_kwargs)
+        if packing:
+            if encoding:
+                for var_name in packing.keys():
+                    if var_name in encoding.keys():
+                        encoding[var_name].update(dict(packing[var_name]))
+                    else:
+                        encoding[var_name] = dict(packing[var_name])
+            else:
+                encoding = {}
+                for var_name in packing.keys():
+                    encoding[var_name] = dict(packing[var_name])
+
+        if compressor:
+            compressor = zarr.Blosc(**compressor)
 
             if encoding:
                 for var_name in encoding.keys():

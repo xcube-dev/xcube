@@ -20,9 +20,32 @@
     credentials found in environment variables `AWS_ACCESS_KEY_ID` and
     `AWS_SECRET_ACCESS_KEY`.
 
+### Enhancements in 0.5.0.dev1
+
+* Added possibility to specify packing of variables within the configuration of
+  `xcube gen` (#269). The user now may specify a different packing variables, 
+  which might be useful for reducing the storage size of the datacubes.
+  Currently it is only implemented for zarr format.
+  This may be done by passing the parameters for packing as the following:  
+   
+   
+  ```yaml  
+  output_writer_params: 
+
+    packing: 
+      analysed_sst: 
+        scale_factor: 0.07324442274239326
+        add_offset: -300.0
+        dtype: 'uint16'
+        _FillValue: 0.65535
+  ```
+
 ## Changes in 0.4.1
 
 * Fixed time-series performance drop (#299). 
+
+### New
+### Enhancements
 
 ## Changes in 0.4.0
 
