@@ -21,7 +21,7 @@
 
 import itertools
 import json
-from collections import MutableMapping
+from collections.abc import MutableMapping
 from typing import Iterator, Dict, Tuple, Iterable, KeysView, Callable, Any, Union, Sequence
 
 import numpy as np
