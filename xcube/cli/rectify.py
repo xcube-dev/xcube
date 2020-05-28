@@ -101,7 +101,7 @@ def rectify(dataset: str,
     # noinspection PyBroadException
     _rectify(input_path,
              xy_var_names,
-             var_names,
+             None if len(var_names) == 0 else var_names,
              output_path,
              output_format,
              output_size,
