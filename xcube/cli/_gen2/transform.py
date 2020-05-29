@@ -19,28 +19,30 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-from typing import Optional, ItemsView, Generic, TypeVar
+import xarray as xr
 
-T = TypeVar('T')
+from xcube.core.store.param import ParamDescriptor
+from xcube.core.store.param import ParamDescriptorSet
+from xcube.core.store.param import ParamValues
+
+# Need to be aligned with params in transform_cube(cube, **params)
+TRANSFORM_PARAMS = ParamDescriptorSet([
+    ParamDescriptor('python_code', dtype=str),
+    ParamDescriptor('gh_repo_name', dtype=str),
+    ParamDescriptor('gh_user_name', dtype=str),
+    ParamDescriptor('gh_access_token', dtype=str),
+    ParamDescriptor('transform_name', dtype=str),
+    ParamDescriptor('transform_params', dtype=dict),
+])
 
 
-class Registry(Generic[T]):
-    _DEFAULT = None
-
-    def __init__(self):
-        self._services = dict()
-
-    def add(self, data_service: T):
-        self._services[data_service.id] = data_service
-
-    def get(self, id: str) -> Optional[T]:
-        return self._services.get(id)
-
-    def items(self) -> ItemsView[str, T]:
-        return self._services.items()
-
-    @classmethod
-    def default(cls):
-        if cls._DEFAULT is None:
-            cls._DEFAULT = cls()
-        return cls._DEFAULT
+def transform_cube(cube: xr.Dataset,
+                   python_code: str = None,
+                   gh_repo_name: str = None,
+                   gh_user_name: str = None,
+                   gh_access_token: str = None,
+                   transform_name: str = None,
+                   transform_params: ParamValues = None):
+    """Use user-defined Python code to transform *cube*."""
+    # TODO: implement me
+    return cube

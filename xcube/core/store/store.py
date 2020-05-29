@@ -20,30 +20,41 @@
 # SOFTWARE.
 
 import abc
-from typing import Sequence
+from typing import Any, Dict, Optional, ItemsView
 
 import xarray as xr
 
 from xcube.core.store.dataset import DatasetDescriptor
-from xcube.core.store.param import ParamDescriptor
-from xcube.core.store.registry import Registry
-from xcube.core.store.search import DatasetSearch, DatasetSearchResult
+from xcube.core.store.param import ParamDescriptorSet
+from xcube.core.store.param import ParamValues
+from xcube.core.store.search import DatasetSearch
+from xcube.core.store.search import DatasetSearchResult
 from xcube.core.store.service import CubeService
 
 
-class CubeStore(metaclass=abc.ABCMeta):
-    def __init__(self, store_id: str, description: str = None):
-        self.id = store_id
-        self.description = description
+# TODO: list dataset_ids
+# TODO: list datasets for dataset_id
+# TODO: search for variables
+# TODO: maybe change design using mixins CubeFinder, CubeOpener, CubeWriter, CubeTimeSliceUpdater
+#       then we can define new stores in a flexible manner:
+#           MyCubeStore(CubeStore, CubeFinder, CubeOpener)
+#           MyCubeStore(CubeStore, CubeWriter)
+#           MyCubeStore(CubeStore, CubeFinder, CubeOpener, CubeWriter, CubeTimeSliceUpdater)
 
+
+class CubeStore(metaclass=abc.ABCMeta):
     @property
     @abc.abstractmethod
-    def new_cube_service_params(self) -> Sequence[ParamDescriptor]:
+    def id(self) -> str:
+        raise NotImplementedError()
+
+    @abc.abstractmethod
+    def get_cube_service_params(self) -> ParamDescriptorSet:
         """Get descriptors of parameters that must or can be used to instantiate a new service object."""
         raise NotImplementedError()
 
     @abc.abstractmethod
-    def new_cube_service(self, **params) -> CubeService:
+    def new_cube_service(self, service_params: ParamValues = None) -> CubeService:
         raise NotImplementedError()
 
     @abc.abstractmethod
@@ -52,9 +63,8 @@ class CubeStore(metaclass=abc.ABCMeta):
                         dataset_search: DatasetSearch) -> DatasetSearchResult:
         raise NotImplementedError()
 
-    @property
     @abc.abstractmethod
-    def open_cube_params(self) -> Sequence[ParamDescriptor]:
+    def get_open_cube_params(self, dataset_id: str) -> ParamDescriptorSet:
         """Get descriptors of parameters that must or can be used to open a cube."""
         raise NotImplementedError()
 
@@ -62,25 +72,28 @@ class CubeStore(metaclass=abc.ABCMeta):
     def open_cube(self,
                   cube_service: CubeService,
                   dataset_id: str,
-                  **params) -> xr.Dataset:
+                  open_params: ParamValues = None,
+                  cube_params: ParamValues = None) -> xr.Dataset:
+        raise NotImplementedError()
+
+
+class WritableCubeStore(CubeStore, metaclass=abc.ABCMeta):
+
+    @abc.abstractmethod
+    def get_write_cube_params(self) -> ParamDescriptorSet:
+        """Get descriptors of parameters that must or can be used to write a cube."""
         raise NotImplementedError()
 
     @abc.abstractmethod
-    def add_cube(self,
-                 cube_service: CubeService,
-                 dataset: xr.Dataset,
-                 **params) -> DatasetDescriptor:
+    def write_cube(self,
+                   cube_service: CubeService,
+                   dataset: xr.Dataset,
+                   replace: bool = False,
+                   write_params: ParamValues = None) -> DatasetDescriptor:
         raise NotImplementedError()
 
     @abc.abstractmethod
-    def replace_cube(self,
-                     cube_service: CubeService,
-                     dataset_id: str,
-                     dataset: xr.Dataset) -> DatasetDescriptor:
-        raise NotImplementedError()
-
-    @abc.abstractmethod
-    def remove_cube(self,
+    def delete_cube(self,
                     cube_service: CubeService,
                     dataset_id: str) -> DatasetDescriptor:
         raise NotImplementedError()
@@ -109,5 +122,24 @@ class CubeStore(metaclass=abc.ABCMeta):
         raise NotImplementedError()
 
 
-class CubeStoreRegistry(Registry[CubeStore]):
-    pass
+class CubeStoreRegistry:
+    _DEFAULT = None
+
+    def __init__(self):
+        self._cube_stores = dict()
+
+    def get(self, cube_store_id: str) -> Optional[CubeStore]:
+        return self._cube_stores.get(cube_store_id)
+
+    def put(self, cube_store_id: str, cube_store: CubeStore):
+        self._cube_stores[cube_store_id] = cube_store
+
+    def items(self) -> ItemsView[str, CubeStore]:
+        return self._cube_stores.items()
+
+    @classmethod
+    def default(cls):
+        if cls._DEFAULT is None:
+            cls._DEFAULT = cls()
+        return cls._DEFAULT
+

@@ -19,31 +19,11 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-from typing import Sequence
+import xarray as xr
 
-from xcube.core.store.dataset import DatasetDescriptor
 from xcube.core.store.param import ParamValues
 
 
-class DatasetSearch:
-    def __init__(self,
-                 search_params: ParamValues,
-                 max_results: int = None,
-                 offset: int = None):
-        self.search_params = dict(search_params or {})
-        self.max_results = max_results
-        self.offset = offset
-
-
-class DatasetSearchResult:
-    def __init__(self,
-                 search: DatasetSearch,
-                 offset: int,
-                 next_offset: int,
-                 service_id: str,
-                 datasets: Sequence[DatasetDescriptor]):
-        self.search = search
-        self.offset = offset
-        self.next_offset = next_offset
-        self.service_id = service_id
-        self.datasets = datasets
+def write_cube(cube: xr.Dataset, output_path: str = None, write_params: ParamValues = None):
+    # TODO: implement me
+    pass

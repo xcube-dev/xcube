@@ -18,32 +18,34 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+from typing import Tuple
 
-from typing import Sequence
+import xarray as xr
 
-from xcube.core.store.dataset import DatasetDescriptor
+from xcube.core.store.param import ParamDescriptor
+from xcube.core.store.param import ParamDescriptorSet
 from xcube.core.store.param import ParamValues
 
+# Need to be aligned with params in resample_cube(cube, **params)
+RESAMPLE_PARAMS = ParamDescriptorSet([
+    ParamDescriptor('spatial_crs', dtype=str, default='WGS84', value_set=[None, 'WGS84']),
+    ParamDescriptor('spatial_coverage', dtype=str),
+    ParamDescriptor('spatial_resolution', dtype=float),
+    ParamDescriptor('temporal_coverage', dtype=tuple),
+    ParamDescriptor('temporal_resolution', dtype=str),
+])
 
-class DatasetSearch:
-    def __init__(self,
-                 search_params: ParamValues,
-                 max_results: int = None,
-                 offset: int = None):
-        self.search_params = dict(search_params or {})
-        self.max_results = max_results
-        self.offset = offset
+
+def resample_cube(cube: xr.Dataset,
+                  spatial_crs: str = None,
+                  spatial_coverage: Tuple[float, float, float, float] = None,
+                  spatial_resolution: float = None,
+                  temporal_coverage: Tuple[str, str] = None,
+                  temporal_resolution: str = None):
+    # TODO: implement me
+    return cube
 
 
-class DatasetSearchResult:
-    def __init__(self,
-                 search: DatasetSearch,
-                 offset: int,
-                 next_offset: int,
-                 service_id: str,
-                 datasets: Sequence[DatasetDescriptor]):
-        self.search = search
-        self.offset = offset
-        self.next_offset = next_offset
-        self.service_id = service_id
-        self.datasets = datasets
+def resample_and_merge_cubes(cubes, cube_config: ParamValues) -> xr.Dataset:
+    cubes = [resample_cube(cube, **cube_config) for cube in cubes]
+    return xr.merge(cubes)

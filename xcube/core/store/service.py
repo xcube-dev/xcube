@@ -18,27 +18,37 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-from typing import Mapping, Sequence, Union
+import xarray as xr
 
-from xcube.core.store.param import ParamDescriptor
-from xcube.core.store.registry import Registry
+from xcube.core.store.param import ParamValues, ParamDescriptorSet
 from xcube.core.store.search import DatasetSearch
 from xcube.core.store.search import DatasetSearchResult
-from xcube.core.store.store import CubeStore
+from xcube.core.store.store import CubeStore, WritableCubeStore
+
 
 class CubeService:
-    def __init__(self,
-                 service_id: str,
-                 cube_store: CubeStore,
-                 description: str = None):
-        self.id = service_id
-        self.cube_store = cube_store
-        self.description = description
+    def __init__(self, cube_store: CubeStore, service_params: ParamValues):
+        self._cube_store = cube_store
+        self._service_params = service_params
 
-    def search_datasets(self,
-                        dataset_search: DatasetSearch) -> DatasetSearchResult:
-        return self.cube_store.search_datasets(self, dataset_search)
+    def search_datasets(self, dataset_search: DatasetSearch) -> DatasetSearchResult:
+        return self._cube_store.search_datasets(self, dataset_search)
+
+    def get_open_cube_params(self, dataset_id: str) -> ParamDescriptorSet:
+        return self._cube_store.get_open_cube_params(dataset_id)
+
+    def open_cube(self, dataset_id: str, open_params: ParamValues) -> xr.Dataset:
+        return self._cube_store.open_cube(self, dataset_id, open_params)
 
 
-class CubeServiceRegistry(Registry[CubeService]):
-    pass
+class WritableCubeService(CubeService):
+    def __init__(self, cube_store: WritableCubeStore, service_params: ParamValues):
+        super().__init__(cube_store, service_params)
+
+    def get_write_cube_params(self) -> ParamDescriptorSet:
+        # noinspection PyUnresolvedReferences
+        return self._cube_store.get_write_cube_params()
+
+    def write_cube(self, cube: xr.Dataset, write_params: ParamValues):
+        # noinspection PyUnresolvedReferences
+        return self._cube_store.write_cube(self, cube, write_params)

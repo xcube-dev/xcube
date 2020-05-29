@@ -92,6 +92,7 @@ def _register_cli_commands(ext_registry: extension.ExtensionRegistry):
         'edit',
         'extract',
         'gen',
+        'gen2',
         'genpts',
         'grid',
         'level',
