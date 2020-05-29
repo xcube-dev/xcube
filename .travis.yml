@@ -22,10 +22,17 @@ install:
   # - conda update -q conda # makes travis build fail
   # Useful for debugging any issues with conda
   - conda info -a
-
-  - conda env create --file environment.yml
   - conda init bash
-  - source activate xcube
+
+  # Install mamba as a dramatically faster conda replacement. Specifying a
+  # fixed version makes the installation of mamba itself much faster, and
+  # avoids potential breakage due to changes in mamba behaviour.
+  - conda install mamba=0.1.2 -c conda-forge
+
+  # Environments created by mamba can't be referenced by name from conda
+  # (presumably a bug), so we use an explicit path instead.
+  - mamba env create --prefix $HOME/mamba-env --file environment.yml
+  - conda activate $HOME/mamba-env
   - conda list
   - python setup.py install 
 
