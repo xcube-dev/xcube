@@ -18,22 +18,22 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+from typing import Mapping, Any
 
 import xarray as xr
 
-from xcube.core.store.param import ParamDescriptor
-from xcube.core.store.param import ParamDescriptorSet
-from xcube.core.store.param import ParamValues
+from xcube.util.jsonschema import JsonObjectSchema
+from xcube.util.jsonschema import JsonStringSchema
 
 # Need to be aligned with params in transform_cube(cube, **params)
-TRANSFORM_PARAMS = ParamDescriptorSet([
-    ParamDescriptor('python_code', dtype=str),
-    ParamDescriptor('gh_repo_name', dtype=str),
-    ParamDescriptor('gh_user_name', dtype=str),
-    ParamDescriptor('gh_access_token', dtype=str),
-    ParamDescriptor('transform_name', dtype=str),
-    ParamDescriptor('transform_params', dtype=dict),
-])
+TRANSFORM_PARAMS = JsonObjectSchema(properties=dict(
+    python_code=JsonStringSchema(nullable=True),
+    gh_repo_name=JsonStringSchema(nullable=True),
+    gh_user_name=JsonStringSchema(nullable=True),
+    gh_access_token=JsonStringSchema(nullable=True),
+    transform_name=JsonStringSchema(nullable=True),
+    transform_params=JsonObjectSchema(nullable=True),
+))
 
 
 def transform_cube(cube: xr.Dataset,
@@ -42,7 +42,7 @@ def transform_cube(cube: xr.Dataset,
                    gh_user_name: str = None,
                    gh_access_token: str = None,
                    transform_name: str = None,
-                   transform_params: ParamValues = None):
+                   transform_params: Mapping[str, Any] = None):
     """Use user-defined Python code to transform *cube*."""
     # TODO: implement me
     return cube

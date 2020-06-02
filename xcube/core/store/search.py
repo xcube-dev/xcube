@@ -19,31 +19,58 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-from typing import Sequence
+from typing import Sequence, Mapping, Any, Dict
 
 from xcube.core.store.dataset import DatasetDescriptor
-from xcube.core.store.param import ParamValues
 
 
-class DatasetSearch:
+# TODO: write tests
+# TODO: document me
+# TODO: validate params
+class CubeSearch:
     def __init__(self,
-                 search_params: ParamValues,
+                 search_params: Mapping[str, Any],
                  max_results: int = None,
                  offset: int = None):
         self.search_params = dict(search_params or {})
         self.max_results = max_results
         self.offset = offset
 
+    @classmethod
+    def from_dict(cls, d: Mapping[str, Any]) -> 'CubeSearch':
+        """Create new instance from a JSON-serializable dictionary"""
+        # TODO: implement me
+        raise NotImplementedError()
 
-class DatasetSearchResult:
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert into a JSON-serializable dictionary"""
+        # TODO: implement me
+        raise NotImplementedError()
+
+
+# TODO: write tests
+# TODO: document me
+# TODO: validate params
+class CubeSearchResult:
     def __init__(self,
-                 search: DatasetSearch,
+                 search: CubeSearch,
                  offset: int,
                  next_offset: int,
                  service_id: str,
-                 datasets: Sequence[DatasetDescriptor]):
+                 cubes: Sequence[DatasetDescriptor]):
         self.search = search
         self.offset = offset
         self.next_offset = next_offset
         self.service_id = service_id
-        self.datasets = datasets
+        self.cubes = cubes
+
+    @classmethod
+    def from_dict(cls, d: Mapping[str, Any]) -> 'CubeSearchResult':
+        """Create new instance from a JSON-serializable dictionary"""
+        # TODO: implement me
+        raise NotImplementedError()
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert into a JSON-serializable dictionary"""
+        # TODO: implement me
+        raise NotImplementedError()

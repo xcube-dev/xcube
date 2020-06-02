@@ -5,7 +5,7 @@ from xcube.util.extension import ExtensionRegistry
 
 
 class PluginTest(unittest.TestCase):
-    def test_init_plugin(self):
+    def test_standard_extensions_exist(self):
         ext_reg = ExtensionRegistry()
 
         init_plugin(ext_reg)
@@ -17,9 +17,12 @@ class PluginTest(unittest.TestCase):
         self.assertTrue(ext_reg.has_extension('xcube.core.dsio', 'csv'))
         self.assertTrue(ext_reg.has_extension('xcube.core.dsio', 'mem'))
 
+        self.assertTrue(ext_reg.has_extension('xcube.core.store', 'mem'))
+        self.assertTrue(ext_reg.has_extension('xcube.core.store', 'dir'))
+
         self.assertTrue(ext_reg.has_extension('xcube.cli', 'compute'))
         self.assertTrue(ext_reg.has_extension('xcube.cli', 'extract'))
         self.assertTrue(ext_reg.has_extension('xcube.cli', 'gen'))
         self.assertTrue(ext_reg.has_extension('xcube.cli', 'level'))
         self.assertTrue(ext_reg.has_extension('xcube.cli', 'optimize'))
-        # ...
+

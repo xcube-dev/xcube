@@ -19,127 +19,189 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-import abc
-from typing import Any, Dict, Optional, ItemsView
+from abc import ABCMeta, abstractmethod
+from typing import Optional, Iterator, Mapping, Any
 
 import xarray as xr
 
 from xcube.core.store.dataset import DatasetDescriptor
-from xcube.core.store.param import ParamDescriptorSet
-from xcube.core.store.param import ParamValues
-from xcube.core.store.search import DatasetSearch
-from xcube.core.store.search import DatasetSearchResult
-from xcube.core.store.service import CubeService
+from xcube.core.store.search import CubeSearch
+from xcube.core.store.search import CubeSearchResult
+from xcube.util.jsonschema import JsonObjectSchema
 
 
-# TODO: list dataset_ids
-# TODO: list datasets for dataset_id
-# TODO: search for variables
-# TODO: maybe change design using mixins CubeFinder, CubeOpener, CubeWriter, CubeTimeSliceUpdater
-#       then we can define new stores in a flexible manner:
-#           MyCubeStore(CubeStore, CubeFinder, CubeOpener)
-#           MyCubeStore(CubeStore, CubeWriter)
-#           MyCubeStore(CubeStore, CubeFinder, CubeOpener, CubeWriter, CubeTimeSliceUpdater)
+# TODO: IMPORTANT: support multi-resolution datasets (*.levels)
+# TODO: IMPORTANT: replace, reuse, or align with
+#   xcube.core.dsio.DatasetIO class
+# TODO: rename to DatasetStore, DatasetFinder, DatasetOpener, DatasetWriter?
 
-
-class CubeStore(metaclass=abc.ABCMeta):
-    @property
-    @abc.abstractmethod
-    def id(self) -> str:
-        raise NotImplementedError()
-
-    @abc.abstractmethod
-    def get_cube_service_params(self) -> ParamDescriptorSet:
-        """Get descriptors of parameters that must or can be used to instantiate a new service object."""
-        raise NotImplementedError()
-
-    @abc.abstractmethod
-    def new_cube_service(self, service_params: ParamValues = None) -> CubeService:
-        raise NotImplementedError()
-
-    @abc.abstractmethod
-    def search_datasets(self,
-                        cube_service: CubeService,
-                        dataset_search: DatasetSearch) -> DatasetSearchResult:
-        raise NotImplementedError()
-
-    @abc.abstractmethod
-    def get_open_cube_params(self, dataset_id: str) -> ParamDescriptorSet:
-        """Get descriptors of parameters that must or can be used to open a cube."""
-        raise NotImplementedError()
-
-    @abc.abstractmethod
-    def open_cube(self,
-                  cube_service: CubeService,
-                  dataset_id: str,
-                  open_params: ParamValues = None,
-                  cube_params: ParamValues = None) -> xr.Dataset:
-        raise NotImplementedError()
-
-
-class WritableCubeStore(CubeStore, metaclass=abc.ABCMeta):
-
-    @abc.abstractmethod
-    def get_write_cube_params(self) -> ParamDescriptorSet:
-        """Get descriptors of parameters that must or can be used to write a cube."""
-        raise NotImplementedError()
-
-    @abc.abstractmethod
-    def write_cube(self,
-                   cube_service: CubeService,
-                   dataset: xr.Dataset,
-                   replace: bool = False,
-                   write_params: ParamValues = None) -> DatasetDescriptor:
-        raise NotImplementedError()
-
-    @abc.abstractmethod
-    def delete_cube(self,
-                    cube_service: CubeService,
-                    dataset_id: str) -> DatasetDescriptor:
-        raise NotImplementedError()
-
-    @abc.abstractmethod
-    def insert_cube_time_slice(self,
-                               cube_service: CubeService,
-                               dataset_id: str,
-                               time_slice: xr.Dataset,
-                               time_index: int):
-        raise NotImplementedError()
-
-    @abc.abstractmethod
-    def append_cube_time_slice(self,
-                               cube_service: CubeService,
-                               dataset_id: str,
-                               time_slice: xr.Dataset):
-        raise NotImplementedError()
-
-    @abc.abstractmethod
-    def replace_cube_time_slice(self,
-                                cube_service: CubeService,
-                                dataset_id: str,
-                                time_slice: xr.Dataset,
-                                time_index: int):
-        raise NotImplementedError()
-
-
-class CubeStoreRegistry:
-    _DEFAULT = None
-
-    def __init__(self):
-        self._cube_stores = dict()
-
-    def get(self, cube_store_id: str) -> Optional[CubeStore]:
-        return self._cube_stores.get(cube_store_id)
-
-    def put(self, cube_store_id: str, cube_store: CubeStore):
-        self._cube_stores[cube_store_id] = cube_store
-
-    def items(self) -> ItemsView[str, CubeStore]:
-        return self._cube_stores.items()
+class CubeStore(metaclass=ABCMeta):
+    """
+    An abstract cube store.
+    """
 
     @classmethod
-    def default(cls):
-        if cls._DEFAULT is None:
-            cls._DEFAULT = cls()
-        return cls._DEFAULT
+    def get_cube_store_params_schema(cls) -> JsonObjectSchema:
+        """
+        Get descriptions of parameters that must or can be used to instantiate a new cube store object.
+        Parameters are named and described by the properties of the returned JSON object schema.
+        The default implementation returns JSON object schema that can have any properties.
+        """
+        return JsonObjectSchema(additional_properties=True)
 
+    @abstractmethod
+    def iter_cubes(self) -> Iterator[DatasetDescriptor]:
+        """
+        Iterate descriptors of all cubes in this store.
+        :return: A cube descriptor iterator.
+        """
+
+
+# TODO: support search for variables
+class CubeFinder(metaclass=ABCMeta):
+    """
+    Find cubes in this cube store.
+    """
+
+    def get_search_params_schema(self) -> JsonObjectSchema:
+        """
+        Get descriptions of parameters that must or can be used to search the store.
+        Parameters are named and described by the properties of the returned JSON object schema.
+        The default implementation returns JSON object schema that can have any properties.
+        """
+        return JsonObjectSchema()
+
+    @abstractmethod
+    def search_cubes(self,
+                     dataset_search: CubeSearch) -> CubeSearchResult:
+        """
+        Searches for cubes using the given search request.
+
+        :param dataset_search: The dataset search request.
+        :return: The search result.
+        """
+
+
+class CubeOpener(metaclass=ABCMeta):
+    """
+    Open cubes in this cube store.
+    """
+
+    def get_open_cube_params_schema(self, cube_id: str) -> JsonObjectSchema:
+        """
+        Get descriptions of parameters that must or can be used to open a cube from the store.
+        Parameters are named and described by the properties of the returned JSON object schema.
+        The default implementation returns JSON object schema that can have any properties.
+        """
+        return JsonObjectSchema()
+
+    @abstractmethod
+    def open_cube(self,
+                  cube_id: str,
+                  open_params: Mapping[str, Any] = None,
+                  cube_params: Mapping[str, Any] = None) -> xr.Dataset:
+        """
+        Open a cube from this cube store.
+
+        :param cube_id: The cube identifier.
+        :param open_params: Open parameters.
+        :param cube_params: Cube generation parameters.
+        :return: The cube.
+        """
+
+
+class CubeWriter(metaclass=ABCMeta):
+    """
+    Write cubes to and delete cubes from this cube store.
+    """
+
+    def get_write_cube_params_schema(self) -> JsonObjectSchema:
+        """
+        Get descriptions of parameters that must or can be used to write a cube to the store.
+        Parameters are named and described by the properties of the returned JSON object schema.
+        The default implementation returns JSON object schema that can have any properties.
+        """
+        return JsonObjectSchema()
+
+    @abstractmethod
+    def write_cube(self,
+                   cube: xr.Dataset,
+                   cube_id: str = None,
+                   replace: bool = False,
+                   write_params: Mapping[str, Any] = None) -> str:
+        """
+        Writes *cube* into the cube store and returns its cube identifier.
+
+        :param cube: The cube to be written.
+        :param cube_id: Optional cube identifier. If not given, a new one will be created.
+        :param replace: Whether to replace an existing cube.
+        :param write_params: Store specific writer parameters.
+        :return: The cube identifier.
+        :raise CubeStoreError: on error
+        """
+
+    @abstractmethod
+    def delete_cube(self, cube_id: str) -> bool:
+        """
+        Delete the cube with the given cube identifier.
+
+        :param cube_id: The cube identifier.
+        :return: True, if the cube was deleted. False, if it does not exist.
+        :raise CubeStoreError: on error
+        """
+
+
+class CubeTimeSliceUpdater(metaclass=ABCMeta):
+    @abstractmethod
+    def append_cube_time_slice(self,
+                               cube_id: str,
+                               time_slice: xr.Dataset):
+        """
+        Append a time slice to the identified cube.
+
+        :param cube_id: The cube identifier.
+        :param time_slice: The time slice to be inserted. Must be compatible with the cube.
+        """
+
+    @abstractmethod
+    def insert_cube_time_slice(self,
+                               cube_id: str,
+                               time_slice: xr.Dataset,
+                               time_index: int):
+        """
+        Insert a time slice into the identified cube at given index.
+
+        :param cube_id: The cube identifier.
+        :param time_slice: The time slice to be inserted. Must be compatible with the cube.
+        :param time_index: The time index.
+        """
+
+    @abstractmethod
+    def replace_cube_time_slice(self,
+                                cube_id: str,
+                                time_slice: xr.Dataset,
+                                time_index: int):
+        """
+        Replace a time slice in the identified cube at given index.
+
+        :param cube_id: The cube identifier.
+        :param time_slice: The time slice to be inserted. Must be compatible with the cube.
+        :param time_index: The time index.
+        """
+
+
+class CubeStoreError(Exception):
+    """
+    Raised on error in any of the cube store methods.
+
+    :param message: The error message.
+    :param cube_store: The cube store that caused the error.
+    """
+
+    def __init__(self, message: str, cube_store: CubeStore = None):
+        super().__init__(message)
+        self._cube_store = cube_store
+
+    @property
+    def cube_store(self) -> Optional[CubeStore]:
+        return self._cube_store

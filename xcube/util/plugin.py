@@ -36,6 +36,7 @@ from xcube.constants import PLUGIN_MODULE_FUNCTION_NAME
 from xcube.constants import PLUGIN_MODULE_NAME
 from xcube.constants import PLUGIN_MODULE_PREFIX
 from xcube.util.extension import Extension
+from xcube.util.extension import ExtensionRegistry
 
 #: Mapping of xcube entry point names to JSON-serializable plugin meta-information.
 _PLUGIN_REGISTRY = None
@@ -55,7 +56,7 @@ def get_plugins() -> Dict[str, Dict]:
     return dict(_PLUGIN_REGISTRY)
 
 
-def get_extension_registry():
+def get_extension_registry() -> ExtensionRegistry:
     """Get populated extension registry."""
     from xcube.util.extension import get_extension_registry
     init_plugins()

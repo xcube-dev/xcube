@@ -30,7 +30,6 @@ from xcube.cli._gen2.resample import resample_and_merge_cubes
 from xcube.cli._gen2.transform import TRANSFORM_PARAMS
 from xcube.cli._gen2.transform import transform_cube
 from xcube.cli._gen2.write import write_cube
-from xcube.core.store.store import CubeStoreRegistry
 
 DEFAULT_GEN_OUTPUT_PATH = 'out.zarr'
 
@@ -39,7 +38,6 @@ def main(request_path: str,
          output_path: str = None,
          callback_url=None,
          exception_type: Type[BaseException] = click.ClickException,
-         cube_store_registry: CubeStoreRegistry = None,
          verbose: bool = False):
     """
     Generate a data cube.
@@ -62,24 +60,33 @@ def main(request_path: str,
         must accept the POST method and support the JSON content type.
     :param verbose:
     :param exception_type: exception type used to raise on errors
-    :param cube_store_registry:
-    :return:
     """
+
+    def callback_func():
+        # TODO: make use of callback_url and verbose
+        pass
 
     request = Request.from_file(request_path, exception_type=exception_type)
 
-    input_configs = [request.input_config]
-    resample_params = RESAMPLE_PARAMS.from_json_values(request.cube_config,
-                                                       exception_type=exception_type)
-    transform_params = TRANSFORM_PARAMS.from_json_values(request.code_config,
-                                                         exception_type=exception_type)
+    input_configs = request.input_configs
+    cube_config = RESAMPLE_PARAMS.from_json(request.cube_config,
+                                            exception_type=exception_type)
+    code_config = TRANSFORM_PARAMS.from_json(request.code_config,
+                                             exception_type=exception_type)
     write_params = request.output_config
 
     # 1.
-    cubes = open_cubes(input_configs, resample_params, cube_store_registry, exception_type)
+    cubes = open_cubes(input_configs,
+                       cube_config=cube_config,
+                       extension_registry=None,
+                       exception_type=exception_type,
+                       callback_func=callback_func)
     # 2.
-    cube = resample_and_merge_cubes(cubes, resample_params)
+    cube = resample_and_merge_cubes(cubes, cube_config=code_config)
     # 3.
-    cube = transform_cube(cube, **transform_params)
+    cube = transform_cube(cube, **code_config)
     # 4.
-    write_cube(cube, output_path=output_path, write_params=write_params)
+    write_cube(cube,
+               output_path=output_path,
+               write_params=write_params,
+               callback_func=callback_func)

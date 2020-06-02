@@ -18,22 +18,23 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-from typing import Tuple
+from typing import Tuple, Dict, Any
 
 import xarray as xr
 
-from xcube.core.store.param import ParamDescriptor
-from xcube.core.store.param import ParamDescriptorSet
-from xcube.core.store.param import ParamValues
+from xcube.util.jsonschema import JsonArraySchema
+from xcube.util.jsonschema import JsonNumberSchema
+from xcube.util.jsonschema import JsonObjectSchema
+from xcube.util.jsonschema import JsonStringSchema
 
 # Need to be aligned with params in resample_cube(cube, **params)
-RESAMPLE_PARAMS = ParamDescriptorSet([
-    ParamDescriptor('spatial_crs', dtype=str, default='WGS84', value_set=[None, 'WGS84']),
-    ParamDescriptor('spatial_coverage', dtype=str),
-    ParamDescriptor('spatial_resolution', dtype=float),
-    ParamDescriptor('temporal_coverage', dtype=tuple),
-    ParamDescriptor('temporal_resolution', dtype=str),
-])
+RESAMPLE_PARAMS = JsonObjectSchema(properties=dict(
+    spatial_crs=JsonStringSchema(nullable=True, default='WGS84', enum=[None, 'WGS84']),
+    spatial_coverage=JsonArraySchema(items=JsonNumberSchema(), min_items=4, max_items=4),
+    spatial_resolution=JsonNumberSchema(exclusive_minimum=0.0),
+    temporal_coverage=JsonArraySchema(items=JsonStringSchema(format='date-time'), min_items=2, max_items=2),
+    temporal_resolution=JsonStringSchema(nullable=True),
+))
 
 
 def resample_cube(cube: xr.Dataset,
@@ -46,6 +47,6 @@ def resample_cube(cube: xr.Dataset,
     return cube
 
 
-def resample_and_merge_cubes(cubes, cube_config: ParamValues) -> xr.Dataset:
+def resample_and_merge_cubes(cubes, cube_config: Dict[str, Any]) -> xr.Dataset:
     cubes = [resample_cube(cube, **cube_config) for cube in cubes]
     return xr.merge(cubes)

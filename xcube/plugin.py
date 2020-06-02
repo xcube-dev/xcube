@@ -20,6 +20,7 @@
 # SOFTWARE.
 
 from xcube.constants import EXTENSION_POINT_CLI_COMMANDS
+from xcube.constants import EXTENSION_POINT_CUBE_STORES
 from xcube.constants import EXTENSION_POINT_DATASET_IOS
 from xcube.constants import EXTENSION_POINT_INPUT_PROCESSORS
 from xcube.constants import FORMAT_NAME_CSV
@@ -36,6 +37,7 @@ def init_plugin(ext_registry: extension.ExtensionRegistry):
     _register_input_processors(ext_registry)
     _register_dataset_ios(ext_registry)
     _register_cli_commands(ext_registry)
+    _register_cube_stores(ext_registry)
 
 
 def _register_input_processors(ext_registry: extension.ExtensionRegistry):
@@ -76,6 +78,22 @@ def _register_dataset_ios(ext_registry: extension.ExtensionRegistry):
         point=EXTENSION_POINT_DATASET_IOS, name=FORMAT_NAME_MEM,
         description='In-memory dataset I/O',
         ext='mem', modes={'r', 'w', 'a'}
+    )
+
+
+def _register_cube_stores(ext_registry: extension.ExtensionRegistry):
+    """
+    Register xcube's standard cube stores.
+    """
+    ext_registry.add_extension(
+        loader=extension.import_component('xcube.core.store.stores:MemoryCubeStore'),
+        point=EXTENSION_POINT_CUBE_STORES, name='mem',
+        description='Memory cube store'
+    )
+    ext_registry.add_extension(
+        loader=extension.import_component('xcube.core.store.stores:DirectoryCubeStore'),
+        point=EXTENSION_POINT_CUBE_STORES, name='dir',
+        description='Directory cube store'
     )
 
 

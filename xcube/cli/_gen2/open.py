@@ -18,33 +18,36 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-from typing import Sequence, Type
+from typing import Sequence, Type, Optional, Callable, Any, Mapping
 
-from xcube.core.store.param import ParamValues
-from xcube.core.store.store import CubeStoreRegistry
+from xcube.constants import EXTENSION_POINT_CUBE_STORES
+from xcube.util.extension import ExtensionRegistry
+from xcube.util.plugin import get_extension_registry
 
 
-def open_cubes(input_configs: Sequence[ParamValues],
-               cube_config: ParamValues,
-               cube_store_registry: CubeStoreRegistry,
-               exception_type: Type[BaseException]):
-    cube_store_registry = cube_store_registry or CubeStoreRegistry.default()
+def open_cubes(input_configs: Sequence[Mapping[str, Any]],
+               cube_config: Mapping[str, Any],
+               extension_registry: Optional[ExtensionRegistry],
+               exception_type: Type[BaseException],
+               callback_func: Callable):
+    extension_registry = extension_registry or get_extension_registry()
 
     cubes = []
     for input_config in input_configs:
         cube_store_id = input_config.cube_store_id
-        cube_store = cube_store_registry.get(cube_store_id)
-        if cube_store is None:
+        if not extension_registry.has_extension(EXTENSION_POINT_CUBE_STORES, cube_store_id):
             raise exception_type(f'Unknown cube store "{cube_store_id}"')
-        cube_store_params = cube_store.get_cube_service_params().from_json_values(input_config.cube_store_params,
-                                                                                  exception_type=exception_type)
-        cube_service = cube_store.new_cube_service(cube_store_params)
+        cube_store_class = extension_registry.get_component(EXTENSION_POINT_CUBE_STORES, cube_store_id)
+        cube_store_params = cube_store_class.get_cube_store_params_schema().from_json(input_config.cube_store_params,
+                                                                                      exception_type=exception_type)
+        cube_store = cube_store_class(cube_store_params)
 
         dataset_id = input_config.dataset_id
-        open_params = cube_service.get_open_cube_params(dataset_id).from_json_values(input_config.open_params,
-                                                                                     exception_type=exception_type)
+        open_params = cube_store.get_open_cube_params_schema(dataset_id).from_json(input_config.open_params,
+                                                                                   exception_type=exception_type)
 
-        cube = cube_service.open_cube(dataset_id, open_params=open_params, cube_params=cube_config)
+        cube = cube_store.open_cube(dataset_id, open_params=open_params, cube_params=cube_config)
         cubes.append(cube)
+        callback_func(dict(message=f'Cube "{dataset_id}" opened from cube store "{cube_store_id}"'))
 
     return cubes
