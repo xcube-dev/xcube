@@ -23,7 +23,8 @@ import sys
 
 import click
 
-from xcube.cli.common import cli_option_scheduler, cli_option_traceback, handle_cli_exception, new_cli_ctx_obj
+from xcube.cli.common import cli_option_scheduler, cli_option_traceback
+from xcube.cli.common import handle_cli_exception, new_cli_ctx_obj
 from xcube.constants import EXTENSION_POINT_CLI_COMMANDS
 from xcube.util.plugin import get_extension_registry
 from xcube.version import version
@@ -34,10 +35,17 @@ from xcube.version import version
 @click.version_option(version)
 @cli_option_traceback
 @cli_option_scheduler
-def cli(traceback=False, scheduler=None):
+@click.option('--warnings', '-w', is_flag=True,
+        help='Show any warnings produced during operation '
+             '(they are hidden by default)')
+def cli(traceback=False, scheduler=None, warnings=None):
     """
     xcube Toolkit
     """
+
+    if not warnings:
+        import warnings as _warnings
+        _warnings.simplefilter('ignore')
 
 
 # Add registered CLI commands
