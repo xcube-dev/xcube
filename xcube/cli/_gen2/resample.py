@@ -18,35 +18,21 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-from typing import Tuple, Dict, Any
-
 import xarray as xr
+from typing import Callable
 
-from xcube.util.jsonschema import JsonArraySchema
-from xcube.util.jsonschema import JsonNumberSchema
-from xcube.util.jsonschema import JsonObjectSchema
-from xcube.util.jsonschema import JsonStringSchema
-
-# Need to be aligned with params in resample_cube(cube, **params)
-RESAMPLE_PARAMS = JsonObjectSchema(properties=dict(
-    spatial_crs=JsonStringSchema(nullable=True, default='WGS84', enum=[None, 'WGS84']),
-    spatial_coverage=JsonArraySchema(items=JsonNumberSchema(), min_items=4, max_items=4),
-    spatial_resolution=JsonNumberSchema(exclusive_minimum=0.0),
-    temporal_coverage=JsonArraySchema(items=JsonStringSchema(format='date-time'), min_items=2, max_items=2),
-    temporal_resolution=JsonStringSchema(nullable=True),
-))
+from xcube_cci.config import CubeConfig
 
 
 def resample_cube(cube: xr.Dataset,
-                  spatial_crs: str = None,
-                  spatial_coverage: Tuple[float, float, float, float] = None,
-                  spatial_resolution: float = None,
-                  temporal_coverage: Tuple[str, str] = None,
-                  temporal_resolution: str = None):
+                  cube_config: CubeConfig,
+                  progress_monitor: Callable):
     # TODO: implement me
     return cube
 
 
-def resample_and_merge_cubes(cubes, cube_config: Dict[str, Any]) -> xr.Dataset:
-    cubes = [resample_cube(cube, **cube_config) for cube in cubes]
+def resample_and_merge_cubes(cubes,
+                             cube_config: CubeConfig,
+                             progress_monitor: Callable) -> xr.Dataset:
+    cubes = [resample_cube(cube, cube_config, progress_monitor) for cube in cubes]
     return xr.merge(cubes)

@@ -86,12 +86,12 @@ def _register_cube_stores(ext_registry: extension.ExtensionRegistry):
     Register xcube's standard cube stores.
     """
     ext_registry.add_extension(
-        loader=extension.import_component('xcube.core.store.stores:MemoryCubeStore'),
+        loader=extension.import_component('xcube.core.store.stores.mem:MemoryCubeStore'),
         point=EXTENSION_POINT_CUBE_STORES, name='mem',
         description='Memory cube store'
     )
     ext_registry.add_extension(
-        loader=extension.import_component('xcube.core.store.stores:DirectoryCubeStore'),
+        loader=extension.import_component('xcube.core.store.stores.dir:DirectoryCubeStore'),
         point=EXTENSION_POINT_CUBE_STORES, name='dir',
         description='Directory cube store'
     )

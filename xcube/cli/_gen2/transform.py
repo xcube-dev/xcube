@@ -18,31 +18,15 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-from typing import Mapping, Any
-
 import xarray as xr
+from typing import Callable
 
-from xcube.util.jsonschema import JsonObjectSchema
-from xcube.util.jsonschema import JsonStringSchema
-
-# Need to be aligned with params in transform_cube(cube, **params)
-TRANSFORM_PARAMS = JsonObjectSchema(properties=dict(
-    python_code=JsonStringSchema(nullable=True),
-    gh_repo_name=JsonStringSchema(nullable=True),
-    gh_user_name=JsonStringSchema(nullable=True),
-    gh_access_token=JsonStringSchema(nullable=True),
-    transform_name=JsonStringSchema(nullable=True),
-    transform_params=JsonObjectSchema(nullable=True),
-))
+from xcube.cli._gen2.request import CodeConfig
 
 
 def transform_cube(cube: xr.Dataset,
-                   python_code: str = None,
-                   gh_repo_name: str = None,
-                   gh_user_name: str = None,
-                   gh_access_token: str = None,
-                   transform_name: str = None,
-                   transform_params: Mapping[str, Any] = None):
+                   code_config: CodeConfig,
+                   progress_monitor: Callable):
     """Use user-defined Python code to transform *cube*."""
     # TODO: implement me
     return cube

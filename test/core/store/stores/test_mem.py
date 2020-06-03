@@ -1,5 +1,4 @@
 import unittest
-
 import xarray as xr
 
 from xcube.core.new import new_cube
@@ -11,7 +10,7 @@ class MemoryCubeStoreTest(unittest.TestCase):
 
     def setUp(self) -> None:
         self.cube_store = MemoryCubeStore()
-        self.cube_store.cubes.update({
+        self.cube_store.cube_memory.update({
             'cube_1': new_cube(variables=dict(B01=0.4, B02=0.5)),
             'cube_2': new_cube(variables=dict(B03=0.4, B04=0.5))
         })

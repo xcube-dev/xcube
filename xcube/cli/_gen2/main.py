@@ -19,17 +19,17 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-from typing import Type
+import os.path
 
 import click
+from typing import Type
 
 from xcube.cli._gen2.open import open_cubes
-from xcube.cli._gen2.request import Request
-from xcube.cli._gen2.resample import RESAMPLE_PARAMS
+from xcube.cli._gen2.request import Request, OutputConfig
 from xcube.cli._gen2.resample import resample_and_merge_cubes
-from xcube.cli._gen2.transform import TRANSFORM_PARAMS
 from xcube.cli._gen2.transform import transform_cube
 from xcube.cli._gen2.write import write_cube
+from xcube.core.dsio import guess_dataset_format
 
 DEFAULT_GEN_OUTPUT_PATH = 'out.zarr'
 
@@ -62,31 +62,35 @@ def main(request_path: str,
     :param exception_type: exception type used to raise on errors
     """
 
-    def callback_func():
+    def progress_monitor():
         # TODO: make use of callback_url and verbose
         pass
 
     request = Request.from_file(request_path, exception_type=exception_type)
 
-    input_configs = request.input_configs
-    cube_config = RESAMPLE_PARAMS.from_json(request.cube_config,
-                                            exception_type=exception_type)
-    code_config = TRANSFORM_PARAMS.from_json(request.code_config,
-                                             exception_type=exception_type)
-    write_params = request.output_config
+    if output_path:
+        base_dir = os.path.dirname(output_path)
+        cube_id, _ = os.path.splitext(os.path.basename(output_path))
+        output_config = OutputConfig(cube_store_id='dir',
+                                     cube_store_params=dict(base_dir=base_dir, read_only=False),
+                                     cube_id=cube_id,
+                                     write_params=dict(format=guess_dataset_format(output_path)))
+    else:
+        output_config = request.output_config
 
-    # 1.
-    cubes = open_cubes(input_configs,
-                       cube_config=cube_config,
-                       extension_registry=None,
-                       exception_type=exception_type,
-                       callback_func=callback_func)
-    # 2.
-    cube = resample_and_merge_cubes(cubes, cube_config=code_config)
-    # 3.
-    cube = transform_cube(cube, **code_config)
-    # 4.
+    # Step 1
+    cubes = open_cubes(request.input_configs,
+                       cube_config=request.cube_config,
+                       progress_monitor=progress_monitor)
+    # Step 2
+    cube = resample_and_merge_cubes(cubes,
+                                    cube_config=request.cube_config,
+                                    progress_monitor=progress_monitor)
+    # Step 3
+    cube = transform_cube(cube,
+                          request.code_config,
+                          progress_monitor=progress_monitor)
+    # Step 4
     write_cube(cube,
-               output_path=output_path,
-               write_params=write_params,
-               callback_func=callback_func)
+               output_config=output_config,
+               progress_monitor=progress_monitor)

@@ -1,12 +1,11 @@
+import jsonschema
 from abc import ABCMeta, abstractmethod
 from typing import Dict, Any, Callable, Mapping, Sequence, Union
 
-import jsonschema
-
 from xcube.util.undefined import UNDEFINED
 
-JsonToObj = Callable[..., Any]
-ObjToJson = Callable[..., Any]
+Factory = Callable[..., Any]
+Serializer = Callable[..., Any]
 
 _TYPES_ENUM = {'null', 'boolean', 'integer', 'number', 'string', 'array', 'object'}
 _NUMERIC_TYPES_ENUM = {'integer', 'number'}
@@ -23,14 +22,14 @@ class JsonSchema(metaclass=ABCMeta):
                  nullable: bool = None,
                  title: str = None,
                  description: str = None,
-                 json_to_obj: JsonToObj = None,
-                 obj_to_json: ObjToJson = None):
+                 factory: Factory = None,
+                 serializer: Serializer = None):
         if type not in _TYPES_ENUM:
             raise ValueError(f'type must be one of {", ".join(_TYPES_ENUM)}')
-        if json_to_obj is not None and not callable(json_to_obj):
-            raise ValueError('json_to_obj must be callable')
-        if obj_to_json is not None and not callable(obj_to_json):
-            raise ValueError('obj_to_json must be callable')
+        if factory is not None and not callable(factory):
+            raise ValueError('factory must be callable')
+        if serializer is not None and not callable(serializer):
+            raise ValueError('serializer must be callable')
         self.type = type
         self.default = default
         self.const = const
@@ -38,8 +37,8 @@ class JsonSchema(metaclass=ABCMeta):
         self.nullable = nullable
         self.title = title
         self.description = description
-        self.json_to_obj = json_to_obj
-        self.obj_to_json = obj_to_json
+        self.factory = factory
+        self.serializer = serializer
 
     def to_dict(self) -> Dict[str, Any]:
         if self.nullable is not None and self.type != 'null':
@@ -59,15 +58,27 @@ class JsonSchema(metaclass=ABCMeta):
         return d
 
     def validate_instance(self, instance: Any):
+        """Validate JSON value *instance*."""
         jsonschema.validate(instance=instance, schema=self.to_dict())
 
-    @abstractmethod
-    def to_json_instance(self, obj: Any) -> Any:
-        raise NotImplementedError()
+    def to_instance(self, value: Any) -> Any:
+        """Convert Python object *value* into JSON value and return the validated result."""
+        json_instance = self._to_unvalidated_instance(value)
+        self.validate_instance(json_instance)
+        return json_instance
+
+    def from_instance(self, instance: Any) -> Any:
+        """Validate JSON value *instance* and convert it into a Python object."""
+        self.validate_instance(instance)
+        return self._from_validated_instance(instance)
 
     @abstractmethod
-    def from_json_instance(self, instance: Any) -> Any:
-        raise NotImplementedError()
+    def _to_unvalidated_instance(self, value: Any) -> Any:
+        """Turn Python object *value* into an unvalidated JSON value."""
+
+    @abstractmethod
+    def _from_validated_instance(self, instance: Any) -> Any:
+        """Turn validated JSON value *instance* into a Python object."""
 
 
 class JsonSimpleTypeSchema(JsonSchema, metaclass=ABCMeta):
@@ -75,11 +86,11 @@ class JsonSimpleTypeSchema(JsonSchema, metaclass=ABCMeta):
     def __init__(self, type: str, **kwargs):
         super().__init__(type, **kwargs)
 
-    def to_json_instance(self, obj: Any) -> Any:
-        return self.obj_to_json(obj) if self.obj_to_json is not None else obj
+    def _to_unvalidated_instance(self, value: Any) -> Any:
+        return self.serializer(value) if self.serializer is not None else value
 
-    def from_json_instance(self, instance: Any) -> Any:
-        return self.json_to_obj(instance) if self.json_to_obj is not None else instance
+    def _from_validated_instance(self, instance: Any) -> Any:
+        return self.factory(instance) if self.factory is not None else instance
 
 
 class JsonNullSchema(JsonSimpleTypeSchema):
@@ -187,27 +198,26 @@ class JsonArraySchema(JsonSchema):
             d.update(uniqueItems=self.unique_items)
         return d
 
-    def to_json_instance(self, obj: Sequence[Any]) -> Sequence[Any]:
-        if self.obj_to_json is not None:
-            return self.obj_to_json(obj)
-        return self._convert_instance(obj, 'to_json_instance')
+    def _to_unvalidated_instance(self, value: Sequence[Any]) -> Sequence[Any]:
+        if self.serializer:
+            return self.serializer(value)
+        return self._convert_sequence(value, '_to_unvalidated_instance')
 
-    def from_json_instance(self, instance: Sequence[Any]) -> Any:
-        new_instance = self._convert_instance(instance, 'from_json_instance')
-        return self.json_to_obj(new_instance) if self.json_to_obj is not None else new_instance
+    def _from_validated_instance(self, instance: Sequence[Any]) -> Any:
+        obj = self._convert_sequence(instance, '_from_validated_instance')
+        return self.factory(obj) if self.factory is not None else obj
 
-    def _convert_instance(self, instance: Sequence[Any], method_name: str) -> Sequence[Any]:
+    def _convert_sequence(self, sequence: Sequence[Any], method_name: str) -> Sequence[Any]:
         items_schema = self.items
         if isinstance(items_schema, JsonSchema):
-            # Array is a validated list
-            return [getattr(items_schema, method_name)(item) for item in instance]
+            # Sequence turned into list with items_schema applying to all elements
+            return [getattr(items_schema, method_name)(item) for item in sequence]
         elif items_schema is not None:
-            # Array is a validated tuple
-            return tuple(getattr(items_schema[item_index], method_name)(instance[item_index])
+            # Sequence turned into tuple with schema for every position
+            return tuple(getattr(items_schema[item_index], method_name)(sequence[item_index])
                          for item_index in range(len(items_schema)))
-        else:
-            # Array is any unvalidated sequence
-            return instance
+        # Sequence returned as-is, without schema
+        return sequence
 
 
 class JsonObjectSchema(JsonSchema):
@@ -240,32 +250,37 @@ class JsonObjectSchema(JsonSchema):
             d.update(required=self.required)
         return d
 
-    def to_json_instance(self, obj: Any) -> Mapping[str, Any]:
-        if self.obj_to_json is not None:
-            return self.obj_to_json(obj)
-        return self._convert_instance(obj, 'to_json_instance')
+    def _to_unvalidated_instance(self, value: Any) -> Mapping[str, Any]:
+        if self.serializer is not None:
+            return self.serializer(value)
+        return self._convert_mapping(value, '_to_unvalidated_instance')
 
-    def from_json_instance(self, instance: Mapping[str, Any]) -> Any:
-        deserialized_instance = self._convert_instance(instance, 'from_json_instance')
-        return self.json_to_obj(**deserialized_instance) if self.json_to_obj is not None else deserialized_instance
+    def _from_validated_instance(self, instance: Mapping[str, Any]) -> Any:
+        obj = self._convert_mapping(instance, '_from_validated_instance')
+        return self.factory(**obj) if self.factory is not None else obj
 
-    def _convert_instance(self, instance: Mapping[str, Any], method_name: str) -> Mapping[str, Any]:
-        converted_instance = dict()
+    def _convert_mapping(self, mapping: Mapping[str, Any], method_name: str) -> Mapping[str, Any]:
+        converted_mapping = dict()
+
+        required_set = set(self.required) if self.required else set()
 
         if self.properties:
             for property_name, property_schema in self.properties.items():
-                if property_name in instance:
-                    property_value = instance[property_name]
+                if property_name in mapping:
+                    property_value = mapping[property_name]
+                    converted_property_value = getattr(property_schema, method_name)(property_value)
+                    converted_mapping[property_name] = converted_property_value
                 else:
                     property_value = property_schema.default
-                converted_property_value = getattr(property_schema, method_name)(property_value)
-                if converted_property_value is not UNDEFINED:
-                    converted_instance[property_name] = converted_property_value
+                    if property_value is not UNDEFINED:
+                        converted_property_value = getattr(property_schema, method_name)(property_value)
+                        if property_name in required_set or converted_property_value is not None:
+                            converted_mapping[property_name] = converted_property_value
 
         # Note, additional_properties defaults to True
         if self.additional_properties is None or self.additional_properties:
-            for property_name, property_value in instance.items():
-                if property_name not in converted_instance and property_value is not UNDEFINED:
-                    converted_instance[property_name] = property_value
+            for property_name, property_value in mapping.items():
+                if property_name not in converted_mapping and property_value is not UNDEFINED:
+                    converted_mapping[property_name] = property_value
 
-        return converted_instance
+        return converted_mapping

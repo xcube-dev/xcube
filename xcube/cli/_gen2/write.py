@@ -18,14 +18,16 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-from typing import Callable, Mapping, Any
-
 import xarray as xr
+from typing import Callable, Optional
+
+from xcube.cli._gen2.request import OutputConfig
+from xcube.util.extension import ExtensionRegistry
 
 
 def write_cube(cube: xr.Dataset,
-               output_path: str,
-               write_params: Mapping[str, Any],
-               callback_func: Callable):
+               output_config: OutputConfig,
+               progress_monitor: Callable,
+               extension_registry: Optional[ExtensionRegistry] = None):
     # TODO: implement me
     pass

@@ -20,9 +20,8 @@
 # SOFTWARE.
 
 import uuid
-from typing import Iterator, Dict, Mapping, Any, Optional
-
 import xarray as xr
+from typing import Iterator, Dict, Mapping, Any, Optional
 
 from xcube.core.store.dataset import DatasetDescriptor
 from xcube.core.store.store import CubeOpener
@@ -37,15 +36,27 @@ class MemoryCubeStore(CubeStore, CubeOpener, CubeWriter):
     Its main use case is testing.
     """
 
-    def __init__(self):
-        self._cubes = dict()
+    _GLOBAL_CUBE_MEMORY = dict()
+
+    def __init__(self, cube_memory: Dict[str, Any] = None):
+        self._cube_memory = cube_memory if cube_memory is not None else self.get_global_cube_memory()
 
     @property
-    def cubes(self) -> Dict[str, xr.Dataset]:
-        return self._cubes
+    def cube_memory(self) -> Dict[str, xr.Dataset]:
+        return self._cube_memory
+
+    @classmethod
+    def get_global_cube_memory(cls) -> Dict[str, xr.Dataset]:
+        return cls._GLOBAL_CUBE_MEMORY
+
+    @classmethod
+    def replace_global_cube_memory(cls, global_cube_memory: Dict[str, xr.Dataset]) -> Dict[str, xr.Dataset]:
+        old_global_cube_memory = cls._GLOBAL_CUBE_MEMORY
+        cls._GLOBAL_CUBE_MEMORY = global_cube_memory
+        return old_global_cube_memory
 
     def iter_cubes(self) -> Iterator[DatasetDescriptor]:
-        for cube_id, cube in self._cubes.items():
+        for cube_id, cube in self._cube_memory.items():
             # TODO: create DatasetDescriptor from cube
             yield DatasetDescriptor(dataset_id=cube_id)
 
@@ -53,25 +64,25 @@ class MemoryCubeStore(CubeStore, CubeOpener, CubeWriter):
                   cube_id: str,
                   open_params: Mapping[str, Any] = None,
                   cube_params: Mapping[str, Any] = None) -> xr.Dataset:
-        if cube_id not in self._cubes:
+        if cube_id not in self._cube_memory:
             raise CubeStoreError(f'Unknown cube identifier "{cube_id}"', cube_store=self)
-        return self._cubes[cube_id]
+        return self._cube_memory[cube_id]
 
     def write_cube(self,
                    cube: xr.Dataset,
                    cube_id: str = None,
                    replace: bool = False,
                    write_params: Mapping[str, Any] = None) -> str:
-        if cube_id and cube_id in self._cubes and not replace:
+        if cube_id and cube_id in self._cube_memory and not replace:
             raise CubeStoreError(f'A cube named "{cube_id}" already exists')
         cube_id = self._ensure_valid_cube_id(cube_id)
-        self._cubes[cube_id] = cube
+        self._cube_memory[cube_id] = cube
         return cube_id
 
     def delete_cube(self, cube_id: str):
-        if cube_id not in self._cubes:
+        if cube_id not in self._cube_memory:
             return False
-        del self._cubes[cube_id]
+        del self._cube_memory[cube_id]
         return True
 
     @classmethod
