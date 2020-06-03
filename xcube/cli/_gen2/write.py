@@ -22,6 +22,8 @@ import xarray as xr
 from typing import Callable, Optional
 
 from xcube.cli._gen2.request import OutputConfig
+from xcube.core.store.helpers import new_cube_store
+from xcube.core.store.store import CubeWriter
 from xcube.util.extension import ExtensionRegistry
 
 
@@ -29,5 +31,12 @@ def write_cube(cube: xr.Dataset,
                output_config: OutputConfig,
                progress_monitor: Callable,
                extension_registry: Optional[ExtensionRegistry] = None):
-    # TODO: implement me
-    pass
+    cube_store = new_cube_store(output_config.cube_store_id,
+                                output_config.cube_store_params,
+                                cube_store_requirements=(CubeWriter,),
+                                extension_registry=extension_registry)
+    cube_id = output_config.cube_id
+    write_params_schema = cube_store.get_write_cube_params_schema()
+    write_params = write_params_schema.from_json(output_config.write_params) \
+        if output_config.write_params else {}
+    cube_store.write_cube(cube, cube_id=cube_id, write_params=write_params)

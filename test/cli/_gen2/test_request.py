@@ -50,7 +50,7 @@ class CubeConfigTest(unittest.TestCase):
 
 class RequestTest(unittest.TestCase):
 
-    def test_to_and_from_dict(self):
+    def test_from_dict(self):
         request_dict = dict(input_configs=[dict(cube_store_id='mem',
                                                 cube_id='S2L2A',
                                                 variable_names=['B01', 'B02'])],
@@ -61,7 +61,7 @@ class RequestTest(unittest.TestCase):
                                              temporal_resolution='4D'),
                             output_config=dict(cube_store_id='mem',
                                                cube_id='CHL'))
-        request = Request.get_schema().from_instance(request_dict)
+        request = Request.from_dict(request_dict)
         self.assertIsInstance(request, Request)
         self.assertEqual(1, len(request.input_configs))
         self.assertIsInstance(request.input_configs[0], InputConfig)

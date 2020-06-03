@@ -32,7 +32,6 @@ from xcube.util.jsonschema import JsonStringSchema
 
 
 # TODO: Refactor/rename properties. Currently modelled after xcube_sh requests.
-# TODO: write tests
 
 class InputConfig:
     def __init__(self,
@@ -199,17 +198,12 @@ class Request:
 
     def to_dict(self) -> Mapping[str, Any]:
         """Convert into a JSON-serializable dictionary"""
-        schema = self.get_schema()
-        request_dict = schema.to_instance(self)
-        schema.validate_instance(request_dict)
-        return request_dict
+        return self.get_schema().to_instance(self)
 
     @classmethod
     def from_dict(cls, request_dict: Dict) -> 'Request':
         """Create new instance from a JSON-serializable dictionary"""
-        schema = cls.get_schema()
-        schema.validate_instance(request_dict)
-        return schema.from_instance(request_dict)
+        return cls.get_schema().from_instance(request_dict)
 
     @classmethod
     def from_file(cls, request_file: Optional[str], exception_type: Type[BaseException] = ValueError) -> 'Request':

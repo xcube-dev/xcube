@@ -205,3 +205,5 @@ class CubeStoreError(Exception):
     @property
     def cube_store(self) -> Optional[CubeStore]:
         return self._cube_store
+
+
