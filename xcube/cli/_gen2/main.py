@@ -20,9 +20,9 @@
 # SOFTWARE.
 
 import os.path
+from typing import Type
 
 import click
-from typing import Type
 
 from xcube.cli._gen2.open import open_cubes
 from xcube.cli._gen2.request import Request, OutputConfig
@@ -30,8 +30,6 @@ from xcube.cli._gen2.resample import resample_and_merge_cubes
 from xcube.cli._gen2.transform import transform_cube
 from xcube.cli._gen2.write import write_cube
 from xcube.core.dsio import guess_dataset_format
-
-DEFAULT_GEN_OUTPUT_PATH = 'out.zarr'
 
 
 def main(request_path: str,
@@ -55,8 +53,7 @@ def main(request_path: str,
         the Cube generation request is piped as a JSON string.
     :param output_path: output ZARR directory in local file system.
         Overwrites output configuration in request if given.
-        If no output configuration is given in request, *output_path* defaults to "out.zarr".
-    :param callback_url:  Optional URL used to status information. The URL
+    :param callback_url:  Optional URL used to report status information. The URL
         must accept the POST method and support the JSON content type.
     :param verbose:
     :param exception_type: exception type used to raise on errors
@@ -69,12 +66,7 @@ def main(request_path: str,
     request = Request.from_file(request_path, exception_type=exception_type)
 
     if output_path:
-        base_dir = os.path.dirname(output_path)
-        cube_id, _ = os.path.splitext(os.path.basename(output_path))
-        output_config = OutputConfig(cube_store_id='dir',
-                                     cube_store_params=dict(base_dir=base_dir, read_only=False),
-                                     cube_id=cube_id,
-                                     write_params=dict(format=guess_dataset_format(output_path)))
+        output_config = _new_output_config_for_dir(output_path)
     else:
         output_config = request.output_config
 
@@ -94,3 +86,13 @@ def main(request_path: str,
     write_cube(cube,
                output_config=output_config,
                progress_monitor=progress_monitor)
+
+
+def _new_output_config_for_dir(output_path):
+    base_dir = os.path.dirname(output_path)
+    cube_id, _ = os.path.splitext(os.path.basename(output_path))
+    output_config = OutputConfig(cube_store_id='dir',
+                                 cube_store_params=dict(base_dir=base_dir, read_only=False),
+                                 cube_id=cube_id,
+                                 write_params=dict(format=guess_dataset_format(output_path)))
+    return output_config

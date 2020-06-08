@@ -21,18 +21,14 @@
 
 import click
 
-DEFAULT_GEN_OUTPUT_PATH = 'out.zarr'
-
 
 @click.command(name="gen2")
 @click.argument('request_path', type=str, required=False, metavar='REQUEST')
 @click.option('--output', '-o', 'output_path', metavar='OUTPUT',
               help='Output ZARR directory in local file system. '
-                   'Overwrites output configuration in REQUEST if given. '
-                   'If no output configuration is given in REQUEST, '
-                   f'OUTPUT defaults to "{DEFAULT_GEN_OUTPUT_PATH}".')
+                   'Overwrites output configuration in REQUEST if given.')
 @click.option('--callback', '--cb', 'callback_url', metavar='URL',
-              help='Optional URL used to status information. '
+              help='Optional URL used to report status information. '
                    'The URL must accept the POST method and support the JSON content type.')
 @click.option('--verbose', '-v',
               is_flag=True,
