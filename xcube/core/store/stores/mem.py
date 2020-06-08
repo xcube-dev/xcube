@@ -23,7 +23,7 @@ import uuid
 import xarray as xr
 from typing import Iterator, Dict, Mapping, Any, Optional
 
-from xcube.core.store.dataset import DatasetDescriptor
+from xcube.core.store.descriptor import DatasetDescriptor
 from xcube.core.store.store import CubeOpener
 from xcube.core.store.store import CubeStore
 from xcube.core.store.store import CubeStoreError

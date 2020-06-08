@@ -21,7 +21,7 @@
 
 from typing import Sequence, Mapping, Any, Dict
 
-from xcube.core.store.dataset import DatasetDescriptor
+from xcube.core.store.descriptor import DatasetDescriptor
 
 
 # TODO: write tests

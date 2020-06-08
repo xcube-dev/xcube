@@ -26,7 +26,7 @@ from typing import Optional, Iterator, Mapping, Any
 import xarray as xr
 
 from xcube.core.dsio import rimraf
-from xcube.core.store.dataset import DatasetDescriptor
+from xcube.core.store.descriptor import DatasetDescriptor
 from xcube.core.store.store import CubeOpener
 from xcube.core.store.store import CubeStore
 from xcube.core.store.store import CubeStoreError

@@ -24,7 +24,7 @@ from typing import Optional, Iterator, Mapping, Any
 
 import xarray as xr
 
-from xcube.core.store.dataset import DatasetDescriptor
+from xcube.core.store.descriptor import DatasetDescriptor
 from xcube.core.store.search import CubeSearch
 from xcube.core.store.search import CubeSearchResult
 from xcube.util.jsonschema import JsonObjectSchema
