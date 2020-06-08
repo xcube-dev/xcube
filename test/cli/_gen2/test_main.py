@@ -1,6 +1,7 @@
 import json
-
 import unittest
+
+import xarray as xr
 import yaml
 
 from xcube.cli._gen2.main import main
@@ -37,6 +38,10 @@ class MainTest(unittest.TestCase):
 
     def test_json(self):
         main('_request.json')
+        self.assertIsInstance(MemoryCubeStore.get_global_cube_memory().get('CHL'),
+                              xr.Dataset)
 
     def test_yaml(self):
         main('_request.yaml')
+        self.assertIsInstance(MemoryCubeStore.get_global_cube_memory().get('CHL'),
+                              xr.Dataset)
