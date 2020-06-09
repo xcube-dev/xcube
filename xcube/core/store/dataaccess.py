@@ -69,7 +69,7 @@ class NetcdfDatasetWriter(AbstractDatasetWriter):
 
 class ZarrDatasetOpener(DatasetOpener):
     @property
-    def write_dataset_params_schema(self) -> JsonObjectSchema:
+    def open_dataset_params_schema(self) -> JsonObjectSchema:
         # TODO
         return JsonObjectSchema()
 
