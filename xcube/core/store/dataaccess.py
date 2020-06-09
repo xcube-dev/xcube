@@ -19,18 +19,105 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 from abc import abstractmethod, ABC
-from typing import Any, Dict
+from typing import Any, Dict, Sequence, Type, Mapping
 
 import geopandas as gpd
 import xarray as xr
 
+from xcube.constants import EXTENSION_POINT_DATA_ACCESSORS
 from xcube.core.store.descriptor import DatasetDescriptor
+from xcube.util.extension import Extension
+from xcube.util.extension import ExtensionRegistry
 from xcube.util.jsonschema import JsonObjectSchema
+from xcube.util.plugin import get_extension_registry
+
+
+def get_data_accessor_extensions(*implemented_interfaces: Type,
+                                 extension_registry: ExtensionRegistry = None) -> Sequence[Extension]:
+    """
+    Get data accessor extensions that implement all the the class types given *implemented_interfaces*.
+    If *implemented_interfaces* is empty, all data accessor extensions are returned.
+
+    :param implemented_interfaces: The interface types that are required.
+    :param extension_registry: The extensions registry to query. Defaults to the global extension registry.
+    :return: Sequence of data accessor extensions.
+    """
+    predicate = None
+    if implemented_interfaces:
+        implemented_interfaces = tuple(implemented_interfaces)
+
+        def predicate(extension: Extension) -> bool:
+            return issubclass(extension.component, implemented_interfaces)
+
+    extension_registry = extension_registry or get_extension_registry()
+    return extension_registry.find_extensions(EXTENSION_POINT_DATA_ACCESSORS, predicate=predicate)
+
+
+def get_data_accessor_infos(*implemented_interfaces: Type,
+                            extension_registry: ExtensionRegistry = None) -> Mapping[str, Mapping[str, Any]]:
+    """
+    Get the names of data accessors that implement all the class types given in *implemented_interfaces*.
+    If *implemented_interfaces* is empty, the names of all data accessor extensions are returned.
+
+    :param implemented_interfaces: The interface types that are required.
+    :param extension_registry: The extensions registry to query. Defaults to the global extension registry.
+    :return: Sequence of names of data accessor extensions.
+    """
+    return {ext.name: ext.metadata
+            for ext in get_data_accessor_extensions(*implemented_interfaces,
+                                                    extension_registry=extension_registry)}
+
+
+def get_data_accessor_params_schema(name: str,
+                                    extension_registry: ExtensionRegistry = None) -> JsonObjectSchema:
+    """
+    Get the schema of parameters used to instantiate a data accessor named *name*.
+
+    :param name: The data accessor name.
+    :param extension_registry: The extensions registry to query. Defaults to the global extension registry.
+    :return: A JSON object schema that describes the parameters of a data accessor named *name*.
+    """
+    extension_registry = extension_registry or get_extension_registry()
+    data_accessor_class = extension_registry.get_component(EXTENSION_POINT_DATA_ACCESSORS, name)
+    return data_accessor_class.get_data_accessor_params_schema()
+
+
+def new_data_accessor(name: str,
+                      extension_registry: ExtensionRegistry = None,
+                      **params) -> 'DataAccessor':
+    """
+    Instantiate a data accessor named *name* using the parameters *params*.
+
+    :param name: The data accessor name.
+    :param extension_registry: The extensions registry to query. Defaults to the global extension registry.
+    :return: Sequence of data accessor extensions.
+    """
+    extension_registry = extension_registry or get_extension_registry()
+    data_accessor_class = extension_registry.get_component(EXTENSION_POINT_DATA_ACCESSORS, name)
+    params_schema = data_accessor_class.get_data_accessor_params_schema()
+    params = params_schema.from_instance(params)
+    return data_accessor_class(**params)
 
 
 #######################################################
 # Interfaces
 #######################################################
+
+class DataAccessor(ABC):
+    """
+    Per convention, this is a marker interface for the registration of implementations of the interfaces
+    DatasetDescriber, DatasetOpener, DatasetWriter, DatasetTimeSliceUpdater, etc.
+    """
+
+    @classmethod
+    def get_data_accessor_params_schema(cls) -> JsonObjectSchema:
+        """
+        Get the schema for the parameters used to instantiate this data accessor class.
+
+        :return: A JSON object schema that describes this class' constructor parameters.
+        """
+        return JsonObjectSchema()
+
 
 class DatasetDescriber(ABC):
     @abstractmethod
@@ -93,13 +180,6 @@ class DatasetWriter(ABC):
         :return: The dataset identifier used to write the dataset.
         """
         raise NotImplementedError()
-
-
-class DataAccessor(ABC):
-    """
-    Per convention, this is the abstract base class for the registration of DatasetOpeners, DatasetWriters,
-    DatasetTimeSliceUpdaters, etc.
-    """
 
 
 #######################################################
