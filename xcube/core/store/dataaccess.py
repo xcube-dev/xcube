@@ -18,49 +18,109 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-from abc import ABCMeta, abstractmethod
+from abc import abstractmethod, ABC
 from typing import Any, Dict
 
 import geopandas as gpd
 import xarray as xr
 
+from xcube.core.store.descriptor import DatasetDescriptor
 from xcube.util.jsonschema import JsonObjectSchema
 
 
-class DatasetOpener:
+#######################################################
+# Interfaces
+#######################################################
 
-    @property
-    def open_dataset_params_schema(self) -> JsonObjectSchema:
+class DatasetDescriber(ABC):
+    @abstractmethod
+    def describe_dataset(self, dataset_id: str) -> DatasetDescriptor:
+        """
+        Descriptor for the dataset given by the dataset identifier *dataset_id*.
+
+        :param dataset_id: The dataset identifier.
+        :return: A dataset descriptor.
+        """
+        raise NotImplementedError()
+
+
+class DatasetOpener(ABC):
+    @abstractmethod
+    def get_open_dataset_params_schema(self, dataset_id: str = None) -> JsonObjectSchema:
+        """
+        Get the schema for the parameters passed as *open_params* to :meth:open_dataset(dataset_id, open_params).
+        If *dataset_id* is given, the returned schema will be tailored to the constraints implied by the
+        identified dataset. Some openers might not support this, therefore *dataset_id* is optional, and if
+        it is omitted, the returned schema will be less restrictive.
+
+        :param dataset_id: An optional dataset identifier.
+        :return: The schema for the parameters in *open_params*.
+        """
+        raise NotImplementedError()
+
+    @abstractmethod
+    def open_dataset(self, dataset_id: str, **open_params) -> xr.Dataset:
+        """
+        Open the dataset given by the dataset identifier *dataset_id* using the supplied *open_params*.
+
+        :param dataset_id: The dataset identifier.
+        :param open_params: Opener-specific parameters.
+        :return: An xarray.Dataset instance.
+        """
+        raise NotImplementedError()
+
+
+class DatasetWriter(ABC):
+    @abstractmethod
+    def get_write_dataset_params_schema(self) -> JsonObjectSchema:
+        """
+        Get the schema for the parameters passed as *write_params* to
+        :meth:write_dataset(dataset, dataset_id, open_params).
+
+        :return: The schema for the parameters in *write_params*.
+        """
+        raise NotImplementedError()
+
+    @abstractmethod
+    def write_dataset(self, dataset: xr.Dataset, dataset_id: str = None, **write_params) -> str:
+        """
+        Write a dataset using the supplied *dataset_id* and *write_params*. If dataset identifier
+        *dataset_id* is not given, a writer-specific default will be generated, used, and returned.
+
+        :param dataset: The dataset instance to be written.
+        :param dataset_id: An optional dataset identifier.
+        :param write_params: Writer-specific parameters.
+        :return: The dataset identifier used to write the dataset.
+        """
+        raise NotImplementedError()
+
+
+#######################################################
+# Base classes
+#######################################################
+
+class GenericDatasetOpener(DatasetOpener):
+    def get_open_dataset_params_schema(self, dataset_id: str = None) -> JsonObjectSchema:
         # TODO
         return JsonObjectSchema()
 
-    def open_dataset(self, path: str, **open_params) -> xr.Dataset:
-        return xr.open_dataset(path, **open_params)
-
-
-class AbstractDatasetWriter(metaclass=ABCMeta):
-
-    @property
-    def write_dataset_params_schema(self) -> JsonObjectSchema:
-        return JsonObjectSchema()
-
-    @abstractmethod
-    def write_dataset(self, dataset: xr.Dataset, path: str, **write_params):
-        raise NotImplementedError()
+    def open_dataset(self, dataset_id: str, **open_params) -> xr.Dataset:
+        return xr.open_dataset(dataset_id, **open_params)
 
 
 #######################################################
 # xr.Dataset / Netcdf
 #######################################################
 
-class NetcdfDatasetWriter(AbstractDatasetWriter):
-    @property
-    def write_dataset_params_schema(self) -> JsonObjectSchema:
+class NetcdfDatasetWriter(DatasetWriter):
+    def get_write_dataset_params_schema(self) -> JsonObjectSchema:
         # TODO
         return JsonObjectSchema()
 
-    def write_dataset(self, dataset: xr.Dataset, path: str, **write_params):
-        dataset.to_netcdf(path, **write_params)
+    def write_dataset(self, dataset: xr.Dataset, dataset_id: str = None, **write_params) -> str:
+        dataset_id = dataset_id or 'out.nc'
+        dataset.to_netcdf(dataset_id, **write_params)
+        return dataset_id
 
 
 #######################################################
@@ -68,30 +128,30 @@ class NetcdfDatasetWriter(AbstractDatasetWriter):
 #######################################################
 
 class ZarrDatasetOpener(DatasetOpener):
-    @property
-    def open_dataset_params_schema(self) -> JsonObjectSchema:
+    def get_open_dataset_params_schema(self, dataset_id: str = None) -> JsonObjectSchema:
         # TODO
         return JsonObjectSchema()
 
-    def open_dataset(self, path: str, **open_params) -> xr.Dataset:
-        return xr.open_zarr(path, **open_params)
+    def open_dataset(self, dataset_id: str, **open_params) -> xr.Dataset:
+        return xr.open_zarr(dataset_id, **open_params)
 
 
-class ZarrDatasetWriter(AbstractDatasetWriter):
-    @property
-    def write_dataset_params_schema(self) -> JsonObjectSchema:
+class ZarrDatasetWriter(DatasetWriter):
+    def get_write_dataset_params_schema(self) -> JsonObjectSchema:
         # TODO
         return JsonObjectSchema()
 
-    def write_dataset(self, dataset: xr.Dataset, path: str, **write_params):
-        dataset.to_zarr(path, **write_params)
+    def write_dataset(self, dataset: xr.Dataset, dataset_id: str = None, **write_params) -> str:
+        dataset_id = dataset_id or 'out.zarr'
+        dataset.to_zarr(dataset_id, **write_params)
+        return dataset_id
 
 
 #######################################################
 # xr.Dataset / Zarr N5
 #######################################################
 
-class ZarrN5DatasetOpener(DatasetOpener):
+class ZarrN5DatasetOpener(ZarrDatasetOpener):
 
     def open_dataset(self, path: str, **open_params) -> xr.Dataset:
         normalize_keys = open_params.pop('normalize_keys', False)
@@ -99,16 +159,17 @@ class ZarrN5DatasetOpener(DatasetOpener):
         return xr.open_zarr(N5Store(path, normalize_keys=normalize_keys), **open_params)
 
 
-class ZarrN5DatasetWriter(AbstractDatasetWriter):
-    @property
-    def write_dataset_params_schema(self) -> JsonObjectSchema:
+class ZarrN5DatasetWriter(ZarrDatasetWriter):
+    def get_write_dataset_params_schema(self) -> JsonObjectSchema:
         # TODO
         return JsonObjectSchema()
 
-    def write_dataset(self, dataset: xr.Dataset, path: str, **write_params):
+    def write_dataset(self, dataset: xr.Dataset, dataset_id: str = None, **write_params):
+        dataset_id = dataset_id or 'out.n5'
         normalize_keys = write_params.pop('normalize_keys', False)
         from zarr.n5 import N5Store
-        dataset.to_zarr(N5Store(path, normalize_keys=normalize_keys), **write_params)
+        dataset.to_zarr(N5Store(dataset_id, normalize_keys=normalize_keys), **write_params)
+        return dataset_id
 
 
 #######################################################
@@ -116,23 +177,27 @@ class ZarrN5DatasetWriter(AbstractDatasetWriter):
 #######################################################
 
 class ZarrS3DatasetOpener(ZarrDatasetOpener):
-
-    def open_dataset(self, path: str, **open_params) -> xr.Dataset:
-        import s3fs
-        s3, open_params = _get_s3_and_consume_params(open_params)
-        return xr.open_zarr(s3fs.S3Map(root=path, s3=s3, check=False), **open_params)
-
-
-class ZarrS3DatasetWriter(ZarrDatasetWriter):
-    @property
-    def write_dataset_params_schema(self) -> JsonObjectSchema:
+    def get_open_dataset_params_schema(self, dataset_id: str = None) -> JsonObjectSchema:
         # TODO
         return JsonObjectSchema()
 
-    def write_dataset(self, dataset: xr.Dataset, path: str, **write_params):
+    def open_dataset(self, dataset_id: str, **open_params) -> xr.Dataset:
+        import s3fs
+        s3, open_params = _get_s3_and_consume_params(open_params)
+        return xr.open_zarr(s3fs.S3Map(root=dataset_id, s3=s3, check=False), **open_params)
+
+
+class ZarrS3DatasetWriter(ZarrDatasetWriter):
+    def get_write_dataset_params_schema(self) -> JsonObjectSchema:
+        # TODO
+        return JsonObjectSchema()
+
+    def write_dataset(self, dataset: xr.Dataset, dataset_id: str = None, **write_params) -> str:
+        dataset_id = dataset_id or 'out.zarr'
         import s3fs
         s3, write_params = _get_s3_and_consume_params(write_params)
-        dataset.to_zarr(s3fs.S3Map(root=path, s3=s3, check=False), **write_params)
+        dataset.to_zarr(s3fs.S3Map(root=dataset_id, s3=s3, check=False), **write_params)
+        return dataset_id
 
 
 def _get_s3_and_consume_params(params: Dict[str, Any]):
@@ -151,22 +216,23 @@ def _get_s3_and_consume_params(params: Dict[str, Any]):
 
 class GeoDataFrameOpener:
     @property
-    def open_geo_data_frame_params_schema(self) -> JsonObjectSchema:
+    def open_geo_data_frame_params_schema(self, gdf_id=None) -> JsonObjectSchema:
         # TODO
         return JsonObjectSchema()
 
-    def open_geo_data_frame(self, path: str, **open_params) -> gpd.GeoDataFrame:
-        return gpd.read_file(path, **open_params)
+    def open_geo_data_frame(self, gdf_id: str, **open_params) -> gpd.GeoDataFrame:
+        return gpd.read_file(gdf_id, **open_params)
 
 
 class GeoDataFrameWriter:
-    @property
     def write_geo_data_frame_params_schema(self) -> JsonObjectSchema:
         # TODO
         return JsonObjectSchema()
 
-    def write_geo_data_frame(self, geo_data_frame: gpd.GeoDataFrame, path: str, **write_params):
-        return geo_data_frame.to_file(path, **write_params)
+    def write_geo_data_frame(self, geo_data_frame: gpd.GeoDataFrame, gdf_id: str = None, **write_params) -> str:
+        gdf_id = gdf_id or 'out.shp'
+        geo_data_frame.to_file(gdf_id, **write_params)
+        return gdf_id
 
 
 #######################################################
@@ -174,6 +240,11 @@ class GeoDataFrameWriter:
 #######################################################
 
 class GeoJsonGeoDataFrameWriter(GeoDataFrameWriter):
+    def write_geo_data_frame_params_schema(self) -> JsonObjectSchema:
+        # TODO
+        return JsonObjectSchema()
 
-    def write_geo_data_frame(self, geo_data_frame: gpd.GeoDataFrame, path: str, **write_params):
-        return geo_data_frame.to_file(path, driver='GeoJSON', **write_params)
+    def write_geo_data_frame(self, geo_data_frame: gpd.GeoDataFrame, gdf_id: str = None, **write_params) -> str:
+        gdf_id = gdf_id or 'out.geojson'
+        geo_data_frame.to_file(gdf_id, driver='GeoJSON', **write_params)
+        return gdf_id
