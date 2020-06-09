@@ -27,7 +27,7 @@ import xarray as xr
 from xcube.util.jsonschema import JsonObjectSchema
 
 
-class DatasetOpener(metaclass=ABCMeta):
+class DatasetOpener:
 
     @property
     def open_dataset_params_schema(self) -> JsonObjectSchema:
@@ -127,7 +127,7 @@ class ZarrS3DatasetWriter(ZarrDatasetWriter):
     @property
     def write_dataset_params_schema(self) -> JsonObjectSchema:
         # TODO
-        return None
+        return JsonObjectSchema()
 
     def write_dataset(self, dataset: xr.Dataset, path: str, **write_params):
         import s3fs
@@ -152,6 +152,7 @@ def _get_s3_and_consume_params(params: Dict[str, Any]):
 class GeoDataFrameOpener:
     @property
     def open_geo_data_frame_params_schema(self) -> JsonObjectSchema:
+        # TODO
         return JsonObjectSchema()
 
     def open_geo_data_frame(self, path: str, **open_params) -> gpd.GeoDataFrame:
@@ -161,6 +162,7 @@ class GeoDataFrameOpener:
 class GeoDataFrameWriter:
     @property
     def write_geo_data_frame_params_schema(self) -> JsonObjectSchema:
+        # TODO
         return JsonObjectSchema()
 
     def write_geo_data_frame(self, geo_data_frame: gpd.GeoDataFrame, path: str, **write_params):
