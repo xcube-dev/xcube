@@ -1,6 +1,6 @@
 import jsonschema
 from abc import ABCMeta, abstractmethod
-from typing import Dict, Any, Callable, Mapping, Sequence, Union
+from typing import Dict, Any, Callable, Mapping, Sequence, Union, Tuple
 
 from xcube.util.undefined import UNDEFINED
 
@@ -222,6 +222,8 @@ class JsonArraySchema(JsonSchema):
 
 class JsonObjectSchema(JsonSchema):
 
+    # TODO: also address property dependencies
+
     def __init__(self,
                  properties: Mapping[str, JsonSchema] = None,
                  additional_properties: bool = None,
@@ -230,15 +232,15 @@ class JsonObjectSchema(JsonSchema):
                  required: Sequence[str] = None,
                  **kwargs):
         super().__init__(type='object', **kwargs)
-        self.properties = properties
+        self.properties = dict(properties) if properties else dict()
         self.additional_properties = additional_properties
         self.min_properties = min_properties
         self.max_properties = max_properties
-        self.required = required
+        self.required = set(required) if required else set()
 
     def to_dict(self) -> Dict[str, Any]:
         d = super().to_dict()
-        if self.properties is not None:
+        if self.properties:
             d.update(properties={k: v.to_dict() for k, v in self.properties.items()})
         if self.additional_properties is not None:
             d.update(additionalProperties=self.additional_properties)
@@ -246,9 +248,26 @@ class JsonObjectSchema(JsonSchema):
             d.update(minProperties=self.min_properties)
         if self.max_properties is not None:
             d.update(maxProperties=self.max_properties)
-        if self.required is not None:
-            d.update(required=self.required)
+        if self.required:
+            d.update(required=list(self.required))
         return d
+
+    def process_kwargs_subset(self,
+                              kwargs: Dict[str, Any],
+                              keywords: Sequence[str]) -> Tuple[Dict[str, Any], Dict[str, Any]]:
+        old_kwargs = dict(kwargs)
+        new_kwargs = {}
+        for k in keywords:
+            if k in old_kwargs:
+                new_kwargs[k] = old_kwargs.pop(k)
+            elif k in self.properties:
+                property_schema = self.properties[k]
+                if property_schema.const is not UNDEFINED:
+                    new_kwargs[k] = property_schema.const
+                elif property_schema.default is not UNDEFINED and k in self.required:
+                    if property_schema.default is not UNDEFINED:
+                        new_kwargs[k] = property_schema.default
+        return new_kwargs, old_kwargs
 
     def _to_unvalidated_instance(self, value: Any) -> Mapping[str, Any]:
         if self.serializer is not None:
@@ -264,18 +283,17 @@ class JsonObjectSchema(JsonSchema):
 
         required_set = set(self.required) if self.required else set()
 
-        if self.properties:
-            for property_name, property_schema in self.properties.items():
-                if property_name in mapping:
-                    property_value = mapping[property_name]
+        for property_name, property_schema in self.properties.items():
+            if property_name in mapping:
+                property_value = mapping[property_name]
+                converted_property_value = getattr(property_schema, method_name)(property_value)
+                converted_mapping[property_name] = converted_property_value
+            else:
+                property_value = property_schema.default
+                if property_value is not UNDEFINED:
                     converted_property_value = getattr(property_schema, method_name)(property_value)
-                    converted_mapping[property_name] = converted_property_value
-                else:
-                    property_value = property_schema.default
-                    if property_value is not UNDEFINED:
-                        converted_property_value = getattr(property_schema, method_name)(property_value)
-                        if property_name in required_set or converted_property_value is not None:
-                            converted_mapping[property_name] = converted_property_value
+                    if property_name in required_set or converted_property_value is not None:
+                        converted_mapping[property_name] = converted_property_value
 
         # Note, additional_properties defaults to True
         if self.additional_properties is None or self.additional_properties:

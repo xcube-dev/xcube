@@ -1,6 +1,5 @@
-from collections import namedtuple
-
 import unittest
+from collections import namedtuple
 
 from xcube.util.jsonschema import JsonArraySchema
 from xcube.util.jsonschema import JsonBooleanSchema
@@ -156,3 +155,43 @@ class JsonObjectSchemaTest(unittest.TestCase):
         self.assertEqual(Assignment(persons=[Person(name='Bibo', age=15, deleted=False),
                                              Person(name='Ernie', age=12, deleted=False)]),
                          schema.from_instance(value))
+
+    def test_process_kwargs(self):
+        schema = JsonObjectSchema(
+            properties=dict(
+                client_id=JsonStringSchema(default='bibo'),
+                client_secret=JsonStringSchema(default='2w908435t'),
+                geom=JsonStringSchema(),
+                crs=JsonStringSchema(const='WGS84'),
+                spatial_res=JsonNumberSchema(),
+                time_range=JsonStringSchema(),
+                time_period=JsonStringSchema(default='8D'),
+                max_cache_size=JsonIntegerSchema(),
+            ),
+            required=['client_id', 'client_secret', 'geom', 'crs', 'spatial_res', 'time_range'],
+        )
+
+        kwargs = dict(client_secret='094529g',
+                      geom='POINT (12.2, 53.9)',
+                      spatial_res=0.5,
+                      time_range='2010,2014',
+                      max_cache_size=2 ** 32)
+
+        cred_kwargs, kwargs = schema.process_kwargs_subset(kwargs, ['client_id', 'client_secret'])
+        self.assertEqual(dict(client_id='bibo', client_secret='094529g'),
+                         cred_kwargs)
+        self.assertEqual(dict(geom='POINT (12.2, 53.9)',
+                              spatial_res=0.5,
+                              time_range='2010,2014',
+                              max_cache_size=2 ** 32),
+                         kwargs)
+
+        ds_kwargs, kwargs = schema.process_kwargs_subset(kwargs, ['geom', 'crs',
+                                                                  'spatial_res', 'time_range', 'time_period'])
+        self.assertEqual(dict(crs='WGS84',
+                              geom='POINT (12.2, 53.9)',
+                              spatial_res=0.5,
+                              time_range='2010,2014'),
+                         ds_kwargs)
+        self.assertEqual(dict(max_cache_size=2 ** 32),
+                         kwargs)
