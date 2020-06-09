@@ -37,6 +37,8 @@ EXTENSION_POINT_DATASET_IOS = 'xcube.core.dsio'
 EXTENSION_POINT_CUBE_STORES = 'xcube.core.store'
 #: The extension point identifier for CLI command extensions
 EXTENSION_POINT_CLI_COMMANDS = 'xcube.cli'
+#: The extension point identifier for data accessors
+EXTENSION_POINT_DATA_ACCESSORS = 'xcube.core.store.dataaccess'
 
 GLOBAL_GEO_EXTENT = -180., -90., 180., 90.
 

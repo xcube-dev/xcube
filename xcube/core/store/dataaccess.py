@@ -95,6 +95,13 @@ class DatasetWriter(ABC):
         raise NotImplementedError()
 
 
+class DataAccessor(ABC):
+    """
+    Per convention, this is the abstract base class for the registration of DatasetOpeners, DatasetWriters,
+    DatasetTimeSliceUpdaters, etc.
+    """
+
+
 #######################################################
 # Base classes
 #######################################################
