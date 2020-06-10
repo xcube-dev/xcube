@@ -19,7 +19,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 from abc import abstractmethod, ABC
-from typing import Any, Dict, Sequence, Type, Mapping
+from typing import Any, Dict, Sequence, Type, Mapping, Iterator
 
 import geopandas as gpd
 import xarray as xr
@@ -68,18 +68,17 @@ def get_data_accessor_infos(*implemented_interfaces: Type,
                                                     extension_registry=extension_registry)}
 
 
-def get_data_accessor_params_schema(name: str,
-                                    extension_registry: ExtensionRegistry = None) -> JsonObjectSchema:
+def get_data_accessor_class(name: str,
+                            extension_registry: ExtensionRegistry = None) -> Type['DataAccessor']:
     """
-    Get the schema of parameters used to instantiate a data accessor named *name*.
+    Get the class for the data accessor named *name*.
 
     :param name: The data accessor name.
     :param extension_registry: The extensions registry to query. Defaults to the global extension registry.
-    :return: A JSON object schema that describes the parameters of a data accessor named *name*.
+    :return: The data accessor's class.
     """
     extension_registry = extension_registry or get_extension_registry()
-    data_accessor_class = extension_registry.get_component(EXTENSION_POINT_DATA_ACCESSORS, name)
-    return data_accessor_class.get_data_accessor_params_schema()
+    return extension_registry.get_component(EXTENSION_POINT_DATA_ACCESSORS, name)
 
 
 def new_data_accessor(name: str,
@@ -117,6 +116,12 @@ class DataAccessor(ABC):
         :return: A JSON object schema that describes this class' constructor parameters.
         """
         return JsonObjectSchema()
+
+
+class DatasetIterator(ABC):
+    @abstractmethod
+    def iter_dataset_ids(self) -> Iterator[str]:
+        """ Get an iterator over all dataset identifiers."""
 
 
 class DatasetDescriber(ABC):
