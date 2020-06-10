@@ -18,9 +18,10 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-import jsonschema
 from abc import ABCMeta, abstractmethod
 from typing import Dict, Any, Callable, Mapping, Sequence, Union, Tuple
+
+import jsonschema
 
 from xcube.util.undefined import UNDEFINED
 
@@ -99,6 +100,9 @@ class JsonSchema(metaclass=ABCMeta):
     @abstractmethod
     def _from_validated_instance(self, instance: Any) -> Any:
         """Turn validated JSON value *instance* into a Python object."""
+
+    def _repr_json(self):
+        pass
 
 
 class JsonSimpleTypeSchema(JsonSchema, metaclass=ABCMeta):
@@ -322,3 +326,19 @@ class JsonObjectSchema(JsonSchema):
                     converted_mapping[property_name] = property_value
 
         return converted_mapping
+
+
+try:
+    import IPython
+    import IPython.display
+
+
+    def json_schema_obj_to_dict(json_schema_obj):
+        return json_schema_obj.to_dict()
+
+
+    ipy_formatter = IPython.get_ipython().display_formatter.formatters['application/json']
+    ipy_formatter.for_type(JsonSchema, json_schema_obj_to_dict)
+
+except ImportError:
+    pass
