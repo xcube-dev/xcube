@@ -23,6 +23,7 @@ from typing import Dict, Any, Callable, Mapping, Sequence, Union, Tuple
 
 import jsonschema
 
+from xcube.util.ipython import register_json_formatter
 from xcube.util.undefined import UNDEFINED
 
 Factory = Callable[..., Any]
@@ -328,17 +329,4 @@ class JsonObjectSchema(JsonSchema):
         return converted_mapping
 
 
-try:
-    import IPython
-    import IPython.display
-
-
-    def json_schema_obj_to_dict(json_schema_obj):
-        return json_schema_obj.to_dict()
-
-
-    ipy_formatter = IPython.get_ipython().display_formatter.formatters['application/json']
-    ipy_formatter.for_type(JsonSchema, json_schema_obj_to_dict)
-
-except ImportError:
-    pass
+register_json_formatter(JsonSchema)

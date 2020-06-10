@@ -1,6 +1,5 @@
 from typing import Tuple, Sequence, Mapping, Union, Optional, Dict, Any
 
-
 # TODO: IMPORTANT: support/describe also multi-resolution cubes (*.levels)
 # TODO: IMPORTANT: replace, reuse, or align with
 #   xcube.core.schema.CubeSchema class
@@ -10,6 +9,9 @@ from typing import Tuple, Sequence, Mapping, Union, Optional, Dict, Any
 # TODO: write tests
 # TODO: document me
 # TODO: validate params
+from xcube.util.ipython import register_json_formatter
+
+
 class DatasetDescriptor:
 
     def __init__(self,
@@ -39,7 +41,13 @@ class DatasetDescriptor:
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert into a JSON-serializable dictionary"""
-        # TODO: implement me
+        d = dict(id=self.id)
+        if self.data_vars is not None:
+            d['data_vars'] = [vd.to_dict() for vd in self.data_vars]
+        _copy_none_null_props(self, d, ['dims', 'attrs', 'spatial_crs',
+                                        'spatial_coverage', 'spatial_resolution', 'temporal_coverage',
+                                        'temporal_resolution'])
+        return d
 
 
 # TODO: write tests
@@ -65,4 +73,17 @@ class VariableDescriptor:
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert into a JSON-serializable dictionary"""
-        # TODO: implement me
+        d = dict(name=self.name, dtype=self.dtype)
+        _copy_none_null_props(self, d, ['dims', 'ndim', 'attrs'])
+        return d
+
+
+def _copy_none_null_props(obj: Any, d: Dict[str, Any], names: Sequence[str]):
+    for name in names:
+        value = getattr(obj, name)
+        if value is not None:
+            d[name] = value
+
+
+register_json_formatter(DatasetDescriptor)
+register_json_formatter(VariableDescriptor)
