@@ -98,6 +98,10 @@ def load_plugins(entry_points=None, ext_registry=None):
             _handle_error(entry_point, e)
             continue
 
+        if plugin_init_function is None:
+            # Not a plugin
+            continue
+
         millis = int(1000 * (time.perf_counter() - t0))
         if millis >= PLUGIN_LOAD_TIME_WARN_LIMIT:
             warnings.warn(f'loading xcube plugin {entry_point.name!r} took {millis} ms, '
@@ -142,7 +146,7 @@ class _ModuleEntryPoint:
     def name(self) -> str:
         return self._module_name
 
-    def load(self) -> Callable:
+    def load(self) -> Optional[Callable]:
         """
         Load function "init_plugin()" either from "<module_name>.plugin" or "<module_name>"
         :return: plugin init function
@@ -159,8 +163,10 @@ class _ModuleEntryPoint:
             if callable(module_func):
                 return module_func
 
-        raise AttributeError(f'xcube plugin module {module_name!r} must define '
-                             f'a function named {module_func_name!r}')
+        warnings.warn(f'module {module_name!r} looks like an xcube-plugin '
+                      f'but lacks a callable named {module_func_name!r}')
+
+        return None
 
 
 class ExtensionComponent(metaclass=abc.ABCMeta):
