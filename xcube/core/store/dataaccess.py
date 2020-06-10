@@ -133,7 +133,6 @@ class DatasetDescriber(ABC):
         :param dataset_id: The dataset identifier.
         :return: A dataset descriptor.
         """
-        raise NotImplementedError()
 
 
 class DatasetOpener(ABC):
@@ -148,7 +147,6 @@ class DatasetOpener(ABC):
         :param dataset_id: An optional dataset identifier.
         :return: The schema for the parameters in *open_params*.
         """
-        raise NotImplementedError()
 
     @abstractmethod
     def open_dataset(self, dataset_id: str, **open_params) -> xr.Dataset:
@@ -159,7 +157,6 @@ class DatasetOpener(ABC):
         :param open_params: Opener-specific parameters.
         :return: An xarray.Dataset instance.
         """
-        raise NotImplementedError()
 
 
 class DatasetWriter(ABC):
@@ -171,7 +168,6 @@ class DatasetWriter(ABC):
 
         :return: The schema for the parameters in *write_params*.
         """
-        raise NotImplementedError()
 
     @abstractmethod
     def write_dataset(self, dataset: xr.Dataset, dataset_id: str = None, **write_params) -> str:
@@ -184,7 +180,6 @@ class DatasetWriter(ABC):
         :param write_params: Writer-specific parameters.
         :return: The dataset identifier used to write the dataset.
         """
-        raise NotImplementedError()
 
 
 #######################################################
