@@ -19,7 +19,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 from abc import abstractmethod, ABC
-from typing import Any, Dict, Sequence, Type, Mapping, Iterator
+from typing import Any, Dict, Sequence, Type, Mapping, Iterator, Callable
 
 import geopandas as gpd
 import xarray as xr
@@ -33,20 +33,24 @@ from xcube.util.plugin import get_extension_registry
 
 
 def get_data_accessor_extensions(*implemented_interfaces: Type,
+                                 predicate: Callable[[Extension], bool] = None,
                                  extension_registry: ExtensionRegistry = None) -> Sequence[Extension]:
     """
     Get data accessor extensions that implement all the the class types given *implemented_interfaces*.
     If *implemented_interfaces* is empty, all data accessor extensions are returned.
 
-    :param implemented_interfaces: The interface types that are required.
+    :param implemented_interfaces: Optional interface types that the extension component must implement.
+    :param predicate: Optional filter function.
     :param extension_registry: The extensions registry to query. Defaults to the global extension registry.
     :return: Sequence of data accessor extensions.
     """
-    predicate = None
     if implemented_interfaces:
         implemented_interfaces = tuple(implemented_interfaces)
+        _predicate = predicate
 
         def predicate(extension: Extension) -> bool:
+            if _predicate is not None and not _predicate(extension):
+                return False
             return issubclass(extension.component, implemented_interfaces)
 
     extension_registry = extension_registry or get_extension_registry()

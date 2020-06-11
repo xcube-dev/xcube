@@ -24,6 +24,8 @@ from typing import Sequence
 
 import xarray as xr
 
+from xcube.core.store.dataaccess import DatasetDescriber
+from xcube.core.store.dataaccess import DatasetIterator
 from xcube.core.store.dataaccess import DatasetOpener
 from xcube.core.store.dataaccess import DatasetWriter
 from xcube.util.jsonschema import JsonObjectSchema
@@ -35,7 +37,7 @@ class DataStore(ABC):
     """
 
     @classmethod
-    def get_params_schema(cls) -> JsonObjectSchema:
+    def get_data_store_params_schema(cls) -> JsonObjectSchema:
         """
         Get descriptions of parameters that must or can be used to instantiate a new data store object.
         Parameters are named and described by the properties of the returned JSON object schema.
@@ -44,7 +46,7 @@ class DataStore(ABC):
         return JsonObjectSchema()
 
 
-class DatasetStore(DataStore, DatasetOpener, ABC):
+class DatasetStore(DatasetOpener, DatasetDescriber, DatasetIterator, DataStore, ABC):
 
     @abstractmethod
     def get_dataset_opener_ids(self, dataset_id: str = None) -> Sequence[str]:
@@ -82,7 +84,7 @@ class DatasetStore(DataStore, DatasetOpener, ABC):
         """
 
 
-class MutableDatasetStore(DatasetStore, DatasetWriter, ABC):
+class MutableDatasetStore(DatasetWriter, DatasetStore, ABC):
 
     @abstractmethod
     def get_dataset_writer_ids(self) -> Sequence[str]:
@@ -102,6 +104,12 @@ class MutableDatasetStore(DatasetStore, DatasetWriter, ABC):
         :return: The schema for the parameters in *write_params*.
         """
 
+        # Pseudo code for stores that support multiple writers:
+        #
+        # writer_params_schema = get_writer(writer_id).get_write_dataset_params_schema()
+        # store_params_schema = self.get_params_schema()
+        # return subtract_param_schemas(writer_params_schema, store_params_schema)
+
     @abstractmethod
     def write_dataset(self, dataset: xr.Dataset, dataset_id: str = None, writer_id: str = None, **write_params) -> str:
         """
@@ -114,3 +122,10 @@ class MutableDatasetStore(DatasetStore, DatasetWriter, ABC):
         :param write_params: Writer-specific parameters.
         :return: The dataset identifier used to write the dataset.
         """
+
+        # Pseudo code for stores that support multiple writers:
+        #
+        # path = self.resolve_dataset_id_to_path(dataset_id)
+        # new_write_params = add_params(self.get_params(), write_params)
+        # get_writer(writer_id).write_dataset(dataset, path, **new_write_params)
+        # self.register_dataset(dataset)
