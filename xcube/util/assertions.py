@@ -18,14 +18,26 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-from typing import Any
+from typing import Any, Union, Tuple, Type, Container
+
+_DEFAULT_NAME = 'value'
 
 
-def assert_not_none(value: Any, name: str = 'value'):
+def assert_not_none(value: Any, name: str = None):
     if value is None:
-        raise ValueError(f'{name} must not be None')
+        raise ValueError(f'{name or _DEFAULT_NAME} must not be None')
 
 
-def assert_given(value: Any, name: str = 'value'):
+def assert_given(value: Any, name: str = None):
     if not value:
-        raise ValueError(f'{name} must be given')
+        raise ValueError(f'{name or _DEFAULT_NAME} must be given')
+
+
+def assert_instance(value: Any, type: Union[Type, Tuple[Type, ...]], name: str = None):
+    if not isinstance(value, type):
+        raise ValueError(f'{name or _DEFAULT_NAME} must be an instance of {type}')
+
+
+def assert_in(value: Any, container: Container, name: str = None):
+    if value not in container:
+        raise ValueError(f'{name or _DEFAULT_NAME} must be one of {container}')
