@@ -18,6 +18,9 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+
+import functools
+import operator
 from typing import Sequence, Optional, Tuple
 
 import click
@@ -85,9 +88,14 @@ def rectify(dataset: str,
     input_path = dataset
 
     xy_var_names = parse_cli_sequence(xy_var_names,
-                                      metavar='VARIABLES', num_items=2, item_plural_name='names')
-    var_names = parse_cli_sequence(var_names,
-                                   metavar='VARIABLES', item_plural_name='names')
+                                      metavar='VARIABLES', num_items=2,
+                                      item_plural_name='names')
+    var_name_lists = [parse_cli_sequence(var_name_specifier,
+                                         metavar='VARIABLES',
+                                         item_plural_name='names')
+                      for var_name_specifier in var_names]
+    var_name_flat_list = functools.reduce(operator.iconcat, var_name_lists, [])
+
     output_size = parse_cli_sequence(output_size,
                                      metavar='SIZE', num_items=2, item_plural_name='sizes',
                                      item_parser=int, item_validator=assert_positive_int_item)
@@ -101,7 +109,7 @@ def rectify(dataset: str,
     # noinspection PyBroadException
     _rectify(input_path,
              xy_var_names,
-             None if len(var_names) == 0 else var_names,
+             None if len(var_name_flat_list) == 0 else var_name_flat_list,
              output_path,
              output_format,
              output_size,

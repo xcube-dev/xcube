@@ -120,6 +120,25 @@ class TilesControllerTest(unittest.TestCase):
         self.assertEqual(400, cm.exception.status_code)
         self.assertEqual('Unknown tile client "ol2.json"', cm.exception.reason)
 
+    def test_get_dataset_tile_grid_with_prefix(self):
+        self.maxDiff = None
+
+        ctx = new_test_service_context(prefix='api/v1')
+
+        tile_grid = get_dataset_tile_grid(ctx, 'demo', 'conc_chl', 'ol4', 'http://bibo')
+        self.assertEqual(
+            {
+                'maxZoom': 2,
+                'minZoom': 0,
+                'projection': 'EPSG:4326',
+                'tileGrid': {'extent': [0, 50, 5, 52.5],
+                             'origin': [0, 52.5],
+                             'resolutions': [0.01, 0.005, 0.0025],
+                             'tileSize': [250, 250]},
+                'url': 'http://bibo/api/v1/datasets/demo/vars/conc_chl/tiles/{z}/{x}/{y}.png'
+            },
+            tile_grid)
+
     def test_get_legend(self):
         ctx = new_test_service_context()
         image = get_legend(ctx, 'demo', 'conc_chl', RequestParamsMock())
