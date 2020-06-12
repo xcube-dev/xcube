@@ -57,7 +57,6 @@ def new_data_store(data_store_id: str,
     return data_store_class(**data_store_params)
 
 
-# TODO: test me!
 def find_data_store_extensions(predicate: ExtensionPredicate = None,
                                extension_registry: Optional[ExtensionRegistry] = None) -> List[Extension]:
     """
