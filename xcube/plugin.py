@@ -89,13 +89,13 @@ def _register_data_stores(ext_registry: extension.ExtensionRegistry):
     Register xcube's standard data stores.
     """
     ext_registry.add_extension(
-        loader=extension.import_component('xcube.core.store.stores.mem:MemoryDataStore'),
-        point=EXTENSION_POINT_DATA_STORES, name='mem',
+        loader=extension.import_component('xcube.core.store.stores.memory:MemoryDataStore'),
+        point=EXTENSION_POINT_DATA_STORES, name='memory',
         description='Memory data store'
     )
     ext_registry.add_extension(
-        loader=extension.import_component('xcube.core.store.stores.dir:DirectoryDataStore'),
-        point=EXTENSION_POINT_DATA_STORES, name='dir',
+        loader=extension.import_component('xcube.core.store.stores.directory:DirectoryDataStore'),
+        point=EXTENSION_POINT_DATA_STORES, name='directory',
         description='Directory data store'
     )
 

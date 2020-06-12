@@ -3,7 +3,7 @@ import xarray as xr
 
 from xcube.core.new import new_cube
 from xcube.core.store.store import DataStoreError, new_data_store
-from xcube.core.store.stores.mem import MemoryDataStore
+from xcube.core.store.stores.memory import MemoryDataStore
 
 
 class MemoryCubeStoreTest(unittest.TestCase):
@@ -16,7 +16,7 @@ class MemoryCubeStoreTest(unittest.TestCase):
         })
 
     def test_new_data_store(self):
-        store = new_data_store('mem')
+        store = new_data_store('memory')
         self.assertIsInstance(store, MemoryDataStore)
 
     def test_get_data_ids(self):

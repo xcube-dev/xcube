@@ -7,7 +7,7 @@ import yaml
 from xcube.cli._gen2.main import main
 from xcube.core.dsio import rimraf
 from xcube.core.new import new_cube
-from xcube.core.store.stores.mem import MemoryCubeStore
+from xcube.core.store.stores.memory import MemoryCubeStore
 
 
 class MainTest(unittest.TestCase):

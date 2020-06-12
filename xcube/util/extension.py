@@ -117,8 +117,6 @@ class Extension:
             point=self.point,
             component=component,
         )
-        if self._loader is not None:
-            d['loader'] = repr(self._loader)
         return d
 
 

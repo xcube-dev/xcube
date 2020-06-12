@@ -24,8 +24,12 @@ from typing import Iterator, Dict, Any, Optional, Tuple
 
 import xarray as xr
 
-from xcube.core.store.descriptor import DataDescriptor, new_data_descriptor, \
-    get_data_type_id
+from xcube.core.store.descriptor import DataDescriptor
+from xcube.core.store.descriptor import TYPE_ID_DATASET
+from xcube.core.store.descriptor import TYPE_ID_GEO_DATA_FRAME
+from xcube.core.store.descriptor import TYPE_ID_MULTI_LEVEL_DATASET
+from xcube.core.store.descriptor import get_data_type_id
+from xcube.core.store.descriptor import new_data_descriptor
 from xcube.core.store.store import MutableDataStore, DataStoreError
 from xcube.util.jsonschema import JsonObjectSchema
 
@@ -48,6 +52,10 @@ class MemoryDataStore(MutableDataStore):
     def get_data_store_params_schema(cls) -> JsonObjectSchema:
         return JsonObjectSchema()
 
+    @classmethod
+    def get_type_ids(cls) -> Tuple[str, ...]:
+        return TYPE_ID_DATASET, TYPE_ID_MULTI_LEVEL_DATASET, TYPE_ID_GEO_DATA_FRAME
+
     def get_data_ids(self, type_id: str = None) -> Iterator[str]:
         return iter(self._data_storage.keys())
 
@@ -60,12 +68,12 @@ class MemoryDataStore(MutableDataStore):
 
     def search_data(self, type_id: str = None, **search_params) -> Iterator[DataDescriptor]:
         if search_params:
-            raise ValueError(f'unsupported open_params {tuple(search_params.keys())}')
+            raise DataStoreError(f'Unsupported search_params {tuple(search_params.keys())}')
         for data_id, data in self._data_storage.items():
             if type_id is None or type_id == get_data_type_id(data):
                 yield new_data_descriptor(data_id, data)
 
-    def get_data_opener_ids(self, type_id: str = None, data_id: str = None) -> Tuple[str, ...]:
+    def get_data_opener_ids(self, data_id: str = None, type_id: str = None) -> Tuple[str, ...]:
         return ()
 
     def get_open_data_params_schema(self, data_id: str = None, opener_id: str = None) -> JsonObjectSchema:

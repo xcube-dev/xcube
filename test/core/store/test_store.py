@@ -10,12 +10,12 @@ class ExtensionRegistryTest(unittest.TestCase):
     def test_find_data_store_extensions(self):
         extensions = find_data_store_extensions()
         actual_ext = set(ext.name for ext in extensions)
-        self.assertIn('mem', actual_ext)
-        self.assertIn('dir', actual_ext)
+        self.assertIn('memory', actual_ext)
+        self.assertIn('directory', actual_ext)
 
     def test_get_data_store_params_schema(self):
-        schema = get_data_store_params_schema('mem')
+        schema = get_data_store_params_schema('memory')
         self.assertIsInstance(schema, JsonObjectSchema)
 
-        schema = get_data_store_params_schema('dir')
+        schema = get_data_store_params_schema('directory')
         self.assertIsInstance(schema, JsonObjectSchema)

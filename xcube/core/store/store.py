@@ -117,6 +117,7 @@ class DataStore(ABC):
         return JsonObjectSchema()
 
     @classmethod
+    @abstractmethod
     def get_type_ids(cls) -> Tuple[str, ...]:
         """
         Get a tuple of supported data type identifiers.
@@ -173,18 +174,18 @@ class DataStore(ABC):
         """
 
     @abstractmethod
-    def get_data_opener_ids(self, type_id: str = None, data_id: str = None) -> Tuple[str, ...]:
+    def get_data_opener_ids(self, data_id: str = None, type_id: str = None) -> Tuple[str, ...]:
         """
         Get identifiers of data openers that can be used to open data resources from this store.
 
-        If *type_id* is given, only openers that support this data type are returned.
         If *data_id* is given, data accessors are restricted to the ones that can open the identified data resource.
+        If *type_id* is given, only openers that support this data type are returned.
 
         If a store implementation supports only a single data type, it should verify that *type_id* is either None
         or equal to that single data type.
 
-        :param type_id: An optional data type identifier that is known to be supported by this data store.
         :param data_id: An optional data resource identifier that is known to exist in this data store.
+        :param type_id: An optional data type identifier that is known to be supported by this data store.
         :return: A tuple of identifiers of data openers that can be used to open data resources.
         """
 
