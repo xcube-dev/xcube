@@ -58,6 +58,9 @@ class DataStore(ABC):
         Get an iterator over the data resource identifiers for the given type *type_id*.
         If *type_id* is omitted, all data resource identifiers are returned.
 
+        If a store implementation supports only a single data type, it should verify that *type_id* is either None
+        or equal to that single data type.
+
         :return: An iterator over the identifiers if data resources provided by this data store.
         """
 
@@ -88,6 +91,9 @@ class DataStore(ABC):
         The returned data descriptors may contain less information than returned by the :meth:describe_data()
         method.
 
+        If a store implementation supports only a single data type, it should verify that *type_id* is either None
+        or equal to that single data type.
+
         :param type_id: An optional data type identifier that is known to be supported by this data store.
         :param search_params: The search parameters.
         :return: An iterator of data descriptors for the found data resources.
@@ -100,6 +106,9 @@ class DataStore(ABC):
 
         If *type_id* is given, only openers that support this data type are returned.
         If *data_id* is given, data accessors are restricted to the ones that can open the identified data resource.
+
+        If a store implementation supports only a single data type, it should verify that *type_id* is either None
+        or equal to that single data type.
 
         :param type_id: An optional data type identifier that is known to be supported by this data store.
         :param data_id: An optional data resource identifier that is known to exist in this data store.
@@ -155,6 +164,9 @@ class MutableDataStore(DataStore, ABC):
 
         If *type_id* is given, only writers that support this data type are returned.
 
+        If a store implementation supports only a single data type, it should verify that *type_id* is either None
+        or equal to that single data type.
+
         :param type_id: An optional data type identifier that is known to be supported by this data store.
         :return: A tuple of identifiers of data writers that can be used to write data resources.
         """
@@ -169,19 +181,20 @@ class MutableDataStore(DataStore, ABC):
         identified writer. Some writers might not support this, therefore *writer_id* is optional, and if
         it is omitted, the returned schema will be less restrictive.
 
-        Given here is a pseudo-code implementation for stores that support multiple writers:
+        Given here is a pseudo-code implementation for stores that support multiple writers
+        and where the store has common parameters with the writer:
 
             store_params_schema = self.get_data_store_params_schema()
             writer_params_schema = get_writer(writer_id).get_write_data_params_schema()
             return subtract_param_schemas(writer_params_schema, store_params_schema)
-
 
         :param writer_id: An optional data writer identifier.
         :return: The schema for the parameters in *write_params*.
         """
 
     @abstractmethod
-    def write_data(self, data: Any,
+    def write_data(self,
+                   data: Any,
                    data_id: str = None,
                    writer_id: str = None,
                    replace: bool = False,

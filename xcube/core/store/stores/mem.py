@@ -20,71 +20,110 @@
 # SOFTWARE.
 
 import uuid
+from typing import Iterator, Dict, Any, Optional, Tuple
+
 import xarray as xr
-from typing import Iterator, Dict, Mapping, Any, Optional
 
-from xcube.core.store.descriptor import DatasetDescriptor
-from xcube.core.store.store import CubeOpener
-from xcube.core.store.store import CubeStore
-from xcube.core.store.store import CubeStoreError
-from xcube.core.store.store import CubeWriter
+from xcube.core.store.descriptor import DataDescriptor, new_data_descriptor, \
+    get_data_type_id
+from xcube.core.store.store_v4 import MutableDataStore, DataStoreError
+from xcube.util.jsonschema import JsonObjectSchema
 
 
-class MemoryCubeStore(CubeStore, CubeOpener, CubeWriter):
+class MemoryDataStore(MutableDataStore):
     """
     An in-memory cube store.
     Its main use case is testing.
     """
 
-    _GLOBAL_CUBE_MEMORY = dict()
+    _GLOBAL_DATA_STORAGE = dict()
 
-    def __init__(self, cube_memory: Dict[str, Any] = None):
-        self._cube_memory = cube_memory if cube_memory is not None else self.get_global_cube_memory()
+    def __init__(self, data_storage: Dict[str, Any] = None):
+        self._data_storage = data_storage if data_storage is not None else self.get_global_data_storage()
 
-    @property
-    def cube_memory(self) -> Dict[str, xr.Dataset]:
-        return self._cube_memory
+    #############################################################################
+    # MutableDataStore impl.
 
     @classmethod
-    def get_global_cube_memory(cls) -> Dict[str, xr.Dataset]:
-        return cls._GLOBAL_CUBE_MEMORY
+    def get_data_store_params_schema(cls) -> JsonObjectSchema:
+        return JsonObjectSchema()
+
+    def get_data_ids(self, type_id: str = None) -> Iterator[str]:
+        return iter(self._data_storage.keys())
+
+    def describe_data(self, data_id: str) -> DataDescriptor:
+        return new_data_descriptor(data_id, self._data_storage[data_id])
+
+    @classmethod
+    def get_search_params_schema(cls) -> JsonObjectSchema:
+        return JsonObjectSchema()
+
+    def search_data(self, type_id: str = None, **search_params) -> Iterator[DataDescriptor]:
+        if search_params:
+            raise ValueError(f'unsupported open_params {tuple(search_params.keys())}')
+        for data_id, data in self._data_storage.items():
+            if type_id is None or type_id == get_data_type_id(data):
+                yield new_data_descriptor(data_id, data)
+
+    def get_data_opener_ids(self, type_id: str = None, data_id: str = None) -> Tuple[str, ...]:
+        return ()
+
+    def get_open_data_params_schema(self, data_id: str = None, opener_id: str = None) -> JsonObjectSchema:
+        return JsonObjectSchema()
+
+    def open_data(self, data_id: str, opener_id: str = None, **open_params) -> Any:
+        if open_params:
+            raise ValueError(f'unsupported open_params {tuple(open_params.keys())}')
+        if data_id not in self._data_storage:
+            raise DataStoreError(f'data resource "{data_id}" does not exist in store')
+        return self._data_storage[data_id]
+
+    def get_data_writer_ids(self, type_id: str = None) -> Tuple[str, ...]:
+        return ()
+
+    def get_write_data_params_schema(self, writer_id: str = None) -> JsonObjectSchema:
+        return JsonObjectSchema()
+
+    def write_data(self, data: Any, data_id: str = None, writer_id: str = None, replace: bool = False,
+                   **write_params) -> str:
+        if write_params:
+            raise ValueError(f'unsupported write_params {tuple(write_params.keys())}')
+        data_id = self._ensure_valid_data_id(data_id)
+        if data_id in self._data_storage and not replace:
+            raise DataStoreError(f'data resource "{data_id}" already exist in store')
+        self._data_storage[data_id] = data
+        return data_id
+
+    def delete_data(self, data_id: str):
+        if data_id not in self._data_storage:
+            raise DataStoreError(f'data resource "{data_id}" does not exist in store')
+        del self._data_storage[data_id]
+
+    def register_data(self, data_id: str, data: Any):
+        # Not required
+        pass
+
+    def deregister_data(self, data_id: str):
+        # Not required
+        pass
+
+    #############################################################################
+    # Specific interface
+
+    @property
+    def data_storage(self) -> Dict[str, xr.Dataset]:
+        return self._data_storage
+
+    @classmethod
+    def get_global_data_storage(cls) -> Dict[str, xr.Dataset]:
+        return cls._GLOBAL_DATA_STORAGE
 
     @classmethod
     def replace_global_cube_memory(cls, global_cube_memory: Dict[str, xr.Dataset]) -> Dict[str, xr.Dataset]:
-        old_global_cube_memory = cls._GLOBAL_CUBE_MEMORY
-        cls._GLOBAL_CUBE_MEMORY = global_cube_memory
+        old_global_cube_memory = cls._GLOBAL_DATA_STORAGE
+        cls._GLOBAL_DATA_STORAGE = global_cube_memory
         return old_global_cube_memory
 
-    def iter_cubes(self) -> Iterator[DatasetDescriptor]:
-        for cube_id, cube in self._cube_memory.items():
-            # TODO: create DatasetDescriptor from cube
-            yield DatasetDescriptor(dataset_id=cube_id)
-
-    def open_cube(self,
-                  cube_id: str,
-                  open_params: Mapping[str, Any] = None,
-                  cube_params: Mapping[str, Any] = None) -> xr.Dataset:
-        if cube_id not in self._cube_memory:
-            raise CubeStoreError(f'Unknown cube identifier "{cube_id}"', cube_store=self)
-        return self._cube_memory[cube_id]
-
-    def write_cube(self,
-                   cube: xr.Dataset,
-                   cube_id: str = None,
-                   replace: bool = False,
-                   write_params: Mapping[str, Any] = None) -> str:
-        if cube_id and cube_id in self._cube_memory and not replace:
-            raise CubeStoreError(f'A cube named "{cube_id}" already exists')
-        cube_id = self._ensure_valid_cube_id(cube_id)
-        self._cube_memory[cube_id] = cube
-        return cube_id
-
-    def delete_cube(self, cube_id: str):
-        if cube_id not in self._cube_memory:
-            return False
-        del self._cube_memory[cube_id]
-        return True
-
     @classmethod
-    def _ensure_valid_cube_id(cls, cube_id: Optional[str]) -> str:
-        return cube_id or str(uuid.uuid4())
+    def _ensure_valid_data_id(cls, data_id: Optional[str]) -> str:
+        return data_id or str(uuid.uuid4())

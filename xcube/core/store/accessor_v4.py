@@ -21,7 +21,7 @@
 
 import os.path
 from abc import abstractmethod, ABC
-from typing import Any, Dict, Mapping, Optional
+from typing import Any, Dict, Optional, List
 
 import geopandas as gpd
 import pandas as pd
@@ -30,38 +30,10 @@ import xarray as xr
 from xcube.constants import EXTENSION_POINT_DATA_OPENERS
 from xcube.constants import EXTENSION_POINT_DATA_WRITERS
 from xcube.core.dsio import rimraf
-from xcube.util.assertions import assert_instance
+from xcube.util.assertions import assert_instance, assert_given
 from xcube.util.extension import Extension
 from xcube.util.jsonschema import JsonObjectSchema
 from xcube.util.plugin import get_extension_registry
-
-
-def get_data_opener_infos(type_id: str = None,
-                          format_id: str = None,
-                          storage_id: str = None) -> Mapping[str, Mapping[str, Any]]:
-    """
-    Get information about registered data openers.
-
-    :param type_id: Optional data type identifier to be supported.
-    :return: Mapping of opener identifiers to opener metadata.
-    """
-    predicate = _get_data_accessor_predicate(type_id, format_id, storage_id)
-    return {ext.name: ext.metadata
-            for ext in get_extension_registry().find_extensions(EXTENSION_POINT_DATA_OPENERS, predicate=predicate)}
-
-
-def get_data_writer_infos(type_id: str = None,
-                          format_id: str = None,
-                          storage_id: str = None) -> Mapping[str, Mapping[str, Any]]:
-    """
-    Get information about registered data writers for data type *type_id*.
-
-    :param type_id: Optional data type identifier to be supported.
-    :return: Mapping of opener identifiers to opener metadata.
-    """
-    predicate = _get_data_accessor_predicate(type_id, format_id, storage_id)
-    return {ext.name: ext.metadata
-            for ext in get_extension_registry().find_extensions(EXTENSION_POINT_DATA_WRITERS, predicate=predicate)}
 
 
 def get_data_opener(opener_id: str) -> 'DataOpener':
@@ -71,6 +43,7 @@ def get_data_opener(opener_id: str) -> 'DataOpener':
     :param opener_id: The data opener identifier.
     :return: A data opener instance.
     """
+    assert_given(opener_id, 'opener_id')
     return get_extension_registry().get_component(EXTENSION_POINT_DATA_OPENERS, opener_id)
 
 
@@ -81,15 +54,48 @@ def get_data_writer(writer_id: str) -> 'DataWriter':
     :param writer_id: The data writer identifier.
     :return: A data writer instance.
     """
+    assert_given(writer_id, 'writer_id')
     return get_extension_registry().get_component(EXTENSION_POINT_DATA_WRITERS, writer_id)
 
 
+def get_data_opener_extensions(type_id: str = None,
+                               format_id: str = None,
+                               storage_id: str = None) -> List[Extension]:
+    """
+    Get information about registered data openers.
+
+    :param type_id: Optional data type identifier to be supported.
+    :param format_id: Optional data format identifier to be supported.
+    :param storage_id: Optional data storage identifier to be supported.
+    :return: List of matching extensions.
+    """
+    predicate = _get_data_accessor_predicate(type_id, format_id, storage_id)
+    return get_extension_registry().find_extensions(EXTENSION_POINT_DATA_OPENERS, predicate=predicate)
+
+
+def get_data_writer_extensions(type_id: str = None,
+                               format_id: str = None,
+                               storage_id: str = None) -> List[Extension]:
+    """
+    Get information about registered data writers for data type *type_id*.
+
+    :param type_id: Optional data type identifier to be supported.
+    :param format_id: Optional data format identifier to be supported.
+    :param storage_id: Optional data storage identifier to be supported.
+    :return: Mapping of opener identifiers to opener metadata.
+    """
+    predicate = _get_data_accessor_predicate(type_id, format_id, storage_id)
+    return get_extension_registry().find_extensions(EXTENSION_POINT_DATA_WRITERS, predicate=predicate)
+
+
 def _get_data_accessor_predicate(type_id: Optional[str], format_id: Optional[str], storage_id: Optional[str]):
-    if type_id is None and storage_id is None:
+    if not any((type_id, format_id, storage_id)):
         return None
 
-    def predicate(ext: Extension) -> bool:
-        parts = ext.name.split(':', maxsplit=4)
+    def predicate(extension: Extension) -> bool:
+        parts = extension.name.split(':', maxsplit=4)
+        if len(parts) < 3:
+            raise ValueError(f'illegal data opener/writer extension name "{extension.name}"')
         type_ok = parts[0] == type_id if type_id else True
         format_ok = parts[1] == format_id if format_id else True
         storage_ok = parts[2] == storage_id if storage_id else True

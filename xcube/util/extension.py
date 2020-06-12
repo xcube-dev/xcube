@@ -25,6 +25,8 @@ from typing import List, Any, Dict, Callable, Mapping, Sequence, Optional
 
 __author__ = "Norman Fomferra (Brockmann Consult GmbH)"
 
+from xcube.util.ipython import register_json_formatter
+
 Component = Any
 ComponentLoader = Callable[['Extension'], Component]
 ComponentTransform = Callable[[Component, 'Extension'], Component]
@@ -97,6 +99,30 @@ class Extension:
     def metadata(self) -> Dict[str, Any]:
         """Extension metadata."""
         return dict(self._metadata)
+
+    def to_dict(self) -> Dict[str, Any]:
+        """ Get a JSON-serializable dictionary representation of this extension. """
+
+        # Note: we avoid loading the component!
+        if self._component is not None:
+            if hasattr(self._component, 'to_dict') and callable(getattr(self._component, 'to_dict')):
+                component = self._component.to_dict()
+            else:
+                component = repr(self._component)
+        else:
+            component = '<not loaded yet>'
+        d = dict(
+            name=self.name,
+            **self.metadata,
+            point=self.point,
+            component=component,
+        )
+        if self._loader is not None:
+            d['loader'] = repr(self._loader)
+        return d
+
+
+register_json_formatter(Extension)
 
 
 # noinspection PyShadowingBuiltins
@@ -222,6 +248,12 @@ class ExtensionRegistry:
         point_extensions = self._extension_points[point]
         del point_extensions[name]
 
+    def to_dict(self):
+        """ Get a JSON-serializable dictionary representation of this extension registry. """
+        return {k: {ek: ev.to_dict() for ek, ev in v.items()} for k, v in self._extension_points.items()}
+
+
+register_json_formatter(ExtensionRegistry)
 
 _EXTENSION_REGISTRY_SINGLETON = ExtensionRegistry()
 

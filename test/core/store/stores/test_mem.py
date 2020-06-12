@@ -2,51 +2,55 @@ import unittest
 import xarray as xr
 
 from xcube.core.new import new_cube
-from xcube.core.store.store import CubeStoreError
-from xcube.core.store.stores.mem import MemoryCubeStore
+from xcube.core.store.store_v4 import DataStoreError
+from xcube.core.store.stores.mem import MemoryDataStore
 
 
 class MemoryCubeStoreTest(unittest.TestCase):
 
     def setUp(self) -> None:
-        self.cube_store = MemoryCubeStore()
-        self.cube_store.cube_memory.update({
+        self.data_store = MemoryDataStore()
+        self.data_store.data_storage.update({
             'cube_1': new_cube(variables=dict(B01=0.4, B02=0.5)),
             'cube_2': new_cube(variables=dict(B03=0.4, B04=0.5))
         })
 
-    def test_iter_cubes(self):
-        self.assertEqual({'cube_1', 'cube_2'},
-                         set(cube_des.id for cube_des in self.cube_store.iter_cubes()))
+    def test_get_data_ids(self):
+        self.assertEqual({'cube_1', 'cube_2'}, set(self.data_store.get_data_ids()))
 
-    def test_open_cube(self):
-        cube_1 = self.cube_store.open_cube('cube_1')
+    def test_open_data(self):
+        cube_1 = self.data_store.open_data('cube_1')
         self.assertIsInstance(cube_1, xr.Dataset)
         self.assertEqual({'B01', 'B02'}, set(map(str, cube_1.data_vars.keys())))
-        cube_2 = self.cube_store.open_cube('cube_2')
+        cube_2 = self.data_store.open_data('cube_2')
         self.assertIsInstance(cube_2, xr.Dataset)
         self.assertEqual({'B03', 'B04'}, set(map(str, cube_2.data_vars.keys())))
-        with self.assertRaises(CubeStoreError) as cm:
-            self.cube_store.open_cube('cube_3')
-        self.assertEqual('Unknown cube identifier "cube_3"', f'{cm.exception}')
+        with self.assertRaises(DataStoreError) as cm:
+            self.data_store.open_data('cube_3')
+        self.assertEqual('data resource "cube_3" does not exist in store', f'{cm.exception}')
 
-    def test_write_and_delete_cube(self):
+    def test_write_and_delete_data(self):
         cube_3 = new_cube(variables=dict(B05=0.1, B06=0.2))
-        cube_3_id = self.cube_store.write_cube(cube_3, cube_id='cube_3')
+        cube_3_id = self.data_store.write_data(cube_3, data_id='cube_3')
         self.assertEqual('cube_3', cube_3_id)
-        self.assertIs(cube_3, self.cube_store.open_cube(cube_3_id))
+        self.assertIs(cube_3, self.data_store.open_data(cube_3_id))
 
         cube_4 = new_cube(variables=dict(B07=0.1, B08=0.2))
-        cube_4_id = self.cube_store.write_cube(cube_4)
+        cube_4_id = self.data_store.write_data(cube_4)
         self.assertIsInstance(cube_4_id, str)
-        self.assertIs(cube_4, self.cube_store.open_cube(cube_4_id))
+        self.assertIs(cube_4, self.data_store.open_data(cube_4_id))
 
-        with self.assertRaises(CubeStoreError) as cm:
-            self.cube_store.write_cube(cube_4, cube_id='cube_3')
-        self.assertEqual('A cube named "cube_3" already exists', f'{cm.exception}')
+        with self.assertRaises(DataStoreError) as cm:
+            self.data_store.write_data(cube_4, data_id='cube_3')
+        self.assertEqual('data resource "cube_3" already exist in store', f'{cm.exception}')
 
-        self.assertTrue(self.cube_store.delete_cube(cube_3_id))
-        self.assertFalse(self.cube_store.delete_cube(cube_3_id))
+        self.data_store.delete_data(cube_3_id)
+        self.data_store.delete_data(cube_4_id)
 
-        self.assertTrue(self.cube_store.delete_cube(cube_4_id))
-        self.assertFalse(self.cube_store.delete_cube(cube_4_id))
+        with self.assertRaises(DataStoreError) as cm:
+            self.data_store.delete_data(cube_3_id)
+        self.assertEqual('data resource "cube_3" does not exist in store', f'{cm.exception}')
+
+        with self.assertRaises(DataStoreError) as cm:
+            self.data_store.delete_data(cube_4_id)
+        self.assertEqual(f'data resource "{cube_4_id}" does not exist in store', f'{cm.exception}')

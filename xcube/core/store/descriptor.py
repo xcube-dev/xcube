@@ -1,7 +1,15 @@
 from typing import Tuple, Sequence, Mapping, Optional, Dict, Any
 
+import geopandas as gpd
+import xarray as xr
+
+from xcube.core.mldataset import MultiLevelDataset
 from xcube.util.assertions import assert_given
 from xcube.util.ipython import register_json_formatter
+
+TYPE_ID_DATASET = 'dataset'
+TYPE_ID_MULTI_LEVEL_DATASET = 'mldataset'
+TYPE_ID_GEO_DATA_FRAME = 'geodataframe'
 
 
 # TODO: IMPORTANT: replace, reuse, or align with
@@ -11,6 +19,30 @@ from xcube.util.ipython import register_json_formatter
 # TODO: write tests
 # TODO: document me
 # TODO: validate params
+
+
+def get_data_type_id(data: Any) -> Optional[str]:
+    if isinstance(data, xr.Dataset):
+        return TYPE_ID_DATASET
+    elif isinstance(data, MultiLevelDataset):
+        return TYPE_ID_MULTI_LEVEL_DATASET
+    elif isinstance(data, gpd.GeoDataFrame):
+        return TYPE_ID_GEO_DATA_FRAME
+    return None
+
+
+def new_data_descriptor(data_id: str, data: Any) -> 'DataDescriptor':
+    if isinstance(data, xr.Dataset):
+        # TODO: implement me: data -> DatasetDescriptor
+        return DatasetDescriptor(data_id=data_id)
+    elif isinstance(data, MultiLevelDataset):
+        # TODO: implement me: data -> MultiLevelDatasetDescriptor
+        return MultiLevelDatasetDescriptor(data_id=data_id, num_levels=5)
+    elif isinstance(data, gpd.GeoDataFrame):
+        # TODO: implement me: data -> GeoDataFrameDescriptor
+        return GeoDataFrameDescriptor(data_id=data_id, num_levels=5)
+    raise NotImplementedError()
+
 
 class DataDescriptor:
 
@@ -50,7 +82,7 @@ class DatasetDescriptor(DataDescriptor):
 
     def __init__(self,
                  data_id: str,
-                 type_id='dataset',
+                 type_id=TYPE_ID_DATASET,
                  dims: Mapping[str, int] = None,
                  data_vars: Sequence['VariableDescriptor'] = None,
                  attrs: Mapping[str, any] = None,
@@ -104,13 +136,6 @@ class VariableDescriptor:
         return d
 
 
-def _copy_none_null_props(obj: Any, d: Dict[str, Any], names: Sequence[str]):
-    for name in names:
-        value = getattr(obj, name)
-        if value is not None:
-            d[name] = value
-
-
 class MultiLevelDatasetDescriptor(DatasetDescriptor):
 
     def __init__(self,
@@ -119,7 +144,7 @@ class MultiLevelDatasetDescriptor(DatasetDescriptor):
                  **kwargs):
         assert_given(data_id, 'data_id')
         assert_given(num_levels, 'num_levels')
-        super().__init__(data_id=data_id, type_id='mldataset', **kwargs)
+        super().__init__(data_id=data_id, type_id=TYPE_ID_MULTI_LEVEL_DATASET, **kwargs)
         self.num_levels = num_levels
 
     @classmethod
@@ -134,7 +159,36 @@ class MultiLevelDatasetDescriptor(DatasetDescriptor):
         return d
 
 
+class GeoDataFrameDescriptor(DataDescriptor):
+
+    def __init__(self,
+                 data_id: str,
+                 feature_schema: Any = None,
+                 **kwargs):
+        super().__init__(data_id=data_id, type_id=TYPE_ID_GEO_DATA_FRAME, **kwargs)
+        self.feature_schema = feature_schema
+
+    @classmethod
+    def from_dict(cls, d: Mapping[str, Any]) -> 'MultiLevelDatasetDescriptor':
+        """Create new instance from a JSON-serializable dictionary"""
+        # TODO: implement me
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert into a JSON-serializable dictionary"""
+        d = super().to_dict()
+        _copy_none_null_props(self, d, ['feature_schema'])
+        return d
+
+
+def _copy_none_null_props(obj: Any, d: Dict[str, Any], names: Sequence[str]):
+    for name in names:
+        value = getattr(obj, name)
+        if value is not None:
+            d[name] = value
+
+
 register_json_formatter(DataDescriptor)
 register_json_formatter(DatasetDescriptor)
 register_json_formatter(VariableDescriptor)
 register_json_formatter(MultiLevelDatasetDescriptor)
+register_json_formatter(GeoDataFrameDescriptor)
