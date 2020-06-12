@@ -38,7 +38,6 @@ from xcube.util.plugin import get_extension_registry
 # Data accessor instantiation and registry query
 #######################################################
 
-# TODO: test me!
 def new_data_opener(opener_id: str,
                     extension_registry: Optional[ExtensionRegistry] = None) -> 'DataOpener':
     """
@@ -53,7 +52,6 @@ def new_data_opener(opener_id: str,
     return extension_registry.get_component(EXTENSION_POINT_DATA_OPENERS, opener_id)()
 
 
-# TODO: test me!
 def new_data_writer(writer_id: str,
                     extension_registry: Optional[ExtensionRegistry] = None) -> 'DataWriter':
     """
@@ -67,7 +65,6 @@ def new_data_writer(writer_id: str,
     return extension_registry.get_component(EXTENSION_POINT_DATA_WRITERS, writer_id)()
 
 
-# TODO: test me!
 def find_data_opener_extensions(predicate: ExtensionPredicate = None,
                                 extension_registry: Optional[ExtensionRegistry] = None) -> List[Extension]:
     """
@@ -81,7 +78,6 @@ def find_data_opener_extensions(predicate: ExtensionPredicate = None,
     return extension_registry.find_extensions(EXTENSION_POINT_DATA_OPENERS, predicate=predicate)
 
 
-# TODO: test me!
 def find_data_writer_extensions(predicate: ExtensionPredicate = None,
                                 extension_registry: Optional[ExtensionRegistry] = None) -> List[Extension]:
     """
@@ -95,7 +91,6 @@ def find_data_writer_extensions(predicate: ExtensionPredicate = None,
     return extension_registry.find_extensions(EXTENSION_POINT_DATA_WRITERS, predicate=predicate)
 
 
-# TODO: test me!
 def get_data_accessor_predicate(type_id: str = None,
                                 format_id: str = None,
                                 storage_id: str = None) -> ExtensionPredicate:
