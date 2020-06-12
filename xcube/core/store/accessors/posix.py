@@ -18,28 +18,19 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-from typing import Sequence, Optional, Callable
+import os.path
 
-from xcube.cli._gen2.request import CubeConfig
-from xcube.cli._gen2.request import InputConfig
-from xcube.core.store.store import new_data_store
-from xcube.util.extension import ExtensionRegistry
+from xcube.core.dsio import rimraf
+from xcube.core.store.accessor import DataAccessorError, DataDeleter
 
 
-def open_cubes(input_configs: Sequence[InputConfig],
-               cube_config: CubeConfig,
-               progress_monitor: Callable,
-               extension_registry: Optional[ExtensionRegistry] = None):
-    cubes = []
-    for input_config in input_configs:
-        cube_store = new_data_store(input_config.cube_store_id,
-                                    extension_registry=extension_registry,
-                                    **input_config.cube_store_params)
-        cube_id = input_config.cube_id
-        open_params_schema = cube_store.get_open_data_params_schema(cube_id)
-        open_params = open_params_schema.from_json(input_config.open_params) \
-            if input_config.open_params else {}
-        cube = cube_store.open_data(cube_id, **open_params, **cube_config)
-        cubes.append(cube)
+class PosixDataDeleter(DataDeleter):
+    """
+    Implements a DataWriter's :meth:delete_data() method for storage types supporting POSIX file handling.
+    """
 
-    return cubes
+    # noinspection PyMethodMayBeStatic
+    def delete_data(self, data_id: str):
+        if not os.path.exists(data_id):
+            raise DataAccessorError(f'A dataset named "{data_id}" does not exist')
+        rimraf(data_id)

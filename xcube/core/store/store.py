@@ -19,191 +19,310 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-from abc import ABCMeta, abstractmethod
-from typing import Optional, Iterator, Mapping, Any
+from abc import abstractmethod, ABC
+from typing import Iterator, Tuple, Any, Mapping, Optional, List
 
-import xarray as xr
-
-from xcube.core.store.descriptor import DatasetDescriptor
-from xcube.core.store.search import CubeSearch
-from xcube.core.store.search import CubeSearchResult
+from xcube.constants import EXTENSION_POINT_DATA_STORES
+from xcube.core.store.accessor import DataAccessorError
+from xcube.core.store.descriptor import DataDescriptor
+from xcube.util.extension import Extension
+from xcube.util.extension import ExtensionPredicate
+from xcube.util.extension import ExtensionRegistry
 from xcube.util.jsonschema import JsonObjectSchema
+from xcube.util.plugin import get_extension_registry
 
 
-# TODO: IMPORTANT: support multi-resolution datasets (*.levels)
-# TODO: IMPORTANT: replace, reuse, or align with
-#   xcube.core.dsio.DatasetIO class
-# TODO: rename to DatasetStore, DatasetFinder, DatasetOpener, DatasetWriter?
+#######################################################
+# Data store instantiation and registry query
+#######################################################
 
-class CubeStore(metaclass=ABCMeta):
+def new_data_store(data_store_id: str,
+                   extension_registry: Optional[ExtensionRegistry] = None,
+                   **data_store_params):
     """
-    An abstract cube store.
+    Create a new data store instance for given *data_store_id* and *data_store_params*.
+
+    :param data_store_id: A data store identifier.
+    :param extension_registry: Optional extension registry. If not given, the global extension registry will be used.
+    :param data_store_params: Data store specific parameters.
+    :return: A new data store instance
+    """
+    extension_registry = extension_registry or get_extension_registry()
+    if not extension_registry.has_extension(EXTENSION_POINT_DATA_STORES, data_store_id):
+        raise DataStoreError(f'Unknown data store "{data_store_id}"')
+    data_store_class = extension_registry.get_component(EXTENSION_POINT_DATA_STORES, data_store_id)
+    cube_store_params_schema = data_store_class.get_data_store_params_schema()
+    data_store_params = cube_store_params_schema.from_instance(data_store_params) \
+        if data_store_params else {}
+    return data_store_class(**data_store_params)
+
+
+# TODO: test me!
+def find_data_store_extensions(predicate: ExtensionPredicate = None,
+                               extension_registry: Optional[ExtensionRegistry] = None) -> List[Extension]:
+    """
+    Find data store extensions using the optional filter function *predicate*.
+
+    :param predicate: An optional filter function.
+    :param extension_registry: Optional extension registry. If not given, the global extension registry will be used.
+    :return: List of data store extensions.
+    """
+    extension_registry = extension_registry or get_extension_registry()
+    return extension_registry.find_extensions(EXTENSION_POINT_DATA_STORES, predicate=predicate)
+
+
+#######################################################
+# Classes
+#######################################################
+
+class DataStore(ABC):
+    """
+    A data store represents a collection of data resources that can be enumerated, queried, and opened in order to
+    obtain in-memory representations.
+
+    DataStore is an abstract base class that both read-only and mutable data stores must implement.
     """
 
     @classmethod
-    def get_cube_store_params_schema(cls) -> JsonObjectSchema:
+    def get_data_store_params_schema(cls) -> JsonObjectSchema:
         """
-        Get descriptions of parameters that must or can be used to instantiate a new cube store object.
-        Parameters are named and described by the properties of the returned JSON object schema.
-        The default implementation returns JSON object schema that can have any properties.
-        """
-        return JsonObjectSchema(additional_properties=True)
-
-    @abstractmethod
-    def iter_cubes(self) -> Iterator[DatasetDescriptor]:
-        """
-        Iterate descriptors of all cubes in this store.
-        :return: A cube descriptor iterator.
-        """
-
-
-# TODO: support search for variables
-class CubeFinder(metaclass=ABCMeta):
-    """
-    Find cubes in this cube store.
-    """
-
-    def get_search_params_schema(self) -> JsonObjectSchema:
-        """
-        Get descriptions of parameters that must or can be used to search the store.
+        Get descriptions of parameters that must or can be used to instantiate a new DataStore object.
         Parameters are named and described by the properties of the returned JSON object schema.
         The default implementation returns JSON object schema that can have any properties.
         """
         return JsonObjectSchema()
 
+    @classmethod
+    def get_type_ids(cls) -> Tuple[str, ...]:
+        """
+        Get a tuple of supported data type identifiers.
+        The first entry in the tuple represents this store's default data type.
+
+        :return: The tuple of supported data type identifiers.
+        """
+
     @abstractmethod
-    def search_cubes(self,
-                     dataset_search: CubeSearch) -> CubeSearchResult:
+    def get_data_ids(self, type_id: str = None) -> Iterator[str]:
         """
-        Searches for cubes using the given search request.
+        Get an iterator over the data resource identifiers for the given type *type_id*.
+        If *type_id* is omitted, all data resource identifiers are returned.
 
-        :param dataset_search: The dataset search request.
-        :return: The search result.
+        If a store implementation supports only a single data type, it should verify that *type_id* is either None
+        or equal to that single data type.
+
+        :return: An iterator over the identifiers if data resources provided by this data store.
         """
 
-
-class CubeOpener(metaclass=ABCMeta):
-    """
-    Open cubes in this cube store.
-    """
-
-    def get_open_cube_params_schema(self, cube_id: str) -> JsonObjectSchema:
+    @abstractmethod
+    def describe_data(self, data_id: str) -> DataDescriptor:
         """
-        Get descriptions of parameters that must or can be used to open a cube from the store.
+        Get the descriptor for the data resource given by *data_id*.
+        """
+
+    @classmethod
+    def get_search_params_schema(cls) -> JsonObjectSchema:
+        """
+        Get the schema for the parameters that can be passed as *search_params* to :meth:search_data().
         Parameters are named and described by the properties of the returned JSON object schema.
         The default implementation returns JSON object schema that can have any properties.
+
+        :return: A JSON object schema whose properties describe this store's search parameters.
         """
         return JsonObjectSchema()
 
     @abstractmethod
-    def open_cube(self,
-                  cube_id: str,
-                  open_params: Mapping[str, Any] = None,
-                  cube_params: Mapping[str, Any] = None) -> xr.Dataset:
+    def search_data(self, type_id: str = None, **search_params) -> Iterator[DataDescriptor]:
         """
-        Open a cube from this cube store.
+        Search this store for data resources.
+        If *type_id* is given, the search is restricted to data resources of that type.
 
-        :param cube_id: The cube identifier.
-        :param open_params: Open parameters.
-        :param cube_params: Cube generation parameters.
-        :return: The cube.
+        Returns an iterator over the search results.
+        The returned data descriptors may contain less information than returned by the :meth:describe_data()
+        method.
+
+        If a store implementation supports only a single data type, it should verify that *type_id* is either None
+        or equal to that single data type.
+
+        :param type_id: An optional data type identifier that is known to be supported by this data store.
+        :param search_params: The search parameters.
+        :return: An iterator of data descriptors for the found data resources.
         """
-
-
-class CubeWriter(metaclass=ABCMeta):
-    """
-    Write cubes to and delete cubes from this cube store.
-    """
-
-    def get_write_cube_params_schema(self) -> JsonObjectSchema:
-        """
-        Get descriptions of parameters that must or can be used to write a cube to the store.
-        Parameters are named and described by the properties of the returned JSON object schema.
-        The default implementation returns JSON object schema that can have any properties.
-        """
-        return JsonObjectSchema()
 
     @abstractmethod
-    def write_cube(self,
-                   cube: xr.Dataset,
-                   cube_id: str = None,
+    def get_data_opener_ids(self, type_id: str = None, data_id: str = None) -> Tuple[str, ...]:
+        """
+        Get identifiers of data openers that can be used to open data resources from this store.
+
+        If *type_id* is given, only openers that support this data type are returned.
+        If *data_id* is given, data accessors are restricted to the ones that can open the identified data resource.
+
+        If a store implementation supports only a single data type, it should verify that *type_id* is either None
+        or equal to that single data type.
+
+        :param type_id: An optional data type identifier that is known to be supported by this data store.
+        :param data_id: An optional data resource identifier that is known to exist in this data store.
+        :return: A tuple of identifiers of data openers that can be used to open data resources.
+        """
+
+    @abstractmethod
+    def get_open_data_params_schema(self, data_id: str = None, opener_id: str = None) -> JsonObjectSchema:
+        """
+        Get the schema for the parameters passed as *open_params* to :meth:open_data(data_id, open_params).
+
+        If *data_id* is given, the returned schema will be tailored to the constraints implied by the
+        identified data resource. Some openers might not support this, therefore *data_id* is optional, and if
+        it is omitted, the returned schema will be less restrictive.
+
+        If *opener_id* is given, the returned schema will be tailored to the constraints implied by the
+        identified opener. Some openers might not support this, therefore *opener_id* is optional, and if
+        it is omitted, the returned schema will be less restrictive.
+
+        :param data_id: An optional data identifier that is known to exist in this data store.
+        :param opener_id: An optional data opener identifier.
+        :return: The schema for the parameters in *open_params*.
+        """
+
+    @abstractmethod
+    def open_data(self, data_id: str, opener_id: str = None, **open_params) -> Any:
+        """
+        Open the data given by the data resource identifier *data_id* using the supplied *open_params*.
+
+        The data type of the return value depends on the data opener used to open the data resource.
+
+        If *opener_id* is given, the identified data opener will be used to open the data resource and
+        *open_params* must comply with the schema of the opener's parameters.
+
+        :param data_id: The data identifier that is known to exist in this data store.
+        :param opener_id: An optional data opener identifier.
+        :param open_params: Opener-specific parameters.
+        :return: An in-memory representation of the data resources identified by *data_id* and *open_params*.
+        """
+
+
+class MutableDataStore(DataStore, ABC):
+    """
+    A mutable data store is a data store that also allows for adding, updating, and removing data resources.
+
+    MutableDataStore is an abstract base class that any mutable data store must implement.
+    """
+
+    @abstractmethod
+    def get_data_writer_ids(self, type_id: str = None) -> Tuple[str, ...]:
+        """
+        Get identifiers of data writers that can be used to write data resources to this store.
+
+        If *type_id* is given, only writers that support this data type are returned.
+
+        If a store implementation supports only a single data type, it should verify that *type_id* is either None
+        or equal to that single data type.
+
+        :param type_id: An optional data type identifier that is known to be supported by this data store.
+        :return: A tuple of identifiers of data writers that can be used to write data resources.
+        """
+
+    @abstractmethod
+    def get_write_data_params_schema(self, writer_id: str = None) -> JsonObjectSchema:
+        """
+        Get the schema for the parameters passed as *write_params* to
+        :meth:write_data(data, data_id, open_params).
+
+        If *writer_id* is given, the returned schema will be tailored to the constraints implied by the
+        identified writer. Some writers might not support this, therefore *writer_id* is optional, and if
+        it is omitted, the returned schema will be less restrictive.
+
+        Given here is a pseudo-code implementation for stores that support multiple writers
+        and where the store has common parameters with the writer:
+
+            store_params_schema = self.get_data_store_params_schema()
+            writer_params_schema = get_writer(writer_id).get_write_data_params_schema()
+            return subtract_param_schemas(writer_params_schema, store_params_schema)
+
+        :param writer_id: An optional data writer identifier.
+        :return: The schema for the parameters in *write_params*.
+        """
+
+    @abstractmethod
+    def write_data(self,
+                   data: Any,
+                   data_id: str = None,
+                   writer_id: str = None,
                    replace: bool = False,
-                   write_params: Mapping[str, Any] = None) -> str:
+                   **write_params) -> str:
         """
-        Writes *cube* into the cube store and returns its cube identifier.
+        Write a data in-memory instance using the supplied *data_id* and *write_params*.
 
-        :param cube: The cube to be written.
-        :param cube_id: Optional cube identifier. If not given, a new one will be created.
-        :param replace: Whether to replace an existing cube.
-        :param write_params: Store specific writer parameters.
-        :return: The cube identifier.
-        :raise CubeStoreError: on error
-        """
+        If data identifier *data_id* is not given, a writer-specific default will be generated, used, and returned.
 
-    @abstractmethod
-    def delete_cube(self, cube_id: str) -> bool:
-        """
-        Delete the cube with the given cube identifier.
+        If *writer_id* is given, the identified data writer will be used to write the data resource and
+        *write_params* must comply with the schema of writers's parameters.
 
-        :param cube_id: The cube identifier.
-        :return: True, if the cube was deleted. False, if it does not exist.
-        :raise CubeStoreError: on error
-        """
+        Given here is a pseudo-code implementation for stores that support multiple writers:
 
+            writer_id = writer_id or self.gen_data_id()
+            path = self.resolve_data_id_to_path(data_id)
+            write_params = add_params(self.get_data_store_params(), write_params)
+            get_writer(writer_id).write_data(data, path, **write_params)
+            self.register_data(data_id, data)
 
-class CubeTimeSliceUpdater(metaclass=ABCMeta):
-    @abstractmethod
-    def append_cube_time_slice(self,
-                               cube_id: str,
-                               time_slice: xr.Dataset):
-        """
-        Append a time slice to the identified cube.
-
-        :param cube_id: The cube identifier.
-        :param time_slice: The time slice to be inserted. Must be compatible with the cube.
+        :param data: The data in-memory instance to be written.
+        :param data_id: An optional data identifier that is known to be unique in this data store.
+        :param writer_id: An optional data writer identifier.
+        :param replace: Whether to replace an existing data resource.
+        :param write_params: Writer-specific parameters.
+        :return: The data identifier used to write the data.
         """
 
     @abstractmethod
-    def insert_cube_time_slice(self,
-                               cube_id: str,
-                               time_slice: xr.Dataset,
-                               time_index: int):
+    def delete_data(self, data_id: str):
         """
-        Insert a time slice into the identified cube at given index.
+        Delete the data resource identified by *data_id*.
 
-        :param cube_id: The cube identifier.
-        :param time_slice: The time slice to be inserted. Must be compatible with the cube.
-        :param time_index: The time index.
+        Typically, an implementation would delete the data resource from the physical storage
+        and also remove any registered metadata from an associated database.
+
+        :param data_id: An data identifier that is known to exist in this data store.
         """
 
     @abstractmethod
-    def replace_cube_time_slice(self,
-                                cube_id: str,
-                                time_slice: xr.Dataset,
-                                time_index: int):
+    def register_data(self, data_id: str, data: Any):
         """
-        Replace a time slice in the identified cube at given index.
+        Register the in-memory representation of a data resource *data* using the given
+        data resource identifier *data_id*.
 
-        :param cube_id: The cube identifier.
-        :param time_slice: The time slice to be inserted. Must be compatible with the cube.
-        :param time_index: The time index.
+        This method can be used to register data resources that are already physically
+        stored in the data store, but are not yet searchable or otherwise accessible by
+        the given *data_id*.
+
+        Typically, an implementation would extract metadata from *data* and store it in a
+        store-specific database. An implementation should just store the metadata of *data*.
+        It should not write *data*.
+
+        :param data_id: A data resource identifier that is known to be unique in this data store.
+        :param data: An in-memory representation of a data resource.
+        """
+
+    @abstractmethod
+    def deregister_data(self, data_id: str):
+        """
+        De-register a data resource identified by *data_id* from this data store.
+
+        This method can be used to de-register data resources so it will be no longer
+        searchable or otherwise accessible by the given *data_id*.
+
+        Typically, an implementation would extract metadata from *data* and store it in a
+        store-specific database. An implementation should only remove a data resource's metadata.
+        It should not delete *data* from its physical storage space.
+
+        :param data_id: A data resource identifier that is known to exist in this data store.
         """
 
 
-class CubeStoreError(Exception):
+class DataStoreError(DataAccessorError):
     """
-    Raised on error in any of the cube store methods.
+    Raised on error in any of the data store methods.
 
     :param message: The error message.
-    :param cube_store: The cube store that caused the error.
     """
 
-    def __init__(self, message: str, cube_store: CubeStore = None):
+    def __init__(self, message: str):
         super().__init__(message)
-        self._cube_store = cube_store
-
-    @property
-    def cube_store(self) -> Optional[CubeStore]:
-        return self._cube_store
-
-

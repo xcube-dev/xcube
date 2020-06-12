@@ -2,7 +2,7 @@ import unittest
 import xarray as xr
 
 from xcube.core.new import new_cube
-from xcube.core.store.store import DataStoreError, new_data_store
+from xcube.core.store.store import DataStoreError
 from xcube.core.store.stores.mem import MemoryDataStore
 
 
@@ -14,10 +14,6 @@ class MemoryCubeStoreTest(unittest.TestCase):
             'cube_1': new_cube(variables=dict(B01=0.4, B02=0.5)),
             'cube_2': new_cube(variables=dict(B03=0.4, B04=0.5))
         })
-
-    def test_new_data_store(self):
-        store = new_data_store('mem')
-        self.assertIsInstance(store, MemoryDataStore)
 
     def test_get_data_ids(self):
         self.assertEqual({'cube_1', 'cube_2'}, set(self.data_store.get_data_ids()))

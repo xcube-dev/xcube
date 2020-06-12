@@ -26,7 +26,7 @@ import xarray as xr
 
 from xcube.core.store.descriptor import DataDescriptor, new_data_descriptor, \
     get_data_type_id
-from xcube.core.store.store_v4 import MutableDataStore, DataStoreError
+from xcube.core.store.store import MutableDataStore, DataStoreError
 from xcube.util.jsonschema import JsonObjectSchema
 
 
