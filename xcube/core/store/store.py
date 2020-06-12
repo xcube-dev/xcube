@@ -20,7 +20,7 @@
 # SOFTWARE.
 
 from abc import abstractmethod, ABC
-from typing import Iterator, Tuple, Any, Mapping, Optional, List
+from typing import Iterator, Tuple, Any, Optional, List, Type
 
 from xcube.constants import EXTENSION_POINT_DATA_STORES
 from xcube.core.store.accessor import DataAccessorError
@@ -38,7 +38,7 @@ from xcube.util.plugin import get_extension_registry
 
 def new_data_store(data_store_id: str,
                    extension_registry: Optional[ExtensionRegistry] = None,
-                   **data_store_params):
+                   **data_store_params) -> 'DataStore':
     """
     Create a new data store instance for given *data_store_id* and *data_store_params*.
 
@@ -47,14 +47,39 @@ def new_data_store(data_store_id: str,
     :param data_store_params: Data store specific parameters.
     :return: A new data store instance
     """
-    extension_registry = extension_registry or get_extension_registry()
-    if not extension_registry.has_extension(EXTENSION_POINT_DATA_STORES, data_store_id):
-        raise DataStoreError(f'Unknown data store "{data_store_id}"')
-    data_store_class = extension_registry.get_component(EXTENSION_POINT_DATA_STORES, data_store_id)
+    data_store_class = get_data_store_class(data_store_id, extension_registry=extension_registry)
     data_store_params_schema = data_store_class.get_data_store_params_schema()
     data_store_params = data_store_params_schema.from_instance(data_store_params) \
         if data_store_params else {}
     return data_store_class(**data_store_params)
+
+
+def get_data_store_class(data_store_id: str,
+                         extension_registry: Optional[ExtensionRegistry] = None) -> Type['DataStore']:
+    """
+    Get the class for the data store identified by *data_store_id*.
+
+    :param data_store_id: A data store identifier.
+    :param extension_registry: Optional extension registry. If not given, the global extension registry will be used.
+    :return: The class for the data store.
+    """
+    extension_registry = extension_registry or get_extension_registry()
+    if not extension_registry.has_extension(EXTENSION_POINT_DATA_STORES, data_store_id):
+        raise DataStoreError(f'Unknown data store "{data_store_id}"')
+    return extension_registry.get_component(EXTENSION_POINT_DATA_STORES, data_store_id)
+
+
+def get_data_store_params_schema(data_store_id: str,
+                                 extension_registry: Optional[ExtensionRegistry] = None) -> JsonObjectSchema:
+    """
+    Get the JSON schema for instantiating a new data store identified by *data_store_id*.
+
+    :param data_store_id: A data store identifier.
+    :param extension_registry: Optional extension registry. If not given, the global extension registry will be used.
+    :return: The JSON schema for the data store's parameters.
+    """
+    data_store_class = get_data_store_class(data_store_id, extension_registry=extension_registry)
+    return data_store_class.get_data_store_params_schema()
 
 
 def find_data_store_extensions(predicate: ExtensionPredicate = None,
