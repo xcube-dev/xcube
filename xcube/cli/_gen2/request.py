@@ -20,44 +20,49 @@
 # SOFTWARE.
 import json
 import os.path
-
 import sys
-import yaml
 from typing import Optional, Type, Dict, Any, Sequence, Mapping, Tuple
 
+import yaml
+
+from xcube.util.assertions import assert_condition
+from xcube.util.assertions import assert_given
 from xcube.util.jsonschema import JsonArraySchema
 from xcube.util.jsonschema import JsonNumberSchema
 from xcube.util.jsonschema import JsonObjectSchema
 from xcube.util.jsonschema import JsonStringSchema
 
 
-# TODO: Refactor/rename properties. Currently modelled after xcube_sh requests.
-
 class InputConfig:
     def __init__(self,
-                 cube_store_id: str,
-                 cube_id: str,
-                 variable_names: Sequence[str],
-                 cube_store_params: Mapping[str, Any] = None,
+                 store_id: str = None,
+                 opener_id: str = None,
+                 data_id: str = None,
+                 variable_names: Sequence[str] = None,
+                 store_params: Mapping[str, Any] = None,
                  open_params: Mapping[str, Any] = None):
-        self.cube_store_id = cube_store_id
-        self.cube_id = cube_id
+        assert_condition(store_id or opener_id, 'One of store_id and opener_id must be given')
+        assert_given(data_id, 'data_id')
+        self.store_id = store_id
+        self.opener_id = opener_id
+        self.data_id = data_id
         self.variable_names = variable_names
-        self.cube_store_params = cube_store_params
-        self.open_params = open_params
+        self.store_params = store_params or {}
+        self.open_params = open_params or {}
 
     @classmethod
     def get_schema(cls) -> JsonObjectSchema:
         return JsonObjectSchema(
             properties=dict(
-                cube_store_id=JsonStringSchema(min_length=1),
-                cube_id=JsonStringSchema(min_length=1),
+                store_id=JsonStringSchema(min_length=1),
+                opener_id=JsonStringSchema(min_length=1),
+                data_id=JsonStringSchema(min_length=1),
                 variable_names=JsonArraySchema(items=JsonStringSchema(min_length=1), min_items=1),
-                cube_store_params=JsonObjectSchema(),
+                store_params=JsonObjectSchema(),
                 open_params=JsonObjectSchema()
             ),
             additional_properties=False,
-            required=['cube_store_id', 'cube_id', 'variable_names'],
+            required=['data_id'],
             factory=cls,
         )
 
@@ -65,26 +70,30 @@ class InputConfig:
 class OutputConfig:
 
     def __init__(self,
-                 cube_store_id: str,
-                 cube_id: str = None,
-                 cube_store_params: Mapping[str, Any] = None,
+                 store_id: str = None,
+                 writer_id: str = None,
+                 data_id: str = None,
+                 store_params: Mapping[str, Any] = None,
                  write_params: Mapping[str, Any] = None):
-        self.cube_store_id = cube_store_id
-        self.cube_id = cube_id
-        self.cube_store_params = cube_store_params
-        self.write_params = write_params
+        assert_condition(store_id or writer_id, 'One of store_id and writer_id must be given')
+        self.store_id = store_id
+        self.writer_id = writer_id
+        self.data_id = data_id
+        self.store_params = store_params or {}
+        self.write_params = write_params or {}
 
     @classmethod
     def get_schema(cls):
         return JsonObjectSchema(
             properties=dict(
-                cube_store_id=JsonStringSchema(min_length=1),
-                cube_id=JsonStringSchema(default=None),
-                cube_store_params=JsonObjectSchema(),
+                store_id=JsonStringSchema(min_length=1),
+                writer_id=JsonStringSchema(min_length=1),
+                data_id=JsonStringSchema(default=None),
+                store_params=JsonObjectSchema(),
                 write_params=JsonObjectSchema(),
             ),
             additional_properties=False,
-            required=['cube_store_id'],
+            required=[],
             factory=cls,
         )
 
@@ -93,41 +102,58 @@ class OutputConfig:
 class CubeConfig:
 
     def __init__(self,
-                 spatial_crs: Optional[str],
-                 spatial_coverage: Tuple[float, float, float, float],
-                 spatial_resolution: float,
-                 temporal_coverage: Tuple[str, Optional[str]],
-                 temporal_resolution: str = None):
-        self.spatial_crs = spatial_crs
-        self.spatial_coverage = spatial_coverage
-        self.spatial_resolution = spatial_resolution
-        self.temporal_coverage = temporal_coverage
-        self.temporal_resolution = temporal_resolution
+                 crs: str = None,
+                 bbox: Tuple[float, float, float, float] = None,
+                 spatial_res: float = None,
+                 time_range: Tuple[str, Optional[str]] = None,
+                 time_period: str = None):
+        assert_given(bbox, 'bbox')
+        assert_given(spatial_res, 'spatial_res')
+        assert_given(time_range, 'time_range')
+        self.crs = str(crs)
+        self.bbox = tuple(bbox)
+        self.spatial_res = float(spatial_res)
+        self.time_range = tuple(time_range)
+        self.time_period = str(time_period)
+
+    def to_dict(self):
+        d = dict(
+            bbox=list(self.bbox),
+            spatial_res=float(self.spatial_res),
+            time_range=list(self.time_range)
+        )
+        if self.crs:
+            d.update(crs=str(self.crs))
+        if self.time_period:
+            d.update(time_period=str(self.time_period))
+        return d
 
     @classmethod
     def get_schema(cls):
         return JsonObjectSchema(
             properties=dict(
-                spatial_crs=JsonStringSchema(nullable=True, default='WGS84', enum=[None, 'WGS84']),
-                spatial_coverage=JsonArraySchema(items=[JsonNumberSchema(),
-                                                        JsonNumberSchema(),
-                                                        JsonNumberSchema(),
-                                                        JsonNumberSchema()]),
-                spatial_resolution=JsonNumberSchema(exclusive_minimum=0.0),
-                temporal_coverage=JsonArraySchema(items=[JsonStringSchema(format='date-time'),
-                                                         JsonStringSchema(format='date-time', nullable=True)]),
-                temporal_resolution=JsonStringSchema(nullable=True),
+                crs=JsonStringSchema(nullable=True, default='WGS84', enum=[None, 'WGS84']),
+                bbox=JsonArraySchema(items=[JsonNumberSchema(),
+                                            JsonNumberSchema(),
+                                            JsonNumberSchema(),
+                                            JsonNumberSchema()]),
+                spatial_res=JsonNumberSchema(exclusive_minimum=0.0),
+                time_range=JsonArraySchema(items=[JsonStringSchema(format='date-time'),
+                                                  JsonStringSchema(format='date-time', nullable=True)]),
+                time_period=JsonStringSchema(nullable=True),
             ),
             additional_properties=True,
-            required=['spatial_coverage', 'spatial_resolution', 'temporal_coverage'],
+            required=['bbox', 'spatial_res', 'time_range'],
             factory=cls)
 
 
 class GitHubConfig:
     def __init__(self,
-                 repo_name: str,
-                 user_name: str,
-                 access_token: str):
+                 repo_name: str = None,
+                 user_name: str = None,
+                 access_token: str = None):
+        assert_given(repo_name, 'repo_name')
+        assert_given(user_name, 'user_name')
         self.repo_name = repo_name
         self.user_name = user_name
         self.access_token = access_token
@@ -141,7 +167,7 @@ class GitHubConfig:
                 access_token=JsonStringSchema(min_length=1),
             ),
             additional_properties=False,
-            required=['repo_name', 'user_name', 'access_token'],
+            required=['repo_name', 'user_name'],
             factory=cls,
         )
 
@@ -149,10 +175,11 @@ class GitHubConfig:
 # Need to be aligned with params in transform_cube(cube, **params)
 class CodeConfig:
     def __init__(self,
-                 python_code: Optional[str] = None,
-                 git_hub: Optional[str] = None,
+                 python_code: str = None,
+                 git_hub: GitHubConfig = None,
                  function_name: str = None,
                  function_params: Mapping[str, Any] = None):
+        assert_condition(not python_code and not git_hub, 'One of python_code and git_hub must be given')
         self.python_code = python_code
         self.git_hub = git_hub
         self.function_name = function_name
@@ -174,10 +201,13 @@ class CodeConfig:
 
 class Request:
     def __init__(self,
-                 input_configs: Sequence[InputConfig],
-                 cube_config: Mapping[str, Any],
-                 output_config: OutputConfig,
+                 input_configs: Sequence[InputConfig] = None,
+                 cube_config: Mapping[str, Any] = None,
+                 output_config: OutputConfig = None,
                  code_config: Optional[Mapping[str, Any]] = None):
+        assert_given(input_configs, 'input_configs')
+        assert_given(cube_config, 'cube_config')
+        assert_given(output_config, 'output_config')
         self.input_configs = input_configs
         self.cube_config = cube_config
         self.code_config = code_config

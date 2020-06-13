@@ -24,18 +24,22 @@ import xarray as xr
 
 from xcube.cli._gen2.request import OutputConfig
 from xcube.core.store.store import new_data_store
+from xcube.core.store.accessor import new_data_writer
 from xcube.util.extension import ExtensionRegistry
 
 
 def write_cube(cube: xr.Dataset,
                output_config: OutputConfig,
                progress_monitor: Callable,
-               extension_registry: Optional[ExtensionRegistry] = None):
-    data_store = new_data_store(output_config.cube_store_id,
-                                extension_registry=extension_registry,
-                                **output_config.cube_store_params)
-    cube_id = output_config.cube_id
-    write_params_schema = data_store.get_write_data_params_schema()
-    write_params = write_params_schema.from_json(output_config.write_params) \
-        if output_config.write_params else {}
-    data_store.write_cube(cube, data_id=cube_id, **write_params)
+               extension_registry: Optional[ExtensionRegistry] = None) -> str:
+    write_params = dict()
+    if output_config.store_id:
+        writer = new_data_store(output_config.store_id,
+                                **output_config.store_params,
+                                extension_registry=extension_registry)
+        write_params.update(writer_id=output_config.writer_id, **output_config.write_params)
+    else:
+        writer = new_data_writer(output_config.writer_id,
+                                 extension_registry=extension_registry)
+        write_params.update(**output_config.store_params, **output_config.write_params)
+    return writer.write_data(cube, data_id=output_config.data_id, **write_params)

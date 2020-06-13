@@ -22,6 +22,7 @@ from typing import Sequence, Optional, Callable
 
 from xcube.cli._gen2.request import CubeConfig
 from xcube.cli._gen2.request import InputConfig
+from xcube.core.store.accessor import new_data_opener
 from xcube.core.store.store import new_data_store
 from xcube.util.extension import ExtensionRegistry
 
@@ -31,15 +32,20 @@ def open_cubes(input_configs: Sequence[InputConfig],
                progress_monitor: Callable,
                extension_registry: Optional[ExtensionRegistry] = None):
     cubes = []
+    all_cube_params = cube_config.to_dict()
     for input_config in input_configs:
-        cube_store = new_data_store(input_config.cube_store_id,
-                                    extension_registry=extension_registry,
-                                    **input_config.cube_store_params)
-        cube_id = input_config.cube_id
-        open_params_schema = cube_store.get_open_data_params_schema(cube_id)
-        open_params = open_params_schema.from_json(input_config.open_params) \
-            if input_config.open_params else {}
-        cube = cube_store.open_data(cube_id, **open_params, **cube_config)
+        open_params = {}
+        if input_config.store_id:
+            opener = new_data_store(input_config.store_id, **input_config.store_params,
+                                    extension_registry=extension_registry)
+            open_params.update(opener_id=input_config.opener_id, **input_config.open_params)
+        else:
+            opener = new_data_opener(input_config.opener_id,
+                                     extension_registry=extension_registry)
+            open_params.update(**input_config.store_params, **input_config.open_params)
+        open_params_schema = opener.get_open_data_params_schema(input_config.data_id)
+        cube_params = {k: v for k, v in all_cube_params.items() if k in open_params_schema.properties}
+        cube = opener.open_data(input_config.data_id, **open_params, **cube_params)
         cubes.append(cube)
 
     return cubes
