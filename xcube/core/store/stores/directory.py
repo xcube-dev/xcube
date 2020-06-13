@@ -48,7 +48,7 @@ from xcube.util.jsonschema import JsonBooleanSchema
 from xcube.util.jsonschema import JsonObjectSchema
 from xcube.util.jsonschema import JsonStringSchema
 
-_EXT_TO_ACCESSOR_ID_PARTS = {
+_FILENAME_EXT_TO_ACCESSOR_ID_PARTS = {
     '.zarr': (TYPE_ID_DATASET, 'zarr', 'posix'),
     '.levels': (TYPE_ID_MULTI_LEVEL_DATASET, 'levels', 'posix'),
     '.nc': (TYPE_ID_DATASET, 'netcdf', 'posix'),
@@ -56,7 +56,7 @@ _EXT_TO_ACCESSOR_ID_PARTS = {
     '.geojson': (TYPE_ID_GEO_DATA_FRAME, 'geojson', 'posix'),
 }
 
-_TYPE_ID_TO_ACCESSOR_TO_DEFAULT_EXT = {
+_TYPE_ID_TO_ACCESSOR_TO_DEFAULT_FILENAME_EXT = {
     TYPE_ID_DATASET: '.zarr',
     TYPE_ID_MULTI_LEVEL_DATASET: '.levels',
     TYPE_ID_GEO_DATA_FRAME: '.geojson'
@@ -80,6 +80,9 @@ class DirectoryDataStore(MutableDataStore):
         assert_given(base_dir, 'base_dir')
         self._base_dir = base_dir
         self._read_only = read_only
+
+    #############################################################################
+    # MutableDataStore impl.
 
     @classmethod
     def get_data_store_params_schema(cls) -> JsonObjectSchema:
@@ -248,7 +251,7 @@ class DirectoryDataStore(MutableDataStore):
     def _get_accessor_id_parts(cls, data_id: str, require=True) -> Optional[Tuple[str, str, str]]:
         assert_given(data_id, 'data_id')
         _, ext = os.path.splitext(data_id)
-        accessor_id_parts = _EXT_TO_ACCESSOR_ID_PARTS.get(ext)
+        accessor_id_parts = _FILENAME_EXT_TO_ACCESSOR_ID_PARTS.get(ext)
         if not accessor_id_parts and require:
             raise DataStoreError(f'A dataset named "{data_id}" is not supported')
         return accessor_id_parts
@@ -256,4 +259,4 @@ class DirectoryDataStore(MutableDataStore):
     @classmethod
     def _get_filename_ext(cls, data: Any):
         type_id = get_data_type_id(data)
-        return _TYPE_ID_TO_ACCESSOR_TO_DEFAULT_EXT[type_id]
+        return _TYPE_ID_TO_ACCESSOR_TO_DEFAULT_FILENAME_EXT[type_id]
