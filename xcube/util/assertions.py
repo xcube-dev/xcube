@@ -41,3 +41,8 @@ def assert_instance(value: Any, type: Union[Type, Tuple[Type, ...]], name: str =
 def assert_in(value: Any, container: Container, name: str = None):
     if value not in container:
         raise ValueError(f'{name or _DEFAULT_NAME} must be one of {container}')
+
+
+def assert_condition(condition: Any, message: str):
+    if not condition:
+        raise ValueError(message)
