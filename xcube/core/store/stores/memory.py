@@ -22,12 +22,7 @@
 import uuid
 from typing import Iterator, Dict, Any, Optional, Tuple
 
-import xarray as xr
-
 from xcube.core.store.descriptor import DataDescriptor
-from xcube.core.store.descriptor import TYPE_ID_DATASET
-from xcube.core.store.descriptor import TYPE_ID_GEO_DATA_FRAME
-from xcube.core.store.descriptor import TYPE_ID_MULTI_LEVEL_DATASET
 from xcube.core.store.descriptor import get_data_type_id
 from xcube.core.store.descriptor import new_data_descriptor
 from xcube.core.store.store import MutableDataStore, DataStoreError
@@ -40,10 +35,10 @@ class MemoryDataStore(MutableDataStore):
     Its main use case is testing.
     """
 
-    _GLOBAL_DATA_STORAGE = dict()
+    _GLOBAL_DATA_DICT = dict()
 
-    def __init__(self, data_storage: Dict[str, Any] = None):
-        self._data_storage = data_storage if data_storage is not None else self.get_global_data_storage()
+    def __init__(self, data_dict: Dict[str, Any] = None):
+        self._data_dict = data_dict if data_dict is not None else self.get_global_data_dict()
 
     #############################################################################
     # MutableDataStore impl.
@@ -54,13 +49,13 @@ class MemoryDataStore(MutableDataStore):
 
     @classmethod
     def get_type_ids(cls) -> Tuple[str, ...]:
-        return TYPE_ID_DATASET, TYPE_ID_MULTI_LEVEL_DATASET, TYPE_ID_GEO_DATA_FRAME
+        return '*',
 
     def get_data_ids(self, type_id: str = None) -> Iterator[str]:
-        return iter(self._data_storage.keys())
+        return iter(self._data_dict.keys())
 
     def describe_data(self, data_id: str) -> DataDescriptor:
-        return new_data_descriptor(data_id, self._data_storage[data_id])
+        return new_data_descriptor(data_id, self._data_dict[data_id])
 
     @classmethod
     def get_search_params_schema(cls) -> JsonObjectSchema:
@@ -69,25 +64,25 @@ class MemoryDataStore(MutableDataStore):
     def search_data(self, type_id: str = None, **search_params) -> Iterator[DataDescriptor]:
         if search_params:
             raise DataStoreError(f'Unsupported search_params {tuple(search_params.keys())}')
-        for data_id, data in self._data_storage.items():
+        for data_id, data in self._data_dict.items():
             if type_id is None or type_id == get_data_type_id(data):
                 yield new_data_descriptor(data_id, data)
 
     def get_data_opener_ids(self, data_id: str = None, type_id: str = None) -> Tuple[str, ...]:
-        return ()
+        return '*:*:memory',
 
     def get_open_data_params_schema(self, data_id: str = None, opener_id: str = None) -> JsonObjectSchema:
         return JsonObjectSchema()
 
     def open_data(self, data_id: str, opener_id: str = None, **open_params) -> Any:
         if open_params:
-            raise ValueError(f'unsupported open_params {tuple(open_params.keys())}')
-        if data_id not in self._data_storage:
-            raise DataStoreError(f'data resource "{data_id}" does not exist in store')
-        return self._data_storage[data_id]
+            raise ValueError(f'Unsupported open_params {tuple(open_params.keys())}')
+        if data_id not in self._data_dict:
+            raise DataStoreError(f'Data resource "{data_id}" does not exist in store')
+        return self._data_dict[data_id]
 
     def get_data_writer_ids(self, type_id: str = None) -> Tuple[str, ...]:
-        return ()
+        return '*:*:memory',
 
     def get_write_data_params_schema(self, writer_id: str = None) -> JsonObjectSchema:
         return JsonObjectSchema()
@@ -95,17 +90,17 @@ class MemoryDataStore(MutableDataStore):
     def write_data(self, data: Any, data_id: str = None, writer_id: str = None, replace: bool = False,
                    **write_params) -> str:
         if write_params:
-            raise ValueError(f'unsupported write_params {tuple(write_params.keys())}')
+            raise ValueError(f'Unsupported write_params {tuple(write_params.keys())}')
         data_id = self._ensure_valid_data_id(data_id)
-        if data_id in self._data_storage and not replace:
-            raise DataStoreError(f'data resource "{data_id}" already exist in store')
-        self._data_storage[data_id] = data
+        if data_id in self._data_dict and not replace:
+            raise DataStoreError(f'Data resource "{data_id}" already exist in store')
+        self._data_dict[data_id] = data
         return data_id
 
     def delete_data(self, data_id: str):
-        if data_id not in self._data_storage:
-            raise DataStoreError(f'data resource "{data_id}" does not exist in store')
-        del self._data_storage[data_id]
+        if data_id not in self._data_dict:
+            raise DataStoreError(f'Data resource "{data_id}" does not exist in store')
+        del self._data_dict[data_id]
 
     def register_data(self, data_id: str, data: Any):
         # Not required
@@ -119,17 +114,17 @@ class MemoryDataStore(MutableDataStore):
     # Specific interface
 
     @property
-    def data_storage(self) -> Dict[str, xr.Dataset]:
-        return self._data_storage
+    def data_dict(self) -> Dict[str, Any]:
+        return self._data_dict
 
     @classmethod
-    def get_global_data_storage(cls) -> Dict[str, xr.Dataset]:
-        return cls._GLOBAL_DATA_STORAGE
+    def get_global_data_dict(cls) -> Dict[str, Any]:
+        return cls._GLOBAL_DATA_DICT
 
     @classmethod
-    def replace_global_cube_memory(cls, global_cube_memory: Dict[str, xr.Dataset]) -> Dict[str, xr.Dataset]:
-        old_global_cube_memory = cls._GLOBAL_DATA_STORAGE
-        cls._GLOBAL_DATA_STORAGE = global_cube_memory
+    def replace_global_data_dict(cls, global_cube_memory: Dict[str, Any]) -> Dict[str, Any]:
+        old_global_cube_memory = cls._GLOBAL_DATA_DICT
+        cls._GLOBAL_DATA_DICT = global_cube_memory
         return old_global_cube_memory
 
     @classmethod
