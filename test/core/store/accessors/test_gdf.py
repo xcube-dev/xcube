@@ -10,7 +10,7 @@ class MemoryCubeStoreTest(unittest.TestCase):
 
     def setUp(self) -> None:
         self.data_store = MemoryDataStore()
-        self.data_store.data_storage.update({
+        self.data_store.data_dict.update({
             'cube_1': new_cube(variables=dict(B01=0.4, B02=0.5)),
             'cube_2': new_cube(variables=dict(B03=0.4, B04=0.5))
         })
@@ -27,7 +27,7 @@ class MemoryCubeStoreTest(unittest.TestCase):
         self.assertEqual({'B03', 'B04'}, set(map(str, cube_2.data_vars.keys())))
         with self.assertRaises(DataStoreError) as cm:
             self.data_store.open_data('cube_3')
-        self.assertEqual('data resource "cube_3" does not exist in store', f'{cm.exception}')
+        self.assertEqual('Data resource "cube_3" does not exist in store', f'{cm.exception}')
 
     def test_write_and_delete_data(self):
         cube_3 = new_cube(variables=dict(B05=0.1, B06=0.2))
@@ -42,15 +42,15 @@ class MemoryCubeStoreTest(unittest.TestCase):
 
         with self.assertRaises(DataStoreError) as cm:
             self.data_store.write_data(cube_4, data_id='cube_3')
-        self.assertEqual('data resource "cube_3" already exist in store', f'{cm.exception}')
+        self.assertEqual('Data resource "cube_3" already exist in store', f'{cm.exception}')
 
         self.data_store.delete_data(cube_3_id)
         self.data_store.delete_data(cube_4_id)
 
         with self.assertRaises(DataStoreError) as cm:
             self.data_store.delete_data(cube_3_id)
-        self.assertEqual('data resource "cube_3" does not exist in store', f'{cm.exception}')
+        self.assertEqual('Data resource "cube_3" does not exist in store', f'{cm.exception}')
 
         with self.assertRaises(DataStoreError) as cm:
             self.data_store.delete_data(cube_4_id)
-        self.assertEqual(f'data resource "{cube_4_id}" does not exist in store', f'{cm.exception}')
+        self.assertEqual(f'Data resource "{cube_4_id}" does not exist in store', f'{cm.exception}')
