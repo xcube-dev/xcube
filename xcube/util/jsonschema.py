@@ -251,10 +251,11 @@ class JsonObjectSchema(JsonSchema):
 
     def __init__(self,
                  properties: Mapping[str, JsonSchema] = None,
-                 additional_properties: bool = None,
+                 additional_properties: Union[bool, JsonSchema] = None,
                  min_properties: int = None,
                  max_properties: int = None,
                  required: Sequence[str] = None,
+                 dependencies: Mapping[str, Union[Sequence[str], JsonSchema]] = None,
                  **kwargs):
         super().__init__(type='object', **kwargs)
         self.properties = dict(properties) if properties else dict()
@@ -262,19 +263,24 @@ class JsonObjectSchema(JsonSchema):
         self.min_properties = min_properties
         self.max_properties = max_properties
         self.required = set(required) if required else set()
+        self.dependencies = dict(dependencies) if dependencies else None
 
     def to_dict(self) -> Dict[str, Any]:
         d = super().to_dict()
         if self.properties:
             d.update(properties={k: v.to_dict() for k, v in self.properties.items()})
         if self.additional_properties is not None:
-            d.update(additionalProperties=self.additional_properties)
+            d.update(additionalProperties=self.additional_properties.to_dict() \
+                if isinstance(self.additional_properties, JsonSchema) else self.additional_properties)
         if self.min_properties is not None:
             d.update(minProperties=self.min_properties)
         if self.max_properties is not None:
             d.update(maxProperties=self.max_properties)
         if self.required:
             d.update(required=list(self.required))
+        if self.dependencies:
+            d.update(dependencies={k: (v.to_dict() if isinstance(v, JsonSchema) else v)
+                                   for k, v in self.dependencies.items()})
         return d
 
     def process_kwargs_subset(self,
@@ -304,6 +310,8 @@ class JsonObjectSchema(JsonSchema):
         return self.factory(**obj) if self.factory is not None else obj
 
     def _convert_mapping(self, mapping: Mapping[str, Any], method_name: str) -> Mapping[str, Any]:
+        # TODO: recognise self.dependencies
+
         converted_mapping = dict()
 
         required_set = set(self.required) if self.required else set()
