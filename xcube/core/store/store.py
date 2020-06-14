@@ -24,6 +24,8 @@ from typing import Iterator, Tuple, Any, Optional, List, Type
 
 from xcube.constants import EXTENSION_POINT_DATA_STORES
 from xcube.core.store.accessor import DataAccessorError
+from xcube.core.store.accessor import DataOpener
+from xcube.core.store.accessor import DataWriter
 from xcube.core.store.descriptor import DataDescriptor
 from xcube.util.extension import Extension
 from xcube.util.extension import ExtensionPredicate
@@ -99,7 +101,7 @@ def find_data_store_extensions(predicate: ExtensionPredicate = None,
 # Classes
 #######################################################
 
-class DataStore(ABC):
+class DataStore(DataOpener, ABC):
     """
     A data store represents a collection of data resources that can be enumerated, queried, and opened in order to
     obtain in-memory representations.
@@ -136,6 +138,13 @@ class DataStore(ABC):
         or equal to that single data type.
 
         :return: An iterator over the identifiers if data resources provided by this data store.
+        """
+
+    @abstractmethod
+    def has_data(self, data_id: str) -> bool:
+        """
+        Check if the data resource given by *data_id* is available in this store.
+        :return: True, if the data resource is available in this store, False otherwise.
         """
 
     @abstractmethod
@@ -208,7 +217,10 @@ class DataStore(ABC):
         """
 
     @abstractmethod
-    def open_data(self, data_id: str, opener_id: str = None, **open_params) -> Any:
+    def open_data(self,
+                  data_id: str,
+                  opener_id: str = None,
+                  **open_params) -> Any:
         """
         Open the data given by the data resource identifier *data_id* using the supplied *open_params*.
 
@@ -224,7 +236,7 @@ class DataStore(ABC):
         """
 
 
-class MutableDataStore(DataStore, ABC):
+class MutableDataStore(DataStore, DataWriter, ABC):
     """
     A mutable data store is a data store that also allows for adding, updating, and removing data resources.
 

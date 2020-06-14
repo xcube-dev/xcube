@@ -45,6 +45,18 @@ class ExtensionRegistryTest(unittest.TestCase):
         self.assertEqual(False, p(ext('mldataset:levels:s3')))
         self.assertEqual(True, p(ext('geodataframe:geojson:posix')))
 
+        p = get_data_accessor_predicate(type_id='dataset')
+        self.assertEqual(True, p(ext('*:*:memory')))
+
+        p = get_data_accessor_predicate(format_id='levels')
+        self.assertEqual(True, p(ext('*:*:memory')))
+
+        p = get_data_accessor_predicate(storage_id='memory')
+        self.assertEqual(True, p(ext('*:*:memory')))
+
+        p = get_data_accessor_predicate(storage_id='posix')
+        self.assertEqual(False, p(ext('*:*:memory')))
+
         with self.assertRaises(DataAccessorError) as cm:
             p(ext('geodataframe,geojson:posix'))
         self.assertEqual('Illegal data opener/writer extension name "geodataframe,geojson:posix"', f'{cm.exception}')

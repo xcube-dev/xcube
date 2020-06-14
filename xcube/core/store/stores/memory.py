@@ -20,12 +20,13 @@
 # SOFTWARE.
 
 import uuid
-from typing import Iterator, Dict, Any, Optional, Tuple
+from typing import Iterator, Dict, Any, Optional, Tuple, Mapping
 
 from xcube.core.store.descriptor import DataDescriptor
 from xcube.core.store.descriptor import get_data_type_id
 from xcube.core.store.descriptor import new_data_descriptor
 from xcube.core.store.store import MutableDataStore, DataStoreError
+from xcube.util.assertions import assert_given
 from xcube.util.jsonschema import JsonObjectSchema
 
 
@@ -54,7 +55,12 @@ class MemoryDataStore(MutableDataStore):
     def get_data_ids(self, type_id: str = None) -> Iterator[str]:
         return iter(self._data_dict.keys())
 
+    def has_data(self, data_id: str) -> bool:
+        assert_given(data_id, 'data_id')
+        return data_id in self._data_dict
+
     def describe_data(self, data_id: str) -> DataDescriptor:
+        self._assert_valid_data_id(data_id)
         return new_data_descriptor(data_id, self._data_dict[data_id])
 
     @classmethod
@@ -62,8 +68,7 @@ class MemoryDataStore(MutableDataStore):
         return JsonObjectSchema()
 
     def search_data(self, type_id: str = None, **search_params) -> Iterator[DataDescriptor]:
-        if search_params:
-            raise DataStoreError(f'Unsupported search_params {tuple(search_params.keys())}')
+        self._assert_empty_params(search_params, 'search_params')
         for data_id, data in self._data_dict.items():
             if type_id is None or type_id == get_data_type_id(data):
                 yield new_data_descriptor(data_id, data)
@@ -75,10 +80,8 @@ class MemoryDataStore(MutableDataStore):
         return JsonObjectSchema()
 
     def open_data(self, data_id: str, opener_id: str = None, **open_params) -> Any:
-        if open_params:
-            raise ValueError(f'Unsupported open_params {tuple(open_params.keys())}')
-        if data_id not in self._data_dict:
-            raise DataStoreError(f'Data resource "{data_id}" does not exist in store')
+        self._assert_valid_data_id(data_id)
+        self._assert_empty_params(open_params, 'open_params')
         return self._data_dict[data_id]
 
     def get_data_writer_ids(self, type_id: str = None) -> Tuple[str, ...]:
@@ -89,8 +92,7 @@ class MemoryDataStore(MutableDataStore):
 
     def write_data(self, data: Any, data_id: str = None, writer_id: str = None, replace: bool = False,
                    **write_params) -> str:
-        if write_params:
-            raise ValueError(f'Unsupported write_params {tuple(write_params.keys())}')
+        self._assert_empty_params(write_params, 'write_params')
         data_id = self._ensure_valid_data_id(data_id)
         if data_id in self._data_dict and not replace:
             raise DataStoreError(f'Data resource "{data_id}" already exist in store')
@@ -98,8 +100,7 @@ class MemoryDataStore(MutableDataStore):
         return data_id
 
     def delete_data(self, data_id: str):
-        if data_id not in self._data_dict:
-            raise DataStoreError(f'Data resource "{data_id}" does not exist in store')
+        self._assert_valid_data_id(data_id)
         del self._data_dict[data_id]
 
     def register_data(self, data_id: str, data: Any):
@@ -127,6 +128,19 @@ class MemoryDataStore(MutableDataStore):
         cls._GLOBAL_DATA_DICT = global_cube_memory
         return old_global_cube_memory
 
+    #############################################################################
+    # Implementation helpers
+
     @classmethod
     def _ensure_valid_data_id(cls, data_id: Optional[str]) -> str:
         return data_id or str(uuid.uuid4())
+
+    def _assert_valid_data_id(self, data_id):
+        assert_given(data_id, 'data_id')
+        if data_id not in self._data_dict:
+            raise DataStoreError(f'Data resource "{data_id}" does not exist in store')
+
+    def _assert_empty_params(self, params: Optional[Mapping[str, Any]], name: str):
+        if params:
+            param_names = ', '.join(map(lambda k: f'"{k}"', params.keys()))
+            raise DataStoreError(f'Unsupported {name} {param_names}')

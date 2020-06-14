@@ -101,6 +101,7 @@ class DirectoryDataStore(MutableDataStore):
 
     def get_data_ids(self, type_id: str = None) -> Iterator[str]:
         self._assert_valid_type_id(type_id)
+        # TODO: Use os.walk(), which provides a generator rather than a list
         for data_id in os.listdir(self._base_dir):
             accessor_id_parts = self._get_accessor_id_parts(data_id, require=False)
             if accessor_id_parts:
@@ -108,7 +109,13 @@ class DirectoryDataStore(MutableDataStore):
                 if type_id is None or actual_type_id == type_id:
                     yield data_id
 
+    def has_data(self, data_id: str) -> bool:
+        assert_given(data_id, 'data_id')
+        path = self._resolve_data_id_to_path(data_id)
+        return os.path.exists(path)
+
     def describe_data(self, data_id: str) -> DataDescriptor:
+        self._assert_valid_data_id(data_id)
         data = self.open_data(data_id)
         return new_data_descriptor(data_id, data)
 
@@ -139,6 +146,7 @@ class DirectoryDataStore(MutableDataStore):
                   data_id: str,
                   opener_id: str = None,
                   **open_params) -> xr.Dataset:
+        self._assert_valid_data_id(data_id)
         if not opener_id:
             opener_id = self._get_opener_id(data_id)
         path = self._resolve_data_id_to_path(data_id)
@@ -208,6 +216,10 @@ class DirectoryDataStore(MutableDataStore):
     @classmethod
     def _ensure_valid_data_id(cls, data_id: Optional[str], data: Any) -> str:
         return data_id or str(uuid.uuid4()) + cls._get_filename_ext(data)
+
+    def _assert_valid_data_id(self, data_id):
+        if not self.has_data(data_id):
+            raise DataStoreError(f'Data resource "{data_id}" does not exist in store')
 
     def _resolve_data_id_to_path(self, data_id: str) -> str:
         assert_given(data_id, 'data_id')

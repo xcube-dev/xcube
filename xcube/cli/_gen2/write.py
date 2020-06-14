@@ -23,8 +23,8 @@ from typing import Callable, Optional
 import xarray as xr
 
 from xcube.cli._gen2.request import OutputConfig
-from xcube.core.store.store import new_data_store
-from xcube.core.store.accessor import new_data_writer
+from xcube.core.store import new_data_store
+from xcube.core.store import new_data_writer
 from xcube.util.extension import ExtensionRegistry
 
 

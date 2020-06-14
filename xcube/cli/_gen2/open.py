@@ -22,8 +22,8 @@ from typing import Sequence, Optional, Callable
 
 from xcube.cli._gen2.request import CubeConfig
 from xcube.cli._gen2.request import InputConfig
-from xcube.core.store.accessor import new_data_opener
-from xcube.core.store.store import new_data_store
+from xcube.core.store import new_data_opener
+from xcube.core.store import new_data_store
 from xcube.util.extension import ExtensionRegistry
 
 

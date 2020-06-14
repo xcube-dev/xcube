@@ -170,7 +170,11 @@ class DataWriter(DataDeleter, ABC):
         """
 
     @abstractmethod
-    def write_data(self, data: Any, data_id: str, replace: bool = False, **write_params) -> str:
+    def write_data(self,
+                   data: Any,
+                   data_id: str,
+                   replace: bool = False,
+                   **write_params) -> str:
         """
         Write a data resource using the supplied *data_id* and *write_params*.
 
