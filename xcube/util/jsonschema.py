@@ -18,7 +18,7 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-from abc import ABCMeta, abstractmethod
+from abc import ABC, abstractmethod
 from typing import Dict, Any, Callable, Mapping, Sequence, Union, Tuple
 
 import jsonschema
@@ -33,7 +33,7 @@ _TYPES_ENUM = {'null', 'boolean', 'integer', 'number', 'string', 'array', 'objec
 _NUMERIC_TYPES_ENUM = {'integer', 'number'}
 
 
-class JsonSchema(metaclass=ABCMeta):
+class JsonSchema(ABC):
 
     # noinspection PyShadowingBuiltins
     def __init__(self,
@@ -47,7 +47,8 @@ class JsonSchema(metaclass=ABCMeta):
                  factory: Factory = None,
                  serializer: Serializer = None):
         if type not in _TYPES_ENUM:
-            raise ValueError(f'type must be one of {", ".join(_TYPES_ENUM)}')
+            names = ', '.join(map(lambda t: f'"{t}"', sorted(list(_TYPES_ENUM))))
+            raise ValueError(f'type must be one of {names}')
         if factory is not None and not callable(factory):
             raise ValueError('factory must be callable')
         if serializer is not None and not callable(serializer):
@@ -102,11 +103,8 @@ class JsonSchema(metaclass=ABCMeta):
     def _from_validated_instance(self, instance: Any) -> Any:
         """Turn validated JSON value *instance* into a Python object."""
 
-    def _repr_json(self):
-        pass
 
-
-class JsonSimpleTypeSchema(JsonSchema, metaclass=ABCMeta):
+class JsonSimpleTypeSchema(JsonSchema, ABC):
     # noinspection PyShadowingBuiltins
     def __init__(self, type: str, **kwargs):
         super().__init__(type, **kwargs)
@@ -166,7 +164,8 @@ class JsonNumberSchema(JsonSimpleTypeSchema):
                  multiple_of: Union[int, float] = None,
                  **kwargs):
         if type not in _NUMERIC_TYPES_ENUM:
-            raise ValueError(f'Type must be one of {", ".join(_NUMERIC_TYPES_ENUM)}')
+            names = ', '.join(sorted(map(lambda t: f'"{t}"', _NUMERIC_TYPES_ENUM)))
+            raise ValueError(f'Type must be one of {names}')
         super().__init__(type, **kwargs)
         self.minimum = minimum
         self.exclusive_minimum = exclusive_minimum
@@ -236,11 +235,12 @@ class JsonArraySchema(JsonSchema):
         items_schema = self.items
         if isinstance(items_schema, JsonSchema):
             # Sequence turned into list with items_schema applying to all elements
-            return [getattr(items_schema, method_name)(item) for item in sequence]
+            return [getattr(items_schema, method_name)(item)
+                    for item in sequence]
         elif items_schema is not None:
             # Sequence turned into tuple with schema for every position
-            return tuple(getattr(items_schema[item_index], method_name)(sequence[item_index])
-                         for item_index in range(len(items_schema)))
+            return [getattr(items_schema[item_index], method_name)(sequence[item_index])
+                    for item_index in range(len(items_schema))]
         # Sequence returned as-is, without schema
         return sequence
 
@@ -283,9 +283,22 @@ class JsonObjectSchema(JsonSchema):
                                    for k, v in self.dependencies.items()})
         return d
 
+    # TODO: move away. this is a special-purpose utility
     def process_kwargs_subset(self,
                               kwargs: Dict[str, Any],
                               keywords: Sequence[str]) -> Tuple[Dict[str, Any], Dict[str, Any]]:
+        """
+        Utility that helps processing keyword-arguments. in *kwargs*:
+
+        Pop every keyword in *keywords* contained in this object schema's properties
+        from *kwargs* and put the keyword and value from *kwargs* into a new dictionary.
+
+        Return a 2-element tuple, first *kwargs* with, second the and *kwargs* without the keywords from *keywords*.
+
+        The original *kwargs* is not touched.
+
+        :return a tuple of two new keyword-argument dictionaries
+        """
         old_kwargs = dict(kwargs)
         new_kwargs = {}
         for k in keywords:
@@ -310,7 +323,8 @@ class JsonObjectSchema(JsonSchema):
         return self.factory(**obj) if self.factory is not None else obj
 
     def _convert_mapping(self, mapping: Mapping[str, Any], method_name: str) -> Mapping[str, Any]:
-        # TODO: recognise self.dependencies
+        # TODO: recognise self.dependencies. if dependency is again a schema, compute effective schema
+        #       by merging this and the dependency.
 
         converted_mapping = dict()
 

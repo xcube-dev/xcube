@@ -1,5 +1,6 @@
 import unittest
 from collections import namedtuple
+from typing import Dict, Any
 
 from xcube.util.jsonschema import JsonArraySchema
 from xcube.util.jsonschema import JsonBooleanSchema
@@ -7,7 +8,54 @@ from xcube.util.jsonschema import JsonIntegerSchema
 from xcube.util.jsonschema import JsonNullSchema
 from xcube.util.jsonschema import JsonNumberSchema
 from xcube.util.jsonschema import JsonObjectSchema
+from xcube.util.jsonschema import JsonSchema
+from xcube.util.jsonschema import JsonSimpleTypeSchema
 from xcube.util.jsonschema import JsonStringSchema
+
+
+class JsonSchemaTest(unittest.TestCase):
+
+    def test_base_props_validated(self):
+        class MyIntSchema(JsonSimpleTypeSchema, JsonSchema):
+            def __init__(self, type: str, **kwargs):
+                super().__init__(type=type, **kwargs)
+
+        with self.assertRaises(ValueError) as cm:
+            MyIntSchema('int')
+        self.assertEqual('type must be one of "array", "boolean", "integer", "null", "number", "object", "string"',
+                         f'{cm.exception}')
+
+        with self.assertRaises(ValueError) as cm:
+            MyIntSchema('integer', factory='int')
+        self.assertEqual('factory must be callable',
+                         f'{cm.exception}')
+
+        with self.assertRaises(ValueError) as cm:
+            MyIntSchema('integer', serializer='int')
+        self.assertEqual('serializer must be callable',
+                         f'{cm.exception}')
+
+    def test_to_dict(self):
+        class MyIntSchema(JsonSimpleTypeSchema, JsonSchema):
+            def __init__(self, type: str, **kwargs):
+                super().__init__(type=type, **kwargs)
+
+        self.assertEqual(
+            {
+                'type': ['integer', 'null'],
+                'title': 'Number of Gnarzes',
+                'description': 'Not really required',
+                'enum': [10, 100, 1000],
+                'default': 10,
+                'const': 100,
+            },
+            MyIntSchema('integer',
+                        title='Number of Gnarzes',
+                        description='Not really required',
+                        enum=[10, 100, 1000],
+                        const=100,
+                        default=10,
+                        nullable=True).to_dict())
 
 
 class JsonNullSchemaTest(unittest.TestCase):
@@ -30,38 +78,68 @@ class JsonBooleanSchemaTest(unittest.TestCase):
 
 class JsonIntegerSchemaTest(unittest.TestCase):
 
-    def test_to_json_integer(self):
-        self.assertEqual(45, JsonIntegerSchema().to_instance(45))
+    def test_to_instance(self):
+        self.assertEqual(45, JsonIntegerSchema(minimum=0,
+                                               maximum=100,
+                                               multiple_of=5).to_instance(45))
 
-    def test_from_json_integer(self):
-        self.assertEqual(45, JsonIntegerSchema().from_instance(45))
+    def test_from_instance(self):
+        self.assertEqual(45, JsonIntegerSchema(minimum=0,
+                                               maximum=100,
+                                               multiple_of=5).from_instance(45))
 
 
 class JsonNumberSchemaTest(unittest.TestCase):
-    def test_to_json_number(self):
-        self.assertEqual(0.6, JsonNumberSchema().to_instance(0.6))
+    def test_to_instance(self):
+        self.assertEqual(0.6, JsonNumberSchema(exclusive_minimum=0,
+                                               exclusive_maximum=1).to_instance(0.6))
 
-    def test_from_json_number(self):
-        self.assertEqual(0.6, JsonNumberSchema().from_instance(0.6))
+    def test_from_instance(self):
+        self.assertEqual(6, JsonNumberSchema(minimum=0,
+                                             maximum=10,
+                                             multiple_of=2).from_instance(6))
+
+    def test_check_type(self):
+        with self.assertRaises(ValueError) as cm:
+            JsonNumberSchema(type='float')
+        self.assertEqual('Type must be one of "integer", "number"', f'{cm.exception}')
 
 
 class JsonStringSchemaTest(unittest.TestCase):
-    def test_to_json_string(self):
+    def test_to_instance(self):
         self.assertEqual('pieps', JsonStringSchema().to_instance('pieps'))
+        self.assertEqual('pieps', JsonStringSchema(min_length=0,
+                                                   max_length=10).to_instance('pieps'))
+        self.assertEqual('pieps', JsonStringSchema(pattern='.*').to_instance('pieps'))
+        self.assertEqual('2020-01-03', JsonStringSchema(format='date').to_instance('2020-01-03'))
 
-    def test_from_json_string(self):
+    def test_from_instance(self):
         self.assertEqual('pieps', JsonStringSchema().from_instance('pieps'))
 
 
 class JsonArraySchemaTest(unittest.TestCase):
 
-    def test_to_json_array(self):
-        self.assertEqual([False, 2, 'U'], JsonArraySchema().to_instance([False, 2, 'U']))
+    def test_to_instance(self):
+        self.assertEqual([False, 2, 'U'],
+                         JsonArraySchema().to_instance([False, 2, 'U']))
 
-    def test_from_json_array(self):
-        self.assertEqual([False, 2, 'U'], JsonArraySchema().from_instance([False, 2, 'U']))
+    def test_to_instance_tuple(self):
+        self.assertEqual([False, 2, 'U'],
+                         JsonArraySchema(items=[JsonBooleanSchema(),
+                                                JsonIntegerSchema(),
+                                                JsonStringSchema()]).to_instance([False, 2, 'U']))
 
-    def test_from_json_array_object(self):
+    def test_from_instance(self):
+        self.assertEqual([False, 2, 'U'],
+                         JsonArraySchema().from_instance([False, 2, 'U']))
+
+    def test_from_instance_tuple(self):
+        self.assertEqual([False, 2, 'U'],
+                         JsonArraySchema(items=[JsonBooleanSchema(),
+                                                JsonIntegerSchema(),
+                                                JsonStringSchema()]).from_instance([False, 2, 'U']))
+
+    def test_from_instance_array_object(self):
         value = [{'name': 'Bibo', 'age': 15},
                  {'name': 'Ernie', 'age': 12}]
 
@@ -108,6 +186,32 @@ class JsonObjectSchemaTest(unittest.TestCase):
         person_schema.factory = Person
         self.assertEqual(Person(name='Bibo', age=12, deleted=True),
                          person_schema.from_instance(value))
+
+    def test_to_json_object(self):
+        person_schema = JsonObjectSchema(properties=dict(name=JsonStringSchema(),
+                                                         age=JsonIntegerSchema(),
+                                                         deleted=JsonBooleanSchema(default=False)))
+
+        value = {'name': 'Bibo', 'age': 12, 'deleted': True}
+
+        self.assertEqual(value,
+                         person_schema.to_instance(value))
+
+        # ok, because person_schema does not explicitly say additional_properties=False
+        value_extra = {'name': 'Bibo', 'age': 12, 'deleted': True, 'comment': 'Hello!'}
+        self.assertEqual(value_extra,
+                         person_schema.to_instance(value_extra))
+
+        Person = namedtuple('Person', ['name', 'age', 'deleted'])
+
+        def serialize(person: Person) -> Dict[str, Any]:
+            return person._asdict()
+
+        person_schema.serializer = serialize
+
+        person = Person(**value)
+        self.assertEqual(value,
+                         person_schema.to_instance(person))
 
     def test_from_json_object_object(self):
         person_schema = JsonObjectSchema(properties=dict(name=JsonStringSchema(),
@@ -156,7 +260,7 @@ class JsonObjectSchemaTest(unittest.TestCase):
                                              Person(name='Ernie', age=12, deleted=False)]),
                          schema.from_instance(value))
 
-    def test_process_kwargs(self):
+    def test_process_kwargs_subset(self):
         schema = JsonObjectSchema(
             properties=dict(
                 client_id=JsonStringSchema(default='bibo'),
