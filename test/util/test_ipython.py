@@ -20,4 +20,5 @@ class IPythonTest(unittest.TestCase):
         # Should not work
         with self.assertRaises(ValueError) as cm:
             register_json_formatter(_FormatterTest2)
-        self.assertTrue(f'{cm.exception}'.endswith("Formatter_Test2'> must define to_dict() method"))
+        self.assertTrue(f'{cm.exception}'.endswith("FormatterTest2'> must define a to_dict() method"),
+                        msg=f'{cm.exception}')

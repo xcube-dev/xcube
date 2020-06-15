@@ -9,7 +9,7 @@ def register_json_formatter(cls: Type, to_dict_method_name: str = 'to_dict'):
     :return:
     """
     if not hasattr(cls, to_dict_method_name) or not callable(getattr(cls, to_dict_method_name)):
-        raise ValueError(f'{cls} must define {to_dict_method_name}() method')
+        raise ValueError(f'{cls} must define a {to_dict_method_name}() method')
 
     try:
         import IPython
