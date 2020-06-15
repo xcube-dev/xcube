@@ -30,6 +30,8 @@ from xcube.util.assertions import assert_given
 from xcube.util.jsonschema import JsonObjectSchema
 
 
+# TODO: complete docs
+
 class MemoryDataStore(MutableDataStore):
     """
     An in-memory cube store.

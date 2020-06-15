@@ -106,6 +106,9 @@ class DataStore(DataOpener, ABC):
     A data store represents a collection of data resources that can be enumerated, queried, and opened in order to
     obtain in-memory representations.
 
+    A store implementation may use any existing openers/writers, or define its own,
+    or not use any openers/writers at all.
+
     DataStore is an abstract base class that both read-only and mutable data stores must implement.
     """
 
@@ -138,6 +141,7 @@ class DataStore(DataOpener, ABC):
         or equal to that single data type.
 
         :return: An iterator over the identifiers if data resources provided by this data store.
+        :raise DataStoreError: If an error occurs.
         """
 
     @abstractmethod
@@ -151,6 +155,11 @@ class DataStore(DataOpener, ABC):
     def describe_data(self, data_id: str) -> DataDescriptor:
         """
         Get the descriptor for the data resource given by *data_id*.
+
+        Raises if *data_id* does not exist in this store.
+
+        :return a data-type specific data descriptor
+        :raise DataStoreError: If an error occurs.
         """
 
     @classmethod
@@ -180,6 +189,7 @@ class DataStore(DataOpener, ABC):
         :param type_id: An optional data type identifier that is known to be supported by this data store.
         :param search_params: The search parameters.
         :return: An iterator of data descriptors for the found data resources.
+        :raise DataStoreError: If an error occurs.
         """
 
     @abstractmethod
@@ -188,6 +198,8 @@ class DataStore(DataOpener, ABC):
         Get identifiers of data openers that can be used to open data resources from this store.
 
         If *data_id* is given, data accessors are restricted to the ones that can open the identified data resource.
+        Raises if *data_id* does not exist in this store.
+
         If *type_id* is given, only openers that support this data type are returned.
 
         If a store implementation supports only a single data type, it should verify that *type_id* is either None
@@ -196,6 +208,7 @@ class DataStore(DataOpener, ABC):
         :param data_id: An optional data resource identifier that is known to exist in this data store.
         :param type_id: An optional data type identifier that is known to be supported by this data store.
         :return: A tuple of identifiers of data openers that can be used to open data resources.
+        :raise DataStoreError: If an error occurs.
         """
 
     @abstractmethod
@@ -205,7 +218,8 @@ class DataStore(DataOpener, ABC):
 
         If *data_id* is given, the returned schema will be tailored to the constraints implied by the
         identified data resource. Some openers might not support this, therefore *data_id* is optional, and if
-        it is omitted, the returned schema will be less restrictive.
+        it is omitted, the returned schema will be less restrictive. If given, the method raises
+        if *data_id* does not exist in this store.
 
         If *opener_id* is given, the returned schema will be tailored to the constraints implied by the
         identified opener. Some openers might not support this, therefore *opener_id* is optional, and if
@@ -214,6 +228,7 @@ class DataStore(DataOpener, ABC):
         :param data_id: An optional data identifier that is known to exist in this data store.
         :param opener_id: An optional data opener identifier.
         :return: The schema for the parameters in *open_params*.
+        :raise DataStoreError: If an error occurs.
         """
 
     @abstractmethod
@@ -227,12 +242,16 @@ class DataStore(DataOpener, ABC):
         The data type of the return value depends on the data opener used to open the data resource.
 
         If *opener_id* is given, the identified data opener will be used to open the data resource and
-        *open_params* must comply with the schema of the opener's parameters.
+        *open_params* must comply with the schema of the opener's parameters. Note that some store
+        implementations may not support using different openers or just support a single one.
+
+        Raises if *data_id* does not exist in this store.
 
         :param data_id: The data identifier that is known to exist in this data store.
         :param opener_id: An optional data opener identifier.
         :param open_params: Opener-specific parameters.
         :return: An in-memory representation of the data resources identified by *data_id* and *open_params*.
+        :raise DataStoreError: If an error occurs.
         """
 
 
@@ -255,6 +274,7 @@ class MutableDataStore(DataStore, DataWriter, ABC):
 
         :param type_id: An optional data type identifier that is known to be supported by this data store.
         :return: A tuple of identifiers of data writers that can be used to write data resources.
+        :raise DataStoreError: If an error occurs.
         """
 
     @abstractmethod
@@ -276,6 +296,7 @@ class MutableDataStore(DataStore, DataWriter, ABC):
 
         :param writer_id: An optional data writer identifier.
         :return: The schema for the parameters in *write_params*.
+        :raise DataStoreError: If an error occurs.
         """
 
     @abstractmethod
@@ -291,7 +312,8 @@ class MutableDataStore(DataStore, DataWriter, ABC):
         If data identifier *data_id* is not given, a writer-specific default will be generated, used, and returned.
 
         If *writer_id* is given, the identified data writer will be used to write the data resource and
-        *write_params* must comply with the schema of writers's parameters.
+        *write_params* must comply with the schema of writers's parameters. Note that some store
+        implementations may not support using different writers or just support a single one.
 
         Given here is a pseudo-code implementation for stores that support multiple writers:
 
@@ -301,12 +323,15 @@ class MutableDataStore(DataStore, DataWriter, ABC):
             get_writer(writer_id).write_data(data, path, **write_params)
             self.register_data(data_id, data)
 
+        Raises if *data_id* does not exist in this store.
+
         :param data: The data in-memory instance to be written.
         :param data_id: An optional data identifier that is known to be unique in this data store.
         :param writer_id: An optional data writer identifier.
         :param replace: Whether to replace an existing data resource.
         :param write_params: Writer-specific parameters.
         :return: The data identifier used to write the data.
+        :raise DataStoreError: If an error occurs.
         """
 
     @abstractmethod
@@ -317,7 +342,10 @@ class MutableDataStore(DataStore, DataWriter, ABC):
         Typically, an implementation would delete the data resource from the physical storage
         and also remove any registered metadata from an associated database.
 
+        Raises if *data_id* does not exist in this store.
+
         :param data_id: An data identifier that is known to exist in this data store.
+        :raise DataStoreError: If an error occurs.
         """
 
     @abstractmethod
@@ -336,6 +364,7 @@ class MutableDataStore(DataStore, DataWriter, ABC):
 
         :param data_id: A data resource identifier that is known to be unique in this data store.
         :param data: An in-memory representation of a data resource.
+        :raise DataStoreError: If an error occurs.
         """
 
     @abstractmethod
@@ -350,7 +379,10 @@ class MutableDataStore(DataStore, DataWriter, ABC):
         store-specific database. An implementation should only remove a data resource's metadata.
         It should not delete *data* from its physical storage space.
 
+        Raises if *data_id* does not exist in this store.
+
         :param data_id: A data resource identifier that is known to exist in this data store.
+        :raise DataStoreError: If an error occurs.
         """
 
 

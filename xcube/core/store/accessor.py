@@ -57,6 +57,7 @@ def new_data_writer(writer_id: str,
     """
     Get an instance of the data opener identified by *writer_id*.
 
+    :param writer_id: The data writer identifier.
     :param extension_registry: Optional extension registry. If not given, the global extension registry will be used.
     :return: A data writer instance.
     """
@@ -102,6 +103,7 @@ def get_data_accessor_predicate(type_id: str = None,
     :param format_id: Optional data format identifier to be supported.
     :param storage_id: Optional data storage identifier to be supported.
     :return: A filter function.
+    :raise DataAccessorError: If an error occurs.
     """
     if any((type_id, format_id, storage_id)):
         def predicate(extension: Extension) -> bool:
@@ -126,6 +128,16 @@ def get_data_accessor_predicate(type_id: str = None,
 
 
 class DataOpener(ABC):
+    """
+    An interface that specifies an operation to open data from an arbitrary source using arbitrary open parameters.
+
+    Possible open parameters are implementation-specific and are described by a JSON Schema.
+
+    Note this interface uses the term "opener" to underline the expected laziness of the operation. For example,
+    when a xarray.Dataset is returned from a Zarr directory, the actual data is represented by Dask arrays
+    and will be loaded only on-demand.
+    """
+
     @abstractmethod
     def get_open_data_params_schema(self, data_id: str = None) -> JsonObjectSchema:
         """
@@ -136,6 +148,7 @@ class DataOpener(ABC):
 
         :param data_id: An optional data resource identifier.
         :return: The schema for the parameters in *open_params*.
+        :raise DataAccessorError: If an error occurs.
         """
 
     @abstractmethod
@@ -143,23 +156,38 @@ class DataOpener(ABC):
         """
         Open the data resource given by the data resource identifier *data_id* using the supplied *open_params*.
 
+        Raises if *data_id* does not exist.
+
         :param data_id: The data resource identifier.
         :param open_params: Opener-specific parameters.
         :return: An xarray.Dataset instance.
+        :raise DataAccessorError: If an error occurs.
         """
 
 
 class DataDeleter(ABC):
+    """
+    An interface that specifies an operation to delete data.
+    """
+
     @abstractmethod
     def delete_data(self, data_id: str):
         """
-        Delete a data resource.
+        Delete a data resource. Raises if *data_id* does not exist.
 
         :param data_id: A data resource identifier known to exist.
+        :raise DataAccessorError: If an error occurs.
         """
 
 
 class DataWriter(DataDeleter, ABC):
+    """
+    An interface that specifies an operation to write data to some arbitrary target data
+    using arbitrary write parameters.
+
+    Possible write parameters are implementation-specific and are described by a JSON Schema.
+    """
+
     @abstractmethod
     def get_write_data_params_schema(self) -> JsonObjectSchema:
         """
@@ -167,6 +195,7 @@ class DataWriter(DataDeleter, ABC):
         :meth:write_data(data resource, data_id, open_params).
 
         :return: The schema for the parameters in *write_params*.
+        :raise DataAccessorError: If an error occurs.
         """
 
     @abstractmethod
@@ -183,10 +212,15 @@ class DataWriter(DataDeleter, ABC):
         :param replace: Whether to replace an existing data resource.
         :param write_params: Writer-specific parameters.
         :return: The data resource identifier used to write the data resource.
+        :raise DataAccessorError: If an error occurs.
         """
 
 
 class DataTimeSliceUpdater(DataWriter, ABC):
+    """
+    An interface that specifies writing of time slice data.
+    """
+
     @abstractmethod
     def append_data_time_slice(self, data_id: str, time_slice: xr.Dataset):
         """
@@ -194,6 +228,7 @@ class DataTimeSliceUpdater(DataWriter, ABC):
 
         :param data_id: The data resource identifier.
         :param time_slice: The time slice data to be inserted. Must be compatible with the data resource.
+        :raise DataAccessorError: If an error occurs.
         """
 
     @abstractmethod
@@ -204,6 +239,7 @@ class DataTimeSliceUpdater(DataWriter, ABC):
         :param data_id: The data resource identifier.
         :param time_slice: The time slice data to be inserted. Must be compatible with the data resource.
         :param time_index: The time index.
+        :raise DataAccessorError: If an error occurs.
         """
 
     @abstractmethod
@@ -214,12 +250,13 @@ class DataTimeSliceUpdater(DataWriter, ABC):
         :param data_id: The data resource identifier.
         :param time_slice: The time slice data to be inserted. Must be compatible with the data resource.
         :param time_index: The time index.
+        :raise DataAccessorError: If an error occurs.
         """
 
 
 class DataAccessorError(Exception):
     """
-    Raised on error in any of the data accessor methods.
+    Raised on error in any of the DataOpener/DataWriter implementations.
 
     :param message: The error message.
     """

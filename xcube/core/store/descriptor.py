@@ -17,7 +17,6 @@ TYPE_ID_GEO_DATA_FRAME = 'geodataframe'
 #   xcube.webapi.context.DatasetDescriptor type
 #   responses of xcube.webapi.controllers.catalogue
 # TODO: write tests
-# TODO: document me
 # TODO: validate params
 
 
@@ -45,6 +44,10 @@ def new_data_descriptor(data_id: str, data: Any) -> 'DataDescriptor':
 
 
 class DataDescriptor:
+    """
+    A generic descriptor for any data.
+    Also serves as a base class for more specific data descriptors.
+    """
 
     def __init__(self,
                  data_id: str,
@@ -68,6 +71,7 @@ class DataDescriptor:
     def from_dict(cls, d: Mapping[str, Any]) -> 'DatasetDescriptor':
         """Create new instance from a JSON-serializable dictionary"""
         # TODO: implement me
+        raise NotImplementedError()
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert into a JSON-serializable dictionary"""
@@ -79,6 +83,10 @@ class DataDescriptor:
 
 
 class DatasetDescriptor(DataDescriptor):
+    """
+    A descriptor for a gridded, N-dimensional dataset represented by xarray.Dataset.
+    Comprises a description of the data variables contained in the dataset.
+    """
 
     def __init__(self,
                  data_id: str,
@@ -108,8 +116,11 @@ class DatasetDescriptor(DataDescriptor):
 
 
 # TODO: write tests
-# TODO: document me
 class VariableDescriptor:
+    """
+    A descriptor for dataset variable represented by xarray.DataArray instances.
+    They are part of dataset descriptor for an gridded, N-dimensional dataset represented by xarray.Dataset.
+    """
 
     def __init__(self,
                  name: str,
@@ -128,6 +139,7 @@ class VariableDescriptor:
     def from_dict(cls, d: Mapping[str, Any]) -> 'DatasetDescriptor':
         """Create new instance from a JSON-serializable dictionary"""
         # TODO: implement me
+        raise NotImplementedError()
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert into a JSON-serializable dictionary"""
@@ -137,6 +149,10 @@ class VariableDescriptor:
 
 
 class MultiLevelDatasetDescriptor(DatasetDescriptor):
+    """
+    A descriptor for a gridded, N-dimensional, multi-level, multi-resolution dataset represented by
+    xcube.core.mldataset.MultiLevelDataset.
+    """
 
     def __init__(self,
                  data_id: str,
@@ -151,6 +167,7 @@ class MultiLevelDatasetDescriptor(DatasetDescriptor):
     def from_dict(cls, d: Mapping[str, Any]) -> 'MultiLevelDatasetDescriptor':
         """Create new instance from a JSON-serializable dictionary"""
         # TODO: implement me
+        raise NotImplementedError()
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert into a JSON-serializable dictionary"""
@@ -160,6 +177,9 @@ class MultiLevelDatasetDescriptor(DatasetDescriptor):
 
 
 class GeoDataFrameDescriptor(DataDescriptor):
+    """
+    A descriptor for a geo-vector dataset represented by a geopandas.GeoDataFrame instance.
+    """
 
     def __init__(self,
                  data_id: str,
@@ -172,6 +192,7 @@ class GeoDataFrameDescriptor(DataDescriptor):
     def from_dict(cls, d: Mapping[str, Any]) -> 'MultiLevelDatasetDescriptor':
         """Create new instance from a JSON-serializable dictionary"""
         # TODO: implement me
+        raise NotImplementedError()
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert into a JSON-serializable dictionary"""

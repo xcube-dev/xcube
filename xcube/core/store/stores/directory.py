@@ -63,8 +63,8 @@ _TYPE_ID_TO_ACCESSOR_TO_DEFAULT_FILENAME_EXT = {
 }
 
 
-# TODO: validate params
-# TODO: complete tests
+# TODO: write tests
+# TODO: complete docs
 
 class DirectoryDataStore(MutableDataStore):
     """
