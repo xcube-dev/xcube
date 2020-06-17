@@ -250,7 +250,7 @@ class DirectoryDataStore(MutableDataStore):
         if not accessor_id_parts:
             return []
         type_id, format_id, storage_id = accessor_id_parts
-        print(type_id, format_id, storage_id)
+        # print(type_id, format_id, storage_id)
         predicate = get_data_accessor_predicate(type_id=type_id, format_id=format_id, storage_id=storage_id)
         extensions = get_data_accessor_extensions(predicate)
         if not extensions:
