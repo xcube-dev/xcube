@@ -133,7 +133,7 @@ class VariableDescriptor:
         self.dtype = dtype
         self.dims = tuple(dims)
         self.ndim = len(self.dims)
-        self.attrs = dict(attrs) if attrs is None else None
+        self.attrs = dict(attrs) if attrs is not None else None
 
     @classmethod
     def from_dict(cls, d: Mapping[str, Any]) -> 'DatasetDescriptor':
