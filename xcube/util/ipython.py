@@ -1,3 +1,4 @@
+import warnings
 from typing import Type
 
 
@@ -22,5 +23,21 @@ def register_json_formatter(cls: Type, to_dict_method_name: str = 'to_dict'):
             ipy_formatter = IPython.get_ipython().display_formatter.formatters['application/json']
             ipy_formatter.for_type(cls, obj_to_dict)
 
+    except ImportError:
+        pass
+
+
+def enable_asyncio():
+    """
+    Enable asyncio package to be executable in Jupyter Notebooks.
+    """
+    try:
+        import IPython
+        if IPython.get_ipython() is not None:
+            try:
+                import nest_asyncio
+                nest_asyncio.apply()
+            except ImportError:
+                warnings.warn('nest_asyncio required to use asyncio in Jupyter Notebooks')
     except ImportError:
         pass
