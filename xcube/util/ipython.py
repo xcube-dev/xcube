@@ -38,6 +38,6 @@ def enable_asyncio():
                 import nest_asyncio
                 nest_asyncio.apply()
             except ImportError:
-                warnings.warn('nest_asyncio required to use asyncio in Jupyter Notebooks')
+                warnings.warn('nest-asyncio required to use asyncio in Jupyter Notebooks')
     except ImportError:
         pass
