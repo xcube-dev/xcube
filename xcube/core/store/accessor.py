@@ -20,7 +20,7 @@
 # SOFTWARE.
 
 from abc import abstractmethod, ABC
-from typing import Any, List, Optional
+from typing import Any, List, Optional, Tuple
 
 import xarray as xr
 
@@ -94,7 +94,8 @@ def find_data_writer_extensions(predicate: ExtensionPredicate = None,
 
 def get_data_accessor_predicate(type_id: str = None,
                                 format_id: str = None,
-                                storage_id: str = None) -> ExtensionPredicate:
+                                storage_id: str = None,
+                                data_id: str = None) -> ExtensionPredicate:
     """
     Get a predicate that checks if a data accessor extensions's name is
     compliant with *type_id*, *format_id*, *storage_id*.
@@ -105,14 +106,24 @@ def get_data_accessor_predicate(type_id: str = None,
     :return: A filter function.
     :raise DataAccessorError: If an error occurs.
     """
-    if any((type_id, format_id, storage_id)):
+    if any((type_id, format_id, storage_id, data_id)):
+        if data_id:
+            default_type_id, default_format_id, default_storage_id = get_default_accessor_tuples(data_id)
+            eff_type_id = type_id or default_type_id
+            eff_format_id = format_id or default_format_id
+            eff_storage_id = storage_id or default_storage_id
+        else:
+            eff_type_id = type_id
+            eff_format_id = format_id
+            eff_storage_id = storage_id
+
         def predicate(extension: Extension) -> bool:
-            parts = extension.name.split(':', maxsplit=4)
-            if len(parts) < 3:
+            extension_parts = extension.name.split(':', maxsplit=4)
+            if len(extension_parts) < 3:
                 raise DataAccessorError(f'Illegal data opener/writer extension name "{extension.name}"')
-            type_ok = type_id is None or parts[0] == '*' or parts[0] == type_id
-            format_ok = format_id is None or parts[1] == '*' or parts[1] == format_id
-            storage_ok = storage_id is None or parts[2] == '*' or parts[2] == storage_id
+            type_ok = eff_type_id is None or extension_parts[0] == '*' or extension_parts[0] == eff_type_id
+            format_ok = eff_format_id is None or extension_parts[1] == '*' or extension_parts[1] == eff_format_id
+            storage_ok = eff_storage_id is None or extension_parts[2] == '*' or extension_parts[2] == eff_storage_id
             return type_ok and format_ok and storage_ok
     else:
         # noinspection PyUnusedLocal
@@ -120,6 +131,32 @@ def get_data_accessor_predicate(type_id: str = None,
             return True
 
     return predicate
+
+
+def get_default_accessor_tuples(data_id: str) -> Tuple[Optional[str], Optional[str], Optional[str]]:
+    type_id, format_id, storage_id = None, None, None
+    index = data_id.rfind('.')
+    if index > 0:
+        ext = data_id[index:]
+        if ext in _FILENAME_EXT_DEFAULT_ACCESSOR_TUPLES:
+            type_id, format_id, storage_id = _FILENAME_EXT_DEFAULT_ACCESSOR_TUPLES[ext]
+    if data_id.startswith("https://") \
+            or data_id.startswith("http://") \
+            or data_id.startswith("s3://"):
+        storage_id = 's3'
+    return type_id, format_id, storage_id
+
+
+_FILENAME_EXT_DEFAULT_ACCESSOR_TUPLES = {
+    '.zarr': ('dataset', 'zarr', 'posix'),
+    '.nc': ('dataset', 'netcdf', 'posix'),
+    '.hdf': ('dataset', 'netcdf', 'posix'),
+    '.h5': ('dataset', 'netcdf', 'posix'),
+    '.grb': ('dataset', 'grib', 'posix'),
+    '.tif': ('dataset', 'geotiff', 'posix'),
+    '.geojson': ('geodataframe', 'geojson', 'posix'),
+    '.shp': ('geodataframe', 'shapefile', 'posix'),
+}
 
 
 #######################################################

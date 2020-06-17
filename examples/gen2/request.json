@@ -1,0 +1,20 @@
+{
+  "input_configs": [
+    {
+      "store_id": "memory",
+      "data_id": "S2L2A",
+      "variable_names": ["B01", "B02"]
+    }
+  ],
+  "cube_config": {
+    "bbox": [12.2, 52.1, 13.9, 54.8],
+    "spatial_res": 0.05,
+    "time_range": ["2018-01-01", null],
+    "crs": "WGS84",
+    "time_period": "4D"
+  },
+  "output_config": {
+    "store_id": "memory",
+    "data_id": "CHL"
+  }
+}

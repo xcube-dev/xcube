@@ -21,7 +21,7 @@
 import xarray as xr
 from typing import Callable
 
-from xcube_cci.config import CubeConfig
+from xcube.cli._gen2.request import CubeConfig
 
 
 def resample_cube(cube: xr.Dataset,

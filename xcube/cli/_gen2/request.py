@@ -66,6 +66,22 @@ class InputConfig:
             factory=cls,
         )
 
+    def to_dict(self):
+        d = dict()
+        if self.store_id:
+            d.update(store_id=str(self.store_id))
+        if self.opener_id:
+            d.update(writer_id=str(self.opener_id))
+        if self.data_id:
+            d.update(data_id=str(self.data_id))
+        if self.variable_names:
+            d.update(variable_names=list(self.variable_names))
+        if self.store_params:
+            d.update(store_params=dict(self.store_params))
+        if self.open_params:
+            d.update(open_params=dict(self.open_params))
+        return d
+
 
 class OutputConfig:
 
@@ -96,6 +112,20 @@ class OutputConfig:
             required=[],
             factory=cls,
         )
+
+    def to_dict(self):
+        d = dict()
+        if self.store_id:
+            d.update(store_id=str(self.store_id))
+        if self.writer_id:
+            d.update(writer_id=str(self.writer_id))
+        if self.data_id:
+            d.update(data_id=str(self.data_id))
+        if self.store_params:
+            d.update(store_params=dict(self.store_params))
+        if self.write_params:
+            d.update(write_params=dict(self.write_params))
+        return d
 
 
 # Need to be aligned with params in resample_cube(cube, **params)
@@ -228,7 +258,12 @@ class Request:
 
     def to_dict(self) -> Mapping[str, Any]:
         """Convert into a JSON-serializable dictionary"""
-        return self.get_schema().to_instance(self)
+        d = dict(input_configs=[ic.to_dict() for ic in self.input_configs],
+                 cube_config=self.cube_config.to_dict(),
+                 output_config=self.output_config.to_dict())
+        if self.code_config:
+            d.update(code_config=self.code_config.to_dict())
+        return d
 
     @classmethod
     def from_dict(cls, request_dict: Dict) -> 'Request':

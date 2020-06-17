@@ -19,7 +19,6 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-import os.path
 from typing import Type
 
 import click
@@ -29,11 +28,13 @@ from xcube.cli._gen2.request import Request, OutputConfig
 from xcube.cli._gen2.resample import resample_and_merge_cubes
 from xcube.cli._gen2.transform import transform_cube
 from xcube.cli._gen2.write import write_cube
-from xcube.core.dsio import guess_dataset_format
+from xcube.core.store import find_data_writer_extensions
+from xcube.core.store import get_data_accessor_predicate
 
 
 def main(request_path: str,
          output_path: str = None,
+         format_name: str = None,
          callback_url=None,
          exception_type: Type[BaseException] = click.ClickException,
          verbose: bool = False):
@@ -66,7 +67,7 @@ def main(request_path: str,
     request = Request.from_file(request_path, exception_type=exception_type)
 
     if output_path:
-        output_config = _new_output_config_for_dir(output_path)
+        output_config = _new_output_config_for_dir(output_path, format_name)
     else:
         output_config = request.output_config
 
@@ -88,11 +89,13 @@ def main(request_path: str,
                progress_monitor=progress_monitor)
 
 
-def _new_output_config_for_dir(output_path):
-    base_dir = os.path.dirname(output_path)
-    cube_id, _ = os.path.splitext(os.path.basename(output_path))
-    output_config = OutputConfig(cube_store_id='dir',
-                                 cube_store_params=dict(base_dir=base_dir, read_only=False),
-                                 cube_id=cube_id,
-                                 write_params=dict(format=guess_dataset_format(output_path)))
+def _new_output_config_for_dir(output_path, format_id, exception_type: Type[BaseException]):
+    predicate = get_data_accessor_predicate(type_id='dataset', format_id=format_id, data_id=output_path)
+    extensions = find_data_writer_extensions(predicate=predicate)
+    if not extensions:
+        raise exception_type(f'Failed to guess writer from path {output_path}')
+    writer_id = extensions[0].name
+    output_config = OutputConfig(writer_id=writer_id,
+                                 data_id=output_path,
+                                 write_params=dict())
     return output_config
