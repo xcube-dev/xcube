@@ -52,6 +52,6 @@ def gen2(request_path: str,
     from xcube.cli._gen2.main import main
     main(request_path,
          output_path=output_path,
-         callback_url=callback_url,
+         callback_api_url=callback_url,
          verbose=verbose,
          exception_type=click.ClickException)

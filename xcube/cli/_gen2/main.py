@@ -23,6 +23,7 @@ from typing import Type
 
 import click
 
+from xcube.cli._gen2.callback import CallbackApiProgressObserver
 from xcube.cli._gen2.open import open_cubes
 from xcube.cli._gen2.request import Request, OutputConfig
 from xcube.cli._gen2.resample import resample_and_merge_cubes
@@ -35,7 +36,7 @@ from xcube.util.progress import observe_progress
 def main(request_path: str,
          output_path: str = None,
          format_name: str = None,
-         callback_url=None,
+         callback_api_url: str = None,
          exception_type: Type[BaseException] = click.ClickException,
          verbose: bool = False):
     """
@@ -54,15 +55,14 @@ def main(request_path: str,
         the Cube generation request is piped as a JSON string.
     :param output_path: output ZARR directory in local file system.
         Overwrites output configuration in request if given.
-    :param callback_url:  Optional URL used to report status information. The URL
-        must accept the POST method and support the JSON content type.
+    :param callback_api_url:  Optional API URL used to report status information. The URL
+        must accept the PUT method and support the JSON content type.
     :param verbose:
     :param exception_type: exception type used to raise on errors
     """
 
-    def progress_monitor():
-        # TODO: make use of callback_url and verbose
-        pass
+    if callback_api_url:
+        CallbackApiProgressObserver(callback_api_url).activate()
 
     request = Request.from_file(request_path, exception_type=exception_type)
 
