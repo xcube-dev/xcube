@@ -26,7 +26,9 @@ from xcube.core.store.accessor import DataOpener
 from xcube.core.store.accessor import DataWriter
 from xcube.core.store.accessors.posix import PosixDataDeleter
 from xcube.util.assertions import assert_instance
+from xcube.util.jsonschema import JsonBooleanSchema
 from xcube.util.jsonschema import JsonObjectSchema
+from xcube.util.jsonschema import JsonStringSchema
 
 
 class DatasetNetcdfPosixDataAccessor(PosixDataDeleter, DataWriter, DataOpener):
@@ -45,7 +47,7 @@ class DatasetNetcdfPosixDataAccessor(PosixDataDeleter, DataWriter, DataOpener):
         # TODO: implement me
         return JsonObjectSchema()
 
-    def write_data(self, data: xr.Dataset, data_id: str, **write_params):
+    def write_data(self, data: xr.Dataset, data_id: str, replace=False, **write_params):
         assert_instance(data, xr.Dataset, 'data')
         data.to_netcdf(data_id, **write_params)
 
@@ -64,9 +66,32 @@ class DatasetZarrPosixAccessor(PosixDataDeleter, DataWriter, DataOpener):
 
     def get_write_data_params_schema(self) -> JsonObjectSchema:
         # TODO: implement me
-        return JsonObjectSchema()
+        return JsonObjectSchema(
+            properties=dict(
+                group=JsonStringSchema(
+                    description='Group path. (a.k.a. path in zarr terminology.).',
+                    min_length=1,
+                ),
+                encoding=JsonObjectSchema(
+                    description='Nested dictionary with variable names as keys and '
+                                'dictionaries of variable specific encodings as values.',
+                    examples=[{'my_variable': {'dtype': 'int16', 'scale_factor': 0.1, }}],
+                    additional_properties=True,
+                ),
+                consolidated=JsonBooleanSchema(
+                    description='If True, apply zarr’s consolidate_metadata() '
+                                'function to the store after writing.'
+                ),
+                append_dim=JsonStringSchema(
+                    description='If set, the dimension on which the data will be appended.',
+                    min_length=1,
+                )
+            ),
+            required=[],
+            additional_properties=False
+        )
 
-    def write_data(self, data: xr.Dataset, data_id: str, **write_params):
+    def write_data(self, data: xr.Dataset, data_id: str, replace=False, **write_params):
         assert_instance(data, xr.Dataset, 'data')
         data.to_zarr(data_id, **write_params)
 
@@ -93,7 +118,7 @@ class DatasetZarrS3Accessor(DataWriter, DataOpener):
         # TODO: implement me
         return JsonObjectSchema()
 
-    def write_data(self, data: xr.Dataset, data_id: str, **write_params):
+    def write_data(self, data: xr.Dataset, data_id: str, replace=False, **write_params):
         assert_instance(data, xr.Dataset, 'data')
         import s3fs
         s3, write_params = _get_s3fs_and_consume_params(write_params)
