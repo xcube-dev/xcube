@@ -26,10 +26,10 @@ import click
 from xcube.cli._gen2.open import open_cubes
 from xcube.cli._gen2.request import Request, OutputConfig
 from xcube.cli._gen2.resample import resample_and_merge_cubes
-from xcube.cli._gen2.transform import transform_cube
 from xcube.cli._gen2.write import write_cube
 from xcube.core.store import find_data_writer_extensions
 from xcube.core.store import get_data_accessor_predicate
+from xcube.util.progress import observe_progress
 
 
 def main(request_path: str,
@@ -67,26 +67,20 @@ def main(request_path: str,
     request = Request.from_file(request_path, exception_type=exception_type)
 
     if output_path:
-        output_config = _new_output_config_for_dir(output_path, format_name)
+        output_config = _new_output_config_for_dir(output_path, format_name, exception_type)
     else:
         output_config = request.output_config
 
-    # Step 1
-    cubes = open_cubes(request.input_configs,
-                       cube_config=request.cube_config,
-                       progress_monitor=progress_monitor)
-    # Step 2
-    cube = resample_and_merge_cubes(cubes,
-                                    cube_config=request.cube_config,
-                                    progress_monitor=progress_monitor)
-    # Step 3
-    cube = transform_cube(cube,
-                          request.code_config,
-                          progress_monitor=progress_monitor)
-    # Step 4
-    write_cube(cube,
-               output_config=output_config,
-               progress_monitor=progress_monitor)
+    with observe_progress('Generating cube', 100) as cm:
+        cm.will_work(10)
+        cubes = open_cubes(request.input_configs,
+                           cube_config=request.cube_config)
+        cm.will_work(10)
+        cube = resample_and_merge_cubes(cubes,
+                                        cube_config=request.cube_config)
+        cm.will_work(80)
+        write_cube(cube,
+                   output_config=output_config)
 
 
 def _new_output_config_for_dir(output_path, format_id, exception_type: Type[BaseException]):

@@ -30,7 +30,6 @@ from xcube.util.extension import ExtensionRegistry
 
 def write_cube(cube: xr.Dataset,
                output_config: OutputConfig,
-               progress_monitor: Callable,
                extension_registry: Optional[ExtensionRegistry] = None) -> str:
     write_params = dict()
     if output_config.store_id:

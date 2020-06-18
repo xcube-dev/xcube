@@ -18,6 +18,7 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+
 import json
 import os.path
 import sys
@@ -177,70 +178,16 @@ class CubeConfig:
             factory=cls)
 
 
-class GitHubConfig:
-    def __init__(self,
-                 repo_name: str = None,
-                 user_name: str = None,
-                 access_token: str = None):
-        assert_given(repo_name, 'repo_name')
-        assert_given(user_name, 'user_name')
-        self.repo_name = repo_name
-        self.user_name = user_name
-        self.access_token = access_token
-
-    @classmethod
-    def get_schema(cls):
-        return JsonObjectSchema(
-            properties=dict(
-                repo_name=JsonStringSchema(min_length=1),
-                user_name=JsonStringSchema(min_length=1),
-                access_token=JsonStringSchema(min_length=1),
-            ),
-            additional_properties=False,
-            required=['repo_name', 'user_name'],
-            factory=cls,
-        )
-
-
-# Need to be aligned with params in transform_cube(cube, **params)
-class CodeConfig:
-    def __init__(self,
-                 python_code: str = None,
-                 git_hub: GitHubConfig = None,
-                 function_name: str = None,
-                 function_params: Mapping[str, Any] = None):
-        assert_condition(not python_code and not git_hub, 'One of python_code and git_hub must be given')
-        self.python_code = python_code
-        self.git_hub = git_hub
-        self.function_name = function_name
-        self.function_params = function_params
-
-    @classmethod
-    def get_schema(cls):
-        return JsonObjectSchema(
-            properties=dict(
-                python_code=JsonStringSchema(),
-                git_hub=GitHubConfig.get_schema(),
-                function_name=JsonStringSchema(),
-                function_params=JsonObjectSchema(),
-            ),
-            additional_properties=False,
-            factory=cls,
-        )
-
-
 class Request:
     def __init__(self,
                  input_configs: Sequence[InputConfig] = None,
                  cube_config: Mapping[str, Any] = None,
-                 output_config: OutputConfig = None,
-                 code_config: Optional[Mapping[str, Any]] = None):
+                 output_config: OutputConfig = None):
         assert_given(input_configs, 'input_configs')
         assert_given(cube_config, 'cube_config')
         assert_given(output_config, 'output_config')
         self.input_configs = input_configs
         self.cube_config = cube_config
-        self.code_config = code_config
         self.output_config = output_config
 
     @classmethod
@@ -249,7 +196,6 @@ class Request:
             properties=dict(
                 input_configs=JsonArraySchema(items=InputConfig.get_schema(), min_items=1),
                 cube_config=CubeConfig.get_schema(),
-                code_config=CodeConfig.get_schema(),
                 output_config=OutputConfig.get_schema(),
             ),
             required=['input_configs', 'cube_config', 'output_config'],
@@ -258,12 +204,9 @@ class Request:
 
     def to_dict(self) -> Mapping[str, Any]:
         """Convert into a JSON-serializable dictionary"""
-        d = dict(input_configs=[ic.to_dict() for ic in self.input_configs],
-                 cube_config=self.cube_config.to_dict(),
-                 output_config=self.output_config.to_dict())
-        if self.code_config:
-            d.update(code_config=self.code_config.to_dict())
-        return d
+        return dict(input_configs=[ic.to_dict() for ic in self.input_configs],
+                    cube_config=self.cube_config.to_dict(),
+                    output_config=self.output_config.to_dict())
 
     @classmethod
     def from_dict(cls, request_dict: Dict) -> 'Request':

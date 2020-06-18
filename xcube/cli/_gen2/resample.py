@@ -25,14 +25,12 @@ from xcube.cli._gen2.request import CubeConfig
 
 
 def resample_cube(cube: xr.Dataset,
-                  cube_config: CubeConfig,
-                  progress_monitor: Callable):
+                  cube_config: CubeConfig):
     # TODO: implement me
     return cube
 
 
 def resample_and_merge_cubes(cubes,
-                             cube_config: CubeConfig,
-                             progress_monitor: Callable) -> xr.Dataset:
-    cubes = [resample_cube(cube, cube_config, progress_monitor) for cube in cubes]
+                             cube_config: CubeConfig) -> xr.Dataset:
+    cubes = [resample_cube(cube, cube_config) for cube in cubes]
     return xr.merge(cubes)

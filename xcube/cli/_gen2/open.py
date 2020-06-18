@@ -29,7 +29,6 @@ from xcube.util.extension import ExtensionRegistry
 
 def open_cubes(input_configs: Sequence[InputConfig],
                cube_config: CubeConfig,
-               progress_monitor: Callable,
                extension_registry: Optional[ExtensionRegistry] = None):
     cubes = []
     all_cube_params = cube_config.to_dict()

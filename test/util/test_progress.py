@@ -1,34 +1,80 @@
 import unittest
+from typing import Sequence
 
-from xcube.util.progress import ProgressEmitter
-from xcube.util.progress import ProgressMonitor
+from xcube.util.progress import ProgressObserver
+from xcube.util.progress import ProgressState
+from xcube.util.progress import observe_progress
+from xcube.util.progress import observe_progress_local
 
 
-class ProgressMonitorTest(unittest.TestCase):
-
-    def setUp(self) -> None:
+class MyProgressObserver(ProgressObserver):
+    def __init__(self):
         self.calls = []
 
-    def _start(self, label, total_work):
-        self.calls.append(('start', label, total_work))
+    def on_begin(self, state_stack: Sequence[ProgressState]):
+        self.calls.append(('begin', self._serialize_stack(state_stack)))
 
-    def _update(self, worked):
-        self.calls.append(('update', worked))
+    def on_update(self, state_stack: Sequence[ProgressState]):
+        self.calls.append(('update', self._serialize_stack(state_stack)))
 
-    def _end(self, label, total_work):
-        self.calls.append(('end'))
+    def on_end(self, state_stack: Sequence[ProgressState]):
+        self.calls.append(('end', self._serialize_stack(state_stack)))
 
-    def test_task_object(self):
-        pm = ProgressMonitor(self._start, self._update, self._end)
+    @classmethod
+    def _serialize_stack(cls, state_stack):
+        return [(s.label, s.progress, s.finished) for s in state_stack]
 
-        t = ProgressEmitter('test', 3)
-        t.update(1)
-        t.update(0.5)
-        t.update(1.5)
-        t.stop()
 
-    def test_task_context_manager(self):
-        with ProgressEmitter('test', 3) as t:
-            t.update(1)
-            t.update(0.5)
-            t.update(1.5)
+class ProgressObserverTest(unittest.TestCase):
+
+    def test_observe_progress(self):
+        observer = MyProgressObserver()
+        observer.activate()
+
+        with observe_progress('computing', 4) as progress_reporter:
+            # do something that takes 1 unit
+            progress_reporter.worked(1)
+            # do something that takes 1 unit
+            progress_reporter.worked(1)
+            # do something that takes 2 units
+            progress_reporter.worked(2)
+
+        self.assertEqual(
+            [
+                ('begin', [('computing', 0.0, False)]),
+                ('update', [('computing', 0.25, False)]),
+                ('update', [('computing', 0.5, False)]),
+                ('update', [('computing', 1.0, False)]),
+                ('end', [('computing', 1.0, True)])
+            ],
+            observer.calls)
+
+    def test_nested_observe_progress(self):
+        observer = MyProgressObserver()
+        observer.activate()
+
+        with observe_progress('computing', 4) as progress_reporter:
+            # do something that takes 1 unit
+            progress_reporter.worked(1)
+            # do something that takes 1 unit
+            progress_reporter.worked(1)
+            # do something that will takes 2 units
+            progress_reporter.will_work(2)
+            with observe_progress('loading', 4) as progress_reporter_2:
+                # do something that takes 3 units
+                progress_reporter_2.worked(3)
+                # do something that takes 1 unit
+                progress_reporter_2.worked(1)
+
+        self.assertEqual(
+            [
+                ('begin', [('computing', 0.0, False)]),
+                ('update', [('computing', 0.25, False)]),
+                ('update', [('computing', 0.5, False)]),
+                ('begin', [('computing', 0.5, False), ('loading', 0.0, False)]),
+                ('update', [('computing', 0.875, False), ('loading', 0.75, False)]),
+                ('update', [('computing', 1.0, False), ('loading', 1.0, False)]),
+                ('end', [('computing', 1.0, False), ('loading', 1.0, True)]),
+                ('end', [('computing', 1.0, True)])
+            ],
+            observer.calls)
