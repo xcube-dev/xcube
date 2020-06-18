@@ -1,5 +1,7 @@
 ## Changes in 0.5.0.devX (in development)
 
+* Fixed a regression when running "xcube serve" with cube path as parameter (#314)
+
 * From 0.4.3: Extended `xcube serve` by reverse URL prefix option. 
 * From 0.4.1: Fixed time-series performance drop (#299). 
 
