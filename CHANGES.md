@@ -1,16 +1,9 @@
-## Changes in 0.5.0.dev3 (in development)
+## Changes in 0.5.0.devX (in development)
 
-* From 0.4.3: Extended `xcube serve` by reverse URL prefix option `--revprefix REFPREFIX`.
-  This can be used in cases where only URLs returned by the service need to be prefixed, 
-  e.g. by a web server's proxy pass.
   
-* From 0.4.1: Fixed time-series performance drop (#299). 
-
-### New in 0.5.0.dev2
+## Enhancements
 
 * `xcube serve CUBE` will now use the last path component of `CUBE` as dataset title.
-
-### New in 0.5.0.dev1
 
 * `xcube serve` can now be run with AWS credentials (#296). 
   - In the form `xcube serve --config CONFIG`, a `Datasets` entry in `CONFIG`
@@ -24,6 +17,24 @@
     credentials found in environment variables `AWS_ACCESS_KEY_ID` and
     `AWS_SECRET_ACCESS_KEY`.
 
+* Added possibility to specify packing of variables within the configuration of
+  `xcube gen` (#269). The user now may specify a different packing variables, 
+  which might be useful for reducing the storage size of the datacubes.
+  Currently it is only implemented for zarr format.
+  This may be done by passing the parameters for packing as the following:  
+   
+   
+  ```yaml  
+  output_writer_params: 
+
+    packing: 
+      analysed_sst: 
+        scale_factor: 0.07324442274239326
+        add_offset: -300.0
+        dtype: 'uint16'
+        _FillValue: 0.65535
+  ```
+
 ## Changes in 0.4.3
 
 * Extended `xcube serve` by reverse URL prefix option `--revprefix REFPREFIX`.
@@ -32,7 +43,7 @@
 
 ## Changes in 0.4.2
 
-* Release process fix.
+* Fixed a problem during release process. No code changes.
   
 ## Changes in 0.4.1
 

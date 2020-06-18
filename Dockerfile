@@ -16,12 +16,22 @@ RUN apt-get -y update && apt-get -y upgrade
 
 # && apt-get -y install  git build-essential libyaml-cpp-dev
 
+# Install mamba as a much faster conda replacement. We specify an
+# explicit version number because (1) it makes installation of mamba
+# much faster and (2) mamba is still in beta, so it's best to stick
+# to a known-good version.
+RUN conda install mamba=0.1.2 -c conda-forge
+
 # Setup conda environment
 # Copy yml config into image
 ADD environment.yml /tmp/environment.yml
 
-# Update conda and install dependencies specified in environment.yml
-RUN conda env create -f=/tmp/environment.yml;
+# Use mamba to create an environment based on the specifications in
+# environment.yml. At present, evironments created by mamba can't be
+# referenced by name from conda (presumably a bug), so we use --preix
+# to specify an explicit path instead.
+RUN mamba env create --file /tmp/environment.yml --prefix $HOME/xcube-env
+RUN source activate $HOME/xcube-env
 
 # Set work directory for xcube_server installation
 RUN mkdir /xcube
@@ -30,8 +40,9 @@ WORKDIR /xcube
 # Copy local github repo into image (will be replaced by either git clone or as a conda dep)
 ADD . /xcube
 
-# Setup xcube_server package
-RUN source activate xcube && python setup.py develop
+# Setup xcube_server package, specifying the environment by path rather
+# than by name (see above).
+RUN source activate $HOME/xcube-env && python setup.py develop
 
 # Test xcube package
 ENV NUMBA_DISABLE_JIT 1
@@ -42,4 +53,4 @@ EXPOSE 8000
 
 # Start server
 ENTRYPOINT ["/bin/bash", "-c"]
-CMD ["source activate xcube && xcube"]
+CMD ["source activate $HOME/xcube-env && xcube"]
