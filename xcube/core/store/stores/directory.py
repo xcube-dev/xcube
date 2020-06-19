@@ -88,7 +88,7 @@ class DirectoryDataStore(MutableDataStore):
     def get_data_store_params_schema(cls) -> JsonObjectSchema:
         return JsonObjectSchema(
             properties=dict(
-                base_dir=JsonStringSchema(default='.'),
+                base_dir=JsonStringSchema(min_length=1),
                 read_only=JsonBooleanSchema(default=False)
             ),
             required=['base_dir'],
