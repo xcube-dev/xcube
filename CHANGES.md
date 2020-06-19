@@ -1,5 +1,20 @@
 ## Changes in 0.5.0.devX (in development)
 
+* xcube has been extended by a new *Data Store Framework* (#307).
+  It is provided by the `xcube.core.store` package.
+  It's usage is currently documented only in the form of Jupyter Notebook examples, 
+  see `examples/store/*.ipynb`.
+   
+* During the development of the new *Data Store Framework*, some  
+  utility packages have been added:
+  * `xcube.util.jsonschema` - classes that represent JSON Schemas for types null, boolean,
+     number, string, object, and array. Schema instances are used for JSON validation,
+     and object marshalling.
+  * `xcube.util.assertions` - numerous `assert_*` functions that are used for function 
+     parameter validation. All functions raise `ValueError` in case an assertion is not met.
+  * `xcube.util.ipython` - functions that can be called for better integration of objects with
+     Jupyter Notebooks.
+
 * Fixed a regression when running "xcube serve" with cube path as parameter (#314)
 
 * From 0.4.3: Extended `xcube serve` by reverse URL prefix option. 
