@@ -27,16 +27,16 @@ import click
 @click.option('--output', '-o', 'output_path', metavar='OUTPUT',
               help='Output ZARR directory in local file system. '
                    'Overwrites output configuration in REQUEST if given.')
-@click.option('--callback', '--cb', 'callback_url', metavar='URL',
-              help='Optional URL used to report status information. '
-                   'The URL must accept the POST method and support the JSON content type.')
+@click.option('--callback', '--cb', 'callback_api_url', metavar='URL',
+              help='Optional URL of an API for reporting status information. '
+                   'The URL must accept the PUT method and support JSON bodies.')
 @click.option('--verbose', '-v',
               is_flag=True,
               multiple=True,
               help='Control amount of information dumped to stdout.')
 def gen2(request_path: str,
          output_path: str = None,
-         callback_url=None,
+         callback_api_url=None,
          verbose: bool = False):
     """
     Generate a data cube.
@@ -52,6 +52,6 @@ def gen2(request_path: str,
     from xcube.cli._gen2.main import main
     main(request_path,
          output_path=output_path,
-         callback_api_url=callback_url,
+         callback_api_url=callback_api_url,
          verbose=verbose,
          exception_type=click.ClickException)
