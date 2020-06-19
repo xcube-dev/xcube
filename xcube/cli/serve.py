@@ -126,7 +126,7 @@ def serve(cube: List[str],
         _run_viewer()
 
     from xcube.webapi.app import new_application
-    application = new_application(route_prefix=prefix, base_dir=os.path.dirname(config))
+    application = new_application(route_prefix=prefix, base_dir=os.path.dirname(config) if config else '.')
 
     from xcube.webapi.service import Service
     service = Service(application,

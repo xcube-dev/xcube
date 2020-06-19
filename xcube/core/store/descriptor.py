@@ -115,7 +115,6 @@ class DatasetDescriptor(DataDescriptor):
         return d
 
 
-# TODO: write tests
 class VariableDescriptor:
     """
     A descriptor for dataset variable represented by xarray.DataArray instances.
@@ -126,6 +125,7 @@ class VariableDescriptor:
                  name: str,
                  dtype: str,
                  dims: Sequence[str],
+                 description: Optional[str] = '',
                  attrs: Mapping[str, any] = None):
         assert_given(name, 'name')
         assert_given(dtype, 'dtype')
@@ -133,18 +133,21 @@ class VariableDescriptor:
         self.dtype = dtype
         self.dims = tuple(dims)
         self.ndim = len(self.dims)
+        self.description = description
         self.attrs = dict(attrs) if attrs is not None else None
 
     @classmethod
-    def from_dict(cls, d: Mapping[str, Any]) -> 'DatasetDescriptor':
+    def from_dict(cls, d: Mapping[str, Any]):
         """Create new instance from a JSON-serializable dictionary"""
-        # TODO: implement me
-        raise NotImplementedError()
+        assert 'name' in d
+        assert 'dtype' in d
+        assert 'dims' in d
+        return VariableDescriptor(d['name'], d['dtype'], d['dims'], d.get('description', ''), d.get('attrs', None))
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert into a JSON-serializable dictionary"""
         d = dict(name=self.name, dtype=self.dtype)
-        _copy_none_null_props(self, d, ['dims', 'ndim', 'attrs'])
+        _copy_none_null_props(self, d, ['dims', 'ndim', 'description', 'attrs'])
         return d
 
 
