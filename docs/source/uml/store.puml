@@ -1,0 +1,75 @@
+@startuml
+
+note top of ExtensionRegistry
+Plugins can extend
+by adding new data stores
+end note
+
+note top of SomeCubeStore
+Instances represent a configured existing cube service.
+- https://www.sentinel-hub.com/
+- https://scihub.copernicus.eu/
+- http://cci.esa.int/data
+- geoDB instance
+- xcube Server instance
+- Bucket in object storage + metadata
+- Directory in network filesystem + metadata
+end note
+
+class ExtensionRegistry {
+    get_component(point: str, name: str) -> Any
+}
+
+interface CubeStore {
+    {static} get_cube_store_params_schema(): JsonSchema
+    {abstract} list_cubes(): Iterator[DatasetDescriptor]
+}
+
+interface CubeFinder {
+    get_search_params_schema(): JsonSchema
+    find_cubes(search: Search): SearchResult
+}
+
+interface CubeOpener {
+    get_open_params_schema(): JsonSchema
+    {abstract} open_cube(cube_id: str, open_params): xr.Dataset
+}
+
+interface CubeWriter {
+    get_write_params_schema(): JsonSchema
+    {abstract} write_cube(cube: xr.Dataset, cube_id: str, write_params): str
+    {abstract} delete_cube(cube_id: str): bool
+}
+
+interface CubeTimeSliceUpdater {
+    {abstract} append_cube_time_slice(cube_id: str, time_slice: xr.Dataset)
+    {abstract} insert_cube_time_slice(cube_id: str, time_slice: xr.Dataset, index: int)
+    {abstract} update_cube_time_slice(cube_id: str, time_slice: xr.Dataset, index: int)
+}
+
+class SomeCubeStore implements CubeStore {
+}
+
+class DatasetDescriptor {
+    id: str
+    dims: Dict[str, int]
+    data_vars: List[VariableDescriptor]
+    attrs: Dict[str, Any]
+}
+
+class VariableDescriptor {
+    name: str
+    dims: List[str]
+    ndim: int
+    attrs: Dict[str, Any]
+}
+
+ExtensionRegistry -> SomeCubeStore
+SomeCubeStore ..|> CubeFinder : {optional}
+SomeCubeStore ..|> CubeOpener : {optional}
+SomeCubeStore ..|> CubeWriter : {optional}
+SomeCubeStore ..|> CubeTimeSliceUpdater : {optional}
+CubeStore ..> DatasetDescriptor : <lists>
+DatasetDescriptor -> VariableDescriptor
+
+@enduml

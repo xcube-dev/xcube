@@ -1,0 +1,18 @@
+@startuml
+
+package xcube.core.store {
+  interface CubeStore {
+  }
+  interface CubeOpener {
+  }
+  interface CubeWriter {
+  }
+}
+
+class MemoryCubeStore implements CubeStore, CubeOpener, CubeWriter {
+}
+
+class DirectoryCubeStore implements CubeStore, CubeOpener, CubeWriter {
+}
+
+@enduml

@@ -1,0 +1,59 @@
+@startuml
+
+class Request {
+    input_configs: List[InputConfig]
+    cube_config: CubeConfig
+    code_config: CodeConfig
+    output_config: OutputConfig
+}
+
+class InputConfig {
+    cube_store_id: str
+    cube_id: str
+    variable_names: Sequence[str]
+    cube_store_params: Mapping[str, Any]
+    open_params: Mapping[str, Any]
+}
+
+class CubeConfig {
+    spatial_crs: Optional[str]
+    spatial_coverage: Tuple[float, float, float, float]
+    spatial_resolution: float
+    temporal_coverage: Tuple[str, Optional[str]]
+    temporal_resolution: str
+}
+
+class CodeConfig {
+}
+
+class OutputConfig {
+    cube_store_id: str
+    cube_id: str
+    cube_store_params: Mapping[str, Any]
+    write_params: Mapping[str, Any]
+}
+
+package xcube.core.store {
+  interface CubeStore {
+  }
+  interface CubeOpener {
+  }
+  interface CubeWriter {
+  }
+}
+
+class SomeInputCubeStore implements CubeStore, CubeOpener {
+}
+
+class SomeOutputCubeStore implements CubeStore, CubeWriter {
+}
+
+InputConfig "1..N" <--o  Request
+CubeConfig "1" <--o  Request
+CodeConfig "0..1" <--o  Request
+OutputConfig "1" <--o  Request
+
+SomeInputCubeStore <..  InputConfig : <identifies>
+SomeOutputCubeStore <..  OutputConfig : <identifies>
+
+@enduml

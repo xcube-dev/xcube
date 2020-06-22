@@ -36,91 +36,91 @@ from xcube.webapi.service import url_pattern
 __author__ = "Norman Fomferra (Brockmann Consult GmbH)"
 
 
-def new_application(prefix: str = None, base_dir: str = '.'):
-    prefix = normalize_prefix(prefix)
+def new_application(route_prefix: str = None, base_dir: str = '.'):
+    route_prefix = normalize_prefix(route_prefix)
 
     application = Application([
-        (prefix + '/res/(.*)',
+        (route_prefix + '/res/(.*)',
          StaticFileHandler, {'path': os.path.join(os.path.dirname(__file__), 'res')}),
 
-        (prefix + '/images/(.*)',
+        (route_prefix + '/images/(.*)',
          StaticFileHandler, {'path': os.path.join(base_dir, 'images')}),
 
-        (prefix + url_pattern('/'),
+        (route_prefix + url_pattern('/'),
          InfoHandler),
 
-        (prefix + url_pattern('/wmts/1.0.0/WMTSCapabilities.xml'),
+        (route_prefix + url_pattern('/wmts/1.0.0/WMTSCapabilities.xml'),
          GetWMTSCapabilitiesXmlHandler),
-        (prefix + url_pattern('/wmts/1.0.0/tile/{{ds_id}}/{{var_name}}/{{z}}/{{y}}/{{x}}.png'),
+        (route_prefix + url_pattern('/wmts/1.0.0/tile/{{ds_id}}/{{var_name}}/{{z}}/{{y}}/{{x}}.png'),
          GetWMTSTileHandler),
-        (prefix + url_pattern('/wmts/kvp'),
+        (route_prefix + url_pattern('/wmts/kvp'),
          WMTSKvpHandler),
 
-        (prefix + url_pattern('/datasets'),
+        (route_prefix + url_pattern('/datasets'),
          GetDatasetsHandler),
-        (prefix + url_pattern('/datasets/{{ds_id}}'),
+        (route_prefix + url_pattern('/datasets/{{ds_id}}'),
          GetDatasetHandler),
-        (prefix + url_pattern('/datasets/{{ds_id}}/places'),
+        (route_prefix + url_pattern('/datasets/{{ds_id}}/places'),
          GetDatasetPlaceGroupsHandler),
-        (prefix + url_pattern('/datasets/{{ds_id}}/places/{{place_group_id}}'),
+        (route_prefix + url_pattern('/datasets/{{ds_id}}/places/{{place_group_id}}'),
          GetDatasetPlaceGroupHandler),
-        (prefix + url_pattern('/datasets/{{ds_id}}/coords/{{dim_name}}'),
+        (route_prefix + url_pattern('/datasets/{{ds_id}}/coords/{{dim_name}}'),
          GetDatasetCoordsHandler),
-        (prefix + url_pattern('/datasets/{{ds_id}}/vars/{{var_name}}/legend.png'),
+        (route_prefix + url_pattern('/datasets/{{ds_id}}/vars/{{var_name}}/legend.png'),
          GetDatasetVarLegendHandler),
-        (prefix + url_pattern('/datasets/{{ds_id}}/vars/{{var_name}}/tiles/{{z}}/{{x}}/{{y}}.png'),
+        (route_prefix + url_pattern('/datasets/{{ds_id}}/vars/{{var_name}}/tiles/{{z}}/{{x}}/{{y}}.png'),
          GetDatasetVarTileHandler),
-        (prefix + url_pattern('/datasets/{{ds_id}}/vars/{{var_name}}/tilegrid'),
+        (route_prefix + url_pattern('/datasets/{{ds_id}}/vars/{{var_name}}/tilegrid'),
          GetDatasetVarTileGridHandler),
 
         # AWS S3 compatible data access as ZARR
 
-        (prefix + url_pattern('/s3bucket/{{ds_id}}/(?P<path>.*)'),
+        (route_prefix + url_pattern('/s3bucket/{{ds_id}}/(?P<path>.*)'),
          GetS3BucketObjectHandler),
-        (prefix + url_pattern('/s3bucket/{{ds_id}}'),
+        (route_prefix + url_pattern('/s3bucket/{{ds_id}}'),
          GetS3BucketObjectHandler),
-        (prefix + url_pattern('/s3bucket'),
+        (route_prefix + url_pattern('/s3bucket'),
          ListS3BucketHandler),
 
         # Natural Earth 2 tiles for testing
 
-        (prefix + url_pattern('/ne2/tilegrid'),
+        (route_prefix + url_pattern('/ne2/tilegrid'),
          GetNE2TileGridHandler),
-        (prefix + url_pattern('/ne2/tiles/{{z}}/{{x}}/{{y}}.jpg'),
+        (route_prefix + url_pattern('/ne2/tiles/{{z}}/{{x}}/{{y}}.jpg'),
          GetNE2TileHandler),
 
         # Color Bars API
 
-        (prefix + url_pattern('/colorbars'),
+        (route_prefix + url_pattern('/colorbars'),
          GetColorBarsJsonHandler),
-        (prefix + url_pattern('/colorbars.html'),
+        (route_prefix + url_pattern('/colorbars.html'),
          GetColorBarsHtmlHandler),
 
         # Places API (PRELIMINARY & UNSTABLE - will be revised soon)
 
-        (prefix + url_pattern('/places'),
+        (route_prefix + url_pattern('/places'),
          GetPlaceGroupsHandler),
-        (prefix + url_pattern('/places/{{place_group_id}}'),
+        (route_prefix + url_pattern('/places/{{place_group_id}}'),
          FindPlacesHandler),
-        (prefix + url_pattern('/places/{{place_group_id}}/{{ds_id}}'),
+        (route_prefix + url_pattern('/places/{{place_group_id}}/{{ds_id}}'),
          FindDatasetPlacesHandler),
 
         # Time-Series API
 
-        (prefix + url_pattern('/timeseries/{{ds_id}}/{{var_name}}'),
+        (route_prefix + url_pattern('/timeseries/{{ds_id}}/{{var_name}}'),
          GetTimeSeriesHandler),
 
         # Legacy time-series API (for VITO's DCS4COP viewer only)
 
-        (prefix + url_pattern('/ts'),
+        (route_prefix + url_pattern('/ts'),
          GetTsLegacyInfoHandler),
-        (prefix + url_pattern('/ts/{{ds_id}}/{{var_name}}/point'),
+        (route_prefix + url_pattern('/ts/{{ds_id}}/{{var_name}}/point'),
          GetTsLegacyForPointHandler),
-        (prefix + url_pattern('/ts/{{ds_id}}/{{var_name}}/geometry'),
+        (route_prefix + url_pattern('/ts/{{ds_id}}/{{var_name}}/geometry'),
          GetTsLegacyForGeometryHandler),
-        (prefix + url_pattern('/ts/{{ds_id}}/{{var_name}}/geometries'),
+        (route_prefix + url_pattern('/ts/{{ds_id}}/{{var_name}}/geometries'),
          GetTsLegacyForGeometriesHandler),
-        (prefix + url_pattern('/ts/{{ds_id}}/{{var_name}}/features'),
+        (route_prefix + url_pattern('/ts/{{ds_id}}/{{var_name}}/features'),
          GetTsLegacyForFeaturesHandler),
     ])
     return application

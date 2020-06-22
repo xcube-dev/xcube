@@ -193,7 +193,7 @@ class ServiceContext:
 
     def get_service_url(self, base_url, *path: str):
         if self._prefix:
-            return base_url + '/' + self._prefix + '/' + '/'.join(path)
+            return base_url + self._prefix + '/' + '/'.join(path)
         else:
             return base_url + '/' + '/'.join(path)
 
@@ -645,13 +645,22 @@ class ServiceContext:
         return cache_size
 
 
-def normalize_prefix(prefix: Optional[str]):
+def normalize_prefix(prefix: Optional[str]) -> str:
     if not prefix:
         return ''
 
-    prefix = prefix.replace('${version}', version).replace('${name}', 'xcube')
+    prefix = prefix.replace('${name}', 'xcube')
+    prefix = prefix.replace('${version}', version)
+    prefix = prefix.replace('//', '/').replace('//', '/')
+
+    if prefix == '/':
+        return ''
+
     if not prefix.startswith('/'):
-        return '/' + prefix
+        prefix = '/' + prefix
+
+    if prefix.endswith('/'):
+        prefix = prefix[0:-1]
 
     return prefix
 

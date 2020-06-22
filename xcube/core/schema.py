@@ -1,5 +1,5 @@
 # The MIT License (MIT)
-# Copyright (c) 2019 by the xcube development team and contributors
+# Copyright (c) 2020 by the xcube development team and contributors
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of
 # this software and associated documentation files (the "Software"), to deal in
@@ -38,7 +38,7 @@ class CubeSchema:
 
     def __init__(self,
                  shape: Sequence[int],
-                 coords: Mapping[str, np.array],
+                 coords: Mapping[str, xr.DataArray],
                  x_name: str = 'lon',
                  y_name: str = 'lat',
                  time_name: str = 'time',
@@ -179,7 +179,7 @@ class CubeSchema:
         return self._coords
 
     @classmethod
-    def new(cls, cube: xr.Dataset) -> "CubeSchema":
+    def new(cls, cube: xr.Dataset) -> 'CubeSchema':
         """Create a cube schema from given *cube*."""
         return get_cube_schema(cube)
 

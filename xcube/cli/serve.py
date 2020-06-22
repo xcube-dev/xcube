@@ -39,7 +39,12 @@ VIEWER_ENV_VAR = 'XCUBE_VIEWER_PATH'
               help=f'Port number where the service will listen on. Defaults to {DEFAULT_PORT}.')
 @click.option('--prefix', metavar='PREFIX',
               help='Service URL prefix. May contain template patterns such as "${version}" or "${name}". '
-                   'For example "${name}/api/${version}".')
+                   'For example "${name}/api/${version}". Will be used to prefix all API operation routes '
+                   'and in any URLs returned by the service.')
+@click.option('--revprefix', 'reverse_prefix', metavar='REVPREFIX',
+              help='Service reverse URL prefix. May contain template patterns such as "${version}" or "${name}". '
+                   'For example "${name}/api/${version}". Defaults to PREFIX, if any. Will be used only in URLs '
+                   'returned by the service e.g. the tile URLs returned by the WMTS service.')
 @click.option('--name', metavar='NAME', hidden=True,
               help='Service name. Deprecated, use prefix option instead.')
 @click.option('--update', '-u', 'update_period', metavar='PERIOD', type=float,
@@ -82,6 +87,7 @@ def serve(cube: List[str],
           address: str,
           port: int,
           prefix: str,
+          reverse_prefix: str,
           name: str,
           update_period: float,
           styles: str,
@@ -120,9 +126,11 @@ def serve(cube: List[str],
         _run_viewer()
 
     from xcube.webapi.app import new_application
+    application = new_application(route_prefix=prefix, base_dir=os.path.dirname(config) if config else '.')
+
     from xcube.webapi.service import Service
-    service = Service(new_application(prefix, os.path.dirname(config) if config else '.'),
-                      prefix=prefix,
+    service = Service(application,
+                      prefix=reverse_prefix or prefix,
                       port=port,
                       address=address,
                       cube_paths=cube,
