@@ -35,6 +35,12 @@ EXTENSION_POINT_INPUT_PROCESSORS = 'xcube.core.gen.iproc'
 EXTENSION_POINT_DATASET_IOS = 'xcube.core.dsio'
 #: The extension point identifier for CLI command extensions
 EXTENSION_POINT_CLI_COMMANDS = 'xcube.cli'
+#: The extension point identifier for data stores
+EXTENSION_POINT_DATA_STORES = 'xcube.core.store'
+#: The extension point identifier for data openers
+EXTENSION_POINT_DATA_OPENERS = 'xcube.core.store.opener'
+#: The extension point identifier for data writers
+EXTENSION_POINT_DATA_WRITERS = 'xcube.core.store.writer'
 
 GLOBAL_GEO_EXTENT = -180., -90., 180., 90.
 

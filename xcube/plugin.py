@@ -21,6 +21,9 @@
 
 from xcube.constants import EXTENSION_POINT_CLI_COMMANDS
 from xcube.constants import EXTENSION_POINT_DATASET_IOS
+from xcube.constants import EXTENSION_POINT_DATA_OPENERS
+from xcube.constants import EXTENSION_POINT_DATA_STORES
+from xcube.constants import EXTENSION_POINT_DATA_WRITERS
 from xcube.constants import EXTENSION_POINT_INPUT_PROCESSORS
 from xcube.constants import FORMAT_NAME_CSV
 from xcube.constants import FORMAT_NAME_MEM
@@ -36,6 +39,8 @@ def init_plugin(ext_registry: extension.ExtensionRegistry):
     _register_input_processors(ext_registry)
     _register_dataset_ios(ext_registry)
     _register_cli_commands(ext_registry)
+    _register_data_stores(ext_registry)
+    _register_data_accessors(ext_registry)
 
 
 def _register_input_processors(ext_registry: extension.ExtensionRegistry):
@@ -79,6 +84,69 @@ def _register_dataset_ios(ext_registry: extension.ExtensionRegistry):
     )
 
 
+def _register_data_stores(ext_registry: extension.ExtensionRegistry):
+    """
+    Register xcube's standard data stores.
+    """
+    ext_registry.add_extension(
+        loader=extension.import_component('xcube.core.store.stores.memory:MemoryDataStore'),
+        point=EXTENSION_POINT_DATA_STORES, name='memory',
+        description='Memory data store'
+    )
+    ext_registry.add_extension(
+        loader=extension.import_component('xcube.core.store.stores.directory:DirectoryDataStore'),
+        point=EXTENSION_POINT_DATA_STORES, name='directory',
+        description='Directory data store'
+    )
+
+
+def _register_data_accessors(ext_registry: extension.ExtensionRegistry):
+    """
+    Register xcube's standard data stores.
+    """
+
+    def _add_extension(class_name: str, ext_name, description):
+        loader = extension.import_component(class_name)
+        ext_registry.add_extension(
+            point=EXTENSION_POINT_DATA_OPENERS,
+            loader=loader,
+            name=ext_name,
+            description=description
+        )
+        ext_registry.add_extension(
+            point=EXTENSION_POINT_DATA_WRITERS,
+            loader=loader,
+            name=ext_name,
+            description=description
+        )
+
+    _add_extension(
+        'xcube.core.store.accessors.dataset:DatasetNetcdfPosixDataAccessor',
+        'dataset:netcdf:posix',
+        'xarray.Dataset in NetCDF format stored in local file system'
+    )
+    _add_extension(
+        'xcube.core.store.accessors.dataset:DatasetZarrPosixAccessor',
+        'dataset:zarr:posix',
+        'xarray.Dataset in Zarr format stored in local file system'
+    )
+    _add_extension(
+        'xcube.core.store.accessors.dataset:DatasetZarrS3Accessor',
+        'dataset:zarr:s3',
+        'xarray.Dataset in Zarr format stored in S3-like object storage'
+    )
+    _add_extension(
+        'xcube.core.store.accessors.gdf:GdfShapefilePosixAccessor',
+        'geodataframe:shapefile:posix',
+        'geopandas.GeoDataFrame in ESRI Shapefile format stored in local file system'
+    )
+    _add_extension(
+        'xcube.core.store.accessors.gdf:GdfShapefilePosixAccessor',
+        'geodataframe:geojson:posix',
+        'geopandas.GeoDataFrame in GeoJSON format stored stored in local file system'
+    )
+
+
 def _register_cli_commands(ext_registry: extension.ExtensionRegistry):
     """
     Register xcube's standard CLI commands.
@@ -92,6 +160,7 @@ def _register_cli_commands(ext_registry: extension.ExtensionRegistry):
         'edit',
         'extract',
         'gen',
+        'gen2',
         'genpts',
         'grid',
         'level',
