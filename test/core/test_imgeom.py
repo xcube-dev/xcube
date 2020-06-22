@@ -2,6 +2,7 @@ import unittest
 
 import numpy as np
 
+import xcube.core.new
 from xcube.core.rectify import ImageGeom
 from xcube.core.sentinel3 import is_sentinel3_product
 from xcube.core.sentinel3 import open_sentinel3_product
@@ -276,6 +277,11 @@ class ImageGeomTest(SourceDatasetMixin, unittest.TestCase):
                                 ImageGeom.from_dataset(src_ds,
                                                        ij_denom=4,
                                                        xy_oversampling=2.0))
+
+    def test_from_default_new_cube(self):
+        self._assert_image_geom(
+            ImageGeom((508, 253), None, -179.5, -89.5, 2**-.5),
+            ImageGeom.from_dataset(xcube.core.new.new_cube()))
 
     def _assert_image_geom(self,
                            expected: ImageGeom,

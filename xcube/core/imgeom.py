@@ -277,6 +277,11 @@ def _compute_output_geom(dataset: xr.Dataset,
     dst_height = 1 + math.floor((src_y_max - src_y_min) / src_xy_res)
     dst_width = i_denom * ((dst_width + i_denom - 1) // i_denom)
     dst_height = j_denom * ((dst_height + j_denom - 1) // j_denom)
+
+    # Reduce height if it takes the maximum latitude over 90° (see Issue #303).
+    if src_y_min + dst_height * src_xy_res > 90.0:
+        dst_height -= 1
+
     return ImageGeom((dst_width, dst_height),
                      x_min=src_x_min,
                      y_min=src_y_min,

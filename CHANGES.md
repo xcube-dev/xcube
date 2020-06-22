@@ -2,6 +2,9 @@
 
 * From 0.4.1: Fixed time-series performance drop (#299).
 
+* When creating an ImageGeom from a dataset, correct the height if it would
+  otherwise give a maximum latitude >90°.
+
 * Disable the display of warnings in the CLI by default, only showing them if
   a `--warnings` flag is given.
 
