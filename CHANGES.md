@@ -5,6 +5,27 @@
 * Disable the display of warnings in the CLI by default, only showing them if
   a `--warnings` flag is given.
 
+* xcube has been extended by a new *Data Store Framework* (#307).
+  It is provided by the `xcube.core.store` package.
+  It's usage is currently documented only in the form of Jupyter Notebook examples, 
+  see `examples/store/*.ipynb`.
+   
+* During the development of the new *Data Store Framework*, some  
+  utility packages have been added:
+  * `xcube.util.jsonschema` - classes that represent JSON Schemas for types null, boolean,
+     number, string, object, and array. Schema instances are used for JSON validation,
+     and object marshalling.
+  * `xcube.util.assertions` - numerous `assert_*` functions that are used for function 
+     parameter validation. All functions raise `ValueError` in case an assertion is not met.
+  * `xcube.util.ipython` - functions that can be called for better integration of objects with
+     Jupyter Notebooks.
+
+* Fixed a regression when running "xcube serve" with cube path as parameter (#314)
+
+* From 0.4.3: Extended `xcube serve` by reverse URL prefix option. 
+
+* From 0.4.1: Fixed time-series performance drop (#299). 
+
 ### New in 0.5.0.dev2
 
 * `xcube serve CUBE` will now use the last path component of `CUBE` as dataset title.
@@ -43,12 +64,19 @@
         _FillValue: 0.65535
   ```
 
-## Changes in 0.4.1
+## Changes in 0.4.3
+
+* Extended `xcube serve` by reverse URL prefix option `--revprefix REFPREFIX`.
+  This can be used in cases where only URLs returned by the service need to be prefixed, 
+  e.g. by a web server's proxy pass.
+
+## Changes in 0.4.2 
+
+* Fixed a problem during release process. No code changes.
+
+## Changes in 0.4.1 
 
 * Fixed time-series performance drop (#299). 
-
-### New
-### Enhancements
 
 ## Changes in 0.4.0
 

@@ -10,8 +10,9 @@ from xcube.webapi.reqparams import RequestParams
 
 
 def new_test_service_context(config_file_name: str = 'config.yml',
-                             ml_dataset_openers: Dict[str, MultiLevelDatasetOpener] = None) -> ServiceContext:
-    ctx = ServiceContext(base_dir=get_res_test_dir(), ml_dataset_openers=ml_dataset_openers)
+                             ml_dataset_openers: Dict[str, MultiLevelDatasetOpener] = None,
+                             prefix: str = None) -> ServiceContext:
+    ctx = ServiceContext(base_dir=get_res_test_dir(), ml_dataset_openers=ml_dataset_openers, prefix=prefix)
     config_file = os.path.join(ctx.base_dir, config_file_name)
     with open(config_file, encoding='utf-8') as fp:
         ctx.config = yaml.safe_load(fp)

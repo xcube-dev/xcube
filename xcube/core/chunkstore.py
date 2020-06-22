@@ -1,5 +1,5 @@
 # The MIT License (MIT)
-# Copyright (c) 2019 by the xcube development team and contributors
+# Copyright (c) 2020 by the xcube development team and contributors
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of
 # this software and associated documentation files (the "Software"), to deal in
@@ -21,26 +21,26 @@
 
 import itertools
 import json
-from collections import MutableMapping
+from collections.abc import MutableMapping
 from typing import Iterator, Dict, Tuple, Iterable, KeysView, Callable, Any, Union, Sequence
 
 import numpy as np
 
 __author__ = "Norman Fomferra (Brockmann Consult GmbH)"
 
-GetChunk = Callable[["CubeStore", str, Tuple[int, ...]], bytes]
+GetChunk = Callable[['ChunkStore', str, Tuple[int, ...]], bytes]
 
 
-class CubeStore(MutableMapping):
+class ChunkStore(MutableMapping):
     """
-    A Zarr Store that generates data cubes by allowing data variables to fetch or compute their chunks
+    A Zarr Store that generates datasets by allowing data variables to fetch or compute their chunks
     by a user-defined function *get_chunk*. Implements the standard Python ``MutableMapping`` interface.
 
     This is how the *get_chunk* function is called:::
 
-        data = get_chunk(cube_store, var_name, chunk_indexes)
+        data = get_chunk(chunk_store, var_name, chunk_indexes)
 
-    where ``cube_store`` is this store, ``var_name`` is the name of the variable for which data
+    where ``chunk_store`` is this store, ``var_name`` is the name of the variable for which data
     is fetched, and ``chunk_indexes`` is a tuple of zero-based, integer chunk indexes. The result must
     be a Python *bytes* object.
 

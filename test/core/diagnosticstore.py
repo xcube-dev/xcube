@@ -1,5 +1,5 @@
 import time
-from collections import MutableMapping
+from collections.abc import MutableMapping
 from types import MethodType
 from typing import TypeVar, Iterator, List, Callable, Any, Tuple
 

@@ -5,12 +5,12 @@ from typing import Tuple
 import numpy as np
 import xarray as xr
 
-from xcube.core.store import CubeStore
+from xcube.core.chunkstore import ChunkStore
 
 
-class CubeStoreTest(unittest.TestCase):
+class ChunkStoreTest(unittest.TestCase):
 
-    def test_cube_store(self):
+    def test_chunk_store(self):
         index_var = gen_index_var(dims=('time', 'lat', 'lon'),
                                   shape=(4, 8, 16),
                                   chunks=(2, 4, 8))
@@ -57,7 +57,7 @@ class CubeStoreTest(unittest.TestCase):
 
 def gen_index_var(dims, shape, chunks):
     # noinspection PyUnusedLocal
-    def get_chunk(cube_store: CubeStore, name: str, index: Tuple[int, ...]) -> bytes:
+    def get_chunk(cube_store: ChunkStore, name: str, index: Tuple[int, ...]) -> bytes:
         data = np.zeros(cube_store.chunks, dtype=np.uint64)
         data_view = data.ravel()
         if data_view.base is not data:
@@ -71,7 +71,7 @@ def gen_index_var(dims, shape, chunks):
             data_view[2 * i + 1] = j2
         return data.tobytes()
 
-    store = CubeStore(dims, shape, chunks)
+    store = ChunkStore(dims, shape, chunks)
     store.add_lazy_array('__index_var__', '<u8', get_chunk=get_chunk)
 
     ds = xr.open_zarr(store)

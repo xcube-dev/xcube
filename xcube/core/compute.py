@@ -1,5 +1,5 @@
 # The MIT License (MIT)
-# Copyright (c) 2019 by the xcube development team and contributors
+# Copyright (c) 2020 by the xcube development team and contributors
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of
 # this software and associated documentation files (the "Software"), to deal in
@@ -27,7 +27,7 @@ import numpy as np
 import xarray as xr
 
 from xcube.core.schema import CubeSchema
-from xcube.core.store import CubeStore
+from xcube.core.chunkstore import ChunkStore
 from xcube.core.verify import assert_cube
 
 CubeFuncOutput = Union[xr.DataArray, np.ndarray, Sequence[Union[xr.DataArray, np.ndarray]]]
@@ -213,7 +213,7 @@ def _gen_index_var(cube_schema: CubeSchema):
     chunks = cube_schema.chunks
 
     # noinspection PyUnusedLocal
-    def get_chunk(cube_store: CubeStore, name: str, index: Tuple[int, ...]) -> bytes:
+    def get_chunk(cube_store: ChunkStore, name: str, index: Tuple[int, ...]) -> bytes:
         data = np.zeros(cube_store.chunks, dtype=np.uint64)
         data_view = data.ravel()
         if data_view.base is not data:
@@ -227,7 +227,7 @@ def _gen_index_var(cube_schema: CubeSchema):
             data_view[2 * i + 1] = j2
         return data.tobytes()
 
-    store = CubeStore(dims, shape, chunks)
+    store = ChunkStore(dims, shape, chunks)
     store.add_lazy_array('__index_var__', '<u8', get_chunk=get_chunk)
 
     dataset = xr.open_zarr(store)

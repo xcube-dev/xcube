@@ -36,6 +36,7 @@ from xcube.constants import PLUGIN_MODULE_FUNCTION_NAME
 from xcube.constants import PLUGIN_MODULE_NAME
 from xcube.constants import PLUGIN_MODULE_PREFIX
 from xcube.util.extension import Extension
+from xcube.util.extension import ExtensionRegistry
 
 #: Mapping of xcube entry point names to JSON-serializable plugin meta-information.
 _PLUGIN_REGISTRY = None
@@ -55,7 +56,7 @@ def get_plugins() -> Dict[str, Dict]:
     return dict(_PLUGIN_REGISTRY)
 
 
-def get_extension_registry():
+def get_extension_registry() -> ExtensionRegistry:
     """Get populated extension registry."""
     from xcube.util.extension import get_extension_registry
     init_plugins()
@@ -95,6 +96,10 @@ def load_plugins(entry_points=None, ext_registry=None):
             plugin_init_function = entry_point.load()
         except Exception as e:
             _handle_error(entry_point, e)
+            continue
+
+        if plugin_init_function is None:
+            # Not a plugin
             continue
 
         millis = int(1000 * (time.perf_counter() - t0))
@@ -141,7 +146,7 @@ class _ModuleEntryPoint:
     def name(self) -> str:
         return self._module_name
 
-    def load(self) -> Callable:
+    def load(self) -> Optional[Callable]:
         """
         Load function "init_plugin()" either from "<module_name>.plugin" or "<module_name>"
         :return: plugin init function
@@ -158,8 +163,10 @@ class _ModuleEntryPoint:
             if callable(module_func):
                 return module_func
 
-        raise AttributeError(f'xcube plugin module {module_name!r} must define '
-                             f'a function named {module_func_name!r}')
+        warnings.warn(f'module {module_name!r} looks like an xcube-plugin '
+                      f'but lacks a callable named {module_func_name!r}')
+
+        return None
 
 
 class ExtensionComponent(metaclass=abc.ABCMeta):

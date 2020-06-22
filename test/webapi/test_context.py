@@ -5,6 +5,7 @@ import xarray as xr
 
 from test.webapi.helpers import new_test_service_context
 from xcube.core.mldataset import MultiLevelDataset
+from xcube.webapi.context import normalize_prefix
 from xcube.webapi.errors import ServiceResourceNotFoundError
 
 
@@ -185,3 +186,28 @@ class ServiceContextTest(unittest.TestCase):
         with self.assertRaises(ServiceResourceNotFoundError) as cm:
             ctx.get_global_place_group("bibo", "http://localhost:9090")
         self.assertEqual('HTTP 404: Place group "bibo" not found', f"{cm.exception}")
+
+
+class NormalizePrefixTest(unittest.TestCase):
+    def test_empty(self):
+        self.assertEqual('', normalize_prefix(None))
+        self.assertEqual('', normalize_prefix(''))
+        self.assertEqual('', normalize_prefix('/'))
+        self.assertEqual('', normalize_prefix('///'))
+
+    def test_normalizes_slashes(self):
+        self.assertEqual('/xcube/api/v1', normalize_prefix('/xcube/api/v1'))
+        self.assertEqual('/xcube/api/v1', normalize_prefix('xcube/api/v1'))
+        self.assertEqual('/xcube/api/v1', normalize_prefix('xcube/api/v1/'))
+        self.assertEqual('/xcube/api/v1', normalize_prefix('/xcube/api/v1/'))
+        self.assertEqual('/xcube/api/v1', normalize_prefix('/xcube/api/v1///'))
+        self.assertEqual('/xcube/api/v1', normalize_prefix('////xcube/api/v1'))
+
+    def test_interpolates_vars(self):
+        from xcube.version import version
+        self.assertEqual(f'/{version}',
+                         normalize_prefix('${version}'))
+        self.assertEqual(f'/xcube',
+                         normalize_prefix('/${name}'))
+        self.assertEqual(f'/xcube/v{version}',
+                         normalize_prefix('/${name}/v${version}'))
