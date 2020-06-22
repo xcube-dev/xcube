@@ -79,6 +79,23 @@ class ProgressState:
     def finish(self):
         self._finished = True
 
+    def to_dict(self):
+        d = dict()
+        if self._label:
+            d.update(label=self._label)
+        if self._total_work:
+            d.update(total_work=self._total_work)
+        if self._super_work:
+            d.update(super_work=self._super_work)
+        if self._super_work_ahead:
+            d.update(super_work_ahead=self._super_work_ahead)
+        if self._completed_work:
+            d.update(completed_work=self._completed_work)
+        if self._finished:
+            d.update(finished=self._finished)
+
+        return d
+
 
 class ProgressObserver(ABC):
     """

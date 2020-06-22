@@ -20,6 +20,9 @@
 # SOFTWARE.
 from typing import Sequence
 
+import requests
+
+from xcube.cli._gen2.request import Request
 from xcube.util.progress import ProgressObserver
 from xcube.util.progress import ProgressState
 
@@ -30,17 +33,23 @@ from xcube.util.progress import ProgressState
 
 
 class CallbackApiProgressObserver(ProgressObserver):
-    def __init__(self, callback_api_url: str):
-        self.callback_api_url = callback_api_url
+    def __init__(self, callback_api_cfg: Request):
+        self.callback_api_cfg = callback_api_cfg
+
+    def _send_request(self, event: str, cfg: Request, state_stack: Sequence[ProgressState]):
+        state_stack = [ss.to_dict() for ss in state_stack]
+        callback = {"event": event, "state": state_stack}
+        callback_api_cfg = cfg.to_dict()
+        callback_api_uri = callback_api_cfg['callback']["api_uri"]
+        callback_api_access_token = callback_api_cfg['callback']["access_token"]
+        header = {"Authorization": f"Bearer {callback_api_access_token}"}
+        requests.put(callback_api_uri, json=callback, headers=header, verify=False)
 
     def on_begin(self, state_stack: Sequence[ProgressState]):
-        # TODO (dzelge): implement me
-        pass
+        self._send_request("on_begin", self.callback_api_cfg, state_stack)
 
     def on_update(self, state_stack: Sequence[ProgressState]):
-        # TODO (dzelge): implement me
-        pass
+        self._send_request("on_update", self.callback_api_cfg, state_stack)
 
     def on_end(self, state_stack: Sequence[ProgressState]):
-        # TODO (dzelge): implement me
-        pass
+        self._send_request("on_end", self.callback_api_cfg, state_stack)
