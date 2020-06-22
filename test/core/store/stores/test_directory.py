@@ -20,7 +20,6 @@ class DirectoryCubeStoreTest(unittest.TestCase):
             {
                 'cube-1-250-250.zarr',
                 'cube-5-100-200.zarr',
-                'cube-1-250-250.levels',
                 'cube.nc'
             },
             set(data_store.get_data_ids()))
