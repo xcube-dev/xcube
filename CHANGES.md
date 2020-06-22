@@ -1,6 +1,9 @@
 ## Changes in 0.5.0.devX (in development)
 
-* From 0.4.1: Fixed time-series performance drop (#299). 
+* From 0.4.1: Fixed time-series performance drop (#299).
+
+* Disable the display of warnings in the CLI by default, only showing them if
+  a `--warnings` flag is given.
 
 ### New in 0.5.0.dev2
 
