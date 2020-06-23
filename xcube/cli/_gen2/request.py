@@ -220,7 +220,7 @@ class Request:
         self.input_configs = input_configs
         self.cube_config = cube_config
         self.output_config = output_config
-        self.callback = callback
+        self.callback_config = callback_config
 
     @classmethod
     def get_schema(cls):
