@@ -213,7 +213,7 @@ class Request:
                  input_configs: Sequence[InputConfig] = None,
                  cube_config: CubeConfig = None,
                  output_config: OutputConfig = None,
-                 callback_config: Optional[Callback] = None):
+                 callback_config: Optional[CallbackConfig] = None):
         assert_given(input_configs, 'input_configs')
         assert_given(cube_config, 'cube_config')
         assert_given(output_config, 'output_config')
@@ -229,7 +229,7 @@ class Request:
                 input_configs=JsonArraySchema(items=InputConfig.get_schema(), min_items=1),
                 cube_config=CubeConfig.get_schema(),
                 output_config=OutputConfig.get_schema(),
-                callback=Callback.get_schema()
+                callback_config=CallbackConfig.get_schema()
             ),
             required=['input_configs', 'cube_config', 'output_config'],
             factory=cls,
@@ -241,8 +241,8 @@ class Request:
                  cube_config=self.cube_config.to_dict(),
                  output_config=self.output_config.to_dict())
 
-        if self.callback:
-            d.update(callback=self.callback.to_dict())
+        if self.callback_config:
+            d.update(callback_config=self.callback_config.to_dict())
 
         return d
 

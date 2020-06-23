@@ -34,8 +34,6 @@ from xcube.util.progress import observe_progress
 
 
 def main(request_path: str,
-         output_path: str = None,
-         format_name: str = None,
          exception_type: Type[BaseException] = click.ClickException,
          verbose: bool = False):
     """
@@ -52,36 +50,31 @@ def main(request_path: str,
     :param request_path: cube generation request. It may be provided as a JSON or YAML file
         (file extensions ".json" or ".yaml"). If the REQUEST file argument is omitted, it is expected that
         the Cube generation request is piped as a JSON string.
-    :param output_path: output ZARR directory in local file system.
-        Overwrites output configuration in request if given.
     :param verbose:
     :param exception_type: exception type used to raise on errors
     """
 
     request = Request.from_file(request_path, exception_type=exception_type)
-    if request.callback:
-        CallbackApiProgressObserver(request).activate()
+
+    if request.callback_config:
+        CallbackApiProgressObserver(request.callback_config).activate()
     else:
         CallbackTerminalProgressObserver().activate()
-
-    if output_path:
-        output_config = _new_output_config_for_dir(output_path, format_name, exception_type)
-    else:
-        output_config = request.output_config
 
     with observe_progress('Generating cube', 100) as cm:
         cm.will_work(10)
         cubes = open_cubes(request.input_configs,
                            cube_config=request.cube_config)
         cm.worked(10)
+
         cm.will_work(10)
         cube = resample_and_merge_cubes(cubes,
                                         cube_config=request.cube_config)
         cm.worked(10)
-        cm.will_work(80)
 
+        cm.will_work(80)
         write_cube(cube,
-                   output_config=output_config)
+                   output_config=request.output_config)
         cm.worked(80)
 
 
