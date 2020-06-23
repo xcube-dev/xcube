@@ -35,7 +35,7 @@ from xcube.util.progress import ProgressState
 
 
 class CallbackApiProgressObserver(ProgressObserver):
-    def __init__(self, callback_api_cfg: Request):
+    def __init__(self, callback_config: CallbackConfig):
         assert_given(callback_api_cfg)
         assert_given(callback_api_cfg.callback)
         assert_condition(callback_api_cfg.callback.api_uri and callback_api_cfg.callback.access_token,
