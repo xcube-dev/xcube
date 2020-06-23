@@ -1,3 +1,5 @@
+import os.path
+
 from test.cli.helpers import CliTest
 
 
@@ -37,6 +39,24 @@ class IOStoreTest(CliTest):
                          'Required parameters:\n'
                          '  base_dir 	(string)\n',
                          result.stdout)
+
+    def test_data(self):
+        demo_dir = os.path.join(os.path.dirname(__file__), '..', '..', 'examples', 'serve', 'demo')
+
+        result = self.invoke_cli(['io', 'store', 'info', 'directory', '-D', f'base_dir={demo_dir}'])
+        self.assertEqual(0, result.exit_code)
+        self.assertEqual('Directory data store\n'
+                         'Data resources:\n'
+                         '  cube-1-250-250.zarr\n'
+                         '  cube-5-100-200.zarr\n'
+                         '  cube.nc\n'
+                         '3 data resources found.\n',
+                         result.stdout)
+
+        demo_dir = os.path.join(os.path.dirname(__file__), '..', '..', 'examples', 'serve', 'demo')
+        result = self.invoke_cli(['io', 'store', 'data', 'directory', 'cube-1-250-250.zarr', f'base_dir={demo_dir}'])
+        self.assertEqual(0, result.exit_code)
+        self.assertIn('cube-1-250-250.zarr', result.stdout)
 
 
 class IOOpenerTest(CliTest):

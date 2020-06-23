@@ -78,8 +78,8 @@ def store_info(store_id: str,
     You can obtain valid STORE names using command "xcube store list".
 
     Note some stores require provision of parameters PARAMS
-    when using one of the options --openers, --writers, or --data.
-    To find out which parameters are available use the command with just the --params option first.
+    when using one of the options --openers/-O, --writers/-W, or --data/-D.
+    To find out which parameters are available use the command with just the --params/-P option first.
     """
     extension = get_extension_registry().get_extension(EXTENSION_POINT_DATA_STORES, store_id)
     from xcube.core.store import get_data_store_params_schema
@@ -125,11 +125,15 @@ def store_info(store_id: str,
 
 @click.command(name='data')
 @click.argument('store_id', metavar='STORE')
-@click.argument('data_id', metavar='ID')
+@click.argument('data_id', metavar='DATA')
 @click.argument('store_params', metavar='PARAMS', nargs=-1)
 def store_data(store_id: str, data_id: str, store_params: List[str]):
     """
     Show data resource information.
+
+    Show the data descriptor for data resource DATA in data store STORE.
+    Note some stores require provision of store parameters PARAMS.
+    Use "xcube io store info STORE -P" command to find out which parameters are available/required.
     """
     data_store = _new_data_store(store_id, store_params)
     data_descriptor = data_store.describe_data(data_id)
@@ -142,7 +146,7 @@ def store_data(store_id: str, data_id: str, store_params: List[str]):
 def opener_info(opener_id: str):
     """
     Show data opener information.
-    You can obtain valid OPENER names using command "xcube opener list".
+    You can obtain valid OPENER names using command "xcube io opener list".
     """
     extension = get_extension_registry().get_extension(EXTENSION_POINT_DATA_WRITERS, opener_id)
     description = extension.metadata.get('description')
@@ -159,7 +163,7 @@ def opener_info(opener_id: str):
 def writer_info(writer_id: str):
     """
     Show data opener information.
-    You can obtain valid WRITER names using command "xcube writer list".
+    You can obtain valid WRITER names using command "xcube io writer list".
     """
     extension = get_extension_registry().get_extension(EXTENSION_POINT_DATA_WRITERS, writer_id)
     description = extension.metadata.get('description')
@@ -174,7 +178,7 @@ def writer_info(writer_id: str):
 @click.group()
 def store():
     """
-    Tools for data stores.
+    Tools for xcube's data stores.
     """
     pass
 
@@ -182,7 +186,7 @@ def store():
 @click.group()
 def opener():
     """
-    Tools for data openers.
+    Tools for xcube's data openers.
     """
     pass
 
@@ -190,7 +194,7 @@ def opener():
 @click.group()
 def writer():
     """
-    Tools for data writers.
+    Tools for xcube's data writers.
     """
     pass
 
@@ -207,7 +211,7 @@ writer.add_command(writer_info)
 @click.group(hidden=True)
 def io():
     """
-    Tools for xcube's I/O system.
+    Tools for xcube's generic I/O system.
     """
     pass
 
@@ -329,7 +333,7 @@ def _new_data_store(store_id: str, store_params: List[str]):
                 try:
                     p_value = json.loads(p_value)
                 except json.decoder.JSONDecodeError:
-                    p_value = f'"{p_value}"'
+                    pass
             else:
                 # Passed name as flag
                 p_value = True
