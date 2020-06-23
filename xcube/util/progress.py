@@ -19,8 +19,9 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+import traceback
 from abc import ABC
-from typing import Sequence
+from typing import Sequence, Optional, Any, Tuple, Type, List
 
 from xcube.util.assertions import assert_condition, assert_given
 
@@ -33,6 +34,8 @@ class ProgressState:
         self._total_work = total_work
         self._super_work = super_work
         self._super_work_ahead = 1.
+        self._exc_info = None
+        self._traceback = None
         self._completed_work = 0.
         self._finished = False
 
@@ -58,6 +61,23 @@ class ProgressState:
 
     def to_super_work(self, work: float) -> float:
         return self._super_work * work / self._total_work
+
+    @property
+    def exc_info(self) -> Optional[Tuple[Type, BaseException, Any]]:
+        return self._exc_info
+
+    @exc_info.setter
+    def exc_info(self, exc_info: Tuple[Type, BaseException, Any]):
+        self._exc_info = exc_info
+
+    @property
+    def exc_info_text(self) -> Optional[Tuple[str, str, List[str]]]:
+        if not self.exc_info:
+            return None
+        exc_type, exc_value, exc_traceback = self.exc_info
+        return (f'{type(exc_value).__name__}',
+                f'{exc_value}',
+                traceback.format_exception(exc_type, exc_value, exc_traceback))
 
     @property
     def finished(self) -> bool:
@@ -138,8 +158,9 @@ class _ProgressContext:
         self._state_stack.append(ProgressState(label, total_work, super_work))
         self.emit_begin()
 
-    def end(self, type, value, traceback):
-        # store error info
+    def end(self, exc_type, exc_value, exc_traceback):
+        exc_info = tuple((exc_type, exc_value, exc_traceback))
+        self._state_stack[-1].exc_info = exc_info if any(exc_info) else None
         self._state_stack[-1].finish()
         self.emit_end()
         self._state_stack.pop()

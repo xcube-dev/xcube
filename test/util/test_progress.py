@@ -9,7 +9,8 @@ from xcube.util.progress import observe_progress
 
 
 class MyProgressObserver(ProgressObserver):
-    def __init__(self):
+    def __init__(self, record_errors=False):
+        self.record_errors = record_errors
         self.calls = []
 
     def on_begin(self, state_stack: Sequence[ProgressState]):
@@ -21,9 +22,11 @@ class MyProgressObserver(ProgressObserver):
     def on_end(self, state_stack: Sequence[ProgressState]):
         self.calls.append(('end', self._serialize_stack(state_stack)))
 
-    @classmethod
-    def _serialize_stack(cls, state_stack):
-        return [(s.label, s.progress, s.finished) for s in state_stack]
+    def _serialize_stack(self, state_stack):
+        if self.record_errors:
+            return [(s.label, s.progress, s.finished, s.exc_info_text) for s in state_stack]
+        else:
+            return [(s.label, s.progress, s.finished) for s in state_stack]
 
 
 class ObserveProgressTest(unittest.TestCase):
@@ -162,6 +165,65 @@ class ObserveProgressTest(unittest.TestCase):
             ],
             nested_observer.calls)
 
+    def test_nested_observe_progress_with_exception(self):
+        observer = MyProgressObserver(record_errors=True)
+        observer.activate()
+
+        try:
+            with observe_progress('computing', 10) as reporter:
+                # do something that takes 1 unit
+                reporter.worked(1)
+                # do something that takes 1 unit
+                reporter.worked(1)
+                # do something that will take 2 units
+                reporter.will_work(8)
+                with observe_progress('loading', 100) as nested_reported:
+                    # do something that takes 3 units
+                    nested_reported.worked(15)
+                    # now - BANG!
+                    raise ValueError('Failed to load')
+        except ValueError:
+            pass
+        self.assertEqual(7, len(observer.calls))
+        self.assertEqual(
+            [
+                ('begin', [('computing', 0.0, False, None)]),
+                ('update', [('computing', 0.1, False, None)]),
+                ('update', [('computing', 0.2, False, None)]),
+                ('begin', [('computing', 0.2, False, None), ('loading', 0.0, False, None)]),
+                ('update', [('computing', 0.32, False, None), ('loading', 0.15, False, None)]),
+            ],
+            observer.calls[0: -2])
+
+        self.assertEqual(2, len(observer.calls[-2]))
+        event, states = observer.calls[-2]
+        self.assertEqual('end', event)
+        self.assertEqual(2, len(states))
+        self.assertEqual(4, len(states[0]))
+        self.assertEqual(4, len(states[1]))
+        self.assertEqual(('computing', 0.32, False), states[0][0:-1])
+        self.assertEqual(('loading', 0.15, True), states[1][0:-1])
+        error = states[0][-1]
+        self.assertIsNone(error)
+        error = states[1][-1]
+        self.assertIsInstance(error, tuple)
+        exc_type, exc_value, exc_traceback = error
+        self.assertEqual('ValueError', exc_type)
+        self.assertEqual('Failed to load', exc_value)
+        self.assertIsInstance(exc_traceback, list)
+
+        self.assertEqual(2, len(observer.calls[-1]))
+        event, states = observer.calls[-1]
+        self.assertEqual('end',event)
+        self.assertEqual(1, len(states))
+        self.assertEqual(4, len(states[0]))
+        self.assertEqual(('computing', 0.32, True), states[0][0:-1])
+        error = states[0][-1]
+        self.assertIsInstance(error, tuple)
+        exc_type, exc_value, exc_traceback = error
+        self.assertEqual('ValueError', exc_type)
+        self.assertEqual('Failed to load', exc_value)
+        self.assertIsInstance(exc_traceback, list)
 
 class ProgressStateTest(unittest.TestCase):
 
@@ -178,4 +240,3 @@ class ProgressStateTest(unittest.TestCase):
         self.assertEqual(15, state.completed_work)
         self.assertEqual(0.15, state.progress)
         self.assertEqual(0.6, state.to_super_work(20))
-
