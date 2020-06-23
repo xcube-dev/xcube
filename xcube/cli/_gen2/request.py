@@ -84,7 +84,7 @@ class InputConfig:
         return d
 
 
-class Callback:
+class CallbackConfig:
     def __init__(self,
                  api_uri: str = None,
                  access_token: str = None):
