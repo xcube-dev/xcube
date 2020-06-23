@@ -23,12 +23,12 @@ import geopandas as gpd
 
 from xcube.core.store.accessor import DataOpener
 from xcube.core.store.accessor import DataWriter
-from xcube.core.store.accessors.posix import PosixDataDeleter
+from xcube.core.store.accessors.posix import PosixDataDeleterMixin
 from xcube.util.assertions import assert_instance
 from xcube.util.jsonschema import JsonObjectSchema
 
 
-class GdfShapefilePosixAccessor(PosixDataDeleter, DataWriter, DataOpener):
+class GdfShapefilePosixAccessor(PosixDataDeleterMixin, DataWriter, DataOpener):
     """
     Extension name: "geodataframe:shapefile:posix"
     """
@@ -49,7 +49,7 @@ class GdfShapefilePosixAccessor(PosixDataDeleter, DataWriter, DataOpener):
         data.to_file(data_id, driver='ESRI Shapefile', **write_params)
 
 
-class GdfGeoJsonPosixAccessor(PosixDataDeleter, DataWriter, DataOpener):
+class GdfGeoJsonPosixAccessor(PosixDataDeleterMixin, DataWriter, DataOpener):
     """
     Extension name: "geodataframe:geojson:posix"
     """

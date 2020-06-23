@@ -24,7 +24,7 @@ from xcube.core.dsio import rimraf
 from xcube.core.store.accessor import DataAccessorError, DataDeleter
 
 
-class PosixDataDeleter(DataDeleter):
+class PosixDataDeleterMixin(DataDeleter):
     """
     Implements a DataWriter's :meth:delete_data() method for storage types supporting POSIX file handling.
     """

@@ -29,6 +29,9 @@ from xcube.core.store.store import MutableDataStore, DataStoreError
 from xcube.util.assertions import assert_given
 from xcube.util.jsonschema import JsonObjectSchema
 
+_STORAGE_ID = 'memory'
+_ACCESSOR_ID = f'*:*:{_STORAGE_ID}'
+
 
 # TODO: complete docs
 
@@ -76,7 +79,7 @@ class MemoryDataStore(MutableDataStore):
                 yield new_data_descriptor(data_id, data)
 
     def get_data_opener_ids(self, data_id: str = None, type_id: str = None) -> Tuple[str, ...]:
-        return '*:*:memory',
+        return _ACCESSOR_ID,
 
     def get_open_data_params_schema(self, data_id: str = None, opener_id: str = None) -> JsonObjectSchema:
         return JsonObjectSchema()
@@ -87,7 +90,7 @@ class MemoryDataStore(MutableDataStore):
         return self._data_dict[data_id]
 
     def get_data_writer_ids(self, type_id: str = None) -> Tuple[str, ...]:
-        return '*:*:memory',
+        return _ACCESSOR_ID,
 
     def get_write_data_params_schema(self, writer_id: str = None) -> JsonObjectSchema:
         return JsonObjectSchema()
