@@ -3,7 +3,7 @@ from xcube.cli._gen2.request import Callback
 
 
 class TestCallback(unittest.TestCase):
-    def test_progress(self):
+    def test_callback(self):
         with self.assertRaises(ValueError) as e:
             Callback()
         self.assertEqual('Both, api_uri and access_token must be given', str(e.exception))
@@ -13,7 +13,3 @@ class TestCallback(unittest.TestCase):
         res = callback.to_dict()
 
         self.assertDictEqual(expected, res)
-
-
-
-

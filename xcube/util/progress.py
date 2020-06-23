@@ -113,6 +113,8 @@ class ProgressState:
             d.update(completed_work=self._completed_work)
         if self._finished:
             d.update(finished=self._finished)
+        if self._exc_info:
+            d.update(exc_info=self.exc_info_text)
 
         return d
 

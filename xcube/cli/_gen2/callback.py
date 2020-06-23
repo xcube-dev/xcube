@@ -23,6 +23,7 @@ from typing import Sequence
 import requests
 
 from xcube.cli._gen2.request import Request
+from xcube.util.assertions import assert_condition, assert_given
 from xcube.util.progress import ProgressObserver
 from xcube.util.progress import ProgressState
 
@@ -34,22 +35,28 @@ from xcube.util.progress import ProgressState
 
 class CallbackApiProgressObserver(ProgressObserver):
     def __init__(self, callback_api_cfg: Request):
+        assert_given(callback_api_cfg)
+        assert_given(callback_api_cfg.callback)
+        assert_condition(callback_api_cfg.callback.api_uri and callback_api_cfg.callback.access_token,
+                         "Both, api_uri and access_token must be given.")
         self.callback_api_cfg = callback_api_cfg
 
-    def _send_request(self, event: str, cfg: Request, state_stack: Sequence[ProgressState]):
-        state_stack = [ss.to_dict() for ss in state_stack]
+    def _send_request(self, event: str, state_stack: Sequence[ProgressState]):
+        assert_given(state_stack, "ProgressStates")
+        state_stack = state_stack[0].to_dict()
         callback = {"event": event, "state": state_stack}
-        callback_api_cfg = cfg.to_dict()
-        callback_api_uri = callback_api_cfg['callback']["api_uri"]
-        callback_api_access_token = callback_api_cfg['callback']["access_token"]
+
+        callback_api_uri = self.callback_api_cfg.callback.api_uri
+        callback_api_access_token = self.callback_api_cfg.callback.access_token
+
         header = {"Authorization": f"Bearer {callback_api_access_token}"}
-        requests.put(callback_api_uri, json=callback, headers=header, verify=False)
+        requests.put(callback_api_uri, json=callback, headers=header)
 
     def on_begin(self, state_stack: Sequence[ProgressState]):
-        self._send_request("on_begin", self.callback_api_cfg, state_stack)
+        self._send_request("on_begin", state_stack)
 
     def on_update(self, state_stack: Sequence[ProgressState]):
-        self._send_request("on_update", self.callback_api_cfg, state_stack)
+        self._send_request("on_update", state_stack)
 
     def on_end(self, state_stack: Sequence[ProgressState]):
-        self._send_request("on_end", self.callback_api_cfg, state_stack)
+        self._send_request("on_end", state_stack)
