@@ -23,12 +23,13 @@ from typing import Dict, Any, Tuple, Optional
 import s3fs
 import xarray as xr
 
+from xcube.core.store.accessor import DataAccessorError
 from xcube.core.store.accessor import DataOpener
 from xcube.core.store.accessor import DataWriter
-from xcube.core.store.accessor import DataAccessorError
 from xcube.core.store.accessors.posix import PosixDataDeleterMixin
 from xcube.util.assertions import assert_instance
-from xcube.util.jsonschema import JsonBooleanSchema, JsonArraySchema
+from xcube.util.jsonschema import JsonArraySchema
+from xcube.util.jsonschema import JsonBooleanSchema
 from xcube.util.jsonschema import JsonObjectSchema
 from xcube.util.jsonschema import JsonStringSchema
 
@@ -65,7 +66,8 @@ class ZarrOpenerParamsSchemaMixin:
                     min_length=1,
                 ),
                 chunks=JsonObjectSchema(
-                    description='Optional chunk sizes along each dimension. ',
+                    description='Optional chunk sizes along each dimension. Chunk size values may '
+                                'be None, "auto" or an integer value.',
                     examples=[{'time': None, 'lat': 'auto', 'lon': 90},
                               {'time': 1, 'y': 512, 'x': 512}],
                     additional_properties=True,
@@ -77,7 +79,7 @@ class ZarrOpenerParamsSchemaMixin:
                 ),
                 mask_and_scale=JsonBooleanSchema(
                     description='If True, replace array values equal to attribute "_FillValue" with NaN. '
-                                'Use attribute "scaling_factor" and "add_offset" to computed actual values.',
+                                'Use "scaling_factor" and "add_offset" attributes to compute actual values.',
                     default=True,
                 ),
                 decode_times=JsonBooleanSchema(
@@ -134,7 +136,6 @@ class ZarrWriterParamsSchemaMixin:
         )
 
 
-
 class DatasetZarrPosixAccessor(ZarrOpenerParamsSchemaMixin,
                                ZarrWriterParamsSchemaMixin,
                                PosixDataDeleterMixin,
@@ -178,7 +179,7 @@ class S3Mixin:
 
     @classmethod
     def consume_s3fs_params(cls, params: Dict[str, Any]) -> Tuple[s3fs.S3FileSystem, Dict[str, Any]]:
-        aws_access_key_id = params.pop('aws_access_key_id',  None)
+        aws_access_key_id = params.pop('aws_access_key_id', None)
         aws_secret_access_key = params.pop('aws_secret_access_key', None)
         aws_session_token = params.pop('aws_session_token', None)
         anon = params.pop('anon', not any((aws_access_key_id, aws_secret_access_key, aws_session_token)))
@@ -191,7 +192,7 @@ class S3Mixin:
 
     @classmethod
     def consume_bucket_name_param(cls, params: Dict[str, Any]) -> Tuple[Optional[str], Dict[str, Any]]:
-        bucket_name = params.pop('bucket_name',  None)
+        bucket_name = params.pop('bucket_name', None)
         return bucket_name, params
 
 
