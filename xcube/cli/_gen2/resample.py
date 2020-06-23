@@ -19,11 +19,11 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 import xarray as xr
-from typing import Callable
 
 from xcube.cli._gen2.request import CubeConfig
 
 
+# noinspection PyUnusedLocal
 def resample_cube(cube: xr.Dataset,
                   cube_config: CubeConfig):
     # TODO: implement me
