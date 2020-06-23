@@ -69,7 +69,7 @@ class CallbackTerminalProgressObserver(ProgressObserver):
         progress = progress_state.progress * 100
 
         sys.stdout.write('\r')
-        sys.stdout.write("state: %s: [%-100s] %d%%" % (state, '='*int(progress), int(progress_state.total_work)))
+        sys.stdout.write("state: %s: [%-100s] %d/100%%" % (state, '='*int(progress), int(progress)))
         sys.stdout.flush()
 
     def on_begin(self, state_stack: Sequence[ProgressState]):
