@@ -213,7 +213,7 @@ class Request:
                  input_configs: Sequence[InputConfig] = None,
                  cube_config: CubeConfig = None,
                  output_config: OutputConfig = None,
-                 callback: Optional[Callback] = None):
+                 callback_config: Optional[Callback] = None):
         assert_given(input_configs, 'input_configs')
         assert_given(cube_config, 'cube_config')
         assert_given(output_config, 'output_config')
