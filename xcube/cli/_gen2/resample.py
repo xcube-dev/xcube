@@ -18,10 +18,11 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-import xarray as xr
 from typing import Callable
 
-from xcube_cci.config import CubeConfig
+import xarray as xr
+
+from xcube.cli._gen2.request import CubeConfig
 
 
 def resample_cube(cube: xr.Dataset,
