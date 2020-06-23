@@ -18,6 +18,7 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+import sys
 from typing import Sequence
 
 import requests
@@ -60,3 +61,22 @@ class CallbackApiProgressObserver(ProgressObserver):
 
     def on_end(self, state_stack: Sequence[ProgressState]):
         self._send_request("on_end", state_stack)
+
+
+class CallbackTerminalProgressObserver(ProgressObserver):
+    def _print_progress(self, state: str, state_stack: [ProgressState]):
+        progress_state = state_stack[0]
+        progress = progress_state.progress * 100
+
+        sys.stdout.write('\r')
+        sys.stdout.write("state: %s: [%-100s] %d%%" % (state, '='*int(progress), int(progress_state.total_work)))
+        sys.stdout.flush()
+
+    def on_begin(self, state_stack: Sequence[ProgressState]):
+        self._print_progress('on_begin', state_stack)
+
+    def on_update(self, state_stack: Sequence[ProgressState]):
+        self._print_progress("on_update", state_stack)
+
+    def on_end(self, state_stack: Sequence[ProgressState]):
+        self._print_progress("on_end", state_stack)

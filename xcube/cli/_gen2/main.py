@@ -18,12 +18,11 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-
 from typing import Type
 
 import click
 
-from xcube.cli._gen2.callback import CallbackApiProgressObserver
+from xcube.cli._gen2.callback import CallbackApiProgressObserver, CallbackTerminalProgressObserver
 from xcube.cli._gen2.open import open_cubes
 from xcube.cli._gen2.request import Request, OutputConfig
 from xcube.cli._gen2.resample import resample_and_merge_cubes
@@ -59,7 +58,10 @@ def main(request_path: str,
     """
 
     request = Request.from_file(request_path, exception_type=exception_type)
-    CallbackApiProgressObserver(request).activate()
+    if request.callback:
+        CallbackApiProgressObserver(request).activate()
+    else:
+        CallbackTerminalProgressObserver().activate()
 
     if output_path:
         output_config = _new_output_config_for_dir(output_path, format_name, exception_type)
@@ -70,12 +72,16 @@ def main(request_path: str,
         cm.will_work(10)
         cubes = open_cubes(request.input_configs,
                            cube_config=request.cube_config)
+        cm.worked(10)
         cm.will_work(10)
         cube = resample_and_merge_cubes(cubes,
                                         cube_config=request.cube_config)
+        cm.worked(10)
         cm.will_work(80)
+
         write_cube(cube,
                    output_config=output_config)
+        cm.worked(80)
 
 
 def _new_output_config_for_dir(output_path, format_id, exception_type: Type[BaseException]):
