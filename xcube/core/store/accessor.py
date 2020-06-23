@@ -39,31 +39,41 @@ from xcube.util.plugin import get_extension_registry
 #######################################################
 
 def new_data_opener(opener_id: str,
-                    extension_registry: Optional[ExtensionRegistry] = None) -> 'DataOpener':
+                    extension_registry: Optional[ExtensionRegistry] = None,
+                    **opener_params) -> 'DataOpener':
     """
     Get an instance of the data opener identified by *opener_id*.
 
+    The optional, extra writer parameters *opener_params* may be used by data store
+    (``xcube.core.store.DataStore``) implementations so they can share their internal state with the opener.
+
     :param opener_id: The data opener identifier.
     :param extension_registry: Optional extension registry. If not given, the global extension registry will be used.
+    :param opener_params: Extra opener parameters.
     :return: A data opener instance.
     """
     assert_given(opener_id, 'opener_id')
     extension_registry = extension_registry or get_extension_registry()
-    return extension_registry.get_component(EXTENSION_POINT_DATA_OPENERS, opener_id)()
+    return extension_registry.get_component(EXTENSION_POINT_DATA_OPENERS, opener_id)(**opener_params)
 
 
 def new_data_writer(writer_id: str,
-                    extension_registry: Optional[ExtensionRegistry] = None) -> 'DataWriter':
+                    extension_registry: Optional[ExtensionRegistry] = None,
+                    **writer_params) -> 'DataWriter':
     """
     Get an instance of the data opener identified by *writer_id*.
 
+    The optional, extra writer parameters *writer_params* may be used by data store
+    (``xcube.core.store.DataStore``) implementations so they can share their internal state with the writer.
+
     :param writer_id: The data writer identifier.
     :param extension_registry: Optional extension registry. If not given, the global extension registry will be used.
+    :param writer_params: Extra writer parameters.
     :return: A data writer instance.
     """
     assert_given(writer_id, 'writer_id')
     extension_registry = extension_registry or get_extension_registry()
-    return extension_registry.get_component(EXTENSION_POINT_DATA_WRITERS, writer_id)()
+    return extension_registry.get_component(EXTENSION_POINT_DATA_WRITERS, writer_id)(**writer_params)
 
 
 def find_data_opener_extensions(predicate: ExtensionPredicate = None,
