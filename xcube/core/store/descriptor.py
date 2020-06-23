@@ -5,6 +5,7 @@ import xarray as xr
 
 from xcube.core.mldataset import MultiLevelDataset
 from xcube.util.assertions import assert_given
+from xcube.util.assertions import assert_in
 from xcube.util.ipython import register_json_formatter
 
 TYPE_ID_DATASET = 'dataset'
@@ -125,7 +126,6 @@ class VariableDescriptor:
                  name: str,
                  dtype: str,
                  dims: Sequence[str],
-                 description: Optional[str] = '',
                  attrs: Mapping[str, any] = None):
         assert_given(name, 'name')
         assert_given(dtype, 'dtype')
@@ -133,21 +133,20 @@ class VariableDescriptor:
         self.dtype = dtype
         self.dims = tuple(dims)
         self.ndim = len(self.dims)
-        self.description = description
         self.attrs = dict(attrs) if attrs is not None else None
 
     @classmethod
     def from_dict(cls, d: Mapping[str, Any]):
         """Create new instance from a JSON-serializable dictionary"""
-        assert 'name' in d
-        assert 'dtype' in d
-        assert 'dims' in d
-        return VariableDescriptor(d['name'], d['dtype'], d['dims'], d.get('description', ''), d.get('attrs', None))
+        assert_in('name', d)
+        assert_in('dtype', d)
+        assert_in('dims', d)
+        return VariableDescriptor(d['name'], d['dtype'], d['dims'], d.get('attrs', None))
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert into a JSON-serializable dictionary"""
         d = dict(name=self.name, dtype=self.dtype)
-        _copy_none_null_props(self, d, ['dims', 'ndim', 'description', 'attrs'])
+        _copy_none_null_props(self, d, ['dims', 'ndim', 'attrs'])
         return d
 
 
