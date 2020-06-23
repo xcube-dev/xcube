@@ -11,33 +11,22 @@ class VariableDescriptorTest(unittest.TestCase):
         self.assertEqual('zughysz', vd1.dtype)
         self.assertEqual(('rtdswgt', 'dref', 'zdrs5ge'), vd1.dims)
         self.assertEqual(3, vd1.ndim)
-        self.assertEqual('', vd1.description)
         self.assertEqual(None, vd1.attrs)
 
-        vd2 = VariableDescriptor('gz', 'zughysz', ['rtdswgt', 'dref', 'zdrs5ge'], 'rtwfrhewg dyhgr sehj.')
-        self.assertEqual('gz', vd2.name)
-        self.assertEqual('zughysz', vd2.dtype)
-        self.assertEqual(('rtdswgt', 'dref', 'zdrs5ge'), vd2.dims)
-        self.assertEqual(3, vd2.ndim)
-        self.assertEqual('rtwfrhewg dyhgr sehj.', vd2.description)
-        self.assertEqual(None, vd2.attrs)
-
-        vd3 = VariableDescriptor('gz', 'zughysz', ['rtdswgt', 'dref', 'zdrs5ge'], attrs={'d': 2, 'zjgu': ''})
+        vd3 = VariableDescriptor('gz', 'zughysz', ['rtdswgt', 'dref', 'zdrs5ge'], {'d': 2, 'zjgu': ''})
         self.assertEqual('gz', vd3.name)
         self.assertEqual('zughysz', vd3.dtype)
         self.assertEqual(('rtdswgt', 'dref', 'zdrs5ge'), vd3.dims)
         self.assertEqual(3, vd3.ndim)
-        self.assertEqual('', vd3.description)
         self.assertEqual({'d': 2, 'zjgu': ''}, vd3.attrs)
 
     def test_variable_descriptor_to_dict(self):
-        vd = VariableDescriptor('xf', 'rj', ['dfjhrt', 'sg'], 'fhdektgfas', attrs={'ssd': 4, 'zjgrhgu': 'dgfrf'})
+        vd = VariableDescriptor('xf', 'rj', ['dfjhrt', 'sg'], {'ssd': 4, 'zjgrhgu': 'dgfrf'})
         expected = {
             'name': 'xf',
             'dtype': 'rj',
             'dims': ('dfjhrt', 'sg'),
             'ndim': 2,
-            'description': 'fhdektgfas',
             'attrs': {
                 'ssd': 4,
                 'zjgrhgu': 'dgfrf'
@@ -51,7 +40,6 @@ class VariableDescriptorTest(unittest.TestCase):
             'dtype': 'rj',
             'dims': ('dfjhrt', 'sg'),
             'ndim': 2,
-            'description': 'fhdektgfas',
             'attrs': {
                 'ssd': 4,
                 'zjgrhgu': 'dgfrf'
@@ -62,24 +50,23 @@ class VariableDescriptorTest(unittest.TestCase):
         self.assertEqual('rj', vd.dtype)
         self.assertEqual(('dfjhrt', 'sg'), vd.dims)
         self.assertEqual(2, vd.ndim)
-        self.assertEqual('fhdektgfas', vd.description)
         self.assertEqual({'ssd': 4, 'zjgrhgu': 'dgfrf'}, vd.attrs)
 
         vd_fail = None
         try:
             vd_fail = VariableDescriptor.from_dict({'name': 'dhgfr', 'dtype': 'ghdst'})
             self.fail('Should not come here')
-        except AssertionError:
+        except ValueError:
             self.assertIsNone(vd_fail)
 
         try:
             vd_fail = VariableDescriptor.from_dict({'name': 'dhgfr', 'dims': ['faer', 'bjunda']})
             self.fail('Should not come here')
-        except AssertionError:
+        except ValueError:
             self.assertIsNone(vd_fail)
 
         try:
             vd_fail = VariableDescriptor.from_dict({'dtype': 'ghdst', 'dims': ['faer', 'bjunda']})
             self.fail('Should not come here')
-        except AssertionError:
+        except ValueError:
             self.assertIsNone(vd_fail)
