@@ -155,7 +155,9 @@ def update_time_slice(store: Union[str, MutableMapping],
 
     if chunk_sizes:
         time_slice = chunk_dataset(time_slice, chunk_sizes, format_name='zarr')
-
+    ds = zarr.open_group(store, mode='r')
+    time_slice = time_slice.copy()
+    time_slice.attrs.update(ds.attrs)
     temp_dir = tempfile.TemporaryDirectory(prefix='xcube-time-slice-', suffix='.zarr')
     time_slice.to_zarr(temp_dir.name)
     slice_root_group = zarr.open(temp_dir.name, mode='r')
