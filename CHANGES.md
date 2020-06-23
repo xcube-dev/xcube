@@ -1,5 +1,13 @@
 ## Changes in 0.5.0.devX (in development)
 
+* From 0.4.1: Fixed time-series performance drop (#299).
+
+* When creating an ImageGeom from a dataset, correct the height if it would
+  otherwise give a maximum latitude >90°.
+
+* Disable the display of warnings in the CLI by default, only showing them if
+  a `--warnings` flag is given.
+
 * xcube has been extended by a new *Data Store Framework* (#307).
   It is provided by the `xcube.core.store` package.
   It's usage is currently documented only in the form of Jupyter Notebook examples, 
@@ -18,6 +26,7 @@
 * Fixed a regression when running "xcube serve" with cube path as parameter (#314)
 
 * From 0.4.3: Extended `xcube serve` by reverse URL prefix option. 
+
 * From 0.4.1: Fixed time-series performance drop (#299). 
 
 ### New in 0.5.0.dev2
