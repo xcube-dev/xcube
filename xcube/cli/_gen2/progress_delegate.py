@@ -23,8 +23,8 @@ from typing import Sequence
 import requests
 
 from xcube.cli._gen2.genconfig import CallbackConfig
-from xcube.util.assertions import assert_condition, assert_given
-from xcube.util.progress import ProgressState
+from xcube.util.assertions import assert_given
+from xcube.util.progress import ProgressState, ProgressObserver
 
 
 def _format_time(t):
@@ -46,16 +46,12 @@ def _format_time(t):
         return "{0:4.1f}s".format(s)
 
 
-def get_callback_api_progress_delegate(callback_config: CallbackConfig):
-    """
+class ApiProgressCallbackObserver(ProgressObserver):
+    def __init__(self, callback_config: CallbackConfig):
+        super().__init__()
+        self.callback_config = callback_config
 
-    :type callback_config: CallbackConfig
-    """
-    assert_given(callback_config)
-    assert_condition(callback_config.api_uri and callback_config.access_token,
-                     "Both, api_uri and access_token must be given.")
-
-    def _callback(sender: str, elapsed: float, state_stack: Sequence[ProgressState]):
+    def callback(self, sender: str, elapsed: float, state_stack: Sequence[ProgressState]):
         assert_given(state_stack, "ProgressStates")
         state = state_stack[0]
         callback = {
@@ -71,17 +67,39 @@ def get_callback_api_progress_delegate(callback_config: CallbackConfig):
                 "errored": state.exc_info is not None
             }
         }
-        callback_api_uri = callback_config.api_uri
-        callback_api_access_token = callback_config.access_token
+        callback_api_uri = self.callback_config.api_uri
+        callback_api_access_token = self.callback_config.access_token
         header = {"Authorization": f"Bearer {callback_api_access_token}"}
 
         return requests.put(callback_api_uri, json=callback, headers=header)
 
-    return _callback
+    def on_begin(self, state_stack: Sequence[ProgressState]):
+        """
+
+        :param state_stack:
+        :return:
+        """
+
+    def on_update(self, state_stack: Sequence[ProgressState]):
+        """
+
+        :param state_stack:
+        :return:
+        """
+
+    def on_end(self, state_stack: Sequence[ProgressState]):
+        """
+
+        :param state_stack:
+        :return:
+        """
 
 
-def get_callback_terminal_progress_delegate():
-    def _callback(sender: str, elapsed: float, state_stack: [ProgressState]):
+class TerminalProgressCallbackObserver(ProgressObserver):
+    def __init__(self):
+        super().__init__()
+
+    def callback(self, sender: str, elapsed: float, state_stack: [ProgressState]):
         """
 
         :param state_stack:
@@ -96,8 +114,7 @@ def get_callback_terminal_progress_delegate():
         msg = "\r{0}: [{1:<{2}}] | {3}% Completed | {4}".format(
             sender, bar, state.total_work, percent, elapsed
         )
+
         print(msg)
 
         return msg
-
-    return _callback

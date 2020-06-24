@@ -1,9 +1,9 @@
 import unittest
+from time import sleep
 
 import requests_mock
-from xcube.util.progress import ThreadedProgressObserver
-from xcube.cli._gen2.progress_delegate import get_callback_api_progress_delegate
-from xcube.cli._gen2.progress_delegate import get_callback_terminal_progress_delegate
+from xcube.util.progress import ThreadedProgressObserver, observe_progress
+from xcube.cli._gen2.progress_delegate import ApiProgressCallbackObserver, TerminalProgressCallbackObserver
 from xcube.cli._gen2.genconfig import GenConfig
 from xcube.util.progress import ProgressState
 
@@ -31,13 +31,13 @@ class TestThreadedProgressObserver(unittest.TestCase):
         m.put('https://xcube-gen.test/api/v1/jobs/tomtom/iamajob/callback', json={})
         progress_state = ProgressState(label='test', total_work=0., super_work=10.)
 
-        delegate = get_callback_api_progress_delegate(self._callback_config)
+        delegate = ApiProgressCallbackObserver(self._callback_config)
         observer = ThreadedProgressObserver(delegate=delegate)
         observer.on_begin(state_stack=[progress_state])
 
         with self.assertRaises(ValueError) as e:
             self._callback_config.api_uri = None
-            delegate = get_callback_api_progress_delegate(self._callback_config)
+            delegate = ApiProgressCallbackObserver(self._callback_config)
             observer = ThreadedProgressObserver(delegate=delegate)
             observer.on_begin(state_stack=[progress_state])
 
@@ -45,7 +45,7 @@ class TestThreadedProgressObserver(unittest.TestCase):
 
         with self.assertRaises(ValueError) as e:
             self._callback_config.access_token = None
-            delegate = get_callback_api_progress_delegate(self._callback_config)
+            delegate = ApiProgressCallbackObserver(self._callback_config)
             observer = ThreadedProgressObserver(delegate=delegate)
             observer.on_begin(state_stack=[progress_state])
 
@@ -71,31 +71,34 @@ class TestThreadedProgressObserver(unittest.TestCase):
 
         state_stack = ProgressState('Test', 100, 100)
 
-        delegate = get_callback_api_progress_delegate(self._callback_config)
+        delegate = ApiProgressCallbackObserver(self._callback_config)
 
-        res = delegate("on_begin", 3., [state_stack])
+        res = delegate.callback("on_begin", 3., [state_stack])
         self.assertDictEqual(expected_callback, res.request.json())
 
         with self.assertRaises(ValueError) as e:
-            delegate("on_begin", 3., [])
+            delegate.callback("on_begin", 3., [])
 
         self.assertEqual("ProgressStates must be given", str(e.exception))
 
-    def test_terminal_delegate(self):
-        delegate = get_callback_terminal_progress_delegate()
-        ThreadedProgressObserver(delegate=delegate, dt=0.1).activate()
+    # def test_terminal_delegate(self):
+    #     delegate = get_callback_terminal_progress_delegate(prt=False)
+    #     ThreadedProgressObserver(delegate=delegate, dt=0.1).activate()
 
     def test_terminal_progress(self):
         """
         Uncomment the lines below if you want to run and test the termial progress bar output.
         """
-        # with observe_progress('Generating cube', 100) as cm:
-        #     dt = 1
-        #     for i in range(1, 80):
-        #         cm.will_work(1)
-        #         sleep(dt)
-        #         cm.worked(1)
-        #
-        #     cm.will_work(20)
-        #     sleep(dt)
-        #     cm.worked(20)
+
+        delegate = TerminalProgressCallbackObserver()
+        ThreadedProgressObserver(delegate=delegate, dt=0.1).activate()
+        with observe_progress('Generating cube', 100) as cm:
+            dt = 1
+            for i in range(1, 80):
+                cm.will_work(1)
+                sleep(dt)
+                cm.worked(1)
+
+            cm.will_work(20)
+            sleep(dt)
+            cm.worked(20)

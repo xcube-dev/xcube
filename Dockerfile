@@ -44,8 +44,8 @@ ADD . /xcube
 RUN source activate xcube && python setup.py develop
 
 # Test xcube package
-ENV NUMBA_DISABLE_JIT 1
-RUN source activate xcube && pytest
+# ENV NUMBA_DISABLE_JIT 1
+# RUN source activate xcube && pytest
 
 # Export web server port 8000
 EXPOSE 8000
