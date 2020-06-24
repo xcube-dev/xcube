@@ -20,7 +20,7 @@
 # SOFTWARE.
 
 import tempfile
-from collections import MutableMapping
+from collections.abc import MutableMapping
 from typing import Dict, Union, Tuple
 
 import numpy as np
