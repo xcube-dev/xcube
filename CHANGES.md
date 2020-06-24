@@ -1,6 +1,9 @@
 ## Changes in 0.5.0.devX (in development)
 
+### Fixes
 * From 0.4.1: Fixed time-series performance drop (#299). 
+* Fixed incorrect handling input slices with defined packing of variables when inserting 
+  into a xcube dataset in zarr (#317).  
 
 ### New in 0.5.0.dev2
 
