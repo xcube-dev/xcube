@@ -18,6 +18,7 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+
 from abc import ABC, abstractmethod
 from typing import Dict, Any, Callable, Mapping, Sequence, Union, Tuple
 
@@ -346,10 +347,14 @@ class JsonObjectSchema(JsonSchema):
                     if property_name in required_set or converted_property_value is not None:
                         converted_mapping[property_name] = converted_property_value
 
-        # Note, additional_properties defaults to True
         if self.additional_properties is None or self.additional_properties:
+            properties_schema = self.additional_properties \
+                if isinstance(self.additional_properties, JsonSchema) else None
+            # Note, additional_properties defaults to True
             for property_name, property_value in mapping.items():
                 if property_name not in converted_mapping and property_value is not UNDEFINED:
+                    if properties_schema:
+                        property_value = properties_schema.from_instance(property_value)
                     converted_mapping[property_name] = property_value
 
         return converted_mapping
