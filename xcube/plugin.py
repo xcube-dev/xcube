@@ -172,6 +172,9 @@ def _register_cli_commands(ext_registry: extension.ExtensionRegistry):
         'tile',
         'vars2dim',
         'verify',
+
+        # Experimental + Hidden
+        'io',
     ]
 
     for cli_command_name in cli_command_names:
