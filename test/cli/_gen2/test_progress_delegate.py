@@ -1,9 +1,10 @@
 import unittest
 
 import requests_mock
-from xcube.cli._gen2.progress_observer import ThreadedProgressObserver, get_callback_api_progress_delegate, \
-    get_callback_terminal_progress_delegate
-from xcube.cli._gen2.genconfig import GenConfig, CallbackConfig
+from xcube.util.progress import ThreadedProgressObserver
+from xcube.cli._gen2.progress_delegate import get_callback_api_progress_delegate
+from xcube.cli._gen2.progress_delegate import get_callback_terminal_progress_delegate
+from xcube.cli._gen2.genconfig import GenConfig
 from xcube.util.progress import ProgressState
 
 
@@ -24,34 +25,6 @@ class TestThreadedProgressObserver(unittest.TestCase):
     def setUp(self) -> None:
         self._request = GenConfig.from_dict(self.REQUEST)
         self._callback_config = self._request.callback_config
-
-    def test_threaded(self):
-        delegate = get_callback_api_progress_delegate(CallbackConfig(api_uri='uri', access_token='token'))
-        with self.assertRaises(ValueError) as e:
-            ThreadedProgressObserver(minimum=-1, dt=0, delegate=delegate)
-
-        self.assertEqual("The timer's minimum must be >=0", str(e.exception))
-
-        with self.assertRaises(ValueError) as e:
-            ThreadedProgressObserver(minimum=0, dt=-1, delegate=delegate)
-
-        self.assertEqual("The timer's time step must be >=0", str(e.exception))
-
-        observer = ThreadedProgressObserver(minimum=0, dt=0, delegate=delegate)
-        with self.assertRaises(ValueError) as e:
-            observer.on_begin(state_stack=[])
-
-        self.assertEqual('state_stack must be given', str(e.exception))
-
-        with self.assertRaises(ValueError) as e:
-            observer.on_update(state_stack=[])
-
-        self.assertEqual('state_stack must be given', str(e.exception))
-
-        with self.assertRaises(ValueError) as e:
-            observer.on_end(state_stack=[])
-
-        self.assertEqual('state_stack must be given', str(e.exception))
 
     @requests_mock.Mocker()
     def test_api_delegate(self, m):

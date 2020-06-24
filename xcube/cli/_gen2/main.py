@@ -22,9 +22,9 @@ from typing import Type
 
 import click
 
-from xcube.cli._gen2.progress_observer import ThreadedProgressObserver
-from xcube.cli._gen2.progress_observer import get_callback_terminal_progress_delegate
-from xcube.cli._gen2.progress_observer import get_callback_api_progress_delegate
+from xcube.util.progress import ThreadedProgressObserver
+from xcube.cli._gen2.progress_delegate import get_callback_terminal_progress_delegate
+from xcube.cli._gen2.progress_delegate import get_callback_api_progress_delegate
 from xcube.cli._gen2.open import open_cubes
 from xcube.cli._gen2.genconfig import GenConfig, OutputConfig
 from xcube.cli._gen2.resample import resample_and_merge_cubes

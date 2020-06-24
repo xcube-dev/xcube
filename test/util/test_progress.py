@@ -1,7 +1,7 @@
 import unittest
 from typing import Sequence
 
-from xcube.util.progress import ProgressObserver
+from xcube.util.progress import ProgressObserver, ThreadedProgressObserver
 from xcube.util.progress import ProgressState
 from xcube.util.progress import add_progress_observers
 from xcube.util.progress import new_progress_observers
@@ -241,3 +241,36 @@ class ProgressStateTest(unittest.TestCase):
         self.assertEqual(15, state.completed_work)
         self.assertEqual(0.15, state.progress)
         self.assertEqual(0.6, state.to_super_work(20))
+
+
+class TestThreadedProgressObserver(unittest.TestCase):
+    def test_threaded(self):
+        def _callback():
+            pass
+
+        with self.assertRaises(ValueError) as e:
+            ThreadedProgressObserver(minimum=-1, dt=0, delegate=_callback)
+
+        self.assertEqual("The timer's minimum must be >=0", str(e.exception))
+
+        with self.assertRaises(ValueError) as e:
+            ThreadedProgressObserver(minimum=0, dt=-1, delegate=_callback)
+
+        self.assertEqual("The timer's time step must be >=0", str(e.exception))
+
+        observer = ThreadedProgressObserver(minimum=0, dt=0, delegate=_callback)
+        with self.assertRaises(ValueError) as e:
+            observer.on_begin(state_stack=[])
+
+        self.assertEqual('state_stack must be given', str(e.exception))
+
+        with self.assertRaises(ValueError) as e:
+            observer.on_update(state_stack=[])
+
+        self.assertEqual('state_stack must be given', str(e.exception))
+
+        with self.assertRaises(ValueError) as e:
+            observer.on_end(state_stack=[])
+
+        self.assertEqual('state_stack must be given', str(e.exception))
+
