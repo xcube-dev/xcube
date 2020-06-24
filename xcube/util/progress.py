@@ -194,23 +194,31 @@ class ThreadedProgressObserver(ProgressObserver):
             self._delegate.callback(self._current_sender, elapsed, self._state_stack)
 
     def on_begin(self, state_stack: Sequence[ProgressState]):
+        self._delegate.on_begin(state_stack)
+
         assert_given(state_stack, name='state_stack')
         self._state_stack = state_stack
         self._current_sender = "on_begin"
         self._start_timer()
 
     def on_update(self, state_stack: Sequence[ProgressState]):
+        self._delegate.on_update(state_stack)
+
         assert_given(state_stack, name="state_stack")
         self._state_stack = state_stack
         self._current_sender = "on_update"
 
     def on_end(self, state_stack: Sequence[ProgressState]):
+        self._delegate.on_end(state_stack)
+
         assert_given(state_stack, name="state_stack")
         self._state_stack = state_stack
         self._current_sender = "on_end"
         self._stop_timer(False)
 
     def callback(self, sender: str, elapsed: float, state_stack: Sequence[ProgressState]):
+        assert_given(state_stack, 'state_stack')
+
         if not hasattr(self._delegate,"callback"):
             raise ValueError("Please implement method callback.")
         self._delegate.callback(sender, elapsed, state_stack)

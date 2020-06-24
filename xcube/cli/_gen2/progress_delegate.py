@@ -99,13 +99,14 @@ class TerminalProgressCallbackObserver(ProgressObserver):
     def __init__(self):
         super().__init__()
 
-    def callback(self, sender: str, elapsed: float, state_stack: [ProgressState]):
+    def callback(self, sender: str, elapsed: float, state_stack: [ProgressState], prt: bool = True):
         """
 
         :param state_stack:
         :param sender:
         :param elapsed:
         """
+
         state = state_stack[0]
 
         bar = "#" * int(state.total_work * state.progress)
@@ -115,6 +116,7 @@ class TerminalProgressCallbackObserver(ProgressObserver):
             sender, bar, state.total_work, percent, elapsed
         )
 
-        print(msg)
+        if prt:
+            print(msg)
 
         return msg

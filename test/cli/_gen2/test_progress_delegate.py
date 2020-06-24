@@ -1,8 +1,7 @@
 import unittest
-from time import sleep
 
 import requests_mock
-from xcube.util.progress import ThreadedProgressObserver, observe_progress
+from xcube.util.progress import ThreadedProgressObserver
 from xcube.cli._gen2.progress_delegate import ApiProgressCallbackObserver, TerminalProgressCallbackObserver
 from xcube.cli._gen2.genconfig import GenConfig
 from xcube.util.progress import ProgressState
@@ -81,24 +80,28 @@ class TestThreadedProgressObserver(unittest.TestCase):
 
         self.assertEqual("ProgressStates must be given", str(e.exception))
 
-    # def test_terminal_delegate(self):
-    #     delegate = get_callback_terminal_progress_delegate(prt=False)
-    #     ThreadedProgressObserver(delegate=delegate, dt=0.1).activate()
+        delegate = TerminalProgressCallbackObserver()
+        res = delegate.callback("on_begin", 3., [state_stack], False)
+        self.assertIn('on_begin', res)
+        self.assertIn('0% Completed', res)
 
     def test_terminal_progress(self):
         """
         Uncomment the lines below if you want to run and test the termial progress bar output.
         """
 
-        delegate = TerminalProgressCallbackObserver()
-        ThreadedProgressObserver(delegate=delegate, dt=0.1).activate()
-        with observe_progress('Generating cube', 100) as cm:
-            dt = 1
-            for i in range(1, 80):
-                cm.will_work(1)
-                sleep(dt)
-                cm.worked(1)
+        # from time import sleep
+        # from xcube.util.progress import observe_progress
 
-            cm.will_work(20)
-            sleep(dt)
-            cm.worked(20)
+        # delegate = TerminalProgressCallbackObserver()
+        # ThreadedProgressObserver(delegate=delegate, dt=0.1).activate()
+        # with observe_progress('Generating cube', 100) as cm:
+        #     dt = 1
+        #     for i in range(1, 80):
+        #         cm.will_work(1)
+        #         sleep(dt)
+        #         cm.worked(1)
+        #
+        #     cm.will_work(20)
+        #     sleep(dt)
+        #     cm.worked(20)
