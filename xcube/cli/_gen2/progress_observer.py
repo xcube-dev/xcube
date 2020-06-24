@@ -69,6 +69,7 @@ class ThreadedProgressObserver(ProgressObserver):
         super().__init__()
         assert_condition(dt >= 0, "The timer's time step must be >=0")
         assert_condition(minimum >= 0, "The timer's minimum must be >=0")
+        self._delegate = delegate
         self._running = False
         self._start_time = None
         self._minimum = minimum
