@@ -2,8 +2,9 @@
 
 ### Fixes
 * From 0.4.1: Fixed time-series performance drop (#299). 
-* Fixed incorrect handling input slices with defined packing of variables when inserting 
-  into a xcube dataset in zarr (#317).  
+
+* Fixed `xcube gen` CLI tool to correctly insert time slices into an 
+  existing cube stored as Zarr (#317).  
 
 * When creating an ImageGeom from a dataset, correct the height if it would
   otherwise give a maximum latitude >90°.
