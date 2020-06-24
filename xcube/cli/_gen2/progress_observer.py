@@ -56,7 +56,7 @@ def _format_time(t):
 
 class ThreadedProgressObserver(ProgressObserver):
     """
-    A threaded Progress observer adapted from Dask's Progress class.
+    A threaded Progress observer adapted from Dask's ProgressBar class.
     """
     def __init__(self,
                  minimum: float = 0,
@@ -193,4 +193,3 @@ class CallbackTerminalProgressObserver(ThreadedProgressObserver):
             sender, bar, self._width, percent, elapsed
         )
         print(msg)
-
