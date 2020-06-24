@@ -22,8 +22,8 @@ from typing import Type
 
 import click
 
-from xcube.cli._gen2.callback import CallbackApiProgressObserver
-from xcube.cli._gen2.callback import CallbackTerminalProgressObserver
+from xcube.cli._gen2.progress_observer import CallbackApiProgressObserver
+from xcube.cli._gen2.progress_observer import CallbackTerminalProgressObserver
 from xcube.cli._gen2.open import open_cubes
 from xcube.cli._gen2.request import Request, OutputConfig
 from xcube.cli._gen2.resample import resample_and_merge_cubes
