@@ -11,7 +11,7 @@ from xcube.core.gen.gen import gen_cube
 
 
 def clean_up():
-    files = ['l2c-single.nc', 'l2c-single.zarr', 'l2c.nc', 'l2c.zarr', 'l2c_1x80x60.zarr',
+    files = ['l2c-single.nc', 'l2c-single.zarr', 'l2c.nc', 'l2c.zarr', 'l2c_presorted.zarr', 'l2c_1x80x60.zarr',
              'l2c_1x80x80.zarr', 'l2c_packed.zarr', 'l2c_packed_1x80x80.zarr']
     for file in files:
         rimraf(file)
@@ -108,6 +108,14 @@ class DefaultProcessTest(unittest.TestCase):
         status, output = gen_cube_wrapper(
             [get_inputdata_path('20170102-IFR-L4_GHRSST-SSTfnd-ODYSSEA-NWE_002-v2.0-fv1.0.nc'),
              get_inputdata_path('20170103-IFR-L4_GHRSST-SSTfnd-ODYSSEA-NWE_002-v2.0-fv1.0.nc'),
+             get_inputdata_path('20170101-IFR-L4_GHRSST-SSTfnd-ODYSSEA-NWE_002-v2.0-fv1.0.nc')], 'l2c_presorted.zarr')
+        self.assertEqual(True, status)
+        self.assertTrue('\nstep 9 of 9: creating input slice in l2c_presorted.zarr...\n' in output)
+        self.assertTrue('\nstep 9 of 9: appending input slice to l2c_presorted.zarr...\n' in output)
+        self.assertFalse('\nstep 9 of 9: inserting input slice before index 0 in l2c_presorted.zarr...\n' in output)
+        status, output = gen_cube_wrapper(
+            [get_inputdata_path('20170102-IFR-L4_GHRSST-SSTfnd-ODYSSEA-NWE_002-v2.0-fv1.0.nc'),
+             get_inputdata_path('20170103-IFR-L4_GHRSST-SSTfnd-ODYSSEA-NWE_002-v2.0-fv1.0.nc'),
              get_inputdata_path('20170101-IFR-L4_GHRSST-SSTfnd-ODYSSEA-NWE_002-v2.0-fv1.0.nc')], 'l2c.zarr',
             no_sort_mode=True)
         self.assertEqual(True, status)
@@ -119,6 +127,9 @@ class DefaultProcessTest(unittest.TestCase):
                             expected_extra_attrs=dict(date_modified=None,
                                                       time_coverage_start='2016-12-31T12:00:00.000000000',
                                                       time_coverage_end='2017-01-03T12:00:00.000000000'))
+        ds_presorted = xr.open_zarr('l2c_presorted.zarr')
+        ds_insert = xr.open_zarr('l2c.zarr')
+        np.testing.assert_allclose(ds_presorted.analysed_sst.values, ds_insert.analysed_sst.values)
 
     def test_process_inputs_replace_multiple_zarr(self):
         status, output = gen_cube_wrapper(
@@ -248,6 +259,81 @@ class DefaultProcessTest(unittest.TestCase):
         self.assertEqual('uint16', ds_packed.analysed_sst.encoding['dtype'])
         self.assertEqual(65535, ds_packed.analysed_sst.encoding['_FillValue'])
         self.assertEqual((1, 80, 80), ds_packed.analysed_sst.encoding['chunks'])
+
+    def test_insert_packed_zarr(self):
+        status, output = gen_cube_wrapper(
+            [get_inputdata_path('20170102-IFR-L4_GHRSST-SSTfnd-ODYSSEA-NWE_002-v2.0-fv1.0.nc'),
+             get_inputdata_path('20170103-IFR-L4_GHRSST-SSTfnd-ODYSSEA-NWE_002-v2.0-fv1.0.nc'),
+             get_inputdata_path('20170101-IFR-L4_GHRSST-SSTfnd-ODYSSEA-NWE_002-v2.0-fv1.0.nc')], 'l2c_presorted.zarr',
+            output_writer_params={'chunksizes': {'lon': 80, 'lat': 80},
+                                  'packing': {'analysed_sst': {'scale_factor': 0.07324442274239326,
+                                                               'add_offset': -300.0,
+                                                               'dtype': 'uint16',
+                                                               '_FillValue': 65535}}})
+        self.assertEqual(True, status)
+        self.assertTrue('\nstep 9 of 9: creating input slice in l2c_presorted.zarr...\n' in output)
+        self.assertTrue('\nstep 9 of 9: appending input slice to l2c_presorted.zarr...\n' in output)
+        self.assertFalse('\nstep 9 of 9: inserting input slice before index 0 in l2c_presorted.zarr...\n' in output)
+        status, output = gen_cube_wrapper(
+            [get_inputdata_path('20170102-IFR-L4_GHRSST-SSTfnd-ODYSSEA-NWE_002-v2.0-fv1.0.nc'),
+             get_inputdata_path('20170103-IFR-L4_GHRSST-SSTfnd-ODYSSEA-NWE_002-v2.0-fv1.0.nc'),
+             get_inputdata_path('20170101-IFR-L4_GHRSST-SSTfnd-ODYSSEA-NWE_002-v2.0-fv1.0.nc')], 'l2c.zarr',
+            output_writer_params={'chunksizes': {'lon': 80, 'lat': 80},
+                                  'packing': {'analysed_sst': {'scale_factor': 0.07324442274239326,
+                                                               'add_offset': -300.0,
+                                                               'dtype': 'uint16',
+                                                               '_FillValue': 65535}}},
+            no_sort_mode=True)
+        self.assertEqual(True, status)
+        self.assertTrue('\nstep 9 of 9: creating input slice in l2c.zarr...\n' in output)
+        self.assertTrue('\nstep 9 of 9: appending input slice to l2c.zarr...\n' in output)
+        self.assertTrue('\nstep 9 of 9: inserting input slice before index 0 in l2c.zarr...\n' in output)
+        self.assert_cube_ok(xr.open_zarr('l2c.zarr'),
+                            expected_time_dim=3,
+                            expected_extra_attrs=dict(date_modified=None,
+                                                      time_coverage_start='2016-12-31T12:00:00.000000000',
+                                                      time_coverage_end='2017-01-03T12:00:00.000000000'))
+        ds_presorted = xr.open_zarr('l2c_presorted.zarr')
+        ds_insert = xr.open_zarr('l2c.zarr')
+        np.testing.assert_allclose(ds_presorted.analysed_sst.values, ds_insert.analysed_sst.values)
+
+    def test_replace_packed_zarr(self):
+        status, output = gen_cube_wrapper(
+            [get_inputdata_path('20170102-IFR-L4_GHRSST-SSTfnd-ODYSSEA-NWE_002-v2.0-fv1.0.nc'),
+             get_inputdata_path('20170103-IFR-L4_GHRSST-SSTfnd-ODYSSEA-NWE_002-v2.0-fv1.0.nc'),
+             get_inputdata_path('20170101-IFR-L4_GHRSST-SSTfnd-ODYSSEA-NWE_002-v2.0-fv1.0.nc')], 'l2c_presorted.zarr',
+            output_writer_params={'chunksizes': {'lon': 80, 'lat': 80},
+                                  'packing': {'analysed_sst': {'scale_factor': 0.07324442274239326,
+                                                               'add_offset': -300.0,
+                                                               'dtype': 'uint16',
+                                                               '_FillValue': 65535}}})
+        self.assertEqual(True, status)
+        self.assertTrue('\nstep 9 of 9: creating input slice in l2c_presorted.zarr...\n' in output)
+        self.assertTrue('\nstep 9 of 9: appending input slice to l2c_presorted.zarr...\n' in output)
+        self.assertFalse('\nstep 9 of 9: inserting input slice before index 0 in l2c_presorted.zarr...\n' in output)
+        status, output = gen_cube_wrapper(
+            [get_inputdata_path('20170101-IFR-L4_GHRSST-SSTfnd-ODYSSEA-NWE_002-v2.0-fv1.0.nc'),
+             get_inputdata_path('20170102-IFR-L4_GHRSST-SSTfnd-ODYSSEA-NWE_002-v2.0-fv1.0.nc'),
+             get_inputdata_path('20170103-IFR-L4_GHRSST-SSTfnd-ODYSSEA-NWE_002-v2.0-fv1.0.nc'),
+             get_inputdata_path('20170102-IFR-L4_GHRSST-SSTfnd-ODYSSEA-NWE_002-v2.0-fv1.0.nc')], 'l2c.zarr',
+            output_writer_params={'chunksizes': {'lon': 80, 'lat': 80},
+                                  'packing': {'analysed_sst': {'scale_factor': 0.07324442274239326,
+                                                               'add_offset': -300.0,
+                                                               'dtype': 'uint16',
+                                                               '_FillValue': 65535}}},
+            no_sort_mode=True)
+        self.assertEqual(True, status)
+        self.assertTrue('\nstep 9 of 9: creating input slice in l2c.zarr...\n' in output)
+        self.assertTrue('\nstep 9 of 9: appending input slice to l2c.zarr...\n' in output)
+        self.assertTrue('\nstep 9 of 9: replacing input slice at index 1 in l2c.zarr...\n' in output)
+        self.assert_cube_ok(xr.open_zarr('l2c.zarr'),
+                            expected_time_dim=3,
+                            expected_extra_attrs=dict(date_modified=None,
+                                                      time_coverage_start='2016-12-31T12:00:00.000000000',
+                                                      time_coverage_end='2017-01-03T12:00:00.000000000'))
+        ds_presorted = xr.open_zarr('l2c_presorted.zarr')
+        ds_insert = xr.open_zarr('l2c.zarr')
+        np.testing.assert_allclose(ds_presorted.analysed_sst.values, ds_insert.analysed_sst.values)
 
     def test_process_compressed_zarr(self):
         status, output = gen_cube_wrapper(

@@ -98,6 +98,11 @@ def _register_data_stores(ext_registry: extension.ExtensionRegistry):
         point=EXTENSION_POINT_DATA_STORES, name='directory',
         description='Directory data store'
     )
+    ext_registry.add_extension(
+        loader=extension.import_component('xcube.core.store.stores.s3:S3DataStore'),
+        point=EXTENSION_POINT_DATA_STORES, name='s3',
+        description='AWS S3 data store'
+    )
 
 
 def _register_data_accessors(ext_registry: extension.ExtensionRegistry):
@@ -172,6 +177,9 @@ def _register_cli_commands(ext_registry: extension.ExtensionRegistry):
         'tile',
         'vars2dim',
         'verify',
+
+        # Experimental + Hidden
+        'io',
     ]
 
     for cli_command_name in cli_command_names:

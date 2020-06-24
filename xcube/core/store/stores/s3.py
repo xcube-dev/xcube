@@ -32,108 +32,98 @@ from xcube.core.store.accessor import find_data_writer_extensions
 from xcube.core.store.accessor import get_data_accessor_predicate
 from xcube.core.store.accessor import new_data_opener
 from xcube.core.store.accessor import new_data_writer
+from xcube.core.store.accessors.dataset import S3Mixin
 from xcube.core.store.descriptor import DataDescriptor
 from xcube.core.store.descriptor import TYPE_ID_DATASET
-from xcube.core.store.descriptor import TYPE_ID_GEO_DATA_FRAME
 from xcube.core.store.descriptor import TYPE_ID_MULTI_LEVEL_DATASET
 from xcube.core.store.descriptor import get_data_type_id
-from xcube.core.store.descriptor import new_data_descriptor
 from xcube.core.store.store import DataStoreError
 from xcube.core.store.store import MutableDataStore
+from xcube.util.assertions import assert_condition
 from xcube.util.assertions import assert_given
 from xcube.util.assertions import assert_in
 from xcube.util.assertions import assert_instance
 from xcube.util.extension import Extension
-from xcube.util.jsonschema import JsonBooleanSchema
 from xcube.util.jsonschema import JsonObjectSchema
-from xcube.util.jsonschema import JsonStringSchema
 
-_STORAGE_ID = 'posix'
+_STORAGE_ID = 's3'
 
 _DEFAULT_FORMAT_ID = 'zarr'
 
 _FILENAME_EXT_TO_ACCESSOR_ID_PARTS = {
     '.zarr': (TYPE_ID_DATASET, 'zarr', _STORAGE_ID),
     '.levels': (TYPE_ID_MULTI_LEVEL_DATASET, 'levels', _STORAGE_ID),
-    '.nc': (TYPE_ID_DATASET, 'netcdf', _STORAGE_ID),
-    '.shp': (TYPE_ID_GEO_DATA_FRAME, 'shapefile', _STORAGE_ID),
-    '.geojson': (TYPE_ID_GEO_DATA_FRAME, 'geojson', _STORAGE_ID),
 }
 
 _TYPE_ID_TO_ACCESSOR_TO_DEFAULT_FILENAME_EXT = {
     TYPE_ID_DATASET: '.zarr',
     TYPE_ID_MULTI_LEVEL_DATASET: '.levels',
-    TYPE_ID_GEO_DATA_FRAME: '.geojson'
 }
 
 
 # TODO: write tests
 # TODO: complete docs
-# TODO: remove code duplication with ./s3.py and its tests.
+# TODO: implement '*.levels' support
+# TODO: remove code duplication with ./directory.py and its tests.
 #   Introduce something like MultiOpenerStoreMixin/MultiWriterStoreMixin
 
-class DirectoryDataStore(MutableDataStore):
+class S3DataStore(MutableDataStore):
     """
     A cube store that stores cubes in a directory in the local file system.
 
-    :param base_dir: The base directory where cubes are stored.
-    :param read_only: Whether this is a read-only store.
+    :param anon: Anonymous access.
+    :param aws_access_key_id: Optional AWS access key identifier.
+    :param aws_secret_access_key: Optional AWS secret access key.
+    :param aws_session_token: Optional AWS session token.
+    :param bucket_name: Mandatory bucket name.
+    :param region_name: Optional region name.
     """
 
-    def __init__(self,
-                 base_dir: str = None,
-                 read_only: bool = False):
-        assert_given(base_dir, 'base_dir')
-        self._base_dir = base_dir
-        self._read_only = read_only
+    def __init__(self, **store_params):
+        self._s3_fs, store_params = S3Mixin.consume_s3fs_params(store_params)
+        self._bucket_name, store_params = S3Mixin.consume_bucket_name_param(store_params)
+        assert_given(self._bucket_name, 'bucket_name')
+        assert_condition(not store_params, f'Unknown keyword arguments: {", ".join(store_params.keys())}')
+
+    def close(self):
+        self._s3_fs = None
 
     #############################################################################
     # MutableDataStore impl.
 
     @classmethod
     def get_data_store_params_schema(cls) -> JsonObjectSchema:
-        return JsonObjectSchema(
-            properties=dict(
-                base_dir=JsonStringSchema(min_length=1),
-                read_only=JsonBooleanSchema(default=False)
-            ),
-            required=['base_dir'],
-            additional_properties=False
-        )
+        schema = S3Mixin.get_s3_params_schema()
+        schema.required.add('bucket_name')
+        return schema
 
     @classmethod
     def get_type_ids(cls) -> Tuple[str, ...]:
-        return TYPE_ID_DATASET, TYPE_ID_MULTI_LEVEL_DATASET, TYPE_ID_GEO_DATA_FRAME
+        return TYPE_ID_DATASET,
 
     def get_data_ids(self, type_id: str = None) -> Iterator[str]:
-        self._assert_valid_type_id(type_id)
-        # TODO: Use os.walk(), which provides a generator rather than a list
-        for data_id in os.listdir(self._base_dir):
-            accessor_id_parts = self._get_accessor_id_parts(data_id, require=False)
-            if accessor_id_parts:
-                actual_type_id, _, _ = accessor_id_parts
-                if type_id is None or actual_type_id == type_id:
-                    yield data_id
+        prefix = self._bucket_name + '/'
+        first_index = len(prefix)
+        for item in self._s3_fs.listdir(self._bucket_name, detail=False):
+            if item.startswith(prefix):
+                yield item[first_index:]
 
     def has_data(self, data_id: str) -> bool:
-        assert_given(data_id, 'data_id')
         path = self._resolve_data_id_to_path(data_id)
-        return os.path.exists(path)
+        return self._s3_fs.exists(path)
 
     def describe_data(self, data_id: str) -> DataDescriptor:
-        self._assert_valid_data_id(data_id)
-        data = self.open_data(data_id)
-        return new_data_descriptor(data_id, data)
+        # TODO: implement me
+        raise NotImplementedError()
 
     @classmethod
     def get_search_params_schema(cls) -> JsonObjectSchema:
-        return JsonObjectSchema()
+        # TODO: implement me
+        raise NotImplementedError()
 
     def search_data(self, type_id: str = None, **search_params) -> Iterator[DataDescriptor]:
-        if search_params:
-            raise DataStoreError(f'Unsupported search_params {tuple(search_params.keys())}')
-        for data_id in self.get_data_ids(type_id=type_id):
-            yield self.describe_data(data_id)
+        # TODO: implement me
+        raise NotImplementedError()
 
     def get_data_opener_ids(self, data_id: str = None, type_id: str = None) -> Tuple[str, ...]:
         self._assert_valid_type_id(type_id)
@@ -154,7 +144,7 @@ class DirectoryDataStore(MutableDataStore):
             )
             assert extensions
             opener_id = extensions[0].name
-        return new_data_opener(opener_id).get_open_data_params_schema(data_id=data_id)
+        return self._new_s3_opener(opener_id).get_open_data_params_schema(data_id=data_id)
 
     def open_data(self,
                   data_id: str,
@@ -164,7 +154,7 @@ class DirectoryDataStore(MutableDataStore):
         if not opener_id:
             opener_id = self._get_opener_id(data_id)
         path = self._resolve_data_id_to_path(data_id)
-        return new_data_opener(opener_id).open_data(path, **open_params)
+        return self._new_s3_opener(opener_id).open_data(data_id=path, **open_params)
 
     def get_data_writer_ids(self, type_id: str = None) -> Tuple[str, ...]:
         self._assert_valid_type_id(type_id)
@@ -176,13 +166,10 @@ class DirectoryDataStore(MutableDataStore):
     def get_write_data_params_schema(self, writer_id: str = None) -> JsonObjectSchema:
         if not writer_id:
             extensions = find_data_writer_extensions(
-                predicate=get_data_accessor_predicate(type_id='dataset',
-                                                      format_id=_DEFAULT_FORMAT_ID,
-                                                      storage_id=_STORAGE_ID)
+                predicate=get_data_accessor_predicate(type_id='dataset', storage_id=_STORAGE_ID)
             )
-            assert extensions
             writer_id = extensions[0].name
-        return new_data_writer(writer_id).get_write_data_params_schema()
+        return self._new_s3_writer(writer_id).get_write_data_params_schema()
 
     def write_data(self,
                    data: Any,
@@ -196,44 +183,50 @@ class DirectoryDataStore(MutableDataStore):
                 predicate = get_data_accessor_predicate(type_id=TYPE_ID_DATASET,
                                                         format_id='zarr',
                                                         storage_id=_STORAGE_ID)
-            elif isinstance(data, MultiLevelDataset):
-                predicate = get_data_accessor_predicate(type_id=TYPE_ID_MULTI_LEVEL_DATASET,
-                                                        format_id='levels',
-                                                        storage_id=_STORAGE_ID)
-            elif isinstance(data, gpd.GeoDataFrame):
-                predicate = get_data_accessor_predicate(type_id=TYPE_ID_GEO_DATA_FRAME,
-                                                        format_id='geojson',
-                                                        storage_id=_STORAGE_ID)
             else:
                 raise DataStoreError(f'Unsupported data type {type(data)}')
             extensions = find_data_writer_extensions(predicate=predicate)
-            assert extensions
             writer_id = extensions[0].name
         data_id = self._ensure_valid_data_id(data_id, data)
         path = self._resolve_data_id_to_path(data_id)
-        new_data_writer(writer_id).write_data(data, path, replace=replace, **write_params)
+        self._new_s3_writer(writer_id).write_data(data, data_id=path, replace=replace, **write_params)
+        self.register_data(data_id, data)
         return data_id
 
     def delete_data(self, data_id: str):
-        accessor_id_parts = self._get_accessor_id_parts(data_id)
-        writer_id = ':'.join(accessor_id_parts)
         path = self._resolve_data_id_to_path(data_id)
-        new_data_writer(writer_id).delete_data(path)
+        try:
+            self._s3_fs.delete(path, recursive=True)
+            self.deregister_data(data_id)
+        except ValueError as e:
+            raise DataStoreError(f'{e}') from e
 
     def register_data(self, data_id: str, data: Any):
-        # We don't need this as we use the file system
+        # TODO: implement me
         pass
 
     def deregister_data(self, data_id: str):
-        # We don't need this as we use the file system
+        # TODO: implement me
         pass
 
     ###############################################################
     # Implementation helpers
 
+    def _new_s3_opener(self, opener_id):
+        self._assert_not_closed()
+        return new_data_opener(opener_id, s3_fs=self._s3_fs)
+
+    def _new_s3_writer(self, writer_id):
+        self._assert_not_closed()
+        return new_data_writer(writer_id, s3_fs=self._s3_fs)
+
     @classmethod
     def _ensure_valid_data_id(cls, data_id: Optional[str], data: Any) -> str:
         return data_id or str(uuid.uuid4()) + cls._get_filename_ext(data)
+
+    def _assert_not_closed(self):
+        if self._s3_fs is None:
+            raise DataStoreError(f'Data store already closed.')
 
     def _assert_valid_data_id(self, data_id):
         if not self.has_data(data_id):
@@ -241,7 +234,7 @@ class DirectoryDataStore(MutableDataStore):
 
     def _resolve_data_id_to_path(self, data_id: str) -> str:
         assert_given(data_id, 'data_id')
-        return os.path.join(self._base_dir, data_id)
+        return f'{self._bucket_name}/{data_id}'
 
     def _assert_valid_type_id(self, type_id: Optional[str]):
         if type_id:

@@ -1,6 +1,10 @@
 ## Changes in 0.5.0.devX (in development)
 
-* From 0.4.1: Fixed time-series performance drop (#299).
+### Fixes
+* From 0.4.1: Fixed time-series performance drop (#299). 
+
+* Fixed `xcube gen` CLI tool to correctly insert time slices into an 
+  existing cube stored as Zarr (#317).  
 
 * When creating an ImageGeom from a dataset, correct the height if it would
   otherwise give a maximum latitude >90°.

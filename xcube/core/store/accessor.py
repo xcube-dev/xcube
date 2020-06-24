@@ -44,7 +44,7 @@ def new_data_opener(opener_id: str,
     """
     Get an instance of the data opener identified by *opener_id*.
 
-    The optional, extra writer parameters *opener_params* may be used by data store
+    The optional, extra opener parameters *opener_params* may be used by data store
     (``xcube.core.store.DataStore``) implementations so they can share their internal state with the opener.
 
     :param opener_id: The data opener identifier.
@@ -61,7 +61,7 @@ def new_data_writer(writer_id: str,
                     extension_registry: Optional[ExtensionRegistry] = None,
                     **writer_params) -> 'DataWriter':
     """
-    Get an instance of the data opener identified by *writer_id*.
+    Get an instance of the data writer identified by *writer_id*.
 
     The optional, extra writer parameters *writer_params* may be used by data store
     (``xcube.core.store.DataStore``) implementations so they can share their internal state with the writer.
