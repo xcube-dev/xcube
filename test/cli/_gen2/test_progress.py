@@ -1,13 +1,13 @@
 import unittest
 
 import requests_mock
-from xcube.util.progress import ThreadedProgressObserver
-from xcube.cli._gen2.progress import ApiProgressCallbackObserver, TerminalProgressCallbackObserver
+from xcube.cli._gen2.progress import ApiProgressCallbackObserver, TerminalProgressCallbackObserver, \
+    _ThreadedProgressObserver
 from xcube.cli._gen2.genconfig import GenConfig
 from xcube.util.progress import ProgressState
 
 
-class TestThreadedProgressObserver(unittest.TestCase):
+class TestThreadedProgressObservers(unittest.TestCase):
     REQUEST = dict(input_configs=[dict(store_id='sentinelhub',
                                        data_id='S2L2A',
                                        variable_names=['B01', 'B02', 'B03'])],
@@ -30,22 +30,19 @@ class TestThreadedProgressObserver(unittest.TestCase):
         m.put('https://xcube-gen.test/api/v1/jobs/tomtom/iamajob/callback', json={})
         progress_state = ProgressState(label='test', total_work=0., super_work=10.)
 
-        delegate = ApiProgressCallbackObserver(self._callback_config)
-        observer = ThreadedProgressObserver(delegate=delegate)
+        observer = ApiProgressCallbackObserver(self._callback_config)
         observer.on_begin(state_stack=[progress_state])
 
         with self.assertRaises(ValueError) as e:
             self._callback_config.api_uri = None
-            delegate = ApiProgressCallbackObserver(self._callback_config)
-            observer = ThreadedProgressObserver(delegate=delegate)
+            observer = ApiProgressCallbackObserver(self._callback_config)
             observer.on_begin(state_stack=[progress_state])
 
         self.assertEqual('Both, api_uri and access_token must be given.', str(e.exception))
 
         with self.assertRaises(ValueError) as e:
             self._callback_config.access_token = None
-            delegate = ApiProgressCallbackObserver(self._callback_config)
-            observer = ThreadedProgressObserver(delegate=delegate)
+            observer = ApiProgressCallbackObserver(self._callback_config)
             observer.on_begin(state_stack=[progress_state])
 
         self.assertEqual('Both, api_uri and access_token must be given.', str(e.exception))
@@ -70,18 +67,18 @@ class TestThreadedProgressObserver(unittest.TestCase):
 
         state_stack = ProgressState('Test', 100, 100)
 
-        delegate = ApiProgressCallbackObserver(self._callback_config)
+        observer = ApiProgressCallbackObserver(self._callback_config)
 
-        res = delegate.callback("on_begin", 3., [state_stack])
+        res = observer.callback("on_begin", 3., [state_stack])
         self.assertDictEqual(expected_callback, res.request.json())
 
         with self.assertRaises(ValueError) as e:
-            delegate.callback("on_begin", 3., [])
+            observer.callback("on_begin", 3., [])
 
         self.assertEqual("ProgressStates must be given", str(e.exception))
 
-        delegate = TerminalProgressCallbackObserver()
-        res = delegate.callback("on_begin", 3., [state_stack], False)
+        observer = TerminalProgressCallbackObserver()
+        res = observer.callback("on_begin", 3., [state_stack], False)
         self.assertIn('on_begin', res)
         self.assertIn('0% Completed', res)
 
@@ -92,9 +89,9 @@ class TestThreadedProgressObserver(unittest.TestCase):
 
         # from time import sleep
         # from xcube.util.progress import observe_progress
-
+        #
         # delegate = TerminalProgressCallbackObserver()
-        # ThreadedProgressObserver(delegate=delegate, dt=0.1).activate()
+        # observer = ThreadedProgressObserver(delegate=delegate, dt=0.1).activate()
         # with observe_progress('Generating cube', 100) as cm:
         #     dt = 1
         #     for i in range(1, 80):
@@ -105,3 +102,35 @@ class TestThreadedProgressObserver(unittest.TestCase):
         #     cm.will_work(20)
         #     sleep(dt)
         #     cm.worked(20)
+        # observer.deactivate()
+
+
+class TestThreadedProgressObserver(unittest.TestCase):
+    def test_threaded(self):
+
+        with self.assertRaises(ValueError) as e:
+            _ThreadedProgressObserver(minimum=-1, dt=0)
+
+        self.assertEqual("The timer's minimum must be >=0", str(e.exception))
+
+        with self.assertRaises(ValueError) as e:
+            _ThreadedProgressObserver(minimum=0, dt=-1)
+
+        self.assertEqual("The timer's time step must be >=0", str(e.exception))
+
+        observer = _ThreadedProgressObserver(minimum=0, dt=0)
+        with self.assertRaises(ValueError) as e:
+            observer.on_begin(state_stack=[])
+
+        self.assertEqual('state_stack must be given', str(e.exception))
+
+        with self.assertRaises(ValueError) as e:
+            observer.on_update(state_stack=[])
+
+        self.assertEqual('state_stack must be given', str(e.exception))
+
+        with self.assertRaises(ValueError) as e:
+            observer.on_end(state_stack=[])
+
+        self.assertEqual('state_stack must be given', str(e.exception))
+

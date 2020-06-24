@@ -22,7 +22,6 @@ from typing import Type
 
 import click
 
-from xcube.util.progress import ThreadedProgressObserver
 from xcube.cli._gen2.progress import ApiProgressCallbackObserver
 from xcube.cli._gen2.progress import TerminalProgressCallbackObserver
 from xcube.cli._gen2.open import open_cubes
@@ -58,9 +57,9 @@ def main(request_path: str,
     request = GenConfig.from_file(request_path, exception_type=exception_type)
 
     if request.callback_config:
-        ThreadedProgressObserver(delegate=ApiProgressCallbackObserver(request.callback_config)).activate()
+        ApiProgressCallbackObserver(request.callback_config).activate()
     else:
-        ThreadedProgressObserver(delegate=TerminalProgressCallbackObserver()).activate()
+        TerminalProgressCallbackObserver().activate()
 
     with observe_progress('Generating cube', 100) as cm:
         cm.will_work(10)
