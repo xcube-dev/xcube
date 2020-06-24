@@ -214,7 +214,7 @@ class ObserveProgressTest(unittest.TestCase):
 
         self.assertEqual(2, len(observer.calls[-1]))
         event, states = observer.calls[-1]
-        self.assertEqual('end',event)
+        self.assertEqual('end', event)
         self.assertEqual(1, len(states))
         self.assertEqual(4, len(states[0]))
         self.assertEqual(('computing', 0.32, True), states[0][0:-1])
@@ -224,6 +224,7 @@ class ObserveProgressTest(unittest.TestCase):
         self.assertEqual('ValueError', exc_type)
         self.assertEqual('Failed to load', exc_value)
         self.assertIsInstance(exc_traceback, list)
+
 
 class ProgressStateTest(unittest.TestCase):
 

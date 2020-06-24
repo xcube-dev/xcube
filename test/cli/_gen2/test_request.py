@@ -100,5 +100,5 @@ class RequestTest(unittest.TestCase):
                                                data_id='CHL'))
         request = GenConfig.from_dict(request_dict)
         self.assertEqual(request_dict, request.to_dict())
-        import json
-        print(json.dumps(request.to_dict()))
+        # import json
+        # print(json.dumps(request.to_dict()))

@@ -23,6 +23,7 @@ import xarray as xr
 from xcube.cli._gen2.genconfig import CubeConfig
 
 
+# noinspection PyUnusedLocal
 def resample_cube(cube: xr.Dataset,
                   cube_config: CubeConfig):
     # TODO: implement me
