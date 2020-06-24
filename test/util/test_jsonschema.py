@@ -260,6 +260,34 @@ class JsonObjectSchemaTest(unittest.TestCase):
                                              Person(name='Ernie', age=12, deleted=False)]),
                          schema.from_instance(value))
 
+    def test_from_json_object_additional_properties_is_schema(self):
+        Person = namedtuple('Person', ['name', 'age', 'deleted'])
+
+        person_schema = JsonObjectSchema(
+            properties=dict(
+                name=JsonStringSchema(),
+                age=JsonIntegerSchema(),
+                deleted=JsonBooleanSchema(default=False)
+            ),
+            factory=Person,
+        )
+
+        schema = JsonObjectSchema(
+            additional_properties=person_schema,
+        )
+
+        value = {
+            'p1': {'name': 'Bibo', 'age': 15, 'deleted': True},
+            'p2': {'name': 'Ernie', 'age': 12, 'deleted': False},
+        }
+
+        self.assertEqual(
+            {
+                'p1': Person(name='Bibo', age=15, deleted=True),
+                'p2': Person(name='Ernie', age=12, deleted=False),
+            },
+            schema.from_instance(value))
+
     def test_process_kwargs_subset(self):
         schema = JsonObjectSchema(
             properties=dict(
