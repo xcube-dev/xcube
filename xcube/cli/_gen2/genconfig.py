@@ -84,6 +84,36 @@ class InputConfig:
         return d
 
 
+class CallbackConfig:
+    def __init__(self,
+                 api_uri: str = None,
+                 access_token: str = None):
+        assert_condition(api_uri and access_token, 'Both, api_uri and access_token must be given')
+        self.api_uri = api_uri
+        self.access_token = access_token
+
+    @classmethod
+    def get_schema(cls):
+        return JsonObjectSchema(
+            properties=dict(
+                api_uri=JsonStringSchema(min_length=1),
+                access_token=JsonStringSchema(min_length=1)
+            ),
+            additional_properties=False,
+            required=["api_uri", "access_token"],
+            factory=cls,
+        )
+
+    def to_dict(self) -> dict:
+        d = dict()
+        if self.api_uri:
+            d.update(api_uri=self.api_uri)
+        if self.access_token:
+            d.update(access_token=self.access_token)
+
+        return d
+
+
 class OutputConfig:
 
     def __init__(self,
@@ -178,17 +208,19 @@ class CubeConfig:
             factory=cls)
 
 
-class Request:
+class GenConfig:
     def __init__(self,
                  input_configs: Sequence[InputConfig] = None,
-                 cube_config: Mapping[str, Any] = None,
-                 output_config: OutputConfig = None):
+                 cube_config: CubeConfig = None,
+                 output_config: OutputConfig = None,
+                 callback_config: Optional[CallbackConfig] = None):
         assert_given(input_configs, 'input_configs')
         assert_given(cube_config, 'cube_config')
         assert_given(output_config, 'output_config')
         self.input_configs = input_configs
         self.cube_config = cube_config
         self.output_config = output_config
+        self.callback_config = callback_config
 
     @classmethod
     def get_schema(cls):
@@ -197,6 +229,7 @@ class Request:
                 input_configs=JsonArraySchema(items=InputConfig.get_schema(), min_items=1),
                 cube_config=CubeConfig.get_schema(),
                 output_config=OutputConfig.get_schema(),
+                callback_config=CallbackConfig.get_schema()
             ),
             required=['input_configs', 'cube_config', 'output_config'],
             factory=cls,
@@ -204,17 +237,22 @@ class Request:
 
     def to_dict(self) -> Mapping[str, Any]:
         """Convert into a JSON-serializable dictionary"""
-        return dict(input_configs=[ic.to_dict() for ic in self.input_configs],
-                    cube_config=self.cube_config.to_dict(),
-                    output_config=self.output_config.to_dict())
+        d = dict(input_configs=[ic.to_dict() for ic in self.input_configs],
+                 cube_config=self.cube_config.to_dict(),
+                 output_config=self.output_config.to_dict())
+
+        if self.callback_config:
+            d.update(callback_config=self.callback_config.to_dict())
+
+        return d
 
     @classmethod
-    def from_dict(cls, request_dict: Dict) -> 'Request':
+    def from_dict(cls, request_dict: Dict) -> 'GenConfig':
         """Create new instance from a JSON-serializable dictionary"""
         return cls.get_schema().from_instance(request_dict)
 
     @classmethod
-    def from_file(cls, request_file: Optional[str], exception_type: Type[BaseException] = ValueError) -> 'Request':
+    def from_file(cls, request_file: Optional[str], exception_type: Type[BaseException] = ValueError) -> 'GenConfig':
         """Create new instance from a JSON file, or YAML file, or JSON passed via stdin."""
         request_dict = cls._load_request_file(request_file, exception_type=exception_type)
         return cls.from_dict(request_dict)

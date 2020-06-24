@@ -18,14 +18,14 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-
 from typing import Type
 
 import click
 
-from xcube.cli._gen2.callback import CallbackApiProgressObserver
+from xcube.cli._gen2.progress import ApiProgressCallbackObserver
+from xcube.cli._gen2.progress import TerminalProgressCallbackObserver
 from xcube.cli._gen2.open import open_cubes
-from xcube.cli._gen2.request import Request, OutputConfig
+from xcube.cli._gen2.genconfig import GenConfig, OutputConfig
 from xcube.cli._gen2.resample import resample_and_merge_cubes
 from xcube.cli._gen2.write import write_cube
 from xcube.core.store import find_data_writer_extensions
@@ -34,9 +34,6 @@ from xcube.util.progress import observe_progress
 
 
 def main(request_path: str,
-         output_path: str = None,
-         format_name: str = None,
-         callback_api_url: str = None,
          exception_type: Type[BaseException] = click.ClickException,
          verbose: bool = False):
     """
@@ -53,34 +50,32 @@ def main(request_path: str,
     :param request_path: cube generation request. It may be provided as a JSON or YAML file
         (file extensions ".json" or ".yaml"). If the REQUEST file argument is omitted, it is expected that
         the Cube generation request is piped as a JSON string.
-    :param output_path: output ZARR directory in local file system.
-        Overwrites output configuration in request if given.
-    :param callback_api_url:  Optional API URL used to report status information. The URL
-        must accept the PUT method and support the JSON content type.
     :param verbose:
     :param exception_type: exception type used to raise on errors
     """
 
-    if callback_api_url:
-        CallbackApiProgressObserver(callback_api_url).activate()
+    request = GenConfig.from_file(request_path, exception_type=exception_type)
 
-    request = Request.from_file(request_path, exception_type=exception_type)
-
-    if output_path:
-        output_config = _new_output_config_for_dir(output_path, format_name, exception_type)
+    if request.callback_config:
+        ApiProgressCallbackObserver(request.callback_config).activate()
     else:
-        output_config = request.output_config
+        TerminalProgressCallbackObserver().activate()
 
     with observe_progress('Generating cube', 100) as cm:
         cm.will_work(10)
         cubes = open_cubes(request.input_configs,
                            cube_config=request.cube_config)
+        cm.worked(10)
+
         cm.will_work(10)
         cube = resample_and_merge_cubes(cubes,
                                         cube_config=request.cube_config)
+        cm.worked(10)
+
         cm.will_work(80)
         write_cube(cube,
-                   output_config=output_config)
+                   output_config=request.output_config)
+        cm.worked(80)
 
 
 def _new_output_config_for_dir(output_path, format_id, exception_type: Type[BaseException]):

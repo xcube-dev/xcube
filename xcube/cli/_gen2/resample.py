@@ -20,7 +20,7 @@
 # SOFTWARE.
 import xarray as xr
 
-from xcube.cli._gen2.request import CubeConfig
+from xcube.cli._gen2.genconfig import CubeConfig
 
 
 # noinspection PyUnusedLocal

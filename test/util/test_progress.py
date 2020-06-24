@@ -55,6 +55,7 @@ class ObserveProgressTest(unittest.TestCase):
 
     def test_nested_observe_progress(self):
         observer = MyProgressObserver()
+        observer.deactivate()
         observer.activate()
 
         with observe_progress('computing', 4) as reporter:
