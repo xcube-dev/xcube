@@ -148,13 +148,13 @@ def opener_info(opener_id: str):
     Show data opener information.
     You can obtain valid OPENER names using command "xcube io opener list".
     """
-    extension = get_extension_registry().get_extension(EXTENSION_POINT_DATA_WRITERS, opener_id)
+    extension = get_extension_registry().get_extension(EXTENSION_POINT_DATA_OPENERS, opener_id)
     description = extension.metadata.get('description')
     if description:
         print(description)
     from xcube.core.store import new_data_opener
-    writer = new_data_opener(opener_id)
-    params_schema = writer.get_open_data_params_schema()
+    opener = new_data_opener(opener_id)
+    params_schema = opener.get_open_data_params_schema()
     print(_format_params_schema(params_schema))
 
 
