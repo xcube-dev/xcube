@@ -1,51 +1,13 @@
 import unittest
-from time import sleep
-from typing import Sequence
 
 import requests_mock
-from xcube.cli._gen2.progress_observer import CallbackApiProgressObserver, CallbackTerminalProgressObserver, \
-    ThreadedProgressObserver
-from xcube.cli._gen2.request import Request
-from xcube.util.progress import ProgressState, observe_progress
+from xcube.cli._gen2.progress_observer import ThreadedProgressObserver, get_callback_api_progress_delegate, \
+    get_callback_terminal_progress_delegate
+from xcube.cli._gen2.request import Request, CallbackConfig
+from xcube.util.progress import ProgressState
 
 
 class TestThreadedProgressObserver(unittest.TestCase):
-    class _TestThreaded(ThreadedProgressObserver):
-        def __init__(self, minimum=0, dt=0):
-            super().__init__(minimum=minimum, dt=dt)
-
-        def callback(self, sender: str, elapsed: float, state_stack: Sequence[ProgressState]) -> None:
-            pass
-
-    def test_threaded(self):
-        with self.assertRaises(ValueError) as e:
-            self._TestThreaded(-1, 0)
-
-        self.assertEqual("The timer's minimum must be >=0", str(e.exception))
-
-        with self.assertRaises(ValueError) as e:
-            self._TestThreaded(0, -1)
-
-        self.assertEqual("The timer's time step must be >=0", str(e.exception))
-
-        observer = self._TestThreaded()
-        with self.assertRaises(ValueError) as e:
-            observer.on_begin(state_stack=[])
-
-        self.assertEqual('ProgressStates must be given', str(e.exception))
-
-        with self.assertRaises(ValueError) as e:
-            observer.on_update(state_stack=[])
-
-        self.assertEqual('ProgressStates must be given', str(e.exception))
-
-        with self.assertRaises(ValueError) as e:
-            observer.on_end(state_stack=[])
-
-        self.assertEqual('ProgressStates must be given', str(e.exception))
-
-
-class TestCallbackApiProgressObserver(unittest.TestCase):
     REQUEST = dict(input_configs=[dict(store_id='sentinelhub',
                                        data_id='S2L2A',
                                        variable_names=['B01', 'B02', 'B03'])],
@@ -57,46 +19,108 @@ class TestCallbackApiProgressObserver(unittest.TestCase):
                    output_config=dict(store_id='memory',
                                       data_id='CHL'),
                    callback_config=dict(api_uri='https://xcube-gen.test/api/v1/jobs/tomtom/iamajob/callback',
-                                 access_token='dfsvdfsv'))
+                                        access_token='dfsvdfsv'))
 
     def setUp(self) -> None:
         self._request = Request.from_dict(self.REQUEST)
         self._callback_config = self._request.callback_config
 
+    def test_threaded(self):
+        delegate = get_callback_api_progress_delegate(CallbackConfig(api_uri='uri', access_token='token'))
+        with self.assertRaises(ValueError) as e:
+            ThreadedProgressObserver(minimum=-1, dt=0, delegate=delegate)
+
+        self.assertEqual("The timer's minimum must be >=0", str(e.exception))
+
+        with self.assertRaises(ValueError) as e:
+            ThreadedProgressObserver(minimum=0, dt=-1, delegate=delegate)
+
+        self.assertEqual("The timer's time step must be >=0", str(e.exception))
+
+        observer = ThreadedProgressObserver(minimum=0, dt=0, delegate=delegate)
+        with self.assertRaises(ValueError) as e:
+            observer.on_begin(state_stack=[])
+
+        self.assertEqual('state_stack must be given', str(e.exception))
+
+        with self.assertRaises(ValueError) as e:
+            observer.on_update(state_stack=[])
+
+        self.assertEqual('state_stack must be given', str(e.exception))
+
+        with self.assertRaises(ValueError) as e:
+            observer.on_end(state_stack=[])
+
+        self.assertEqual('state_stack must be given', str(e.exception))
+
     @requests_mock.Mocker()
-    def test_observer(self, m):
+    def test_api_delegate(self, m):
         m.put('https://xcube-gen.test/api/v1/jobs/tomtom/iamajob/callback', json={})
         progress_state = ProgressState(label='test', total_work=0., super_work=10.)
 
-        observer = CallbackApiProgressObserver(self._callback_config)
+        delegate = get_callback_api_progress_delegate(self._callback_config)
+        observer = ThreadedProgressObserver(delegate=delegate)
         observer.on_begin(state_stack=[progress_state])
 
         with self.assertRaises(ValueError) as e:
             self._callback_config.api_uri = None
-            observer = CallbackApiProgressObserver(self._callback_config)
+            delegate = get_callback_api_progress_delegate(self._callback_config)
+            observer = ThreadedProgressObserver(delegate=delegate)
             observer.on_begin(state_stack=[progress_state])
 
         self.assertEqual('Both, api_uri and access_token must be given.', str(e.exception))
 
         with self.assertRaises(ValueError) as e:
             self._callback_config.access_token = None
-            observer = CallbackApiProgressObserver(self._callback_config)
+            delegate = get_callback_api_progress_delegate(self._callback_config)
+            observer = ThreadedProgressObserver(delegate=delegate)
             observer.on_begin(state_stack=[progress_state])
 
         self.assertEqual('Both, api_uri and access_token must be given.', str(e.exception))
 
+    @requests_mock.Mocker()
+    def test_callback(self, m):
+        expected_callback = {
+            "sender": "on_begin",
+            "state": {
+                "label": "Test",
+                "total_work": 100,
+                "super_work": 100,
+                "super_work_ahead": 1,
+                "exc_info": None,
+                "progress": 0.0
+            }
+        }
 
-class TestCallbackTerminalProgressObserver(unittest.TestCase):
-    def test_print_progress(self):
-        CallbackTerminalProgressObserver(dt=0.1).activate()
+        m.put('https://xcube-gen.test/api/v1/jobs/tomtom/iamajob/callback', json=expected_callback)
 
-        with observe_progress('Generating cube', 100) as cm:
-            dt = 1
-            for i in range(1, 80):
-                cm.will_work(1)
-                sleep(dt)
-                cm.worked(1)
+        state_stack = ProgressState('Test', 100, 100)
 
-            cm.will_work(20)
-            sleep(dt)
-            cm.worked(20)
+        delegate = get_callback_api_progress_delegate(self._callback_config)
+
+        res = delegate("on_begin", 3., [state_stack])
+        self.assertDictEqual(expected_callback, res.request.json())
+
+        with self.assertRaises(ValueError) as e:
+            delegate("on_begin", 3., [])
+
+        self.assertEqual("ProgressStates must be given", str(e.exception))
+
+    def test_terminal_delegate(self):
+        delegate = get_callback_terminal_progress_delegate()
+        ThreadedProgressObserver(delegate=delegate, dt=0.1).activate()
+
+    def test_terminal_progress(self):
+        """
+        Uncomment the lines below if you want to run and test the termial progress bar output.
+        """
+        # with observe_progress('Generating cube', 100) as cm:
+        #     dt = 1
+        #     for i in range(1, 80):
+        #         cm.will_work(1)
+        #         sleep(dt)
+        #         cm.worked(1)
+        #
+        #     cm.will_work(20)
+        #     sleep(dt)
+        #     cm.worked(20)

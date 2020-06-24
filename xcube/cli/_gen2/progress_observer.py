@@ -19,10 +19,10 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 import threading
-from abc import abstractmethod
 from time import sleep
 from timeit import default_timer
-from typing import Sequence
+from typing import Sequence, Any
+
 import requests
 
 from xcube.cli._gen2.request import CallbackConfig
@@ -59,6 +59,7 @@ class ThreadedProgressObserver(ProgressObserver):
     A threaded Progress observer adapted from Dask's ProgressBar class.
     """
     def __init__(self,
+                 delegate: Any,
                  minimum: float = 0,
                  dt: float = 1):
         """
@@ -103,18 +104,18 @@ class ThreadedProgressObserver(ProgressObserver):
         if elapsed < self._minimum:
             return
         if not errored:
-            self.callback(self._current_sender, elapsed, self._state_stack)
+            self._delegate(self._current_sender, elapsed, self._state_stack)
         else:
             self._update_state(elapsed)
 
     def _update_state(self, elapsed):
         if not self._state_stack:
-            self.callback(self._current_sender, 0, elapsed)
+            self._delegate(self._current_sender, 0, elapsed)
             return
         state = self._state_stack[0]
 
         if state.completed_work < state.total_work:
-            self.callback(self._current_sender, elapsed, self._state_stack)
+            self._delegate(self._current_sender, elapsed, self._state_stack)
 
     def on_begin(self, state_stack: Sequence[ProgressState]):
         assert_given(state_stack, name='state_stack')
@@ -123,41 +124,27 @@ class ThreadedProgressObserver(ProgressObserver):
         self._start_timer()
 
     def on_update(self, state_stack: Sequence[ProgressState]):
-        assert_given(state_stack, name="ProgressStates")
+        assert_given(state_stack, name="state_stack")
         self._state_stack = state_stack
         self._current_sender = "on_update"
 
     def on_end(self, state_stack: Sequence[ProgressState]):
-        assert_given(state_stack, name="ProgressStates")
+        assert_given(state_stack, name="state_stack")
         self._state_stack = state_stack
         self._current_sender = "on_end"
         self._stop_timer(False)
 
-    @abstractmethod
-    def callback(self, sender: str, elapsed: float, state_stack: Sequence[ProgressState]) -> None:
-        """
 
-        :param state_stack: Current ProgressState
-        :param elapsed: elapsed time in seconds
-        :param sender: sender event
+def get_callback_api_progress_delegate(callback_config: CallbackConfig):
+    """
 
-        :return: None
-        """
+    :type callback_config: CallbackConfig
+    """
+    assert_given(callback_config)
+    assert_condition(callback_config.api_uri and callback_config.access_token,
+                     "Both, api_uri and access_token must be given.")
 
-
-class CallbackApiProgressObserver(ThreadedProgressObserver):
-    def __init__(self, callback_config: CallbackConfig):
-        """
-
-        :type callback_config: CallbackConfig
-        """
-        super().__init__()
-        assert_given(callback_config)
-        assert_condition(callback_config.api_uri and callback_config.access_token,
-                         "Both, api_uri and access_token must be given.")
-        self.callback_cfg = callback_config
-
-    def callback(self, sender: str, elapsed: float, state_stack: Sequence[ProgressState]) -> None:
+    def _callback(sender: str, elapsed: float, state_stack: Sequence[ProgressState]):
         assert_given(state_stack, "ProgressStates")
         state = state_stack[0]
         callback = {
@@ -168,28 +155,22 @@ class CallbackApiProgressObserver(ThreadedProgressObserver):
                 "super_work": state.super_work,
                 "super_work_ahead": state.super_work_ahead,
                 "exc_info": state.exc_info_text,
-                "progress": state.progress
+                "progress": state.progress,
+                "elapsed": elapsed,
+                "errored": state.exc_info is not None
             }
         }
-        callback_api_uri = self.callback_cfg.api_uri
-        callback_api_access_token = self.callback_cfg.access_token
+        callback_api_uri = callback_config.api_uri
+        callback_api_access_token = callback_config.access_token
         header = {"Authorization": f"Bearer {callback_api_access_token}"}
-        requests.put(callback_api_uri, json=callback, headers=header)
+
+        return requests.put(callback_api_uri, json=callback, headers=header)
+
+    return _callback
 
 
-class CallbackTerminalProgressObserver(ThreadedProgressObserver):
-    def __init__(self,
-                 minimum: float = 0,
-                 dt: float = 1):
-        """
-
-        :type dt: float
-        :type minimum: float
-        
-        """
-        super().__init__(minimum, dt)
-
-    def callback(self, sender: str, elapsed: float, state_stack: [ProgressState]):
+def get_callback_terminal_progress_delegate():
+    def _callback(sender: str, elapsed: float, state_stack: [ProgressState]):
         """
 
         :param state_stack:
@@ -198,10 +179,14 @@ class CallbackTerminalProgressObserver(ThreadedProgressObserver):
         """
         state = state_stack[0]
 
-        bar = "#" * int(self._width * state.progress)
+        bar = "#" * int(state.total_work * state.progress)
         percent = int(100 * state.progress)
         elapsed = _format_time(elapsed)
         msg = "\r{0}: [{1:<{2}}] | {3}% Completed | {4}".format(
-            sender, bar, self._width, percent, elapsed
+            sender, bar, state.total_work, percent, elapsed
         )
         print(msg)
+
+        return msg
+
+    return _callback
