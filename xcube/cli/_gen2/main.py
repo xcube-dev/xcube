@@ -26,7 +26,7 @@ from xcube.cli._gen2.progress_observer import ThreadedProgressObserver
 from xcube.cli._gen2.progress_observer import get_callback_terminal_progress_delegate
 from xcube.cli._gen2.progress_observer import get_callback_api_progress_delegate
 from xcube.cli._gen2.open import open_cubes
-from xcube.cli._gen2.request import Request, OutputConfig
+from xcube.cli._gen2.genconfig import GenConfig, OutputConfig
 from xcube.cli._gen2.resample import resample_and_merge_cubes
 from xcube.cli._gen2.write import write_cube
 from xcube.core.store import find_data_writer_extensions
@@ -55,7 +55,7 @@ def main(request_path: str,
     :param exception_type: exception type used to raise on errors
     """
 
-    request = Request.from_file(request_path, exception_type=exception_type)
+    request = GenConfig.from_file(request_path, exception_type=exception_type)
 
     if request.callback_config:
         ThreadedProgressObserver(delegate=get_callback_api_progress_delegate(request.callback_config)).activate()

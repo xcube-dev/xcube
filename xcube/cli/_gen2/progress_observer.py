@@ -25,7 +25,7 @@ from typing import Sequence, Any
 
 import requests
 
-from xcube.cli._gen2.request import CallbackConfig
+from xcube.cli._gen2.genconfig import CallbackConfig
 from xcube.util.assertions import assert_condition, assert_given
 from xcube.util.progress import ProgressObserver
 from xcube.util.progress import ProgressState

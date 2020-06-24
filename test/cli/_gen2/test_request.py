@@ -1,9 +1,9 @@
 import unittest
 
-from xcube.cli._gen2.request import CubeConfig
-from xcube.cli._gen2.request import InputConfig
-from xcube.cli._gen2.request import OutputConfig
-from xcube.cli._gen2.request import Request
+from xcube.cli._gen2.genconfig import CubeConfig
+from xcube.cli._gen2.genconfig import InputConfig
+from xcube.cli._gen2.genconfig import OutputConfig
+from xcube.cli._gen2.genconfig import GenConfig
 
 
 class InputConfigTest(unittest.TestCase):
@@ -70,8 +70,8 @@ class RequestTest(unittest.TestCase):
                                              time_period='4D'),
                             output_config=dict(store_id='memory',
                                                data_id='CHL'))
-        request = Request.from_dict(request_dict)
-        self.assertIsInstance(request, Request)
+        request = GenConfig.from_dict(request_dict)
+        self.assertIsInstance(request, GenConfig)
         self.assertEqual(1, len(request.input_configs))
         self.assertIsInstance(request.input_configs[0], InputConfig)
         self.assertEqual('memory', request.input_configs[0].store_id)
@@ -98,7 +98,7 @@ class RequestTest(unittest.TestCase):
                                              time_period='4D'),
                             output_config=dict(store_id='memory',
                                                data_id='CHL'))
-        request = Request.from_dict(request_dict)
+        request = GenConfig.from_dict(request_dict)
         self.assertEqual(request_dict, request.to_dict())
         import json
         print(json.dumps(request.to_dict()))

@@ -18,11 +18,11 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-from typing import Callable, Optional
+from typing import Optional
 
 import xarray as xr
 
-from xcube.cli._gen2.request import OutputConfig
+from xcube.cli._gen2.genconfig import OutputConfig
 from xcube.core.store import new_data_store
 from xcube.core.store import new_data_writer
 from xcube.util.extension import ExtensionRegistry

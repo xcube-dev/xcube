@@ -19,9 +19,8 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 import xarray as xr
-from typing import Callable
 
-from xcube.cli._gen2.request import CubeConfig
+from xcube.cli._gen2.genconfig import CubeConfig
 
 
 def resample_cube(cube: xr.Dataset,

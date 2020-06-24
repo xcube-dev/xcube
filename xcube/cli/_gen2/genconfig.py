@@ -208,7 +208,7 @@ class CubeConfig:
             factory=cls)
 
 
-class Request:
+class GenConfig:
     def __init__(self,
                  input_configs: Sequence[InputConfig] = None,
                  cube_config: CubeConfig = None,
@@ -247,12 +247,12 @@ class Request:
         return d
 
     @classmethod
-    def from_dict(cls, request_dict: Dict) -> 'Request':
+    def from_dict(cls, request_dict: Dict) -> 'GenConfig':
         """Create new instance from a JSON-serializable dictionary"""
         return cls.get_schema().from_instance(request_dict)
 
     @classmethod
-    def from_file(cls, request_file: Optional[str], exception_type: Type[BaseException] = ValueError) -> 'Request':
+    def from_file(cls, request_file: Optional[str], exception_type: Type[BaseException] = ValueError) -> 'GenConfig':
         """Create new instance from a JSON file, or YAML file, or JSON passed via stdin."""
         request_dict = cls._load_request_file(request_file, exception_type=exception_type)
         return cls.from_dict(request_dict)

@@ -3,7 +3,7 @@ import unittest
 import requests_mock
 from xcube.cli._gen2.progress_observer import ThreadedProgressObserver, get_callback_api_progress_delegate, \
     get_callback_terminal_progress_delegate
-from xcube.cli._gen2.request import Request, CallbackConfig
+from xcube.cli._gen2.genconfig import GenConfig, CallbackConfig
 from xcube.util.progress import ProgressState
 
 
@@ -22,7 +22,7 @@ class TestThreadedProgressObserver(unittest.TestCase):
                                         access_token='dfsvdfsv'))
 
     def setUp(self) -> None:
-        self._request = Request.from_dict(self.REQUEST)
+        self._request = GenConfig.from_dict(self.REQUEST)
         self._callback_config = self._request.callback_config
 
     def test_threaded(self):
@@ -88,7 +88,9 @@ class TestThreadedProgressObserver(unittest.TestCase):
                 "super_work": 100,
                 "super_work_ahead": 1,
                 "exc_info": None,
-                "progress": 0.0
+                "progress": 0.0,
+                "elapsed": 3.,
+                "errored": False
             }
         }
 

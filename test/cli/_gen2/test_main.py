@@ -22,7 +22,7 @@ class MainTest(unittest.TestCase):
                                     time_period='4D'),
                    output_config=dict(store_id='memory',
                                       data_id='CHL'),
-                   callback=dict(api_uri='https://xcube-gen.test/api/v1/jobs/tomtom/iamajob/callback',
+                   callback_config=dict(api_uri='https://xcube-gen.test/api/v1/jobs/tomtom/iamajob/callback',
                                  access_token='dfsvdfsv'))
 
     def setUp(self) -> None:
