@@ -158,7 +158,18 @@ class CallbackApiProgressObserver(ThreadedProgressObserver):
 
     def callback(self, sender: str, elapsed: float, state_stack: Sequence[ProgressState]) -> None:
         assert_given(state_stack, "ProgressStates")
-        callback = {"sender": sender, "state": state_stack}
+        state = state_stack[0]
+        callback = {
+            "sender": sender,
+            "state": {
+                "label": state.label,
+                "total_work": state.total_work,
+                "super_work": state.super_work,
+                "super_work_ahead": state.super_work_ahead,
+                "exc_info": state.exc_info_text,
+                "progress": state.progress
+            }
+        }
         callback_api_uri = self.callback_cfg.api_uri
         callback_api_access_token = self.callback_cfg.access_token
         header = {"Authorization": f"Bearer {callback_api_access_token}"}
