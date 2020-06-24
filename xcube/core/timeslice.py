@@ -145,6 +145,7 @@ def update_time_slice(store: Union[str, MutableMapping],
     insert_mode = mode == 'insert'
 
     time_var_names = []
+    encoding = {}
     with xr.open_zarr(store) as cube:
         for var_name in cube.variables:
             var = cube[var_name]
@@ -152,12 +153,12 @@ def update_time_slice(store: Union[str, MutableMapping],
                 if var.dims[0] != 'time':
                     raise ValueError(f"dimension 'time' of variable {var_name!r} must be first dimension")
                 time_var_names.append(var_name)
+                encoding[var_name] = cube[var_name].encoding
 
     if chunk_sizes:
         time_slice = chunk_dataset(time_slice, chunk_sizes, format_name='zarr')
-
     temp_dir = tempfile.TemporaryDirectory(prefix='xcube-time-slice-', suffix='.zarr')
-    time_slice.to_zarr(temp_dir.name)
+    time_slice.to_zarr(temp_dir.name, encoding=encoding)
     slice_root_group = zarr.open(temp_dir.name, mode='r')
     slice_arrays = dict(slice_root_group.arrays())
 
