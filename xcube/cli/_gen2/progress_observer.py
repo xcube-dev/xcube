@@ -56,7 +56,7 @@ def _format_time(t):
 
 class ThreadedProgressObserver(ProgressObserver):
     """
-    A threaded Progress observer adapted from Dask's Progress class.
+    A threaded Progress observer adapted from Dask's ProgressBar class.
     """
     def __init__(self,
                  minimum: float = 0,
@@ -69,6 +69,7 @@ class ThreadedProgressObserver(ProgressObserver):
         super().__init__()
         assert_condition(dt >= 0, "The timer's time step must be >=0")
         assert_condition(minimum >= 0, "The timer's minimum must be >=0")
+        self._delegate = delegate
         self._running = False
         self._start_time = None
         self._minimum = minimum
@@ -116,7 +117,7 @@ class ThreadedProgressObserver(ProgressObserver):
             self.callback(self._current_sender, elapsed, self._state_stack)
 
     def on_begin(self, state_stack: Sequence[ProgressState]):
-        assert_given(state_stack, name="ProgressStates")
+        assert_given(state_stack, name='state_stack')
         self._state_stack = state_stack
         self._current_sender = "on_begin"
         self._start_timer()
@@ -204,4 +205,3 @@ class CallbackTerminalProgressObserver(ThreadedProgressObserver):
             sender, bar, self._width, percent, elapsed
         )
         print(msg)
-
