@@ -243,22 +243,46 @@ class ProgressStateTest(unittest.TestCase):
         self.assertEqual(0.6, state.to_super_work(20))
 
 
+class TestCallbackObserver(ProgressObserver):
+    def callback(self, sender: str, elapsed: float, state_stack: [ProgressState]):
+        pass
+
+    def on_begin(self, state_stack: Sequence[ProgressState]):
+        """
+
+        :param state_stack:
+        :return:
+        """
+
+    def on_update(self, state_stack: Sequence[ProgressState]):
+        """
+
+        :param state_stack:
+        :return:
+        """
+
+    def on_end(self, state_stack: Sequence[ProgressState]):
+        """
+
+        :param state_stack:
+        :return:
+        """
+
+
 class TestThreadedProgressObserver(unittest.TestCase):
     def test_threaded(self):
-        def _callback():
-            pass
 
         with self.assertRaises(ValueError) as e:
-            ThreadedProgressObserver(minimum=-1, dt=0, delegate=_callback)
+            ThreadedProgressObserver(minimum=-1, dt=0, delegate=TestCallbackObserver())
 
         self.assertEqual("The timer's minimum must be >=0", str(e.exception))
 
         with self.assertRaises(ValueError) as e:
-            ThreadedProgressObserver(minimum=0, dt=-1, delegate=_callback)
+            ThreadedProgressObserver(minimum=0, dt=-1, delegate=TestCallbackObserver())
 
         self.assertEqual("The timer's time step must be >=0", str(e.exception))
 
-        observer = ThreadedProgressObserver(minimum=0, dt=0, delegate=_callback)
+        observer = ThreadedProgressObserver(minimum=0, dt=0, delegate=TestCallbackObserver())
         with self.assertRaises(ValueError) as e:
             observer.on_begin(state_stack=[])
 

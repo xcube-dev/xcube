@@ -180,7 +180,7 @@ class ThreadedProgressObserver(ProgressObserver):
         if elapsed < self._minimum:
             return
         if not errored:
-            self._delegate(self._current_sender, elapsed, self._state_stack)
+            self._delegate.callback(self._current_sender, elapsed, self._state_stack)
         else:
             self._update_state(elapsed)
 

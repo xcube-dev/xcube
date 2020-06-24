@@ -23,7 +23,7 @@ from typing import Sequence
 import requests
 
 from xcube.cli._gen2.genconfig import CallbackConfig
-from xcube.util.assertions import assert_given
+from xcube.util.assertions import assert_given, assert_condition
 from xcube.util.progress import ProgressState, ProgressObserver
 
 
@@ -49,6 +49,9 @@ def _format_time(t):
 class ApiProgressCallbackObserver(ProgressObserver):
     def __init__(self, callback_config: CallbackConfig):
         super().__init__()
+        assert_condition(callback_config.api_uri and callback_config.access_token,
+                         "Both, api_uri and access_token must be given.")
+
         self.callback_config = callback_config
 
     def callback(self, sender: str, elapsed: float, state_stack: Sequence[ProgressState]):
@@ -120,3 +123,25 @@ class TerminalProgressCallbackObserver(ProgressObserver):
             print(msg)
 
         return msg
+
+    def on_begin(self, state_stack: Sequence[ProgressState]):
+            """
+
+            :param state_stack:
+            :return:
+            """
+
+    def on_update(self, state_stack: Sequence[ProgressState]):
+        """
+
+        :param state_stack:
+        :return:
+        """
+
+    def on_end(self, state_stack: Sequence[ProgressState]):
+        """
+
+        :param state_stack:
+        :return:
+        """
+

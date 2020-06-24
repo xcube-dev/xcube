@@ -2,7 +2,7 @@ import unittest
 
 import requests_mock
 from xcube.util.progress import ThreadedProgressObserver
-from xcube.cli._gen2.progress_delegate import ApiProgressCallbackObserver, TerminalProgressCallbackObserver
+from xcube.cli._gen2.progress import ApiProgressCallbackObserver, TerminalProgressCallbackObserver
 from xcube.cli._gen2.genconfig import GenConfig
 from xcube.util.progress import ProgressState
 
