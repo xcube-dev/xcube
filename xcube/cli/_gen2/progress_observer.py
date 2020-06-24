@@ -116,7 +116,7 @@ class ThreadedProgressObserver(ProgressObserver):
             self.callback(self._current_sender, elapsed, self._state_stack)
 
     def on_begin(self, state_stack: Sequence[ProgressState]):
-        assert_given(state_stack, name="ProgressStates")
+        assert_given(state_stack, name='state_stack')
         self._state_stack = state_stack
         self._current_sender = "on_begin"
         self._start_timer()
