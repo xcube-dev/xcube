@@ -23,15 +23,15 @@ from abc import abstractmethod, ABC
 from typing import Iterator, Tuple, Any, Optional, List, Type
 
 from xcube.constants import EXTENSION_POINT_DATA_STORES
-from xcube.core.store.accessor import DataAccessorError
-from xcube.core.store.accessor import DataOpener
-from xcube.core.store.accessor import DataWriter
-from xcube.core.store.descriptor import DataDescriptor
 from xcube.util.extension import Extension
 from xcube.util.extension import ExtensionPredicate
 from xcube.util.extension import ExtensionRegistry
 from xcube.util.jsonschema import JsonObjectSchema
 from xcube.util.plugin import get_extension_registry
+from .accessor import DataOpener
+from .accessor import DataWriter
+from .descriptor import DataDescriptor
+from .error import DataStoreError
 
 
 #######################################################
@@ -384,14 +384,3 @@ class MutableDataStore(DataStore, DataWriter, ABC):
         :param data_id: A data resource identifier that is known to exist in this data store.
         :raise DataStoreError: If an error occurs.
         """
-
-
-class DataStoreError(DataAccessorError):
-    """
-    Raised on error in any of the data store methods.
-
-    :param message: The error message.
-    """
-
-    def __init__(self, message: str):
-        super().__init__(message)

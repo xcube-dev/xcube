@@ -53,6 +53,7 @@ class _ThreadedProgressObserver(ProgressObserver):
     """
     A threaded Progress observer adapted from Dask's ProgressBar class.
     """
+
     def __init__(self,
                  minimum: float = 0,
                  dt: float = 1):
@@ -194,3 +195,39 @@ class TerminalProgressCallbackObserver(_ThreadedProgressObserver):
 
         return msg
 
+
+class ConsoleProgressObserver(ProgressObserver):
+
+    def on_begin(self, state_stack: Sequence[ProgressState]):
+        print(self._format_progress(state_stack, status_label='...'))
+
+    def on_update(self, state_stack: Sequence[ProgressState]):
+        print(self._format_progress(state_stack))
+
+    def on_end(self, state_stack: Sequence[ProgressState]):
+        if state_stack[0].exc_info:
+            print(self._format_progress(state_stack, status_label='error!'))
+            if len(state_stack) == 1:
+                print(state_stack[0].exc_info_text)
+        else:
+            print(self._format_progress(state_stack, status_label='done.'))
+
+    @classmethod
+    def _format_progress(cls, state_stack: Sequence[ProgressState], status_label=None) -> str:
+        if status_label:
+            state_stack_part = cls._format_state_stack(state_stack[0:-1])
+            state_part = cls._format_state(state_stack[-1], marker=status_label)
+            return state_part if not state_stack_part else state_stack_part + ': ' + state_part
+        else:
+            return cls._format_state_stack(state_stack)
+
+    @classmethod
+    def _format_state_stack(cls, state_stack: Sequence[ProgressState], marker=None) -> str:
+        return ': '.join([cls._format_state(s) for s in state_stack])
+
+    @classmethod
+    def _format_state(cls, state: ProgressState, marker=None) -> str:
+        if marker is None:
+            return '{a} - {b:3.1f}%'.format(a=state.label, b=100 * state.progress)
+        else:
+            return '{a} - {b}'.format(a=state.label, b=marker)

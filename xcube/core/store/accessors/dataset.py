@@ -18,14 +18,15 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+
 from typing import Dict, Any, Tuple, Optional
 
 import s3fs
 import xarray as xr
 
-from xcube.core.store.accessor import DataAccessorError
-from xcube.core.store.accessor import DataOpener
-from xcube.core.store.accessor import DataWriter
+from xcube.core.store import DataOpener
+from xcube.core.store import DataStoreError
+from xcube.core.store import DataWriter
 from xcube.core.store.accessors.posix import PosixDataDeleterMixin
 from xcube.util.assertions import assert_instance
 from xcube.util.jsonschema import JsonArraySchema
@@ -232,7 +233,7 @@ class DatasetZarrS3Accessor(ZarrOpenerParamsSchemaMixin,
                                            check=False),
                                 **open_params)
         except ValueError as e:
-            raise DataAccessorError(f'{e}') from e
+            raise DataStoreError(f'{e}') from e
 
     # noinspection PyMethodMayBeStatic
     def get_write_data_params_schema(self) -> JsonObjectSchema:
@@ -255,7 +256,7 @@ class DatasetZarrS3Accessor(ZarrOpenerParamsSchemaMixin,
                          mode='w' if replace else None,
                          **write_params)
         except ValueError as e:
-            raise DataAccessorError(f'{e}') from e
+            raise DataStoreError(f'{e}') from e
 
     def delete_data(self, data_id: str):
         # TODO: implement me

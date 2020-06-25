@@ -18,31 +18,30 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-from typing import Sequence, Optional
+
+from typing import Sequence, Dict
 
 from xcube.cli._gen2.genconfig import CubeConfig
 from xcube.cli._gen2.genconfig import InputConfig
+from xcube.cli._gen2.storeconfig import get_data_store_instance
+from xcube.core.store import DataStore
 from xcube.core.store import new_data_opener
-from xcube.core.store import new_data_store
-from xcube.util.extension import ExtensionRegistry
 from xcube.util.progress import observe_progress
 
 
 def open_cubes(input_configs: Sequence[InputConfig],
                cube_config: CubeConfig,
-               extension_registry: Optional[ExtensionRegistry] = None):
+               store_instances: Dict[str, DataStore] = None):
     cubes = []
     all_cube_params = cube_config.to_dict()
     with observe_progress('Opening input(s)', len(input_configs)) as progress:
         for input_config in input_configs:
             open_params = {}
             if input_config.store_id:
-                opener = new_data_store(input_config.store_id, **input_config.store_params,
-                                        extension_registry=extension_registry)
+                opener = get_data_store_instance(input_config.store_id, input_config.store_params, store_instances)
                 open_params.update(opener_id=input_config.opener_id, **input_config.open_params)
             else:
-                opener = new_data_opener(input_config.opener_id,
-                                         extension_registry=extension_registry)
+                opener = new_data_opener(input_config.opener_id)
                 open_params.update(**input_config.store_params, **input_config.open_params)
             open_params_schema = opener.get_open_data_params_schema(input_config.data_id)
             cube_params = {k: v for k, v in all_cube_params.items() if k in open_params_schema.properties}

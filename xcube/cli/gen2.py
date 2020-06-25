@@ -23,31 +23,58 @@ import click
 
 
 @click.command(name="gen2")
-@click.argument('request_path', type=str, required=False, metavar='REQUEST')
-@click.option('--store-conf', '-s', 'store_configs', metavar='STORE_CONFIGS',
-              help='A JSON file that maps store names to configured stores.')
+@click.argument('gen_config_path', type=str, required=False, metavar='GEN_CONFIG')
+@click.option('--store-conf', '-s', 'store_configs_path', metavar='STORE_CONFIGS',
+              help='A JSON file that maps store names to parameterized stores.')
 @click.option('--verbose', '-v',
               is_flag=True,
-              multiple=True,
               help='Control amount of information dumped to stdout.')
-def gen2(request_path: str,
-         store_configs: str = None,
+def gen2(gen_config_path: str,
+         store_configs_path: str = None,
          verbose: bool = False):
     """
-    Generate a data cube.
+    Generator tool for data cubes.
 
     Creates a cube view from one or more cube stores, optionally performs some cube transformation,
     and writes the resulting cube to some target cube store.
 
-    REQUEST is the cube generation request. It may be provided as a JSON or YAML file
-    (file extensions ".json" or ".yaml"). If the REQUEST file argument is omitted, it is expected that
+    GEN_CONFIG is the cube generation request. It may be provided as a JSON or YAML file
+    (file extensions ".json" or ".yaml"). If the GEN_CONFIG file argument is omitted, it is expected that
     the Cube generation request is piped as a JSON string.
+
+    STORE_CONFIGS is a path to a JSON file (file extensions ".json") with data store configurations.
+    It is a mapping of arbitrary store names to configured data stores. Entries are dictionaries
+    that have a mandatory "store_id" property which is a name of a registered xcube data store.
+    The optional "store_params" property may define data store specific parameters.
+    The following example defines a data store named "my_s3_store" which is an AWS S3 bucket store,
+    and a data store "my_test_store" for testing, which is an in-memory data store:
+
+    \b
+    {
+        "my_s3_store": {
+            "store_id": "s3",
+            "store_params": {
+                "bucket_name": "eurodatacube",
+                "aws_access_key_id": "jokljkjoiqqjvlaksd",
+                "aws_secret_access_key": "1728349182734983248234"
+            }
+        },
+        "my_test_store": {
+            "store_id": "memory"
+        }
+    }
+
     """
     # noinspection PyProtectedMember
     from xcube.cli._gen2.main import main
-    main(request_path,
-         verbose=verbose,
-         exception_type=click.ClickException)
+    from xcube.cli._gen2.error import GenError
+    from xcube.core.store import DataStoreError
+    try:
+        main(gen_config_path,
+             store_configs_path=store_configs_path,
+             verbose=verbose)
+    except (GenError, DataStoreError) as e:
+        raise click.ClickException(f'{e}') from e
 
 
 if __name__ == '__main__':

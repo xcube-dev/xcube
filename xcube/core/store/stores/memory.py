@@ -22,10 +22,11 @@
 import uuid
 from typing import Iterator, Dict, Any, Optional, Tuple, Mapping
 
-from xcube.core.store.descriptor import DataDescriptor
-from xcube.core.store.descriptor import get_data_type_id
-from xcube.core.store.descriptor import new_data_descriptor
-from xcube.core.store.store import MutableDataStore, DataStoreError
+from xcube.core.store import DataDescriptor
+from xcube.core.store import DataStoreError
+from xcube.core.store import MutableDataStore
+from xcube.core.store import get_data_type_id
+from xcube.core.store import new_data_descriptor
 from xcube.util.assertions import assert_given
 from xcube.util.jsonschema import JsonObjectSchema
 

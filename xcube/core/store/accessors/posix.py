@@ -21,7 +21,8 @@
 import os.path
 
 from xcube.core.dsio import rimraf
-from xcube.core.store.accessor import DataAccessorError, DataDeleter
+from xcube.core.store import DataDeleter
+from xcube.core.store import DataStoreError
 
 
 class PosixDataDeleterMixin(DataDeleter):
@@ -32,5 +33,5 @@ class PosixDataDeleterMixin(DataDeleter):
     # noinspection PyMethodMayBeStatic
     def delete_data(self, data_id: str):
         if not os.path.exists(data_id):
-            raise DataAccessorError(f'A dataset named "{data_id}" does not exist')
+            raise DataStoreError(f'A dataset named "{data_id}" does not exist')
         rimraf(data_id)

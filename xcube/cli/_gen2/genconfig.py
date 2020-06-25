@@ -22,10 +22,12 @@
 import json
 import os.path
 import sys
-from typing import Optional, Type, Dict, Any, Sequence, Mapping, Tuple
+from typing import Optional, Dict, Any, Sequence, Mapping, Tuple
 
+import jsonschema
 import yaml
 
+from xcube.cli._gen2.error import GenError
 from xcube.util.assertions import assert_condition
 from xcube.util.assertions import assert_given
 from xcube.util.jsonschema import JsonArraySchema
@@ -266,31 +268,34 @@ class GenConfig:
     @classmethod
     def from_dict(cls, request_dict: Dict) -> 'GenConfig':
         """Create new instance from a JSON-serializable dictionary"""
-        return cls.get_schema().from_instance(request_dict)
+        try:
+            return cls.get_schema().from_instance(request_dict)
+        except jsonschema.exceptions.ValidationError as e:
+            raise GenError(f'{e}') from e
 
     @classmethod
-    def from_file(cls, request_file: Optional[str], exception_type: Type[BaseException] = ValueError) -> 'GenConfig':
+    def from_file(cls, request_file: Optional[str]) -> 'GenConfig':
         """Create new instance from a JSON file, or YAML file, or JSON passed via stdin."""
-        request_dict = cls._load_request_file(request_file, exception_type=exception_type)
-        return cls.from_dict(request_dict)
+        gen_config_dict = cls._load_gen_config_file(request_file)
+        return cls.from_dict(gen_config_dict)
 
     @classmethod
-    def _load_request_file(cls, request_file: Optional[str], exception_type: Type[BaseException] = ValueError) -> Dict:
+    def _load_gen_config_file(cls, gen_config_file: Optional[str]) -> Dict:
 
-        if request_file is not None and not os.path.exists(request_file):
-            raise exception_type(f'Cube generation request "{request_file}" not found.')
+        if gen_config_file is not None and not os.path.exists(gen_config_file):
+            raise GenError(f'Cube generator configuration "{gen_config_file}" not found.')
 
         try:
-            if request_file is None:
+            if gen_config_file is None:
                 if not sys.stdin.isatty():
                     return json.load(sys.stdin)
             else:
-                with open(request_file, 'r') as fp:
-                    if request_file.endswith('.json'):
+                with open(gen_config_file, 'r') as fp:
+                    if gen_config_file.endswith('.json'):
                         return json.load(fp)
                     else:
                         return yaml.safe_load(fp)
         except BaseException as e:
-            raise exception_type(f'Error loading cube generation request "{request_file}": {e}') from e
+            raise GenError(f'Error loading generator configuration "{gen_config_file}": {e}') from e
 
-        raise exception_type(f'Missing cube generation request.')
+        raise GenError(f'Missing cube generator configuration.')

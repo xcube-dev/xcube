@@ -19,29 +19,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-from typing import List
 
-import xarray as xr
-
-from xcube.cli._gen2.genconfig import CubeConfig
-from xcube.util.progress import observe_progress
-
-
-# noinspection PyUnusedLocal
-def resample_cube(cube: xr.Dataset,
-                  cube_config: CubeConfig):
-    # TODO: implement me
-    return cube
-
-
-def resample_and_merge_cubes(cubes: List[xr.Dataset],
-                             cube_config: CubeConfig) -> xr.Dataset:
-    with observe_progress('Resampling cube(s)', len(cubes) + 1) as progress:
-        resampled_cubes = []
-        for cube in cubes:
-            resampled_cube = resample_cube(cube, cube_config)
-            resampled_cubes.append(resampled_cube)
-            progress.worked(1)
-        merged_cube = xr.merge(resampled_cubes) if len(resampled_cubes) > 1 else resampled_cubes[0]
-        progress.worked(1)
-        return merged_cube
+class GenError(Exception):
+    def __init__(self, message: str):
+        super().__init__(message)
