@@ -26,22 +26,28 @@ from xcube.cli._gen2.genconfig import OutputConfig
 from xcube.core.store import new_data_store
 from xcube.core.store import new_data_writer
 from xcube.util.extension import ExtensionRegistry
+from xcube.util.progress import observe_progress
 
 
 def write_cube(cube: xr.Dataset,
                output_config: OutputConfig,
                extension_registry: Optional[ExtensionRegistry] = None) -> str:
-    write_params = dict()
-    if output_config.store_id:
-        writer = new_data_store(output_config.store_id,
-                                **output_config.store_params,
-                                extension_registry=extension_registry)
-        write_params.update(writer_id=output_config.writer_id, **output_config.write_params)
-    else:
-        writer = new_data_writer(output_config.writer_id,
-                                 extension_registry=extension_registry)
-        write_params.update(**output_config.store_params, **output_config.write_params)
-    return writer.write_data(cube,
-                             data_id=output_config.data_id,
-                             replace=output_config.replace or False,
-                             **write_params)
+    with observe_progress('Writing output', 1) as progress:
+        write_params = dict()
+        if output_config.store_id:
+            writer = new_data_store(output_config.store_id,
+                                    **output_config.store_params,
+                                    extension_registry=extension_registry)
+            write_params.update(writer_id=output_config.writer_id, **output_config.write_params)
+        else:
+            writer = new_data_writer(output_config.writer_id,
+                                     extension_registry=extension_registry)
+            write_params.update(**output_config.store_params, **output_config.write_params)
+
+        # TODO: develop an adapter from Dask callback to ProgressObserver and use it here.
+        data_id = writer.write_data(cube,
+                                    data_id=output_config.data_id,
+                                    replace=output_config.replace or False,
+                                    **write_params)
+        progress.worked(1)
+        return data_id

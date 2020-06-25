@@ -18,7 +18,7 @@
     "store_id": "directory",
     "data_id": "out.zarr",
     "store_params": {
-      "base_dir": "."
+      "base_dir": "examples/gen2"
     },
     "replace": true
   }

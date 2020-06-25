@@ -18,19 +18,31 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+from typing import List
+
 import xarray as xr
 
 from xcube.cli._gen2.genconfig import CubeConfig
 
 
 # noinspection PyUnusedLocal
+from xcube.util.progress import observe_progress
+
+
 def resample_cube(cube: xr.Dataset,
                   cube_config: CubeConfig):
     # TODO: implement me
     return cube
 
 
-def resample_and_merge_cubes(cubes,
+def resample_and_merge_cubes(cubes: List[xr.Dataset],
                              cube_config: CubeConfig) -> xr.Dataset:
-    cubes = [resample_cube(cube, cube_config) for cube in cubes]
-    return xr.merge(cubes)
+    with observe_progress('Resampling cube(s)', len(cubes) + 1) as progress:
+        cubes = []
+        for cube in cubes:
+            resampled_cube = resample_cube(cube, cube_config)
+            cubes.append(resampled_cube)
+            progress.worked(1)
+        merged_cube = xr.merge(cubes)
+        progress.worked(1)
+        return merged_cube

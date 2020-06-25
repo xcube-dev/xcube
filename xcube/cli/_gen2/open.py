@@ -25,6 +25,7 @@ from xcube.cli._gen2.genconfig import InputConfig
 from xcube.core.store import new_data_opener
 from xcube.core.store import new_data_store
 from xcube.util.extension import ExtensionRegistry
+from xcube.util.progress import observe_progress
 
 
 def open_cubes(input_configs: Sequence[InputConfig],
@@ -32,19 +33,21 @@ def open_cubes(input_configs: Sequence[InputConfig],
                extension_registry: Optional[ExtensionRegistry] = None):
     cubes = []
     all_cube_params = cube_config.to_dict()
-    for input_config in input_configs:
-        open_params = {}
-        if input_config.store_id:
-            opener = new_data_store(input_config.store_id, **input_config.store_params,
-                                    extension_registry=extension_registry)
-            open_params.update(opener_id=input_config.opener_id, **input_config.open_params)
-        else:
-            opener = new_data_opener(input_config.opener_id,
-                                     extension_registry=extension_registry)
-            open_params.update(**input_config.store_params, **input_config.open_params)
-        open_params_schema = opener.get_open_data_params_schema(input_config.data_id)
-        cube_params = {k: v for k, v in all_cube_params.items() if k in open_params_schema.properties}
-        cube = opener.open_data(input_config.data_id, **open_params, **cube_params)
-        cubes.append(cube)
+    with observe_progress('Opening input(s)', len(input_configs)) as progress:
+        for input_config in input_configs:
+            open_params = {}
+            if input_config.store_id:
+                opener = new_data_store(input_config.store_id, **input_config.store_params,
+                                        extension_registry=extension_registry)
+                open_params.update(opener_id=input_config.opener_id, **input_config.open_params)
+            else:
+                opener = new_data_opener(input_config.opener_id,
+                                         extension_registry=extension_registry)
+                open_params.update(**input_config.store_params, **input_config.open_params)
+            open_params_schema = opener.get_open_data_params_schema(input_config.data_id)
+            cube_params = {k: v for k, v in all_cube_params.items() if k in open_params_schema.properties}
+            cube = opener.open_data(input_config.data_id, **open_params, **cube_params)
+            cubes.append(cube)
+            progress.worked(1)
 
     return cubes

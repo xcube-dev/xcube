@@ -64,17 +64,14 @@ def main(request_path: str,
         cm.will_work(10)
         cubes = open_cubes(request.input_configs,
                            cube_config=request.cube_config)
-        cm.worked(10)
 
         cm.will_work(10)
         cube = resample_and_merge_cubes(cubes,
                                         cube_config=request.cube_config)
-        cm.worked(10)
 
         cm.will_work(80)
         write_cube(cube,
                    output_config=request.output_config)
-        cm.worked(80)
 
 
 def _new_output_config_for_dir(output_path, format_id, exception_type: Type[BaseException]):
@@ -91,5 +88,36 @@ def _new_output_config_for_dir(output_path, format_id, exception_type: Type[Base
 
 class ConsoleProgressObserver(ProgressObserver):
 
+    def on_begin(self, state_stack: Sequence[ProgressState]):
+        print(self._format_progress(state_stack, marker='...'))
+
     def on_update(self, state_stack: Sequence[ProgressState]):
-        print(': '.join([s.label for s in state_stack]), "- {:.1f}%".format(100 % state_stack[0].progress))
+        print(self._format_state_stack(state_stack))
+
+    def on_end(self, state_stack: Sequence[ProgressState]):
+        if state_stack[0].exc_info:
+            print(self._format_progress(state_stack, marker='error!'))
+            if len(state_stack) == 1:
+                print(state_stack[0].exc_info_text)
+        else:
+            print(self._format_progress(state_stack, marker='done.'))
+
+    @classmethod
+    def _format_progress(cls, state_stack: Sequence[ProgressState], marker=None) -> str:
+        if marker:
+            state_stack_part = cls._format_state_stack(state_stack[0:-1])
+            state_part = cls._format_state(state_stack[-1], marker=marker)
+            return state_part if not state_stack_part else state_stack_part + ': ' + state_part
+        else:
+            return cls._format_state_stack(state_stack)
+
+    @classmethod
+    def _format_state_stack(cls, state_stack: Sequence[ProgressState], marker=None) -> str:
+        return ': '.join([cls._format_state(s) for s in state_stack])
+
+    @classmethod
+    def _format_state(cls, state: ProgressState, marker=None) -> str:
+        if marker is None:
+            return '{a} - {b:3.1f}%'.format(a=state.label, b=100 * state.progress)
+        else:
+            return '{a} - {b}'.format(a=state.label, b=marker)
