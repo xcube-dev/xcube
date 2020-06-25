@@ -38,11 +38,11 @@ def resample_cube(cube: xr.Dataset,
 def resample_and_merge_cubes(cubes: List[xr.Dataset],
                              cube_config: CubeConfig) -> xr.Dataset:
     with observe_progress('Resampling cube(s)', len(cubes) + 1) as progress:
-        cubes = []
+        resampled_cubes= []
         for cube in cubes:
             resampled_cube = resample_cube(cube, cube_config)
-            cubes.append(resampled_cube)
+            resampled_cubes.append(resampled_cube)
             progress.worked(1)
-        merged_cube = xr.merge(cubes)
+        merged_cube = xr.merge(resampled_cubes)
         progress.worked(1)
         return merged_cube
