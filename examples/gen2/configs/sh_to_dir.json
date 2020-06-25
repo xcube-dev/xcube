@@ -11,7 +11,7 @@
     "crs": "WGS84",
     "bbox": [10, 54.27, 11, 54.6],
     "spatial_res": 0.00018,
-    "time_range": ["2018-05-14", "2018-07-31"],
+    "time_range": ["2018-05-21", "2018-05-25"],
     "time_period": "2D"
   },
   "output_config": {
