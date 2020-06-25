@@ -29,6 +29,7 @@ import yaml
 from xcube.util.assertions import assert_condition
 from xcube.util.assertions import assert_given
 from xcube.util.jsonschema import JsonArraySchema
+from xcube.util.jsonschema import JsonBooleanSchema
 from xcube.util.jsonschema import JsonNumberSchema
 from xcube.util.jsonschema import JsonObjectSchema
 from xcube.util.jsonschema import JsonStringSchema
@@ -39,7 +40,6 @@ class InputConfig:
                  store_id: str = None,
                  opener_id: str = None,
                  data_id: str = None,
-                 variable_names: Sequence[str] = None,
                  store_params: Mapping[str, Any] = None,
                  open_params: Mapping[str, Any] = None):
         assert_condition(store_id or opener_id, 'One of store_id and opener_id must be given')
@@ -47,7 +47,6 @@ class InputConfig:
         self.store_id = store_id
         self.opener_id = opener_id
         self.data_id = data_id
-        self.variable_names = variable_names
         self.store_params = store_params or {}
         self.open_params = open_params or {}
 
@@ -58,7 +57,6 @@ class InputConfig:
                 store_id=JsonStringSchema(min_length=1),
                 opener_id=JsonStringSchema(min_length=1),
                 data_id=JsonStringSchema(min_length=1),
-                variable_names=JsonArraySchema(items=JsonStringSchema(min_length=1), min_items=1),
                 store_params=JsonObjectSchema(),
                 open_params=JsonObjectSchema()
             ),
@@ -75,8 +73,6 @@ class InputConfig:
             d.update(writer_id=str(self.opener_id))
         if self.data_id:
             d.update(data_id=str(self.data_id))
-        if self.variable_names:
-            d.update(variable_names=list(self.variable_names))
         if self.store_params:
             d.update(store_params=dict(self.store_params))
         if self.open_params:
@@ -121,13 +117,15 @@ class OutputConfig:
                  writer_id: str = None,
                  data_id: str = None,
                  store_params: Mapping[str, Any] = None,
-                 write_params: Mapping[str, Any] = None):
+                 write_params: Mapping[str, Any] = None,
+                 replace: bool = None):
         assert_condition(store_id or writer_id, 'One of store_id and writer_id must be given')
         self.store_id = store_id
         self.writer_id = writer_id
         self.data_id = data_id
         self.store_params = store_params or {}
         self.write_params = write_params or {}
+        self.replace = replace
 
     @classmethod
     def get_schema(cls):
@@ -138,6 +136,7 @@ class OutputConfig:
                 data_id=JsonStringSchema(default=None),
                 store_params=JsonObjectSchema(),
                 write_params=JsonObjectSchema(),
+                replace=JsonBooleanSchema(default=False),
             ),
             additional_properties=False,
             required=[],
@@ -156,6 +155,8 @@ class OutputConfig:
             d.update(store_params=dict(self.store_params))
         if self.write_params:
             d.update(write_params=dict(self.write_params))
+        if self.replace:
+            d.update(replace=True)
         return d
 
 
@@ -163,14 +164,17 @@ class OutputConfig:
 class CubeConfig:
 
     def __init__(self,
+                 variable_names: Sequence[str] = None,
                  crs: str = None,
                  bbox: Tuple[float, float, float, float] = None,
                  spatial_res: float = None,
                  time_range: Tuple[str, Optional[str]] = None,
                  time_period: str = None):
+        assert_given(variable_names, 'variable_names')
         assert_given(bbox, 'bbox')
         assert_given(spatial_res, 'spatial_res')
         assert_given(time_range, 'time_range')
+        self.variable_names = tuple(variable_names)
         self.crs = str(crs)
         self.bbox = tuple(bbox)
         self.spatial_res = float(spatial_res)
@@ -179,6 +183,7 @@ class CubeConfig:
 
     def to_dict(self):
         d = dict(
+            variable_names=list(self.variable_names),
             bbox=list(self.bbox),
             spatial_res=float(self.spatial_res),
             time_range=list(self.time_range)
@@ -193,6 +198,7 @@ class CubeConfig:
     def get_schema(cls):
         return JsonObjectSchema(
             properties=dict(
+                variable_names=JsonArraySchema(items=JsonStringSchema(min_length=1), min_items=0),
                 crs=JsonStringSchema(nullable=True, default='WGS84', enum=[None, 'WGS84']),
                 bbox=JsonArraySchema(items=[JsonNumberSchema(),
                                             JsonNumberSchema(),
@@ -203,17 +209,23 @@ class CubeConfig:
                                                   JsonStringSchema(format='date-time', nullable=True)]),
                 time_period=JsonStringSchema(nullable=True),
             ),
-            additional_properties=True,
-            required=['bbox', 'spatial_res', 'time_range'],
-            factory=cls)
+            additional_properties=False,
+            required=['variable_names', 'bbox', 'spatial_res', 'time_range'],
+            factory=cls
+        )
 
 
 class GenConfig:
     def __init__(self,
+                 input_config: InputConfig = None,
                  input_configs: Sequence[InputConfig] = None,
                  cube_config: CubeConfig = None,
                  output_config: OutputConfig = None,
                  callback_config: Optional[CallbackConfig] = None):
+        assert_condition(input_config or input_configs, 'one of input_config and input_configs must be given')
+        assert_condition(not (input_config and input_configs), 'input_config and input_configs cannot be given both')
+        if input_config:
+            input_configs = [input_config]
         assert_given(input_configs, 'input_configs')
         assert_given(cube_config, 'cube_config')
         assert_given(output_config, 'output_config')
@@ -226,19 +238,24 @@ class GenConfig:
     def get_schema(cls):
         return JsonObjectSchema(
             properties=dict(
+                input_config=InputConfig.get_schema(),
                 input_configs=JsonArraySchema(items=InputConfig.get_schema(), min_items=1),
                 cube_config=CubeConfig.get_schema(),
                 output_config=OutputConfig.get_schema(),
                 callback_config=CallbackConfig.get_schema()
             ),
-            required=['input_configs', 'cube_config', 'output_config'],
+            required=['cube_config', 'output_config'],
             factory=cls,
         )
 
     def to_dict(self) -> Mapping[str, Any]:
         """Convert into a JSON-serializable dictionary"""
-        d = dict(input_configs=[ic.to_dict() for ic in self.input_configs],
-                 cube_config=self.cube_config.to_dict(),
+        if len(self.input_configs) == 1:
+            d = dict(input_config=self.input_configs[0].to_dict())
+        else:
+            d = dict(input_configs=[ic.to_dict() for ic in self.input_configs])
+
+        d.update(cube_config=self.cube_config.to_dict(),
                  output_config=self.output_config.to_dict())
 
         if self.callback_config:

@@ -41,4 +41,7 @@ def write_cube(cube: xr.Dataset,
         writer = new_data_writer(output_config.writer_id,
                                  extension_registry=extension_registry)
         write_params.update(**output_config.store_params, **output_config.write_params)
-    return writer.write_data(cube, data_id=output_config.data_id, **write_params)
+    return writer.write_data(cube,
+                             data_id=output_config.data_id,
+                             replace=output_config.replace or False,
+                             **write_params)

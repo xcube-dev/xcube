@@ -12,10 +12,10 @@ from xcube.core.store.stores.memory import MemoryDataStore
 
 
 class MainTest(unittest.TestCase):
-    REQUEST = dict(input_configs=[dict(store_id='memory',
-                                       data_id='S2L2A',
-                                       variable_names=['B01', 'B02', 'B03'])],
-                   cube_config=dict(crs='WGS84',
+    REQUEST = dict(input_config=dict(store_id='memory',
+                                     data_id='S2L2A'),
+                   cube_config=dict(variable_names=['B01', 'B02', 'B03'],
+                                    crs='WGS84',
                                     bbox=[12.2, 52.1, 13.9, 54.8],
                                     spatial_res=0.05,
                                     time_range=['2018-01-01', None],
@@ -23,7 +23,7 @@ class MainTest(unittest.TestCase):
                    output_config=dict(store_id='memory',
                                       data_id='CHL'),
                    callback_config=dict(api_uri='https://xcube-gen.test/api/v1/jobs/tomtom/iamajob/callback',
-                                 access_token='dfsvdfsv'))
+                                        access_token='dfsvdfsv'))
 
     def setUp(self) -> None:
         with open('_request.json', 'w') as fp:

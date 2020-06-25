@@ -24,19 +24,14 @@ import click
 
 @click.command(name="gen2")
 @click.argument('request_path', type=str, required=False, metavar='REQUEST')
-@click.option('--output', '-o', 'output_path', metavar='OUTPUT',
-              help='Output ZARR directory in local file system. '
-                   'Overwrites output configuration in REQUEST if given.')
-@click.option('--callback', '--cb', 'callback_api_url', metavar='URL',
-              help='Optional URL of an API for reporting status information. '
-                   'The URL must accept the PUT method and support JSON bodies.')
+@click.option('--store-conf', '-s', 'store_configs', metavar='STORE_CONFIGS',
+              help='A JSON file that maps store names to configured stores.')
 @click.option('--verbose', '-v',
               is_flag=True,
               multiple=True,
               help='Control amount of information dumped to stdout.')
 def gen2(request_path: str,
-         output_path: str = None,
-         callback_api_url=None,
+         store_configs: str = None,
          verbose: bool = False):
     """
     Generate a data cube.
@@ -53,3 +48,7 @@ def gen2(request_path: str,
     main(request_path,
          verbose=verbose,
          exception_type=click.ClickException)
+
+
+if __name__ == '__main__':
+    gen2()

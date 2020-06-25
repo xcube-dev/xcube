@@ -18,19 +18,18 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-from typing import Type
+from typing import Type, Sequence
 
 import click
 
-from xcube.cli._gen2.progress import ApiProgressCallbackObserver
-from xcube.cli._gen2.progress import TerminalProgressCallbackObserver
-from xcube.cli._gen2.open import open_cubes
 from xcube.cli._gen2.genconfig import GenConfig, OutputConfig
+from xcube.cli._gen2.open import open_cubes
+from xcube.cli._gen2.progress import ApiProgressCallbackObserver
 from xcube.cli._gen2.resample import resample_and_merge_cubes
 from xcube.cli._gen2.write import write_cube
 from xcube.core.store import find_data_writer_extensions
 from xcube.core.store import get_data_accessor_predicate
-from xcube.util.progress import observe_progress
+from xcube.util.progress import observe_progress, ProgressObserver, ProgressState
 
 
 def main(request_path: str,
@@ -59,7 +58,7 @@ def main(request_path: str,
     if request.callback_config:
         ApiProgressCallbackObserver(request.callback_config).activate()
     else:
-        TerminalProgressCallbackObserver().activate()
+        ConsoleProgressObserver().activate()
 
     with observe_progress('Generating cube', 100) as cm:
         cm.will_work(10)
@@ -88,3 +87,9 @@ def _new_output_config_for_dir(output_path, format_id, exception_type: Type[Base
                                  data_id=output_path,
                                  write_params=dict())
     return output_config
+
+
+class ConsoleProgressObserver(ProgressObserver):
+
+    def on_update(self, state_stack: Sequence[ProgressState]):
+        print(': '.join([s.label for s in state_stack]), "- {:.1f}%".format(100 % state_stack[0].progress))

@@ -1,17 +1,19 @@
 import unittest
 
 import requests_mock
+
+from xcube.cli._gen2.genconfig import GenConfig
 from xcube.cli._gen2.progress import ApiProgressCallbackObserver, TerminalProgressCallbackObserver, \
     _ThreadedProgressObserver
-from xcube.cli._gen2.genconfig import GenConfig
 from xcube.util.progress import ProgressState
 
 
 class TestThreadedProgressObservers(unittest.TestCase):
-    REQUEST = dict(input_configs=[dict(store_id='sentinelhub',
-                                       data_id='S2L2A',
-                                       variable_names=['B01', 'B02', 'B03'])],
-                   cube_config=dict(crs='WGS84',
+    REQUEST = dict(input_config=dict(store_id='sentinelhub',
+                                     data_id='S2L2A',
+                                     ),
+                   cube_config=dict(variable_names=['B01', 'B02', 'B03'],
+                                    crs='WGS84',
                                     bbox=[12.2, 52.1, 13.9, 54.8],
                                     spatial_res=0.05,
                                     time_range=['2018-01-01', None],
@@ -107,7 +109,6 @@ class TestThreadedProgressObservers(unittest.TestCase):
 
 class TestThreadedProgressObserver(unittest.TestCase):
     def test_threaded(self):
-
         with self.assertRaises(ValueError) as e:
             _ThreadedProgressObserver(minimum=-1, dt=0)
 
@@ -133,4 +134,3 @@ class TestThreadedProgressObserver(unittest.TestCase):
             observer.on_end(state_stack=[])
 
         self.assertEqual('state_stack must be given', str(e.exception))
-
