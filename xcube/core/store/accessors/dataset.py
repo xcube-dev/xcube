@@ -150,7 +150,7 @@ class DatasetZarrPosixAccessor(ZarrOpenerParamsSchemaMixin,
 
     def write_data(self, data: xr.Dataset, data_id: str, replace=False, **write_params):
         assert_instance(data, xr.Dataset, 'data')
-        data.to_zarr(data_id, **write_params)
+        data.to_zarr(data_id, mode='w' if replace else None, **write_params)
 
 
 #######################################################
