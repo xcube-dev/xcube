@@ -1,7 +1,9 @@
 import unittest
 
-from xcube.core.store.accessor import find_data_opener_extensions, get_data_accessor_predicate, DataAccessorError
-from xcube.core.store.accessor import find_data_writer_extensions
+from xcube.core.store import DataStoreError
+from xcube.core.store import find_data_opener_extensions
+from xcube.core.store import find_data_writer_extensions
+from xcube.core.store import get_data_accessor_predicate
 from xcube.util.extension import Extension
 
 
@@ -57,6 +59,6 @@ class ExtensionRegistryTest(unittest.TestCase):
         p = get_data_accessor_predicate(storage_id='posix')
         self.assertEqual(False, p(ext('*:*:memory')))
 
-        with self.assertRaises(DataAccessorError) as cm:
+        with self.assertRaises(DataStoreError) as cm:
             p(ext('geodataframe,geojson:posix'))
         self.assertEqual('Illegal data opener/writer extension name "geodataframe,geojson:posix"', f'{cm.exception}')

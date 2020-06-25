@@ -2,7 +2,7 @@ import unittest
 
 import jsonschema
 
-from xcube.cli._gen2.storeconfig import new_store_instances
+from xcube.cli._gen2.storeconfig import new_data_store_instances
 from xcube.core.store import DataStore
 
 
@@ -11,7 +11,7 @@ class StoreConfTest(unittest.TestCase):
     def test_empty_config(self):
         store_configs = {
         }
-        store_instances = new_store_instances(store_configs)
+        store_instances = new_data_store_instances(store_configs)
         self.assertEqual({}, store_instances)
 
     def test_no_store_params(self):
@@ -20,7 +20,7 @@ class StoreConfTest(unittest.TestCase):
                 "store_id": "memory"
             }
         }
-        store_instances = new_store_instances(store_configs)
+        store_instances = new_data_store_instances(store_configs)
         self.assertIsInstance(store_instances, dict)
         self.assertIn('mem_1', store_instances)
         self.assertIsInstance(store_instances['mem_1'], DataStore)
@@ -31,7 +31,7 @@ class StoreConfTest(unittest.TestCase):
             }
         }
         with self.assertRaises(jsonschema.exceptions.ValidationError) as cm:
-            new_store_instances(store_configs)
+            new_data_store_instances(store_configs)
         self.assertEqual(0, f'{cm.exception}'.index("'store_id' is a required property\n"))
 
     def test_multi_stores_with_params(self):
@@ -52,7 +52,7 @@ class StoreConfTest(unittest.TestCase):
                 }
             },
         }
-        store_instances = new_store_instances(store_configs)
+        store_instances = new_data_store_instances(store_configs)
         self.assertIsInstance(store_instances, dict)
         for name in ["test-store", "local-datacubes-1", "local-datacubes-2"]:
             self.assertIn(name, store_instances)
