@@ -56,7 +56,7 @@ def main(gen_config_path: str,
 
     store_instances = load_data_store_instances(store_configs_path)
 
-    gen_config = GenConfig.from_file(gen_config_path)
+    gen_config = GenConfig.from_file(gen_config_path, verbose=verbose)
 
     if gen_config.callback_config:
         ApiProgressCallbackObserver(gen_config.callback_config).activate()

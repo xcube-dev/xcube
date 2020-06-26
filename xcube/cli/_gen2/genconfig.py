@@ -274,13 +274,15 @@ class GenConfig:
             raise GenError(f'{e}') from e
 
     @classmethod
-    def from_file(cls, request_file: Optional[str]) -> 'GenConfig':
+    def from_file(cls, request_file: Optional[str], verbose=False) -> 'GenConfig':
         """Create new instance from a JSON file, or YAML file, or JSON passed via stdin."""
-        gen_config_dict = cls._load_gen_config_file(request_file)
+        gen_config_dict = cls._load_gen_config_file(request_file, verbose=verbose)
+        if verbose:
+            print(f'Cube generator configuration loaded from {request_file or "TTY"}.')
         return cls.from_dict(gen_config_dict)
 
     @classmethod
-    def _load_gen_config_file(cls, gen_config_file: Optional[str]) -> Dict:
+    def _load_gen_config_file(cls, gen_config_file: Optional[str], verbose=False) -> Dict:
 
         if gen_config_file is not None and not os.path.exists(gen_config_file):
             raise GenError(f'Cube generator configuration "{gen_config_file}" not found.')
@@ -288,6 +290,8 @@ class GenConfig:
         try:
             if gen_config_file is None:
                 if not sys.stdin.isatty():
+                    if verbose:
+                        print('Awaiting generator configuration JSON from TTY...')
                     return json.load(sys.stdin)
             else:
                 with open(gen_config_file, 'r') as fp:
