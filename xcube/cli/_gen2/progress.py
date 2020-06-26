@@ -56,7 +56,8 @@ class _ThreadedProgressObserver(ProgressObserver):
 
     def __init__(self,
                  minimum: float = 0,
-                 dt: float = 1):
+                 dt: float = 1,
+                 timeout: float = None):
         """
 
         :type dt: float
@@ -72,6 +73,7 @@ class _ThreadedProgressObserver(ProgressObserver):
         self._width = 100
         self._current_sender = None
         self._state_stack: [ProgressState] = []
+        self._timeout = timeout
 
     def _timer_func(self):
         """Background thread for updating the progress bar"""
@@ -79,6 +81,8 @@ class _ThreadedProgressObserver(ProgressObserver):
             elapsed = default_timer() - self._start_time
             if elapsed > self._minimum:
                 self._update_state(elapsed)
+            if self._timeout and elapsed > self._timeout:
+                self._running = False
             sleep(self._dt)
 
     def _start_timer(self):
@@ -115,7 +119,8 @@ class _ThreadedProgressObserver(ProgressObserver):
         assert_given(state_stack, name='state_stack')
         self._state_stack = state_stack
         self._current_sender = "on_begin"
-        self._start_timer()
+        if not self._running and len(state_stack) == 1:
+            self._start_timer()
 
     def on_update(self, state_stack: Sequence[ProgressState]):
         assert_given(state_stack, name="state_stack")
@@ -126,7 +131,9 @@ class _ThreadedProgressObserver(ProgressObserver):
         assert_given(state_stack, name="state_stack")
         self._state_stack = state_stack
         self._current_sender = "on_end"
-        self._stop_timer(False)
+
+        if self._running and len(state_stack) == 1:
+            self._stop_timer(False)
 
     def callback(self, sender: str, elapsed: float, state_stack: Sequence[ProgressState]):
         """
@@ -139,8 +146,8 @@ class _ThreadedProgressObserver(ProgressObserver):
 
 
 class ApiProgressCallbackObserver(_ThreadedProgressObserver):
-    def __init__(self, callback_config: CallbackConfig, minimum: float = 0, dt: float = 1):
-        super().__init__(minimum=minimum, dt=dt)
+    def __init__(self, callback_config: CallbackConfig, minimum: float = 0, dt: float = 1, timeout: float = False):
+        super().__init__(minimum=minimum, dt=dt, timeout=timeout)
         assert_condition(callback_config.api_uri and callback_config.access_token,
                          "Both, api_uri and access_token must be given.")
 
@@ -154,12 +161,9 @@ class ApiProgressCallbackObserver(_ThreadedProgressObserver):
             "state": {
                 "label": state.label,
                 "total_work": state.total_work,
-                "super_work": state.super_work,
-                "super_work_ahead": state.super_work_ahead,
-                "exc_info": state.exc_info_text,
+                "error": state.exc_info_text or False,
                 "progress": state.progress,
                 "elapsed": elapsed,
-                "errored": state.exc_info is not None
             }
         }
         callback_api_uri = self.callback_config.api_uri
@@ -170,8 +174,8 @@ class ApiProgressCallbackObserver(_ThreadedProgressObserver):
 
 
 class TerminalProgressCallbackObserver(_ThreadedProgressObserver):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, minimum: float = 0, dt: float = 1, timeout: float = False):
+        super().__init__(minimum=minimum, dt=dt, timeout=timeout)
 
     def callback(self, sender: str, elapsed: float, state_stack: [ProgressState], prt: bool = True):
         """
@@ -187,7 +191,7 @@ class TerminalProgressCallbackObserver(_ThreadedProgressObserver):
         percent = int(100 * state.progress)
         elapsed = _format_time(elapsed)
         msg = "\r{0}: [{1:<{2}}] | {3}% Completed | {4}".format(
-            sender, bar, state.total_work, percent, elapsed
+            state.label, bar, state.total_work, percent, elapsed
         )
 
         if prt:
