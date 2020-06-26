@@ -249,9 +249,10 @@ def _format_required_params_schema(params_schema: 'xcube.util.jsonschema.JsonObj
 def _format_param_schema(param_schema: 'xcube.util.jsonschema.JsonSchema'):
     from xcube.util.undefined import UNDEFINED
     param_info = []
-    if param_schema.title or param_schema.description:
-        description = param_schema.title or param_schema.description
-        param_info.append(description + ('' if description.endswith('.') else '.'))
+    if param_schema.title:
+        param_info.append(param_schema.title + ('' if param_schema.title.endswith('.') else '.'))
+    if param_schema.description:
+        param_info.append(param_schema.description + ('' if param_schema.description.endswith('.') else '.'))
     if param_schema.enum:
         param_info.append(f'Must be one of {", ".join(map(json.dumps, param_schema.enum))}.')
     if param_schema.const is not UNDEFINED:
