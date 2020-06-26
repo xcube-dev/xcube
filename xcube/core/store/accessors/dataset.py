@@ -199,19 +199,19 @@ class S3Mixin:
                 aws_access_key_id=JsonStringSchema(
                     min_length=1,
                     title='AWS access key identifier',
-                    description='Can also be set in profile section of ~/.aws/config,'
+                    description='Can also be set in profile section of ~/.aws/config, '
                                 'or by environment variable AWS_ACCESS_KEY_ID'
                 ),
                 aws_secret_access_key=JsonStringSchema(
                     min_length=1,
                     title='AWS secret access key',
-                    description='Can also be set in profile section of ~/.aws/config,'
+                    description='Can also be set in profile section of ~/.aws/config, '
                                 'or by environment variable AWS_SECRET_ACCESS_KEY'
                 ),
                 aws_session_token=JsonStringSchema(
                     min_length=1,
                     title='Session token.',
-                    description='Can also be set in profile section of ~/.aws/config,'
+                    description='Can also be set in profile section of ~/.aws/config, '
                                 'or by environment variable AWS_SESSION_TOKEN'
                 ),
                 endpoint_url=JsonStringSchema(
