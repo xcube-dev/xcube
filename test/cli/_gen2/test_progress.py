@@ -1,4 +1,5 @@
 import unittest
+from unittest.mock import patch
 
 import requests_mock
 
@@ -56,12 +57,9 @@ class TestThreadedProgressObservers(unittest.TestCase):
             "state": {
                 "label": "Test",
                 "total_work": 100,
-                "super_work": 100,
-                "super_work_ahead": 1,
-                "exc_info": None,
+                "error": False,
                 "progress": 0.0,
                 "elapsed": 3.,
-                "errored": False
             }
         }
 
@@ -81,19 +79,58 @@ class TestThreadedProgressObservers(unittest.TestCase):
 
         observer = TerminalProgressCallbackObserver()
         res = observer.callback("on_begin", 3., [state_stack], False)
-        self.assertIn('on_begin', res)
+        self.assertIn('Test', res)
         self.assertIn('0% Completed', res)
 
-    def test_terminal_progress(self):
-        """
-        Uncomment the lines below if you want to run and test the termial progress bar output.
-        """
+    def test_threaded_progress_on_begin(self):
+        _mock_patch = patch('xcube.cli._gen2.progress._ThreadedProgressObserver._start_timer')
+        _mock = _mock_patch.start()
+
+        observer = TerminalProgressCallbackObserver()
+
+        state_stack = ProgressState('Test', 100, 100)
+
+        observer.on_begin([state_stack])
+        self.assertTrue(_mock.called)
+        _mock.stop()
+
+        _mock = _mock_patch.start()
+        state_stack1 = ProgressState('Test', 100, 100)
+        state_stack2 = ProgressState('Test', 100, 100)
+
+        observer.on_begin([state_stack1, state_stack2])
+        self.assertFalse(_mock.called)
+
+    def test_threaded_progress_on_end(self):
+        _mock_patch = patch('xcube.cli._gen2.progress._ThreadedProgressObserver._stop_timer')
+        _mock = _mock_patch.start()
+
+        observer = TerminalProgressCallbackObserver()
+        observer._running = True
+
+        state_stack = ProgressState('Test', 100, 100)
+
+        observer.on_end([state_stack])
+        self.assertTrue(_mock.called)
+        _mock.stop()
+
+        _mock = _mock_patch.start()
+        state_stack1 = ProgressState('Test', 100, 100)
+        state_stack2 = ProgressState('Test', 100, 100)
+
+        observer.on_end([state_stack1, state_stack2])
+        self.assertFalse(_mock.called)
+
+    # def test_running_progress(self):
+    #     """
+    #     Uncomment the lines below if you want to run and test the termial progress bar output.
+    #     """
 
         # from time import sleep
         # from xcube.util.progress import observe_progress
         #
-        # delegate = TerminalProgressCallbackObserver()
-        # observer = ThreadedProgressObserver(delegate=delegate, dt=0.1).activate()
+        # TerminalProgressCallbackObserver().activate()
+        #
         # with observe_progress('Generating cube', 100) as cm:
         #     dt = 1
         #     for i in range(1, 80):
@@ -104,7 +141,6 @@ class TestThreadedProgressObservers(unittest.TestCase):
         #     cm.will_work(20)
         #     sleep(dt)
         #     cm.worked(20)
-        # observer.deactivate()
 
 
 class TestThreadedProgressObserver(unittest.TestCase):
@@ -120,6 +156,7 @@ class TestThreadedProgressObserver(unittest.TestCase):
         self.assertEqual("The timer's time step must be >=0", str(e.exception))
 
         observer = _ThreadedProgressObserver(minimum=0, dt=0)
+
         with self.assertRaises(ValueError) as e:
             observer.on_begin(state_stack=[])
 
