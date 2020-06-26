@@ -132,7 +132,7 @@ class DataStore(DataOpener, ABC):
         """
 
     @abstractmethod
-    def get_data_ids(self, type_id: str = None) -> Iterator[str]:
+    def get_data_ids(self, type_id: str = None) -> Iterator[Tuple[str, Optional[str]]]:
         """
         Get an iterator over the data resource identifiers for the given type *type_id*.
         If *type_id* is omitted, all data resource identifiers are returned.
@@ -140,7 +140,10 @@ class DataStore(DataOpener, ABC):
         If a store implementation supports only a single data type, it should verify that *type_id* is either None
         or equal to that single data type.
 
-        :return: An iterator over the identifiers if data resources provided by this data store.
+        The returned iterator items are 2-tuples of the form (*data_id*, *title*), where *data_id*
+        is the actual data identifier and *title* is an optional, human-readable title for the data.
+
+        :return: An iterator over the identifiers and titles of data resources provided by this data store.
         :raise DataStoreError: If an error occurs.
         """
 

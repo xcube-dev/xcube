@@ -74,8 +74,8 @@ class DirectoryDataStoreTest(unittest.TestCase):
     def test_get_data_ids(self):
         self.assertEqual(
             {
-                'cube-1-250-250.zarr',
-                'cube-5-100-200.zarr',
-                'cube.nc'
+                ('cube-1-250-250.zarr', None),
+                ('cube-5-100-200.zarr', None),
+                ('cube.nc', None),
             },
             set(self.store.get_data_ids()))

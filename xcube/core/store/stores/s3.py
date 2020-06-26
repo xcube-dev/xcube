@@ -102,12 +102,12 @@ class S3DataStore(MutableDataStore):
     def get_type_ids(cls) -> Tuple[str, ...]:
         return TYPE_ID_DATASET,
 
-    def get_data_ids(self, type_id: str = None) -> Iterator[str]:
+    def get_data_ids(self, type_id: str = None) -> Iterator[Tuple[str, Optional[str]]]:
         prefix = self._bucket_name + '/'
         first_index = len(prefix)
         for item in self._s3_fs.listdir(self._bucket_name, detail=False):
             if item.startswith(prefix):
-                yield item[first_index:]
+                yield item[first_index:], None
 
     def has_data(self, data_id: str) -> bool:
         path = self._resolve_data_id_to_path(data_id)

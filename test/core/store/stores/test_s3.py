@@ -90,9 +90,9 @@ class S3DataStoreTest(unittest.TestCase):
             self.store.write_data(dataset_2, data_id='cube-2.zarr')
             self.store.write_data(dataset_3, data_id='cube-3.zarr')
 
-            self.assertEqual({'cube-1.zarr',
-                              'cube-2.zarr',
-                              'cube-3.zarr'},
+            self.assertEqual({('cube-1.zarr', None),
+                              ('cube-2.zarr', None),
+                              ('cube-3.zarr', None)},
                              set(self.store.get_data_ids()))
 
             self.assertTrue(self.store.has_data('cube-1.zarr'))
@@ -124,7 +124,7 @@ class S3DataStoreTest(unittest.TestCase):
 
             # Try deleting cube 1
             self.store.delete_data('cube-1.zarr')
-            self.assertEqual({'cube-2.zarr', 'cube-3.zarr'},
+            self.assertEqual({('cube-2.zarr', None), ('cube-3.zarr', None)},
                              set(self.store.get_data_ids()))
             self.assertFalse(self.store.has_data('cube-1.zarr'))
 

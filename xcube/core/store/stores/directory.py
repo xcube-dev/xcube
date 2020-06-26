@@ -106,7 +106,7 @@ class DirectoryDataStore(MutableDataStore):
     def get_type_ids(cls) -> Tuple[str, ...]:
         return TYPE_ID_DATASET, TYPE_ID_MULTI_LEVEL_DATASET, TYPE_ID_GEO_DATA_FRAME
 
-    def get_data_ids(self, type_id: str = None) -> Iterator[str]:
+    def get_data_ids(self, type_id: str = None) -> Iterator[Tuple[str, Optional[str]]]:
         self._assert_valid_type_id(type_id)
         # TODO: Use os.walk(), which provides a generator rather than a list
         for data_id in os.listdir(self._base_dir):
@@ -114,7 +114,7 @@ class DirectoryDataStore(MutableDataStore):
             if accessor_id_parts:
                 actual_type_id, _, _ = accessor_id_parts
                 if type_id is None or actual_type_id == type_id:
-                    yield data_id
+                    yield data_id, None
 
     def has_data(self, data_id: str) -> bool:
         assert_given(data_id, 'data_id')

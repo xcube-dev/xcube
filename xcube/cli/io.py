@@ -28,9 +28,9 @@ from xcube.constants import EXTENSION_POINT_DATA_STORES
 from xcube.constants import EXTENSION_POINT_DATA_WRITERS
 from xcube.util.plugin import get_extension_registry
 
-_UNKNOWN_EXTENSION = "<unknown!>"
-
+_NO_TITLE = "<no title>"
 _NO_DESCRIPTION = "<no description>"
+_UNKNOWN_EXTENSION = "<unknown!>"
 
 
 @click.command(name='list')
@@ -293,8 +293,8 @@ def _dump_store_writers(data_store: 'xcube.core.store.DataStore') -> int:
 
 def _dump_store_data_ids(data_store: 'xcube.core.store.DataStore') -> int:
     count = 0
-    for data_id in data_store.get_data_ids():
-        print(f'  {data_id}')
+    for data_id, title in data_store.get_data_ids():
+        print(f'  {data_id:>32s}  {title or _NO_TITLE}')
         count += 1
     return count
 
@@ -313,8 +313,8 @@ def _dump_named_extensions(point: str, names: Sequence[str]) -> int:
 
 def _dump_data_resources(data_store: 'xcube.core.store.DataStore') -> int:
     count = 0
-    for data_id in data_store.get_data_ids():
-        print(f'  {data_id}')
+    for data_id, title in data_store.get_data_ids():
+        print(f'  {data_id:<32s}  {title or _NO_TITLE}')
         count += 1
     return count
 

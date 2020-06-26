@@ -114,7 +114,7 @@ def get_data_accessor_predicate(type_id: str = None,
     :param format_id: Optional data format identifier to be supported.
     :param storage_id: Optional data storage identifier to be supported.
     :return: A filter function.
-    :raise DataAccessorError: If an error occurs.
+    :raise DataStoreError: If an error occurs.
     """
     if any((type_id, format_id, storage_id)):
         def _predicate(extension: Extension) -> bool:
@@ -159,7 +159,7 @@ class DataOpener(ABC):
 
         :param data_id: An optional data resource identifier.
         :return: The schema for the parameters in *open_params*.
-        :raise DataAccessorError: If an error occurs.
+        :raise DataStoreError: If an error occurs.
         """
 
     @abstractmethod
@@ -172,7 +172,7 @@ class DataOpener(ABC):
         :param data_id: The data resource identifier.
         :param open_params: Opener-specific parameters.
         :return: An xarray.Dataset instance.
-        :raise DataAccessorError: If an error occurs.
+        :raise DataStoreError: If an error occurs.
         """
 
 
@@ -187,7 +187,7 @@ class DataDeleter(ABC):
         Delete a data resource. Raises if *data_id* does not exist.
 
         :param data_id: A data resource identifier known to exist.
-        :raise DataAccessorError: If an error occurs.
+        :raise DataStoreError: If an error occurs.
         """
 
 
@@ -206,7 +206,7 @@ class DataWriter(DataDeleter, ABC):
         :meth:write_data(data resource, data_id, open_params).
 
         :return: The schema for the parameters in *write_params*.
-        :raise DataAccessorError: If an error occurs.
+        :raise DataStoreError: If an error occurs.
         """
 
     @abstractmethod
@@ -223,7 +223,7 @@ class DataWriter(DataDeleter, ABC):
         :param replace: Whether to replace an existing data resource.
         :param write_params: Writer-specific parameters.
         :return: The data resource identifier used to write the data resource.
-        :raise DataAccessorError: If an error occurs.
+        :raise DataStoreError: If an error occurs.
         """
 
 
@@ -239,7 +239,7 @@ class DataTimeSliceUpdater(DataWriter, ABC):
 
         :param data_id: The data resource identifier.
         :param time_slice: The time slice data to be inserted. Must be compatible with the data resource.
-        :raise DataAccessorError: If an error occurs.
+        :raise DataStoreError: If an error occurs.
         """
 
     @abstractmethod
@@ -250,7 +250,7 @@ class DataTimeSliceUpdater(DataWriter, ABC):
         :param data_id: The data resource identifier.
         :param time_slice: The time slice data to be inserted. Must be compatible with the data resource.
         :param time_index: The time index.
-        :raise DataAccessorError: If an error occurs.
+        :raise DataStoreError: If an error occurs.
         """
 
     @abstractmethod
@@ -261,5 +261,5 @@ class DataTimeSliceUpdater(DataWriter, ABC):
         :param data_id: The data resource identifier.
         :param time_slice: The time slice data to be inserted. Must be compatible with the data resource.
         :param time_index: The time index.
-        :raise DataAccessorError: If an error occurs.
+        :raise DataStoreError: If an error occurs.
         """

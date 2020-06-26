@@ -50,9 +50,9 @@ class IOStoreTest(CliTest):
                          '  Directory data store\n'
                          '\n'
                          'Data resources:\n'
-                         '  cube-1-250-250.zarr\n'
-                         '  cube-5-100-200.zarr\n'
-                         '  cube.nc\n'
+                         '               cube-1-250-250.zarr  <no title>\n'
+                         '               cube-5-100-200.zarr  <no title>\n'
+                         '                           cube.nc  <no title>\n'
                          '3 data resources found.\n',
                          result.stdout)
 

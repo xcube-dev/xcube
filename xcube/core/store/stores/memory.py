@@ -58,8 +58,9 @@ class MemoryDataStore(MutableDataStore):
     def get_type_ids(cls) -> Tuple[str, ...]:
         return '*',
 
-    def get_data_ids(self, type_id: str = None) -> Iterator[str]:
-        return iter(self._data_dict.keys())
+    def get_data_ids(self, type_id: str = None) -> Iterator[Tuple[str, Optional[str]]]:
+        for data_id in self._data_dict.keys():
+            yield data_id, None
 
     def has_data(self, data_id: str) -> bool:
         assert_given(data_id, 'data_id')

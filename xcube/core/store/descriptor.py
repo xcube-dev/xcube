@@ -28,6 +28,7 @@ from xcube.core.mldataset import MultiLevelDataset
 from xcube.util.assertions import assert_given
 from xcube.util.assertions import assert_in
 from xcube.util.ipython import register_json_formatter
+from xcube.util.jsonschema import JsonObjectSchema
 
 TYPE_ID_DATASET = 'dataset'
 TYPE_ID_MULTI_LEVEL_DATASET = 'mldataset'
@@ -78,7 +79,8 @@ class DataDescriptor:
                  bbox: Tuple[float, float, float, float] = None,
                  spatial_res: float = None,
                  time_range: Tuple[Optional[str], Optional[str]] = None,
-                 time_period: str = None):
+                 time_period: str = None,
+                 open_params_schema: JsonObjectSchema = None):
         assert_given(data_id, 'data_id')
         assert_given(type_id, 'type_id')
         self.data_id = data_id
@@ -88,6 +90,7 @@ class DataDescriptor:
         self.spatial_res = spatial_res
         self.time_range = tuple(time_range) if time_range else None
         self.time_period = time_period
+        self.open_params_schema = open_params_schema
 
     @classmethod
     def from_dict(cls, d: Mapping[str, Any]) -> 'DatasetDescriptor':
@@ -101,6 +104,8 @@ class DataDescriptor:
         _copy_none_null_props(self, d, ['data_id', 'type_id',
                                         'crs', 'bbox', 'spatial_res',
                                         'time_range', 'time_period'])
+        if self.open_params_schema is not None:
+            d['open_params_schema'] = self.open_params_schema.to_dict()
         return d
 
 
@@ -113,12 +118,21 @@ class DatasetDescriptor(DataDescriptor):
     def __init__(self,
                  data_id: str,
                  type_id=TYPE_ID_DATASET,
+                 crs: str = None,
+                 bbox: Tuple[float, float, float, float] = None,
+                 spatial_res: float = None,
+                 time_range: Tuple[Optional[str], Optional[str]] = None,
+                 time_period: str = None,
                  dims: Mapping[str, int] = None,
                  data_vars: Sequence['VariableDescriptor'] = None,
-                 attrs: Mapping[str, any] = None,
-                 **kwargs):
-        assert_given(data_id, 'data_id')
-        super().__init__(data_id=data_id, type_id=type_id, **kwargs)
+                 attrs: Mapping[str, any] = None):
+        super().__init__(data_id=data_id,
+                         type_id=type_id,
+                         crs=crs,
+                         bbox=bbox,
+                         spatial_res=spatial_res,
+                         time_range=time_range,
+                         time_period=time_period)
         self.dims = dict(dims) if dims else None
         self.data_vars = list(data_vars) if data_vars else None
         self.attrs = dict(attrs) if attrs else None
@@ -127,6 +141,7 @@ class DatasetDescriptor(DataDescriptor):
     def from_dict(cls, d: Mapping[str, Any]) -> 'DatasetDescriptor':
         """Create new instance from a JSON-serializable dictionary"""
         # TODO: implement me
+        raise NotImplementedError()
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert into a JSON-serializable dictionary"""
