@@ -177,6 +177,35 @@ def writer_info(writer_id: str):
     print(_format_params_schema(params_schema))
 
 
+@click.command(name='dump')
+@click.option('-o', '--output', 'file_path', help='Output filename.', default='store-dump.json')
+def dump(file_path: str):
+    """
+    Dump all store metadata.
+    Dumps all store metadata and their dataset descriptors into a single JSON file.
+    """
+    stores_list = list()
+    extensions = get_extension_registry().find_extensions(EXTENSION_POINT_DATA_STORES)
+    for extension in extensions:
+        store_id = extension.name
+        if store_id in ('memory', 'directory', 's3'):
+            continue
+        # TODO: missing store_params
+        store_params = []
+        store = _new_data_store(store_id, store_params)
+        datasets_list = []
+        for data_id, title in store.get_data_ids(type_id='dataset'):
+            dsd = store.describe_data(data_id)
+            datasets_list.append(dsd.to_dict())
+        stores_list.append(dict(store_id=store_id,
+                                **extension.metadata,
+                                datasets=datasets_list))
+    json_instance = dict(stores=stores_list)
+    with open(file_path, 'w') as fp:
+        json.dump(json_instance, fp, indent=2)
+    print(f'Dumped stores to {file_path}.')
+
+
 @click.group()
 def store():
     """
@@ -221,6 +250,7 @@ def io():
 io.add_command(store)
 io.add_command(opener)
 io.add_command(writer)
+io.add_command(dump)
 
 
 # from xcube.util.jsonschema import JsonObjectSchema
@@ -319,7 +349,7 @@ def _dump_data_resources(data_store: 'xcube.core.store.DataStore') -> int:
     return count
 
 
-def _new_data_store(store_id: str, store_params: List[str]):
+def _new_data_store(store_id: str, store_params: List[str]) -> 'xcube.core.store.DataStore':
     from xcube.core.store import get_data_store_params_schema
     from xcube.core.store import new_data_store
     params_schema = get_data_store_params_schema(store_id)

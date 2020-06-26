@@ -126,8 +126,7 @@ class DatasetDescriptor(DataDescriptor):
                  dims: Mapping[str, int] = None,
                  data_vars: Sequence['VariableDescriptor'] = None,
                  attrs: Mapping[str, any] = None,
-                 open_params_schema: JsonObjectSchema = None
-                 ):
+                 open_params_schema: JsonObjectSchema = None):
         super().__init__(data_id=data_id,
                          type_id=type_id,
                          crs=crs,
@@ -135,8 +134,7 @@ class DatasetDescriptor(DataDescriptor):
                          spatial_res=spatial_res,
                          time_range=time_range,
                          time_period=time_period,
-                         open_params_schema=open_params_schema
-                         )
+                         open_params_schema=open_params_schema)
         self.dims = dict(dims) if dims else None
         self.data_vars = list(data_vars) if data_vars else None
         self.attrs = dict(attrs) if attrs else None
