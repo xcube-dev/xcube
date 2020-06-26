@@ -28,7 +28,9 @@ from xcube.constants import EXTENSION_POINT_DATA_STORES
 from xcube.constants import EXTENSION_POINT_DATA_WRITERS
 from xcube.util.plugin import get_extension_registry
 
-_TAB = ' \t'
+_UNKNOWN_EXTENSION = "<unknown!>"
+
+_NO_DESCRIPTION = "<no description>"
 
 
 @click.command(name='list')
@@ -104,21 +106,21 @@ def store_info(store_id: str,
         if show_openers:
             print(json.dumps(d, indent=2))
     else:
-        if description:
-            print(description)
+        print(f'\nData store description:')
+        print(f'  {description or _NO_DESCRIPTION}')
         if show_params:
             print(_format_params_schema(params_schema))
         if show_openers:
-            print(f'Data openers:')
+            print(f'\nData openers:')
             _dump_store_openers(data_store)
         if show_writers:
             if isinstance(data_store, MutableDataStore):
-                print(f'Data writers:')
+                print(f'\nData writers:')
                 _dump_store_writers(data_store)
             else:
                 print(f'No writers available, because data store "{store_id}" is not mutable.')
         if show_data_ids:
-            print(f'Data resources:')
+            print(f'\nData resources:')
             count = _dump_store_data_ids(data_store)
             print(f'{count} data resource{"s" if count != 1 else ""} found.')
 
@@ -230,7 +232,7 @@ def _format_params_schema(params_schema: 'xcube.util.jsonschema.JsonObjectSchema
         text.append('Parameters:')
         for param_name, param_schema in params_schema.properties.items():
             text.append(f'{"* " if param_name in params_schema.required else "  "}'
-                        f'{param_name}{_TAB}{_format_param_schema(param_schema)}')
+                        f'{param_name:>24s}  {_format_param_schema(param_schema)}')
     else:
         text.append(f'No parameters required.')
     return '\n'.join(text)
@@ -240,16 +242,17 @@ def _format_required_params_schema(params_schema: 'xcube.util.jsonschema.JsonObj
     text = ['Required parameters:']
     for param_name, param_schema in params_schema.properties.items():
         if param_name in params_schema.required:
-            text.append(f'  {param_name}{_TAB}{_format_param_schema(param_schema)}')
+            text.append(f'  {param_name:>24s}  {_format_param_schema(param_schema)}')
     return '\n'.join(text)
 
 
 def _format_param_schema(param_schema: 'xcube.util.jsonschema.JsonSchema'):
     from xcube.util.undefined import UNDEFINED
     param_info = []
-    if param_schema.title or param_schema.description:
-        description = param_schema.title or param_schema.description
-        param_info.append(description + ('' if description.endswith('.') else '.'))
+    if param_schema.title:
+        param_info.append(param_schema.title + ('' if param_schema.title.endswith('.') else '.'))
+    if param_schema.description:
+        param_info.append(param_schema.description + ('' if param_schema.description.endswith('.') else '.'))
     if param_schema.enum:
         param_info.append(f'Must be one of {", ".join(map(json.dumps, param_schema.enum))}.')
     if param_schema.const is not UNDEFINED:
@@ -275,7 +278,7 @@ def _dump_data_writers() -> int:
 def _dump_extensions(point: str) -> int:
     count = 0
     for extension in get_extension_registry().find_extensions(point):
-        print(f'  {extension.name}{_TAB}{extension.metadata.get("description", "<no description>")}')
+        print(f'  {extension.name:>24s}  {extension.metadata.get("description", "<no description>")}')
         count += 1
     return count
 
@@ -301,9 +304,9 @@ def _dump_named_extensions(point: str, names: Sequence[str]) -> int:
     for name in names:
         extension = get_extension_registry().get_extension(point, name)
         if extension:
-            print(f'  {name}{_TAB}{extension.metadata.get("description", "<no description>")}')
+            print(f'  {name:>24s}  {extension.metadata.get("description", _NO_DESCRIPTION)}')
         else:
-            print(f'  {name}{_TAB}<unknown!>')
+            print(f'  {name:>24s}  {_UNKNOWN_EXTENSION}')
         count += 1
     return count
 

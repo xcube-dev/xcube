@@ -19,7 +19,6 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-from .accessor import DataAccessorError
 from .accessor import DataDeleter
 from .accessor import DataOpener
 from .accessor import DataTimeSliceUpdater
@@ -36,8 +35,10 @@ from .descriptor import TYPE_ID_DATASET
 from .descriptor import TYPE_ID_GEO_DATA_FRAME
 from .descriptor import TYPE_ID_MULTI_LEVEL_DATASET
 from .descriptor import VariableDescriptor
+from .descriptor import get_data_type_id
+from .descriptor import new_data_descriptor
+from .error import DataStoreError
 from .store import DataStore
-from .store import DataStoreError
 from .store import MutableDataStore
 from .store import find_data_store_extensions
 from .store import get_data_store_params_schema

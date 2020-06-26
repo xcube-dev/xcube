@@ -18,15 +18,14 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-import xarray as xr
-from typing import Callable
-
-from xcube.cli._gen2.request import CodeConfig
 
 
-def transform_cube(cube: xr.Dataset,
-                   code_config: CodeConfig,
-                   progress_monitor: Callable):
-    """Use user-defined Python code to transform *cube*."""
-    # TODO: implement me
-    return cube
+class DataStoreError(Exception):
+    """
+    Raised on error in any of the data store, opener, or writer methods.
+
+    :param message: The error message.
+    """
+
+    def __init__(self, message: str):
+        super().__init__(message)

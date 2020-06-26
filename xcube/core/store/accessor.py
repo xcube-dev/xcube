@@ -32,6 +32,7 @@ from xcube.util.extension import ExtensionPredicate
 from xcube.util.extension import ExtensionRegistry
 from xcube.util.jsonschema import JsonObjectSchema
 from xcube.util.plugin import get_extension_registry
+from .error import DataStoreError
 
 
 #######################################################
@@ -116,20 +117,20 @@ def get_data_accessor_predicate(type_id: str = None,
     :raise DataAccessorError: If an error occurs.
     """
     if any((type_id, format_id, storage_id)):
-        def predicate(extension: Extension) -> bool:
-            parts = extension.name.split(':', maxsplit=4)
-            if len(parts) < 3:
-                raise DataAccessorError(f'Illegal data opener/writer extension name "{extension.name}"')
-            type_ok = type_id is None or parts[0] == '*' or parts[0] == type_id
-            format_ok = format_id is None or parts[1] == '*' or parts[1] == format_id
-            storage_ok = storage_id is None or parts[2] == '*' or parts[2] == storage_id
+        def _predicate(extension: Extension) -> bool:
+            extension_parts = extension.name.split(':', maxsplit=4)
+            if len(extension_parts) < 3:
+                raise DataStoreError(f'Illegal data opener/writer extension name "{extension.name}"')
+            type_ok = type_id is None or extension_parts[0] == '*' or extension_parts[0] == type_id
+            format_ok = format_id is None or extension_parts[1] == '*' or extension_parts[1] == format_id
+            storage_ok = storage_id is None or extension_parts[2] == '*' or extension_parts[2] == storage_id
             return type_ok and format_ok and storage_ok
     else:
         # noinspection PyUnusedLocal
-        def predicate(extension: Extension) -> bool:
+        def _predicate(extension: Extension) -> bool:
             return True
 
-    return predicate
+    return _predicate
 
 
 #######################################################
@@ -262,14 +263,3 @@ class DataTimeSliceUpdater(DataWriter, ABC):
         :param time_index: The time index.
         :raise DataAccessorError: If an error occurs.
         """
-
-
-class DataAccessorError(Exception):
-    """
-    Raised on error in any of the DataOpener/DataWriter implementations.
-
-    :param message: The error message.
-    """
-
-    def __init__(self, message: str):
-        super().__init__(message)

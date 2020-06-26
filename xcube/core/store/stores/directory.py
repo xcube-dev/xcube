@@ -27,19 +27,19 @@ import geopandas as gpd
 import xarray as xr
 
 from xcube.core.mldataset import MultiLevelDataset
-from xcube.core.store.accessor import find_data_opener_extensions
-from xcube.core.store.accessor import find_data_writer_extensions
-from xcube.core.store.accessor import get_data_accessor_predicate
-from xcube.core.store.accessor import new_data_opener
-from xcube.core.store.accessor import new_data_writer
-from xcube.core.store.descriptor import DataDescriptor
-from xcube.core.store.descriptor import TYPE_ID_DATASET
-from xcube.core.store.descriptor import TYPE_ID_GEO_DATA_FRAME
-from xcube.core.store.descriptor import TYPE_ID_MULTI_LEVEL_DATASET
-from xcube.core.store.descriptor import get_data_type_id
-from xcube.core.store.descriptor import new_data_descriptor
-from xcube.core.store.store import DataStoreError
-from xcube.core.store.store import MutableDataStore
+from xcube.core.store import DataDescriptor
+from xcube.core.store import DataStoreError
+from xcube.core.store import MutableDataStore
+from xcube.core.store import TYPE_ID_DATASET
+from xcube.core.store import TYPE_ID_GEO_DATA_FRAME
+from xcube.core.store import TYPE_ID_MULTI_LEVEL_DATASET
+from xcube.core.store import find_data_opener_extensions
+from xcube.core.store import find_data_writer_extensions
+from xcube.core.store import get_data_accessor_predicate
+from xcube.core.store import get_data_type_id
+from xcube.core.store import new_data_descriptor
+from xcube.core.store import new_data_opener
+from xcube.core.store import new_data_writer
 from xcube.util.assertions import assert_given
 from xcube.util.assertions import assert_in
 from xcube.util.assertions import assert_instance
@@ -70,7 +70,8 @@ _TYPE_ID_TO_ACCESSOR_TO_DEFAULT_FILENAME_EXT = {
 # TODO: write tests
 # TODO: complete docs
 # TODO: remove code duplication with ./s3.py and its tests.
-#   Introduce something like MultiOpenerStoreMixin/MultiWriterStoreMixin
+#   - Introduce a file-system-abstracting base class or mixin, see module "fsspec" and impl. "s3fs" as  used in Dask!
+#   - Introduce something like MultiOpenerStoreMixin/MultiWriterStoreMixin!
 
 class DirectoryDataStore(MutableDataStore):
     """

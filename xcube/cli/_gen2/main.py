@@ -19,80 +19,61 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-import os.path
-from typing import Type
-
-import click
-
+from xcube.cli._gen2.genconfig import GenConfig
 from xcube.cli._gen2.open import open_cubes
-from xcube.cli._gen2.request import Request, OutputConfig
+from xcube.cli._gen2.progress import ApiProgressCallbackObserver
+from xcube.cli._gen2.progress import ConsoleProgressObserver
 from xcube.cli._gen2.resample import resample_and_merge_cubes
-from xcube.cli._gen2.transform import transform_cube
+from xcube.cli._gen2.storeconfig import load_data_store_instances
 from xcube.cli._gen2.write import write_cube
-from xcube.core.dsio import guess_dataset_format
+from xcube.util.progress import observe_progress
 
 
-def main(request_path: str,
-         output_path: str = None,
-         callback_url=None,
-         exception_type: Type[BaseException] = click.ClickException,
+def main(gen_config_path: str,
+         store_configs_path: str = None,
          verbose: bool = False):
     """
-    Generate a data cube.
+    Generator tool for data cubes.
 
     Creates cube views from one or more cube stores, resamples them to a common grid,
     optionally performs some cube transformation,
     and writes the resulting cube to some target cube store.
 
-    REQUEST is the cube generation request. It may be provided as a JSON or YAML file
-    (file extensions ".json" or ".yaml"). If the REQUEST file argument is omitted, it is expected that
-    the Cube generation request is piped as a JSON string.
+    *gen_config_path* is the cube generator configuration. It may be provided as a JSON or YAML file
+    (file extensions ".json" or ".yaml"). If the *gen_config_path* argument is omitted, it is expected that
+    the cube generator configuration is piped as a JSON string.
 
-    :param request_path: cube generation request. It may be provided as a JSON or YAML file
+    *store_configs_path* is a path to a JSON file with data store configurations. It is a mapping of names to
+    configured stores. Entries are dictionaries that have a mandatory "store_id" property which is a name of a
+    registered xcube data store. The optional "store_params" property may define data store specific parameters.
+
+    :param gen_config_path: Cube generation configuration. It may be provided as a JSON or YAML file
         (file extensions ".json" or ".yaml"). If the REQUEST file argument is omitted, it is expected that
-        the Cube generation request is piped as a JSON string.
-    :param output_path: output ZARR directory in local file system.
-        Overwrites output configuration in request if given.
-    :param callback_url:  Optional URL used to report status information. The URL
-        must accept the POST method and support the JSON content type.
-    :param verbose:
-    :param exception_type: exception type used to raise on errors
+        the cube generator configuration is piped as a JSON string.
+    :param store_configs_path: A JSON file that maps store names to parameterized stores.
+    :param verbose: Whether to output progress information to stdout.
     """
 
-    def progress_monitor():
-        # TODO: make use of callback_url and verbose
-        pass
+    store_instances = load_data_store_instances(store_configs_path)
 
-    request = Request.from_file(request_path, exception_type=exception_type)
+    gen_config = GenConfig.from_file(gen_config_path, verbose=verbose)
 
-    if output_path:
-        output_config = _new_output_config_for_dir(output_path)
-    else:
-        output_config = request.output_config
+    if gen_config.callback_config:
+        ApiProgressCallbackObserver(gen_config.callback_config).activate()
+    if verbose:
+        ConsoleProgressObserver().activate()
 
-    # Step 1
-    cubes = open_cubes(request.input_configs,
-                       cube_config=request.cube_config,
-                       progress_monitor=progress_monitor)
-    # Step 2
-    cube = resample_and_merge_cubes(cubes,
-                                    cube_config=request.cube_config,
-                                    progress_monitor=progress_monitor)
-    # Step 3
-    cube = transform_cube(cube,
-                          request.code_config,
-                          progress_monitor=progress_monitor)
-    # Step 4
-    write_cube(cube,
-               output_config=output_config,
-               progress_monitor=progress_monitor)
+    with observe_progress('Generating cube', 100) as cm:
+        cm.will_work(10)
+        cubes = open_cubes(gen_config.input_configs,
+                           cube_config=gen_config.cube_config,
+                           store_instances=store_instances)
 
+        cm.will_work(10)
+        cube = resample_and_merge_cubes(cubes,
+                                        cube_config=gen_config.cube_config)
 
-def _new_output_config_for_dir(output_path):
-    base_dir = os.path.dirname(output_path)
-    cube_id, _ = os.path.splitext(os.path.basename(output_path))
-    output_config = OutputConfig(cube_store_id='dir',
-                                 cube_store_params=dict(base_dir=base_dir, read_only=False),
-                                 cube_id=cube_id,
-                                 write_params=dict(format=guess_dataset_format(output_path)))
-    return output_config
+        cm.will_work(80)
+        write_cube(cube,
+                   output_config=gen_config.output_config,
+                   store_instances=store_instances)

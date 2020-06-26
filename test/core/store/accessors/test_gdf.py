@@ -2,7 +2,7 @@ import unittest
 import xarray as xr
 
 from xcube.core.new import new_cube
-from xcube.core.store.store import DataStoreError
+from xcube.core.store import DataStoreError
 from xcube.core.store.stores.memory import MemoryDataStore
 
 

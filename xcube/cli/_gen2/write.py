@@ -18,28 +18,34 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-from typing import Callable, Optional
+
+from typing import Dict
 
 import xarray as xr
 
-from xcube.cli._gen2.request import OutputConfig
-from xcube.core.store import new_data_store
+from xcube.cli._gen2.genconfig import OutputConfig
+from xcube.cli._gen2.storeconfig import get_data_store_instance
+from xcube.core.store import DataStore
 from xcube.core.store import new_data_writer
-from xcube.util.extension import ExtensionRegistry
+from xcube.util.progress import observe_progress
 
 
 def write_cube(cube: xr.Dataset,
                output_config: OutputConfig,
-               progress_monitor: Callable,
-               extension_registry: Optional[ExtensionRegistry] = None) -> str:
-    write_params = dict()
-    if output_config.store_id:
-        writer = new_data_store(output_config.store_id,
-                                **output_config.store_params,
-                                extension_registry=extension_registry)
-        write_params.update(writer_id=output_config.writer_id, **output_config.write_params)
-    else:
-        writer = new_data_writer(output_config.writer_id,
-                                 extension_registry=extension_registry)
-        write_params.update(**output_config.store_params, **output_config.write_params)
-    return writer.write_data(cube, data_id=output_config.data_id, **write_params)
+               store_instances: Dict[str, DataStore] = None) -> str:
+    with observe_progress('Writing output', 1) as progress:
+        write_params = dict()
+        if output_config.store_id:
+            writer = get_data_store_instance(output_config.store_id, output_config.store_params, store_instances)
+            write_params.update(writer_id=output_config.writer_id, **output_config.write_params)
+        else:
+            writer = new_data_writer(output_config.writer_id)
+            write_params.update(**output_config.store_params, **output_config.write_params)
+
+        # TODO: develop an adapter from Dask callback to ProgressObserver and use it here.
+        data_id = writer.write_data(cube,
+                                    data_id=output_config.data_id,
+                                    replace=output_config.replace or False,
+                                    **write_params)
+        progress.worked(1)
+        return data_id

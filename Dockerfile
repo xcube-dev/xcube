@@ -30,8 +30,7 @@ ADD environment.yml /tmp/environment.yml
 # environment.yml. At present, evironments created by mamba can't be
 # referenced by name from conda (presumably a bug), so we use --preix
 # to specify an explicit path instead.
-RUN mamba env create --file /tmp/environment.yml --prefix $HOME/xcube-env
-RUN source activate $HOME/xcube-env
+RUN mamba env create --file /tmp/environment.yml
 
 # Set work directory for xcube_server installation
 RUN mkdir /xcube
@@ -42,15 +41,15 @@ ADD . /xcube
 
 # Setup xcube_server package, specifying the environment by path rather
 # than by name (see above).
-RUN source activate $HOME/xcube-env && python setup.py develop
+RUN source activate xcube && python setup.py develop
 
 # Test xcube package
-ENV NUMBA_DISABLE_JIT 1
-#RUN source activate xcube && pytest
+# ENV NUMBA_DISABLE_JIT 1
+# RUN source activate xcube && pytest
 
 # Export web server port 8000
 EXPOSE 8000
 
 # Start server
 ENTRYPOINT ["/bin/bash", "-c"]
-CMD ["source activate $HOME/xcube-env && xcube"]
+CMD ["source activate xcube && xcube --help"]

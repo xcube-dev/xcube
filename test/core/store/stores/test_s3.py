@@ -5,7 +5,7 @@ import moto
 import xarray as xr
 
 from xcube.core.new import new_cube
-from xcube.core.store import DataAccessorError
+from xcube.core.store import DataStoreError
 from xcube.core.store import new_data_store
 from xcube.core.store.stores.s3 import S3DataStore
 
@@ -33,6 +33,8 @@ class S3DataStoreTest(unittest.TestCase):
              'aws_access_key_id',
              'aws_secret_access_key',
              'aws_session_token',
+             'endpoint_url',
+             'profile_name',
              'bucket_name',
              'region_name'},
             set(schema.properties.keys())
@@ -112,7 +114,7 @@ class S3DataStoreTest(unittest.TestCase):
 
             # Try overwriting existing cube 1
             dataset_4 = new_cube(variables=dict(g=7.4, h=10.7))
-            with self.assertRaises(DataAccessorError) as cm:
+            with self.assertRaises(DataStoreError) as cm:
                 self.store.write_data(dataset_4, data_id='cube-1.zarr')
             self.assertEqual("path '' contains a group", f'{cm.exception}')
             # replace=True should do the trick

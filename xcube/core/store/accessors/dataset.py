@@ -18,14 +18,15 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+
 from typing import Dict, Any, Tuple, Optional
 
 import s3fs
 import xarray as xr
 
-from xcube.core.store.accessor import DataAccessorError
-from xcube.core.store.accessor import DataOpener
-from xcube.core.store.accessor import DataWriter
+from xcube.core.store import DataOpener
+from xcube.core.store import DataStoreError
+from xcube.core.store import DataWriter
 from xcube.core.store.accessors.posix import PosixDataDeleterMixin
 from xcube.util.assertions import assert_instance
 from xcube.util.jsonschema import JsonArraySchema
@@ -150,7 +151,7 @@ class DatasetZarrPosixAccessor(ZarrOpenerParamsSchemaMixin,
 
     def write_data(self, data: xr.Dataset, data_id: str, replace=False, **write_params):
         assert_instance(data, xr.Dataset, 'data')
-        data.to_zarr(data_id, **write_params)
+        data.to_zarr(data_id, mode='w' if replace else None, **write_params)
 
 
 #######################################################
@@ -162,18 +163,77 @@ class S3Mixin:
     Provides common S3 parameters.
     """
 
+    _regions = [
+        ['Europe (Frankfurt)', 'eu-central-1'],
+        ['Europe (Ireland)', 'eu-west-1'],
+        ['Europe (London)', 'eu-west-2'],
+        ['Europe (Milan)', 'eu-south-1'],
+        ['Europe (Paris)', 'eu-west-3'],
+        ['Europe (Stockholm)', 'eu-north-1'],
+        ['Canada (Central)', 'ca-central-1'],
+        ['Africa (Cape Town)', 'af-south-1'],
+        ['US East (Ohio)', 'us-east-2'],
+        ['US East (N. Virginia)', 'us-east-1'],
+        ['US West (N. California)', 'us-west-1'],
+        ['US West (Oregon)', 'us-west-2'],
+        ['South America (São Paulo)', 'sa-east-1'],
+        ['Asia Pacific (Hong Kong)', 'ap-east-1'],
+        ['Asia Pacific (Mumbai)', 'ap-south-1'],
+        ['Asia Pacific (Osaka-Local)', 'ap-northeast-3'],
+        ['Asia Pacific (Seoul)', 'ap-northeast-2'],
+        ['Asia Pacific (Singapore)', 'ap-southeast-1'],
+        ['Asia Pacific (Sydney)', 'ap-southeast-2'],
+        ['Asia Pacific (Tokyo)', 'ap-northeast-1'],
+        ['Middle East (Bahrain)', 'me-south-1'],
+        ['China (Beijing)', 'cn-north-1'],
+        ['China (Ningxia)', 'cn-northwest-1'],
+    ]
+
     @classmethod
     def get_s3_params_schema(self) -> JsonObjectSchema:
         # TODO: Use defaults as described in
         #   https://boto3.amazonaws.com/v1/documentation/api/latest/guide/configuration.html
         return JsonObjectSchema(
             properties=dict(
-                anon=JsonBooleanSchema(default=False),
-                aws_access_key_id=JsonStringSchema(min_length=1),
-                aws_secret_access_key=JsonStringSchema(min_length=1),
-                aws_session_token=JsonStringSchema(min_length=1),
-                bucket_name=JsonStringSchema(min_length=1),
-                region_name=JsonStringSchema(min_length=1),
+                anon=JsonBooleanSchema(title='Whether to anonymously connect to AWS S3'),
+                aws_access_key_id=JsonStringSchema(
+                    min_length=1,
+                    title='AWS access key identifier',
+                    description='Can also be set in profile section of ~/.aws/config, '
+                                'or by environment variable AWS_ACCESS_KEY_ID'
+                ),
+                aws_secret_access_key=JsonStringSchema(
+                    min_length=1,
+                    title='AWS secret access key',
+                    description='Can also be set in profile section of ~/.aws/config, '
+                                'or by environment variable AWS_SECRET_ACCESS_KEY'
+                ),
+                aws_session_token=JsonStringSchema(
+                    min_length=1,
+                    title='Session token.',
+                    description='Can also be set in profile section of ~/.aws/config, '
+                                'or by environment variable AWS_SESSION_TOKEN'
+                ),
+                endpoint_url=JsonStringSchema(
+                    min_length=1, format='uri',
+                    title='Alternative endpoint URL'
+                ),
+                bucket_name=JsonStringSchema(
+                    min_length=1,
+                    title='Name of the bucket'
+                ),
+                profile_name=JsonStringSchema(
+                    min_length=1,
+                    title='Name of the AWS configuration profile',
+                    description='Section name with within ~/.aws/config file, '
+                                'which provides AWS configurations and credentials.'
+                ),
+                region_name=JsonStringSchema(
+                    min_length=1,
+                    default='eu-central-1',
+                    enum=[r[1] for r in self._regions],
+                    title='AWS storage region name'
+                ),
             ),
         )
 
@@ -232,7 +292,7 @@ class DatasetZarrS3Accessor(ZarrOpenerParamsSchemaMixin,
                                            check=False),
                                 **open_params)
         except ValueError as e:
-            raise DataAccessorError(f'{e}') from e
+            raise DataStoreError(f'{e}') from e
 
     # noinspection PyMethodMayBeStatic
     def get_write_data_params_schema(self) -> JsonObjectSchema:
@@ -255,7 +315,7 @@ class DatasetZarrS3Accessor(ZarrOpenerParamsSchemaMixin,
                          mode='w' if replace else None,
                          **write_params)
         except ValueError as e:
-            raise DataAccessorError(f'{e}') from e
+            raise DataStoreError(f'{e}') from e
 
     def delete_data(self, data_id: str):
         # TODO: implement me
