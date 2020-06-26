@@ -196,30 +196,44 @@ class S3Mixin:
         return JsonObjectSchema(
             properties=dict(
                 anon=JsonBooleanSchema(title='Whether to anonymously connect to AWS S3'),
-                aws_access_key_id=JsonStringSchema(min_length=1,
-                                                   title='AWS access key identifier',
-                                                   description='May also be provided by environment variable '
-                                                               'AWS_SECRET_ACCESS_KEY or via profile section '
-                                                               'in ~/.aws/config'),
-                aws_secret_access_key=JsonStringSchema(min_length=1,
-                                                       title='AWS secret access key',
-                                                       description='May also be provided by environment variable '
-                                                                   'AWS_SECRET_ACCESS_KEY or via profile section '
-                                                                   'in ~/.aws/config'),
-                aws_session_token=JsonStringSchema(min_length=1,
-                                                   title='Session token.'),
-                endpoint_url=JsonStringSchema(min_length=1, format='uri',
-                                              title='Alternative endpoint URL'),
-                bucket_name=JsonStringSchema(min_length=1,
-                                             title='Name of the bucket'),
-                profile_name=JsonStringSchema(min_length=1,
-                                              title='Name of the AWS configuration profile',
-                                              description='Section name with within ~/.aws/config file, '
-                                                          'which provides AWS configurations and credentials.'),
-                region_name=JsonStringSchema(min_length=1,
-                                             default='eu-central-1',
-                                             enum=[r[1] for r in self._regions],
-                                             title='AWS storage region name'),
+                aws_access_key_id=JsonStringSchema(
+                    min_length=1,
+                    title='AWS access key identifier',
+                    description='Can also be set in profile section of ~/.aws/config,'
+                                'or by environment variable AWS_ACCESS_KEY_ID'
+                ),
+                aws_secret_access_key=JsonStringSchema(
+                    min_length=1,
+                    title='AWS secret access key',
+                    description='Can also be set in profile section of ~/.aws/config,'
+                                'or by environment variable AWS_SECRET_ACCESS_KEY'
+                ),
+                aws_session_token=JsonStringSchema(
+                    min_length=1,
+                    title='Session token.',
+                    description='Can also be set in profile section of ~/.aws/config,'
+                                'or by environment variable AWS_SESSION_TOKEN'
+                ),
+                endpoint_url=JsonStringSchema(
+                    min_length=1, format='uri',
+                    title='Alternative endpoint URL'
+                ),
+                bucket_name=JsonStringSchema(
+                    min_length=1,
+                    title='Name of the bucket'
+                ),
+                profile_name=JsonStringSchema(
+                    min_length=1,
+                    title='Name of the AWS configuration profile',
+                    description='Section name with within ~/.aws/config file, '
+                                'which provides AWS configurations and credentials.'
+                ),
+                region_name=JsonStringSchema(
+                    min_length=1,
+                    default='eu-central-1',
+                    enum=[r[1] for r in self._regions],
+                    title='AWS storage region name'
+                ),
             ),
         )
 
