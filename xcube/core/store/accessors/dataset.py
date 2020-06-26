@@ -163,18 +163,63 @@ class S3Mixin:
     Provides common S3 parameters.
     """
 
+    _regions = [
+        ['Europe (Frankfurt)', 'eu-central-1'],
+        ['Europe (Ireland)', 'eu-west-1'],
+        ['Europe (London)', 'eu-west-2'],
+        ['Europe (Milan)', 'eu-south-1'],
+        ['Europe (Paris)', 'eu-west-3'],
+        ['Europe (Stockholm)', 'eu-north-1'],
+        ['Canada (Central)', 'ca-central-1'],
+        ['Africa (Cape Town)', 'af-south-1'],
+        ['US East (Ohio)', 'us-east-2'],
+        ['US East (N. Virginia)', 'us-east-1'],
+        ['US West (N. California)', 'us-west-1'],
+        ['US West (Oregon)', 'us-west-2'],
+        ['South America (São Paulo)', 'sa-east-1'],
+        ['Asia Pacific (Hong Kong)', 'ap-east-1'],
+        ['Asia Pacific (Mumbai)', 'ap-south-1'],
+        ['Asia Pacific (Osaka-Local)', 'ap-northeast-3'],
+        ['Asia Pacific (Seoul)', 'ap-northeast-2'],
+        ['Asia Pacific (Singapore)', 'ap-southeast-1'],
+        ['Asia Pacific (Sydney)', 'ap-southeast-2'],
+        ['Asia Pacific (Tokyo)', 'ap-northeast-1'],
+        ['Middle East (Bahrain)', 'me-south-1'],
+        ['China (Beijing)', 'cn-north-1'],
+        ['China (Ningxia)', 'cn-northwest-1'],
+    ]
+
     @classmethod
     def get_s3_params_schema(self) -> JsonObjectSchema:
         # TODO: Use defaults as described in
         #   https://boto3.amazonaws.com/v1/documentation/api/latest/guide/configuration.html
         return JsonObjectSchema(
             properties=dict(
-                anon=JsonBooleanSchema(default=False),
-                aws_access_key_id=JsonStringSchema(min_length=1),
-                aws_secret_access_key=JsonStringSchema(min_length=1),
-                aws_session_token=JsonStringSchema(min_length=1),
-                bucket_name=JsonStringSchema(min_length=1),
-                region_name=JsonStringSchema(min_length=1),
+                anon=JsonBooleanSchema(title='Whether to anonymously connect to AWS S3'),
+                aws_access_key_id=JsonStringSchema(min_length=1,
+                                                   title='AWS access key identifier',
+                                                   description='May also be provided by environment variable '
+                                                               'AWS_SECRET_ACCESS_KEY or via profile section '
+                                                               'in ~/.aws/config'),
+                aws_secret_access_key=JsonStringSchema(min_length=1,
+                                                       title='AWS secret access key',
+                                                       description='May also be provided by environment variable '
+                                                                   'AWS_SECRET_ACCESS_KEY or via profile section '
+                                                                   'in ~/.aws/config'),
+                aws_session_token=JsonStringSchema(min_length=1,
+                                                   title='Session token.'),
+                endpoint_url=JsonStringSchema(min_length=1, format='uri',
+                                              title='Alternative endpoint URL'),
+                bucket_name=JsonStringSchema(min_length=1,
+                                             title='Name of the bucket'),
+                profile_name=JsonStringSchema(min_length=1,
+                                              title='Name of the AWS configuration profile',
+                                              description='Section name with within ~/.aws/config file, '
+                                                          'which provides AWS configurations and credentials.'),
+                region_name=JsonStringSchema(min_length=1,
+                                             default='eu-central-1',
+                                             enum=[r[1] for r in self._regions],
+                                             title='AWS storage region name'),
             ),
         )
 
