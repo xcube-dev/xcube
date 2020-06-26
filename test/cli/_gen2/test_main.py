@@ -42,13 +42,13 @@ class MainTest(unittest.TestCase):
     @requests_mock.Mocker()
     def test_json(self, m):
         m.put('https://xcube-gen.test/api/v1/jobs/tomtom/iamajob/callback', json={})
-        main('_request.json')
+        main('_request.json', verbose=True)
         self.assertIsInstance(MemoryDataStore.get_global_data_dict().get('CHL'),
                               xr.Dataset)
 
     @requests_mock.Mocker()
     def test_yaml(self, m):
         m.put('https://xcube-gen.test/api/v1/jobs/tomtom/iamajob/callback', json={})
-        main('_request.yaml')
+        main('_request.yaml', verbose=True)
         self.assertIsInstance(MemoryDataStore.get_global_data_dict().get('CHL'),
                               xr.Dataset)

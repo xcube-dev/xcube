@@ -228,6 +228,6 @@ class ConsoleProgressObserver(ProgressObserver):
     @classmethod
     def _format_state(cls, state: ProgressState, marker=None) -> str:
         if marker is None:
-            return '{a} - {b:3.1f}%'.format(a=state.label, b=100 * state.progress)
+            return '{} - {:3.1%}'.format(state.label, state.progress)
         else:
-            return '{a} - {b}'.format(a=state.label, b=marker)
+            return '{} - {}'.format(state.label, marker)
