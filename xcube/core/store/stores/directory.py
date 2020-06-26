@@ -70,7 +70,8 @@ _TYPE_ID_TO_ACCESSOR_TO_DEFAULT_FILENAME_EXT = {
 # TODO: write tests
 # TODO: complete docs
 # TODO: remove code duplication with ./s3.py and its tests.
-#   Introduce something like MultiOpenerStoreMixin/MultiWriterStoreMixin
+#   - Introduce a file-system-abstracting base class or mixin, see module "fsspec" and impl. "s3fs" as  used in Dask!
+#   - Introduce something like MultiOpenerStoreMixin/MultiWriterStoreMixin!
 
 class DirectoryDataStore(MutableDataStore):
     """

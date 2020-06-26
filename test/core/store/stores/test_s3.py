@@ -33,6 +33,8 @@ class S3DataStoreTest(unittest.TestCase):
              'aws_access_key_id',
              'aws_secret_access_key',
              'aws_session_token',
+             'endpoint_url',
+             'profile_name',
              'bucket_name',
              'region_name'},
             set(schema.properties.keys())
