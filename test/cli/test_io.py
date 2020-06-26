@@ -37,7 +37,7 @@ class IOStoreTest(CliTest):
         self.assertEqual(1, result.exit_code)
         self.assertEqual('Error: Data store "directory" has required parameters, but none were given.\n'
                          'Required parameters:\n'
-                         '  base_dir 	(string)\n',
+                         '                  base_dir  (string)\n',
                          result.stdout)
 
     def test_data(self):
@@ -45,7 +45,10 @@ class IOStoreTest(CliTest):
 
         result = self.invoke_cli(['io', 'store', 'info', 'directory', '-D', f'base_dir={demo_dir}'])
         self.assertEqual(0, result.exit_code)
-        self.assertEqual('Directory data store\n'
+        self.assertEqual('\n'
+                         'Data store description:\n'
+                         '  Directory data store\n'
+                         '\n'
                          'Data resources:\n'
                          '  cube-1-250-250.zarr\n'
                          '  cube-5-100-200.zarr\n'
