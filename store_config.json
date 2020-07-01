@@ -1,0 +1,16 @@
+{
+  "sentinelhub": {
+    "store_id": "sentinelhub",
+    "store_params": {
+      "client_id": "cbe755fc-5e4c-4ccb-859d-25dee4fe63e6",
+      "client_secret": "4)R!y|it7,K>vY]nLXfl@r+SY9%]1H~y&kkOdi_t",
+      "instance_id": "AKIAVBLQBN5YPU4MLEPW"
+    }
+  },
+  "cds": {
+    "store_id": "cds"
+  },
+  "cciodp": {
+    "store_id": "cciodp"
+  }
+}

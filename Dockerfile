@@ -13,6 +13,7 @@ SHELL ["/bin/bash", "-c"]
 
 # Update system and install dependencies
 RUN apt-get -y update && apt-get -y upgrade
+RUN apt-get -y install vim
 
 # && apt-get -y install  git build-essential libyaml-cpp-dev
 
@@ -37,11 +38,25 @@ RUN mkdir /xcube
 WORKDIR /xcube
 
 # Copy local github repo into image (will be replaced by either git clone or as a conda dep)
+RUN git clone https://github.com/dcs4cop/xcube-cds.git
+RUN git clone https://github.com/dcs4cop/xcube-sh.git
+RUN git clone https://github.com/dcs4cop/xcube-cci.git
+
+RUN echo 'HH2'
+
+RUN source activate xcube && cd xcube-sh && python setup.py develop && sed "s/- xcube/# - xcube/g" -i environment.yml && mamba env update -n xcube
+RUN source activate xcube && cd xcube-cds && python setup.py develop && sed "s/- xcube/# - xcube/g" -i environment.yml && mamba env update -n xcube
+RUN source activate xcube && cd xcube-cci && python setup.py develop && sed "s/- xcube/# - xcube/g" -i environment.yml && mamba env update -n xcube
+
 ADD . /xcube
 
 # Setup xcube_server package, specifying the environment by path rather
 # than by name (see above).
 RUN source activate xcube && python setup.py develop
+
+
+ADD --chown=1000:1000 store_config.json store_config.json
+ADD .cdsapirc /root/.cdsapirc
 
 # Test xcube package
 # ENV NUMBA_DISABLE_JIT 1
