@@ -41,6 +41,7 @@
         _FillValue: 0.65535
   ```
 
+* Example configurations for `xcube gen2` were added.
 
 ### Fixes
 * From 0.4.1: Fixed time-series performance drop (#299). 
