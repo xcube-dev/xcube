@@ -1,3 +1,7 @@
+## Changes in 0.5.1
+
+* `normalize_dataset` now ensures that latitudes are decreasing.
+
 ## Changes in 0.5.0
 
 ### New in 0.5.0
