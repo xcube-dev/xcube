@@ -4,6 +4,7 @@ from test.cli.helpers import CliDataTest, TEST_NC_FILE
 class DumpTest(CliDataTest):
 
     def test_dump_ds(self):
+        self.maxDiff = None
         result = self.invoke_cli(["dump", TEST_NC_FILE])
         self.assertEqual((
             "<xarray.Dataset>\n"
