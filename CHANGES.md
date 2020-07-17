@@ -1,4 +1,51 @@
-## Changes in 0.5.0.devX (in development)
+## Changes in 0.5.1
+
+* `normalize_dataset` now ensures that latitudes are decreasing.
+
+## Changes in 0.5.0
+
+### New in 0.5.0
+
+* `xcube gen2 CONFIG` will generate a cube from a data input store and a user given cube configuration.
+   It will write the resulting cube in a user defined output store.
+    - Input Stores: CCIODP, CDS, SentinelHub
+    - Output stores: memory, directory, S3
+
+* `xcube serve CUBE` will now use the last path component of `CUBE` as dataset title.
+
+* `xcube serve` can now be run with AWS credentials (#296). 
+  - In the form `xcube serve --config CONFIG`, a `Datasets` entry in `CONFIG`
+    may now contain the two new keys `AccessKeyId: ...` and `SecretAccessKey: ...` 
+    given that `FileSystem: obs`.
+  - In the form `xcube serve --aws-prof PROFILE CUBE`
+    the cube stored in bucket with URL `CUBE` will be accessed using the
+    credentials found in section `[PROFILE]` of your `~/.aws/credentials` file.
+  - In the form `xcube serve --aws-env CUBE`
+    the cube stored in bucket with URL `CUBE` will be accessed using the
+    credentials found in environment variables `AWS_ACCESS_KEY_ID` and
+    `AWS_SECRET_ACCESS_KEY`.
+
+### Enhancements in 0.5.0
+
+* Added possibility to specify packing of variables within the configuration of
+  `xcube gen` (#269). The user now may specify a different packing variables, 
+  which might be useful for reducing the storage size of the datacubes.
+  Currently it is only implemented for zarr format.
+  This may be done by passing the parameters for packing as the following:  
+   
+   
+  ```yaml  
+  output_writer_params: 
+
+    packing: 
+      analysed_sst: 
+        scale_factor: 0.07324442274239326
+        add_offset: -300.0
+        dtype: 'uint16'
+        _FillValue: 0.65535
+  ```
+
+* Example configurations for `xcube gen2` were added.
 
 ### Fixes
 * From 0.4.1: Fixed time-series performance drop (#299). 
@@ -33,43 +80,6 @@
 
 * From 0.4.1: Fixed time-series performance drop (#299). 
 
-### New in 0.5.0.dev2
-
-* `xcube serve CUBE` will now use the last path component of `CUBE` as dataset title.
-
-### New in 0.5.0.dev1
-
-* `xcube serve` can now be run with AWS credentials (#296). 
-  - In the form `xcube serve --config CONFIG`, a `Datasets` entry in `CONFIG`
-    may now contain the two new keys `AccessKeyId: ...` and `SecretAccessKey: ...` 
-    given that `FileSystem: obs`.
-  - In the form `xcube serve --aws-prof PROFILE CUBE`
-    the cube stored in bucket with URL `CUBE` will be accessed using the
-    credentials found in section `[PROFILE]` of your `~/.aws/credentials` file.
-  - In the form `xcube serve --aws-env CUBE`
-    the cube stored in bucket with URL `CUBE` will be accessed using the
-    credentials found in environment variables `AWS_ACCESS_KEY_ID` and
-    `AWS_SECRET_ACCESS_KEY`.
-
-### Enhancements in 0.5.0.dev1
-
-* Added possibility to specify packing of variables within the configuration of
-  `xcube gen` (#269). The user now may specify a different packing variables, 
-  which might be useful for reducing the storage size of the datacubes.
-  Currently it is only implemented for zarr format.
-  This may be done by passing the parameters for packing as the following:  
-   
-   
-  ```yaml  
-  output_writer_params: 
-
-    packing: 
-      analysed_sst: 
-        scale_factor: 0.07324442274239326
-        add_offset: -300.0
-        dtype: 'uint16'
-        _FillValue: 0.65535
-  ```
 
 ## Changes in 0.4.3
 

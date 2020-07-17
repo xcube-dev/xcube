@@ -56,20 +56,24 @@ def normalize_dataset(ds: xr.Dataset) -> xr.Dataset:
     ds = _normalize_lat_lon_2d(ds)
     ds = _normalize_dim_order(ds)
     ds = _normalize_lon_360(ds)
-    ds = _normalize_inverted_lat(ds)
+
+    # xcube viewer currently requires decreasing latitude co-ordinates, so
+    # we invert them here if necessary.
+    ds = _ensure_lat_decreasing(ds)
+
     ds = normalize_missing_time(ds)
     ds = _normalize_jd2datetime(ds)
     return ds
 
 
-def _normalize_inverted_lat(ds: xr.Dataset) -> xr.Dataset:
+def _ensure_lat_decreasing(ds: xr.Dataset) -> xr.Dataset:
     """
-    In case the latitude decreases, invert it
+    If the latitude is increasing, invert it to make it decreasing.
     :param ds: some xarray dataset
     :return: a normalized xarray dataset
     """
     try:
-        if _lat_inverted(ds.lat):
+        if not _is_lat_decreasing(ds.lat):
             ds = ds.sel(lat=slice(None, None, -1))
     except AttributeError:
         # The dataset doesn't have 'lat', probably not geospatial
@@ -681,9 +685,9 @@ def _get_dim_name(ds: Union[xr.Dataset, xr.DataArray], possible_names: Sequence[
     return None
 
 
-def _lat_inverted(lat: xr.DataArray) -> bool:
+def _is_lat_decreasing(lat: xr.DataArray) -> bool:
     """
-    Determine if the latitude is inverted
+    Determine if the latitude is decreasing
     """
     if lat.values[0] > lat.values[-1]:
         return True
