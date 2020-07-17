@@ -109,7 +109,9 @@ class DirectoryDataStore(MutableDataStore):
     def get_data_ids(self, type_id: str = None) -> Iterator[Tuple[str, Optional[str]]]:
         self._assert_valid_type_id(type_id)
         # TODO: Use os.walk(), which provides a generator rather than a list
-        for data_id in os.listdir(self._base_dir):
+        # os.listdir does not guarantee any ordering of the entries, so
+        # sort them to ensure predictable behaviour.
+        for data_id in sorted(os.listdir(self._base_dir)):
             accessor_id_parts = self._get_accessor_id_parts(data_id, require=False)
             if accessor_id_parts:
                 actual_type_id, _, _ = accessor_id_parts
