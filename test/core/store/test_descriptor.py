@@ -1,6 +1,78 @@
 import unittest
 
+from xcube.core.store.descriptor import DatasetDescriptor
 from xcube.core.store.descriptor import VariableDescriptor
+
+
+class DatasetDescriptorTest(unittest.TestCase):
+
+    def test_from_dict_no_data_id(self):
+        try:
+            descriptor_dict = dict(type_id='abc')
+            DatasetDescriptor.from_dict(descriptor_dict)
+            self.fail('Exception expected')
+        except ValueError:
+            pass
+
+    def test_from_dict_no_type_id(self):
+        try:
+            descriptor_dict = dict(data_id='xyz')
+            DatasetDescriptor.from_dict(descriptor_dict)
+            self.fail('Exception expected')
+        except ValueError:
+            pass
+
+    def test_from_dict_basic(self):
+        descriptor_dict = dict(data_id='xyz', type_id='abc')
+        descriptor = DatasetDescriptor.from_dict(descriptor_dict)
+        self.assertIsNotNone(descriptor)
+        self.assertEqual('xyz', descriptor.data_id)
+        self.assertEqual('abc', descriptor.type_id)
+
+    def test_from_dict_full(self):
+        descriptor_dict = dict(data_id='xyz',
+                               type_id='abc',
+                               crs='EPSG:9346',
+                               bbox=(10., 20., 30., 40.),
+                               spatial_res=20.,
+                               time_range=('2017-06-05', '2017-06-27'),
+                               time_period='daily',
+                               dims=dict(x=1, y=2, z=3),
+                               data_vars=[dict(name='xf',
+                                               dtype='rj',
+                                               dims=('dfjhrt', 'sg'),
+                                               ndim=2,
+                                               attrs=dict(ssd=4,
+                                                          zjgrhgu='dgfrf'
+                                                          )
+                                               )
+                                          ],
+                               attrs=dict(dzus=236,
+                                          tgr7h='rt5',
+                                          df='s8fd4w5'
+                                          ),
+                               open_params_schema=dict(type="object",
+                                                       properties=dict(variable_names=dict(type='array',
+                                                                                           items=dict(type='string')
+                                                                                           )
+                                                                       )
+                                                       )
+                               )
+        descriptor = DatasetDescriptor.from_dict(descriptor_dict)
+        self.assertIsNotNone(descriptor)
+        self.assertEqual('xyz', descriptor.data_id)
+        self.assertEqual('abc', descriptor.type_id)
+        self.assertEqual('EPSG:9346', descriptor.crs)
+        self.assertEqual((10., 20., 30., 40.), descriptor.bbox)
+        self.assertEqual(20., descriptor.spatial_res)
+        self.assertEqual(('2017-06-05', '2017-06-27'), descriptor.time_range)
+        self.assertEqual('daily', descriptor.time_period)
+        self.assertEqual(dict(x=1, y=2, z=3), descriptor.dims)
+        self.assertEqual(1, len(descriptor.data_vars))
+        self.assertEqual(236, descriptor.attrs.get('dzus', None))
+        self.assertEqual('rt5', descriptor.attrs.get('tgr7h', None))
+        self.assertEqual('s8fd4w5', descriptor.attrs.get('df', None))
+        self.assertEqual('object', descriptor.open_params_schema.get('type', None))
 
 
 class VariableDescriptorTest(unittest.TestCase):

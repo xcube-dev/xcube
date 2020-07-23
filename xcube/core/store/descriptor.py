@@ -142,8 +142,24 @@ class DatasetDescriptor(DataDescriptor):
     @classmethod
     def from_dict(cls, d: Mapping[str, Any]) -> 'DatasetDescriptor':
         """Create new instance from a JSON-serializable dictionary"""
-        # TODO: implement me
-        raise NotImplementedError()
+        assert_in('data_id', d)
+        assert_in('type_id', d)
+        data_vars = []
+        data_vars_as_dicts = d.get('data_vars', [])
+        for data_var_as_dict in data_vars_as_dicts:
+            data_vars.append(VariableDescriptor.from_dict(data_var_as_dict))
+        return DatasetDescriptor(data_id=d['data_id'],
+                                 type_id=d['type_id'],
+                                 crs=d.get('crs', None),
+                                 bbox=d.get('bbox', None),
+                                 spatial_res=d.get('spatial_res', None),
+                                 time_range=d.get('time_range', None),
+                                 time_period=d.get('time_period', None),
+                                 dims=d.get('dims', None),
+                                 data_vars=data_vars,
+                                 attrs=d.get('attrs', None),
+                                 open_params_schema=d.get('open_params_schema', None),
+        )
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert into a JSON-serializable dictionary"""
