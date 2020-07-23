@@ -43,9 +43,9 @@ class TestNormalize(TestCase):
         a_data = np.random.random_sample((t_size, y_size, x_size))
         b_data = np.random.random_sample((t_size, y_size, x_size))
         time_data = [1, 2]
-        lat_data = [[10., 10., 10., 10.],
+        lat_data = [[30., 30., 30., 30.],
                     [20., 20., 20., 20.],
-                    [30., 30., 30., 30.]]
+                    [10., 10., 10., 10.]]
         lon_data = [[-10., 0., 10., 20.],
                     [-10., 0., 10., 20.],
                     [-10., 0., 10., 20.]]
@@ -67,7 +67,7 @@ class TestNormalize(TestCase):
         expected = xr.Dataset({'a': (new_dims, a_data, attribs),
                                'b': (new_dims, b_data, attribs)},
                               {'time': (('time',), time_data),
-                               'lat': (('lat',), [10., 20., 30.]),
+                               'lat': (('lat',), [30., 20., 10.]),
                                'lon': (('lon',), [-10., 0., 10., 20.]),
                                },
                               {'geospatial_lon_min': -15.,
@@ -85,23 +85,25 @@ class TestNormalize(TestCase):
         dataset = xr.Dataset({'first': (['latitude',
                                          'longitude'], [[1, 2, 3],
                                                         [2, 3, 4]])})
-        expected = xr.Dataset({'first': (['lat', 'lon'], [[1, 2, 3],
-                                                          [2, 3, 4]])})
+        # Since normalization puts latitudes into descending order, we
+        # expect the rows to be swapped.
+        expected = xr.Dataset({'first': (['lat', 'lon'], [[2, 3, 4],
+                                                          [1, 2, 3]])})
         actual = normalize_dataset(dataset)
         assertDatasetEqual(actual, expected)
 
         dataset = xr.Dataset({'first': (['lat', 'long'], [[1, 2, 3],
                                                           [2, 3, 4]])})
-        expected = xr.Dataset({'first': (['lat', 'lon'], [[1, 2, 3],
-                                                          [2, 3, 4]])})
+        expected = xr.Dataset({'first': (['lat', 'lon'], [[2, 3, 4],
+                                                          [1, 2, 3]])})
         actual = normalize_dataset(dataset)
         assertDatasetEqual(actual, expected)
 
         dataset = xr.Dataset({'first': (['latitude',
                                          'spacetime'], [[1, 2, 3],
                                                         [2, 3, 4]])})
-        expected = xr.Dataset({'first': (['lat', 'spacetime'], [[1, 2, 3],
-                                                                [2, 3, 4]])})
+        expected = xr.Dataset({'first': (['lat', 'spacetime'], [[2, 3, 4],
+                                                                [1, 2, 3]])})
         actual = normalize_dataset(dataset)
         assertDatasetEqual(actual, expected)
 
@@ -118,18 +120,20 @@ class TestNormalize(TestCase):
         ds = xr.Dataset({
             'first': (['time', 'lat', 'lon'], first),
             'second': (['time', 'lat', 'lon'], np.zeros([3, 45, 90])),
-            'lat': np.linspace(88, -88, 45),
+            'lat': np.linspace(-88, 88, 45),
             'lon': np.linspace(-178, 178, 90),
-            'time': [datetime(2000, x, 1) for x in range(1, 4)]}).chunk(chunks={'time': 1})
+            'time': [datetime(2000, x, 1) for x in range(1, 4)]}).chunk(
+            chunks={'time': 1})
 
         first = np.zeros([3, 45, 90])
         first[0, :, :] = np.flip(np.eye(45, 90), axis=0)
         expected = xr.Dataset({
             'first': (['time', 'lat', 'lon'], first),
             'second': (['time', 'lat', 'lon'], np.zeros([3, 45, 90])),
-            'lat': np.linspace(-88, 88, 45),
+            'lat': np.linspace(88, -88, 45),
             'lon': np.linspace(-178, 178, 90),
-            'time': [datetime(2000, x, 1) for x in range(1, 4)]}).chunk(chunks={'time': 1})
+            'time': [datetime(2000, x, 1) for x in range(1, 4)]}).chunk(
+            chunks={'time': 1})
 
         actual = normalize_dataset(ds)
         xr.testing.assert_equal(actual, expected)
@@ -164,7 +168,7 @@ class TestNormalize(TestCase):
         ds = xr.Dataset({
             'first': (['lat', 'lon', 'time'], np.zeros([45, 90, 12])),
             'second': (['lat', 'lon', 'time'], np.zeros([45, 90, 12])),
-            'lat': np.linspace(-88, 88, 45),
+            'lat': np.linspace(88, -88, 45),
             'lon': np.linspace(-178, 178, 90),
             'time': [x[0] + x[1] for x in tuples]})
         ds.time.attrs['long_name'] = 'time in julian days'
@@ -172,7 +176,7 @@ class TestNormalize(TestCase):
         expected = xr.Dataset({
             'first': (['time', 'lat', 'lon'], np.zeros([12, 45, 90])),
             'second': (['time', 'lat', 'lon'], np.zeros([12, 45, 90])),
-            'lat': np.linspace(-88, 88, 45),
+            'lat': np.linspace(88, -88, 45),
             'lon': np.linspace(-178, 178, 90),
             'time': [datetime(2000, x, 1) for x in range(1, 13)]})
         expected.time.attrs['long_name'] = 'time'
@@ -731,11 +735,15 @@ class Fix360Test(TestCase):
         lat_size = 130
         time_size = 12
         ds = xr.Dataset({
-            'first': (['time', 'lat', 'lon'], np.random.random_sample([time_size, lat_size, lon_size])),
-            'second': (['time', 'lat', 'lon'], np.random.random_sample([time_size, lat_size, lon_size]))},
+            'first': (['time', 'lat', 'lon'],
+                      np.random.random_sample([time_size, lat_size, lon_size])),
+            'second': (['time', 'lat', 'lon'],
+                       np.random.random_sample([time_size, lat_size,
+                                                lon_size]))},
             coords={'lon': np.linspace(1., 360., lon_size),
-                    'lat': np.linspace(-64., 65., lat_size),
-                    'time': [datetime(2000, x, 1) for x in range(1, time_size + 1)]},
+                    'lat': np.linspace(65., -64., lat_size),
+                    'time': [datetime(2000, x, 1)
+                             for x in range(1, time_size + 1)]},
             attrs=dict(geospatial_lon_min=0.,
                        geospatial_lon_max=360.,
                        geospatial_lat_min=-64.5,
@@ -748,11 +756,13 @@ class Fix360Test(TestCase):
         self.assertEqual(ds.dims, new_ds.dims)
         self.assertEqual(ds.sizes, new_ds.sizes)
         assert_array_almost_equal(new_ds.lon, np.linspace(-179.5, 179.5, 360))
-        assert_array_almost_equal(new_ds.lat, np.linspace(-64., 65., 130))
+        assert_array_almost_equal(new_ds.lat, np.linspace(65., -64., 130))
         assert_array_almost_equal(new_ds.first[..., :180], ds.first[..., 180:])
         assert_array_almost_equal(new_ds.first[..., 180:], ds.first[..., :180])
-        assert_array_almost_equal(new_ds.second[..., :180], ds.second[..., 180:])
-        assert_array_almost_equal(new_ds.second[..., 180:], ds.second[..., :180])
+        assert_array_almost_equal(new_ds.second[..., :180],
+                                  ds.second[..., 180:])
+        assert_array_almost_equal(new_ds.second[..., 180:],
+                                  ds.second[..., :180])
         self.assertEqual(-180., new_ds.attrs['geospatial_lon_min'])
         self.assertEqual(+180., new_ds.attrs['geospatial_lon_max'])
         self.assertEqual(-64.5, new_ds.attrs['geospatial_lat_min'])
@@ -774,11 +784,15 @@ class NormalizeDimOrder(TestCase):
         lat_size = 130
         time_size = 12
         ds = xr.Dataset({
-            'first': (['time', 'lat', 'lon'], np.random.random_sample([time_size, lat_size, lon_size])),
-            'second': (['time', 'lat', 'lon'], np.random.random_sample([time_size, lat_size, lon_size]))},
+            'first': (['time', 'lat', 'lon'],
+                      np.random.random_sample([time_size, lat_size, lon_size])),
+            'second': (['time', 'lat', 'lon'],
+                       np.random.random_sample([time_size, lat_size,
+                                                lon_size]))},
             coords={'lon': np.linspace(-179.5, -179.5, lon_size),
-                    'lat': np.linspace(-64., 65., lat_size),
-                    'time': [datetime(2000, x, 1) for x in range(1, time_size + 1)]})
+                    'lat': np.linspace(65., -64., lat_size),
+                    'time': [datetime(2000, x, 1)
+                             for x in range(1, time_size + 1)]})
         ds2 = normalize_dataset(ds)
         self.assertIs(ds2, ds)
 

@@ -1,6 +1,6 @@
 import unittest
 
-from .mixins import AlmostEqualDeepMixin
+from test.mixins import AlmostEqualDeepMixin
 
 
 class AlmostEqualDeepMixinTest(unittest.TestCase, AlmostEqualDeepMixin):
