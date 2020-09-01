@@ -1,0 +1,8 @@
+{
+  "local_examples_gen2": {
+    "store_id": "directory",
+    "store_params": {
+      "base_dir": "examples/gen2"
+    }
+  }
+}
