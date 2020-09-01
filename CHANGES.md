@@ -1,3 +1,7 @@
+## Changes in 0.5.2 (in dev)
+
+* Extended xcube.core.store.DataStore docstring to include a basic convention for store open parameters. (#330)
+
 ## Changes in 0.5.1
 
 * `normalize_dataset` now ensures that latitudes are decreasing.
