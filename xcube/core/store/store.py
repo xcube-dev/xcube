@@ -231,13 +231,16 @@ class DataStore(DataOpener, ABC):
         For maximum compatibility of stores, it is strongly encouraged to apply the following conventions on
         parameter names, types, and their interpretation.
 
-        Let P be the value of a data constraining open parameter, then it should be interpreted as follows:
+        Let P be the value of an optional, data constraining open parameter,
+        then it should be interpreted as follows:
 
           * _if P is None_ means, parameter not given, hence no constraint applies, hence full containment.
           * _if not P_ means, we exclude what would otherwise be fully included.
           * _else_, the given constraint applies.
 
-        Names, types, and descriptions of common open parameters for gridded datasets:
+        Given here are names, types, and descriptions of common, constraining open parameters for gridded datasets.
+        Note, whether any of these is optional or mandatory depends on the individual data store. A store may also
+        define other open parameters or support only a subset of the following:
 
           * ``variable_names: List[str]``: Included data variables.
              Available coordinate variables will be auto-included for any dimension of the data variables.
@@ -247,7 +250,7 @@ class DataStore(DataOpener, ABC):
           * ``time_range: Tuple[Optional[str], Optional[str]]``: Time range interval using iso-date/times.
           * ``time_period: str`: Pandas-compatible period/frequency string, e.g. "8D", "2W".
 
-        E.g. applied to `variable_names`, this means
+        E.g. applied to an optional `variable_names` parameter, this means
 
           * `variable_names is None` - include all data variables
           * `variable_names == []` - do not include data variables (schema only)
