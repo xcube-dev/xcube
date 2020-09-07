@@ -1,10 +1,7 @@
 {
   "input_config": {
-    "store_id": "sentinelhub",
-    "data_id": "S2L2A",
-    "open_params": {
-      "tile_size": [512, 512]
-    }
+    "store_id": "@local_examples_gen2",
+    "data_id": "out.zarr"
   },
   "cube_config": {
     "variable_names": ["B04", "B05", "B06", "B11", "SCL", "CLD"],
@@ -15,8 +12,11 @@
     "time_period": "2D"
   },
   "output_config": {
-    "store_id": "@local_examples_gen2",
+    "store_id": "s3",
     "data_id": "out.zarr",
+    "store_params": {
+      "bucket_name": "eurodatacube-test"
+    },
     "replace": true
   }
 }
