@@ -1,6 +1,10 @@
 ## Changes in 0.5.1
 
 * `normalize_dataset` now ensures that latitudes are decreasing.
+* restricted package dependencies due to false behaviour in 
+  newer version caused by unfixed bugs: 
+    * pandas >=0.24,<1.1
+    * s3fs >=0.2,<0.5
 
 ## Changes in 0.5.0
 
