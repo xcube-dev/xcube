@@ -138,12 +138,16 @@ class JsonStringSchema(JsonSimpleTypeSchema):
                  pattern: str = None,
                  min_length: int = None,
                  max_length: int = None,
+                 min_datetime: str = None,
+                 max_datetime: str = None,
                  **kwargs):
         super().__init__(type='string', **kwargs)
         self.format = format
         self.pattern = pattern
         self.min_length = min_length
         self.max_length = max_length
+        self.min_datetime = min_datetime
+        self.max_datetime = max_datetime
 
     def to_dict(self) -> Dict[str, Any]:
         d = super().to_dict()
@@ -155,6 +159,10 @@ class JsonStringSchema(JsonSimpleTypeSchema):
             d.update(minLength=self.min_length)
         if self.max_length is not None:
             d.update(maxLength=self.max_length)
+        if self.min_datetime is not None:
+            d.update(minDatetime=self.min_datetime)
+        if self.max_datetime is not None:
+            d.update(maxDatetime=self.max_datetime)
         return d
 
 

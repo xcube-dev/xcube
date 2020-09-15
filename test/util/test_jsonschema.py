@@ -112,9 +112,22 @@ class JsonStringSchemaTest(unittest.TestCase):
                                                    max_length=10).to_instance('pieps'))
         self.assertEqual('pieps', JsonStringSchema(pattern='.*').to_instance('pieps'))
         self.assertEqual('2020-01-03', JsonStringSchema(format='date').to_instance('2020-01-03'))
+        self.assertEqual('2020-06-03',
+                         JsonStringSchema(format='datetime',
+                                          min_datetime='2020-02-01',
+                                          max_datetime='2020-07-05').
+                         to_instance('2020-06-03'))
 
     def test_from_instance(self):
         self.assertEqual('pieps', JsonStringSchema().from_instance('pieps'))
+
+    def test_store_date_limits(self):
+        minimum = '1981-05-06'
+        maximum = '1982-09-15'
+        schema = JsonStringSchema(format='datetime', min_datetime=minimum,
+                                  max_datetime=maximum)
+        self.assertEqual(minimum, schema.min_datetime)
+        self.assertEqual(maximum, schema.max_datetime)
 
 
 class JsonArraySchemaTest(unittest.TestCase):
