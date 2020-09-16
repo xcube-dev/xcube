@@ -111,9 +111,11 @@ class JsonStringSchemaTest(unittest.TestCase):
         self.assertEqual('pieps', JsonStringSchema(min_length=0,
                                                    max_length=10).to_instance('pieps'))
         self.assertEqual('pieps', JsonStringSchema(pattern='.*').to_instance('pieps'))
-        self.assertEqual('2020-01-03', JsonStringSchema(format='date').to_instance('2020-01-03'))
+        self.assertEqual('2020-01-03T03:30:01.99+03:30',
+                         JsonStringSchema(format='date-time').
+                         to_instance('2020-01-03T03:30:01.99+03:30'))
         self.assertEqual('2020-06-03',
-                         JsonStringSchema(format='datetime',
+                         JsonStringSchema(format='date',
                                           min_datetime='2020-02-01',
                                           max_datetime='2020-07-05').
                          to_instance('2020-06-03'))
@@ -124,10 +126,34 @@ class JsonStringSchemaTest(unittest.TestCase):
     def test_store_date_limits(self):
         minimum = '1981-05-06'
         maximum = '1982-09-15'
-        schema = JsonStringSchema(format='datetime', min_datetime=minimum,
+        schema = JsonStringSchema(format='date-time', min_datetime=minimum,
                                   max_datetime=maximum)
         self.assertEqual(minimum, schema.min_datetime)
         self.assertEqual(maximum, schema.max_datetime)
+
+    def test_date_limit_validity_checks(self):
+        JsonStringSchema(format='date-time',
+                         min_datetime='1980-02-03T12:34:56Z',
+                         max_datetime='1982-02-03T23:34:56+05:00')
+        with self.assertRaises(ValueError):
+            JsonStringSchema(format='date-time',
+                             # missing timezone specifier
+                             min_datetime='1980-02-03T12:34:56',
+                             max_datetime='1982-02-03T23:34:56+05:00')
+        with self.assertRaises(ValueError):
+            JsonStringSchema(format='date-time',
+                             min_datetime='1980-02-03T12:34:56-08:00',
+                             # invalid date
+                             max_datetime='1985-01-32')
+
+    def test_date_limits_without_format(self):
+        with self.assertRaises(ValueError):
+            JsonStringSchema(min_datetime='2001-01-01')
+        with self.assertRaises(ValueError):
+            JsonStringSchema(max_datetime='2002-02-02')
+        with self.assertRaises(ValueError):
+            JsonStringSchema(min_datetime='2001-01-01',
+                             max_datetime='2002-02-02')
 
 
 class JsonArraySchemaTest(unittest.TestCase):

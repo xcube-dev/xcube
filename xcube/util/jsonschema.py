@@ -87,7 +87,12 @@ class JsonSchema(ABC):
 
     def validate_instance(self, instance: Any):
         """Validate JSON value *instance*."""
-        jsonschema.validate(instance=instance, schema=self.to_dict())
+        # Note: jsconschema needs extra packages installed to check some
+        # formats; if they are missing, the format check will be skipped
+        # silently. For date-time format, strict_rfc3339 or rfc3339-validator
+        # is required.
+        jsonschema.validate(instance=instance, schema=self.to_dict(),
+                            format_checker=jsonschema.draft7_format_checker)
 
     def to_instance(self, value: Any) -> Any:
         """Convert Python object *value* into JSON value and return the validated result."""
@@ -146,8 +151,32 @@ class JsonStringSchema(JsonSimpleTypeSchema):
         self.pattern = pattern
         self.min_length = min_length
         self.max_length = max_length
+        if (format not in ['date-time', 'date']) and\
+                (min_datetime or max_datetime):
+            raise ValueError('min_datetime and max_datetime are only valid '
+                             'with a "date" or "date-time" format.')
+        if min_datetime is not None and\
+                not self._is_valid_datetime_or_date(min_datetime):
+            raise ValueError('min_datetime must be formatted as a "date" or '
+                             '"date-time"')
+        if max_datetime is not None and\
+                not self._is_valid_datetime_or_date(max_datetime):
+            raise ValueError('max_datetime must be formatted as a "date" or '
+                             '"date-time"')
         self.min_datetime = min_datetime
         self.max_datetime = max_datetime
+
+    @staticmethod
+    def _is_valid_datetime_or_date(instance: str):
+        try:
+            jsonschema.validate(
+                instance=instance,
+                schema=dict(anyOf=[dict(type='string', format='date-time'),
+                                   dict(type='string', format='date')]),
+                format_checker=jsonschema.draft7_format_checker)
+            return True
+        except jsonschema.ValidationError:
+            return False
 
     def to_dict(self) -> Dict[str, Any]:
         d = super().to_dict()
