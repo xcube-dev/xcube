@@ -1,10 +1,10 @@
 ## Changes in 0.5.1
 
 * `normalize_dataset` now ensures that latitudes are decreasing.
-* restricted package dependencies due to false behaviour in 
-  newer version caused by unfixed bugs: 
-    * pandas >=0.24,<1.1
-    * s3fs >=0.2,<0.5
+* changed unittest concerning s3 bucket access to work with motoserver in order to ensure
+  proper execution of tests
+* tiny fix in `xcube/core/dsio.py` - before `s3.exists()` is executed, `s3.listdir()` is called to omit 
+  `KeyError: KeyCount`
 
 ## Changes in 0.5.0
 

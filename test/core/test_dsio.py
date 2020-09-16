@@ -1,23 +1,51 @@
 import os
 import os.path
 import unittest
+import urllib
+import urllib.request
 from typing import Set
 
 import boto3
 import fsspec
-import moto
+from moto import mock_s3
 import numpy as np
 import pandas as pd
 import xarray as xr
 
 from test.sampledata import new_test_dataset
 from xcube.core.dsio import CsvDatasetIO, DatasetIO, MemDatasetIO, Netcdf4DatasetIO, ZarrDatasetIO, find_dataset_io, \
-    query_dataset_io, get_path_or_obs_store, write_cube, split_obs_url, parse_obs_url_and_kwargs
+    query_dataset_io, get_path_or_obs_store, write_cube, split_obs_url, parse_obs_url_and_kwargs, open_cube
 from xcube.core.dsio import open_dataset, write_dataset
 from xcube.core.new import new_cube
 
 TEST_NC_FILE = "test.nc"
 TEST_NC_FILE_2 = "test-2.nc"
+
+MOTO_SKIP_HELP = 'Skipped, because moto server is not running: $ moto_server s3'
+MOTO_SERVER_URL = 'http://localhost:5000'
+
+FAKE_CLIENT_CREDENTIALS = {'provider_access_key_id': 'fake_id', 'provider_secret_access_key': 'fake_secret'}
+
+
+def is_server_running() -> bool:
+    # noinspection PyBroadException
+    try:
+        with urllib.request.urlopen(MOTO_SERVER_URL, timeout=2.0) as response:
+            response.read()
+    except Exception:
+        return False
+    return 200 <= response.code < 400
+
+
+MOTO_SERVER_IS_RUNNING = is_server_running()
+
+
+def establish_mock_s3_connection():
+    s3_conn = boto3.resource(service_name='s3',
+                             region_name='us-west-1',
+                             endpoint_url=MOTO_SERVER_URL,
+                             )
+    return s3_conn
 
 
 class OpenWriteDatasetTest(unittest.TestCase):
@@ -330,18 +358,30 @@ class ContextManagerTest(unittest.TestCase):
 
 
 class GetPathOrObsStoreTest(unittest.TestCase):
+
+    @unittest.skipUnless(MOTO_SERVER_IS_RUNNING, MOTO_SKIP_HELP)
+    @mock_s3
     def test_path_or_store_read_from_bucket(self):
+        s3_conn = establish_mock_s3_connection()
+        s3_conn.create_bucket(Bucket='upload_bucket_public', ACL='public-read')
+        zarr_path = os.path.join(os.path.dirname(__file__), '../../examples/serve/demo/cube-1-250-250.zarr')
+        ds1 = xr.open_zarr(zarr_path)
+        write_cube(ds1, f'{MOTO_SERVER_URL}/upload_bucket_public/cube-1-250-250.zarr', 'zarr',
+                   client_kwargs=FAKE_CLIENT_CREDENTIALS)
         path, consolidated = get_path_or_obs_store(
-            'http://obs.eu-de.otc.t-systems.com/dcs4cop-obs-02/OLCI-SNS-RAW-CUBE-2.zarr',
+            f'{MOTO_SERVER_URL}/upload_bucket_public/cube-1-250-250.zarr',
             mode='r')
         self.assertIsInstance(path, fsspec.mapping.FSMap)
         self.assertEqual(False, consolidated)
 
+    @unittest.skipUnless(MOTO_SERVER_IS_RUNNING, MOTO_SKIP_HELP)
+    @mock_s3
     def test_path_or_store_write_to_bucket(self):
-        path, consolidated = get_path_or_obs_store('http://obs.eu-de.otc.t-systems.com/fake_bucket/fake_cube.zarr',
+        s3_conn = establish_mock_s3_connection()
+        s3_conn.create_bucket(Bucket='fake_bucket')
+        path, consolidated = get_path_or_obs_store(f'{MOTO_SERVER_URL}/fake_bucket/fake_cube.zarr',
                                                    mode='w',
-                                                   client_kwargs={'aws_access_key_id': 'some_fake_id',
-                                                                  'aws_secret_access_key': 'some_fake_key'})
+                                                   client_kwargs=FAKE_CLIENT_CREDENTIALS)
         self.assertIsInstance(path, fsspec.mapping.FSMap)
         self.assertEqual(False, consolidated)
 
@@ -410,28 +450,40 @@ class SplitBucketUrlTest(unittest.TestCase):
         self.assertEqual('/dcs4cop-obs-02/OLCI-SNS-RAW-CUBE-2.zarr', root)
 
 
-class TestUploadToS3Bucket(unittest.TestCase):
+class TestWriteAndReadS3Bucket(unittest.TestCase):
 
-    def test_upload_to_s3(self):
-        with moto.mock_s3():
-            s3_conn = boto3.client('s3')
-            s3_conn.create_bucket(Bucket='upload_bucket', ACL='public-read')
-            client_kwargs = {'provider_access_key_id': 'test_fake_id', 'provider_secret_access_key': 'test_fake_secret'}
-            zarr_path = os.path.join(os.path.dirname(__file__), '../../examples/serve/demo/cube-1-250-250.zarr')
-            ds1 = xr.open_zarr(zarr_path)
-            write_cube(ds1, 'https://s3.amazonaws.com/upload_bucket/cube-1-250-250.zarr', 'zarr',
-                       client_kwargs=client_kwargs)
-            self.assertIn('cube-1-250-250.zarr/.zattrs',
-                          s3_conn.list_objects(Bucket='upload_bucket')['Contents'][0]['Key'])
+    @unittest.skipUnless(MOTO_SERVER_IS_RUNNING, MOTO_SKIP_HELP)
+    @mock_s3
+    def test_upload_and_read_from_s3(self):
+        s3_conn = establish_mock_s3_connection()
+        s3_conn.create_bucket(Bucket='upload_bucket')
+        zarr_path = os.path.join(os.path.dirname(__file__), '../../examples/serve/demo/cube-1-250-250.zarr')
+        ds1 = xr.open_zarr(zarr_path)
+        write_cube(ds1, f'{MOTO_SERVER_URL}/upload_bucket/cube-1-250-250.zarr', 'zarr',
+                   client_kwargs=FAKE_CLIENT_CREDENTIALS)
 
-    def test_upload_to_s3_via_bucket_path(self):
-        with moto.mock_s3():
-            s3_conn = boto3.client('s3')
-            s3_conn.create_bucket(Bucket='upload_bucket', ACL='public-read')
-            client_kwargs = {'provider_access_key_id': 'test_fake_id', 'provider_secret_access_key': 'test_fake_secret'}
-            zarr_path = os.path.join(os.path.dirname(__file__), '../../examples/serve/demo/cube-1-250-250.zarr')
-            ds1 = xr.open_zarr(zarr_path)
-            write_cube(ds1, 's3://upload_bucket/cube-1-250-250.zarr', 'zarr',
-                       client_kwargs=client_kwargs)
-            self.assertIn('cube-1-250-250.zarr/.zattrs',
-                          s3_conn.list_objects(Bucket='upload_bucket')['Contents'][0]['Key'])
+        cube = open_cube(
+            f'{MOTO_SERVER_URL}/upload_bucket/cube-1-250-250.zarr',
+            client_kwargs=FAKE_CLIENT_CREDENTIALS)
+        self.assertIsInstance(cube, xr.Dataset)
+        cube.close()
+
+        with self.assertRaises(PermissionError) as cm:
+            cube = open_cube(
+                f'{MOTO_SERVER_URL}/upload_bucket/cube-1-250-250.zarr')
+            self.assertEqual("PermissionError: Forbidden", f"{cm.exception}")
+            self.assertIsInstance(cube, xr.Dataset)
+
+    @unittest.skipUnless(MOTO_SERVER_IS_RUNNING, MOTO_SKIP_HELP)
+    @mock_s3
+    def test_upload_and_read_from_s3_public_read(self):
+        s3_conn = establish_mock_s3_connection()
+        s3_conn.create_bucket(Bucket='upload_bucket_public', ACL='public-read')
+        zarr_path = os.path.join(os.path.dirname(__file__), '../../examples/serve/demo/cube-1-250-250.zarr')
+        ds1 = xr.open_zarr(zarr_path)
+        write_cube(ds1, f'{MOTO_SERVER_URL}/upload_bucket_public/cube-1-250-250.zarr', 'zarr',
+                   client_kwargs=FAKE_CLIENT_CREDENTIALS)
+        cube = open_cube(
+            f'{MOTO_SERVER_URL}/upload_bucket_public/cube-1-250-250.zarr')
+        self.assertIsInstance(cube, xr.Dataset)
+        cube.close()

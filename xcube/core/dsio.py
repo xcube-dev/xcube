@@ -543,6 +543,9 @@ def get_path_or_obs_store(path_or_url: str,
     if is_obs_url(path_or_url):
         root, obs_fs_kwargs, obs_fs_client_kwargs = parse_obs_url_and_kwargs(path_or_url, client_kwargs)
         s3 = s3fs.S3FileSystem(**obs_fs_kwargs, client_kwargs=obs_fs_client_kwargs)
+        # below is needed, otherwise s3.exists(f'{root}/.zmetadata') will fail with {KeyError}'KeyCount'
+        if mode == 'r':
+            s3.listdir(root)
         consolidated = mode == "r" and s3.exists(f'{root}/.zmetadata')
         return s3fs.S3Map(root=root, s3=s3, check=False, create=mode == "w"), consolidated
     else:
