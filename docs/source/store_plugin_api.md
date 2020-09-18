@@ -52,17 +52,43 @@ of these parameters should use the standard parameter names, syntax, and
 semantics defined below, in order to keep the interface consistent.
 For instance, if a dataset allows a time aggregation period to be specified,
 it should use the `time_period` parameter with the format described below
-rather than some other parameter name and/or format.
+rather than some other parameter name and/or format. The parameters are
+listed with Python type annotations.
 
-```
-variable_names: List[str]
-bbox:Union[str,Tuple[float, float, float, float]]
-crs:str
-spatial_res: float
-time_range: Tuple[Optional[str]
-Optional[str]]
-time_period: str
-```
+ - `variable_names: List[str]`  
+   A list of the identifiers of the requested variables.
+ - `bbox: Union[str,Tuple[float, float, float, float]]`
+   The bounding box for the requested data, in the order x0, y0, x1, y1.
+ - `crs: str`  
+   The identifier for the co-ordinate reference system of geographic data.
+ - `spatial_res: float`  
+   The requested spatial resolution (x and y) of the returned data.
+ - `time_range: Tuple[Optional[str], Optional[str]]`  
+   The requested time range for the data to be returned. See section
+   ‘Date, time, and duration specifications’ below.
+ - `time_period: str`  
+   The requested temporal aggregation period for the data. See section
+   ‘Date, time, and duration specifications’ below.
+
+## Semantics of list-valued parameters
+
+The `variables` parameter takes as its value a list, with no members
+repeated and the values of its members drawn from a predefined set.
+The values of this parameter, and other parameters whose values also
+follow such a format, are interpreted by xcube as a *restriction*,
+much like a bounding box or time range. That is:
+
+ - By default (if the parameter is omitted or if a `None` value is
+   supplied for it), *all* the possible member values are included
+   in the list. In the case of `variables`, this will result in a
+   dataset containing all the available variables.
+ - If a list containing *some* of the possible members is given,
+   a dataset corresponding to those members only is returned.
+   In the case of `variables`, this will result in a dataset
+   containing only the requested variables.
+ - As a special case of the above, if an empty list is supplied,
+   a dataset containing *no data* will be returned -- but with the
+   requested spatial and temporal dimensions.
 
 ## Date, time, and duration specifications
 
@@ -92,8 +118,23 @@ relevant for xcube stores.)
 
 ## Time limits: an extension to the JSON Schema
 
-TODO
+JSON Schema itself does not offer a way to impose time limits on a
+string schema with the `date` or `date-time` format. This is a problem
+for xcube generator UI creation, since it might be reasonably expected
+that a UI will show and enforce such limits. The xcube store API
+therefore defines an unofficial extension to the JSON string schema: a
+`JsonStringSchema` object (as returned as part of a `JsonSchema` by a
+call to `get_open_data_params_schema`) may, if it has a `format`
+property with a value of `date` or `date-time`, also have one or both
+of the properties `min_datetime` and `max_datetime`. These properties
+must also conform to the `date` or `date-time` format.
 
 ## Generating a UI from a schema
+
+With the time limits extension described above, the JSON Schema
+returned by `get_open_data_params_schema` should be extensive and
+detailed enough to fully describe a UI for cube generation.  In the
+case of a GUI, a one-to-one conversion of instances of `JsonSchema`
+subclasses into GUI elements should be possible. For instance:
 
 TODO
