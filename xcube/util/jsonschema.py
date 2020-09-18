@@ -87,12 +87,13 @@ class JsonSchema(ABC):
 
     def validate_instance(self, instance: Any):
         """Validate JSON value *instance*."""
-        # Note: jsconschema needs extra packages installed to check some
-        # formats; if they are missing, the format check will be skipped
-        # silently. For date-time format, strict_rfc3339 or rfc3339-validator
-        # is required.
+        # jsconschema needs extra packages installed to validate some formats;
+        # if they are missing, the format check will be skipped silently. For
+        # date-time format, strict_rfc3339 or rfc3339-validator is required.
         jsonschema.validate(instance=instance, schema=self.to_dict(),
-                            format_checker=jsonschema.draft7_format_checker)
+                            format_checker=jsonschema.draft7_format_checker,
+                            # We have to explicitly sanction tuples as arrays.
+                            types=dict(array=(list, tuple)))
 
     def to_instance(self, value: Any) -> Any:
         """Convert Python object *value* into JSON value and return the validated result."""

@@ -178,6 +178,10 @@ class JsonArraySchemaTest(unittest.TestCase):
                                                 JsonIntegerSchema(),
                                                 JsonStringSchema()]).from_instance([False, 2, 'U']))
 
+    def test_tuple_validates_as_array(self):
+        self.assertTupleEqual((1, 2, 3),
+                              JsonArraySchema().to_instance((1, 2, 3)))
+
     def test_from_instance_array_object(self):
         value = [{'name': 'Bibo', 'age': 15},
                  {'name': 'Ernie', 'age': 12}]
