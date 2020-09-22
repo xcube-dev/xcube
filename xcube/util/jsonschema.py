@@ -46,6 +46,7 @@ class JsonSchema(ABC):
                  title: str = None,
                  description: str = None,
                  examples: str = None,
+                 any_of: Sequence['JsonSchema'] = None,
                  factory: Factory = None,
                  serializer: Serializer = None):
         if type not in _TYPES_ENUM:
@@ -63,6 +64,7 @@ class JsonSchema(ABC):
         self.title = title
         self.description = description
         self.examples = examples
+        self.any_of = any_of
         self.factory = factory
         self.serializer = serializer
 
@@ -83,6 +85,8 @@ class JsonSchema(ABC):
             d.update(description=self.description)
         if self.examples is not None:
             d.update(examples=self.examples)
+        if self.any_of:
+            d.update(anyOf=[schema.to_dict() for schema in self.any_of])
         return d
 
     def validate_instance(self, instance: Any):
