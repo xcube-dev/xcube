@@ -51,8 +51,8 @@ interface for access to the available datasets. Note that, under this system:
 
 To work around some of the restrictions of point (2) above, a dataset MAY be
 presented by the opener as multiple "virtual" datasets with different
-parameter schemas. For instance, the hypothetical dataset described above
-could be offered not as a single dataset `envdata` but as two datasets
+parameter schemas. For instance, the hypothetical dataset described above MAY
+be offered not as a single dataset `envdata` but as two datasets
 `envdata:sensor-a` (with a fixed *sensor_type* of A) and `envdata:sensor-b`,
 (with a fixed *sensor_type* of B), offering different sets of permitted
 variables.
