@@ -94,10 +94,10 @@ Python type annotations.
    Must be given in the units of the specified spatial coordinate reference system `crs`. 
  - `time_range: Tuple[Optional[str], Optional[str]]`  
    The requested time range for the data to be returned. See section
-   ‘Date, time, and duration specifications’ below.
+   ‘[Date, time, and duration specifications](#sec-datespec)’.
  - `time_period: str`  
    The requested temporal aggregation period for the data. See section
-   ‘Date, time, and duration specifications’ below.
+   ‘[Date, time, and duration specifications](#sec-datespec)’.
 
 ## Semantics of list-valued parameters
 
@@ -119,7 +119,7 @@ range. That is:
    containing *no data* MUST be returned -- but with the requested spatial and
    temporal dimensions.
 
-## Date, time, and duration specifications
+## <a id="sec-datespec"></a>Date, time, and duration specifications
 
 In the common parameter `time_range`, times can be specified using the
 standard JSON Schema formats `date-time` or `date`. Any additional time or
