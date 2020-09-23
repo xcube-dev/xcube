@@ -1,4 +1,6 @@
-# The xcube opener parameters API
+# Common data store conventions
+
+## Open Parameters
 
 This document is a work in progress. It aims to provide an overview of the
 interface defined by an xcube data store or opener in its open parameters
