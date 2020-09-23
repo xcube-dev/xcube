@@ -25,9 +25,10 @@ Useful references related to this document include:
 
 ## Opener parameters
 
-Every implementation of the `xcube.core.store.DataOpener` or `xcube.core.store.DataStore` abstract base classes MUST implement
-the `get_open_data_params_schema` method in order to provide a description of
-the allowed arguments to `open_data` for each dataset supported by the
+Every implementation of the `xcube.core.store.DataOpener` or
+`xcube.core.store.DataStore` abstract base classes MUST implement the
+`get_open_data_params_schema` method in order to provide a description of the
+allowed arguments to `open_data` for each dataset supported by the
 `DataOpener` or `DataStore`. The description is provided as a
 `JsonObjectSchema` object corresponding to a [JSON
 Schema](https://json-schema.org/). The intention is that this description be
@@ -37,20 +38,21 @@ interface for access to the available datasets. Note that, under this system:
   1. Every dataset which an opener provides can support a different set of
      opener parameters.
 
-  2. The schema does not allow the representation of interdependencies
-     between values of opener parameters within a dataset. For
-     instance, the following cannot be represented in an open
-     parameters schema:
+  2. The schema does not allow the representation of interdependencies between
+     values of opener parameters within a dataset. For instance, the following
+     interdependencies between two opener parameters *sensor_type* and
+     *variables* would not be representable in an open parameters schema:
      
      *sensor_type*: A or B  
      *variables*: [temperature, humidity] for sensor type A;
                   [temperature, pressure] for sensor type B
 
 To work around some of the restrictions of point (2) above, a dataset MAY be
-presented by the opener as multiple "virtual" datasets with difference
+presented by the opener as multiple "virtual" datasets with different
 parameter schemas. For instance, the hypothetical dataset described above
 could be offered not as a single dataset `envdata` but as two datasets
-`envdata:sensor-a` and `envdata:sensor-b`, with different sets of permitted
+`envdata:sensor-a` (with a fixed *sensor_type* of A) and `envdata:sensor-b`,
+(with a fixed *sensor_type* of B), offering different sets of permitted
 variables.
 
 Sometimes, the interdependencies between parameters are too complex to
