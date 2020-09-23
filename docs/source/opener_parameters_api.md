@@ -25,7 +25,7 @@ Useful references related to this document include:
 
 ## Opener parameters
 
-Every implementation of an xcube `DataOpener` or `DataStore` MUST implement
+Every implementation of the `xcube.core.store.DataOpener` or `xcube.core.store.DataStore` abstract base classes MUST implement
 the `get_open_data_params_schema` method in order to provide a description of
 the allowed arguments to `open_data` for each dataset supported by the
 `DataOpener` or `DataStore`. The description is provided as a
