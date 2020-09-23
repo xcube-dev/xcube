@@ -85,7 +85,8 @@ Python type annotations.
  - `variable_names: List[str]`  
    A list of the identifiers of the requested variables.
  - `bbox: Union[str,Tuple[float, float, float, float]]`
-   The bounding box for the requested data, in the order x0, y0, x1, y1.
+   The bounding box for the requested data, in the order xmin, ymin, xmax, ymax. 
+   Must be given in the units of the specified spatial coordinate reference system `crs`. 
  - `crs: str`  
    The identifier for the co-ordinate reference system of geographic data.
  - `spatial_res: float`  
