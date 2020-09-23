@@ -88,7 +88,7 @@ Python type annotations.
    The bounding box for the requested data, in the order xmin, ymin, xmax, ymax. 
    Must be given in the units of the specified spatial coordinate reference system `crs`. 
  - `crs: str`  
-   The identifier for the co-ordinate reference system of geographic data.
+   The identifier for the spatial coordinate reference system of geographic data.
  - `spatial_res: float`  
    The requested spatial resolution (x and y) of the returned data.
    Must be given in the units of the specified spatial coordinate reference system `crs`. 
