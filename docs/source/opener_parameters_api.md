@@ -207,20 +207,20 @@ schema as a fallback.
 
 For parameters other than the common parameters, the UI can be generated
 automatically from the schema structure. In the case of a GUI, a one-to-one
-conversion of instances of `JsonSchema` subclasses into GUI elements will
+conversion of values of JSON Schema properties into GUI elements will
 generally be fairly straightforward. For instance:
 
- - A `JsonBooleanSchema` can be represented as a checkbox.
+ - A schema of type `boolean` can be represented as a checkbox.
 
- - A `JsonStringSchema` without restrictions on allowed items can be
+ - A schema of type `string` without restrictions on allowed items can be
    represented as an editable text field.
 
- - A `JsonStringSchema` with an `enum` parameter giving a list of allowed
-   values can be represented as a drop-down menu.
+ - A schema of type `string` with an `enum` keyword giving a list of
+   allowed values can be represented as a drop-down menu.
 
- - A `JsonStringSchema` with a `date` format parameter can be represented as
-   a specialized date selector.
+ - A schema of type `string` with the keyword setting `"format": "date"` can
+   be represented as a specialized date selector.
 
- - A `JsonArraySchema` with `unique_items=True` and an `items` parameter
-   giving a fixed list of allowed values can be represented as a list of
-   checkboxes.
+ - A schema of type `array` with the keyword setting `"uniqueItems": true` and
+   an `items` keyword giving a fixed list of allowed values can be represented
+   as a list of checkboxes.
