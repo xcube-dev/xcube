@@ -91,6 +91,7 @@ Python type annotations.
    The identifier for the co-ordinate reference system of geographic data.
  - `spatial_res: float`  
    The requested spatial resolution (x and y) of the returned data.
+   Must be given in the units of the specified spatial coordinate reference system `crs`. 
  - `time_range: Tuple[Optional[str], Optional[str]]`  
    The requested time range for the data to be returned. See section
    ‘Date, time, and duration specifications’ below.
