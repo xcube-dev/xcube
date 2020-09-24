@@ -157,6 +157,8 @@ of `date` or `date-time`, also have one or both of the properties
 `date` or `date-time` format.
 xcube provides a dedicated `JsonDatetimeSchema` for this purpose. Internally, it extends
 the `JsonStringSchema` by adding the required properties to the JSON string schema.
+xcube provides a dedicated `JsonDatetimeSchema` for this purpose. Internally, it extends
+the `JsonStringSchema` by adding the required properties to the JSON string schema.
 
 ## Generating a UI from a schema
 
