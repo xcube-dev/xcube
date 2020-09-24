@@ -30,7 +30,7 @@ import yaml
 from xcube.cli._gen2.error import GenError
 from xcube.util.assertions import assert_condition
 from xcube.util.assertions import assert_given
-from xcube.util.jsonschema import JsonArraySchema
+from xcube.util.jsonschema import JsonArraySchema, JsonDatetimeSchema
 from xcube.util.jsonschema import JsonBooleanSchema
 from xcube.util.jsonschema import JsonNumberSchema
 from xcube.util.jsonschema import JsonObjectSchema
@@ -208,13 +208,13 @@ class CubeConfig:
                                             JsonNumberSchema()]),
                 spatial_res=JsonNumberSchema(exclusive_minimum=0.0),
                 time_range=JsonArraySchema(items=[
-                    JsonStringSchema(any_of=[
-                        JsonStringSchema(format='date-time', nullable=True),
-                        JsonStringSchema(format='date', nullable=True),
+                    JsonDatetimeSchema(any_of=[
+                        JsonDatetimeSchema(format='date-time', nullable=True),
+                        JsonDatetimeSchema(format='date', nullable=True),
                     ]),
-                    JsonStringSchema(any_of=[
-                        JsonStringSchema(format='date-time', nullable=True),
-                        JsonStringSchema(format='date', nullable=True),
+                    JsonDatetimeSchema(any_of=[
+                        JsonDatetimeSchema(format='date-time', nullable=True),
+                        JsonDatetimeSchema(format='date', nullable=True),
                     ], nullable=True)]),
                 time_period=JsonStringSchema(nullable=True),
             ),

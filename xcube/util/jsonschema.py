@@ -148,23 +148,44 @@ class JsonStringSchema(JsonSimpleTypeSchema):
                  pattern: str = None,
                  min_length: int = None,
                  max_length: int = None,
-                 min_datetime: str = None,
-                 max_datetime: str = None,
                  **kwargs):
         super().__init__(type='string', **kwargs)
         self.format = format
         self.pattern = pattern
         self.min_length = min_length
         self.max_length = max_length
-        if (format not in ['date-time', 'date']) and\
-                (min_datetime or max_datetime):
-            raise ValueError('min_datetime and max_datetime are only valid '
-                             'with a "date" or "date-time" format.')
-        if min_datetime is not None and\
+
+    def to_dict(self) -> Dict[str, Any]:
+        d = super().to_dict()
+        if self.format is not None:
+            d.update(format=self.format)
+        if self.pattern is not None:
+            d.update(pattern=self.pattern)
+        if self.min_length is not None:
+            d.update(minLength=self.min_length)
+        if self.max_length is not None:
+            d.update(maxLength=self.max_length)
+        return d
+
+
+class JsonDatetimeSchema(JsonStringSchema):
+    # noinspection PyShadowingBuiltins
+    def __init__(self,
+                 min_datetime: str = None,
+                 max_datetime: str = None,
+                 format='date-time',
+                 **kwargs):
+
+        super().__init__(**kwargs)
+
+        if format not in ['date-time', 'date']:
+            raise ValueError('JsonDatetimeSchema must have format "date-time" '
+                             'or "date".')
+        if min_datetime is not None and \
                 not self._is_valid_datetime_or_date(min_datetime):
             raise ValueError('min_datetime must be formatted as a "date" or '
                              '"date-time"')
-        if max_datetime is not None and\
+        if max_datetime is not None and \
                 not self._is_valid_datetime_or_date(max_datetime):
             raise ValueError('max_datetime must be formatted as a "date" or '
                              '"date-time"')
@@ -185,14 +206,6 @@ class JsonStringSchema(JsonSimpleTypeSchema):
 
     def to_dict(self) -> Dict[str, Any]:
         d = super().to_dict()
-        if self.format is not None:
-            d.update(format=self.format)
-        if self.pattern is not None:
-            d.update(pattern=self.pattern)
-        if self.min_length is not None:
-            d.update(minLength=self.min_length)
-        if self.max_length is not None:
-            d.update(maxLength=self.max_length)
         if self.min_datetime is not None:
             d.update(minDatetime=self.min_datetime)
         if self.max_datetime is not None:
