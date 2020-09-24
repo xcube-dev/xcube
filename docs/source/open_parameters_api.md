@@ -25,7 +25,7 @@ Useful references related to this document include:
  - The
    [`xcube.util.jsonschema`](https://github.com/dcs4cop/xcube/blob/master/xcube/util/jsonschema.py) source code
 
-## Opener parameters
+## Open parameters
 
 Every implementation of the `xcube.core.store.DataOpener` or
 `xcube.core.store.DataStore` abstract base classes MUST implement the
@@ -38,11 +38,11 @@ full and detailed enough to allow the automatic construction of a user
 interface for access to the available datasets. Note that, under this system:
 
   1. Every dataset which an opener provides can support a different set of
-     opener parameters.
+     open parameters.
 
   2. The schema does not allow the representation of interdependencies between
-     values of opener parameters within a dataset. For instance, the following
-     interdependencies between two opener parameters *sensor_type* and
+     values of open parameters within a dataset. For instance, the following
+     interdependencies between two open parameters *sensor_type* and
      *variables* would not be representable in an open parameters schema:
      
      *sensor_type*: A or B  
@@ -72,15 +72,15 @@ be represented fully by splitting datasets in this way. In these cases:
 
 ## Common parameters
 
-While an opener is free to define any opener parameters for any of its
-datasets, there are some common parameters which are likely to be used by the
-majority of datasets. Any dataset requiring the specification of these
-parameters MUST use the standard parameter names, syntax, and semantics
-defined below, in order to keep the interface consistent. For instance, if a
-dataset allows a time aggregation period to be specified, it MUST use the
-`time_period` parameter with the format described below rather than some other
-alternative name and/or format. The parameters are described below with their
-Python type annotations.
+While an opener is free to define any open parameters for any of its datasets,
+there are some common parameters which are likely to be used by the majority
+of datasets. Any dataset requiring the specification of these parameters MUST
+use the standard parameter names, syntax, and semantics defined below, in
+order to keep the interface consistent. For instance, if a dataset allows a
+time aggregation period to be specified, it MUST use the `time_period`
+parameter with the format described below rather than some other alternative
+name and/or format. The parameters are described below with their Python type
+annotations.
 
  - `variable_names: List[str]`  
    A list of the identifiers of the requested variables.
