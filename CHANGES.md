@@ -2,6 +2,10 @@
 
 * `normalize_dataset` now ensures that latitudes are decreasing.
 
+* Add documentation for the use of the opener parameters.
+
+* Various improvements to the JSON Schema classes.
+
 ## Changes in 0.5.0
 
 ### New in 0.5.0
