@@ -1,11 +1,13 @@
 # Common data store conventions
 
+This document is a work in progress.
+
 ## Open Parameters
 
-This document is a work in progress. It aims to provide an overview of the
-interface defined by an xcube data store or opener in its open parameters
-schema, and how this schema may be used by a UI generator to automatically
-construct a user interface for a data opener.
+This section aims to provide an overview of the interface defined by an xcube
+data store or opener in its open parameters schema, and how this schema may be
+used by a UI generator to automatically construct a user interface for a data
+opener.
 
 The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT", "SHOULD",
 "SHOULD NOT", "RECOMMENDED", "MAY", and "OPTIONAL" in this document are to be
@@ -25,7 +27,7 @@ Useful references related to this document include:
  - The
    [`xcube.util.jsonschema`](https://github.com/dcs4cop/xcube/blob/master/xcube/util/jsonschema.py) source code
 
-## Open parameters
+### Specification of open parameters
 
 Every implementation of the `xcube.core.store.DataOpener` or
 `xcube.core.store.DataStore` abstract base classes MUST implement the
@@ -68,9 +70,9 @@ be represented fully by splitting datasets in this way. In these cases:
 
   3. If illegal parameter combinations are supplied, the opener MUST raise an
      exception with an informative error message, and the user interface
-     should present this message clearly to the user.
+     SHOULD present this message clearly to the user.
 
-## Common parameters
+### Common parameters
 
 While an opener is free to define any open parameters for any of its datasets,
 there are some common parameters which are likely to be used by the majority
@@ -99,7 +101,7 @@ annotations.
    The requested temporal aggregation period for the data. See section
    ‘[Date, time, and duration specifications](#sec-datespec)’.
 
-## Semantics of list-valued parameters
+### Semantics of list-valued parameters
 
 The `variables` parameter takes as its value a list, with no members repeated
 and the values of its members drawn from a predefined set. The values of this
@@ -119,7 +121,7 @@ range. That is:
    containing *no data* MUST be returned -- but with the requested spatial and
    temporal dimensions.
 
-## <a id="sec-datespec"></a>Date, time, and duration specifications
+### <a id="sec-datespec"></a>Date, time, and duration specifications
 
 In the common parameter `time_range`, times can be specified using the
 standard JSON Schema formats `date-time` or `date`. Any additional time or
@@ -143,7 +145,7 @@ the letter `T`. Examples of `date-time` format include `1961-03-23T12:22:45Z`
 and `2018-04-01T21:12:00+08:00`. (Fractions of a second MAY also be included,
 but are unlikely to be relevant for xcube openers.)
 
-## Time limits: an extension to the JSON Schema
+### Time limits: an extension to the JSON Schema
 
 JSON Schema itself does not offer a way to impose time limits on a string
 schema with the `date` or `date-time` format. This is a problem for xcube
@@ -160,13 +162,13 @@ the `JsonStringSchema` by adding the required properties to the JSON string sche
 xcube provides a dedicated `JsonDatetimeSchema` for this purpose. Internally, it extends
 the `JsonStringSchema` by adding the required properties to the JSON string schema.
 
-## Generating a UI from a schema
+### Generating a UI from a schema
 
 With the addition of the time limits extension described above, the JSON
 Schema returned by `get_open_data_params_schema` is expected to be extensive
 and detailed enough to fully describe a UI for cube generation.
 
-### Order of properties in a schema
+#### Order of properties in a schema
 
 Sub-elements of a `JsonObjectSchema` are passed to the constructor using the
 `properties` parameter with type signature `Mapping[str, JsonSchema]`. Openers
@@ -178,7 +180,7 @@ preserves the insertion order of its elements as of Python 3.6, and that this
 behaviour is officially guaranteed as of Python 3.7, so additional classes
 like `OrderedDict` are no longer necessary to fulfil this requirement.
 
-### Special handling of common parameters
+#### Special handling of common parameters
 
 Any of the common parameters listed above SHOULD, if present, be recognized
 and handled specially. They SHOULD be presented in a consistent position
@@ -193,7 +195,7 @@ for any of the common parameters, and a UI generator MAY choose to use any of
 these to supplement or modify its standard presentation of the common
 parameters.
 
-### Schema annotations (title, description, examples, and default)
+#### Schema annotations (title, description, examples, and default)
 
 For JSON Schemas describing parameters other than the common parameters, an
 opener SHOULD provide the `title` and `description` annotations. A UI
@@ -207,7 +209,7 @@ the UI accordingly. If the `title` annotation is absent, the UI generator
 SHOULD use the key corresponding to the parameter's schema in the parent
 schema as a fallback.
 
-### Generalized conversion of parameter schemas
+#### Generalized conversion of parameter schemas
 
 For parameters other than the common parameters, the UI can be generated
 automatically from the schema structure. In the case of a GUI, a one-to-one
