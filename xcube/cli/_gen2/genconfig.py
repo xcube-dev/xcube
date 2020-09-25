@@ -200,15 +200,19 @@ class CubeConfig:
     def get_schema(cls):
         return JsonObjectSchema(
             properties=dict(
-                variable_names=JsonArraySchema(items=JsonStringSchema(min_length=1), min_items=0),
-                crs=JsonStringSchema(nullable=True, default='WGS84', enum=[None, 'WGS84']),
+                variable_names=JsonArraySchema(
+                    items=JsonStringSchema(min_length=1), min_items=0),
+                crs=JsonStringSchema(nullable=True, default='WGS84',
+                                     enum=[None, 'WGS84']),
                 bbox=JsonArraySchema(items=[JsonNumberSchema(),
                                             JsonNumberSchema(),
                                             JsonNumberSchema(),
                                             JsonNumberSchema()]),
                 spatial_res=JsonNumberSchema(exclusive_minimum=0.0),
                 time_range=JsonDatetimeSchema.new_datetime_range(),
-                time_period=JsonStringSchema(nullable=True),
+                time_period=JsonStringSchema(
+                    pattern=r'^([1-9][0-9]*)?[HDWMY]$',
+                    nullable=True),
             ),
             additional_properties=False,
             required=['variable_names', 'bbox', 'spatial_res', 'time_range'],

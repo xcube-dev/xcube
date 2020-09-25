@@ -142,8 +142,24 @@ month – day), for example `1995-08-20`. The `date-time` format consists of a
 date (in the `date` format), a time (in `HH:MM:SS` format), and timezone (`Z`
 for UTC, or `+HH:MM` or `-HH:MM` format).  The date and time are separated by
 the letter `T`. Examples of `date-time` format include `1961-03-23T12:22:45Z`
-and `2018-04-01T21:12:00+08:00`. (Fractions of a second MAY also be included,
-but are unlikely to be relevant for xcube openers.)
+and `2018-04-01T21:12:00+08:00`. Fractions of a second MAY also be included,
+but are unlikely to be relevant for xcube openers.
+
+The format for durations, as used for aggregation period, does **not** conform
+to the syntax defined for this purpose in the ISO 8601 standard (which is also
+quoted as Appendix A of RFC 3339). Instead, the required format is a small
+subset of the [pandas time series frequency
+syntax](https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#timeseries-offset-aliases), defined by the following regular expression:
+
+
+```
+^([1-9][0-9]*)?[HDWMY]$
+```
+
+That is: an optional positive integer followed by one of the letters H (hour),
+D (day), W (week), M (month), and Y (year). The letter specifies the time unit
+and the integer specifies the number of units. If the integer is omitted, 1 is
+assumed.
 
 ### Time limits: an extension to the JSON Schema
 
@@ -156,11 +172,12 @@ unofficial extension to the JSON string schema: a `JsonStringSchema` object
 `get_open_data_params_schema`) MAY, if it has a `format` property with a value
 of `date` or `date-time`, also have one or both of the properties
 `min_datetime` and `max_datetime`. These properties must also conform to the
-`date` or `date-time` format.
-xcube provides a dedicated `JsonDatetimeSchema` for this purpose. Internally, it extends
-the `JsonStringSchema` by adding the required properties to the JSON string schema.
-xcube provides a dedicated `JsonDatetimeSchema` for this purpose. Internally, it extends
-the `JsonStringSchema` by adding the required properties to the JSON string schema.
+`date` or `date-time` format.  xcube provides a dedicated `JsonDatetimeSchema`
+for this purpose. Internally, it extends the `JsonStringSchema` by adding the
+required properties to the JSON string schema.  xcube provides a dedicated
+`JsonDatetimeSchema` for this purpose. Internally, it extends the
+`JsonStringSchema` by adding the required properties to the JSON string
+schema.
 
 ### Generating a UI from a schema
 
