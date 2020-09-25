@@ -6,7 +6,11 @@
 .. _`Setuptools documentation`: https://setuptools.readthedocs.io/
 .. _`Setuptools`: https://setuptools.readthedocs.io/
 .. _`SENTINEL Hub Cloud API`: https://www.sentinel-hub.com/
+.. _`ESA CCI Open Data Portal`: https://climate.esa.int/en/odp/
+.. _`Copernicus Climate Data Store`: https://cds.climate.copernicus.eu/
 .. _xcube_sh: https://github.com/dcs4cop/xcube-sh
+.. _xcube_cci: https://github.com/dcs4cop/xcube-cci
+.. _xcube_cds: https://github.com/dcs4cop/xcube-cds
 .. _xcube_gen_bc: https://github.com/dcs4cop/xcube-gen-bc
 .. _xcube_gen_rbins: https://github.com/dcs4cop/xcube-gen-rbins
 .. _xcube_gen_vito: https://github.com/dcs4cop/xcube-gen-vito
@@ -41,6 +45,16 @@ function ``xcube_sh.cube.open_cube`` to create data cubes from SENTINEL Hub on-t
 adds a new CLI command ``xcube sh gen`` to generate and write data cubes created from SENTINEL Hub
 into the file system.
 
+ESA CCI Open Data Portal
+------------------------
+
+The xcube_cci_ plugin provides support for the `ESA CCI Open Data Portal`_.
+
+Copernicus Climate Data Store
+-----------------------------
+
+The xcube_cds_ plugin provides support for the `Copernicus Climate Data Store`_.
+
 Cube Generation
 ---------------
 
@@ -54,7 +68,6 @@ but are a good starting point for developing your own input processors:
   Ocean Colour Earth Observation products derived from the SEVIRI measurements.
 * xcube_gen_vito_ - adds new input processors for specific
   Ocean Colour Earth Observation products derived from the Sentinel-2 MSI measurements.
-
 
 .. _plugin_development:
 

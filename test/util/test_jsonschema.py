@@ -2,7 +2,7 @@ import unittest
 from collections import namedtuple
 from typing import Dict, Any
 
-from xcube.util.jsonschema import JsonArraySchema
+from xcube.util.jsonschema import JsonArraySchema, JsonDatetimeSchema
 from xcube.util.jsonschema import JsonBooleanSchema
 from xcube.util.jsonschema import JsonIntegerSchema
 from xcube.util.jsonschema import JsonNullSchema
@@ -111,10 +111,55 @@ class JsonStringSchemaTest(unittest.TestCase):
         self.assertEqual('pieps', JsonStringSchema(min_length=0,
                                                    max_length=10).to_instance('pieps'))
         self.assertEqual('pieps', JsonStringSchema(pattern='.*').to_instance('pieps'))
-        self.assertEqual('2020-01-03', JsonStringSchema(format='date').to_instance('2020-01-03'))
+        self.assertEqual('2020-01-03T03:30:01.99+03:30',
+                         JsonStringSchema(format='date-time').
+                         to_instance('2020-01-03T03:30:01.99+03:30'))
 
     def test_from_instance(self):
         self.assertEqual('pieps', JsonStringSchema().from_instance('pieps'))
+
+
+class JsonDatetimeSchemaTest(unittest.TestCase):
+
+    def test_to_instance(self):
+        self.assertEqual('2020-06-03',
+                         JsonDatetimeSchema(format='date',
+                                          min_datetime='2020-02-01',
+                                          max_datetime='2020-07-05').
+                         to_instance('2020-06-03'))
+
+    def test_store_date_limits(self):
+        JsonDatetimeSchema(min_datetime='2001-01-01',
+                           max_datetime='2002-02-02')
+        minimum = '1981-05-06'
+        maximum = '1982-09-15'
+        schema = JsonDatetimeSchema(format='date-time', min_datetime=minimum,
+                                    max_datetime=maximum)
+        self.assertEqual(minimum, schema.min_datetime)
+        self.assertEqual(maximum, schema.max_datetime)
+
+    def test_datetimeschema_formats(self):
+        JsonDatetimeSchema(min_datetime='2001-01-01')
+        with self.assertRaises(ValueError):
+            JsonDatetimeSchema(format=None, max_datetime='2002-02-02')
+        with self.assertRaises(ValueError):
+            JsonDatetimeSchema(format='invalid')
+
+
+    def test_date_limit_validity_checks(self):
+        JsonDatetimeSchema(format='date-time',
+                           min_datetime='1980-02-03T12:34:56Z',
+                           max_datetime='1982-02-03T23:34:56+05:00')
+        with self.assertRaises(ValueError):
+            JsonDatetimeSchema(format='date-time',
+                               # missing timezone specifier
+                               min_datetime='1980-02-03T12:34:56',
+                               max_datetime='1982-02-03T23:34:56+05:00')
+        with self.assertRaises(ValueError):
+            JsonDatetimeSchema(format='date-time',
+                               min_datetime='1980-02-03T12:34:56-08:00',
+                               # invalid date
+                               max_datetime='1985-01-32')
 
 
 class JsonArraySchemaTest(unittest.TestCase):
@@ -138,6 +183,10 @@ class JsonArraySchemaTest(unittest.TestCase):
                          JsonArraySchema(items=[JsonBooleanSchema(),
                                                 JsonIntegerSchema(),
                                                 JsonStringSchema()]).from_instance([False, 2, 'U']))
+
+    def test_tuple_validates_as_array(self):
+        self.assertTupleEqual((1, 2, 3),
+                              JsonArraySchema().to_instance((1, 2, 3)))
 
     def test_from_instance_array_object(self):
         value = [{'name': 'Bibo', 'age': 15},
