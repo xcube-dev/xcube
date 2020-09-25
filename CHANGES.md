@@ -2,7 +2,7 @@
 
 * `normalize_dataset` now ensures that latitudes are decreasing.
 
-* Add documentation for the use of the opener parameters.
+* Add documentation for the use of the open parameters passed to `xcube.core.store.DataOpener.open_data()`.
 
 * Various improvements to the JSON Schema classes.
 
