@@ -36,6 +36,11 @@ _NUMERIC_TYPES_ENUM = {'integer', 'number'}
 
 class JsonSchema(ABC):
 
+    # TODO: implement any_of more completely
+    # Currently any_of is only used by JsonDatetimeSchema to allow alternative
+    # 'date' and 'date-time' format specifiers. For full support it should also
+    # be handled in from_instance and to_instance.
+
     # noinspection PyShadowingBuiltins
     def __init__(self,
                  type: str,
@@ -101,12 +106,14 @@ class JsonSchema(ABC):
 
     def to_instance(self, value: Any) -> Any:
         """Convert Python object *value* into JSON value and return the validated result."""
+        # TODO: support anyOf
         json_instance = self._to_unvalidated_instance(value)
         self.validate_instance(json_instance)
         return json_instance
 
     def from_instance(self, instance: Any) -> Any:
         """Validate JSON value *instance* and convert it into a Python object."""
+        # TODO: support anyOf
         self.validate_instance(instance)
         return self._from_validated_instance(instance)
 
@@ -203,6 +210,19 @@ class JsonDatetimeSchema(JsonStringSchema):
             return True
         except jsonschema.ValidationError:
             return False
+
+    @staticmethod
+    def new_datetime_range() -> 'JsonArraySchema':
+        """Return a schema for a two-element array of dates or date-times"""
+        return JsonArraySchema(items=[
+                    JsonDatetimeSchema(any_of=[
+                        JsonDatetimeSchema(format='date-time', nullable=True),
+                        JsonDatetimeSchema(format='date', nullable=True),
+                    ]),
+                    JsonDatetimeSchema(any_of=[
+                        JsonDatetimeSchema(format='date-time', nullable=True),
+                        JsonDatetimeSchema(format='date', nullable=True),
+                    ], nullable=True)])
 
     def to_dict(self) -> Dict[str, Any]:
         d = super().to_dict()

@@ -207,15 +207,7 @@ class CubeConfig:
                                             JsonNumberSchema(),
                                             JsonNumberSchema()]),
                 spatial_res=JsonNumberSchema(exclusive_minimum=0.0),
-                time_range=JsonArraySchema(items=[
-                    JsonDatetimeSchema(any_of=[
-                        JsonDatetimeSchema(format='date-time', nullable=True),
-                        JsonDatetimeSchema(format='date', nullable=True),
-                    ]),
-                    JsonDatetimeSchema(any_of=[
-                        JsonDatetimeSchema(format='date-time', nullable=True),
-                        JsonDatetimeSchema(format='date', nullable=True),
-                    ], nullable=True)]),
+                time_range=JsonDatetimeSchema.new_datetime_range(),
                 time_period=JsonStringSchema(nullable=True),
             ),
             additional_properties=False,
