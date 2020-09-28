@@ -646,25 +646,28 @@ def open_ml_dataset_from_object_storage(path: str,
                                         data_format: str = None,
                                         ds_id: str = None,
                                         exception_type: type = ValueError,
+                                        s3_kwargs: Mapping[str, Any] = None,
                                         client_kwargs: Mapping[str, Any] = None,
                                         chunk_cache_capacity: int = None,
                                         **kwargs) -> MultiLevelDataset:
     data_format = data_format or guess_ml_dataset_format(path)
 
-    root, obs_fs_kwargs, obs_fs_client_kwargs = parse_obs_url_and_kwargs(path, client_kwargs)
-    obs_fs = s3fs.S3FileSystem(**obs_fs_kwargs, client_kwargs=obs_fs_client_kwargs)
+    root, s3_kwargs, client_kwargs = parse_obs_url_and_kwargs(path,
+                                                              s3_kwargs=s3_kwargs,
+                                                              client_kwargs=client_kwargs)
+    s3 = s3fs.S3FileSystem(**s3_kwargs, client_kwargs=client_kwargs)
 
     if data_format == FORMAT_NAME_ZARR:
-        store = s3fs.S3Map(root=root, s3=obs_fs, check=False)
+        store = s3fs.S3Map(root=root, s3=s3, check=False)
         if chunk_cache_capacity:
             store = zarr.LRUStoreCache(store, max_size=chunk_cache_capacity)
         with measure_time(tag=f"opened remote zarr dataset {path}"):
-            consolidated = obs_fs.exists(f'{root}/.zmetadata')
+            consolidated = s3.exists(f'{root}/.zmetadata')
             ds = assert_cube(xr.open_zarr(store, consolidated=consolidated, **kwargs))
         return BaseMultiLevelDataset(ds, ds_id=ds_id)
     elif data_format == FORMAT_NAME_LEVELS:
         with measure_time(tag=f"opened remote levels dataset {path}"):
-            return ObjectStorageMultiLevelDataset(obs_fs,
+            return ObjectStorageMultiLevelDataset(s3,
                                                   root,
                                                   zarr_kwargs=kwargs,
                                                   ds_id=ds_id,

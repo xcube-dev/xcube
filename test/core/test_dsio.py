@@ -20,6 +20,26 @@ TEST_NC_FILE = "test.nc"
 TEST_NC_FILE_2 = "test-2.nc"
 
 
+@unittest.skip('Execute manually to test with cube on S3, requires S3 credentials')
+class OpenDatasetTest(unittest.TestCase):
+    CUBE = 'eurodatacube-test/xcube-gen-f8207f0e-636d-4267-8ac5-abbdc5d121fc.zarr'
+
+    def test_open_dataset(self):
+        ds = open_dataset(f's3://{self.CUBE}')
+        self.assertIn('B02', ds)
+        print(ds)
+
+    def test_plain(self):
+        import s3fs
+
+        def _open_cube(path):
+            return xr.open_zarr(s3fs.S3Map(path, s3=s3fs.S3FileSystem()))
+
+        ds = _open_cube(self.CUBE)
+        self.assertIn('B02', ds)
+        print(ds)
+
+
 class OpenWriteDatasetTest(unittest.TestCase):
     def setUp(self):
         super().setUp()
@@ -332,22 +352,19 @@ class ContextManagerTest(unittest.TestCase):
 class GetPathOrObsStoreTest(unittest.TestCase):
     def test_path_or_store_read_from_bucket(self):
         path, consolidated = get_path_or_obs_store(
-            'http://obs.eu-de.otc.t-systems.com/dcs4cop-obs-02/OLCI-SNS-RAW-CUBE-2.zarr',
-            mode='r')
+            'http://obs.eu-de.otc.t-systems.com/dcs4cop-obs-02/OLCI-SNS-RAW-CUBE-2.zarr', mode='r')
         self.assertIsInstance(path, fsspec.mapping.FSMap)
         self.assertEqual(False, consolidated)
 
     def test_path_or_store_write_to_bucket(self):
         path, consolidated = get_path_or_obs_store('http://obs.eu-de.otc.t-systems.com/fake_bucket/fake_cube.zarr',
-                                                   mode='w',
                                                    client_kwargs={'aws_access_key_id': 'some_fake_id',
-                                                                  'aws_secret_access_key': 'some_fake_key'})
+                                                                  'aws_secret_access_key': 'some_fake_key'}, mode='w')
         self.assertIsInstance(path, fsspec.mapping.FSMap)
         self.assertEqual(False, consolidated)
 
     def test_path_or_store_read_from_local(self):
-        path, consolidated = get_path_or_obs_store('../examples/serve/demo/cube-1-250-250.zarr',
-                                                   mode='r')
+        path, consolidated = get_path_or_obs_store('../examples/serve/demo/cube-1-250-250.zarr', mode='r')
         self.assertEqual('../examples/serve/demo/cube-1-250-250.zarr', path)
         self.assertEqual(False, consolidated)
 
@@ -355,35 +372,34 @@ class GetPathOrObsStoreTest(unittest.TestCase):
 class ParseObsUrlAndKwargsTest(unittest.TestCase):
     def test_http(self):
         root, kwargs, client_kwargs = parse_obs_url_and_kwargs(
-            'http://obs.eu-de.otc.t-systems.com/dcs4cop-obs-02/OLCI-SNS-RAW-CUBE-2.zarr', {})
+            'http://obs.eu-de.otc.t-systems.com/dcs4cop-obs-02/OLCI-SNS-RAW-CUBE-2.zarr')
         self.assertEqual('dcs4cop-obs-02/OLCI-SNS-RAW-CUBE-2.zarr', root)
-        self.assertEqual({'anon': True, 'key': None, 'secret': None}, kwargs)
+        self.assertEqual({'key': None, 'secret': None}, kwargs)
         self.assertEqual({'endpoint_url': 'http://obs.eu-de.otc.t-systems.com'}, client_kwargs)
 
     def test_https_credentials(self):
         root, kwargs, client_kwargs = parse_obs_url_and_kwargs(
-            'https://obs.eu-de.otc.t-systems.com/dcs4cop-obs-02/OLCI-SNS-RAW-CUBE-2.zarr',
-            {
+            'https://obs.eu-de.otc.t-systems.com/dcs4cop-obs-02/OLCI-SNS-RAW-CUBE-2.zarr', client_kwargs={
                 'provider_access_key_id': 'bibo',
                 'provider_secret_access_key': '8625345',
             })
         self.assertEqual('dcs4cop-obs-02/OLCI-SNS-RAW-CUBE-2.zarr', root)
-        self.assertEqual({'anon': False, 'key': 'bibo', 'secret': '8625345'}, kwargs)
+        self.assertEqual({'key': 'bibo', 'secret': '8625345'}, kwargs)
         self.assertEqual({'endpoint_url': 'https://obs.eu-de.otc.t-systems.com'}, client_kwargs)
 
         root, kwargs, client_kwargs = parse_obs_url_and_kwargs(
-            'https://obs.eu-de.otc.t-systems.com/dcs4cop-obs-02/OLCI-SNS-RAW-CUBE-2.zarr',
-            {
+            'https://obs.eu-de.otc.t-systems.com/dcs4cop-obs-02/OLCI-SNS-RAW-CUBE-2.zarr', client_kwargs={
                 'aws_access_key_id': 'bibo',
                 'aws_secret_access_key': '8625345',
             })
         self.assertEqual('dcs4cop-obs-02/OLCI-SNS-RAW-CUBE-2.zarr', root)
-        self.assertEqual({'anon': False, 'key': 'bibo', 'secret': '8625345'}, kwargs)
+        self.assertEqual({'key': 'bibo', 'secret': '8625345'}, kwargs)
         self.assertEqual({'endpoint_url': 'https://obs.eu-de.otc.t-systems.com'}, client_kwargs)
 
     def test_s3(self):
-        root, kwargs, client_kwargs = parse_obs_url_and_kwargs(
-            's3://dcs4cop-obs-02/OLCI-SNS-RAW-CUBE-2.zarr', {})
+        root, kwargs, client_kwargs = parse_obs_url_and_kwargs('s3://dcs4cop-obs-02/OLCI-SNS-RAW-CUBE-2.zarr',
+                                                               s3_kwargs={'anon': True},
+                                                               client_kwargs={})
         self.assertEqual('s3://dcs4cop-obs-02/OLCI-SNS-RAW-CUBE-2.zarr', root)
         self.assertEqual({'anon': True, 'key': None, 'secret': None}, kwargs)
         self.assertEqual({}, client_kwargs)
