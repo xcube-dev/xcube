@@ -1,5 +1,8 @@
 ## Changes in 0.5.2 (in development)
 
+* Fixed both `xcube.core.dsio.open_cube()` and `open_dataset()` which failed with message 
+  `"ValueError: group not found at path ''"` if called with a bucket URL but no credentials given
+  in case the bucket is not publicly readable.
 * Add documentation for the use of the open parameters passed to `xcube.core.store.DataOpener.open_data()`.
 * The JSON Schema classes in `xcube.util.jsonschema` have been extended:
   - `date` and `date-time` formats are now validated along with the rest of the schema
