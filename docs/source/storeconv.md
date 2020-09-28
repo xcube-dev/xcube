@@ -100,6 +100,14 @@ annotations.
  - `time_period: str`  
    The requested temporal aggregation period for the data. See section
    ‘[Date, time, and duration specifications](#sec-datespec)’.
+ - `force_cube: bool`  
+   Whether to return results as a [specification-compliant
+   xcube](https://github.com/dcs4cop/xcube/blob/master/docs/source/cubespec.md).
+   If a store supports this parameter and if a dataset is opened with this
+   parameter set to `True`, the store MUST return a specification-compliant
+   xcube. If this parameter is not supported or if a dataset is opened with
+   this parameter set to `False`, the caller MUST NOT assume that the returned
+   data conform to the xcube specification.
 
 ### Semantics of list-valued parameters
 
