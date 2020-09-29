@@ -28,6 +28,10 @@
   - `date` and `date-time` formats are now validated along with the rest of the schema
   - a `JsonDatetimeSchema` subclass of `JsonStringSchema` has been introduced, including a non-standard extension to specify date and time limits
 
+## Changes in 0.5.1
+
+* `normalize_dataset` now ensures that latitudes are decreasing.
+
 ## Changes in 0.5.0
 
 ### New in 0.5.0
