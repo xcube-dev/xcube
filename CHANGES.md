@@ -1,5 +1,7 @@
 ## Changes in 0.5.2 (in development)
 
+* For `xcube serve` dataset configurations where `FileSystem: obs`, users must now also 
+  specify `Anonymous: True` for datasets in public object storage buckets. 
 * Fixed both `xcube.core.dsio.open_cube()` and `open_dataset()` which failed with message 
   `"ValueError: group not found at path ''"` if called with a bucket URL but no credentials given
   in case the bucket is not publicly readable.
