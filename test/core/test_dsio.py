@@ -269,8 +269,7 @@ class ZarrDatasetIOTest(S3Test):
         s3_conn = boto3.client('s3', endpoint_url=MOTOSERVER_ENDPOINT_URL)
         s3_conn.create_bucket(Bucket='upload_bucket', ACL='public-read')
 
-        s3_kwargs = dict(key='test_fake_id',
-                         secret='test_fake_secret'),
+        s3_kwargs = dict(key='test_fake_id', secret='test_fake_secret')
         client_kwargs = {'endpoint_url': MOTOSERVER_ENDPOINT_URL}
 
         zarr_path = os.path.join(os.path.dirname(__file__), '../../examples/serve/demo/cube-1-250-250.zarr')
@@ -280,12 +279,12 @@ class ZarrDatasetIOTest(S3Test):
                    'upload_bucket/cube-1-250-250.zarr',
                    format_name='zarr',
                    s3_kwargs=s3_kwargs,
-                   client_kwargs=client_kwargs)
+                   s3_client_kwargs=client_kwargs)
 
         ds2 = open_cube('upload_bucket/cube-1-250-250.zarr',
                         format_name='zarr',
                         s3_kwargs=s3_kwargs,
-                        client_kwargs=client_kwargs)
+                        s3_client_kwargs=client_kwargs)
 
         self.assertEqual(set(ds1.data_vars), set(ds2.data_vars))
 
