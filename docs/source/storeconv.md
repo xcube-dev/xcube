@@ -181,11 +181,8 @@ unofficial extension to the JSON string schema: a `JsonStringSchema` object
 of `date` or `date-time`, also have one or both of the properties
 `min_datetime` and `max_datetime`. These properties must also conform to the
 `date` or `date-time` format.  xcube provides a dedicated `JsonDatetimeSchema`
-for this purpose. Internally, it extends the `JsonStringSchema` by adding the
-required properties to the JSON string schema.  xcube provides a dedicated
-`JsonDatetimeSchema` for this purpose. Internally, it extends the
-`JsonStringSchema` by adding the required properties to the JSON string
-schema.
+for this purpose. Internally, it extends `JsonStringSchema` by adding the
+required properties to the JSON string schema.
 
 ### Generating a UI from a schema
 
