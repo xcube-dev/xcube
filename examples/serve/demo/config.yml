@@ -58,6 +58,7 @@ Datasets:
     Endpoint: "http://obs.eu-de.otc.t-systems.com"
     Path: "dcs4cop-obs-02/OLCI-SNS-RAW-CUBE-2.zarr"
     Region: "eu-de"
+    Anonymous: true
     Style: default
     ChunkCacheSize: 250M
     PlaceGroups:

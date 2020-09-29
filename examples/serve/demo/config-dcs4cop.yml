@@ -13,6 +13,7 @@ Datasets:
     Path: "dcs4cop-obs-01/dcs4cop-bc-sst-sns-l2c-v1.zarr"
     FileSystem: "obs"
     Region: "eu-de"
+    Anonymous: true
     Style: default
 
 Styles:
