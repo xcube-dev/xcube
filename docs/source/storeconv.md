@@ -100,6 +100,14 @@ annotations.
  - `time_period: str`  
    The requested temporal aggregation period for the data. See section
    ‘[Date, time, and duration specifications](#sec-datespec)’.
+ - `force_cube: bool`  
+   Whether to return results as a [specification-compliant
+   xcube](https://github.com/dcs4cop/xcube/blob/master/docs/source/cubespec.md).
+   If a store supports this parameter and if a dataset is opened with this
+   parameter set to `True`, the store MUST return a specification-compliant
+   xcube. If this parameter is not supported or if a dataset is opened with
+   this parameter set to `False`, the caller MUST NOT assume that the returned
+   data conform to the xcube specification.
 
 ### Semantics of list-valued parameters
 
@@ -173,11 +181,8 @@ unofficial extension to the JSON string schema: a `JsonStringSchema` object
 of `date` or `date-time`, also have one or both of the properties
 `min_datetime` and `max_datetime`. These properties must also conform to the
 `date` or `date-time` format.  xcube provides a dedicated `JsonDatetimeSchema`
-for this purpose. Internally, it extends the `JsonStringSchema` by adding the
-required properties to the JSON string schema.  xcube provides a dedicated
-`JsonDatetimeSchema` for this purpose. Internally, it extends the
-`JsonStringSchema` by adding the required properties to the JSON string
-schema.
+for this purpose. Internally, it extends `JsonStringSchema` by adding the
+required properties to the JSON string schema.
 
 ### Generating a UI from a schema
 
