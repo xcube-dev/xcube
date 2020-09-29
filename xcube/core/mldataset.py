@@ -741,6 +741,7 @@ def augment_ml_dataset(ml_dataset: MultiLevelDataset,
 
 def write_levels(ml_dataset: MultiLevelDataset,
                  levels_path: str,
+                 s3_kwargs: Dict[str, Any] = None,
                  client_kwargs: Dict[str, Any] = None):
     tile_w, tile_h = ml_dataset.tile_grid.tile_size
     chunks = dict(time=1, lat=tile_h, lon=tile_w)
@@ -751,5 +752,6 @@ def write_levels(ml_dataset: MultiLevelDataset,
         write_cube(level_dataset,
                    f'{levels_path}/{level}.zarr',
                    'zarr',
+                   s3_kwargs=s3_kwargs,
                    client_kwargs=client_kwargs)
         print(f'written level {level + 1}')

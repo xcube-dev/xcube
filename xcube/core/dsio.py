@@ -439,9 +439,13 @@ class ZarrDatasetIO(DatasetIO):
               compressor: Dict[str, Any] = None,
               chunksizes: Dict[str, int] = None,
               packing: Dict[str, Dict[str, Any]] = None,
+              s3_kwargs: Dict[str, Any] = None,
               client_kwargs: Dict[str, Any] = None,
               **kwargs):
-        path_or_store, consolidated = get_path_or_obs_store(output_path, client_kwargs=client_kwargs, mode='w')
+        path_or_store, consolidated = get_path_or_obs_store(output_path,
+                                                            s3_kwargs=s3_kwargs,
+                                                            client_kwargs=client_kwargs,
+                                                            mode='w')
         encoding = self._get_write_encodings(dataset, compressor, chunksizes, packing)
         dataset.to_zarr(path_or_store, mode='w', encoding=encoding, **kwargs)
 

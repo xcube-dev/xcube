@@ -10,10 +10,10 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 
-from test.s3test import S3Test
+from test.s3test import MOTOSERVER_ENDPOINT_URL, S3Test
 from test.sampledata import new_test_dataset
 from xcube.core.dsio import CsvDatasetIO, DatasetIO, MemDatasetIO, Netcdf4DatasetIO, ZarrDatasetIO, find_dataset_io, \
-    query_dataset_io, get_path_or_obs_store, write_cube, split_obs_url, parse_obs_url_and_kwargs
+    query_dataset_io, get_path_or_obs_store, write_cube, split_obs_url, parse_obs_url_and_kwargs, open_cube
 from xcube.core.dsio import open_dataset, write_dataset
 from xcube.core.new import new_cube
 
@@ -232,7 +232,7 @@ class Netcdf4DatasetIOTest(unittest.TestCase):
             ds_io.read('test.nc')
 
 
-class ZarrDatasetIOTest(unittest.TestCase):
+class ZarrDatasetIOTest(S3Test):
 
     def test_props(self):
         ds_io = ZarrDatasetIO()
@@ -263,6 +263,31 @@ class ZarrDatasetIOTest(unittest.TestCase):
         ds_io = ZarrDatasetIO()
         with self.assertRaises(ValueError):
             ds_io.read('test.zarr')
+
+    @moto.mock_s3
+    def test_write_to_and_read_from_s3(self):
+        s3_conn = boto3.client('s3', endpoint_url=MOTOSERVER_ENDPOINT_URL)
+        s3_conn.create_bucket(Bucket='upload_bucket', ACL='public-read')
+
+        s3_kwargs = dict(key='test_fake_id',
+                         secret='test_fake_secret'),
+        client_kwargs = {'endpoint_url': MOTOSERVER_ENDPOINT_URL}
+
+        zarr_path = os.path.join(os.path.dirname(__file__), '../../examples/serve/demo/cube-1-250-250.zarr')
+        ds1 = xr.open_zarr(zarr_path)
+
+        write_cube(ds1,
+                   'upload_bucket/cube-1-250-250.zarr',
+                   format_name='zarr',
+                   s3_kwargs=s3_kwargs,
+                   client_kwargs=client_kwargs)
+
+        ds2 = open_cube('upload_bucket/cube-1-250-250.zarr',
+                        format_name='zarr',
+                        s3_kwargs=s3_kwargs,
+                        client_kwargs=client_kwargs)
+
+        self.assertEqual(set(ds1.data_vars), set(ds2.data_vars))
 
 
 class CsvDatasetIOTest(unittest.TestCase):
@@ -425,30 +450,3 @@ class SplitBucketUrlTest(unittest.TestCase):
         endpoint_url, root = split_obs_url('/dcs4cop-obs-02/OLCI-SNS-RAW-CUBE-2.zarr')
         self.assertEqual(None, endpoint_url)
         self.assertEqual('/dcs4cop-obs-02/OLCI-SNS-RAW-CUBE-2.zarr', root)
-
-
-class TestUploadToS3Bucket(S3Test):
-
-    @moto.mock_s3
-    def test_upload_to_s3(self):
-        s3_conn = boto3.client('s3')
-        s3_conn.create_bucket(Bucket='upload_bucket', ACL='public-read')
-        client_kwargs = {'provider_access_key_id': 'test_fake_id', 'provider_secret_access_key': 'test_fake_secret'}
-        zarr_path = os.path.join(os.path.dirname(__file__), '../../examples/serve/demo/cube-1-250-250.zarr')
-        ds1 = xr.open_zarr(zarr_path)
-        write_cube(ds1, 'https://s3.amazonaws.com/upload_bucket/cube-1-250-250.zarr', 'zarr',
-                   client_kwargs=client_kwargs)
-        self.assertIn('cube-1-250-250.zarr/.zattrs',
-                      s3_conn.list_objects(Bucket='upload_bucket')['Contents'][0]['Key'])
-
-    @moto.mock_s3
-    def test_upload_to_s3_via_bucket_path(self):
-        s3_conn = boto3.client('s3')
-        s3_conn.create_bucket(Bucket='upload_bucket', ACL='public-read')
-        client_kwargs = {'provider_access_key_id': 'test_fake_id', 'provider_secret_access_key': 'test_fake_secret'}
-        zarr_path = os.path.join(os.path.dirname(__file__), '../../examples/serve/demo/cube-1-250-250.zarr')
-        ds1 = xr.open_zarr(zarr_path)
-        write_cube(ds1, 's3://upload_bucket/cube-1-250-250.zarr', 'zarr',
-                   client_kwargs=client_kwargs)
-        self.assertIn('cube-1-250-250.zarr/.zattrs',
-                      s3_conn.list_objects(Bucket='upload_bucket')['Contents'][0]['Key'])
