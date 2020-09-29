@@ -1,4 +1,4 @@
-import boto3
+import s3fs
 import moto
 import xarray as xr
 
@@ -25,6 +25,10 @@ class S3DataStoreTest(S3Test):
     def store(self) -> S3DataStore:
         # noinspection PyTypeChecker
         return self._store
+
+    def test_props(self):
+        self.assertIsInstance(self.store.s3, s3fs.S3FileSystem)
+        self.assertEqual(BUCKET_NAME, self.store.bucket_name)
 
     def test_get_data_store_params_schema(self):
         schema = self.store.get_data_store_params_schema()
@@ -78,8 +82,7 @@ class S3DataStoreTest(S3Test):
 
     @moto.mock_s3
     def test_write_and_read_and_delete(self):
-        s3_conn = boto3.client('s3', endpoint_url=MOTOSERVER_ENDPOINT_URL)
-        s3_conn.create_bucket(Bucket=BUCKET_NAME, ACL='public-read')
+        self.store.s3.mkdir(BUCKET_NAME)
 
         dataset_1 = new_cube(variables=dict(a=4.1, b=7.4))
         dataset_2 = new_cube(variables=dict(c=5.2, d=8.5))

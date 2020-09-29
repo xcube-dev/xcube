@@ -24,6 +24,7 @@ import uuid
 from typing import Optional, Iterator, Any, Tuple, List
 
 import geopandas as gpd
+import s3fs
 import xarray as xr
 
 from xcube.core.mldataset import MultiLevelDataset
@@ -87,7 +88,15 @@ class S3DataStore(MutableDataStore):
         assert_condition(not store_params, f'Unknown keyword arguments: {", ".join(store_params.keys())}')
 
     def close(self):
-        self._s3_fs = None
+        pass
+
+    @property
+    def s3(self) -> s3fs.S3FileSystem:
+        return self._s3_fs
+
+    @property
+    def bucket_name(self) -> str:
+        return self._bucket_name
 
     #############################################################################
     # MutableDataStore impl.
