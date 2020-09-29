@@ -32,6 +32,7 @@ from xcube.util.ipython import register_json_formatter
 from xcube.util.jsonschema import JsonObjectSchema
 
 TYPE_ID_DATASET = 'dataset'
+TYPE_ID_CUBE = 'dataset[cube]'
 TYPE_ID_MULTI_LEVEL_DATASET = 'dataset[multilevel]'
 TYPE_ID_GEO_DATA_FRAME = 'geodataframe'
 
@@ -173,6 +174,69 @@ class DatasetDescriptor(DataDescriptor):
             d['data_vars'] = [vd.to_dict() for vd in self.data_vars]
         _copy_none_null_props(self, d, ['dims', 'attrs'])
         return d
+
+
+class CubeDescriptor(DatasetDescriptor):
+    """
+    A descriptor for a gridded, N-dimensional dataset represented by xarray.Dataset
+    where all data variables are guaranteed to have dimensions "lat", "lon", and "time".
+    Comprises a description of the data variables contained in the dataset.
+    """
+
+    def __init__(self,
+                 data_id: str,
+                 type_id: str = TYPE_ID_CUBE,
+                 crs: str = None,
+                 bbox: Tuple[float, float, float, float] = None,
+                 spatial_res: float = None,
+                 time_range: Tuple[Optional[str], Optional[str]] = None,
+                 time_period: str = None,
+                 dims: Mapping[str, int] = None,
+                 data_vars: Sequence['VariableDescriptor'] = None,
+                 attrs: Mapping[str, any] = None,
+                 open_params_schema: JsonObjectSchema = None):
+        super().__init__(data_id=data_id,
+                         type_id=type_id,
+                         crs=crs,
+                         bbox=bbox,
+                         spatial_res=spatial_res,
+                         time_range=time_range,
+                         time_period=time_period,
+                         dims=dims,
+                         data_vars=data_vars,
+                         attrs=attrs,
+                         open_params_schema=open_params_schema)
+
+    def _assert_type_id(self, type_id: str):
+        split_id = type_id.split('[')
+        if split_id[0] != 'dataset':
+            raise ValueError('Type ID must start with dataset')
+        if len(split_id) == 1:
+            raise ValueError("Type ID must contain 'cube'")
+        flag_list = split_id[1].replace(']', '').split(',')
+        if not 'cube' in flag_list:
+            raise ValueError("Type ID must contain 'cube'")
+
+    @classmethod
+    def from_dict(cls, d: Mapping[str, Any]) -> 'CubeDescriptor':
+        """Create new instance from a JSON-serializable dictionary"""
+        assert_in('data_id', d)
+        data_vars = []
+        data_vars_as_dicts = d.get('data_vars', [])
+        for data_var_as_dict in data_vars_as_dicts:
+            data_vars.append(VariableDescriptor.from_dict(data_var_as_dict))
+        return CubeDescriptor(data_id=d['data_id'],
+                              type_id=d.get('type_id', TYPE_ID_CUBE),
+                              crs=d.get('crs', None),
+                              bbox=d.get('bbox', None),
+                              spatial_res=d.get('spatial_res', None),
+                              time_range=d.get('time_range', None),
+                              time_period=d.get('time_period', None),
+                              dims=d.get('dims', None),
+                              data_vars=data_vars,
+                              attrs=d.get('attrs', None),
+                              open_params_schema=d.get('open_params_schema', None),
+        )
 
 
 class VariableDescriptor:
