@@ -161,7 +161,7 @@ class ObjectStorageMultiLevelDatasetTest(S3Test):
         ml_ds_from_object_storage = open_ml_dataset_from_object_storage(
             'xcube-test/cube-1-250-250.zarr',
             s3_kwargs=dict(key='test_fake_id', secret='test_fake_secret'),
-            client_kwargs=dict(endpoint_url=MOTOSERVER_ENDPOINT_URL)
+            s3_client_kwargs=dict(endpoint_url=MOTOSERVER_ENDPOINT_URL)
         )
         self.assertIsNotNone(ml_ds_from_object_storage)
         self.assertIn('conc_chl', ml_ds_from_object_storage.base_dataset.variables)
@@ -223,7 +223,7 @@ class ObjectStorageMultiLevelDatasetTest(S3Test):
         write_levels(ml_dataset,
                      'xcube-test/cube-1-250-250.levels',
                      s3_kwargs=s3_kwargs,
-                     client_kwargs=client_kwargs)
+                     s3_client_kwargs=client_kwargs)
 
 
 class GetDatasetTileGridTest(unittest.TestCase):

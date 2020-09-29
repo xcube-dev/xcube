@@ -687,7 +687,7 @@ def _open_ml_dataset_from_object_storage(ctx: ServiceContext,
                                                data_format=data_format,
                                                ds_id=ds_id,
                                                exception_type=ServiceConfigError,
-                                               client_kwargs=client_kwargs,
+                                               s3_client_kwargs=client_kwargs,
                                                chunk_cache_capacity=chunk_cache_capacity)
 
 
