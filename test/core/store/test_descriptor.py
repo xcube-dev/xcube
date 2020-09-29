@@ -8,30 +8,36 @@ class DatasetDescriptorTest(unittest.TestCase):
 
     def test_from_dict_no_data_id(self):
         try:
-            descriptor_dict = dict(type_id='abc')
+            descriptor_dict = dict()
             DatasetDescriptor.from_dict(descriptor_dict)
             self.fail('Exception expected')
         except ValueError:
             pass
 
-    def test_from_dict_no_type_id(self):
+    def test_from_dict_wrong_type_id(self):
         try:
-            descriptor_dict = dict(data_id='xyz')
+            descriptor_dict = dict(data_id='xyz', type_id='tsr')
             DatasetDescriptor.from_dict(descriptor_dict)
             self.fail('Exception expected')
         except ValueError:
             pass
 
     def test_from_dict_basic(self):
-        descriptor_dict = dict(data_id='xyz', type_id='abc')
+        descriptor_dict = dict(data_id='xyz')
         descriptor = DatasetDescriptor.from_dict(descriptor_dict)
         self.assertIsNotNone(descriptor)
         self.assertEqual('xyz', descriptor.data_id)
-        self.assertEqual('abc', descriptor.type_id)
+        self.assertEqual('dataset', descriptor.type_id)
+
+    def test_from_dict_derived_type(self):
+        descriptor_dict = dict(data_id='xyz', type_id='dataset[fegd]')
+        descriptor = DatasetDescriptor.from_dict(descriptor_dict)
+        self.assertIsNotNone(descriptor)
+        self.assertEqual('xyz', descriptor.data_id)
+        self.assertEqual('dataset[fegd]', descriptor.type_id)
 
     def test_from_dict_full(self):
         descriptor_dict = dict(data_id='xyz',
-                               type_id='abc',
                                crs='EPSG:9346',
                                bbox=(10., 20., 30., 40.),
                                spatial_res=20.,
@@ -61,7 +67,7 @@ class DatasetDescriptorTest(unittest.TestCase):
         descriptor = DatasetDescriptor.from_dict(descriptor_dict)
         self.assertIsNotNone(descriptor)
         self.assertEqual('xyz', descriptor.data_id)
-        self.assertEqual('abc', descriptor.type_id)
+        self.assertEqual('dataset', descriptor.type_id)
         self.assertEqual('EPSG:9346', descriptor.crs)
         self.assertEqual((10., 20., 30., 40.), descriptor.bbox)
         self.assertEqual(20., descriptor.spatial_res)

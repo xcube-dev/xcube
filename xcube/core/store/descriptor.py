@@ -25,13 +25,14 @@ import geopandas as gpd
 import xarray as xr
 
 from xcube.core.mldataset import MultiLevelDataset
+from xcube.util.assertions import assert_condition
 from xcube.util.assertions import assert_given
 from xcube.util.assertions import assert_in
 from xcube.util.ipython import register_json_formatter
 from xcube.util.jsonschema import JsonObjectSchema
 
 TYPE_ID_DATASET = 'dataset'
-TYPE_ID_MULTI_LEVEL_DATASET = 'mldataset'
+TYPE_ID_MULTI_LEVEL_DATASET = 'dataset[multilevel]'
 TYPE_ID_GEO_DATA_FRAME = 'geodataframe'
 
 
@@ -117,7 +118,7 @@ class DatasetDescriptor(DataDescriptor):
 
     def __init__(self,
                  data_id: str,
-                 type_id=TYPE_ID_DATASET,
+                 type_id: str = TYPE_ID_DATASET,
                  crs: str = None,
                  bbox: Tuple[float, float, float, float] = None,
                  spatial_res: float = None,
@@ -127,6 +128,7 @@ class DatasetDescriptor(DataDescriptor):
                  data_vars: Sequence['VariableDescriptor'] = None,
                  attrs: Mapping[str, any] = None,
                  open_params_schema: JsonObjectSchema = None):
+        self._assert_type_id(type_id)
         super().__init__(data_id=data_id,
                          type_id=type_id,
                          crs=crs,
@@ -139,17 +141,20 @@ class DatasetDescriptor(DataDescriptor):
         self.data_vars = list(data_vars) if data_vars else None
         self.attrs = dict(attrs) if attrs else None
 
+    def _assert_type_id(self, type_id: str):
+        assert_condition(type_id.split('[')[0] == TYPE_ID_DATASET,
+                         f'Type ID must be a {TYPE_ID_DATASET} type id')
+
     @classmethod
     def from_dict(cls, d: Mapping[str, Any]) -> 'DatasetDescriptor':
         """Create new instance from a JSON-serializable dictionary"""
         assert_in('data_id', d)
-        assert_in('type_id', d)
         data_vars = []
         data_vars_as_dicts = d.get('data_vars', [])
         for data_var_as_dict in data_vars_as_dicts:
             data_vars.append(VariableDescriptor.from_dict(data_var_as_dict))
         return DatasetDescriptor(data_id=d['data_id'],
-                                 type_id=d['type_id'],
+                                 type_id=d.get('type_id', TYPE_ID_DATASET),
                                  crs=d.get('crs', None),
                                  bbox=d.get('bbox', None),
                                  spatial_res=d.get('spatial_res', None),
@@ -218,6 +223,16 @@ class MultiLevelDatasetDescriptor(DatasetDescriptor):
         assert_given(num_levels, 'num_levels')
         super().__init__(data_id=data_id, type_id=TYPE_ID_MULTI_LEVEL_DATASET, **kwargs)
         self.num_levels = num_levels
+
+    def _assert_type_id(self, type_id: str):
+        split_id = type_id.split('[')
+        if split_id[0] != 'dataset':
+            raise ValueError('Type ID must start with dataset')
+        if len(split_id) == 1:
+            raise ValueError("Type ID must contain 'multilevel'")
+        flag_list = split_id[1].replace(']', '').split(',')
+        if not 'multilevel' in flag_list:
+            raise ValueError("Type ID must contain 'multilevel'")
 
     @classmethod
     def from_dict(cls, d: Mapping[str, Any]) -> 'MultiLevelDatasetDescriptor':
