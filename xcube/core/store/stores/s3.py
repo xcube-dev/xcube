@@ -82,7 +82,7 @@ class S3DataStore(MutableDataStore):
     """
 
     def __init__(self, **store_params):
-        self._s3_fs, store_params = S3Mixin.consume_s3fs_params(store_params)
+        self._s3, store_params = S3Mixin.consume_s3fs_params(store_params)
         self._bucket_name, store_params = S3Mixin.consume_bucket_name_param(store_params)
         assert_given(self._bucket_name, 'bucket_name')
         assert_condition(not store_params, f'Unknown keyword arguments: {", ".join(store_params.keys())}')
@@ -92,7 +92,7 @@ class S3DataStore(MutableDataStore):
 
     @property
     def s3(self) -> s3fs.S3FileSystem:
-        return self._s3_fs
+        return self._s3
 
     @property
     def bucket_name(self) -> str:
@@ -114,13 +114,13 @@ class S3DataStore(MutableDataStore):
     def get_data_ids(self, type_id: str = None) -> Iterator[Tuple[str, Optional[str]]]:
         prefix = self._bucket_name + '/'
         first_index = len(prefix)
-        for item in self._s3_fs.listdir(self._bucket_name, detail=False):
+        for item in self._s3.listdir(self._bucket_name, detail=False):
             if item.startswith(prefix):
                 yield item[first_index:], None
 
     def has_data(self, data_id: str) -> bool:
         path = self._resolve_data_id_to_path(data_id)
-        return self._s3_fs.exists(path)
+        return self._s3.exists(path)
 
     def describe_data(self, data_id: str) -> DataDescriptor:
         # TODO: implement me
@@ -206,7 +206,7 @@ class S3DataStore(MutableDataStore):
     def delete_data(self, data_id: str):
         path = self._resolve_data_id_to_path(data_id)
         try:
-            self._s3_fs.delete(path, recursive=True)
+            self._s3.delete(path, recursive=True)
             self.deregister_data(data_id)
         except ValueError as e:
             raise DataStoreError(f'{e}') from e
@@ -224,18 +224,18 @@ class S3DataStore(MutableDataStore):
 
     def _new_s3_opener(self, opener_id):
         self._assert_not_closed()
-        return new_data_opener(opener_id, s3_fs=self._s3_fs)
+        return new_data_opener(opener_id, s3=self._s3)
 
     def _new_s3_writer(self, writer_id):
         self._assert_not_closed()
-        return new_data_writer(writer_id, s3_fs=self._s3_fs)
+        return new_data_writer(writer_id, s3=self._s3)
 
     @classmethod
     def _ensure_valid_data_id(cls, data_id: Optional[str], data: Any) -> str:
         return data_id or str(uuid.uuid4()) + cls._get_filename_ext(data)
 
     def _assert_not_closed(self):
-        if self._s3_fs is None:
+        if self._s3 is None:
             raise DataStoreError(f'Data store already closed.')
 
     def _assert_valid_data_id(self, data_id):

@@ -14,7 +14,7 @@ from xcube.constants import FORMAT_NAME_NETCDF4
 from xcube.constants import FORMAT_NAME_SCRIPT
 from xcube.constants import FORMAT_NAME_ZARR
 from xcube.core.dsio import guess_dataset_format
-from xcube.core.dsio import is_obs_url
+from xcube.core.dsio import is_s3_url
 from xcube.core.dsio import parse_s3_url_and_kwargs
 from xcube.core.dsio import write_cube
 from xcube.core.geom import get_dataset_bounds
@@ -633,7 +633,7 @@ def open_ml_dataset(path: str,
     """
     if not path:
         raise ValueError('path must be given')
-    if is_obs_url(path):
+    if is_s3_url(path):
         return open_ml_dataset_from_object_storage(path, ds_id=ds_id, exception_type=exception_type, **kwargs)
     elif path.endswith('.py'):
         return open_ml_dataset_from_python_code(path, ds_id=ds_id, exception_type=exception_type, **kwargs)

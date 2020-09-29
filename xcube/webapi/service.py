@@ -40,7 +40,7 @@ from tornado.log import enable_pretty_logging
 from tornado.web import RequestHandler, Application
 
 from xcube.constants import LOG
-from xcube.core.dsio import is_obs_url
+from xcube.core.dsio import is_s3_url
 from xcube.core.mldataset import guess_ml_dataset_format
 from xcube.util.cache import parse_mem_size
 from xcube.util.caseless import caseless_dict
@@ -431,7 +431,7 @@ def new_default_config(cube_paths: List[str],
         dataset_descriptor = dict(Identifier=f"dataset_{index + 1}",
                                   Format=guess_ml_dataset_format(cube_path),
                                   Path=cube_path)
-        if is_obs_url(cube_path):
+        if is_s3_url(cube_path):
             dataset_descriptor.update(Title=cube_path.split('/')[-1],
                                       FileSystem='obs')
             if aws_access_key_id and aws_secret_access_key:

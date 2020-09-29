@@ -13,7 +13,7 @@ import xarray as xr
 from test.s3test import MOTOSERVER_ENDPOINT_URL, S3Test
 from test.sampledata import new_test_dataset
 from xcube.core.dsio import CsvDatasetIO, DatasetIO, MemDatasetIO, Netcdf4DatasetIO, ZarrDatasetIO, find_dataset_io, \
-    query_dataset_io, get_path_or_obs_store, write_cube, split_s3_url, parse_s3_url_and_kwargs, open_cube
+    query_dataset_io, get_path_or_s3_store, write_cube, split_s3_url, parse_s3_url_and_kwargs, open_cube
 from xcube.core.dsio import open_dataset, write_dataset
 from xcube.core.new import new_cube
 
@@ -374,23 +374,25 @@ class ContextManagerTest(unittest.TestCase):
         self.assertEqual(False, a.closed)
 
 
-class GetPathOrObsStoreTest(unittest.TestCase):
+class GetPathOrObsStoreTest(S3Test):
+    @moto.mock_s3
     def test_path_or_store_read_from_bucket(self):
-        path, consolidated = get_path_or_obs_store(
-            'http://obs.eu-de.otc.t-systems.com/dcs4cop-obs-02/OLCI-SNS-RAW-CUBE-2.zarr', mode='r')
-        self.assertIsInstance(path, fsspec.mapping.FSMap)
+        s3_store, consolidated = get_path_or_s3_store(
+            f'{MOTOSERVER_ENDPOINT_URL}/dcs4cop-obs-02/OLCI-SNS-RAW-CUBE-2.zarr', mode='r')
+        self.assertIsInstance(s3_store, fsspec.mapping.FSMap)
         self.assertEqual(False, consolidated)
 
+    @moto.mock_s3
     def test_path_or_store_write_to_bucket(self):
-        path, consolidated = get_path_or_obs_store('http://obs.eu-de.otc.t-systems.com/fake_bucket/fake_cube.zarr',
-                                                   s3_client_kwargs={'aws_access_key_id': 'some_fake_id',
-                                                                     'aws_secret_access_key': 'some_fake_key'},
-                                                   mode='w')
-        self.assertIsInstance(path, fsspec.mapping.FSMap)
+        s3_store, consolidated = get_path_or_s3_store(f'{MOTOSERVER_ENDPOINT_URL}/fake_bucket/fake_cube.zarr',
+                                                      s3_client_kwargs={'aws_access_key_id': 'some_fake_id',
+                                                                        'aws_secret_access_key': 'some_fake_key'},
+                                                      mode='w')
+        self.assertIsInstance(s3_store, fsspec.mapping.FSMap)
         self.assertEqual(False, consolidated)
 
     def test_path_or_store_read_from_local(self):
-        path, consolidated = get_path_or_obs_store('../examples/serve/demo/cube-1-250-250.zarr', mode='r')
+        path, consolidated = get_path_or_s3_store('../examples/serve/demo/cube-1-250-250.zarr', mode='r')
         self.assertEqual('../examples/serve/demo/cube-1-250-250.zarr', path)
         self.assertEqual(False, consolidated)
 

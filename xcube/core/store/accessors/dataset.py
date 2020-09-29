@@ -265,16 +265,16 @@ class DatasetZarrS3Accessor(ZarrOpenerParamsSchemaMixin,
     """
     Opener and Writer extension with name "dataset:zarr:s3".
 
-    :param s3_fs: Optional, pre-computed instance of ``s3fs.S3FileSystem``.
+    :param s3: Optional, pre-computed instance of ``s3fs.S3FileSystem``.
     """
 
-    def __init__(self, s3_fs: s3fs.S3FileSystem = None):
-        self._s3_fs = s3_fs
+    def __init__(self, s3: s3fs.S3FileSystem = None):
+        self._s3 = s3
 
     # noinspection PyUnusedLocal,PyMethodMayBeStatic
     def get_open_data_params_schema(self, data_id: str = None) -> JsonObjectSchema:
         schema = super().get_open_data_params_schema(data_id)
-        if self._s3_fs is None:
+        if self._s3 is None:
             # If there is no S3 FS yet, we need extra S3 parameters to create it
             schema.properties.update(self.get_s3_params_schema())
         else:
@@ -283,13 +283,13 @@ class DatasetZarrS3Accessor(ZarrOpenerParamsSchemaMixin,
         return schema
 
     def open_data(self, data_id: str, **open_params) -> xr.Dataset:
-        s3_fs = self._s3_fs
-        if s3_fs is None:
-            s3_fs, open_params = self.consume_s3fs_params(open_params)
+        s3 = self._s3
+        if s3 is None:
+            s3, open_params = self.consume_s3fs_params(open_params)
         bucket_name, open_params = self.consume_bucket_name_param(open_params)
         try:
             return xr.open_zarr(s3fs.S3Map(root=f'{bucket_name}/{data_id}' if bucket_name else data_id,
-                                           s3=s3_fs,
+                                           s3=s3,
                                            check=False),
                                 **open_params)
         except ValueError as e:
@@ -298,20 +298,20 @@ class DatasetZarrS3Accessor(ZarrOpenerParamsSchemaMixin,
     # noinspection PyMethodMayBeStatic
     def get_write_data_params_schema(self) -> JsonObjectSchema:
         schema = super().get_write_data_params_schema()
-        if self._s3_fs is None:
+        if self._s3 is None:
             # If there is no S3 FS yet, we need extra S3 parameters to create it
             schema.properties.update(self.get_s3_params_schema())
         return schema
 
     def write_data(self, data: xr.Dataset, data_id: str, replace=False, **write_params):
         assert_instance(data, xr.Dataset, 'data')
-        s3_fs = self._s3_fs
-        if s3_fs is None:
-            s3_fs, write_params = self.consume_s3fs_params(write_params)
+        s3 = self._s3
+        if s3 is None:
+            s3, write_params = self.consume_s3fs_params(write_params)
         bucket_name, write_params = self.consume_bucket_name_param(write_params)
         try:
             data.to_zarr(s3fs.S3Map(root=f'{bucket_name}/{data_id}' if bucket_name else data_id,
-                                    s3=s3_fs,
+                                    s3=s3,
                                     check=False),
                          mode='w' if replace else None,
                          **write_params)

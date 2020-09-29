@@ -425,10 +425,10 @@ class ZarrDatasetIO(DatasetIO):
         path_or_store = path
         consolidated = False
         if isinstance(path, str):
-            path_or_store, consolidated = get_path_or_obs_store(path_or_store,
-                                                                s3_kwargs=s3_kwargs,
-                                                                s3_client_kwargs=s3_client_kwargs,
-                                                                mode='r')
+            path_or_store, consolidated = get_path_or_s3_store(path_or_store,
+                                                               s3_kwargs=s3_kwargs,
+                                                               s3_client_kwargs=s3_client_kwargs,
+                                                               mode='r')
             if max_cache_size is not None and max_cache_size > 0:
                 path_or_store = zarr.LRUStoreCache(path_or_store, max_size=max_cache_size)
         return xr.open_zarr(path_or_store, consolidated=consolidated, **kwargs)
@@ -442,10 +442,10 @@ class ZarrDatasetIO(DatasetIO):
               s3_kwargs: Dict[str, Any] = None,
               s3_client_kwargs: Dict[str, Any] = None,
               **kwargs):
-        path_or_store, consolidated = get_path_or_obs_store(output_path,
-                                                            s3_kwargs=s3_kwargs,
-                                                            s3_client_kwargs=s3_client_kwargs,
-                                                            mode='w')
+        path_or_store, consolidated = get_path_or_s3_store(output_path,
+                                                           s3_kwargs=s3_kwargs,
+                                                           s3_client_kwargs=s3_client_kwargs,
+                                                           mode='w')
         encoding = self._get_write_encodings(dataset, compressor, chunksizes, packing)
         dataset.to_zarr(path_or_store, mode='w', encoding=encoding, **kwargs)
 
@@ -545,10 +545,10 @@ def rimraf(path):
             pass
 
 
-def get_path_or_obs_store(path_or_url: str,
-                          s3_kwargs: Mapping[str, Any] = None,
-                          s3_client_kwargs: Mapping[str, Any] = None,
-                          mode: str = 'r') -> Tuple[Union[str, Dict], bool]:
+def get_path_or_s3_store(path_or_url: str,
+                         s3_kwargs: Mapping[str, Any] = None,
+                         s3_client_kwargs: Mapping[str, Any] = None,
+                         mode: str = 'r') -> Tuple[Union[str, Dict], bool]:
     """
     If *path_or_url* is an object storage URL, return a object storage Zarr store (mapping object)
     using *s3_client_kwargs* and *mode* and a flag indicating whether the Zarr datasets is consolidated.
@@ -562,7 +562,7 @@ def get_path_or_obs_store(path_or_url: str,
     :param mode: "r" or "w"
     :return: A tuple (path_or_obs_store, consolidated).
     """
-    if is_obs_url(path_or_url) or s3_kwargs is not None or s3_client_kwargs is not None:
+    if is_s3_url(path_or_url) or s3_kwargs is not None or s3_client_kwargs is not None:
         root, s3_kwargs, s3_client_kwargs = parse_s3_url_and_kwargs(path_or_url,
                                                                     s3_kwargs=s3_kwargs,
                                                                     s3_client_kwargs=s3_client_kwargs)
@@ -632,7 +632,7 @@ def split_s3_url(path: str) -> Tuple[Optional[str], str]:
     return None, path
 
 
-def is_obs_url(path_or_url: str) -> bool:
+def is_s3_url(path_or_url: str) -> bool:
     """
     Test if *path_or_url* is a potential object storage URL.
 
