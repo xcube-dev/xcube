@@ -36,6 +36,11 @@ _NUMERIC_TYPES_ENUM = {'integer', 'number'}
 
 class JsonSchema(ABC):
 
+    # TODO: implement any_of more completely
+    # Currently any_of is only used by JsonDatetimeSchema to allow alternative
+    # 'date' and 'date-time' format specifiers. For full support it should also
+    # be handled in from_instance and to_instance.
+
     # noinspection PyShadowingBuiltins
     def __init__(self,
                  type: str,
@@ -46,6 +51,7 @@ class JsonSchema(ABC):
                  title: str = None,
                  description: str = None,
                  examples: str = None,
+                 any_of: Sequence['JsonSchema'] = None,
                  factory: Factory = None,
                  serializer: Serializer = None):
         if type not in _TYPES_ENUM:
@@ -63,6 +69,7 @@ class JsonSchema(ABC):
         self.title = title
         self.description = description
         self.examples = examples
+        self.any_of = any_of
         self.factory = factory
         self.serializer = serializer
 
@@ -83,20 +90,30 @@ class JsonSchema(ABC):
             d.update(description=self.description)
         if self.examples is not None:
             d.update(examples=self.examples)
+        if self.any_of:
+            d.update(anyOf=[schema.to_dict() for schema in self.any_of])
         return d
 
     def validate_instance(self, instance: Any):
         """Validate JSON value *instance*."""
-        jsonschema.validate(instance=instance, schema=self.to_dict())
+        # jsconschema needs extra packages installed to validate some formats;
+        # if they are missing, the format check will be skipped silently. For
+        # date-time format, strict_rfc3339 or rfc3339-validator is required.
+        jsonschema.validate(instance=instance, schema=self.to_dict(),
+                            format_checker=jsonschema.draft7_format_checker,
+                            # We have to explicitly sanction tuples as arrays.
+                            types=dict(array=(list, tuple)))
 
     def to_instance(self, value: Any) -> Any:
         """Convert Python object *value* into JSON value and return the validated result."""
+        # TODO: support anyOf
         json_instance = self._to_unvalidated_instance(value)
         self.validate_instance(json_instance)
         return json_instance
 
     def from_instance(self, instance: Any) -> Any:
         """Validate JSON value *instance* and convert it into a Python object."""
+        # TODO: support anyOf
         self.validate_instance(instance)
         return self._from_validated_instance(instance)
 
@@ -155,6 +172,64 @@ class JsonStringSchema(JsonSimpleTypeSchema):
             d.update(minLength=self.min_length)
         if self.max_length is not None:
             d.update(maxLength=self.max_length)
+        return d
+
+
+class JsonDatetimeSchema(JsonStringSchema):
+    # noinspection PyShadowingBuiltins
+    def __init__(self,
+                 min_datetime: str = None,
+                 max_datetime: str = None,
+                 format='date-time',
+                 **kwargs):
+
+        super().__init__(**kwargs)
+
+        if format not in ['date-time', 'date']:
+            raise ValueError('JsonDatetimeSchema must have format "date-time" '
+                             'or "date".')
+        if min_datetime is not None and \
+                not self._is_valid_datetime_or_date(min_datetime):
+            raise ValueError('min_datetime must be formatted as a "date" or '
+                             '"date-time"')
+        if max_datetime is not None and \
+                not self._is_valid_datetime_or_date(max_datetime):
+            raise ValueError('max_datetime must be formatted as a "date" or '
+                             '"date-time"')
+        self.min_datetime = min_datetime
+        self.max_datetime = max_datetime
+
+    @staticmethod
+    def _is_valid_datetime_or_date(instance: str):
+        try:
+            jsonschema.validate(
+                instance=instance,
+                schema=dict(anyOf=[dict(type='string', format='date-time'),
+                                   dict(type='string', format='date')]),
+                format_checker=jsonschema.draft7_format_checker)
+            return True
+        except jsonschema.ValidationError:
+            return False
+
+    @staticmethod
+    def new_datetime_range() -> 'JsonArraySchema':
+        """Return a schema for a two-element array of dates or date-times"""
+        return JsonArraySchema(items=[
+                    JsonDatetimeSchema(any_of=[
+                        JsonDatetimeSchema(format='date-time', nullable=True),
+                        JsonDatetimeSchema(format='date', nullable=True),
+                    ]),
+                    JsonDatetimeSchema(any_of=[
+                        JsonDatetimeSchema(format='date-time', nullable=True),
+                        JsonDatetimeSchema(format='date', nullable=True),
+                    ], nullable=True)])
+
+    def to_dict(self) -> Dict[str, Any]:
+        d = super().to_dict()
+        if self.min_datetime is not None:
+            d.update(minDatetime=self.min_datetime)
+        if self.max_datetime is not None:
+            d.update(maxDatetime=self.max_datetime)
         return d
 
 

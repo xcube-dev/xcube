@@ -1,6 +1,9 @@
-## Changes in 0.5.1
+## Changes in 0.5.2 (in development)
 
-* `normalize_dataset` now ensures that latitudes are decreasing.
+* Add documentation for the use of the open parameters passed to `xcube.core.store.DataOpener.open_data()`.
+* The JSON Schema classes in `xcube.util.jsonschema` have been extended:
+  - `date` and `date-time` formats are now validated along with the rest of the schema
+  - a `JsonDatetimeSchema` subclass of `JsonStringSchema` has been introduced, including a non-standard extension to specify date and time limits
 
 ## Changes in 0.5.0
 
