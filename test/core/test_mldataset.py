@@ -170,8 +170,8 @@ class ObjectStorageMultiLevelDatasetTest(S3Test):
     @classmethod
     def _write_test_cube(cls):
         s3_kwargs = dict(key='test_fake_id', secret='test_fake_secret')
-        client_kwargs = dict(endpoint_url=MOTOSERVER_ENDPOINT_URL)
-        s3 = s3fs.S3FileSystem(**s3_kwargs, client_kwargs=client_kwargs)
+        s3_client_kwargs = dict(endpoint_url=MOTOSERVER_ENDPOINT_URL)
+        s3 = s3fs.S3FileSystem(**s3_kwargs, client_kwargs=s3_client_kwargs)
         # Create bucket 'xcube-test', so it exists before we write a test pyramid
         s3.mkdir('xcube-test')
 
@@ -184,7 +184,7 @@ class ObjectStorageMultiLevelDatasetTest(S3Test):
         write_dataset(dataset,
                       'xcube-test/cube-1-250-250.zarr',
                       s3_kwargs=s3_kwargs,
-                      client_kwargs=client_kwargs)
+                      s3_client_kwargs=s3_client_kwargs)
 
     @moto.mock_s3
     def test_s3_levels(self):
@@ -208,8 +208,8 @@ class ObjectStorageMultiLevelDatasetTest(S3Test):
     @classmethod
     def _write_test_cube_pyramid(cls):
         s3_kwargs = dict(key='test_fake_id', secret='test_fake_secret')
-        client_kwargs = dict(endpoint_url=MOTOSERVER_ENDPOINT_URL)
-        s3 = s3fs.S3FileSystem(**s3_kwargs, client_kwargs=client_kwargs)
+        s3_client_kwargs = dict(endpoint_url=MOTOSERVER_ENDPOINT_URL)
+        s3 = s3fs.S3FileSystem(**s3_kwargs, client_kwargs=s3_client_kwargs)
         # Create bucket 'xcube-test', so it exists before we write a test pyramid
         s3.mkdir('xcube-test')
 
@@ -223,7 +223,7 @@ class ObjectStorageMultiLevelDatasetTest(S3Test):
         write_levels(ml_dataset,
                      'xcube-test/cube-1-250-250.levels',
                      s3_kwargs=s3_kwargs,
-                     s3_client_kwargs=client_kwargs)
+                     s3_client_kwargs=s3_client_kwargs)
 
 
 class GetDatasetTileGridTest(unittest.TestCase):
