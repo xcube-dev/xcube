@@ -14,7 +14,7 @@
   
 * Fixed both `xcube.core.dsio.open_cube()` and `open_dataset()` which failed with message 
   `"ValueError: group not found at path ''"` if called with a bucket URL but no credentials given
-  in case the bucket is not publicly readable. 
+  in case the bucket is not publicly readable. (#337)
   The fix for that issue now requires an additional `s3_kwargs` parameter when accessing datasets 
   in _public_ buckets:
 ```python

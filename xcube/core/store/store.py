@@ -234,20 +234,24 @@ class DataStore(DataOpener, ABC):
         Let P be the value of an optional, data constraining open parameter,
         then it should be interpreted as follows:
 
-          * _if P is None_ means, parameter not given, hence no constraint applies, hence full containment.
-          * _if not P_ means, we exclude what would otherwise be fully included.
+          * _if P is None_ means, parameter not given, hence no constraint applies,
+            hence no additional restrictions on requested data.
+          * _if not P_ means, we exclude data that would be included by default.
           * _else_, the given constraint applies.
 
         Given here are names, types, and descriptions of common, constraining open parameters for gridded datasets.
         Note, whether any of these is optional or mandatory depends on the individual data store. A store may also
-        define other open parameters or support only a subset of the following:
+        define other open parameters or support only a subset of the following. Note all parameters may be optional,
+        the Python-types given here refer to _given_, non-Null parameters:
 
           * ``variable_names: List[str]``: Included data variables.
              Available coordinate variables will be auto-included for any dimension of the data variables.
-          * ``bbox: Tuple[float, float, float, float]``: Spatial coverage.
+          * ``bbox: Tuple[float, float, float, float]``: Spatial coverage as xmin, ymin, xmax, ymax.
           * ``crs: str``: Spatial CRS, e.g. "EPSG:4326" or OGC CRS URI.
           * ``spatial_res: float``: Spatial resolution in coordinates of the spatial CRS.
-          * ``time_range: Tuple[Optional[str], Optional[str]]``: Time range interval using iso-date/times.
+          * ``time_range: Tuple[Optional[str], Optional[str]]``: Time range interval in UTC date/time units
+             using ISO format.
+             Start or end time may be missing which means everything until available start or end time.
           * ``time_period: str`: Pandas-compatible period/frequency string, e.g. "8D", "2W".
 
         E.g. applied to an optional `variable_names` parameter, this means
