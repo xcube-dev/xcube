@@ -14,8 +14,8 @@ from xcube.constants import FORMAT_NAME_NETCDF4
 from xcube.constants import FORMAT_NAME_SCRIPT
 from xcube.constants import FORMAT_NAME_ZARR
 from xcube.core.dsio import guess_dataset_format
-from xcube.core.dsio import is_obs_url
-from xcube.core.dsio import parse_obs_url_and_kwargs
+from xcube.core.dsio import is_s3_url
+from xcube.core.dsio import parse_s3_url_and_kwargs
 from xcube.core.dsio import write_cube
 from xcube.core.geom import get_dataset_bounds
 from xcube.core.verify import assert_cube
@@ -633,7 +633,7 @@ def open_ml_dataset(path: str,
     """
     if not path:
         raise ValueError('path must be given')
-    if is_obs_url(path):
+    if is_s3_url(path):
         return open_ml_dataset_from_object_storage(path, ds_id=ds_id, exception_type=exception_type, **kwargs)
     elif path.endswith('.py'):
         return open_ml_dataset_from_python_code(path, ds_id=ds_id, exception_type=exception_type, **kwargs)
@@ -646,25 +646,28 @@ def open_ml_dataset_from_object_storage(path: str,
                                         data_format: str = None,
                                         ds_id: str = None,
                                         exception_type: type = ValueError,
-                                        client_kwargs: Mapping[str, Any] = None,
+                                        s3_kwargs: Mapping[str, Any] = None,
+                                        s3_client_kwargs: Mapping[str, Any] = None,
                                         chunk_cache_capacity: int = None,
                                         **kwargs) -> MultiLevelDataset:
     data_format = data_format or guess_ml_dataset_format(path)
 
-    root, obs_fs_kwargs, obs_fs_client_kwargs = parse_obs_url_and_kwargs(path, client_kwargs)
-    obs_fs = s3fs.S3FileSystem(**obs_fs_kwargs, client_kwargs=obs_fs_client_kwargs)
+    root, s3_kwargs, s3_client_kwargs = parse_s3_url_and_kwargs(path,
+                                                                s3_kwargs=s3_kwargs,
+                                                                s3_client_kwargs=s3_client_kwargs)
+    s3 = s3fs.S3FileSystem(**s3_kwargs, client_kwargs=s3_client_kwargs)
 
     if data_format == FORMAT_NAME_ZARR:
-        store = s3fs.S3Map(root=root, s3=obs_fs, check=False)
+        store = s3fs.S3Map(root=root, s3=s3, check=False)
         if chunk_cache_capacity:
             store = zarr.LRUStoreCache(store, max_size=chunk_cache_capacity)
         with measure_time(tag=f"opened remote zarr dataset {path}"):
-            consolidated = obs_fs.exists(f'{root}/.zmetadata')
+            consolidated = s3.exists(f'{root}/.zmetadata')
             ds = assert_cube(xr.open_zarr(store, consolidated=consolidated, **kwargs))
         return BaseMultiLevelDataset(ds, ds_id=ds_id)
     elif data_format == FORMAT_NAME_LEVELS:
         with measure_time(tag=f"opened remote levels dataset {path}"):
-            return ObjectStorageMultiLevelDataset(obs_fs,
+            return ObjectStorageMultiLevelDataset(s3,
                                                   root,
                                                   zarr_kwargs=kwargs,
                                                   ds_id=ds_id,
@@ -738,7 +741,8 @@ def augment_ml_dataset(ml_dataset: MultiLevelDataset,
 
 def write_levels(ml_dataset: MultiLevelDataset,
                  levels_path: str,
-                 client_kwargs: Dict[str, Any] = None):
+                 s3_kwargs: Dict[str, Any] = None,
+                 s3_client_kwargs: Dict[str, Any] = None):
     tile_w, tile_h = ml_dataset.tile_grid.tile_size
     chunks = dict(time=1, lat=tile_h, lon=tile_w)
     for level in range(ml_dataset.num_levels):
@@ -748,5 +752,6 @@ def write_levels(ml_dataset: MultiLevelDataset,
         write_cube(level_dataset,
                    f'{levels_path}/{level}.zarr',
                    'zarr',
-                   client_kwargs=client_kwargs)
+                   s3_kwargs=s3_kwargs,
+                   s3_client_kwargs=s3_client_kwargs)
         print(f'written level {level + 1}')

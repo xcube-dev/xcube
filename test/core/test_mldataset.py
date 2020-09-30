@@ -8,6 +8,7 @@ import pandas as pd
 import s3fs
 import xarray as xr
 
+from test.s3test import S3Test, MOTOSERVER_ENDPOINT_URL
 from xcube.core.dsio import write_dataset
 from xcube.core.mldataset import BaseMultiLevelDataset
 from xcube.core.mldataset import CombinedMultiLevelDataset
@@ -152,27 +153,27 @@ def _get_test_dataset(var_names=('noise',)):
     return xr.Dataset(coords=coords, data_vars=data_vars)
 
 
-class ObjectStorageMultiLevelDatasetTest(unittest.TestCase):
+class ObjectStorageMultiLevelDatasetTest(S3Test):
+    @moto.mock_s3
     def test_s3_zarr(self):
-        with moto.mock_s3():
-            self._write_test_cube()
+        self._write_test_cube()
 
-            ml_ds_from_object_storage = open_ml_dataset_from_object_storage(
-                'https://s3.amazonaws.com/xcube-test/cube-1-250-250.zarr',
-                client_kwargs=dict(
-                    provider_access_key_id='test_fake_id',
-                    provider_secret_access_key='test_fake_secret'
-                )
-            )
-            self.assertIsNotNone(ml_ds_from_object_storage)
-            self.assertIn('conc_chl', ml_ds_from_object_storage.base_dataset.variables)
-            self.assertEqual((5, 1000, 2000), ml_ds_from_object_storage.base_dataset.conc_chl.shape)
+        ml_ds_from_object_storage = open_ml_dataset_from_object_storage(
+            'xcube-test/cube-1-250-250.zarr',
+            s3_kwargs=dict(key='test_fake_id', secret='test_fake_secret'),
+            s3_client_kwargs=dict(endpoint_url=MOTOSERVER_ENDPOINT_URL)
+        )
+        self.assertIsNotNone(ml_ds_from_object_storage)
+        self.assertIn('conc_chl', ml_ds_from_object_storage.base_dataset.variables)
+        self.assertEqual((5, 1000, 2000), ml_ds_from_object_storage.base_dataset.conc_chl.shape)
 
     @classmethod
     def _write_test_cube(cls):
+        s3_kwargs = dict(key='test_fake_id', secret='test_fake_secret')
+        s3_client_kwargs = dict(endpoint_url=MOTOSERVER_ENDPOINT_URL)
+        s3 = s3fs.S3FileSystem(**s3_kwargs, client_kwargs=s3_client_kwargs)
         # Create bucket 'xcube-test', so it exists before we write a test pyramid
-        s3_conn = boto3.client('s3')
-        s3_conn.create_bucket(Bucket='xcube-test', ACL='public-read')
+        s3.mkdir('xcube-test')
 
         # Create a test cube with just one variable "conc_chl"
         zarr_path = os.path.join(os.path.dirname(__file__), '../../examples/serve/demo/cube-1-250-250.zarr')
@@ -181,34 +182,36 @@ class ObjectStorageMultiLevelDatasetTest(unittest.TestCase):
 
         # Write test cube
         write_dataset(dataset,
-                      'https://s3.amazonaws.com/xcube-test/cube-1-250-250.zarr',
-                      client_kwargs=dict(provider_access_key_id='test_fake_id',
-                                         provider_secret_access_key='test_fake_secret'))
+                      'xcube-test/cube-1-250-250.zarr',
+                      s3_kwargs=s3_kwargs,
+                      s3_client_kwargs=s3_client_kwargs)
 
+    @moto.mock_s3
     def test_s3_levels(self):
-        with moto.mock_s3():
-            self._write_test_cube_pyramid()
+        self._write_test_cube_pyramid()
 
-            s3 = s3fs.S3FileSystem(key='test_fake_id',
-                                   secret='test_fake_secret',
-                                   client_kwargs=dict(endpoint_url="https://s3.amazonaws.com"))
-            ml_dataset = ObjectStorageMultiLevelDataset(s3,
-                                                        "xcube-test/cube-1-250-250.levels",
-                                                        chunk_cache_capacity=1000 * 1000 * 1000)
-            self.assertIsNotNone(ml_dataset)
-            self.assertEqual(3, ml_dataset.num_levels)
-            self.assertEqual((250, 250), ml_dataset.tile_grid.tile_size)
-            self.assertEqual(2, ml_dataset.tile_grid.num_level_zero_tiles_x)
-            self.assertEqual(1, ml_dataset.tile_grid.num_level_zero_tiles_y)
-            self.assertEqual(761904762, ml_dataset.get_chunk_cache_capacity(0))
-            self.assertEqual(190476190, ml_dataset.get_chunk_cache_capacity(1))
-            self.assertEqual(47619048, ml_dataset.get_chunk_cache_capacity(2))
+        s3 = s3fs.S3FileSystem(key='test_fake_id',
+                               secret='test_fake_secret',
+                               client_kwargs=dict(endpoint_url=MOTOSERVER_ENDPOINT_URL))
+        ml_dataset = ObjectStorageMultiLevelDataset(s3,
+                                                    "xcube-test/cube-1-250-250.levels",
+                                                    chunk_cache_capacity=1000 * 1000 * 1000)
+        self.assertIsNotNone(ml_dataset)
+        self.assertEqual(3, ml_dataset.num_levels)
+        self.assertEqual((250, 250), ml_dataset.tile_grid.tile_size)
+        self.assertEqual(2, ml_dataset.tile_grid.num_level_zero_tiles_x)
+        self.assertEqual(1, ml_dataset.tile_grid.num_level_zero_tiles_y)
+        self.assertEqual(761904762, ml_dataset.get_chunk_cache_capacity(0))
+        self.assertEqual(190476190, ml_dataset.get_chunk_cache_capacity(1))
+        self.assertEqual(47619048, ml_dataset.get_chunk_cache_capacity(2))
 
     @classmethod
     def _write_test_cube_pyramid(cls):
+        s3_kwargs = dict(key='test_fake_id', secret='test_fake_secret')
+        s3_client_kwargs = dict(endpoint_url=MOTOSERVER_ENDPOINT_URL)
+        s3 = s3fs.S3FileSystem(**s3_kwargs, client_kwargs=s3_client_kwargs)
         # Create bucket 'xcube-test', so it exists before we write a test pyramid
-        s3_conn = boto3.client('s3')
-        s3_conn.create_bucket(Bucket='xcube-test', ACL='public-read')
+        s3.mkdir('xcube-test')
 
         # Create a test cube pyramid with just one variable "conc_chl"
         zarr_path = os.path.join(os.path.dirname(__file__), '../../examples/serve/demo/cube-1-250-250.zarr')
@@ -218,9 +221,9 @@ class ObjectStorageMultiLevelDatasetTest(unittest.TestCase):
 
         # Write test cube pyramid
         write_levels(ml_dataset,
-                     'https://s3.amazonaws.com/xcube-test/cube-1-250-250.levels',
-                     client_kwargs=dict(provider_access_key_id='test_fake_id',
-                                        provider_secret_access_key='test_fake_secret'))
+                     'xcube-test/cube-1-250-250.levels',
+                     s3_kwargs=s3_kwargs,
+                     s3_client_kwargs=s3_client_kwargs)
 
 
 class GetDatasetTileGridTest(unittest.TestCase):

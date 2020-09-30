@@ -671,23 +671,28 @@ def _open_ml_dataset_from_object_storage(ctx: ServiceContext,
     ds_id = dataset_descriptor.get('Identifier')
     path = ctx.get_descriptor_path(dataset_descriptor, f"dataset descriptor {ds_id}", is_url=True)
     data_format = dataset_descriptor.get('Format', FORMAT_NAME_ZARR)
-    client_kwargs = dict()
-    endpoint_url = None
-    if 'Endpoint' in dataset_descriptor:
-        client_kwargs['endpoint_url'] = dataset_descriptor['Endpoint']
-    region_name = None
-    if 'Region' in dataset_descriptor:
-        client_kwargs['region_name'] = dataset_descriptor['Region']
+
+    s3_kwargs = dict()
+    if 'Anonymous' in dataset_descriptor:
+        s3_kwargs['anon'] = bool(dataset_descriptor['Anonymous'])
     if 'AccessKeyId' in dataset_descriptor:
-        client_kwargs['aws_access_key_id'] = dataset_descriptor['AccessKeyId']
+        s3_kwargs['key'] = dataset_descriptor['AccessKeyId']
     if 'SecretAccessKey' in dataset_descriptor:
-        client_kwargs['aws_secret_access_key'] = dataset_descriptor['SecretAccessKey']
+        s3_kwargs['secret'] = dataset_descriptor['SecretAccessKey']
+
+    s3_client_kwargs = dict()
+    if 'Endpoint' in dataset_descriptor:
+        s3_client_kwargs['endpoint_url'] = dataset_descriptor['Endpoint']
+    if 'Region' in dataset_descriptor:
+        s3_client_kwargs['region_name'] = dataset_descriptor['Region']
+
     chunk_cache_capacity = ctx.get_dataset_chunk_cache_capacity(dataset_descriptor)
     return open_ml_dataset_from_object_storage(path,
                                                data_format=data_format,
                                                ds_id=ds_id,
                                                exception_type=ServiceConfigError,
-                                               client_kwargs=client_kwargs,
+                                               s3_kwargs=s3_kwargs,
+                                               s3_client_kwargs=s3_client_kwargs,
                                                chunk_cache_capacity=chunk_cache_capacity)
 
 

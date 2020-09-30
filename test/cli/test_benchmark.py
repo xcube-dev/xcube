@@ -1,8 +1,10 @@
 import os
+import unittest
 
 from test.cli.helpers import CliDataTest
 
 
+@unittest.skip('Very slow tests, execute on demand only')
 class BenchmarkCliTest(CliDataTest):
 
     def test_help_option(self):
