@@ -10,14 +10,35 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 
+from test.s3test import MOTOSERVER_ENDPOINT_URL, S3Test
 from test.sampledata import new_test_dataset
 from xcube.core.dsio import CsvDatasetIO, DatasetIO, MemDatasetIO, Netcdf4DatasetIO, ZarrDatasetIO, find_dataset_io, \
-    query_dataset_io, get_path_or_obs_store, write_cube, split_obs_url, parse_obs_url_and_kwargs
+    query_dataset_io, get_path_or_s3_store, write_cube, split_s3_url, parse_s3_url_and_kwargs, open_cube
 from xcube.core.dsio import open_dataset, write_dataset
 from xcube.core.new import new_cube
 
 TEST_NC_FILE = "test.nc"
 TEST_NC_FILE_2 = "test-2.nc"
+
+
+@unittest.skip('Execute manually to test with cube on S3, requires S3 credentials')
+class OpenDatasetTest(unittest.TestCase):
+    CUBE = 'eurodatacube-test/xcube-gen-f8207f0e-636d-4267-8ac5-abbdc5d121fc.zarr'
+
+    def test_open_dataset(self):
+        ds = open_dataset(f's3://{self.CUBE}')
+        self.assertIn('B02', ds)
+        print(ds)
+
+    def test_plain(self):
+        import s3fs
+
+        def _open_cube(path):
+            return xr.open_zarr(s3fs.S3Map(path, s3=s3fs.S3FileSystem()))
+
+        ds = _open_cube(self.CUBE)
+        self.assertIn('B02', ds)
+        print(ds)
 
 
 class OpenWriteDatasetTest(unittest.TestCase):
@@ -211,7 +232,7 @@ class Netcdf4DatasetIOTest(unittest.TestCase):
             ds_io.read('test.nc')
 
 
-class ZarrDatasetIOTest(unittest.TestCase):
+class ZarrDatasetIOTest(S3Test):
 
     def test_props(self):
         ds_io = ZarrDatasetIO()
@@ -242,6 +263,30 @@ class ZarrDatasetIOTest(unittest.TestCase):
         ds_io = ZarrDatasetIO()
         with self.assertRaises(ValueError):
             ds_io.read('test.zarr')
+
+    @moto.mock_s3
+    def test_write_to_and_read_from_s3(self):
+        s3_conn = boto3.client('s3', endpoint_url=MOTOSERVER_ENDPOINT_URL)
+        s3_conn.create_bucket(Bucket='upload_bucket', ACL='public-read')
+
+        s3_kwargs = dict(key='test_fake_id', secret='test_fake_secret')
+        s3_client_kwargs = {'endpoint_url': MOTOSERVER_ENDPOINT_URL}
+
+        zarr_path = os.path.join(os.path.dirname(__file__), '../../examples/serve/demo/cube-1-250-250.zarr')
+        ds1 = xr.open_zarr(zarr_path)
+
+        write_cube(ds1,
+                   'upload_bucket/cube-1-250-250.zarr',
+                   format_name='zarr',
+                   s3_kwargs=s3_kwargs,
+                   s3_client_kwargs=s3_client_kwargs)
+
+        ds2 = open_cube('upload_bucket/cube-1-250-250.zarr',
+                        format_name='zarr',
+                        s3_kwargs=s3_kwargs,
+                        s3_client_kwargs=s3_client_kwargs)
+
+        self.assertEqual(set(ds1.data_vars), set(ds2.data_vars))
 
 
 class CsvDatasetIOTest(unittest.TestCase):
@@ -329,109 +374,81 @@ class ContextManagerTest(unittest.TestCase):
         self.assertEqual(False, a.closed)
 
 
-class GetPathOrObsStoreTest(unittest.TestCase):
+class GetPathOrObsStoreTest(S3Test):
+    @moto.mock_s3
     def test_path_or_store_read_from_bucket(self):
-        path, consolidated = get_path_or_obs_store(
-            'http://obs.eu-de.otc.t-systems.com/dcs4cop-obs-02/OLCI-SNS-RAW-CUBE-2.zarr',
-            mode='r')
-        self.assertIsInstance(path, fsspec.mapping.FSMap)
+        s3_store, consolidated = get_path_or_s3_store(
+            f'{MOTOSERVER_ENDPOINT_URL}/dcs4cop-obs-02/OLCI-SNS-RAW-CUBE-2.zarr', mode='r')
+        self.assertIsInstance(s3_store, fsspec.mapping.FSMap)
         self.assertEqual(False, consolidated)
 
+    @moto.mock_s3
     def test_path_or_store_write_to_bucket(self):
-        path, consolidated = get_path_or_obs_store('http://obs.eu-de.otc.t-systems.com/fake_bucket/fake_cube.zarr',
-                                                   mode='w',
-                                                   client_kwargs={'aws_access_key_id': 'some_fake_id',
-                                                                  'aws_secret_access_key': 'some_fake_key'})
-        self.assertIsInstance(path, fsspec.mapping.FSMap)
+        s3_store, consolidated = get_path_or_s3_store(f'{MOTOSERVER_ENDPOINT_URL}/fake_bucket/fake_cube.zarr',
+                                                      s3_client_kwargs={'aws_access_key_id': 'some_fake_id',
+                                                                        'aws_secret_access_key': 'some_fake_key'},
+                                                      mode='w')
+        self.assertIsInstance(s3_store, fsspec.mapping.FSMap)
         self.assertEqual(False, consolidated)
 
     def test_path_or_store_read_from_local(self):
-        path, consolidated = get_path_or_obs_store('../examples/serve/demo/cube-1-250-250.zarr',
-                                                   mode='r')
+        path, consolidated = get_path_or_s3_store('../examples/serve/demo/cube-1-250-250.zarr', mode='r')
         self.assertEqual('../examples/serve/demo/cube-1-250-250.zarr', path)
         self.assertEqual(False, consolidated)
 
 
 class ParseObsUrlAndKwargsTest(unittest.TestCase):
     def test_http(self):
-        root, kwargs, client_kwargs = parse_obs_url_and_kwargs(
-            'http://obs.eu-de.otc.t-systems.com/dcs4cop-obs-02/OLCI-SNS-RAW-CUBE-2.zarr', {})
+        root, s3_kwargs, s3_client_kwargs = parse_s3_url_and_kwargs(
+            'http://obs.eu-de.otc.t-systems.com/dcs4cop-obs-02/OLCI-SNS-RAW-CUBE-2.zarr')
         self.assertEqual('dcs4cop-obs-02/OLCI-SNS-RAW-CUBE-2.zarr', root)
-        self.assertEqual({'anon': True, 'key': None, 'secret': None}, kwargs)
-        self.assertEqual({'endpoint_url': 'http://obs.eu-de.otc.t-systems.com'}, client_kwargs)
+        self.assertEqual({'key': None, 'secret': None}, s3_kwargs)
+        self.assertEqual({'endpoint_url': 'http://obs.eu-de.otc.t-systems.com'}, s3_client_kwargs)
 
     def test_https_credentials(self):
-        root, kwargs, client_kwargs = parse_obs_url_and_kwargs(
-            'https://obs.eu-de.otc.t-systems.com/dcs4cop-obs-02/OLCI-SNS-RAW-CUBE-2.zarr',
-            {
+        root, s3_kwargs, s3_client_kwargs = parse_s3_url_and_kwargs(
+            'https://obs.eu-de.otc.t-systems.com/dcs4cop-obs-02/OLCI-SNS-RAW-CUBE-2.zarr', s3_client_kwargs={
                 'provider_access_key_id': 'bibo',
                 'provider_secret_access_key': '8625345',
             })
         self.assertEqual('dcs4cop-obs-02/OLCI-SNS-RAW-CUBE-2.zarr', root)
-        self.assertEqual({'anon': False, 'key': 'bibo', 'secret': '8625345'}, kwargs)
-        self.assertEqual({'endpoint_url': 'https://obs.eu-de.otc.t-systems.com'}, client_kwargs)
+        self.assertEqual({'key': 'bibo', 'secret': '8625345'}, s3_kwargs)
+        self.assertEqual({'endpoint_url': 'https://obs.eu-de.otc.t-systems.com'}, s3_client_kwargs)
 
-        root, kwargs, client_kwargs = parse_obs_url_and_kwargs(
-            'https://obs.eu-de.otc.t-systems.com/dcs4cop-obs-02/OLCI-SNS-RAW-CUBE-2.zarr',
-            {
+        root, s3_kwargs, s3_client_kwargs = parse_s3_url_and_kwargs(
+            'https://obs.eu-de.otc.t-systems.com/dcs4cop-obs-02/OLCI-SNS-RAW-CUBE-2.zarr', s3_client_kwargs={
                 'aws_access_key_id': 'bibo',
                 'aws_secret_access_key': '8625345',
             })
         self.assertEqual('dcs4cop-obs-02/OLCI-SNS-RAW-CUBE-2.zarr', root)
-        self.assertEqual({'anon': False, 'key': 'bibo', 'secret': '8625345'}, kwargs)
-        self.assertEqual({'endpoint_url': 'https://obs.eu-de.otc.t-systems.com'}, client_kwargs)
+        self.assertEqual({'key': 'bibo', 'secret': '8625345'}, s3_kwargs)
+        self.assertEqual({'endpoint_url': 'https://obs.eu-de.otc.t-systems.com'}, s3_client_kwargs)
 
     def test_s3(self):
-        root, kwargs, client_kwargs = parse_obs_url_and_kwargs(
-            's3://dcs4cop-obs-02/OLCI-SNS-RAW-CUBE-2.zarr', {})
+        root, s3_kwargs, s3_client_kwargs = parse_s3_url_and_kwargs('s3://dcs4cop-obs-02/OLCI-SNS-RAW-CUBE-2.zarr',
+                                                                    s3_kwargs={'anon': True},
+                                                                    s3_client_kwargs={})
         self.assertEqual('s3://dcs4cop-obs-02/OLCI-SNS-RAW-CUBE-2.zarr', root)
-        self.assertEqual({'anon': True, 'key': None, 'secret': None}, kwargs)
-        self.assertEqual({}, client_kwargs)
+        self.assertEqual({'anon': True, 'key': None, 'secret': None}, s3_kwargs)
+        self.assertEqual({}, s3_client_kwargs)
 
 
 class SplitBucketUrlTest(unittest.TestCase):
     def test_http(self):
-        endpoint_url, root = split_obs_url(
+        endpoint_url, root = split_s3_url(
             'http://obs.eu-de.otc.t-systems.com/dcs4cop-obs-02/OLCI-SNS-RAW-CUBE-2.zarr')
         self.assertEqual('http://obs.eu-de.otc.t-systems.com', endpoint_url)
         self.assertEqual('dcs4cop-obs-02/OLCI-SNS-RAW-CUBE-2.zarr', root)
-        endpoint_url, root = split_obs_url('https://xcube-serve:9098/dcs4cop-obs-02/OLCI-SNS-RAW-CUBE-2.zarr')
+        endpoint_url, root = split_s3_url('https://xcube-serve:9098/dcs4cop-obs-02/OLCI-SNS-RAW-CUBE-2.zarr')
         self.assertEqual('https://xcube-serve:9098', endpoint_url)
         self.assertEqual('dcs4cop-obs-02/OLCI-SNS-RAW-CUBE-2.zarr', root)
 
     def test_s3(self):
-        endpoint_url, root = split_obs_url('s3://dcs4cop-obs-02/OLCI-SNS-RAW-CUBE-2.zarr')
+        endpoint_url, root = split_s3_url('s3://dcs4cop-obs-02/OLCI-SNS-RAW-CUBE-2.zarr')
         self.assertEqual(None, endpoint_url)
         self.assertEqual('s3://dcs4cop-obs-02/OLCI-SNS-RAW-CUBE-2.zarr', root)
 
     def test_local(self):
-        endpoint_url, root = split_obs_url('/dcs4cop-obs-02/OLCI-SNS-RAW-CUBE-2.zarr')
+        endpoint_url, root = split_s3_url('/dcs4cop-obs-02/OLCI-SNS-RAW-CUBE-2.zarr')
         self.assertEqual(None, endpoint_url)
         self.assertEqual('/dcs4cop-obs-02/OLCI-SNS-RAW-CUBE-2.zarr', root)
-
-
-class TestUploadToS3Bucket(unittest.TestCase):
-
-    def test_upload_to_s3(self):
-        with moto.mock_s3():
-            s3_conn = boto3.client('s3')
-            s3_conn.create_bucket(Bucket='upload_bucket', ACL='public-read')
-            client_kwargs = {'provider_access_key_id': 'test_fake_id', 'provider_secret_access_key': 'test_fake_secret'}
-            zarr_path = os.path.join(os.path.dirname(__file__), '../../examples/serve/demo/cube-1-250-250.zarr')
-            ds1 = xr.open_zarr(zarr_path)
-            write_cube(ds1, 'https://s3.amazonaws.com/upload_bucket/cube-1-250-250.zarr', 'zarr',
-                       client_kwargs=client_kwargs)
-            self.assertIn('cube-1-250-250.zarr/.zattrs',
-                          s3_conn.list_objects(Bucket='upload_bucket')['Contents'][0]['Key'])
-
-    def test_upload_to_s3_via_bucket_path(self):
-        with moto.mock_s3():
-            s3_conn = boto3.client('s3')
-            s3_conn.create_bucket(Bucket='upload_bucket', ACL='public-read')
-            client_kwargs = {'provider_access_key_id': 'test_fake_id', 'provider_secret_access_key': 'test_fake_secret'}
-            zarr_path = os.path.join(os.path.dirname(__file__), '../../examples/serve/demo/cube-1-250-250.zarr')
-            ds1 = xr.open_zarr(zarr_path)
-            write_cube(ds1, 's3://upload_bucket/cube-1-250-250.zarr', 'zarr',
-                       client_kwargs=client_kwargs)
-            self.assertIn('cube-1-250-250.zarr/.zattrs',
-                          s3_conn.list_objects(Bucket='upload_bucket')['Contents'][0]['Key'])
