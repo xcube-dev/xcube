@@ -14,7 +14,7 @@
   
 * Fixed both `xcube.core.dsio.open_cube()` and `open_dataset()` which failed with message 
   `"ValueError: group not found at path ''"` if called with a bucket URL but no credentials given
-  in case the bucket is not publicly readable. 
+  in case the bucket is not publicly readable. (#337)
   The fix for that issue now requires an additional `s3_kwargs` parameter when accessing datasets 
   in _public_ buckets:
 ```python
@@ -23,7 +23,8 @@
     public_url = "http://obs.eu-de.otc.t-systems.com/dcs4cop-obs-02/OLCI-SNS-RAW-CUBE-2.zarr"
     public_cube = open_cube(public_url, s3_kwargs=dict(anon=True))
 ```  
-* Add documentation for the use of the open parameters passed to `xcube.core.store.DataOpener.open_data()`.
+* Extended `xcube.core.store.DataStore` docstring to include a basic convention for store open parameters. (#330)
+* Added documentation for the use of the open parameters passed to `xcube.core.store.DataOpener.open_data()`.
 * The JSON Schema classes in `xcube.util.jsonschema` have been extended:
   - `date` and `date-time` formats are now validated along with the rest of the schema
   - a `JsonDatetimeSchema` subclass of `JsonStringSchema` has been introduced, including a non-standard extension to specify date and time limits

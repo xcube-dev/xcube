@@ -228,6 +228,38 @@ class DataStore(DataOpener, ABC):
         identified opener. Some openers might not support this, therefore *opener_id* is optional, and if
         it is omitted, the returned schema will be less restrictive.
 
+        For maximum compatibility of stores, it is strongly encouraged to apply the following conventions on
+        parameter names, types, and their interpretation.
+
+        Let P be the value of an optional, data constraining open parameter,
+        then it should be interpreted as follows:
+
+          * _if P is None_ means, parameter not given, hence no constraint applies,
+            hence no additional restrictions on requested data.
+          * _if not P_ means, we exclude data that would be included by default.
+          * _else_, the given constraint applies.
+
+        Given here are names, types, and descriptions of common, constraining open parameters for gridded datasets.
+        Note, whether any of these is optional or mandatory depends on the individual data store. A store may also
+        define other open parameters or support only a subset of the following. Note all parameters may be optional,
+        the Python-types given here refer to _given_, non-Null parameters:
+
+          * ``variable_names: List[str]``: Included data variables.
+             Available coordinate variables will be auto-included for any dimension of the data variables.
+          * ``bbox: Tuple[float, float, float, float]``: Spatial coverage as xmin, ymin, xmax, ymax.
+          * ``crs: str``: Spatial CRS, e.g. "EPSG:4326" or OGC CRS URI.
+          * ``spatial_res: float``: Spatial resolution in coordinates of the spatial CRS.
+          * ``time_range: Tuple[Optional[str], Optional[str]]``: Time range interval in UTC date/time units
+             using ISO format.
+             Start or end time may be missing which means everything until available start or end time.
+          * ``time_period: str`: Pandas-compatible period/frequency string, e.g. "8D", "2W".
+
+        E.g. applied to an optional `variable_names` parameter, this means
+
+          * `variable_names is None` - include all data variables
+          * `variable_names == []` - do not include data variables (schema only)
+          * `variable_names == ["<var_1>", "<var_2>", ...]` only include data variables named "<var_1>", "<var_2>", ...
+
         :param data_id: An optional data identifier that is known to exist in this data store.
         :param opener_id: An optional data opener identifier.
         :return: The schema for the parameters in *open_params*.
