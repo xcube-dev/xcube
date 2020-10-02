@@ -37,6 +37,6 @@ class S3BucketHandlersTest(unittest.TestCase):
         self.assertAlmostEqual(22.4421215, float(np.nanmax(conc_chl_values)), delta=1e-6)
 
     # def test_open_cube_from_obs(self):
-    #     ds = open_cube('dcs4cop-obs-01/OLCI-SNS-RAW-CUBE-2.zarr', format_name='zarr',
-    #                    endpoint_url='https://obs.eu-de.otc.t-systems.com')
+    #     ds = open_cube('xcube-examples/OLCI-SNS-RAW-CUBE-2.zarr', format_name='zarr',
+    #                    endpoint_url='https://s3.eu-central-1.amazonaws.com/')
     #     self.assertIsNotNone(ds)

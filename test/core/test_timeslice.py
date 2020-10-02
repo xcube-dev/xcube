@@ -167,8 +167,8 @@ class ZarrStoreTest(unittest.TestCase):
     @unittest.skipUnless(False, 'is enabled')
     def test_remote(self):
         import s3fs
-        endpoint_url = "http://obs.eu-de.otc.t-systems.com"
+        endpoint_url = "https://s3.eu-central-1.amazonaws.com"
         s3 = s3fs.S3FileSystem(anon=True, client_kwargs=dict(endpoint_url=endpoint_url))
-        s3_store = s3fs.S3Map(root="cyanoalert/cyanoalert-olci-lswe-l2c-v1.zarr", s3=s3, check=False)
+        s3_store = s3fs.S3Map(root="xcube-examples/OLCI-SNS-RAW-CUBE-2.zarr", s3=s3, check=False)
         diagnostic_store = DiagnosticStore(s3_store, logging_observer(log_path='remote-cube.log'))
         xr.open_zarr(diagnostic_store)
