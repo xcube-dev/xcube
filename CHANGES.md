@@ -5,7 +5,7 @@
 ```yaml
     - Identifier: "OLCI-SNS-RAW-CUBE-2"
       FileSystem: "obs"
-      Endpoint: "https://s3.eu-central-1.amazonaws.com/"
+      Endpoint: "https://s3.eu-central-1.amazonaws.com"
       Path: "xcube-examples/OLCI-SNS-RAW-CUBE-2.zarr"
       Anyonymous: true
       ...

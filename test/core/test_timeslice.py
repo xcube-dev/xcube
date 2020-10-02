@@ -1,18 +1,14 @@
-import os
 import unittest
 
-import moto
 import numpy as np
-import s3fs
 import xarray as xr
 import zarr
 
 from xcube.core.new import new_cube
 from xcube.core.chunk import chunk_dataset
-from xcube.core.dsio import rimraf, write_dataset
+from xcube.core.dsio import rimraf
 from xcube.core.timeslice import find_time_slice, append_time_slice, insert_time_slice, replace_time_slice
 from test.core.diagnosticstore import DiagnosticStore, logging_observer
-from test.s3test import S3Test, MOTOSERVER_ENDPOINT_URL
 
 
 class TimeSliceTest(unittest.TestCase):
