@@ -378,7 +378,7 @@ class GetPathOrObsStoreTest(S3Test):
     @moto.mock_s3
     def test_path_or_store_read_from_bucket(self):
         s3_store, consolidated = get_path_or_s3_store(
-            f'{MOTOSERVER_ENDPOINT_URL}/dcs4cop-obs-02/OLCI-SNS-RAW-CUBE-2.zarr', mode='r')
+            f'{MOTOSERVER_ENDPOINT_URL}/xcube-examples/OLCI-SNS-RAW-CUBE-2.zarr', mode='r')
         self.assertIsInstance(s3_store, fsspec.mapping.FSMap)
         self.assertEqual(False, consolidated)
 
@@ -400,35 +400,35 @@ class GetPathOrObsStoreTest(S3Test):
 class ParseObsUrlAndKwargsTest(unittest.TestCase):
     def test_http(self):
         root, s3_kwargs, s3_client_kwargs = parse_s3_url_and_kwargs(
-            'http://obs.eu-de.otc.t-systems.com/dcs4cop-obs-02/OLCI-SNS-RAW-CUBE-2.zarr')
-        self.assertEqual('dcs4cop-obs-02/OLCI-SNS-RAW-CUBE-2.zarr', root)
+            'https://s3.eu-central-1.amazonaws.com/xcube-examples/OLCI-SNS-RAW-CUBE-2.zarr')
+        self.assertEqual('xcube-examples/OLCI-SNS-RAW-CUBE-2.zarr', root)
         self.assertEqual({'key': None, 'secret': None}, s3_kwargs)
-        self.assertEqual({'endpoint_url': 'http://obs.eu-de.otc.t-systems.com'}, s3_client_kwargs)
+        self.assertEqual({'endpoint_url': 'https://s3.eu-central-1.amazonaws.com'}, s3_client_kwargs)
 
     def test_https_credentials(self):
         root, s3_kwargs, s3_client_kwargs = parse_s3_url_and_kwargs(
-            'https://obs.eu-de.otc.t-systems.com/dcs4cop-obs-02/OLCI-SNS-RAW-CUBE-2.zarr', s3_client_kwargs={
+            'https://s3.eu-central-1.amazonaws.com/xcube-examples/OLCI-SNS-RAW-CUBE-2.zarr', s3_client_kwargs={
                 'provider_access_key_id': 'bibo',
                 'provider_secret_access_key': '8625345',
             })
-        self.assertEqual('dcs4cop-obs-02/OLCI-SNS-RAW-CUBE-2.zarr', root)
+        self.assertEqual('xcube-examples/OLCI-SNS-RAW-CUBE-2.zarr', root)
         self.assertEqual({'key': 'bibo', 'secret': '8625345'}, s3_kwargs)
-        self.assertEqual({'endpoint_url': 'https://obs.eu-de.otc.t-systems.com'}, s3_client_kwargs)
+        self.assertEqual({'endpoint_url': 'https://s3.eu-central-1.amazonaws.com'}, s3_client_kwargs)
 
         root, s3_kwargs, s3_client_kwargs = parse_s3_url_and_kwargs(
-            'https://obs.eu-de.otc.t-systems.com/dcs4cop-obs-02/OLCI-SNS-RAW-CUBE-2.zarr', s3_client_kwargs={
+            'https://s3.eu-central-1.amazonaws.com/xcube-examples/OLCI-SNS-RAW-CUBE-2.zarr', s3_client_kwargs={
                 'aws_access_key_id': 'bibo',
                 'aws_secret_access_key': '8625345',
             })
-        self.assertEqual('dcs4cop-obs-02/OLCI-SNS-RAW-CUBE-2.zarr', root)
+        self.assertEqual('xcube-examples/OLCI-SNS-RAW-CUBE-2.zarr', root)
         self.assertEqual({'key': 'bibo', 'secret': '8625345'}, s3_kwargs)
-        self.assertEqual({'endpoint_url': 'https://obs.eu-de.otc.t-systems.com'}, s3_client_kwargs)
+        self.assertEqual({'endpoint_url': 'https://s3.eu-central-1.amazonaws.com'}, s3_client_kwargs)
 
     def test_s3(self):
-        root, s3_kwargs, s3_client_kwargs = parse_s3_url_and_kwargs('s3://dcs4cop-obs-02/OLCI-SNS-RAW-CUBE-2.zarr',
+        root, s3_kwargs, s3_client_kwargs = parse_s3_url_and_kwargs('s3://xcube-examples/OLCI-SNS-RAW-CUBE-2.zarr',
                                                                     s3_kwargs={'anon': True},
                                                                     s3_client_kwargs={})
-        self.assertEqual('s3://dcs4cop-obs-02/OLCI-SNS-RAW-CUBE-2.zarr', root)
+        self.assertEqual('s3://xcube-examples/OLCI-SNS-RAW-CUBE-2.zarr', root)
         self.assertEqual({'anon': True, 'key': None, 'secret': None}, s3_kwargs)
         self.assertEqual({}, s3_client_kwargs)
 
@@ -436,19 +436,19 @@ class ParseObsUrlAndKwargsTest(unittest.TestCase):
 class SplitBucketUrlTest(unittest.TestCase):
     def test_http(self):
         endpoint_url, root = split_s3_url(
-            'http://obs.eu-de.otc.t-systems.com/dcs4cop-obs-02/OLCI-SNS-RAW-CUBE-2.zarr')
-        self.assertEqual('http://obs.eu-de.otc.t-systems.com', endpoint_url)
-        self.assertEqual('dcs4cop-obs-02/OLCI-SNS-RAW-CUBE-2.zarr', root)
-        endpoint_url, root = split_s3_url('https://xcube-serve:9098/dcs4cop-obs-02/OLCI-SNS-RAW-CUBE-2.zarr')
+            'https://s3.eu-central-1.amazonaws.com/xcube-examples/OLCI-SNS-RAW-CUBE-2.zarr')
+        self.assertEqual('https://s3.eu-central-1.amazonaws.com', endpoint_url)
+        self.assertEqual('xcube-examples/OLCI-SNS-RAW-CUBE-2.zarr', root)
+        endpoint_url, root = split_s3_url('https://xcube-serve:9098/xcube-examples/OLCI-SNS-RAW-CUBE-2.zarr')
         self.assertEqual('https://xcube-serve:9098', endpoint_url)
-        self.assertEqual('dcs4cop-obs-02/OLCI-SNS-RAW-CUBE-2.zarr', root)
+        self.assertEqual('xcube-examples/OLCI-SNS-RAW-CUBE-2.zarr', root)
 
     def test_s3(self):
-        endpoint_url, root = split_s3_url('s3://dcs4cop-obs-02/OLCI-SNS-RAW-CUBE-2.zarr')
+        endpoint_url, root = split_s3_url('s3://xcube-examples/OLCI-SNS-RAW-CUBE-2.zarr')
         self.assertEqual(None, endpoint_url)
-        self.assertEqual('s3://dcs4cop-obs-02/OLCI-SNS-RAW-CUBE-2.zarr', root)
+        self.assertEqual('s3://xcube-examples/OLCI-SNS-RAW-CUBE-2.zarr', root)
 
     def test_local(self):
-        endpoint_url, root = split_s3_url('/dcs4cop-obs-02/OLCI-SNS-RAW-CUBE-2.zarr')
+        endpoint_url, root = split_s3_url('/xcube-examples/OLCI-SNS-RAW-CUBE-2.zarr')
         self.assertEqual(None, endpoint_url)
-        self.assertEqual('/dcs4cop-obs-02/OLCI-SNS-RAW-CUBE-2.zarr', root)
+        self.assertEqual('/xcube-examples/OLCI-SNS-RAW-CUBE-2.zarr', root)

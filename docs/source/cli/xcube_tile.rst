@@ -76,7 +76,7 @@ Example
 An example that uses a configuration file only::
 
 ```bash
-    xcube tile http://obs.eu-de.otc.t-systems.com/obs-esdc-v2.0.0/esdc-8d-0.083deg-1x2160x4320-2.0.0.zarr \
+    xcube tile https://s3.eu-central-1.amazonaws.com/obs-esdc-v2.0.0/esdc-8d-0.083deg-1x2160x4320-2.0.0.zarr \
       --labels time='2009-01-01/2009-12-30' \
       --vars analysed_sst,air_temperature_2m \
       --tile-size 270 \

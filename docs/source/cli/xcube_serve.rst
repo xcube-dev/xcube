@@ -175,9 +175,9 @@ Remotely Stored xcube Datasets
         Title: Remote OLCI L2C cube for region SNS
         BoundingBox: [0.0, 50, 5.0, 52.5]
         FileSystem: obs
-        Endpoint: "http://obs.eu-de.otc.t-systems.com"
-        Path: "dcs4cop-obs-02/OLCI-SNS-RAW-CUBE-2.zarr"
-        Region: "eu-de"
+        Endpoint: "https://s3.eu-central-1.amazonaws.com"
+        Path: "xcube-examples/OLCI-SNS-RAW-CUBE-2.zarr"
+        Region: "eu-central-1"
         Style: default
         PlaceGroups:
           - PlaceGroupRef: inside-cube
@@ -208,7 +208,7 @@ notation of the *BoundingBox* is [lon_min,lat_min,lon_max,lat_max].
 cloud provider.
 
 *Path* [mandatory] leads to the specific location of the datacube. The particular datacube is stored in an
-OpenTelecomCloud S3 bucket called "dcs4cop-obs-02" and the datacube is called "OLCI-SNS-RAW-CUBE-2.zarr".
+OpenTelecomCloud S3 bucket called "xcube-examples" and the datacube is called "OLCI-SNS-RAW-CUBE-2.zarr".
 
 *Region* [mandatory] is the region where the specified cloud provider is operating.
 

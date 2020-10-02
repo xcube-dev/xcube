@@ -5,8 +5,8 @@
 ```yaml
     - Identifier: "OLCI-SNS-RAW-CUBE-2"
       FileSystem: "obs"
-      Endpoint: "http://obs.eu-de.otc.t-systems.com"
-      Path: "dcs4cop-obs-02/OLCI-SNS-RAW-CUBE-2.zarr"
+      Endpoint: "https://s3.eu-central-1.amazonaws.com/"
+      Path: "xcube-examples/OLCI-SNS-RAW-CUBE-2.zarr"
       Anyonymous: true
       ...
     - ...
@@ -20,7 +20,7 @@
 ```python
     from xcube.core.dsio import open_cube 
     
-    public_url = "http://obs.eu-de.otc.t-systems.com/dcs4cop-obs-02/OLCI-SNS-RAW-CUBE-2.zarr"
+    public_url = "https://s3.eu-central-1.amazonaws.com/xcube-examples/OLCI-SNS-RAW-CUBE-2.zarr"
     public_cube = open_cube(public_url, s3_kwargs=dict(anon=True))
 ```  
 * Extended `xcube.core.store.DataStore` docstring to include a basic convention for store open parameters. (#330)

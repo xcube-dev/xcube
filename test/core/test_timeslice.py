@@ -1,14 +1,18 @@
+import os
 import unittest
 
+import moto
 import numpy as np
+import s3fs
 import xarray as xr
 import zarr
 
 from xcube.core.new import new_cube
 from xcube.core.chunk import chunk_dataset
-from xcube.core.dsio import rimraf
+from xcube.core.dsio import rimraf, write_dataset
 from xcube.core.timeslice import find_time_slice, append_time_slice, insert_time_slice, replace_time_slice
 from test.core.diagnosticstore import DiagnosticStore, logging_observer
+from test.s3test import S3Test, MOTOSERVER_ENDPOINT_URL
 
 
 class TimeSliceTest(unittest.TestCase):
@@ -167,8 +171,8 @@ class ZarrStoreTest(unittest.TestCase):
     @unittest.skipUnless(False, 'is enabled')
     def test_remote(self):
         import s3fs
-        endpoint_url = "http://obs.eu-de.otc.t-systems.com"
+        endpoint_url = "https://s3.eu-central-1.amazonaws.com"
         s3 = s3fs.S3FileSystem(anon=True, client_kwargs=dict(endpoint_url=endpoint_url))
-        s3_store = s3fs.S3Map(root="cyanoalert/cyanoalert-olci-lswe-l2c-v1.zarr", s3=s3, check=False)
+        s3_store = s3fs.S3Map(root="xcube-examples/OLCI-SNS-RAW-CUBE-2.zarr", s3=s3, check=False)
         diagnostic_store = DiagnosticStore(s3_store, logging_observer(log_path='remote-cube.log'))
         xr.open_zarr(diagnostic_store)
