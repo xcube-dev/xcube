@@ -14,7 +14,7 @@ dependencies:
   - fiona >=1.8
   - gdal >=2.4
   - geopandas >=0.8
-  - jdcal>=1.4.1
+  - jdcal >=1.4.1
   - jsonschema >=3.2.0
   - matplotlib >=3.0
   - netcdf4 >=1.5.0
@@ -23,7 +23,7 @@ dependencies:
   - pandas >=1.1
   - pillow >=6.0
   - proj4 >=5.2
-  - pyjwt >= 1.7
+  - pyjwt >=1.7
   - pyproj >=2.1
   - pyyaml >=5.1
   - rasterio >=1.0
@@ -31,14 +31,14 @@ dependencies:
   - scipy >=1.2
   - setuptools >=41.0
   - shapely >=1.6
+  - sphinx >=2.0.1
   - strict-rfc3339 >=0.7 # for python-jsonschema date-time format validation
   - tornado >=6.0
   - xarray >=0.16
   - zarr >=2.4
-  - sphinx >=2.0.1
   # Testing
   - flake8 >=3.7
   - moto >=1.3
   - pytest >=4.4
   - pytest-cov >=2.6
-  - requests-mock >= 1.8.0
+  - requests-mock >=1.8.0
