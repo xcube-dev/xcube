@@ -19,23 +19,21 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-from typing import Tuple, Sequence, Mapping, Optional, Dict, Any
+from typing import Tuple, Sequence, Mapping, Optional, Dict, Any, Union
 
 import geopandas as gpd
 import xarray as xr
 
 from xcube.core.mldataset import MultiLevelDataset
-from xcube.util.assertions import assert_condition
+from xcube.core.store.typeid import get_type_id
+from xcube.core.store.typeid import TypeId
+from xcube.core.store.typeid import TYPE_ID_DATASET
+from xcube.core.store.typeid import TYPE_ID_MULTI_LEVEL_DATASET
+from xcube.core.store.typeid import TYPE_ID_GEO_DATA_FRAME
 from xcube.util.assertions import assert_given
 from xcube.util.assertions import assert_in
 from xcube.util.ipython import register_json_formatter
 from xcube.util.jsonschema import JsonObjectSchema
-
-TYPE_ID_DATASET = 'dataset'
-TYPE_ID_CUBE = 'dataset[cube]'
-TYPE_ID_MULTI_LEVEL_DATASET = 'dataset[multilevel]'
-TYPE_ID_GEO_DATA_FRAME = 'geodataframe'
-
 
 # TODO: IMPORTANT: replace, reuse, or align with
 #   xcube.core.schema.CubeSchema class
@@ -45,20 +43,10 @@ TYPE_ID_GEO_DATA_FRAME = 'geodataframe'
 # TODO: validate params
 
 
-def get_data_type_id(data: Any) -> Optional[str]:
-    if isinstance(data, xr.Dataset):
-        return TYPE_ID_DATASET
-    elif isinstance(data, MultiLevelDataset):
-        return TYPE_ID_MULTI_LEVEL_DATASET
-    elif isinstance(data, gpd.GeoDataFrame):
-        return TYPE_ID_GEO_DATA_FRAME
-    return None
-
-
 def new_data_descriptor(data_id: str, data: Any) -> 'DataDescriptor':
     if isinstance(data, xr.Dataset):
         # TODO: implement me: data -> DatasetDescriptor
-        return DatasetDescriptor(data_id=data_id)
+        return DatasetDescriptor(data_id=data_id, type_id=get_type_id(data))
     elif isinstance(data, MultiLevelDataset):
         # TODO: implement me: data -> MultiLevelDatasetDescriptor
         return MultiLevelDatasetDescriptor(data_id=data_id, num_levels=5)
@@ -76,7 +64,7 @@ class DataDescriptor:
 
     def __init__(self,
                  data_id: str,
-                 type_id: str,
+                 type_id: Union[str, TypeId],
                  crs: str = None,
                  bbox: Tuple[float, float, float, float] = None,
                  spatial_res: float = None,
@@ -86,7 +74,7 @@ class DataDescriptor:
         assert_given(data_id, 'data_id')
         assert_given(type_id, 'type_id')
         self.data_id = data_id
-        self.type_id = type_id
+        self.type_id = TypeId.normalize(type_id)
         self.crs = crs
         self.bbox = tuple(bbox) if bbox else None
         self.spatial_res = spatial_res
@@ -119,7 +107,7 @@ class DatasetDescriptor(DataDescriptor):
 
     def __init__(self,
                  data_id: str,
-                 type_id: str = TYPE_ID_DATASET,
+                 type_id: Union[str, TypeId] = TYPE_ID_DATASET,
                  crs: str = None,
                  bbox: Tuple[float, float, float, float] = None,
                  spatial_res: float = None,
@@ -143,8 +131,8 @@ class DatasetDescriptor(DataDescriptor):
         self.attrs = dict(attrs) if attrs else None
 
     def _assert_type_id(self, type_id: str):
-        assert_condition(type_id.split('[')[0] == TYPE_ID_DATASET,
-                         f'Type ID must be a {TYPE_ID_DATASET} type id')
+        if not TYPE_ID_DATASET.is_compatible(type_id):
+            raise ValueError('TypeId must be "dataset" type id')
 
     @classmethod
     def from_dict(cls, d: Mapping[str, Any]) -> 'DatasetDescriptor':
@@ -174,69 +162,6 @@ class DatasetDescriptor(DataDescriptor):
             d['data_vars'] = [vd.to_dict() for vd in self.data_vars]
         _copy_none_null_props(self, d, ['dims', 'attrs'])
         return d
-
-
-class CubeDescriptor(DatasetDescriptor):
-    """
-    A descriptor for a gridded, N-dimensional dataset represented by xarray.Dataset
-    where all data variables are guaranteed to have dimensions "lat", "lon", and "time".
-    Comprises a description of the data variables contained in the dataset.
-    """
-
-    def __init__(self,
-                 data_id: str,
-                 type_id: str = TYPE_ID_CUBE,
-                 crs: str = None,
-                 bbox: Tuple[float, float, float, float] = None,
-                 spatial_res: float = None,
-                 time_range: Tuple[Optional[str], Optional[str]] = None,
-                 time_period: str = None,
-                 dims: Mapping[str, int] = None,
-                 data_vars: Sequence['VariableDescriptor'] = None,
-                 attrs: Mapping[str, any] = None,
-                 open_params_schema: JsonObjectSchema = None):
-        super().__init__(data_id=data_id,
-                         type_id=type_id,
-                         crs=crs,
-                         bbox=bbox,
-                         spatial_res=spatial_res,
-                         time_range=time_range,
-                         time_period=time_period,
-                         dims=dims,
-                         data_vars=data_vars,
-                         attrs=attrs,
-                         open_params_schema=open_params_schema)
-
-    def _assert_type_id(self, type_id: str):
-        split_id = type_id.split('[')
-        if split_id[0] != 'dataset':
-            raise ValueError('Type ID must start with dataset')
-        if len(split_id) == 1:
-            raise ValueError("Type ID must contain 'cube'")
-        flag_list = split_id[1].replace(']', '').split(',')
-        if not 'cube' in flag_list:
-            raise ValueError("Type ID must contain 'cube'")
-
-    @classmethod
-    def from_dict(cls, d: Mapping[str, Any]) -> 'CubeDescriptor':
-        """Create new instance from a JSON-serializable dictionary"""
-        assert_in('data_id', d)
-        data_vars = []
-        data_vars_as_dicts = d.get('data_vars', [])
-        for data_var_as_dict in data_vars_as_dicts:
-            data_vars.append(VariableDescriptor.from_dict(data_var_as_dict))
-        return CubeDescriptor(data_id=d['data_id'],
-                              type_id=d.get('type_id', TYPE_ID_CUBE),
-                              crs=d.get('crs', None),
-                              bbox=d.get('bbox', None),
-                              spatial_res=d.get('spatial_res', None),
-                              time_range=d.get('time_range', None),
-                              time_period=d.get('time_period', None),
-                              dims=d.get('dims', None),
-                              data_vars=data_vars,
-                              attrs=d.get('attrs', None),
-                              open_params_schema=d.get('open_params_schema', None),
-        )
 
 
 class VariableDescriptor:
@@ -289,14 +214,8 @@ class MultiLevelDatasetDescriptor(DatasetDescriptor):
         self.num_levels = num_levels
 
     def _assert_type_id(self, type_id: str):
-        split_id = type_id.split('[')
-        if split_id[0] != 'dataset':
-            raise ValueError('Type ID must start with dataset')
-        if len(split_id) == 1:
-            raise ValueError("Type ID must contain 'multilevel'")
-        flag_list = split_id[1].replace(']', '').split(',')
-        if not 'multilevel' in flag_list:
-            raise ValueError("Type ID must contain 'multilevel'")
+        if not TYPE_ID_MULTI_LEVEL_DATASET.is_compatible(type_id):
+            raise ValueError('TypeId must be "mldataset" type id')
 
     @classmethod
     def from_dict(cls, d: Mapping[str, Any]) -> 'MultiLevelDatasetDescriptor':
@@ -326,6 +245,10 @@ class GeoDataFrameDescriptor(DataDescriptor):
                          open_params_schema=open_params_schema,
                          **kwargs)
         self.feature_schema = feature_schema
+
+    def _assert_type_id(self, type_id: str):
+        if not TYPE_ID_GEO_DATA_FRAME.is_compatible(type_id):
+            raise ValueError('TypeId must be "geodataframe" type id')
 
     @classmethod
     def from_dict(cls, d: Mapping[str, Any]) -> 'MultiLevelDatasetDescriptor':

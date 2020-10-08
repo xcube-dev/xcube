@@ -19,11 +19,16 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+from typing import Any
+from typing import Optional
 from typing import Set
 from typing import Union
 
+from xcube.core.mldataset import MultiLevelDataset
 from xcube.util.assertions import assert_given
 
+import geopandas as gpd
+import xarray as xr
 
 class TypeId:
     """
@@ -36,8 +41,8 @@ class TypeId:
 
     def __init__(self, name: str, flags: Set[str] = None):
         assert_given(name, 'name')
-        self._name: str = name
-        self._flags: set = flags if flags is not None else set()
+        self._name = name
+        self._flags = flags if flags is not None else set()
 
     @property
     def name(self) -> str:
@@ -48,6 +53,8 @@ class TypeId:
         return self._flags
 
     def __str__(self) -> str:
+        if len(self.flags) == 0:
+            return self.name
         flag_part = ','.join(sorted(self.flags))
         return f'{self.name}[{flag_part}]'
 
@@ -61,7 +68,7 @@ class TypeId:
             return False
         if self.name != other_type.name:
             return False
-        return len(self.flags - other_type.flags) == 0 and len(other_type.flags - self.flags) == 0
+        return len(self.flags.symmetric_difference(other_type.flags)) == 0
 
     def is_compatible(self, other: Union[str, "TypeId"]) -> bool:
         """
@@ -74,12 +81,12 @@ class TypeId:
         :return: Whether the other type id is compatible with this type id
         """
         other_type = self.normalize(other)
-        if self.name != other_type.name:
+        if self.name != '*' and self.name != other_type.name:
             return False
-        return len(self.flags - other_type.flags) == 0
+        return len(self.flags.difference(other_type.flags)) == 0
 
     def __hash__(self) -> int:
-        return hash(self.name) + 16 * hash(self.flags)
+        return hash(self.name) + 16 * hash(frozenset(self.flags))
 
     @classmethod
     def normalize(cls, type_id: Union[str, "TypeId"]) -> "TypeId":
@@ -98,3 +105,20 @@ class TypeId:
         name = type_id.split('[')[0]
         flags = type_id.split('[')[1].split(']')[0].split(',')
         return TypeId(name, flags=set(flags))
+
+TYPE_ID_ANY = TypeId('*')
+TYPE_ID_DATASET = TypeId('dataset')
+TYPE_ID_CUBE = TypeId('dataset', flags={'cube'})
+TYPE_ID_MULTI_LEVEL_DATASET = TypeId('mldataset')
+TYPE_ID_GEO_DATA_FRAME = TypeId('geodataframe')
+
+def get_type_id(data: Any) -> Optional[TypeId]:
+    if isinstance(data, xr.Dataset):
+        if 'time' in data.coords and 'lat' in data.coords and 'lon' in data.coords:
+            return TYPE_ID_CUBE
+        return TYPE_ID_DATASET
+    elif isinstance(data, MultiLevelDataset):
+        return TYPE_ID_MULTI_LEVEL_DATASET
+    elif isinstance(data, gpd.GeoDataFrame):
+        return TYPE_ID_GEO_DATA_FRAME
+    return None

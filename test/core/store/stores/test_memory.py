@@ -5,6 +5,7 @@ import xarray as xr
 from xcube.core.new import new_cube
 from xcube.core.store import DataStoreError
 from xcube.core.store import DatasetDescriptor
+from xcube.core.store import TYPE_ID_CUBE
 from xcube.core.store import TYPE_ID_DATASET
 from xcube.core.store import new_data_store
 from xcube.core.store.stores.memory import MemoryDataStore
@@ -16,7 +17,8 @@ class MemoryCubeStoreTest(unittest.TestCase):
     def setUp(self) -> None:
         self.old_global_data_dict = MemoryDataStore.replace_global_data_dict({
             'cube_1': new_cube(variables=dict(B01=0.4, B02=0.5)),
-            'cube_2': new_cube(variables=dict(B03=0.4, B04=0.5))
+            'cube_2': new_cube(variables=dict(B03=0.4, B04=0.5)),
+            'ds_1': xr.Dataset()
         })
         self._store = new_data_store('memory')
         self.assertIsInstance(self.store, MemoryDataStore)
@@ -33,7 +35,7 @@ class MemoryCubeStoreTest(unittest.TestCase):
         self.assertEqual(('*',), self.store.get_type_ids())
 
     def test_get_data_ids(self):
-        self.assertEqual({('cube_1', None), ('cube_2', None)}, set(self.store.get_data_ids()))
+        self.assertEqual({('cube_1', None), ('cube_2', None), ('ds_1', None)}, set(self.store.get_data_ids()))
 
     def test_has_data(self):
         self.assertEqual(True, self.store.has_data('cube_1'))
@@ -45,7 +47,7 @@ class MemoryCubeStoreTest(unittest.TestCase):
         self.assertEqual(
             DatasetDescriptor(
                 data_id='cube_1',
-                type_id=TYPE_ID_DATASET,
+                type_id=TYPE_ID_CUBE,
             ).to_dict(),
             dd.to_dict())
 
@@ -56,9 +58,20 @@ class MemoryCubeStoreTest(unittest.TestCase):
 
     def test_search_data(self):
         result = list(self.store.search_data(type_id=TYPE_ID_DATASET))
+        self.assertEqual(3, len(result))
+        self.assertIsInstance(result[0], DatasetDescriptor)
+        self.assertEqual(result[0].type_id, TYPE_ID_CUBE)
+        self.assertIsInstance(result[1], DatasetDescriptor)
+        self.assertEqual(result[1].type_id, TYPE_ID_CUBE)
+        self.assertIsInstance(result[2], DatasetDescriptor)
+        self.assertEqual(result[2].type_id, TYPE_ID_DATASET)
+
+        result = list(self.store.search_data(type_id=TYPE_ID_CUBE))
         self.assertEqual(2, len(result))
         self.assertIsInstance(result[0], DatasetDescriptor)
+        self.assertEqual(result[0].type_id, TYPE_ID_CUBE)
         self.assertIsInstance(result[1], DatasetDescriptor)
+        self.assertEqual(result[1].type_id, TYPE_ID_CUBE)
 
         with self.assertRaises(DataStoreError) as cm:
             list(self.store.search_data(type_id=TYPE_ID_DATASET, data_id='cube_1', name='bibo'))
@@ -66,6 +79,9 @@ class MemoryCubeStoreTest(unittest.TestCase):
 
     def test_get_data_opener_ids(self):
         self.assertEqual(('*:*:memory',), self.store.get_data_opener_ids())
+        self.assertEqual(('*:*:memory',), self.store.get_data_opener_ids('dataset'))
+        self.assertEqual(('*:*:memory',), self.store.get_data_opener_ids('dataset[cube]'))
+        self.assertEqual(('*:*:memory',), self.store.get_data_opener_ids('geodataframe'))
 
     def test_get_open_data_params_schema(self):
         schema = self.store.get_open_data_params_schema()
@@ -88,6 +104,9 @@ class MemoryCubeStoreTest(unittest.TestCase):
 
     def test_get_data_writer_ids(self):
         self.assertEqual(('*:*:memory',), self.store.get_data_writer_ids())
+        self.assertEqual(('*:*:memory',), self.store.get_data_writer_ids('dataset'))
+        self.assertEqual(('*:*:memory',), self.store.get_data_writer_ids('dataset[cube]'))
+        self.assertEqual(('*:*:memory',), self.store.get_data_writer_ids('geodataframe'))
 
     def test_get_write_data_params_schema(self):
         schema = self.store.get_write_data_params_schema()

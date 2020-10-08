@@ -2,8 +2,8 @@ import os.path
 import unittest
 
 from xcube.core.store import new_data_store
+from xcube.core.store import TYPE_ID_CUBE
 from xcube.core.store.stores.directory import DirectoryDataStore
-
 
 class DirectoryDataStoreTest(unittest.TestCase):
 
@@ -54,7 +54,7 @@ class DirectoryDataStoreTest(unittest.TestCase):
         self.assertEqual(set(), schema.required)
 
     def test_get_type_ids(self):
-        self.assertEqual({'geodataframe', 'mldataset', 'dataset'},
+        self.assertEqual({'dataset', 'mldataset', 'geodataframe'},
                          set(self.store.get_type_ids()))
 
     def test_get_data_opener_ids(self):
@@ -63,6 +63,22 @@ class DirectoryDataStoreTest(unittest.TestCase):
                           'geodataframe:geojson:posix',
                           'geodataframe:shapefile:posix'},
                          set(self.store.get_data_opener_ids()))
+        self.assertEqual({'dataset:netcdf:posix',
+                          'dataset:zarr:posix',
+                          'geodataframe:geojson:posix',
+                          'geodataframe:shapefile:posix'},
+                         set(self.store.get_data_opener_ids(type_id='*')))
+        self.assertEqual({'dataset:netcdf:posix',
+                          'dataset:zarr:posix'},
+                         set(self.store.get_data_opener_ids(type_id='dataset')))
+        with self.assertRaises(ValueError) as cm:
+            set(self.store.get_data_opener_ids(type_id='dataset[cube]'))
+        self.assertEqual("type_id must be one of ('dataset', 'mldataset', 'geodataframe')", f'{cm.exception}')
+        self.assertEqual(set(),
+                         set(self.store.get_data_opener_ids(type_id='mldataset')))
+        self.assertEqual({'geodataframe:geojson:posix',
+                          'geodataframe:shapefile:posix'},
+                         set(self.store.get_data_opener_ids(type_id='geodataframe')))
 
     def test_get_data_writer_ids(self):
         self.assertEqual({'dataset:netcdf:posix',
@@ -70,6 +86,22 @@ class DirectoryDataStoreTest(unittest.TestCase):
                           'geodataframe:geojson:posix',
                           'geodataframe:shapefile:posix'},
                          set(self.store.get_data_writer_ids()))
+        self.assertEqual({'dataset:netcdf:posix',
+                          'dataset:zarr:posix',
+                          'geodataframe:geojson:posix',
+                          'geodataframe:shapefile:posix'},
+                         set(self.store.get_data_writer_ids(type_id='*')))
+        self.assertEqual({'dataset:netcdf:posix',
+                          'dataset:zarr:posix'},
+                         set(self.store.get_data_writer_ids(type_id='dataset')))
+        with self.assertRaises(ValueError) as cm:
+            set(self.store.get_data_writer_ids(type_id='dataset[cube]'))
+        self.assertEqual("type_id must be one of ('dataset', 'mldataset', 'geodataframe')", f'{cm.exception}')
+        self.assertEqual(set(),
+                         set(self.store.get_data_writer_ids(type_id='mldataset')))
+        self.assertEqual({'geodataframe:geojson:posix',
+                          'geodataframe:shapefile:posix'},
+                         set(self.store.get_data_writer_ids(type_id='geodataframe')))
 
     def test_get_data_ids(self):
         self.assertEqual(
@@ -79,3 +111,58 @@ class DirectoryDataStoreTest(unittest.TestCase):
                 ('cube.nc', None),
             },
             set(self.store.get_data_ids()))
+        self.assertEqual(
+            {
+                ('cube-1-250-250.zarr', None),
+                ('cube-5-100-200.zarr', None),
+                ('cube.nc', None),
+            },
+            set(self.store.get_data_ids('*')))
+        self.assertEqual(
+            {
+                ('cube-1-250-250.zarr', None),
+                ('cube-5-100-200.zarr', None),
+                ('cube.nc', None),
+            },
+            set(self.store.get_data_ids('dataset')))
+        self.assertEqual(
+            set(),
+            set(self.store.get_data_ids('mldataset')))
+        with self.assertRaises(ValueError) as cm:
+            set(self.store.get_data_ids(type_id='dataset[cube]'))
+        self.assertEqual("type_id must be one of ('dataset', 'mldataset', 'geodataframe')", f'{cm.exception}')
+
+    def test_search_data(self):
+        result = list(self.store.search_data())
+        self.assertEqual(3, len(result))
+        self.assertEqual(result[0].data_id, 'cube-1-250-250.zarr')
+        self.assertEqual(result[0].type_id, TYPE_ID_CUBE)
+        self.assertEqual(result[1].data_id, 'cube-5-100-200.zarr')
+        self.assertEqual(result[1].type_id, TYPE_ID_CUBE)
+        self.assertEqual(result[2].data_id, 'cube.nc')
+        self.assertEqual(result[2].type_id, TYPE_ID_CUBE)
+
+        result = list(self.store.search_data('*'))
+        self.assertEqual(3, len(result))
+        self.assertEqual(result[0].data_id, 'cube-1-250-250.zarr')
+        self.assertEqual(result[0].type_id, TYPE_ID_CUBE)
+        self.assertEqual(result[1].data_id, 'cube-5-100-200.zarr')
+        self.assertEqual(result[1].type_id, TYPE_ID_CUBE)
+        self.assertEqual(result[2].data_id, 'cube.nc')
+        self.assertEqual(result[2].type_id, TYPE_ID_CUBE)
+
+        result = list(self.store.search_data(type_id='dataset'))
+        self.assertEqual(3, len(result))
+        self.assertEqual(result[0].data_id, 'cube-1-250-250.zarr')
+        self.assertEqual(result[0].type_id, TYPE_ID_CUBE)
+        self.assertEqual(result[1].data_id, 'cube-5-100-200.zarr')
+        self.assertEqual(result[1].type_id, TYPE_ID_CUBE)
+        self.assertEqual(result[2].data_id, 'cube.nc')
+        self.assertEqual(result[2].type_id, TYPE_ID_CUBE)
+
+        with self.assertRaises(ValueError) as cm:
+            list(self.store.search_data(type_id='dataset[cube]'))
+        self.assertEqual("type_id must be one of ('dataset', 'mldataset', 'geodataframe')", f'{cm.exception}')
+
+        result = list(self.store.search_data(type_id='geodataframe'))
+        self.assertEqual(0, len(result))

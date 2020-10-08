@@ -30,14 +30,16 @@ from xcube.core.mldataset import MultiLevelDataset
 from xcube.core.store import DataDescriptor
 from xcube.core.store import DataStoreError
 from xcube.core.store import MutableDataStore
+from xcube.core.store import TYPE_ID_ANY
 from xcube.core.store import TYPE_ID_DATASET
 from xcube.core.store import TYPE_ID_MULTI_LEVEL_DATASET
 from xcube.core.store import find_data_opener_extensions
 from xcube.core.store import find_data_writer_extensions
 from xcube.core.store import get_data_accessor_predicate
-from xcube.core.store import get_data_type_id
+from xcube.core.store import get_type_id
 from xcube.core.store import new_data_opener
 from xcube.core.store import new_data_writer
+from xcube.core.store import TypeId
 from xcube.core.store.accessors.dataset import S3Mixin
 from xcube.util.assertions import assert_condition
 from xcube.util.assertions import assert_given
@@ -100,9 +102,10 @@ class S3DataStore(MutableDataStore):
 
     @classmethod
     def get_type_ids(cls) -> Tuple[str, ...]:
-        return TYPE_ID_DATASET,
+        return str(TYPE_ID_DATASET),
 
     def get_data_ids(self, type_id: str = None) -> Iterator[Tuple[str, Optional[str]]]:
+        # todo do not ignore type_id
         prefix = self._bucket_name + '/'
         first_index = len(prefix)
         for item in self._s3_fs.listdir(self._bucket_name, detail=False):
@@ -127,6 +130,10 @@ class S3DataStore(MutableDataStore):
         raise NotImplementedError()
 
     def get_data_opener_ids(self, data_id: str = None, type_id: str = None) -> Tuple[str, ...]:
+        if type_id:
+            type_id = TypeId.normalize(type_id)
+        if type_id == TYPE_ID_ANY:
+            type_id = None
         self._assert_valid_type_id(type_id)
         if not type_id and data_id:
             type_id, _, _ = self._get_accessor_id_parts(data_id)
@@ -158,6 +165,10 @@ class S3DataStore(MutableDataStore):
         return self._new_s3_opener(opener_id).open_data(data_id=path, **open_params)
 
     def get_data_writer_ids(self, type_id: str = None) -> Tuple[str, ...]:
+        if type_id:
+            type_id = TypeId.normalize(type_id)
+        if type_id == TYPE_ID_ANY:
+            type_id = None
         self._assert_valid_type_id(type_id)
         extensions = find_data_writer_extensions(
             predicate=get_data_accessor_predicate(type_id=type_id, storage_id=_STORAGE_ID)
@@ -237,7 +248,7 @@ class S3DataStore(MutableDataStore):
         assert_given(data_id, 'data_id')
         return f'{self._bucket_name}/{data_id}'
 
-    def _assert_valid_type_id(self, type_id: Optional[str]):
+    def _assert_valid_type_id(self, type_id: Optional[TypeId]):
         if type_id:
             assert_in(type_id, self.get_type_ids(), 'type_id')
 
@@ -282,5 +293,5 @@ class S3DataStore(MutableDataStore):
 
     @classmethod
     def _get_filename_ext(cls, data: Any):
-        type_id = get_data_type_id(data)
+        type_id = get_type_id(data)
         return _TYPE_ID_TO_ACCESSOR_TO_DEFAULT_FILENAME_EXT[type_id]
