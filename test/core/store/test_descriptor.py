@@ -1,5 +1,7 @@
 import unittest
 
+import numpy as np
+
 from xcube.core.store.descriptor import DatasetDescriptor
 from xcube.core.store.descriptor import VariableDescriptor
 
@@ -93,7 +95,7 @@ class VariableDescriptorTest(unittest.TestCase):
         self.assertEqual({'d': 2, 'zjgu': ''}, vd3.attrs)
 
     def test_variable_descriptor_to_dict(self):
-        vd = VariableDescriptor('xf', 'rj', ['dfjhrt', 'sg'], {'ssd': 4, 'zjgrhgu': 'dgfrf'})
+        vd = VariableDescriptor('xf', 'rj', ['dfjhrt', 'sg'], {'ssd': 4, 'zjgrhgu': 'dgfrf', 'fill_value': np.NaN})
         expected = {
             'name': 'xf',
             'dtype': 'rj',
@@ -101,7 +103,8 @@ class VariableDescriptorTest(unittest.TestCase):
             'ndim': 2,
             'attrs': {
                 'ssd': 4,
-                'zjgrhgu': 'dgfrf'
+                'zjgrhgu': 'dgfrf',
+                'fill_value': 'null'
             }
         }
         self.assertEqual(expected, vd.to_dict())
@@ -114,7 +117,8 @@ class VariableDescriptorTest(unittest.TestCase):
             'ndim': 2,
             'attrs': {
                 'ssd': 4,
-                'zjgrhgu': 'dgfrf'
+                'zjgrhgu': 'dgfrf',
+                'fill_value': 'null'
             }
         }
         vd = VariableDescriptor.from_dict(vd_as_dict)
@@ -122,7 +126,7 @@ class VariableDescriptorTest(unittest.TestCase):
         self.assertEqual('rj', vd.dtype)
         self.assertEqual(('dfjhrt', 'sg'), vd.dims)
         self.assertEqual(2, vd.ndim)
-        self.assertEqual({'ssd': 4, 'zjgrhgu': 'dgfrf'}, vd.attrs)
+        self.assertEqual({'ssd': 4, 'zjgrhgu': 'dgfrf', 'fill_value': 'null'}, vd.attrs)
 
         vd_fail = None
         try:

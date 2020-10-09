@@ -21,6 +21,7 @@
 
 from typing import Tuple, Sequence, Mapping, Optional, Dict, Any
 
+import numpy as np
 import geopandas as gpd
 import xarray as xr
 
@@ -137,7 +138,7 @@ class DatasetDescriptor(DataDescriptor):
                          open_params_schema=open_params_schema)
         self.dims = dict(dims) if dims else None
         self.data_vars = list(data_vars) if data_vars else None
-        self.attrs = dict(attrs) if attrs else None
+        self.attrs = _convert_nans_to_null(dict(attrs)) if attrs else None
 
     @classmethod
     def from_dict(cls, d: Mapping[str, Any]) -> 'DatasetDescriptor':
@@ -187,7 +188,7 @@ class VariableDescriptor:
         self.dtype = dtype
         self.dims = tuple(dims)
         self.ndim = len(self.dims)
-        self.attrs = dict(attrs) if attrs is not None else None
+        self.attrs = _convert_nans_to_null(dict(attrs)) if attrs is not None else None
 
     @classmethod
     def from_dict(cls, d: Mapping[str, Any]):
@@ -259,6 +260,13 @@ class GeoDataFrameDescriptor(DataDescriptor):
         d = super().to_dict()
         _copy_none_null_props(self, d, ['feature_schema'])
         return d
+
+
+def _convert_nans_to_null(d: Dict[str, Any]) -> Dict[str, Any]:
+    for key, value in d.items():
+        if isinstance(value, float) and np.isnan(value):
+            d[key] = 'null'
+    return d
 
 
 def _copy_none_null_props(obj: Any, d: Dict[str, Any], names: Sequence[str]):
