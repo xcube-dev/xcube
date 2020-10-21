@@ -76,7 +76,13 @@ be represented fully by splitting datasets in this way. In these cases:
 
 While an opener is free to define any open parameters for any of its datasets,
 there are some common parameters which are likely to be used by the majority
-of datasets. Any dataset requiring the specification of these parameters MUST
+of datasets. Also, there are some parameters which are fundamental for the 
+description of a dataset and therefore MUST be included in a schema 
+(these parameters are denoted explicitly in the list below). In case that an 
+opener does not support varying values of one of these parameters, a constant 
+value must be set.
+
+Any dataset requiring the specification of these parameters MUST
 use the standard parameter names, syntax, and semantics defined below, in
 order to keep the interface consistent. For instance, if a dataset allows a
 time aggregation period to be specified, it MUST use the `time_period`
@@ -85,21 +91,26 @@ name and/or format. The parameters are described below with their Python type
 annotations.
 
  - `variable_names: List[str]`  
-   A list of the identifiers of the requested variables.
+   A list of the identifiers of the requested variables. 
+   This parameter MUST be included in an opener parameters schema.
  - `bbox: Union[str,Tuple[float, float, float, float]]`
    The bounding box for the requested data, in the order xmin, ymin, xmax, ymax. 
-   Must be given in the units of the specified spatial coordinate reference system `crs`. 
+   Must be given in the units of the specified spatial coordinate reference system `crs`.
+   This parameter MUST be included in an opener parameters schema. 
  - `crs: str`  
    The identifier for the spatial coordinate reference system of geographic data.
  - `spatial_res: float`  
    The requested spatial resolution (x and y) of the returned data.
-   Must be given in the units of the specified spatial coordinate reference system `crs`. 
+   Must be given in the units of the specified spatial coordinate reference system `crs`.
+   This parameter MUST be included in an opener parameters schema. 
  - `time_range: Tuple[Optional[str], Optional[str]]`  
    The requested time range for the data to be returned. See section
    ‘[Date, time, and duration specifications](#sec-datespec)’.
+   This parameter MUST be included in an opener parameters schema.
  - `time_period: str`  
    The requested temporal aggregation period for the data. See section
    ‘[Date, time, and duration specifications](#sec-datespec)’.
+   This parameter MUST be included in an opener parameters schema.
  - `force_cube: bool`  
    Whether to return results as a [specification-compliant
    xcube](https://github.com/dcs4cop/xcube/blob/master/docs/source/cubespec.md).
