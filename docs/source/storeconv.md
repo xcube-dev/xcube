@@ -80,7 +80,8 @@ of datasets. Also, there are some parameters which are fundamental for the
 description of a dataset and therefore MUST be included in a schema 
 (these parameters are denoted explicitly in the list below). In case that an 
 opener does not support varying values of one of these parameters, a constant 
-value must be set.
+value must defined. This may be achieved by the JSON schema's `const` property 
+or by an `enum` property whose value is a one-element array.
 
 Any dataset requiring the specification of these parameters MUST
 use the standard parameter names, syntax, and semantics defined below, in
