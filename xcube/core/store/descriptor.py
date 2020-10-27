@@ -138,7 +138,7 @@ class DatasetDescriptor(DataDescriptor):
                          open_params_schema=open_params_schema)
         self.dims = dict(dims) if dims else None
         self.data_vars = list(data_vars) if data_vars else None
-        self.attrs = _convert_nans_to_null(dict(attrs)) if attrs else None
+        self.attrs = _convert_nans_to_none(dict(attrs)) if attrs else None
 
     @classmethod
     def from_dict(cls, d: Mapping[str, Any]) -> 'DatasetDescriptor':
@@ -188,7 +188,7 @@ class VariableDescriptor:
         self.dtype = dtype
         self.dims = tuple(dims)
         self.ndim = len(self.dims)
-        self.attrs = _convert_nans_to_null(dict(attrs)) if attrs is not None else None
+        self.attrs = _convert_nans_to_none(dict(attrs)) if attrs is not None else None
 
     @classmethod
     def from_dict(cls, d: Mapping[str, Any]):
@@ -262,11 +262,8 @@ class GeoDataFrameDescriptor(DataDescriptor):
         return d
 
 
-def _convert_nans_to_null(d: Dict[str, Any]) -> Dict[str, Any]:
-    for key, value in d.items():
-        if isinstance(value, float) and np.isnan(value):
-            d[key] = 'null'
-    return d
+def _convert_nans_to_none(d: Dict[str, Any]) -> Dict[str, Any]:
+    return {k: (None if isinstance(v, float) and np.isnan(v) else v) for k, v in d.items()}
 
 
 def _copy_none_null_props(obj: Any, d: Dict[str, Any], names: Sequence[str]):

@@ -104,7 +104,7 @@ class VariableDescriptorTest(unittest.TestCase):
             'attrs': {
                 'ssd': 4,
                 'zjgrhgu': 'dgfrf',
-                'fill_value': 'null'
+                'fill_value': None
             }
         }
         self.assertEqual(expected, vd.to_dict())
@@ -118,7 +118,7 @@ class VariableDescriptorTest(unittest.TestCase):
             'attrs': {
                 'ssd': 4,
                 'zjgrhgu': 'dgfrf',
-                'fill_value': 'null'
+                'fill_value': None
             }
         }
         vd = VariableDescriptor.from_dict(vd_as_dict)
@@ -126,7 +126,7 @@ class VariableDescriptorTest(unittest.TestCase):
         self.assertEqual('rj', vd.dtype)
         self.assertEqual(('dfjhrt', 'sg'), vd.dims)
         self.assertEqual(2, vd.ndim)
-        self.assertEqual({'ssd': 4, 'zjgrhgu': 'dgfrf', 'fill_value': 'null'}, vd.attrs)
+        self.assertEqual({'ssd': 4, 'zjgrhgu': 'dgfrf', 'fill_value': None}, vd.attrs)
 
         vd_fail = None
         try:
