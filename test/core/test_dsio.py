@@ -15,6 +15,7 @@ from test.sampledata import new_test_dataset
 from xcube.core.dsio import CsvDatasetIO, DatasetIO, MemDatasetIO, Netcdf4DatasetIO, ZarrDatasetIO, find_dataset_io, \
     query_dataset_io, get_path_or_s3_store, write_cube, split_s3_url, parse_s3_url_and_kwargs, open_cube
 from xcube.core.dsio import open_dataset, write_dataset
+from xcube.core.geom import clip_dataset_by_geometry
 from xcube.core.new import new_cube
 
 TEST_NC_FILE = "test.nc"
@@ -274,20 +275,20 @@ class ZarrDatasetIOTest(S3Test):
 
         zarr_path = os.path.join(os.path.dirname(__file__), '../../examples/serve/demo/cube-1-250-250.zarr')
         ds1 = xr.open_zarr(zarr_path)
-        ds2 = ds1.drop(['c2rcc_flags', 'conc_tsm', 'kd489', 'quality_flags'])
+        ds1 = _make_spatial_and_variable_subset(ds1)
 
-        write_cube(ds2,
+        write_cube(ds1,
                    'upload_bucket/cube-1-250-250.zarr',
                    format_name='zarr',
                    s3_kwargs=s3_kwargs,
                    s3_client_kwargs=s3_client_kwargs)
 
-        ds3 = open_cube('upload_bucket/cube-1-250-250.zarr',
+        ds2 = open_cube('upload_bucket/cube-1-250-250.zarr',
                         format_name='zarr',
                         s3_kwargs=s3_kwargs,
                         s3_client_kwargs=s3_client_kwargs)
 
-        self.assertEqual(set(ds2.data_vars), set(ds3.data_vars))
+        self.assertEqual(set(ds1.data_vars), set(ds2.data_vars))
 
 
 class CsvDatasetIOTest(unittest.TestCase):
@@ -453,3 +454,25 @@ class SplitBucketUrlTest(unittest.TestCase):
         endpoint_url, root = split_s3_url('/xcube-examples/OLCI-SNS-RAW-CUBE-2.zarr')
         self.assertEqual(None, endpoint_url)
         self.assertEqual('/xcube-examples/OLCI-SNS-RAW-CUBE-2.zarr', root)
+
+
+def _make_spatial_and_variable_subset(dataset):
+    dataset = dataset.drop(['c2rcc_flags', 'conc_tsm', 'kd489', 'quality_flags'])
+    geometry = (1.0, 51.0, 2.0, 51.5)
+    dataset = clip_dataset_by_geometry(dataset, geometry=geometry)
+    dataset = dataset.dropna('time', how='all')
+    # somehow clip_dataset_by_geometry() does not unify chunks and encoding, so it needs to be done manually:
+    for var in dataset.variables:
+        if var not in dataset.coords:
+            if dataset[var].encoding['chunks'] != (1, 101, 100):
+                dataset[var].encoding['chunks'] = (1, 101, 100)
+            dataset[var] = dataset[var].chunk({'time': 1, 'lat': 101, 'lon': 100})
+    dataset['lat'] = dataset['lat'].chunk({'lat': 101})
+    dataset.lat.encoding['chunks'] = (101,)
+    dataset['lon'] = dataset['lon'].chunk({'lon': 100})
+    dataset.lon.encoding['chunks'] = (100,)
+    dataset['lat_bnds'] = dataset['lat_bnds'].chunk(101, 2)
+    dataset.lat_bnds.encoding['chunks'] = (101, 2)
+    dataset['lon_bnds'] = dataset['lon_bnds'].chunk(100, 2)
+    dataset.lon_bnds.encoding['chunks'] = (100, 2)
+    return dataset
