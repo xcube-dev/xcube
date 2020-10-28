@@ -274,19 +274,20 @@ class ZarrDatasetIOTest(S3Test):
 
         zarr_path = os.path.join(os.path.dirname(__file__), '../../examples/serve/demo/cube-1-250-250.zarr')
         ds1 = xr.open_zarr(zarr_path)
+        ds2 = ds1.drop(['c2rcc_flags', 'conc_tsm', 'kd489', 'quality_flags'])
 
-        write_cube(ds1,
+        write_cube(ds2,
                    'upload_bucket/cube-1-250-250.zarr',
                    format_name='zarr',
                    s3_kwargs=s3_kwargs,
                    s3_client_kwargs=s3_client_kwargs)
 
-        ds2 = open_cube('upload_bucket/cube-1-250-250.zarr',
+        ds3 = open_cube('upload_bucket/cube-1-250-250.zarr',
                         format_name='zarr',
                         s3_kwargs=s3_kwargs,
                         s3_client_kwargs=s3_client_kwargs)
 
-        self.assertEqual(set(ds1.data_vars), set(ds2.data_vars))
+        self.assertEqual(set(ds2.data_vars), set(ds3.data_vars))
 
 
 class CsvDatasetIOTest(unittest.TestCase):
