@@ -54,7 +54,7 @@ class DirectoryDataStoreTest(unittest.TestCase):
         self.assertEqual(set(), schema.required)
 
     def test_get_type_ids(self):
-        self.assertEqual({'dataset', 'mldataset', 'geodataframe'},
+        self.assertEqual({'dataset', 'dataset[multilevel]', 'geodataframe'},
                          set(self.store.get_type_ids()))
 
     def test_get_data_opener_ids(self):
@@ -73,9 +73,9 @@ class DirectoryDataStoreTest(unittest.TestCase):
                          set(self.store.get_data_opener_ids(type_id='dataset')))
         with self.assertRaises(ValueError) as cm:
             set(self.store.get_data_opener_ids(type_id='dataset[cube]'))
-        self.assertEqual("type_id must be one of ('dataset', 'mldataset', 'geodataframe')", f'{cm.exception}')
+        self.assertEqual("type_id must be one of ('dataset', 'dataset[multilevel]', 'geodataframe')", f'{cm.exception}')
         self.assertEqual(set(),
-                         set(self.store.get_data_opener_ids(type_id='mldataset')))
+                         set(self.store.get_data_opener_ids(type_id='dataset[multilevel]')))
         self.assertEqual({'geodataframe:geojson:posix',
                           'geodataframe:shapefile:posix'},
                          set(self.store.get_data_opener_ids(type_id='geodataframe')))
@@ -96,9 +96,9 @@ class DirectoryDataStoreTest(unittest.TestCase):
                          set(self.store.get_data_writer_ids(type_id='dataset')))
         with self.assertRaises(ValueError) as cm:
             set(self.store.get_data_writer_ids(type_id='dataset[cube]'))
-        self.assertEqual("type_id must be one of ('dataset', 'mldataset', 'geodataframe')", f'{cm.exception}')
+        self.assertEqual("type_id must be one of ('dataset', 'dataset[multilevel]', 'geodataframe')", f'{cm.exception}')
         self.assertEqual(set(),
-                         set(self.store.get_data_writer_ids(type_id='mldataset')))
+                         set(self.store.get_data_writer_ids(type_id='dataset[multilevel]')))
         self.assertEqual({'geodataframe:geojson:posix',
                           'geodataframe:shapefile:posix'},
                          set(self.store.get_data_writer_ids(type_id='geodataframe')))
@@ -127,10 +127,10 @@ class DirectoryDataStoreTest(unittest.TestCase):
             set(self.store.get_data_ids('dataset')))
         self.assertEqual(
             set(),
-            set(self.store.get_data_ids('mldataset')))
+            set(self.store.get_data_ids('dataset[multilevel]')))
         with self.assertRaises(ValueError) as cm:
             set(self.store.get_data_ids(type_id='dataset[cube]'))
-        self.assertEqual("type_id must be one of ('dataset', 'mldataset', 'geodataframe')", f'{cm.exception}')
+        self.assertEqual("type_id must be one of ('dataset', 'dataset[multilevel]', 'geodataframe')", f'{cm.exception}')
 
     def test_search_data(self):
         result = list(self.store.search_data())
@@ -162,7 +162,7 @@ class DirectoryDataStoreTest(unittest.TestCase):
 
         with self.assertRaises(ValueError) as cm:
             list(self.store.search_data(type_id='dataset[cube]'))
-        self.assertEqual("type_id must be one of ('dataset', 'mldataset', 'geodataframe')", f'{cm.exception}')
+        self.assertEqual("type_id must be one of ('dataset', 'dataset[multilevel]', 'geodataframe')", f'{cm.exception}')
 
         result = list(self.store.search_data(type_id='geodataframe'))
         self.assertEqual(0, len(result))

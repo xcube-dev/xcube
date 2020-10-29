@@ -112,7 +112,7 @@ class TypeId:
 TYPE_ID_ANY = TypeId('*')
 TYPE_ID_DATASET = TypeId('dataset')
 TYPE_ID_CUBE = TypeId('dataset', flags={'cube'})
-TYPE_ID_MULTI_LEVEL_DATASET = TypeId('mldataset')
+TYPE_ID_MULTI_LEVEL_DATASET = TypeId('dataset', flags={'multilevel'})
 TYPE_ID_GEO_DATA_FRAME = TypeId('geodataframe')
 
 def get_type_id(data: Any) -> Optional[TypeId]:
