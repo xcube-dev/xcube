@@ -386,7 +386,10 @@ class GetPathOrObsStoreTest(S3Test):
 
     @moto.mock_s3
     def test_path_or_store_write_to_bucket(self):
-        s3_store, consolidated = get_path_or_s3_store(f'{MOTOSERVER_ENDPOINT_URL}/fake_bucket/fake_cube.zarr',
+        s3_conn = boto3.client('s3', endpoint_url=MOTOSERVER_ENDPOINT_URL)
+        s3_conn.create_bucket(Bucket='xcube-examples', ACL='public-read')
+
+        s3_store, consolidated = get_path_or_s3_store(f'{MOTOSERVER_ENDPOINT_URL}/xcube-examples/fake_cube.zarr',
                                                       s3_client_kwargs={'aws_access_key_id': 'some_fake_id',
                                                                         'aws_secret_access_key': 'some_fake_key'},
                                                       mode='w')

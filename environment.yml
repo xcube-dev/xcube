@@ -34,7 +34,7 @@ dependencies:
   - sphinx >=2.0.1
   - strict-rfc3339 >=0.7 # for python-jsonschema date-time format validation
   - tornado >=6.0
-  - xarray >=0.16
+  - xarray >=0.16.1
   - zarr >=2.4
   # Testing
   - flake8 >=3.7
