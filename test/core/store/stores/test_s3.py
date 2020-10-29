@@ -1,6 +1,9 @@
+from collections import OrderedDict
+
 import s3fs
 import moto
 import xarray as xr
+from xarray.core.utils import OrderedSet
 
 from test.s3test import S3Test, MOTOSERVER_ENDPOINT_URL
 from xcube.core.new import new_cube
@@ -93,10 +96,10 @@ class S3DataStoreTest(S3Test):
         self.store.write_data(dataset_2, data_id='cube-2.zarr')
         self.store.write_data(dataset_3, data_id='cube-3.zarr')
 
-        self.assertEqual({('cube-1.zarr', None),
-                          ('cube-2.zarr', None),
-                          ('cube-3.zarr', None)},
-                         set(self.store.get_data_ids()))
+        self.assertSetEqual({('cube-1.zarr', None),
+                             ('cube-2.zarr', None),
+                             ('cube-3.zarr', None)},
+                            set(self.store.get_data_ids()))
 
         self.assertTrue(self.store.has_data('cube-1.zarr'))
         self.assertTrue(self.store.has_data('cube-2.zarr'))
