@@ -1,7 +1,6 @@
 import os
 import unittest
 
-import boto3
 import moto
 import numpy as np
 import pandas as pd
@@ -217,6 +216,7 @@ class ObjectStorageMultiLevelDatasetTest(S3Test):
         zarr_path = os.path.join(os.path.dirname(__file__), '../../examples/serve/demo/cube-1-250-250.zarr')
         base_dataset = xr.open_zarr(zarr_path)
         base_dataset = xr.Dataset(dict(conc_chl=base_dataset.conc_chl))
+        base_dataset = base_dataset.isel(time=slice(0, 1))
         ml_dataset = BaseMultiLevelDataset(base_dataset)
 
         # Write test cube pyramid
