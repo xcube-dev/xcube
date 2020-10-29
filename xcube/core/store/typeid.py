@@ -37,6 +37,9 @@ class TypeId:
 
     A type id consists of a name and an arbitrary number of flags.
     Flags can be used to further refine a type id if needed.
+
+    :param name: The name of the type of data
+    :param flags: An arbitrary set of flags that further refine the type
     """
 
     def __init__(self, name: str, flags: Set[str] = None):
