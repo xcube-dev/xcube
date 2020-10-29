@@ -165,7 +165,7 @@ class ObjectStorageMultiLevelDatasetTest(S3Test):
         )
         self.assertIsNotNone(ml_ds_from_object_storage)
         self.assertIn('conc_chl', ml_ds_from_object_storage.base_dataset.variables)
-        self.assertEqual((5, 1000, 2000), ml_ds_from_object_storage.base_dataset.conc_chl.shape)
+        self.assertEqual((2, 200, 400), ml_ds_from_object_storage.base_dataset.conc_chl.shape)
 
     @classmethod
     def _write_test_cube(cls):
@@ -178,7 +178,7 @@ class ObjectStorageMultiLevelDatasetTest(S3Test):
         # Create a test cube with just one variable "conc_chl"
         zarr_path = os.path.join(os.path.dirname(__file__), '../../examples/serve/demo/cube-1-250-250.zarr')
         dataset = xr.open_zarr(zarr_path)
-        dataset = xr.Dataset(dict(conc_chl=dataset.conc_chl))
+        dataset = cls._make_subset(dataset)
 
         # Write test cube
         write_dataset(dataset,
@@ -215,8 +215,17 @@ class ObjectStorageMultiLevelDatasetTest(S3Test):
         # Create a test cube pyramid with just one variable "conc_chl"
         zarr_path = os.path.join(os.path.dirname(__file__), '../../examples/serve/demo/cube-1-250-250.zarr')
         base_dataset = xr.open_zarr(zarr_path)
-        # base_dataset = xr.Dataset(dict(conc_chl=base_dataset.conc_chl))
-        # base_dataset = base_dataset.isel(time=slice(0, 1))
+        base_dataset = cls._make_subset(base_dataset)
+        ml_dataset = BaseMultiLevelDataset(base_dataset)
+
+        # Write test cube pyramid
+        write_levels(ml_dataset,
+                     'xcube-test/cube-1-250-250.levels',
+                     s3_kwargs=s3_kwargs,
+                     s3_client_kwargs=s3_client_kwargs)
+
+    @classmethod
+    def _make_subset(cls, base_dataset):
         base_dataset = base_dataset.drop_vars(['c2rcc_flags', 'conc_tsm', 'kd489', 'quality_flags'])
         geometry = (1.0, 51.0, 2.0, 51.5)
         base_dataset = clip_dataset_by_geometry(base_dataset, geometry=geometry)
@@ -235,13 +244,7 @@ class ObjectStorageMultiLevelDatasetTest(S3Test):
         base_dataset.lat_bnds.encoding['chunks'] = (100, 2)
         base_dataset['lon_bnds'] = base_dataset['lon_bnds'].chunk(100, 2)
         base_dataset.lon_bnds.encoding['chunks'] = (100, 2)
-        ml_dataset = BaseMultiLevelDataset(base_dataset)
-
-        # Write test cube pyramid
-        write_levels(ml_dataset,
-                     'xcube-test/cube-1-250-250.levels',
-                     s3_kwargs=s3_kwargs,
-                     s3_client_kwargs=s3_client_kwargs)
+        return base_dataset
 
 
 class GetDatasetTileGridTest(unittest.TestCase):
