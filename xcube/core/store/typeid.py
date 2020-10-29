@@ -113,6 +113,7 @@ TYPE_ID_ANY = TypeId('*')
 TYPE_ID_DATASET = TypeId('dataset')
 TYPE_ID_CUBE = TypeId('dataset', flags={'cube'})
 TYPE_ID_MULTI_LEVEL_DATASET = TypeId('dataset', flags={'multilevel'})
+TYPE_ID_MULTI_LEVEL_CUBE = TypeId('dataset', flags={'multilevel', 'cube'})
 TYPE_ID_GEO_DATA_FRAME = TypeId('geodataframe')
 
 def get_type_id(data: Any) -> Optional[TypeId]:
@@ -121,6 +122,10 @@ def get_type_id(data: Any) -> Optional[TypeId]:
             return TYPE_ID_CUBE
         return TYPE_ID_DATASET
     elif isinstance(data, MultiLevelDataset):
+        if 'time' in data.get_dataset(0).coords and \
+                'lat' in data.get_dataset(0).coords and \
+                'lon' in data.get_dataset(0).coords:
+            return TYPE_ID_MULTI_LEVEL_CUBE
         return TYPE_ID_MULTI_LEVEL_DATASET
     elif isinstance(data, gpd.GeoDataFrame):
         return TYPE_ID_GEO_DATA_FRAME
