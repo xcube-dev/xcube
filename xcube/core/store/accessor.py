@@ -20,12 +20,14 @@
 # SOFTWARE.
 
 from abc import abstractmethod, ABC
-from typing import Any, List, Optional
+from typing import Any, List, Optional, Union
 
 import xarray as xr
 
 from xcube.constants import EXTENSION_POINT_DATA_OPENERS
 from xcube.constants import EXTENSION_POINT_DATA_WRITERS
+from xcube.core.store.typeid import TypeId
+from xcube.core.store.typeid import TYPE_ID_ANY
 from xcube.util.assertions import assert_given
 from xcube.util.extension import Extension
 from xcube.util.extension import ExtensionPredicate
@@ -103,7 +105,7 @@ def find_data_writer_extensions(predicate: ExtensionPredicate = None,
     return extension_registry.find_extensions(EXTENSION_POINT_DATA_WRITERS, predicate=predicate)
 
 
-def get_data_accessor_predicate(type_id: str = None,
+def get_data_accessor_predicate(type_id: Union[str, TypeId] = None,
                                 format_id: str = None,
                                 storage_id: str = None) -> ExtensionPredicate:
     """
@@ -121,7 +123,9 @@ def get_data_accessor_predicate(type_id: str = None,
             extension_parts = extension.name.split(':', maxsplit=4)
             if len(extension_parts) < 3:
                 raise DataStoreError(f'Illegal data opener/writer extension name "{extension.name}"')
-            type_ok = type_id is None or extension_parts[0] == '*' or extension_parts[0] == type_id
+            extension_type = TypeId.parse(extension_parts[0])
+            type_ok = type_id is None or extension_type == TYPE_ID_ANY or \
+                      extension_type == TypeId.normalize(type_id)
             format_ok = format_id is None or extension_parts[1] == '*' or extension_parts[1] == format_id
             storage_ok = storage_id is None or extension_parts[2] == '*' or extension_parts[2] == storage_id
             return type_ok and format_ok and storage_ok

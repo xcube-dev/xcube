@@ -24,8 +24,10 @@ from typing import Iterator, Dict, Any, Optional, Tuple, Mapping
 
 from xcube.core.store import DataDescriptor
 from xcube.core.store import DataStoreError
+from xcube.core.store import get_type_id
 from xcube.core.store import MutableDataStore
-from xcube.core.store import get_data_type_id
+from xcube.core.store import TypeId
+from xcube.core.store import TYPE_ID_ANY
 from xcube.core.store import new_data_descriptor
 from xcube.util.assertions import assert_given
 from xcube.util.jsonschema import JsonObjectSchema
@@ -56,11 +58,12 @@ class MemoryDataStore(MutableDataStore):
 
     @classmethod
     def get_type_ids(cls) -> Tuple[str, ...]:
-        return '*',
+        return str(TYPE_ID_ANY),
 
     def get_data_ids(self, type_id: str = None) -> Iterator[Tuple[str, Optional[str]]]:
-        for data_id in self._data_dict.keys():
-            yield data_id, None
+        for data_id, data in self._data_dict.items():
+            if type_id is None or TypeId.normalize(type_id).is_compatible(get_type_id(data)):
+                yield data_id, None
 
     def has_data(self, data_id: str) -> bool:
         assert_given(data_id, 'data_id')
@@ -76,9 +79,8 @@ class MemoryDataStore(MutableDataStore):
 
     def search_data(self, type_id: str = None, **search_params) -> Iterator[DataDescriptor]:
         self._assert_empty_params(search_params, 'search_params')
-        for data_id, data in self._data_dict.items():
-            if type_id is None or type_id == get_data_type_id(data):
-                yield new_data_descriptor(data_id, data)
+        for data_id, _ in self.get_data_ids(type_id=type_id):
+            yield new_data_descriptor(data_id, self._data_dict[data_id])
 
     def get_data_opener_ids(self, data_id: str = None, type_id: str = None) -> Tuple[str, ...]:
         return _ACCESSOR_ID,
