@@ -132,7 +132,7 @@ class DatasetDescriptor(DataDescriptor):
 
     def _assert_type_id(self, type_id: str):
         if not TYPE_ID_DATASET.is_compatible(type_id):
-            raise ValueError('TypeId must be "dataset" type id')
+            raise ValueError(f'TypeId must be compatible with "dataset" type id, was {type_id}')
 
     @classmethod
     def from_dict(cls, d: Mapping[str, Any]) -> 'DatasetDescriptor':
@@ -215,7 +215,7 @@ class MultiLevelDatasetDescriptor(DatasetDescriptor):
 
     def _assert_type_id(self, type_id: str):
         if not TYPE_ID_MULTI_LEVEL_DATASET.is_compatible(type_id):
-            raise ValueError('TypeId must be "mldataset" type id')
+            raise ValueError(f'TypeId must be compatible with "mldataset" type id, was {type_id}')
 
     @classmethod
     def from_dict(cls, d: Mapping[str, Any]) -> 'MultiLevelDatasetDescriptor':
@@ -248,7 +248,7 @@ class GeoDataFrameDescriptor(DataDescriptor):
 
     def _assert_type_id(self, type_id: str):
         if not TYPE_ID_GEO_DATA_FRAME.is_compatible(type_id):
-            raise ValueError('TypeId must be "geodataframe" type id')
+            raise ValueError(f'TypeId must be compatible with "geodataframe" type id, was {type_id}')
 
     @classmethod
     def from_dict(cls, d: Mapping[str, Any]) -> 'MultiLevelDatasetDescriptor':
