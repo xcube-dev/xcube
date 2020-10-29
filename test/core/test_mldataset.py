@@ -9,6 +9,7 @@ import xarray as xr
 
 from test.s3test import S3Test, MOTOSERVER_ENDPOINT_URL
 from xcube.core.dsio import write_dataset
+from xcube.core.geom import clip_dataset_by_geometry
 from xcube.core.mldataset import BaseMultiLevelDataset
 from xcube.core.mldataset import CombinedMultiLevelDataset
 from xcube.core.mldataset import ComputedMultiLevelDataset
@@ -196,13 +197,12 @@ class ObjectStorageMultiLevelDatasetTest(S3Test):
                                                     "xcube-test/cube-1-250-250.levels",
                                                     chunk_cache_capacity=1000 * 1000 * 1000)
         self.assertIsNotNone(ml_dataset)
-        self.assertEqual(3, ml_dataset.num_levels)
-        self.assertEqual((250, 250), ml_dataset.tile_grid.tile_size)
+        self.assertEqual(2, ml_dataset.num_levels)
+        self.assertEqual((100, 100), ml_dataset.tile_grid.tile_size)
         self.assertEqual(2, ml_dataset.tile_grid.num_level_zero_tiles_x)
         self.assertEqual(1, ml_dataset.tile_grid.num_level_zero_tiles_y)
-        self.assertEqual(761904762, ml_dataset.get_chunk_cache_capacity(0))
-        self.assertEqual(190476190, ml_dataset.get_chunk_cache_capacity(1))
-        self.assertEqual(47619048, ml_dataset.get_chunk_cache_capacity(2))
+        self.assertEqual(800000000, ml_dataset.get_chunk_cache_capacity(0))
+        self.assertEqual(200000000, ml_dataset.get_chunk_cache_capacity(1))
 
     @classmethod
     def _write_test_cube_pyramid(cls):
@@ -215,8 +215,26 @@ class ObjectStorageMultiLevelDatasetTest(S3Test):
         # Create a test cube pyramid with just one variable "conc_chl"
         zarr_path = os.path.join(os.path.dirname(__file__), '../../examples/serve/demo/cube-1-250-250.zarr')
         base_dataset = xr.open_zarr(zarr_path)
-        base_dataset = xr.Dataset(dict(conc_chl=base_dataset.conc_chl))
-        base_dataset = base_dataset.isel(time=slice(0, 1))
+        # base_dataset = xr.Dataset(dict(conc_chl=base_dataset.conc_chl))
+        # base_dataset = base_dataset.isel(time=slice(0, 1))
+        base_dataset = base_dataset.drop_vars(['c2rcc_flags', 'conc_tsm', 'kd489', 'quality_flags'])
+        geometry = (1.0, 51.0, 2.0, 51.5)
+        base_dataset = clip_dataset_by_geometry(base_dataset, geometry=geometry)
+        base_dataset = base_dataset.dropna('time', how='all')
+        # somehow clip_dataset_by_geometry() does not unify chunks and encoding, so it needs to be done manually:
+        for var in base_dataset.variables:
+            if var not in base_dataset.coords:
+                if base_dataset[var].encoding['chunks'] != (1, 100, 100):
+                    base_dataset[var].encoding['chunks'] = (1, 100, 100)
+                base_dataset[var] = base_dataset[var].chunk({'time': 1, 'lat': 100, 'lon': 100})
+        base_dataset['lat'] = base_dataset['lat'].chunk({'lat': 100})
+        base_dataset.lat.encoding['chunks'] = (100,)
+        base_dataset['lon'] = base_dataset['lon'].chunk({'lon': 100})
+        base_dataset.lon.encoding['chunks'] = (100,)
+        base_dataset['lat_bnds'] = base_dataset['lat_bnds'].chunk(100, 2)
+        base_dataset.lat_bnds.encoding['chunks'] = (100, 2)
+        base_dataset['lon_bnds'] = base_dataset['lon_bnds'].chunk(100, 2)
+        base_dataset.lon_bnds.encoding['chunks'] = (100, 2)
         ml_dataset = BaseMultiLevelDataset(base_dataset)
 
         # Write test cube pyramid

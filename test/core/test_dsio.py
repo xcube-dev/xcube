@@ -460,7 +460,7 @@ class SplitBucketUrlTest(unittest.TestCase):
 
 
 def _make_spatial_and_variable_subset(dataset):
-    dataset = dataset.drop(['c2rcc_flags', 'conc_tsm', 'kd489', 'quality_flags'])
+    dataset = dataset.drop_vars(['c2rcc_flags', 'conc_tsm', 'kd489', 'quality_flags'])
     geometry = (1.0, 51.0, 2.0, 51.5)
     dataset = clip_dataset_by_geometry(dataset, geometry=geometry)
     dataset = dataset.dropna('time', how='all')
