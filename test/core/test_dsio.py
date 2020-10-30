@@ -9,7 +9,7 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 
-from test.s3test import MOTOSERVER_ENDPOINT_URL, S3Test
+from test.s3test import MOTO_SERVER_ENDPOINT_URL, S3Test
 from test.sampledata import new_test_dataset
 from xcube.core.dsio import CsvDatasetIO, DatasetIO, MemDatasetIO, Netcdf4DatasetIO, ZarrDatasetIO, find_dataset_io, \
     query_dataset_io, get_path_or_s3_store, write_cube, split_s3_url, parse_s3_url_and_kwargs, open_cube
@@ -264,14 +264,15 @@ class ZarrDatasetIOTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             ds_io.read('test.zarr')
 
+
 class ZarrDatasetS3IOTest(S3Test):
 
     def test_write_to_and_read_from_s3(self):
-        s3_conn = boto3.client('s3', endpoint_url=MOTOSERVER_ENDPOINT_URL)
+        s3_conn = boto3.client('s3', endpoint_url=MOTO_SERVER_ENDPOINT_URL)
         s3_conn.create_bucket(Bucket='upload_bucket', ACL='public-read')
 
         s3_kwargs = dict(key='test_fake_id', secret='test_fake_secret')
-        s3_client_kwargs = {'endpoint_url': MOTOSERVER_ENDPOINT_URL}
+        s3_client_kwargs = {'endpoint_url': MOTO_SERVER_ENDPOINT_URL}
 
         zarr_path = os.path.join(os.path.dirname(__file__), '../../examples/serve/demo/cube-1-250-250.zarr')
         ds1 = xr.open_zarr(zarr_path)
@@ -379,15 +380,15 @@ class ContextManagerTest(unittest.TestCase):
 class GetPathOrObsStoreTest(S3Test):
     def test_path_or_store_read_from_bucket(self):
         s3_store, consolidated = get_path_or_s3_store(
-            f'{MOTOSERVER_ENDPOINT_URL}/xcube-examples/OLCI-SNS-RAW-CUBE-2.zarr', mode='r')
+            f'{MOTO_SERVER_ENDPOINT_URL}/xcube-examples/OLCI-SNS-RAW-CUBE-2.zarr', mode='r')
         self.assertIsInstance(s3_store, fsspec.mapping.FSMap)
         self.assertEqual(False, consolidated)
 
     def test_path_or_store_write_to_bucket(self):
-        s3_conn = boto3.client('s3', endpoint_url=MOTOSERVER_ENDPOINT_URL)
+        s3_conn = boto3.client('s3', endpoint_url=MOTO_SERVER_ENDPOINT_URL)
         s3_conn.create_bucket(Bucket='xcube-examples', ACL='public-read')
 
-        s3_store, consolidated = get_path_or_s3_store(f'{MOTOSERVER_ENDPOINT_URL}/xcube-examples/fake_cube.zarr',
+        s3_store, consolidated = get_path_or_s3_store(f'{MOTO_SERVER_ENDPOINT_URL}/xcube-examples/fake_cube.zarr',
                                                       s3_client_kwargs={'aws_access_key_id': 'some_fake_id',
                                                                         'aws_secret_access_key': 'some_fake_key'},
                                                       mode='w')
