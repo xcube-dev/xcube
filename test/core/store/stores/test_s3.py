@@ -1,9 +1,7 @@
-from collections import OrderedDict
 
 import s3fs
 import moto
 import xarray as xr
-from xarray.core.utils import OrderedSet
 
 from test.s3test import S3Test, MOTOSERVER_ENDPOINT_URL
 from xcube.core.new import new_cube
