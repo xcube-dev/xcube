@@ -96,10 +96,11 @@ class S3DataStoreTest(S3Test):
         self.store.write_data(dataset_2, data_id='cube-2.zarr')
         self.store.write_data(dataset_3, data_id='cube-3.zarr')
 
-        self.assertEqual(OrderedSet({('cube-1.zarr', None),
-                                     ('cube-2.zarr', None),
-                                     ('cube-3.zarr', None)}),
-                         OrderedSet(self.store.get_data_ids()))
+        self.assertEqual(3, len(set(self.store.get_data_ids())))
+        self.assertIn(('cube-1.zarr', None), set(self.store.get_data_ids()))
+        self.assertIn(('cube-2.zarr', None), set(self.store.get_data_ids()))
+        self.assertIn(('cube-3.zarr', None), set(self.store.get_data_ids()))
+
 
         self.assertTrue(self.store.has_data('cube-1.zarr'))
         self.assertTrue(self.store.has_data('cube-2.zarr'))
