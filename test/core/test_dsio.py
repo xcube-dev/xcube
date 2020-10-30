@@ -5,7 +5,6 @@ from typing import Set
 
 import boto3
 import fsspec
-import moto
 import numpy as np
 import pandas as pd
 import xarray as xr
@@ -233,7 +232,7 @@ class Netcdf4DatasetIOTest(unittest.TestCase):
             ds_io.read('test.nc')
 
 
-class ZarrDatasetIOTest(S3Test):
+class ZarrDatasetIOTest(unittest.TestCase):
 
     def test_props(self):
         ds_io = ZarrDatasetIO()
@@ -265,7 +264,8 @@ class ZarrDatasetIOTest(S3Test):
         with self.assertRaises(ValueError):
             ds_io.read('test.zarr')
 
-    @moto.mock_s3
+class ZarrDatasetS3IOTest(S3Test):
+
     def test_write_to_and_read_from_s3(self):
         s3_conn = boto3.client('s3', endpoint_url=MOTOSERVER_ENDPOINT_URL)
         s3_conn.create_bucket(Bucket='upload_bucket', ACL='public-read')
@@ -377,14 +377,12 @@ class ContextManagerTest(unittest.TestCase):
 
 
 class GetPathOrObsStoreTest(S3Test):
-    @moto.mock_s3
     def test_path_or_store_read_from_bucket(self):
         s3_store, consolidated = get_path_or_s3_store(
             f'{MOTOSERVER_ENDPOINT_URL}/xcube-examples/OLCI-SNS-RAW-CUBE-2.zarr', mode='r')
         self.assertIsInstance(s3_store, fsspec.mapping.FSMap)
         self.assertEqual(False, consolidated)
 
-    @moto.mock_s3
     def test_path_or_store_write_to_bucket(self):
         s3_conn = boto3.client('s3', endpoint_url=MOTOSERVER_ENDPOINT_URL)
         s3_conn.create_bucket(Bucket='xcube-examples', ACL='public-read')

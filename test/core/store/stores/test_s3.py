@@ -1,6 +1,5 @@
 
 import s3fs
-import moto
 import xarray as xr
 
 from test.s3test import S3Test, MOTOSERVER_ENDPOINT_URL
@@ -15,6 +14,7 @@ BUCKET_NAME = 'xcube-test'
 class S3DataStoreTest(S3Test):
 
     def setUp(self) -> None:
+        super().setUp()
         self._store = new_data_store('s3',
                                      aws_access_key_id='test_fake_id',
                                      aws_secret_access_key='test_fake_secret',
@@ -81,7 +81,6 @@ class S3DataStoreTest(S3Test):
     def test_get_data_writer_ids(self):
         self.assertEqual(('dataset:zarr:s3',), self.store.get_data_writer_ids())
 
-    @moto.mock_s3
     def test_write_and_read_and_delete(self):
         self.store.s3.mkdir(BUCKET_NAME)
 

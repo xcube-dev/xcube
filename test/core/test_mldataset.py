@@ -1,7 +1,6 @@
 import os
 import unittest
 
-import moto
 import numpy as np
 import pandas as pd
 import s3fs
@@ -154,7 +153,6 @@ def _get_test_dataset(var_names=('noise',)):
 
 
 class ObjectStorageMultiLevelDatasetTest(S3Test):
-    @moto.mock_s3
     def test_s3_zarr(self):
         self._write_test_cube()
 
@@ -186,7 +184,6 @@ class ObjectStorageMultiLevelDatasetTest(S3Test):
                       s3_kwargs=s3_kwargs,
                       s3_client_kwargs=s3_client_kwargs)
 
-    @moto.mock_s3
     def test_s3_levels(self):
         self._write_test_cube_pyramid()
 
