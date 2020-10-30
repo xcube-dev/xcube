@@ -41,6 +41,7 @@ class S3Test(unittest.TestCase):
         if not running:
             raise Exception(f'Failed to start moto server after {round(1000 * (time.perf_counter() - t0))} ms')
 
+    def setUp(self) -> None:
         # see https://github.com/spulec/moto/issues/2288
         urllib.request.urlopen(urllib.request.Request(MOTOSERVER_ENDPOINT_URL + '/moto-api/reset', method='POST'))
 
