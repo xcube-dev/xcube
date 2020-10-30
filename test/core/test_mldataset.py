@@ -159,7 +159,7 @@ class ObjectStorageMultiLevelDatasetTest(S3Test):
         self._write_test_cube()
 
         ml_ds_from_object_storage = open_ml_dataset_from_object_storage(
-            'xcube-test/cube-1-250-250.zarr',
+            'xcube-test-cube/cube-1-250-250.zarr',
             s3_kwargs=dict(key='test_fake_id', secret='test_fake_secret'),
             s3_client_kwargs=dict(endpoint_url=MOTOSERVER_ENDPOINT_URL)
         )
@@ -173,7 +173,7 @@ class ObjectStorageMultiLevelDatasetTest(S3Test):
         s3_client_kwargs = dict(endpoint_url=MOTOSERVER_ENDPOINT_URL)
         s3 = s3fs.S3FileSystem(**s3_kwargs, client_kwargs=s3_client_kwargs)
         # Create bucket 'xcube-test', so it exists before we write a test pyramid
-        s3.mkdir('xcube-test')
+        s3.mkdir('xcube-test-cube')
 
         # Create a test cube with just one variable "conc_chl"
         zarr_path = os.path.join(os.path.dirname(__file__), '../../examples/serve/demo/cube-1-250-250.zarr')
@@ -182,7 +182,7 @@ class ObjectStorageMultiLevelDatasetTest(S3Test):
 
         # Write test cube
         write_dataset(dataset,
-                      'xcube-test/cube-1-250-250.zarr',
+                      'xcube-test-cube/cube-1-250-250.zarr',
                       s3_kwargs=s3_kwargs,
                       s3_client_kwargs=s3_client_kwargs)
 
