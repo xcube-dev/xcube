@@ -6,7 +6,7 @@ import pandas as pd
 import s3fs
 import xarray as xr
 
-from test.s3test import S3Test, MOTOSERVER_ENDPOINT_URL
+from test.s3test import S3Test, MOTO_SERVER_ENDPOINT_URL
 from xcube.core.dsio import write_dataset
 from xcube.core.mldataset import BaseMultiLevelDataset
 from xcube.core.mldataset import CombinedMultiLevelDataset
@@ -158,7 +158,7 @@ class ObjectStorageMultiLevelDatasetTest(S3Test):
         ml_ds_from_object_storage = open_ml_dataset_from_object_storage(
             'xcube-test/cube-1-250-250.zarr',
             s3_kwargs=dict(key='test_fake_id', secret='test_fake_secret'),
-            s3_client_kwargs=dict(endpoint_url=MOTOSERVER_ENDPOINT_URL)
+            s3_client_kwargs=dict(endpoint_url=MOTO_SERVER_ENDPOINT_URL)
         )
         self.assertIsNotNone(ml_ds_from_object_storage)
         self.assertIn('conc_chl', ml_ds_from_object_storage.base_dataset.variables)
@@ -167,7 +167,7 @@ class ObjectStorageMultiLevelDatasetTest(S3Test):
     @classmethod
     def _write_test_cube(cls):
         s3_kwargs = dict(key='test_fake_id', secret='test_fake_secret')
-        s3_client_kwargs = dict(endpoint_url=MOTOSERVER_ENDPOINT_URL)
+        s3_client_kwargs = dict(endpoint_url=MOTO_SERVER_ENDPOINT_URL)
         s3 = s3fs.S3FileSystem(**s3_kwargs, client_kwargs=s3_client_kwargs)
         # Create bucket 'xcube-test', so it exists before we write a test pyramid
         s3.mkdir('xcube-test')
@@ -188,7 +188,7 @@ class ObjectStorageMultiLevelDatasetTest(S3Test):
 
         s3 = s3fs.S3FileSystem(key='test_fake_id',
                                secret='test_fake_secret',
-                               client_kwargs=dict(endpoint_url=MOTOSERVER_ENDPOINT_URL))
+                               client_kwargs=dict(endpoint_url=MOTO_SERVER_ENDPOINT_URL))
         ml_dataset = ObjectStorageMultiLevelDataset(s3,
                                                     "xcube-test/cube-1-250-250.levels",
                                                     chunk_cache_capacity=1000 * 1000 * 1000)
@@ -204,7 +204,7 @@ class ObjectStorageMultiLevelDatasetTest(S3Test):
     @classmethod
     def _write_test_cube_pyramid(cls):
         s3_kwargs = dict(key='test_fake_id', secret='test_fake_secret')
-        s3_client_kwargs = dict(endpoint_url=MOTOSERVER_ENDPOINT_URL)
+        s3_client_kwargs = dict(endpoint_url=MOTO_SERVER_ENDPOINT_URL)
         s3 = s3fs.S3FileSystem(**s3_kwargs, client_kwargs=s3_client_kwargs)
         # Create bucket 'xcube-test', so it exists before we write a test pyramid
         s3.mkdir('xcube-test')

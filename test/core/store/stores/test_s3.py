@@ -1,7 +1,7 @@
 import s3fs
 import xarray as xr
 
-from test.s3test import S3Test, MOTOSERVER_ENDPOINT_URL
+from test.s3test import S3Test, MOTO_SERVER_ENDPOINT_URL
 from xcube.core.new import new_cube
 from xcube.core.store import DataStoreError
 from xcube.core.store import new_data_store
@@ -18,7 +18,7 @@ class S3DataStoreTest(S3Test):
                                      aws_access_key_id='test_fake_id',
                                      aws_secret_access_key='test_fake_secret',
                                      bucket_name=BUCKET_NAME,
-                                     endpoint_url=MOTOSERVER_ENDPOINT_URL)
+                                     endpoint_url=MOTO_SERVER_ENDPOINT_URL)
         self.assertIsInstance(self.store, S3DataStore)
 
     @property
