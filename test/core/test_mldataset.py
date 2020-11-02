@@ -154,6 +154,11 @@ def _get_test_dataset(var_names=('noise',)):
 
 class ObjectStorageMultiLevelDatasetTest(S3Test):
     def test_s3_zarr(self):
+        # if this test fails on travis with
+        # E           IndexError: pop from an empty deque
+        # then it most likly might be due to this issue: https://github.com/pydata/xarray/issues/4478
+        # The issue has been fixed, but dask/s3fs does not have a new release including the fix yet
+
         self._write_test_cube()
 
         ml_ds_from_object_storage = open_ml_dataset_from_object_storage(
