@@ -123,39 +123,39 @@ class DataStore(DataOpener, ABC):
 
     @classmethod
     @abstractmethod
-    def get_type_ids(cls) -> Tuple[str, ...]:
+    def get_type_specifiers(cls) -> Tuple[str, ...]:
         """
-        Get a tuple of supported data type identifiers.
+        Get a tuple of supported data type specifiers.
         The first entry in the tuple represents this store's default data type.
 
         :return: The tuple of supported data type identifiers.
         """
 
     @abstractmethod
-    def get_type_ids_for_data(self, data_id: str) -> Tuple[str, ...]:
+    def get_type_specifiers_for_data(self, data_id: str) -> Tuple[str, ...]:
         """
-        Get the tuple of data type identifiers that are supported for the given *data_id*.
+        Get the tuple of data type specifiers that are supported for the given *data_id*.
         In case the type specifier allows one ore more flags, they are listed in brackets
         following the specifier's name, e.g., dataset[CUBE, MULTILEVEL].
         :param data_id: An identifier of data that is provided by this store
-        :return: A tuple of type identifiers that apply to the given data_id
+        :return: A tuple of type specifiers that apply to the given data_id
         :raise DataStoreError: If an error occurs.
         """
 
     @abstractmethod
-    def get_data_ids(self, type_id: str = None, include_titles = True) -> Iterator[Tuple[str, Optional[str]]]:
+    def get_data_ids(self, type_specifier: str = None, include_titles = True) -> Iterator[Tuple[str, Optional[str]]]:
         """
-        Get an iterator over the data resource identifiers for the given type *type_id*.
-        If *type_id* is omitted, all data resource identifiers are returned.
+        Get an iterator over the data resource identifiers for the given type *type_specifier*.
+        If *type_specifier* is omitted, all data resource identifiers are returned.
 
-        If a store implementation supports only a single data type, it should verify that *type_id* is either None
-        or equal to that single data type.
+        If a store implementation supports only a single data type, it should verify that *type_specifier*
+        is either None or equal to that single data type.
 
         The returned iterator items are 2-tuples of the form (*data_id*, *title*), where *data_id*
         is the actual data identifier and *title* is an optional, human-readable title for the data.
         If *include_titles* is false, the second item of the result tuple will be None.
 
-        :param type_id: If given, only data identifiers that are available as this type are returned. If this is
+        :param type_specifier: If given, only data identifiers that are available as this type are returned. If this is
         omitted, all available data identifiers are returned
         :param include_titles: If true, the store will attempt to also provide a title
         :return: An iterator over the identifiers and titles of data resources provided by this data store.
@@ -163,78 +163,78 @@ class DataStore(DataOpener, ABC):
         """
 
     @abstractmethod
-    def has_data(self, data_id: str, type_id: str = None) -> bool:
+    def has_data(self, data_id: str, type_specifier: str = None) -> bool:
         """
         Check if the data resource given by *data_id* is available in this store.
 
         :param data_id: A data identifier
-        :param type_id: An optional data type identifier. If given, it will also be checked
+        :param type_specifier: An optional data type specifier. If given, it will also be checked
         whether the data is available as the specified type
         :return: True, if the data resource is available in this store, False otherwise.
         """
 
     @abstractmethod
-    def describe_data(self, data_id: str, type_id: str = None) -> DataDescriptor:
+    def describe_data(self, data_id: str, type_specifier: str = None) -> DataDescriptor:
         """
         Get the descriptor for the data resource given by *data_id*.
 
         Raises a DataStoreError if *data_id* does not exist in this store
-        or the data is not available as the specified *type_id*.
+        or the data is not available as the specified *type_specifier*.
 
         :param data_id: An identifier of data provided by this store
-        :param type_id: If given, the descriptor of the data will describe the data as
+        :param type_specifier: If given, the descriptor of the data will describe the data as
         specified by the type
         :return a data-type specific data descriptor
         :raise DataStoreError: If an error occurs.
         """
 
     @classmethod
-    def get_search_params_schema(cls, type_id: str = None) -> JsonObjectSchema:
+    def get_search_params_schema(cls, type_specifier: str = None) -> JsonObjectSchema:
         """
         Get the schema for the parameters that can be passed as *search_params* to :meth:search_data().
         Parameters are named and described by the properties of the returned JSON object schema.
         The default implementation returns JSON object schema that can have any properties.
 
-        :param type_id: If given, the search parameters will allow to search for data as specified by
+        :param type_specifier: If given, the search parameters will allow to search for data as specified by
         this parameter. If not given, the params will resort to a default type specifier.
         :return: A JSON object schema whose properties describe this store's search parameters.
         """
         return JsonObjectSchema()
 
     @abstractmethod
-    def search_data(self, type_id: str = None, **search_params) -> Iterator[DataDescriptor]:
+    def search_data(self, type_specifier: str = None, **search_params) -> Iterator[DataDescriptor]:
         """
         Search this store for data resources.
-        If *type_id* is given, the search is restricted to data resources of that type.
+        If *type_specifier* is given, the search is restricted to data resources of that type.
 
         Returns an iterator over the search results.
         The returned data descriptors may contain less information than returned by the :meth:describe_data()
         method.
 
-        If a store implementation supports only a single data type, it should verify that *type_id* is either None
-        or equal to that single data type.
+        If a store implementation supports only a single data type, it should verify that *type_specifier*
+        is either None or equal to that single data type.
 
-        :param type_id: An optional data type identifier that is known to be supported by this data store.
+        :param type_specifier: An optional data type specifier that is known to be supported by this data store.
         :param search_params: The search parameters.
         :return: An iterator of data descriptors for the found data resources.
         :raise DataStoreError: If an error occurs.
         """
 
     @abstractmethod
-    def get_data_opener_ids(self, data_id: str = None, type_id: str = None) -> Tuple[str, ...]:
+    def get_data_opener_ids(self, data_id: str = None, type_specifier: str = None) -> Tuple[str, ...]:
         """
         Get identifiers of data openers that can be used to open data resources from this store.
 
         If *data_id* is given, data accessors are restricted to the ones that can open the identified data resource.
         Raises if *data_id* does not exist in this store.
 
-        If *type_id* is given, only openers that support this data type are returned.
+        If *type_specifier* is given, only openers that support this data type are returned.
 
-        If a store implementation supports only a single data type, it should verify that *type_id* is either None
-        or equal to that single data type.
+        If a store implementation supports only a single data type, it should verify that *type_specifier*
+        is either None or equal to that single data type.
 
         :param data_id: An optional data resource identifier that is known to exist in this data store.
-        :param type_id: An optional data type identifier that is known to be supported by this data store.
+        :param type_specifier: An optional data type specifier that is known to be supported by this data store.
         :return: A tuple of identifiers of data openers that can be used to open data resources.
         :raise DataStoreError: If an error occurs.
         """
@@ -323,16 +323,16 @@ class MutableDataStore(DataStore, DataWriter, ABC):
     """
 
     @abstractmethod
-    def get_data_writer_ids(self, type_id: str = None) -> Tuple[str, ...]:
+    def get_data_writer_ids(self, type_specifier: str = None) -> Tuple[str, ...]:
         """
         Get identifiers of data writers that can be used to write data resources to this store.
 
-        If *type_id* is given, only writers that support this data type are returned.
+        If *type_specifier* is given, only writers that support this data type are returned.
 
-        If a store implementation supports only a single data type, it should verify that *type_id* is either None
-        or equal to that single data type.
+        If a store implementation supports only a single data type, it should verify that *type_specifier*
+        is either None or equal to that single data type.
 
-        :param type_id: An optional data type identifier that is known to be supported by this data store.
+        :param type_specifier: An optional data type specifier that is known to be supported by this data store.
         :return: A tuple of identifiers of data writers that can be used to write data resources.
         :raise DataStoreError: If an error occurs.
         """

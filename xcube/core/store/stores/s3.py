@@ -31,16 +31,16 @@ from xcube.core.mldataset import MultiLevelDataset
 from xcube.core.store import DataDescriptor
 from xcube.core.store import DataStoreError
 from xcube.core.store import MutableDataStore
-from xcube.core.store import TYPE_ID_ANY
-from xcube.core.store import TYPE_ID_DATASET
-from xcube.core.store import TYPE_ID_MULTI_LEVEL_DATASET
+from xcube.core.store import TYPE_SPECIFIER_ANY
+from xcube.core.store import TYPE_SPECIFIER_DATASET
+from xcube.core.store import TYPE_SPECIFIER_MULTILEVEL_DATASET
 from xcube.core.store import find_data_opener_extensions
 from xcube.core.store import find_data_writer_extensions
 from xcube.core.store import get_data_accessor_predicate
-from xcube.core.store import get_type_id
+from xcube.core.store import get_type_specifier
 from xcube.core.store import new_data_opener
 from xcube.core.store import new_data_writer
-from xcube.core.store import TypeId
+from xcube.core.store import TypeSpecifier
 from xcube.core.store.accessors.dataset import S3Mixin
 from xcube.util.assertions import assert_condition
 from xcube.util.assertions import assert_given
@@ -54,13 +54,13 @@ _STORAGE_ID = 's3'
 _DEFAULT_FORMAT_ID = 'zarr'
 
 _FILENAME_EXT_TO_ACCESSOR_ID_PARTS = {
-    '.zarr': (TYPE_ID_DATASET, 'zarr', _STORAGE_ID),
-    '.levels': (TYPE_ID_MULTI_LEVEL_DATASET, 'levels', _STORAGE_ID),
+    '.zarr': (TYPE_SPECIFIER_DATASET, 'zarr', _STORAGE_ID),
+    '.levels': (TYPE_SPECIFIER_MULTILEVEL_DATASET, 'levels', _STORAGE_ID),
 }
 
-_TYPE_ID_TO_ACCESSOR_TO_DEFAULT_FILENAME_EXT = {
-    TYPE_ID_DATASET: '.zarr',
-    TYPE_ID_MULTI_LEVEL_DATASET: '.levels',
+_TYPE_SPECIFIER_TO_ACCESSOR_TO_DEFAULT_FILENAME_EXT = {
+    TYPE_SPECIFIER_DATASET: '.zarr',
+    TYPE_SPECIFIER_MULTILEVEL_DATASET: '.levels',
 }
 
 
@@ -110,54 +110,54 @@ class S3DataStore(MutableDataStore):
         return schema
 
     @classmethod
-    def get_type_ids(cls) -> Tuple[str, ...]:
-        return str(TYPE_ID_MULTI_LEVEL_DATASET),
+    def get_type_specifiers(cls) -> Tuple[str, ...]:
+        return str(TYPE_SPECIFIER_MULTILEVEL_DATASET),
 
-    def get_type_ids_for_data(self, data_id: str) -> Tuple[str, ...]:
+    def get_type_specifiers_for_data(self, data_id: str) -> Tuple[str, ...]:
         if not self.has_data(data_id):
             raise ValueError(f'"{data_id}" is not provided by this data store')
-        data_type_id, _, _ = self._get_accessor_id_parts(data_id)
-        return data_type_id,
+        data_type_specifier, _, _ = self._get_accessor_id_parts(data_id)
+        return data_type_specifier,
 
-    def get_data_ids(self, type_id: str = None, include_titles = True) -> Iterator[Tuple[str, Optional[str]]]:
-        # todo do not ignore type_id
+    def get_data_ids(self, type_specifier: str = None, include_titles = True) -> Iterator[Tuple[str, Optional[str]]]:
+        # todo do not ignore type_specifier
         prefix = self._bucket_name + '/'
         first_index = len(prefix)
         for item in self._s3.listdir(self._bucket_name, detail=False):
             if item.startswith(prefix):
                 yield item[first_index:], None
 
-    def has_data(self, data_id: str, type_id: str = None) -> bool:
-        if type_id:
-            data_type_id, _, _ = self._get_accessor_id_parts(data_id)
-            if not TypeId.parse(type_id).is_compatible(data_type_id):
+    def has_data(self, data_id: str, type_specifier: str = None) -> bool:
+        if type_specifier:
+            data_type_specifier, _, _ = self._get_accessor_id_parts(data_id)
+            if not TypeSpecifier.parse(type_specifier).is_compatible(data_type_specifier):
                 return False
         path = self._resolve_data_id_to_path(data_id)
         return self._s3.exists(path)
 
-    def describe_data(self, data_id: str, type_id: str = None) -> DataDescriptor:
+    def describe_data(self, data_id: str, type_specifier: str = None) -> DataDescriptor:
         # TODO: implement me
         raise NotImplementedError()
 
     @classmethod
-    def get_search_params_schema(self, type_id: str = None) -> JsonObjectSchema:
+    def get_search_params_schema(self, type_specifier: str = None) -> JsonObjectSchema:
         # TODO: implement me
         raise NotImplementedError()
 
-    def search_data(self, type_id: str = None, **search_params) -> Iterator[DataDescriptor]:
+    def search_data(self, type_specifier: str = None, **search_params) -> Iterator[DataDescriptor]:
         # TODO: implement me
         raise NotImplementedError()
 
-    def get_data_opener_ids(self, data_id: str = None, type_id: str = None) -> Tuple[str, ...]:
-        if type_id:
-            type_id = TypeId.normalize(type_id)
-        if type_id == TYPE_ID_ANY:
-            type_id = None
-        self._assert_valid_type_id(type_id)
-        if not type_id and data_id:
-            type_id, _, _ = self._get_accessor_id_parts(data_id)
+    def get_data_opener_ids(self, data_id: str = None, type_specifier: str = None) -> Tuple[str, ...]:
+        if type_specifier:
+            type_specifier = TypeSpecifier.normalize(type_specifier)
+        if type_specifier == TYPE_SPECIFIER_ANY:
+            type_specifier = None
+        self._assert_valid_type_specifier(type_specifier)
+        if not type_specifier and data_id:
+            type_specifier, _, _ = self._get_accessor_id_parts(data_id)
         return tuple(ext.name for ext in find_data_opener_extensions(
-            predicate=get_data_accessor_predicate(type_id=type_id, storage_id=_STORAGE_ID)
+            predicate=get_data_accessor_predicate(type_specifier=type_specifier, storage_id=_STORAGE_ID)
         ))
 
     def get_open_data_params_schema(self, data_id: str = None, opener_id: str = None) -> JsonObjectSchema:
@@ -165,7 +165,7 @@ class S3DataStore(MutableDataStore):
             opener_id = self._get_opener_id(data_id)
         if not opener_id:
             extensions = find_data_opener_extensions(
-                predicate=get_data_accessor_predicate(type_id='dataset',
+                predicate=get_data_accessor_predicate(type_specifier='dataset',
                                                       format_id=_DEFAULT_FORMAT_ID,
                                                       storage_id=_STORAGE_ID)
             )
@@ -183,21 +183,21 @@ class S3DataStore(MutableDataStore):
         path = self._resolve_data_id_to_path(data_id)
         return self._new_s3_opener(opener_id).open_data(data_id=path, **open_params)
 
-    def get_data_writer_ids(self, type_id: str = None) -> Tuple[str, ...]:
-        if type_id:
-            type_id = TypeId.normalize(type_id)
-        if type_id == TYPE_ID_ANY:
-            type_id = None
-        self._assert_valid_type_id(type_id)
+    def get_data_writer_ids(self, type_specifier: str = None) -> Tuple[str, ...]:
+        if type_specifier:
+            type_specifier = TypeSpecifier.normalize(type_specifier)
+        if type_specifier == TYPE_SPECIFIER_ANY:
+            type_specifier = None
+        self._assert_valid_type_specifier(type_specifier)
         extensions = find_data_writer_extensions(
-            predicate=get_data_accessor_predicate(type_id=type_id, storage_id=_STORAGE_ID)
+            predicate=get_data_accessor_predicate(type_specifier=type_specifier, storage_id=_STORAGE_ID)
         )
         return tuple(ext.name for ext in extensions)
 
     def get_write_data_params_schema(self, writer_id: str = None) -> JsonObjectSchema:
         if not writer_id:
             extensions = find_data_writer_extensions(
-                predicate=get_data_accessor_predicate(type_id='dataset', storage_id=_STORAGE_ID)
+                predicate=get_data_accessor_predicate(type_specifier='dataset', storage_id=_STORAGE_ID)
             )
             writer_id = extensions[0].name
         return self._new_s3_writer(writer_id).get_write_data_params_schema()
@@ -211,7 +211,7 @@ class S3DataStore(MutableDataStore):
         assert_instance(data, (xr.Dataset, MultiLevelDataset, gpd.GeoDataFrame))
         if not writer_id:
             if isinstance(data, xr.Dataset):
-                predicate = get_data_accessor_predicate(type_id=TYPE_ID_DATASET,
+                predicate = get_data_accessor_predicate(type_specifier=TYPE_SPECIFIER_DATASET,
                                                         format_id='zarr',
                                                         storage_id=_STORAGE_ID)
             else:
@@ -267,9 +267,9 @@ class S3DataStore(MutableDataStore):
         assert_given(data_id, 'data_id')
         return f'{self._bucket_name}/{data_id}'
 
-    def _assert_valid_type_id(self, type_id: Optional[TypeId]):
-        if type_id:
-            assert_in(type_id, self.get_type_ids(), 'type_id')
+    def _assert_valid_type_specifier(self, type_specifier: Optional[TypeSpecifier]):
+        if type_specifier:
+            assert_in(type_specifier, self.get_type_specifiers(), 'type_specifier')
 
     def _get_opener_id(self, data_id: str):
         return self._get_accessor_id(data_id, find_data_opener_extensions)
@@ -291,9 +291,10 @@ class S3DataStore(MutableDataStore):
         accessor_id_parts = self._get_accessor_id_parts(data_id, require=require)
         if not accessor_id_parts:
             return []
-        type_id, format_id, storage_id = accessor_id_parts
-        # print(type_id, format_id, storage_id)
-        predicate = get_data_accessor_predicate(type_id=type_id, format_id=format_id, storage_id=storage_id)
+        type_specifier, format_id, storage_id = accessor_id_parts
+        predicate = get_data_accessor_predicate(type_specifier=type_specifier,
+                                                format_id=format_id,
+                                                storage_id=storage_id)
         extensions = get_data_accessor_extensions(predicate)
         if not extensions:
             if require:
@@ -312,5 +313,5 @@ class S3DataStore(MutableDataStore):
 
     @classmethod
     def _get_filename_ext(cls, data: Any):
-        type_id = get_type_id(data)
-        return _TYPE_ID_TO_ACCESSOR_TO_DEFAULT_FILENAME_EXT[type_id]
+        type_specifier = get_type_specifier(data)
+        return _TYPE_SPECIFIER_TO_ACCESSOR_TO_DEFAULT_FILENAME_EXT[type_specifier]

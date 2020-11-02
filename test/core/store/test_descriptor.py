@@ -4,7 +4,7 @@ import numpy as np
 
 from xcube.core.store.descriptor import DatasetDescriptor
 from xcube.core.store.descriptor import VariableDescriptor
-from xcube.core.store.typeid import TypeId
+from xcube.core.store.typespecifier import TypeSpecifier
 
 
 class DatasetDescriptorTest(unittest.TestCase):
@@ -17,7 +17,7 @@ class DatasetDescriptorTest(unittest.TestCase):
         except ValueError:
             pass
 
-    def test_from_dict_wrong_type_id(self):
+    def test_from_dict_wrong_type_specifier(self):
         try:
             descriptor_dict = dict(data_id='xyz', type_id='tsr')
             DatasetDescriptor.from_dict(descriptor_dict)
@@ -30,14 +30,14 @@ class DatasetDescriptorTest(unittest.TestCase):
         descriptor = DatasetDescriptor.from_dict(descriptor_dict)
         self.assertIsNotNone(descriptor)
         self.assertEqual('xyz', descriptor.data_id)
-        self.assertEqual('dataset', descriptor.type_id)
+        self.assertEqual('dataset', descriptor.type_specifier)
 
     def test_from_dict_derived_type(self):
-        descriptor_dict = dict(data_id='xyz', type_id='dataset[fegd]')
+        descriptor_dict = dict(data_id='xyz', type_specifier='dataset[fegd]')
         descriptor = DatasetDescriptor.from_dict(descriptor_dict)
         self.assertIsNotNone(descriptor)
         self.assertEqual('xyz', descriptor.data_id)
-        self.assertEqual('dataset[fegd]', descriptor.type_id)
+        self.assertEqual('dataset[fegd]', descriptor.type_specifier)
 
     def test_from_dict_full(self):
         descriptor_dict = dict(data_id='xyz',
@@ -70,7 +70,7 @@ class DatasetDescriptorTest(unittest.TestCase):
         descriptor = DatasetDescriptor.from_dict(descriptor_dict)
         self.assertIsNotNone(descriptor)
         self.assertEqual('xyz', descriptor.data_id)
-        self.assertEqual('dataset', descriptor.type_id)
+        self.assertEqual('dataset', descriptor.type_specifier)
         self.assertEqual('EPSG:9346', descriptor.crs)
         self.assertEqual((10., 20., 30., 40.), descriptor.bbox)
         self.assertEqual(20., descriptor.spatial_res)
@@ -94,7 +94,7 @@ class DatasetDescriptorTest(unittest.TestCase):
                                )
         ]
         descriptor = DatasetDescriptor(data_id='xyz',
-                                       type_id=TypeId('dataset', flags={'cube'}),
+                                       type_specifier=TypeSpecifier('dataset', flags={'cube'}),
                                        crs='EPSG:9346',
                                        bbox=(10., 20., 30., 40.),
                                        spatial_res=20.,
@@ -109,7 +109,7 @@ class DatasetDescriptorTest(unittest.TestCase):
                                        )
         descriptor_dict = descriptor.to_dict()
         self.assertEqual(dict(data_id='xyz',
-                              type_id='dataset[cube]',
+                              type_specifier='dataset[cube]',
                               crs='EPSG:9346',
                               bbox=(10., 20., 30., 40.),
                               spatial_res=20.,
