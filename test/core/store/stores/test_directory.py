@@ -3,6 +3,7 @@ import unittest
 
 from xcube.core.store import new_data_store
 from xcube.core.store import TYPE_ID_CUBE
+from xcube.core.store.error import DataStoreError
 from xcube.core.store.stores.directory import DirectoryDataStore
 
 class DirectoryDataStoreTest(unittest.TestCase):
@@ -80,6 +81,13 @@ class DirectoryDataStoreTest(unittest.TestCase):
                           'geodataframe:shapefile:posix'},
                          set(self.store.get_data_opener_ids(type_id='geodataframe')))
 
+    def test_get_type_ids_for_data(self):
+        self.assertEqual(('dataset', ), self.store.get_type_ids_for_data('cube-1-250-250.zarr'))
+        self.assertEqual(('dataset', ), self.store.get_type_ids_for_data('cube.nc'))
+        with self.assertRaises(DataStoreError) as cm:
+            set(self.store.get_type_ids_for_data('xyz.levels'))
+
+
     def test_get_data_writer_ids(self):
         self.assertEqual({'dataset:netcdf:posix',
                           'dataset:zarr:posix',
@@ -131,6 +139,54 @@ class DirectoryDataStoreTest(unittest.TestCase):
         with self.assertRaises(ValueError) as cm:
             set(self.store.get_data_ids(type_id='dataset[cube]'))
         self.assertEqual("type_id must be one of ('dataset', 'dataset[multilevel]', 'geodataframe')", f'{cm.exception}')
+        self.assertEqual(
+            {
+                ('cube-1-250-250.zarr', None),
+                ('cube-5-100-200.zarr', None),
+                ('cube.nc', None),
+            },
+            set(self.store.get_data_ids(include_titles=False)))
+        self.assertEqual(
+            {
+                ('cube-1-250-250.zarr', None),
+                ('cube-5-100-200.zarr', None),
+                ('cube.nc', None),
+            },
+            set(self.store.get_data_ids('dataset', include_titles=False)))
+        self.assertEqual(
+            set(),
+            set(self.store.get_data_ids('dataset[multilevel]', include_titles=False)))
+
+    def test_has_data(self):
+        self.assertTrue(self.store.has_data('cube-1-250-250.zarr'))
+        self.assertTrue(self.store.has_data('cube.nc'))
+        self.assertFalse(self.store.has_data('cube.levels'))
+        self.assertTrue(self.store.has_data('cube-1-250-250.zarr', type_id='dataset'))
+        self.assertFalse(self.store.has_data('cube-1-250-250.zarr', type_id='geodataframe'))
+
+    def test_get_search_params_schema(self):
+        schema = self.store.get_search_params_schema()
+        self.assertEqual(set(), set(schema.properties.keys()))
+        schema = self.store.get_search_params_schema(type_id='dataset')
+        self.assertEqual(set(), set(schema.properties.keys()))
+        schema = self.store.get_search_params_schema(type_id='dataset[multilevel]')
+        self.assertEqual(set(), set(schema.properties.keys()))
+        schema = self.store.get_search_params_schema(type_id='geodataframe')
+        self.assertEqual(set(), set(schema.properties.keys()))
+
+    def test_describe_data(self):
+        data_descriptor = self.store.describe_data('cube-1-250-250.zarr')
+        self.assertIsNotNone(data_descriptor)
+        self.assertEqual('cube-1-250-250.zarr', data_descriptor.data_id)
+        self.assertEqual('dataset[cube]', data_descriptor.type_id)
+
+        data_descriptor = self.store.describe_data('cube-1-250-250.zarr', type_id='dataset')
+        self.assertIsNotNone(data_descriptor)
+        self.assertEqual('cube-1-250-250.zarr', data_descriptor.data_id)
+        self.assertEqual('dataset[cube]', data_descriptor.type_id)
+
+        with self.assertRaises(ValueError) as cm:
+            set(self.store.describe_data('cube-1-250-250.zarr', type_id='geodataframe'))
 
     def test_search_data(self):
         result = list(self.store.search_data())

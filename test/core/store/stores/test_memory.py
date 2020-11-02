@@ -34,12 +34,26 @@ class MemoryCubeStoreTest(unittest.TestCase):
     def test_get_type_ids(self):
         self.assertEqual(('*',), self.store.get_type_ids())
 
+    def test_get_type_ids_for_data(self):
+        self.assertEqual(('dataset[cube]', ), self.store.get_type_ids_for_data('cube_1'))
+        self.assertEqual(('dataset', ), self.store.get_type_ids_for_data('ds_1'))
+        with self.assertRaises(DataStoreError) as cm:
+            self.store.get_type_ids_for_data('geodataframe_2')
+        self.assertEqual('Data resource "geodataframe_2" does not exist in store', f'{cm.exception}')
+
     def test_get_data_ids(self):
         self.assertEqual({('cube_1', None), ('cube_2', None), ('ds_1', None)}, set(self.store.get_data_ids()))
+        self.assertEqual({('cube_1', None), ('cube_2', None), ('ds_1', None)},
+                         set(self.store.get_data_ids(include_titles=False)))
 
     def test_has_data(self):
         self.assertEqual(True, self.store.has_data('cube_1'))
         self.assertEqual(False, self.store.has_data('cube_3'))
+        self.assertEqual(True, self.store.has_data('cube_1', type_id='dataset'))
+        self.assertEqual(True, self.store.has_data('cube_1', type_id='dataset[cube]'))
+        self.assertEqual(False, self.store.has_data('cube_1', type_id='dataset[multilevel]'))
+        self.assertEqual(True, self.store.has_data('ds_1', type_id='dataset'))
+        self.assertEqual(False, self.store.has_data('ds_1', type_id='dataset[cube]'))
 
     def test_describe_data(self):
         dd = self.store.describe_data('cube_1')
@@ -51,8 +65,21 @@ class MemoryCubeStoreTest(unittest.TestCase):
             ).to_dict(),
             dd.to_dict())
 
+        dd = self.store.describe_data('cube_1', type_id='dataset[cube]')
+        self.assertIsInstance(dd, DatasetDescriptor)
+        self.assertEqual(
+            DatasetDescriptor(
+                data_id='cube_1',
+                type_id=TYPE_ID_CUBE,
+            ).to_dict(),
+            dd.to_dict())
+
     def test_get_search_params_schema(self):
         schema = self.store.get_search_params_schema()
+        self.assertIsInstance(schema, JsonObjectSchema)
+        self.assertEqual({}, schema.properties)
+
+        schema = self.store.get_search_params_schema(type_id='geodataframe')
         self.assertIsInstance(schema, JsonObjectSchema)
         self.assertEqual({}, schema.properties)
 

@@ -111,9 +111,15 @@ class S3DataStore(MutableDataStore):
 
     @classmethod
     def get_type_ids(cls) -> Tuple[str, ...]:
-        return str(TYPE_ID_DATASET),
+        return str(TYPE_ID_MULTI_LEVEL_DATASET),
 
-    def get_data_ids(self, type_id: str = None) -> Iterator[Tuple[str, Optional[str]]]:
+    def get_type_ids_for_data(self, data_id: str) -> Tuple[str, ...]:
+        if not self.has_data(data_id):
+            raise ValueError(f'"{data_id}" is not provided by this data store')
+        data_type_id, _, _ = self._get_accessor_id_parts(data_id)
+        return data_type_id,
+
+    def get_data_ids(self, type_id: str = None, include_titles = True) -> Iterator[Tuple[str, Optional[str]]]:
         # todo do not ignore type_id
         prefix = self._bucket_name + '/'
         first_index = len(prefix)
@@ -121,16 +127,20 @@ class S3DataStore(MutableDataStore):
             if item.startswith(prefix):
                 yield item[first_index:], None
 
-    def has_data(self, data_id: str) -> bool:
+    def has_data(self, data_id: str, type_id: str = None) -> bool:
+        if type_id:
+            data_type_id, _, _ = self._get_accessor_id_parts(data_id)
+            if not TypeId.parse(type_id).is_compatible(data_type_id):
+                return False
         path = self._resolve_data_id_to_path(data_id)
         return self._s3.exists(path)
 
-    def describe_data(self, data_id: str) -> DataDescriptor:
+    def describe_data(self, data_id: str, type_id: str = None) -> DataDescriptor:
         # TODO: implement me
         raise NotImplementedError()
 
     @classmethod
-    def get_search_params_schema(cls) -> JsonObjectSchema:
+    def get_search_params_schema(self, type_id: str = None) -> JsonObjectSchema:
         # TODO: implement me
         raise NotImplementedError()
 

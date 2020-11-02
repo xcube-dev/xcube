@@ -60,21 +60,37 @@ class MemoryDataStore(MutableDataStore):
     def get_type_ids(cls) -> Tuple[str, ...]:
         return str(TYPE_ID_ANY),
 
-    def get_data_ids(self, type_id: str = None) -> Iterator[Tuple[str, Optional[str]]]:
+    def get_type_ids_for_data(self, data_id: str) -> Tuple[str, ...]:
+        self._assert_valid_data_id(data_id)
+        type_id = get_type_id(self._data_dict[data_id])
+        return str(type_id),
+
+    def get_data_ids(self, type_id: str = None, include_titles: bool = True) -> Iterator[Tuple[str, Optional[str]]]:
         for data_id, data in self._data_dict.items():
             if type_id is None or TypeId.normalize(type_id).is_compatible(get_type_id(data)):
                 yield data_id, None
 
-    def has_data(self, data_id: str) -> bool:
+    def has_data(self, data_id: str, type_id: str = None) -> bool:
         assert_given(data_id, 'data_id')
-        return data_id in self._data_dict
+        if not data_id in self._data_dict:
+            return False
+        if type_id:
+            data_type_id = get_type_id(self._data_dict[data_id])
+            if not TypeId.parse(type_id).is_compatible(data_type_id):
+                return False
+        return True
 
-    def describe_data(self, data_id: str) -> DataDescriptor:
+    def describe_data(self, data_id: str, type_id: str = None) -> DataDescriptor:
         self._assert_valid_data_id(data_id)
+        if type_id:
+            data_type_id = get_type_id(self._data_dict[data_id])
+            if not data_type_id.is_compatible(type_id):
+                raise ValueError(f'Data resource "{data_id}" is not available as type {type_id}. '
+                                 f'Cannot create DataDescriptor.')
         return new_data_descriptor(data_id, self._data_dict[data_id])
 
     @classmethod
-    def get_search_params_schema(cls) -> JsonObjectSchema:
+    def get_search_params_schema(self, type_id: str = None) -> JsonObjectSchema:
         return JsonObjectSchema()
 
     def search_data(self, type_id: str = None, **search_params) -> Iterator[DataDescriptor]:
