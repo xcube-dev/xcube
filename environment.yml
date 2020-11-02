@@ -42,4 +42,3 @@ dependencies:
   - pytest >=4.4
   - pytest-cov >=2.6
   - requests-mock >=1.8.0
-  -
