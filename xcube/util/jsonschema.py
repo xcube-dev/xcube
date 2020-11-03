@@ -20,8 +20,11 @@
 # SOFTWARE.
 
 from abc import ABC, abstractmethod
-from typing import Dict, Any, Callable, Mapping, Sequence, Union, Tuple
+from typing import Dict, Any, Callable, Mapping, Sequence, Union, Tuple, Optional
 
+# Make sure strict-rfc3339 package is installed. The package jsonschema uses it for validating
+# instances of the JsonDateSchema and JsonDatetimeSchema.
+__import__('strict_rfc3339')
 import jsonschema
 
 from xcube.util.ipython import register_json_formatter
@@ -36,14 +39,9 @@ _NUMERIC_TYPES_ENUM = {'integer', 'number'}
 
 class JsonSchema(ABC):
 
-    # TODO: implement any_of more completely
-    # Currently any_of is only used by JsonDatetimeSchema to allow alternative
-    # 'date' and 'date-time' format specifiers. For full support it should also
-    # be handled in from_instance and to_instance.
-
     # noinspection PyShadowingBuiltins
     def __init__(self,
-                 type: str,
+                 type: Union[str, Sequence[str]] = None,
                  default: Any = UNDEFINED,
                  const: Any = UNDEFINED,
                  enum: Sequence[Any] = None,
@@ -51,33 +49,35 @@ class JsonSchema(ABC):
                  title: str = None,
                  description: str = None,
                  examples: str = None,
-                 any_of: Sequence['JsonSchema'] = None,
                  factory: Factory = None,
                  serializer: Serializer = None):
-        if type not in _TYPES_ENUM:
+        if type is not None and type not in _TYPES_ENUM:
             names = ', '.join(map(lambda t: f'"{t}"', sorted(list(_TYPES_ENUM))))
             raise ValueError(f'type must be one of {names}')
         if factory is not None and not callable(factory):
             raise ValueError('factory must be callable')
         if serializer is not None and not callable(serializer):
             raise ValueError('serializer must be callable')
-        self.type = type
-        self.default = default
-        self.const = const
-        self.enum = list(enum) if enum is not None else None
-        self.nullable = nullable
-        self.title = title
-        self.description = description
-        self.examples = examples
-        self.any_of = any_of
+        self.type: Optional[Union[str, Sequence[str]]] = type
+        self.default: Any = default
+        self.const: Any = const
+        self.enum: Optional[Any] = list(enum) if enum is not None else None
+        self.nullable: Optional[bool] = nullable
+        self.title: Optional[str] = title
+        self.description: Optional[str] = description
+        self.examples: Optional[str] = examples
         self.factory = factory
         self.serializer = serializer
 
     def to_dict(self) -> Dict[str, Any]:
-        if self.nullable is not None and self.type != 'null':
-            d = dict(type=[self.type, 'null'])
-        else:
-            d = dict(type=self.type)
+        d = dict()
+        if self.type is not None:
+            if self.nullable is True and self.type != 'null':
+                d.update(type=[self.type, 'null'])
+            else:
+                d.update(type=self.type)
+        elif self.nullable is True:
+            d.update(type='null')
         if self.default is not UNDEFINED:
             d.update(default=self.default)
         if self.const is not UNDEFINED:
@@ -90,8 +90,6 @@ class JsonSchema(ABC):
             d.update(description=self.description)
         if self.examples is not None:
             d.update(examples=self.examples)
-        if self.any_of:
-            d.update(anyOf=[schema.to_dict() for schema in self.any_of])
         return d
 
     def validate_instance(self, instance: Any):
@@ -126,10 +124,32 @@ class JsonSchema(ABC):
         """Turn validated JSON value *instance* into a Python object."""
 
 
-class JsonSimpleTypeSchema(JsonSchema, ABC):
+class JsonComplexSchema(JsonSchema):
+    # TODO: implement JsonComplexTypeSchema more completely
+    # For full support one_of, any_of, all_of should also be handled in from_instance and to_instance.
+
     # noinspection PyShadowingBuiltins
-    def __init__(self, type: str, **kwargs):
-        super().__init__(type, **kwargs)
+    def __init__(self,
+                 one_of: Sequence['JsonSchema'] = None,
+                 any_of: Sequence['JsonSchema'] = None,
+                 all_of: Sequence['JsonSchema'] = None,
+                 **kwargs):
+        if len([x for x in (one_of, any_of, all_of) if bool(x)]) != 1:
+            raise ValueError('exactly one of one_of, any_of, all_of must be given')
+        super().__init__(**kwargs)
+        self.one_of = one_of
+        self.any_of = any_of
+        self.all_of = all_of
+
+    def to_dict(self) -> Dict[str, Any]:
+        d = super().to_dict()
+        if self.one_of:
+            d.update(oneOf=[schema.to_dict() for schema in self.one_of])
+        if self.any_of:
+            d.update(anyOf=[schema.to_dict() for schema in self.any_of])
+        if self.all_of:
+            d.update(allOf=[schema.to_dict() for schema in self.all_of])
+        return d
 
     def _to_unvalidated_instance(self, value: Any) -> Any:
         return self.serializer(value) if self.serializer is not None else value
@@ -138,17 +158,31 @@ class JsonSimpleTypeSchema(JsonSchema, ABC):
         return self.factory(instance) if self.factory is not None else instance
 
 
-class JsonNullSchema(JsonSimpleTypeSchema):
+class JsonSimpleSchema(JsonSchema):
+    # noinspection PyShadowingBuiltins
+    def __init__(self, type: str, **kwargs):
+        super().__init__(type, **kwargs)
+        if not isinstance(type, str):
+            raise ValueError(f'illegal type: {type}')
+
+    def _to_unvalidated_instance(self, value: Any) -> Any:
+        return self.serializer(value) if self.serializer is not None else value
+
+    def _from_validated_instance(self, instance: Any) -> Any:
+        return self.factory(instance) if self.factory is not None else instance
+
+
+class JsonNullSchema(JsonSimpleSchema):
     def __init__(self, **kwargs):
         super().__init__(type='null', **kwargs)
 
 
-class JsonBooleanSchema(JsonSimpleTypeSchema):
+class JsonBooleanSchema(JsonSimpleSchema):
     def __init__(self, **kwargs):
         super().__init__(type='boolean', **kwargs)
 
 
-class JsonStringSchema(JsonSimpleTypeSchema):
+class JsonStringSchema(JsonSimpleSchema):
     # noinspection PyShadowingBuiltins
     def __init__(self,
                  format: str = None,
@@ -175,54 +209,91 @@ class JsonStringSchema(JsonSimpleTypeSchema):
         return d
 
 
-class JsonDatetimeSchema(JsonStringSchema):
+class JsonDateAndTimeSchemaBase:
     # noinspection PyShadowingBuiltins
-    def __init__(self,
-                 min_datetime: str = None,
-                 max_datetime: str = None,
-                 format='date-time',
-                 **kwargs):
+    @classmethod
+    def _validate_value(cls, value: Optional[str], name: str, format: str):
+        if value is not None and \
+                not cls._is_valid_value(value, format):
+            raise ValueError(f'{name} must be formatted as a "{format}"')
 
-        super().__init__(**kwargs)
-
-        if format not in ['date-time', 'date']:
-            raise ValueError('JsonDatetimeSchema must have format "date-time" '
-                             'or "date".')
-        if min_datetime is not None and \
-                not self._is_valid_datetime_or_date(min_datetime):
-            raise ValueError('min_datetime must be formatted as a "date" or '
-                             '"date-time"')
-        if max_datetime is not None and \
-                not self._is_valid_datetime_or_date(max_datetime):
-            raise ValueError('max_datetime must be formatted as a "date" or '
-                             '"date-time"')
-        self.min_datetime = min_datetime
-        self.max_datetime = max_datetime
-
-    @staticmethod
-    def _is_valid_datetime_or_date(instance: str):
+    # noinspection PyShadowingBuiltins
+    @classmethod
+    def _is_valid_value(cls, value: str, format: str) -> bool:
         try:
-            jsonschema.validate(
-                instance=instance,
-                schema=dict(anyOf=[dict(type='string', format='date-time'),
-                                   dict(type='string', format='date')]),
-                format_checker=jsonschema.draft7_format_checker)
+            jsonschema.validate(value,
+                                dict(type='string', format=format),
+                                format_checker=jsonschema.draft7_format_checker)
             return True
         except jsonschema.ValidationError:
             return False
 
-    @staticmethod
-    def new_datetime_range() -> 'JsonArraySchema':
-        """Return a schema for a two-element array of dates or date-times"""
-        return JsonArraySchema(items=[
-                    JsonDatetimeSchema(any_of=[
-                        JsonDatetimeSchema(format='date-time', nullable=True),
-                        JsonDatetimeSchema(format='date', nullable=True),
-                    ]),
-                    JsonDatetimeSchema(any_of=[
-                        JsonDatetimeSchema(format='date-time', nullable=True),
-                        JsonDatetimeSchema(format='date', nullable=True),
-                    ], nullable=True)])
+
+class JsonDateSchema(JsonStringSchema, JsonDateAndTimeSchemaBase):
+    """
+    JSON schema for date instances.
+
+    :param min_date: optional minimum date.
+    :param max_date: optional maximum date.
+    """
+
+    # noinspection PyShadowingBuiltins
+    def __init__(self,
+                 min_date: str = None,
+                 max_date: str = None,
+                 **kwargs):
+        super().__init__(**kwargs, format='date')
+        self._validate_value(min_date, 'min_date', 'date')
+        self._validate_value(max_date, 'max_date', 'date')
+        self.min_date = min_date
+        self.max_date = max_date
+
+    def to_dict(self) -> Dict[str, Any]:
+        d = super().to_dict()
+        if self.min_date is not None:
+            d.update(minDate=self.min_date)
+        if self.max_date is not None:
+            d.update(maxDate=self.max_date)
+        return d
+
+    @classmethod
+    def new_range(cls,
+                  min_date: str = None,
+                  max_date: str = None,
+                  nullable: bool = False) -> 'JsonArraySchema':
+        """
+        Return a schema for a date range.
+        :param min_date: optional minimum date.
+        :param max_date: optional maximum date.
+        :param nullable: whether the whole range as well as individual start and end may be None.
+        :return: a JsonArraySchema with two items.
+        """
+        return JsonArraySchema(
+            items=[
+                JsonDateSchema(min_date=min_date, max_date=max_date, nullable=nullable),
+                JsonDateSchema(min_date=min_date, max_date=max_date, nullable=nullable),
+            ],
+            nullable=nullable)
+
+
+class JsonDatetimeSchema(JsonStringSchema, JsonDateAndTimeSchemaBase):
+    """
+    JSON schema for date-time instances.
+
+    :param min_datetime: optional minimum date-time.
+    :param max_datetime: optional maximum date-time.
+    """
+
+    # noinspection PyShadowingBuiltins
+    def __init__(self,
+                 min_datetime: str = None,
+                 max_datetime: str = None,
+                 **kwargs):
+        super().__init__(**kwargs, format='date-time')
+        self._validate_value(min_datetime, 'min_datetime', 'date-time')
+        self._validate_value(max_datetime, 'max_datetime', 'date-time')
+        self.min_datetime = min_datetime
+        self.max_datetime = max_datetime
 
     def to_dict(self) -> Dict[str, Any]:
         d = super().to_dict()
@@ -232,8 +303,25 @@ class JsonDatetimeSchema(JsonStringSchema):
             d.update(maxDatetime=self.max_datetime)
         return d
 
+    @classmethod
+    def new_range(cls,
+                  min_datetime: str = None,
+                  max_datetime: str = None,
+                  nullable: bool = False) -> 'JsonArraySchema':
+        """
+        Return a schema for a date-time range.
+        :param min_datetime: optional minimum date.
+        :param max_datetime: optional maximum date.
+        :param nullable: whether the whole range as well as individual start and end dates may be None.
+        :return: a JsonArraySchema with two items.
+        """
+        return JsonArraySchema(items=[
+            JsonDatetimeSchema(min_datetime=min_datetime, max_datetime=max_datetime, nullable=nullable),
+            JsonDatetimeSchema(min_datetime=min_datetime, max_datetime=max_datetime, nullable=nullable),
+        ], nullable=nullable)
 
-class JsonNumberSchema(JsonSimpleTypeSchema):
+
+class JsonNumberSchema(JsonSimpleSchema):
     # noinspection PyShadowingBuiltins
     def __init__(self,
                  type: str = 'number',
