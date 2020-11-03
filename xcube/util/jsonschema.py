@@ -22,6 +22,9 @@
 from abc import ABC, abstractmethod
 from typing import Dict, Any, Callable, Mapping, Sequence, Union, Tuple, Optional
 
+# Make sure strict-rfc3339 package is installed. The package jsonschema uses it for validating
+# instances of the JsonDateSchema and JsonDatetimeSchema.
+__import__('strict_rfc3339')
 import jsonschema
 
 from xcube.util.ipython import register_json_formatter
@@ -216,7 +219,7 @@ class JsonDateAndTimeSchemaBase:
 
     # noinspection PyShadowingBuiltins
     @classmethod
-    def _is_valid_value(cls, value: str, format: str):
+    def _is_valid_value(cls, value: str, format: str) -> bool:
         try:
             jsonschema.validate(value,
                                 dict(type='string', format=format),
@@ -287,8 +290,8 @@ class JsonDatetimeSchema(JsonStringSchema, JsonDateAndTimeSchemaBase):
                  max_datetime: str = None,
                  **kwargs):
         super().__init__(**kwargs, format='date-time')
-        JsonDateSchema._validate_value(min_datetime, 'min_datetime', 'date-time')
-        JsonDateSchema._validate_value(max_datetime, 'max_datetime', 'date-time')
+        self._validate_value(min_datetime, 'min_datetime', 'date-time')
+        self._validate_value(max_datetime, 'max_datetime', 'date-time')
         self.min_datetime = min_datetime
         self.max_datetime = max_datetime
 
