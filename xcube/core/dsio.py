@@ -30,6 +30,7 @@ import s3fs
 import urllib3.util
 import xarray as xr
 import zarr
+import yaml
 
 from xcube.constants import EXTENSION_POINT_DATASET_IOS
 from xcube.constants import FORMAT_NAME_CSV, FORMAT_NAME_MEM, FORMAT_NAME_NETCDF4, FORMAT_NAME_ZARR
