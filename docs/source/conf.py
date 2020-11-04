@@ -130,6 +130,7 @@ autodoc_mock_imports = ['affine',
                         'netcdf4',
                         'numba',
                         'numpy',
+                        'osgeo'
                         'pandas',
                         # 'pillow',
                         'proj4',
