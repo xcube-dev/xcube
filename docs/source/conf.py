@@ -129,6 +129,7 @@ autodoc_mock_imports = ['affine',
                         'dask',
                         'fiona',
                         'gdal',
+                        'geopandas'
                         'jsonschema'
                         'matplotlib',
                         'netcdf4',

@@ -4,5 +4,7 @@ sphinx-argparse
 sphinx-autodoc-annotation
 mock
 recommonmark>=0.6.0
+# listing pandas within autodoc_mock_imports of conf.py seems not to be sufficient:
 pandas
+# listing jsonschema within autodoc_mock_imports of conf.py seems not to be sufficient:
 jsonschema
