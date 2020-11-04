@@ -74,7 +74,7 @@ class MemoryDataStore(MutableDataStore):
         assert_given(data_id, 'data_id')
         if not data_id in self._data_dict:
             return False
-        if type_specifier:
+        if type_specifier is not None:
             data_type_specifier = get_type_specifier(self._data_dict[data_id])
             if not TypeSpecifier.parse(type_specifier).is_compatible(data_type_specifier):
                 return False
@@ -82,7 +82,7 @@ class MemoryDataStore(MutableDataStore):
 
     def describe_data(self, data_id: str, type_specifier: str = None) -> DataDescriptor:
         self._assert_valid_data_id(data_id)
-        if type_specifier:
+        if type_specifier is not None:
             data_type_specifier = get_type_specifier(self._data_dict[data_id])
             if not data_type_specifier.is_compatible(type_specifier):
                 raise ValueError(f'Data resource "{data_id}" is not compatible with type specifier {type_specifier}. '

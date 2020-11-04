@@ -32,9 +32,9 @@ import xarray as xr
 
 class TypeSpecifier:
     """
-    A type specifier denotes a type of data. It is used to group similar types of data and discern
-    different types of data. It can be used by stores to state what types of data can be read from
-    and/or written to them.
+    A type specifier denotes a type of data. It is used to group similar types of data and
+    distinguish between different types of data. It can be used by stores to state what
+    types of data can be read from and/or written to them.
 
     A type specifier consists of a name and an arbitrary number of flags.
     Flags can be used to further refine a type specifier if needed.

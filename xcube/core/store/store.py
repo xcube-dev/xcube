@@ -145,7 +145,7 @@ class DataStore(DataOpener, ABC):
         """
         Get the tuple of data type specifiers that are supported for the given *data_id*.
         In case the type specifier allows one ore more flags, they are listed in brackets
-        following the specifier's name, e.g., dataset[cube, multilevel].
+        following the specifier's name, e.g., "dataset[cube, multilevel]".
 
         :param data_id: An identifier of data that is provided by this store
         :return: A tuple of type specifiers that apply to the given data_id
@@ -166,8 +166,8 @@ class DataStore(DataOpener, ABC):
         If *include_titles* is false, the second item of the result tuple will be None.
 
         :param type_specifier: If given, only data identifiers that are available as this type are returned. If this is
-        omitted, all available data identifiers are returned
-        :param include_titles: If true, the store will attempt to also provide a title
+        omitted, all available data identifiers are returned.
+        :param include_titles: If true, the store will attempt to also provide a title.
         :return: An iterator over the identifiers and titles of data resources provided by this data store.
         :raise DataStoreError: If an error occurs.
         """

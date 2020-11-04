@@ -153,8 +153,7 @@ class DatasetDescriptor(DataDescriptor):
                                  dims=d.get('dims', None),
                                  data_vars=data_vars,
                                  attrs=d.get('attrs', None),
-                                 open_params_schema=d.get('open_params_schema', None),
-                                 )
+                                 open_params_schema=d.get('open_params_schema', None))
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert into a JSON-serializable dictionary"""
