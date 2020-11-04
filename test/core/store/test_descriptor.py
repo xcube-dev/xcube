@@ -18,12 +18,10 @@ class DatasetDescriptorTest(unittest.TestCase):
             pass
 
     def test_from_dict_wrong_type_specifier(self):
-        try:
+        with self.assertRaises(ValueError) as cm:
             descriptor_dict = dict(data_id='xyz', type_id='tsr')
             DatasetDescriptor.from_dict(descriptor_dict)
-            self.fail('Exception expected')
-        except ValueError:
-            pass
+        self.assertEqual('...', f'{cm.exception}')
 
     def test_from_dict_basic(self):
         descriptor_dict = dict(data_id='xyz')

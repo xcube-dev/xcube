@@ -142,7 +142,7 @@ class DirectoryDataStore(MutableDataStore):
         self._assert_valid_data_id(data_id)
         actual_type_specifier, _, _ = self._get_accessor_id_parts(data_id)
         if type_specifier and not TypeSpecifier.parse(type_specifier).is_compatible(actual_type_specifier):
-            raise ValueError(f'Data resource "{data_id}" is not available as type {type_specifier}. '
+            raise ValueError(f'Data resource "{data_id}" is not compatible with type specifier {type_specifier}. '
                              f'Cannot create DataDescriptor.')
         data = self.open_data(data_id)
         return new_data_descriptor(data_id, data)

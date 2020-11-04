@@ -136,7 +136,8 @@ class DataStore(DataOpener, ABC):
         """
         Get the tuple of data type specifiers that are supported for the given *data_id*.
         In case the type specifier allows one ore more flags, they are listed in brackets
-        following the specifier's name, e.g., dataset[CUBE, MULTILEVEL].
+        following the specifier's name, e.g., dataset[cube, multilevel].
+
         :param data_id: An identifier of data that is provided by this store
         :return: A tuple of type specifiers that apply to the given data_id
         :raise DataStoreError: If an error occurs.
@@ -149,7 +150,7 @@ class DataStore(DataOpener, ABC):
         If *type_specifier* is omitted, all data resource identifiers are returned.
 
         If a store implementation supports only a single data type, it should verify that *type_specifier*
-        is either None or equal to that single data type.
+        is either None or compatible with the supported data type.
 
         The returned iterator items are 2-tuples of the form (*data_id*, *title*), where *data_id*
         is the actual data identifier and *title* is an optional, human-readable title for the data.
@@ -178,7 +179,7 @@ class DataStore(DataOpener, ABC):
         """
         Get the descriptor for the data resource given by *data_id*.
 
-        Raises a DataStoreError if *data_id* does not exist in this store
+        Raises a :class:DataStoreError if *data_id* does not exist in this store
         or the data is not available as the specified *type_specifier*.
 
         :param data_id: An identifier of data provided by this store
@@ -212,7 +213,7 @@ class DataStore(DataOpener, ABC):
         method.
 
         If a store implementation supports only a single data type, it should verify that *type_specifier*
-        is either None or equal to that single data type.
+        is either None or compatible with the supported data type specifier.
 
         :param type_specifier: An optional data type specifier that is known to be supported by this data store.
         :param search_params: The search parameters.
@@ -228,7 +229,7 @@ class DataStore(DataOpener, ABC):
         If *data_id* is given, data accessors are restricted to the ones that can open the identified data resource.
         Raises if *data_id* does not exist in this store.
 
-        If *type_specifier* is given, only openers that support this data type are returned.
+        If *type_specifier* is given, only openers that are compatible with this data type specifier are returned.
 
         If a store implementation supports only a single data type, it should verify that *type_specifier*
         is either None or equal to that single data type.
