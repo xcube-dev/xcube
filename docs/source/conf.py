@@ -127,6 +127,7 @@ autodoc_mock_imports = ['affine',
                         'click',
                         'cmocean',
                         'dask',
+                        'distutils'
                         'fiona',
                         'gdal',
                         'geopandas'
