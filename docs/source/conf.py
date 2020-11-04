@@ -126,6 +126,7 @@ autodoc_mock_imports = ['affine',
                         'dask',
                         'fiona',
                         'gdal',
+                        'jsonschema'
                         'matplotlib',
                         'netcdf4',
                         'numba',
