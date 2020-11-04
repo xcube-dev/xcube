@@ -104,10 +104,19 @@ def find_data_store_extensions(predicate: ExtensionPredicate = None,
 class DataStore(DataOpener, ABC):
     """
     A data store represents a collection of data resources that can be enumerated, queried, and opened in order to
-    obtain in-memory representations.
+    obtain in-memory representations. A data resource may be available as different types. Therefore, many functions
+    allow to specify the data type using a TypeSpecifier. A type specifier consists of a name and an arbitrary set of
+    flags, given in brackets. These flags are used to define characteristics of a type, e.g., the type specifier
+    dataset[cube] denotes a dataset which also meets the requirements of a cube. A dataset specified by
+    dataset[cube, multilevel] is a cube and has multiple levels. A type specifier with a flag is compatible to a type
+    specifer that does not have the same flag set but is otherwise similar, e.g., dataset[cube] is compatible with
+    dataset. This is not true the other way round. If no type specifier is set a default type is assumed,
+    which in most cases will be the basic form of a data type without any flags.
 
     A store implementation may use any existing openers/writers, or define its own,
     or not use any openers/writers at all.
+
+    Store Implementers should follow the conventions outlined in https://xcube.readthedocs.io/en/latest/storeconv.html .
 
     DataStore is an abstract base class that both read-only and mutable data stores must implement.
     """
