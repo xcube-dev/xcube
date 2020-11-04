@@ -38,6 +38,9 @@ doc_title = 'xcube Toolkit Documentation'
 
 # -- General configuration ---------------------------------------------------
 
+# If your documentation needs a minimal Sphinx version, state it here.
+needs_sphinx = '1.7'
+
 # The master toctree document.
 master_doc = 'index'
 
@@ -145,4 +148,4 @@ autodoc_mock_imports = ['affine',
                         # 'tornado',
                         'xarray',
                         'yaml',
-                        'zarr']
+                        'zarr',]
