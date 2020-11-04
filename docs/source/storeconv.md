@@ -2,13 +2,6 @@
 
 This document is a work in progress.
 
-## Open Parameters
-
-This section aims to provide an overview of the interface defined by an xcube
-data store or opener in its open parameters schema, and how this schema may be
-used by a UI generator to automatically construct a user interface for a data
-opener.
-
 The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT", "SHOULD",
 "SHOULD NOT", "RECOMMENDED", "MAY", and "OPTIONAL" in this document are to be
 interpreted as described in [RFC 2119](https://tools.ietf.org/html/rfc2119).
@@ -26,6 +19,35 @@ Useful references related to this document include:
    [xcube-cds](https://github.com/dcs4cop/xcube-cds)
  - The
    [`xcube.util.jsonschema`](https://github.com/dcs4cop/xcube/blob/master/xcube/util/jsonschema.py) source code
+
+## Naming Identifiers
+
+This section states what identifiers used by an xcube data store SHALL look like.
+
+In the DataStore framework, identifiers are used to denote data sources, data stores, and data accessors.
+Data store, data opener, and data writer identifiers are used to register the component as extension in a package's plugin.py.
+Identifiers MUST be unambiguous in the scope of the data store. 
+They SHOULD be unambiguous across the entirety of data stores. 
+
+There are no further restrictions for data source and data store identifiers.
+
+A data accessor identifier MUST correspond to the following scheme:
+
+`<type_specifier>:<format_identifier>:<storage_identifier>`
+
+`<type_specifier>` MUST be a valid string that specifies a data type.
+In case the type specifier has flags, the flags MUST be given in brackets, in alphabetic order, without spaces (e.g., `dataset[cube,multilevel]`).
+Note that `*` is a valid value in case that any type is supported.
+The `<format_identifier>` describes the data format that may be accessed, e.g., `zarr` or `netcdf`.
+The `<storage_identifier>` describes the kind of storage the accessor can access.
+An example for a valid data accessor identifier is `dataset[cube]:netcdf:posix`.
+
+## Open Parameters
+
+This section aims to provide an overview of the interface defined by an xcube
+data store or opener in its open parameters schema, and how this schema may be
+used by a UI generator to automatically construct a user interface for a data
+opener.
 
 ### Specification of open parameters
 
