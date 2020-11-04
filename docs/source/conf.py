@@ -143,9 +143,10 @@ autodoc_mock_imports = ['affine',
                         'rasterio',
                         's3fs',
                         'scipy',
+                        'seaborn',
                         'setuptools',
                         'shapely',
                         # 'tornado',
                         'xarray',
                         'yaml',
-                        'zarr',]
+                        'zarr', ]
