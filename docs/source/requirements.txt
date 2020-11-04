@@ -8,3 +8,7 @@ recommonmark>=0.6.0
 pandas
 jsonschema
 geopandas
+shapely
+fiona
+pyproj
+numpy
