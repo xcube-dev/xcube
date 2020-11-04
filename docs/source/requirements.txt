@@ -1,6 +1,7 @@
 sphinx>=3.3
 sphinx_rtd_theme>=0.5.0
+sphinx-argparse
 sphinx-autodoc-annotation
 mock
 recommonmark>=0.6.0
-pandas >=1.1
+pandas
