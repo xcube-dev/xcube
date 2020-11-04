@@ -135,7 +135,7 @@ autodoc_mock_imports = ['affine',
                         'numba',
                         'numpy',
                         'osgeo',
-                        'packaging',
+                        'packaging', # needed to fix AttributeError: 'LooseVersion' object has no attribute 'version' - https://github.com/sphinx-doc/sphinx/pull/4393/files
                         'pandas',
                         # 'pillow',
                         'proj4',
