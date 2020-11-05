@@ -87,6 +87,8 @@ class DirectoryDataStoreTest(unittest.TestCase):
         self.assertEqual(('dataset', ), self.store.get_type_specifiers_for_data('cube.nc'))
         with self.assertRaises(DataStoreError) as cm:
             set(self.store.get_type_specifiers_for_data('xyz.levels'))
+        self.assertEqual('Data resource "xyz.levels" does not exist in store',
+                         f'{cm.exception}')
 
 
     def test_get_data_writer_ids(self):
@@ -188,8 +190,11 @@ class DirectoryDataStoreTest(unittest.TestCase):
         self.assertEqual('cube-1-250-250.zarr', data_descriptor.data_id)
         self.assertEqual('dataset[cube]', data_descriptor.type_specifier)
 
-        with self.assertRaises(ValueError) as cm:
+        with self.assertRaises(DataStoreError) as cm:
             set(self.store.describe_data('cube-1-250-250.zarr', type_specifier='geodataframe'))
+        self.assertEqual('Data resource "cube-1-250-250.zarr" is not compatible with type specifier "geodataframe". '
+                         'Cannot create DataDescriptor.', f'{cm.exception}')
+
 
     def test_search_data(self):
         result = list(self.store.search_data())
