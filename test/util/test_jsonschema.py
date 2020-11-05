@@ -2,44 +2,70 @@ import unittest
 from collections import namedtuple
 from typing import Dict, Any
 
-from xcube.util.jsonschema import JsonArraySchema, JsonDatetimeSchema
+from xcube.util.jsonschema import JsonArraySchema
 from xcube.util.jsonschema import JsonBooleanSchema
+from xcube.util.jsonschema import JsonComplexSchema
+from xcube.util.jsonschema import JsonDateSchema
+from xcube.util.jsonschema import JsonDatetimeSchema
 from xcube.util.jsonschema import JsonIntegerSchema
 from xcube.util.jsonschema import JsonNullSchema
 from xcube.util.jsonschema import JsonNumberSchema
 from xcube.util.jsonschema import JsonObjectSchema
-from xcube.util.jsonschema import JsonSchema
-from xcube.util.jsonschema import JsonSimpleTypeSchema
+from xcube.util.jsonschema import JsonSimpleSchema
 from xcube.util.jsonschema import JsonStringSchema
 
 
-class JsonSchemaTest(unittest.TestCase):
+class JsonComplexSchemaTest(unittest.TestCase):
 
     def test_base_props_validated(self):
-        class MyIntSchema(JsonSimpleTypeSchema, JsonSchema):
-            def __init__(self, type: str, **kwargs):
-                super().__init__(type=type, **kwargs)
+        with self.assertRaises(ValueError) as cm:
+            JsonComplexSchema()
+        self.assertEqual('exactly one of one_of, any_of, all_of must be given',
+                         f'{cm.exception}')
 
         with self.assertRaises(ValueError) as cm:
-            MyIntSchema('int')
+            JsonComplexSchema(one_of=[JsonStringSchema(), JsonIntegerSchema()],
+                              all_of=[JsonStringSchema(), JsonIntegerSchema()])
+        self.assertEqual('exactly one of one_of, any_of, all_of must be given',
+                         f'{cm.exception}')
+
+    def test_to_dict(self):
+        self.assertEqual(
+            {'oneOf': [{'multipleOf': 5, 'type': 'integer'},
+                       {'multipleOf': 3, 'type': 'integer'}]},
+            JsonComplexSchema(one_of=[JsonIntegerSchema(multiple_of=5),
+                                      JsonIntegerSchema(multiple_of=3)]).to_dict())
+        self.assertEqual(
+            {'anyOf': [{'multipleOf': 5, 'type': 'integer'},
+                       {'multipleOf': 3, 'type': 'integer'}]},
+            JsonComplexSchema(any_of=[JsonIntegerSchema(multiple_of=5),
+                                      JsonIntegerSchema(multiple_of=3)]).to_dict())
+        self.assertEqual(
+            {'allOf': [{'multipleOf': 5, 'type': 'integer'},
+                       {'multipleOf': 3, 'type': 'integer'}]},
+            JsonComplexSchema(all_of=[JsonIntegerSchema(multiple_of=5),
+                                      JsonIntegerSchema(multiple_of=3)]).to_dict())
+
+
+class JsonSimpleSchemaTest(unittest.TestCase):
+
+    def test_base_props_validated(self):
+        with self.assertRaises(ValueError) as cm:
+            JsonSimpleSchema('int')
         self.assertEqual('type must be one of "array", "boolean", "integer", "null", "number", "object", "string"',
                          f'{cm.exception}')
 
         with self.assertRaises(ValueError) as cm:
-            MyIntSchema('integer', factory='int')
+            JsonSimpleSchema('integer', factory='int')
         self.assertEqual('factory must be callable',
                          f'{cm.exception}')
 
         with self.assertRaises(ValueError) as cm:
-            MyIntSchema('integer', serializer='int')
+            JsonSimpleSchema('integer', serializer='int')
         self.assertEqual('serializer must be callable',
                          f'{cm.exception}')
 
     def test_to_dict(self):
-        class MyIntSchema(JsonSimpleTypeSchema, JsonSchema):
-            def __init__(self, type: str, **kwargs):
-                super().__init__(type=type, **kwargs)
-
         self.assertEqual(
             {
                 'type': ['integer', 'null'],
@@ -49,13 +75,13 @@ class JsonSchemaTest(unittest.TestCase):
                 'default': 10,
                 'const': 100,
             },
-            MyIntSchema('integer',
-                        title='Number of Gnarzes',
-                        description='Not really required',
-                        enum=[10, 100, 1000],
-                        const=100,
-                        default=10,
-                        nullable=True).to_dict())
+            JsonSimpleSchema('integer',
+                             title='Number of Gnarzes',
+                             description='Not really required',
+                             enum=[10, 100, 1000],
+                             const=100,
+                             default=10,
+                             nullable=True).to_dict())
 
 
 class JsonNullSchemaTest(unittest.TestCase):
@@ -104,6 +130,25 @@ class JsonNumberSchemaTest(unittest.TestCase):
             JsonNumberSchema(type='float')
         self.assertEqual('Type must be one of "integer", "number"', f'{cm.exception}')
 
+    def test_to_dict(self):
+        self.assertEqual({'type': 'number'}, JsonNumberSchema().to_dict())
+        self.assertEqual({'type': 'number'}, JsonNumberSchema(nullable=False).to_dict())
+        self.assertEqual({'type': ['number', 'null']}, JsonNumberSchema(nullable=True).to_dict())
+        self.assertEqual({'type': 'number',
+                          'exclusiveMinimum': 0,
+                          'maximum': 100,
+                          'multipleOf': 10},
+                         JsonNumberSchema(exclusive_minimum=0,
+                                          maximum=100,
+                                          multiple_of=10).to_dict())
+        self.assertEqual({'type': 'integer',
+                          'minimum': 100,
+                          'exclusiveMaximum': 200,
+                          'multipleOf': 20},
+                         JsonIntegerSchema(minimum=100,
+                                           exclusive_maximum=200,
+                                           multiple_of=20).to_dict())
+
 
 class JsonStringSchemaTest(unittest.TestCase):
     def test_to_instance(self):
@@ -118,48 +163,148 @@ class JsonStringSchemaTest(unittest.TestCase):
     def test_from_instance(self):
         self.assertEqual('pieps', JsonStringSchema().from_instance('pieps'))
 
+    def test_to_dict(self):
+        self.assertEqual({'type': 'string'}, JsonStringSchema().to_dict())
+        self.assertEqual({'type': 'string'}, JsonStringSchema(nullable=False).to_dict())
+        self.assertEqual({'type': ['string', 'null']}, JsonStringSchema(nullable=True).to_dict())
+        self.assertEqual({'type': 'string', 'format': 'uri'}, JsonStringSchema(format='uri').to_dict())
+
+
+class JsonDateSchemaTest(unittest.TestCase):
+
+    def test_to_instance(self):
+        self.assertEqual('2020-06-03',
+                         JsonDateSchema(min_date='2020-02-01',
+                                        max_date='2020-07-05').to_instance('2020-06-03'))
+
+    def test_to_dict(self):
+        self.assertEqual({'type': 'string',
+                          'format': 'date',
+                          'minDate': '2020-02-01',
+                          'maxDate': '2020-07-05'
+                          },
+                         JsonDateSchema(min_date='2020-02-01',
+                                        max_date='2020-07-05').to_dict())
+
+        self.assertEqual({'type': ['string', 'null'],
+                          'format': 'date',
+                          'minDate': '2020-02-01',
+                          'maxDate': '2020-07-05'
+                          },
+                         JsonDateSchema(min_date='2020-02-01',
+                                        max_date='2020-07-05',
+                                        nullable=True).to_dict())
+
+    def test_store_date_limits(self):
+        minimum = '1981-05-06'
+        maximum = '1982-09-15'
+        schema = JsonDateSchema(min_date=minimum,
+                                max_date=maximum)
+        self.assertEqual(minimum, schema.min_date)
+        self.assertEqual(maximum, schema.max_date)
+
+    def test_min_max_validity_checks(self):
+        with self.assertRaises(ValueError):
+            JsonDateSchema(min_date='2002-02-02T10:20:14')
+        with self.assertRaises(ValueError):
+            JsonDateSchema(max_date='pippo')
+
+    def test_new_range(self):
+        self.assertEqual(
+            {'type': 'array',
+             'items': [{'type': 'string',
+                        'format': 'date',
+                        },
+                       {'type': 'string',
+                        'format': 'date',
+                        }
+                       ],
+             },
+            JsonDateSchema.new_range().to_dict())
+
+        self.assertEqual(
+            {'type': ['array', 'null'],
+             'items': [{'type': ['string', 'null'],
+                        'format': 'date',
+                        'minDate': '2020-02-01',
+                        'maxDate': '2020-07-05',
+                        },
+                       {'type': ['string', 'null'],
+                        'format': 'date',
+                        'minDate': '2020-02-01',
+                        'maxDate': '2020-07-05',
+                        }
+                       ],
+             },
+            JsonDateSchema.new_range(min_date='2020-02-01',
+                                     max_date='2020-07-05',
+                                     nullable=True).to_dict())
+
 
 class JsonDatetimeSchemaTest(unittest.TestCase):
 
     def test_to_instance(self):
-        self.assertEqual('2020-06-03',
-                         JsonDatetimeSchema(format='date',
-                                          min_datetime='2020-02-01',
-                                          max_datetime='2020-07-05').
-                         to_instance('2020-06-03'))
+        self.assertEqual('2020-06-12T12:30:19Z',
+                         JsonDatetimeSchema(min_datetime='2020-02-01T00:00:00Z',
+                                            max_datetime='2020-07-05T00:00:00Z').to_instance(
+                             '2020-06-12T12:30:19Z'))
+
+    def test_to_dict(self):
+        self.assertEqual({'type': 'string',
+                          'format': 'date-time',
+                          'minDatetime': '2020-02-01T00:00:00Z',
+                          'maxDatetime': '2020-07-05T00:00:00Z'},
+                         JsonDatetimeSchema(min_datetime='2020-02-01T00:00:00Z',
+                                            max_datetime='2020-07-05T00:00:00Z').to_dict())
 
     def test_store_date_limits(self):
-        JsonDatetimeSchema(min_datetime='2001-01-01',
-                           max_datetime='2002-02-02')
-        minimum = '1981-05-06'
-        maximum = '1982-09-15'
-        schema = JsonDatetimeSchema(format='date-time', min_datetime=minimum,
+        minimum = '1981-05-06T00:00:00+00:00'
+        maximum = '1982-09-15T00:00:00+00:00'
+        schema = JsonDatetimeSchema(min_datetime=minimum,
                                     max_datetime=maximum)
         self.assertEqual(minimum, schema.min_datetime)
         self.assertEqual(maximum, schema.max_datetime)
 
-    def test_datetimeschema_formats(self):
-        JsonDatetimeSchema(min_datetime='2001-01-01')
+    def test_min_max_validity_checks(self):
         with self.assertRaises(ValueError):
-            JsonDatetimeSchema(format=None, max_datetime='2002-02-02')
+            JsonDatetimeSchema(  # missing timezone specifier
+                min_datetime='1980-02-03T12:34:56',
+                max_datetime='1982-02-03T23:34:56+05:00')
         with self.assertRaises(ValueError):
-            JsonDatetimeSchema(format='invalid')
-
-
-    def test_date_limit_validity_checks(self):
-        JsonDatetimeSchema(format='date-time',
-                           min_datetime='1980-02-03T12:34:56Z',
-                           max_datetime='1982-02-03T23:34:56+05:00')
-        with self.assertRaises(ValueError):
-            JsonDatetimeSchema(format='date-time',
-                               # missing timezone specifier
-                               min_datetime='1980-02-03T12:34:56',
-                               max_datetime='1982-02-03T23:34:56+05:00')
-        with self.assertRaises(ValueError):
-            JsonDatetimeSchema(format='date-time',
-                               min_datetime='1980-02-03T12:34:56-08:00',
+            JsonDatetimeSchema(min_datetime='1980-02-03T12:34:56-08:00',
                                # invalid date
                                max_datetime='1985-01-32')
+
+    def test_new_range(self):
+        self.assertEqual(
+            {'type': 'array',
+             'items': [{'type': 'string',
+                        'format': 'date-time',
+                        },
+                       {'type': 'string',
+                        'format': 'date-time',
+                        }
+                       ],
+             },
+            JsonDatetimeSchema.new_range().to_dict())
+
+        self.assertEqual(
+            {'type': ['array', 'null'],
+             'items': [{'type': ['string', 'null'],
+                        'format': 'date-time',
+                        'minDatetime': '2002-01-01T00:00:00Z',
+                        'maxDatetime': '2020-01-01T00:00:00Z',
+                        },
+                       {'type': ['string', 'null'],
+                        'format': 'date-time',
+                        'minDatetime': '2002-01-01T00:00:00Z',
+                        'maxDatetime': '2020-01-01T00:00:00Z',
+                        }
+                       ],
+             },
+            JsonDatetimeSchema.new_range(min_datetime='2002-01-01T00:00:00Z',
+                                         max_datetime='2020-01-01T00:00:00Z',
+                                         nullable=True).to_dict())
 
 
 class JsonArraySchemaTest(unittest.TestCase):

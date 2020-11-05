@@ -27,7 +27,8 @@
 * Added documentation for the use of the open parameters passed to `xcube.core.store.DataOpener.open_data()`.
 * The JSON Schema classes in `xcube.util.jsonschema` have been extended:
   - `date` and `date-time` formats are now validated along with the rest of the schema
-  - a `JsonDatetimeSchema` subclass of `JsonStringSchema` has been introduced, including a non-standard extension to specify date and time limits
+  - the `JsonDateSchema` and `JsonDatetimeSchema` subclasses of `JsonStringSchema` have been introduced, 
+    including a non-standard extension to specify date and time limits
 * xcube now requires `s3fs >= 0.5` which implies using faster async I/O when accessing object storage.
 
 ## Changes in 0.5.1

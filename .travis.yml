@@ -5,6 +5,13 @@
 
 language: generic
 
+# Turn PARALLELIZE=true only after the build passed with PARALLELIZE=false.
+# Turn PARALLELIZE=false as a first action after tests fail, especially those that use 
+# concurrent processes or threads (e.g. S3 moto server)!
+#
+#env:
+#  - PARALLELIZE=true
+
 os:
   - linux
   - osx
