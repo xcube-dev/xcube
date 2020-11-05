@@ -91,10 +91,9 @@ class DataDescriptor:
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert into a JSON-serializable dictionary"""
-        d = dict()
-        _copy_none_null_props(self, d, ['data_id', 'type_specifier',
-                                        'crs', 'bbox', 'spatial_res',
-                                        'time_range', 'time_period'])
+        d = dict(type_specifier=str(self.type_specifier))
+        _copy_none_null_props(self, d, ['data_id', 'crs', 'bbox', 'spatial_res', 'time_range', 'time_period'])
+
         if self.open_params_schema is not None:
             d['open_params_schema'] = self.open_params_schema.to_dict()
         return d
