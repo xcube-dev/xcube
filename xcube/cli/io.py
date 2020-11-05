@@ -194,7 +194,7 @@ def dump(file_path: str):
         store_params = []
         store = _new_data_store(store_id, store_params)
         datasets_list = []
-        for data_id, title in store.get_data_ids(type_id='dataset'):
+        for data_id, title in store.get_data_ids(type_specifier='dataset'):
             dsd = store.describe_data(data_id)
             datasets_list.append(dsd.to_dict())
         stores_list.append(dict(store_id=store_id,

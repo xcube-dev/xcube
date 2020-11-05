@@ -30,18 +30,18 @@ from xcube.core.mldataset import MultiLevelDataset
 from xcube.core.store import DataDescriptor
 from xcube.core.store import DataStoreError
 from xcube.core.store import MutableDataStore
-from xcube.core.store import TYPE_ID_ANY
-from xcube.core.store import TYPE_ID_DATASET
-from xcube.core.store import TYPE_ID_GEO_DATA_FRAME
-from xcube.core.store import TYPE_ID_MULTI_LEVEL_DATASET
+from xcube.core.store import TYPE_SPECIFIER_ANY
+from xcube.core.store import TYPE_SPECIFIER_DATASET
+from xcube.core.store import TYPE_SPECIFIER_GEODATAFRAME
+from xcube.core.store import TYPE_SPECIFIER_MULTILEVEL_DATASET
 from xcube.core.store import find_data_opener_extensions
 from xcube.core.store import find_data_writer_extensions
 from xcube.core.store import get_data_accessor_predicate
-from xcube.core.store import get_type_id
+from xcube.core.store import get_type_specifier
 from xcube.core.store import new_data_descriptor
 from xcube.core.store import new_data_opener
 from xcube.core.store import new_data_writer
-from xcube.core.store import TypeId
+from xcube.core.store import TypeSpecifier
 from xcube.util.assertions import assert_given
 from xcube.util.assertions import assert_in
 from xcube.util.assertions import assert_instance
@@ -55,17 +55,17 @@ _STORAGE_ID = 'posix'
 _DEFAULT_FORMAT_ID = 'zarr'
 
 _FILENAME_EXT_TO_ACCESSOR_ID_PARTS = {
-    '.zarr': (str(TYPE_ID_DATASET), 'zarr', _STORAGE_ID),
-    '.levels': (str(TYPE_ID_MULTI_LEVEL_DATASET), 'levels', _STORAGE_ID),
-    '.nc': (str(TYPE_ID_DATASET), 'netcdf', _STORAGE_ID),
-    '.shp': (str(TYPE_ID_GEO_DATA_FRAME), 'shapefile', _STORAGE_ID),
-    '.geojson': (str(TYPE_ID_GEO_DATA_FRAME), 'geojson', _STORAGE_ID),
+    '.zarr': (str(TYPE_SPECIFIER_DATASET), 'zarr', _STORAGE_ID),
+    '.levels': (str(TYPE_SPECIFIER_MULTILEVEL_DATASET), 'levels', _STORAGE_ID),
+    '.nc': (str(TYPE_SPECIFIER_DATASET), 'netcdf', _STORAGE_ID),
+    '.shp': (str(TYPE_SPECIFIER_GEODATAFRAME), 'shapefile', _STORAGE_ID),
+    '.geojson': (str(TYPE_SPECIFIER_GEODATAFRAME), 'geojson', _STORAGE_ID),
 }
 
-_TYPE_ID_TO_ACCESSOR_TO_DEFAULT_FILENAME_EXT = {
-    TYPE_ID_DATASET: '.zarr',
-    TYPE_ID_MULTI_LEVEL_DATASET: '.levels',
-    TYPE_ID_GEO_DATA_FRAME: '.geojson'
+_TYPE_SPECIFIER_TO_ACCESSOR_TO_DEFAULT_FILENAME_EXT = {
+    TYPE_SPECIFIER_DATASET: '.zarr',
+    TYPE_SPECIFIER_MULTILEVEL_DATASET: '.levels',
+    TYPE_SPECIFIER_GEODATAFRAME: '.geojson'
 }
 
 
@@ -105,56 +105,67 @@ class DirectoryDataStore(MutableDataStore):
         )
 
     @classmethod
-    def get_type_ids(cls) -> Tuple[str, ...]:
-        return str(TYPE_ID_DATASET), str(TYPE_ID_MULTI_LEVEL_DATASET), str(TYPE_ID_GEO_DATA_FRAME)
+    def get_type_specifiers(cls) -> Tuple[str, ...]:
+        return str(TYPE_SPECIFIER_DATASET), str(TYPE_SPECIFIER_MULTILEVEL_DATASET), str(TYPE_SPECIFIER_GEODATAFRAME)
 
-    def get_data_ids(self, type_id: str = None) -> Iterator[Tuple[str, Optional[str]]]:
-        if type_id:
-            type_id = TypeId.parse(type_id)
-        if type_id == TYPE_ID_ANY:
-            type_id = None
-        self._assert_valid_type_id(type_id)
+    def get_type_specifiers_for_data(self, data_id: str) -> Tuple[str, ...]:
+        self._assert_valid_data_id(data_id)
+        actual_type_specifier, _, _ = self._get_accessor_id_parts(data_id)
+        return actual_type_specifier,
+
+    def get_data_ids(self, type_specifier: str = None, include_titles: bool = True) -> Iterator[Tuple[str, Optional[str]]]:
+        if type_specifier:
+            type_specifier = TypeSpecifier.parse(type_specifier)
+        if type_specifier == TYPE_SPECIFIER_ANY:
+            type_specifier = None
+        self._assert_valid_type_specifier(type_specifier)
         # TODO: Use os.walk(), which provides a generator rather than a list
         # os.listdir does not guarantee any ordering of the entries, so
         # sort them to ensure predictable behaviour.
         for data_id in sorted(os.listdir(self._base_dir)):
             accessor_id_parts = self._get_accessor_id_parts(data_id, require=False)
             if accessor_id_parts:
-                actual_type_id, _, _ = accessor_id_parts
-                actual_type_id = TypeId.normalize(actual_type_id)
-                if type_id is None or type_id.is_compatible(actual_type_id):
+                actual_type_specifier, _, _ = accessor_id_parts
+                actual_type_specifier = TypeSpecifier.normalize(actual_type_specifier)
+                if type_specifier is None or type_specifier.is_compatible(actual_type_specifier):
                     yield data_id, None
 
-    def has_data(self, data_id: str) -> bool:
+    def has_data(self, data_id: str, type_specifier: str = None) -> bool:
         assert_given(data_id, 'data_id')
+        actual_type_specifier, _, _ = self._get_accessor_id_parts(data_id)
+        if type_specifier and not TypeSpecifier.parse(type_specifier).is_compatible(actual_type_specifier):
+            return False
         path = self._resolve_data_id_to_path(data_id)
         return os.path.exists(path)
 
-    def describe_data(self, data_id: str) -> DataDescriptor:
+    def describe_data(self, data_id: str, type_specifier: str = None) -> DataDescriptor:
         self._assert_valid_data_id(data_id)
+        actual_type_specifier, _, _ = self._get_accessor_id_parts(data_id)
+        if type_specifier and not TypeSpecifier.parse(type_specifier).is_compatible(actual_type_specifier):
+            raise DataStoreError(f'Data resource "{data_id}" is not compatible with type specifier "{type_specifier}". '
+                                 f'Cannot create DataDescriptor.')
         data = self.open_data(data_id)
         return new_data_descriptor(data_id, data)
 
-    @classmethod
-    def get_search_params_schema(cls) -> JsonObjectSchema:
+    def get_search_params_schema(self, type_specifier: str = None) -> JsonObjectSchema:
         return JsonObjectSchema()
 
-    def search_data(self, type_id: str = None, **search_params) -> Iterator[DataDescriptor]:
+    def search_data(self, type_specifier: str = None, **search_params) -> Iterator[DataDescriptor]:
         if search_params:
-            raise DataStoreError(f'Unsupported search_params {tuple(search_params.keys())}')
-        for data_id in self.get_data_ids(type_id=type_id):
+            raise DataStoreError(f'Unsupported search_params "{tuple(search_params.keys())}"')
+        for data_id in self.get_data_ids(type_specifier=type_specifier):
             yield self.describe_data(data_id[0])
 
-    def get_data_opener_ids(self, data_id: str = None, type_id: Optional[str] = None) -> Tuple[str, ...]:
-        if type_id:
-            type_id = TypeId.parse(type_id)
-        if type_id == TYPE_ID_ANY:
-            type_id = None
-        self._assert_valid_type_id(type_id)
-        if not type_id and data_id:
-            type_id, _, _ = self._get_accessor_id_parts(data_id)
+    def get_data_opener_ids(self, data_id: str = None, type_specifier: Optional[str] = None) -> Tuple[str, ...]:
+        if type_specifier:
+            type_specifier = TypeSpecifier.parse(type_specifier)
+        if type_specifier == TYPE_SPECIFIER_ANY:
+            type_specifier = None
+        self._assert_valid_type_specifier(type_specifier)
+        if not type_specifier and data_id:
+            type_specifier, _, _ = self._get_accessor_id_parts(data_id)
         return tuple(ext.name for ext in find_data_opener_extensions(
-            predicate=get_data_accessor_predicate(type_id=type_id, storage_id=_STORAGE_ID)
+            predicate=get_data_accessor_predicate(type_specifier=type_specifier, storage_id=_STORAGE_ID)
         ))
 
     def get_open_data_params_schema(self, data_id: str = None, opener_id: str = None) -> JsonObjectSchema:
@@ -162,7 +173,7 @@ class DirectoryDataStore(MutableDataStore):
             opener_id = self._get_opener_id(data_id)
         if not opener_id:
             extensions = find_data_opener_extensions(
-                predicate=get_data_accessor_predicate(type_id='dataset',
+                predicate=get_data_accessor_predicate(type_specifier='dataset',
                                                       format_id=_DEFAULT_FORMAT_ID,
                                                       storage_id=_STORAGE_ID)
             )
@@ -180,21 +191,21 @@ class DirectoryDataStore(MutableDataStore):
         path = self._resolve_data_id_to_path(data_id)
         return new_data_opener(opener_id).open_data(path, **open_params)
 
-    def get_data_writer_ids(self, type_id: str = None) -> Tuple[str, ...]:
-        if type_id:
-            type_id = TypeId.parse(type_id)
-        if type_id == TYPE_ID_ANY:
-            type_id = None
-        self._assert_valid_type_id(type_id)
+    def get_data_writer_ids(self, type_specifier: str = None) -> Tuple[str, ...]:
+        if type_specifier:
+            type_specifier = TypeSpecifier.parse(type_specifier)
+        if type_specifier == TYPE_SPECIFIER_ANY:
+            type_specifier = None
+        self._assert_valid_type_specifier(type_specifier)
         extensions = find_data_writer_extensions(
-            predicate=get_data_accessor_predicate(type_id=type_id, storage_id=_STORAGE_ID)
+            predicate=get_data_accessor_predicate(type_specifier=type_specifier, storage_id=_STORAGE_ID)
         )
         return tuple(ext.name for ext in extensions)
 
     def get_write_data_params_schema(self, writer_id: str = None) -> JsonObjectSchema:
         if not writer_id:
             extensions = find_data_writer_extensions(
-                predicate=get_data_accessor_predicate(type_id='dataset',
+                predicate=get_data_accessor_predicate(type_specifier='dataset',
                                                       format_id=_DEFAULT_FORMAT_ID,
                                                       storage_id=_STORAGE_ID)
             )
@@ -211,19 +222,19 @@ class DirectoryDataStore(MutableDataStore):
         assert_instance(data, (xr.Dataset, MultiLevelDataset, gpd.GeoDataFrame))
         if not writer_id:
             if isinstance(data, xr.Dataset):
-                predicate = get_data_accessor_predicate(type_id=TYPE_ID_DATASET,
+                predicate = get_data_accessor_predicate(type_specifier=TYPE_SPECIFIER_DATASET,
                                                         format_id='zarr',
                                                         storage_id=_STORAGE_ID)
             elif isinstance(data, MultiLevelDataset):
-                predicate = get_data_accessor_predicate(type_id=TYPE_ID_MULTI_LEVEL_DATASET,
+                predicate = get_data_accessor_predicate(type_specifier=TYPE_SPECIFIER_MULTILEVEL_DATASET,
                                                         format_id='levels',
                                                         storage_id=_STORAGE_ID)
             elif isinstance(data, gpd.GeoDataFrame):
-                predicate = get_data_accessor_predicate(type_id=TYPE_ID_GEO_DATA_FRAME,
+                predicate = get_data_accessor_predicate(type_specifier=TYPE_SPECIFIER_GEODATAFRAME,
                                                         format_id='geojson',
                                                         storage_id=_STORAGE_ID)
             else:
-                raise DataStoreError(f'Unsupported data type {type(data)}')
+                raise DataStoreError(f'Unsupported data type "{type(data)}"')
             extensions = find_data_writer_extensions(predicate=predicate)
             assert extensions
             writer_id = extensions[0].name
@@ -261,9 +272,9 @@ class DirectoryDataStore(MutableDataStore):
         assert_given(data_id, 'data_id')
         return os.path.join(self._base_dir, data_id)
 
-    def _assert_valid_type_id(self, type_id: Optional[TypeId]):
-        if type_id:
-            assert_in(type_id, self.get_type_ids(), 'type_id')
+    def _assert_valid_type_specifier(self, type_specifier: Optional[TypeSpecifier]):
+        if type_specifier:
+            assert_in(type_specifier, self.get_type_specifiers(), 'type_specifier')
 
     def _get_opener_id(self, data_id: str):
         return self._get_accessor_id(data_id, find_data_opener_extensions)
@@ -285,8 +296,10 @@ class DirectoryDataStore(MutableDataStore):
         accessor_id_parts = self._get_accessor_id_parts(data_id, require=require)
         if not accessor_id_parts:
             return []
-        type_id, format_id, storage_id = accessor_id_parts
-        predicate = get_data_accessor_predicate(type_id=type_id, format_id=format_id, storage_id=storage_id)
+        type_specifier, format_id, storage_id = accessor_id_parts
+        predicate = get_data_accessor_predicate(type_specifier=type_specifier,
+                                                format_id=format_id,
+                                                storage_id=storage_id)
         extensions = get_data_accessor_extensions(predicate)
         if not extensions:
             if require:
@@ -305,5 +318,5 @@ class DirectoryDataStore(MutableDataStore):
 
     @classmethod
     def _get_filename_ext(cls, data: Any):
-        type_id = get_type_id(data)
-        return _TYPE_ID_TO_ACCESSOR_TO_DEFAULT_FILENAME_EXT[type_id]
+        type_specifier = get_type_specifier(data)
+        return _TYPE_SPECIFIER_TO_ACCESSOR_TO_DEFAULT_FILENAME_EXT[type_specifier]

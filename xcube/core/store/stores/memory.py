@@ -24,10 +24,10 @@ from typing import Iterator, Dict, Any, Optional, Tuple, Mapping
 
 from xcube.core.store import DataDescriptor
 from xcube.core.store import DataStoreError
-from xcube.core.store import get_type_id
+from xcube.core.store import get_type_specifier
 from xcube.core.store import MutableDataStore
-from xcube.core.store import TypeId
-from xcube.core.store import TYPE_ID_ANY
+from xcube.core.store import TypeSpecifier
+from xcube.core.store import TYPE_SPECIFIER_ANY
 from xcube.core.store import new_data_descriptor
 from xcube.util.assertions import assert_given
 from xcube.util.jsonschema import JsonObjectSchema
@@ -57,32 +57,48 @@ class MemoryDataStore(MutableDataStore):
         return JsonObjectSchema()
 
     @classmethod
-    def get_type_ids(cls) -> Tuple[str, ...]:
-        return str(TYPE_ID_ANY),
+    def get_type_specifiers(cls) -> Tuple[str, ...]:
+        return str(TYPE_SPECIFIER_ANY),
 
-    def get_data_ids(self, type_id: str = None) -> Iterator[Tuple[str, Optional[str]]]:
+    def get_type_specifiers_for_data(self, data_id: str) -> Tuple[str, ...]:
+        self._assert_valid_data_id(data_id)
+        type_specifier = get_type_specifier(self._data_dict[data_id])
+        return str(type_specifier),
+
+    def get_data_ids(self, type_specifier: str = None, include_titles: bool = True) -> Iterator[Tuple[str, Optional[str]]]:
         for data_id, data in self._data_dict.items():
-            if type_id is None or TypeId.normalize(type_id).is_compatible(get_type_id(data)):
+            if type_specifier is None or TypeSpecifier.normalize(type_specifier).is_compatible(get_type_specifier(data)):
                 yield data_id, None
 
-    def has_data(self, data_id: str) -> bool:
+    def has_data(self, data_id: str, type_specifier: str = None) -> bool:
         assert_given(data_id, 'data_id')
-        return data_id in self._data_dict
+        if not data_id in self._data_dict:
+            return False
+        if type_specifier is not None:
+            data_type_specifier = get_type_specifier(self._data_dict[data_id])
+            if not TypeSpecifier.parse(type_specifier).is_compatible(data_type_specifier):
+                return False
+        return True
 
-    def describe_data(self, data_id: str) -> DataDescriptor:
+    def describe_data(self, data_id: str, type_specifier: str = None) -> DataDescriptor:
         self._assert_valid_data_id(data_id)
+        if type_specifier is not None:
+            data_type_specifier = get_type_specifier(self._data_dict[data_id])
+            if not data_type_specifier.is_compatible(type_specifier):
+                raise DataStoreError(f'Data resource "{data_id}" is not compatible with '
+                                     f'type specifier "{type_specifier}". Cannot create DataDescriptor.')
         return new_data_descriptor(data_id, self._data_dict[data_id])
 
     @classmethod
-    def get_search_params_schema(cls) -> JsonObjectSchema:
+    def get_search_params_schema(self, type_specifier: str = None) -> JsonObjectSchema:
         return JsonObjectSchema()
 
-    def search_data(self, type_id: str = None, **search_params) -> Iterator[DataDescriptor]:
+    def search_data(self, type_specifier: str = None, **search_params) -> Iterator[DataDescriptor]:
         self._assert_empty_params(search_params, 'search_params')
-        for data_id, _ in self.get_data_ids(type_id=type_id):
+        for data_id, _ in self.get_data_ids(type_specifier=type_specifier):
             yield new_data_descriptor(data_id, self._data_dict[data_id])
 
-    def get_data_opener_ids(self, data_id: str = None, type_id: str = None) -> Tuple[str, ...]:
+    def get_data_opener_ids(self, data_id: str = None, type_specifier: str = None) -> Tuple[str, ...]:
         return _ACCESSOR_ID,
 
     def get_open_data_params_schema(self, data_id: str = None, opener_id: str = None) -> JsonObjectSchema:
@@ -93,7 +109,7 @@ class MemoryDataStore(MutableDataStore):
         self._assert_empty_params(open_params, 'open_params')
         return self._data_dict[data_id]
 
-    def get_data_writer_ids(self, type_id: str = None) -> Tuple[str, ...]:
+    def get_data_writer_ids(self, type_specifier: str = None) -> Tuple[str, ...]:
         return _ACCESSOR_ID,
 
     def get_write_data_params_schema(self, writer_id: str = None) -> JsonObjectSchema:
