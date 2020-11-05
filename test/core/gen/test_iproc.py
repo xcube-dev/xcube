@@ -84,6 +84,10 @@ class DefaultInputProcessorTest(unittest.TestCase):
         t1, t2 = self.processor.get_time_range(ds)
         self.assertEqual(to_time_in_days_since_1970("20100301T000000Z"), t1)
         self.assertEqual(to_time_in_days_since_1970("20100301T235959Z"), t2)
+        ds = create_default_dataset(time_mode="start_stop_date")
+        t1, t2 = self.processor.get_time_range(ds)
+        self.assertEqual(to_time_in_days_since_1970("20100301T000000Z"), t1)
+        self.assertEqual(to_time_in_days_since_1970("20100301T235959Z"), t2)
         ds = create_default_dataset(time_mode="no_time")
         with self.assertRaises(ValueError) as cm:
             self.processor.get_time_range(ds)
@@ -178,6 +182,12 @@ def create_default_dataset(time_mode: str = "time_bnds"):
         attrs.update(dict([
             ('start_time', '20100301T000000Z'),
             ('stop_time', '20100301T235959Z'),
+        ]))
+
+    elif time_mode == "start_stop_date":
+        attrs.update(dict([
+            ('start_date', '01-MAR-2010 00:00:00.000000'),
+            ('stop_date', '01-MAR-2010 23:59:59.000000'),
         ]))
 
     return xr.Dataset(coords=coords, data_vars=data_vars, attrs=attrs)
