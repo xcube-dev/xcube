@@ -115,7 +115,7 @@ class S3DataStore(MutableDataStore):
 
     def get_type_specifiers_for_data(self, data_id: str) -> Tuple[str, ...]:
         if not self.has_data(data_id):
-            raise ValueError(f'"{data_id}" is not provided by this data store')
+            raise DataStoreError(f'"{data_id}" is not provided by this data store')
         data_type_specifier, _, _ = self._get_accessor_id_parts(data_id)
         return data_type_specifier,
 
