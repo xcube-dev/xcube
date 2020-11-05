@@ -38,6 +38,9 @@ doc_title = 'xcube Toolkit Documentation'
 
 # -- General configuration ---------------------------------------------------
 
+# If your documentation needs a minimal Sphinx version, state it here.
+needs_sphinx = '1.7'
+
 # The master toctree document.
 master_doc = 'index'
 
@@ -48,12 +51,19 @@ source_suffix = ['.rst', '.md']
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
-    'sphinx.ext.autodoc',
+    'sphinx.ext.doctest',
+    'sphinx.ext.intersphinx',
+    'sphinx.ext.todo',
     'sphinx.ext.coverage',
-    'sphinx.ext.napoleon',
-    'sphinx_rtd_theme',
+    'sphinx.ext.mathjax',
+    'sphinx.ext.ifconfig',
+    'sphinx.ext.viewcode',
+    'sphinx.ext.autodoc',
+    'sphinx_autodoc_annotation',
+    'sphinxarg.ext',
     'recommonmark',
 ]
+
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -119,29 +129,32 @@ autoclass_content = 'class'
 autodoc_member_order = 'bysource'
 autodoc_inherit_docstrings = True
 autodoc_typehints = 'signature'
-autodoc_mock_imports = [
-    'affine',
-    'blas',
-    'click',
-    'cmocean',
-    'dask',
-    'fiona',
-    'gdal',
-    'matplotlib',
-    'netcdf4',
-    'numba',
-    'numpy',
-    'pandas',
-    #'pillow',
-    'proj4',
-    'pyproj',
-    'pyyaml',
-    'rasterio',
-    's3fs',
-    'scipy',
-    'setuptools',
-    'shapely',
-    # 'tornado',
-    'xarray',
-    'zarr',
-]
+autodoc_mock_imports = ['affine',
+                        'blas',
+                        'click',
+                        'cmocean',
+                        'dask',
+                        'distutils'
+                        'fiona',
+                        'gdal',
+                        'geopandas'
+                        'jsonschema'
+                        'matplotlib',
+                        'netcdf4',
+                        'numba',
+                        'numpy',
+                        'osgeo',
+                        'pandas',
+                        # 'pillow',
+                        'proj4',
+                        'pyproj',
+                        'pyyaml',
+                        'rasterio',
+                        's3fs',
+                        'scipy',
+                        'setuptools',
+                        'shapely',
+                        # 'tornado',
+                        'xarray',
+                        'yaml',
+                        'zarr', ]
