@@ -215,7 +215,7 @@ class S3DataStore(MutableDataStore):
                                                         format_id='zarr',
                                                         storage_id=_STORAGE_ID)
             else:
-                raise DataStoreError(f'Unsupported data type {type(data)}')
+                raise DataStoreError(f'Unsupported data type "{type(data)}"')
             extensions = find_data_writer_extensions(predicate=predicate)
             writer_id = extensions[0].name
         data_id = self._ensure_valid_data_id(data_id, data)

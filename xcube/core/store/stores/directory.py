@@ -142,7 +142,7 @@ class DirectoryDataStore(MutableDataStore):
         self._assert_valid_data_id(data_id)
         actual_type_specifier, _, _ = self._get_accessor_id_parts(data_id)
         if type_specifier and not TypeSpecifier.parse(type_specifier).is_compatible(actual_type_specifier):
-            raise ValueError(f'Data resource "{data_id}" is not compatible with type specifier {type_specifier}. '
+            raise ValueError(f'Data resource "{data_id}" is not compatible with type specifier "{type_specifier}". '
                              f'Cannot create DataDescriptor.')
         data = self.open_data(data_id)
         return new_data_descriptor(data_id, data)
@@ -152,7 +152,7 @@ class DirectoryDataStore(MutableDataStore):
 
     def search_data(self, type_specifier: str = None, **search_params) -> Iterator[DataDescriptor]:
         if search_params:
-            raise DataStoreError(f'Unsupported search_params {tuple(search_params.keys())}')
+            raise DataStoreError(f'Unsupported search_params "{tuple(search_params.keys())}"')
         for data_id in self.get_data_ids(type_specifier=type_specifier):
             yield self.describe_data(data_id[0])
 
@@ -234,7 +234,7 @@ class DirectoryDataStore(MutableDataStore):
                                                         format_id='geojson',
                                                         storage_id=_STORAGE_ID)
             else:
-                raise DataStoreError(f'Unsupported data type {type(data)}')
+                raise DataStoreError(f'Unsupported data type "{type(data)}"')
             extensions = find_data_writer_extensions(predicate=predicate)
             assert extensions
             writer_id = extensions[0].name

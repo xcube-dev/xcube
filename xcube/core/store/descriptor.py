@@ -133,7 +133,7 @@ class DatasetDescriptor(DataDescriptor):
 
     def _assert_type_specifier(self, type_specifier: str):
         if not TYPE_SPECIFIER_DATASET.is_compatible(type_specifier):
-            raise ValueError(f'TypeSpecifier must be compatible with "dataset" type specifier, was {type_specifier}')
+            raise ValueError(f'type_specifier must be compatible with "dataset" type specifier, was "{type_specifier}"')
 
     @classmethod
     def from_dict(cls, d: Mapping[str, Any]) -> 'DatasetDescriptor':
@@ -216,7 +216,7 @@ class MultiLevelDatasetDescriptor(DatasetDescriptor):
     def _assert_type_specifier(self, type_specifier: str):
         if not TYPE_SPECIFIER_MULTILEVEL_DATASET.is_compatible(type_specifier):
             raise ValueError(f'type_specifier must be compatible with "dataset[multilevel]" type specifier, '
-                             f'was {type_specifier}')
+                             f'was "{type_specifier}"')
 
     @classmethod
     def from_dict(cls, d: Mapping[str, Any]) -> 'MultiLevelDatasetDescriptor':
@@ -250,7 +250,7 @@ class GeoDataFrameDescriptor(DataDescriptor):
     def _assert_type_specifier(self, type_specifier: str):
         if not TYPE_SPECIFIER_GEODATAFRAME.is_compatible(type_specifier):
             raise ValueError(f'type_specifier must be compatible with "geodataframe" type specifier, '
-                             f'was {type_specifier}')
+                             f'was "{type_specifier}"')
 
     @classmethod
     def from_dict(cls, d: Mapping[str, Any]) -> 'MultiLevelDatasetDescriptor':
