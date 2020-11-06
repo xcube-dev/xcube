@@ -22,11 +22,12 @@ Useful references related to this document include:
 
 ## Naming Identifiers
 
-This section states what identifiers used by an xcube data store SHALL look like.
+This section states how identifiers of an xcube data store SHALL look like.
 
-In the DataStore framework, identifiers are used to denote data sources, data stores, and data accessors.
-Data store, data opener, and data writer identifiers are used to register the component as extension in a package's plugin.py.
-Identifiers MUST be unambiguous in the scope of the data store. 
+Within the DataStore framework, identifiers are used to denote data sources, data stores, and data accessors.
+Data store, data opener, and data writer identifiers are used to register the component as an extension in a 
+package's plugin.py.
+Identifiers MUST be unambiguous within the scope of the data store. 
 They SHOULD be unambiguous across the entirety of data stores. 
 
 There are no further restrictions for data source and data store identifiers.
@@ -37,7 +38,8 @@ A data accessor identifier MUST correspond to the following scheme:
 
 `<type_specifier>` specifies a data type. 
 Its intention and format is described in the sub-section below.
-In case the type specifier has flags, the flags MUST be given in square brackets, in alphabetic order, separated by single commas, without spaces (e.g., `dataset[cube,multilevel]`).
+In case the type specifier has flags, the flags MUST be given within square brackets, in alphabetic order, separated by 
+single commas and without spaces (e.g., `dataset[cube,multilevel]`).
 The `<format_identifier>` describes the data format that may be accessed, e.g., `zarr` or `netcdf`.
 The `<storage_identifier>` describes the kind of storage or data provision the accessor can access.
 Example values are `memory`, `s3` or `sentinelhub`.
@@ -53,10 +55,12 @@ Examples for valid data accessors identifiers are:
 
 Type Specifiers are used to specify a data type.
 They consist of a name and an arbitrary number of optional flags, given in square brackets. 
-These flags are used to define characteristics of a type, e.g., the type specifier `dataset[cube]` denotes a dataset which also meets the requirements of a cube. 
+These flags are used to define characteristics of a type, e.g., the type specifier `dataset[cube]` denotes a dataset 
+which also meets the requirements of a cube. 
 A dataset specified by `dataset[cube, multilevel]` is a cube and has multiple levels.
 The order of flags is irrelevant, i.e., `dataset[cube, multilevel]` is the same as `dataset[multilevel, cube]`. 
-A type specifier with a flag is compatible to a type specifer that does not have the same flag set but is otherwise similar, e.g., `dataset[cube]` is compatible with `dataset`.
+A type specifier with a flag is compatible to a type specifier that does not have the same flag set but is otherwise 
+similar, e.g., `dataset[cube]` is compatible with `dataset`.
 The value `*` indicates that any type is supported.
 
 ## Open Parameters
@@ -74,11 +78,11 @@ Every implementation of the `xcube.core.store.DataOpener` or
 allowed arguments to `open_data` for each dataset supported by the
 `DataOpener` or `DataStore`. The description is provided as a
 `JsonObjectSchema` object corresponding to a [JSON
-Schema](https://json-schema.org/). The intention is that this description be
-full and detailed enough to allow the automatic construction of a user
-interface for access to the available datasets. Note that, under this system:
+Schema](https://json-schema.org/). The intention is that this description should be 
+detailed enough to allow the automatic construction of a user
+interface for accessing the available datasets. Note that, under this system:
 
-  1. Every dataset which an opener provides can support a different set of
+  1. Every dataset provided by an opener can support a different set of
      open parameters.
 
   2. The schema does not allow the representation of interdependencies between
@@ -92,14 +96,14 @@ interface for access to the available datasets. Note that, under this system:
 
 To work around some of the restrictions of point (2) above, a dataset MAY be
 presented by the opener as multiple "virtual" datasets with different
-parameter schemas. For instance, the hypothetical dataset described above MAY
-be offered not as a single dataset `envdata` but as two datasets
+parameter schemas. For instance, the hypothetical dataset described above MAY 
+be offered as two datasets
 `envdata:sensor-a` (with a fixed *sensor_type* of A) and `envdata:sensor-b`,
 (with a fixed *sensor_type* of B), offering different sets of permitted
-variables.
+variables. However, it may not be represented as a single dataset `envdata`.
 
 Sometimes, the interdependencies between parameters are too complex to
-be represented fully by splitting datasets in this way. In these cases:
+be fully represented by splitting datasets in this manner. In these cases:
 
   1. The JSON Schema SHOULD describe the smallest possible superset of the
      allowed parameter combinations.
@@ -115,56 +119,62 @@ be represented fully by splitting datasets in this way. In these cases:
 
 While an opener is free to define any open parameters for any of its datasets,
 there are some common parameters which are likely to be used by the majority
-of datasets. Also, there are some parameters which are fundamental for the 
+of datasets. Furthermore, there are some parameters which are fundamental for the 
 description of a dataset and therefore MUST be included in a schema 
 (these parameters are denoted explicitly in the list below). In case that an 
 opener does not support varying values of one of these parameters, a constant 
 value must defined. This may be achieved by the JSON schema's `const` property 
-or by an `enum` property whose value is a one-element array.
+or by an `enum` property value which is a one-element array.
 
 Any dataset requiring the specification of these parameters MUST
 use the standard parameter names, syntax, and semantics defined below, in
 order to keep the interface consistent. For instance, if a dataset allows a
 time aggregation period to be specified, it MUST use the `time_period`
 parameter with the format described below rather than some other alternative
-name and/or format. The parameters are described below with their Python type
+name and/or format. Below, the parameters are described with their Python type
 annotations.
 
  - `variable_names: List[str]`  
    A list of the identifiers of the requested variables. 
    This parameter MUST be included in an opener parameters schema.
+   
  - `bbox: Union[str,Tuple[float, float, float, float]]`
    The bounding box for the requested data, in the order xmin, ymin, xmax, ymax. 
    Must be given in the units of the specified spatial coordinate reference system `crs`.
    This parameter MUST be included in an opener parameters schema. 
+   
  - `crs: str`  
    The identifier for the spatial coordinate reference system of geographic data.
+   
  - `spatial_res: float`  
    The requested spatial resolution (x and y) of the returned data.
    Must be given in the units of the specified spatial coordinate reference system `crs`.
    This parameter MUST be included in an opener parameters schema. 
+   
  - `time_range: Tuple[Optional[str], Optional[str]]`  
    The requested time range for the data to be returned. See section
    ‘[Date, time, and duration specifications](#sec-datespec)’.
    This parameter MUST be included in an opener parameters schema.
+   
  - `time_period: str`  
    The requested temporal aggregation period for the data. See section
    ‘[Date, time, and duration specifications](#sec-datespec)’.
    This parameter MUST be included in an opener parameters schema.
+   
  - `force_cube: bool`  
    Whether to return results as a [specification-compliant
    xcube](https://github.com/dcs4cop/xcube/blob/master/docs/source/cubespec.md).
    If a store supports this parameter and if a dataset is opened with this
    parameter set to `True`, the store MUST return a specification-compliant
-   xcube. If this parameter is not supported or if a dataset is opened with
+   xcube dataset. If this parameter is not supported or if a dataset is opened with
    this parameter set to `False`, the caller MUST NOT assume that the returned
    data conform to the xcube specification.
 
 ### Semantics of list-valued parameters
 
-The `variables` parameter takes as its value a list, with no members repeated
+The `variables` parameter takes as its value a list, with no members duplication
 and the values of its members drawn from a predefined set. The values of this
-parameter, and other parameters whose values also follow such a format, are
+parameter, and other parameters which values also follow such a format, are
 interpreted by xcube as a *restriction*, much like a bounding box or time
 range. That is:
 
@@ -176,20 +186,20 @@ range. That is:
    corresponding to those members only MUST be returned. In the case of
    `variables`, this will result in a dataset containing only the requested
    variables.
- - As a special case of the above, if an empty list is supplied, a dataset
+ - A special case of the above: If an empty list is supplied, a dataset
    containing *no data* MUST be returned -- but with the requested spatial and
    temporal dimensions.
 
 ### <a id="sec-datespec"></a>Date, time, and duration specifications
 
-In the common parameter `time_range`, times can be specified using the
+Within the common parameter `time_range`, times can be specified using the
 standard JSON Schema formats `date-time` or `date`. Any additional time or
 date parameters supported by an xcube opener dataset SHOULD also use these
 formats, unless there is some good reason to prefer a different format.
 
 The formats are described in the [JSON Schema Validation 2019
 draft](https://json-schema.org/draft/2019-09/json-schema-validation.html#rfc.section.7.3.1),
-which in turn adopts definitions from [RFC 3339 Section
+which adopts definitions from [RFC 3339 Section
 5.6](https://tools.ietf.org/html/rfc3339#section-5.6). The JSON Schema
 `date-time` format corresponds to RFC 3339's `date-time` production, and JSON
 Schema's `date` format to RFC 3339's `full-date` production. These formats are
@@ -208,7 +218,8 @@ The format for durations, as used for aggregation period, does **not** conform
 to the syntax defined for this purpose in the ISO 8601 standard (which is also
 quoted as Appendix A of RFC 3339). Instead, the required format is a small
 subset of the [pandas time series frequency
-syntax](https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#timeseries-offset-aliases), defined by the following regular expression:
+syntax](https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#timeseries-offset-aliases), 
+defined by the following regular expression:
 
 
 ```
