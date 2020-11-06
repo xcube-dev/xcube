@@ -22,7 +22,7 @@ Useful references related to this document include:
 
 ## Naming Identifiers
 
-This section defines the structure of the identifiers used by an xcube data store.
+This section explains various identifiers used by the xcube data store framework and defines their format.
 
 Within the DataStore framework, identifiers are used to denote data sources, data stores, and data accessors.
 Data store, data opener, and data writer identifiers are used to register the component as an extension in a 
