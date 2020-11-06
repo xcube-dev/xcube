@@ -24,9 +24,8 @@ Useful references related to this document include:
 
 This section explains various identifiers used by the xcube data store framework and defines their format.
 
-Within the DataStore framework, identifiers are used to denote data sources, data stores, and data accessors.
-Data store, data opener, and data writer identifiers are used to register the component as an extension in a 
-package's plugin.py.
+In the DataStore framework, identifiers are used to denote data sources, data stores, and data accessors.
+Data store, data opener, and data writer identifiers are used to register the component as an extension in a package's plugin.py.
 Identifiers MUST be unambiguous within the scope of the data store. 
 They SHOULD be unambiguous across the entirety of data stores. 
 
@@ -97,11 +96,11 @@ interface for accessing the available datasets. Note that, under this system:
 To work around some of the restrictions of point (2) above, a dataset MAY be
 presented by the opener as multiple "virtual" datasets with different
 parameter schemas. For instance, the hypothetical dataset described above MAY 
-be offered as two datasets
+be offered not as a single dataset `envdata` but as two datasets
 `envdata:sensor-a` (with a fixed *sensor_type* of A) and `envdata:sensor-b`,
 (with a fixed *sensor_type* of B), offering different sets of permitted
-variables.
-
+ variables. 
+ 
 Sometimes, the interdependencies between parameters are too complex to
 be fully represented by splitting datasets in this manner. In these cases:
 
@@ -124,7 +123,7 @@ description of a dataset and therefore MUST be included in a schema
 (these parameters are denoted explicitly in the list below). In case that an 
 opener does not support varying values of one of these parameters, a constant 
 value must defined. This may be achieved by the JSON schema's `const` property 
-or by an `enum` property value which is a one-element array.
+or by an `enum` property value whose is a one-element array.
 
 Any dataset requiring the specification of these parameters MUST
 use the standard parameter names, syntax, and semantics defined below, in
@@ -174,7 +173,7 @@ annotations.
 
 The `variables` parameter takes as its value a list, with no duplicated members
 and the values of its members drawn from a predefined set. The values of this
-parameter, and other parameters which values also follow such a format, are
+parameter, and other parameters whose values also follow such a format, are
 interpreted by xcube as a *restriction*, much like a bounding box or time
 range. That is:
 
@@ -192,7 +191,7 @@ range. That is:
 
 ### <a id="sec-datespec"></a>Date, time, and duration specifications
 
-Within the common parameter `time_range`, times can be specified using the
+In the common parameter `time_range`, times can be specified using the
 standard JSON Schema formats `date-time` or `date`. Any additional time or
 date parameters supported by an xcube opener dataset SHOULD also use these
 formats, unless there is some good reason to prefer a different format.
