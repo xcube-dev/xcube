@@ -55,7 +55,7 @@ Examples for valid data accessors identifiers are:
 
 Type Specifiers are used to specify a data type.
 They consist of a name and an arbitrary number of optional flags, given in square brackets. 
-These flags are used to define characteristics of a type, e.g., the type specifier `dataset[cube]` denotes a dataset 
+These flags are used to define characteristics of a type, e.g., the type specifier "`dataset[cube]`" denotes a dataset 
 which also meets the requirements of a cube. 
 A dataset specified by `dataset[cube, multilevel]` is a cube and has multiple levels.
 The order of flags is irrelevant, i.e., `dataset[cube, multilevel]` is the same as `dataset[multilevel, cube]`. 
