@@ -111,7 +111,7 @@ class S3DataStore(MutableDataStore):
 
     @classmethod
     def get_type_specifiers(cls) -> Tuple[str, ...]:
-        return str(TYPE_SPECIFIER_MULTILEVEL_DATASET),
+        return str(TYPE_SPECIFIER_DATASET),
 
     def get_type_specifiers_for_data(self, data_id: str) -> Tuple[str, ...]:
         if not self.has_data(data_id):
