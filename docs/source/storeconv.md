@@ -22,7 +22,7 @@ Useful references related to this document include:
 
 ## Naming Identifiers
 
-This section states how identifiers of an xcube data store SHALL look like.
+This section defines the structure of the identifiers used by an xcube data store.
 
 Within the DataStore framework, identifiers are used to denote data sources, data stores, and data accessors.
 Data store, data opener, and data writer identifiers are used to register the component as an extension in a 
@@ -172,7 +172,7 @@ annotations.
 
 ### Semantics of list-valued parameters
 
-The `variables` parameter takes as its value a list, with no members duplication
+The `variables` parameter takes as its value a list, with no duplicated members
 and the values of its members drawn from a predefined set. The values of this
 parameter, and other parameters which values also follow such a format, are
 interpreted by xcube as a *restriction*, much like a bounding box or time
