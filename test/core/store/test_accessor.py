@@ -32,14 +32,14 @@ class ExtensionRegistryTest(unittest.TestCase):
         p = get_data_accessor_predicate()
         self.assertEqual(True, p(ext('dataset:zarr:s3')))
 
-        p = get_data_accessor_predicate(type_id='dataset')
+        p = get_data_accessor_predicate(type_specifier='dataset')
         self.assertEqual(True, p(ext('dataset:zarr:s3')))
         self.assertEqual(False, p(ext('dataset[cube]:zarr:s3')))
         self.assertEqual(False, p(ext('mldataset:levels:s3')))
         self.assertEqual(False, p(ext('mldataset[cube]:levels:s3')))
         self.assertEqual(False, p(ext('geodataframe:geojson:posix')))
 
-        p = get_data_accessor_predicate(type_id='mldataset[cube]')
+        p = get_data_accessor_predicate(type_specifier='mldataset[cube]')
         self.assertEqual(False, p(ext('dataset:zarr:s3')))
         self.assertEqual(False, p(ext('dataset[cube]:zarr:s3')))
         self.assertEqual(False, p(ext('mldataset:levels:s3')))
@@ -58,7 +58,7 @@ class ExtensionRegistryTest(unittest.TestCase):
         self.assertEqual(False, p(ext('mldataset:levels:s3')))
         self.assertEqual(True, p(ext('geodataframe:geojson:posix')))
 
-        p = get_data_accessor_predicate(type_id='dataset')
+        p = get_data_accessor_predicate(type_specifier='dataset')
         self.assertEqual(True, p(ext('*:*:memory')))
 
         p = get_data_accessor_predicate(format_id='levels')

@@ -39,10 +39,10 @@ from .store import MutableDataStore
 from .store import find_data_store_extensions
 from .store import get_data_store_params_schema
 from .store import new_data_store
-from .typeid import get_type_id
-from .typeid import TypeId
-from .typeid import TYPE_ID_ANY
-from .typeid import TYPE_ID_CUBE
-from .typeid import TYPE_ID_DATASET
-from .typeid import TYPE_ID_GEO_DATA_FRAME
-from .typeid import TYPE_ID_MULTI_LEVEL_DATASET
+from .typespecifier import get_type_specifier
+from .typespecifier import TypeSpecifier
+from .typespecifier import TYPE_SPECIFIER_ANY
+from .typespecifier import TYPE_SPECIFIER_CUBE
+from .typespecifier import TYPE_SPECIFIER_DATASET
+from .typespecifier import TYPE_SPECIFIER_GEODATAFRAME
+from .typespecifier import TYPE_SPECIFIER_MULTILEVEL_DATASET

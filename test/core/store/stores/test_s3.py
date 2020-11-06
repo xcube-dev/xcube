@@ -73,24 +73,24 @@ class S3DataStoreTest(S3Test):
         )
         self.assertEqual(set(), schema.required)
 
-    def test_get_type_ids(self):
-        self.assertEqual(('dataset',), self.store.get_type_ids())
+    def test_get_type_specifiers(self):
+        self.assertEqual(('dataset',), self.store.get_type_specifiers())
 
     def test_get_data_opener_ids(self):
         self.assertEqual(('dataset:zarr:s3',), self.store.get_data_opener_ids())
-        self.assertEqual(('dataset:zarr:s3',), self.store.get_data_opener_ids(type_id='dataset'))
-        self.assertEqual(('dataset:zarr:s3',), self.store.get_data_opener_ids(type_id='*'))
+        self.assertEqual(('dataset:zarr:s3',), self.store.get_data_opener_ids(type_specifier='dataset'))
+        self.assertEqual(('dataset:zarr:s3',), self.store.get_data_opener_ids(type_specifier='*'))
         with self.assertRaises(ValueError) as cm:
-            self.store.get_data_opener_ids(type_id='dataset[cube]')
-        self.assertEqual("type_id must be one of ('dataset',)", f'{cm.exception}')
+            self.store.get_data_opener_ids(type_specifier='dataset[cube]')
+        self.assertEqual("type_specifier must be one of ('dataset',)", f'{cm.exception}')
 
     def test_get_data_writer_ids(self):
         self.assertEqual(('dataset:zarr:s3',), self.store.get_data_writer_ids())
-        self.assertEqual(('dataset:zarr:s3',), self.store.get_data_writer_ids(type_id='dataset'))
-        self.assertEqual(('dataset:zarr:s3',), self.store.get_data_writer_ids(type_id='*'))
+        self.assertEqual(('dataset:zarr:s3',), self.store.get_data_writer_ids(type_specifier='dataset'))
+        self.assertEqual(('dataset:zarr:s3',), self.store.get_data_writer_ids(type_specifier='*'))
         with self.assertRaises(ValueError) as cm:
-            self.store.get_data_writer_ids(type_id='dataset[cube]')
-        self.assertEqual("type_id must be one of ('dataset',)", f'{cm.exception}')
+            self.store.get_data_writer_ids(type_specifier='dataset[cube]')
+        self.assertEqual("type_specifier must be one of ('dataset',)", f'{cm.exception}')
 
     @unittest.skip('Currently fails on travis but not locally, execute on demand only')
     def test_write_and_read_and_delete(self):

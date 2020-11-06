@@ -30,13 +30,14 @@ from xcube.util.assertions import assert_given
 import geopandas as gpd
 import xarray as xr
 
-class TypeId:
+class TypeSpecifier:
     """
-    A type id denotes a type of data. It is used to group similar types of data and discern different types of data.
-    It can be used by stores to state what types of data can be read from and/or written to them.
+    A type specifier denotes a type of data. It is used to group similar types of data and
+    distinguish between different types of data. It can be used by stores to state what
+    types of data can be read from and/or written to them.
 
-    A type id consists of a name and an arbitrary number of flags.
-    Flags can be used to further refine a type id if needed.
+    A type specifier consists of a name and an arbitrary number of flags.
+    Flags can be used to further refine a type specifier if needed.
 
     :param name: The name of the type of data
     :param flags: An arbitrary set of flags that further refine the type
@@ -73,15 +74,16 @@ class TypeId:
             return False
         return len(self.flags.symmetric_difference(other_type.flags)) == 0
 
-    def is_compatible(self, other: Union[str, "TypeId"]) -> bool:
+    def is_compatible(self, other: Union[str, "TypeSpecifier"]) -> bool:
         """
-        Tests whether another type id is compatible with this type id.
+        Tests whether another type specifier is compatible with this type specifier.
         This is a weaker relationship than *equals()*.
-        Two type ids are considered compatible when they have the same name and the other type id has all the flags
-        that this type id has. The other type id may also have additional flags.
+        Two type specifiers are considered compatible when they have the same name
+        and the other type specifier has all the flags that this type specifier has.
+        The other type specifier may also have additional flags.
 
-        :param other: Another type id, as string or *TypeId*.
-        :return: Whether the other type id is compatible with this type id
+        :param other: Another type specifier, as string or *TypeSpecifier*.
+        :return: Whether the other type specifier is compatible with this type specifier
         """
         other_type = self.normalize(other)
         if self.name != '*' and self.name != other_type.name:
@@ -92,41 +94,41 @@ class TypeId:
         return hash(self.name) + 16 * hash(frozenset(self.flags))
 
     @classmethod
-    def normalize(cls, type_id: Union[str, "TypeId"]) -> "TypeId":
-        if isinstance(type_id, TypeId):
-            return type_id
-        if isinstance(type_id, str):
-            return cls.parse(type_id)
-        raise TypeError('type_id must be of type "str" or "TypeId"')
+    def normalize(cls, type_specifier: Union[str, "TypeSpecifier"]) -> "TypeSpecifier":
+        if isinstance(type_specifier, TypeSpecifier):
+            return type_specifier
+        if isinstance(type_specifier, str):
+            return cls.parse(type_specifier)
+        raise TypeError('type_specifier must be of type "str" or "TypeSpecifier"')
 
     @classmethod
-    def parse(cls, type_id: str) -> "TypeId":
-        if '[' not in type_id:
-            return TypeId(type_id)
-        if not type_id.endswith(']'):
-            raise SyntaxError(f'"{type_id}" cannot be parsed: No end brackets found')
-        name = type_id.split('[')[0]
-        flags = type_id.split('[')[1].split(']')[0].split(',')
-        return TypeId(name, flags=set(flags))
+    def parse(cls, type_specifier: str) -> "TypeSpecifier":
+        if '[' not in type_specifier:
+            return TypeSpecifier(type_specifier)
+        if not type_specifier.endswith(']'):
+            raise SyntaxError(f'"{type_specifier}" cannot be parsed: No end brackets found')
+        name = type_specifier.split('[')[0]
+        flags = type_specifier.split('[')[1].split(']')[0].split(',')
+        return TypeSpecifier(name, flags=set(flags))
 
-TYPE_ID_ANY = TypeId('*')
-TYPE_ID_DATASET = TypeId('dataset')
-TYPE_ID_CUBE = TypeId('dataset', flags={'cube'})
-TYPE_ID_MULTI_LEVEL_DATASET = TypeId('dataset', flags={'multilevel'})
-TYPE_ID_MULTI_LEVEL_CUBE = TypeId('dataset', flags={'multilevel', 'cube'})
-TYPE_ID_GEO_DATA_FRAME = TypeId('geodataframe')
+TYPE_SPECIFIER_ANY = TypeSpecifier('*')
+TYPE_SPECIFIER_DATASET = TypeSpecifier('dataset')
+TYPE_SPECIFIER_CUBE = TypeSpecifier('dataset', flags={'cube'})
+TYPE_SPECIFIER_MULTILEVEL_DATASET = TypeSpecifier('dataset', flags={'multilevel'})
+TYPE_SPECIFIER_MULTILEVEL_CUBE = TypeSpecifier('dataset', flags={'multilevel', 'cube'})
+TYPE_SPECIFIER_GEODATAFRAME = TypeSpecifier('geodataframe')
 
-def get_type_id(data: Any) -> Optional[TypeId]:
+def get_type_specifier(data: Any) -> Optional[TypeSpecifier]:
     if isinstance(data, xr.Dataset):
         if 'time' in data.coords and 'lat' in data.coords and 'lon' in data.coords:
-            return TYPE_ID_CUBE
-        return TYPE_ID_DATASET
+            return TYPE_SPECIFIER_CUBE
+        return TYPE_SPECIFIER_DATASET
     elif isinstance(data, MultiLevelDataset):
         if 'time' in data.get_dataset(0).coords and \
                 'lat' in data.get_dataset(0).coords and \
                 'lon' in data.get_dataset(0).coords:
-            return TYPE_ID_MULTI_LEVEL_CUBE
-        return TYPE_ID_MULTI_LEVEL_DATASET
+            return TYPE_SPECIFIER_MULTILEVEL_CUBE
+        return TYPE_SPECIFIER_MULTILEVEL_DATASET
     elif isinstance(data, gpd.GeoDataFrame):
-        return TYPE_ID_GEO_DATA_FRAME
+        return TYPE_SPECIFIER_GEODATAFRAME
     return None

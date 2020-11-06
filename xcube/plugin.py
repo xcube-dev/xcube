@@ -107,7 +107,7 @@ def _register_data_stores(ext_registry: extension.ExtensionRegistry):
 
 def _register_data_accessors(ext_registry: extension.ExtensionRegistry):
     """
-    Register xcube's standard data stores.
+    Register xcube's standard data accessors.
     """
 
     def _add_extension(class_name: str, ext_name, description):
