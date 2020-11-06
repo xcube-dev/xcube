@@ -186,7 +186,7 @@ range. That is:
    corresponding to those members only MUST be returned. In the case of
    `variables`, this will result in a dataset containing only the requested
    variables.
- - A special case of the above: If an empty list is supplied, a dataset
+ - A special case of the above: if an empty list is supplied, a dataset
    containing *no data* MUST be returned -- but with the requested spatial and
    temporal dimensions.
 
