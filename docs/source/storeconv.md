@@ -100,7 +100,7 @@ parameter schemas. For instance, the hypothetical dataset described above MAY
 be offered as two datasets
 `envdata:sensor-a` (with a fixed *sensor_type* of A) and `envdata:sensor-b`,
 (with a fixed *sensor_type* of B), offering different sets of permitted
-variables. However, it may not be represented as a single dataset `envdata`.
+variables.
 
 Sometimes, the interdependencies between parameters are too complex to
 be fully represented by splitting datasets in this manner. In these cases:
