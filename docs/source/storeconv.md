@@ -39,7 +39,7 @@ A data accessor identifier MUST correspond to the following scheme:
 `<type_specifier>` specifies a data type. 
 Its intention and format is described in the sub-section below.
 In case the type specifier has flags, the flags MUST be given within square brackets, in alphabetic order, separated by 
-single commas and without spaces (e.g., `dataset[cube,multilevel]`).
+single commas and without spaces (e.g., `"dataset[cube,multilevel]"`).
 The `<format_identifier>` describes the data format that may be accessed, e.g., `zarr` or `netcdf`.
 The `<storage_identifier>` describes the kind of storage or data provision the accessor can access.
 Example values are `memory`, `s3` or `sentinelhub`.
