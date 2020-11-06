@@ -25,8 +25,8 @@ Useful references related to this document include:
 This section explains various identifiers used by the xcube data store framework and defines their format.
 
 In the DataStore framework, identifiers are used to denote data sources, data stores, and data accessors.
-Data store, data opener, and data writer identifiers are used to register the component as an extension in a package's plugin.py.
-Identifiers MUST be unambiguous within the scope of the data store. 
+Data store, data opener, and data writer identifiers are used to register the component as extension in a package's plugin.py.
+Identifiers MUST be unambiguous in the scope of the data store. 
 They SHOULD be unambiguous across the entirety of data stores. 
 
 There are no further restrictions for data source and data store identifiers.
@@ -77,9 +77,9 @@ Every implementation of the `xcube.core.store.DataOpener` or
 allowed arguments to `open_data` for each dataset supported by the
 `DataOpener` or `DataStore`. The description is provided as a
 `JsonObjectSchema` object corresponding to a [JSON
-Schema](https://json-schema.org/). The intention is that this description should be 
-detailed enough to allow the automatic construction of a user
-interface for accessing the available datasets. Note that, under this system:
+Schema](https://json-schema.org/). The intention is that this description should be
+full and detailed enough to allow the automatic construction of a user
+interface for access to the available datasets. Note that, under this system:
 
   1. Every dataset provided by an opener can support a different set of
      open parameters.
@@ -99,8 +99,7 @@ parameter schemas. For instance, the hypothetical dataset described above MAY
 be offered not as a single dataset `envdata` but as two datasets
 `envdata:sensor-a` (with a fixed *sensor_type* of A) and `envdata:sensor-b`,
 (with a fixed *sensor_type* of B), offering different sets of permitted
- variables. 
- 
+variables. 
 Sometimes, the interdependencies between parameters are too complex to
 be fully represented by splitting datasets in this manner. In these cases:
 
