@@ -117,7 +117,7 @@ class DatasetDescriptor(DataDescriptor):
                  data_vars: Sequence['VariableDescriptor'] = None,
                  attrs: Mapping[str, any] = None,
                  open_params_schema: JsonObjectSchema = None):
-        self._assert_type_specifier(type_specifier)
+        self._assert_valid_type_specifier(type_specifier)
         super().__init__(data_id=data_id,
                          type_specifier=type_specifier,
                          crs=crs,
@@ -130,9 +130,16 @@ class DatasetDescriptor(DataDescriptor):
         self.data_vars = list(data_vars) if data_vars else None
         self.attrs = _convert_nans_to_none(dict(attrs)) if attrs else None
 
-    def _assert_type_specifier(self, type_specifier: str):
-        if not TYPE_SPECIFIER_DATASET.is_compatible(type_specifier):
-            raise ValueError(f'type_specifier must be compatible with "dataset" type specifier, was "{type_specifier}"')
+    @classmethod
+    def _get_base_type_specifier(cls) -> TypeSpecifier:
+        return TYPE_SPECIFIER_DATASET
+
+    @classmethod
+    def _assert_valid_type_specifier(cls, type_specifier: str):
+        base_type_specifier = cls._get_base_type_specifier()
+        if not base_type_specifier.is_satisfied_by(type_specifier):
+            raise ValueError('type_specifier must be compatible with'
+                             f' type specifier "{base_type_specifier}", was "{type_specifier}"')
 
     @classmethod
     def from_dict(cls, d: Mapping[str, Any]) -> 'DatasetDescriptor':
@@ -206,16 +213,16 @@ class MultiLevelDatasetDescriptor(DatasetDescriptor):
     def __init__(self,
                  data_id: str,
                  num_levels: int,
+                 type_specifier: Union[str, TypeSpecifier] = TYPE_SPECIFIER_MULTILEVEL_DATASET,
                  **kwargs):
         assert_given(data_id, 'data_id')
         assert_given(num_levels, 'num_levels')
-        super().__init__(data_id=data_id, type_specifier=TYPE_SPECIFIER_MULTILEVEL_DATASET, **kwargs)
+        super().__init__(data_id=data_id, type_specifier=type_specifier, **kwargs)
         self.num_levels = num_levels
 
-    def _assert_type_specifier(self, type_specifier: str):
-        if not TYPE_SPECIFIER_MULTILEVEL_DATASET.is_compatible(type_specifier):
-            raise ValueError(f'type_specifier must be compatible with "dataset[multilevel]" type specifier, '
-                             f'was "{type_specifier}"')
+    @classmethod
+    def _get_base_type_specifier(cls) -> TypeSpecifier:
+        return TYPE_SPECIFIER_MULTILEVEL_DATASET
 
     @classmethod
     def from_dict(cls, d: Mapping[str, Any]) -> 'MultiLevelDatasetDescriptor':
@@ -247,8 +254,8 @@ class GeoDataFrameDescriptor(DataDescriptor):
         self.feature_schema = feature_schema
 
     def _assert_type_specifier(self, type_specifier: str):
-        if not TYPE_SPECIFIER_GEODATAFRAME.is_compatible(type_specifier):
-            raise ValueError(f'type_specifier must be compatible with "geodataframe" type specifier, '
+        if not TYPE_SPECIFIER_GEODATAFRAME.is_satisfied_by(type_specifier):
+            raise ValueError(f'type_specifier must be compatible with "{TYPE_SPECIFIER_GEODATAFRAME}" type specifier, '
                              f'was "{type_specifier}"')
 
     @classmethod

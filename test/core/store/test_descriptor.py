@@ -21,7 +21,7 @@ class DatasetDescriptorTest(unittest.TestCase):
         with self.assertRaises(ValueError) as cm:
             descriptor_dict = dict(data_id='xyz', type_specifier='tsr')
             DatasetDescriptor.from_dict(descriptor_dict)
-        self.assertEqual('type_specifier must be compatible with "dataset" type specifier, was "tsr"',
+        self.assertEqual('type_specifier must be compatible with type specifier "dataset", was "tsr"',
                          f'{cm.exception}')
 
     def test_from_dict_basic(self):

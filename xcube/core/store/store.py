@@ -153,7 +153,8 @@ class DataStore(DataOpener, ABC):
         """
 
     @abstractmethod
-    def get_data_ids(self, type_specifier: str = None, include_titles = True) -> Iterator[Tuple[str, Optional[str]]]:
+    def get_data_ids(self, type_specifier: str = None, include_titles: bool = True) -> \
+            Iterator[Tuple[str, Optional[str]]]:
         """
         Get an iterator over the data resource identifiers for the given type *type_specifier*.
         If *type_specifier* is omitted, all data resource identifiers are returned.

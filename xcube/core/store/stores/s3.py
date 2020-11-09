@@ -130,7 +130,7 @@ class S3DataStore(MutableDataStore):
     def has_data(self, data_id: str, type_specifier: str = None) -> bool:
         if type_specifier:
             data_type_specifier, _, _ = self._get_accessor_id_parts(data_id)
-            if not TypeSpecifier.parse(type_specifier).is_compatible(data_type_specifier):
+            if not TypeSpecifier.parse(data_type_specifier).satisfies(type_specifier):
                 return False
         path = self._resolve_data_id_to_path(data_id)
         return self._s3.exists(path)
