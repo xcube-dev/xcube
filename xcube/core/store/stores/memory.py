@@ -91,8 +91,8 @@ class MemoryDataStore(MutableDataStore):
         if type_specifier is not None:
             data_type_specifier = get_type_specifier(self._data_dict[data_id])
             if data_type_specifier is None or not data_type_specifier.satisfies(type_specifier):
-                raise DataStoreError(f'Data resource "{data_id}" is not compatible with '
-                                     f'type specifier "{type_specifier}". Cannot create DataDescriptor.')
+                raise DataStoreError(f'Type specifier "{type_specifier}" cannot be satisfied'
+                                     f' by type specifier "{data_type_specifier}" of data resource "{data_id}"')
         return new_data_descriptor(data_id, self._data_dict[data_id])
 
     @classmethod

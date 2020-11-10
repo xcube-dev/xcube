@@ -195,8 +195,7 @@ class DirectoryDataStoreTest(unittest.TestCase):
 
         with self.assertRaises(DataStoreError) as cm:
             set(self.store.describe_data('cube-1-250-250.zarr', type_specifier='geodataframe'))
-        self.assertEqual('Data resource "cube-1-250-250.zarr" is not compatible with type specifier "geodataframe". '
-                         'Cannot create DataDescriptor.', f'{cm.exception}')
+        self.assertEqual('Type specifier "geodataframe" cannot be satisfied by type specifier "dataset" of data resource "cube-1-250-250.zarr"', f'{cm.exception}')
 
     def test_search_data(self):
         result = list(self.store.search_data())

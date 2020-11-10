@@ -20,6 +20,15 @@ class TypeSpecifierTest(unittest.TestCase):
         self.assertEqual('dataset', type_specifier.name)
         self.assertEqual(set(), type_specifier.flags)
 
+    def test_any(self):
+        type_specifier = TypeSpecifier(name='*')
+        self.assertEqual('*', type_specifier.name)
+
+    def test_any_and_flags(self):
+        with self.assertRaises(ValueError) as cm:
+            TypeSpecifier(name='*', flags={'cube'})
+        self.assertEqual('flags are not allowed if name is "*" (any)', f'{cm.exception}')
+
     def test_name_and_flags(self):
         type_specifier = TypeSpecifier(name='dataset', flags={'cube', 'multilevel'})
         self.assertEqual('dataset', type_specifier.name)
@@ -44,15 +53,14 @@ class TypeSpecifierTest(unittest.TestCase):
         self.assertTrue(type_specifier_1 == type_specifier_2)
 
     def test_equality_any(self):
-        type_specifier = TypeSpecifier(name='*', flags={'cube'})
+        type_specifier = TypeSpecifier(name='*')
         self.assertFalse(type_specifier == TypeSpecifier('geodataframe'))
         self.assertFalse(type_specifier == TypeSpecifier('geodataframe', flags={'cube'}))
         self.assertFalse(type_specifier == TypeSpecifier('dataset'))
         self.assertFalse(type_specifier == TypeSpecifier('dataset', flags={'multilevel'}))
         self.assertFalse(type_specifier == TypeSpecifier('dataset', flags={'multilevel', 'cube'}))
         self.assertFalse(type_specifier == TypeSpecifier('dataset', flags={'cube'}))
-        self.assertFalse(type_specifier == TypeSpecifier('*'))
-        self.assertTrue(type_specifier == TypeSpecifier('*', flags={'cube'}))
+        self.assertTrue(type_specifier == TypeSpecifier('*'))
 
     def test_it_satisfies_without_flags(self):
         type_specifier = TypeSpecifier(name='dataset')
@@ -96,9 +104,12 @@ class TypeSpecifierTest(unittest.TestCase):
         self.assertEqual(TypeSpecifier.normalize('dataset'), dataset_specifier)
 
     def test_parse(self):
-        parsed_specifier = TypeSpecifier.parse('dataset[cube,multilevel]')
-        self.assertEqual('dataset', parsed_specifier.name)
-        self.assertEqual({'cube', 'multilevel'}, parsed_specifier.flags)
+        self.assertEqual(TypeSpecifier('*'),
+                         TypeSpecifier.parse('*'))
+        self.assertEqual(TypeSpecifier('dataset'),
+                         TypeSpecifier.parse('dataset'))
+        self.assertEqual(TypeSpecifier('dataset', {'cube', 'multilevel'}),
+                         TypeSpecifier.parse('dataset[cube,multilevel]'))
 
     def test_parse_exception(self):
         with self.assertRaises(SyntaxError) as cm:

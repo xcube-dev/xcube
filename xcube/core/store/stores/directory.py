@@ -128,23 +128,25 @@ class DirectoryDataStore(MutableDataStore):
 
     def has_data(self, data_id: str, type_specifier: str = None) -> bool:
         assert_given(data_id, 'data_id')
-        if type_specifier:
-            actual_type_specifier = self._get_type_specifier_for_data_id(data_id)
-            if not actual_type_specifier.satisfies(type_specifier):
-                return False
-        path = self._resolve_data_id_to_path(data_id)
-        return os.path.exists(path)
+        actual_type_specifier = self._get_type_specifier_for_data_id(data_id)
+        if actual_type_specifier is not None:
+            if type_specifier is None or actual_type_specifier.satisfies(type_specifier):
+                path = self._resolve_data_id_to_path(data_id)
+                return os.path.exists(path)
+        return False
 
     def describe_data(self, data_id: str, type_specifier: str = None) -> DataDescriptor:
         self._assert_valid_data_id(data_id)
-        if type_specifier is not None:
-            actual_type_specifier = self._get_type_specifier_for_data_id(data_id)
-            if not actual_type_specifier.satisfies(type_specifier):
-                raise DataStoreError(
-                    f'Data resource "{data_id}" is not compatible with type specifier "{type_specifier}". '
-                    f'Cannot create DataDescriptor.')
-        data = self.open_data(data_id)
-        return new_data_descriptor(data_id, data)
+        actual_type_specifier = self._get_type_specifier_for_data_id(data_id)
+        if actual_type_specifier is not None:
+            if type_specifier is None or actual_type_specifier.satisfies(type_specifier):
+                data = self.open_data(data_id)
+                return new_data_descriptor(data_id, data, require=True)
+            else:
+                raise DataStoreError(f'Type specifier "{type_specifier}" cannot be satisfied'
+                                     f' by type specifier "{actual_type_specifier}" of data resource "{data_id}"')
+        else:
+            raise DataStoreError(f'Data resource "{data_id}" not found')
 
     def get_search_params_schema(self, type_specifier: str = None) -> JsonObjectSchema:
         return JsonObjectSchema()
