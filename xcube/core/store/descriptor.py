@@ -138,7 +138,7 @@ class DatasetDescriptor(DataDescriptor):
     def _assert_valid_type_specifier(cls, type_specifier: str):
         base_type_specifier = cls._get_base_type_specifier()
         if not base_type_specifier.is_satisfied_by(type_specifier):
-            raise ValueError('type_specifier must be compatible with'
+            raise ValueError('type_specifier must satisfy'
                              f' type specifier "{base_type_specifier}", was "{type_specifier}"')
 
     @classmethod
