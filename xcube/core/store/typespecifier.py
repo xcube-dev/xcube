@@ -95,7 +95,7 @@ class TypeSpecifier:
             return False
         if not other_type.flags:
             return True
-        return len(other_type.flags.difference(self.flags)) == 0
+        return other_type.flags.issubset(self.flags)
 
     def is_satisfied_by(self, other: Union[str, "TypeSpecifier"]) -> bool:
         """
