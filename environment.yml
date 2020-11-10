@@ -16,7 +16,7 @@ dependencies:
   - geopandas >=0.8
   - jdcal >=1.4.1
   - jsonschema >=3.2.0
-  - matplotlib >=3.0
+  - matplotlib-base >=3.0
   - netcdf4 >=1.5.0
   - numba >=0.43
   - numpy >=1.16
