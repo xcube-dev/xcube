@@ -1,5 +1,6 @@
 ## Changes in 0.5.2 (in development)
-
+* `xcube gen` can now interpret `start_date` and `stop_date` from a netcdfs attributes. This is relevant for using
+  `xcube gen` for Sentinel-2 Level 2 data products generated and provided by Brockmann Consult. 
 * For `xcube serve` dataset configurations where `FileSystem: obs`, users must now also 
   specify `Anonymous: True` for datasets in public object storage buckets. For example:
 ```yaml
