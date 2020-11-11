@@ -1,9 +1,13 @@
+import os
 import unittest
 
 import s3fs
 import xarray as xr
+import numpy as np
 
 from test.s3test import S3Test, MOTO_SERVER_ENDPOINT_URL
+from xcube.cli.prune import _prune
+from xcube.core.dsio import rimraf, write_cube
 from xcube.core.new import new_cube
 from xcube.core.store import DataStoreError
 from xcube.core.store import new_data_store
@@ -12,7 +16,16 @@ from xcube.core.store.stores.s3 import S3DataStore
 BUCKET_NAME = 'xcube-test'
 
 
+def get_pruned_cube(path):
+    _prune(input_path=path,
+           dry_run=False,
+           monitor=print)
+    dataset_p = xr.open_zarr(path)
+    return dataset_p
+
+
 class S3DataStoreTest(S3Test):
+    TEST_CUBE = "test.zarr"
 
     def setUp(self) -> None:
         super().setUp()
@@ -22,6 +35,15 @@ class S3DataStoreTest(S3Test):
                                      bucket_name=BUCKET_NAME,
                                      endpoint_url=MOTO_SERVER_ENDPOINT_URL)
         self.assertIsInstance(self.store, S3DataStore)
+        rimraf(self.TEST_CUBE)
+        cube = new_cube(time_periods=3,
+                        variables=dict(precipitation=np.nan,
+                                       temperature=np.nan)).chunk(dict(time=1, lat=90, lon=90))
+
+        write_cube(cube, self.TEST_CUBE, "zarr", cube_asserted=True)
+
+    def tearDown(self) -> None:
+        rimraf(self.TEST_CUBE)
 
     @property
     def store(self) -> S3DataStore:
@@ -145,3 +167,21 @@ class S3DataStoreTest(S3Test):
 
         # Now it should be save to also write with replace=False
         self.store.write_data(dataset_1, data_id='cube-1.zarr', replace=False)
+
+    def test_get_pruned_datacube(self):
+        self.store.s3.mkdir(BUCKET_NAME)
+        cube = new_cube(time_periods=3,
+                        variables=dict(precipitation=np.nan,
+                                       temperature=np.nan)).chunk(dict(time=1, lat=90, lon=90))
+
+        write_cube(cube, self.TEST_CUBE, cube_asserted=True)
+        dataset_p = get_pruned_cube(f'{os.getcwd()}/{self.TEST_CUBE}')
+        self.store.write_data(dataset_p, data_id='cube-pruned.zarr')
+
+        self.assertTrue(self.store.has_data('cube-pruned.zarr'))
+        self.assertIn(('cube-pruned.zarr', None), set(self.store.get_data_ids()))
+        # Open the written cube
+        opened_dataset_1 = self.store.open_data('cube-pruned.zarr')
+        self.assertIsInstance(opened_dataset_1, xr.Dataset)
+        self.assertEqual(set(dataset_p.data_vars), set(opened_dataset_1.data_vars))
+        self.assertEqual(dataset_p.precipitation.values.all(), opened_dataset_1.precipitation.values.all())
