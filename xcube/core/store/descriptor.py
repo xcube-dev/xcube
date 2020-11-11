@@ -21,20 +21,22 @@
 
 from typing import Tuple, Sequence, Mapping, Optional, Dict, Any, Union
 
-import numpy as np
 import geopandas as gpd
+import numpy as np
 import xarray as xr
 
 from xcube.core.mldataset import MultiLevelDataset
-from xcube.core.store.typespecifier import get_type_specifier
-from xcube.core.store.typespecifier import TypeSpecifier
+from xcube.core.store.typespecifier import TYPE_SPECIFIER_ANY
 from xcube.core.store.typespecifier import TYPE_SPECIFIER_DATASET
-from xcube.core.store.typespecifier import TYPE_SPECIFIER_MULTILEVEL_DATASET
 from xcube.core.store.typespecifier import TYPE_SPECIFIER_GEODATAFRAME
+from xcube.core.store.typespecifier import TYPE_SPECIFIER_MULTILEVEL_DATASET
+from xcube.core.store.typespecifier import TypeSpecifier
+from xcube.core.store.typespecifier import get_type_specifier
 from xcube.util.assertions import assert_given
 from xcube.util.assertions import assert_in
 from xcube.util.ipython import register_json_formatter
 from xcube.util.jsonschema import JsonObjectSchema
+
 
 # TODO: IMPORTANT: replace, reuse, or align with
 #   xcube.core.schema.CubeSchema class
@@ -44,7 +46,7 @@ from xcube.util.jsonschema import JsonObjectSchema
 # TODO: validate params
 
 
-def new_data_descriptor(data_id: str, data: Any) -> 'DataDescriptor':
+def new_data_descriptor(data_id: str, data: Any, require: bool = False) -> 'DataDescriptor':
     if isinstance(data, xr.Dataset):
         # TODO: implement me: data -> DatasetDescriptor
         return DatasetDescriptor(data_id=data_id, type_specifier=get_type_specifier(data))
@@ -54,6 +56,8 @@ def new_data_descriptor(data_id: str, data: Any) -> 'DataDescriptor':
     elif isinstance(data, gpd.GeoDataFrame):
         # TODO: implement me: data -> GeoDataFrameDescriptor
         return GeoDataFrameDescriptor(data_id=data_id, num_levels=5)
+    elif not require:
+        return DataDescriptor(data_id=data_id, type_specifier=TYPE_SPECIFIER_ANY)
     raise NotImplementedError()
 
 
@@ -73,7 +77,7 @@ class DataDescriptor:
                  time_period: str = None,
                  open_params_schema: JsonObjectSchema = None):
         assert_given(data_id, 'data_id')
-        assert_given(type_specifier, 'type_specifier')
+        self._assert_valid_type_specifier(type_specifier)
         self.data_id = data_id
         self.type_specifier = TypeSpecifier.normalize(type_specifier)
         self.crs = crs
@@ -98,6 +102,18 @@ class DataDescriptor:
             d['open_params_schema'] = self.open_params_schema.to_dict()
         return d
 
+    @classmethod
+    def _get_base_type_specifier(cls) -> TypeSpecifier:
+        return TYPE_SPECIFIER_ANY
+
+    @classmethod
+    def _assert_valid_type_specifier(cls, type_specifier: Optional[str]):
+        assert_given(type_specifier, 'type_specifier')
+        base_type_specifier = cls._get_base_type_specifier()
+        if not base_type_specifier.is_satisfied_by(type_specifier):
+            raise ValueError('type_specifier must satisfy'
+                             f' type specifier "{base_type_specifier}", but was "{type_specifier}"')
+
 
 class DatasetDescriptor(DataDescriptor):
     """
@@ -117,7 +133,6 @@ class DatasetDescriptor(DataDescriptor):
                  data_vars: Sequence['VariableDescriptor'] = None,
                  attrs: Mapping[str, any] = None,
                  open_params_schema: JsonObjectSchema = None):
-        self._assert_type_specifier(type_specifier)
         super().__init__(data_id=data_id,
                          type_specifier=type_specifier,
                          crs=crs,
@@ -129,10 +144,6 @@ class DatasetDescriptor(DataDescriptor):
         self.dims = dict(dims) if dims else None
         self.data_vars = list(data_vars) if data_vars else None
         self.attrs = _convert_nans_to_none(dict(attrs)) if attrs else None
-
-    def _assert_type_specifier(self, type_specifier: str):
-        if not TYPE_SPECIFIER_DATASET.is_compatible(type_specifier):
-            raise ValueError(f'type_specifier must be compatible with "dataset" type specifier, was "{type_specifier}"')
 
     @classmethod
     def from_dict(cls, d: Mapping[str, Any]) -> 'DatasetDescriptor':
@@ -161,6 +172,10 @@ class DatasetDescriptor(DataDescriptor):
             d['data_vars'] = [vd.to_dict() for vd in self.data_vars]
         _copy_none_null_props(self, d, ['dims', 'attrs'])
         return d
+
+    @classmethod
+    def _get_base_type_specifier(cls) -> TypeSpecifier:
+        return TYPE_SPECIFIER_DATASET
 
 
 class VariableDescriptor:
@@ -206,16 +221,12 @@ class MultiLevelDatasetDescriptor(DatasetDescriptor):
     def __init__(self,
                  data_id: str,
                  num_levels: int,
+                 type_specifier: Union[str, TypeSpecifier] = TYPE_SPECIFIER_MULTILEVEL_DATASET,
                  **kwargs):
         assert_given(data_id, 'data_id')
         assert_given(num_levels, 'num_levels')
-        super().__init__(data_id=data_id, type_specifier=TYPE_SPECIFIER_MULTILEVEL_DATASET, **kwargs)
+        super().__init__(data_id=data_id, type_specifier=type_specifier, **kwargs)
         self.num_levels = num_levels
-
-    def _assert_type_specifier(self, type_specifier: str):
-        if not TYPE_SPECIFIER_MULTILEVEL_DATASET.is_compatible(type_specifier):
-            raise ValueError(f'type_specifier must be compatible with "dataset[multilevel]" type specifier, '
-                             f'was "{type_specifier}"')
 
     @classmethod
     def from_dict(cls, d: Mapping[str, Any]) -> 'MultiLevelDatasetDescriptor':
@@ -228,6 +239,10 @@ class MultiLevelDatasetDescriptor(DatasetDescriptor):
         d = super().to_dict()
         d['num_levels'] = self.num_levels
         return d
+
+    @classmethod
+    def _get_base_type_specifier(cls) -> TypeSpecifier:
+        return TYPE_SPECIFIER_MULTILEVEL_DATASET
 
 
 class GeoDataFrameDescriptor(DataDescriptor):
@@ -246,11 +261,6 @@ class GeoDataFrameDescriptor(DataDescriptor):
                          **kwargs)
         self.feature_schema = feature_schema
 
-    def _assert_type_specifier(self, type_specifier: str):
-        if not TYPE_SPECIFIER_GEODATAFRAME.is_compatible(type_specifier):
-            raise ValueError(f'type_specifier must be compatible with "geodataframe" type specifier, '
-                             f'was "{type_specifier}"')
-
     @classmethod
     def from_dict(cls, d: Mapping[str, Any]) -> 'MultiLevelDatasetDescriptor':
         """Create new instance from a JSON-serializable dictionary"""
@@ -262,6 +272,10 @@ class GeoDataFrameDescriptor(DataDescriptor):
         d = super().to_dict()
         _copy_none_null_props(self, d, ['feature_schema'])
         return d
+
+    @classmethod
+    def _get_base_type_specifier(cls) -> TypeSpecifier:
+        return TYPE_SPECIFIER_GEODATAFRAME
 
 
 def _convert_nans_to_none(d: Dict[str, Any]) -> Dict[str, Any]:

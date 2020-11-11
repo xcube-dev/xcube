@@ -66,17 +66,23 @@ class MemoryDataStore(MutableDataStore):
         return str(type_specifier),
 
     def get_data_ids(self, type_specifier: str = None, include_titles: bool = True) -> Iterator[Tuple[str, Optional[str]]]:
-        for data_id, data in self._data_dict.items():
-            if type_specifier is None or TypeSpecifier.normalize(type_specifier).is_compatible(get_type_specifier(data)):
+        if type_specifier is None:
+            for data_id, data in self._data_dict.items():
                 yield data_id, None
+        else:
+            type_specifier = TypeSpecifier.normalize(type_specifier)
+            for data_id, data in self._data_dict.items():
+                data_type_specifier = get_type_specifier(data)
+                if data_type_specifier is None or data_type_specifier.satisfies(type_specifier):
+                    yield data_id, None
 
     def has_data(self, data_id: str, type_specifier: str = None) -> bool:
         assert_given(data_id, 'data_id')
-        if not data_id in self._data_dict:
+        if data_id not in self._data_dict:
             return False
         if type_specifier is not None:
             data_type_specifier = get_type_specifier(self._data_dict[data_id])
-            if not TypeSpecifier.parse(type_specifier).is_compatible(data_type_specifier):
+            if data_type_specifier is None or not data_type_specifier.satisfies(type_specifier):
                 return False
         return True
 
@@ -84,9 +90,9 @@ class MemoryDataStore(MutableDataStore):
         self._assert_valid_data_id(data_id)
         if type_specifier is not None:
             data_type_specifier = get_type_specifier(self._data_dict[data_id])
-            if not data_type_specifier.is_compatible(type_specifier):
-                raise DataStoreError(f'Data resource "{data_id}" is not compatible with '
-                                     f'type specifier "{type_specifier}". Cannot create DataDescriptor.')
+            if data_type_specifier is None or not data_type_specifier.satisfies(type_specifier):
+                raise DataStoreError(f'Type specifier "{type_specifier}" cannot be satisfied'
+                                     f' by type specifier "{data_type_specifier}" of data resource "{data_id}"')
         return new_data_descriptor(data_id, self._data_dict[data_id])
 
     @classmethod

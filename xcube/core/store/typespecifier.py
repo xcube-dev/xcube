@@ -24,11 +24,13 @@ from typing import Optional
 from typing import Set
 from typing import Union
 
-from xcube.core.mldataset import MultiLevelDataset
-from xcube.util.assertions import assert_given
-
 import geopandas as gpd
 import xarray as xr
+
+from xcube.core.mldataset import MultiLevelDataset
+from xcube.core.verify import verify_cube
+from xcube.util.assertions import assert_given
+
 
 class TypeSpecifier:
     """
@@ -45,6 +47,8 @@ class TypeSpecifier:
 
     def __init__(self, name: str, flags: Set[str] = None):
         assert_given(name, 'name')
+        if name == '*' and flags:
+            raise ValueError('flags are not allowed if name is "*" (any)')
         self._name = name
         self._flags = flags if flags is not None else set()
 
@@ -72,26 +76,47 @@ class TypeSpecifier:
             return False
         if self.name != other_type.name:
             return False
-        return len(self.flags.symmetric_difference(other_type.flags)) == 0
-
-    def is_compatible(self, other: Union[str, "TypeSpecifier"]) -> bool:
-        """
-        Tests whether another type specifier is compatible with this type specifier.
-        This is a weaker relationship than *equals()*.
-        Two type specifiers are considered compatible when they have the same name
-        and the other type specifier has all the flags that this type specifier has.
-        The other type specifier may also have additional flags.
-
-        :param other: Another type specifier, as string or *TypeSpecifier*.
-        :return: Whether the other type specifier is compatible with this type specifier
-        """
-        other_type = self.normalize(other)
-        if self.name != '*' and self.name != other_type.name:
-            return False
-        return len(self.flags.difference(other_type.flags)) == 0
+        return self.flags == other_type.flags
 
     def __hash__(self) -> int:
         return hash(self.name) + 16 * hash(frozenset(self.flags))
+
+    def satisfies(self, other: Union[str, "TypeSpecifier"]) -> bool:
+        """
+        Tests whether this type specifier satisfies (the requirements of) another type specifier.
+
+        This type specifier satisfies type specifier *other*
+
+        1. if either this or *other* is "*" (= any) or
+        2. if the type names of this and *other* are equal and
+          - if *other* has no flags or
+          - if all the flags of *other* are a subset of the flags (if any) of this type specifier.
+
+        :param other: Another type specifier, as string or *TypeSpecifier*.
+        :return: Whether this type specifier satisfies another type specifier.
+        """
+        other_type = self.normalize(other)
+        if self.name == '*' or other_type.name == '*':
+            return True
+        if self.name != other_type.name:
+            return False
+        if not other_type.flags:
+            return True
+        return other_type.flags.issubset(self.flags)
+
+    def is_satisfied_by(self, other: Union[str, "TypeSpecifier"]) -> bool:
+        """
+        Tests whether this type specifier is satisfied by another type specifier.
+
+        This is the inverse operation of :meth:satisfies and may be more handy
+        or intuitive in some situations. It is equivalent to:
+
+            self.normalize(other).satisfies(self)
+
+        :param other: Another type specifier, as string or *TypeSpecifier*.
+        :return: Whether this type specifier satisfies another type specifier.
+        """
+        return self.normalize(other).satisfies(self)
 
     @classmethod
     def normalize(cls, type_specifier: Union[str, "TypeSpecifier"]) -> "TypeSpecifier":
@@ -111,6 +136,7 @@ class TypeSpecifier:
         flags = type_specifier.split('[')[1].split(']')[0].split(',')
         return TypeSpecifier(name, flags=set(flags))
 
+
 TYPE_SPECIFIER_ANY = TypeSpecifier('*')
 TYPE_SPECIFIER_DATASET = TypeSpecifier('dataset')
 TYPE_SPECIFIER_CUBE = TypeSpecifier('dataset', flags={'cube'})
@@ -118,17 +144,16 @@ TYPE_SPECIFIER_MULTILEVEL_DATASET = TypeSpecifier('dataset', flags={'multilevel'
 TYPE_SPECIFIER_MULTILEVEL_CUBE = TypeSpecifier('dataset', flags={'multilevel', 'cube'})
 TYPE_SPECIFIER_GEODATAFRAME = TypeSpecifier('geodataframe')
 
+
 def get_type_specifier(data: Any) -> Optional[TypeSpecifier]:
-    if isinstance(data, xr.Dataset):
-        if 'time' in data.coords and 'lat' in data.coords and 'lon' in data.coords:
-            return TYPE_SPECIFIER_CUBE
-        return TYPE_SPECIFIER_DATASET
-    elif isinstance(data, MultiLevelDataset):
-        if 'time' in data.get_dataset(0).coords and \
-                'lat' in data.get_dataset(0).coords and \
-                'lon' in data.get_dataset(0).coords:
+    if isinstance(data, MultiLevelDataset):
+        if not verify_cube(data.get_dataset(0)):
             return TYPE_SPECIFIER_MULTILEVEL_CUBE
         return TYPE_SPECIFIER_MULTILEVEL_DATASET
-    elif isinstance(data, gpd.GeoDataFrame):
+    if isinstance(data, xr.Dataset):
+        if not verify_cube(data):
+            return TYPE_SPECIFIER_CUBE
+        return TYPE_SPECIFIER_DATASET
+    if isinstance(data, gpd.GeoDataFrame):
         return TYPE_SPECIFIER_GEODATAFRAME
     return None
