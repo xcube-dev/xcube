@@ -19,21 +19,23 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-from typing import Tuple, Sequence, Mapping, Optional, Dict, Any
+from typing import Tuple, Sequence, Mapping, Optional, Dict, Any, Union
 
-import numpy as np
 import geopandas as gpd
+import numpy as np
 import xarray as xr
 
 from xcube.core.mldataset import MultiLevelDataset
+from xcube.core.store.typespecifier import TYPE_SPECIFIER_ANY
+from xcube.core.store.typespecifier import TYPE_SPECIFIER_DATASET
+from xcube.core.store.typespecifier import TYPE_SPECIFIER_GEODATAFRAME
+from xcube.core.store.typespecifier import TYPE_SPECIFIER_MULTILEVEL_DATASET
+from xcube.core.store.typespecifier import TypeSpecifier
+from xcube.core.store.typespecifier import get_type_specifier
 from xcube.util.assertions import assert_given
 from xcube.util.assertions import assert_in
 from xcube.util.ipython import register_json_formatter
 from xcube.util.jsonschema import JsonObjectSchema
-
-TYPE_ID_DATASET = 'dataset'
-TYPE_ID_MULTI_LEVEL_DATASET = 'mldataset'
-TYPE_ID_GEO_DATA_FRAME = 'geodataframe'
 
 
 # TODO: IMPORTANT: replace, reuse, or align with
@@ -44,26 +46,18 @@ TYPE_ID_GEO_DATA_FRAME = 'geodataframe'
 # TODO: validate params
 
 
-def get_data_type_id(data: Any) -> Optional[str]:
-    if isinstance(data, xr.Dataset):
-        return TYPE_ID_DATASET
-    elif isinstance(data, MultiLevelDataset):
-        return TYPE_ID_MULTI_LEVEL_DATASET
-    elif isinstance(data, gpd.GeoDataFrame):
-        return TYPE_ID_GEO_DATA_FRAME
-    return None
-
-
-def new_data_descriptor(data_id: str, data: Any) -> 'DataDescriptor':
+def new_data_descriptor(data_id: str, data: Any, require: bool = False) -> 'DataDescriptor':
     if isinstance(data, xr.Dataset):
         # TODO: implement me: data -> DatasetDescriptor
-        return DatasetDescriptor(data_id=data_id)
+        return DatasetDescriptor(data_id=data_id, type_specifier=get_type_specifier(data))
     elif isinstance(data, MultiLevelDataset):
         # TODO: implement me: data -> MultiLevelDatasetDescriptor
         return MultiLevelDatasetDescriptor(data_id=data_id, num_levels=5)
     elif isinstance(data, gpd.GeoDataFrame):
         # TODO: implement me: data -> GeoDataFrameDescriptor
         return GeoDataFrameDescriptor(data_id=data_id, num_levels=5)
+    elif not require:
+        return DataDescriptor(data_id=data_id, type_specifier=TYPE_SPECIFIER_ANY)
     raise NotImplementedError()
 
 
@@ -75,7 +69,7 @@ class DataDescriptor:
 
     def __init__(self,
                  data_id: str,
-                 type_id: str,
+                 type_specifier: Union[str, TypeSpecifier],
                  crs: str = None,
                  bbox: Tuple[float, float, float, float] = None,
                  spatial_res: float = None,
@@ -83,9 +77,9 @@ class DataDescriptor:
                  time_period: str = None,
                  open_params_schema: JsonObjectSchema = None):
         assert_given(data_id, 'data_id')
-        assert_given(type_id, 'type_id')
+        self._assert_valid_type_specifier(type_specifier)
         self.data_id = data_id
-        self.type_id = type_id
+        self.type_specifier = TypeSpecifier.normalize(type_specifier)
         self.crs = crs
         self.bbox = tuple(bbox) if bbox else None
         self.spatial_res = spatial_res
@@ -101,13 +95,24 @@ class DataDescriptor:
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert into a JSON-serializable dictionary"""
-        d = dict()
-        _copy_none_null_props(self, d, ['data_id', 'type_id',
-                                        'crs', 'bbox', 'spatial_res',
-                                        'time_range', 'time_period'])
+        d = dict(type_specifier=str(self.type_specifier))
+        _copy_none_null_props(self, d, ['data_id', 'crs', 'bbox', 'spatial_res', 'time_range', 'time_period'])
+
         if self.open_params_schema is not None:
             d['open_params_schema'] = self.open_params_schema.to_dict()
         return d
+
+    @classmethod
+    def _get_base_type_specifier(cls) -> TypeSpecifier:
+        return TYPE_SPECIFIER_ANY
+
+    @classmethod
+    def _assert_valid_type_specifier(cls, type_specifier: Optional[str]):
+        assert_given(type_specifier, 'type_specifier')
+        base_type_specifier = cls._get_base_type_specifier()
+        if not base_type_specifier.is_satisfied_by(type_specifier):
+            raise ValueError('type_specifier must satisfy'
+                             f' type specifier "{base_type_specifier}", but was "{type_specifier}"')
 
 
 class DatasetDescriptor(DataDescriptor):
@@ -118,7 +123,7 @@ class DatasetDescriptor(DataDescriptor):
 
     def __init__(self,
                  data_id: str,
-                 type_id=TYPE_ID_DATASET,
+                 type_specifier: Union[str, TypeSpecifier] = TYPE_SPECIFIER_DATASET,
                  crs: str = None,
                  bbox: Tuple[float, float, float, float] = None,
                  spatial_res: float = None,
@@ -129,7 +134,7 @@ class DatasetDescriptor(DataDescriptor):
                  attrs: Mapping[str, any] = None,
                  open_params_schema: JsonObjectSchema = None):
         super().__init__(data_id=data_id,
-                         type_id=type_id,
+                         type_specifier=type_specifier,
                          crs=crs,
                          bbox=bbox,
                          spatial_res=spatial_res,
@@ -138,19 +143,18 @@ class DatasetDescriptor(DataDescriptor):
                          open_params_schema=open_params_schema)
         self.dims = dict(dims) if dims else None
         self.data_vars = list(data_vars) if data_vars else None
-        self.attrs = _convert_nans_to_null(dict(attrs)) if attrs else None
+        self.attrs = _convert_nans_to_none(dict(attrs)) if attrs else None
 
     @classmethod
     def from_dict(cls, d: Mapping[str, Any]) -> 'DatasetDescriptor':
         """Create new instance from a JSON-serializable dictionary"""
         assert_in('data_id', d)
-        assert_in('type_id', d)
         data_vars = []
         data_vars_as_dicts = d.get('data_vars', [])
         for data_var_as_dict in data_vars_as_dicts:
             data_vars.append(VariableDescriptor.from_dict(data_var_as_dict))
         return DatasetDescriptor(data_id=d['data_id'],
-                                 type_id=d['type_id'],
+                                 type_specifier=d.get('type_specifier', TYPE_SPECIFIER_DATASET),
                                  crs=d.get('crs', None),
                                  bbox=d.get('bbox', None),
                                  spatial_res=d.get('spatial_res', None),
@@ -159,8 +163,7 @@ class DatasetDescriptor(DataDescriptor):
                                  dims=d.get('dims', None),
                                  data_vars=data_vars,
                                  attrs=d.get('attrs', None),
-                                 open_params_schema=d.get('open_params_schema', None),
-        )
+                                 open_params_schema=d.get('open_params_schema', None))
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert into a JSON-serializable dictionary"""
@@ -169,6 +172,10 @@ class DatasetDescriptor(DataDescriptor):
             d['data_vars'] = [vd.to_dict() for vd in self.data_vars]
         _copy_none_null_props(self, d, ['dims', 'attrs'])
         return d
+
+    @classmethod
+    def _get_base_type_specifier(cls) -> TypeSpecifier:
+        return TYPE_SPECIFIER_DATASET
 
 
 class VariableDescriptor:
@@ -188,7 +195,7 @@ class VariableDescriptor:
         self.dtype = dtype
         self.dims = tuple(dims)
         self.ndim = len(self.dims)
-        self.attrs = _convert_nans_to_null(dict(attrs)) if attrs is not None else None
+        self.attrs = _convert_nans_to_none(dict(attrs)) if attrs is not None else None
 
     @classmethod
     def from_dict(cls, d: Mapping[str, Any]):
@@ -214,10 +221,11 @@ class MultiLevelDatasetDescriptor(DatasetDescriptor):
     def __init__(self,
                  data_id: str,
                  num_levels: int,
+                 type_specifier: Union[str, TypeSpecifier] = TYPE_SPECIFIER_MULTILEVEL_DATASET,
                  **kwargs):
         assert_given(data_id, 'data_id')
         assert_given(num_levels, 'num_levels')
-        super().__init__(data_id=data_id, type_id=TYPE_ID_MULTI_LEVEL_DATASET, **kwargs)
+        super().__init__(data_id=data_id, type_specifier=type_specifier, **kwargs)
         self.num_levels = num_levels
 
     @classmethod
@@ -232,6 +240,10 @@ class MultiLevelDatasetDescriptor(DatasetDescriptor):
         d['num_levels'] = self.num_levels
         return d
 
+    @classmethod
+    def _get_base_type_specifier(cls) -> TypeSpecifier:
+        return TYPE_SPECIFIER_MULTILEVEL_DATASET
+
 
 class GeoDataFrameDescriptor(DataDescriptor):
     """
@@ -244,7 +256,7 @@ class GeoDataFrameDescriptor(DataDescriptor):
                  open_params_schema: JsonObjectSchema = None,
                  **kwargs):
         super().__init__(data_id=data_id,
-                         type_id=TYPE_ID_GEO_DATA_FRAME,
+                         type_specifier=TYPE_SPECIFIER_GEODATAFRAME,
                          open_params_schema=open_params_schema,
                          **kwargs)
         self.feature_schema = feature_schema
@@ -261,12 +273,13 @@ class GeoDataFrameDescriptor(DataDescriptor):
         _copy_none_null_props(self, d, ['feature_schema'])
         return d
 
+    @classmethod
+    def _get_base_type_specifier(cls) -> TypeSpecifier:
+        return TYPE_SPECIFIER_GEODATAFRAME
 
-def _convert_nans_to_null(d: Dict[str, Any]) -> Dict[str, Any]:
-    for key, value in d.items():
-        if isinstance(value, float) and np.isnan(value):
-            d[key] = 'null'
-    return d
+
+def _convert_nans_to_none(d: Dict[str, Any]) -> Dict[str, Any]:
+    return {k: (None if isinstance(v, float) and np.isnan(v) else v) for k, v in d.items()}
 
 
 def _copy_none_null_props(obj: Any, d: Dict[str, Any], names: Sequence[str]):

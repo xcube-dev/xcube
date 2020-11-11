@@ -20,12 +20,14 @@
 # SOFTWARE.
 
 from abc import abstractmethod, ABC
-from typing import Any, List, Optional
+from typing import Any, List, Optional, Union
 
 import xarray as xr
 
 from xcube.constants import EXTENSION_POINT_DATA_OPENERS
 from xcube.constants import EXTENSION_POINT_DATA_WRITERS
+from xcube.core.store.typespecifier import TypeSpecifier
+from xcube.core.store.typespecifier import TYPE_SPECIFIER_ANY
 from xcube.util.assertions import assert_given
 from xcube.util.extension import Extension
 from xcube.util.extension import ExtensionPredicate
@@ -103,25 +105,27 @@ def find_data_writer_extensions(predicate: ExtensionPredicate = None,
     return extension_registry.find_extensions(EXTENSION_POINT_DATA_WRITERS, predicate=predicate)
 
 
-def get_data_accessor_predicate(type_id: str = None,
+def get_data_accessor_predicate(type_specifier: Union[str, TypeSpecifier] = None,
                                 format_id: str = None,
                                 storage_id: str = None) -> ExtensionPredicate:
     """
     Get a predicate that checks if a data accessor extensions's name is
-    compliant with *type_id*, *format_id*, *storage_id*.
+    compliant with *type_specifier*, *format_id*, *storage_id*.
 
-    :param type_id: Optional data type identifier to be supported.
+    :param type_specifier: Optional data type specifier to be supported.
     :param format_id: Optional data format identifier to be supported.
     :param storage_id: Optional data storage identifier to be supported.
     :return: A filter function.
     :raise DataStoreError: If an error occurs.
     """
-    if any((type_id, format_id, storage_id)):
+    if any((type_specifier, format_id, storage_id)):
         def _predicate(extension: Extension) -> bool:
             extension_parts = extension.name.split(':', maxsplit=4)
             if len(extension_parts) < 3:
                 raise DataStoreError(f'Illegal data opener/writer extension name "{extension.name}"')
-            type_ok = type_id is None or extension_parts[0] == '*' or extension_parts[0] == type_id
+            extension_type = TypeSpecifier.parse(extension_parts[0])
+            type_ok = type_specifier is None or extension_type == TYPE_SPECIFIER_ANY or \
+                      extension_type == TypeSpecifier.normalize(type_specifier)
             format_ok = format_id is None or extension_parts[1] == '*' or extension_parts[1] == format_id
             storage_ok = storage_id is None or extension_parts[2] == '*' or extension_parts[2] == storage_id
             return type_ok and format_ok and storage_ok

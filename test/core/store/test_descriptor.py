@@ -4,36 +4,42 @@ import numpy as np
 
 from xcube.core.store.descriptor import DatasetDescriptor
 from xcube.core.store.descriptor import VariableDescriptor
+from xcube.core.store.typespecifier import TypeSpecifier
 
 
 class DatasetDescriptorTest(unittest.TestCase):
 
     def test_from_dict_no_data_id(self):
         try:
-            descriptor_dict = dict(type_id='abc')
+            descriptor_dict = dict()
             DatasetDescriptor.from_dict(descriptor_dict)
             self.fail('Exception expected')
         except ValueError:
             pass
 
-    def test_from_dict_no_type_id(self):
-        try:
-            descriptor_dict = dict(data_id='xyz')
+    def test_from_dict_wrong_type_specifier(self):
+        with self.assertRaises(ValueError) as cm:
+            descriptor_dict = dict(data_id='xyz', type_specifier='tsr')
             DatasetDescriptor.from_dict(descriptor_dict)
-            self.fail('Exception expected')
-        except ValueError:
-            pass
+        self.assertEqual('type_specifier must satisfy type specifier "dataset", but was "tsr"',
+                         f'{cm.exception}')
 
     def test_from_dict_basic(self):
-        descriptor_dict = dict(data_id='xyz', type_id='abc')
+        descriptor_dict = dict(data_id='xyz')
         descriptor = DatasetDescriptor.from_dict(descriptor_dict)
         self.assertIsNotNone(descriptor)
         self.assertEqual('xyz', descriptor.data_id)
-        self.assertEqual('abc', descriptor.type_id)
+        self.assertEqual('dataset', descriptor.type_specifier)
+
+    def test_from_dict_derived_type(self):
+        descriptor_dict = dict(data_id='xyz', type_specifier='dataset[fegd]')
+        descriptor = DatasetDescriptor.from_dict(descriptor_dict)
+        self.assertIsNotNone(descriptor)
+        self.assertEqual('xyz', descriptor.data_id)
+        self.assertEqual('dataset[fegd]', descriptor.type_specifier)
 
     def test_from_dict_full(self):
         descriptor_dict = dict(data_id='xyz',
-                               type_id='abc',
                                crs='EPSG:9346',
                                bbox=(10., 20., 30., 40.),
                                spatial_res=20.,
@@ -63,7 +69,7 @@ class DatasetDescriptorTest(unittest.TestCase):
         descriptor = DatasetDescriptor.from_dict(descriptor_dict)
         self.assertIsNotNone(descriptor)
         self.assertEqual('xyz', descriptor.data_id)
-        self.assertEqual('abc', descriptor.type_id)
+        self.assertEqual('dataset', descriptor.type_specifier)
         self.assertEqual('EPSG:9346', descriptor.crs)
         self.assertEqual((10., 20., 30., 40.), descriptor.bbox)
         self.assertEqual(20., descriptor.spatial_res)
@@ -75,6 +81,56 @@ class DatasetDescriptorTest(unittest.TestCase):
         self.assertEqual('rt5', descriptor.attrs.get('tgr7h', None))
         self.assertEqual('s8fd4w5', descriptor.attrs.get('df', None))
         self.assertEqual('object', descriptor.open_params_schema.get('type', None))
+
+    def test_to_dict(self):
+        var_descriptors = [
+            VariableDescriptor(name='xf',
+                               dtype='rj',
+                               dims=('dfjhrt', 'sg'),
+                               attrs=dict(ssd=4,
+                                          zjgrhgu='dgfrf'
+                                          )
+                               )
+        ]
+        descriptor = DatasetDescriptor(data_id='xyz',
+                                       type_specifier=TypeSpecifier('dataset', flags={'cube'}),
+                                       crs='EPSG:9346',
+                                       bbox=(10., 20., 30., 40.),
+                                       spatial_res=20.,
+                                       time_range=('2017-06-05', '2017-06-27'),
+                                       time_period='daily',
+                                       dims=dict(x=1, y=2, z=3),
+                                       data_vars=var_descriptors,
+                                       attrs=dict(dzus=236,
+                                                  tgr7h='rt5',
+                                                  df='s8fd4w5'
+                                                  )
+                                       )
+        descriptor_dict = descriptor.to_dict()
+        self.assertEqual(dict(data_id='xyz',
+                              type_specifier='dataset[cube]',
+                              crs='EPSG:9346',
+                              bbox=(10., 20., 30., 40.),
+                              spatial_res=20.,
+                              time_range=('2017-06-05', '2017-06-27'),
+                              time_period='daily',
+                              dims=dict(x=1, y=2, z=3),
+                              data_vars=[dict(name='xf',
+                                              dtype='rj',
+                                              dims=('dfjhrt', 'sg'),
+                                              ndim=2,
+                                              attrs=dict(ssd=4,
+                                                         zjgrhgu='dgfrf'
+                                                         )
+                                              )
+                                         ],
+                              attrs=dict(dzus=236,
+                                         tgr7h='rt5',
+                                         df='s8fd4w5'
+                                         )
+                              ),
+                         descriptor_dict
+                         )
 
 
 class VariableDescriptorTest(unittest.TestCase):
@@ -104,7 +160,7 @@ class VariableDescriptorTest(unittest.TestCase):
             'attrs': {
                 'ssd': 4,
                 'zjgrhgu': 'dgfrf',
-                'fill_value': 'null'
+                'fill_value': None
             }
         }
         self.assertEqual(expected, vd.to_dict())
@@ -118,7 +174,7 @@ class VariableDescriptorTest(unittest.TestCase):
             'attrs': {
                 'ssd': 4,
                 'zjgrhgu': 'dgfrf',
-                'fill_value': 'null'
+                'fill_value': None
             }
         }
         vd = VariableDescriptor.from_dict(vd_as_dict)
@@ -126,7 +182,7 @@ class VariableDescriptorTest(unittest.TestCase):
         self.assertEqual('rj', vd.dtype)
         self.assertEqual(('dfjhrt', 'sg'), vd.dims)
         self.assertEqual(2, vd.ndim)
-        self.assertEqual({'ssd': 4, 'zjgrhgu': 'dgfrf', 'fill_value': 'null'}, vd.attrs)
+        self.assertEqual({'ssd': 4, 'zjgrhgu': 'dgfrf', 'fill_value': None}, vd.attrs)
 
         vd_fail = None
         try:

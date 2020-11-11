@@ -1,34 +1,69 @@
-## Changes in 0.5.2 (in development)
+## Changes in 0.6.0 (in development)
 
-* For `xcube serve` dataset configurations where `FileSystem: obs`, users must now also 
-  specify `Anonymous: True` for datasets in public object storage buckets. For example:
-```yaml
-    - Identifier: "OLCI-SNS-RAW-CUBE-2"
-      FileSystem: "obs"
-      Endpoint: "https://s3.eu-central-1.amazonaws.com"
-      Path: "xcube-examples/OLCI-SNS-RAW-CUBE-2.zarr"
-      Anyonymous: true
-      ...
-    - ...
-```
+### Enhancements 
+
+* Replaced the concept of `type_id` used by several `xcube.core.store.DataStore` methods 
+  by a more flexible `type_specifier`. Documentation is provided in `docs/source/storeconv.md`. 
   
+  The `DataStore` interface changed as follows:
+  - class method `get_type_id()` replaced by `get_type_specifiers()` replaces `get_type_id()`;
+  - new instance method `get_type_specifiers_for_data()`;
+  - replaced keyword-argument in `get_data_ids()`;
+  - replaced keyword-argument in `has_data()`;
+  - replaced keyword-argument in `describe_data()`;
+  - replaced keyword-argument in `get_search_params_schema()`;
+  - replaced keyword-argument in `search_data()`;
+  - replaced keyword-argument in `get_data_opener_ids()`.
+  
+  The `WritableDataStore` interface changed as follows:
+  - replaced keyword-argument in `get_data_writer_ids()`.
+
+* The JSON Schema classes in `xcube.util.jsonschema` have been extended:
+  - `date` and `date-time` formats are now validated along with the rest of the schema
+  - the `JsonDateSchema` and `JsonDatetimeSchema` subclasses of `JsonStringSchema` have been introduced, 
+    including a non-standard extension to specify date and time limits
+
+* Extended `xcube.core.store.DataStore` docstring to include a basic convention for store 
+  open parameters. (#330)
+
+* Added documentation for the use of the open parameters passed to 
+  `xcube.core.store.DataOpener.open_data()`.
+
+### Fixes
+
+* `xcube gen` can now interpret `start_date` and `stop_date` from NetCDF dataset attributes. 
+  This is relevant for using `xcube gen` for Sentinel-2 Level 2 data products generated and 
+  provided by Brockmann Consult. (#352)
+
+
 * Fixed both `xcube.core.dsio.open_cube()` and `open_dataset()` which failed with message 
   `"ValueError: group not found at path ''"` if called with a bucket URL but no credentials given
   in case the bucket is not publicly readable. (#337)
   The fix for that issue now requires an additional `s3_kwargs` parameter when accessing datasets 
   in _public_ buckets:
-```python
-    from xcube.core.dsio import open_cube 
+  ```python
+  from xcube.core.dsio import open_cube 
     
-    public_url = "https://s3.eu-central-1.amazonaws.com/xcube-examples/OLCI-SNS-RAW-CUBE-2.zarr"
-    public_cube = open_cube(public_url, s3_kwargs=dict(anon=True))
-```  
-* Extended `xcube.core.store.DataStore` docstring to include a basic convention for store open parameters. (#330)
-* Added documentation for the use of the open parameters passed to `xcube.core.store.DataOpener.open_data()`.
-* The JSON Schema classes in `xcube.util.jsonschema` have been extended:
-  - `date` and `date-time` formats are now validated along with the rest of the schema
-  - a `JsonDatetimeSchema` subclass of `JsonStringSchema` has been introduced, including a non-standard extension to specify date and time limits
+  public_url = "https://s3.eu-central-1.amazonaws.com/xcube-examples/OLCI-SNS-RAW-CUBE-2.zarr"
+  public_cube = open_cube(public_url, s3_kwargs=dict(anon=True))
+  ```  
 * xcube now requires `s3fs >= 0.5` which implies using faster async I/O when accessing object storage.
+* xcube now requires `gdal >= 3.0`. (#348)
+* xcube now only requires `matplotlib-base` package rather than `matplotlib`. (#361)
+
+### Other
+
+* For `xcube serve` dataset configurations where `FileSystem: obs`, users must now also 
+  specify `Anonymous: True` for datasets in public object storage buckets. For example:
+  ```yaml
+  - Identifier: "OLCI-SNS-RAW-CUBE-2"
+    FileSystem: "obs"
+    Endpoint: "https://s3.eu-central-1.amazonaws.com"
+    Path: "xcube-examples/OLCI-SNS-RAW-CUBE-2.zarr"
+    Anyonymous: true
+    ...
+  - ...
+  ```  
 
 ## Changes in 0.5.1
 
@@ -36,7 +71,7 @@
 
 ## Changes in 0.5.0
 
-### New in 0.5.0
+### New 
 
 * `xcube gen2 CONFIG` will generate a cube from a data input store and a user given cube configuration.
    It will write the resulting cube in a user defined output store.
@@ -57,7 +92,23 @@
     credentials found in environment variables `AWS_ACCESS_KEY_ID` and
     `AWS_SECRET_ACCESS_KEY`.
 
-### Enhancements in 0.5.0
+
+* xcube has been extended by a new *Data Store Framework* (#307).
+  It is provided by the `xcube.core.store` package.
+  It's usage is currently documented only in the form of Jupyter Notebook examples, 
+  see `examples/store/*.ipynb`.
+   
+* During the development of the new *Data Store Framework*, some  
+  utility packages have been added:
+  * `xcube.util.jsonschema` - classes that represent JSON Schemas for types null, boolean,
+     number, string, object, and array. Schema instances are used for JSON validation,
+     and object marshalling.
+  * `xcube.util.assertions` - numerous `assert_*` functions that are used for function 
+     parameter validation. All functions raise `ValueError` in case an assertion is not met.
+  * `xcube.util.ipython` - functions that can be called for better integration of objects with
+     Jupyter Notebooks.
+
+### Enhancements
 
 * Added possibility to specify packing of variables within the configuration of
   `xcube gen` (#269). The user now may specify a different packing variables, 
@@ -80,6 +131,7 @@
 * Example configurations for `xcube gen2` were added.
 
 ### Fixes
+
 * From 0.4.1: Fixed time-series performance drop (#299). 
 
 * Fixed `xcube gen` CLI tool to correctly insert time slices into an 
@@ -90,21 +142,6 @@
 
 * Disable the display of warnings in the CLI by default, only showing them if
   a `--warnings` flag is given.
-
-* xcube has been extended by a new *Data Store Framework* (#307).
-  It is provided by the `xcube.core.store` package.
-  It's usage is currently documented only in the form of Jupyter Notebook examples, 
-  see `examples/store/*.ipynb`.
-   
-* During the development of the new *Data Store Framework*, some  
-  utility packages have been added:
-  * `xcube.util.jsonschema` - classes that represent JSON Schemas for types null, boolean,
-     number, string, object, and array. Schema instances are used for JSON validation,
-     and object marshalling.
-  * `xcube.util.assertions` - numerous `assert_*` functions that are used for function 
-     parameter validation. All functions raise `ValueError` in case an assertion is not met.
-  * `xcube.util.ipython` - functions that can be called for better integration of objects with
-     Jupyter Notebooks.
 
 * Fixed a regression when running "xcube serve" with cube path as parameter (#314)
 

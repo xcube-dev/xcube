@@ -1,15 +1,14 @@
 import os
 import unittest
 
-import boto3
-import moto
 import numpy as np
 import pandas as pd
 import s3fs
 import xarray as xr
 
-from test.s3test import S3Test, MOTOSERVER_ENDPOINT_URL
+from test.s3test import S3Test, MOTO_SERVER_ENDPOINT_URL
 from xcube.core.dsio import write_dataset
+from xcube.core.geom import clip_dataset_by_geometry
 from xcube.core.mldataset import BaseMultiLevelDataset
 from xcube.core.mldataset import CombinedMultiLevelDataset
 from xcube.core.mldataset import ComputedMultiLevelDataset
@@ -154,61 +153,63 @@ def _get_test_dataset(var_names=('noise',)):
 
 
 class ObjectStorageMultiLevelDatasetTest(S3Test):
-    @moto.mock_s3
     def test_s3_zarr(self):
+        # if this test fails on travis with
+        # E           IndexError: pop from an empty deque
+        # then it most likly might be due to this issue: https://github.com/pydata/xarray/issues/4478
+        # The issue has been fixed, but dask/s3fs does not have a new release including the fix yet
+
         self._write_test_cube()
 
         ml_ds_from_object_storage = open_ml_dataset_from_object_storage(
-            'xcube-test/cube-1-250-250.zarr',
+            'xcube-test-cube/cube-1-250-250.zarr',
             s3_kwargs=dict(key='test_fake_id', secret='test_fake_secret'),
-            s3_client_kwargs=dict(endpoint_url=MOTOSERVER_ENDPOINT_URL)
+            s3_client_kwargs=dict(endpoint_url=MOTO_SERVER_ENDPOINT_URL)
         )
         self.assertIsNotNone(ml_ds_from_object_storage)
         self.assertIn('conc_chl', ml_ds_from_object_storage.base_dataset.variables)
-        self.assertEqual((5, 1000, 2000), ml_ds_from_object_storage.base_dataset.conc_chl.shape)
+        self.assertEqual((2, 200, 400), ml_ds_from_object_storage.base_dataset.conc_chl.shape)
 
     @classmethod
     def _write_test_cube(cls):
         s3_kwargs = dict(key='test_fake_id', secret='test_fake_secret')
-        s3_client_kwargs = dict(endpoint_url=MOTOSERVER_ENDPOINT_URL)
+        s3_client_kwargs = dict(endpoint_url=MOTO_SERVER_ENDPOINT_URL)
         s3 = s3fs.S3FileSystem(**s3_kwargs, client_kwargs=s3_client_kwargs)
-        # Create bucket 'xcube-test', so it exists before we write a test pyramid
-        s3.mkdir('xcube-test')
+        # Create bucket 'xcube-test', so it exists before we write a test cube
+        s3.mkdir('xcube-test-cube')
 
         # Create a test cube with just one variable "conc_chl"
         zarr_path = os.path.join(os.path.dirname(__file__), '../../examples/serve/demo/cube-1-250-250.zarr')
         dataset = xr.open_zarr(zarr_path)
-        dataset = xr.Dataset(dict(conc_chl=dataset.conc_chl))
+        dataset = cls._make_subset(dataset)
 
         # Write test cube
         write_dataset(dataset,
-                      'xcube-test/cube-1-250-250.zarr',
+                      'xcube-test-cube/cube-1-250-250.zarr',
                       s3_kwargs=s3_kwargs,
                       s3_client_kwargs=s3_client_kwargs)
 
-    @moto.mock_s3
     def test_s3_levels(self):
         self._write_test_cube_pyramid()
 
         s3 = s3fs.S3FileSystem(key='test_fake_id',
                                secret='test_fake_secret',
-                               client_kwargs=dict(endpoint_url=MOTOSERVER_ENDPOINT_URL))
+                               client_kwargs=dict(endpoint_url=MOTO_SERVER_ENDPOINT_URL))
         ml_dataset = ObjectStorageMultiLevelDataset(s3,
                                                     "xcube-test/cube-1-250-250.levels",
                                                     chunk_cache_capacity=1000 * 1000 * 1000)
         self.assertIsNotNone(ml_dataset)
-        self.assertEqual(3, ml_dataset.num_levels)
-        self.assertEqual((250, 250), ml_dataset.tile_grid.tile_size)
+        self.assertEqual(2, ml_dataset.num_levels)
+        self.assertEqual((100, 100), ml_dataset.tile_grid.tile_size)
         self.assertEqual(2, ml_dataset.tile_grid.num_level_zero_tiles_x)
         self.assertEqual(1, ml_dataset.tile_grid.num_level_zero_tiles_y)
-        self.assertEqual(761904762, ml_dataset.get_chunk_cache_capacity(0))
-        self.assertEqual(190476190, ml_dataset.get_chunk_cache_capacity(1))
-        self.assertEqual(47619048, ml_dataset.get_chunk_cache_capacity(2))
+        self.assertEqual(800000000, ml_dataset.get_chunk_cache_capacity(0))
+        self.assertEqual(200000000, ml_dataset.get_chunk_cache_capacity(1))
 
     @classmethod
     def _write_test_cube_pyramid(cls):
         s3_kwargs = dict(key='test_fake_id', secret='test_fake_secret')
-        s3_client_kwargs = dict(endpoint_url=MOTOSERVER_ENDPOINT_URL)
+        s3_client_kwargs = dict(endpoint_url=MOTO_SERVER_ENDPOINT_URL)
         s3 = s3fs.S3FileSystem(**s3_kwargs, client_kwargs=s3_client_kwargs)
         # Create bucket 'xcube-test', so it exists before we write a test pyramid
         s3.mkdir('xcube-test')
@@ -216,7 +217,7 @@ class ObjectStorageMultiLevelDatasetTest(S3Test):
         # Create a test cube pyramid with just one variable "conc_chl"
         zarr_path = os.path.join(os.path.dirname(__file__), '../../examples/serve/demo/cube-1-250-250.zarr')
         base_dataset = xr.open_zarr(zarr_path)
-        base_dataset = xr.Dataset(dict(conc_chl=base_dataset.conc_chl))
+        base_dataset = cls._make_subset(base_dataset)
         ml_dataset = BaseMultiLevelDataset(base_dataset)
 
         # Write test cube pyramid
@@ -224,6 +225,28 @@ class ObjectStorageMultiLevelDatasetTest(S3Test):
                      'xcube-test/cube-1-250-250.levels',
                      s3_kwargs=s3_kwargs,
                      s3_client_kwargs=s3_client_kwargs)
+
+    @classmethod
+    def _make_subset(cls, base_dataset):
+        base_dataset = base_dataset.drop_vars(['c2rcc_flags', 'conc_tsm', 'kd489', 'quality_flags'])
+        geometry = (1.0, 51.0, 2.0, 51.5)
+        base_dataset = clip_dataset_by_geometry(base_dataset, geometry=geometry)
+        base_dataset = base_dataset.dropna('time', how='all')
+        # somehow clip_dataset_by_geometry() does not unify chunks and encoding, so it needs to be done manually:
+        for var in base_dataset.variables:
+            if var not in base_dataset.coords:
+                if base_dataset[var].encoding['chunks'] != (1, 100, 100):
+                    base_dataset[var].encoding['chunks'] = (1, 100, 100)
+                base_dataset[var] = base_dataset[var].chunk({'time': 1, 'lat': 100, 'lon': 100})
+        base_dataset['lat'] = base_dataset['lat'].chunk({'lat': 100})
+        base_dataset.lat.encoding['chunks'] = (100,)
+        base_dataset['lon'] = base_dataset['lon'].chunk({'lon': 100})
+        base_dataset.lon.encoding['chunks'] = (100,)
+        base_dataset['lat_bnds'] = base_dataset['lat_bnds'].chunk(100, 2)
+        base_dataset.lat_bnds.encoding['chunks'] = (100, 2)
+        base_dataset['lon_bnds'] = base_dataset['lon_bnds'].chunk(100, 2)
+        base_dataset.lon_bnds.encoding['chunks'] = (100, 2)
+        return base_dataset
 
 
 class GetDatasetTileGridTest(unittest.TestCase):

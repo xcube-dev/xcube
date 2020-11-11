@@ -5,16 +5,16 @@ from typing import Set
 
 import boto3
 import fsspec
-import moto
 import numpy as np
 import pandas as pd
 import xarray as xr
 
-from test.s3test import MOTOSERVER_ENDPOINT_URL, S3Test
+from test.s3test import MOTO_SERVER_ENDPOINT_URL, S3Test
 from test.sampledata import new_test_dataset
 from xcube.core.dsio import CsvDatasetIO, DatasetIO, MemDatasetIO, Netcdf4DatasetIO, ZarrDatasetIO, find_dataset_io, \
     query_dataset_io, get_path_or_s3_store, write_cube, split_s3_url, parse_s3_url_and_kwargs, open_cube
 from xcube.core.dsio import open_dataset, write_dataset
+from xcube.core.geom import clip_dataset_by_geometry
 from xcube.core.new import new_cube
 
 TEST_NC_FILE = "test.nc"
@@ -232,7 +232,7 @@ class Netcdf4DatasetIOTest(unittest.TestCase):
             ds_io.read('test.nc')
 
 
-class ZarrDatasetIOTest(S3Test):
+class ZarrDatasetIOTest(unittest.TestCase):
 
     def test_props(self):
         ds_io = ZarrDatasetIO()
@@ -264,16 +264,19 @@ class ZarrDatasetIOTest(S3Test):
         with self.assertRaises(ValueError):
             ds_io.read('test.zarr')
 
-    @moto.mock_s3
+
+class ZarrDatasetS3IOTest(S3Test):
+
     def test_write_to_and_read_from_s3(self):
-        s3_conn = boto3.client('s3', endpoint_url=MOTOSERVER_ENDPOINT_URL)
+        s3_conn = boto3.client('s3', endpoint_url=MOTO_SERVER_ENDPOINT_URL)
         s3_conn.create_bucket(Bucket='upload_bucket', ACL='public-read')
 
         s3_kwargs = dict(key='test_fake_id', secret='test_fake_secret')
-        s3_client_kwargs = {'endpoint_url': MOTOSERVER_ENDPOINT_URL}
+        s3_client_kwargs = {'endpoint_url': MOTO_SERVER_ENDPOINT_URL}
 
         zarr_path = os.path.join(os.path.dirname(__file__), '../../examples/serve/demo/cube-1-250-250.zarr')
         ds1 = xr.open_zarr(zarr_path)
+        ds1 = _make_spatial_and_variable_subset(ds1)
 
         write_cube(ds1,
                    'upload_bucket/cube-1-250-250.zarr',
@@ -375,16 +378,17 @@ class ContextManagerTest(unittest.TestCase):
 
 
 class GetPathOrObsStoreTest(S3Test):
-    @moto.mock_s3
     def test_path_or_store_read_from_bucket(self):
         s3_store, consolidated = get_path_or_s3_store(
-            f'{MOTOSERVER_ENDPOINT_URL}/xcube-examples/OLCI-SNS-RAW-CUBE-2.zarr', mode='r')
+            f'{MOTO_SERVER_ENDPOINT_URL}/xcube-examples/OLCI-SNS-RAW-CUBE-2.zarr', mode='r')
         self.assertIsInstance(s3_store, fsspec.mapping.FSMap)
         self.assertEqual(False, consolidated)
 
-    @moto.mock_s3
     def test_path_or_store_write_to_bucket(self):
-        s3_store, consolidated = get_path_or_s3_store(f'{MOTOSERVER_ENDPOINT_URL}/fake_bucket/fake_cube.zarr',
+        s3_conn = boto3.client('s3', endpoint_url=MOTO_SERVER_ENDPOINT_URL)
+        s3_conn.create_bucket(Bucket='xcube-examples', ACL='public-read')
+
+        s3_store, consolidated = get_path_or_s3_store(f'{MOTO_SERVER_ENDPOINT_URL}/xcube-examples/fake_cube.zarr',
                                                       s3_client_kwargs={'aws_access_key_id': 'some_fake_id',
                                                                         'aws_secret_access_key': 'some_fake_key'},
                                                       mode='w')
@@ -452,3 +456,25 @@ class SplitBucketUrlTest(unittest.TestCase):
         endpoint_url, root = split_s3_url('/xcube-examples/OLCI-SNS-RAW-CUBE-2.zarr')
         self.assertEqual(None, endpoint_url)
         self.assertEqual('/xcube-examples/OLCI-SNS-RAW-CUBE-2.zarr', root)
+
+
+def _make_spatial_and_variable_subset(dataset):
+    dataset = dataset.drop_vars(['c2rcc_flags', 'conc_tsm', 'kd489', 'quality_flags'])
+    geometry = (1.0, 51.0, 2.0, 51.5)
+    dataset = clip_dataset_by_geometry(dataset, geometry=geometry)
+    dataset = dataset.dropna('time', how='all')
+    # somehow clip_dataset_by_geometry() does not unify chunks and encoding, so it needs to be done manually:
+    for var in dataset.variables:
+        if var not in dataset.coords:
+            if dataset[var].encoding['chunks'] != (1, 101, 100):
+                dataset[var].encoding['chunks'] = (1, 101, 100)
+            dataset[var] = dataset[var].chunk({'time': 1, 'lat': 101, 'lon': 100})
+    dataset['lat'] = dataset['lat'].chunk({'lat': 101})
+    dataset.lat.encoding['chunks'] = (101,)
+    dataset['lon'] = dataset['lon'].chunk({'lon': 100})
+    dataset.lon.encoding['chunks'] = (100,)
+    dataset['lat_bnds'] = dataset['lat_bnds'].chunk(101, 2)
+    dataset.lat_bnds.encoding['chunks'] = (101, 2)
+    dataset['lon_bnds'] = dataset['lon_bnds'].chunk(100, 2)
+    dataset.lon_bnds.encoding['chunks'] = (100, 2)
+    return dataset

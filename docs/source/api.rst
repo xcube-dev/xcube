@@ -52,7 +52,7 @@ Cube manipulation
 Cube subsetting
 ===============
 
-.. autofunction:: xcube.core.select.select_vars
+.. autofunction:: xcube.core.select.select_variables_subset
 
 .. autofunction:: xcube.core.geom.clip_dataset_by_geometry
 
