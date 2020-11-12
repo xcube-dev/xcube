@@ -23,9 +23,9 @@ from typing import Sequence, Dict
 
 from xcube.cli._gen2.genconfig import CubeConfig
 from xcube.cli._gen2.genconfig import InputConfig
-from xcube.cli._gen2.storeconfig import get_data_store_instance
 from xcube.core.store import DataStore
 from xcube.core.store import new_data_opener
+from xcube.core.store.storeconfig import get_data_store_instance
 from xcube.util.progress import observe_progress
 
 

@@ -24,8 +24,8 @@ from xcube.cli._gen2.open import open_cubes
 from xcube.cli._gen2.progress import ApiProgressCallbackObserver
 from xcube.cli._gen2.progress import ConsoleProgressObserver
 from xcube.cli._gen2.resample import resample_and_merge_cubes
-from xcube.cli._gen2.storeconfig import load_data_store_instances
 from xcube.cli._gen2.write import write_cube
+from xcube.core.store.storeconfig import load_data_store_instances
 from xcube.util.progress import observe_progress
 
 

@@ -20,12 +20,13 @@
 # SOFTWARE.
 
 import json
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
-from xcube.core.store import DataStore, DataStoreError
-from xcube.core.store import new_data_store
 from xcube.util.jsonschema import JsonObjectSchema
 from xcube.util.jsonschema import JsonStringSchema
+from .store import DataStore, DataStoreError
+from .store import new_data_store
+from ...util.assertions import assert_given
 
 
 def _store_factory(store_id: str = None,
@@ -33,19 +34,21 @@ def _store_factory(store_id: str = None,
     return new_data_store(store_id, **(store_params or {}))
 
 
-_STORE_INSTANCE_SCHEMA = JsonObjectSchema(
+DATA_STORE_CONFIG_SCHEMA = JsonObjectSchema(
     properties=dict(
         store_id=JsonStringSchema(min_length=1),
         store_params=JsonObjectSchema(
             additional_properties=True
-        )
+        ),
+        name=JsonStringSchema(min_length=1),
+        description=JsonStringSchema(min_length=1),
     ),
     required=['store_id'],
     factory=_store_factory,
 )
 
 _STORE_CONFIG_SCHEMA = JsonObjectSchema(
-    additional_properties=_STORE_INSTANCE_SCHEMA,
+    additional_properties=DATA_STORE_CONFIG_SCHEMA,
 )
 
 
@@ -64,7 +67,7 @@ def new_data_store_instances(store_configs: Dict[str, Any]) -> Dict[str, DataSto
     that maps store names to parameterized data store instances:
 
         {
-            "<store_name>": {
+            "<store_instance_id>": {
                 "store_id": "<store_id>",
                 "store_params": {
                     "<param_name>": <param_value>,
@@ -102,3 +105,74 @@ def get_data_store_instance(store_id: str,
         else:
             raise DataStoreError(f'pre-configured data store "{store_instance_name}" not found')
     return new_data_store(store_id, **store_params)
+
+
+class DataStoreConfig:
+
+    def __init__(self,
+                 store_id: str,
+                 store_params: Dict[str, Any] = None,
+                 name: str = None,
+                 description: str = None):
+        assert_given(store_id, 'store_id')
+        self._store_id = store_id
+        self._store_params = store_params
+        self._name = name
+        self._description = description
+
+    @property
+    def store_id(self) -> Optional[str]:
+        return self._store_id
+
+    @property
+    def store_params(self) -> Optional[Dict[str, Any]]:
+        return self._store_params
+
+    @property
+    def name(self) -> Optional[str]:
+        return self._name
+
+    @property
+    def description(self) -> Optional[str]:
+        return self._description
+
+    @classmethod
+    def from_dict(cls, d: Dict[str, Any]) -> 'DataStoreConfig':
+        DATA_STORE_CONFIG_SCHEMA.validate_instance(d)
+        return DataStoreConfig(d['store_id'],
+                               d.get('store_params'),
+                               d.get('name'),
+                               d.get('description'))
+
+    def to_dict(self) -> Dict[str, Any]:
+        d = dict(store_id=self._store_id)
+        if self._store_params:
+            d.update(store_params=self._store_params)
+        if self._name:
+            d.update(name=self._name)
+        if self._description:
+            d.update(description=self._description)
+        return d
+
+
+class DataStoreInstance:
+
+    def __init__(self, config: DataStoreConfig):
+        self._config = config
+        self._store = None
+
+    @property
+    def config(self) -> DataStoreConfig:
+        return self._config
+
+    @property
+    def store(self) -> DataStoreConfig:
+        if self._store is None:
+            self._store = _STORE_CONFIG_SCHEMA.from_instance(self._config.to_dict())
+        return self._store
+
+
+class DataStoreInstance:
+
+    def __init__(self, store_config:):
+        self._store

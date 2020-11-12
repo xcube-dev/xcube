@@ -2,7 +2,7 @@ import unittest
 
 import jsonschema
 
-from xcube.cli._gen2.storeconfig import new_data_store_instances
+from xcube.core.store.storeconfig import new_data_store_instances
 from xcube.core.store import DataStore
 
 

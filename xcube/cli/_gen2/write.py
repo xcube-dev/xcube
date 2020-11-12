@@ -24,9 +24,9 @@ from typing import Dict
 import xarray as xr
 
 from xcube.cli._gen2.genconfig import OutputConfig
-from xcube.cli._gen2.storeconfig import get_data_store_instance
 from xcube.core.store import DataStore
 from xcube.core.store import new_data_writer
+from xcube.core.store.storeconfig import get_data_store_instance
 from xcube.util.progress import observe_progress
 
 
