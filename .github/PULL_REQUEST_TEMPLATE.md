@@ -8,4 +8,4 @@ Checklist:
 * [ ] Changes documented in `docs/CHANGES.md`
 * [ ] AppVeyor and Travis CI passes
 * [ ] Test coverage remains or increases (target 100%)
-* [ ] Close associated issues after merge
+* [ ] Associated issues closed after merge
