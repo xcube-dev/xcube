@@ -23,22 +23,22 @@ from typing import Sequence, Dict
 
 from xcube.cli._gen2.genconfig import CubeConfig
 from xcube.cli._gen2.genconfig import InputConfig
-from xcube.core.store import DataStore
 from xcube.core.store import new_data_opener
-from xcube.core.store.storeconfig import get_data_store_instance
+from xcube.core.store import DataStorePool
+from xcube.core.store import get_data_store_instance
 from xcube.util.progress import observe_progress
 
 
 def open_cubes(input_configs: Sequence[InputConfig],
                cube_config: CubeConfig,
-               store_instances: Dict[str, DataStore] = None):
+               store_pool: DataStorePool = None):
     cubes = []
     all_cube_params = cube_config.to_dict()
     with observe_progress('Opening input(s)', len(input_configs)) as progress:
         for input_config in input_configs:
             open_params = {}
             if input_config.store_id:
-                opener = get_data_store_instance(input_config.store_id, input_config.store_params, store_instances)
+                opener = get_data_store_instance(input_config.store_id, input_config.store_params, store_pool)
                 open_params.update(opener_id=input_config.opener_id, **input_config.open_params)
             else:
                 opener = new_data_opener(input_config.opener_id)

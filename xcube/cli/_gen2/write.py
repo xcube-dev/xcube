@@ -26,17 +26,18 @@ import xarray as xr
 from xcube.cli._gen2.genconfig import OutputConfig
 from xcube.core.store import DataStore
 from xcube.core.store import new_data_writer
-from xcube.core.store.storeconfig import get_data_store_instance
+from xcube.core.store import DataStorePool
+from xcube.core.store import get_data_store_instance
 from xcube.util.progress import observe_progress
 
 
 def write_cube(cube: xr.Dataset,
                output_config: OutputConfig,
-               store_instances: Dict[str, DataStore] = None) -> str:
+               store_pool: DataStorePool = None) -> str:
     with observe_progress('Writing output', 1) as progress:
         write_params = dict()
         if output_config.store_id:
-            writer = get_data_store_instance(output_config.store_id, output_config.store_params, store_instances)
+            writer = get_data_store_instance(output_config.store_id, output_config.store_params, store_pool)
             write_params.update(writer_id=output_config.writer_id, **output_config.write_params)
         else:
             writer = new_data_writer(output_config.writer_id)
