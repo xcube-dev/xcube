@@ -167,9 +167,12 @@ class DataStorePool:
     :param store_configs: A dictionary that maps store instance identifiers to to store configurations.
     """
 
-    def __init__(self, store_configs: Dict[str, DataStoreConfig]):
-        assert_instance(store_configs, dict, name='stores_configs')
-        self._instances: Dict[str, _DataStoreInstance] = {k: _DataStoreInstance(v) for k, v in store_configs.items()}
+    def __init__(self, store_configs: Dict[str, DataStoreConfig] = None):
+        if store_configs is not None:
+            assert_instance(store_configs, dict, name='stores_configs')
+            self._instances: Dict[str, _DataStoreInstance] = {k: _DataStoreInstance(v) for k, v in store_configs.items()}
+        else:
+            self._instances: Dict[str, _DataStoreInstance] = {}
 
     @property
     def store_instance_ids(self) -> List[str]:

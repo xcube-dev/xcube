@@ -10,10 +10,13 @@ from xcube.core.store.stores.directory import DirectoryDataStore
 class DirectoryDataStoreTest(unittest.TestCase):
 
     def setUp(self) -> None:
-        self._store = new_data_store('directory',
-                                     base_dir=os.path.join(os.path.dirname(__file__),
-                                                           '..', '..', '..', '..', 'examples', 'serve', 'demo'))
+        base_dir = os.path.join(os.path.dirname(__file__), '..', '..', '..', '..', 'examples', 'serve', 'demo')
+        self._store = new_data_store('directory', base_dir=base_dir)
         self.assertIsInstance(self.store, DirectoryDataStore)
+        # noinspection PyUnresolvedReferences
+        self.assertEqual(base_dir, self._store.base_dir)
+        # noinspection PyUnresolvedReferences
+        self.assertEqual(False, self._store.read_only)
 
     @property
     def store(self) -> DirectoryDataStore:
@@ -195,7 +198,9 @@ class DirectoryDataStoreTest(unittest.TestCase):
 
         with self.assertRaises(DataStoreError) as cm:
             set(self.store.describe_data('cube-1-250-250.zarr', type_specifier='geodataframe'))
-        self.assertEqual('Type specifier "geodataframe" cannot be satisfied by type specifier "dataset" of data resource "cube-1-250-250.zarr"', f'{cm.exception}')
+        self.assertEqual(
+            'Type specifier "geodataframe" cannot be satisfied by type specifier "dataset" of data resource "cube-1-250-250.zarr"',
+            f'{cm.exception}')
 
     def test_search_data(self):
         result = list(self.store.search_data())

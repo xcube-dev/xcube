@@ -90,6 +90,14 @@ class DirectoryDataStore(MutableDataStore):
         self._base_dir = base_dir
         self._read_only = read_only
 
+    @property
+    def base_dir(self) -> Optional[str]:
+        return self._base_dir
+
+    @property
+    def read_only(self) -> bool:
+        return self._read_only
+
     #############################################################################
     # MutableDataStore impl.
 
