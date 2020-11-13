@@ -29,13 +29,16 @@ First, clone the repository and create a conda environment from it:
     $ git clone https://github.com/dcs4cop/xcube.git
     $ cd xcube
     $ conda env create
-    
+
+From this point on, all instructions assume that your current directory is the
+root of the xcube repository.
+
 The `conda env create` command above creates an environment according to
 the specifications in the `environment.yml` file in the repository, which
 by default takes the name `xcube`. Then, to activate the environment and
 install xcube from the repository:
     
-    $ activate xcube
+    $ conda activate xcube
     $ pip install --no-deps --editable .
 
 The second command installs xcube in ‘editable mode’, meaning that it will
@@ -46,10 +49,12 @@ pip, the command `python setup.py develop` can be used, but this is
 Among other things, `pip` has the advantage of allowing easy deinstallation of
 installed packages.)
 
-To update the install to the latest repository version:
+To update the install to the latest repository version and update the
+environment to reflect to any changes in `environment.yml`:
     
-    $ activate xcube
+    $ conda activate xcube
     $ git pull --force
+    $ conda env update -n xcube --file environment.yml --prune
     
 To install `pytest` and run the unit test suite:
     
@@ -64,7 +69,6 @@ To produce an HTML
 [coverage report](https://pytest-cov.readthedocs.io/en/latest/reporting.html):
 
     $ pytest --cov-report html --cov=xcube
-
 
 ## Installation using mamba
 
