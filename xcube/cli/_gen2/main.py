@@ -54,7 +54,7 @@ def main(gen_config_path: str,
     :param verbose: Whether to output progress information to stdout.
     """
 
-    store_pool = DataStorePool.from_file(store_configs_path) if store_configs_path else None
+    store_pool = DataStorePool.from_file(store_configs_path) if store_configs_path else DataStorePool()
 
     gen_config = GenConfig.from_file(gen_config_path, verbose=verbose)
 
