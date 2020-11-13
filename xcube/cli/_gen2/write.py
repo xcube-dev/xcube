@@ -19,15 +19,12 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-from typing import Dict
-
 import xarray as xr
 
 from xcube.cli._gen2.genconfig import OutputConfig
-from xcube.core.store import DataStore
-from xcube.core.store import new_data_writer
 from xcube.core.store import DataStorePool
-from xcube.core.store import get_data_store_instance
+from xcube.core.store import get_data_store
+from xcube.core.store import new_data_writer
 from xcube.util.progress import observe_progress
 
 
@@ -37,7 +34,9 @@ def write_cube(cube: xr.Dataset,
     with observe_progress('Writing output', 1) as progress:
         write_params = dict()
         if output_config.store_id:
-            writer = get_data_store_instance(output_config.store_id, output_config.store_params, store_pool)
+            writer = get_data_store(output_config.store_id,
+                                    store_params=output_config.store_params,
+                                    store_pool=store_pool)
             write_params.update(writer_id=output_config.writer_id, **output_config.write_params)
         else:
             writer = new_data_writer(output_config.writer_id)

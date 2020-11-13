@@ -2,6 +2,10 @@
 
 ### Enhancements 
 
+* New function `xcube.core.store.get_data_store()` and new class `xcube.core.store.DataStorePool` 
+  allow for maintaining a set of pre-configured data store instances. This will be used
+  in future xcube tools that utilise multiple data stores, e.g. "xcube gen", "xcube serve". (#364)
+
 * Replaced the concept of `type_id` used by several `xcube.core.store.DataStore` methods 
   by a more flexible `type_specifier`. Documentation is provided in `docs/source/storeconv.md`. 
   

@@ -23,19 +23,40 @@ import json
 from typing import Any, Dict, Optional, List
 
 from xcube.util.assertions import assert_given
-from xcube.util.assertions import assert_in
 from xcube.util.assertions import assert_instance
 from xcube.util.jsonschema import JsonObjectSchema
 from xcube.util.jsonschema import JsonStringSchema
 from .store import DataStore
+from .store import DataStoreError
 from .store import new_data_store
 
-# def _store_config_factory(**kwargs):
-#     return DataStoreConfig.from_dict(kwargs)
-#
-#
-# def _store_config_serializer(store_config: 'DataStoreConfig'):
-#     return store_config.to_dict()
+
+def get_data_store(store_id: str,
+                   store_params: Dict[str, Any] = None,
+                   store_pool: 'DataStorePool' = None) -> DataStore:
+    """
+    Get a data store for identifier *store_id*.
+
+    If *store_id* is prefixed by a "@", it is an "instance identifier".
+    In this case the store instance is retrieved from the expected *store_pool* argument.
+    Otherwise a new store instance is created using optional *store_params*.
+
+    :param store_id: Store identifier, may be prefixed by a "@" to indicate a store instance identifier.
+    :param store_params: Store parameters, only valid if *store_id* is not an instance identifier.
+    :param store_pool: A pool of configured store instances used if *store_id* is an instance identifier.
+    :return: a data store instance
+    :raise: DataStoreError if a configured store does not exist
+    """
+    if store_id.startswith('@'):
+        store_instance_id = store_id[1:]
+        if store_pool is None:
+            raise ValueError(f'store_pool must be given,'
+                             f' with store_id ("{store_id}") referring to a configured store')
+        if store_params:
+            raise ValueError(f'store_params cannot be given,'
+                             f' with store_id ("{store_id}") referring to a configured store')
+        return store_pool.get_store(store_instance_id)
+    return new_data_store(store_id, **(store_params or {}))
 
 
 DATA_STORE_CONFIG_SCHEMA = JsonObjectSchema(
@@ -48,10 +69,27 @@ DATA_STORE_CONFIG_SCHEMA = JsonObjectSchema(
         description=JsonStringSchema(min_length=1),
     ),
     required=['store_id'],
+    # Uncomment, once needed.
     # factory=_store_config_factory,
     # serializer=_store_config_serializer,
 )
 
+DATA_STORE_POOL_SCHEMA = JsonObjectSchema(
+    additional_properties=DATA_STORE_CONFIG_SCHEMA,
+    # Uncomment, once needed.
+    # factory=_store_pool_factory,
+    # serializer=_store_pool_serializer,
+)
+
+
+# def _store_config_factory(**kwargs):
+#     return DataStoreConfig.from_dict(kwargs)
+#
+#
+# def _store_config_serializer(store_config: 'DataStoreConfig'):
+#     return store_config.to_dict()
+#
+#
 # def _store_pool_factory(**kwargs):
 #     return DataStorePool.from_dict(kwargs)
 #
@@ -59,15 +97,16 @@ DATA_STORE_CONFIG_SCHEMA = JsonObjectSchema(
 # def _store_pool_serializer(store_pool: 'DataStorePool'):
 #     return store_pool.to_dict()
 
-
-DATA_STORE_POOL_SCHEMA = JsonObjectSchema(
-    additional_properties=DATA_STORE_CONFIG_SCHEMA,
-    # factory=_store_pool_factory,
-    # serializer=_store_pool_serializer,
-)
-
-
 class DataStoreConfig:
+    """
+    The configuration of a data store.
+    The class is used by :class:DataStorePool to instantiate stores in a deferred manner.
+
+    :param store_id: the data store identifier
+    :param store_params: optional store parameters
+    :param name: a human-readable name for the store instance
+    :param description: a human-readable description of the store instance
+    """
 
     def __init__(self,
                  store_id: str,
@@ -118,6 +157,9 @@ class DataStoreConfig:
 
 
 class _DataStoreInstance:
+    """
+    Internal class used by DataStorePool to maintain store configurations + instances.
+    """
 
     def __init__(self, store_config: DataStoreConfig):
         assert_given(store_config, name='store_config')
@@ -170,7 +212,8 @@ class DataStorePool:
     def __init__(self, store_configs: Dict[str, DataStoreConfig] = None):
         if store_configs is not None:
             assert_instance(store_configs, dict, name='stores_configs')
-            self._instances: Dict[str, _DataStoreInstance] = {k: _DataStoreInstance(v) for k, v in store_configs.items()}
+            self._instances: Dict[str, _DataStoreInstance] = {k: _DataStoreInstance(v) for k, v in
+                                                              store_configs.items()}
         else:
             self._instances: Dict[str, _DataStoreInstance] = {}
 
@@ -183,26 +226,27 @@ class DataStorePool:
         return [v.store_config for k, v in self._instances.items()]
 
     def has_store_config(self, store_instance_id: str) -> bool:
-        assert_given(store_instance_id, 'store_instance_id')
+        assert_instance(store_instance_id, str, 'store_instance_id')
         return store_instance_id in self._instances
 
     def add_store_config(self, store_instance_id: str, store_config: DataStoreConfig):
-        assert_given(store_instance_id, 'store_instance_id')
-        assert_given(store_config, 'store_config')
+        assert_instance(store_instance_id, str, 'store_instance_id')
+        assert_instance(store_config, DataStoreConfig, 'store_config')
         if store_instance_id in self._instances:
             self._instances[store_instance_id].close()
         self._instances[store_instance_id] = _DataStoreInstance(store_config)
 
     def remove_store_config(self, store_instance_id: str):
-        assert_given(store_instance_id, 'store_instance_id')
-        assert_in(store_instance_id, self._instances, 'store_instance_id')
+        self._assert_valid_instance_id(store_instance_id)
         self._instances[store_instance_id].close()
         del self._instances[store_instance_id]
 
     def get_store_config(self, store_instance_id: str) -> DataStoreConfig:
+        self._assert_valid_instance_id(store_instance_id)
         return self._instances[store_instance_id].store_config
 
     def get_store(self, store_instance_id: str) -> DataStore:
+        self._assert_valid_instance_id(store_instance_id)
         return self._instances[store_instance_id].store
 
     def close_all_stores(self):
@@ -222,3 +266,8 @@ class DataStorePool:
 
     def to_dict(self) -> Dict[str, Any]:
         return {instance_id: instance.store_config.to_dict() for instance_id, instance in self._instances.items()}
+
+    def _assert_valid_instance_id(self, store_instance_id: str):
+        assert_instance(store_instance_id, str, name='store_instance_id')
+        if store_instance_id not in self._instances:
+            raise DataStoreError(f'Configured data store instance "{store_instance_id}" not found.')

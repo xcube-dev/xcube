@@ -42,6 +42,7 @@ from .store import get_data_store_params_schema
 from .store import new_data_store
 from .storepool import DataStoreConfig
 from .storepool import DataStorePool
+from .storepool import get_data_store
 from .typespecifier import TYPE_SPECIFIER_ANY
 from .typespecifier import TYPE_SPECIFIER_CUBE
 from .typespecifier import TYPE_SPECIFIER_DATASET

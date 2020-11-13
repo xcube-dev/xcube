@@ -5,18 +5,60 @@ import jsonschema
 
 from xcube.core.store import DataStore
 from xcube.core.store import DataStoreConfig
+from xcube.core.store import DataStoreError
 from xcube.core.store import DataStorePool
+from xcube.core.store import get_data_store
 from xcube.core.store.stores.directory import DirectoryDataStore
 
 
+class GetDataStoreTest(unittest.TestCase):
+
+    def test_get_data_store_new_inst(self):
+        store = get_data_store('directory', store_params=dict(base_dir='.'))
+        self.assertIsInstance(store, DirectoryDataStore)
+        store2 = get_data_store('directory', store_params=dict(base_dir='.'))
+        self.assertIsNot(store, store2)
+
+    def test_get_data_store_from_pool(self):
+        pool = DataStorePool({'dir': DataStoreConfig('directory', store_params=dict(base_dir='.'))})
+        store = get_data_store('@dir', store_pool=pool)
+        self.assertIsInstance(store, DirectoryDataStore)
+        store2 = get_data_store('@dir', store_pool=pool)
+        self.assertIs(store, store2)
+
+    def test_get_data_store_from_pool_with_params(self):
+        pool = DataStorePool({'@dir': DataStoreConfig('directory', store_params=dict(base_dir='.'))})
+        with self.assertRaises(ValueError) as cm:
+            get_data_store('@dir', store_pool=pool, store_params={'thres': 5})
+        self.assertEqual('store_params cannot be given, with store_id ("@dir") referring to a configured store',
+                         f'{cm.exception}')
+
+    def test_get_data_store_from_pool_without_pool(self):
+        with self.assertRaises(ValueError) as cm:
+            get_data_store('@dir')
+        self.assertEqual('store_pool must be given, with store_id ("@dir") referring to a configured store',
+                         f'{cm.exception}')
+
+
 class DataStoreConfigTest(unittest.TestCase):
-    def test_constr_and_props(self):
+
+    def test_constructor_and_instance_props(self):
         store_config = DataStoreConfig('directory', store_params={'base_dir': '.'}, name='Local',
                                        description='Local files')
         self.assertEqual('directory', store_config.store_id)
         self.assertEqual({'base_dir': '.'}, store_config.store_params)
         self.assertEqual('Local', store_config.name)
         self.assertEqual('Local files', store_config.description)
+
+    def test_constructor_asserts(self):
+        with self.assertRaises(ValueError) as cm:
+            DataStoreConfig('')
+        self.assertEqual('store_id must be given', f'{cm.exception}')
+
+        with self.assertRaises(TypeError) as cm:
+            # noinspection PyTypeChecker
+            DataStoreConfig('directory', store_params=[1, 'B'])
+        self.assertEqual("store_params must be an instance of <class 'dict'>", f'{cm.exception}')
 
     def test_to_dict(self):
         store_config = DataStoreConfig('directory', store_params={'base_dir': '.'}, name='Local',
@@ -46,8 +88,6 @@ class DataStorePoolTest(unittest.TestCase):
         self.assertEqual([], pool.store_configs)
 
     def test_from_dict_empty(self):
-        store_configs = {
-        }
         pool = DataStorePool.from_dict({})
         self.assertIsInstance(pool, DataStorePool)
         self.assertEqual([], pool.store_instance_ids)
@@ -118,6 +158,12 @@ class DataStorePoolTest(unittest.TestCase):
         # Should stay same instance
         self.assertIs(store, pool.get_store('dir-1'))
         self.assertIs(store, pool.get_store('dir-1'))
+
+    def test_get_store_error(self):
+        pool = DataStorePool()
+        with self.assertRaises(DataStoreError) as cm:
+            pool.get_store('dir-1')
+        self.assertEqual('Configured data store instance "dir-1" not found.', f'{cm.exception}')
 
     def test_to_dict(self):
         self.assertEqual({}, DataStorePool().to_dict())
