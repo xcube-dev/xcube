@@ -1,50 +1,94 @@
-
 # Installation
 
-## Installation using conda
+xcube can be installed from a released conda package, or directly from a
+copy of the source code repository.
 
-Into existing conda environment (>= Python 3.7)
+The first two sections below give instructions for installation using conda,
+available as part of the [miniconda
+distribution](https://docs.conda.io/en/latest/miniconda.html). If installation
+using conda proves to be unacceptably slow, mamba can be used instead (see
+[Installation using mamba](#installation-using-mamba)).
+
+## Installation from the conda package
+
+Into a currently active, existing conda environment (>= Python 3.7)
 
     $ conda install -c conda-forge xcube
 
-Into new conda environment
+Into a new conda environment named `xcube`:
     
-    $ conda create -c conda-forge -n xcube python3
-    $ conda install -c conda-forge xcube
+    $ conda create -c conda-forge -n xcube xcube
 
+The argument to the `-n` option can be changed to create a differently
+named environment.
 
-## Installation from sources
+## Installation from the source code repository
 
-First
+First, clone the repository and create a conda environment from it:
     
     $ git clone https://github.com/dcs4cop/xcube.git
     $ cd xcube
     $ conda env create
     
-Then
+The `conda env create` command above creates an environment according to
+the specifications in the `environment.yml` file in the repository, which
+by default takes the name `xcube`. Then, to activate the environment and
+install xcube from the repository:
     
     $ activate xcube
-    $ python setup.py develop
+    $ pip install --no-deps --editable .
 
-Update
+The second command installs xcube in ‘editable mode’, meaning that it will
+be run directly from the repository, and changes to the code in the repository
+will take immediate effect without reinstallation. (As an alternative to
+pip, the command `python setup.py develop` can be used, but this is
+[no longer recommended](https://docs.python.org/3/install/#introduction).
+Among other things, `pip` has the advantage of allowing easy deinstallation of
+installed packages.)
+
+To update the install to the latest repository version:
     
     $ activate xcube
     $ git pull --force
-    $ python setup.py develop
     
+To install `pytest` and run the unit test suite:
     
-Run tests
-
+    $ conda install pytest
     $ pytest
     
-with coverage
+To analyse test coverage (after installing pytest as above):
 
     $ pytest --cov=xcube
 
-with [coverage report](https://pytest-cov.readthedocs.io/en/latest/reporting.html) in HTML
+To produce an HTML
+[coverage report](https://pytest-cov.readthedocs.io/en/latest/reporting.html):
 
     $ pytest --cov-report html --cov=xcube
 
+
+## Installation using mamba
+
+[Mamba](https://github.com/mamba-org/mamba) is a dramatically faster drop-in
+replacement for the conda tool. Mamba itself can be installed using conda.
+If installation using conda proves to be unacceptably slow, it is recommended
+to install mamba, as follows:
+
+    $ conda create -n xcube python=3.8
+    $ conda activate xcube
+    $ conda install -c conda-forge mamba
+
+This creates a conda environment called `xcube`, activates the environment,
+and installs mamba in it. To install xcube from its conda-forge package, you
+can now use:
+
+    $ mamba install -c conda-forge xcube
+
+Alternatively, to install xcube directly from the repository:
+
+    $ git clone https://github.com/dcs4cop/xcube.git
+    $ cd xcube
+    $ mamba env create
+    $ pip install --no-deps --editable .
 
 ## Docker
 
@@ -58,5 +102,3 @@ Example:
     $  docker build -t xcube:0.1.0dev6 .
     $  docker run -d -p 8001:8000 xcube:0.1.0dev6
     $  docker ps
-
-
