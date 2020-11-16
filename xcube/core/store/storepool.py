@@ -65,37 +65,16 @@ DATA_STORE_CONFIG_SCHEMA = JsonObjectSchema(
         store_params=JsonObjectSchema(
             additional_properties=True
         ),
-        name=JsonStringSchema(min_length=1),
+        title=JsonStringSchema(min_length=1),
         description=JsonStringSchema(min_length=1),
     ),
     required=['store_id'],
-    # Uncomment, once needed.
-    # factory=_store_config_factory,
-    # serializer=_store_config_serializer,
 )
 
 DATA_STORE_POOL_SCHEMA = JsonObjectSchema(
     additional_properties=DATA_STORE_CONFIG_SCHEMA,
-    # Uncomment, once needed.
-    # factory=_store_pool_factory,
-    # serializer=_store_pool_serializer,
 )
 
-
-# def _store_config_factory(**kwargs):
-#     return DataStoreConfig.from_dict(kwargs)
-#
-#
-# def _store_config_serializer(store_config: 'DataStoreConfig'):
-#     return store_config.to_dict()
-#
-#
-# def _store_pool_factory(**kwargs):
-#     return DataStorePool.from_dict(kwargs)
-#
-#
-# def _store_pool_serializer(store_pool: 'DataStorePool'):
-#     return store_pool.to_dict()
 
 class DataStoreConfig:
     """
@@ -104,21 +83,21 @@ class DataStoreConfig:
 
     :param store_id: the data store identifier
     :param store_params: optional store parameters
-    :param name: a human-readable name for the store instance
+    :param title: a human-readable title for the store instance
     :param description: a human-readable description of the store instance
     """
 
     def __init__(self,
                  store_id: str,
                  store_params: Dict[str, Any] = None,
-                 name: str = None,
+                 title: str = None,
                  description: str = None):
         assert_given(store_id, name='store_id')
         if store_params is not None:
             assert_instance(store_params, dict, name='store_params')
         self._store_id = store_id
         self._store_params = store_params
-        self._name = name
+        self._title = title
         self._description = description
 
     @property
@@ -130,8 +109,8 @@ class DataStoreConfig:
         return self._store_params
 
     @property
-    def name(self) -> Optional[str]:
-        return self._name
+    def title(self) -> Optional[str]:
+        return self._title
 
     @property
     def description(self) -> Optional[str]:
@@ -142,15 +121,15 @@ class DataStoreConfig:
         DATA_STORE_CONFIG_SCHEMA.validate_instance(d)
         return DataStoreConfig(d['store_id'],
                                store_params=d.get('store_params'),
-                               name=d.get('name'),
+                               title=d.get('name'),
                                description=d.get('description'))
 
     def to_dict(self) -> Dict[str, Any]:
         d = dict(store_id=self._store_id)
         if self._store_params:
             d.update(store_params=self._store_params)
-        if self._name:
-            d.update(name=self._name)
+        if self._title:
+            d.update(name=self._title)
         if self._description:
             d.update(description=self._description)
         return d
@@ -200,7 +179,7 @@ class DataStorePool:
                     "<param_name>": <param_value>,
                     ...
                 },
-                "name": "<optional_human_readable_name>",
+                "title": "<optional_human_readable_title>",
                 "description": "<optional_human_readable_description>",
             },
             ...

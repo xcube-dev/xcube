@@ -43,11 +43,11 @@ class GetDataStoreTest(unittest.TestCase):
 class DataStoreConfigTest(unittest.TestCase):
 
     def test_constructor_and_instance_props(self):
-        store_config = DataStoreConfig('directory', store_params={'base_dir': '.'}, name='Local',
+        store_config = DataStoreConfig('directory', store_params={'base_dir': '.'}, title='Local',
                                        description='Local files')
         self.assertEqual('directory', store_config.store_id)
         self.assertEqual({'base_dir': '.'}, store_config.store_params)
-        self.assertEqual('Local', store_config.name)
+        self.assertEqual('Local', store_config.title)
         self.assertEqual('Local files', store_config.description)
 
     def test_constructor_asserts(self):
@@ -61,7 +61,7 @@ class DataStoreConfigTest(unittest.TestCase):
         self.assertEqual("store_params must be an instance of <class 'dict'>", f'{cm.exception}')
 
     def test_to_dict(self):
-        store_config = DataStoreConfig('directory', store_params={'base_dir': '.'}, name='Local',
+        store_config = DataStoreConfig('directory', store_params={'base_dir': '.'}, title='Local',
                                        description='Local files')
         self.assertEqual({'description': 'Local files',
                           'name': 'Local',
@@ -77,7 +77,7 @@ class DataStoreConfigTest(unittest.TestCase):
         self.assertIsInstance(store_config, DataStoreConfig)
         self.assertEqual('directory', store_config.store_id)
         self.assertEqual({'base_dir': '.'}, store_config.store_params)
-        self.assertEqual('Local', store_config.name)
+        self.assertEqual('Local', store_config.title)
         self.assertEqual('Local files', store_config.description)
 
 
