@@ -53,13 +53,12 @@ after_success:
   - pip install codecov
   - codecov --env TRAVIS_PYTHON_VERSION
 
-  - for nb in examples/*/*.ipynb;
+  - for nb in examples/stores/*.ipynb;
     do
       jupyter nbconvert --to python  --ExecutePreprocessor.kernel_name=python3 $nb;
     done
-  - mv notebooks/data .
-  - mv notebooks/*/*.py .
-  - for nb in *.py;
+  - mv examples/stores/open_*.py .
+  - for nb in open_*.py;
     do
       echo "Testing ${nb}";
       python $nb;
