@@ -45,6 +45,9 @@ def chunk(cube, output, format=None, params=None, chunks=None):
     (Re-)chunk xcube dataset.
     Changes the external chunking of all variables of CUBE according to CHUNKS and writes
     the result to OUTPUT.
+
+    Note: There is a possibly more efficient way to (re-)chunk datasets through the
+    dedicated tool "rechunker", see https://rechunker.readthedocs.io.
     """
     chunk_sizes = None
     if chunks:
