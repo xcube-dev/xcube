@@ -57,6 +57,10 @@
 
 ### Other
 
+* Added a note in the `xcube chunk` CLI help, saying that there is a possibly more efficient way 
+  to (re-)chunk datasets through the dedicated tool "rechunker", see https://rechunker.readthedocs.io
+  (thanks to Ryan Abernathey for the hint). (#335)
+
 * For `xcube serve` dataset configurations where `FileSystem: obs`, users must now also 
   specify `Anonymous: True` for datasets in public object storage buckets. For example:
   ```yaml
