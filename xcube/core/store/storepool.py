@@ -21,7 +21,8 @@
 
 import json
 from typing import Any, Dict, Optional, List
-
+import os.path
+import yaml
 from xcube.util.assertions import assert_given
 from xcube.util.assertions import assert_instance
 from xcube.util.jsonschema import JsonObjectSchema
@@ -234,8 +235,10 @@ class DataStorePool:
 
     @classmethod
     def from_file(cls, path: str) -> 'DataStorePool':
+        _, ext = os.path.splitext(path)
+        lib = json if ext == '.json' else yaml
         with open(path) as fp:
-            store_configs = json.load(fp)
+            store_configs = lib.load(fp)
         return cls.from_dict(store_configs)
 
     @classmethod
