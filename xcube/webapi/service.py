@@ -465,12 +465,14 @@ def new_default_config(cube_paths: List[str],
 def _get_custom_color_list(config_file):
     global SNAP_CPD_LIST
     config = load_configs(config_file) if config_file else {}
-    styles = config['Styles']
-    for style in styles:
-        cm = style['ColorMappings']
-        for key in cm.keys():
-            if 'ColorFile' in cm[key]:
-                cf = cm[key]['ColorFile']
-                if cf not in SNAP_CPD_LIST:
-                    SNAP_CPD_LIST.append(cf)
+    styles = config.get('Styles')
+    if isinstance(styles, list):
+        for style in styles:
+            cm = style.get('ColorMappings')
+            if isinstance(cm, dict):
+                for key in cm.keys():
+                    if 'ColorFile' in cm[key]:
+                        cf = cm[key]['ColorFile']
+                        if cf not in SNAP_CPD_LIST:
+                            SNAP_CPD_LIST.append(cf)
     return SNAP_CPD_LIST

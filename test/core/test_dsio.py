@@ -426,13 +426,25 @@ class ParseObsUrlAndKwargsTest(unittest.TestCase):
         self.assertEqual({'key': 'bibo', 'secret': '8625345'}, s3_kwargs)
         self.assertEqual({'endpoint_url': 'https://s3.eu-central-1.amazonaws.com'}, s3_client_kwargs)
 
-    def test_s3(self):
+    def test_s3_schema(self):
         root, s3_kwargs, s3_client_kwargs = parse_s3_url_and_kwargs('s3://xcube-examples/OLCI-SNS-RAW-CUBE-2.zarr',
                                                                     s3_kwargs={'anon': True},
                                                                     s3_client_kwargs={})
         self.assertEqual('s3://xcube-examples/OLCI-SNS-RAW-CUBE-2.zarr', root)
         self.assertEqual({'anon': True, 'key': None, 'secret': None}, s3_kwargs)
         self.assertEqual({}, s3_client_kwargs)
+
+    def test_endpoint_url(self):
+        root, s3_kwargs, s3_client_kwargs = parse_s3_url_and_kwargs(
+            'eurodatacube-test/demo/xcube-gen-489bb051.zarr',
+            s3_kwargs={'anon': True},
+            s3_client_kwargs={
+                'endpoint_url': 'https://s3.eu-central-1.amazonaws.com'
+            }
+        )
+        self.assertEqual('eurodatacube-test/demo/xcube-gen-489bb051.zarr', root)
+        self.assertEqual({'anon': True, 'key': None, 'secret': None}, s3_kwargs)
+        self.assertEqual({'endpoint_url': 'https://s3.eu-central-1.amazonaws.com'}, s3_client_kwargs)
 
 
 class SplitBucketUrlTest(unittest.TestCase):

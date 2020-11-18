@@ -35,6 +35,8 @@
 
 ### Fixes
 
+* `xcube serve` no longer crashes, if configuration is lacking a `Styles` entry.
+
 * `xcube gen` can now interpret `start_date` and `stop_date` from NetCDF dataset attributes. 
   This is relevant for using `xcube gen` for Sentinel-2 Level 2 data products generated and 
   provided by Brockmann Consult. (#352)
