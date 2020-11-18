@@ -59,6 +59,9 @@
 
 ### Other
 
+* Restricted `s3fs` version in envrionment.yml in order to use a version which can handle pruned xcube datasets.
+  This restriction will be removed once changes in zarr PR https://github.com/zarr-developers/zarr-python/pull/650 
+  are merged and released. (#360)
 * Added a note in the `xcube chunk` CLI help, saying that there is a possibly more efficient way 
   to (re-)chunk datasets through the dedicated tool "rechunker", see https://rechunker.readthedocs.io
   (thanks to Ryan Abernathey for the hint). (#335)
