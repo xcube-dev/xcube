@@ -53,11 +53,9 @@ after_success:
   - pip install codecov
   - codecov --env TRAVIS_PYTHON_VERSION
 
-  - for nb in examples/store/*.ipynb;
-    do
-      jupyter nbconvert --to python  --ExecutePreprocessor.kernel_name=python3 $nb;
-    done
-  - mv examples/store/open_*.py .
+  - jupyter nbconvert --to python  --ExecutePreprocessor.kernel_name=python3 examples/store/open_data_directory.ipynb
+  - mv examples/serve/demo .
+  - mv examples/store/open_data_directory.py .
   - for nb in open_*.py;
     do
       echo "Testing ${nb}";
