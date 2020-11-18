@@ -2,6 +2,8 @@
 
 ### Enhancements 
 
+* CLI tool `xcube io dump` now has new `--config` and `--type` options. (#370)
+
 * New function `xcube.core.store.get_data_store()` and new class `xcube.core.store.DataStorePool` 
   allow for maintaining a set of pre-configured data store instances. This will be used
   in future xcube tools that utilise multiple data stores, e.g. "xcube gen", "xcube serve". (#364)

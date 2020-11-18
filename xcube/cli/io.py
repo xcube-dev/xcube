@@ -18,8 +18,10 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+
 import json
-from typing import List, Sequence
+import sys
+from typing import List, Sequence, Optional
 
 import click
 
@@ -178,32 +180,67 @@ def writer_info(writer_id: str):
 
 
 @click.command(name='dump')
-@click.option('-o', '--output', 'file_path', help='Output filename.', default='store-dump.json')
-def dump(file_path: str):
+@click.option('-o', '--output', 'output_file_path', metavar='OUTPUT',
+              help='Output filename. Output will be written as JSON.', default='store-dump.json')
+@click.option('-c', '--config', 'config_file_path', metavar='CONFIG',
+              help='Store configuration filename. May use JSON or YAML format.')
+@click.option('-t', '--type', 'type_specifier', metavar='TYPE',
+              help='Type specifier. If given, only data resources that satisfy the '
+                   'type specifier are listed. E.g. "dataset" or "dataset[cube]"')
+def dump(output_file_path: str, config_file_path: Optional[str], type_specifier: Optional[str]):
     """
-    Dump all store metadata.
-    Dumps all store metadata and their dataset descriptors into a single JSON file.
+    Dump metadata of given data stores.
+    Dumps metadata for every data resources for given data stores.
+    Configured data stores may be passed via the CONFIG option.
+    For example, this YAML configuration configures a directory data store:
+
+    \b
+    this_dir:
+        title: Current Dir
+        description: A store that represents my current directory
+        store_id: "directory"
+        store_params:
+            base_dir: "."
+
     """
-    stores_list = list()
-    extensions = get_extension_registry().find_extensions(EXTENSION_POINT_DATA_STORES)
-    for extension in extensions:
-        store_id = extension.name
-        if store_id in ('memory', 'directory', 's3'):
+    from xcube.core.store import DataStoreConfig
+    from xcube.core.store import DataStorePool
+    import time
+    if config_file_path:
+        store_pool = DataStorePool.from_file(config_file_path)
+    else:
+        extensions = get_extension_registry().find_extensions(EXTENSION_POINT_DATA_STORES)
+        store_configs = {extension.name: DataStoreConfig(extension.name,
+                                                         title=extension.metadata.get('title'),
+                                                         description=extension.metadata.get('description'))
+                         for extension in extensions
+                         if extension.name not in ('memory', 'directory', 's3')}
+        store_pool = DataStorePool(store_configs)
+
+    stores = []
+    for store_instance_id in store_pool.store_instance_ids:
+        t0 = time.perf_counter()
+        print(f'Generating entries for store "{store_instance_id}"...')
+        try:
+            store_instance = store_pool.get_store(store_instance_id)
+        except Exception as error:
+            print(f'error: cannot open store "{store_instance_id}": {error}', file=sys.stderr)
             continue
-        # TODO: missing store_params
-        store_params = []
-        store = _new_data_store(store_id, store_params)
+
         datasets_list = []
-        for data_id, title in store.get_data_ids(type_specifier='dataset'):
-            dsd = store.describe_data(data_id)
+        for data_id, title in store_instance.get_data_ids(type_specifier=type_specifier, include_titles=True):
+            dsd = store_instance.describe_data(data_id)
             datasets_list.append(dsd.to_dict())
-        stores_list.append(dict(store_id=store_id,
-                                **extension.metadata,
-                                datasets=datasets_list))
-    json_instance = dict(stores=stores_list)
-    with open(file_path, 'w') as fp:
-        json.dump(json_instance, fp, indent=2)
-    print(f'Dumped stores to {file_path}.')
+
+        store_config = store_pool.get_store_config(store_instance_id)
+        stores.append(dict(store_id=store_instance_id,
+                           title=store_config.title,
+                           description=store_config.description,
+                           datasets=datasets_list))
+        print('Done after {:.2f} seconds'.format(time.perf_counter() - t0))
+    with open(output_file_path, 'w') as fp:
+        json.dump(dict(stores=stores), fp, indent=2)
+    print(f'Dumped {len(stores)} store(s) to {output_file_path}.')
 
 
 @click.group()
