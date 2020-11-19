@@ -206,6 +206,7 @@ def dump(output_file_path: str, config_file_path: Optional[str], type_specifier:
     from xcube.core.store import DataStoreConfig
     from xcube.core.store import DataStorePool
     import time
+
     if config_file_path:
         store_pool = DataStorePool.from_file(config_file_path)
     else:
@@ -223,23 +224,31 @@ def dump(output_file_path: str, config_file_path: Optional[str], type_specifier:
         print(f'Generating entries for store "{store_instance_id}"...')
         try:
             store_instance = store_pool.get_store(store_instance_id)
-        except Exception as error:
+        except BaseException as error:
             print(f'error: cannot open store "{store_instance_id}": {error}', file=sys.stderr)
             continue
 
-        datasets_list = []
-        for data_id, title in store_instance.get_data_ids(type_specifier=type_specifier, include_titles=True):
-            dsd = store_instance.describe_data(data_id)
-            datasets_list.append(dsd.to_dict())
+        # datasets_list = []
+        # for data_id, title in store_instance.get_data_ids(type_specifier=type_specifier, include_titles=True):
+        #     dsd = store_instance.describe_data(data_id)
+        #     datasets_list.append(dsd.to_dict())
+
+        try:
+            search_result = [dsd.to_dict() for dsd in store_instance.search_data(type_specifier=type_specifier)]
+        except BaseException as error:
+            print(f'error: cannot search store "{store_instance_id}": {error}', file=sys.stderr)
+            continue
 
         store_config = store_pool.get_store_config(store_instance_id)
         stores.append(dict(store_id=store_instance_id,
                            title=store_config.title,
                            description=store_config.description,
-                           datasets=datasets_list))
+                           datasets=search_result))
         print('Done after {:.2f} seconds'.format(time.perf_counter() - t0))
+
     with open(output_file_path, 'w') as fp:
         json.dump(dict(stores=stores), fp, indent=2)
+
     print(f'Dumped {len(stores)} store(s) to {output_file_path}.')
 
 

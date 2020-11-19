@@ -78,10 +78,12 @@ class MemoryCubeStoreTest(unittest.TestCase):
         schema = self.store.get_search_params_schema()
         self.assertIsInstance(schema, JsonObjectSchema)
         self.assertEqual({}, schema.properties)
+        self.assertEqual(False, schema.additional_properties)
 
         schema = self.store.get_search_params_schema(type_specifier='geodataframe')
         self.assertIsInstance(schema, JsonObjectSchema)
         self.assertEqual({}, schema.properties)
+        self.assertEqual(False, schema.additional_properties)
 
     def test_search_data(self):
         result = list(self.store.search_data(type_specifier=TYPE_SPECIFIER_DATASET))
@@ -101,8 +103,9 @@ class MemoryCubeStoreTest(unittest.TestCase):
         self.assertEqual(result[1].type_specifier, TYPE_SPECIFIER_CUBE)
 
         with self.assertRaises(DataStoreError) as cm:
-            list(self.store.search_data(type_specifier=TYPE_SPECIFIER_DATASET, data_id='cube_1', name='bibo'))
-        self.assertEqual('Unsupported search_params "data_id", "name"', f'{cm.exception}')
+            list(self.store.search_data(type_specifier=TYPE_SPECIFIER_DATASET,
+                                        time_range=['2020-03-01', '2020-03-04'], bbox=[52, 11, 54, 12]))
+        self.assertEqual('Unsupported search parameters: time_range, bbox', f'{cm.exception}')
 
     def test_get_data_opener_ids(self):
         self.assertEqual(('*:*:memory',), self.store.get_data_opener_ids())

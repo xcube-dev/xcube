@@ -36,6 +36,7 @@ from xcube.core.store import TYPE_SPECIFIER_GEODATAFRAME
 from xcube.core.store import TYPE_SPECIFIER_MULTILEVEL_DATASET
 from xcube.core.store import TypeSpecifier
 from xcube.core.store import find_data_opener_extensions
+from xcube.core.store import DefaultSearchMixin
 from xcube.core.store import find_data_writer_extensions
 from xcube.core.store import get_data_accessor_predicate
 from xcube.core.store import get_type_specifier
@@ -75,7 +76,7 @@ _TYPE_SPECIFIER_TO_ACCESSOR_TO_DEFAULT_FILENAME_EXT = {
 #   - Introduce a file-system-abstracting base class or mixin, see module "fsspec" and impl. "s3fs" as  used in Dask!
 #   - Introduce something like MultiOpenerStoreMixin/MultiWriterStoreMixin!
 
-class DirectoryDataStore(MutableDataStore):
+class DirectoryDataStore(DefaultSearchMixin, MutableDataStore):
     """
     A cube store that stores cubes in a directory in the local file system.
 
@@ -155,15 +156,6 @@ class DirectoryDataStore(MutableDataStore):
                                      f' by type specifier "{actual_type_specifier}" of data resource "{data_id}"')
         else:
             raise DataStoreError(f'Data resource "{data_id}" not found')
-
-    def get_search_params_schema(self, type_specifier: str = None) -> JsonObjectSchema:
-        return JsonObjectSchema()
-
-    def search_data(self, type_specifier: str = None, **search_params) -> Iterator[DataDescriptor]:
-        if search_params:
-            raise DataStoreError(f'Unsupported search_params "{tuple(search_params.keys())}"')
-        for data_id in self.get_data_ids(type_specifier=type_specifier):
-            yield self.describe_data(data_id[0])
 
     def get_data_opener_ids(self, data_id: str = None, type_specifier: Optional[str] = None) -> Tuple[str, ...]:
         if type_specifier:
