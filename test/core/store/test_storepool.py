@@ -72,7 +72,7 @@ class DataStoreConfigTest(unittest.TestCase):
 
     def test_from_dict(self):
         store_config = DataStoreConfig.from_dict({'description': 'Local files',
-                                                  'name': 'Local',
+                                                  'title': 'Local',
                                                   'store_id': 'directory',
                                                   'store_params': {'base_dir': '.'}})
         self.assertIsInstance(store_config, DataStoreConfig)
