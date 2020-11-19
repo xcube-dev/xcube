@@ -29,6 +29,7 @@ import xarray as xr
 from xcube.core.mldataset import MultiLevelDataset
 from xcube.core.store import DataDescriptor
 from xcube.core.store import DataStoreError
+from xcube.core.store import DefaultSearchMixin
 from xcube.core.store import MutableDataStore
 from xcube.core.store import TYPE_SPECIFIER_ANY
 from xcube.core.store import TYPE_SPECIFIER_DATASET
@@ -36,7 +37,6 @@ from xcube.core.store import TYPE_SPECIFIER_GEODATAFRAME
 from xcube.core.store import TYPE_SPECIFIER_MULTILEVEL_DATASET
 from xcube.core.store import TypeSpecifier
 from xcube.core.store import find_data_opener_extensions
-from xcube.core.store import DefaultSearchMixin
 from xcube.core.store import find_data_writer_extensions
 from xcube.core.store import get_data_accessor_predicate
 from xcube.core.store import get_type_specifier
@@ -61,12 +61,6 @@ _FILENAME_EXT_TO_ACCESSOR_ID_PARTS = {
     '.nc': (str(TYPE_SPECIFIER_DATASET), 'netcdf', _STORAGE_ID),
     '.shp': (str(TYPE_SPECIFIER_GEODATAFRAME), 'shapefile', _STORAGE_ID),
     '.geojson': (str(TYPE_SPECIFIER_GEODATAFRAME), 'geojson', _STORAGE_ID),
-}
-
-_TYPE_SPECIFIER_TO_ACCESSOR_TO_DEFAULT_FILENAME_EXT = {
-    TYPE_SPECIFIER_DATASET: '.zarr',
-    TYPE_SPECIFIER_MULTILEVEL_DATASET: '.levels',
-    TYPE_SPECIFIER_GEODATAFRAME: '.geojson'
 }
 
 
@@ -222,13 +216,13 @@ class DirectoryDataStore(DefaultSearchMixin, MutableDataStore):
                    **write_params) -> str:
         assert_instance(data, (xr.Dataset, MultiLevelDataset, gpd.GeoDataFrame))
         if not writer_id:
-            if isinstance(data, xr.Dataset):
-                predicate = get_data_accessor_predicate(type_specifier=TYPE_SPECIFIER_DATASET,
-                                                        format_id='zarr',
-                                                        storage_id=_STORAGE_ID)
-            elif isinstance(data, MultiLevelDataset):
+            if isinstance(data, MultiLevelDataset):
                 predicate = get_data_accessor_predicate(type_specifier=TYPE_SPECIFIER_MULTILEVEL_DATASET,
                                                         format_id='levels',
+                                                        storage_id=_STORAGE_ID)
+            elif isinstance(data, xr.Dataset):
+                predicate = get_data_accessor_predicate(type_specifier=TYPE_SPECIFIER_DATASET,
+                                                        format_id='zarr',
                                                         storage_id=_STORAGE_ID)
             elif isinstance(data, gpd.GeoDataFrame):
                 predicate = get_data_accessor_predicate(type_specifier=TYPE_SPECIFIER_GEODATAFRAME,
@@ -325,6 +319,10 @@ class DirectoryDataStore(DefaultSearchMixin, MutableDataStore):
         return accessor_id_parts
 
     @classmethod
-    def _get_filename_ext(cls, data: Any):
+    def _get_filename_ext(cls, data: Any) -> Optional[str]:
         type_specifier = get_type_specifier(data)
-        return _TYPE_SPECIFIER_TO_ACCESSOR_TO_DEFAULT_FILENAME_EXT[type_specifier]
+        if TYPE_SPECIFIER_MULTILEVEL_DATASET.satisfies(type_specifier):
+            return '.levels'
+        if TYPE_SPECIFIER_GEODATAFRAME.satisfies(type_specifier):
+            return '.geojson'
+        return '.zarr'

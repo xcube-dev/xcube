@@ -59,12 +59,6 @@ _FILENAME_EXT_TO_ACCESSOR_ID_PARTS = {
     '.levels': (TYPE_SPECIFIER_MULTILEVEL_DATASET, 'levels', _STORAGE_ID),
 }
 
-_TYPE_SPECIFIER_TO_ACCESSOR_TO_DEFAULT_FILENAME_EXT = {
-    TYPE_SPECIFIER_DATASET: '.zarr',
-    TYPE_SPECIFIER_MULTILEVEL_DATASET: '.levels',
-}
-
-
 # TODO: write tests
 # TODO: complete docs
 # TODO: implement '*.levels' support
@@ -200,9 +194,13 @@ class S3DataStore(DefaultSearchMixin, MutableDataStore):
                    writer_id: str = None,
                    replace: bool = False,
                    **write_params) -> str:
-        assert_instance(data, (xr.Dataset, MultiLevelDataset, gpd.GeoDataFrame))
+        assert_instance(data, (xr.Dataset, MultiLevelDataset))
         if not writer_id:
-            if isinstance(data, xr.Dataset):
+            if isinstance(data, MultiLevelDataset):
+                predicate = get_data_accessor_predicate(type_specifier=TYPE_SPECIFIER_MULTILEVEL_DATASET,
+                                                        format_id='levels',
+                                                        storage_id=_STORAGE_ID)
+            elif isinstance(data, xr.Dataset):
                 predicate = get_data_accessor_predicate(type_specifier=TYPE_SPECIFIER_DATASET,
                                                         format_id='zarr',
                                                         storage_id=_STORAGE_ID)
@@ -304,6 +302,8 @@ class S3DataStore(DefaultSearchMixin, MutableDataStore):
         return accessor_id_parts
 
     @classmethod
-    def _get_filename_ext(cls, data: Any):
+    def _get_filename_ext(cls, data: Any) -> Optional[str]:
         type_specifier = get_type_specifier(data)
-        return _TYPE_SPECIFIER_TO_ACCESSOR_TO_DEFAULT_FILENAME_EXT[type_specifier]
+        if TYPE_SPECIFIER_MULTILEVEL_DATASET.satisfies(type_specifier):
+            return '.levels'
+        return '.zarr'
