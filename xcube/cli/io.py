@@ -190,9 +190,12 @@ def writer_info(writer_id: str):
 def dump(output_file_path: str, config_file_path: Optional[str], type_specifier: Optional[str]):
     """
     Dump metadata of given data stores.
-    Dumps metadata for every data resources for given data stores.
-    Configured data stores may be passed via the CONFIG option.
-    For example, this YAML configuration configures a directory data store:
+
+    Dumps data store metadata and metadata for a store's data resources
+    for given data stores  into a JSON file.
+    Data stores may be selected and configured by a configuration file CONFIG,
+    which may have JSON or YAML format.
+    For example, this YAML configuration configures a single directory data store:
 
     \b
     this_dir:

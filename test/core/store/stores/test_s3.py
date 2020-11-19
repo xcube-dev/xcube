@@ -77,6 +77,7 @@ class S3DataStoreTest(S3Test):
         self.assertEqual({}, schema.properties)
         self.assertEqual(False, schema.additional_properties)
 
+    # TODO (forman): Fixme! Currently get boto3 errors when running out-commented test
     # def test_search_data(self):
     #     result = list(self.store.search_data(type_specifier=TYPE_SPECIFIER_CUBE))
     #     self.assertTrue(len(result) > 0)
