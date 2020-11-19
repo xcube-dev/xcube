@@ -122,7 +122,7 @@ class DataStoreConfig:
         DATA_STORE_CONFIG_SCHEMA.validate_instance(d)
         return DataStoreConfig(d['store_id'],
                                store_params=d.get('store_params'),
-                               title=d.get('name'),
+                               title=d.get('title'),
                                description=d.get('description'))
 
     def to_dict(self) -> Dict[str, Any]:
