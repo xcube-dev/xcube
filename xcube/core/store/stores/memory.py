@@ -24,10 +24,11 @@ from typing import Iterator, Dict, Any, Optional, Tuple, Mapping
 
 from xcube.core.store import DataDescriptor
 from xcube.core.store import DataStoreError
-from xcube.core.store import get_type_specifier
+from xcube.core.store import DefaultSearchMixin
 from xcube.core.store import MutableDataStore
-from xcube.core.store import TypeSpecifier
 from xcube.core.store import TYPE_SPECIFIER_ANY
+from xcube.core.store import TypeSpecifier
+from xcube.core.store import get_type_specifier
 from xcube.core.store import new_data_descriptor
 from xcube.util.assertions import assert_given
 from xcube.util.jsonschema import JsonObjectSchema
@@ -38,7 +39,7 @@ _ACCESSOR_ID = f'*:*:{_STORAGE_ID}'
 
 # TODO: complete docs
 
-class MemoryDataStore(MutableDataStore):
+class MemoryDataStore(DefaultSearchMixin, MutableDataStore):
     """
     An in-memory cube store.
     Its main use case is testing.
@@ -65,7 +66,8 @@ class MemoryDataStore(MutableDataStore):
         type_specifier = get_type_specifier(self._data_dict[data_id])
         return str(type_specifier),
 
-    def get_data_ids(self, type_specifier: str = None, include_titles: bool = True) -> Iterator[Tuple[str, Optional[str]]]:
+    def get_data_ids(self, type_specifier: str = None, include_titles: bool = True) -> Iterator[
+        Tuple[str, Optional[str]]]:
         if type_specifier is None:
             for data_id, data in self._data_dict.items():
                 yield data_id, None
@@ -94,15 +96,6 @@ class MemoryDataStore(MutableDataStore):
                 raise DataStoreError(f'Type specifier "{type_specifier}" cannot be satisfied'
                                      f' by type specifier "{data_type_specifier}" of data resource "{data_id}"')
         return new_data_descriptor(data_id, self._data_dict[data_id])
-
-    @classmethod
-    def get_search_params_schema(self, type_specifier: str = None) -> JsonObjectSchema:
-        return JsonObjectSchema()
-
-    def search_data(self, type_specifier: str = None, **search_params) -> Iterator[DataDescriptor]:
-        self._assert_empty_params(search_params, 'search_params')
-        for data_id, _ in self.get_data_ids(type_specifier=type_specifier):
-            yield new_data_descriptor(data_id, self._data_dict[data_id])
 
     def get_data_opener_ids(self, data_id: str = None, type_specifier: str = None) -> Tuple[str, ...]:
         return _ACCESSOR_ID,

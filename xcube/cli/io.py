@@ -18,8 +18,10 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+
 import json
-from typing import List, Sequence
+import sys
+from typing import List, Sequence, Optional
 
 import click
 
@@ -155,8 +157,8 @@ def opener_info(opener_id: str):
     if description:
         print(description)
     from xcube.core.store import new_data_opener
-    opener = new_data_opener(opener_id)
-    params_schema = opener.get_open_data_params_schema()
+    opener_ = new_data_opener(opener_id)
+    params_schema = opener_.get_open_data_params_schema()
     print(_format_params_schema(params_schema))
 
 
@@ -172,38 +174,82 @@ def writer_info(writer_id: str):
     if description:
         print(description)
     from xcube.core.store import new_data_writer
-    writer = new_data_writer(writer_id)
-    params_schema = writer.get_write_data_params_schema()
+    writer_ = new_data_writer(writer_id)
+    params_schema = writer_.get_write_data_params_schema()
     print(_format_params_schema(params_schema))
 
 
 @click.command(name='dump')
-@click.option('-o', '--output', 'file_path', help='Output filename.', default='store-dump.json')
-def dump(file_path: str):
+@click.option('-o', '--output', 'output_file_path', metavar='OUTPUT',
+              help='Output filename. Output will be written as JSON.', default='store-dump.json')
+@click.option('-c', '--config', 'config_file_path', metavar='CONFIG',
+              help='Store configuration filename. May use JSON or YAML format.')
+@click.option('-t', '--type', 'type_specifier', metavar='TYPE',
+              help='Type specifier. If given, only data resources that satisfy the '
+                   'type specifier are listed. E.g. "dataset" or "dataset[cube]"')
+def dump(output_file_path: str, config_file_path: Optional[str], type_specifier: Optional[str]):
     """
-    Dump all store metadata.
-    Dumps all store metadata and their dataset descriptors into a single JSON file.
+    Dump metadata of given data stores.
+
+    Dumps data store metadata and metadata for a store's data resources
+    for given data stores  into a JSON file.
+    Data stores may be selected and configured by a configuration file CONFIG,
+    which may have JSON or YAML format.
+    For example, this YAML configuration configures a single directory data store:
+
+    \b
+    this_dir:
+        title: Current Dir
+        description: A store that represents my current directory
+        store_id: "directory"
+        store_params:
+            base_dir: "."
+
     """
-    stores_list = list()
-    extensions = get_extension_registry().find_extensions(EXTENSION_POINT_DATA_STORES)
-    for extension in extensions:
-        store_id = extension.name
-        if store_id in ('memory', 'directory', 's3'):
+    from xcube.core.store import DataStoreConfig
+    from xcube.core.store import DataStorePool
+    import time
+
+    if config_file_path:
+        store_pool = DataStorePool.from_file(config_file_path)
+    else:
+        extensions = get_extension_registry().find_extensions(EXTENSION_POINT_DATA_STORES)
+        store_configs = {extension.name: DataStoreConfig(extension.name,
+                                                         title=extension.metadata.get('title'),
+                                                         description=extension.metadata.get('description'))
+                         for extension in extensions
+                         if extension.name not in ('memory', 'directory', 's3')}
+        store_pool = DataStorePool(store_configs)
+
+    stores = []
+    for store_instance_id in store_pool.store_instance_ids:
+        t0 = time.perf_counter()
+        print(f'Generating entries for store "{store_instance_id}"...')
+        try:
+            store_instance = store_pool.get_store(store_instance_id)
+        except BaseException as error:
+            print(f'error: cannot open store "{store_instance_id}": {error}', file=sys.stderr)
             continue
-        # TODO: missing store_params
-        store_params = []
-        store = _new_data_store(store_id, store_params)
-        datasets_list = []
-        for data_id, title in store.get_data_ids(type_specifier='dataset'):
-            dsd = store.describe_data(data_id)
-            datasets_list.append(dsd.to_dict())
-        stores_list.append(dict(store_id=store_id,
-                                **extension.metadata,
-                                datasets=datasets_list))
-    json_instance = dict(stores=stores_list)
-    with open(file_path, 'w') as fp:
-        json.dump(json_instance, fp, indent=2)
-    print(f'Dumped stores to {file_path}.')
+
+        try:
+            search_result = [dsd.to_dict() for dsd in store_instance.search_data(type_specifier=type_specifier)]
+        except BaseException as error:
+            print(f'error: cannot search store "{store_instance_id}": {error}', file=sys.stderr)
+            continue
+
+        store_config = store_pool.get_store_config(store_instance_id)
+        stores.append(dict(store_instance_id=store_instance_id,
+                           store_id=store_instance_id,
+                           title=store_config.title,
+                           description=store_config.description,
+                           type_specifier=type_specifier,
+                           datasets=search_result))
+        print('Done after {:.2f} seconds'.format(time.perf_counter() - t0))
+
+    with open(output_file_path, 'w') as fp:
+        json.dump(dict(stores=stores), fp, indent=2)
+
+    print(f'Dumped {len(stores)} store(s) to {output_file_path}.')
 
 
 @click.group()
@@ -256,6 +302,7 @@ io.add_command(dump)
 # from xcube.util.jsonschema import JsonObjectSchema
 
 
+# noinspection PyUnresolvedReferences
 def _format_params_schema(params_schema: 'xcube.util.jsonschema.JsonObjectSchema') -> str:
     text = []
     if params_schema.properties:
@@ -268,6 +315,7 @@ def _format_params_schema(params_schema: 'xcube.util.jsonschema.JsonObjectSchema
     return '\n'.join(text)
 
 
+# noinspection PyUnresolvedReferences
 def _format_required_params_schema(params_schema: 'xcube.util.jsonschema.JsonObjectSchema') -> str:
     text = ['Required parameters:']
     for param_name, param_schema in params_schema.properties.items():
@@ -276,6 +324,7 @@ def _format_required_params_schema(params_schema: 'xcube.util.jsonschema.JsonObj
     return '\n'.join(text)
 
 
+# noinspection PyUnresolvedReferences
 def _format_param_schema(param_schema: 'xcube.util.jsonschema.JsonSchema'):
     from xcube.util.undefined import UNDEFINED
     param_info = []
@@ -313,14 +362,17 @@ def _dump_extensions(point: str) -> int:
     return count
 
 
+# noinspection PyUnresolvedReferences
 def _dump_store_openers(data_store: 'xcube.core.store.DataStore', data_id: str = None) -> int:
     return _dump_named_extensions(EXTENSION_POINT_DATA_OPENERS, data_store.get_data_opener_ids(data_id=data_id))
 
 
+# noinspection PyUnresolvedReferences
 def _dump_store_writers(data_store: 'xcube.core.store.DataStore') -> int:
     return _dump_named_extensions(EXTENSION_POINT_DATA_WRITERS, data_store.get_data_writer_ids())
 
 
+# noinspection PyUnresolvedReferences
 def _dump_store_data_ids(data_store: 'xcube.core.store.DataStore') -> int:
     count = 0
     for data_id, title in data_store.get_data_ids():
@@ -341,6 +393,7 @@ def _dump_named_extensions(point: str, names: Sequence[str]) -> int:
     return count
 
 
+# noinspection PyUnresolvedReferences
 def _dump_data_resources(data_store: 'xcube.core.store.DataStore') -> int:
     count = 0
     for data_id, title in data_store.get_data_ids():
@@ -349,6 +402,7 @@ def _dump_data_resources(data_store: 'xcube.core.store.DataStore') -> int:
     return count
 
 
+# noinspection PyUnresolvedReferences
 def _new_data_store(store_id: str, store_params: List[str]) -> 'xcube.core.store.DataStore':
     from xcube.core.store import get_data_store_params_schema
     from xcube.core.store import new_data_store

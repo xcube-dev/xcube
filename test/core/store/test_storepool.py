@@ -2,6 +2,7 @@ import json
 import unittest
 
 import jsonschema
+import yaml
 
 from xcube.core.store import DataStore
 from xcube.core.store import DataStoreConfig
@@ -71,7 +72,7 @@ class DataStoreConfigTest(unittest.TestCase):
 
     def test_from_dict(self):
         store_config = DataStoreConfig.from_dict({'description': 'Local files',
-                                                  'name': 'Local',
+                                                  'title': 'Local',
                                                   'store_id': 'directory',
                                                   'store_params': {'base_dir': '.'}})
         self.assertIsInstance(store_config, DataStoreConfig)
@@ -122,7 +123,7 @@ class DataStorePoolTest(unittest.TestCase):
             DataStorePool.from_dict(store_configs)
         self.assertTrue("Failed validating 'type' in schema" in f'{cm.exception}', msg=f'{cm.exception}')
 
-    def test_from_file(self):
+    def test_from_json_file(self):
         store_configs = {
             "ram-1": {
                 "store_id": "memory"
@@ -134,6 +135,26 @@ class DataStorePoolTest(unittest.TestCase):
         path = 'test-store-configs.json'
         with open(path, 'w') as fp:
             json.dump(store_configs, fp, indent=2)
+        try:
+            pool = DataStorePool.from_file(path)
+            self.assertIsInstance(pool, DataStorePool)
+            self.assertEqual(['ram-1', 'ram-2'], pool.store_instance_ids)
+        finally:
+            import os
+            os.remove(path)
+
+    def test_from_yaml_file(self):
+        store_configs = {
+            "ram-1": {
+                "store_id": "memory"
+            },
+            "ram-2": {
+                "store_id": "memory"
+            }
+        }
+        path = 'test-store-configs.yaml'
+        with open(path, 'w') as fp:
+            yaml.dump(store_configs, fp, indent=2)
         try:
             pool = DataStorePool.from_file(path)
             self.assertIsInstance(pool, DataStorePool)
