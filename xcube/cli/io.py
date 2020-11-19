@@ -157,8 +157,8 @@ def opener_info(opener_id: str):
     if description:
         print(description)
     from xcube.core.store import new_data_opener
-    opener = new_data_opener(opener_id)
-    params_schema = opener.get_open_data_params_schema()
+    opener_ = new_data_opener(opener_id)
+    params_schema = opener_.get_open_data_params_schema()
     print(_format_params_schema(params_schema))
 
 
@@ -174,8 +174,8 @@ def writer_info(writer_id: str):
     if description:
         print(description)
     from xcube.core.store import new_data_writer
-    writer = new_data_writer(writer_id)
-    params_schema = writer.get_write_data_params_schema()
+    writer_ = new_data_writer(writer_id)
+    params_schema = writer_.get_write_data_params_schema()
     print(_format_params_schema(params_schema))
 
 
@@ -228,11 +228,6 @@ def dump(output_file_path: str, config_file_path: Optional[str], type_specifier:
             print(f'error: cannot open store "{store_instance_id}": {error}', file=sys.stderr)
             continue
 
-        # datasets_list = []
-        # for data_id, title in store_instance.get_data_ids(type_specifier=type_specifier, include_titles=True):
-        #     dsd = store_instance.describe_data(data_id)
-        #     datasets_list.append(dsd.to_dict())
-
         try:
             search_result = [dsd.to_dict() for dsd in store_instance.search_data(type_specifier=type_specifier)]
         except BaseException as error:
@@ -240,9 +235,11 @@ def dump(output_file_path: str, config_file_path: Optional[str], type_specifier:
             continue
 
         store_config = store_pool.get_store_config(store_instance_id)
-        stores.append(dict(store_id=store_instance_id,
+        stores.append(dict(store_instance_id=store_instance_id,
+                           store_id=store_instance_id,
                            title=store_config.title,
                            description=store_config.description,
+                           type_specifier=type_specifier,
                            datasets=search_result))
         print('Done after {:.2f} seconds'.format(time.perf_counter() - t0))
 
@@ -302,6 +299,7 @@ io.add_command(dump)
 # from xcube.util.jsonschema import JsonObjectSchema
 
 
+# noinspection PyUnresolvedReferences
 def _format_params_schema(params_schema: 'xcube.util.jsonschema.JsonObjectSchema') -> str:
     text = []
     if params_schema.properties:
@@ -314,6 +312,7 @@ def _format_params_schema(params_schema: 'xcube.util.jsonschema.JsonObjectSchema
     return '\n'.join(text)
 
 
+# noinspection PyUnresolvedReferences
 def _format_required_params_schema(params_schema: 'xcube.util.jsonschema.JsonObjectSchema') -> str:
     text = ['Required parameters:']
     for param_name, param_schema in params_schema.properties.items():
@@ -322,6 +321,7 @@ def _format_required_params_schema(params_schema: 'xcube.util.jsonschema.JsonObj
     return '\n'.join(text)
 
 
+# noinspection PyUnresolvedReferences
 def _format_param_schema(param_schema: 'xcube.util.jsonschema.JsonSchema'):
     from xcube.util.undefined import UNDEFINED
     param_info = []
@@ -359,14 +359,17 @@ def _dump_extensions(point: str) -> int:
     return count
 
 
+# noinspection PyUnresolvedReferences
 def _dump_store_openers(data_store: 'xcube.core.store.DataStore', data_id: str = None) -> int:
     return _dump_named_extensions(EXTENSION_POINT_DATA_OPENERS, data_store.get_data_opener_ids(data_id=data_id))
 
 
+# noinspection PyUnresolvedReferences
 def _dump_store_writers(data_store: 'xcube.core.store.DataStore') -> int:
     return _dump_named_extensions(EXTENSION_POINT_DATA_WRITERS, data_store.get_data_writer_ids())
 
 
+# noinspection PyUnresolvedReferences
 def _dump_store_data_ids(data_store: 'xcube.core.store.DataStore') -> int:
     count = 0
     for data_id, title in data_store.get_data_ids():
@@ -387,6 +390,7 @@ def _dump_named_extensions(point: str, names: Sequence[str]) -> int:
     return count
 
 
+# noinspection PyUnresolvedReferences
 def _dump_data_resources(data_store: 'xcube.core.store.DataStore') -> int:
     count = 0
     for data_id, title in data_store.get_data_ids():
@@ -395,6 +399,7 @@ def _dump_data_resources(data_store: 'xcube.core.store.DataStore') -> int:
     return count
 
 
+# noinspection PyUnresolvedReferences
 def _new_data_store(store_id: str, store_params: List[str]) -> 'xcube.core.store.DataStore':
     from xcube.core.store import get_data_store_params_schema
     from xcube.core.store import new_data_store
