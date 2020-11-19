@@ -67,7 +67,7 @@ def get_data_store_class(data_store_id: str,
     """
     extension_registry = extension_registry or get_extension_registry()
     if not extension_registry.has_extension(EXTENSION_POINT_DATA_STORES, data_store_id):
-        raise DataStoreError(f'Unknown data store "{data_store_id}"')
+        raise DataStoreError(f'Unknown data store "{data_store_id}" (may be due to missing xcube plugin)')
     return extension_registry.get_component(EXTENSION_POINT_DATA_STORES, data_store_id)
 
 

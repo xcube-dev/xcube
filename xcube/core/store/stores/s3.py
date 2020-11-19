@@ -30,17 +30,18 @@ import xarray as xr
 from xcube.core.mldataset import MultiLevelDataset
 from xcube.core.store import DataDescriptor
 from xcube.core.store import DataStoreError
+from xcube.core.store import DefaultSearchMixin
 from xcube.core.store import MutableDataStore
 from xcube.core.store import TYPE_SPECIFIER_ANY
 from xcube.core.store import TYPE_SPECIFIER_DATASET
 from xcube.core.store import TYPE_SPECIFIER_MULTILEVEL_DATASET
+from xcube.core.store import TypeSpecifier
 from xcube.core.store import find_data_opener_extensions
 from xcube.core.store import find_data_writer_extensions
 from xcube.core.store import get_data_accessor_predicate
 from xcube.core.store import get_type_specifier
 from xcube.core.store import new_data_opener
 from xcube.core.store import new_data_writer
-from xcube.core.store import TypeSpecifier
 from xcube.core.store.accessors.dataset import S3Mixin
 from xcube.util.assertions import assert_condition
 from xcube.util.assertions import assert_given
@@ -71,7 +72,7 @@ _TYPE_SPECIFIER_TO_ACCESSOR_TO_DEFAULT_FILENAME_EXT = {
 #   - Introduce a file-system-abstracting base class or mixin, see module "fsspec" and impl. "s3fs" as  used in Dask!
 #   - Introduce something like MultiOpenerStoreMixin/MultiWriterStoreMixin!
 
-class S3DataStore(MutableDataStore):
+class S3DataStore(DefaultSearchMixin, MutableDataStore):
     """
     A cube store that stores cubes in a directory in the local file system.
 
@@ -136,15 +137,6 @@ class S3DataStore(MutableDataStore):
         return self._s3.exists(path)
 
     def describe_data(self, data_id: str, type_specifier: str = None) -> DataDescriptor:
-        # TODO: implement me
-        raise NotImplementedError()
-
-    @classmethod
-    def get_search_params_schema(self, type_specifier: str = None) -> JsonObjectSchema:
-        # TODO: implement me
-        raise NotImplementedError()
-
-    def search_data(self, type_specifier: str = None, **search_params) -> Iterator[DataDescriptor]:
         # TODO: implement me
         raise NotImplementedError()
 

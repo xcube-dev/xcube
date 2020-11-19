@@ -47,9 +47,9 @@ class ResampleInTimeTest(unittest.TestCase):
         self.assertEqual((6, 180, 360), resampled_cube.precipitation_max.shape)
         np.testing.assert_equal(resampled_cube.time.values,
                                 np.array(
-                                    ['2017-06-25T00:00:00Z', '2017-07-09T00:00:00Z',
-                                     '2017-07-23T00:00:00Z', '2017-08-06T00:00:00Z',
-                                     '2017-08-20T00:00:00Z', '2017-09-03T00:00:00Z'], dtype=np.datetime64))
+                                    ['2017-06-25T00:00:00', '2017-07-09T00:00:00',
+                                     '2017-07-23T00:00:00', '2017-08-06T00:00:00',
+                                     '2017-08-20T00:00:00', '2017-09-03T00:00:00'], dtype=np.datetime64))
         np.testing.assert_allclose(resampled_cube.temperature_min.values[..., 0, 0],
                                    np.array([272.0, 272.4, 273.0, 273.8, 274.4, 274.9]))
         np.testing.assert_allclose(resampled_cube.temperature_max.values[..., 0, 0],

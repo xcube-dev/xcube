@@ -2,6 +2,12 @@
 
 ### Enhancements 
 
+* CLI tool `xcube io dump` now has new `--config` and `--type` options. (#370)
+
+* New function `xcube.core.store.get_data_store()` and new class `xcube.core.store.DataStorePool` 
+  allow for maintaining a set of pre-configured data store instances. This will be used
+  in future xcube tools that utilise multiple data stores, e.g. "xcube gen", "xcube serve". (#364)
+
 * Replaced the concept of `type_id` used by several `xcube.core.store.DataStore` methods 
   by a more flexible `type_specifier`. Documentation is provided in `docs/source/storeconv.md`. 
   
@@ -31,6 +37,8 @@
 
 ### Fixes
 
+* `xcube serve` no longer crashes, if configuration is lacking a `Styles` entry.
+
 * `xcube gen` can now interpret `start_date` and `stop_date` from NetCDF dataset attributes. 
   This is relevant for using `xcube gen` for Sentinel-2 Level 2 data products generated and 
   provided by Brockmann Consult. (#352)
@@ -52,6 +60,13 @@
 * xcube now only requires `matplotlib-base` package rather than `matplotlib`. (#361)
 
 ### Other
+
+* Restricted `s3fs` version in envrionment.yml in order to use a version which can handle pruned xcube datasets.
+  This restriction will be removed once changes in zarr PR https://github.com/zarr-developers/zarr-python/pull/650 
+  are merged and released. (#360)
+* Added a note in the `xcube chunk` CLI help, saying that there is a possibly more efficient way 
+  to (re-)chunk datasets through the dedicated tool "rechunker", see https://rechunker.readthedocs.io
+  (thanks to Ryan Abernathey for the hint). (#335)
 
 * For `xcube serve` dataset configurations where `FileSystem: obs`, users must now also 
   specify `Anonymous: True` for datasets in public object storage buckets. For example:
