@@ -211,8 +211,6 @@ class ConsoleProgressObserver(ProgressObserver):
     def on_end(self, state_stack: Sequence[ProgressState]):
         if state_stack[0].exc_info:
             print(self._format_progress(state_stack, status_label='error!'))
-            if len(state_stack) == 1:
-                print(state_stack[0].exc_info_text)
         else:
             print(self._format_progress(state_stack, status_label='done.'))
 
