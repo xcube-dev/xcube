@@ -74,6 +74,9 @@ def main(gen_config_path: str,
                                         cube_config=gen_config.cube_config)
 
         cm.will_work(80)
-        write_cube(cube,
-                   output_config=gen_config.output_config,
-                   store_pool=store_pool)
+        data_id = write_cube(cube,
+                             output_config=gen_config.output_config,
+                             store_pool=store_pool)
+
+    if verbose:
+        print('Cube "{}" generated within {:.2f} seconds'.format(str(data_id), cm.state.total_time))
