@@ -43,6 +43,10 @@ class ObserveProgressTest(unittest.TestCase):
             # do something that takes 2 units
             reporter.worked(2)
 
+        self.assertIsInstance(reporter.state, ProgressState)
+        self.assertIsInstance(reporter.state.total_time, float)
+        self.assertTrue(reporter.state.total_time >= 0.0)
+
         self.assertEqual(
             [
                 ('begin', [('computing', 0.0, False)]),

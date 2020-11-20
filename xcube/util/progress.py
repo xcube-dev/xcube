@@ -18,6 +18,8 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+
+import time
 import traceback
 from abc import ABC
 from typing import Sequence, Optional, Any, Tuple, Type, List
@@ -37,6 +39,9 @@ class ProgressState:
         self._traceback = None
         self._completed_work = 0.
         self._finished = False
+        self._start_time = None
+        self._start_time = time.perf_counter()
+        self._total_time = None
 
     @property
     def label(self) -> str:
@@ -83,6 +88,10 @@ class ProgressState:
         return self._finished
 
     @property
+    def total_time(self) -> Optional[float]:
+        return self._total_time
+
+    @property
     def super_work_ahead(self) -> float:
         return self._super_work_ahead
 
@@ -97,6 +106,7 @@ class ProgressState:
 
     def finish(self):
         self._finished = True
+        self._total_time = time.perf_counter() - self._start_time
 
 
 class ProgressObserver(ABC):
@@ -152,19 +162,23 @@ class _ProgressContext:
         for observer in self._observers:
             observer.on_end(self._state_stack)
 
-    def begin(self, label: str, total_work: float):
+    def begin(self, label: str, total_work: float) -> ProgressState:
         super_work = self._state_stack[-1].super_work_ahead if self._state_stack else 1
-        self._state_stack.append(ProgressState(label, total_work, super_work))
+        progress_state = ProgressState(label, total_work, super_work)
+        self._state_stack.append(progress_state)
         self.emit_begin()
+        return progress_state
 
-    def end(self, exc_type, exc_value, exc_traceback):
+    def end(self, exc_type, exc_value, exc_traceback) -> ProgressState:
         exc_info = tuple((exc_type, exc_value, exc_traceback))
-        self._state_stack[-1].exc_info = exc_info if any(exc_info) else None
-        self._state_stack[-1].finish()
+        progress_state = self._state_stack[-1]
+        progress_state.exc_info = exc_info if any(exc_info) else None
+        progress_state.finish()
         self.emit_end()
         self._state_stack.pop()
         if self._state_stack:
             self._state_stack[-1].super_work_ahead = 1
+        return progress_state
 
     def worked(self, work: float):
         assert_condition(self._state_stack, 'worked() method call is missing a current context')
@@ -237,9 +251,10 @@ class observe_progress:
         assert_condition(total_work > 0, 'total_work must be greater than zero')
         self.label = label
         self.total_work = total_work
+        self.state: Optional[ProgressState] = None
 
     def __enter__(self) -> 'observe_progress':
-        _ProgressContext.instance().begin(self.label, self.total_work)
+        self.state = _ProgressContext.instance().begin(self.label, self.total_work)
         return self
 
     def __exit__(self, type, value, traceback):
