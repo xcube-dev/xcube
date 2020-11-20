@@ -20,9 +20,11 @@
 # SOFTWARE.
 
 import json
-from typing import Any, Dict, Optional, List
 import os.path
+from typing import Any, Dict, Optional, List
+
 import yaml
+
 from xcube.util.assertions import assert_given
 from xcube.util.assertions import assert_instance
 from xcube.util.jsonschema import JsonObjectSchema
@@ -32,11 +34,11 @@ from .store import DataStoreError
 from .store import new_data_store
 
 
-def get_data_store(store_id: str,
-                   store_params: Dict[str, Any] = None,
-                   store_pool: 'DataStorePool' = None) -> DataStore:
+def get_data_store_instance(store_id: str,
+                            store_params: Dict[str, Any] = None,
+                            store_pool: 'DataStorePool' = None) -> 'DataStoreInstance':
     """
-    Get a data store for identifier *store_id*.
+    Get a data store instance for identifier *store_id*.
 
     If *store_id* is prefixed by a "@", it is an "instance identifier".
     In this case the store instance is retrieved from the expected *store_pool* argument.
@@ -45,7 +47,7 @@ def get_data_store(store_id: str,
     :param store_id: Store identifier, may be prefixed by a "@" to indicate a store instance identifier.
     :param store_params: Store parameters, only valid if *store_id* is not an instance identifier.
     :param store_pool: A pool of configured store instances used if *store_id* is an instance identifier.
-    :return: a data store instance
+    :return: a DataStoreInstance object
     :raise: DataStoreError if a configured store does not exist
     """
     if store_id.startswith('@'):
@@ -56,8 +58,8 @@ def get_data_store(store_id: str,
         if store_params:
             raise ValueError(f'store_params cannot be given,'
                              f' with store_id ("{store_id}") referring to a configured store')
-        return store_pool.get_store(store_instance_id)
-    return new_data_store(store_id, **(store_params or {}))
+        return store_pool.get_store_instance(store_instance_id)
+    return DataStoreInstance(DataStoreConfig(store_id, store_params))
 
 
 DATA_STORE_CONFIG_SCHEMA = JsonObjectSchema(
@@ -136,7 +138,7 @@ class DataStoreConfig:
         return d
 
 
-class _DataStoreInstance:
+class DataStoreInstance:
     """
     Internal class used by DataStorePool to maintain store configurations + instances.
     """
@@ -192,10 +194,10 @@ class DataStorePool:
     def __init__(self, store_configs: Dict[str, DataStoreConfig] = None):
         if store_configs is not None:
             assert_instance(store_configs, dict, name='stores_configs')
-            self._instances: Dict[str, _DataStoreInstance] = {k: _DataStoreInstance(v) for k, v in
-                                                              store_configs.items()}
+            self._instances: Dict[str, DataStoreInstance] = {k: DataStoreInstance(v) for k, v in
+                                                             store_configs.items()}
         else:
-            self._instances: Dict[str, _DataStoreInstance] = {}
+            self._instances: Dict[str, DataStoreInstance] = {}
 
     @property
     def store_instance_ids(self) -> List[str]:
@@ -214,7 +216,7 @@ class DataStorePool:
         assert_instance(store_config, DataStoreConfig, 'store_config')
         if store_instance_id in self._instances:
             self._instances[store_instance_id].close()
-        self._instances[store_instance_id] = _DataStoreInstance(store_config)
+        self._instances[store_instance_id] = DataStoreInstance(store_config)
 
     def remove_store_config(self, store_instance_id: str):
         self._assert_valid_instance_id(store_instance_id)
@@ -228,6 +230,10 @@ class DataStorePool:
     def get_store(self, store_instance_id: str) -> DataStore:
         self._assert_valid_instance_id(store_instance_id)
         return self._instances[store_instance_id].store
+
+    def get_store_instance(self, store_instance_id: str) -> DataStoreInstance:
+        self._assert_valid_instance_id(store_instance_id)
+        return self._instances[store_instance_id]
 
     def close_all_stores(self):
         for instance in self._instances.values():

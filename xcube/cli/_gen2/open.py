@@ -23,8 +23,10 @@ from typing import Sequence
 
 from xcube.cli._gen2.genconfig import CubeConfig
 from xcube.cli._gen2.genconfig import InputConfig
+from xcube.core.store import DataStoreError
 from xcube.core.store import DataStorePool
-from xcube.core.store import get_data_store
+from xcube.core.store import TYPE_SPECIFIER_CUBE
+from xcube.core.store import get_data_store_instance
 from xcube.core.store import new_data_opener
 from xcube.util.progress import observe_progress
 
@@ -37,13 +39,22 @@ def open_cubes(input_configs: Sequence[InputConfig],
     with observe_progress('Opening input(s)', len(input_configs)) as progress:
         for input_config in input_configs:
             open_params = {}
+            opener_id = input_config.opener_id
             if input_config.store_id:
-                opener = get_data_store(input_config.store_id,
-                                        store_params=input_config.store_params,
-                                        store_pool=store_pool)
-                open_params.update(opener_id=input_config.opener_id, **input_config.open_params)
+                store_instance = get_data_store_instance(input_config.store_id,
+                                                         store_params=input_config.store_params,
+                                                         store_pool=store_pool)
+                store = store_instance.store
+                if opener_id is None:
+                    opener_ids = store.get_data_opener_ids(data_id=input_config.data_id,
+                                                           type_specifier=TYPE_SPECIFIER_CUBE)
+                    if not opener_ids:
+                        raise DataStoreError(f'Data store "{input_config.store_id}" does not support data cubes')
+                    opener_id = opener_ids[0]
+                opener = store
+                open_params.update(opener_id=opener_id, **input_config.open_params)
             else:
-                opener = new_data_opener(input_config.opener_id)
+                opener = new_data_opener(opener_id)
                 open_params.update(**input_config.store_params, **input_config.open_params)
             open_params_schema = opener.get_open_data_params_schema(input_config.data_id)
             cube_params = {k: v for k, v in all_cube_params.items() if k in open_params_schema.properties}
