@@ -60,8 +60,8 @@ class InputConfig:
                 store_id=JsonStringSchema(min_length=1),
                 opener_id=JsonStringSchema(min_length=1),
                 data_id=JsonStringSchema(min_length=1),
-                store_params=JsonObjectSchema(),
-                open_params=JsonObjectSchema()
+                store_params=JsonObjectSchema(additional_properties=True),
+                open_params=JsonObjectSchema(additional_properties=True)
             ),
             additional_properties=False,
             required=['data_id'],
@@ -137,8 +137,8 @@ class OutputConfig:
                 store_id=JsonStringSchema(min_length=1),
                 writer_id=JsonStringSchema(min_length=1),
                 data_id=JsonStringSchema(default=None),
-                store_params=JsonObjectSchema(),
-                write_params=JsonObjectSchema(),
+                store_params=JsonObjectSchema(additional_properties=True),
+                write_params=JsonObjectSchema(additional_properties=True),
                 replace=JsonBooleanSchema(default=False),
             ),
             additional_properties=False,
@@ -202,21 +202,32 @@ class CubeConfig:
         return JsonObjectSchema(
             properties=dict(
                 variable_names=JsonArraySchema(
-                    items=JsonStringSchema(min_length=1), min_items=0),
-                crs=JsonStringSchema(nullable=True, default='WGS84',
-                                     enum=[None, 'WGS84']),
-                bbox=JsonArraySchema(items=[JsonNumberSchema(),
-                                            JsonNumberSchema(),
-                                            JsonNumberSchema(),
-                                            JsonNumberSchema()]),
-                spatial_res=JsonNumberSchema(exclusive_minimum=0.0),
-                time_range=JsonDateSchema.new_range(nullable=True),
+                    items=JsonStringSchema(min_length=1),
+                    min_items=0
+                ),
+                crs=JsonStringSchema(
+                    nullable=True,
+                    min_length=1
+                ),
+                bbox=JsonArraySchema(
+                    nullable=True,
+                    items=[JsonNumberSchema(),
+                           JsonNumberSchema(),
+                           JsonNumberSchema(),
+                           JsonNumberSchema()]),
+                spatial_res=JsonNumberSchema(
+                    nullable=True,
+                    exclusive_minimum=0.0),
+                time_range=JsonDateSchema.new_range(
+                    nullable=True
+                ),
                 time_period=JsonStringSchema(
-                    pattern=r'^([1-9][0-9]*)?[DWMY]$',
-                    nullable=True),
+                    nullable=True,
+                    pattern=r'^([1-9][0-9]*)?[DWMY]$'
+                ),
             ),
+            required=['variable_names'],
             additional_properties=False,
-            required=['variable_names', 'bbox', 'spatial_res', 'time_range'],
             factory=cls
         )
 
