@@ -321,8 +321,10 @@ class DirectoryDataStore(DefaultSearchMixin, MutableDataStore):
     @classmethod
     def _get_filename_ext(cls, data: Any) -> Optional[str]:
         type_specifier = get_type_specifier(data)
-        if TYPE_SPECIFIER_MULTILEVEL_DATASET.satisfies(type_specifier):
+        if type_specifier is None:
+            return None
+        if TYPE_SPECIFIER_MULTILEVEL_DATASET.is_satisfied_by(type_specifier):
             return '.levels'
-        if TYPE_SPECIFIER_GEODATAFRAME.satisfies(type_specifier):
+        if TYPE_SPECIFIER_GEODATAFRAME.is_satisfied_by(type_specifier):
             return '.geojson'
         return '.zarr'

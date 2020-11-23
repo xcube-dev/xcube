@@ -257,3 +257,18 @@ class DirectoryDataStoreTest(unittest.TestCase):
 
         result = list(self.store.search_data(type_specifier='geodataframe'))
         self.assertEqual(0, len(result))
+
+    def test_get_filename_ext(self):
+        import xarray as xr
+        import geopandas as gpd
+        from xcube.core.mldataset import BaseMultiLevelDataset
+
+        dataset = xr.Dataset()
+        self.assertEqual('.zarr', self.store._get_filename_ext(dataset))
+        frame = gpd.GeoDataFrame()
+        self.assertEqual('.geojson', self.store._get_filename_ext(frame))
+        mldataset = BaseMultiLevelDataset(base_dataset=dataset)
+        self.assertEqual('.levels', self.store._get_filename_ext(mldataset))
+
+        self.assertIsNone(self.store._get_filename_ext(None))
+        self.assertIsNone(self.store._get_filename_ext(DataStoreError('A nonsense object')))
