@@ -67,7 +67,6 @@
 * Added a note in the `xcube chunk` CLI help, saying that there is a possibly more efficient way 
   to (re-)chunk datasets through the dedicated tool "rechunker", see https://rechunker.readthedocs.io
   (thanks to Ryan Abernathey for the hint). (#335)
-
 * For `xcube serve` dataset configurations where `FileSystem: obs`, users must now also 
   specify `Anonymous: True` for datasets in public object storage buckets. For example:
   ```yaml
@@ -79,6 +78,8 @@
     ...
   - ...
   ```  
+* In `environment.yml`, removed unnecessary explicit dependencies on `proj4` 
+  and `pyproj` and restricted `gdal` version to >=3.0,<3.1. 
 
 ## Changes in 0.5.1
 
