@@ -7,36 +7,39 @@ import yaml
 from xcube.core.store import DataStore
 from xcube.core.store import DataStoreConfig
 from xcube.core.store import DataStoreError
+from xcube.core.store import DataStoreInstance
 from xcube.core.store import DataStorePool
-from xcube.core.store import get_data_store
+from xcube.core.store import get_data_store_instance
 from xcube.core.store.stores.directory import DirectoryDataStore
 
 
 class GetDataStoreTest(unittest.TestCase):
 
-    def test_get_data_store_new_inst(self):
-        store = get_data_store('directory', store_params=dict(base_dir='.'))
-        self.assertIsInstance(store, DirectoryDataStore)
-        store2 = get_data_store('directory', store_params=dict(base_dir='.'))
-        self.assertIsNot(store, store2)
+    def test_get_data_store_instance_new_inst(self):
+        instance = get_data_store_instance('directory', store_params=dict(base_dir='.'))
+        self.assertIsInstance(instance, DataStoreInstance)
+        self.assertIsInstance(instance.store, DirectoryDataStore)
+        instance2 = get_data_store_instance('directory', store_params=dict(base_dir='.'))
+        self.assertIsNot(instance, instance2)
+        self.assertIsNot(instance.store, instance2.store)
 
-    def test_get_data_store_from_pool(self):
+    def test_get_data_store_instance_from_pool(self):
         pool = DataStorePool({'dir': DataStoreConfig('directory', store_params=dict(base_dir='.'))})
-        store = get_data_store('@dir', store_pool=pool)
-        self.assertIsInstance(store, DirectoryDataStore)
-        store2 = get_data_store('@dir', store_pool=pool)
-        self.assertIs(store, store2)
+        instance = get_data_store_instance('@dir', store_pool=pool)
+        self.assertIsInstance(instance.store, DirectoryDataStore)
+        instance2 = get_data_store_instance('@dir', store_pool=pool)
+        self.assertIs(instance, instance2)
 
-    def test_get_data_store_from_pool_with_params(self):
+    def test_get_data_store_instance_from_pool_with_params(self):
         pool = DataStorePool({'@dir': DataStoreConfig('directory', store_params=dict(base_dir='.'))})
         with self.assertRaises(ValueError) as cm:
-            get_data_store('@dir', store_pool=pool, store_params={'thres': 5})
+            get_data_store_instance('@dir', store_pool=pool, store_params={'thres': 5})
         self.assertEqual('store_params cannot be given, with store_id ("@dir") referring to a configured store',
                          f'{cm.exception}')
 
-    def test_get_data_store_from_pool_without_pool(self):
+    def test_get_data_store_instance_from_pool_without_pool(self):
         with self.assertRaises(ValueError) as cm:
-            get_data_store('@dir')
+            get_data_store_instance('@dir')
         self.assertEqual('store_pool must be given, with store_id ("@dir") referring to a configured store',
                          f'{cm.exception}')
 
