@@ -60,18 +60,6 @@ class DirectoryDataStoreTest(unittest.TestCase):
         self.assertEqual({}, schema.properties)
         self.assertEqual(False, schema.additional_properties)
 
-    def test_search_data(self):
-        result = list(self.store.search_data(type_specifier=TYPE_SPECIFIER_CUBE))
-        self.assertTrue(len(result) > 0)
-
-        result = list(self.store.search_data(type_specifier=TYPE_SPECIFIER_DATASET))
-        self.assertTrue(len(result) > 0)
-
-        with self.assertRaises(DataStoreError) as cm:
-            list(self.store.search_data(type_specifier=TYPE_SPECIFIER_DATASET,
-                                        time_range=['2020-03-01', '2020-03-04'], bbox=[52, 11, 54, 12]))
-        self.assertEqual('Unsupported search parameters: time_range, bbox', f'{cm.exception}')
-
     def test_get_write_data_params_schema(self):
         schema = self.store.get_write_data_params_schema()
         self.assertEqual(
@@ -224,10 +212,10 @@ class DirectoryDataStoreTest(unittest.TestCase):
         with self.assertRaises(DataStoreError) as cm:
             set(self.store.describe_data('cube-1-250-250.zarr', type_specifier='geodataframe'))
         self.assertEqual(
-            'Type specifier "geodataframe" cannot be satisfied by type specifier "dataset" of data resource "cube-1-250-250.zarr"',
-            f'{cm.exception}')
+            'Type specifier "geodataframe" cannot be satisfied by type specifier "dataset" '
+            'of data resource "cube-1-250-250.zarr"', f'{cm.exception}')
 
-    def test_search_data(self):
+    def test_search_data_search(self):
         result = list(self.store.search_data())
         self.assertEqual(3, len(result))
         self.assertEqual(result[0].data_id, 'cube-1-250-250.zarr')
@@ -257,3 +245,23 @@ class DirectoryDataStoreTest(unittest.TestCase):
 
         result = list(self.store.search_data(type_specifier='geodataframe'))
         self.assertEqual(0, len(result))
+
+        with self.assertRaises(DataStoreError) as cm:
+            list(self.store.search_data(type_specifier=TYPE_SPECIFIER_DATASET,
+                                        time_range=['2020-03-01', '2020-03-04'], bbox=[52, 11, 54, 12]))
+        self.assertEqual('Unsupported search parameters: time_range, bbox', f'{cm.exception}')
+
+    def test_get_filename_ext(self):
+        import xarray as xr
+        import geopandas as gpd
+        from xcube.core.mldataset import BaseMultiLevelDataset
+
+        dataset = xr.Dataset()
+        self.assertEqual('.zarr', self.store._get_filename_ext(dataset))
+        frame = gpd.GeoDataFrame()
+        self.assertEqual('.geojson', self.store._get_filename_ext(frame))
+        mldataset = BaseMultiLevelDataset(base_dataset=dataset)
+        self.assertEqual('.levels', self.store._get_filename_ext(mldataset))
+
+        self.assertIsNone(self.store._get_filename_ext(None))
+        self.assertIsNone(self.store._get_filename_ext(DataStoreError('A nonsense object')))
