@@ -2,6 +2,9 @@
 
 ### Enhancements 
 
+* Added four new Jupyter Notebooks about xcube's new Data Store Framework in 
+  `examples/notebooks/datastores`.
+
 * CLI tool `xcube io dump` now has new `--config` and `--type` options. (#370)
 
 * New function `xcube.core.store.get_data_store()` and new class `xcube.core.store.DataStorePool` 
