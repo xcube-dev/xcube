@@ -6,9 +6,6 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - uses: conda-incubator/setup-miniconda@v2
-      - run: bash miniconda.sh -b -p $HOME/miniconda
-      - run: export PATH="$HOME/miniconda/bin:$PATH"
-      - run: hash -r
       - run: conda config --set always_yes yes --set changeps1 no
         # - conda update -q conda # makes travis build fail
         # Useful for debugging any issues with conda
