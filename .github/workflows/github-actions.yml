@@ -11,8 +11,7 @@ jobs:
         # Useful for debugging any issues with conda
       - run: conda info -a
       - run: conda init bash
-      # - run: export CONDA_BASE=$(conda info --base)
-      # - run: source $CONDA_BASE/etc/profile.d/conda.sh
+      - run: source $(conda info --base)/etc/profile.d/conda.sh
 
         # Install mamba as a dramatically faster conda replacement. Specifying a
         # fixed version makes the installation of mamba itself much faster, and
