@@ -1,0 +1,35 @@
+name: test
+on: [push]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: conda-incubator/setup-miniconda@v2
+      - run: bash miniconda.sh -b -p $HOME/miniconda
+      - run: export PATH="$HOME/miniconda/bin:$PATH"
+      - run: hash -r
+      - run: conda config --set always_yes yes --set changeps1 no
+        # - conda update -q conda # makes travis build fail
+        # Useful for debugging any issues with conda
+      - run: conda info -a
+      - run: conda init bash
+      - run: export CONDA_BASE=$(conda info --base)
+      - run: source $CONDA_BASE/etc/profile.d/conda.sh
+
+        # Install mamba as a dramatically faster conda replacement. Specifying a
+        # fixed version makes the installation of mamba itself much faster, and
+        # avoids potential breakage due to changes in mamba behaviour.
+      - run: conda install mamba=0.1.2 -c conda-forge
+
+        # Environments created by mamba can't be referenced by name from conda
+        # (presumably a bug), so we use an explicit path instead.
+      - run: mamba env create --prefix $HOME/mamba-env --file environment.yml
+      - run: conda activate $HOME/mamba-env
+      - run: conda list
+      - run: python setup.py install 
+
+        # Setting NUMBA_DISABLE_JIT=1 makes unit tests way too slow, so we
+        # accept less code coverage here
+        # - run: export NUMBA_DISABLE_JIT=1
+      - run: py.test -v --cov=xcube
