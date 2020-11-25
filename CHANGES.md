@@ -1,4 +1,4 @@
-## Changes in 0.6.0 (in development)
+## Changes in 0.6.0
 
 ### Enhancements 
 
