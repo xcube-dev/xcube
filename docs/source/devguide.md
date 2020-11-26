@@ -229,7 +229,7 @@ Make sure your change
 1. Make sure issue is assigned to you, if unclear agree with team first.
 1. Add issue label "in progress".
 1. Create development branch named `"<developer>-<issue>-<title>"` 
-   or `"<developer>-<issue>-<title>-fix"` (see below).
+   (see [below](#development-branches)).
 1. Develop, having in mind the checklists and implementation hints
    above.
    1. In your first commit, refer the issue so it will appear as link 
@@ -259,28 +259,23 @@ Make sure your change
 
 ## Branches and Releases
 
-### Target Branches
+### Target Branch
 
-* The `master` branch contains latest developments, including new 
-  features and fixes. It is used to generate `<major>.<minor>.0` 
-  releases. That is, either `<major>` or `<minor>` is increased.
-* The `<major>.<minor>.x` branch is the maintenance branch for a 
-  former release tagged `v<major>.<minor>.0`. It is used to generate
-  maintenance `<major>.<minor>.<fix>` releases. That is, only `<fix>` 
-  is increased. Most changes to `<major>.<minor>.x` branch must 
-  obviously be merged into `master` branch too.
-  
-The software version string on all active branches is always 
-`<major>.<minor>.<micro>.dev<n>`. Only for a release, we remove the 
-`.dev<n>` suffix.
+The `master` branch contains latest developments, including new features and fixes. 
+Its software version string is always `<major>.<minor>.<micro>.dev<n>`.
+The branch is used to generate major, minor, or maintenance releases.
+That is, either `<major>`, `<minor>`, or `<fix>` is increased.
+Before a release, the last thing we do is to remove the `.dev<n>` suffix, 
+after a release, the first thing we do is to increase the `micro` version and 
+add the `.dev<n>` suffix.  
 
 ### Development Branches
 
-Development branches that target the `<major>.<minor>.x` branch 
-should indicate that by using the suffix `-fix`, 
-e.g. `coolguy-7633-div_by_zero_in_mean-fix`. After a pull request,
-the development branch will first be merged into the 
-`<major>.<minor>.x` branch then into `master`.
+Development branches should be named `<developer>-<issue>-<title>` where
+* `<developer>` is the github name of the code author
+* `<issue>` is the number of the issue in the github issue tracker that is targeted
+  by the works on this branch
+* `<title>` is either the name of the issue or an abbreviated version of it
 
 ## Release Process
 
