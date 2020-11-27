@@ -1,4 +1,4 @@
-## Changes in 0.6.1 (under development)
+## Changes in 0.6.1 (in development)
 
 ## Changes in 0.6.0
 
