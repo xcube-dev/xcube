@@ -1,6 +1,9 @@
-## Changes in 0.6.0 (in development)
+## Changes in 0.6.0
 
 ### Enhancements 
+
+* Added four new Jupyter Notebooks about xcube's new Data Store Framework in 
+  `examples/notebooks/datastores`.
 
 * CLI tool `xcube io dump` now has new `--config` and `--type` options. (#370)
 
