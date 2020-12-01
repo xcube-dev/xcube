@@ -1,18 +1,24 @@
 import os.path
 import unittest
 
-from xcube.core.store import new_data_store
+from xcube.core.store import DataStoreError
 from xcube.core.store import TYPE_SPECIFIER_CUBE
-from xcube.core.store.error import DataStoreError
+from xcube.core.store import TYPE_SPECIFIER_DATASET
+from xcube.core.store import new_data_store
 from xcube.core.store.stores.directory import DirectoryDataStore
+from xcube.util.jsonschema import JsonObjectSchema
+
 
 class DirectoryDataStoreTest(unittest.TestCase):
 
     def setUp(self) -> None:
-        self._store = new_data_store('directory',
-                                     base_dir=os.path.join(os.path.dirname(__file__),
-                                                           '..', '..', '..', '..', 'examples', 'serve', 'demo'))
+        base_dir = os.path.join(os.path.dirname(__file__), '..', '..', '..', '..', 'examples', 'serve', 'demo')
+        self._store = new_data_store('directory', base_dir=base_dir)
         self.assertIsInstance(self.store, DirectoryDataStore)
+        # noinspection PyUnresolvedReferences
+        self.assertEqual(base_dir, self._store.base_dir)
+        # noinspection PyUnresolvedReferences
+        self.assertEqual(False, self._store.read_only)
 
     @property
     def store(self) -> DirectoryDataStore:
@@ -42,6 +48,17 @@ class DirectoryDataStoreTest(unittest.TestCase):
             set(schema.properties.keys())
         )
         self.assertEqual(set(), schema.required)
+
+    def test_get_search_params_schema(self):
+        schema = self.store.get_search_params_schema()
+        self.assertIsInstance(schema, JsonObjectSchema)
+        self.assertEqual({}, schema.properties)
+        self.assertEqual(False, schema.additional_properties)
+
+        schema = self.store.get_search_params_schema(type_specifier='geodataframe')
+        self.assertIsInstance(schema, JsonObjectSchema)
+        self.assertEqual({}, schema.properties)
+        self.assertEqual(False, schema.additional_properties)
 
     def test_get_write_data_params_schema(self):
         schema = self.store.get_write_data_params_schema()
@@ -83,13 +100,12 @@ class DirectoryDataStoreTest(unittest.TestCase):
                          set(self.store.get_data_opener_ids(type_specifier='geodataframe')))
 
     def test_get_type_specifiers_for_data(self):
-        self.assertEqual(('dataset', ), self.store.get_type_specifiers_for_data('cube-1-250-250.zarr'))
-        self.assertEqual(('dataset', ), self.store.get_type_specifiers_for_data('cube.nc'))
+        self.assertEqual(('dataset',), self.store.get_type_specifiers_for_data('cube-1-250-250.zarr'))
+        self.assertEqual(('dataset',), self.store.get_type_specifiers_for_data('cube.nc'))
         with self.assertRaises(DataStoreError) as cm:
             set(self.store.get_type_specifiers_for_data('xyz.levels'))
         self.assertEqual('Data resource "xyz.levels" does not exist in store',
                          f'{cm.exception}')
-
 
     def test_get_data_writer_ids(self):
         self.assertEqual({'dataset:netcdf:posix',
@@ -122,45 +138,48 @@ class DirectoryDataStoreTest(unittest.TestCase):
                 ('cube-5-100-200.zarr', None),
                 ('cube.nc', None),
             },
-            set(self.store.get_data_ids()))
+            set(self.store.get_data_ids())
+        )
         self.assertEqual(
             {
                 ('cube-1-250-250.zarr', None),
                 ('cube-5-100-200.zarr', None),
                 ('cube.nc', None),
             },
-            set(self.store.get_data_ids('*')))
+            set(self.store.get_data_ids('*'))
+        )
         self.assertEqual(
             {
                 ('cube-1-250-250.zarr', None),
                 ('cube-5-100-200.zarr', None),
                 ('cube.nc', None),
             },
-            set(self.store.get_data_ids('dataset')))
+            set(self.store.get_data_ids('dataset'))
+        )
         self.assertEqual(
             set(),
-            set(self.store.get_data_ids('dataset[multilevel]')))
-        with self.assertRaises(ValueError) as cm:
-            set(self.store.get_data_ids(type_specifier='dataset[cube]'))
-        self.assertEqual("type_specifier must be one of ('dataset', 'dataset[multilevel]', 'geodataframe')",
-                         f'{cm.exception}')
+            set(self.store.get_data_ids('dataset[multilevel]'))
+        )
         self.assertEqual(
             {
                 ('cube-1-250-250.zarr', None),
                 ('cube-5-100-200.zarr', None),
                 ('cube.nc', None),
             },
-            set(self.store.get_data_ids(include_titles=False)))
+            set(self.store.get_data_ids(include_titles=False))
+        )
         self.assertEqual(
             {
                 ('cube-1-250-250.zarr', None),
                 ('cube-5-100-200.zarr', None),
                 ('cube.nc', None),
             },
-            set(self.store.get_data_ids('dataset', include_titles=False)))
+            set(self.store.get_data_ids('dataset', include_titles=False))
+        )
         self.assertEqual(
             set(),
-            set(self.store.get_data_ids('dataset[multilevel]', include_titles=False)))
+            set(self.store.get_data_ids('dataset[multilevel]', include_titles=False))
+        )
 
     def test_has_data(self):
         self.assertTrue(self.store.has_data('cube-1-250-250.zarr'))
@@ -192,11 +211,11 @@ class DirectoryDataStoreTest(unittest.TestCase):
 
         with self.assertRaises(DataStoreError) as cm:
             set(self.store.describe_data('cube-1-250-250.zarr', type_specifier='geodataframe'))
-        self.assertEqual('Data resource "cube-1-250-250.zarr" is not compatible with type specifier "geodataframe". '
-                         'Cannot create DataDescriptor.', f'{cm.exception}')
+        self.assertEqual(
+            'Type specifier "geodataframe" cannot be satisfied by type specifier "dataset" '
+            'of data resource "cube-1-250-250.zarr"', f'{cm.exception}')
 
-
-    def test_search_data(self):
+    def test_search_data_search(self):
         result = list(self.store.search_data())
         self.assertEqual(3, len(result))
         self.assertEqual(result[0].data_id, 'cube-1-250-250.zarr')
@@ -224,10 +243,25 @@ class DirectoryDataStoreTest(unittest.TestCase):
         self.assertEqual(result[2].data_id, 'cube.nc')
         self.assertEqual(result[2].type_specifier, TYPE_SPECIFIER_CUBE)
 
-        with self.assertRaises(ValueError) as cm:
-            list(self.store.search_data(type_specifier='dataset[cube]'))
-        self.assertEqual("type_specifier must be one of ('dataset', 'dataset[multilevel]', 'geodataframe')",
-                         f'{cm.exception}')
-
         result = list(self.store.search_data(type_specifier='geodataframe'))
         self.assertEqual(0, len(result))
+
+        with self.assertRaises(DataStoreError) as cm:
+            list(self.store.search_data(type_specifier=TYPE_SPECIFIER_DATASET,
+                                        time_range=['2020-03-01', '2020-03-04'], bbox=[52, 11, 54, 12]))
+        self.assertEqual('Unsupported search parameters: time_range, bbox', f'{cm.exception}')
+
+    def test_get_filename_ext(self):
+        import xarray as xr
+        import geopandas as gpd
+        from xcube.core.mldataset import BaseMultiLevelDataset
+
+        dataset = xr.Dataset()
+        self.assertEqual('.zarr', self.store._get_filename_ext(dataset))
+        frame = gpd.GeoDataFrame()
+        self.assertEqual('.geojson', self.store._get_filename_ext(frame))
+        mldataset = BaseMultiLevelDataset(base_dataset=dataset)
+        self.assertEqual('.levels', self.store._get_filename_ext(mldataset))
+
+        self.assertIsNone(self.store._get_filename_ext(None))
+        self.assertIsNone(self.store._get_filename_ext(DataStoreError('A nonsense object')))

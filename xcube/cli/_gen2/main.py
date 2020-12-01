@@ -24,8 +24,8 @@ from xcube.cli._gen2.open import open_cubes
 from xcube.cli._gen2.progress import ApiProgressCallbackObserver
 from xcube.cli._gen2.progress import ConsoleProgressObserver
 from xcube.cli._gen2.resample import resample_and_merge_cubes
-from xcube.cli._gen2.storeconfig import load_data_store_instances
 from xcube.cli._gen2.write import write_cube
+from xcube.core.store import DataStorePool
 from xcube.util.progress import observe_progress
 
 
@@ -54,7 +54,7 @@ def main(gen_config_path: str,
     :param verbose: Whether to output progress information to stdout.
     """
 
-    store_instances = load_data_store_instances(store_configs_path)
+    store_pool = DataStorePool.from_file(store_configs_path) if store_configs_path else DataStorePool()
 
     gen_config = GenConfig.from_file(gen_config_path, verbose=verbose)
 
@@ -67,13 +67,16 @@ def main(gen_config_path: str,
         cm.will_work(10)
         cubes = open_cubes(gen_config.input_configs,
                            cube_config=gen_config.cube_config,
-                           store_instances=store_instances)
+                           store_pool=store_pool)
 
         cm.will_work(10)
         cube = resample_and_merge_cubes(cubes,
                                         cube_config=gen_config.cube_config)
 
         cm.will_work(80)
-        write_cube(cube,
-                   output_config=gen_config.output_config,
-                   store_instances=store_instances)
+        data_id = write_cube(cube,
+                             output_config=gen_config.output_config,
+                             store_pool=store_pool)
+
+    if verbose:
+        print('Cube "{}" generated within {:.2f} seconds'.format(str(data_id), cm.state.total_time))

@@ -1,28 +1,31 @@
-#
-# This is a basic build configuration for Travis CI.
-# See http://conda.pydata.org/docs/travis.html for more info.
-#
+version: '{build}'
 
-language: generic
+image:
+  - macos
+  - Ubuntu2004
 
-# Turn PARALLELIZE=true only after the build passed with PARALLELIZE=false.
-# Turn PARALLELIZE=false as a first action after tests fail, especially those that use 
-# concurrent processes or threads (e.g. S3 moto server)!
-#
-#env:
-#  - PARALLELIZE=true
+configuration: Release
 
-os:
-  - linux
-  - osx
+platform:
+  - x64
 
-install:
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
-      wget https://repo.continuum.io/miniconda/Miniconda3-latest-MacOSX-x86_64.sh -O miniconda.sh;
-    else
-      wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
-    fi
-  - bash miniconda.sh -b -p $HOME/miniconda
+for:
+-
+  matrix:
+    only:
+      - image: macos
+  install:
+    - curl -L https://repo.continuum.io/miniconda/Miniconda3-latest-MacOSX-x86_64.sh > miniconda.sh
+    - bash miniconda.sh -b -p $HOME/miniconda
+-
+  matrix:
+    only:
+      - image: Ubuntu2004
+  install:
+    - wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
+    - bash miniconda.sh -b -p $HOME/miniconda
+
+build_script:
   - export PATH="$HOME/miniconda/bin:$PATH"
   - hash -r
   - conda config --set always_yes yes --set changeps1 no
@@ -36,19 +39,17 @@ install:
   # Install mamba as a dramatically faster conda replacement. Specifying a
   # fixed version makes the installation of mamba itself much faster, and
   # avoids potential breakage due to changes in mamba behaviour.
-  - conda install mamba=0.1.2 -c conda-forge
+  - conda install -c conda-forge mamba=0.7.3
 
   # Environments created by mamba can't be referenced by name from conda
   # (presumably a bug), so we use an explicit path instead.
   - mamba env create --prefix $HOME/mamba-env --file environment.yml
   - conda activate $HOME/mamba-env
   - conda list
-  - python setup.py install 
+  - python setup.py install
 
   # Setting NUMBA_DISABLE_JIT=1 makes unit tests way too slow, so we accept less code coverage here
   # - export NUMBA_DISABLE_JIT=1
   - py.test -v --cov=xcube
 
-after_success:
-  - pip install codecov
-  - codecov --env TRAVIS_PYTHON_VERSION
+

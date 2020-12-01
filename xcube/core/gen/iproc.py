@@ -438,6 +438,9 @@ class DefaultInputProcessor(XYInputProcessor):
         elif "start_time" in dataset.attrs:
             time_start = str(dataset.attrs["start_time"])
             time_stop = str(dataset.attrs.get("stop_time", dataset.attrs.get("end_time", time_start)))
+        elif "start_date" in dataset.attrs:
+            time_start = str(dataset.attrs["start_date"])
+            time_stop = str(dataset.attrs.get("stop_date", dataset.attrs.get("end_time", time_start)))
         return time_start, time_stop
 
     def _validate(self, dataset):

@@ -10,8 +10,12 @@ from xcube.cli.prune import _prune
 from xcube.core.dsio import rimraf, write_cube
 from xcube.core.new import new_cube
 from xcube.core.store import DataStoreError
+from xcube.core.store import TYPE_SPECIFIER_CUBE
+from xcube.core.store import TYPE_SPECIFIER_DATASET
 from xcube.core.store import new_data_store
 from xcube.core.store.stores.s3 import S3DataStore
+from xcube.util.jsonschema import JsonObjectSchema
+
 
 BUCKET_NAME = 'xcube-test'
 
@@ -83,6 +87,30 @@ class S3DataStoreTest(S3Test):
             set(schema.properties.keys())
         )
         self.assertEqual(set(), schema.required)
+
+    def test_get_search_params_schema(self):
+        schema = self.store.get_search_params_schema()
+        self.assertIsInstance(schema, JsonObjectSchema)
+        self.assertEqual({}, schema.properties)
+        self.assertEqual(False, schema.additional_properties)
+
+        schema = self.store.get_search_params_schema(type_specifier='geodataframe')
+        self.assertIsInstance(schema, JsonObjectSchema)
+        self.assertEqual({}, schema.properties)
+        self.assertEqual(False, schema.additional_properties)
+
+    # TODO (forman): Fixme! Currently get boto3 errors when running out-commented test
+    # def test_search_data(self):
+    #     result = list(self.store.search_data(type_specifier=TYPE_SPECIFIER_CUBE))
+    #     self.assertTrue(len(result) > 0)
+    #
+    #     result = list(self.store.search_data(type_specifier=TYPE_SPECIFIER_DATASET))
+    #     self.assertTrue(len(result) > 0)
+    #
+    #     with self.assertRaises(DataStoreError) as cm:
+    #         list(self.store.search_data(type_specifier=TYPE_SPECIFIER_DATASET,
+    #                                     time_range=['2020-03-01', '2020-03-04'], bbox=[52, 11, 54, 12]))
+    #     self.assertEqual('Unsupported search parameters: time_range, bbox', f'{cm.exception}')
 
     def test_get_write_data_params_schema(self):
         schema = self.store.get_write_data_params_schema()

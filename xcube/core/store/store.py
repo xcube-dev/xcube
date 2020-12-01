@@ -67,7 +67,7 @@ def get_data_store_class(data_store_id: str,
     """
     extension_registry = extension_registry or get_extension_registry()
     if not extension_registry.has_extension(EXTENSION_POINT_DATA_STORES, data_store_id):
-        raise DataStoreError(f'Unknown data store "{data_store_id}"')
+        raise DataStoreError(f'Unknown data store "{data_store_id}" (may be due to missing xcube plugin)')
     return extension_registry.get_component(EXTENSION_POINT_DATA_STORES, data_store_id)
 
 
@@ -153,7 +153,8 @@ class DataStore(DataOpener, ABC):
         """
 
     @abstractmethod
-    def get_data_ids(self, type_specifier: str = None, include_titles = True) -> Iterator[Tuple[str, Optional[str]]]:
+    def get_data_ids(self, type_specifier: str = None, include_titles: bool = True) -> \
+            Iterator[Tuple[str, Optional[str]]]:
         """
         Get an iterator over the data resource identifiers for the given type *type_specifier*.
         If *type_specifier* is omitted, all data resource identifiers are returned.

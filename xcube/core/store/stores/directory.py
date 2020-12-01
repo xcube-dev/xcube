@@ -29,11 +29,13 @@ import xarray as xr
 from xcube.core.mldataset import MultiLevelDataset
 from xcube.core.store import DataDescriptor
 from xcube.core.store import DataStoreError
+from xcube.core.store import DefaultSearchMixin
 from xcube.core.store import MutableDataStore
 from xcube.core.store import TYPE_SPECIFIER_ANY
 from xcube.core.store import TYPE_SPECIFIER_DATASET
 from xcube.core.store import TYPE_SPECIFIER_GEODATAFRAME
 from xcube.core.store import TYPE_SPECIFIER_MULTILEVEL_DATASET
+from xcube.core.store import TypeSpecifier
 from xcube.core.store import find_data_opener_extensions
 from xcube.core.store import find_data_writer_extensions
 from xcube.core.store import get_data_accessor_predicate
@@ -41,7 +43,6 @@ from xcube.core.store import get_type_specifier
 from xcube.core.store import new_data_descriptor
 from xcube.core.store import new_data_opener
 from xcube.core.store import new_data_writer
-from xcube.core.store import TypeSpecifier
 from xcube.util.assertions import assert_given
 from xcube.util.assertions import assert_in
 from xcube.util.assertions import assert_instance
@@ -62,12 +63,6 @@ _FILENAME_EXT_TO_ACCESSOR_ID_PARTS = {
     '.geojson': (str(TYPE_SPECIFIER_GEODATAFRAME), 'geojson', _STORAGE_ID),
 }
 
-_TYPE_SPECIFIER_TO_ACCESSOR_TO_DEFAULT_FILENAME_EXT = {
-    TYPE_SPECIFIER_DATASET: '.zarr',
-    TYPE_SPECIFIER_MULTILEVEL_DATASET: '.levels',
-    TYPE_SPECIFIER_GEODATAFRAME: '.geojson'
-}
-
 
 # TODO: write tests
 # TODO: complete docs
@@ -75,7 +70,7 @@ _TYPE_SPECIFIER_TO_ACCESSOR_TO_DEFAULT_FILENAME_EXT = {
 #   - Introduce a file-system-abstracting base class or mixin, see module "fsspec" and impl. "s3fs" as  used in Dask!
 #   - Introduce something like MultiOpenerStoreMixin/MultiWriterStoreMixin!
 
-class DirectoryDataStore(MutableDataStore):
+class DirectoryDataStore(DefaultSearchMixin, MutableDataStore):
     """
     A cube store that stores cubes in a directory in the local file system.
 
@@ -89,6 +84,14 @@ class DirectoryDataStore(MutableDataStore):
         assert_given(base_dir, 'base_dir')
         self._base_dir = base_dir
         self._read_only = read_only
+
+    @property
+    def base_dir(self) -> Optional[str]:
+        return self._base_dir
+
+    @property
+    def read_only(self) -> bool:
+        return self._read_only
 
     #############################################################################
     # MutableDataStore impl.
@@ -113,48 +116,40 @@ class DirectoryDataStore(MutableDataStore):
         actual_type_specifier, _, _ = self._get_accessor_id_parts(data_id)
         return actual_type_specifier,
 
-    def get_data_ids(self, type_specifier: str = None, include_titles: bool = True) -> Iterator[Tuple[str, Optional[str]]]:
-        if type_specifier:
-            type_specifier = TypeSpecifier.parse(type_specifier)
-        if type_specifier == TYPE_SPECIFIER_ANY:
-            type_specifier = None
-        self._assert_valid_type_specifier(type_specifier)
+    def get_data_ids(self, type_specifier: str = None, include_titles: bool = True) -> \
+            Iterator[Tuple[str, Optional[str]]]:
+        if type_specifier is not None:
+            type_specifier = TypeSpecifier.normalize(type_specifier)
         # TODO: Use os.walk(), which provides a generator rather than a list
         # os.listdir does not guarantee any ordering of the entries, so
         # sort them to ensure predictable behaviour.
         for data_id in sorted(os.listdir(self._base_dir)):
-            accessor_id_parts = self._get_accessor_id_parts(data_id, require=False)
-            if accessor_id_parts:
-                actual_type_specifier, _, _ = accessor_id_parts
-                actual_type_specifier = TypeSpecifier.normalize(actual_type_specifier)
-                if type_specifier is None or type_specifier.is_compatible(actual_type_specifier):
+            actual_type_specifier = self._get_type_specifier_for_data_id(data_id, require=False)
+            if actual_type_specifier is not None:
+                if type_specifier is None or actual_type_specifier.satisfies(type_specifier):
                     yield data_id, None
 
     def has_data(self, data_id: str, type_specifier: str = None) -> bool:
         assert_given(data_id, 'data_id')
-        actual_type_specifier, _, _ = self._get_accessor_id_parts(data_id)
-        if type_specifier and not TypeSpecifier.parse(type_specifier).is_compatible(actual_type_specifier):
-            return False
-        path = self._resolve_data_id_to_path(data_id)
-        return os.path.exists(path)
+        actual_type_specifier = self._get_type_specifier_for_data_id(data_id)
+        if actual_type_specifier is not None:
+            if type_specifier is None or actual_type_specifier.satisfies(type_specifier):
+                path = self._resolve_data_id_to_path(data_id)
+                return os.path.exists(path)
+        return False
 
     def describe_data(self, data_id: str, type_specifier: str = None) -> DataDescriptor:
         self._assert_valid_data_id(data_id)
-        actual_type_specifier, _, _ = self._get_accessor_id_parts(data_id)
-        if type_specifier and not TypeSpecifier.parse(type_specifier).is_compatible(actual_type_specifier):
-            raise DataStoreError(f'Data resource "{data_id}" is not compatible with type specifier "{type_specifier}". '
-                                 f'Cannot create DataDescriptor.')
-        data = self.open_data(data_id)
-        return new_data_descriptor(data_id, data)
-
-    def get_search_params_schema(self, type_specifier: str = None) -> JsonObjectSchema:
-        return JsonObjectSchema()
-
-    def search_data(self, type_specifier: str = None, **search_params) -> Iterator[DataDescriptor]:
-        if search_params:
-            raise DataStoreError(f'Unsupported search_params "{tuple(search_params.keys())}"')
-        for data_id in self.get_data_ids(type_specifier=type_specifier):
-            yield self.describe_data(data_id[0])
+        actual_type_specifier = self._get_type_specifier_for_data_id(data_id)
+        if actual_type_specifier is not None:
+            if type_specifier is None or actual_type_specifier.satisfies(type_specifier):
+                data = self.open_data(data_id)
+                return new_data_descriptor(data_id, data, require=True)
+            else:
+                raise DataStoreError(f'Type specifier "{type_specifier}" cannot be satisfied'
+                                     f' by type specifier "{actual_type_specifier}" of data resource "{data_id}"')
+        else:
+            raise DataStoreError(f'Data resource "{data_id}" not found')
 
     def get_data_opener_ids(self, data_id: str = None, type_specifier: Optional[str] = None) -> Tuple[str, ...]:
         if type_specifier:
@@ -221,13 +216,13 @@ class DirectoryDataStore(MutableDataStore):
                    **write_params) -> str:
         assert_instance(data, (xr.Dataset, MultiLevelDataset, gpd.GeoDataFrame))
         if not writer_id:
-            if isinstance(data, xr.Dataset):
-                predicate = get_data_accessor_predicate(type_specifier=TYPE_SPECIFIER_DATASET,
-                                                        format_id='zarr',
-                                                        storage_id=_STORAGE_ID)
-            elif isinstance(data, MultiLevelDataset):
+            if isinstance(data, MultiLevelDataset):
                 predicate = get_data_accessor_predicate(type_specifier=TYPE_SPECIFIER_MULTILEVEL_DATASET,
                                                         format_id='levels',
+                                                        storage_id=_STORAGE_ID)
+            elif isinstance(data, xr.Dataset):
+                predicate = get_data_accessor_predicate(type_specifier=TYPE_SPECIFIER_DATASET,
+                                                        format_id='zarr',
                                                         storage_id=_STORAGE_ID)
             elif isinstance(data, gpd.GeoDataFrame):
                 predicate = get_data_accessor_predicate(type_specifier=TYPE_SPECIFIER_GEODATAFRAME,
@@ -273,7 +268,7 @@ class DirectoryDataStore(MutableDataStore):
         return os.path.join(self._base_dir, data_id)
 
     def _assert_valid_type_specifier(self, type_specifier: Optional[TypeSpecifier]):
-        if type_specifier:
+        if type_specifier is not None:
             assert_in(type_specifier, self.get_type_specifiers(), 'type_specifier')
 
     def _get_opener_id(self, data_id: str):
@@ -307,6 +302,13 @@ class DirectoryDataStore(MutableDataStore):
             return []
         return extensions
 
+    def _get_type_specifier_for_data_id(self, data_id: str, require=True) -> Optional[TypeSpecifier]:
+        accessor_id_parts = self._get_accessor_id_parts(data_id, require=require)
+        if accessor_id_parts is None:
+            return None
+        actual_type_specifier, _, _ = accessor_id_parts
+        return TypeSpecifier.parse(actual_type_specifier)
+
     @classmethod
     def _get_accessor_id_parts(cls, data_id: str, require=True) -> Optional[Tuple[str, str, str]]:
         assert_given(data_id, 'data_id')
@@ -317,6 +319,12 @@ class DirectoryDataStore(MutableDataStore):
         return accessor_id_parts
 
     @classmethod
-    def _get_filename_ext(cls, data: Any):
+    def _get_filename_ext(cls, data: Any) -> Optional[str]:
         type_specifier = get_type_specifier(data)
-        return _TYPE_SPECIFIER_TO_ACCESSOR_TO_DEFAULT_FILENAME_EXT[type_specifier]
+        if type_specifier is None:
+            return None
+        if TYPE_SPECIFIER_MULTILEVEL_DATASET.is_satisfied_by(type_specifier):
+            return '.levels'
+        if TYPE_SPECIFIER_GEODATAFRAME.is_satisfied_by(type_specifier):
+            return '.geojson'
+        return '.zarr'
