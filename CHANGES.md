@@ -1,5 +1,10 @@
 ## Changes in 0.6.1 (in development)
 
+### Other
+* Added  and restricted `sspec <=0.6.2` version in envrionment.yml in order to use a version which can handle pruned 
+  xcube datasets. This restriction and dependency will be removed once changes in zarr PR 
+  https://github.com/zarr-developers/zarr-python/pull/650 are merged and released. (#360)
+
 ## Changes in 0.6.0
 
 ### Enhancements 
