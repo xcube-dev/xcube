@@ -337,16 +337,15 @@ In detail, the steps are:
    is not strictly prescribed, but it's sensible to choose an informative name like 
    `update_0_5_3`.
 
-1. Rerender the feedstock using conda-smithy. This updates common conda-forge 
+1. In case the build number is 0, a bot will render the feedstock during the pull request.
+   Otherwise, conduct the following steps: 
+   Rerender the feedstock using conda-smithy. This updates common conda-forge 
    feedstock files. It's probably easiest to install conda-smithy in a 
    fresh environment for this:
 
    `conda install -c conda-forge conda-smithy`
     
    `conda smithy rerender -c auto`
-
-   It's also possible to have the rendering done by a bot as part of the pull request,
-   but this doesn't seem to work very reliably in practice.
 
 1. Update `recipe/meta.yaml` for the new version. 
    Mainly this will involve the following steps:
@@ -361,8 +360,10 @@ In detail, the steps are:
    1. If the dependencies have changed, update the list of dependencies 
    in the `-run` subsection to match those in the environment.yml file.
 
-1. Commit the changes, push them to GitHub, and create a pull request at the 
-   feedstock repository on conda-forge .
+1. Commit the changes and push them to GitHub. 
+   A pull request at the feedstock repository on conda-forge will be automatically 
+   created by a bot if the build number is 0.
+   If it is higher, you will have to create the pull request yourself.
 
 1. Once conda-forge's automated checks have passed, merge the pull request.
 
