@@ -2,6 +2,9 @@
 [![codecov](https://codecov.io/gh/dcs4cop/xcube/branch/master/graph/badge.svg)](https://codecov.io/gh/dcs4cop/xcube)
 [![Documentation Status](https://readthedocs.org/projects/xcube/badge/?version=latest)](https://xcube.readthedocs.io/en/latest/?badge=latest)
       
-xcube is an [xarray](http://xarray.pydata.org/)-based EO data cube toolkit.
+xcube is a Python toolkit for managing EO/climate data cubes. 
+
+It is based on popular data science packages such as 
+[xarray](http://xarray.pydata.org/), [Zarr](https://zarr.readthedocs.io/), and [Dask](https://dask.org/).
 
 Find out more in the [xcube Documentation](https://xcube.readthedocs.io).
