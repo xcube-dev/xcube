@@ -1,16 +1,14 @@
 ## Changes in 0.6.1 (in development)
 
-All changes relate to maintenance of xcube's Python environment requirements in `envrionment.yml`:
+* Updated developer guide (#382)
+
+Changes relating to maintenance of xcube's Python environment requirements in `envrionment.yml`:
 
 * Removed explicit `blas` dependency (which required MKL as of `blas =*.*=mkl`) 
   for better interoperability with existing environments.  
 * Removed restrictions of `fsspec <=0.6.2` which was required due to 
   https://github.com/zarr-developers/zarr-python/pull/650. As this has been fixed, 
   `zarr=2.6.1` has been added. (#360)
-
-### Enhancements
-
-* Updated developer guide (#382)
 
 ## Changes in 0.6.0
 
