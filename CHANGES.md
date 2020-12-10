@@ -1,5 +1,9 @@
 ## Changes in 0.6.1 (under development)
 
+### Enhancements
+
+* Updated developer guide (#382)
+
 ## Changes in 0.6.0
 
 ### Enhancements 
