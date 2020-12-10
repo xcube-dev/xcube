@@ -329,7 +329,7 @@ class Netcdf4DatasetIO(DatasetIO):
         ext = _get_ext(path)
         ext_value = ext in {'.nc', '.hdf', '.h5'}
         type_value = 0.0
-        if path_type is "file":
+        if path_type == "file":
             type_value = 1.0
         elif path_type is None:
             type_value = 0.5
@@ -380,7 +380,7 @@ class ZarrDatasetIO(DatasetIO):
         type_value = 0.0
         if ext == ".zarr":
             ext_value = 1.0
-            if path_type is "dir":
+            if path_type == "dir":
                 type_value = 1.0
             elif path_type == "url" or path_type is None:
                 type_value = 0.5
@@ -397,7 +397,7 @@ class ZarrDatasetIO(DatasetIO):
                 else:
                     ext_value = 0.0
             else:
-                if path_type is "dir":
+                if path_type == "dir":
                     type_value = 1.0
                 elif path_type == "url":
                     type_value = 0.5
