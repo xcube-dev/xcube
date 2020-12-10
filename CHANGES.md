@@ -1,11 +1,12 @@
 ## Changes in 0.6.1 (in development)
 
-### Other
-* Removed restrictions of `fsspec <=0.6.2` as well as the restriction of a lower version of `s3fs`, because 
-  https://github.com/zarr-developers/zarr-python/pull/650 has been released with `zarr=2.6.1` (#360)
-* ~~Added  and restricted `fsspec <=0.6.2` version in environment.yml in order to use a version which can handle pruned 
-  xcube datasets. This restriction and dependency will be removed once changes in zarr PR 
-  https://github.com/zarr-developers/zarr-python/pull/650 are merged and released. (#360)~~
+All changes relate to maintenance of xcube's Python environment requirements in `envrionment.yml`:
+
+* Removed explicit `blas` dependency (which required MKL as of `blas =*.*=mkl`) 
+  for better interoperability with existing environments.  
+* Removed restrictions of `fsspec <=0.6.2` which was required due to 
+  https://github.com/zarr-developers/zarr-python/pull/650. As this has been fixed, 
+  `zarr=2.6.1` has been added. (#360)
 
 ## Changes in 0.6.0
 

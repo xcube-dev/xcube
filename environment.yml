@@ -7,7 +7,6 @@ dependencies:
   - python >=3.6
   # Required
   - affine >=2.2
-  - blas =*.*=mkl
   - click >=7.0
   - cmocean >=2.0
   - dask >=1.2
