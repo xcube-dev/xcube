@@ -1,9 +1,11 @@
 ## Changes in 0.6.1 (in development)
 
 ### Other
-* Added  and restricted `sspec <=0.6.2` version in envrionment.yml in order to use a version which can handle pruned 
+* Removed restrictions of `fsspec <=0.6.2` as well as the restriction of a lower version of `s3fs`, because 
+  https://github.com/zarr-developers/zarr-python/pull/650 has been released with `zarr=2.6.1` (#360)
+* ~~Added  and restricted `fsspec <=0.6.2` version in environment.yml in order to use a version which can handle pruned 
   xcube datasets. This restriction and dependency will be removed once changes in zarr PR 
-  https://github.com/zarr-developers/zarr-python/pull/650 are merged and released. (#360)
+  https://github.com/zarr-developers/zarr-python/pull/650 are merged and released. (#360)~~
 
 ## Changes in 0.6.0
 

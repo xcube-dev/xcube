@@ -12,7 +12,6 @@ dependencies:
   - cmocean >=2.0
   - dask >=1.2
   - fiona >=1.8
-  - fsspec <=0.6.2 # restriction needed until zarr release changes made in PR https://github.com/zarr-developers/zarr-python/pull/650
   - gdal >=3.0,<3.1
   - geopandas >=0.8
   - jdcal >=1.4.1
@@ -26,7 +25,7 @@ dependencies:
   - pyjwt >=1.7
   - pyyaml >=5.1
   - rasterio >=1.0
-  - s3fs <0.5 # restriction needed until zarr release changes made in PR https://github.com/zarr-developers/zarr-python/pull/650
+  - s3fs >=0.5.1
   - scipy >=1.2
   - setuptools >=41.0
   - shapely >=1.6
@@ -34,7 +33,7 @@ dependencies:
   - strict-rfc3339 >=0.7 # for python-jsonschema date-time format validation
   - tornado >=6.0
   - xarray >=0.16.1
-  - zarr >=2.4
+  - zarr >=2.6.1
   # Testing
   - flake8 >=3.7
   - moto >=1.3
