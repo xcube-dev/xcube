@@ -1,3 +1,13 @@
+## Changes in 0.6.2 (in development)
+
+* Added new context manager `xcube.util.observe_dask_progress()` that can be used
+  to observe tasks that known to be dominated by Dask computations: 
+   
+  ```python
+  with observe_dask_progress('Writing dataset', 100):
+      dataset.to_zarr(store)  
+  ```
+
 ## Changes in 0.6.1
 
 All changes relate to maintenance of xcube's Python environment requirements in `envrionment.yml`:

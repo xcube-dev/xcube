@@ -25,13 +25,13 @@ from xcube.cli._gen2.genconfig import OutputConfig
 from xcube.core.store import DataStorePool
 from xcube.core.store import get_data_store_instance
 from xcube.core.store import new_data_writer
-from xcube.util.progress import observe_progress
+from xcube.util.progress import observe_dask_progress
 
 
 def write_cube(cube: xr.Dataset,
                output_config: OutputConfig,
                store_pool: DataStorePool = None) -> str:
-    with observe_progress('Writing output', 1) as progress:
+    with observe_dask_progress('Writing output', 100):
         write_params = dict()
         if output_config.store_id:
             store_instance = get_data_store_instance(output_config.store_id,
@@ -48,5 +48,4 @@ def write_cube(cube: xr.Dataset,
                                     data_id=output_config.data_id,
                                     replace=output_config.replace or False,
                                     **write_params)
-        progress.worked(1)
         return data_id

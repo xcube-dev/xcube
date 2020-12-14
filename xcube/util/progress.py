@@ -19,10 +19,14 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+import threading
 import time
 import traceback
 from abc import ABC
 from typing import Sequence, Optional, Any, Tuple, Type, List
+
+import dask.callbacks
+import dask.diagnostics
 
 from xcube.util.assertions import assert_condition, assert_given
 
@@ -210,6 +214,8 @@ class new_progress_observers:
     """
     Takes zero or more progress observers and activates them in the enclosed context.
     Progress observers from an outer context will no longer be active.
+
+    :param observers: progress observers that will temporarily replace existing ones.
     """
 
     def __init__(self, *observers: ProgressObserver):
@@ -227,6 +233,8 @@ class add_progress_observers:
     """
     Takes zero or more progress observers and uses them only in the enclosed context.
     Any progress observers from an outer context remain active.
+
+    :param observers: progress observers to be added temporarily.
     """
 
     def __init__(self, *observers: ProgressObserver):
@@ -244,17 +252,33 @@ class add_progress_observers:
 class observe_progress:
     """
     Context manager for observing progress in the enclosed context.
+
+    :param label: A label.
+    :param total_work: The total work.
     """
 
     def __init__(self, label: str, total_work: float):
         assert_given(label, 'label')
         assert_condition(total_work > 0, 'total_work must be greater than zero')
-        self.label = label
-        self.total_work = total_work
-        self.state: Optional[ProgressState] = None
+        self._label = label
+        self._total_work = total_work
+        self._state: Optional[ProgressState] = None
+
+    @property
+    def label(self) -> str:
+        return self._label
+
+    @property
+    def total_work(self) -> float:
+        return self._total_work
+
+    @property
+    def state(self) -> ProgressState:
+        self._assert_used_correctly()
+        return self._state
 
     def __enter__(self) -> 'observe_progress':
-        self.state = _ProgressContext.instance().begin(self.label, self.total_work)
+        self._state = _ProgressContext.instance().begin(self._label, self._total_work)
         return self
 
     def __exit__(self, type, value, traceback):
@@ -262,8 +286,106 @@ class observe_progress:
 
     # noinspection PyMethodMayBeStatic
     def worked(self, work: float):
+        self._assert_used_correctly()
         _ProgressContext.instance().worked(work)
 
     # noinspection PyMethodMayBeStatic
     def will_work(self, work: float):
+        self._assert_used_correctly()
         _ProgressContext.instance().will_work(work)
+
+    def _assert_used_correctly(self):
+        assert_condition(self._state is not None, 'observe_progress() must be used with "with" statement')
+
+
+class observe_dask_progress(dask.callbacks.Callback):
+    """
+    Observe progress made by Dask tasks.
+
+    :param label: A label.
+    :param total_work: The total work.
+    :param interval: Time in seconds to between progress reports.
+    :param initial_interval: Time in seconds to wait before progress is reported.
+    """
+
+    def __init__(self,
+                 label: str,
+                 total_work: float,
+                 interval: float = 0.1,
+                 initial_interval: float = 0):
+        super().__init__()
+        assert_given(label, 'label')
+        assert_condition(total_work > 0, 'total_work must be greater than zero')
+        self._label = label
+        self._total_work = total_work
+        self._state: Optional[ProgressState] = None
+        self._initial_interval = initial_interval
+        self._interval = interval
+        self._last_worked = 0
+        self._running = False
+
+    def __enter__(self) -> 'observe_dask_progress':
+        super().__enter__()
+        self._state = _ProgressContext.instance().begin(self._label, self._total_work)
+        return self
+
+    def __exit__(self, type, value, traceback):
+        self._stop_thread()
+        _ProgressContext.instance().end(type, value, traceback)
+        super().__exit__(type, value, traceback)
+
+    # noinspection PyUnusedLocal
+    def _start(self, dsk):
+        """Dask callback implementation."""
+        self._dask_state = None
+        self._start_time = time.perf_counter()
+        # Start background thread
+        self._running = True
+        self._timer = threading.Thread(target=self._timer_func)
+        self._timer.daemon = True
+        self._timer.start()
+
+    # noinspection PyUnusedLocal
+    def _pretask(self, key, dsk, state):
+        """Dask callback implementation."""
+        self._dask_state = state
+
+    # noinspection PyUnusedLocal
+    def _posttask(self, key, result, dsk, state, worker_id):
+        """Dask callback implementation."""
+        self._update()
+
+    # noinspection PyUnusedLocal
+    def _finish(self, dsk, state, errored):
+        """Dask callback implementation."""
+        self._stop_thread()
+        elapsed = time.perf_counter() - self._start_time
+        if elapsed > self._initial_interval:
+            self._update()
+
+    def _timer_func(self):
+        """Background thread for updating"""
+        while self._running:
+            elapsed = time.perf_counter() - self._start_time
+            if elapsed > self._initial_interval:
+                self._update()
+            time.sleep(self._interval)
+
+    def _update(self):
+        dask_state = self._dask_state
+        if not dask_state:
+            return
+        num_done = len(dask_state['finished'])
+        num_tasks = num_done + sum(len(dask_state[k]) for k in ['ready', 'waiting', 'running'])
+        if num_done < num_tasks:
+            work_fraction = num_done / num_tasks if num_tasks > 0 else 0
+            worked = work_fraction * self._total_work
+            work = worked - self._last_worked
+            if work > 0:
+                _ProgressContext.instance().worked(work)
+                self._last_worked = worked
+
+    def _stop_thread(self):
+        if self._running:
+            self._running = False
+            self._timer.join()

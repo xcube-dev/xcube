@@ -1,10 +1,14 @@
 import unittest
 from typing import Sequence
 
+import dask
+import dask.array.random
+
 from xcube.util.progress import ProgressObserver
 from xcube.util.progress import ProgressState
 from xcube.util.progress import add_progress_observers
 from xcube.util.progress import new_progress_observers
+from xcube.util.progress import observe_dask_progress
 from xcube.util.progress import observe_progress
 
 
@@ -229,6 +233,20 @@ class ObserveProgressTest(unittest.TestCase):
         self.assertEqual('ValueError', exc_type)
         self.assertEqual('Failed to load', exc_value)
         self.assertIsInstance(exc_traceback, list)
+
+    def test_dask_progress(self):
+        observer = MyProgressObserver(record_errors=True)
+        observer.activate()
+
+        res = dask.array.random.normal(size=(100, 200), chunks=(25, 50))
+        with observe_dask_progress('computing', 100):
+            res.compute()
+
+        self.assertEqual(4, len(res.chunks[0]))
+        self.assertTrue(len(observer.calls) >= 3)
+        self.assertEqual(('begin', [('computing', 0.0, False, None)]), observer.calls[0])
+        self.assertEqual(('update', [('computing', 5 / 16, False, None)]), observer.calls[5])
+        self.assertEqual(('end', [('computing', 15 / 16, True, None)]), observer.calls[-1])
 
 
 class ProgressStateTest(unittest.TestCase):
