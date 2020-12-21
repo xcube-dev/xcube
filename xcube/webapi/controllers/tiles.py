@@ -28,6 +28,7 @@ def get_dataset_tile(ctx: ServiceContext,
 
     tile_comp_mode = params.get_query_argument_int('mode', ctx.tile_comp_mode)
     trace_perf = params.get_query_argument_int('debug', ctx.trace_perf) != 0
+    format = params.get_query_argument('format', 'png')
 
     ml_dataset = ctx.get_ml_dataset(ds_id)
     if var_name == 'rgb':
@@ -53,15 +54,21 @@ def get_dataset_tile(ctx: ServiceContext,
         if var is None:
             raise ServiceBadRequestError(f'No variable in dataset {ds_id!r} specified for RGB')
     else:
-        cmap_name = params.get_query_argument('cbar', default=None)
-        cmap_vmin = params.get_query_argument_float('vmin', default=None)
-        cmap_vmax = params.get_query_argument_float('vmax', default=None)
-        if cmap_name is None or cmap_vmin is None or cmap_vmax is None:
-            default_cmap_name, (default_cmap_vmin, default_cmap_vmax) = ctx.get_color_mapping(ds_id, var_name)
-            cmap_name = cmap_name or default_cmap_name
-            cmap_vmin = cmap_vmin or default_cmap_vmin
-            cmap_vmax = cmap_vmax or default_cmap_vmax
-        cmap_range = cmap_vmin, cmap_vmax
+        if format == 'png':
+            cmap_name = params.get_query_argument('cbar', default=None)
+            cmap_vmin = params.get_query_argument_float('vmin', default=None)
+            cmap_vmax = params.get_query_argument_float('vmax', default=None)
+            if cmap_name is None or cmap_vmin is None or cmap_vmax is None:
+                default_cmap_name, (default_cmap_vmin, default_cmap_vmax) = ctx.get_color_mapping(ds_id, var_name)
+                cmap_name = cmap_name or default_cmap_name
+                cmap_vmin = cmap_vmin or default_cmap_vmin
+                cmap_vmax = cmap_vmax or default_cmap_vmax
+            cmap_range = cmap_vmin, cmap_vmax
+        elif format == 'raw':
+            cmap_name = None
+            cmap_range = None
+        else:
+            raise ServiceBadRequestError(f'Illegal format {format!r}')
         if var_name not in ml_dataset.base_dataset:
             raise ServiceBadRequestError(f'Variable {var_name!r} not found in dataset {ds_id!r}')
         var = ml_dataset.base_dataset[var_name]
@@ -142,7 +149,7 @@ def get_dataset_tile_grid(ctx: ServiceContext,
                           tile_client: str,
                           base_url: str) -> Dict[str, Any]:
     tile_grid = ctx.get_tile_grid(ds_id)
-    if tile_client == 'ol4' or tile_client == 'cesium':
+    if tile_client in ['ol4', 'cesium', 'leaflet']:
         return get_tile_source_options(tile_grid,
                                        get_dataset_tile_url(ctx, ds_id, var_name, base_url),
                                        client=tile_client)
@@ -179,9 +186,12 @@ def get_tile_source_options(tile_grid: TileGrid, url: str, client: str = 'ol4'):
     if client == 'ol4':
         # OpenLayers 4.x
         return _tile_grid_to_ol4x_xyz_source_options(tile_grid, url)
-    else:
+    elif client == 'cesium':
         # Cesium 1.x
         return _tile_grid_to_cesium1x_source_options(tile_grid, url)
+    else:  # client == 'leaflet':
+        # Leaflet 1.x
+        return _tile_grid_to_leaflet1x_source_options(tile_grid, url)
 
 
 def _tile_grid_to_ol4x_xyz_source_options(tile_grid: TileGrid, url: str):
@@ -245,3 +255,25 @@ def _tile_grid_to_cesium1x_source_options(tile_grid: TileGrid, url: str):
                 tilingScheme=dict(rectangle=rectangle,
                                   numberOfLevelZeroTilesX=tile_grid.num_level_zero_tiles_x,
                                   numberOfLevelZeroTilesY=tile_grid.num_level_zero_tiles_y))
+
+
+def _tile_grid_to_leaflet1x_source_options(tile_grid: TileGrid, url: str):
+    """
+    Convert TileGrid into options to be used with L.tileLayer(options) of Leaflet 1.7+.
+
+    See
+
+    * https://cesiumjs.org/Cesium/Build/Documentation/UrlTemplateImageryProvider.html
+
+    :param tile_grid: tile grid
+    :param url: source url
+    :return:
+    """
+    west, south, east, north = tile_grid.geo_extent
+    tile_width = tile_grid.tile_size[0]
+    tile_height = tile_grid.tile_size[1]
+    return dict(url=url,
+                bounds=[west, south, east, north],
+                minNativeZoom=0,
+                maxNativeZoom=tile_grid.num_levels - 1,
+                tileSize=tile_width if tile_width == tile_height else [tile_width, tile_height])

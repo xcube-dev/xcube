@@ -102,8 +102,16 @@ def get_ml_dataset_tile(ml_dataset: MultiLevelDataset,
     return tile
 
 
-def new_rgb_image(ml_dataset, image_id, var_names, norm_ranges, z, labels,
-                  labels_are_indices, tile_cache, trace_perf, exception_type):
+def new_rgb_image(ml_dataset,
+                  image_id,
+                  var_names,
+                  norm_ranges,
+                  z,
+                  labels,
+                  labels_are_indices,
+                  tile_cache,
+                  trace_perf,
+                  exception_type):
     tile_grid = ml_dataset.tile_grid
     images = []
     for i in range(3):
@@ -133,8 +141,17 @@ def new_rgb_image(ml_dataset, image_id, var_names, norm_ranges, z, labels,
                            trace_perf=trace_perf)
 
 
-def new_color_mapped_image(ml_dataset, image_id, var_name, cmap_name, cmap_range, z, labels, labels_are_indices,
-                           tile_cache, trace_perf, exception_type):
+def new_color_mapped_image(ml_dataset,
+                           image_id,
+                           var_name,
+                           cmap_name,
+                           cmap_range,
+                           z,
+                           labels,
+                           labels_are_indices,
+                           tile_cache,
+                           trace_perf,
+                           exception_type):
     array, no_data_value, valid_range, var = _get_var_2d_array_and_mask_info(ml_dataset, var_name, z, labels,
                                                                              labels_are_indices,
                                                                              exception_type)
@@ -152,6 +169,8 @@ def new_color_mapped_image(ml_dataset, image_id, var_name, cmap_name, cmap_range
                                 valid_range=valid_range,
                                 norm_range=cmap_range,
                                 trace_perf=trace_perf)
+    if cmap_name is None and cmap_range is None:
+        return image
     return ColorMappedRgbaImage(image,
                                 image_id=f'cmrgbai-{image_id}',
                                 cmap_name=cmap_name,
