@@ -22,12 +22,12 @@
 import math
 from typing import Union, Callable, Optional, Sequence, Tuple
 
-import dask.array
+import dask.array as da
 import numpy as np
 import xarray as xr
 from dask_image import ndinterp
 
-NDImage = Union[np.ndarray, dask.array.Array]
+NDImage = Union[np.ndarray, da.Array]
 Aggregator = Callable[[NDImage], NDImage]
 
 
@@ -37,16 +37,18 @@ def resample_in_space(cube: xr.Dataset) -> xr.Dataset:
 
 def resample_array(im: NDImage,
                    scale: float = 1,
-                   offset: Sequence[int] = None,
+                   offset: Sequence[float] = None,
                    shape: Sequence[int] = None,
+                   chunks: Sequence[int] = None,
                    nearest: bool = False,
-                   aggregator: Optional[Aggregator] = np.nanmean) -> dask.array.Array:
+                   aggregator: Optional[Aggregator] = np.nanmean) -> da.Array:
     im = _normalize_image(im)
     offset = _normalize_offset(offset)
     if shape is None:
         shape = _resize_shape(im.shape, scale, divisor=1)
     else:
         shape = _normalize_shape(shape, im)
+    chunks = _normalize_chunks(chunks, shape)
     inv_scale = 1 / scale
     divisor = math.ceil(inv_scale)
     if divisor >= 2 and aggregator is not None:
@@ -54,22 +56,26 @@ def resample_array(im: NDImage,
         axes = {dims - 2: divisor, dims - 1: divisor}
         elongation = divisor / inv_scale
         larger_shape = _resize_shape(shape, scale=divisor, divisor=divisor)
-        im = _transform_array(im, elongation, offset, shape=larger_shape, nearest=nearest)
+        divisible_chunks = _make_divisible_tiles(larger_shape, divisor)
+        im = _transform_array(im, elongation, offset, larger_shape, divisible_chunks, nearest)
         print('Downsampling:', scale, inv_scale, divisor, elongation, 1 / elongation, larger_shape, im.shape, im.chunks)
-        im = dask.array.coarsen(aggregator, im, axes)
+        im = da.coarsen(aggregator, im, axes)
         if shape != im.shape:
             im = im[..., 0:shape[-2], 0:shape[-1]]
-        return im
+        if chunks is not None and im.chunks != chunks:
+            im = im.rechunk(chunks)
     else:
         print('Upsampling:', scale, offset, shape, nearest)
-        return _transform_array(im, scale, offset, shape, nearest)
+        im = _transform_array(im, scale, offset, shape, chunks, nearest)
+    return im
 
 
-def _transform_array(im: dask.array.Array,
+def _transform_array(im: da.Array,
                      scale: float,
                      offset: np.ndarray,
                      shape: Tuple[int, ...],
-                     nearest: bool) -> dask.array.Array:
+                     chunks: Optional[Tuple[int, ...]],
+                     nearest: bool) -> da.Array:
     if _is_no_op(im, scale, offset, shape):
         return im
     inv_scale = 1 / scale
@@ -81,15 +87,15 @@ def _transform_array(im: dask.array.Array,
         offset=np.array([offset[0], offset[1]]) if offset is not None else np.array([0.0, 0.0]),
         order=0 if nearest else 1,
         output_shape=shape,
-        output_chunks=shape,
+        output_chunks=chunks,
         mode='constant',
     )
-    mask = dask.array.isnan(im)
-    if dask.array.any(mask):
-        filled_im = dask.array.where(mask, 0.0, im)
+    mask = da.isnan(im)
+    if da.any(mask):
+        filled_im = da.where(mask, 0.0, im)
         scaled_im = ndinterp.affine_transform(filled_im, matrix, **at_kwargs, cval=0.0)
         scaled_norm = ndinterp.affine_transform(1.0 - mask, matrix, **at_kwargs, cval=0.0)
-        return dask.array.where(dask.array.isclose(scaled_norm, 0.0), np.nan, scaled_im / scaled_norm)
+        return da.where(da.isclose(scaled_norm, 0.0), np.nan, scaled_im / scaled_norm)
     else:
         return ndinterp.affine_transform(im, matrix, **at_kwargs, cval=np.nan)
 
@@ -108,10 +114,17 @@ def _resize_shape(shape: Sequence[int],
     return tuple(shape[0:-2]) + (h, w)
 
 
-def _normalize_image(im: NDImage) -> dask.array.Array:
-    if isinstance(im, dask.array.Array):
+def _make_divisible_tiles(larger_shape: Tuple[int, ...], divisor: int) -> Tuple[int, ...]:
+    tile_size = divisor * ((2048 + divisor - 1) // divisor)
+    w = min(larger_shape[-1], tile_size)
+    h = min(larger_shape[-2], tile_size)
+    return (len(larger_shape) - 2) * (1,) + (h, w)
+
+
+def _normalize_image(im: NDImage) -> da.Array:
+    if isinstance(im, da.Array):
         return im
-    return dask.array.from_array(im)
+    return da.from_array(im)
 
 
 def _normalize_offset(offset: Optional[Sequence[float]]) -> np.ndarray:
@@ -128,6 +141,15 @@ def _normalize_shape(shape: Optional[Sequence[int]], im: NDImage) -> Tuple[int, 
     if len(shape) < 2 or len(shape) > len(im.shape):
         raise ValueError('illegal image shape')
     return im.shape[0:-len(shape)] + tuple(shape)
+
+
+def _normalize_chunks(chunks: Optional[Sequence[int]],
+                      shape: Tuple[int, ...]) -> Optional[Tuple[int, ...]]:
+    if chunks is None:
+        return None
+    if len(chunks) < 2 or len(chunks) > len(shape):
+        raise ValueError('illegal image chunks')
+    return (len(shape) - len(chunks)) * (1,) + tuple(chunks)
 
 
 def _is_no_op(im: NDImage,
