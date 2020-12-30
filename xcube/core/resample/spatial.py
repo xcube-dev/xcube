@@ -94,29 +94,7 @@ def _transform_array(im: dask.array.Array,
         return ndinterp.affine_transform(im, matrix, **at_kwargs, cval=np.nan)
 
 
-def _normalize_image(im: NDImage) -> dask.array.Array:
-    if isinstance(im, dask.array.Array):
-        return im
-    return dask.array.from_array(im)
-
-
-def _normalize_offset(offset: Optional[Sequence[float]]) -> np.ndarray[int]:
-    if offset is None:
-        offset = [0.0, 0.0]
-    elif len(offset) != 2:
-        raise ValueError('illegal image offset')
-    return np.array(offset, dtype=np.float64)
-
-
-def _normalize_shape(shape: Optional[Sequence[int]], im: NDImage) -> Tuple[int, ...]:
-    if shape is None:
-        return im.shape
-    if len(shape) <= 2 or len(shape) > len(im.shape):
-        raise ValueError('illegal image shape')
-    return im.shape[0:-len(shape)] + tuple(shape)
-
-
-def _resize_shape(shape: Tuple[int, ...],
+def _resize_shape(shape: Sequence[int],
                   scale: float,
                   divisor: float = 1) -> Tuple[int, ...]:
     wf = shape[-1] * scale
@@ -127,7 +105,29 @@ def _resize_shape(shape: Tuple[int, ...],
     else:
         w = math.ceil(wf)
         h = math.ceil(hf)
-    return shape[0:-2] + (h, w)
+    return tuple(shape[0:-2]) + (h, w)
+
+
+def _normalize_image(im: NDImage) -> dask.array.Array:
+    if isinstance(im, dask.array.Array):
+        return im
+    return dask.array.from_array(im)
+
+
+def _normalize_offset(offset: Optional[Sequence[float]]) -> np.ndarray:
+    if offset is None:
+        offset = [0.0, 0.0]
+    elif len(offset) != 2:
+        raise ValueError('illegal image offset')
+    return np.array(offset, dtype=np.float64)
+
+
+def _normalize_shape(shape: Optional[Sequence[int]], im: NDImage) -> Tuple[int, ...]:
+    if shape is None:
+        return im.shape
+    if len(shape) < 2 or len(shape) > len(im.shape):
+        raise ValueError('illegal image shape')
+    return im.shape[0:-len(shape)] + tuple(shape)
 
 
 def _is_no_op(im: NDImage,
