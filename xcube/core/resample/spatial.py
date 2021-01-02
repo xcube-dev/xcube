@@ -35,38 +35,44 @@ def resample_in_space(cube: xr.Dataset) -> xr.Dataset:
     return cube
 
 
-def resample_array(im: NDImage,
-                   scale: float = 1,
-                   offset: Sequence[float] = None,
-                   shape: Sequence[int] = None,
-                   chunks: Sequence[int] = None,
-                   nearest: bool = False,
-                   aggregator: Optional[Aggregator] = np.nanmean) -> da.Array:
+def resample_ndimage(im: NDImage,
+                     scale: float = 1,
+                     offset: Sequence[float] = None,
+                     shape: Sequence[int] = None,
+                     chunks: Sequence[int] = None,
+                     spline_order: int = 1,
+                     aggregator: Optional[Aggregator] = np.nanmean,
+                     recover_nan: bool = False) -> da.Array:
     im = _normalize_image(im)
     offset = _normalize_offset(offset)
     if shape is None:
-        shape = _resize_shape(im.shape, scale, divisor=1)
+        shape = _resize_shape(im.shape, scale, 1)
     else:
         shape = _normalize_shape(shape, im)
     chunks = _normalize_chunks(chunks, shape)
     inv_scale = 1 / scale
     divisor = math.ceil(inv_scale)
     if divisor >= 2 and aggregator is not None:
+        # Downsampling
+        # ------------
         dims = len(im.shape)
         axes = {dims - 2: divisor, dims - 1: divisor}
         elongation = divisor / inv_scale
-        larger_shape = _resize_shape(shape, scale=divisor, divisor=divisor)
+        larger_shape = _resize_shape(shape, divisor, divisor)
         divisible_chunks = _make_divisible_tiles(larger_shape, divisor)
-        im = _transform_array(im, elongation, offset, larger_shape, divisible_chunks, nearest)
-        print('Downsampling:', scale, inv_scale, divisor, elongation, 1 / elongation, larger_shape, im.shape, im.chunks)
+        im = _transform_array(im, elongation, offset, larger_shape, divisible_chunks, spline_order, recover_nan)
+        # print('Downsampling:', scale, inv_scale, divisor, elongation, \
+        #                        1 / elongation, larger_shape, im.shape, im.chunks)
         im = da.coarsen(aggregator, im, axes)
         if shape != im.shape:
             im = im[..., 0:shape[-2], 0:shape[-1]]
-        if chunks is not None and im.chunks != chunks:
+        if chunks is not None:
             im = im.rechunk(chunks)
     else:
-        print('Upsampling:', scale, offset, shape, nearest)
-        im = _transform_array(im, scale, offset, shape, chunks, nearest)
+        # Upsampling
+        # ----------
+        # print('Upsampling:', scale, offset, shape, nearest)
+        im = _transform_array(im, scale, offset, shape, chunks, spline_order, recover_nan)
     return im
 
 
@@ -75,34 +81,44 @@ def _transform_array(im: da.Array,
                      offset: np.ndarray,
                      shape: Tuple[int, ...],
                      chunks: Optional[Tuple[int, ...]],
-                     nearest: bool) -> da.Array:
+                     spline_order: int,
+                     recover_nan: bool) -> da.Array:
     if _is_no_op(im, scale, offset, shape):
         return im
-    inv_scale = 1 / scale
     matrix = [
-        [inv_scale, 0.0],
-        [0.0, inv_scale],
+        [1 / scale, 0.0],
+        [0.0, 1 / scale],
     ]
     at_kwargs = dict(
-        offset=np.array([offset[0], offset[1]]) if offset is not None else np.array([0.0, 0.0]),
-        order=0 if nearest else 1,
+        offset=offset,
+        order=spline_order,
         output_shape=shape,
         output_chunks=chunks,
         mode='constant',
     )
-    mask = da.isnan(im)
-    if da.any(mask):
-        filled_im = da.where(mask, 0.0, im)
-        scaled_im = ndinterp.affine_transform(filled_im, matrix, **at_kwargs, cval=0.0)
-        scaled_norm = ndinterp.affine_transform(1.0 - mask, matrix, **at_kwargs, cval=0.0)
-        return da.where(da.isclose(scaled_norm, 0.0), np.nan, scaled_im / scaled_norm)
-    else:
-        return ndinterp.affine_transform(im, matrix, **at_kwargs, cval=np.nan)
+    if recover_nan and spline_order > 0:
+        # We can "recover" values that are neighbours to NaN values
+        # that would otherwise become NaN too.
+        mask = da.isnan(im)
+        # First check if there are NaN values ar all
+        if da.any(mask):
+            # Yes, then
+            # 1. replace NaN by zero
+            filled_im = da.where(mask, 0.0, im)
+            # 2. transform the zeo-filled image
+            scaled_im = ndinterp.affine_transform(filled_im, matrix, **at_kwargs, cval=0.0)
+            # 3. transform the inverted mask
+            scaled_norm = ndinterp.affine_transform(1.0 - mask, matrix, **at_kwargs, cval=0.0)
+            # 4. put back NaN where there was zero, otherwise decode using scaled mask
+            return da.where(da.isclose(scaled_norm, 0.0), np.nan, scaled_im / scaled_norm)
+
+    # No dealing with NaN required
+    return ndinterp.affine_transform(im, matrix, **at_kwargs, cval=np.nan)
 
 
 def _resize_shape(shape: Sequence[int],
                   scale: float,
-                  divisor: float = 1) -> Tuple[int, ...]:
+                  divisor: int = 1) -> Tuple[int, ...]:
     wf = shape[-1] * scale
     hf = shape[-2] * scale
     if divisor > 1:
