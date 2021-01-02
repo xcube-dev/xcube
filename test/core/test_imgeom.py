@@ -4,6 +4,7 @@ import numpy as np
 import pyproj as pp
 
 import xcube.core.new
+from xcube.core.geocoding import CRS_WGS84
 from xcube.core.rectify import ImageGeom
 from xcube.core.sentinel3 import is_sentinel3_product
 from xcube.core.sentinel3 import open_sentinel3_product
@@ -69,7 +70,7 @@ class ImageGeomTest(SourceDatasetMixin, unittest.TestCase):
 
     def test_crs(self):
         image_geom = ImageGeom((2000, 1000))
-        self.assertEqual(pp.crs.CRS(4326), image_geom.crs)
+        self.assertEqual(CRS_WGS84, image_geom.crs)
         self.assertEqual(True, image_geom.is_geo_crs)
 
     def test_size(self):
