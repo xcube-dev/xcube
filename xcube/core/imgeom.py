@@ -20,13 +20,18 @@
 # SOFTWARE.
 
 import math
+import warnings
 from typing import Tuple, Union, Mapping
 
 import numpy as np
+import pyproj as pp
 import xarray as xr
 
-from xcube.core.geocoding import GeoCoding, denormalize_lon
-from xcube.util.dask import get_chunk_sizes, get_block_iterators
+from xcube.core.geocoding import CRS_WGS84
+from xcube.core.geocoding import GeoCoding
+from xcube.core.geocoding import denormalize_lon
+from xcube.util.dask import get_block_iterators
+from xcube.util.dask import get_chunk_sizes
 
 _LON_ATTRS = dict(long_name='longitude', standard_name='longitude', units='degrees_east')
 _LAT_ATTRS = dict(long_name='latitude', standard_name='latitude', units='degrees_north')
@@ -40,7 +45,8 @@ class ImageGeom:
                  x_min: float = 0.0,
                  y_min: float = 0.0,
                  xy_res: float = 1.0,
-                 is_geo_crs: bool = False):
+                 crs: pp.crs.CRS = None,
+                 is_geo_crs: bool = None):
 
         if isinstance(size, int):
             w, h = size, size
@@ -63,6 +69,10 @@ class ImageGeom:
         if xy_res <= 0:
             raise ValueError('invalid xy_res')
 
+        if is_geo_crs is not None:
+            warnings.warn('keyword argument "is_geo_crs" is deprecated, use "crs" instead',
+                          DeprecationWarning, stacklevel=2)
+
         if is_geo_crs:
             if w * xy_res > 360.0:
                 raise ValueError('invalid size, xy_res combination')
@@ -71,12 +81,15 @@ class ImageGeom:
             if y_min < -90.0 or y_min > 90.0 or y_min + h * xy_res > 90.0:
                 raise ValueError('invalid y_min')
 
+        if is_geo_crs is not None and crs is not None and crs.is_geographic != is_geo_crs:
+            raise ValueError('crs and is_geo_crs are inconsistent')
+
         self._size = w, h
         self._tile_size = min(w, tw) or w, min(h, th) or h
         self._x_min = x_min
         self._y_min = y_min
         self._xy_res = xy_res
-        self._is_geo_crs = is_geo_crs
+        self._crs = crs if crs is not None else CRS_WGS84
 
     def derive(self,
                size: Tuple[int, int] = None,
@@ -84,12 +97,14 @@ class ImageGeom:
                x_min: float = None,
                y_min: float = None,
                xy_res: float = None,
+               crs: pp.crs.CRS = None,
                is_geo_crs: bool = None):
         return ImageGeom(self.size if size is None else size,
                          tile_size=self.tile_size if tile_size is None else tile_size,
                          x_min=self.x_min if x_min is None else x_min,
                          y_min=self.y_min if y_min is None else y_min,
                          xy_res=self.xy_res if xy_res is None else xy_res,
+                         crs=self.crs if crs is None else crs,
                          is_geo_crs=self.is_geo_crs if is_geo_crs is None else is_geo_crs)
 
     @property
@@ -147,8 +162,12 @@ class ImageGeom:
         return self._xy_res
 
     @property
+    def crs(self) -> pp.crs.CRS:
+        return self._crs
+
+    @property
     def is_geo_crs(self) -> bool:
-        return self._is_geo_crs
+        return self._crs.is_geographic
 
     @property
     def xy_bbox(self) -> Tuple[float, float, float, float]:
@@ -238,22 +257,26 @@ class ImageGeom:
         :param ij_denom: if given, and greater one, width and height will be multiples of ij_denom
         :return: A new image geometry.
         """
-        return _compute_output_geom(dataset,
-                                    geo_coding=geo_coding,
-                                    xy_names=xy_names,
-                                    xy_oversampling=xy_oversampling,
-                                    xy_eps=xy_eps,
-                                    ij_denom=ij_denom)
+        return _compute_image_geom(dataset,
+                                   geo_coding=geo_coding,
+                                   xy_names=xy_names,
+                                   xy_oversampling=xy_oversampling,
+                                   xy_eps=xy_eps,
+                                   ij_denom=ij_denom)
 
 
-def _compute_output_geom(dataset: xr.Dataset,
-                         geo_coding: GeoCoding = None,
-                         xy_names: Tuple[str, str] = None,
-                         xy_oversampling: float = 1.0,
-                         xy_eps: float = 1e-10,
-                         ij_denom: Union[int, Tuple[int, int]] = None) -> ImageGeom:
-    i_denom, j_denom = ((ij_denom, ij_denom) if isinstance(ij_denom, int) else ij_denom) or (1, 1)
-    geo_coding = geo_coding if geo_coding is not None else GeoCoding.from_dataset(dataset, xy_names=xy_names)
+def _compute_image_geom(dataset: xr.Dataset,
+                        geo_coding: GeoCoding = None,
+                        xy_names: Tuple[str, str] = None,
+                        xy_oversampling: float = 1.0,
+                        xy_eps: float = 1e-10,
+                        ij_denom: Union[int, Tuple[int, int]] = None) -> ImageGeom:
+    i_denom, j_denom = ((ij_denom, ij_denom) if isinstance(ij_denom, int)
+                        else ij_denom) or (1, 1)
+    geo_coding = geo_coding if geo_coding is not None \
+        else GeoCoding.from_dataset(dataset, xy_names=xy_names)
+    # TODO: make use of the new property geo_coding.is_rectified == True. In this case
+    #       computations are much simpler.
     src_x, src_y = geo_coding.xy
     dim_y, dim_x = src_x.dims
     src_x_x_diff = src_x.diff(dim=dim_x)
@@ -286,4 +309,4 @@ def _compute_output_geom(dataset: xr.Dataset,
                      x_min=src_x_min,
                      y_min=src_y_min,
                      xy_res=src_xy_res,
-                     is_geo_crs=geo_coding.is_geo_crs)
+                     crs=geo_coding.crs)

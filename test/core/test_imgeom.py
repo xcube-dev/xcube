@@ -1,6 +1,7 @@
 import unittest
 
 import numpy as np
+import pyproj as pp
 
 import xcube.core.new
 from xcube.core.rectify import ImageGeom
@@ -13,30 +14,63 @@ olci_path = 'C :\\Users\\Norman\\Downloads\\S3B_OL_1_EFR____20190728T103451_2019
 
 class ImageGeomTest(SourceDatasetMixin, unittest.TestCase):
     def test_invalids(self):
-        with self.assertRaises(ValueError):
-            ImageGeom((3600, 0))
-        with self.assertRaises(ValueError):
-            ImageGeom((-3600, 1800))
-        with self.assertRaises(ValueError):
-            ImageGeom(1000, tile_size=0)
-        with self.assertRaises(ValueError):
-            ImageGeom(1000, tile_size=(100, -100))
-        with self.assertRaises(ValueError):
-            ImageGeom(100, xy_res=0.0)
-        with self.assertRaises(ValueError):
-            ImageGeom(100, xy_res=-0.1)
-        with self.assertRaises(ValueError):
+        crs = pp.crs.CRS(4326)
+
+        with self.assertRaises(ValueError) as cm:
+            ImageGeom((3600, 0), crs=crs)
+        self.assertEqual('invalid size', f'{cm.exception}')
+
+        with self.assertRaises(ValueError) as cm:
+            ImageGeom((-3600, 1800), crs=crs)
+        self.assertEqual('invalid size', f'{cm.exception}')
+
+        with self.assertRaises(ValueError) as cm:
+            ImageGeom(1000, tile_size=0, crs=crs)
+        self.assertEqual('invalid tile_size', f'{cm.exception}')
+
+        with self.assertRaises(ValueError) as cm:
+            ImageGeom(1000, tile_size=(100, -100), crs=crs)
+        self.assertEqual('invalid tile_size', f'{cm.exception}')
+
+        with self.assertRaises(ValueError) as cm:
+            ImageGeom(100, xy_res=0.0, crs=crs)
+        print(f'{cm.exception}')
+        self.assertEqual('invalid xy_res', f'{cm.exception}')
+
+        with self.assertRaises(ValueError) as cm:
+            ImageGeom(100, xy_res=-0.1, crs=crs)
+        print(f'{cm.exception}')
+        self.assertEqual('invalid xy_res', f'{cm.exception}')
+
+        with self.assertRaises(ValueError) as cm:
             ImageGeom(100, x_min=-190.0, xy_res=0.1, is_geo_crs=True)
-        with self.assertRaises(ValueError):
+        print(f'{cm.exception}')
+        self.assertEqual('invalid x_min', f'{cm.exception}')
+
+        with self.assertRaises(ValueError) as cm:
             ImageGeom(100, x_min=182.0, xy_res=0.1, is_geo_crs=True)
-        with self.assertRaises(ValueError):
+        self.assertEqual('invalid x_min', f'{cm.exception}')
+
+        with self.assertRaises(ValueError) as cm:
             ImageGeom(100, x_min=20.0, xy_res=2.0, is_geo_crs=True)
-        with self.assertRaises(ValueError):
+        self.assertEqual('invalid y_min', f'{cm.exception}')
+
+        with self.assertRaises(ValueError) as cm:
             ImageGeom(100, y_min=-100.0, xy_res=0.1, is_geo_crs=True)
-        with self.assertRaises(ValueError):
+        self.assertEqual('invalid y_min', f'{cm.exception}')
+
+        with self.assertRaises(ValueError) as cm:
             ImageGeom(100, y_min=100.0, xy_res=0.1, is_geo_crs=True)
-        with self.assertRaises(ValueError):
+        self.assertEqual('invalid y_min', f'{cm.exception}')
+
+        with self.assertRaises(ValueError) as cm:
             ImageGeom(100, y_min=50.0, xy_res=0.5, is_geo_crs=True)
+        self.assertEqual('invalid y_min', f'{cm.exception}')
+
+    def test_crs(self):
+        image_geom = ImageGeom((2000, 1000))
+        self.assertEqual(pp.crs.CRS(4326), image_geom.crs)
+        self.assertEqual(True, image_geom.is_geo_crs)
 
     def test_size(self):
         image_geom = ImageGeom((2000, 1000))
@@ -91,7 +125,7 @@ class ImageGeomTest(SourceDatasetMixin, unittest.TestCase):
         self.assertTrue(output_geom.is_crossing_antimeridian)
 
     def test_derive(self):
-        image_geom = ImageGeom((2048, 1024))
+        image_geom = ImageGeom((2048, 1024), crs=pp.crs.CRS(32632))
         self.assertEqual((2048, 1024), image_geom.tile_size)
         new_image_geom = image_geom.derive(tile_size=512)
         self.assertIsNot(new_image_geom, image_geom)
@@ -280,7 +314,7 @@ class ImageGeomTest(SourceDatasetMixin, unittest.TestCase):
 
     def test_from_default_new_cube(self):
         self._assert_image_geom(
-            ImageGeom((508, 253), None, -179.5, -89.5, 2**-.5),
+            ImageGeom((508, 253), None, -179.5, -89.5, 2 ** -.5),
             ImageGeom.from_dataset(xcube.core.new.new_cube()))
 
     def _assert_image_geom(self,

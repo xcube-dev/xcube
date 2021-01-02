@@ -19,16 +19,20 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+import warnings
 from typing import Sequence, Tuple, Optional, Union
 
 import numba as nb
 import numpy as np
+import pyproj as pp
 import xarray as xr
 
 LON_COORD_VAR_NAMES = ('lon', 'long', 'longitude')
 LAT_COORD_VAR_NAMES = ('lat', 'latitude')
 X_COORD_VAR_NAMES = ('x', 'xc') + LON_COORD_VAR_NAMES
 Y_COORD_VAR_NAMES = ('y', 'yc') + LAT_COORD_VAR_NAMES
+
+CRS_WGS84 = pp.crs.CRS(4326)
 
 
 class GeoCoding:
@@ -40,22 +44,40 @@ class GeoCoding:
                  y: xr.DataArray,
                  x_name: str = None,
                  y_name: str = None,
+                 is_rectified: bool = None,
+                 crs: pp.crs.CRS = None,
                  is_geo_crs: bool = None,
-                 is_lon_normalized: bool = False):
-        is_geo_crs = True if is_geo_crs is None and is_lon_normalized else bool(is_geo_crs)
-        if is_lon_normalized and not is_geo_crs:
-            raise ValueError('is_lon_normalized cannot be True while is_geo_crs is False')
+                 is_lon_normalized: bool = None):
+
+        if is_geo_crs is not None:
+            warnings.warn('keyword argument "is_geo_crs" is deprecated, use "crs" instead',
+                          DeprecationWarning, stacklevel=2)
+            if crs is not None and crs.is_geographic != is_geo_crs:
+                raise ValueError('crs and is_geo_crs are inconsistent')
+
+        if is_lon_normalized is True:
+            if is_geo_crs is False:
+                raise ValueError('is_geo_crs and is_lon_normalized are inconsistent')
+            if crs is not None and not crs.is_geographic:
+                raise ValueError('crs and is_lon_normalized are inconsistent')
+
         x_name = x_name or x.name
         y_name = y_name or y.name
         if not x_name or not y_name:
             raise ValueError('failed to determine x_name, y_name from x, y')
-        # TODO (forman): validate args & kwargs
+
+        if crs is None and (_is_geo_crs(x_name, y_name) or is_geo_crs or is_lon_normalized is not None):
+            crs = CRS_WGS84
+        if crs is None:
+            raise ValueError('failed to determine crs')
+
         self._x = x
         self._y = y
         self._x_name = x_name
         self._y_name = y_name
-        self._is_geo_crs = is_geo_crs
-        self._is_lon_normalized = is_lon_normalized
+        self._crs = crs
+        self._is_rectified = bool(is_rectified)
+        self._is_lon_normalized = bool(is_lon_normalized) if crs.is_geographic else None
 
     @property
     def x(self) -> xr.DataArray:
@@ -82,11 +104,19 @@ class GeoCoding:
         return self.x_name, self.y_name
 
     @property
-    def is_geo_crs(self) -> bool:
-        return self._is_geo_crs
+    def is_rectified(self) -> bool:
+        return self._is_rectified
 
     @property
-    def is_lon_normalized(self) -> bool:
+    def crs(self) -> pp.crs.CRS:
+        return self._crs
+
+    @property
+    def is_geo_crs(self) -> bool:
+        return self._crs.is_geographic
+
+    @property
+    def is_lon_normalized(self) -> Optional[bool]:
         return self._is_lon_normalized
 
     @property
@@ -104,12 +134,16 @@ class GeoCoding:
                y: xr.DataArray = None,
                x_name: str = None,
                y_name: str = None,
+               crs: pp.crs.CRS = None,
                is_geo_crs: bool = None,
+               is_rectified: bool = None,
                is_lon_normalized: bool = None):
         return GeoCoding(x=x if x is not None else self.x,
                          y=y if y is not None else self.y,
                          x_name=x_name if x_name is not None else self.x_name,
                          y_name=y_name if y_name is not None else self.y_name,
+                         is_rectified=is_rectified if is_rectified is not None else self.is_rectified,
+                         crs=crs if crs is not None else self.crs,
                          is_geo_crs=is_geo_crs if is_geo_crs is not None
                          else self.is_geo_crs,
                          is_lon_normalized=is_lon_normalized if is_lon_normalized is not None
@@ -129,17 +163,23 @@ class GeoCoding:
         x_name, y_name = _get_dataset_xy_names(dataset, xy_names=xy_names)
         x = _get_var(dataset, x_name)
         y = _get_var(dataset, y_name)
-        return cls.from_xy((x, y), xy_names=(x_name, y_name))
+        return cls.from_xy((x, y),
+                           xy_names=(x_name, y_name),
+                           crs=get_dataset_crs(dataset, xy_names=xy_names))
 
     @classmethod
     def from_xy(cls,
                 xy: Tuple[xr.DataArray, xr.DataArray],
-                xy_names: Tuple[str, str] = None) -> 'GeoCoding':
+                xy_names: Tuple[str, str] = None,
+                crs: pp.crs.CRS = None,
+                is_rectified: bool = None) -> 'GeoCoding':
         """
         Return new geo-coding for given *dataset*.
 
         :param xy: Tuple of x and y coordinate variables.
         :param xy_names: Optional tuple of the x- and y-coordinate variables in *dataset*.
+        :param crs: Optional coordinate reference system.
+        :param is_rectified: Whether the given coordinates form a rectified grid.
         :return: The source dataset's geo-coding.
         """
         x, y = xy
@@ -151,19 +191,35 @@ class GeoCoding:
             raise ValueError(f'unable to determine x and y coordinate variable names')
 
         if x.ndim == 1 and y.ndim == 1:
+            if is_rectified is False:
+                raise ValueError('xy and is_rectified are inconsistent')
             y, x = xr.broadcast(y, x)
-        if x.ndim != 2 or y.ndim != 2:
-            raise ValueError(
-                f'coordinate variables {x_name!r} and {y_name!r} must both have either one or two dimensions')
+            is_rectified = True
+        elif x.ndim != 2 or y.ndim != 2:
+            raise ValueError(f'coordinate variables {x_name!r} and {y_name!r}'
+                             f' must both have either one or two dimensions')
 
         if x.shape != y.shape or x.dims != y.dims:
-            raise ValueError(f"coordinate variables {x_name!r} and {y_name!r} must have same shape and dimensions")
+            raise ValueError(f"coordinate variables {x_name!r} and {y_name!r}"
+                             f" must have same shape and dimensions")
 
         height, width = x.shape
-        if width < 2 or height < 2:
-            raise ValueError(f"size in each dimension of {x_name!r} and {y_name!r} must be greater two")
 
-        is_geo_crs = _is_geo_crs(x_name, y_name)
+        if width < 2 or height < 2:
+            raise ValueError(f"size in each dimension of {x_name!r}"
+                             f" and {y_name!r} must be greater two")
+
+        if is_rectified is None:
+            i, j = width // 2, height // 2
+            ref_x, ref_y = x[j, i], y[j, i]
+            is_rectified = np.logical_and(np.allclose(x[j, :], ref_x), np.allclose(y[:, i], ref_y)) \
+                           or np.logical_and(np.allclose(x[:, i], ref_x), np.allclose(y[j, :], ref_y))
+
+        if crs is not None:
+            is_geo_crs = crs.is_geographic
+        else:
+            is_geo_crs = _is_geo_crs(x_name, y_name)
+
         is_lon_normalized = False
         if is_geo_crs:
             x, is_lon_normalized = _maybe_normalise_2d_lon(x)
@@ -171,6 +227,8 @@ class GeoCoding:
         return GeoCoding(x=x, y=y,
                          x_name=x_name,
                          y_name=y_name,
+                         crs=crs,
+                         is_rectified=is_rectified,
                          is_geo_crs=is_geo_crs,
                          is_lon_normalized=is_lon_normalized)
 
@@ -288,6 +346,33 @@ class GeoCoding:
         i_max = _clip(int(i_values[-1]) + ij_border, 0, width - 1)
         j_max = _clip(int(j_values[-1]) + ij_border, 0, height - 1)
         return i_min, j_min, i_max, j_max
+
+
+def get_dataset_crs(dataset: xr.Dataset,
+                    xy_names: Tuple[str, str] = None) -> Optional[pp.crs.CRS]:
+    """
+    Get the coordinate reference system (CRS) for given dataset *ds*.
+
+    :param dataset: The dataset
+    :param xy_names: Optional tuple of the x- and y-coordinate variables in *dataset*.
+    :return: The CRS or None if it cannot be determined.
+    """
+    crs = None
+    if 'crs_wkt' in dataset.attrs:
+        try:
+            crs = pp.crs.CRS.from_wkt(dataset.attrs['crs_wkt'])
+        except Exception as e:
+            warnings.warn(f'could not parse CRS from dataset attribute "crs_wkt": {e}')
+    if crs is None:
+        try:
+            crs = pp.crs.CRS.from_cf(dataset.attrs)
+        except Exception as e:
+            warnings.warn(f'could not parse CRS from dataset attributes: {e}', )
+    if crs is None:
+        xy_names = xy_names if xy_names is not None else _get_dataset_xy_names(dataset)
+        if _is_geo_crs(*xy_names):
+            crs = CRS_WGS84
+    return crs
 
 
 def _clip(x, x_min, x_max):

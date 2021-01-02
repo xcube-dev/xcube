@@ -1,8 +1,10 @@
 import unittest
 
 import numpy as np
+import pyproj as pp
 import xarray as xr
 
+from xcube.core.geocoding import CRS_WGS84
 from xcube.core.geocoding import GeoCoding
 from xcube.core.geocoding import compute_ij_bboxes
 from xcube.core.geocoding import gu_compute_ij_bboxes
@@ -44,40 +46,88 @@ class SourceDatasetMixin:
 
 
 class GeoCodingTest(SourceDatasetMixin, unittest.TestCase):
-
     def test_is_geo_crs_and_is_lon_normalized(self):
         x = xr.DataArray(np.linspace(10.0, 20.0, 21), dims='columns', name='lon')
         y = xr.DataArray(np.linspace(53.0, 58.0, 11), dims='rows', name='lat')
         y, x = xr.broadcast(y, x)
+
         gc = GeoCoding(x, y)
-        self.assertEqual(False, gc.is_geo_crs)
-        self.assertEqual(False, gc.is_lon_normalized)
-        gc = GeoCoding(x, y, is_geo_crs=True)
+        self.assertEqual(CRS_WGS84, gc.crs)
         self.assertEqual(True, gc.is_geo_crs)
         self.assertEqual(False, gc.is_lon_normalized)
+
+        gc = GeoCoding(x, y, is_geo_crs=True)
+        self.assertEqual(CRS_WGS84, gc.crs)
+        self.assertEqual(True, gc.is_geo_crs)
+        self.assertEqual(False, gc.is_lon_normalized)
+
         gc = GeoCoding(x, y, is_lon_normalized=True)
+        self.assertEqual(CRS_WGS84, gc.crs)
         self.assertEqual(True, gc.is_geo_crs)
         self.assertEqual(True, gc.is_lon_normalized)
 
-    def test_from_dataset_1d(self):
+        gc = GeoCoding(x, y, is_lon_normalized=False)
+        self.assertEqual(CRS_WGS84, gc.crs)
+        self.assertEqual(True, gc.is_geo_crs)
+        self.assertEqual(False, gc.is_lon_normalized)
+
+        with self.assertRaises(ValueError) as cm:
+            gc = GeoCoding(x, y, crs=pp.crs.CRS(32633), is_geo_crs=True)
+        self.assertEqual('crs and is_geo_crs are inconsistent',
+                         f'{cm.exception}')
+
+        with self.assertRaises(ValueError) as cm:
+            gc = GeoCoding(x, y, is_geo_crs=False, is_lon_normalized=True)
+        self.assertEqual('is_geo_crs and is_lon_normalized are inconsistent',
+                         f'{cm.exception}')
+
+        with self.assertRaises(ValueError) as cm:
+            gc = GeoCoding(x, y, crs=pp.crs.CRS(32633), is_lon_normalized=True)
+        self.assertEqual('crs and is_lon_normalized are inconsistent',
+                         f'{cm.exception}')
+
+    def test_from_dataset_1d_rectified(self):
         x = xr.DataArray(np.linspace(10.0, 20.0, 21), dims='x')
         y = xr.DataArray(np.linspace(53.0, 58.0, 11), dims='y')
-        gc = GeoCoding.from_dataset(xr.Dataset(dict(x=x, y=y)))
+        gc = GeoCoding.from_dataset(xr.Dataset(dict(x=x, y=y), attrs=CRS_WGS84.to_cf()))
         self.assertIsInstance(gc.x, xr.DataArray)
         self.assertIsInstance(gc.y, xr.DataArray)
         self.assertEqual('x', gc.x_name)
         self.assertEqual('y', gc.y_name)
+        self.assertEqual(True, gc.is_rectified)
+        self.assertEqual(CRS_WGS84, gc.crs)
+        self.assertEqual(True, gc.is_geo_crs)
         self.assertEqual(False, gc.is_lon_normalized)
 
-    def test_from_dataset_2d(self):
+    def test_from_dataset_2d_rectified(self):
         x = xr.DataArray(np.linspace(10.0, 20.0, 21), dims='columns')
         y = xr.DataArray(np.linspace(53.0, 58.0, 11), dims='rows')
         y, x = xr.broadcast(y, x)
-        gc = GeoCoding.from_dataset(xr.Dataset(dict(x=x, y=y)))
+        gc = GeoCoding.from_dataset(xr.Dataset(dict(x=x, y=y), attrs=CRS_WGS84.to_cf()))
         self.assertIsInstance(gc.x, xr.DataArray)
         self.assertIsInstance(gc.y, xr.DataArray)
         self.assertEqual('x', gc.x_name)
         self.assertEqual('y', gc.y_name)
+        self.assertEqual(True, gc.is_rectified)
+        self.assertEqual(CRS_WGS84, gc.crs)
+        self.assertEqual(True, gc.is_geo_crs)
+        self.assertEqual(False, gc.is_lon_normalized)
+
+    def test_from_dataset_2d_not_rectified(self):
+        x = xr.DataArray(np.linspace(10.0, 20.0, 21), dims='columns')
+        y = xr.DataArray(np.linspace(53.0, 58.0, 11), dims='rows')
+        y, x = xr.broadcast(y, x)
+        # Add noise to x, y so they are no longer rectified
+        x = x + 0.01 * np.random.random_sample((11, 21))
+        y = y + 0.01 * np.random.random_sample((11, 21))
+        gc = GeoCoding.from_dataset(xr.Dataset(dict(x=x, y=y), attrs=CRS_WGS84.to_cf()))
+        self.assertIsInstance(gc.x, xr.DataArray)
+        self.assertIsInstance(gc.y, xr.DataArray)
+        self.assertEqual('x', gc.x_name)
+        self.assertEqual('y', gc.y_name)
+        self.assertEqual(False, gc.is_rectified)
+        self.assertEqual(CRS_WGS84, gc.crs)
+        self.assertEqual(True, gc.is_geo_crs)
         self.assertEqual(False, gc.is_lon_normalized)
 
     def test_ij_bbox(self):
