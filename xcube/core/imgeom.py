@@ -36,6 +36,8 @@ from xcube.util.dask import get_chunk_sizes
 _LON_ATTRS = dict(long_name='longitude', standard_name='longitude', units='degrees_east')
 _LAT_ATTRS = dict(long_name='latitude', standard_name='latitude', units='degrees_north')
 
+AffineTransformMatrix = Tuple[Tuple[float, float, float], Tuple[float, float, float]]
+
 
 class ImageGeom:
 
@@ -158,8 +160,30 @@ class ImageGeom:
         return self.y_min + self.xy_res * self.height
 
     @property
+    def x_res(self) -> float:
+        return self._xy_res
+
+    @property
+    def y_res(self) -> float:
+        return self._xy_res
+
+    @property
     def xy_res(self) -> float:
         return self._xy_res
+
+    @property
+    def image_to_crs_transform(self) -> AffineTransformMatrix:
+        return (
+            (self.x_res, 0.0, self.x_min),
+            (0.0, self.y_res, self.y_min),
+        )
+
+    @property
+    def crs_to_image_transform(self) -> AffineTransformMatrix:
+        return (
+            (1 / self.x_res, 0.0, -self.x_min / self.x_res),
+            (0.0, 1 / self.x_res, -self.y_min / self.y_res),
+        )
 
     @property
     def crs(self) -> pp.crs.CRS:
@@ -193,6 +217,10 @@ class ImageGeom:
             ij_bboxes[i, 2] = x_slice.stop - 1
             ij_bboxes[i, 3] = y_slice.stop - 1
         return ij_bboxes
+
+    def get_image_transform_matrix(self, target: 'ImageGeom') -> AffineTransformMatrix:
+        # TODO
+        return None
 
     def coord_vars(self,
                    xy_names: Tuple[str, str],

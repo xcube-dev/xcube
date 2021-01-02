@@ -119,11 +119,36 @@ class ImageGeomTest(SourceDatasetMixin, unittest.TestCase):
             ImageGeom((2000, 1000), ((512,)))
 
     def test_is_crossing_antimeridian(self):
-        output_geom = ImageGeom(size=100, x_min=0.0, y_min=+50.0, xy_res=0.1, is_geo_crs=True)
-        self.assertFalse(output_geom.is_crossing_antimeridian)
+        image_geom = ImageGeom(size=100, x_min=0.0, y_min=+50.0, xy_res=0.1, is_geo_crs=True)
+        self.assertFalse(image_geom.is_crossing_antimeridian)
 
-        output_geom = ImageGeom(size=100, x_min=178.0, y_min=+50.0, xy_res=0.1, is_geo_crs=True)
-        self.assertTrue(output_geom.is_crossing_antimeridian)
+        image_geom = ImageGeom(size=100, x_min=178.0, y_min=+50.0, xy_res=0.1, is_geo_crs=True)
+        self.assertTrue(image_geom.is_crossing_antimeridian)
+
+    def test_image_to_crs_matrix(self):
+        image_geom = ImageGeom(size=(1440, 720), x_min=-180, y_min=-90, xy_res=0.25, is_geo_crs=True)
+        self.assertEqual(
+            (
+                (0.25, 0.0, -180.0),
+                (0.0, 0.25, -90.0)
+            ),
+            image_geom.image_to_crs_transform)
+        self.assertEqual(
+            (
+                (4.0, 0.0, 720.0),
+                (0.0, 4.0, 360.0)
+            ),
+            image_geom.crs_to_image_transform)
+
+    def test_get_image_transform_matrix(self):
+        image_geom_1 = ImageGeom(size=(1440, 720), x_min=-180, y_min=-90, xy_res=0.25, is_geo_crs=True)
+        image_geom_2 = ImageGeom(size=(1000, 1000), x_min=10, y_min=50, xy_res=0.025, is_geo_crs=True)
+        self.assertEqual(
+            (
+                (0.1, 0.0, 190),
+                (0.0, 0.1, 140)
+            ),
+            image_geom_1.get_image_transform_matrix(image_geom_2))
 
     def test_derive(self):
         image_geom = ImageGeom((2048, 1024), crs=pp.crs.CRS(32632))
