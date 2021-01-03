@@ -169,7 +169,7 @@ class GeoCoding:
         y = _get_var(dataset, y_name)
         return cls.from_xy((x, y),
                            xy_names=(x_name, y_name),
-                           crs=get_dataset_crs(dataset, xy_names=xy_names))
+                           crs=find_dataset_crs(dataset, xy_names=xy_names))
 
     @classmethod
     def from_xy(cls,
@@ -352,30 +352,51 @@ class GeoCoding:
         return i_min, j_min, i_max, j_max
 
 
-def get_dataset_crs(dataset: xr.Dataset,
-                    xy_names: Tuple[str, str] = None) -> Optional[pp.crs.CRS]:
+def find_dataset_crs(dataset: xr.Dataset,
+                     xy_names: Tuple[str, str] = None) -> Optional[pp.crs.CRS]:
     """
-    Get the coordinate reference system (CRS) for given dataset *ds*.
+    Get the coordinate reference system (CRS) for given dataset *dataset*.
+
+    The current implementation returns the first CRS found.
+    In the future we should give preference to the CRS
+    whose coordinates are rectified. This may prevent a
+    rectification step when resampling to the same target CRS.
 
     :param dataset: The dataset
     :param xy_names: Optional tuple of the x- and y-coordinate variables in *dataset*.
     :return: The CRS or None if it cannot be determined.
     """
+
+    # TODO: determining CRS from a dataset as implemented here does
+    #       not strictly follow CF conventions. CF allows for multiple CRS
+    #       used by multiple coordinate variables. E.g. at the same time
+    #       we may find 2D coordinates lat(y, x), lon(y, x) using
+    #       CRS EPSG 4326 and x(y,x), y(y, x) using UTM 32 N.
+    #       In this implementation we return the first CRS found.
+    #       In the future we should give preference to the CRS
+    #       whose coordinates are rectified. This may prevent a
+    #       rectification step when resampling to the same target CRS.
+
     crs = None
-    if 'crs_wkt' in dataset.attrs:
-        try:
-            crs = pp.crs.CRS.from_wkt(dataset.attrs['crs_wkt'])
-        except Exception as e:
-            warnings.warn(f'could not parse CRS from dataset attribute "crs_wkt": {e}')
-    if crs is None:
-        try:
-            crs = pp.crs.CRS.from_cf(dataset.attrs)
-        except Exception as e:
-            warnings.warn(f'could not parse CRS from dataset attributes: {e}', )
-    if crs is None:
-        xy_names = xy_names if xy_names is not None else _get_dataset_xy_names(dataset)
-        if _is_geo_crs(*xy_names):
-            crs = CRS_WGS84
+    for var_name, var in dataset.data_vars.items():
+        if 'grid_mapping_name' in var.attrs:
+            # noinspection PyBroadException
+            try:
+                return pp.crs.CRS.from_cf(var.attrs)
+            except Exception:
+                warnings.warn(f'could not parse CRS from CF attributes of variable "{var_name}"')
+    for var_name, var in dataset.data_vars.items():
+        if 'crs_wkt' in var.attrs:
+            # noinspection PyBroadException
+            try:
+                return pp.crs.CRS.from_wkt(var.attrs['crs_wkt'])
+            except Exception:
+                warnings.warn(f'could not parse CRS from CF attribute "crs_wkt" of variable "{var_name}"')
+
+    xy_names = xy_names if xy_names is not None else _get_dataset_xy_names(dataset)
+    if _is_geo_crs(*xy_names):
+        crs = CRS_WGS84
+
     return crs
 
 
@@ -521,7 +542,7 @@ def _get_coord_var_name(dataset: xr.Dataset, coord_name: Optional[str], coord_va
         if coord_name is None:
             coord_name = _find_coord_var_name(dataset, coord_var_names, 1)
             if not coord_name:
-                raise ValueError(f'cannot detect {dim_name!r}-coordinate variable in dataset')
+                raise ValueError(f'cannot detect {dim_name}-coordinate variable in dataset')
     elif coord_name not in dataset:
         raise ValueError(f'missing coordinate variable {coord_name!r} in dataset')
     return coord_name

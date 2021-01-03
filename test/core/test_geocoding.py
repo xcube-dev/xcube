@@ -4,7 +4,7 @@ import numpy as np
 import pyproj as pp
 import xarray as xr
 
-from xcube.core.geocoding import CRS_WGS84
+from xcube.core.geocoding import CRS_WGS84, find_dataset_crs
 from xcube.core.geocoding import GeoCoding
 from xcube.core.geocoding import compute_ij_bboxes
 from xcube.core.geocoding import gu_compute_ij_bboxes
@@ -84,6 +84,12 @@ class GeoCodingTest(SourceDatasetMixin, unittest.TestCase):
         with self.assertRaises(ValueError) as cm:
             gc = GeoCoding(x, y, crs=pp.crs.CRS(32633), is_lon_normalized=True)
         self.assertEqual('crs and is_lon_normalized are inconsistent',
+                         f'{cm.exception}')
+
+        z = xr.DataArray(y, name='z')
+        with self.assertRaises(ValueError) as cm:
+            gc = GeoCoding(x, z)
+        self.assertEqual('failed to determine crs',
                          f'{cm.exception}')
 
     def test_from_dataset_1d_rectified(self):
@@ -218,6 +224,31 @@ class GeoCodingTest(SourceDatasetMixin, unittest.TestCase):
                                                  (10, 0, 20, 6),
                                                  (10, 0, 16, 6),
                                                  (10, 1, 16, 6)], dtype=np.int64))
+
+
+class FindDatasetCrsTest(unittest.TestCase):
+    def test_from_cf_attrs(self):
+        crs_expected = pp.crs.CRS(32633)
+        ds = xr.Dataset(dict(crs=xr.DataArray(0, attrs=crs_expected.to_cf())))
+        self.assertEqual(crs_expected, find_dataset_crs(ds))
+
+    def test_from_crs_wkt_attr(self):
+        crs_expected = pp.crs.CRS(32632)
+        ds = xr.Dataset(dict(crs=xr.DataArray(0, attrs=dict(crs_wkt=crs_expected.to_wkt()))))
+        self.assertEqual(crs_expected, find_dataset_crs(ds))
+
+    def test_from_coords(self):
+        crs_expected = pp.crs.CRS(4326)
+        lon = xr.DataArray(np.linspace(10., 20., 11), dims='lon')
+        lat = xr.DataArray(np.linspace(50., 60., 11), dims='lat')
+        ds = xr.Dataset(dict(lon=lon, lat=lat))
+        self.assertEqual(crs_expected, find_dataset_crs(ds))
+
+    def test_not_found(self):
+        x = xr.DataArray(np.linspace(10., 20., 11), dims='x')
+        y = xr.DataArray(np.linspace(50., 60., 11), dims='y')
+        ds = xr.Dataset(dict(x=x, y=y))
+        self.assertEqual(None, find_dataset_crs(ds))
 
 
 class ComputeIJBBoxesTest(unittest.TestCase):
