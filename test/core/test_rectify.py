@@ -192,7 +192,8 @@ class RectifyDatasetTest(SourceDatasetMixin, unittest.TestCase):
     def test_rectify_2x2_to_13x13_antimeridian(self):
         src_ds = self.new_source_dataset_antimeridian()
 
-        output_geom = ImageGeom(size=(13, 13), x_min=177.75, y_min=49.75, xy_res=0.5)
+        output_geom = ImageGeom(size=(13, 13), x_min=177.75, y_min=49.75, xy_res=0.5, is_geo_crs=True)
+        self.assertEqual(True, output_geom.is_crossing_antimeridian)
 
         dst_ds = rectify_dataset(src_ds, output_geom=output_geom)
         self.assertIsNotNone(dst_ds)

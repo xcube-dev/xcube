@@ -178,7 +178,7 @@ class ImageGeom:
         """
         if not self.is_geo_crs:
             return None
-        return self.x_min + self.width * self.xy_res > 180.0
+        return self.x_max > 180.0
 
     @property
     def x_min(self) -> float:
@@ -188,8 +188,9 @@ class ImageGeom:
     @property
     def x_max(self) -> float:
         """Maximum x-coordinate in CRS units."""
-        x_max = self.x_min + self.x_res * self.width
-        return x_max - 360.0 if self.is_geo_crs and x_max > 180.0 else x_max
+        # x_max = self.x_min + self.x_res * self.width
+        # return x_max - 360.0 if self.is_geo_crs and x_max > 180.0 else x_max
+        return self.x_min + self.x_res * self.width
 
     @property
     def y_min(self) -> float:

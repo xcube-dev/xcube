@@ -204,7 +204,8 @@ class ImageGeomTest(SourceDatasetMixin, unittest.TestCase):
 
     def test_xy_bbox_antimeridian(self):
         output_geom = ImageGeom(size=(20, 10), x_min=174.0, y_min=-30.0, xy_res=0.5, is_geo_crs=True)
-        self.assertEqual((174.0, -30.0, -176.0, -25.0), output_geom.xy_bbox)
+        self.assertEqual(True, output_geom.is_crossing_antimeridian)
+        self.assertEqual((174.0, -30.0, 184.0, -25.0), output_geom.xy_bbox)
 
     def test_ij_bboxes(self):
         image_geom = ImageGeom(size=(2000, 1000), x_min=10.0, y_min=20.0, xy_res=0.1)
@@ -366,12 +367,15 @@ class ImageGeomTest(SourceDatasetMixin, unittest.TestCase):
     def test_from_dataset_antimeridian(self):
         src_ds = self.new_source_dataset_antimeridian()
 
+        image_geom = ImageGeom.from_dataset(src_ds)
+        self.assertEqual(True, image_geom.is_crossing_antimeridian)
         self._assert_image_geom(ImageGeom((4, 4), None, 178.0, 50.0, 2.0),
-                                ImageGeom.from_dataset(src_ds))
+                                image_geom)
 
+        image_geom = ImageGeom.from_dataset(src_ds, xy_oversampling=2.0)
+        self.assertEqual(True, image_geom.is_crossing_antimeridian)
         self._assert_image_geom(ImageGeom((7, 7), None, 178.0, 50.0, 1.0),
-                                ImageGeom.from_dataset(src_ds,
-                                                       xy_oversampling=2.0))
+                                image_geom)
 
         self._assert_image_geom(ImageGeom((8, 8), None, 178.0, 50.0, 1.0),
                                 ImageGeom.from_dataset(src_ds,
