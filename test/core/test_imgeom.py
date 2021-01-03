@@ -73,6 +73,12 @@ class ImageGeomTest(SourceDatasetMixin, unittest.TestCase):
         self.assertEqual(CRS_WGS84, image_geom.crs)
         self.assertEqual(True, image_geom.is_geo_crs)
 
+    def test_is_j_axis_up(self):
+        image_geom = ImageGeom((2000, 1000))
+        self.assertEqual(False, image_geom.is_j_axis_up)
+        image_geom = ImageGeom((2000, 1000), is_j_axis_up=True)
+        self.assertEqual(True, image_geom.is_j_axis_up)
+
     def test_size(self):
         image_geom = ImageGeom((2000, 1000))
         self.assertEqual((2000, 1000), image_geom.size)
@@ -125,30 +131,64 @@ class ImageGeomTest(SourceDatasetMixin, unittest.TestCase):
         image_geom = ImageGeom(size=100, x_min=178.0, y_min=+50.0, xy_res=0.1, is_geo_crs=True)
         self.assertTrue(image_geom.is_crossing_antimeridian)
 
-    def test_image_to_crs_matrix(self):
-        image_geom = ImageGeom(size=(1440, 720), x_min=-180, y_min=-90, xy_res=0.25, is_geo_crs=True)
-        self.assertEqual(
-            (
-                (0.25, 0.0, -180.0),
-                (0.0, 0.25, -90.0)
-            ),
-            image_geom.image_to_crs_transform)
-        self.assertEqual(
-            (
-                (4.0, 0.0, 720.0),
-                (0.0, 4.0, 360.0)
-            ),
-            image_geom.crs_to_image_transform)
+    def test_ij_to_xy_transform(self):
+        image_geom = ImageGeom(size=(1440, 720),
+                               x_min=-180, y_min=-90, xy_res=0.25, is_geo_crs=True)
+        i2crs = image_geom.ij_to_xy_transform
+        self.assertMatrixPoint((-180, 90), i2crs, (0, 0))
+        self.assertMatrixPoint((0, 0), i2crs, (720, 360))
+        self.assertMatrixPoint((180, -90), i2crs, (1440, 720))
+        self.assertEqual(((0.25, 0.0, -180.0), (0.0, -0.25, 90.0)), i2crs)
 
-    def test_get_image_transform_matrix(self):
-        image_geom_1 = ImageGeom(size=(1440, 720), x_min=-180, y_min=-90, xy_res=0.25, is_geo_crs=True)
-        image_geom_2 = ImageGeom(size=(1000, 1000), x_min=10, y_min=50, xy_res=0.025, is_geo_crs=True)
-        self.assertEqual(
-            (
-                (0.1, 0.0, 190),
-                (0.0, 0.1, 140)
-            ),
-            image_geom_1.get_image_transform_matrix(image_geom_2))
+        image_geom = ImageGeom(size=(1440, 720), is_j_axis_up=True,
+                               x_min=-180, y_min=-90, xy_res=0.25, is_geo_crs=True)
+        i2crs = image_geom.ij_to_xy_transform
+        self.assertMatrixPoint((-180, -90), i2crs, (0, 0))
+        self.assertMatrixPoint((0, 0), i2crs, (720, 360))
+        self.assertMatrixPoint((180, 90), i2crs, (1440, 720))
+        self.assertEqual(((0.25, 0.0, -180.0), (0.0, 0.25, -90.0)), i2crs)
+
+    def test_xy_to_ij_transform(self):
+        image_geom = ImageGeom(size=(1440, 720),
+                               x_min=-180, y_min=-90, xy_res=0.25, is_geo_crs=True)
+        crs2i = image_geom.xy_to_ij_transform
+        self.assertMatrixPoint((0, 720), crs2i, (-180, -90))
+        self.assertMatrixPoint((720, 360), crs2i, (0, 0))
+        self.assertMatrixPoint((1440, 0), crs2i, (180, 90))
+        self.assertEqual(((4.0, 0.0, 720.0), (0.0, -4.0, 360.0)), crs2i)
+
+        image_geom = ImageGeom(size=(1440, 720), is_j_axis_up=True,
+                               x_min=-180, y_min=-90, xy_res=0.25, is_geo_crs=True)
+        crs2i = image_geom.xy_to_ij_transform
+        self.assertMatrixPoint((0, 0), crs2i, (-180, -90))
+        self.assertMatrixPoint((720, 360), crs2i, (0, 0))
+        self.assertMatrixPoint((1440, 720), crs2i, (180, 90))
+        self.assertEqual(((4.0, 0.0, 720.0), (0.0, 4.0, 360.0)), crs2i)
+
+    def test_ij_transform_from(self):
+        source = ImageGeom(size=(1440, 720), x_min=-180, y_min=-90, xy_res=0.25, is_j_axis_up=True, is_geo_crs=True)
+        target = ImageGeom(size=(1000, 1000), x_min=10, y_min=50, xy_res=0.025, is_j_axis_up=True, is_geo_crs=True)
+        combined = source.ij_transform_from(target)
+
+        im2crs = target.ij_to_xy_transform
+        crs2im = source.xy_to_ij_transform
+
+        crs_point = self.assertMatrixPoint((10, 50), im2crs, (0, 0))
+        im_point = self.assertMatrixPoint((760, 560), crs2im, crs_point)
+        self.assertMatrixPoint(im_point, combined, (0, 0))
+
+        crs_point = self.assertMatrixPoint((22.5, 56.25), im2crs, (500, 250))
+        im_point = self.assertMatrixPoint((810, 585), crs2im, crs_point)
+        self.assertMatrixPoint(im_point, combined, (500, 250))
+
+        self.assertEqual(((0.1, 0.0, 760.0), (0.0, 0.1, 560.0)), combined)
+
+    def assertMatrixPoint(self, expected_point, matrix, point):
+        affine = ImageGeom._to_affine(matrix)
+        actual_point = affine * point
+        self.assertAlmostEqual(expected_point[0], actual_point[0])
+        self.assertAlmostEqual(expected_point[1], actual_point[1])
+        return actual_point
 
     def test_derive(self):
         image_geom = ImageGeom((2048, 1024), crs=pp.crs.CRS(32632))

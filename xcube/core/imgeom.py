@@ -21,8 +21,9 @@
 
 import math
 import warnings
-from typing import Tuple, Union, Mapping
+from typing import Tuple, Union, Mapping, Optional
 
+import affine
 import numpy as np
 import pyproj as pp
 import xarray as xr
@@ -33,10 +34,30 @@ from xcube.core.geocoding import denormalize_lon
 from xcube.util.dask import get_block_iterators
 from xcube.util.dask import get_chunk_sizes
 
-_LON_ATTRS = dict(long_name='longitude', standard_name='longitude', units='degrees_east')
-_LAT_ATTRS = dict(long_name='latitude', standard_name='latitude', units='degrees_north')
+_LON_ATTRS = dict(
+    long_name='longitude coordinate',
+    standard_name='longitude',
+    units='degrees_east'
+)
 
-AffineTransformMatrix = Tuple[Tuple[float, float, float], Tuple[float, float, float]]
+_LAT_ATTRS = dict(
+    long_name='latitude coordinate',
+    standard_name='latitude',
+    units='degrees_north'
+)
+
+_X_ATTRS = dict(
+    long_name="x coordinate of projection",
+    standard_name="projection_x_coordinate"
+)
+
+_Y_ATTRS = dict(
+    long_name="y coordinate of projection",
+    standard_name="projection_y_coordinate"
+)
+
+AffineTransformMatrix = Tuple[Tuple[float, float, float],
+                              Tuple[float, float, float]]
 
 
 class ImageGeom:
@@ -47,6 +68,7 @@ class ImageGeom:
                  x_min: float = 0.0,
                  y_min: float = 0.0,
                  xy_res: float = 1.0,
+                 is_j_axis_up: bool = False,
                  crs: pp.crs.CRS = None,
                  is_geo_crs: bool = None):
 
@@ -91,6 +113,7 @@ class ImageGeom:
         self._x_min = x_min
         self._y_min = y_min
         self._xy_res = xy_res
+        self._is_j_axis_up = is_j_axis_up
         self._crs = crs if crs is not None else CRS_WGS84
 
     def derive(self,
@@ -99,111 +122,148 @@ class ImageGeom:
                x_min: float = None,
                y_min: float = None,
                xy_res: float = None,
+               is_j_axis_up: bool = None,
                crs: pp.crs.CRS = None,
                is_geo_crs: bool = None):
+        """Derive a new image geometry from given constructor arguments."""
         return ImageGeom(self.size if size is None else size,
                          tile_size=self.tile_size if tile_size is None else tile_size,
                          x_min=self.x_min if x_min is None else x_min,
                          y_min=self.y_min if y_min is None else y_min,
                          xy_res=self.xy_res if xy_res is None else xy_res,
+                         is_j_axis_up=self.is_j_axis_up if is_j_axis_up is None else is_j_axis_up,
                          crs=self.crs if crs is None else crs,
                          is_geo_crs=self.is_geo_crs if is_geo_crs is None else is_geo_crs)
 
     @property
     def size(self) -> Tuple[int, int]:
+        """Image size (width, height) in pixels."""
         return self._size
 
     @property
     def width(self) -> int:
+        """Image width in pixels."""
         return self._size[0]
 
     @property
     def height(self) -> int:
+        """Image height in pixels."""
         return self._size[1]
 
     @property
     def is_tiled(self) -> bool:
+        """Whether the image is tiled."""
         return self._size != self._tile_size
 
     @property
     def tile_size(self) -> Tuple[int, int]:
+        """Image tile size (width, height) in pixels."""
         return self._tile_size
 
     @property
     def tile_width(self) -> int:
+        """Image tile width in pixels."""
         return self._tile_size[0]
 
     @property
     def tile_height(self) -> int:
+        """Image tile height in pixels."""
         return self._tile_size[1]
 
     @property
-    def is_crossing_antimeridian(self) -> bool:
-        """Guess whether the x-axis crosses the antimeridian. Works currently only for geographical coordinates."""
-        return self.is_geo_crs and self.x_min + self.width * self.xy_res > 180.0
+    def is_crossing_antimeridian(self) -> Optional[bool]:
+        """
+        Guess whether the x-axis crosses the anti-meridian.
+        Works currently only for geographical CRSes.
+        """
+        if not self.is_geo_crs:
+            return None
+        return self.x_min + self.width * self.xy_res > 180.0
 
     @property
     def x_min(self) -> float:
+        """Minimum x-coordinate in CRS units."""
         return self._x_min
 
     @property
     def x_max(self) -> float:
-        x_max = self.x_min + self.xy_res * self.width
+        """Maximum x-coordinate in CRS units."""
+        x_max = self.x_min + self.x_res * self.width
         return x_max - 360.0 if self.is_geo_crs and x_max > 180.0 else x_max
 
     @property
     def y_min(self) -> float:
+        """Minimum y-coordinate in CRS units."""
         return self._y_min
 
     @property
     def y_max(self) -> float:
-        return self.y_min + self.xy_res * self.height
+        """Maximum y-coordinate in CRS units."""
+        return self.y_min + self.y_res * self.height
 
     @property
     def x_res(self) -> float:
+        """Pixel size in CRS units per pixel in x-direction."""
         return self._xy_res
 
     @property
     def y_res(self) -> float:
+        """Pixel size in CRS units per pixel in y-direction."""
         return self._xy_res
 
     @property
     def xy_res(self) -> float:
+        """Average pixel size."""
         return self._xy_res
 
     @property
-    def image_to_crs_transform(self) -> AffineTransformMatrix:
-        return (
-            (self.x_res, 0.0, self.x_min),
-            (0.0, self.y_res, self.y_min),
-        )
+    def is_j_axis_up(self) -> bool:
+        """Does the positive image j-axis point up?"""
+        return self._is_j_axis_up
 
     @property
-    def crs_to_image_transform(self) -> AffineTransformMatrix:
-        return (
-            (1 / self.x_res, 0.0, -self.x_min / self.x_res),
-            (0.0, 1 / self.x_res, -self.y_min / self.y_res),
-        )
+    def ij_to_xy_transform(self) -> AffineTransformMatrix:
+        """The affine transformation matrix from image to CRS coordinates."""
+        if self.is_j_axis_up:
+            return (
+                (self.x_res, 0.0, self.x_min),
+                (0.0, self.y_res, self.y_min),
+            )
+        else:
+            return (
+                (self.x_res, 0.0, self.x_min),
+                (0.0, -self.y_res, self.y_max),
+            )
+
+    @property
+    def xy_to_ij_transform(self) -> AffineTransformMatrix:
+        """The affine transformation matrix from CRS to image coordinates."""
+        return ImageGeom._from_affine(~ImageGeom._to_affine(self.ij_to_xy_transform))
 
     @property
     def crs(self) -> pp.crs.CRS:
+        """The coordinate reference system."""
         return self._crs
 
     @property
     def is_geo_crs(self) -> bool:
+        """Whether the coordinate reference system is geographic."""
         return self._crs.is_geographic
 
     @property
     def xy_bbox(self) -> Tuple[float, float, float, float]:
+        """The image's bounding box in CRS coordinates."""
         return self.x_min, self.y_min, self.x_max, self.y_max
 
     @property
     def xy_bboxes(self) -> np.ndarray:
+        """The image chunks' bounding boxes in CRS coordinates."""
         xy_offset = np.array([self.x_min, self.y_min, self.x_min, self.y_min])
         return xy_offset + self.xy_res * self.ij_bboxes
 
     @property
     def ij_bboxes(self) -> np.ndarray:
+        """The image chunks' bounding boxes in image pixel coordinates."""
         chunk_sizes = get_chunk_sizes((self.height, self.width),
                                       (self.tile_height, self.tile_width))
         _, _, block_slices = get_block_iterators(chunk_sizes)
@@ -218,16 +278,43 @@ class ImageGeom:
             ij_bboxes[i, 3] = y_slice.stop - 1
         return ij_bboxes
 
-    def get_image_transform_matrix(self, target: 'ImageGeom') -> AffineTransformMatrix:
-        # TODO
-        return None
+    def ij_transform_from(self, other: 'ImageGeom') -> AffineTransformMatrix:
+        """
+        Get the affine transformation matrix that transforms
+        image coordinates of *other* into image coordinates of this image geometry.
+
+        :param other: The other image geometry
+        :return: Affine transformation matrix
+        """
+        a = ImageGeom._to_affine(other.ij_to_xy_transform)
+        b = ImageGeom._to_affine(self.xy_to_ij_transform)
+        return ImageGeom._from_affine(b * a)
+
+    def ij_transform_to(self, other: 'ImageGeom') -> AffineTransformMatrix:
+        """
+        Get the affine transformation matrix that transforms
+        image coordinates of this image geometry to image coordinates of *other*.
+
+        :param other: The other image geometry
+        :return: Affine transformation matrix
+        """
+        a = ImageGeom._to_affine(self.ij_transform_from(other))
+        return ImageGeom._from_affine(~a)
+
+    @staticmethod
+    def _from_affine(matrix: affine.Affine) -> AffineTransformMatrix:
+        return (matrix.a, matrix.b, matrix.c), (matrix.d, matrix.e, matrix.f)
+
+    @staticmethod
+    def _to_affine(matrix: AffineTransformMatrix) -> affine.Affine:
+        return affine.Affine(*matrix[0], *matrix[1])
 
     def coord_vars(self,
                    xy_names: Tuple[str, str],
                    is_lon_normalized: bool = False,
                    is_y_reversed: bool = False) -> Mapping[str, xr.DataArray]:
         x_name, y_name = xy_names
-        x_attrs, y_attrs = (_LON_ATTRS, _LAT_ATTRS) if self.is_geo_crs else ({}, {})
+        x_attrs, y_attrs = (_LON_ATTRS, _LAT_ATTRS) if self.is_geo_crs else (_X_ATTRS, _Y_ATTRS)
         w, h = self.size
         x1, y1, x2, y2 = self.xy_bbox
         res = self.xy_res
@@ -246,6 +333,7 @@ class ImageGeom:
         y_bnds_0_data = np.linspace(y1, y2 - res, h)
         y_bnds_1_data = np.linspace(y1 + res, y2, h)
 
+        # if not self.is_j_axis_up:
         if is_y_reversed:
             y_data = y_data[::-1]
             y_bnds_1_data, y_bnds_0_data = y_bnds_0_data[::-1], y_bnds_1_data[::-1]
@@ -255,10 +343,14 @@ class ImageGeom:
         y_bnds_name = f'{y_name}_{bnds_name}'
 
         return {
-            x_name: xr.DataArray(x_data, dims=x_name, attrs=dict(**x_attrs, bounds=x_bnds_name)),
-            y_name: xr.DataArray(y_data, dims=y_name, attrs=dict(**y_attrs, bounds=y_bnds_name)),
-            x_bnds_name: xr.DataArray(list(zip(x_bnds_0_data, x_bnds_1_data)), dims=[x_name, bnds_name], attrs=x_attrs),
-            y_bnds_name: xr.DataArray(list(zip(y_bnds_0_data, y_bnds_1_data)), dims=[y_name, bnds_name], attrs=y_attrs),
+            x_name: xr.DataArray(x_data,
+                                 dims=x_name, attrs=dict(**x_attrs, bounds=x_bnds_name)),
+            y_name: xr.DataArray(y_data,
+                                 dims=y_name, attrs=dict(**y_attrs, bounds=y_bnds_name)),
+            x_bnds_name: xr.DataArray(list(zip(x_bnds_0_data, x_bnds_1_data)),
+                                      dims=[x_name, bnds_name], attrs=x_attrs),
+            y_bnds_name: xr.DataArray(list(zip(y_bnds_0_data, y_bnds_1_data)),
+                                      dims=[y_name, bnds_name], attrs=y_attrs),
         }
 
     @classmethod
