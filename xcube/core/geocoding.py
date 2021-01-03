@@ -32,7 +32,11 @@ LAT_COORD_VAR_NAMES = ('lat', 'latitude')
 X_COORD_VAR_NAMES = ('x', 'xc') + LON_COORD_VAR_NAMES
 Y_COORD_VAR_NAMES = ('y', 'yc') + LAT_COORD_VAR_NAMES
 
-CRS_WGS84 = pp.crs.CRS.from_string("urn:ogc:def:crs:OGC:1.3:CRS84")
+# WGS84, axis order: lon, lat
+# CRS_WGS84 = pp.crs.CRS.from_string("urn:ogc:def:crs:OGC:1.3:CRS84")
+
+# WGS84, axis order: lat, lon
+CRS_WGS84 = pp.crs.CRS(4326)
 
 
 class GeoCoding:
