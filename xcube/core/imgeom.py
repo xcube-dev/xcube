@@ -67,7 +67,7 @@ class ImageGeom:
                  tile_size: Union[int, Tuple[int, int]] = None,
                  x_min: float = 0.0,
                  y_min: float = 0.0,
-                 xy_res: float = 1.0,
+                 xy_res: Union[float, Tuple[float, float]] = None,
                  is_j_axis_up: bool = False,
                  crs: pp.crs.CRS = None,
                  is_geo_crs: bool = None):
@@ -90,7 +90,15 @@ class ImageGeom:
         if tw <= 0 or th <= 0:
             raise ValueError('invalid tile_size')
 
-        if xy_res <= 0:
+        if isinstance(xy_res, float) or isinstance(xy_res, int):
+            x_res, y_res = xy_res, xy_res
+        elif xy_res is not None:
+            x_res, y_res = xy_res
+        else:
+            x_res, y_res = 1.0, 1.0
+
+        if x_res <= 0.0 or math.isclose(x_res, 0.0) \
+                or y_res <= 0.0 or math.isclose(y_res, 0.0):
             raise ValueError('invalid xy_res')
 
         if is_geo_crs is not None:
@@ -98,11 +106,11 @@ class ImageGeom:
                           DeprecationWarning, stacklevel=2)
 
         if is_geo_crs:
-            if w * xy_res > 360.0:
+            if w * x_res > 360.0:
                 raise ValueError('invalid size, xy_res combination')
             if x_min < -180.0 or x_min > 180.0:
                 raise ValueError('invalid x_min')
-            if y_min < -90.0 or y_min > 90.0 or y_min + h * xy_res > 90.0:
+            if y_min < -90.0 or y_min > 90.0 or y_min + h * y_res > 90.0:
                 raise ValueError('invalid y_min')
 
         if is_geo_crs is not None and crs is not None and crs.is_geographic != is_geo_crs:
@@ -112,7 +120,7 @@ class ImageGeom:
         self._tile_size = min(w, tw) or w, min(h, th) or h
         self._x_min = x_min
         self._y_min = y_min
-        self._xy_res = xy_res
+        self._xy_res = x_res, y_res
         self._is_j_axis_up = is_j_axis_up
         self._crs = crs if crs is not None else CRS_WGS84
 
@@ -121,7 +129,7 @@ class ImageGeom:
                tile_size: Union[int, Tuple[int, int]] = None,
                x_min: float = None,
                y_min: float = None,
-               xy_res: float = None,
+               xy_res: Union[float, Tuple[float, float]] = None,
                is_j_axis_up: bool = None,
                crs: pp.crs.CRS = None,
                is_geo_crs: bool = None):
@@ -205,17 +213,22 @@ class ImageGeom:
     @property
     def x_res(self) -> float:
         """Pixel size in CRS units per pixel in x-direction."""
-        return self._xy_res
+        return self._xy_res[0]
 
     @property
     def y_res(self) -> float:
         """Pixel size in CRS units per pixel in y-direction."""
+        return self._xy_res[1]
+
+    @property
+    def xy_res(self) -> Tuple[float, float]:
+        """Pixel size in x and y direction."""
         return self._xy_res
 
     @property
-    def xy_res(self) -> float:
+    def avg_xy_res(self) -> float:
         """Average pixel size."""
-        return self._xy_res
+        return 0.5 * (self.x_res + self.y_res)
 
     @property
     def is_j_axis_up(self) -> bool:
@@ -260,7 +273,8 @@ class ImageGeom:
     def xy_bboxes(self) -> np.ndarray:
         """The image chunks' bounding boxes in CRS coordinates."""
         xy_offset = np.array([self.x_min, self.y_min, self.x_min, self.y_min])
-        return xy_offset + self.xy_res * self.ij_bboxes
+        # TODO: replace self.avg_xy_res by x_res, y_res
+        return xy_offset + self.avg_xy_res * self.ij_bboxes
 
     @property
     def ij_bboxes(self) -> np.ndarray:
@@ -318,21 +332,22 @@ class ImageGeom:
         x_attrs, y_attrs = (_LON_ATTRS, _LAT_ATTRS) if self.is_geo_crs else (_X_ATTRS, _Y_ATTRS)
         w, h = self.size
         x1, y1, x2, y2 = self.xy_bbox
-        res = self.xy_res
-        res05 = self.xy_res / 2
+        x_res, y_res = self.xy_res
+        x_res05 = x_res / 2
+        y_res05 = y_res / 2
 
-        x_data = np.linspace(x1 + res05, x2 - res05, w)
-        x_bnds_0_data = np.linspace(x1, x2 - res, w)
-        x_bnds_1_data = np.linspace(x1 + res, x2, w)
+        x_data = np.linspace(x1 + x_res05, x2 - x_res05, w)
+        x_bnds_0_data = np.linspace(x1, x2 - x_res, w)
+        x_bnds_1_data = np.linspace(x1 + x_res, x2, w)
 
         if is_lon_normalized:
             x_data = denormalize_lon(x_data)
             x_bnds_0_data = denormalize_lon(x_bnds_0_data)
             x_bnds_1_data = denormalize_lon(x_bnds_1_data)
 
-        y_data = np.linspace(y1 + res05, y2 - res05, h)
-        y_bnds_0_data = np.linspace(y1, y2 - res, h)
-        y_bnds_1_data = np.linspace(y1 + res, y2, h)
+        y_data = np.linspace(y1 + y_res05, y2 - y_res05, h)
+        y_bnds_0_data = np.linspace(y1, y2 - y_res, h)
+        y_bnds_1_data = np.linspace(y1 + y_res, y2, h)
 
         # if not self.is_j_axis_up:
         if is_y_reversed:

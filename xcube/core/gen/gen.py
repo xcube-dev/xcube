@@ -242,7 +242,7 @@ def _process_input(input_processor: InputProcessor,
         geo_coding = GeoCoding.from_dataset(input_slice)
         subset = select_spatial_subset(input_slice,
                                        xy_bbox=output_geom.xy_bbox,
-                                       xy_border=output_geom.xy_res,
+                                       xy_border=output_geom.avg_xy_res,
                                        ij_border=1,
                                        geo_coding=geo_coding)
         if subset is None:

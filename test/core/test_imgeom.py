@@ -347,7 +347,7 @@ class ImageGeomTest(SourceDatasetMixin, unittest.TestCase):
         self.assertEqual(7386, output_geom.height)
         self.assertAlmostEqual(-11.918857, output_geom.x_min)
         self.assertAlmostEqual(59.959791, output_geom.y_min)
-        self.assertAlmostEqual(0.00181345416, output_geom.xy_res)
+        self.assertAlmostEqual(0.00181345416, output_geom.avg_xy_res)
 
     def test_from_dataset(self):
         src_ds = self.new_source_dataset()
@@ -394,4 +394,5 @@ class ImageGeomTest(SourceDatasetMixin, unittest.TestCase):
         self.assertEqual(expected.height, actual.height)
         self.assertAlmostEqual(actual.x_min, actual.x_min, delta=1e-5)
         self.assertAlmostEqual(actual.y_min, actual.y_min, delta=1e-5)
-        self.assertAlmostEqual(actual.xy_res, actual.xy_res, delta=1e-6)
+        self.assertAlmostEqual(actual.x_res, actual.x_res, delta=1e-6)
+        self.assertAlmostEqual(actual.y_res, actual.y_res, delta=1e-6)

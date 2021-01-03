@@ -315,6 +315,7 @@ class RectifyDatasetTest(SourceDatasetMixin, unittest.TestCase):
                           -0.25,
                           49.75,
                           0.5,
+                          0.5,
                           1e-5)
 
         # print(xr.DataArray(np.floor(dst_src_i + 0.5), dims=('y', 'x')))

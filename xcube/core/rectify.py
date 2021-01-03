@@ -91,7 +91,7 @@ def rectify_dataset(dataset: xr.Dataset,
         dataset_subset = select_spatial_subset(dataset,
                                                xy_bbox=output_geom.xy_bbox,
                                                ij_border=1,
-                                               xy_border=output_geom.xy_res,
+                                               xy_border=output_geom.avg_xy_res,
                                                geo_coding=src_geo_coding)
         if dataset_subset is None:
             return None
@@ -207,7 +207,8 @@ def _compute_ij_images_xarray_numpy(src_geo_coding: GeoCoding,
     dst_src_ij_images = np.full(dst_shape, np.nan, dtype=np.float64)
     dst_x_min = output_geom.x_min
     dst_y_min = output_geom.y_min
-    dst_xy_res = output_geom.xy_res
+    dst_x_res = output_geom.x_res
+    dst_y_res = output_geom.y_res
     _compute_ij_images_numpy_parallel(src_geo_coding.x.values,
                                       src_geo_coding.y.values,
                                       0,
@@ -215,7 +216,8 @@ def _compute_ij_images_xarray_numpy(src_geo_coding: GeoCoding,
                                       dst_src_ij_images,
                                       dst_x_min,
                                       dst_y_min,
-                                      dst_xy_res,
+                                      dst_x_res,
+                                      dst_y_res,
                                       uv_delta)
     return dst_src_ij_images
 
@@ -232,7 +234,7 @@ def _compute_ij_images_xarray_dask(src_geo_coding: GeoCoding,
     dst_var_chunks = 2, dst_tile_height, dst_tile_width
 
     dst_x_min, dst_y_min, dst_x_max, dst_y_max = output_geom.xy_bbox
-    dst_xy_res = output_geom.xy_res
+    dst_x_res, dst_y_res = output_geom.xy_res
 
     # Compute an empirical xy_border as a function of the number of tiles, because the more tiles we have
     # the smaller the destination xy-bboxes and the higher the risk to not find any source ij-bbox for
@@ -242,7 +244,7 @@ def _compute_ij_images_xarray_dask(src_geo_coding: GeoCoding,
     num_tiles_x = dst_width / dst_tile_width
     num_tiles_y = dst_height / dst_tile_height
     max_num_tiles = max(num_tiles_x, num_tiles_y)
-    xy_border = min(2 * max_num_tiles * dst_xy_res,
+    xy_border = min(2 * max_num_tiles * output_geom.avg_xy_res,
                     min(0.5 * (dst_x_max - dst_x_min), 0.5 * (dst_y_max - dst_y_min)))
 
     dst_xy_bboxes = output_geom.xy_bboxes
@@ -264,7 +266,8 @@ def _compute_ij_images_xarray_dask(src_geo_coding: GeoCoding,
                                        src_ij_bboxes,
                                        dst_x_min,
                                        dst_y_min,
-                                       dst_xy_res,
+                                       dst_x_res,
+                                       dst_y_res,
                                        uv_delta
                                    ),
                                    name='ij_pixels',
@@ -280,7 +283,8 @@ def _compute_ij_images_xarray_dask_block(dtype: np.dtype,
                                          src_ij_bboxes: np.ndarray,
                                          dst_x_min: float,
                                          dst_y_min: float,
-                                         dst_xy_res: float,
+                                         dst_x_res: float,
+                                         dst_y_res: float,
                                          uv_delta: float) -> np.ndarray:
     """Compute dask.array.Array destination block with source pixel i,j coords from xarray.DataArray x,y sources """
     dst_src_ij_block = np.full(block_shape, np.nan, dtype=dtype)
@@ -296,9 +300,10 @@ def _compute_ij_images_xarray_dask_block(dtype: np.dtype,
                                         src_i_min,
                                         src_j_min,
                                         dst_src_ij_block,
-                                        dst_x_min + dst_x_slice_start * dst_xy_res,
-                                        dst_y_min + dst_y_slice_start * dst_xy_res,
-                                        dst_xy_res,
+                                        dst_x_min + dst_x_slice_start * dst_x_res,
+                                        dst_y_min + dst_y_slice_start * dst_y_res,
+                                        dst_x_res,
+                                        dst_y_res,
                                         uv_delta)
     return dst_src_ij_block
 
@@ -311,7 +316,8 @@ def _compute_ij_images_numpy_parallel(src_x_image: np.ndarray,
                                       dst_src_ij_images: np.ndarray,
                                       dst_x0: float,
                                       dst_y0: float,
-                                      dst_res: float,
+                                      dst_x_res: float,
+                                      dst_y_res: float,
                                       uv_delta: float):
     """Compute numpy.ndarray destination image with source pixel i,j coords
     from numpy.ndarray x,y sources in parallel mode."""
@@ -326,7 +332,8 @@ def _compute_ij_images_numpy_parallel(src_x_image: np.ndarray,
                                            dst_src_ij_images,
                                            dst_x0,
                                            dst_y0,
-                                           dst_res,
+                                           dst_x_res,
+                                           dst_y_res,
                                            uv_delta)
 
 
@@ -339,7 +346,8 @@ def _compute_ij_images_numpy_sequential(src_x_image: np.ndarray,
                                         dst_src_ij_images: np.ndarray,
                                         dst_x0: float,
                                         dst_y0: float,
-                                        dst_res: float,
+                                        dst_x_res: float,
+                                        dst_y_res: float,
                                         uv_delta: float):
     """Compute numpy.ndarray destination image with source pixel i,j coords
     from numpy.ndarray x,y sources NOT in parallel mode."""
@@ -354,7 +362,8 @@ def _compute_ij_images_numpy_sequential(src_x_image: np.ndarray,
                                            dst_src_ij_images,
                                            dst_x0,
                                            dst_y0,
-                                           dst_res,
+                                           dst_x_res,
+                                           dst_y_res,
                                            uv_delta)
 
 
@@ -367,7 +376,8 @@ def _compute_ij_images_for_source_line(src_j0: int,
                                        dst_src_ij_images: np.ndarray,
                                        dst_x0: float,
                                        dst_y0: float,
-                                       dst_res: float,
+                                       dst_x_res: float,
+                                       dst_y_res: float,
                                        uv_delta: float):
     """Compute numpy.ndarray destination image with source pixel i,j coords
     from a numpy.ndarray x,y source line."""
@@ -396,8 +406,8 @@ def _compute_ij_images_for_source_line(src_j0: int,
         dst_py[2] = dst_p2y = src_y_image[src_j1, src_i0]
         dst_py[3] = dst_p3y = src_y_image[src_j1, src_i1]
 
-        dst_pi = np.floor((dst_px - dst_x0) / dst_res).astype(np.int64)
-        dst_pj = np.floor((dst_py - dst_y0) / dst_res).astype(np.int64)
+        dst_pi = np.floor((dst_px - dst_x0) / dst_x_res).astype(np.int64)
+        dst_pj = np.floor((dst_py - dst_y0) / dst_y_res).astype(np.int64)
 
         dst_i_min = np.min(dst_pi)
         dst_i_max = np.max(dst_pi)
@@ -432,9 +442,9 @@ def _compute_ij_images_for_source_line(src_j0: int,
             continue
 
         for dst_j in range(dst_j_min, dst_j_max + 1):
-            dst_y = dst_y0 + (dst_j + 0.5) * dst_res
+            dst_y = dst_y0 + (dst_j + 0.5) * dst_y_res
             for dst_i in range(dst_i_min, dst_i_max + 1):
-                dst_x = dst_x0 + (dst_i + 0.5) * dst_res
+                dst_x = dst_x0 + (dst_i + 0.5) * dst_x_res
 
                 # TODO: use two other combinations,
                 #       if one of the dst_px<n>,dst_py<n> pairs is missing.
