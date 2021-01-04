@@ -13,6 +13,7 @@ from .test_geocoding import SourceDatasetMixin
 olci_path = 'C :\\Users\\Norman\\Downloads\\S3B_OL_1_EFR____20190728T103451_20190728T103751_20190729T141105_0179_028_108_1800_LN1_O_NT_002.SEN3'
 
 
+# noinspection PyMethodMayBeStatic
 class ImageGeomTest(SourceDatasetMixin, unittest.TestCase):
     def test_invalids(self):
         crs = pp.crs.CRS(4326)
@@ -132,6 +133,15 @@ class ImageGeomTest(SourceDatasetMixin, unittest.TestCase):
         self.assertTrue(image_geom.is_crossing_antimeridian)
 
     def test_ij_to_xy_transform(self):
+        image_geom = ImageGeom(size=(1200, 1200),
+                               x_min=0, y_min=0, xy_res=1)
+        i2crs = image_geom.ij_to_xy_transform
+        self.assertMatrixPoint((0, 0), i2crs, (0, 1200))
+        self.assertMatrixPoint((1024, 0), i2crs, (1024, 1200))
+        self.assertMatrixPoint((0, 1024), i2crs, (0, 1200 - 1024))
+        self.assertMatrixPoint((1024, 1024), i2crs, (1024, 1200 - 1024))
+        self.assertEqual(((1, 0, 0), (0.0, -1, 1200)), i2crs)
+
         image_geom = ImageGeom(size=(1440, 720),
                                x_min=-180, y_min=-90, xy_res=0.25, is_geo_crs=True)
         i2crs = image_geom.ij_to_xy_transform
@@ -149,6 +159,15 @@ class ImageGeomTest(SourceDatasetMixin, unittest.TestCase):
         self.assertEqual(((0.25, 0.0, -180.0), (0.0, 0.25, -90.0)), i2crs)
 
     def test_xy_to_ij_transform(self):
+        image_geom = ImageGeom(size=(1200, 1200),
+                               x_min=0, y_min=0, xy_res=1)
+        crs2i = image_geom.xy_to_ij_transform
+        self.assertMatrixPoint((0, 0), crs2i, (0, 1200))
+        self.assertMatrixPoint((1024, 0), crs2i, (1024, 1200))
+        self.assertMatrixPoint((0, 1024), crs2i, (0, 1200 - 1024))
+        self.assertMatrixPoint((1024, 1024), crs2i, (1024, 1200 - 1024))
+        self.assertEqual(((1, 0, 0), (0.0, -1, 1200)), crs2i)
+
         image_geom = ImageGeom(size=(1440, 720),
                                x_min=-180, y_min=-90, xy_res=0.25, is_geo_crs=True)
         crs2i = image_geom.xy_to_ij_transform
@@ -226,11 +245,34 @@ class ImageGeomTest(SourceDatasetMixin, unittest.TestCase):
                                        ], dtype=np.int64))
 
     def test_xy_bboxes(self):
-        image_geom = ImageGeom(size=(2000, 1000), x_min=10.0, y_min=20.0, xy_res=0.1)
+        image_geom = ImageGeom(size=(2000, 1000),
+                               x_min=10.0, y_min=20.0, xy_res=0.1)
+        np.testing.assert_almost_equal(image_geom.xy_bboxes,
+                                       np.array([[10., 20.1, 209.9, 120.]], dtype=np.float64))
+
+        image_geom = ImageGeom(size=(2000, 1000),
+                               x_min=10.0, y_min=20.0, xy_res=0.1, tile_size=500)
+        print(image_geom.xy_bboxes)
+        np.testing.assert_almost_equal(image_geom.xy_bboxes,
+                                       np.array([
+                                           [10., 70.1, 59.9, 120.],
+                                           [60., 70.1, 109.9, 120.],
+                                           [110., 70.1, 159.9, 120.],
+                                           [160., 70.1, 209.9, 120.],
+                                           [10., 20.1, 59.9, 70.],
+                                           [60., 20.1, 109.9, 70.],
+                                           [110., 20.1, 159.9, 70.],
+                                           [160., 20.1, 209.9, 70.]
+                                       ], dtype=np.float64))
+
+    def test_xy_bboxes_is_j_axis_up(self):
+        image_geom = ImageGeom(size=(2000, 1000), is_j_axis_up=True,
+                               x_min=10.0, y_min=20.0, xy_res=0.1)
         np.testing.assert_almost_equal(image_geom.xy_bboxes,
                                        np.array([[10., 20., 209.9, 119.9]], dtype=np.float64))
 
-        image_geom = ImageGeom(size=(2000, 1000), x_min=10.0, y_min=20.0, xy_res=0.1, tile_size=500)
+        image_geom = ImageGeom(size=(2000, 1000), is_j_axis_up=True,
+                               x_min=10.0, y_min=20.0, xy_res=0.1, tile_size=500)
         np.testing.assert_almost_equal(image_geom.xy_bboxes,
                                        np.array([
                                            [10., 20., 59.9, 69.9],
@@ -251,6 +293,25 @@ class ImageGeomTest(SourceDatasetMixin, unittest.TestCase):
                                 (10, 6),
                                 ('x', 'y'),
                                 (-2595., -2505.),
+                                (1255., 1205.),
+                                ('x_bnds', 'y_bnds'),
+                                (
+                                    (-2600., -2590.),
+                                    (-2510., -2500.),
+                                ),
+                                (
+                                    (1250., 1260.),
+                                    (1200., 1210.),
+                                ))
+
+    def test_coord_vars_j_axis_up(self):
+        image_geom = ImageGeom(size=(10, 6), x_min=-2600.0, y_min=1200.0, xy_res=10.0, is_j_axis_up=True)
+
+        cv = image_geom.coord_vars(xy_names=('x', 'y'))
+        self._assert_coord_vars(cv,
+                                (10, 6),
+                                ('x', 'y'),
+                                (-2595., -2505.),
                                 (1205., 1255.),
                                 ('x_bnds', 'y_bnds'),
                                 (
@@ -262,42 +323,23 @@ class ImageGeomTest(SourceDatasetMixin, unittest.TestCase):
                                     (1250., 1260.),
                                 ))
 
-    def test_coord_vars_y_reversed(self):
-        image_geom = ImageGeom(size=(10, 6), x_min=-2600.0, y_min=1200.0, xy_res=10.0)
-
-        cv = image_geom.coord_vars(xy_names=('x', 'y'), is_y_reversed=True)
-        self._assert_coord_vars(cv,
-                                (10, 6),
-                                ('x', 'y'),
-                                (-2595., -2505.),
-                                (1255., 1205.),
-                                ('x_bnds', 'y_bnds'),
-                                (
-                                    (-2600., -2590.),
-                                    (-2510., -2500.),
-                                ),
-                                (
-                                    (1260., 1250.),
-                                    (1210., 1200.),
-                                ))
-
-    def test_coord_vars_lon_normalized(self):
+    def test_coord_vars_antimeridian(self):
         image_geom = ImageGeom(size=(10, 10), x_min=172.0, y_min=53.0, xy_res=2.0, is_geo_crs=True)
 
-        cv = image_geom.coord_vars(xy_names=('lon', 'lat'), is_lon_normalized=True)
+        cv = image_geom.coord_vars(xy_names=('lon', 'lat'))
         self._assert_coord_vars(cv,
                                 (10, 10),
                                 ('lon', 'lat'),
                                 (173.0, -169.0),
-                                (54.0, 72.0),
+                                (72.0, 54.0),
                                 ('lon_bnds', 'lat_bnds'),
                                 (
                                     (172., 174.),
                                     (-170., -168.),
                                 ),
                                 (
-                                    (53., 55.),
                                     (71., 73.),
+                                    (53., 55.),
                                 ))
 
     def _assert_coord_vars(self,

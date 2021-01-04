@@ -25,7 +25,7 @@ from typing import Tuple, Union, Mapping, Optional
 
 import affine
 import numpy as np
-import pyproj as pp
+import pyproj
 import xarray as xr
 
 from xcube.core.geocoding import CRS_WGS84
@@ -69,7 +69,7 @@ class ImageGeom:
                  y_min: float = 0.0,
                  xy_res: Union[float, Tuple[float, float]] = None,
                  is_j_axis_up: bool = False,
-                 crs: pp.crs.CRS = None,
+                 crs: pyproj.crs.CRS = None,
                  is_geo_crs: bool = None):
 
         if isinstance(size, int):
@@ -131,7 +131,7 @@ class ImageGeom:
                y_min: float = None,
                xy_res: Union[float, Tuple[float, float]] = None,
                is_j_axis_up: bool = None,
-               crs: pp.crs.CRS = None,
+               crs: pyproj.crs.CRS = None,
                is_geo_crs: bool = None):
         """Derive a new image geometry from given constructor arguments."""
         return ImageGeom(self.size if size is None else size,
@@ -255,7 +255,7 @@ class ImageGeom:
         return ImageGeom._from_affine(~ImageGeom._to_affine(self.ij_to_xy_transform))
 
     @property
-    def crs(self) -> pp.crs.CRS:
+    def crs(self) -> pyproj.crs.CRS:
         """The coordinate reference system."""
         return self._crs
 
@@ -269,12 +269,7 @@ class ImageGeom:
         """The image's bounding box in CRS coordinates."""
         return self.x_min, self.y_min, self.x_max, self.y_max
 
-    @property
-    def xy_bboxes(self) -> np.ndarray:
-        """The image chunks' bounding boxes in CRS coordinates."""
-        xy_offset = np.array([self.x_min, self.y_min, self.x_min, self.y_min])
-        # TODO: replace self.avg_xy_res by x_res, y_res
-        return xy_offset + self.avg_xy_res * self.ij_bboxes
+
 
     @property
     def ij_bboxes(self) -> np.ndarray:
@@ -324,10 +319,7 @@ class ImageGeom:
     def _to_affine(matrix: AffineTransformMatrix) -> affine.Affine:
         return affine.Affine(*matrix[0], *matrix[1])
 
-    def coord_vars(self,
-                   xy_names: Tuple[str, str],
-                   is_lon_normalized: bool = False,
-                   is_y_reversed: bool = False) -> Mapping[str, xr.DataArray]:
+    def coord_vars(self, xy_names: Tuple[str, str]) -> Mapping[str, xr.DataArray]:
         x_name, y_name = xy_names
         x_attrs, y_attrs = (_LON_ATTRS, _LAT_ATTRS) if self.is_geo_crs else (_X_ATTRS, _Y_ATTRS)
         w, h = self.size
@@ -340,19 +332,19 @@ class ImageGeom:
         x_bnds_0_data = np.linspace(x1, x2 - x_res, w)
         x_bnds_1_data = np.linspace(x1 + x_res, x2, w)
 
-        if is_lon_normalized:
+        if self.is_crossing_antimeridian:
             x_data = denormalize_lon(x_data)
             x_bnds_0_data = denormalize_lon(x_bnds_0_data)
             x_bnds_1_data = denormalize_lon(x_bnds_1_data)
 
-        y_data = np.linspace(y1 + y_res05, y2 - y_res05, h)
-        y_bnds_0_data = np.linspace(y1, y2 - y_res, h)
-        y_bnds_1_data = np.linspace(y1 + y_res, y2, h)
-
-        # if not self.is_j_axis_up:
-        if is_y_reversed:
-            y_data = y_data[::-1]
-            y_bnds_1_data, y_bnds_0_data = y_bnds_0_data[::-1], y_bnds_1_data[::-1]
+        if self.is_j_axis_up:
+            y_data = np.linspace(y1 + y_res05, y2 - y_res05, h)
+            y_bnds_0_data = np.linspace(y1, y2 - y_res, h)
+            y_bnds_1_data = np.linspace(y1 + y_res, y2, h)
+        else:
+            y_data = np.linspace(y2 - y_res05, y1 + y_res05, h)
+            y_bnds_0_data = np.linspace(y2 - y_res, y1, h)
+            y_bnds_1_data = np.linspace(y2, y1 + y_res, h)
 
         bnds_name = 'bnds'
         x_bnds_name = f'{x_name}_{bnds_name}'
