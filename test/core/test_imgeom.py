@@ -1,7 +1,7 @@
 import unittest
 
 import numpy as np
-import pyproj as pp
+import pyproj
 
 import xcube.core.new
 from xcube.core.geocoding import CRS_WGS84
@@ -16,7 +16,7 @@ olci_path = 'C :\\Users\\Norman\\Downloads\\S3B_OL_1_EFR____20190728T103451_2019
 # noinspection PyMethodMayBeStatic
 class ImageGeomTest(SourceDatasetMixin, unittest.TestCase):
     def test_invalids(self):
-        crs = pp.crs.CRS(4326)
+        crs = pyproj.crs.CRS(4326)
 
         with self.assertRaises(ValueError) as cm:
             ImageGeom((3600, 0), crs=crs)
@@ -210,7 +210,7 @@ class ImageGeomTest(SourceDatasetMixin, unittest.TestCase):
         return actual_point
 
     def test_derive(self):
-        image_geom = ImageGeom((2048, 1024), crs=pp.crs.CRS(32632))
+        image_geom = ImageGeom((2048, 1024), crs=pyproj.crs.CRS(32632))
         self.assertEqual((2048, 1024), image_geom.tile_size)
         new_image_geom = image_geom.derive(tile_size=512)
         self.assertIsNot(new_image_geom, image_geom)
