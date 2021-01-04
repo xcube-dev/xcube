@@ -25,7 +25,7 @@ from typing import Tuple, Union, Mapping, Optional
 
 import affine
 import numpy as np
-import pyproj as pp
+import pyproj
 import xarray as xr
 
 from xcube.core.geocoding import CRS_WGS84
@@ -69,7 +69,7 @@ class ImageGeom:
                  y_min: float = 0.0,
                  xy_res: Union[float, Tuple[float, float]] = None,
                  is_j_axis_up: bool = False,
-                 crs: pp.crs.CRS = None,
+                 crs: pyproj.crs.CRS = None,
                  is_geo_crs: bool = None):
 
         if isinstance(size, int):
@@ -131,7 +131,7 @@ class ImageGeom:
                y_min: float = None,
                xy_res: Union[float, Tuple[float, float]] = None,
                is_j_axis_up: bool = None,
-               crs: pp.crs.CRS = None,
+               crs: pyproj.crs.CRS = None,
                is_geo_crs: bool = None):
         """Derive a new image geometry from given constructor arguments."""
         return ImageGeom(self.size if size is None else size,
@@ -255,7 +255,7 @@ class ImageGeom:
         return ImageGeom._from_affine(~ImageGeom._to_affine(self.ij_to_xy_transform))
 
     @property
-    def crs(self) -> pp.crs.CRS:
+    def crs(self) -> pyproj.crs.CRS:
         """The coordinate reference system."""
         return self._crs
 

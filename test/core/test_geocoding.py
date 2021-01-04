@@ -1,7 +1,7 @@
 import unittest
 
 import numpy as np
-import pyproj as pp
+import pyproj
 import xarray as xr
 
 from xcube.core.geocoding import CRS_WGS84, find_dataset_crs
@@ -88,7 +88,7 @@ class GeoCodingTest(SourceDatasetMixin, unittest.TestCase):
         self.assertEqual(False, gc.is_lon_normalized)
 
         with self.assertRaises(ValueError) as cm:
-            gc = GeoCoding(x, y, crs=pp.crs.CRS(32633), is_geo_crs=True)
+            gc = GeoCoding(x, y, crs=pyproj.crs.CRS(32633), is_geo_crs=True)
         self.assertEqual('crs and is_geo_crs are inconsistent',
                          f'{cm.exception}')
 
@@ -98,7 +98,7 @@ class GeoCodingTest(SourceDatasetMixin, unittest.TestCase):
                          f'{cm.exception}')
 
         with self.assertRaises(ValueError) as cm:
-            gc = GeoCoding(x, y, crs=pp.crs.CRS(32633), is_lon_normalized=True)
+            gc = GeoCoding(x, y, crs=pyproj.crs.CRS(32633), is_lon_normalized=True)
         self.assertEqual('crs and is_lon_normalized are inconsistent',
                          f'{cm.exception}')
 
@@ -244,17 +244,17 @@ class GeoCodingTest(SourceDatasetMixin, unittest.TestCase):
 
 class FindDatasetCrsTest(unittest.TestCase):
     def test_from_cf_attrs(self):
-        crs_expected = pp.crs.CRS(32633)
+        crs_expected = pyproj.crs.CRS(32633)
         ds = xr.Dataset(dict(crs=xr.DataArray(0, attrs=crs_expected.to_cf())))
         self.assertEqual(crs_expected, find_dataset_crs(ds))
 
     def test_from_crs_wkt_attr(self):
-        crs_expected = pp.crs.CRS(32632)
+        crs_expected = pyproj.crs.CRS(32632)
         ds = xr.Dataset(dict(crs=xr.DataArray(0, attrs=dict(crs_wkt=crs_expected.to_wkt()))))
         self.assertEqual(crs_expected, find_dataset_crs(ds))
 
     def test_from_coords(self):
-        crs_expected = pp.crs.CRS(4326)
+        crs_expected = pyproj.crs.CRS(4326)
         lon = xr.DataArray(np.linspace(10., 20., 11), dims='lon')
         lat = xr.DataArray(np.linspace(50., 60., 11), dims='lat')
         ds = xr.Dataset(dict(lon=lon, lat=lat))
