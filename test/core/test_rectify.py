@@ -28,10 +28,11 @@ class RectifyDatasetTest(SourceDatasetMixin, unittest.TestCase):
                                                 dtype=lat.dtype))
         np.testing.assert_almost_equal(rad.values,
                                        np.array([
-                                           [3.0, 4.0, nan, nan],
-                                           [3.0, 1.0, 2.0, nan],
+                                           [nan, nan, nan, nan],
                                            [1.0, nan, nan, nan],
-                                           [nan, nan, nan, nan]],
+                                           [3.0, 1.0, 2.0, nan],
+                                           [3.0, 4.0, nan, nan],
+                                       ],
                                            dtype=rad.dtype))
 
     def test_rectify_2x2_to_7x7(self):
@@ -49,13 +50,13 @@ class RectifyDatasetTest(SourceDatasetMixin, unittest.TestCase):
                                                 dtype=lat.dtype))
         np.testing.assert_almost_equal(rad.values,
                                        np.array([
-                                           [nan, nan, 4.0, nan, nan, nan, nan],
-                                           [nan, 3.0, 4.0, 4.0, nan, nan, nan],
-                                           [3.0, 3.0, 3.0, 4.0, 2.0, nan, nan],
-                                           [nan, 3.0, 3.0, 1.0, 2.0, 2.0, 2.0],
-                                           [nan, 1.0, 1.0, 1.0, 2.0, nan, nan],
-                                           [nan, 1.0, 1.0, nan, nan, nan, nan],
                                            [nan, 1.0, nan, nan, nan, nan, nan],
+                                           [nan, 1.0, 1.0, nan, nan, nan, nan],
+                                           [nan, 1.0, 1.0, 1.0, 2.0, nan, nan],
+                                           [nan, 3.0, 3.0, 1.0, 2.0, 2.0, 2.0],
+                                           [3.0, 3.0, 3.0, 4.0, 2.0, nan, nan],
+                                           [nan, 3.0, 4.0, 4.0, nan, nan, nan],
+                                           [nan, nan, 4.0, nan, nan, nan, nan],
                                        ], dtype=rad.dtype))
 
     def test_rectify_2x2_to_7x7_subset(self):
@@ -73,13 +74,13 @@ class RectifyDatasetTest(SourceDatasetMixin, unittest.TestCase):
                                                 dtype=lat.dtype))
         np.testing.assert_almost_equal(rad.values,
                                        np.array([
-                                           [4.0, 4.0, nan, nan, nan, nan, nan],
-                                           [3.0, 4.0, 2.0, nan, nan, nan, nan],
-                                           [3.0, 1.0, 2.0, 2.0, 2.0, nan, nan],
-                                           [1.0, 1.0, 2.0, nan, nan, nan, nan],
+                                           [nan, nan, nan, nan, nan, nan, nan],
+                                           [nan, nan, nan, nan, nan, nan, nan],
                                            [1.0, nan, nan, nan, nan, nan, nan],
-                                           [nan, nan, nan, nan, nan, nan, nan],
-                                           [nan, nan, nan, nan, nan, nan, nan],
+                                           [1.0, 1.0, 2.0, nan, nan, nan, nan],
+                                           [3.0, 1.0, 2.0, 2.0, 2.0, nan, nan],
+                                           [3.0, 4.0, 2.0, nan, nan, nan, nan],
+                                           [4.0, 4.0, nan, nan, nan, nan, nan],
                                        ], dtype=rad.dtype))
 
     def test_rectify_2x2_to_13x13(self):
@@ -244,7 +245,8 @@ class RectifyDatasetTest(SourceDatasetMixin, unittest.TestCase):
                                        np.array([56., 55.5, 55., 54.5, 54., 53.5, 53., 52.5, 52., 51.5, 51.,
                                                  50.5, 50.],
                                                 dtype=lat.dtype))
-
+        print('source_i:', np.floor(source_i.values + 0.5))
+        print('source_j:', np.floor(source_j.values + 0.5))
         np.testing.assert_almost_equal(np.floor(source_i.values + 0.5), self.expected_i_13x13())
         np.testing.assert_almost_equal(np.floor(source_j.values + 0.5), self.expected_j_13x13())
         np.testing.assert_almost_equal(rad.values, self.expected_rad_13x13(rad.dtype))
@@ -321,9 +323,9 @@ class RectifyDatasetTest(SourceDatasetMixin, unittest.TestCase):
 
         dst_src_ij = np.full((2, 13, 13), np.nan, dtype=np.float64)
         dst_x_offset = -0.25
-        dst_y_offset = 49.75 if not is_j_axis_up else 56.25
+        dst_y_offset = 49.75 if is_j_axis_up else 56.25
         dst_x_scale = 0.5
-        dst_y_scale = 0.5 if not is_j_axis_up else -0.5
+        dst_y_scale = 0.5 if is_j_axis_up else -0.5
         compute_ij_images(src_ds.lon.values,
                           src_ds.lat.values,
                           0,
@@ -353,58 +355,58 @@ class RectifyDatasetTest(SourceDatasetMixin, unittest.TestCase):
         else:
             np.testing.assert_almost_equal(dst_rad, self.expected_rad_13x13(dst_rad.dtype)[::-1])
 
-    def expected_rad_13x13(self, dtype):
+    def expected_i_13x13(self):
         return np.array([
-            [nan, nan, nan, nan, 4.0, nan, nan, nan, nan, nan, nan, nan, nan],
-            [nan, nan, nan, 4.0, 4.0, 4.0, nan, nan, nan, nan, nan, nan, nan],
-            [nan, nan, 3.0, 4.0, 4.0, 4.0, 4.0, nan, nan, nan, nan, nan, nan],
-            [nan, 3.0, 3.0, 3.0, 4.0, 4.0, 4.0, 4.0, 2.0, nan, nan, nan, nan],
-            [3.0, 3.0, 3.0, 3.0, 3.0, 4.0, 4.0, 2.0, 2.0, 2.0, nan, nan, nan],
-            [nan, 3.0, 3.0, 3.0, 3.0, 3.0, 1.0, 2.0, 2.0, 2.0, 2.0, nan, nan],
-            [nan, 3.0, 3.0, 3.0, 3.0, 1.0, 1.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0],
-            [nan, 3.0, 3.0, 1.0, 1.0, 1.0, 1.0, 2.0, 2.0, 2.0, 2.0, nan, nan],
-            [nan, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 2.0, 2.0, nan, nan, nan, nan],
-            [nan, nan, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, nan, nan, nan, nan, nan],
-            [nan, nan, 1.0, 1.0, 1.0, 1.0, nan, nan, nan, nan, nan, nan, nan],
-            [nan, nan, 1.0, 1.0, nan, nan, nan, nan, nan, nan, nan, nan, nan],
-            [nan, nan, 1.0, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan]
-        ], dtype=dtype)
+            [nan, nan, 0.0, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan],
+            [nan, nan, 0.0, 0.0, nan, nan, nan, nan, nan, nan, nan, nan, nan],
+            [nan, nan, 0.0, 0.0, 0.0, 0.0, nan, nan, nan, nan, nan, nan, nan],
+            [nan, nan, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, nan, nan, nan, nan, nan],
+            [nan, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 1.0, nan, nan, nan, nan],
+            [nan, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 1.0, nan, nan],
+            [nan, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0],
+            [nan, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 1.0, 1.0, nan, nan],
+            [0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 1.0, 1.0, nan, nan, nan],
+            [nan, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 1.0, 1.0, nan, nan, nan, nan],
+            [nan, nan, 1.0, 1.0, 1.0, 1.0, 1.0, nan, nan, nan, nan, nan, nan],
+            [nan, nan, nan, 1.0, 1.0, 1.0, nan, nan, nan, nan, nan, nan, nan],
+            [nan, nan, nan, nan, 1.0, nan, nan, nan, nan, nan, nan, nan, nan],
+        ],
+            dtype=np.float64)
 
     def expected_j_13x13(self):
         return np.array([
-            [nan, nan, nan, nan, 1.0, nan, nan, nan, nan, nan, nan, nan, nan],
-            [nan, nan, nan, 1.0, 1.0, 1.0, nan, nan, nan, nan, nan, nan, nan],
-            [nan, nan, 1.0, 1.0, 1.0, 1.0, 1.0, nan, nan, nan, nan, nan, nan],
-            [nan, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, nan, nan, nan, nan],
-            [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.0, 0.0, nan, nan, nan],
-            [nan, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0, nan, nan],
-            [nan, 1.0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
-            [nan, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, nan, nan],
-            [nan, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, nan, nan, nan, nan],
-            [nan, nan, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, nan, nan, nan, nan, nan],
-            [nan, nan, 0.0, 0.0, 0.0, 0.0, nan, nan, nan, nan, nan, nan, nan],
+            [nan, nan, 0.0, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan],
             [nan, nan, 0.0, 0.0, nan, nan, nan, nan, nan, nan, nan, nan, nan],
-            [nan, nan, 0.0, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan]
+            [nan, nan, 0.0, 0.0, 0.0, 0.0, nan, nan, nan, nan, nan, nan, nan],
+            [nan, nan, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, nan, nan, nan, nan, nan],
+            [nan, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, nan, nan, nan, nan],
+            [nan, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, nan, nan],
+            [nan, 1.0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+            [nan, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0, nan, nan],
+            [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.0, 0.0, nan, nan, nan],
+            [nan, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, nan, nan, nan, nan],
+            [nan, nan, 1.0, 1.0, 1.0, 1.0, 1.0, nan, nan, nan, nan, nan, nan],
+            [nan, nan, nan, 1.0, 1.0, 1.0, nan, nan, nan, nan, nan, nan, nan],
+            [nan, nan, nan, nan, 1.0, nan, nan, nan, nan, nan, nan, nan, nan],
         ],
             dtype=np.float64)
 
-    def expected_i_13x13(self):
+    def expected_rad_13x13(self, dtype):
         return np.array([
-            [nan, nan, nan, nan, 1.0, nan, nan, nan, nan, nan, nan, nan, nan],
-            [nan, nan, nan, 1.0, 1.0, 1.0, nan, nan, nan, nan, nan, nan, nan],
-            [nan, nan, 1.0, 1.0, 1.0, 1.0, 1.0, nan, nan, nan, nan, nan, nan],
-            [nan, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 1.0, 1.0, nan, nan, nan, nan],
-            [0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 1.0, 1.0, nan, nan, nan],
-            [nan, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 1.0, 1.0, nan, nan],
-            [nan, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.],
-            [nan, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 1.0, nan, nan],
-            [nan, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 1.0, nan, nan, nan, nan],
-            [nan, nan, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, nan, nan, nan, nan, nan],
-            [nan, nan, 0.0, 0.0, 0.0, 0.0, nan, nan, nan, nan, nan, nan, nan],
-            [nan, nan, 0.0, 0.0, nan, nan, nan, nan, nan, nan, nan, nan, nan],
-            [nan, nan, 0.0, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan]
-        ],
-            dtype=np.float64)
+            [nan, nan, 1.0, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan],
+            [nan, nan, 1.0, 1.0, nan, nan, nan, nan, nan, nan, nan, nan, nan],
+            [nan, nan, 1.0, 1.0, 1.0, 1.0, nan, nan, nan, nan, nan, nan, nan],
+            [nan, nan, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, nan, nan, nan, nan, nan],
+            [nan, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 2.0, 2.0, nan, nan, nan, nan],
+            [nan, 3.0, 3.0, 1.0, 1.0, 1.0, 1.0, 2.0, 2.0, 2.0, 2.0, nan, nan],
+            [nan, 3.0, 3.0, 3.0, 3.0, 1.0, 1.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0],
+            [nan, 3.0, 3.0, 3.0, 3.0, 3.0, 1.0, 2.0, 2.0, 2.0, 2.0, nan, nan],
+            [3.0, 3.0, 3.0, 3.0, 3.0, 4.0, 4.0, 2.0, 2.0, 2.0, nan, nan, nan],
+            [nan, 3.0, 3.0, 3.0, 4.0, 4.0, 4.0, 4.0, 2.0, nan, nan, nan, nan],
+            [nan, nan, 3.0, 4.0, 4.0, 4.0, 4.0, nan, nan, nan, nan, nan, nan],
+            [nan, nan, nan, 4.0, 4.0, 4.0, nan, nan, nan, nan, nan, nan, nan],
+            [nan, nan, nan, nan, 4.0, nan, nan, nan, nan, nan, nan, nan, nan],
+        ], dtype=dtype)
 
 
 class RectifySentinel2DatasetTest(SourceDatasetMixin, unittest.TestCase):
@@ -412,14 +414,15 @@ class RectifySentinel2DatasetTest(SourceDatasetMixin, unittest.TestCase):
     def test_rectify_dataset(self):
         src_ds = create_s2plus_dataset()
 
-        expected_data = np.array(
-            [[0.033001, 0.018002, 0.018002, 0.018002, 0.007999, 0.007999, 0.008999, 0.008999, 0.008999, 0.021],
-             [0.041, 0.022999, 0.022999, 0.022999, 0.007, 0.007, 0.009998, 0.009998, 0.009998, 0.021],
-             [0.036999, 0.022999, 0.022999, 0.022999, 0.007999, 0.007999, 0.008999, 0.008999, 0.023998, 0.023998],
-             [0.036999, 0.022999, 0.022999, 0.022999, 0.007999, 0.007999, 0.008999, 0.008999, 0.023998, 0.023998],
-             [0.028, 0.021, 0.021, 0.021, 0.009998, 0.009998, 0.008999, 0.008999, 0.022999, 0.022999],
-             [0.025002, 0.019001, 0.019001, 0.019001, 0.008999, 0.008999, 0.012001, 0.012001, 0.022999, nan],
-             [nan, nan, nan, nan, nan, nan, nan, nan, nan, nan]])
+        expected_data = np.array([
+            [nan, nan, nan, nan, nan, nan, nan, nan, nan, nan],
+            [0.025002, 0.019001, 0.019001, 0.019001, 0.008999, 0.008999, 0.012001, 0.012001, 0.022999, nan],
+            [0.028, 0.021, 0.021, 0.021, 0.009998, 0.009998, 0.008999, 0.008999, 0.022999, 0.022999],
+            [0.036999, 0.022999, 0.022999, 0.022999, 0.007999, 0.007999, 0.008999, 0.008999, 0.023998, 0.023998],
+            [0.036999, 0.022999, 0.022999, 0.022999, 0.007999, 0.007999, 0.008999, 0.008999, 0.023998, 0.023998],
+            [0.041, 0.022999, 0.022999, 0.022999, 0.007, 0.007, 0.009998, 0.009998, 0.009998, 0.021],
+            [0.033001, 0.018002, 0.018002, 0.018002, 0.007999, 0.007999, 0.008999, 0.008999, 0.008999, 0.021],
+        ])
 
         dst_ds = rectify_dataset(src_ds, tile_size=None)
         self.assertEqual(None, dst_ds.rrs_665.chunks)

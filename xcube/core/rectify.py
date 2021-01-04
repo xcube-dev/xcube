@@ -114,15 +114,15 @@ def rectify_dataset(dataset: xr.Dataset,
         src_geo_coding = src_geo_coding.derive(x=src_x, y=src_y)
 
     if output_geom.is_tiled:
-        get_dst_src_ij_images = _compute_ij_images_xarray_dask
-        get_dst_var_image = _compute_var_image_xarray_dask
+        compute_dst_src_ij_images = _compute_ij_images_xarray_dask
+        compute_dst_var_image = _compute_var_image_xarray_dask
     else:
-        get_dst_src_ij_images = _compute_ij_images_xarray_numpy
-        get_dst_var_image = _compute_var_image_xarray_numpy
+        compute_dst_src_ij_images = _compute_ij_images_xarray_numpy
+        compute_dst_var_image = _compute_var_image_xarray_numpy
 
-    dst_src_ij_array = get_dst_src_ij_images(src_geo_coding,
-                                             output_geom,
-                                             uv_delta)
+    dst_src_ij_array = compute_dst_src_ij_images(src_geo_coding,
+                                                 output_geom,
+                                                 uv_delta)
 
     dst_dims = src_geo_coding.xy_names[::-1]
     dst_ds_coords = output_geom.coord_vars(xy_names=src_geo_coding.xy_names)
@@ -135,9 +135,9 @@ def rectify_dataset(dataset: xr.Dataset,
         dst_var_dims = src_var.dims[0:-2] + dst_dims
         dst_var_coords = {d: src_var.coords[d] for d in dst_var_dims if d in src_var.coords}
         dst_var_coords.update({d: dst_ds_coords[d] for d in dst_var_dims if d in dst_ds_coords})
-        dst_var_array = get_dst_var_image(src_var,
-                                          dst_src_ij_array,
-                                          fill_value=np.nan)
+        dst_var_array = compute_dst_var_image(src_var,
+                                              dst_src_ij_array,
+                                              fill_value=np.nan)
         dst_var = xr.DataArray(dst_var_array,
                                dims=dst_var_dims,
                                coords=dst_var_coords,
@@ -200,9 +200,9 @@ def _compute_ij_images_xarray_numpy(src_geo_coding: GeoCoding,
     dst_shape = 2, dst_height, dst_width
     dst_src_ij_images = np.full(dst_shape, np.nan, dtype=np.float64)
     dst_x_offset = output_geom.x_min
-    dst_y_offset = output_geom.y_min if not output_geom.is_j_axis_up else output_geom.y_max
+    dst_y_offset = output_geom.y_min if output_geom.is_j_axis_up else output_geom.y_max
     dst_x_scale = output_geom.x_res
-    dst_y_scale = output_geom.y_res if not output_geom.is_j_axis_up else -output_geom.y_res
+    dst_y_scale = output_geom.y_res if output_geom.is_j_axis_up else -output_geom.y_res
     _compute_ij_images_numpy_parallel(src_geo_coding.x.values,
                                       src_geo_coding.y.values,
                                       0,
@@ -238,9 +238,10 @@ def _compute_ij_images_xarray_dask(src_geo_coding: GeoCoding,
     #
     num_tiles_x = dst_width / dst_tile_width
     num_tiles_y = dst_height / dst_tile_height
-    max_num_tiles = max(num_tiles_x, num_tiles_y)
-    xy_border = min(2 * max_num_tiles * output_geom.avg_xy_res,
-                    min(0.5 * (dst_x_max - dst_x_min), 0.5 * (dst_y_max - dst_y_min)))
+    xy_border = min(min(2 * num_tiles_x * output_geom.x_res,
+                        2 * num_tiles_y * output_geom.y_res),
+                    min(0.5 * (dst_x_max - dst_x_min),
+                        0.5 * (dst_y_max - dst_y_min)))
 
     dst_xy_bboxes = output_geom.xy_bboxes
     src_ij_bboxes = src_geo_coding.ij_bboxes(dst_xy_bboxes, xy_border=xy_border, ij_border=1)
@@ -288,14 +289,13 @@ def _compute_ij_images_xarray_dask_block(dtype: np.dtype,
     dst_src_ij_block = np.full(block_shape, np.nan, dtype=dtype)
     _, (dst_y_slice_start, _), (dst_x_slice_start, _) = block_slices
     src_ij_bbox = src_ij_bboxes[block_id]
-    print('', block_id, block_shape, src_ij_bbox)
     src_i_min, src_j_min, src_i_max, src_j_max = src_ij_bbox
     if src_i_min == -1:
         return dst_src_ij_block
     src_x_values = src_x[src_j_min:src_j_max + 1, src_i_min:src_i_max + 1].values
     src_y_values = src_y[src_j_min:src_j_max + 1, src_i_min:src_i_max + 1].values
     dst_x_offset = dst_x_min + dst_x_slice_start * dst_x_res
-    if not dst_is_j_axis_up:
+    if dst_is_j_axis_up:
         dst_y_offset = dst_y_min + dst_y_slice_start * dst_y_res
     else:
         dst_y_offset = dst_y_max - dst_y_slice_start * dst_y_res
@@ -307,7 +307,7 @@ def _compute_ij_images_xarray_dask_block(dtype: np.dtype,
                                         dst_x_offset,
                                         dst_y_offset,
                                         dst_x_res,
-                                        dst_y_res if not dst_is_j_axis_up else -dst_y_res,
+                                        dst_y_res if dst_is_j_axis_up else -dst_y_res,
                                         uv_delta)
     return dst_src_ij_block
 

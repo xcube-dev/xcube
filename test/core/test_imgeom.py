@@ -252,7 +252,6 @@ class ImageGeomTest(SourceDatasetMixin, unittest.TestCase):
 
         image_geom = ImageGeom(size=(2000, 1000),
                                x_min=10.0, y_min=20.0, xy_res=0.1, tile_size=500)
-        print(image_geom.xy_bboxes)
         np.testing.assert_almost_equal(image_geom.xy_bboxes,
                                        np.array([
                                            [10., 70.1, 59.9, 120.],

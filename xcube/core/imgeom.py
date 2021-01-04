@@ -232,7 +232,10 @@ class ImageGeom:
 
     @property
     def is_j_axis_up(self) -> bool:
-        """Does the positive image j-axis point up?"""
+        """
+        Does the positive image j-axis point up?
+        By default, the positive image j-axis points down.
+        """
         return self._is_j_axis_up
 
     @property
@@ -269,7 +272,19 @@ class ImageGeom:
         """The image's bounding box in CRS coordinates."""
         return self.x_min, self.y_min, self.x_max, self.y_max
 
-
+    @property
+    def xy_bboxes(self) -> np.ndarray:
+        """The image chunks' bounding boxes in CRS coordinates."""
+        if self.is_j_axis_up:
+            xy_offset = np.array([self.x_min, self.y_min, self.x_min, self.y_min])
+            xy_scale = np.array([self.x_res, self.y_res, self.x_res, self.y_res])
+            xy_bboxes = xy_offset + xy_scale * self.ij_bboxes
+        else:
+            xy_offset = np.array([self.x_min, self.y_max, self.x_min, self.y_max])
+            xy_scale = np.array([self.x_res, -self.y_res, self.x_res, -self.y_res])
+            xy_bboxes = xy_offset + xy_scale * self.ij_bboxes
+            xy_bboxes[:, [1, 3]] = xy_bboxes[:, [3, 1]]
+        return xy_bboxes
 
     @property
     def ij_bboxes(self) -> np.ndarray:
