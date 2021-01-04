@@ -24,7 +24,7 @@ from typing import Sequence, Tuple, Optional, Union
 
 import numba as nb
 import numpy as np
-import pyproj as pp
+import pyproj
 import xarray as xr
 
 LON_COORD_VAR_NAMES = ('lon', 'long', 'longitude')
@@ -36,7 +36,7 @@ Y_COORD_VAR_NAMES = ('y', 'yc') + LAT_COORD_VAR_NAMES
 # CRS_WGS84 = pp.crs.CRS.from_string("urn:ogc:def:crs:OGC:1.3:CRS84")
 
 # WGS84, axis order: lat, lon
-CRS_WGS84 = pp.crs.CRS(4326)
+CRS_WGS84 = pyproj.crs.CRS(4326)
 
 
 class GeoCoding:
@@ -49,7 +49,7 @@ class GeoCoding:
                  x_name: str = None,
                  y_name: str = None,
                  is_rectified: bool = None,
-                 crs: pp.crs.CRS = None,
+                 crs: pyproj.crs.CRS = None,
                  is_geo_crs: bool = None,
                  is_lon_normalized: bool = None):
 
@@ -112,7 +112,7 @@ class GeoCoding:
         return self._is_rectified
 
     @property
-    def crs(self) -> pp.crs.CRS:
+    def crs(self) -> pyproj.crs.CRS:
         return self._crs
 
     @property
@@ -138,7 +138,7 @@ class GeoCoding:
                y: xr.DataArray = None,
                x_name: str = None,
                y_name: str = None,
-               crs: pp.crs.CRS = None,
+               crs: pyproj.crs.CRS = None,
                is_geo_crs: bool = None,
                is_rectified: bool = None,
                is_lon_normalized: bool = None):
@@ -175,7 +175,7 @@ class GeoCoding:
     def from_xy(cls,
                 xy: Tuple[xr.DataArray, xr.DataArray],
                 xy_names: Tuple[str, str] = None,
-                crs: pp.crs.CRS = None,
+                crs: pyproj.crs.CRS = None,
                 is_rectified: bool = None) -> 'GeoCoding':
         """
         Return new geo-coding for given *dataset*.
@@ -353,7 +353,7 @@ class GeoCoding:
 
 
 def find_dataset_crs(dataset: xr.Dataset,
-                     xy_names: Tuple[str, str] = None) -> Optional[pp.crs.CRS]:
+                     xy_names: Tuple[str, str] = None) -> Optional[pyproj.crs.CRS]:
     """
     Get the coordinate reference system (CRS) for given dataset *dataset*.
 
@@ -382,14 +382,14 @@ def find_dataset_crs(dataset: xr.Dataset,
         if 'grid_mapping_name' in var.attrs:
             # noinspection PyBroadException
             try:
-                return pp.crs.CRS.from_cf(var.attrs)
+                return pyproj.crs.CRS.from_cf(var.attrs)
             except Exception:
                 warnings.warn(f'could not parse CRS from CF attributes of variable "{var_name}"')
     for var_name, var in dataset.data_vars.items():
         if 'crs_wkt' in var.attrs:
             # noinspection PyBroadException
             try:
-                return pp.crs.CRS.from_wkt(var.attrs['crs_wkt'])
+                return pyproj.crs.CRS.from_wkt(var.attrs['crs_wkt'])
             except Exception:
                 warnings.warn(f'could not parse CRS from CF attribute "crs_wkt" of variable "{var_name}"')
 
