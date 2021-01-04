@@ -195,7 +195,7 @@ class RectifyDatasetTest(SourceDatasetMixin, unittest.TestCase):
         src_ds = self.new_source_dataset_antimeridian()
 
         output_geom = ImageGeom(size=(13, 13), x_min=177.75, y_min=49.75, xy_res=0.5, is_geo_crs=True)
-        self.assertEqual(True, output_geom.is_crossing_antimeridian)
+        self.assertEqual(True, output_geom.is_lon_360)
 
         dst_ds = rectify_dataset(src_ds, output_geom=output_geom)
         self.assertIsNotNone(dst_ds)
@@ -293,7 +293,7 @@ class RectifyDatasetTest(SourceDatasetMixin, unittest.TestCase):
             self.assertEqual(chunks, var.chunks)
             vars.append(var)
 
-        return lon, lat, *vars
+        return (lon, lat, *vars)
 
     def test_compute_and_extract_source_pixels(self):
         from xcube.core.rectify import _compute_ij_images_numpy_parallel

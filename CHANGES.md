@@ -7,6 +7,7 @@
 
 * Numerous, also breaking changes have been applied to 
   class`xcube.core.imgeom.ImageGeom`:
+  - Property `is_crossing_antimeridian` has been renamed to `is_lon_360`.
   - New property `is_j_axis_up` of type `bool` that is `False` by default;
   - New property `crs` of type `pyproj.crs.CRS`, no default;
   - Property `is_geo_crs` is now deprecated. Instead, use `crs.is_geographic`;
@@ -16,6 +17,7 @@
 
 * Numerous, also breaking changes have been applied to 
   class`xcube.core.imgeom.GeoCoding`:
+  - Property `is_lon_normalized` has been renamed to `is_lon_360`.
   - New property `is_rectified` of type `bool`;
   - New property `crs` of type `pyproj.crs.CRS`;
   - Property `is_geo_crs` is now deprecated. Instead, use `crs.is_geographic`;

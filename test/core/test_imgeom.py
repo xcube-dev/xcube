@@ -12,6 +12,8 @@ from .test_geocoding import SourceDatasetMixin
 
 olci_path = 'C :\\Users\\Norman\\Downloads\\S3B_OL_1_EFR____20190728T103451_20190728T103751_20190729T141105_0179_028_108_1800_LN1_O_NT_002.SEN3'
 
+NOT_A_GEO_CRS = pyproj.crs.CRS(5243)
+
 
 # noinspection PyMethodMayBeStatic
 class ImageGeomTest(SourceDatasetMixin, unittest.TestCase):
@@ -70,22 +72,22 @@ class ImageGeomTest(SourceDatasetMixin, unittest.TestCase):
         self.assertEqual('invalid y_min', f'{cm.exception}')
 
     def test_crs(self):
-        image_geom = ImageGeom((2000, 1000))
+        image_geom = ImageGeom((20, 10))
         self.assertEqual(CRS_WGS84, image_geom.crs)
         self.assertEqual(True, image_geom.is_geo_crs)
 
     def test_is_j_axis_up(self):
-        image_geom = ImageGeom((2000, 1000))
+        image_geom = ImageGeom((20, 10))
         self.assertEqual(False, image_geom.is_j_axis_up)
-        image_geom = ImageGeom((2000, 1000), is_j_axis_up=True)
+        image_geom = ImageGeom((20, 10), is_j_axis_up=True)
         self.assertEqual(True, image_geom.is_j_axis_up)
 
     def test_size(self):
-        image_geom = ImageGeom((2000, 1000))
-        self.assertEqual((2000, 1000), image_geom.size)
+        image_geom = ImageGeom((20, 10))
+        self.assertEqual((20, 10), image_geom.size)
 
-        image_geom = ImageGeom(3600)
-        self.assertEqual((3600, 3600), image_geom.size)
+        image_geom = ImageGeom(36)
+        self.assertEqual((36, 36), image_geom.size)
 
         with self.assertRaises(TypeError):
             # noinspection PyTypeChecker
@@ -93,48 +95,48 @@ class ImageGeomTest(SourceDatasetMixin, unittest.TestCase):
 
         with self.assertRaises(ValueError):
             # noinspection PyTypeChecker
-            ImageGeom((3600, 1800, 4))
+            ImageGeom((36, 18, 4))
 
     def test_tile_size(self):
-        image_geom = ImageGeom(size=(2000, 1000))
+        image_geom = ImageGeom(size=(2000, 1000), crs=NOT_A_GEO_CRS)
         self.assertEqual((2000, 1000), image_geom.size)
         self.assertEqual((2000, 1000), image_geom.tile_size)
         self.assertEqual(False, image_geom.is_tiled)
 
-        image_geom = ImageGeom(size=(2000, 1000), tile_size=None)
+        image_geom = ImageGeom(size=(2000, 1000), tile_size=None, crs=NOT_A_GEO_CRS)
         self.assertEqual((2000, 1000), image_geom.size)
         self.assertEqual((2000, 1000), image_geom.tile_size)
         self.assertEqual(False, image_geom.is_tiled)
 
-        image_geom = ImageGeom(size=(2000, 1000), tile_size=(512, 256))
+        image_geom = ImageGeom(size=(2000, 1000), tile_size=(512, 256), crs=NOT_A_GEO_CRS)
         self.assertEqual((2000, 1000), image_geom.size)
         self.assertEqual((512, 256), image_geom.tile_size)
         self.assertEqual(True, image_geom.is_tiled)
 
-        image_geom = ImageGeom(size=(2000, 1000), tile_size=270)
+        image_geom = ImageGeom(size=(2000, 1000), tile_size=270, crs=NOT_A_GEO_CRS)
         self.assertEqual((2000, 1000), image_geom.size)
         self.assertEqual((270, 270), image_geom.tile_size)
         self.assertEqual(True, image_geom.is_tiled)
 
-        image_geom = ImageGeom(size=(400, 200), tile_size=(512, 256))
+        image_geom = ImageGeom(size=(400, 200), tile_size=(512, 256), crs=NOT_A_GEO_CRS)
         self.assertEqual((400, 200), image_geom.size)
         self.assertEqual((400, 200), image_geom.tile_size)
         self.assertEqual(False, image_geom.is_tiled)
 
         with self.assertRaises(ValueError):
             # noinspection PyTypeChecker
-            ImageGeom((2000, 1000), tile_size=((512,)))
+            ImageGeom((2000, 1000), tile_size=((512,)), crs=NOT_A_GEO_CRS)
 
     def test_is_crossing_antimeridian(self):
         image_geom = ImageGeom(size=100, x_min=0.0, y_min=+50.0, xy_res=0.1, is_geo_crs=True)
-        self.assertFalse(image_geom.is_crossing_antimeridian)
+        self.assertFalse(image_geom.is_lon_360)
 
         image_geom = ImageGeom(size=100, x_min=178.0, y_min=+50.0, xy_res=0.1, is_geo_crs=True)
-        self.assertTrue(image_geom.is_crossing_antimeridian)
+        self.assertTrue(image_geom.is_lon_360)
 
     def test_ij_to_xy_transform(self):
         image_geom = ImageGeom(size=(1200, 1200),
-                               x_min=0, y_min=0, xy_res=1)
+                               x_min=0, y_min=0, xy_res=1, crs=NOT_A_GEO_CRS)
         i2crs = image_geom.ij_to_xy_transform
         self.assertMatrixPoint((0, 0), i2crs, (0, 1200))
         self.assertMatrixPoint((1024, 0), i2crs, (1024, 1200))
@@ -160,7 +162,7 @@ class ImageGeomTest(SourceDatasetMixin, unittest.TestCase):
 
     def test_xy_to_ij_transform(self):
         image_geom = ImageGeom(size=(1200, 1200),
-                               x_min=0, y_min=0, xy_res=1)
+                               x_min=0, y_min=0, xy_res=1, crs=NOT_A_GEO_CRS)
         crs2i = image_geom.xy_to_ij_transform
         self.assertMatrixPoint((0, 0), crs2i, (0, 1200))
         self.assertMatrixPoint((1024, 0), crs2i, (1024, 1200))
@@ -223,15 +225,17 @@ class ImageGeomTest(SourceDatasetMixin, unittest.TestCase):
 
     def test_xy_bbox_antimeridian(self):
         output_geom = ImageGeom(size=(20, 10), x_min=174.0, y_min=-30.0, xy_res=0.5, is_geo_crs=True)
-        self.assertEqual(True, output_geom.is_crossing_antimeridian)
+        self.assertEqual(True, output_geom.is_lon_360)
         self.assertEqual((174.0, -30.0, 184.0, -25.0), output_geom.xy_bbox)
 
     def test_ij_bboxes(self):
-        image_geom = ImageGeom(size=(2000, 1000), x_min=10.0, y_min=20.0, xy_res=0.1)
+        image_geom = ImageGeom(size=(2000, 1000),
+                               x_min=10.0, y_min=20.0, xy_res=0.1, crs=NOT_A_GEO_CRS)
         np.testing.assert_almost_equal(image_geom.ij_bboxes,
                                        np.array([[0, 0, 1999, 999]], dtype=np.int64))
 
-        image_geom = ImageGeom(size=(2000, 1000), x_min=10.0, y_min=20.0, xy_res=0.1, tile_size=500)
+        image_geom = ImageGeom(size=(2000, 1000),
+                               x_min=10.0, y_min=20.0, xy_res=0.1, tile_size=500, crs=NOT_A_GEO_CRS)
         np.testing.assert_almost_equal(image_geom.ij_bboxes,
                                        np.array([
                                            [0, 0, 499, 499],
@@ -246,12 +250,12 @@ class ImageGeomTest(SourceDatasetMixin, unittest.TestCase):
 
     def test_xy_bboxes(self):
         image_geom = ImageGeom(size=(2000, 1000),
-                               x_min=10.0, y_min=20.0, xy_res=0.1)
+                               x_min=10.0, y_min=20.0, xy_res=0.1, crs=NOT_A_GEO_CRS)
         np.testing.assert_almost_equal(image_geom.xy_bboxes,
                                        np.array([[10., 20.1, 209.9, 120.]], dtype=np.float64))
 
         image_geom = ImageGeom(size=(2000, 1000),
-                               x_min=10.0, y_min=20.0, xy_res=0.1, tile_size=500)
+                               x_min=10.0, y_min=20.0, xy_res=0.1, tile_size=500, crs=NOT_A_GEO_CRS)
         np.testing.assert_almost_equal(image_geom.xy_bboxes,
                                        np.array([
                                            [10., 70.1, 59.9, 120.],
@@ -266,12 +270,13 @@ class ImageGeomTest(SourceDatasetMixin, unittest.TestCase):
 
     def test_xy_bboxes_is_j_axis_up(self):
         image_geom = ImageGeom(size=(2000, 1000), is_j_axis_up=True,
-                               x_min=10.0, y_min=20.0, xy_res=0.1)
+                               x_min=10.0, y_min=20.0, xy_res=0.1, crs=NOT_A_GEO_CRS)
         np.testing.assert_almost_equal(image_geom.xy_bboxes,
                                        np.array([[10., 20., 209.9, 119.9]], dtype=np.float64))
 
         image_geom = ImageGeom(size=(2000, 1000), is_j_axis_up=True,
-                               x_min=10.0, y_min=20.0, xy_res=0.1, tile_size=500)
+                               x_min=10.0, y_min=20.0, xy_res=0.1, crs=NOT_A_GEO_CRS,
+                               tile_size=500)
         np.testing.assert_almost_equal(image_geom.xy_bboxes,
                                        np.array([
                                            [10., 20., 59.9, 69.9],
@@ -285,7 +290,7 @@ class ImageGeomTest(SourceDatasetMixin, unittest.TestCase):
                                        ], dtype=np.float64))
 
     def test_coord_vars(self):
-        image_geom = ImageGeom(size=(10, 6), x_min=-2600.0, y_min=1200.0, xy_res=10.0)
+        image_geom = ImageGeom(size=(10, 6), x_min=-2600.0, y_min=1200.0, xy_res=10.0, crs=NOT_A_GEO_CRS)
 
         cv = image_geom.coord_vars(xy_names=('x', 'y'))
         self._assert_coord_vars(cv,
@@ -304,7 +309,8 @@ class ImageGeomTest(SourceDatasetMixin, unittest.TestCase):
                                 ))
 
     def test_coord_vars_j_axis_up(self):
-        image_geom = ImageGeom(size=(10, 6), x_min=-2600.0, y_min=1200.0, xy_res=10.0, is_j_axis_up=True)
+        image_geom = ImageGeom(size=(10, 6), x_min=-2600.0, y_min=1200.0, xy_res=10.0,
+                               is_j_axis_up=True, crs=NOT_A_GEO_CRS)
 
         cv = image_geom.coord_vars(xy_names=('x', 'y'))
         self._assert_coord_vars(cv,
@@ -412,13 +418,13 @@ class ImageGeomTest(SourceDatasetMixin, unittest.TestCase):
         src_ds = self.new_source_dataset_antimeridian()
 
         image_geom = ImageGeom.from_dataset(src_ds)
-        self.assertEqual(True, image_geom.is_crossing_antimeridian)
+        self.assertEqual(True, image_geom.is_lon_360)
         self._assert_image_geom(ImageGeom((4, 4),
                                           tile_size=None, x_min=177.0, y_min=49.0, xy_res=2.0),
                                 image_geom)
 
         image_geom = ImageGeom.from_dataset(src_ds, xy_oversampling=2.0)
-        self.assertEqual(True, image_geom.is_crossing_antimeridian)
+        self.assertEqual(True, image_geom.is_lon_360)
         self._assert_image_geom(ImageGeom((7, 7),
                                           tile_size=None, x_min=177.5, y_min=49.5, xy_res=1.0),
                                 image_geom)

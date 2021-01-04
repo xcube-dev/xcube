@@ -63,7 +63,7 @@ class SourceDatasetMixin:
 
 # noinspection PyMethodMayBeStatic
 class GeoCodingTest(SourceDatasetMixin, unittest.TestCase):
-    def test_is_geo_crs_and_is_lon_normalized(self):
+    def test_is_geo_crs_and_is_lon_360(self):
         x = xr.DataArray(np.linspace(10.0, 20.0, 21), dims='columns', name='lon')
         y = xr.DataArray(np.linspace(53.0, 58.0, 11), dims='rows', name='lat')
         y, x = xr.broadcast(y, x)
@@ -71,22 +71,22 @@ class GeoCodingTest(SourceDatasetMixin, unittest.TestCase):
         gc = GeoCoding(x, y)
         self.assertEqual(CRS_WGS84, gc.crs)
         self.assertEqual(True, gc.is_geo_crs)
-        self.assertEqual(False, gc.is_lon_normalized)
+        self.assertEqual(False, gc.is_lon_360)
 
         gc = GeoCoding(x, y, is_geo_crs=True)
         self.assertEqual(CRS_WGS84, gc.crs)
         self.assertEqual(True, gc.is_geo_crs)
-        self.assertEqual(False, gc.is_lon_normalized)
+        self.assertEqual(False, gc.is_lon_360)
 
-        gc = GeoCoding(x, y, is_lon_normalized=True)
+        gc = GeoCoding(x, y, is_lon_360=True)
         self.assertEqual(CRS_WGS84, gc.crs)
         self.assertEqual(True, gc.is_geo_crs)
-        self.assertEqual(True, gc.is_lon_normalized)
+        self.assertEqual(True, gc.is_lon_360)
 
-        gc = GeoCoding(x, y, is_lon_normalized=False)
+        gc = GeoCoding(x, y, is_lon_360=False)
         self.assertEqual(CRS_WGS84, gc.crs)
         self.assertEqual(True, gc.is_geo_crs)
-        self.assertEqual(False, gc.is_lon_normalized)
+        self.assertEqual(False, gc.is_lon_360)
 
         with self.assertRaises(ValueError) as cm:
             GeoCoding(x, y, crs=pyproj.crs.CRS(32633), is_geo_crs=True)
@@ -94,12 +94,12 @@ class GeoCodingTest(SourceDatasetMixin, unittest.TestCase):
                          f'{cm.exception}')
 
         with self.assertRaises(ValueError) as cm:
-            GeoCoding(x, y, is_geo_crs=False, is_lon_normalized=True)
+            GeoCoding(x, y, is_geo_crs=False, is_lon_360=True)
         self.assertEqual('is_geo_crs and is_lon_normalized are inconsistent',
                          f'{cm.exception}')
 
         with self.assertRaises(ValueError) as cm:
-            GeoCoding(x, y, crs=pyproj.crs.CRS(32633), is_lon_normalized=True)
+            GeoCoding(x, y, crs=pyproj.crs.CRS(32633), is_lon_360=True)
         self.assertEqual('crs and is_lon_normalized are inconsistent',
                          f'{cm.exception}')
 
@@ -110,9 +110,10 @@ class GeoCodingTest(SourceDatasetMixin, unittest.TestCase):
                          f'{cm.exception}')
 
     def test_from_dataset_1d_rectified(self):
-        x = xr.DataArray(np.linspace(10.0, 20.0, 21), dims='x')
-        y = xr.DataArray(np.linspace(53.0, 58.0, 11), dims='y')
-        gc = GeoCoding.from_dataset(xr.Dataset(dict(x=x, y=y), attrs=CRS_WGS84.to_cf()))
+        x = xr.DataArray(np.linspace(10.0, 20.0, 21), dims='x', attrs=dict(grid_mapping='crs'))
+        y = xr.DataArray(np.linspace(53.0, 58.0, 11), dims='y', attrs=dict(grid_mapping='crs'))
+        crs = xr.DataArray(0, attrs=CRS_WGS84.to_cf())
+        gc = GeoCoding.from_dataset(xr.Dataset(dict(x=x, y=y, crs=crs)))
         self.assertIsInstance(gc.x, xr.DataArray)
         self.assertIsInstance(gc.y, xr.DataArray)
         self.assertEqual('x', gc.x_name)
@@ -120,13 +121,14 @@ class GeoCodingTest(SourceDatasetMixin, unittest.TestCase):
         self.assertEqual(True, gc.is_rectified)
         self.assertEqual(CRS_WGS84, gc.crs)
         self.assertEqual(True, gc.is_geo_crs)
-        self.assertEqual(False, gc.is_lon_normalized)
+        self.assertEqual(False, gc.is_lon_360)
 
     def test_from_dataset_2d_rectified(self):
         x = xr.DataArray(np.linspace(10.0, 20.0, 21), dims='columns')
         y = xr.DataArray(np.linspace(53.0, 58.0, 11), dims='rows')
+        crs = xr.DataArray(0, attrs=CRS_WGS84.to_cf())
         y, x = xr.broadcast(y, x)
-        gc = GeoCoding.from_dataset(xr.Dataset(dict(x=x, y=y), attrs=CRS_WGS84.to_cf()))
+        gc = GeoCoding.from_dataset(xr.Dataset(dict(x=x, y=y, crs=crs)))
         self.assertIsInstance(gc.x, xr.DataArray)
         self.assertIsInstance(gc.y, xr.DataArray)
         self.assertEqual('x', gc.x_name)
@@ -134,16 +136,17 @@ class GeoCodingTest(SourceDatasetMixin, unittest.TestCase):
         self.assertEqual(True, gc.is_rectified)
         self.assertEqual(CRS_WGS84, gc.crs)
         self.assertEqual(True, gc.is_geo_crs)
-        self.assertEqual(False, gc.is_lon_normalized)
+        self.assertEqual(False, gc.is_lon_360)
 
     def test_from_dataset_2d_not_rectified(self):
         x = xr.DataArray(np.linspace(10.0, 20.0, 21), dims='columns')
         y = xr.DataArray(np.linspace(53.0, 58.0, 11), dims='rows')
+        crs = xr.DataArray(0, attrs=CRS_WGS84.to_cf())
         y, x = xr.broadcast(y, x)
         # Add noise to x, y so they are no longer rectified
         x = x + 0.01 * np.random.random_sample((11, 21))
         y = y + 0.01 * np.random.random_sample((11, 21))
-        gc = GeoCoding.from_dataset(xr.Dataset(dict(x=x, y=y), attrs=CRS_WGS84.to_cf()))
+        gc = GeoCoding.from_dataset(xr.Dataset(dict(x=x, y=y, crs=crs)))
         self.assertIsInstance(gc.x, xr.DataArray)
         self.assertIsInstance(gc.y, xr.DataArray)
         self.assertEqual('x', gc.x_name)
@@ -151,7 +154,7 @@ class GeoCodingTest(SourceDatasetMixin, unittest.TestCase):
         self.assertEqual(False, gc.is_rectified)
         self.assertEqual(CRS_WGS84, gc.crs)
         self.assertEqual(True, gc.is_geo_crs)
-        self.assertEqual(False, gc.is_lon_normalized)
+        self.assertEqual(False, gc.is_lon_360)
 
     def test_ij_bbox(self):
         self._test_ij_bbox(conservative=False)
@@ -188,7 +191,7 @@ class GeoCodingTest(SourceDatasetMixin, unittest.TestCase):
         lon = xr.DataArray(np.linspace(175.0, 185.0, 21), dims='columns')
         lat = xr.DataArray(np.linspace(53.0, 58.0, 11), dims='rows')
         lat, lon = xr.broadcast(lat, lon)
-        gc = GeoCoding(x=lon, y=lat, x_name='lon', y_name='lat', is_lon_normalized=True)
+        gc = GeoCoding(x=lon, y=lat, x_name='lon', y_name='lat', is_lon_360=True)
         ij_bbox = gc.ij_bbox_conservative if conservative else gc.ij_bbox
         self.assertEqual((-1, -1, -1, -1), ij_bbox((0, -50, 30, 0)))
         self.assertEqual((0, 0, 20, 10), ij_bbox((denorm(160), 50, denorm(200), 60)))

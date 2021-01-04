@@ -30,7 +30,7 @@ import xarray as xr
 
 from xcube.core.geocoding import CRS_WGS84
 from xcube.core.geocoding import GeoCoding
-from xcube.core.geocoding import denormalize_lon
+from xcube.core.geocoding import from_lon_180
 from xcube.util.dask import get_block_iterators
 from xcube.util.dask import get_chunk_sizes
 
@@ -61,6 +61,33 @@ AffineTransformMatrix = Tuple[Tuple[float, float, float],
 
 
 class ImageGeom:
+    """
+    Represents an image's geometry including its *size*, *tile_size* and a mapping
+    of the image coordinates to some *crs*, a coordinate reference system.
+
+    :param size: Image size.
+        May be an integer tuple (width, height) or a
+        integer size so that width = height = size.
+    :param tile_size: Image tile size.
+        May be an integer tuple (tile_width, tile_height) or a
+        integer size so that tile_width = tile_height = size.
+        Defaults to image size (= no tiling).
+    :param x_min:
+        Minimum x-coordinate. Default is zero.
+    :param y_min:
+        Minimum y-coordinate. Default is zero.
+    :param xy_res: Size per pixel in the units of the given *crs*.
+        May be a float tuple (x_res, y_res) or a
+        float size so that x_res = y_res = size. Default is one.
+    :param is_j_axis_up:
+        Whether the image's positive j-axis points up, i.e. y-coordinates increase with pixel j-coordinates.
+        Default is False. Usually, the image's positive j-axis points down.
+    :param crs:
+        The coordinate reference system for *x_min* and *y_min*.
+        Defaults to "WGS 84", geographic latitude/longitude (EPSG:4326).
+    :param is_geo_crs:
+        Deprecated. Use *crs*.
+    """
 
     def __init__(self,
                  size: Union[int, Tuple[int, int]],
@@ -106,7 +133,13 @@ class ImageGeom:
             warnings.warn('keyword argument "is_geo_crs" is deprecated, use "crs" instead',
                           DeprecationWarning, stacklevel=2)
 
-        if is_geo_crs:
+            if crs is not None and crs.is_geographic != is_geo_crs:
+                raise ValueError('crs and is_geo_crs are inconsistent')
+
+        if crs is None:
+            crs = CRS_WGS84
+
+        if crs.is_geographic:
             if w * x_res > 360.0:
                 raise ValueError('invalid size, xy_res combination')
             if x_min < -180.0 or x_min > 180.0:
@@ -114,16 +147,13 @@ class ImageGeom:
             if y_min < -90.0 or y_min > 90.0 or y_min + h * y_res > 90.0:
                 raise ValueError('invalid y_min')
 
-        if is_geo_crs is not None and crs is not None and crs.is_geographic != is_geo_crs:
-            raise ValueError('crs and is_geo_crs are inconsistent')
-
         self._size = w, h
         self._tile_size = min(w, tw) or w, min(h, th) or h
         self._x_min = x_min
         self._y_min = y_min
         self._xy_res = x_res, y_res
         self._is_j_axis_up = is_j_axis_up
-        self._crs = crs if crs is not None else CRS_WGS84
+        self._crs = crs
 
     def derive(self,
                size: Tuple[int, int] = None,
@@ -180,10 +210,12 @@ class ImageGeom:
         return self._tile_size[1]
 
     @property
-    def is_crossing_antimeridian(self) -> Optional[bool]:
+    def is_lon_360(self) -> Optional[bool]:
         """
-        Guess whether the x-axis crosses the anti-meridian.
-        Works currently only for geographical CRSes.
+        Check whether *x_max* is greater than 180 degrees.
+        Effectively tests whether the range *x_min*, *x_max* crosses
+        the anti-meridian at 180 degrees.
+        Works only for geographical coordinate reference systems.
         """
         if not self.is_geo_crs:
             return None
@@ -348,10 +380,10 @@ class ImageGeom:
         x_bnds_0_data = np.linspace(x1, x2 - x_res, w)
         x_bnds_1_data = np.linspace(x1 + x_res, x2, w)
 
-        if self.is_crossing_antimeridian:
-            x_data = denormalize_lon(x_data)
-            x_bnds_0_data = denormalize_lon(x_bnds_0_data)
-            x_bnds_1_data = denormalize_lon(x_bnds_1_data)
+        if self.is_lon_360:
+            x_data = from_lon_180(x_data)
+            x_bnds_0_data = from_lon_180(x_bnds_0_data)
+            x_bnds_1_data = from_lon_180(x_bnds_1_data)
 
         if self.is_j_axis_up:
             y_data = np.linspace(y1 + y_res05, y2 - y_res05, h)

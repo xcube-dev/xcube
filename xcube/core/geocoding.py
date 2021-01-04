@@ -40,8 +40,24 @@ CRS_WGS84 = pyproj.crs.CRS(4326)
 
 
 class GeoCoding:
+    """
+    The geo-coding for a dataset. It comprises a dataset's *x* and *y* coordinates
+    and a *crs*, the coordinate reference system for *x* and *y*.
 
-    # TODO (forman): add docs
+    :param x: 2D x-coordinate array with dimensions (y, x).
+        Coordinates are in units of the given *crs*. Must have same shape as *y*.
+    :param y: 2D y-coordinate array with dimensions (y, x).
+        Coordinates are in units of the given *crs*. Must have same shape as *x*.
+    :param x_name: The name of the x-coordinate array.
+    :param y_name: The name of the y-coordinate array.
+    :param is_rectified: Whether *x* and *y* are rectified coordinates,
+        i.e. x[:,0] == x[0, 0] and y[0,:] == y[0, 0].
+    :param crs: The coordinate reference system for *x* an *y*.
+    :param is_geo_crs: Deprecated, use *crs*.
+        Whether this a geographic coordinate system s used.
+    :param is_lon_360: Whether y-coordinates use longitudes in the
+        range 0 to 360 degrees, rather than -180 to +180.
+    """
 
     def __init__(self,
                  x: xr.DataArray,
@@ -52,7 +68,7 @@ class GeoCoding:
                  is_rectified: bool = None,
                  crs: pyproj.crs.CRS = None,
                  is_geo_crs: bool = None,
-                 is_lon_normalized: bool = None):
+                 is_lon_360: bool = None):
 
         if is_geo_crs is not None:
             warnings.warn('keyword argument "is_geo_crs" is deprecated, use "crs" instead',
@@ -60,7 +76,7 @@ class GeoCoding:
             if crs is not None and crs.is_geographic != is_geo_crs:
                 raise ValueError('crs and is_geo_crs are inconsistent')
 
-        if is_lon_normalized is True:
+        if is_lon_360 is True:
             if is_geo_crs is False:
                 raise ValueError('is_geo_crs and is_lon_normalized are inconsistent')
             if crs is not None and not crs.is_geographic:
@@ -71,7 +87,7 @@ class GeoCoding:
         if not x_name or not y_name:
             raise ValueError('failed to determine x_name, y_name from x, y')
 
-        if crs is None and (_is_geo_crs(x_name, y_name) or is_geo_crs or is_lon_normalized is not None):
+        if crs is None and (_is_geo_crs(x_name, y_name) or is_geo_crs or is_lon_360 is not None):
             crs = CRS_WGS84
         if crs is None:
             raise ValueError('failed to determine crs')
@@ -82,7 +98,7 @@ class GeoCoding:
         self._y_name = y_name
         self._crs = crs
         self._is_rectified = bool(is_rectified)
-        self._is_lon_normalized = bool(is_lon_normalized) if crs.is_geographic else None
+        self._is_lon_360 = bool(is_lon_360) if crs.is_geographic else None
 
     @property
     def x(self) -> xr.DataArray:
@@ -121,8 +137,8 @@ class GeoCoding:
         return self._crs.is_geographic
 
     @property
-    def is_lon_normalized(self) -> Optional[bool]:
-        return self._is_lon_normalized
+    def is_lon_360(self) -> Optional[bool]:
+        return self._is_lon_360
 
     @property
     def size(self) -> Tuple[int, int]:
@@ -151,8 +167,8 @@ class GeoCoding:
                          crs=crs if crs is not None else self.crs,
                          is_geo_crs=is_geo_crs if is_geo_crs is not None
                          else self.is_geo_crs,
-                         is_lon_normalized=is_lon_normalized if is_lon_normalized is not None
-                         else self.is_lon_normalized)
+                         is_lon_360=is_lon_normalized if is_lon_normalized is not None
+                         else self.is_lon_360)
 
     @classmethod
     def from_dataset(cls,
@@ -225,9 +241,9 @@ class GeoCoding:
         else:
             is_geo_crs = _is_geo_crs(x_name, y_name)
 
-        is_lon_normalized = False
+        is_lon_360 = None
         if is_geo_crs:
-            x, is_lon_normalized = _maybe_normalise_2d_lon(x)
+            x, is_lon_360 = _maybe_to_360_lon(x, is_rectified)
 
         return GeoCoding(x=x, y=y,
                          x_name=x_name,
@@ -235,7 +251,7 @@ class GeoCoding:
                          crs=crs,
                          is_rectified=is_rectified,
                          is_geo_crs=is_geo_crs,
-                         is_lon_normalized=is_lon_normalized)
+                         is_lon_360=is_lon_360)
 
     def ij_bbox(self,
                 xy_bbox: Tuple[float, float, float, float],
@@ -277,7 +293,7 @@ class GeoCoding:
         :return: Bounding box in (i_min, j_min, i_max, j_max) in pixel coordinates.
             Returns None if *xy_bbox* isn't intersecting any of the x,y coordinates.
         """
-        if self.is_lon_normalized:
+        if self.is_lon_360:
             xy_bboxes = xy_bboxes.copy()
             c0 = xy_bboxes[:, 0]
             c2 = xy_bboxes[:, 2]
@@ -331,7 +347,7 @@ class GeoCoding:
             Returns ``(-1, -1, -1, -1)`` if *xy_bbox* isn't intersecting any of the x,y coordinates.
         """
         x1, y1, x2, y2 = xy_bbox
-        if self.is_lon_normalized:
+        if self.is_lon_360:
             x1 = x1 + 360.0 if x1 < 0.0 else x1
             x2 = x2 + 360.0 if x2 < 0.0 else x2
 
@@ -409,14 +425,14 @@ def _is_geo_crs(x_name: str, y_name: str) -> bool:
     return x_name in LON_COORD_VAR_NAMES and y_name in LAT_COORD_VAR_NAMES
 
 
-def normalize_lon(lon_var: Union[np.ndarray, xr.DataArray]):
+def to_lon_360(lon_var: Union[np.ndarray, xr.DataArray]):
     if isinstance(lon_var, xr.DataArray):
         return lon_var.where(lon_var >= 0.0, lon_var + 360.0)
     else:
         return np.where(lon_var >= 0.0, lon_var, lon_var + 360.0)
 
 
-def denormalize_lon(lon_var: Union[np.ndarray, xr.DataArray]):
+def from_lon_180(lon_var: Union[np.ndarray, xr.DataArray]):
     if isinstance(lon_var, xr.DataArray):
         return lon_var.where(lon_var <= 180.0, lon_var - 360.0)
     else:
@@ -562,17 +578,30 @@ def _get_var(src_ds: xr.Dataset, name: str) -> xr.DataArray:
     return src_ds[name]
 
 
-def _is_crossing_antimeridian(lon_var: xr.DataArray):
+def _is_crossing_anti_meridian_1d(lon_var: xr.DataArray):
+    dim_x = lon_var.dims[-1]
+    # noinspection PyTypeChecker
+    return abs(lon_var.diff(dim=dim_x)).max() > 180.0
+
+
+def _is_crossing_anti_meridian_2d(lon_var: xr.DataArray):
     dim_y, dim_x = lon_var.dims
     # noinspection PyTypeChecker
     return abs(lon_var.diff(dim=dim_x)).max() > 180.0 or \
            abs(lon_var.diff(dim=dim_y)).max() > 180.0
 
 
-def _maybe_normalise_2d_lon(lon_var: xr.DataArray):
-    if _is_crossing_antimeridian(lon_var):
-        lon_var = normalize_lon(lon_var)
-        if _is_crossing_antimeridian(lon_var):
-            raise ValueError('cannot account for longitudial anti-meridian crossing')
-        return lon_var, True
+def _maybe_to_360_lon(lon_var: xr.DataArray, is_rectified: bool):
+    if is_rectified:
+        if _is_crossing_anti_meridian_1d(lon_var[0, :]):
+            lon_var = to_lon_360(lon_var)
+            if _is_crossing_anti_meridian_1d(lon_var[0, :]):
+                raise ValueError('cannot account for longitudial anti-meridian crossing')
+            return lon_var, True
+    else:
+        if _is_crossing_anti_meridian_2d(lon_var):
+            lon_var = to_lon_360(lon_var)
+            if _is_crossing_anti_meridian_2d(lon_var):
+                raise ValueError('cannot account for longitudial anti-meridian crossing')
+            return lon_var, True
     return lon_var, False
