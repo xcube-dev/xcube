@@ -21,17 +21,17 @@ class RectifyDatasetTest(SourceDatasetMixin, unittest.TestCase):
         dst_ds = rectify_dataset(src_ds)
         lon, lat, rad = self._assert_shape_and_dim(dst_ds, (4, 4))
         np.testing.assert_almost_equal(lon.values,
-                                       np.array([1.0, 3.0, 5., 7.],
+                                       np.array([0., 2., 4., 6.],
                                                 dtype=lon.dtype))
         np.testing.assert_almost_equal(lat.values,
-                                       np.array([57., 55., 53., 51.],
+                                       np.array([56., 54., 52., 50.],
                                                 dtype=lat.dtype))
         np.testing.assert_almost_equal(rad.values,
                                        np.array([
                                            [nan, nan, nan, nan],
-                                           [1.0, nan, nan, nan],
-                                           [3.0, 1.0, 2.0, nan],
-                                           [3.0, 4.0, nan, nan],
+                                           [nan, 1.0, 2.0, nan],
+                                           [3.0, 3.0, 2.0, nan],
+                                           [nan, 4.0, nan, nan]
                                        ],
                                            dtype=rad.dtype))
 
@@ -415,30 +415,30 @@ class RectifySentinel2DatasetTest(SourceDatasetMixin, unittest.TestCase):
         src_ds = create_s2plus_dataset()
 
         expected_data = np.array([
-            [nan, nan, nan, nan, nan, nan, nan, nan, nan, nan],
-            [0.025002, 0.019001, 0.019001, 0.019001, 0.008999, 0.008999, 0.012001, 0.012001, 0.022999, nan],
-            [0.028, 0.021, 0.021, 0.021, 0.009998, 0.009998, 0.008999, 0.008999, 0.022999, 0.022999],
-            [0.036999, 0.022999, 0.022999, 0.022999, 0.007999, 0.007999, 0.008999, 0.008999, 0.023998, 0.023998],
-            [0.036999, 0.022999, 0.022999, 0.022999, 0.007999, 0.007999, 0.008999, 0.008999, 0.023998, 0.023998],
-            [0.041, 0.022999, 0.022999, 0.022999, 0.007, 0.007, 0.009998, 0.009998, 0.009998, 0.021],
-            [0.033001, 0.018002, 0.018002, 0.018002, 0.007999, 0.007999, 0.008999, 0.008999, 0.008999, 0.021],
+            [nan, nan, nan, nan, 0.009, 0.009, 0.012, 0.012, 0.012, 0.023, nan],
+            [nan, 0.028, 0.021, 0.021, 0.01, 0.01, 0.01, 0.009, 0.009, 0.023, nan],
+            [nan, 0.028, 0.021, 0.021, 0.01, 0.01, 0.01, 0.009, 0.009, 0.023, nan],
+            [nan, 0.037, 0.023, 0.023, 0.008, 0.008, 0.008, 0.01, 0.009, 0.023, nan],
+            [nan, 0.041, 0.023, 0.023, 0.007, 0.007, 0.007, 0.01, 0.01, 0.021, nan],
+            [nan, 0.041, 0.023, 0.023, 0.007, 0.007, 0.007, 0.01, 0.01, 0.021, nan],
+            [nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan],
         ])
-
         dst_ds = rectify_dataset(src_ds, tile_size=None)
+        print(dst_ds.rrs_665.values)
         self.assertEqual(None, dst_ds.rrs_665.chunks)
-        np.testing.assert_almost_equal(dst_ds.rrs_665.values, expected_data)
+        np.testing.assert_almost_equal(dst_ds.rrs_665.values, expected_data, decimal=3)
 
         dst_ds = rectify_dataset(src_ds, tile_size=5)
-        self.assertEqual(((5, 2), (5, 5)), dst_ds.rrs_665.chunks)
-        np.testing.assert_almost_equal(dst_ds.rrs_665.values, expected_data)
+        self.assertEqual(((5, 2), (5, 5, 1)), dst_ds.rrs_665.chunks)
+        np.testing.assert_almost_equal(dst_ds.rrs_665.values, expected_data, decimal=3)
 
         dst_ds = rectify_dataset(src_ds, tile_size=None, is_j_axis_up=True)
         self.assertEqual(None, dst_ds.rrs_665.chunks)
-        np.testing.assert_almost_equal(dst_ds.rrs_665.values, expected_data[::-1])
+        np.testing.assert_almost_equal(dst_ds.rrs_665.values, expected_data[::-1], decimal=3)
 
         dst_ds = rectify_dataset(src_ds, tile_size=5, is_j_axis_up=True)
-        self.assertEqual(((5, 2), (5, 5)), dst_ds.rrs_665.chunks)
-        np.testing.assert_almost_equal(dst_ds.rrs_665.values, expected_data[::-1])
+        self.assertEqual(((5, 2), (5, 5, 1)), dst_ds.rrs_665.chunks)
+        np.testing.assert_almost_equal(dst_ds.rrs_665.values, expected_data[::-1], decimal=3)
 
 
 def create_s2plus_dataset():

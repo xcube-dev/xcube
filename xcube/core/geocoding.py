@@ -46,6 +46,7 @@ class GeoCoding:
     def __init__(self,
                  x: xr.DataArray,
                  y: xr.DataArray,
+                 *,
                  x_name: str = None,
                  y_name: str = None,
                  is_rectified: bool = None,

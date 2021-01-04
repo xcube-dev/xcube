@@ -64,6 +64,7 @@ class ImageGeom:
 
     def __init__(self,
                  size: Union[int, Tuple[int, int]],
+                 *,
                  tile_size: Union[int, Tuple[int, int]] = None,
                  x_min: float = 0.0,
                  y_min: float = 0.0,
@@ -416,37 +417,49 @@ def _compute_image_geom(dataset: xr.Dataset,
                         ij_denom: Union[int, Tuple[int, int]] = None) -> ImageGeom:
     i_denom, j_denom = ((ij_denom, ij_denom) if isinstance(ij_denom, int)
                         else ij_denom) or (1, 1)
+
     geo_coding = geo_coding if geo_coding is not None \
         else GeoCoding.from_dataset(dataset, xy_names=xy_names)
-    # TODO: make use of the new property geo_coding.is_rectified == True. In this case
-    #       computations are much simpler.
-    src_x, src_y = geo_coding.xy
-    dim_y, dim_x = src_x.dims
-    src_x_x_diff = src_x.diff(dim=dim_x)
-    src_x_y_diff = src_x.diff(dim=dim_y)
-    src_y_x_diff = src_y.diff(dim=dim_x)
-    src_y_y_diff = src_y.diff(dim=dim_y)
-    src_x_x_diff_sq = np.square(src_x_x_diff)
-    src_x_y_diff_sq = np.square(src_x_y_diff)
-    src_y_x_diff_sq = np.square(src_y_x_diff)
-    src_y_y_diff_sq = np.square(src_y_y_diff)
-    src_x_diff = np.sqrt(src_x_x_diff_sq + src_y_x_diff_sq)
-    src_y_diff = np.sqrt(src_x_y_diff_sq + src_y_y_diff_sq)
+
+    xy_res_factor = 1 / xy_oversampling
+
+    if geo_coding.is_rectified:
+        src_x = geo_coding.x[0, :]
+        src_y = geo_coding.y[:, 0]
+        src_x_diff = np.abs(src_x.diff(dim=src_x.dims[0]))
+        src_y_diff = np.abs(src_y.diff(dim=src_y.dims[0]))
+    else:
+        src_x, src_y = geo_coding.xy
+        dim_y, dim_x = src_x.dims
+        src_x_x_diff = src_x.diff(dim=dim_x)
+        src_x_y_diff = src_x.diff(dim=dim_y)
+        src_y_x_diff = src_y.diff(dim=dim_x)
+        src_y_y_diff = src_y.diff(dim=dim_y)
+        src_x_x_diff_sq = np.square(src_x_x_diff)
+        src_x_y_diff_sq = np.square(src_x_y_diff)
+        src_y_x_diff_sq = np.square(src_y_x_diff)
+        src_y_y_diff_sq = np.square(src_y_y_diff)
+        src_x_diff = np.sqrt(src_x_x_diff_sq + src_y_x_diff_sq)
+        src_y_diff = np.sqrt(src_x_y_diff_sq + src_y_y_diff_sq)
+        xy_res_factor /= math.sqrt(2)
+
     src_x_res = float(src_x_diff.where(src_x_diff > xy_eps).min())
     src_y_res = float(src_y_diff.where(src_y_diff > xy_eps).min())
-    src_xy_res = min(src_x_res, src_y_res) / (math.sqrt(2.0) * xy_oversampling)
-    src_x_min = float(src_x.min())
-    src_x_max = float(src_x.max())
-    src_y_min = float(src_y.min())
-    src_y_max = float(src_y.max())
-    dst_width = 1 + math.floor((src_x_max - src_x_min) / src_xy_res)
-    dst_height = 1 + math.floor((src_y_max - src_y_min) / src_xy_res)
-    dst_width = i_denom * ((dst_width + i_denom - 1) // i_denom)
-    dst_height = j_denom * ((dst_height + j_denom - 1) // j_denom)
+    src_xy_res = min(src_x_res, src_y_res) * xy_res_factor
+    src_xy_res_05 = 0.5 * src_xy_res
+    src_x_min = float(src_x.min() - src_xy_res_05)
+    src_x_max = float(src_x.max() + src_xy_res_05)
+    src_y_min = float(src_y.min() - src_xy_res_05)
+    src_y_max = float(src_y.max() + src_xy_res_05)
 
-    # Reduce height if it takes the maximum latitude over 90° (see Issue #303).
-    if src_y_min + dst_height * src_xy_res > 90.0:
-        dst_height -= 1
+    if geo_coding.crs.is_geographic:
+        src_y_min = -90 if src_y_min < -90 else src_y_min
+        src_y_max = +90 if src_y_max > +90 else src_y_max
+
+    dst_width = round((src_x_max - src_x_min) / src_xy_res)
+    dst_height = round((src_y_max - src_y_min) / src_xy_res)
+    dst_width = (i_denom * ((dst_width + i_denom - 1) // i_denom)) or i_denom
+    dst_height = (j_denom * ((dst_height + j_denom - 1) // j_denom)) or j_denom
 
     return ImageGeom((dst_width, dst_height),
                      x_min=src_x_min,

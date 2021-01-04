@@ -123,7 +123,7 @@ class ImageGeomTest(SourceDatasetMixin, unittest.TestCase):
 
         with self.assertRaises(ValueError):
             # noinspection PyTypeChecker
-            ImageGeom((2000, 1000), ((512,)))
+            ImageGeom((2000, 1000), tile_size=((512,)))
 
     def test_is_crossing_antimeridian(self):
         image_geom = ImageGeom(size=100, x_min=0.0, y_min=+50.0, xy_res=0.1, is_geo_crs=True)
@@ -393,14 +393,17 @@ class ImageGeomTest(SourceDatasetMixin, unittest.TestCase):
     def test_from_dataset(self):
         src_ds = self.new_source_dataset()
 
-        self._assert_image_geom(ImageGeom((4, 4), None, 0.0, 50.0, 2.0),
+        self._assert_image_geom(ImageGeom((4, 4),
+                                          tile_size=None, x_min=-1, y_min=49.0, xy_res=2.0),
                                 ImageGeom.from_dataset(src_ds))
 
-        self._assert_image_geom(ImageGeom((7, 7), None, 0.0, 50.0, 1.0),
+        self._assert_image_geom(ImageGeom((7, 7),
+                                          tile_size=None, x_min=-0.5, y_min=49.5, xy_res=1.0),
                                 ImageGeom.from_dataset(src_ds,
                                                        xy_oversampling=2.0))
 
-        self._assert_image_geom(ImageGeom((8, 8), None, 0.0, 50.0, 1.0),
+        self._assert_image_geom(ImageGeom((8, 8),
+                                          tile_size=None, x_min=-0.5, y_min=49.5, xy_res=1.0),
                                 ImageGeom.from_dataset(src_ds,
                                                        ij_denom=4,
                                                        xy_oversampling=2.0))
@@ -410,30 +413,34 @@ class ImageGeomTest(SourceDatasetMixin, unittest.TestCase):
 
         image_geom = ImageGeom.from_dataset(src_ds)
         self.assertEqual(True, image_geom.is_crossing_antimeridian)
-        self._assert_image_geom(ImageGeom((4, 4), None, 178.0, 50.0, 2.0),
+        self._assert_image_geom(ImageGeom((4, 4),
+                                          tile_size=None, x_min=177.0, y_min=49.0, xy_res=2.0),
                                 image_geom)
 
         image_geom = ImageGeom.from_dataset(src_ds, xy_oversampling=2.0)
         self.assertEqual(True, image_geom.is_crossing_antimeridian)
-        self._assert_image_geom(ImageGeom((7, 7), None, 178.0, 50.0, 1.0),
+        self._assert_image_geom(ImageGeom((7, 7),
+                                          tile_size=None, x_min=177.5, y_min=49.5, xy_res=1.0),
                                 image_geom)
 
-        self._assert_image_geom(ImageGeom((8, 8), None, 178.0, 50.0, 1.0),
+        self._assert_image_geom(ImageGeom((8, 8),
+                                          tile_size=None, x_min=177.5, y_min=49.5, xy_res=1.0),
                                 ImageGeom.from_dataset(src_ds,
                                                        ij_denom=4,
                                                        xy_oversampling=2.0))
 
-    def test_from_default_new_cube(self):
-        self._assert_image_geom(
-            ImageGeom((508, 253), None, -179.5, -89.5, 2 ** -.5),
-            ImageGeom.from_dataset(xcube.core.new.new_cube()))
+    def test_from_rectified_dataset(self):
+        src_ds = xcube.core.new.new_cube()
+        self._assert_image_geom(ImageGeom((360, 180),
+                                          tile_size=None, x_min=-180, y_min=-90, xy_res=1.0),
+                                ImageGeom.from_dataset(src_ds))
 
     def _assert_image_geom(self,
                            expected: ImageGeom,
                            actual: ImageGeom):
-        self.assertEqual(expected.width, actual.width)
-        self.assertEqual(expected.height, actual.height)
-        self.assertAlmostEqual(actual.x_min, actual.x_min, delta=1e-5)
-        self.assertAlmostEqual(actual.y_min, actual.y_min, delta=1e-5)
-        self.assertAlmostEqual(actual.x_res, actual.x_res, delta=1e-6)
-        self.assertAlmostEqual(actual.y_res, actual.y_res, delta=1e-6)
+        self.assertEqual(expected.width, actual.width, msg='width')
+        self.assertEqual(expected.height, actual.height, msg='height')
+        self.assertAlmostEqual(expected.x_min, actual.x_min, delta=1e-5, msg='x_min')
+        self.assertAlmostEqual(expected.y_min, actual.y_min, delta=1e-5, msg='y_min')
+        self.assertAlmostEqual(expected.x_res, actual.x_res, delta=1e-6, msg='x_res')
+        self.assertAlmostEqual(expected.y_res, actual.y_res, delta=1e-6, msg='y_res')
