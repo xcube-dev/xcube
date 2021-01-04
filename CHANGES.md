@@ -1,5 +1,25 @@
 ## Changes in 0.6.2 (in development)
 
+* Numerous, also breaking changes have been applied to 
+  function`xcube.core.rectify.rectify_dataset()`:
+  - Argument `is_y_reversed` no longer used. Instead, use `output_geom` argument
+    with `output_geom.is_j_axis_up == False` (the new default).
+
+* Numerous, also breaking changes have been applied to 
+  class`xcube.core.imgeom.ImageGeom`:
+  - New property `is_j_axis_up` of type `bool` that is `False` by default;
+  - New property `crs` of type `pyproj.crs.CRS`, no default;
+  - Property `is_geo_crs` is now deprecated. Instead, use `crs.is_geographic`;
+  - Property `xy_res` is now a tuple instead of a float scalar.
+    Use `avg_xy_res` that returns a float representing an average pixel resolution;
+  - New properties `x_res` and `y_res`.
+
+* Numerous, also breaking changes have been applied to 
+  class`xcube.core.imgeom.GeoCoding`:
+  - New property `is_rectified` of type `bool`;
+  - New property `crs` of type `pyproj.crs.CRS`;
+  - Property `is_geo_crs` is now deprecated. Instead, use `crs.is_geographic`;
+
 * Added new context manager `xcube.util.observe_dask_progress()` that can be used
   to observe tasks that known to be dominated by Dask computations: 
    
