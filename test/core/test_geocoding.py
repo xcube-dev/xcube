@@ -38,11 +38,27 @@ class SourceDatasetMixin:
 
     @classmethod
     def new_source_dataset(cls):
-        return _new_source_dataset()
+        lon = np.array([[1.0, 6.0],
+                        [0.0, 2.0]])
+        lat = np.array([[56.0, 53.0],
+                        [52.0, 50.0]])
+        rad = np.array([[1.0, 2.0],
+                        [3.0, 4.0]])
+        return xr.Dataset(dict(lon=xr.DataArray(lon, dims=('y', 'x')),
+                               lat=xr.DataArray(lat, dims=('y', 'x')),
+                               rad=xr.DataArray(rad, dims=('y', 'x'))))
 
     @classmethod
     def new_source_dataset_antimeridian(cls):
-        return _new_source_dataset_antimeridian()
+        lon = np.array([[+179.0, -176.0],
+                        [+178.0, +180.0]])
+        lat = np.array([[56.0, 53.0],
+                        [52.0, 50.0]])
+        rad = np.array([[1.0, 2.0],
+                        [3.0, 4.0]])
+        return xr.Dataset(dict(lon=xr.DataArray(lon, dims=('y', 'x')),
+                               lat=xr.DataArray(lat, dims=('y', 'x')),
+                               rad=xr.DataArray(rad, dims=('y', 'x'))))
 
 
 class GeoCodingTest(SourceDatasetMixin, unittest.TestCase):
