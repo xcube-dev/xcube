@@ -22,6 +22,7 @@
 import warnings
 from typing import Sequence, Tuple, Optional, Union
 
+import dask
 import numba as nb
 import numpy as np
 import pyproj
@@ -48,25 +49,29 @@ class GeoCoding:
         Coordinates are in units of the given *crs*. Must have same shape as *y*.
     :param y: 2D y-coordinate array with dimensions (y, x).
         Coordinates are in units of the given *crs*. Must have same shape as *x*.
+    :param crs: The coordinate reference system for *x* an *y*.
     :param x_name: The name of the x-coordinate array.
     :param y_name: The name of the y-coordinate array.
     :param is_rectified: Whether *x* and *y* are rectified coordinates,
         i.e. x[:,0] == x[0, 0] and y[0,:] == y[0, 0].
-    :param crs: The coordinate reference system for *x* an *y*.
     :param is_geo_crs: Deprecated, use *crs*.
         Whether this a geographic coordinate system s used.
     :param is_lon_360: Whether y-coordinates use longitudes in the
         range 0 to 360 degrees, rather than -180 to +180.
     """
 
+    # TODO: Combine x, y into xy a 3D array with dimensions (2, y, x).
+    #       This is required to make reprojectsion much more efficient as
+    #       projected x and y can only be computed at the same time.
+
     def __init__(self,
                  x: xr.DataArray,
                  y: xr.DataArray,
                  *,
+                 crs: pyproj.crs.CRS = None,
                  x_name: str = None,
                  y_name: str = None,
                  is_rectified: bool = None,
-                 crs: pyproj.crs.CRS = None,
                  is_geo_crs: bool = None,
                  is_lon_360: bool = None):
 
@@ -368,6 +373,34 @@ class GeoCoding:
         j_max = _clip(int(j_values[-1]) + ij_border, 0, height - 1)
         return i_min, j_min, i_max, j_max
 
+    def to_crs(self,
+               crs: pyproj.crs.CRS,
+               x_name: str = None,
+               y_name: str = None) -> 'GeoCoding':
+        if self.crs == crs:
+            return self
+
+        transformer = pyproj.transformer.Transformer.from_crs(self.crs, crs)
+
+        def transform(block):
+            x1, y1 = block
+            x2, y2 = transformer.transform(x1, y1)
+            return np.stack([x2, y2])
+
+        src_coords = dask.stack([self.x.data, self.y.data]).rechunk((2, None, None))
+        x, y = dask.apply_gufunc(transform, '()->()', src_coords, output_dtypes=np.float64)
+        x_name = x_name or 'transformed_x'
+        y_name = y_name or 'transformed_y'
+        return GeoCoding(xr.DataArray(x, dims=self.x.dims, name=x_name),
+                         xr.DataArray(y, dims=self.y.dims, name=y_name),
+                         crs=crs,
+                         is_rectified=self.is_rectified
+                                      and self.crs.is_geographic
+                                      and crs.is_geographic,
+                         is_lon_360=self.is_lon_360
+                                    and self.crs.is_geographic
+                                    and crs.is_geographic)
+
 
 def find_dataset_crs(dataset: xr.Dataset,
                      xy_names: Tuple[str, str] = None) -> Optional[pyproj.crs.CRS]:
@@ -389,10 +422,6 @@ def find_dataset_crs(dataset: xr.Dataset,
     #       used by multiple coordinate variables. E.g. at the same time
     #       we may find 2D coordinates lat(y, x), lon(y, x) using
     #       CRS EPSG 4326 and x(y,x), y(y, x) using UTM 32 N.
-    #       In this implementation we return the first CRS found.
-    #       In the future we should give preference to the CRS
-    #       whose coordinates are rectified. This may prevent a
-    #       rectification step when resampling to the same target CRS.
 
     crs = None
     for var_name, var in dataset.data_vars.items():
