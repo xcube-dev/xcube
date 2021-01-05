@@ -33,11 +33,11 @@ LAT_COORD_VAR_NAMES = ('lat', 'latitude')
 X_COORD_VAR_NAMES = ('x', 'xc') + LON_COORD_VAR_NAMES
 Y_COORD_VAR_NAMES = ('y', 'yc') + LAT_COORD_VAR_NAMES
 
-# WGS84, axis order: lon, lat
-# CRS_WGS84 = pp.crs.CRS.from_string("urn:ogc:def:crs:OGC:1.3:CRS84")
-
 # WGS84, axis order: lat, lon
 CRS_WGS84 = pyproj.crs.CRS(4326)
+
+# WGS84, axis order: lon, lat
+CRS_CRS84 = pyproj.crs.CRS.from_string("urn:ogc:def:crs:OGC:1.3:CRS84")
 
 
 class GeoCoding:
@@ -74,6 +74,10 @@ class GeoCoding:
                  is_rectified: bool = None,
                  is_geo_crs: bool = None,
                  is_lon_360: bool = None):
+        if x.ndim != 2 or y.ndim != 2:
+            raise ValueError(f'x and y must both be 2D, was , was {x.dims} and {y.dims}')
+        if x.dims != y.dims:
+            raise ValueError(f'x and y must have same dimensions, was {x.dims} and {y.dims}')
 
         if is_geo_crs is not None:
             warnings.warn('keyword argument "is_geo_crs" is deprecated, use "crs" instead',
@@ -130,6 +134,11 @@ class GeoCoding:
         return self.x_name, self.y_name
 
     @property
+    def xy_dim_names(self) -> Tuple[str, str]:
+        y, x = self.x.dims
+        return str(y), str(x)
+
+    @property
     def is_rectified(self) -> bool:
         return self._is_rectified
 
@@ -139,6 +148,7 @@ class GeoCoding:
 
     @property
     def is_geo_crs(self) -> bool:
+        """Deprecated."""
         return self._crs.is_geographic
 
     @property
@@ -446,6 +456,10 @@ def find_dataset_crs(dataset: xr.Dataset,
     return crs
 
 
+def is_wgs84_crs(crs: pyproj.crs.CRS) -> bool:
+    return crs.is_geographic and (crs == CRS_WGS84 or crs == CRS_CRS84)
+
+
 def _clip(x, x_min, x_max):
     return x_min if x < x_min else x_max if x > x_max else x
 
@@ -461,7 +475,7 @@ def to_lon_360(lon_var: Union[np.ndarray, xr.DataArray]):
         return np.where(lon_var >= 0.0, lon_var, lon_var + 360.0)
 
 
-def from_lon_180(lon_var: Union[np.ndarray, xr.DataArray]):
+def from_lon_360(lon_var: Union[np.ndarray, xr.DataArray]):
     if isinstance(lon_var, xr.DataArray):
         return lon_var.where(lon_var <= 180.0, lon_var - 360.0)
     else:

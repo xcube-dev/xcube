@@ -326,8 +326,7 @@ class XYInputProcessor(InputProcessor, metaclass=ABCMeta):
             dataset = rectify_dataset(dataset,
                                       compute_subset=False,
                                       geo_coding=geo_coding,
-                                      output_geom=output_geom,
-                                      is_y_reversed=True)
+                                      output_geom=output_geom)
             if output_geom.is_tiled:
                 # The following condition may become true, if we have used rectified_dataset(input, ..., is_y_reverse=True)
                 # In this case y-chunksizes will also be reversed. So that the first chunk is smaller than any other.

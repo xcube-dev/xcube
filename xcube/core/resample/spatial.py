@@ -27,12 +27,62 @@ import numpy as np
 import xarray as xr
 from dask_image import ndinterp
 
+from xcube.core.geocoding import GeoCoding
+from xcube.core.geocoding import is_wgs84_crs
+from xcube.core.imgeom import ImageGeom
+from xcube.core.rectify import rectify_dataset
+
 NDImage = Union[np.ndarray, da.Array]
 Aggregator = Callable[[NDImage], NDImage]
 
 
-def resample_in_space(cube: xr.Dataset) -> xr.Dataset:
-    return cube
+def resample_in_space(dataset: xr.Dataset,
+                      geo_coding: GeoCoding = None,
+                      output_geom: ImageGeom = None):
+    geo_coding = geo_coding if geo_coding is not None else GeoCoding.from_dataset(dataset)
+    output_geom = output_geom if output_geom is not None else ImageGeom.from_dataset(dataset)
+
+    both_wgs84 = is_wgs84_crs(geo_coding.crs) and is_wgs84_crs(output_geom.crs)
+
+    if not both_wgs84 and geo_coding.crs != output_geom.crs:
+        geo_coding = geo_coding.to_crs(output_geom.crs)
+        dataset = dataset.assign({geo_coding.x_name: geo_coding.x, geo_coding.y_name: geo_coding.y})
+        geo_coding = geo_coding.derive(x=dataset[geo_coding.x_name], y=dataset[geo_coding.y_name])
+        return resample_in_space(dataset, geo_coding=geo_coding, output_geom=output_geom)
+
+    if geo_coding.is_rectified:
+        return affine_transform_dataset(dataset, geo_coding=geo_coding, output_geom=output_geom)
+    else:
+        input_geom = ImageGeom.from_dataset(dataset)
+        if output_geom.res_xy_avg > source_res:
+            downscaled_dataset = affine_transform_dataset(dataset, geo_coding=geo_coding, output_geom=output_geom)
+            return rectify_dataset(downscaled_dataset, geo_coding=geo_coding, output_geom=output_geom)
+        else:
+            return rectify_dataset(dataset, geo_coding=geo_coding, output_geom=output_geom)
+
+
+def affine_transform_dataset(dataset: xr.Dataset,
+                             geo_coding: GeoCoding = None,
+                             output_geom: ImageGeom = None):
+    if geo_coding.crs != output_geom.crs:
+        raise ValueError('crs of geo_coding and output_geom must be equal')
+    x_dim, y_dim = geo_coding.xy_dim_names
+    yx_dims = (y_dim, x_dim)
+    coords = dict()
+    data_vars = dict()
+    for k, var in dataset.variables.items():
+        new_var = None
+        if var.ndim >= 2 and var.dims[-2] == yx_dims:
+            var_data = resample_ndimage(var.data, scale=)
+            new_var = xr.DataArray(var_data, dims=var.dims, attrs=var.attrs)
+        elif x_dim not in var.dims and y_dim not in var.dims:
+            new_var = var.copy()
+        if new_var is not None:
+            if k in dataset.coords:
+                coords[k] = new_var
+            elif k in dataset.data_vars:
+                data_vars[k] = new_var
+    return xr.Dataset(data_vars=data_vars, coords=coords, attrs=dataset.attrs)
 
 
 def resample_ndimage(im: NDImage,

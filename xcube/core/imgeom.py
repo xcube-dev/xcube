@@ -30,7 +30,7 @@ import xarray as xr
 
 from xcube.core.geocoding import CRS_WGS84
 from xcube.core.geocoding import GeoCoding
-from xcube.core.geocoding import from_lon_180
+from xcube.core.geocoding import from_lon_360
 from xcube.util.dask import get_block_iterators
 from xcube.util.dask import get_chunk_sizes
 
@@ -96,19 +96,21 @@ class ImageGeom:
                  x_min: float = 0.0,
                  y_min: float = 0.0,
                  xy_res: Union[float, Tuple[float, float]] = None,
-                 is_j_axis_up: bool = False,
                  crs: pyproj.crs.CRS = None,
+                 is_j_axis_up: bool = False,
                  is_geo_crs: bool = None):
 
         if isinstance(size, int):
             w, h = size, size
         else:
             w, h = size
+            w, h = int(w), int(h)
 
         if isinstance(tile_size, int):
             tw, th = tile_size, tile_size
         elif tile_size is not None:
             tw, th = tile_size
+            tw, th = int(tw), int(th)
         else:
             tw, th = w, h
 
@@ -123,10 +125,14 @@ class ImageGeom:
         elif xy_res is not None:
             x_res, y_res = xy_res
         else:
-            x_res, y_res = 1.0, 1.0
+            x_res, y_res = 1, 1
 
-        if x_res <= 0.0 or math.isclose(x_res, 0.0) \
-                or y_res <= 0.0 or math.isclose(y_res, 0.0):
+        x_min = _to_int_or_float(x_min)
+        y_min = _to_int_or_float(y_min)
+        x_res = _to_int_or_float(x_res)
+        y_res = _to_int_or_float(y_res)
+
+        if x_res <= 0 or y_res <= 0:
             raise ValueError('invalid xy_res')
 
         if is_geo_crs is not None:
@@ -140,11 +146,11 @@ class ImageGeom:
             crs = CRS_WGS84
 
         if crs.is_geographic:
-            if w * x_res > 360.0:
+            if w * x_res > 360:
                 raise ValueError('invalid size, xy_res combination')
-            if x_min < -180.0 or x_min > 180.0:
+            if x_min < -180 or x_min > 180:
                 raise ValueError('invalid x_min')
-            if y_min < -90.0 or y_min > 90.0 or y_min + h * y_res > 90.0:
+            if y_min < -90 or y_min > 90 or y_min + h * y_res > 90:
                 raise ValueError('invalid y_min')
 
         self._size = w, h
@@ -161,8 +167,8 @@ class ImageGeom:
                x_min: float = None,
                y_min: float = None,
                xy_res: Union[float, Tuple[float, float]] = None,
-               is_j_axis_up: bool = None,
                crs: pyproj.crs.CRS = None,
+               is_j_axis_up: bool = None,
                is_geo_crs: bool = None):
         """Derive a new image geometry from given constructor arguments."""
         return ImageGeom(self.size if size is None else size,
@@ -170,8 +176,8 @@ class ImageGeom:
                          x_min=self.x_min if x_min is None else x_min,
                          y_min=self.y_min if y_min is None else y_min,
                          xy_res=self.xy_res if xy_res is None else xy_res,
-                         is_j_axis_up=self.is_j_axis_up if is_j_axis_up is None else is_j_axis_up,
                          crs=self.crs if crs is None else crs,
+                         is_j_axis_up=self.is_j_axis_up if is_j_axis_up is None else is_j_axis_up,
                          is_geo_crs=self.is_geo_crs if is_geo_crs is None else is_geo_crs)
 
     @property
@@ -217,9 +223,9 @@ class ImageGeom:
         the anti-meridian at 180 degrees.
         Works only for geographical coordinate reference systems.
         """
-        if not self.is_geo_crs:
+        if not self.crs.is_geographic:
             return None
-        return self.x_max > 180.0
+        return self.x_max > 180
 
     @property
     def x_min(self) -> float:
@@ -229,9 +235,7 @@ class ImageGeom:
     @property
     def x_max(self) -> float:
         """Maximum x-coordinate in CRS units."""
-        # x_max = self.x_min + self.x_res * self.width
-        # return x_max - 360.0 if self.is_geo_crs and x_max > 180.0 else x_max
-        return self.x_min + self.x_res * self.width
+        return _to_int_or_float(self.x_min + self.x_res * self.width)
 
     @property
     def y_min(self) -> float:
@@ -241,7 +245,7 @@ class ImageGeom:
     @property
     def y_max(self) -> float:
         """Maximum y-coordinate in CRS units."""
-        return self.y_min + self.y_res * self.height
+        return _to_int_or_float(self.y_min + self.y_res * self.height)
 
     @property
     def x_res(self) -> float:
@@ -261,7 +265,7 @@ class ImageGeom:
     @property
     def avg_xy_res(self) -> float:
         """Average pixel size."""
-        return 0.5 * (self.x_res + self.y_res)
+        return _to_int_or_float((self.x_res + self.y_res) / 2)
 
     @property
     def is_j_axis_up(self) -> bool:
@@ -376,23 +380,25 @@ class ImageGeom:
         x_res05 = x_res / 2
         y_res05 = y_res / 2
 
-        x_data = np.linspace(x1 + x_res05, x2 - x_res05, w)
-        x_bnds_0_data = np.linspace(x1, x2 - x_res, w)
-        x_bnds_1_data = np.linspace(x1 + x_res, x2, w)
+        dtype = np.float64
+
+        x_data = np.linspace(x1 + x_res05, x2 - x_res05, w, dtype=dtype)
+        x_bnds_0_data = np.linspace(x1, x2 - x_res, w, dtype=dtype)
+        x_bnds_1_data = np.linspace(x1 + x_res, x2, w, dtype=dtype)
 
         if self.is_lon_360:
-            x_data = from_lon_180(x_data)
-            x_bnds_0_data = from_lon_180(x_bnds_0_data)
-            x_bnds_1_data = from_lon_180(x_bnds_1_data)
+            x_data = from_lon_360(x_data)
+            x_bnds_0_data = from_lon_360(x_bnds_0_data)
+            x_bnds_1_data = from_lon_360(x_bnds_1_data)
 
         if self.is_j_axis_up:
-            y_data = np.linspace(y1 + y_res05, y2 - y_res05, h)
-            y_bnds_0_data = np.linspace(y1, y2 - y_res, h)
-            y_bnds_1_data = np.linspace(y1 + y_res, y2, h)
+            y_data = np.linspace(y1 + y_res05, y2 - y_res05, h, dtype=dtype)
+            y_bnds_0_data = np.linspace(y1, y2 - y_res, h, dtype=dtype)
+            y_bnds_1_data = np.linspace(y1 + y_res, y2, h, dtype=dtype)
         else:
-            y_data = np.linspace(y2 - y_res05, y1 + y_res05, h)
-            y_bnds_0_data = np.linspace(y2 - y_res, y1, h)
-            y_bnds_1_data = np.linspace(y2, y1 + y_res, h)
+            y_data = np.linspace(y2 - y_res05, y1 + y_res05, h, dtype=dtype)
+            y_bnds_0_data = np.linspace(y2 - y_res, y1, h, dtype=dtype)
+            y_bnds_1_data = np.linspace(y2, y1 + y_res, h, dtype=dtype)
 
         bnds_name = 'bnds'
         x_bnds_name = f'{x_name}_{bnds_name}'
@@ -498,3 +504,15 @@ def _compute_image_geom(dataset: xr.Dataset,
                      y_min=src_y_min,
                      xy_res=src_xy_res,
                      crs=geo_coding.crs)
+
+
+def _to_int_or_float(x: Union[int, float]) -> Union[int, float]:
+    """
+    If x is an int or is close to an int return it as int otherwise as float.
+    Helps avoiding errors introduced by inaccurate floating point ops.
+    """
+    if isinstance(x, int):
+        return x
+    xi = int(x)
+    xf = float(x)
+    return xi if math.isclose(xi, xf) else xf
