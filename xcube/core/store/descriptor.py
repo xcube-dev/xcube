@@ -55,7 +55,7 @@ def new_data_descriptor(data_id: str, data: Any, require: bool = False) -> 'Data
         return MultiLevelDatasetDescriptor(data_id=data_id, num_levels=5)
     elif isinstance(data, gpd.GeoDataFrame):
         # TODO: implement me: data -> GeoDataFrameDescriptor
-        return GeoDataFrameDescriptor(data_id=data_id, num_levels=5)
+        return GeoDataFrameDescriptor(data_id=data_id)
     elif not require:
         return DataDescriptor(data_id=data_id, type_specifier=TYPE_SPECIFIER_ANY)
     raise NotImplementedError()
