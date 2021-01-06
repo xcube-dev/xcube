@@ -252,20 +252,24 @@ class GeoDataFrameDescriptor(DataDescriptor):
 
     def __init__(self,
                  data_id: str,
+                 type_specifier=TYPE_SPECIFIER_GEODATAFRAME,
                  feature_schema: Any = None,
                  open_params_schema: JsonObjectSchema = None,
                  **kwargs):
         super().__init__(data_id=data_id,
-                         type_specifier=TYPE_SPECIFIER_GEODATAFRAME,
+                         type_specifier=type_specifier,
                          open_params_schema=open_params_schema,
                          **kwargs)
         self.feature_schema = feature_schema
 
     @classmethod
-    def from_dict(cls, d: Mapping[str, Any]) -> 'MultiLevelDatasetDescriptor':
+    def from_dict(cls, d: Mapping[str, Any]) -> 'GeoDataFrameDescriptor':
         """Create new instance from a JSON-serializable dictionary"""
-        # TODO: implement me
-        raise NotImplementedError()
+        assert_in('data_id', d)
+        return GeoDataFrameDescriptor(data_id=d['data_id'],
+                                      type_specifier=d.get('type_specifier',
+                                                           TYPE_SPECIFIER_GEODATAFRAME),
+                                      open_params_schema=d.get('open_params_schema', None))
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert into a JSON-serializable dictionary"""
