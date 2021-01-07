@@ -32,6 +32,7 @@ from xcube.core.geocoding import GeoCoding
 from xcube.core.geocoding import from_lon_360
 from xcube.util.dask import get_block_iterators
 from xcube.util.dask import get_chunk_sizes
+from .cf import get_dataset_grid_mappings
 
 # WGS84, axis order: lat, lon
 CRS_WGS84 = pyproj.crs.CRS(4326)
@@ -526,3 +527,20 @@ def _from_affine(matrix: affine.Affine) -> AffineTransformMatrix:
 
 def _to_affine(matrix: AffineTransformMatrix) -> affine.Affine:
     return affine.Affine(*matrix[0], *matrix[1])
+
+
+def find_dataset_grid_mapping(dataset: xr.Dataset, *,
+                              prefer_is_rectified: bool = None,
+                              prefer_crs: pyproj.crs.CRS = None,
+                              emit_warnings: bool = False) -> Optional[GridMapping]:
+    grid_mappings = [GridMapping.from_coords(x=grid_mapping.x,
+                                             y=grid_mapping.y,
+                                             crs=grid_mapping.crs)
+                     for grid_mapping in get_dataset_grid_mappings(dataset, emit_warnings=emit_warnings)]
+    for grid_mapping in grid_mappings:
+        if prefer_is_rectified and grid_mapping.is_rectified:
+            return grid_mapping
+    for grid_mapping in grid_mappings:
+        if prefer_crs is not None and grid_mapping.crs == prefer_crs:
+            return grid_mapping
+    return next(grid_mapping, None)
