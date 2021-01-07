@@ -20,14 +20,28 @@
 # SOFTWARE.
 
 import warnings
-from collections import namedtuple
 from typing import Optional, Dict, Any, Hashable, Union
 
 import pyproj
 import xarray as xr
 
-GridMapping = namedtuple('GridMapping', ['crs', 'name', 'coords'])
-GridCoords = namedtuple('GridCoords', ['x', 'y'])
+
+class GridCoords:
+    def __init__(self,
+                 x: xr.DataArray = None,
+                 y: xr.DataArray = None):
+        self.x = x
+        self.y = y
+
+
+class GridMapping:
+    def __init__(self,
+                 crs: pyproj.crs.CRS,
+                 name: str = None,
+                 coords: GridCoords = None):
+        self.crs = crs
+        self.name = name
+        self.coords = coords
 
 
 def get_dataset_grid_mappings(dataset: xr.Dataset, *,
@@ -53,10 +67,10 @@ def get_dataset_grid_mappings(dataset: xr.Dataset, *,
 
     # Find coordinate variables that use a CF standard_name.
     #
-    latitude_longitude_coords = _GridCoords(x=None, y=None)
-    rotated_latitude_longitude_coords = _GridCoords(x=None, y=None)
-    projected_coords = _GridCoords(x=None, y=None)
-    for k, var in dataset.variables.items():
+    latitude_longitude_coords = GridCoords(x=None, y=None)
+    rotated_latitude_longitude_coords = GridCoords(x=None, y=None)
+    projected_coords = GridCoords(x=None, y=None)
+    for k, var in dataset.coords.items():
         standard_name = var.attrs.get('standard_name')
         if standard_name == 'longitude':
             latitude_longitude_coords.x = var
@@ -73,7 +87,7 @@ def get_dataset_grid_mappings(dataset: xr.Dataset, *,
 
     # Find coordinate variables by common naming convention.
     #
-    for k, var in dataset.variables.items():
+    for k, var in dataset.coords.items():
         if latitude_longitude_coords.x is None \
                 and k in {'lon', 'longitude'}:
             latitude_longitude_coords.x = var
@@ -134,19 +148,19 @@ def get_dataset_grid_mappings(dataset: xr.Dataset, *,
     return complete_grid_mappings
 
 
-def _parse_crs_from_attrs(attrs: Dict[Hashable, Any]) -> Optional[_GridMapping]:
+def _parse_crs_from_attrs(attrs: Dict[Hashable, Any]) -> Optional[GridMapping]:
     # noinspection PyBroadException
     try:
         crs = pyproj.crs.CRS.from_cf(attrs)
     except pyproj.crs.CRSError:
         return None
-    return _GridMapping(crs=crs, name=attrs.get('grid_mapping_name'), coords=None)
+    return GridMapping(crs=crs, name=attrs.get('grid_mapping_name'), coords=None)
 
 
-def _complement_grid_mapping_coords(coords: _GridCoords,
+def _complement_grid_mapping_coords(coords: GridCoords,
                                     grid_mapping_name: Optional[str],
                                     missing_crs: Optional[pyproj.crs.CRS],
-                                    grid_mappings: Dict[Optional[str], _GridMapping]):
+                                    grid_mappings: Dict[Optional[str], GridMapping]):
     if coords.x is not None or coords.y is not None:
         grid_mapping = next((grid_mapping
                              for grid_mapping in grid_mappings.values()
@@ -154,9 +168,9 @@ def _complement_grid_mapping_coords(coords: _GridCoords,
         if grid_mapping is None:
             grid_mapping = grid_mappings.get(None)
             if grid_mapping is None and missing_crs is not None:
-                grid_mapping = _GridMapping(name=grid_mapping_name,
-                                            crs=missing_crs,
-                                            coords=None)
+                grid_mapping = GridMapping(crs=missing_crs,
+                                           name=grid_mapping_name,
+                                           coords=None)
                 grid_mappings[None] = grid_mapping
 
         if grid_mapping is not None and grid_mapping.coords is None:
