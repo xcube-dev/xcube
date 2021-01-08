@@ -8,6 +8,10 @@
       dataset.to_zarr(store)  
   ```
 
+* Enanbled ChunkStore to deliver NaN-Chunks by calling `xcube.core.chunkstore.add_nan_array()`, this will be important 
+  once xcube-sh and xcube-cci will use the ChunkStore. This will allow to fill an xcube dataset with NaN-Chunks instead
+  of failing due to an API-Error.
+
 ## Changes in 0.6.1
 
 All changes relate to maintenance of xcube's Python environment requirements in `envrionment.yml`:
