@@ -54,6 +54,18 @@ class ChunkStoreTest(unittest.TestCase):
             (2, 4, 4, 8, 8, 16),
         }, visited_indexes)
 
+    def test_nan_chunks(self):
+        index_var = gen_index_var_nan(dims=('time', 'lat', 'lon'),
+                                      shape=(4, 8, 16),
+                                      chunks=(2, 4, 8))
+        self.assertIsNotNone(index_var)
+        self.assertEqual((4, 8, 16), index_var.shape)
+        self.assertEqual(((2, 2), (4, 4), (8, 8)), index_var.chunks)
+        self.assertEqual(('time', 'lat', 'lon'), index_var.dims)
+        self.assertEqual(9223372036854775808, index_var.encoding['_FillValue'])
+        self.assertEqual('uint64', index_var.encoding['dtype'])
+        self.assertTrue(np.isnan(index_var.values).all())
+
 
 def gen_index_var(dims, shape, chunks):
     # noinspection PyUnusedLocal
@@ -72,7 +84,15 @@ def gen_index_var(dims, shape, chunks):
         return data.tobytes()
 
     store = ChunkStore(dims, shape, chunks)
-    store.add_lazy_array('__index_var__', '<u8', get_chunk=get_chunk)
+    store.add_lazy_array('__index_var__', '<f8', get_chunk=get_chunk)
+
+    ds = xr.open_zarr(store)
+    return ds.__index_var__
+
+
+def gen_index_var_nan(dims, shape, chunks):
+    store = ChunkStore(dims, shape, chunks)
+    store.add_nan_array('__index_var__', dtype='<u8', fill_value=np.nan)
 
     ds = xr.open_zarr(store)
     return ds.__index_var__

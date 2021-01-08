@@ -141,6 +141,42 @@ class ChunkStore(MutableMapping):
             # noinspection PyTypeChecker
             self._vfs[name + '/' + filename] = name, index, get_chunk
 
+    def add_nan_array(self,
+                      name: str,
+                      dtype: str,
+                      fill_value: Union[int, float] = None,
+                      compressor: Dict[str, Any] = None,
+                      filters=None,
+                      attrs: Dict[str, Any] = None,
+                      order: str = 'C'):
+
+        data = bytearray()
+        length = 1
+        for chunk_size in self.chunks:
+            length *= chunk_size
+        numpy_dtype = np.dtype(dtype)
+        var_array = np.full(shape=length, fill_value=fill_value, dtype=numpy_dtype)
+        data += var_array.tobytes()
+        fill_value_attrs = fill_value
+        if np.issubdtype(var_array[0], np.integer):
+            fill_value_attrs = int(var_array[0])
+        if np.issubdtype(var_array[0], np.inexact):
+            fill_value_attrs = float(var_array[0])
+
+        array_metadata = dict(zarr_format=2,
+                              shape=self._shape,
+                              chunks=self._chunks,
+                              compressor=compressor,
+                              dtype=dtype,
+                              fill_value=fill_value_attrs,
+                              filters=filters,
+                              order=order)
+
+        self._vfs[name] = _str_to_bytes('')
+        self._vfs[name + '/.zarray'] = _dict_to_bytes(array_metadata)
+        self._vfs[name + '/.zattrs'] = _dict_to_bytes(dict(_ARRAY_DIMENSIONS=self._dims, **(attrs or dict())))
+        self._vfs[name + '/' + ('.'.join(['0'] * self._ndim))] = bytes(data)
+
     @property
     def _class_name(self):
         return self.__module__ + '.' + self.__class__.__name__
