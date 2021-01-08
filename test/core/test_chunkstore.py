@@ -84,7 +84,7 @@ def gen_index_var(dims, shape, chunks):
         return data.tobytes()
 
     store = ChunkStore(dims, shape, chunks)
-    store.add_lazy_array('__index_var__', '<f8', get_chunk=get_chunk)
+    store.add_lazy_array('__index_var__', '<u8', get_chunk=get_chunk)
 
     ds = xr.open_zarr(store)
     return ds.__index_var__
