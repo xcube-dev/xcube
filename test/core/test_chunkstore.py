@@ -62,7 +62,7 @@ class ChunkStoreTest(unittest.TestCase):
         self.assertEqual((4, 8, 16), index_var.shape)
         self.assertEqual(((2, 2), (4, 4), (8, 8)), index_var.chunks)
         self.assertEqual(('time', 'lat', 'lon'), index_var.dims)
-        self.assertEqual(9223372036854775808, index_var.encoding['_FillValue'])
+        self.assertEqual(99999, index_var.encoding['_FillValue'])
         self.assertEqual('uint64', index_var.encoding['dtype'])
         self.assertTrue(np.isnan(index_var.values).all())
 
@@ -92,7 +92,7 @@ def gen_index_var(dims, shape, chunks):
 
 def gen_index_var_nan(dims, shape, chunks):
     store = ChunkStore(dims, shape, chunks)
-    store.add_nan_array('__index_var__', dtype='<u8', fill_value=np.nan)
+    store.add_nan_array('__index_var__', dtype='<u8', fill_value=99999)
 
     ds = xr.open_zarr(store)
     return ds.__index_var__

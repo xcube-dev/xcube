@@ -150,18 +150,30 @@ class ChunkStore(MutableMapping):
                       attrs: Dict[str, Any] = None,
                       order: str = 'C'):
 
+        if np.issubdtype(dtype, np.integer):
+            dtype_min = np.iinfo(dtype).min
+            dtype_max = np.iinfo(dtype).max
+            if fill_value:
+                if not fill_value >= dtype_min and not fill_value <= dtype_max:
+                    fill_value = dtype_max
+            else:
+                fill_value = dtype_max
+
+        if np.issubdtype(dtype, np.inexact):
+            if not fill_value:
+                fill_value = np.nan
+
         data = bytearray()
         length = 1
         for chunk_size in self.chunks:
             length *= chunk_size
-        numpy_dtype = np.dtype(dtype)
-        var_array = np.full(shape=length, fill_value=fill_value, dtype=numpy_dtype)
+        var_array = np.full(shape=length, fill_value=fill_value, dtype=dtype)
         data += var_array.tobytes()
         fill_value_attrs = fill_value
-        if np.issubdtype(var_array[0], np.integer):
-            fill_value_attrs = int(var_array[0])
-        if np.issubdtype(var_array[0], np.inexact):
-            fill_value_attrs = float(var_array[0])
+        if np.issubdtype(type(fill_value), np.integer):
+            fill_value_attrs = int(fill_value)
+        if np.issubdtype(type(fill_value), np.inexact):
+            fill_value_attrs = float(fill_value)
 
         array_metadata = dict(zarr_format=2,
                               shape=self._shape,
