@@ -6,9 +6,9 @@ import numpy as np
 import pyproj
 import xarray as xr
 
-from xcube.core.gridmapping.cf import GridCoords
-from xcube.core.gridmapping.cf import GridMapping
-from xcube.core.gridmapping.cf import get_dataset_grid_mappings
+from xcube.core.gridmapping.cfconv import GridCoords
+from xcube.core.gridmapping.cfconv import GridMapping
+from xcube.core.gridmapping.cfconv import get_dataset_grid_mappings
 
 CRS_WGS84 = pyproj.crs.CRS(4326)
 CRS_CRS84 = pyproj.crs.CRS.from_string("urn:ogc:def:crs:OGC:1.3:CRS84")

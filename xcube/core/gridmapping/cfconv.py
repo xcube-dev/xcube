@@ -27,6 +27,11 @@ import xarray as xr
 
 
 class GridCoords:
+    """
+    Grid coordinates comprising x and y of
+    type xarray.DataArray.
+    """
+
     def __init__(self,
                  x: xr.DataArray = None,
                  y: xr.DataArray = None):
@@ -35,6 +40,11 @@ class GridCoords:
 
 
 class GridMapping:
+    """
+    Grid mapping comprising *crs* of type pyproj.crs.CRS,
+    grid coordinates and an optional name.
+    """
+
     def __init__(self,
                  crs: pyproj.crs.CRS,
                  name: str = None,
@@ -49,6 +59,18 @@ def get_dataset_grid_mappings(dataset: xr.Dataset, *,
                               missing_rotated_latitude_longitude_crs: pyproj.crs.CRS = None,
                               missing_projected_crs: pyproj.crs.CRS = None,
                               emit_warnings: bool = False) -> Dict[Union[Hashable, None], GridMapping]:
+    """
+    Find grid mappings encoded as described in the CF conventions
+    [Horizontal Coordinate Reference Systems, Grid Mappings, and Projections]
+    (http://cfconventions.org/Data/cf-conventions/cf-conventions-1.8/cf-conventions.html#grid-mappings-and-projections).
+
+    :param dataset:
+    :param missing_latitude_longitude_crs:
+    :param missing_rotated_latitude_longitude_crs:
+    :param missing_projected_crs:
+    :param emit_warnings:
+    :return:
+    """
     # Find any grid mapping variables
     #
     grid_mappings = dict()
