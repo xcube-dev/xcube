@@ -62,7 +62,7 @@ class SourceDatasetMixin:
 
 
 # noinspection PyMethodMayBeStatic
-class GeoCodingTest(SourceDatasetMixin, unittest.TestCase):
+class GeoCodingTest(unittest.TestCase):
     def test_is_geo_crs_and_is_lon_360(self):
         x = xr.DataArray(np.linspace(10.0, 20.0, 21), dims='columns', name='lon')
         y = xr.DataArray(np.linspace(53.0, 58.0, 11), dims='rows', name='lat')
