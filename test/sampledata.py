@@ -32,9 +32,9 @@ def new_test_dataset(time, height=180, **indexers):
     time = np.array(pd.to_datetime(time), dtype=np.datetime64)
     return xr.Dataset(data_vars,
                       coords=dict(time=(
-                      ['time'], time, dict(units='nanoseconds since 1970-01-01', calendar='proleptic_gregorian')),
-                                  lat=(['lat'], np.linspace(-90 + res, +90 - res, height)),
-                                  lon=(['lon'], np.linspace(-180 + res, +180 - res, width))))
+                          ['time'], time, dict(units='nanoseconds since 1970-01-01', calendar='proleptic_gregorian')),
+                          lat=(['lat'], np.linspace(-90 + res, +90 - res, height)),
+                          lon=(['lon'], np.linspace(-180 + res, +180 - res, width))))
 
 
 def create_s2plus_dataset():
@@ -188,3 +188,30 @@ def create_cmems_sst_flag_var():
         valid_min=0,
         valid_max=12,
     ))
+
+
+class SourceDatasetMixin:
+
+    @classmethod
+    def new_source_dataset(cls):
+        lon = np.array([[1.0, 6.0],
+                        [0.0, 2.0]])
+        lat = np.array([[56.0, 53.0],
+                        [52.0, 50.0]])
+        rad = np.array([[1.0, 2.0],
+                        [3.0, 4.0]])
+        return xr.Dataset(dict(lon=xr.DataArray(lon, dims=('y', 'x')),
+                               lat=xr.DataArray(lat, dims=('y', 'x')),
+                               rad=xr.DataArray(rad, dims=('y', 'x'))))
+
+    @classmethod
+    def new_source_dataset_antimeridian(cls):
+        lon = np.array([[+179.0, -176.0],
+                        [+178.0, +180.0]])
+        lat = np.array([[56.0, 53.0],
+                        [52.0, 50.0]])
+        rad = np.array([[1.0, 2.0],
+                        [3.0, 4.0]])
+        return xr.Dataset(dict(lon=xr.DataArray(lon, dims=('y', 'x')),
+                               lat=xr.DataArray(lat, dims=('y', 'x')),
+                               rad=xr.DataArray(rad, dims=('y', 'x'))))

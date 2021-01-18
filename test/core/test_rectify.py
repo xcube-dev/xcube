@@ -5,11 +5,11 @@ import numpy as np
 # noinspection PyUnresolvedReferences
 import xarray as xr
 
+from test.sampledata import SourceDatasetMixin
 from test.sampledata import create_s2plus_dataset
 from xcube.core.gridmapping import CRS_WGS84
 from xcube.core.gridmapping import GridMapping
 from xcube.core.rectify import rectify_dataset
-from .test_geocoding import SourceDatasetMixin
 
 nan = np.nan
 

@@ -4,7 +4,7 @@ import numpy as np
 import pyproj
 import xarray as xr
 
-from test.core.test_geocoding import SourceDatasetMixin
+from test.sampledata import SourceDatasetMixin
 from xcube.core.gridmapping import GridMapping
 # noinspection PyProtectedMember
 from xcube.core.gridmapping.helpers import _to_affine
