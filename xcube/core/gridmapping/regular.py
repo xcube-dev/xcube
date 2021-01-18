@@ -18,7 +18,7 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-
+import math
 from typing import Tuple, Union
 
 import dask.array as da
@@ -26,62 +26,56 @@ import numpy as np
 import pyproj
 import xarray as xr
 
-from xcube.util.assertions import assert_instance
 from xcube.util.assertions import assert_condition
+from xcube.util.assertions import assert_instance
 from .base import GridMapping
-from .helpers import _parse_int_pair
-from .helpers import _parse_number_pair
+from .helpers import _default_xy_dim_names
+from .helpers import _default_xy_var_names
+from .helpers import _normalize_int_pair
+from .helpers import _normalize_number_pair
+from .helpers import floor_to_fraction
+from .helpers import ceil_to_fraction
 from .helpers import _to_int_or_float
 
 
 class RegularGridMapping(GridMapping):
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self._xy_coords = None
 
-    @property
-    def xy_coords(self) -> xr.DataArray:
-        """
-        The x,y coordinates as data array of shape (2, height, width).
-        Coordinates are given in units of the CRS.
-        """
-        if self._xy_coords is None:
-            self._assert_regular()
-            x_res_05, y_res_05 = self.x_res / 2, self.y_res / 2
-            x1, x2 = self.x_min + x_res_05, self.x_max - x_res_05
-            y1, y2 = self.y_min + y_res_05, self.y_max - y_res_05
-            if not self.is_j_axis_up:
-                y1, y2 = y2, y1
-            x_name, y_name = ('lon', 'lat') if self.crs.is_geographic else ('x', 'y')
-            shape = self.height, self.width
-            chunks = self.tile_height, self.tile_width
-            x_coords = da.broadcast_to(np.linspace(x1, x2, self.width), shape=shape)
-            y_coords = da.broadcast_to(np.linspace(y1, y2, self.height), shape=shape)
-            xy_coords = da.stack([x_coords, y_coords]).rechunk((2, *chunks))
-            self._xy_coords = xr.DataArray(xy_coords,
-                                           dims=('coord', y_name, x_name),
-                                           name='xy_coords')
-
-        return self._xy_coords
+    def _new_xy_coords(self) -> xr.DataArray:
+        self._assert_regular()
+        x_res_05, y_res_05 = self.x_res / 2, self.y_res / 2
+        x1, x2 = self.x_min + x_res_05, self.x_max - x_res_05
+        y1, y2 = self.y_min + y_res_05, self.y_max - y_res_05
+        if not self.is_j_axis_up:
+            y1, y2 = y2, y1
+        x_name, y_name = self.xy_dim_names
+        x_coords_1d = xr.DataArray(da.linspace(x1, x2, self.width, chunks=self.tile_width), dims=x_name)
+        y_coords_1d = xr.DataArray(da.linspace(y1, y2, self.height, chunks=self.tile_height), dims=y_name)
+        y_coords_2d, x_coords_2d = xr.broadcast(y_coords_1d, x_coords_1d)
+        xy_coords = xr.concat([x_coords_2d, y_coords_2d], dim='coord').chunk((2, self.tile_height, self.tile_width))
+        xy_coords.name = 'xy_coords'
+        return xy_coords
 
 
-def from_min_res(size: Union[int, Tuple[int, int]],
-                 xy_min: Tuple[float, float],
-                 xy_res: Union[float, Tuple[float, float]],
-                 crs: pyproj.crs.CRS,
-                 *,
-                 tile_size: Union[int, Tuple[int, int]] = None,
-                 is_j_axis_up: bool = False):
-    width, height = _parse_int_pair(size, name='size')
+def new_regular(size: Union[int, Tuple[int, int]],
+                xy_min: Tuple[float, float],
+                xy_res: Union[float, Tuple[float, float]],
+                crs: pyproj.crs.CRS,
+                *,
+                tile_size: Union[int, Tuple[int, int]] = None,
+                is_j_axis_up: bool = False):
+    width, height = _normalize_int_pair(size, name='size')
     assert_condition(width > 1 and height > 1, 'invalid size')
 
-    x_min, y_min = _parse_number_pair(xy_min, name='xy_min')
+    x_min, y_min = _normalize_number_pair(xy_min, name='xy_min')
 
-    x_res, y_res = _parse_number_pair(xy_res, name='xy_res')
+    x_res, y_res = _normalize_number_pair(xy_res, name='xy_res')
     assert_condition(x_res > 0 and y_res > 0, 'invalid xy_res')
 
     assert_instance(crs, pyproj.crs.CRS, name='crs')
-    assert_instance(is_j_axis_up, bool, name='is_j_axis_up')
 
     x_min = _to_int_or_float(x_min)
     y_min = _to_int_or_float(y_min)
@@ -89,6 +83,8 @@ def from_min_res(size: Union[int, Tuple[int, int]],
     y_max = _to_int_or_float(y_min + y_res * height)
 
     if crs.is_geographic:
+        # TODO: don't do that.
+        #  Instead set NaN in coord vars returned by to_coords()
         if y_min < -90:
             raise ValueError('invalid y_min')
         if y_max > 90:
@@ -96,9 +92,42 @@ def from_min_res(size: Union[int, Tuple[int, int]],
 
     return RegularGridMapping(crs=crs,
                               size=(width, height),
-                              tile_size=tile_size,
+                              tile_size=tile_size or (width, height),
                               xy_bbox=(x_min, y_min, x_max, y_max),
                               xy_res=(x_res, y_res),
+                              xy_var_names=_default_xy_var_names(crs),
+                              xy_dim_names=_default_xy_dim_names(crs),
                               is_regular=True,
                               is_lon_360=x_max > 180,
                               is_j_axis_up=is_j_axis_up)
+
+
+def to_regular(grid_mapping: GridMapping,
+               *,
+               tile_size: Union[int, Tuple[int, int]] = None,
+               is_j_axis_up: bool = False) -> GridMapping:
+    if grid_mapping.is_regular:
+        if tile_size is not None or is_j_axis_up != grid_mapping.is_j_axis_up:
+            return grid_mapping.derive(tile_size=tile_size, is_j_axis_up=is_j_axis_up)
+        return grid_mapping
+
+    x_min, y_min, x_max, y_max = grid_mapping.xy_bbox
+    x_res, y_res = grid_mapping.xy_res
+    # x_digits = 2 + abs(round(math.log10(x_res)))
+    # y_digits = 2 + abs(round(math.log10(y_res)))
+    # x_min = floor_to_fraction(x_min, x_digits)
+    # y_min = floor_to_fraction(y_min, y_digits)
+    # x_max = ceil_to_fraction(x_max, x_digits)
+    # y_max = ceil_to_fraction(y_max, y_digits)
+    xy_res = min(x_res, y_res) or max(x_res, y_res)
+    width = round((x_max - x_min + xy_res) / xy_res)
+    height = round((y_max - y_min + xy_res) / xy_res)
+    width = width if width >= 2 else 2
+    height = height if height >= 2 else 2
+
+    return new_regular(size=(width, height),
+                       xy_min=(x_min, y_min),
+                       xy_res=xy_res,
+                       crs=grid_mapping.crs,
+                       tile_size=tile_size,
+                       is_j_axis_up=is_j_axis_up)

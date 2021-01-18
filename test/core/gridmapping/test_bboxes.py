@@ -1,9 +1,11 @@
 import unittest
 
+import dask.array as da
 import numpy as np
 import xarray as xr
 
 from xcube.core.gridmapping.bboxes import compute_ij_bboxes
+from xcube.core.gridmapping.bboxes import compute_xy_bbox
 
 
 class ComputeIJBBoxesTest(unittest.TestCase):
@@ -93,3 +95,45 @@ class ComputeIJBBoxesTest(unittest.TestCase):
         compute_ij_bboxes_func(self.lon_values, self.lat_values, xy_bboxes, 2.0, 2, ij_bboxes)
         np.testing.assert_almost_equal(ij_bboxes,
                                        np.array([[0, 0, 6, 5]], dtype=np.int64))
+
+
+class ComputeXYBBoxTest(unittest.TestCase):
+    data = [
+        [
+            [10, 11, 12, 13, 14],
+            [11, 12, 13, 14, 15],
+            [12, 13, 14, 15, 16],
+            [13, 14, 15, 16, 17],
+        ],
+        [
+            [50, 51, 52, 53, 54],
+            [51, 52, 53, 54, 55],
+            [52, 53, 54, 55, 56],
+            [53, 54, 55, 56, 57],
+        ],
+    ]
+
+    def test_numpy_array(self):
+        xy_coords = np.array(self.data, dtype=np.float64)
+        xy_bbox = compute_xy_bbox(xy_coords)
+        self.assertEqual((10, 50, 17, 57), xy_bbox)
+
+    def test_dask_array(self):
+        xy_coords = da.array(self.data, dtype=np.float64).rechunk((2, 3, 3))
+        xy_bbox = compute_xy_bbox(xy_coords)
+        self.assertEqual((10, 50, 17, 57), xy_bbox)
+
+    def test_many_nans(self):
+        w = 2000
+        h = 1000
+        x = np.full(h * w, np.nan)
+        y = np.full(h * w, np.nan)
+
+        x[np.random.randint(0, w)] = 73.
+        y[np.random.randint(0, h)] = 34.
+
+        xy_coords = da.array([x.reshape((h, w)), y.reshape((h, w))], dtype=np.float64) \
+            .rechunk((2, 512, 512))
+        xy_bbox = compute_xy_bbox(xy_coords)
+
+        self.assertEqual((73., 34., 73., 34.), xy_bbox)

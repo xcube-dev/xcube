@@ -92,7 +92,10 @@ def get_dataset_grid_mappings(dataset: xr.Dataset, *,
     latitude_longitude_coords = GridCoords(x=None, y=None)
     rotated_latitude_longitude_coords = GridCoords(x=None, y=None)
     projected_coords = GridCoords(x=None, y=None)
-    for k, var in dataset.coords.items():
+    for k in dataset.variables:
+        var = dataset[k]
+        if var.ndim not in (1, 2):
+            continue
         standard_name = var.attrs.get('standard_name')
         if standard_name == 'longitude':
             latitude_longitude_coords.x = var
@@ -109,7 +112,10 @@ def get_dataset_grid_mappings(dataset: xr.Dataset, *,
 
     # Find coordinate variables by common naming convention.
     #
-    for k, var in dataset.coords.items():
+    for k in dataset.variables:
+        var = dataset[k]
+        if var.ndim not in (1, 2):
+            continue
         if latitude_longitude_coords.x is None \
                 and k in {'lon', 'longitude'}:
             latitude_longitude_coords.x = var
@@ -123,10 +129,10 @@ def get_dataset_grid_mappings(dataset: xr.Dataset, *,
                 and k in {'rlat', 'rlatitude'}:
             rotated_latitude_longitude_coords.y = var
         elif projected_coords.x is None \
-                and k in {'x', 'xc'}:
+                and k in {'x', 'xc', 'transformed_x'}:
             projected_coords.x = var
         elif projected_coords.y is None \
-                and k in {'y', 'yc'}:
+                and k in {'y', 'yc', 'transformed_y'}:
             projected_coords.y = var
 
     # Assign found coordinates to grid mappings

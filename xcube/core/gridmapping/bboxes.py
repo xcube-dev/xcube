@@ -18,18 +18,21 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+from typing import Tuple, Union
 
+import dask.array as da
 import numba as nb
 import numpy as np
+import xarray as xr
 
 
 @nb.jit(nopython=True, nogil=True, parallel=True, cache=True)
-def compute_ij_boxes(x_image: np.ndarray,
-                     y_image: np.ndarray,
-                     xy_boxes: np.ndarray,
-                     xy_border: float,
-                     ij_border: int,
-                     ij_boxes: np.ndarray):
+def compute_ij_bboxes(x_image: np.ndarray,
+                      y_image: np.ndarray,
+                      xy_boxes: np.ndarray,
+                      xy_border: float,
+                      ij_border: int,
+                      ij_boxes: np.ndarray):
     h = x_image.shape[0]
     w = x_image.shape[1]
     n = xy_boxes.shape[0]
@@ -71,3 +74,56 @@ def compute_ij_boxes(x_image: np.ndarray,
             ij_bbox[1] = j_min
             ij_bbox[2] = i_max
             ij_bbox[3] = j_max
+
+
+def compute_xy_bbox(xy_coords: Union[xr.DataArray, np.ndarray, da.Array]) -> Tuple[float, float, float, float]:
+    xy_coords = da.asarray(xy_coords)
+    result = da.reduction(xy_coords,
+                          compute_xy_bbox_chunk,
+                          compute_xy_bbox_aggregate,
+                          keepdims=True,
+                          # concatenate=False,
+                          dtype=xy_coords.dtype,
+                          axis=(1, 2),
+                          meta=np.array([[0, 0], [0, 0]], dtype=xy_coords.dtype))
+    x_min, x_max, y_min, y_max = map(float, result.compute().flatten())
+    return x_min, y_min, x_max, y_max
+
+
+@nb.jit(nopython=True)
+def compute_xy_bbox_chunk(xy_block: np.ndarray, axis: int, keepdims: bool):
+    # print('\ncompute_xy_bbox_chunk:', xy_block, axis, keepdims)
+    return compute_xy_bbox_block(xy_block, axis, keepdims)
+
+
+@nb.jit(nopython=True)
+def compute_xy_bbox_aggregate(xy_block: np.ndarray, axis: int, keepdims: bool):
+    # print('\ncompute_xy_bbox_aggregate:', xy_block, axis, keepdims)
+    return compute_xy_bbox_block(xy_block, axis, keepdims)
+
+
+@nb.jit(nopython=True)
+def compute_xy_bbox_block(xy_block: np.ndarray, axis: int, keepdims: bool):
+    x_block = xy_block[0].flatten()
+    y_block = xy_block[1].flatten()
+    x_min = np.inf
+    y_min = np.inf
+    x_max = -np.inf
+    y_max = -np.inf
+    n = x_block.size
+    for i in range(n):
+        x = x_block[i]
+        y = y_block[i]
+        if x < x_min:
+            x_min = x
+        if x > x_max:
+            x_max = x
+        if y < y_min:
+            y_min = y
+        if y > y_max:
+            y_max = y
+    x_min = x_min if x_min != np.inf else np.nan
+    y_min = y_min if y_min != np.inf else np.nan
+    x_max = x_max if x_max != -np.inf else np.nan
+    y_max = y_max if y_max != -np.inf else np.nan
+    return np.array([[[x_min, x_max]], [[y_min, y_max]]], dtype=xy_block.dtype)

@@ -74,8 +74,17 @@ def get_ml_dataset_tile(ml_dataset: MultiLevelDataset,
                                   trace_perf,
                                   exception_type)
         else:
-            image = new_color_mapped_image(ml_dataset, image_id, var_name, cmap_name, cmap_range, z, labels,
-                                           labels_are_indices, tile_cache, trace_perf, exception_type)
+            image = new_color_mapped_image(ml_dataset,
+                                           image_id,
+                                           var_name,
+                                           cmap_name,
+                                           cmap_range,
+                                           z,
+                                           labels,
+                                           labels_are_indices,
+                                           tile_cache,
+                                           trace_perf,
+                                           exception_type)
 
         if image_cache:
             image_cache[image_id] = image
@@ -170,6 +179,7 @@ def new_color_mapped_image(ml_dataset,
                                 norm_range=cmap_range,
                                 trace_perf=trace_perf)
     if cmap_name is None and cmap_range is None:
+        # TODO: Return a ColorMappedRawImage(...) whose tiles are binary, compressed numpy arrays
         return image
     return ColorMappedRgbaImage(image,
                                 image_id=f'cmrgbai-{image_id}',

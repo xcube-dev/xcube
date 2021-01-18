@@ -31,26 +31,40 @@ from .coords import from_coords
 
 def from_dataset(dataset: xr.Dataset,
                  *,
-                 tile_size: Union[int, Tuple[int, int]] = None,
-                 prefer_regular: bool = True,
+                 xy_var_names: Tuple[str, str] = None,
+                 tile_size: Union[int, Tuple[str, str]] = None,
                  prefer_crs: pyproj.crs.CRS = None,
+                 prefer_regular: bool = True,
                  emit_warnings: bool = False) -> Optional[GridMapping]:
-    grid_mappings = get_dataset_grid_mappings(dataset, emit_warnings=emit_warnings).values()
+    if xy_var_names is not None:
+        x_var_name, y_var_name = xy_var_names
+        if x_var_name not in dataset or y_var_name not in dataset:
+            raise ValueError(f'coordinate variables "{x_var_name}" '
+                             f'or "{y_var_name}" not found in dataset')
+        # TODO: create new instance using named coordinate variables
+        raise NotImplementedError('xy_var_names not yet supported')
+
+    grid_mappings = get_dataset_grid_mappings(dataset,
+                                              emit_warnings=emit_warnings).values()
     grid_mappings = [from_coords(x_coords=grid_mapping.coords.x,
                                  y_coords=grid_mapping.coords.y,
                                  crs=grid_mapping.crs,
                                  tile_size=tile_size)
                      for grid_mapping in grid_mappings]
 
-    # If prefer_is_rectified, try finding a rectified one
-    for grid_mapping in grid_mappings:
-        if prefer_regular and grid_mapping.is_regular:
-            return grid_mapping
+    if len(grid_mappings) > 1:
+        # If prefer_crs, try finding one with that CRS
+        for grid_mapping in grid_mappings:
+            if prefer_crs is not None and grid_mapping.crs == prefer_crs:
+                return grid_mapping
 
-    # If prefer_crs, try finding one with that CRS
-    for grid_mapping in grid_mappings:
-        if prefer_crs is not None and grid_mapping.crs == prefer_crs:
-            return grid_mapping
+        # If prefer_is_rectified, try finding a rectified one
+        for grid_mapping in grid_mappings:
+            if prefer_regular and grid_mapping.is_regular:
+                return grid_mapping
 
     # Get arbitrary one (here: first)
-    return grid_mappings[0] if grid_mappings else None
+    if grid_mappings:
+        return grid_mappings[0]
+
+    raise ValueError('cannot find grid mapping in dataset')

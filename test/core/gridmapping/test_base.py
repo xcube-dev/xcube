@@ -14,14 +14,9 @@ NOT_A_GEO_CRS = pyproj.crs.CRS(5243)
 
 
 class TestGridMapping(GridMapping):
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-        self._xy_coords = xr.DataArray(np.random.random((2, self.height, self.width)),
-                                       dims=('coord', 'y', 'x'))
-
-    @property
-    def xy_coords(self) -> xr.DataArray:
-        return self._xy_coords
+    def _new_xy_coords(self) -> xr.DataArray:
+        return xr.DataArray(np.random.random((2, self.height, self.width)),
+                            dims=('coord', 'y', 'x'))
 
 
 # noinspection PyMethodMayBeStatic
@@ -32,6 +27,8 @@ class GridMappingTest(SourceDatasetMixin, unittest.TestCase):
         xy_bbox=(-180.0, -90.0, 180.0, 90.0),
         xy_res=(360 / 7200, 360 / 7200),
         crs=GEO_CRS,
+        xy_var_names=('x', 'y'),
+        xy_dim_names=('x', 'y'),
         is_regular=True,
         is_lon_360=False,
         is_j_axis_up=False,
@@ -66,10 +63,14 @@ class GridMappingTest(SourceDatasetMixin, unittest.TestCase):
         self.assertEqual(False, gm.is_j_axis_up)
 
         self.assertIsInstance(gm.xy_coords, xr.DataArray)
-        np.testing.assert_equal(np.array([[0, 0, 3599, 1799],
-                                          [3600, 0, 7199, 1799],
-                                          [0, 1800, 3599, 3599],
-                                          [3600, 1800, 7199, 3599]]), gm.ij_bboxes)
+        np.testing.assert_equal(np.array([[0, 0, 3600, 1800],
+                                          [3600, 0, 7200, 1800],
+                                          [0, 1800, 3600, 3600],
+                                          [3600, 1800, 7200, 3600]]), gm.ij_bboxes)
+        np.testing.assert_equal(np.array([[-180., 0., 0., 90.],
+                                          [0., 0., 180., 90.],
+                                          [-180., -90., 0., 0.],
+                                          [0., -90., 180., 0.]]), gm.xy_bboxes)
 
     def test_invalids(self):
         with self.assertRaises(ValueError) as cm:

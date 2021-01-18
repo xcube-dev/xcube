@@ -26,22 +26,19 @@ import numba as nb
 import numpy as np
 import xarray as xr
 
-from xcube.core.geocoding import GeoCoding
-from xcube.core.imgeom import ImageGeom
+from xcube.core.gridmapping import GridMapping
 from xcube.core.select import select_spatial_subset
 from xcube.util.dask import compute_array_from_func
 
 
 def rectify_dataset(dataset: xr.Dataset,
                     var_names: Union[str, Sequence[str]] = None,
-                    geo_coding: GeoCoding = None,
-                    xy_names: Tuple[str, str] = None,
-                    output_geom: ImageGeom = None,
+                    geo_coding: GridMapping = None,
+                    xy_var_names: Tuple[str, str] = None,
+                    output_geom: GridMapping = None,
                     tile_size: Union[int, Tuple[int, int]] = None,
                     is_j_axis_up: bool = None,
                     output_ij_names: Tuple[str, str] = None,
-                    load_xy: bool = False,
-                    load_vars: bool = False,
                     compute_subset: bool = True,
                     uv_delta: float = 1e-3) -> Optional[xr.Dataset]:
     """
@@ -63,17 +60,14 @@ def rectify_dataset(dataset: xr.Dataset,
     :param dataset: Source dataset.
     :param var_names: Optional variable name or sequence of variable names.
     :param geo_coding: Optional dataset geo-coding.
-    :param xy_names: Optional tuple of the x- and y-coordinate variables in *dataset*. Ignored if *geo_coding* is given.
+    :param xy_var_names: Optional tuple of the x- and y-coordinate variables in *dataset*.
+        Ignored if *geo_coding* is given.
     :param output_geom: Optional output geometry. If not given, output geometry will be computed
         to spatially fit *dataset* and to retain its spatial resolution.
     :param tile_size: Optional tile size for the output.
     :param is_j_axis_up: Whether y coordinates are increasing with positive image j axis.
     :param output_ij_names: If given, a tuple of variable names in which to store the computed source pixel
         coordinates in the returned output.
-    :param load_xy: Compute x,y coordinates and load into memory before the actual rectification process.
-        May improve runtime performance at the cost of higher memory consumption.
-    :param load_vars: Compute source variables and load into memory before the actual rectification process.
-        May improve runtime performance at the cost of higher memory consumption.
     :param compute_subset: Whether to compute a spatial subset from *dataset* using *output_geom*. If set,
         The function may return ``None`` in case there is no overlap.
     :param uv_delta: A normalized value that is used to determine whether x,y coordinates in the output are contained
@@ -81,37 +75,35 @@ def rectify_dataset(dataset: xr.Dataset,
         The higher this value, the more inaccurate the rectification will be.
     :return: a reprojected dataset, or None if the requested output does not intersect with *dataset*.
     """
-    src_geo_coding = geo_coding if geo_coding is not None else GeoCoding.from_dataset(dataset, xy_names=xy_names)
-    src_x, src_y = src_geo_coding.xy
+    if geo_coding is None:
+        src_geo_coding = GridMapping.from_dataset(dataset, xy_var_names=xy_var_names)
+    else:
+        src_geo_coding = geo_coding
+
     src_attrs = dict(dataset.attrs)
 
     if output_geom is None:
-        output_geom = ImageGeom.from_dataset(dataset, geo_coding=src_geo_coding)
+        output_geom = src_geo_coding.to_regular(tile_size=tile_size)
     elif compute_subset:
         dataset_subset = select_spatial_subset(dataset,
                                                xy_bbox=output_geom.xy_bbox,
                                                ij_border=1,
-                                               xy_border=output_geom.avg_xy_res,
+                                               xy_border=0.5 * (output_geom.x_res + output_geom.y_res),
                                                geo_coding=src_geo_coding)
         if dataset_subset is None:
             return None
         if dataset_subset is not dataset:
-            src_geo_coding = GeoCoding.from_dataset(dataset_subset)
-            src_x, src_y = src_geo_coding.x, src_geo_coding.y
+            src_geo_coding = GridMapping.from_dataset(dataset_subset)
             dataset = dataset_subset
 
-    if tile_size is not None:
-        output_geom = output_geom.derive(tile_size=tile_size)
-    if is_j_axis_up is not None:
-        output_geom = output_geom.derive(is_j_axis_up=is_j_axis_up)
+    # if src_geo_coding.xy_var_names != output_geom.xy_var_names:
+    #     output_geom = output_geom.derive(xy_var_names=src_geo_coding.xy_var_names)
+    # if src_geo_coding.xy_dim_names != output_geom.xy_dim_names:
+    #     output_geom = output_geom.derive(xy_dim_names=src_geo_coding.xy_dim_names)
+    if tile_size is not None or is_j_axis_up is not None:
+        output_geom = output_geom.derive(tile_size=tile_size, is_j_axis_up=is_j_axis_up)
 
     src_vars = _select_variables(dataset, var_names, geo_coding=src_geo_coding)
-
-    if load_xy:
-        # This is NOT faster:
-        src_x = src_x.compute()
-        src_y = src_y.compute()
-        src_geo_coding = src_geo_coding.derive(x=src_x, y=src_y)
 
     if output_geom.is_tiled:
         compute_dst_src_ij_images = _compute_ij_images_xarray_dask
@@ -124,14 +116,11 @@ def rectify_dataset(dataset: xr.Dataset,
                                                  output_geom,
                                                  uv_delta)
 
-    dst_dims = src_geo_coding.xy_names[::-1]
-    dst_ds_coords = output_geom.coord_vars(xy_names=src_geo_coding.xy_names)
+    dst_x_dim, dst_y_dim = output_geom.xy_dim_names
+    dst_dims = dst_y_dim, dst_x_dim
+    dst_ds_coords = output_geom.to_coords()
     dst_vars = dict()
     for src_var_name, src_var in src_vars.items():
-        if load_vars:
-            # This is NOT faster:
-            src_var = src_var.compute()
-
         dst_var_dims = src_var.dims[0:-2] + dst_dims
         dst_var_coords = {d: src_var.coords[d] for d in dst_var_dims if d in src_var.coords}
         dst_var_coords.update({d: dst_ds_coords[d] for d in dst_var_dims if d in dst_ds_coords})
@@ -155,23 +144,22 @@ def rectify_dataset(dataset: xr.Dataset,
 
 def _select_variables(dataset,
                       var_names: Union[str, Sequence[str]] = None,
-                      geo_coding: GeoCoding = None,
-                      xy_names: Tuple[str, str] = None) -> Mapping[str, xr.DataArray]:
+                      geo_coding: GridMapping = None) -> Mapping[str, xr.DataArray]:
     """
     Select variables from *dataset*.
 
     :param dataset: Source dataset.
     :param var_names: Optional variable name or sequence of variable names.
     :param geo_coding: Optional dataset geo-coding.
-    :param xy_names: Optional tuple of the x- and y-coordinate variables in *dataset*. Ignored if *geo_coding* is given.
     :return: The selected variables as a variable name to ``xr.DataArray`` mapping
     """
-    geo_coding = geo_coding if geo_coding is not None else GeoCoding.from_dataset(dataset, xy_names=xy_names)
-    src_x = geo_coding.x
-    x_name, y_name = geo_coding.xy_names
+    geo_coding = geo_coding if geo_coding is not None else GridMapping.from_dataset(dataset)
+    spatial_var_names = geo_coding.xy_var_names
+    spatial_shape = tuple(reversed(geo_coding.size))
+    spatial_dims = tuple(reversed(geo_coding.xy_dim_names))
     if var_names is None:
         var_names = [var_name for var_name, var in dataset.data_vars.items()
-                     if var_name not in (x_name, y_name) and _is_2d_var(var, src_x)]
+                     if var_name not in spatial_var_names and _is_2d_spatial_var(var, spatial_shape, spatial_dims)]
     elif isinstance(var_names, str):
         var_names = (var_names,)
     elif len(var_names) == 0:
@@ -179,20 +167,20 @@ def _select_variables(dataset,
     src_vars = {}
     for var_name in var_names:
         src_var = dataset[var_name]
-        if not _is_2d_var(src_var, src_x):
+        if not _is_2d_spatial_var(src_var, spatial_shape, spatial_dims):
             raise ValueError(
-                f"cannot reproject variable {var_name!r} as its shape or dimensions "
-                f"do not match those of {x_name!r} and {y_name!r}")
+                f"cannot rectify variable {var_name!r} as its shape or dimensions "
+                f"do not match those of {spatial_var_names[0]!r} and {spatial_var_names[1]!r}")
         src_vars[var_name] = src_var
     return src_vars
 
 
-def _is_2d_var(var: xr.DataArray, two_d_coord_var: xr.DataArray) -> bool:
-    return var.ndim >= 2 and var.shape[-2:] == two_d_coord_var.shape and var.dims[-2:] == two_d_coord_var.dims
+def _is_2d_spatial_var(var: xr.DataArray, shape, dims) -> bool:
+    return var.ndim >= 2 and var.shape[-2:] == shape and var.dims[-2:] == dims
 
 
-def _compute_ij_images_xarray_numpy(src_geo_coding: GeoCoding,
-                                    output_geom: ImageGeom,
+def _compute_ij_images_xarray_numpy(src_geo_coding: GridMapping,
+                                    output_geom: GridMapping,
                                     uv_delta: float) -> np.ndarray:
     """Compute numpy.ndarray destination image with source pixel i,j coords from xarray.DataArray x,y sources """
     dst_width = output_geom.width
@@ -203,8 +191,10 @@ def _compute_ij_images_xarray_numpy(src_geo_coding: GeoCoding,
     dst_y_offset = output_geom.y_min if output_geom.is_j_axis_up else output_geom.y_max
     dst_x_scale = output_geom.x_res
     dst_y_scale = output_geom.y_res if output_geom.is_j_axis_up else -output_geom.y_res
-    _compute_ij_images_numpy_parallel(src_geo_coding.x.values,
-                                      src_geo_coding.y.values,
+    # TODO: GridMapping: this will cause out-of-memory problems!
+    x_values, y_values = src_geo_coding.xy_coords.values
+    _compute_ij_images_numpy_parallel(x_values,
+                                      y_values,
                                       0,
                                       0,
                                       dst_src_ij_images,
@@ -216,8 +206,8 @@ def _compute_ij_images_xarray_numpy(src_geo_coding: GeoCoding,
     return dst_src_ij_images
 
 
-def _compute_ij_images_xarray_dask(src_geo_coding: GeoCoding,
-                                   output_geom: ImageGeom,
+def _compute_ij_images_xarray_dask(src_geo_coding: GridMapping,
+                                   output_geom: GridMapping,
                                    uv_delta: float) -> da.Array:
     """Compute dask.array.Array destination image with source pixel i,j coords from xarray.DataArray x,y sources """
     dst_width = output_geom.width
@@ -244,7 +234,8 @@ def _compute_ij_images_xarray_dask(src_geo_coding: GeoCoding,
                         0.5 * (dst_y_max - dst_y_min)))
 
     dst_xy_bboxes = output_geom.xy_bboxes
-    src_ij_bboxes = src_geo_coding.ij_bboxes(dst_xy_bboxes, xy_border=xy_border, ij_border=1)
+    src_ij_bboxes = src_geo_coding.ij_bboxes_from_xy_bboxes(dst_xy_bboxes,
+                                                            xy_border=xy_border, ij_border=1)
 
     return compute_array_from_func(_compute_ij_images_xarray_dask_block,
                                    dst_var_shape,
@@ -257,8 +248,7 @@ def _compute_ij_images_xarray_dask(src_geo_coding: GeoCoding,
                                        'block_slices',
                                    ],
                                    args=(
-                                       src_geo_coding.x,
-                                       src_geo_coding.y,
+                                       src_geo_coding.xy_coords,
                                        src_ij_bboxes,
                                        dst_x_min,
                                        dst_y_min,
@@ -275,8 +265,7 @@ def _compute_ij_images_xarray_dask_block(dtype: np.dtype,
                                          block_id: int,
                                          block_shape: Tuple[int, int],
                                          block_slices: Tuple[Tuple[int, int], Tuple[int, int], Tuple[int, int]],
-                                         src_x: xr.DataArray,
-                                         src_y: xr.DataArray,
+                                         src_xy_coords: xr.DataArray,
                                          src_ij_bboxes: np.ndarray,
                                          dst_x_min: float,
                                          dst_y_min: float,
@@ -292,8 +281,9 @@ def _compute_ij_images_xarray_dask_block(dtype: np.dtype,
     src_i_min, src_j_min, src_i_max, src_j_max = src_ij_bbox
     if src_i_min == -1:
         return dst_src_ij_block
-    src_x_values = src_x[src_j_min:src_j_max + 1, src_i_min:src_i_max + 1].values
-    src_y_values = src_y[src_j_min:src_j_max + 1, src_i_min:src_i_max + 1].values
+    src_xy_values = src_xy_coords[:, src_j_min:src_j_max + 1, src_i_min:src_i_max + 1].values
+    src_x_values = src_xy_values[0]
+    src_y_values = src_xy_values[1]
     dst_x_offset = dst_x_min + dst_x_slice_start * dst_x_res
     if dst_is_j_axis_up:
         dst_y_offset = dst_y_min + dst_y_slice_start * dst_y_res

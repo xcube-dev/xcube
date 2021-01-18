@@ -22,14 +22,13 @@
 import math
 from typing import Union, Callable, Optional, Sequence, Tuple
 
-import dask.array as da
 import numpy as np
 import xarray as xr
+from dask import array as da
 from dask_image import ndinterp
 
-from xcube.core.geocoding import GeoCoding
-from xcube.core.geocoding import is_wgs84_crs
-from xcube.core.imgeom import ImageGeom
+from xcube.core.gridmapping import GridMapping
+from xcube.core.gridmapping import assert_regular_grid_mapping
 from xcube.core.rectify import rectify_dataset
 
 NDImage = Union[np.ndarray, da.Array]
@@ -37,43 +36,93 @@ Aggregator = Callable[[NDImage], NDImage]
 
 
 def resample_in_space(dataset: xr.Dataset,
-                      geo_coding: GeoCoding = None,
-                      output_geom: ImageGeom = None):
-    geo_coding = geo_coding if geo_coding is not None else GeoCoding.from_dataset(dataset)
-    output_geom = output_geom if output_geom is not None else ImageGeom.from_dataset(dataset)
+                      source_gm: GridMapping = None,
+                      target_gm: GridMapping = None):
+    if source_gm is None:
+        # No source grid mapping given, so do derive it from dataset
+        source_gm = GridMapping.from_dataset(dataset)
 
-    both_wgs84 = is_wgs84_crs(geo_coding.crs) and is_wgs84_crs(output_geom.crs)
+    if target_gm is None:
+        # No target grid mapping given, so do derive it from source
+        target_gm = source_gm.to_regular()
 
-    if not both_wgs84 and geo_coding.crs != output_geom.crs:
-        geo_coding = geo_coding.to_crs(output_geom.crs)
-        dataset = dataset.assign({geo_coding.x_name: geo_coding.x, geo_coding.y_name: geo_coding.y})
-        geo_coding = geo_coding.derive(x=dataset[geo_coding.x_name], y=dataset[geo_coding.y_name])
-        return resample_in_space(dataset, geo_coding=geo_coding, output_geom=output_geom)
+    # target_gm must be regular
+    assert_regular_grid_mapping(target_gm, name='target_gm')
 
-    if geo_coding.is_rectified:
-        return affine_transform_dataset(dataset, geo_coding=geo_coding, output_geom=output_geom)
+    # Are source and target both geographic grid mappings?
+    both_geographic = source_gm.crs.is_geographic and target_gm.crs.is_geographic
+
+    if not both_geographic and source_gm.crs != target_gm.crs:
+        # If CRSes are not both geographic and their CRSes are different
+        # transform the source_gm so its CRS matches the target CRS:
+        transformed_geo_coding = source_gm.to_transformed(target_gm.crs)
+        return resample_in_space(dataset,
+                                 source_gm=transformed_geo_coding,
+                                 target_gm=target_gm)
     else:
-        input_geom = ImageGeom.from_dataset(dataset)
-        if output_geom.res_xy_avg > source_res:
-            downscaled_dataset = affine_transform_dataset(dataset, geo_coding=geo_coding, output_geom=output_geom)
-            return rectify_dataset(downscaled_dataset, geo_coding=geo_coding, output_geom=output_geom)
+        # If CRSes are both geographic or their CRSes are equal:
+        if source_gm.is_regular:
+            # If also the source is regular, then resampling reduces
+            # to an affine transformation.
+            return affine_transform_dataset(dataset,
+                                            source_gm=source_gm,
+                                            target_cm=target_gm)
         else:
-            return rectify_dataset(dataset, geo_coding=geo_coding, output_geom=output_geom)
+            # If the source is not regular, we need to rectify it,
+            # so the target is regular. Our rectification implementations
+            # works only if source pixel size > target pixel size.
+            # Therefore check if we must downscale source first.
+            x_scale = source_gm.x_res / target_gm.x_res
+            y_scale = source_gm.y_res / target_gm.y_res
+            xy_scale = 0.5 * (x_scale + y_scale)
+            if xy_scale > 1.25:
+                # Source has lower resolution than target.
+                return rectify_dataset(dataset,
+                                       geo_coding=source_gm,
+                                       output_geom=target_gm)
+            else:
+                # Source has higher resolution than target.
+                # Downscale first, then rectify
+                downscaled_dataset = affine_transform_dataset(dataset,
+                                                              source_gm=source_gm,
+                                                              target_cm=target_gm)
+                x_name, y_name = source_gm.xy_var_names
+                downscaled_gm = GridMapping.from_coords(downscaled_dataset[x_name],
+                                                        downscaled_dataset[y_name],
+                                                        source_gm.crs)
+                return rectify_dataset(downscaled_dataset,
+                                       geo_coding=downscaled_gm,
+                                       output_geom=target_gm)
 
 
 def affine_transform_dataset(dataset: xr.Dataset,
-                             geo_coding: GeoCoding = None,
-                             output_geom: ImageGeom = None):
-    if geo_coding.crs != output_geom.crs:
-        raise ValueError('crs of geo_coding and output_geom must be equal')
-    x_dim, y_dim = geo_coding.xy_dim_names
+                             source_gm: GridMapping = None,
+                             target_cm: GridMapping = None):
+    if source_gm.crs != target_cm.crs:
+        raise ValueError(f'CRS of source_gm and target_cm must be equal, '
+                         f'was "{source_gm.crs.name}" and "{target_cm.crs.name}"')
+    assert_regular_grid_mapping(source_gm)
+    assert_regular_grid_mapping(target_cm)
+    at = source_gm.ij_transform_to(target_cm)
+    print('affine transform:', at)
+    ((x_scale, _, x_off), (_, y_scale, y_off)) = at
+    # TODO: scale may be wrong - scales can be negative if one of
+    #   source_gm.is_j_axis_up or source_gm.is_j_axis_up is True
+    scale = 0.5 * (abs(x_scale) + abs(y_scale))
+    x_dim, y_dim = source_gm.xy_dim_names
+    width, height = target_cm.size
+    tile_width, tile_height = target_cm.tile_size
     yx_dims = (y_dim, x_dim)
     coords = dict()
     data_vars = dict()
     for k, var in dataset.variables.items():
         new_var = None
         if var.ndim >= 2 and var.dims[-2] == yx_dims:
-            var_data = resample_ndimage(var.data, scale=)
+            var_data = resample_ndimage(var.data,
+                                        scale=scale,
+                                        offset=(x_off, y_off),
+                                        shape=(height, width),
+                                        chunks=(tile_height, tile_width))
             new_var = xr.DataArray(var_data, dims=var.dims, attrs=var.attrs)
         elif x_dim not in var.dims and y_dim not in var.dims:
             new_var = var.copy()
@@ -86,14 +135,14 @@ def affine_transform_dataset(dataset: xr.Dataset,
 
 
 def resample_ndimage(im: NDImage,
-                     scale: float = 1,
+                     scale: Union[float, Tuple[float, float]] = 1,
                      offset: Sequence[float] = None,
                      shape: Sequence[int] = None,
                      chunks: Sequence[int] = None,
                      spline_order: int = 1,
                      aggregator: Optional[Aggregator] = np.nanmean,
                      recover_nan: bool = False) -> da.Array:
-    im = _normalize_image(im)
+    im = da.asarray(im)
     offset = _normalize_offset(offset)
     if shape is None:
         shape = _resize_shape(im.shape, scale, 1)
@@ -105,8 +154,8 @@ def resample_ndimage(im: NDImage,
     if divisor >= 2 and aggregator is not None:
         # Downsampling
         # ------------
-        dims = len(im.shape)
-        axes = {dims - 2: divisor, dims - 1: divisor}
+        num_dims = len(im.shape)
+        axes = {num_dims - 2: divisor, num_dims - 1: divisor}
         elongation = divisor / inv_scale
         larger_shape = _resize_shape(shape, divisor, divisor)
         divisible_chunks = _make_divisible_tiles(larger_shape, divisor)
@@ -188,9 +237,7 @@ def _make_divisible_tiles(larger_shape: Tuple[int, ...], divisor: int) -> Tuple[
 
 
 def _normalize_image(im: NDImage) -> da.Array:
-    if isinstance(im, da.Array):
-        return im
-    return da.from_array(im)
+    return da.asarray(im)
 
 
 def _normalize_offset(offset: Optional[Sequence[float]]) -> np.ndarray:

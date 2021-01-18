@@ -118,6 +118,8 @@ class Coords1DGridMappingTest(unittest.TestCase):
         self.assertIs(xy_coords, gm.xy_coords)
         self.assertEqual(('coord', 'lat', 'lon'), xy_coords.dims)
         self.assertEqual((2, 10, 8), xy_coords.shape)
+        self.assertEqual(('lon', 'lat'), gm.xy_var_names)
+        self.assertEqual(('lon', 'lat'), gm.xy_dim_names)
 
 
 class Coords2DGridMappingTest(unittest.TestCase):
@@ -137,12 +139,8 @@ class Coords2DGridMappingTest(unittest.TestCase):
             crs=GEO_CRS)
         self.assertEqual((4, 3), gm.size)
         self.assertEqual((4, 3), gm.tile_size)
-        self.assertAlmostEqual(0.1, gm.x_res)
-        self.assertAlmostEqual(0.1, gm.y_res)
-        self.assertAlmostEqual(9.95, gm.x_min)
-        self.assertAlmostEqual(51.95, gm.y_min)
-        self.assertAlmostEqual(10.55, gm.x_max)
-        self.assertAlmostEqual(53.05, gm.y_max)
+        self.assertEqual((0.2, 0.2), gm.xy_res)
+        self.assertEqual((9.9, 51.9, 10.6, 53.1), gm.xy_bbox)
         self.assertEqual(GEO_CRS, gm.crs)
         self.assertEqual(False, gm.is_regular)
         self.assertEqual(True, gm.is_j_axis_up)
@@ -205,16 +203,31 @@ class Coords2DGridMappingTest(unittest.TestCase):
             crs=GEO_CRS)
         self.assertEqual((4, 3), gm.size)
         self.assertEqual((4, 3), gm.tile_size)
-        self.assertAlmostEqual(1, gm.x_res)
-        self.assertAlmostEqual(1, gm.y_res)
-        self.assertAlmostEqual(177, gm.x_min)
-        self.assertAlmostEqual(51.9, gm.y_min)
-        self.assertAlmostEqual(183, gm.x_max)
-        self.assertAlmostEqual(53.3, gm.y_max)
+        self.assertAlmostEqual(0.53, gm.x_res)
+        self.assertAlmostEqual(0.53, gm.y_res)
+        self.assertEqual((177.235, 52.135, 182.765, 53.065), gm.xy_bbox)
         self.assertEqual(GEO_CRS, gm.crs)
         self.assertEqual(False, gm.is_regular)
         self.assertEqual(True, gm.is_j_axis_up)
         self.assertEqual(True, gm.is_lon_360)
+
+    def test_to_regular(self):
+        lon = xr.DataArray([[1.0, 6.0],
+                            [0.0, 2.0]], dims=('y', 'x'))
+        lat = xr.DataArray([[56.0, 53.0],
+                            [52.0, 50.0]], dims=('y', 'x'))
+
+        gm_irr = GridMapping.from_coords(lon, lat, GEO_CRS)
+        gm_reg_actual = gm_irr.to_regular()
+        gm_reg_expected = GridMapping.regular(size=(4, 4),
+                                              xy_min=(-1.575, 48.425),
+                                              xy_res=3.15,
+                                              crs=GEO_CRS)
+        self.assertEqual(gm_reg_expected.size, gm_reg_actual.size)
+        self.assertEqual(gm_reg_expected.tile_size, gm_reg_actual.tile_size)
+        self.assertEqual(gm_reg_expected.xy_res, gm_reg_actual.xy_res)
+        self.assertEqual(gm_reg_expected.xy_bbox, gm_reg_actual.xy_bbox)
+        self.assertEqual(gm_reg_expected.crs, gm_reg_actual.crs)
 
     def test_2d_xy_coords(self):
         gm = GridMapping.from_coords(
@@ -234,3 +247,5 @@ class Coords2DGridMappingTest(unittest.TestCase):
         self.assertIs(xy_coords, gm.xy_coords)
         self.assertEqual(('coord', 'lat', 'lon'), xy_coords.dims)
         self.assertEqual((2, 3, 4), xy_coords.shape)
+        self.assertEqual(('lon', 'lat'), gm.xy_var_names)
+        self.assertEqual(('lon', 'lat'), gm.xy_dim_names)

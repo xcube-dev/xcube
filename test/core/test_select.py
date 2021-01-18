@@ -71,4 +71,3 @@ class SelectSpatialSubsetTest(unittest.TestCase):
         with self.assertRaises(ValueError) as cm:
             select_spatial_subset(ds1)
         self.assertEqual("One of ij_bbox and xy_bbox must be given", f'{cm.exception}')
-

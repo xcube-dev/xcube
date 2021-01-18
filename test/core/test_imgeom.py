@@ -5,7 +5,7 @@ import pyproj
 
 import xcube.core.new
 from xcube.core.geocoding import CRS_WGS84
-from xcube.core.rectify import ImageGeom
+from xcube.core.imgeom import ImageGeom
 from xcube.core.sentinel3 import is_sentinel3_product
 from xcube.core.sentinel3 import open_sentinel3_product
 from .test_geocoding import SourceDatasetMixin
