@@ -1,26 +1,23 @@
-## Changes in 0.6.2 (in development)
+## Changes in 0.7.0 (in development)
 
-* Numerous, also breaking changes have been applied to 
-  function`xcube.core.rectify.rectify_dataset()`:
-  - Argument `is_y_reversed` no longer used. Instead, use `output_geom` argument
-    with `output_geom.is_j_axis_up == False` (the new default).
-
-* Numerous, also breaking changes have been applied to 
-  class`xcube.core.imgeom.ImageGeom`:
-  - Property `is_crossing_antimeridian` has been renamed to `is_lon_360`.
-  - New property `is_j_axis_up` of type `bool` that is `False` by default;
-  - New property `crs` of type `pyproj.crs.CRS`, no default;
-  - Property `is_geo_crs` is now deprecated. Instead, use `crs.is_geographic`;
-  - Property `xy_res` is now a tuple instead of a float scalar.
-    Use `avg_xy_res` that returns a float representing an average pixel resolution;
-  - New properties `x_res` and `y_res`.
-
-* Numerous, also breaking changes have been applied to 
-  class`xcube.core.imgeom.GeoCoding`:
-  - Property `is_lon_normalized` has been renamed to `is_lon_360`.
-  - New property `is_rectified` of type `bool`;
-  - New property `crs` of type `pyproj.crs.CRS`;
-  - Property `is_geo_crs` is now deprecated. Instead, use `crs.is_geographic`;
+* Numerous breaking changes have been applied to this version
+  in order to address generic resampling (#391) and support other
+  CRS than WGS-84 (#...): 
+  * The following components have been removed entirely 
+    - module `xcube.core.imgeom` with class `ImageGeom` 
+    - module `xcube.core.geocoding` with class `GeoCoding`
+    - module `xcube.core.reproject` and all its functions
+  * The following components have been added 
+    - module `xcube.core.gridmapping` with new class `GridMapping`
+      is a CF compliant replacement for classes `ImageGeom` and `GeoCoding`
+  * The following components have changed in an incompatible way:
+    - Function`xcube.core.rectify.rectify_dataset()` now uses 
+      `source_gm: GridMapping` and `target_gm: GridMapping` instead of 
+      `geo_coding: GeoCoding` and `output_geom: ImageGeom`. 
+    - Function`xcube.core.gen.iproc.InputProcessor.process()` now uses 
+      `source_gm: GridMapping` and `target_gm: GridMapping` instead of 
+      `geo_coding: GeoCoding` and `output_geom: ImageGeom`. 
+  * xcube no longer depends on GDAL (at least not directly).
 
 * Added new context manager `xcube.util.observe_dask_progress()` that can be used
   to observe tasks that known to be dominated by Dask computations: 
