@@ -95,12 +95,17 @@ class RegularGridMappingTest(unittest.TestCase):
 
     def test_ij_bboxes(self):
         gm = GridMapping.regular(size=(2000, 1000),
-                                 xy_min=(10.0, 20.0), xy_res=0.1, crs=NOT_A_GEO_CRS)
+                                 xy_min=(10.0, 20.0),
+                                 xy_res=0.1,
+                                 crs=NOT_A_GEO_CRS)
         np.testing.assert_almost_equal(gm.ij_bboxes,
-                                       np.array([[0, 0, 2000, 1000]], dtype=np.int64))
+                                       np.array([[0, 0, 2000, 1000]],
+                                                dtype=np.int64))
 
         gm = GridMapping.regular(size=(2000, 1000),
-                                 xy_min=(10.0, 20.0), xy_res=0.1, crs=NOT_A_GEO_CRS).derive(tile_size=500)
+                                 xy_min=(10.0, 20.0),
+                                 xy_res=0.1,
+                                 crs=NOT_A_GEO_CRS).derive(tile_size=500)
         np.testing.assert_almost_equal(gm.ij_bboxes,
                                        np.array([
                                            [0, 0, 500, 500],
@@ -115,12 +120,17 @@ class RegularGridMappingTest(unittest.TestCase):
 
     def test_xy_bboxes(self):
         gm = GridMapping.regular(size=(2000, 1000),
-                                 xy_min=(10.0, 20.0), xy_res=0.1, crs=NOT_A_GEO_CRS)
+                                 xy_min=(10.0, 20.0),
+                                 xy_res=0.1,
+                                 crs=NOT_A_GEO_CRS)
         np.testing.assert_almost_equal(gm.xy_bboxes,
-                                       np.array([[10., 20., 210., 120.]], dtype=np.float64))
+                                       np.array([[10., 20., 210., 120.]],
+                                                dtype=np.float64))
 
         gm = GridMapping.regular(size=(2000, 1000),
-                                 xy_min=(10.0, 20.0), xy_res=0.1, crs=NOT_A_GEO_CRS).derive(tile_size=500)
+                                 xy_min=(10.0, 20.0),
+                                 xy_res=0.1,
+                                 crs=NOT_A_GEO_CRS).derive(tile_size=500)
         np.testing.assert_almost_equal(gm.xy_bboxes,
                                        np.array([
                                            [10., 70, 60, 120.],
@@ -135,13 +145,18 @@ class RegularGridMappingTest(unittest.TestCase):
 
     def test_xy_bboxes_is_j_axis_up(self):
         gm = GridMapping.regular(size=(2000, 1000),
-                                 xy_min=(10.0, 20.0), xy_res=0.1, crs=NOT_A_GEO_CRS).derive(is_j_axis_up=True)
+                                 xy_min=(10.0, 20.0),
+                                 xy_res=0.1,
+                                 crs=NOT_A_GEO_CRS).derive(is_j_axis_up=True)
         np.testing.assert_almost_equal(gm.xy_bboxes,
-                                       np.array([[10., 20., 210., 120.]], dtype=np.float64))
+                                       np.array([[10., 20., 210., 120.]],
+                                                dtype=np.float64))
 
         gm = GridMapping.regular(size=(2000, 1000),
-                                 xy_min=(10.0, 20.0), xy_res=0.1, crs=NOT_A_GEO_CRS,
-                                 ).derive(tile_size=500, is_j_axis_up=True)
+                                 xy_min=(10.0, 20.0),
+                                 xy_res=0.1,
+                                 crs=NOT_A_GEO_CRS, ).derive(tile_size=500,
+                                                             is_j_axis_up=True)
         np.testing.assert_almost_equal(gm.xy_bboxes,
                                        np.array([
                                            [10., 20., 60., 70.],
@@ -155,7 +170,10 @@ class RegularGridMappingTest(unittest.TestCase):
                                        ], dtype=np.float64))
 
     def test_to_coords(self):
-        gm = GridMapping.regular(size=(10, 6), xy_min=(-2600.0, 1200.0), xy_res=10.0, crs=NOT_A_GEO_CRS)
+        gm = GridMapping.regular(size=(10, 6),
+                                 xy_min=(-2600.0, 1200.0),
+                                 xy_res=10.0,
+                                 crs=NOT_A_GEO_CRS)
 
         cv = gm.to_coords(xy_var_names=('x', 'y'))
         self._assert_coord_vars(cv,
@@ -174,7 +192,9 @@ class RegularGridMappingTest(unittest.TestCase):
                                 ))
 
     def test_coord_vars_j_axis_up(self):
-        gm = GridMapping.regular(size=(10, 6), xy_min=(-2600.0, 1200.0), xy_res=10.0,
+        gm = GridMapping.regular(size=(10, 6),
+                                 xy_min=(-2600.0, 1200.0),
+                                 xy_res=10.0,
                                  crs=NOT_A_GEO_CRS).derive(is_j_axis_up=True)
 
         cv = gm.to_coords(xy_var_names=('x', 'y'))
@@ -194,7 +214,10 @@ class RegularGridMappingTest(unittest.TestCase):
                                 ))
 
     def test_coord_vars_antimeridian(self):
-        gm = GridMapping.regular(size=(10, 10), xy_min=(172.0, 53.0), xy_res=2.0, crs=GEO_CRS)
+        gm = GridMapping.regular(size=(10, 10),
+                                 xy_min=(172.0, 53.0),
+                                 xy_res=2.0,
+                                 crs=GEO_CRS)
 
         cv = gm.to_coords(xy_var_names=('lon', 'lat'))
         self._assert_coord_vars(cv,

@@ -14,6 +14,11 @@ CRS_WGS84 = pyproj.crs.CRS(4326)
 CRS_CRS84 = pyproj.crs.CRS.from_string("urn:ogc:def:crs:OGC:1.3:CRS84")
 CRS_UTM_33N = pyproj.crs.CRS(32633)
 
+CRS_ROTATED_POLE = pyproj.crs.CRS.from_cf(
+    dict(grid_mapping_name="rotated_latitude_longitude",
+         grid_north_pole_latitude=32.5,
+         grid_north_pole_longitude=170.))
+
 
 class GetDatasetGridMappingsTest(unittest.TestCase):
     def test_no_crs_lon_lat_common_names(self):
@@ -85,6 +90,40 @@ class GetDatasetGridMappingsTest(unittest.TestCase):
         self.assertIsInstance(grid_mapping.coords.y, xr.DataArray)
         self.assertEqual('myx', grid_mapping.coords.x.name)
         self.assertEqual('myy', grid_mapping.coords.y.name)
+
+    def test_rotated_pole_with_common_names(self):
+        dataset = xr.Dataset(dict(rotated_pole=xr.DataArray(0, attrs=CRS_ROTATED_POLE.to_cf())),
+                             coords=dict(rlon=xr.DataArray(np.linspace(-180, 180, 11), dims='rlon'),
+                                         rlat=xr.DataArray(np.linspace(0, 90, 11), dims='rlat')))
+        grid_mappings = get_dataset_grid_mappings(dataset)
+        self.assertEqual(1, len(grid_mappings))
+        self.assertIn('rotated_pole', grid_mappings)
+        grid_mapping = grid_mappings.get('rotated_pole')
+        self.assertIsInstance(grid_mapping, GridMapping)
+        self.assertEqual('Geographic 2D CRS', grid_mapping.crs.type_name)
+        self.assertIsInstance(grid_mapping.coords, GridCoords)
+        self.assertIsInstance(grid_mapping.coords.x, xr.DataArray)
+        self.assertIsInstance(grid_mapping.coords.y, xr.DataArray)
+        self.assertEqual('rlon', grid_mapping.coords.x.name)
+        self.assertEqual('rlat', grid_mapping.coords.y.name)
+
+    def test_rotated_pole_with_standard_names(self):
+        dataset = xr.Dataset(dict(rotated_pole=xr.DataArray(0, attrs=CRS_ROTATED_POLE.to_cf())),
+                             coords=dict(u=xr.DataArray(np.linspace(-180, 180, 11), dims='u',
+                                                        attrs=dict(standard_name='grid_longitude')),
+                                         v=xr.DataArray(np.linspace(0, 90, 11), dims='v',
+                                                        attrs=dict(standard_name='grid_latitude'))))
+        grid_mappings = get_dataset_grid_mappings(dataset)
+        self.assertEqual(1, len(grid_mappings))
+        self.assertIn('rotated_pole', grid_mappings)
+        grid_mapping = grid_mappings.get('rotated_pole')
+        self.assertIsInstance(grid_mapping, GridMapping)
+        self.assertEqual('Geographic 2D CRS', grid_mapping.crs.type_name)
+        self.assertIsInstance(grid_mapping.coords, GridCoords)
+        self.assertIsInstance(grid_mapping.coords.x, xr.DataArray)
+        self.assertIsInstance(grid_mapping.coords.y, xr.DataArray)
+        self.assertEqual('u', grid_mapping.coords.x.name)
+        self.assertEqual('v', grid_mapping.coords.y.name)
 
 
 class XarrayDecodeCfTest(unittest.TestCase):

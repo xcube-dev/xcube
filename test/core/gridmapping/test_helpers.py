@@ -4,10 +4,6 @@ from fractions import Fraction
 from xcube.core.gridmapping.helpers import round_to_fraction
 
 
-def round_to_fraction_float(value, digits, resolution):
-    return float(round_to_fraction(value, digits, resolution))
-
-
 class RoundToFractionTest(unittest.TestCase):
 
     def test_invalid(self):
@@ -21,6 +17,7 @@ class RoundToFractionTest(unittest.TestCase):
     def test_1_025(self):
         def f(value):
             return float(round_to_fraction(value, 1, 0.25))
+
         self.assertAlmostEqual(-1, f(-1))
         self.assertAlmostEqual(0.0, f(0))
         self.assertAlmostEqual(1.0, f(1))
@@ -38,6 +35,7 @@ class RoundToFractionTest(unittest.TestCase):
     def test_2_025(self):
         def f(value):
             return float(round_to_fraction(value, 2, 0.25))
+
         self.assertAlmostEqual(-1, f(-1))
         self.assertAlmostEqual(0.0, f(0))
         self.assertAlmostEqual(1.0, f(1))
@@ -54,17 +52,9 @@ class RoundToFractionTest(unittest.TestCase):
         self.assertAlmostEqual(1.975, f(1.98))
         self.assertAlmostEqual(2.0, f(2))
 
-
-class RoundToFractionTestOld(unittest.TestCase):
     # samples = sorted([10 ** x for x in [20 * random.random() - 10 for i in range(16)]])
 
     dump = True
-
-    def test_invalid(self):
-        with self.assertRaises(ValueError):
-            round_to_fraction(0.29, digits=0)
-        with self.assertRaises(ValueError):
-            round_to_fraction(0.29, resolution=0)
 
     def test_default(self):
         values = [

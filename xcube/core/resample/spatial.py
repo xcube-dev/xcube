@@ -55,7 +55,7 @@ def resample_in_space(dataset: xr.Dataset,
     if not both_geographic and source_gm.crs != target_gm.crs:
         # If CRSes are not both geographic and their CRSes are different
         # transform the source_gm so its CRS matches the target CRS:
-        transformed_geo_coding = source_gm.to_transformed(target_gm.crs)
+        transformed_geo_coding = source_gm.transform(target_gm.crs)
         return resample_in_space(dataset,
                                  source_gm=transformed_geo_coding,
                                  target_gm=target_gm)

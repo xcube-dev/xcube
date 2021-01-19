@@ -18,11 +18,9 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-import math
 from typing import Tuple, Union
 
 import dask.array as da
-import numpy as np
 import pyproj
 import xarray as xr
 
@@ -33,8 +31,6 @@ from .helpers import _default_xy_dim_names
 from .helpers import _default_xy_var_names
 from .helpers import _normalize_int_pair
 from .helpers import _normalize_number_pair
-from .helpers import floor_to_fraction
-from .helpers import ceil_to_fraction
 from .helpers import _to_int_or_float
 
 
@@ -60,13 +56,13 @@ class RegularGridMapping(GridMapping):
         return xy_coords
 
 
-def new_regular(size: Union[int, Tuple[int, int]],
-                xy_min: Tuple[float, float],
-                xy_res: Union[float, Tuple[float, float]],
-                crs: pyproj.crs.CRS,
-                *,
-                tile_size: Union[int, Tuple[int, int]] = None,
-                is_j_axis_up: bool = False):
+def new_regular_grid_mapping(size: Union[int, Tuple[int, int]],
+                             xy_min: Tuple[float, float],
+                             xy_res: Union[float, Tuple[float, float]],
+                             crs: pyproj.crs.CRS,
+                             *,
+                             tile_size: Union[int, Tuple[int, int]] = None,
+                             is_j_axis_up: bool = False) -> GridMapping:
     width, height = _normalize_int_pair(size, name='size')
     assert_condition(width > 1 and height > 1, 'invalid size')
 
@@ -102,10 +98,10 @@ def new_regular(size: Union[int, Tuple[int, int]],
                               is_j_axis_up=is_j_axis_up)
 
 
-def to_regular(grid_mapping: GridMapping,
-               *,
-               tile_size: Union[int, Tuple[int, int]] = None,
-               is_j_axis_up: bool = False) -> GridMapping:
+def to_regular_grid_mapping(grid_mapping: GridMapping,
+                            *,
+                            tile_size: Union[int, Tuple[int, int]] = None,
+                            is_j_axis_up: bool = False) -> GridMapping:
     if grid_mapping.is_regular:
         if tile_size is not None or is_j_axis_up != grid_mapping.is_j_axis_up:
             return grid_mapping.derive(tile_size=tile_size, is_j_axis_up=is_j_axis_up)
@@ -125,9 +121,9 @@ def to_regular(grid_mapping: GridMapping,
     width = width if width >= 2 else 2
     height = height if height >= 2 else 2
 
-    return new_regular(size=(width, height),
-                       xy_min=(x_min, y_min),
-                       xy_res=xy_res,
-                       crs=grid_mapping.crs,
-                       tile_size=tile_size,
-                       is_j_axis_up=is_j_axis_up)
+    return new_regular_grid_mapping(size=(width, height),
+                                    xy_min=(x_min, y_min),
+                                    xy_res=xy_res,
+                                    crs=grid_mapping.crs,
+                                    tile_size=tile_size,
+                                    is_j_axis_up=is_j_axis_up)

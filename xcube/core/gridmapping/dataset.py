@@ -26,16 +26,16 @@ import xarray as xr
 
 from .base import GridMapping
 from .cfconv import get_dataset_grid_mappings
-from .coords import from_coords
+from .coords import new_grid_mapping_from_coords
 
 
-def from_dataset(dataset: xr.Dataset,
-                 *,
-                 xy_var_names: Tuple[str, str] = None,
-                 tile_size: Union[int, Tuple[str, str]] = None,
-                 prefer_crs: pyproj.crs.CRS = None,
-                 prefer_regular: bool = True,
-                 emit_warnings: bool = False) -> Optional[GridMapping]:
+def new_grid_mapping_from_dataset(dataset: xr.Dataset,
+                                  *,
+                                  xy_var_names: Tuple[str, str] = None,
+                                  tile_size: Union[int, Tuple[str, str]] = None,
+                                  prefer_crs: pyproj.crs.CRS = None,
+                                  prefer_is_regular: bool = None,
+                                  emit_warnings: bool = False) -> Optional[GridMapping]:
     if xy_var_names is not None:
         x_var_name, y_var_name = xy_var_names
         if x_var_name not in dataset or y_var_name not in dataset:
@@ -46,25 +46,30 @@ def from_dataset(dataset: xr.Dataset,
 
     grid_mappings = get_dataset_grid_mappings(dataset,
                                               emit_warnings=emit_warnings).values()
-    grid_mappings = [from_coords(x_coords=grid_mapping.coords.x,
-                                 y_coords=grid_mapping.coords.y,
-                                 crs=grid_mapping.crs,
-                                 tile_size=tile_size)
-                     for grid_mapping in grid_mappings]
+    grid_mappings = [new_grid_mapping_from_coords(x_coords=gm.coords.x,
+                                                  y_coords=gm.coords.y,
+                                                  crs=gm.crs,
+                                                  tile_size=tile_size)
+                     for gm in grid_mappings]
 
     if len(grid_mappings) > 1:
-        # If prefer_crs, try finding one with that CRS
-        for grid_mapping in grid_mappings:
-            if prefer_crs is not None and grid_mapping.crs == prefer_crs:
-                return grid_mapping
+        if prefer_crs is not None and prefer_is_regular is not None:
+            for gm in grid_mappings:
+                if gm.crs == prefer_crs and gm.is_regular == prefer_is_regular:
+                    return gm
 
-        # If prefer_is_rectified, try finding a rectified one
-        for grid_mapping in grid_mappings:
-            if prefer_regular and grid_mapping.is_regular:
-                return grid_mapping
+        if prefer_crs is not None:
+            for gm in grid_mappings:
+                if gm.crs == prefer_crs:
+                    return gm
+
+        if prefer_is_regular is not None:
+            for gm in grid_mappings:
+                if gm.is_regular == prefer_is_regular:
+                    return gm
 
     # Get arbitrary one (here: first)
     if grid_mappings:
         return grid_mappings[0]
 
-    raise ValueError('cannot find grid mapping in dataset')
+    raise ValueError('cannot find any grid mapping in dataset')

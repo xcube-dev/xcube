@@ -70,11 +70,11 @@ class Coords2DGridMapping(CoordsGridMapping):
             .chunk(self.xy_coords_chunks)
 
 
-def from_coords(x_coords: xr.DataArray,
-                y_coords: xr.DataArray,
-                crs: pyproj.crs.CRS,
-                *,
-                tile_size: Union[int, Tuple[int, int]] = None) -> GridMapping:
+def new_grid_mapping_from_coords(x_coords: xr.DataArray,
+                                 y_coords: xr.DataArray,
+                                 crs: pyproj.crs.CRS,
+                                 *,
+                                 tile_size: Union[int, Tuple[int, int]] = None) -> GridMapping:
     assert_instance(x_coords, xr.DataArray)
     assert_instance(y_coords, xr.DataArray)
     assert_condition(x_coords.ndim in (1, 2),
@@ -223,10 +223,10 @@ def _abs_no_nan(array: Union[xr.DataArray, da.Array, np.ndarray]):
     return np.where(np.logical_or(np.isnan(array), np.isclose(array, 0)), 0, array)
 
 
-def to_coords(grid_mapping: GridMapping,
-              xy_var_names: Tuple[str, str] = None,
-              xy_dim_names: Tuple[str, str] = None,
-              exclude_bounds: bool = False) -> Dict[str, xr.DataArray]:
+def grid_mapping_to_coords(grid_mapping: GridMapping,
+                           xy_var_names: Tuple[str, str] = None,
+                           xy_dim_names: Tuple[str, str] = None,
+                           exclude_bounds: bool = False) -> Dict[str, xr.DataArray]:
     """
     Get CF-compliant axis coordinate variables and cell boundary coordinate variables.
 

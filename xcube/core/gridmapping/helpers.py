@@ -132,57 +132,6 @@ def _assert_valid_xy_coords(xy_coords: Any):
                      'xy_coords must have dimensions (2, height, width) with height >= 2 and width >= 2')
 
 
-def round_to_fraction(value: float,
-                      digits: int = 2,
-                      resolution: float = 1) -> Fraction:
-    """
-    Round *value* "nicely" and return result as fraction.
-
-    :param value: The value
-    :param digits: The number of significant digits.
-        Must be an integer >= 1. Default is 2.
-    :param resolution: The rounding resolution
-        for the least significant digit.
-        Must be one of (0.1, 0.2, 0.25, 0.5, 1). Default is 1.
-    :return: The rounded value as fraction.Fraction instance.
-    """
-    return _to_fraction(value, digits, resolution, 'round')
-
-
-def ceil_to_fraction(value: float,
-                     digits: int = 2,
-                     resolution: float = 1) -> Fraction:
-    """
-    Round *value* "nicely" and return result as fraction.
-
-    :param value: The value
-    :param digits: The number of significant digits.
-        Must be an integer >= 1. Default is 2.
-    :param resolution: The rounding resolution
-        for the least significant digit.
-        Must be one of (0.1, 0.2, 0.25, 0.5, 1). Default is 1.
-    :return: The rounded value as fraction.Fraction instance.
-    """
-    return _to_fraction(value, digits, resolution, 'ceil')
-
-
-def floor_to_fraction(value: float,
-                      digits: int = 2,
-                      resolution: float = 1) -> Fraction:
-    """
-    Round *value* "nicely" and return result as fraction.
-
-    :param value: The value
-    :param digits: The number of significant digits.
-        Must be an integer >= 1. Default is 2.
-    :param resolution: The rounding resolution
-        for the least significant digit.
-        Must be one of (0.1, 0.2, 0.25, 0.5, 1). Default is 1.
-    :return: The rounded value as fraction.Fraction instance.
-    """
-    return _to_fraction(value, digits, resolution, 'floor')
-
-
 _RESOLUTIONS = {
     10: (1, 0),
     20: (2, 0),
@@ -194,10 +143,20 @@ _RESOLUTIONS = {
 _RESOLUTION_SET = set(k / 100 for k in _RESOLUTIONS.keys())
 
 
-def _to_fraction(value: float,
-                 digits: int,
-                 resolution: float,
-                 method: str) -> Fraction:
+def round_to_fraction(value: float,
+                      digits: int = 2,
+                      resolution: float = 1) -> Fraction:
+    """
+    Round *value* at position given by significant *digits* and return result as fraction.
+
+    :param value: The value
+    :param digits: The number of significant digits.
+        Must be an integer >= 1. Default is 2.
+    :param resolution: The rounding resolution
+        for the least significant digit.
+        Must be one of (0.1, 0.2, 0.25, 0.5, 1). Default is 1.
+    :return: The rounded value as fraction.Fraction instance.
+    """
     if digits < 1:
         raise ValueError('digits must be a positive integer')
     resolution_key = round(100 * resolution)
@@ -217,22 +176,5 @@ def _to_fraction(value: float,
     else:
         magnitude = Fraction(1, 10 ** -exponent)
     scaled_value = value / magnitude
-    if method == 'round':
-        discrete_value = resolution * round(scaled_value / resolution)
-    elif method == 'ceil':
-        discrete_value = resolution * math.ceil(scaled_value / resolution)
-    else:
-        discrete_value = resolution * math.floor(scaled_value / resolution)
+    discrete_value = resolution * round(scaled_value / resolution)
     return (sign * discrete_value) * magnitude
-
-
-def _floor(x, resolution):
-    return x
-
-
-def _ceil(x, resolution):
-    return x + resolution - 1
-
-
-def _round(x, resolution):
-    return round(x + resolution / 2)

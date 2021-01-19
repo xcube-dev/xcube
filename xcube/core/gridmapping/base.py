@@ -65,8 +65,8 @@ class GridMapping(abc.ABC):
     Some instance methods can be used to derive new instances:
 
     * :meth:derive()
+    * :meth:transform()
     * :meth:to_regular()
-    * :meth:to_transformed()
 
     This class is thread-safe.
 
@@ -451,18 +451,22 @@ class GridMapping(abc.ABC):
         :return: dictionary with coordinate variables
         """
         self._assert_regular()
-        from .coords import to_coords
-        return to_coords(self,
-                         xy_var_names=xy_var_names,
-                         xy_dim_names=xy_dim_names,
-                         exclude_bounds=exclude_bounds)
+        from .coords import grid_mapping_to_coords
+        return grid_mapping_to_coords(self,
+                                      xy_var_names=xy_var_names,
+                                      xy_dim_names=xy_dim_names,
+                                      exclude_bounds=exclude_bounds)
 
-    def to_transformed(self,
-                       target_crs: pyproj.crs.CRS,
-                       *,
-                       tile_size: Union[int, Tuple[int, int]] = None) -> 'GridMapping':
-        from .transformed import to_transformed
-        return to_transformed(self, target_crs, tile_size=tile_size)
+    def transform(self,
+                  crs: pyproj.crs.CRS,
+                  *,
+                  tile_size: Union[int, Tuple[int, int]] = None,
+                  xy_var_names: Tuple[str, str] = None) -> 'GridMapping':
+        from .transform import transform_grid_mapping
+        return transform_grid_mapping(self,
+                                      crs,
+                                      tile_size=tile_size,
+                                      xy_var_names=xy_var_names)
 
     @classmethod
     def regular(cls,
@@ -473,21 +477,21 @@ class GridMapping(abc.ABC):
                 *,
                 tile_size: Union[int, Tuple[int, int]] = None,
                 is_j_axis_up: bool = False) -> 'GridMapping':
-        from .regular import new_regular
-        return new_regular(size=size,
-                           xy_min=xy_min,
-                           xy_res=xy_res,
-                           crs=crs,
-                           tile_size=tile_size,
-                           is_j_axis_up=is_j_axis_up)
+        from .regular import new_regular_grid_mapping
+        return new_regular_grid_mapping(size=size,
+                                        xy_min=xy_min,
+                                        xy_res=xy_res,
+                                        crs=crs,
+                                        tile_size=tile_size,
+                                        is_j_axis_up=is_j_axis_up)
 
     def to_regular(self,
                    tile_size: Union[int, Tuple[int, int]] = None,
                    is_j_axis_up: bool = False) -> 'GridMapping':
-        from .regular import to_regular
-        return to_regular(self,
-                          tile_size=tile_size,
-                          is_j_axis_up=is_j_axis_up)
+        from .regular import to_regular_grid_mapping
+        return to_regular_grid_mapping(self,
+                                       tile_size=tile_size,
+                                       is_j_axis_up=is_j_axis_up)
 
     @classmethod
     def from_dataset(cls,
@@ -495,7 +499,7 @@ class GridMapping(abc.ABC):
                      *,
                      xy_var_names: Tuple[str, str] = None,
                      tile_size: Union[int, Tuple[str, str]] = None,
-                     prefer_regular: bool = True,
+                     prefer_is_regular: bool = True,
                      prefer_crs: pyproj.crs.CRS = None,
                      emit_warnings: bool = False) -> 'GridMapping':
         """
@@ -504,19 +508,19 @@ class GridMapping(abc.ABC):
         :param dataset: The dataset.
         :param xy_var_names: Optional tuple of the x- and y-coordinate variables in *dataset*.
         :param tile_size: Optional tile size
-        :param prefer_regular: Whether to prefer a regular grid mapping if multiple found.
+        :param prefer_is_regular: Whether to prefer a regular grid mapping if multiple found.
             Default is True.
         :param prefer_crs: The preferred CRS of a grid mapping if multiple found.
         :param emit_warnings: Whether to emit warning for non-CF compliant datasets.
         :return: a new grid mapping instance.
         """
-        from .dataset import from_dataset
-        return from_dataset(dataset=dataset,
-                            xy_var_names=xy_var_names,
-                            tile_size=tile_size,
-                            prefer_regular=prefer_regular,
-                            prefer_crs=prefer_crs,
-                            emit_warnings=emit_warnings)
+        from .dataset import new_grid_mapping_from_dataset
+        return new_grid_mapping_from_dataset(dataset=dataset,
+                                             xy_var_names=xy_var_names,
+                                             tile_size=tile_size,
+                                             prefer_is_regular=prefer_is_regular,
+                                             prefer_crs=prefer_crs,
+                                             emit_warnings=emit_warnings)
 
     @classmethod
     def from_coords(cls,
@@ -525,8 +529,11 @@ class GridMapping(abc.ABC):
                     crs: pyproj.crs.CRS,
                     *,
                     tile_size: Union[int, Tuple[int, int]] = None) -> 'GridMapping':
-        from .coords import from_coords
-        return from_coords(x_coords=x_coords, y_coords=y_coords, crs=crs, tile_size=tile_size)
+        from .coords import new_grid_mapping_from_coords
+        return new_grid_mapping_from_coords(x_coords=x_coords,
+                                            y_coords=y_coords,
+                                            crs=crs,
+                                            tile_size=tile_size)
 
     def _assert_regular(self):
         if not self.is_regular:

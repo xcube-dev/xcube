@@ -6,16 +6,13 @@ import pyproj
 import xarray as xr
 
 import xcube.core.new
+from test.sampledata import create_s2plus_dataset
 from xcube.core.gridmapping import GridMapping
 
 # noinspection PyProtectedMember
 
 GEO_CRS = pyproj.crs.CRS(4326)
 NOT_A_GEO_CRS = pyproj.crs.CRS(5243)
-
-OLCI_L2_PATH = os.path.join(os.path.dirname(__file__),
-                            '..', '..', '..',
-                            'examples', 'notebooks', 'S3-OLCI-L2A.zarr.zip')
 
 
 # noinspection PyMethodMayBeStatic
@@ -57,7 +54,11 @@ class DatasetGridMappingTest(unittest.TestCase):
         self.assertEqual((0.93, 0.93), gm.xy_res)
 
     def test_from_real_olci(self):
-        dataset = xr.open_zarr(OLCI_L2_PATH)
+        olci_l2_path = os.path.join(os.path.dirname(__file__),
+                                    '..', '..', '..',
+                                    'examples', 'notebooks', 'S3-OLCI-L2A.zarr.zip')
+
+        dataset = xr.open_zarr(olci_l2_path)
         gm = GridMapping.from_dataset(dataset)
         self.assertEqual((1189, 1890), gm.size)
         self.assertEqual((512, 512), gm.tile_size)
@@ -75,3 +76,47 @@ class DatasetGridMappingTest(unittest.TestCase):
 
         gm = gm.to_regular()
         self.assertEqual((7462, 5551), gm.size)
+
+    def test_from_sentinel_2(self):
+        dataset = create_s2plus_dataset()
+
+        gm = GridMapping.from_dataset(dataset)
+        # Should pick the projected one which is regular
+        self.assertEqual("Projected CRS", gm.crs.type_name)
+        self.assertEqual(True, gm.is_regular)
+
+        gm = GridMapping.from_dataset(dataset, prefer_is_regular=True)
+        # Should pick the projected one which is regular
+        self.assertEqual("Projected CRS", gm.crs.type_name)
+        self.assertEqual(True, gm.is_regular)
+
+        gm = GridMapping.from_dataset(dataset, prefer_is_regular=False)
+        # Should pick the geographic one which is irregular
+        self.assertEqual('Geographic 2D CRS', gm.crs.type_name)
+        self.assertEqual(False, gm.is_regular)
+
+        gm = GridMapping.from_dataset(dataset, prefer_crs=GEO_CRS)
+        # Should pick the geographic one which is irregular
+        self.assertEqual('Geographic 2D CRS', gm.crs.type_name)
+        self.assertEqual(False, gm.is_regular)
+
+        gm = GridMapping.from_dataset(dataset, prefer_crs=GEO_CRS, prefer_is_regular=True)
+        # Should pick the geographic one which is irregular
+        self.assertEqual('Geographic 2D CRS', gm.crs.type_name)
+        self.assertEqual(False, gm.is_regular)
+
+    def test_xy_names(self):
+        dataset = create_s2plus_dataset()
+        with self.assertRaises(ValueError) as cm:
+            GridMapping.from_dataset(dataset, xy_var_names=('lons', 'lats'))
+        self.assertEqual('coordinate variables "lons" or "lats" not found in dataset', f'{cm.exception}')
+
+        dataset = create_s2plus_dataset()
+        with self.assertRaises(NotImplementedError) as cm:
+            GridMapping.from_dataset(dataset, xy_var_names=('lon', 'lat'))
+        self.assertEqual('xy_var_names not yet supported', f'{cm.exception}')
+
+    def test_no_grid_mapping_found(self):
+        with self.assertRaises(ValueError) as cm:
+            GridMapping.from_dataset(xr.Dataset())
+        self.assertEqual('cannot find any grid mapping in dataset', f'{cm.exception}')
