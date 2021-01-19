@@ -22,6 +22,7 @@
 import threading
 import time
 import traceback
+import weakref
 from abc import ABC
 from typing import Sequence, Optional, Any, Tuple, Type, List
 
@@ -33,14 +34,16 @@ from xcube.util.assertions import assert_condition, assert_given, assert_in
 class ProgressState:
     """Represents the state of progress."""
 
-    def __init__(self, label: str, total_work: float, parent_state: 'ProgressState' = None,
-                 trace: List[str] = None):
+    def __init__(self, label: str, total_work: float,
+                 parent_state: 'ProgressState' = None, trace: List[str] = None):
         self._label = label
         self._total_work = total_work
+        self._ident = threading.get_ident()
         self._parent = parent_state
         self._stack = None
         self._super_work = parent_state.super_work_ahead if parent_state else 1
         self._super_work_ahead = 1.
+        self._child_idents = []
         self._exc_info = None
         self._traceback = trace if trace else []
         self._completed_work = 0.
@@ -56,6 +59,10 @@ class ProgressState:
     @property
     def total_work(self) -> float:
         return self._total_work
+
+    @property
+    def ident(self) -> int:
+        return self._ident
 
     @property
     def parent(self) -> 'ProgressState':
@@ -136,6 +143,13 @@ class ProgressState:
                 previous_state = previous_state.parent
         return self._stack
 
+    @property
+    def child_idents(self) -> List[int]:
+        return self._child_idents
+
+    def set_child_idents(self, idents: List[str]):
+        self._child_idents = idents
+
 
 class ProgressObserver(ABC):
     """
@@ -201,8 +215,12 @@ class _ProgressContext:
     def _get_parent_state(self, traceback: List[str]) -> Optional[ProgressState]:
         parent_state = None
         max_match = 0
+        ident = threading.get_ident()
+        # preventing set modification during iteration
         states = self._states.copy()
         for state in states:
+            if ident != state.ident:
+                continue
             max_match_candidate = len(state.traceback)
             if len(traceback) < max_match_candidate or max_match_candidate < max_match:
                 continue
@@ -220,6 +238,11 @@ class _ProgressContext:
                 continue
             parent_state = state
             max_match = max_match_candidate
+        if parent_state is None:
+            for state in self._states:
+                if ident in state.child_idents:
+                    parent_state = state
+                    break
         return parent_state
 
     def _may_be_parent_line(self, state_traceback_line: str, parent_traceback_line: str):
@@ -450,3 +473,39 @@ class observe_dask_progress(dask.callbacks.Callback):
         if self._running:
             self._running = False
             self._timer.join()
+
+
+class observe_nested_dask_progress(dask.callbacks.Callback):
+    """
+    Observe progress made by Dask tasks that have nested progress monitors.
+    """
+
+    def __init__(self,
+                 label: str,
+                 num_measured_sub_processes: float):
+        super().__init__()
+        assert_given(label, 'label')
+        assert_condition(num_measured_sub_processes > 0, 'total_work must be greater than zero')
+        self._label = label
+        self._total_work = num_measured_sub_processes
+        self._state: Optional[ProgressState] = None
+        from multiprocessing.dummy import active_children
+        self._active_children = active_children
+        progress_thread = threading.current_thread()
+        if not hasattr(progress_thread, '_children'):
+            progress_thread._children = weakref.WeakKeyDictionary()
+
+    def __enter__(self) -> 'observe_nested_dask_progress':
+        super().__enter__()
+        self._state = _ProgressContext.instance().begin(self._label, self._total_work)
+        return self
+
+    def __exit__(self, type, value, traceback):
+        _ProgressContext.instance().end(self._state, type, value, traceback)
+        super().__exit__(type, value, traceback)
+
+    # noinspection PyUnusedLocal
+    def _pretask(self, key, dsk, state):
+        """Dask callback implementation."""
+        child_idents = [active_child.ident for active_child in self._active_children()]
+        self._state.set_child_idents(child_idents)
