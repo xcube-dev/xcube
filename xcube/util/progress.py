@@ -478,6 +478,9 @@ class observe_dask_progress(dask.callbacks.Callback):
 class observe_nested_dask_progress(dask.callbacks.Callback):
     """
     Observe progress made by Dask tasks that have nested progress monitors.
+
+    :param label: A label.
+    :param num_measured_sub_processes: The number of sub processes with progress monitors.
     """
 
     def __init__(self,
