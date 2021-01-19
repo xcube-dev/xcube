@@ -201,7 +201,8 @@ class _ProgressContext:
     def _get_parent_state(self, traceback: List[str]) -> Optional[ProgressState]:
         parent_state = None
         max_match = 0
-        for state in self._states:
+        states = self._states.copy()
+        for state in states:
             max_match_candidate = len(state.traceback)
             if len(traceback) < max_match_candidate or max_match_candidate < max_match:
                 continue
