@@ -31,38 +31,46 @@ from xcube.core.select import select_spatial_subset
 from xcube.util.dask import compute_array_from_func
 
 
-def rectify_dataset(dataset: xr.Dataset,
+def rectify_dataset(source_ds: xr.Dataset,
+                    *,
                     var_names: Union[str, Sequence[str]] = None,
-                    geo_coding: GridMapping = None,
+                    source_gm: GridMapping = None,
                     xy_var_names: Tuple[str, str] = None,
-                    output_geom: GridMapping = None,
+                    target_gm: GridMapping = None,
                     tile_size: Union[int, Tuple[int, int]] = None,
                     is_j_axis_up: bool = None,
                     output_ij_names: Tuple[str, str] = None,
                     compute_subset: bool = True,
                     uv_delta: float = 1e-3) -> Optional[xr.Dataset]:
     """
-    Reproject *dataset* using its per-pixel x,y coordinates or the given *geo_coding*.
+    Reproject dataset *source_ds* using its per-pixel x,y coordinates or the
+    given *source_gm*.
 
-    The function expects *dataset* to have either one- or two-dimensional coordinate variables
-    that provide spatial x,y coordinates for every data variable with the same spatial dimensions.
+    The function expects *source_ds* or the given *source_gm* to have either
+    one- or two-dimensional coordinate variables that provide spatial x,y
+    coordinates for every data variable with the same spatial dimensions.
 
-    For example, a dataset may comprise variables with spatial dimensions ``var(..., y_dim, x_dim)``, then one
-    the function expects coordinates to be provided in two forms:
+    For example, a dataset may comprise variables with spatial dimensions
+    ``var(..., y_dim, x_dim)``, then one the function expects coordinates to
+    be provided in two forms:
 
-    1. One-dimensional ``x_var(x_dim)`` and ``y_var(y_dim)`` (coordinate) variables.
-    2. Two-dimensional ``x_var(y_dim, x_dim)`` and ``y_var(y_dim, x_dim)`` (coordinate) variables.
+    1. One-dimensional ``x_var(x_dim)`` and ``y_var(y_dim)`` (coordinate)
+       variables.
+    2. Two-dimensional ``x_var(y_dim, x_dim)`` and ``y_var(y_dim, x_dim)``
+       (coordinate) variables.
 
-    If *output_geom* is given and defines a tile size or *tile_size* is given, and the number of tiles
-    is greater than one in the output's x- or y-direction, then the returned dataset will be composed of lazy,
-    chunked dask arrays. Otherwise the returned dataset will be composed of ordinary numpy arrays.
+    If *target_gm* is given and it defines a tile size or *tile_size* is
+    given, and the number of tiles is greater than one in the output's
+    x- or y-direction, then the returned dataset will be composed of lazy,
+    chunked dask arrays. Otherwise the returned dataset will be composed
+    of ordinary numpy arrays.
 
-    :param dataset: Source dataset.
+    :param source_ds: Source dataset grid mapping.
     :param var_names: Optional variable name or sequence of variable names.
-    :param geo_coding: Optional dataset geo-coding.
-    :param xy_var_names: Optional tuple of the x- and y-coordinate variables in *dataset*.
-        Ignored if *geo_coding* is given.
-    :param output_geom: Optional output geometry. If not given, output geometry will be computed
+    :param source_gm: Target dataset grid mapping.
+    :param xy_var_names: Optional tuple of the x- and y-coordinate variables in *source_ds*.
+        Ignored if *source_gm* is given.
+    :param target_gm: Optional output geometry. If not given, output geometry will be computed
         to spatially fit *dataset* and to retain its spatial resolution.
     :param tile_size: Optional tile size for the output.
     :param is_j_axis_up: Whether y coordinates are increasing with positive image j axis.
@@ -75,50 +83,49 @@ def rectify_dataset(dataset: xr.Dataset,
         The higher this value, the more inaccurate the rectification will be.
     :return: a reprojected dataset, or None if the requested output does not intersect with *dataset*.
     """
-    if geo_coding is None:
-        src_geo_coding = GridMapping.from_dataset(dataset, xy_var_names=xy_var_names)
-    else:
-        src_geo_coding = geo_coding
+    if source_gm is None:
+        source_gm = GridMapping.from_dataset(source_ds, xy_var_names=xy_var_names)
 
-    src_attrs = dict(dataset.attrs)
+    src_attrs = dict(source_ds.attrs)
 
-    if output_geom is None:
-        output_geom = src_geo_coding.to_regular(tile_size=tile_size)
+    if target_gm is None:
+        target_gm = source_gm.to_regular(tile_size=tile_size)
     elif compute_subset:
-        dataset_subset = select_spatial_subset(dataset,
-                                               xy_bbox=output_geom.xy_bbox,
-                                               ij_border=1,
-                                               xy_border=0.5 * (output_geom.x_res + output_geom.y_res),
-                                               geo_coding=src_geo_coding)
-        if dataset_subset is None:
+        source_ds_subset = select_spatial_subset(source_ds,
+                                                 xy_bbox=target_gm.xy_bbox,
+                                                 ij_border=1,
+                                                 xy_border=0.5 * (target_gm.x_res + target_gm.y_res),
+                                                 geo_coding=source_gm)
+        if source_ds_subset is None:
             return None
-        if dataset_subset is not dataset:
-            src_geo_coding = GridMapping.from_dataset(dataset_subset)
-            dataset = dataset_subset
+        if source_ds_subset is not source_ds:
+            # TODO: GridMapping.from_dataset() may be expensive. Find a more effective way.
+            source_gm = GridMapping.from_dataset(source_ds_subset)
+            source_ds = source_ds_subset
 
     # if src_geo_coding.xy_var_names != output_geom.xy_var_names:
     #     output_geom = output_geom.derive(xy_var_names=src_geo_coding.xy_var_names)
     # if src_geo_coding.xy_dim_names != output_geom.xy_dim_names:
     #     output_geom = output_geom.derive(xy_dim_names=src_geo_coding.xy_dim_names)
     if tile_size is not None or is_j_axis_up is not None:
-        output_geom = output_geom.derive(tile_size=tile_size, is_j_axis_up=is_j_axis_up)
+        target_gm = target_gm.derive(tile_size=tile_size, is_j_axis_up=is_j_axis_up)
 
-    src_vars = _select_variables(dataset, var_names, geo_coding=src_geo_coding)
+    src_vars = _select_variables(source_ds, source_gm, var_names)
 
-    if output_geom.is_tiled:
+    if target_gm.is_tiled:
         compute_dst_src_ij_images = _compute_ij_images_xarray_dask
         compute_dst_var_image = _compute_var_image_xarray_dask
     else:
         compute_dst_src_ij_images = _compute_ij_images_xarray_numpy
         compute_dst_var_image = _compute_var_image_xarray_numpy
 
-    dst_src_ij_array = compute_dst_src_ij_images(src_geo_coding,
-                                                 output_geom,
+    dst_src_ij_array = compute_dst_src_ij_images(source_gm,
+                                                 target_gm,
                                                  uv_delta)
 
-    dst_x_dim, dst_y_dim = output_geom.xy_dim_names
+    dst_x_dim, dst_y_dim = target_gm.xy_dim_names
     dst_dims = dst_y_dim, dst_x_dim
-    dst_ds_coords = output_geom.to_coords()
+    dst_ds_coords = target_gm.to_coords()
     dst_vars = dict()
     for src_var_name, src_var in src_vars.items():
         dst_var_dims = src_var.dims[0:-2] + dst_dims
@@ -142,23 +149,22 @@ def rectify_dataset(dataset: xr.Dataset,
     return xr.Dataset(dst_vars, coords=dst_ds_coords, attrs=src_attrs)
 
 
-def _select_variables(dataset,
-                      var_names: Union[str, Sequence[str]] = None,
-                      geo_coding: GridMapping = None) -> Mapping[str, xr.DataArray]:
+def _select_variables(source_ds: xr.Dataset,
+                      source_gm: GridMapping,
+                      var_names: Union[None, str, Sequence[str]]) -> Mapping[str, xr.DataArray]:
     """
     Select variables from *dataset*.
 
-    :param dataset: Source dataset.
+    :param source_ds: Source dataset.
+    :param source_gm: Optional dataset geo-coding.
     :param var_names: Optional variable name or sequence of variable names.
-    :param geo_coding: Optional dataset geo-coding.
     :return: The selected variables as a variable name to ``xr.DataArray`` mapping
     """
-    geo_coding = geo_coding if geo_coding is not None else GridMapping.from_dataset(dataset)
-    spatial_var_names = geo_coding.xy_var_names
-    spatial_shape = tuple(reversed(geo_coding.size))
-    spatial_dims = tuple(reversed(geo_coding.xy_dim_names))
+    spatial_var_names = source_gm.xy_var_names
+    spatial_shape = tuple(reversed(source_gm.size))
+    spatial_dims = tuple(reversed(source_gm.xy_dim_names))
     if var_names is None:
-        var_names = [var_name for var_name, var in dataset.data_vars.items()
+        var_names = [var_name for var_name, var in source_ds.data_vars.items()
                      if var_name not in spatial_var_names and _is_2d_spatial_var(var, spatial_shape, spatial_dims)]
     elif isinstance(var_names, str):
         var_names = (var_names,)
@@ -166,7 +172,7 @@ def _select_variables(dataset,
         raise ValueError(f'empty var_names')
     src_vars = {}
     for var_name in var_names:
-        src_var = dataset[var_name]
+        src_var = source_ds[var_name]
         if not _is_2d_spatial_var(src_var, spatial_shape, spatial_dims):
             raise ValueError(
                 f"cannot rectify variable {var_name!r} as its shape or dimensions "

@@ -29,7 +29,7 @@ import xarray as xr
 from xcube.constants import CRS_WKT_EPSG_4326
 from xcube.constants import EXTENSION_POINT_INPUT_PROCESSORS
 from xcube.core.gridmapping import GridMapping
-from xcube.core.rectify import rectify_dataset
+from xcube.core.resampling import rectify_dataset
 from xcube.core.timecoord import to_time_in_days_since_1970
 from xcube.util.plugin import ExtensionComponent
 from xcube.util.plugin import get_extension_registry
@@ -332,8 +332,8 @@ class XYInputProcessor(InputProcessor, metaclass=ABCMeta):
 
         dataset = rectify_dataset(dataset,
                                   compute_subset=False,
-                                  geo_coding=geo_coding,
-                                  output_geom=output_geom)
+                                  source_gm=geo_coding,
+                                  target_gm=output_geom)
         if output_geom.is_tiled:
             # The following condition may become true,
             # if we have used rectified_dataset(input, ..., is_y_reverse=True)

@@ -5,7 +5,7 @@ import pandas as pd
 
 from test.sampledata import new_test_dataset
 from xcube.core.chunk import chunk_dataset
-from xcube.core.resample import resample_in_time
+from xcube.core.resampling import resample_in_time
 from xcube.core.schema import CubeSchema
 
 
@@ -112,7 +112,7 @@ class ResampleInTimeTest(unittest.TestCase):
         self.assertEqual(('time', 'lat', 'lon'), schema.dims)
         self.assertEqual((33, 180, 360), schema.shape)
         self.assertEqual((5, 90, 180), schema.chunks)
-        
+
     def test_resample_f_all(self):
         resampled_cube = resample_in_time(self.input_cube, 'all', ['min', 'max'])
         self.assertIsNot(resampled_cube, self.input_cube)

@@ -193,7 +193,7 @@ def create_cmems_sst_flag_var():
 class SourceDatasetMixin:
 
     @classmethod
-    def new_source_dataset(cls):
+    def new_2x2_dataset_with_irregular_coords(cls):
         lon = np.array([[1.0, 6.0],
                         [0.0, 2.0]])
         lat = np.array([[56.0, 53.0],
@@ -205,7 +205,7 @@ class SourceDatasetMixin:
                                rad=xr.DataArray(rad, dims=('y', 'x'))))
 
     @classmethod
-    def new_source_dataset_antimeridian(cls):
+    def new_2x2_dataset_with_irregular_coords_antimeridian(cls):
         lon = np.array([[+179.0, -176.0],
                         [+178.0, +180.0]])
         lat = np.array([[56.0, 53.0],

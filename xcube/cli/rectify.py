@@ -148,7 +148,7 @@ def _rectify(input_path: str,
     from xcube.core.dsio import open_dataset
     from xcube.core.dsio import write_dataset
     from xcube.core.gridmapping import GridMapping
-    from xcube.core.rectify import rectify_dataset
+    from xcube.core.resampling import rectify_dataset
     from xcube.core.sentinel3 import is_sentinel3_product
     from xcube.core.sentinel3 import open_sentinel3_product
 
@@ -179,7 +179,7 @@ def _rectify(input_path: str,
     rectified_ds = rectify_dataset(src_ds,
                                    xy_var_names=xy_names,
                                    var_names=var_names,
-                                   output_geom=output_gm,
+                                   target_gm=output_gm,
                                    tile_size=output_tile_size,
                                    uv_delta=delta)
 

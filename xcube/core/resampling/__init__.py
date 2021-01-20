@@ -19,4 +19,8 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+from .affine import affine_transform_dataset
+from .affine import resample_ndimage
+from .rectify import rectify_dataset
+from .spatial import resample_in_space
 from .temporal import resample_in_time
