@@ -17,7 +17,7 @@ def show_remote_cubes(bucket, endpoint_url, region_name='eu-central-1'):
 
     for filepath in sorted(obs_file_system.ls(bucket)):
         if filepath.endswith('.zarr'):
-            with open_cube(f'{endpoint_url}/{filepath}') as ds:
+            with open_cube(f'{endpoint_url}/{filepath}', s3_kwargs=dict(anon=True)) as ds:
                 var_list = list(ds.data_vars)
                 cube_names.append(filepath)
                 filename = filepath.split('/')[1]
@@ -34,16 +34,23 @@ def show_remote_cubes(bucket, endpoint_url, region_name='eu-central-1'):
                         f"lat_min: {ds.attrs['geospatial_lat_min']}",
                         f"lon_max: {ds.attrs['geospatial_lon_max']}",
                         f"lat_max: {ds.attrs['geospatial_lat_max']}"])
+                    spat_cov = ', '.join(spat_cov)
                 except KeyError:
-                    spat_cov = None
+                    spat_cov = 'None'
                 df = df.append({'cube_name': filename,
                                 'chunks': ', '.join(chunksize),
                                 'number_of_variables': len(var_list),
                                 'variables': ', '.join(var_list),
                                 'start_date': start_date,
                                 'end_date': end_date,
-                                'spatial_coverage': ', '.join(spat_cov)},
+                                'spatial_coverage': spat_cov},
                                ignore_index=True)
     # Make the variables column wide enough:
-    df.style.set_properties(subset=['variables'], width='300px')                        
+    df.style.set_properties(subset=['variables'], width='300px')
     return df
+
+
+bucket = 'xcube-examples'
+endpoint_url = 'https://s3.eu-central-1.amazonaws.com'
+
+overview_cubes_table = show_remote_cubes(bucket, endpoint_url)
