@@ -20,7 +20,7 @@
 # SOFTWARE.
 
 import warnings
-from typing import Optional, Dict, Any, Hashable, Union
+from typing import Optional, Dict, Any, Hashable, Union, Set, List
 
 import pyproj
 import xarray as xr
@@ -74,10 +74,10 @@ def get_dataset_grid_mappings(dataset: xr.Dataset, *,
     # Find any grid mapping variables
     #
     grid_mappings = dict()
-    for k, var in dataset.variables.items():
+    for var_name, var in dataset.variables.items():
         grid_mapping = _parse_crs_from_attrs(var.attrs)
         if grid_mapping is not None:
-            grid_mappings[k] = grid_mapping
+            grid_mappings[var_name] = grid_mapping
 
     # If no grid mapping variables found,
     # try if CRS is encoded in dataset attributes
@@ -87,57 +87,59 @@ def get_dataset_grid_mappings(dataset: xr.Dataset, *,
         if grid_mapping is not None:
             grid_mappings[None] = grid_mapping
 
-    # Find coordinate variables that use a CF standard_name.
+    # Find coordinate variables.
     #
+
     latitude_longitude_coords = GridCoords(x=None, y=None)
     rotated_latitude_longitude_coords = GridCoords(x=None, y=None)
     projected_coords = GridCoords(x=None, y=None)
-    for k in dataset.variables:
-        var = dataset[k]
+
+    potential_coord_vars = _find_potential_coord_vars(dataset)
+
+    # Find coordinate variables that use a CF standard_name.
+    #
+    coords_standard_names = (
+        (latitude_longitude_coords,
+         'longitude', 'latitude'),
+        (rotated_latitude_longitude_coords,
+         'grid_longitude', 'grid_latitude'),
+        (projected_coords,
+         'projection_x_coordinate', 'projection_y_coordinate')
+    )
+    for var_name in potential_coord_vars:
+        var = dataset[var_name]
         if var.ndim not in (1, 2):
             continue
         standard_name = var.attrs.get('standard_name')
-        if standard_name == 'longitude':
-            latitude_longitude_coords.x = var
-        elif standard_name == 'latitude':
-            latitude_longitude_coords.y = var
-        elif standard_name == 'grid_longitude':
-            rotated_latitude_longitude_coords.x = var
-        elif standard_name == 'grid_latitude':
-            rotated_latitude_longitude_coords.y = var
-        elif standard_name == 'projection_x_coordinate':
-            projected_coords.x = var
-        elif standard_name == 'projection_y_coordinate':
-            projected_coords.y = var
+        for coords, x_name, y_name in coords_standard_names:
+            if standard_name == x_name:
+                coords.x = var
+            if standard_name == y_name:
+                coords.y = var
 
     # Find coordinate variables by common naming convention.
     #
-    for k in dataset.variables:
-        var = dataset[k]
+    coords_var_names = (
+        (latitude_longitude_coords,
+         {'lon', 'longitude'}, {'lat', 'latitude'}),
+        (rotated_latitude_longitude_coords,
+         {'rlon', 'rlongitude'}, {'rlat', 'rlatitude'}),
+        (projected_coords,
+         {'x', 'xc', 'transformed_x'}, {'y', 'yc', 'transformed_y'})
+    )
+    for var_name in potential_coord_vars:
+        var = dataset[var_name]
         if var.ndim not in (1, 2):
             continue
-        if latitude_longitude_coords.x is None \
-                and k in {'lon', 'longitude'}:
-            latitude_longitude_coords.x = var
-        elif latitude_longitude_coords.y is None \
-                and k in {'lat', 'latitude'}:
-            latitude_longitude_coords.y = var
-        elif rotated_latitude_longitude_coords.x is None \
-                and k in {'rlon', 'rlongitude'}:
-            rotated_latitude_longitude_coords.x = var
-        elif rotated_latitude_longitude_coords.y is None \
-                and k in {'rlat', 'rlatitude'}:
-            rotated_latitude_longitude_coords.y = var
-        elif projected_coords.x is None \
-                and k in {'x', 'xc', 'transformed_x'}:
-            projected_coords.x = var
-        elif projected_coords.y is None \
-                and k in {'y', 'yc', 'transformed_y'}:
-            projected_coords.y = var
+        for coords, x_names, y_names in coords_var_names:
+            if var_name in x_names:
+                coords.x = var
+            if var_name in y_names:
+                coords.y = var
 
     # Assign found coordinates to grid mappings
     #
-    for k, grid_mapping in grid_mappings.items():
+    for grid_mapping in grid_mappings.values():
         if grid_mapping.name == 'latitude_longitude':
             grid_mapping.coords = latitude_longitude_coords
         elif grid_mapping.name == 'rotated_latitude_longitude':
@@ -161,16 +163,16 @@ def get_dataset_grid_mappings(dataset: xr.Dataset, *,
 
     # Collect complete grid mappings
     complete_grid_mappings = dict()
-    for k, grid_mapping in grid_mappings.items():
+    for var_name, grid_mapping in grid_mappings.items():
         if grid_mapping.coords is not None \
                 and grid_mapping.coords.x is not None \
                 and grid_mapping.coords.y is not None:
             # TODO: add more consistency checks, eg both 1d or both 2d with same dims
-            complete_grid_mappings[k] = grid_mapping
+            complete_grid_mappings[var_name] = grid_mapping
         elif emit_warnings:
             warnings.warn(f'CRS "{grid_mapping.name}": '
                           f'missing x- and/or y-coordinates '
-                          f'(grid mapping variable "{k}": '
+                          f'(grid mapping variable "{var_name}": '
                           f'grid_mapping_name="{grid_mapping.name}")')
 
     return complete_grid_mappings
@@ -203,3 +205,45 @@ def _complement_grid_mapping_coords(coords: GridCoords,
 
         if grid_mapping is not None and grid_mapping.coords is None:
             grid_mapping.coords = coords
+
+
+def _find_potential_coord_vars(dataset: xr.Dataset) -> List[Hashable]:
+    """
+    Find potential coordinate variables.
+
+    We need this function as we can not rely on xarray.Dataset.coords,
+    because 2D coordinate arrays are most likely not indicated as such
+    in many datasets.
+    """
+
+    # Collect bounds variables. We must exclude them.
+    bounds_vars = set()
+    for k in dataset.variables:
+        var = dataset[k]
+        bounds_k = var.attrs.get('bounds')
+        if bounds_k is not None and bounds_k in dataset:
+            bounds_vars.add(bounds_k)
+
+    potential_coord_vars = []
+
+    # First consider any CF global attribute "coordinates"
+    coordinates = dataset.attrs.get('coordinates')
+    if coordinates is not None:
+        for var_name in coordinates.split():
+            if _is_potential_coord_var(dataset, bounds_vars, var_name):
+                potential_coord_vars.append(var_name)
+
+    # Then consider any other 1D/2D variables
+    for var_name in dataset.variables:
+        if var_name not in potential_coord_vars \
+                and _is_potential_coord_var(dataset, bounds_vars, var_name):
+            potential_coord_vars.append(var_name)
+
+    return potential_coord_vars
+
+
+def _is_potential_coord_var(dataset: xr.Dataset, bounds_var_names: Set[str], var_name: Hashable) -> bool:
+    if var_name in dataset:
+        var = dataset[var_name]
+        return var.ndim in (1, 2) and var_name not in bounds_var_names
+    return False
