@@ -329,9 +329,11 @@ class GridMapping(abc.ABC):
         """
         self._assert_regular()
         assert_regular_grid_mapping(other, name='other')
-        a = _to_affine(other.ij_to_xy_transform)
-        b = _to_affine(self.xy_to_ij_transform)
-        return _from_affine(b * a)
+        b = _to_affine(self.ij_to_xy_transform)
+        a = _to_affine(other.xy_to_ij_transform)
+        # a = _to_affine(self.ij_to_xy_transform)
+        # b = _to_affine(other.xy_to_ij_transform)
+        return _from_affine(a * b)
 
     def ij_transform_to(self, other: 'GridMapping') -> AffineTransformMatrix:
         """

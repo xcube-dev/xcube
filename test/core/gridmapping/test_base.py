@@ -179,41 +179,26 @@ class GridMappingTest(SourceDatasetMixin, unittest.TestCase):
         self.assertMatrixPoint((1440, 720), crs2i, (180, 90))
         self.assertEqual(((4.0, 0.0, 720.0), (0.0, 4.0, 360.0)), crs2i)
 
-    def test_ij_transform_from(self):
-        source = TestGridMapping(**self.kwargs(size=(1440, 720),
-                                               xy_res=0.25,
-                                               is_j_axis_up=True))
-        target = TestGridMapping(**self.kwargs(size=(1000, 1000),
-                                               xy_min=(10, 50),
-                                               xy_res=0.025,
-                                               is_j_axis_up=True))
-        combined = source.ij_transform_from(target)
-
-        im2crs = target.ij_to_xy_transform
-        crs2im = source.xy_to_ij_transform
-
-        crs_point = self.assertMatrixPoint((10, 50), im2crs, (0, 0))
-        im_point = self.assertMatrixPoint((760, 560), crs2im, crs_point)
-        self.assertMatrixPoint(im_point, combined, (0, 0))
-
-        crs_point = self.assertMatrixPoint((22.5, 56.25), im2crs, (500, 250))
-        im_point = self.assertMatrixPoint((810, 585), crs2im, crs_point)
-        self.assertMatrixPoint(im_point, combined, (500, 250))
-
+    def test_ij_transform_to_and_from(self):
+        gm1 = TestGridMapping(**self.kwargs(size=(1440, 720),
+                                            xy_res=0.25,
+                                            is_j_axis_up=True))
+        gm2 = TestGridMapping(**self.kwargs(size=(1000, 1000),
+                                            xy_min=(10, 50),
+                                            xy_res=0.025,
+                                            is_j_axis_up=True))
         self.assertEqual(((0.1, 0.0, 760.0),
-                          (0.0, 0.1, 560.0)), combined)
-
-    def test_ij_transform_to(self):
-        source = TestGridMapping(**self.kwargs(size=(1440, 720),
-                                               xy_res=0.25,
-                                               is_j_axis_up=True))
-        target = TestGridMapping(**self.kwargs(size=(1000, 1000),
-                                               xy_min=(10, 50),
-                                               xy_res=0.025,
-                                               is_j_axis_up=True))
-        combined = source.ij_transform_to(target)
-        self.assertEqual(((10.0, -0.0, -7600.0),
-                          (-0.0, 10.0, -5600.0)), combined)
+                          (0.0, 0.1, 560.0)),
+                         gm1.ij_transform_to(gm2))
+        self.assertEqual(((0.1, 0.0, 760.0),
+                          (0.0, 0.1, 560.0)),
+                         gm2.ij_transform_from(gm1))
+        self.assertEqual(((10.0, 0.0, -7600.0),
+                          (0.0, 10.0, -5600.0)),
+                         gm2.ij_transform_to(gm1))
+        self.assertEqual(((10.0, 0.0, -7600.0),
+                          (0.0, 10.0, -5600.0)),
+                         gm1.ij_transform_from(gm2))
 
     def assertMatrixPoint(self, expected_point, matrix, point):
         affine = _to_affine(matrix)

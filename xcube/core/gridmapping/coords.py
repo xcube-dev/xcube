@@ -114,8 +114,12 @@ def new_grid_mapping_from_coords(x_coords: xr.DataArray,
         x_diff_equal = np.allclose(x_diff, x_res, atol=1.e-5)
         y_diff_equal = np.allclose(y_diff, y_res, atol=1.e-5)
         is_regular = x_diff_equal and y_diff_equal
-        if not is_regular:
-            x_res, y_res = np.nanmedian(x_diff), np.nanmedian(y_diff)
+        if is_regular:
+            x_res = round_to_fraction(x_res, 5, 0.25)
+            y_res = round_to_fraction(y_res, 5, 0.25)
+        else:
+            x_res = round_to_fraction(float(np.nanmedian(x_diff)), 2, 0.5)
+            y_res = round_to_fraction(float(np.nanmedian(y_diff)), 2, 0.5)
 
         if tile_size is None \
                 and x_coords.chunks is not None \
