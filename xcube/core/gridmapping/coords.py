@@ -75,11 +75,11 @@ def new_grid_mapping_from_coords(x_coords: xr.DataArray,
                                  crs: pyproj.crs.CRS,
                                  *,
                                  tile_size: Union[int, Tuple[int, int]] = None) -> GridMapping:
-    assert_instance(x_coords, xr.DataArray)
-    assert_instance(y_coords, xr.DataArray)
+    assert_instance(x_coords, xr.DataArray, name='x_coords')
+    assert_instance(y_coords, xr.DataArray, name='y_coords')
     assert_condition(x_coords.ndim in (1, 2),
-                     'x and y must be either 1D or 2D')
-    assert_instance(crs, pyproj.crs.CRS)
+                     'x_coords and y_coords must be either 1D or 2D arrays')
+    assert_instance(crs, pyproj.crs.CRS, name='crs')
 
     if x_coords.name and y_coords.name:
         xy_var_names = str(x_coords.name), str(y_coords.name)
@@ -92,6 +92,9 @@ def new_grid_mapping_from_coords(x_coords: xr.DataArray,
         is_lon_360 = np.any(x_coords > 180)
 
     if x_coords.ndim == 1:
+        assert_condition(x_coords.size >= 2 and y_coords.size >= 2,
+                         'sizes of x_coords and y_coords 1D arrays must be >= 2')
+
         cls = Coords1DGridMapping
         size = x_coords.size, y_coords.size
 
@@ -124,9 +127,9 @@ def new_grid_mapping_from_coords(x_coords: xr.DataArray,
 
     else:
         assert_condition(x_coords.shape == y_coords.shape,
-                         'shapes of x_coords and y_coords must be equal')
+                         'shapes of x_coords and y_coords 2D arrays must be equal')
         assert_condition(x_coords.dims == y_coords.dims,
-                         'dimensions of x_coords and y_coords must be equal')
+                         'dimensions of x_coords and y_coords 2D arrays must be equal')
 
         y_dim, x_dim = x_coords.dims
 
@@ -308,10 +311,12 @@ def grid_mapping_to_coords(grid_mapping: GridMapping,
         bnds_dim_name = 'bnds'
         x_bnds_name = f'{x_name}_{bnds_dim_name}'
         y_bnds_name = f'{y_name}_{bnds_dim_name}'
+        # Note, according to CF, bounds variables are not required to have
+        # any attributes, so we don't pass any.
         x_bnds_coords = xr.DataArray(list(zip(x_bnds_0_data, x_bnds_1_data)),
-                                     dims=[x_dim_name, bnds_dim_name], attrs=x_attrs)
+                                     dims=[x_dim_name, bnds_dim_name])
         y_bnds_coords = xr.DataArray(list(zip(y_bnds_0_data, y_bnds_1_data)),
-                                     dims=[y_dim_name, bnds_dim_name], attrs=y_attrs)
+                                     dims=[y_dim_name, bnds_dim_name])
         x_coords.attrs.update(bounds=x_bnds_name)
         y_coords.attrs.update(bounds=y_bnds_name)
         coords.update({
