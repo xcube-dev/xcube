@@ -286,8 +286,6 @@ class GridMappingTest(SourceDatasetMixin, unittest.TestCase):
                 [-190, -100, -180, -90]
             ], dtype=np.float32))
 
-        print(repr(ij_bboxes))
-
         np.testing.assert_equal(
             ij_bboxes,
             np.array([[0, 0, 720, 360],
