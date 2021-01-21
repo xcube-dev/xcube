@@ -33,6 +33,21 @@ def compute_ij_bboxes(x_image: np.ndarray,
                       xy_border: float,
                       ij_border: int,
                       ij_boxes: np.ndarray):
+    """
+    Compute bounding boxes in the image's i,j coordinates from given
+    x,y coordinates *x_image*, *y_image* and bounding boxes
+    in x,y coordinates *xy_boxes*.
+
+    *ij_boxes* must be pre-allocated to match shape of *xy_boxes* and initialised
+    with negative integers.
+
+    :param x_image: The x coordinates image. A 2D array of shape (height, width).
+    :param y_image: The y coordinates image. A 2D array of shape (height, width).
+    :param xy_boxes: The x,y bounding boxes.
+    :param xy_border: A border added to the x,y bounding boxes.
+    :param ij_border: A border added to the resulting i,j bounding boxes.
+    :param ij_boxes: The resulting i,j bounding boxes.
+    """
     h = x_image.shape[0]
     w = x_image.shape[1]
     n = xy_boxes.shape[0]
@@ -43,20 +58,32 @@ def compute_ij_bboxes(x_image: np.ndarray,
         y_min = xy_bbox[1] - xy_border
         x_max = xy_bbox[2] + xy_border
         y_max = xy_bbox[3] + xy_border
-        for j in range(h):
-            for i in range(w):
-                x = x_image[j, i]
+        for j0 in range(h):
+            for i0 in range(w):
+                x = x_image[j0, i0]
                 if x_min <= x <= x_max:
-                    y = y_image[j, i]
+                    y = y_image[j0, i0]
                     if y_min <= y <= y_max:
+                        i1 = i0 + 1
+                        j1 = j0 + 1
                         i_min = ij_bbox[0]
                         j_min = ij_bbox[1]
                         i_max = ij_bbox[2]
                         j_max = ij_bbox[3]
-                        ij_bbox[0] = i if i_min < 0 else min(i_min, i)
-                        ij_bbox[1] = j if j_min < 0 else min(j_min, j)
-                        ij_bbox[2] = i if i_max < 0 else max(i_max, i)
-                        ij_bbox[3] = j if j_max < 0 else max(j_max, j)
+                        if i_min < 0:
+                            ij_bbox[0] = i0
+                            ij_bbox[1] = j0
+                            ij_bbox[2] = i1
+                            ij_bbox[3] = j1
+                        else:
+                            if i0 < i_min:
+                                ij_bbox[0] = i0
+                            if j0 < j_min:
+                                ij_bbox[1] = j0
+                            if i1 > i_max:
+                                ij_bbox[2] = i1
+                            if j1 > j_max:
+                                ij_bbox[3] = j1
         if ij_border != 0 and ij_bbox[0] != -1:
             i_min = ij_bbox[0] - ij_border
             j_min = ij_bbox[1] - ij_border
@@ -66,10 +93,10 @@ def compute_ij_bboxes(x_image: np.ndarray,
                 i_min = 0
             if j_min < 0:
                 j_min = 0
-            if i_max >= w:
-                i_max = w - 1
-            if j_max >= h:
-                j_max = h - 1
+            if i_max > w:
+                i_max = w
+            if j_max > h:
+                j_max = h
             ij_bbox[0] = i_min
             ij_bbox[1] = j_min
             ij_bbox[2] = i_max

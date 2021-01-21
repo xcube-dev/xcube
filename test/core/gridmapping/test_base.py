@@ -250,11 +250,50 @@ class GridMappingTest(SourceDatasetMixin, unittest.TestCase):
 
     def test_ij_bbox_from_xy_bbox(self):
         gm = TestGridMapping(**self.kwargs())
+
+        ij_bbox = gm.ij_bbox_from_xy_bbox((-180, -90, 180, 90))
+        self.assertEqual((0, 0, 720, 360), ij_bbox)
+
         ij_bbox = gm.ij_bbox_from_xy_bbox((-180, -90, 0, 0))
-        self.assertEqual((0, 180, 359, 359), ij_bbox)
+        self.assertEqual((0, 180, 360, 360), ij_bbox)
+
         ij_bbox = gm.ij_bbox_from_xy_bbox((0, 0, 180, 90))
-        self.assertEqual((360, 0, 719, 179), ij_bbox)
+        self.assertEqual((360, 0, 720, 180), ij_bbox)
+
         ij_bbox = gm.ij_bbox_from_xy_bbox((-180, -90, 0, 0), ij_border=1)
-        self.assertEqual((0, 179, 360, 359), ij_bbox)
+        self.assertEqual((0, 179, 361, 360), ij_bbox)
+
         ij_bbox = gm.ij_bbox_from_xy_bbox((0, 0, 180, 90), ij_border=1)
-        self.assertEqual((359, 0, 719, 180), ij_bbox)
+        self.assertEqual((359, 0, 720, 181), ij_bbox)
+
+        ij_bbox = gm.ij_bbox_from_xy_bbox((-190, -100, -170, -80), ij_border=1)
+        self.assertEqual((0, 339, 21, 360), ij_bbox)
+
+        ij_bbox = gm.ij_bbox_from_xy_bbox((-190, -100, -180, -90), ij_border=1)
+        self.assertEqual((-1, -1, -1, -1), ij_bbox)
+
+    def test_ij_bboxes_from_xy_bboxes(self):
+        gm = TestGridMapping(**self.kwargs())
+
+        ij_bboxes = gm.ij_bboxes_from_xy_bboxes(
+            xy_bboxes=np.array([
+                [-180, -90, 180, 90],
+                [-180, -90, 0, 0],
+                [0, 0, 180, 90],
+                [-180, -90, 0, 0],
+                [0, 0, 180, 90],
+                [-190, -100, -170, -80],
+                [-190, -100, -180, -90]
+            ], dtype=np.float32))
+
+        print(repr(ij_bboxes))
+
+        np.testing.assert_equal(
+            ij_bboxes,
+            np.array([[0, 0, 720, 360],
+                      [0, 180, 360, 360],
+                      [360, 0, 720, 180],
+                      [0, 180, 360, 360],
+                      [360, 0, 720, 180],
+                      [0, 340, 20, 360],
+                      [-1, -1, -1, -1]], dtype=np.int64))

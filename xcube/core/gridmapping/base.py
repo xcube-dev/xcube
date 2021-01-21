@@ -366,8 +366,6 @@ class GridMapping(abc.ABC):
             y_slice, x_slice = block_slices[i]
             ij_bboxes[i, 0] = x_slice.start
             ij_bboxes[i, 1] = y_slice.start
-            # ij_bboxes[i, 2] = x_slice.stop - 1
-            # ij_bboxes[i, 3] = y_slice.stop - 1
             ij_bboxes[i, 2] = x_slice.stop
             ij_bboxes[i, 3] = y_slice.stop
         return ij_bboxes
@@ -411,16 +409,29 @@ class GridMapping(abc.ABC):
                                  ij_border: int = 0,
                                  ij_bboxes: np.ndarray = None) -> np.ndarray:
         """
-        Compute bounding boxes in i,j pixel coordinates given bounding boxes *xy_bboxes* in x,y coordinates.
+        Compute bounding boxes in pixel coordinates given bounding boxes
+        *xy_bboxes* [[x_min, y_min, x_max, y_max], ...] in x,y coordinates.
 
-        :param xy_bboxes: Numpy array of x,y bounding boxes [[x_min, y_min, x_max, y_max], ...]
-            given in the same CS as x and y.
-        :param xy_border: If non-zero, grows the bounding box *xy_bbox* before using it for comparisons. Defaults to 0.
-        :param ij_border: If non-zero, grows the returned i,j bounding box and clips it to size. Defaults to 0.
-        :param ij_bboxes: Numpy array of pixel i,j bounding boxes [[x_min, y_min, x_max, y_max], ...].
-            If given, must have same shape as *xy_bboxes*.
-        :return: Bounding box in (i_min, j_min, i_max, j_max) in pixel coordinates.
-            Returns None if *xy_bbox* isn't intersecting any of the x,y coordinates.
+        The returned array in i,j pixel coordinates
+        has the same shape as *xy_bboxes*. The value ranges in the
+        returned array [[i_min, j_min, i_max, j_max], ..]] are:
+
+        * i_min from 0 to width-1, i_max from 1 to width;
+        * j_min from 0 to height-1, j_max from 1 to height;
+
+        so the i,j pixel coordinates can be used as array index slices.
+
+        :param xy_bboxes: Numpy array of x,y bounding boxes
+            [[x_min, y_min, x_max, y_max], ...] given in the same CS as x and y.
+        :param xy_border: If non-zero, grows the bounding box *xy_bbox* before
+            using it for comparisons. Defaults to 0.
+        :param ij_border: If non-zero, grows the returned i,j bounding box
+            and clips it to size. Defaults to 0.
+        :param ij_bboxes: Numpy array of pixel i,j bounding boxes
+            [[x_min, y_min, x_max, y_max], ...]. If given, must have same
+            shape as *xy_bboxes*.
+        :return: Bounding boxes in [[i_min, j_min, i_max, j_max], ..]]
+            in pixel coordinates.
         """
         from .bboxes import compute_ij_bboxes
         if ij_bboxes is None:
