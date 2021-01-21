@@ -317,8 +317,8 @@ class RectifyDatasetTest(SourceDatasetMixin, unittest.TestCase):
                                        np.array([56., 55.5, 55., 54.5, 54., 53.5, 53., 52.5, 52., 51.5, 51.,
                                                  50.5, 50.],
                                                 dtype=lat.dtype))
-        print('source_i:', np.floor(source_i.values + 0.5))
-        print('source_j:', np.floor(source_j.values + 0.5))
+        # print('source_i:', np.floor(source_i.values + 0.5))
+        # print('source_j:', np.floor(source_j.values + 0.5))
         np.testing.assert_almost_equal(np.floor(source_i.values + 0.5), self.expected_i_13x13())
         np.testing.assert_almost_equal(np.floor(source_j.values + 0.5), self.expected_j_13x13())
         np.testing.assert_almost_equal(rad.values, self.expected_rad_13x13(rad.dtype))
@@ -509,7 +509,6 @@ class RectifySentinel2DatasetTest(SourceDatasetMixin, unittest.TestCase):
         source_gm = GridMapping.from_dataset(source_ds, prefer_crs=CRS_WGS84)
 
         target_ds = rectify_dataset(source_ds, source_gm=source_gm, tile_size=None)
-        print(target_ds.rrs_665.values)
         self.assertEqual(None, target_ds.rrs_665.chunks)
         np.testing.assert_almost_equal(target_ds.rrs_665.values, expected_data, decimal=3)
 
