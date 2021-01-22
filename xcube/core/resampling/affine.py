@@ -45,7 +45,7 @@ def affine_transform_dataset(source_ds: xr.Dataset,
     assert_regular_grid_mapping(source_gm, name='source_gm')
     assert_regular_grid_mapping(target_cm, name='target_cm')
     var_configs = var_configs or {}
-    matrix = source_gm.ij_transform_to(target_cm)
+    matrix = target_cm.ij_transform_to(source_gm)
     ((i_scale, _, i_off), (_, j_scale, j_off)) = matrix
     x_dim, y_dim = source_gm.xy_dim_names
     width, height = target_cm.size

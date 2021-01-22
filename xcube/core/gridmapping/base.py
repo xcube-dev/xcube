@@ -317,7 +317,7 @@ class GridMapping(abc.ABC):
         self._assert_regular()
         return _from_affine(~_to_affine(self.ij_to_xy_transform))
 
-    def ij_transform_from(self, other: 'GridMapping') -> AffineTransformMatrix:
+    def ij_transform_to(self, other: 'GridMapping') -> AffineTransformMatrix:
         """
         Get the affine transformation matrix that transforms
         image coordinates of *other* into image coordinates of this image geometry.
@@ -329,13 +329,11 @@ class GridMapping(abc.ABC):
         """
         self._assert_regular()
         assert_regular_grid_mapping(other, name='other')
-        b = _to_affine(self.ij_to_xy_transform)
-        a = _to_affine(other.xy_to_ij_transform)
-        # a = _to_affine(self.ij_to_xy_transform)
-        # b = _to_affine(other.xy_to_ij_transform)
-        return _from_affine(a * b)
+        a = _to_affine(self.ij_to_xy_transform)
+        b = _to_affine(other.xy_to_ij_transform)
+        return _from_affine(b * a)
 
-    def ij_transform_to(self, other: 'GridMapping') -> AffineTransformMatrix:
+    def ij_transform_from(self, other: 'GridMapping') -> AffineTransformMatrix:
         """
         Get the affine transformation matrix that transforms
         image coordinates of this image geometry to image coordinates of *other*.
@@ -347,7 +345,7 @@ class GridMapping(abc.ABC):
         """
         self._assert_regular()
         assert_regular_grid_mapping(other, name='other')
-        a = _to_affine(self.ij_transform_from(other))
+        a = _to_affine(self.ij_transform_to(other))
         return _from_affine(~a)
 
     @property

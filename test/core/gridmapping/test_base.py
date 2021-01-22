@@ -187,17 +187,17 @@ class GridMappingTest(SourceDatasetMixin, unittest.TestCase):
                                             xy_min=(10, 50),
                                             xy_res=0.025,
                                             is_j_axis_up=True))
-        self.assertEqual(((0.1, 0.0, 760.0),
-                          (0.0, 0.1, 560.0)),
+        self.assertEqual(((10.0, 0.0, -7600.0),
+                          (0.0, 10.0, -5600.0)),
                          gm1.ij_transform_to(gm2))
+        self.assertEqual(((10.0, 0.0, -7600.0),
+                          (0.0, 10.0, -5600.0)),
+                         gm2.ij_transform_from(gm1))
         self.assertEqual(((0.1, 0.0, 760.0),
                           (0.0, 0.1, 560.0)),
-                         gm2.ij_transform_from(gm1))
-        self.assertEqual(((10.0, 0.0, -7600.0),
-                          (0.0, 10.0, -5600.0)),
                          gm2.ij_transform_to(gm1))
-        self.assertEqual(((10.0, 0.0, -7600.0),
-                          (0.0, 10.0, -5600.0)),
+        self.assertEqual(((0.1, 0.0, 760.0),
+                          (0.0, 0.1, 560.0)),
                          gm1.ij_transform_from(gm2))
 
     def assertMatrixPoint(self, expected_point, matrix, point):
