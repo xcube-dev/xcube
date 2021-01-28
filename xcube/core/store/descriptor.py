@@ -65,6 +65,16 @@ class DataDescriptor:
     """
     A generic descriptor for any data.
     Also serves as a base class for more specific data descriptors.
+
+    :param data_id: An identifier for the data
+    :param type_specifier: A type specifier for the data
+    :param crs: A coordinate reference system identifier, as an EPSG, PROJ or WKT string
+    :param bbox: A bounding box of the data (order: min lon, min lat, max lon, max lat)
+    :param spatial_res: The spatial resolution of the data set
+    :param time_range: Start and end time delimiting this data's temporal extent
+    :param time_period: The data's periodicity if it is evenly temporally resolved.
+    :param open_params_schema: A JSON schema describing the parameters that may be used to open
+    this data.
     """
 
     def __init__(self,
@@ -119,6 +129,22 @@ class DatasetDescriptor(DataDescriptor):
     """
     A descriptor for a gridded, N-dimensional dataset represented by xarray.Dataset.
     Comprises a description of the data variables contained in the dataset.
+
+    :param data_id: An identifier for the data
+    :param type_specifier: A type specifier for the data
+    :param crs: A coordinate reference system identifier, as an EPSG, PROJ or WKT string
+    :param bbox: A bounding box of the data (order: min lon, min lat, max lon, max lat)
+    :param spatial_res: The spatial resolution of the data set
+    :param time_range: Start and end time delimiting this data's temporal extent
+    :param time_period: The data's periodicity if it is evenly temporally resolved.
+    :param coords: A list of the dataset's data coordinates
+    :param dims: A mapping of the dataset's dimensions to their sizes
+    :param data_vars: A mapping of the dataset's variable names to VariableDescriptors
+    (``xcube.core.store.VariableDescriptor``). For backwards compatibility, also lists of
+    VariableDescriptors are accepted. This compatibility will come to an end with a future release.
+    :param attrs: A mapping containing arbitrary attributes of the dataset
+    :param open_params_schema: A JSON schema describing the parameters that may be used to open
+    this data
     """
 
     def __init__(self,
@@ -202,7 +228,13 @@ class DatasetDescriptor(DataDescriptor):
 class VariableDescriptor:
     """
     A descriptor for dataset variable represented by xarray.DataArray instances.
-    They are part of dataset descriptor for an gridded, N-dimensional dataset represented by xarray.Dataset.
+    They are part of dataset descriptor for an gridded, N-dimensional dataset represented by
+    xarray.Dataset.
+
+    :param name: The variable name
+    :param dtype: The data type of the variable.
+    :param dims: A list of the names of the variable's dimensions.
+    :param attrs: A mapping containing arbitrary attributes of the variable
     """
 
     def __init__(self,
@@ -237,6 +269,10 @@ class MultiLevelDatasetDescriptor(DatasetDescriptor):
     """
     A descriptor for a gridded, N-dimensional, multi-level, multi-resolution dataset represented by
     xcube.core.mldataset.MultiLevelDataset.
+
+    :param data_id: An identifier of the multi-level dataset
+    :param num_levels: The number of levels of this multi-level dataset
+    :param type_specifier: A type specifier for the multi-level dataset
     """
 
     def __init__(self,
@@ -269,6 +305,11 @@ class MultiLevelDatasetDescriptor(DatasetDescriptor):
 class GeoDataFrameDescriptor(DataDescriptor):
     """
     A descriptor for a geo-vector dataset represented by a geopandas.GeoDataFrame instance.
+
+    :param data_id: An identifier of the geopandas.GeoDataFrame
+    :param feature_schema: A schema describing the properties of the vector data
+    :param open_params_schema: A JSON schema describing the parameters that may be used to open
+    this geopandas.GeoDataFrame
     """
 
     def __init__(self,
