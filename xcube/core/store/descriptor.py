@@ -129,6 +129,7 @@ class DatasetDescriptor(DataDescriptor):
                  spatial_res: float = None,
                  time_range: Tuple[Optional[str], Optional[str]] = None,
                  time_period: str = None,
+                 coords: Sequence[str] = None,
                  dims: Mapping[str, int] = None,
                  data_vars: Union[Sequence['VariableDescriptor'],
                                   Mapping[str, 'VariableDescriptor']] = None,
@@ -142,6 +143,7 @@ class DatasetDescriptor(DataDescriptor):
                          time_range=time_range,
                          time_period=time_period,
                          open_params_schema=open_params_schema)
+        self.coords = coords
         self.dims = dict(dims) if dims else None
         if data_vars:
             if type(data_vars) == dict:
@@ -176,6 +178,7 @@ class DatasetDescriptor(DataDescriptor):
                                  spatial_res=d.get('spatial_res', None),
                                  time_range=d.get('time_range', None),
                                  time_period=d.get('time_period', None),
+                                 coords=d.get('coords', None),
                                  dims=d.get('dims', None),
                                  data_vars=data_vars_dict,
                                  attrs=d.get('attrs', None),
@@ -188,7 +191,7 @@ class DatasetDescriptor(DataDescriptor):
             d['data_vars'] = {}
             for vd_key, vd_value in self.data_vars.items():
                 d['data_vars'][vd_key] = vd_value.to_dict()
-        _copy_none_null_props(self, d, ['dims', 'attrs'])
+        _copy_none_null_props(self, d, ['coords', 'dims', 'attrs'])
         return d
 
     @classmethod

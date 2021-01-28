@@ -45,6 +45,7 @@ class DatasetDescriptorTest(unittest.TestCase):
                                spatial_res=20.,
                                time_range=('2017-06-05', '2017-06-27'),
                                time_period='daily',
+                               coords=['hxg', 'drg', 'rtdt'],
                                dims=dict(x=1, y=2, z=3),
                                data_vars=[dict(name='xf',
                                                dtype='rj',
@@ -75,6 +76,7 @@ class DatasetDescriptorTest(unittest.TestCase):
         self.assertEqual(20., descriptor.spatial_res)
         self.assertEqual(('2017-06-05', '2017-06-27'), descriptor.time_range)
         self.assertEqual('daily', descriptor.time_period)
+        self.assertEqual(['hxg', 'drg', 'rtdt'], descriptor.coords)
         self.assertEqual(dict(x=1, y=2, z=3), descriptor.dims)
         self.assertEqual(1, len(descriptor.data_vars))
         self.assertEqual(236, descriptor.attrs.get('dzus', None))
@@ -120,6 +122,7 @@ class DatasetDescriptorTest(unittest.TestCase):
                                        spatial_res=20.,
                                        time_range=('2017-06-05', '2017-06-27'),
                                        time_period='daily',
+                                       coords=['hxg', 'drg', 'rtdt'],
                                        dims=dict(x=1, y=2, z=3),
                                        data_vars=var_descriptors,
                                        attrs=dict(dzus=236,
@@ -135,6 +138,7 @@ class DatasetDescriptorTest(unittest.TestCase):
                               spatial_res=20.,
                               time_range=('2017-06-05', '2017-06-27'),
                               time_period='daily',
+                              coords=['hxg', 'drg', 'rtdt'],
                               dims=dict(x=1, y=2, z=3),
                               data_vars=dict(xf=dict(name='xf',
                                                      dtype='rj',
