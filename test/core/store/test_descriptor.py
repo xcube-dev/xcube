@@ -82,6 +82,27 @@ class DatasetDescriptorTest(unittest.TestCase):
         self.assertEqual('s8fd4w5', descriptor.attrs.get('df', None))
         self.assertEqual('object', descriptor.open_params_schema.get('type', None))
 
+    def test_from_dict_var_descriptors_as_dict(self):
+        descriptor_dict = dict(data_id='xyz',
+                               crs='EPSG:9346',
+                               data_vars=dict(xf=dict(name='xf',
+                                                      dtype='rj',
+                                                      dims=('dfjhrt', 'sg'),
+                                                      ndim=2,
+                                                      attrs=dict(ssd=4,
+                                                                 zjgrhgu='dgfrf'
+                                                                 )
+                                                      )
+                                              )
+                               )
+        descriptor = DatasetDescriptor.from_dict(descriptor_dict)
+        self.assertEqual('xyz', descriptor.data_id)
+        self.assertEqual('dataset', descriptor.type_specifier)
+        self.assertEqual('EPSG:9346', descriptor.crs)
+        self.assertEqual(1, len(descriptor.data_vars))
+        self.assertTrue('xf' in descriptor.data_vars)
+        self.assertTrue(type(descriptor.data_vars.get('xf')) == VariableDescriptor)
+
     def test_to_dict(self):
         var_descriptors = [
             VariableDescriptor(name='xf',
@@ -115,15 +136,15 @@ class DatasetDescriptorTest(unittest.TestCase):
                               time_range=('2017-06-05', '2017-06-27'),
                               time_period='daily',
                               dims=dict(x=1, y=2, z=3),
-                              data_vars=[dict(name='xf',
-                                              dtype='rj',
-                                              dims=('dfjhrt', 'sg'),
-                                              ndim=2,
-                                              attrs=dict(ssd=4,
-                                                         zjgrhgu='dgfrf'
-                                                         )
-                                              )
-                                         ],
+                              data_vars=dict(xf=dict(name='xf',
+                                                     dtype='rj',
+                                                     dims=('dfjhrt', 'sg'),
+                                                     ndim=2,
+                                                     attrs=dict(ssd=4,
+                                                                zjgrhgu='dgfrf'
+                                                                )
+                                                     )
+                                             ),
                               attrs=dict(dzus=236,
                                          tgr7h='rt5',
                                          df='s8fd4w5'

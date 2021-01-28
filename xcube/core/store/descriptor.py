@@ -130,7 +130,8 @@ class DatasetDescriptor(DataDescriptor):
                  time_range: Tuple[Optional[str], Optional[str]] = None,
                  time_period: str = None,
                  dims: Mapping[str, int] = None,
-                 data_vars: Sequence['VariableDescriptor'] = None,
+                 data_vars: Union[Sequence['VariableDescriptor'],
+                                  Mapping[str, 'VariableDescriptor']] = None,
                  attrs: Mapping[str, any] = None,
                  open_params_schema: JsonObjectSchema = None):
         super().__init__(data_id=data_id,
@@ -142,17 +143,32 @@ class DatasetDescriptor(DataDescriptor):
                          time_period=time_period,
                          open_params_schema=open_params_schema)
         self.dims = dict(dims) if dims else None
-        self.data_vars = list(data_vars) if data_vars else None
+        if data_vars:
+            if type(data_vars) == dict:
+                self.data_vars = data_vars
+            else:
+                self.data_vars = {}
+                for data_var in data_vars:
+                    self.data_vars[data_var.name] = data_var
+        else:
+            self.data_vars = None
         self.attrs = _convert_nans_to_none(dict(attrs)) if attrs else None
 
     @classmethod
     def from_dict(cls, d: Mapping[str, Any]) -> 'DatasetDescriptor':
         """Create new instance from a JSON-serializable dictionary"""
         assert_in('data_id', d)
-        data_vars = []
-        data_vars_as_dicts = d.get('data_vars', [])
-        for data_var_as_dict in data_vars_as_dicts:
-            data_vars.append(VariableDescriptor.from_dict(data_var_as_dict))
+        data_vars_dict = None
+        data_vars = d.get('data_vars', None)
+        if data_vars:
+            data_vars_dict = {}
+            if type(data_vars) == dict:
+                for data_var_key, data_var_value in data_vars.items():
+                    data_vars_dict[data_var_key] = VariableDescriptor.from_dict(data_var_value)
+            else:
+                for data_var_as_dict in data_vars:
+                    var_descriptor = VariableDescriptor.from_dict(data_var_as_dict)
+                    data_vars_dict[var_descriptor.name] = var_descriptor
         return DatasetDescriptor(data_id=d['data_id'],
                                  type_specifier=d.get('type_specifier', TYPE_SPECIFIER_DATASET),
                                  crs=d.get('crs', None),
@@ -161,7 +177,7 @@ class DatasetDescriptor(DataDescriptor):
                                  time_range=d.get('time_range', None),
                                  time_period=d.get('time_period', None),
                                  dims=d.get('dims', None),
-                                 data_vars=data_vars,
+                                 data_vars=data_vars_dict,
                                  attrs=d.get('attrs', None),
                                  open_params_schema=d.get('open_params_schema', None))
 
@@ -169,7 +185,9 @@ class DatasetDescriptor(DataDescriptor):
         """Convert into a JSON-serializable dictionary"""
         d = super().to_dict()
         if self.data_vars is not None:
-            d['data_vars'] = [vd.to_dict() for vd in self.data_vars]
+            d['data_vars'] = {}
+            for vd_key, vd_value in self.data_vars.items():
+                d['data_vars'][vd_key] = vd_value.to_dict()
         _copy_none_null_props(self, d, ['dims', 'attrs'])
         return d
 
