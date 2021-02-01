@@ -12,6 +12,7 @@ dependencies:
   - dask >=1.2
   - dask-image
   - fiona >=1.8
+  - fsspec >=0.8.5
   - geopandas >=0.8
   - jdcal >=1.4.1
   - jsonschema >=3.2.0
@@ -25,7 +26,7 @@ dependencies:
   - pyproj >=3.0
   - pyyaml >=5.1
   - rasterio >=1.1
-  - s3fs >=0.5.1
+  - s3fs >=0.5.2
   - scipy >=1.2
   - setuptools >=41.0
   - shapely >=1.6
