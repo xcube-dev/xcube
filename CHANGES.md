@@ -7,7 +7,7 @@
   with observe_dask_progress('Writing dataset', 100):
       dataset.to_zarr(store)  
   ```
-* Normalisation may be slow and consume much memory. (#392)
+* Avoid accessing variable data during normalisation. (#392)
 
 ## Changes in 0.6.1
 
