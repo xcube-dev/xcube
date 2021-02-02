@@ -131,31 +131,37 @@ class DatasetDescriptorTest(unittest.TestCase):
                                                   )
                                        )
         descriptor_dict = descriptor.to_dict()
-        self.assertEqual(dict(data_id='xyz',
-                              type_specifier='dataset[cube]',
-                              crs='EPSG:9346',
-                              bbox=(10., 20., 30., 40.),
-                              spatial_res=20.,
-                              time_range=('2017-06-05', '2017-06-27'),
-                              time_period='daily',
-                              coords=['hxg', 'drg', 'rtdt'],
-                              dims=dict(x=1, y=2, z=3),
-                              data_vars=dict(xf=dict(name='xf',
-                                                     dtype='rj',
-                                                     dims=('dfjhrt', 'sg'),
-                                                     ndim=2,
-                                                     attrs=dict(ssd=4,
-                                                                zjgrhgu='dgfrf'
-                                                                )
-                                                     )
-                                             ),
-                              attrs=dict(dzus=236,
-                                         tgr7h='rt5',
-                                         df='s8fd4w5'
-                                         )
-                              ),
-                         descriptor_dict
-                         )
+        self.assertEqual(
+            dict(
+                data_id='xyz',
+                type_specifier='dataset[cube]',
+                crs='EPSG:9346',
+                bbox=(10., 20., 30., 40.),
+                spatial_res=20.,
+                time_range=('2017-06-05', '2017-06-27'),
+                time_period='daily',
+                coords=['hxg', 'drg', 'rtdt'],
+                dims=dict(x=1, y=2, z=3),
+                data_vars=dict(
+                    xf=dict(
+                        name='xf',
+                        dtype='rj',
+                        dims=('dfjhrt', 'sg'),
+                        ndim=2,
+                        attrs=dict(
+                            ssd=4,
+                            zjgrhgu='dgfrf'
+                        )
+                    )
+                ),
+                attrs=dict(
+                    dzus=236,
+                    tgr7h='rt5',
+                    df='s8fd4w5'
+                )
+            ),
+            descriptor_dict
+        )
 
 
 class VariableDescriptorTest(unittest.TestCase):
