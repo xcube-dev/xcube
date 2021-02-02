@@ -45,22 +45,25 @@ class DataDescriptorTest(unittest.TestCase):
         self.assertEqual('geodataframe', descriptor.type_specifier)
 
     def test_from_dict_full(self):
-        descriptor_dict = dict(data_id='xyz',
-                               type_specifier='tsr',
-                               crs='EPSG:9346',
-                               bbox=(10., 20., 30., 40.),
-                               spatial_res=20.,
-                               time_range=('2017-06-05', '2017-06-27'),
-                               time_period='daily',
-                               open_params_schema=dict(type="object",
-                                                       properties=dict(variable_names=
-                                                                       dict(type='array',
-                                                                            items=dict(
-                                                                                type='string')
-                                                                            )
-                                                                       )
-                                                       )
-                               )
+        descriptor_dict = dict(
+            data_id='xyz',
+            type_specifier='tsr',
+            crs='EPSG:9346',
+            bbox=(10., 20., 30., 40.),
+            spatial_res=20.,
+            time_range=('2017-06-05', '2017-06-27'),
+            time_period='daily',
+            open_params_schema=dict(
+                type="object",
+                properties=dict(
+                    variable_names=dict(
+                        type='array',
+                        items=dict(
+                            type='string')
+                    )
+                )
+            )
+        )
         descriptor = DataDescriptor.from_dict(descriptor_dict)
         self.assertIsNotNone(descriptor)
         self.assertEqual('xyz', descriptor.data_id)
@@ -79,8 +82,7 @@ class DataDescriptorTest(unittest.TestCase):
                                        bbox=(10., 20., 30., 40.),
                                        spatial_res=20.,
                                        time_range=('2017-06-05', '2017-06-27'),
-                                       time_period='daily'
-                                       )
+                                       time_period='daily')
         descriptor_dict = descriptor.to_dict()
         self.assertEqual(dict(data_id='xyz',
                               type_specifier='dataset[cube]',
@@ -88,8 +90,7 @@ class DataDescriptorTest(unittest.TestCase):
                               bbox=(10., 20., 30., 40.),
                               spatial_res=20.,
                               time_range=('2017-06-05', '2017-06-27'),
-                              time_period='daily',
-                              ),
+                              time_period='daily'),
                          descriptor_dict)
 
 
