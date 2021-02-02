@@ -271,6 +271,11 @@ class ProgressStateTest(unittest.TestCase):
 class AsyncProgressTest(unittest.TestCase):
 
     def test_asynchronous_progress(self):
+        """
+        This test ensures that progress can be monitored across processes that are run
+        asynchronously by asyncio. It runs three tasks that report progress simultaneously and
+        ensures that in the end the observer finishes with the correct total work.
+        """
         import asyncio
 
         async def do_something_async(i):
