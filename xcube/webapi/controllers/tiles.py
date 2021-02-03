@@ -54,7 +54,7 @@ def get_dataset_tile(ctx: ServiceContext,
         if var is None:
             raise ServiceBadRequestError(f'No variable in dataset {ds_id!r} specified for RGB')
     else:
-        if format == 'png':
+        if format == 'png' or format == 'image/png':
             cmap_name = params.get_query_argument('cbar', default=None)
             cmap_vmin = params.get_query_argument_float('vmin', default=None)
             cmap_vmax = params.get_query_argument_float('vmax', default=None)
@@ -64,7 +64,7 @@ def get_dataset_tile(ctx: ServiceContext,
                 cmap_vmin = cmap_vmin or default_cmap_vmin
                 cmap_vmax = cmap_vmax or default_cmap_vmax
             cmap_range = cmap_vmin, cmap_vmax
-        elif format == 'raw':
+        elif format == 'raw' or format == 'image/raw':
             cmap_name = None
             cmap_range = None
         else:

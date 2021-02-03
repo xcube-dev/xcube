@@ -1,5 +1,7 @@
 ## Changes in 0.6.2 (in development)
 
+* Fixed unit tests broken by accident. (#396)
+
 * Added new context manager `xcube.util.observe_dask_progress()` that can be used
   to observe tasks that known to be dominated by Dask computations: 
    
