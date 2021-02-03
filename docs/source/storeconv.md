@@ -150,9 +150,16 @@ annotations.
    This parameter MUST be included in an opener parameters schema. 
    
  - `time_range: Tuple[Optional[str], Optional[str]]`  
-   The requested time range for the data to be returned. See section
+   The requested time range for the data to be returned.
+   The first member of the tuple is the start time; the second is the end time.
+   See section
    ‘[Date, time, and duration specifications](#sec-datespec)’.
    This parameter MUST be included in an opener parameters schema.
+   If a date without a time is given as the start time,
+   it is interpeted as 00:00 on the specified date.
+   If a date without a time is given as the end time,
+   it is interpreted as 24:00 on the specified date
+   (identical with 00:00 on the date following the specified date).
    
  - `time_period: str`  
    The requested temporal aggregation period for the data. See section
