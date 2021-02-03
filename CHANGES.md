@@ -2,7 +2,7 @@
 
 * Numerous breaking changes have been applied to this version
   in order to address generic resampling (#391) and support other
-  CRS than WGS-84 (#...): 
+  CRS than WGS-84 (#112): 
   * The following components have been removed entirely 
     - module `xcube.core.imgeom` with class `ImageGeom` 
     - module `xcube.core.geocoding` with class `GeoCoding`
@@ -18,6 +18,8 @@
       `source_gm: GridMapping` and `target_gm: GridMapping` instead of 
       `geo_coding: GeoCoding` and `output_geom: ImageGeom`. 
   * xcube no longer depends on GDAL (at least not directly).
+  
+* Removed example notebooks that used hard-coded local file paths. (#400)
 
 * Added new context manager `xcube.util.observe_dask_progress()` that can be used
   to observe tasks that known to be dominated by Dask computations: 
