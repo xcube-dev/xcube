@@ -39,34 +39,44 @@ class DatasetDescriptorTest(unittest.TestCase):
         self.assertEqual('dataset[fegd]', descriptor.type_specifier)
 
     def test_from_dict_full(self):
-        descriptor_dict = dict(data_id='xyz',
-                               crs='EPSG:9346',
-                               bbox=(10., 20., 30., 40.),
-                               spatial_res=20.,
-                               time_range=('2017-06-05', '2017-06-27'),
-                               time_period='daily',
-                               coords=['hxg', 'drg', 'rtdt'],
-                               dims=dict(x=1, y=2, z=3),
-                               data_vars=[dict(name='xf',
-                                               dtype='rj',
-                                               dims=('dfjhrt', 'sg'),
-                                               ndim=2,
-                                               attrs=dict(ssd=4,
-                                                          zjgrhgu='dgfrf'
-                                                          )
-                                               )
-                                          ],
-                               attrs=dict(dzus=236,
-                                          tgr7h='rt5',
-                                          df='s8fd4w5'
-                                          ),
-                               open_params_schema=dict(type="object",
-                                                       properties=dict(variable_names=dict(type='array',
-                                                                                           items=dict(type='string')
-                                                                                           )
-                                                                       )
-                                                       )
-                               )
+        descriptor_dict = dict(
+            data_id='xyz',
+            crs='EPSG:9346',
+            bbox=(10., 20., 30., 40.),
+            spatial_res=20.,
+            time_range=('2017-06-05', '2017-06-27'),
+            time_period='daily',
+            coords=['hxg', 'drg', 'rtdt'],
+            dims=dict(x=1, y=2, z=3),
+            data_vars=[
+                dict(
+                    name='xf',
+                    dtype='rj',
+                    dims=('dfjhrt', 'sg'),
+                    ndim=2,
+                    attrs=dict(
+                        ssd=4,
+                        zjgrhgu='dgfrf'
+                    )
+                )
+            ],
+            attrs=dict(
+                dzus=236,
+                tgr7h='rt5',
+                df='s8fd4w5'
+            ),
+            open_params_schema=dict(
+                type="object",
+                properties=dict(
+                    variable_names=dict(
+                        type='array',
+                        items=dict(
+                            type='string'
+                        )
+                    )
+                )
+            )
+        )
         descriptor = DatasetDescriptor.from_dict(descriptor_dict)
         self.assertIsNotNone(descriptor)
         self.assertEqual('xyz', descriptor.data_id)
@@ -85,18 +95,22 @@ class DatasetDescriptorTest(unittest.TestCase):
         self.assertEqual('object', descriptor.open_params_schema.get('type', None))
 
     def test_from_dict_var_descriptors_as_dict(self):
-        descriptor_dict = dict(data_id='xyz',
-                               crs='EPSG:9346',
-                               data_vars=dict(xf=dict(name='xf',
-                                                      dtype='rj',
-                                                      dims=('dfjhrt', 'sg'),
-                                                      ndim=2,
-                                                      attrs=dict(ssd=4,
-                                                                 zjgrhgu='dgfrf'
-                                                                 )
-                                                      )
-                                              )
-                               )
+        descriptor_dict = dict(
+            data_id='xyz',
+            crs='EPSG:9346',
+            data_vars=dict(
+                xf=dict(
+                    name='xf',
+                    dtype='rj',
+                    dims=('dfjhrt', 'sg'),
+                    ndim=2,
+                    attrs=dict(
+                        ssd=4,
+                        zjgrhgu='dgfrf'
+                    )
+                )
+            )
+        )
         descriptor = DatasetDescriptor.from_dict(descriptor_dict)
         self.assertEqual('xyz', descriptor.data_id)
         self.assertEqual('dataset', descriptor.type_specifier)
@@ -107,29 +121,35 @@ class DatasetDescriptorTest(unittest.TestCase):
 
     def test_to_dict(self):
         var_descriptors = [
-            VariableDescriptor(name='xf',
-                               dtype='rj',
-                               dims=('dfjhrt', 'sg'),
-                               attrs=dict(ssd=4,
-                                          zjgrhgu='dgfrf'
-                                          )
-                               )
+            VariableDescriptor(
+                name='xf',
+                dtype='rj',
+                dims=('dfjhrt', 'sg'),
+                attrs=dict(
+                    ssd=4,
+                    zjgrhgu='dgfrf'
+                )
+            )
         ]
-        descriptor = DatasetDescriptor(data_id='xyz',
-                                       type_specifier=TypeSpecifier('dataset', flags={'cube'}),
-                                       crs='EPSG:9346',
-                                       bbox=(10., 20., 30., 40.),
-                                       spatial_res=20.,
-                                       time_range=('2017-06-05', '2017-06-27'),
-                                       time_period='daily',
-                                       coords=['hxg', 'drg', 'rtdt'],
-                                       dims=dict(x=1, y=2, z=3),
-                                       data_vars=var_descriptors,
-                                       attrs=dict(dzus=236,
-                                                  tgr7h='rt5',
-                                                  df='s8fd4w5'
-                                                  )
-                                       )
+        descriptor = DatasetDescriptor(
+            data_id='xyz',
+            type_specifier=TypeSpecifier('dataset', flags={'cube'}),
+            crs='EPSG:9346',
+            bbox=(10., 20., 30., 40.),
+            spatial_res=20.,
+            time_range=('2017-06-05', '2017-06-27'),
+            time_period='daily',
+            coords=['hxg', 'drg', 'rtdt'],
+            dims=dict(
+                x=1, y=2, z=3
+            ),
+            data_vars=var_descriptors,
+            attrs=dict(
+                dzus=236,
+                tgr7h='rt5',
+                df='s8fd4w5'
+            )
+        )
         descriptor_dict = descriptor.to_dict()
         self.assertEqual(
             dict(
