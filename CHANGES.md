@@ -21,6 +21,8 @@
   
 * Removed example notebooks that used hard-coded local file paths. (#400)
 
+* Fixed unit tests broken by accident. (#396)
+
 * Added new context manager `xcube.util.observe_dask_progress()` that can be used
   to observe tasks that known to be dominated by Dask computations: 
    
