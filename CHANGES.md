@@ -7,7 +7,10 @@
   with observe_dask_progress('Writing dataset', 100):
       dataset.to_zarr(store)  
   ```
-* Normalisation may be slow and consume much memory. (#392)
+* The xcube normalisation process, which ensures that a dataset meets the requirements 
+  of a cube, internally requested a lot of data, causing the process to be slow and
+  expensive in terms of memory consumption. This problem was resolved by avoiding to
+  read in these large amounts of data. (#392)
 
 ## Changes in 0.6.1
 
