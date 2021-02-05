@@ -48,8 +48,8 @@ class DatasetDescriptorTest(unittest.TestCase):
             time_period='daily',
             coords=['hxg', 'drg', 'rtdt'],
             dims=dict(x=1, y=2, z=3),
-            data_vars=[
-                dict(
+            data_vars=dict(
+                xf=dict(
                     name='xf',
                     dtype='rj',
                     dims=('dfjhrt', 'sg'),
@@ -59,7 +59,7 @@ class DatasetDescriptorTest(unittest.TestCase):
                         zjgrhgu='dgfrf'
                     )
                 )
-            ],
+            ),
             attrs=dict(
                 dzus=236,
                 tgr7h='rt5',
@@ -120,8 +120,8 @@ class DatasetDescriptorTest(unittest.TestCase):
         self.assertTrue(type(descriptor.data_vars.get('xf')) == VariableDescriptor)
 
     def test_to_dict(self):
-        var_descriptors = [
-            VariableDescriptor(
+        var_descriptors = dict(
+            xf=VariableDescriptor(
                 name='xf',
                 dtype='rj',
                 dims=('dfjhrt', 'sg'),
@@ -130,7 +130,7 @@ class DatasetDescriptorTest(unittest.TestCase):
                     zjgrhgu='dgfrf'
                 )
             )
-        ]
+        )
         descriptor = DatasetDescriptor(
             data_id='xyz',
             type_specifier=TypeSpecifier('dataset', flags={'cube'}),

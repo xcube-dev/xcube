@@ -140,8 +140,7 @@ class DatasetDescriptor(DataDescriptor):
     :param coords: A list of the dataset's data coordinates
     :param dims: A mapping of the dataset's dimensions to their sizes
     :param data_vars: A mapping of the dataset's variable names to VariableDescriptors
-    (``xcube.core.store.VariableDescriptor``). For backwards compatibility, also lists of
-    VariableDescriptors are accepted. This compatibility will come to an end with a future release.
+    (``xcube.core.store.VariableDescriptor``).
     :param attrs: A mapping containing arbitrary attributes of the dataset
     :param open_params_schema: A JSON schema describing the parameters that may be used to open
     this data
@@ -157,8 +156,7 @@ class DatasetDescriptor(DataDescriptor):
                  time_period: str = None,
                  coords: Sequence[str] = None,
                  dims: Mapping[str, int] = None,
-                 data_vars: Union[Sequence['VariableDescriptor'],
-                                  Mapping[str, 'VariableDescriptor']] = None,
+                 data_vars: Mapping[str, 'VariableDescriptor'] = None,
                  attrs: Mapping[str, any] = None,
                  open_params_schema: JsonObjectSchema = None):
         super().__init__(data_id=data_id,
@@ -171,15 +169,7 @@ class DatasetDescriptor(DataDescriptor):
                          open_params_schema=open_params_schema)
         self.coords = coords
         self.dims = dict(dims) if dims else None
-        if data_vars:
-            if type(data_vars) == dict:
-                self.data_vars = data_vars
-            else:
-                self.data_vars = {}
-                for data_var in data_vars:
-                    self.data_vars[data_var.name] = data_var
-        else:
-            self.data_vars = None
+        self.data_vars = data_vars if data_vars else None
         self.attrs = _convert_nans_to_none(dict(attrs)) if attrs else None
 
     @classmethod
@@ -190,13 +180,8 @@ class DatasetDescriptor(DataDescriptor):
         data_vars = d.get('data_vars', None)
         if data_vars:
             data_vars_dict = {}
-            if type(data_vars) == dict:
-                for data_var_key, data_var_value in data_vars.items():
-                    data_vars_dict[data_var_key] = VariableDescriptor.from_dict(data_var_value)
-            else:
-                for data_var_as_dict in data_vars:
-                    var_descriptor = VariableDescriptor.from_dict(data_var_as_dict)
-                    data_vars_dict[var_descriptor.name] = var_descriptor
+            for data_var_key, data_var_value in data_vars.items():
+                data_vars_dict[data_var_key] = VariableDescriptor.from_dict(data_var_value)
         return DatasetDescriptor(data_id=d['data_id'],
                                  type_specifier=d.get('type_specifier', TYPE_SPECIFIER_DATASET),
                                  crs=d.get('crs', None),
