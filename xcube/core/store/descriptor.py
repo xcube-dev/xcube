@@ -69,7 +69,7 @@ class DataDescriptor:
     :param data_id: An identifier for the data
     :param type_specifier: A type specifier for the data
     :param crs: A coordinate reference system identifier, as an EPSG, PROJ or WKT string
-    :param bbox: A bounding box of the data (order: min lon, min lat, max lon, max lat)
+    :param bbox: A bounding box of the data
     :param spatial_res: The spatial resolution of the data set
     :param time_range: Start and end time delimiting this data's temporal extent
     :param time_period: The data's periodicity if it is evenly temporally resolved.
@@ -133,10 +133,12 @@ class DatasetDescriptor(DataDescriptor):
     :param data_id: An identifier for the data
     :param type_specifier: A type specifier for the data
     :param crs: A coordinate reference system identifier, as an EPSG, PROJ or WKT string
-    :param bbox: A bounding box of the data (order: min lon, min lat, max lon, max lat)
-    :param spatial_res: The spatial resolution of the data set
-    :param time_range: Start and end time delimiting this data's temporal extent
-    :param time_period: The data's periodicity if it is evenly temporally resolved.
+    :param bbox: A bounding box of the data
+    :param spatial_res: The spatial extent of a pixel in crs units
+    :param time_range: Start and end time delimiting this data's temporal extent (see
+    https://github.com/dcs4cop/xcube/blob/master/docs/source/storeconv.md#date-time-and-duration-specifications )
+    :param time_period: The data's periodicity if it is evenly temporally resolved (see
+    https://github.com/dcs4cop/xcube/blob/master/docs/source/storeconv.md#date-time-and-duration-specifications )
     :param coords: A list of the dataset's data coordinates
     :param dims: A mapping of the dataset's dimensions to their sizes
     :param data_vars: A mapping of the dataset's variable names to VariableDescriptors
