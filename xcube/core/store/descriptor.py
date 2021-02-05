@@ -70,7 +70,6 @@ class DataDescriptor:
     :param type_specifier: A type specifier for the data
     :param crs: A coordinate reference system identifier, as an EPSG, PROJ or WKT string
     :param bbox: A bounding box of the data
-    :param spatial_res: The spatial resolution of the data set
     :param time_range: Start and end time delimiting this data's temporal extent
     :param time_period: The data's periodicity if it is evenly temporally resolved.
     :param open_params_schema: A JSON schema describing the parameters that may be used to open
@@ -82,7 +81,6 @@ class DataDescriptor:
                  type_specifier: Union[str, TypeSpecifier],
                  crs: str = None,
                  bbox: Tuple[float, float, float, float] = None,
-                 spatial_res: float = None,
                  time_range: Tuple[Optional[str], Optional[str]] = None,
                  time_period: str = None,
                  open_params_schema: JsonObjectSchema = None):
@@ -92,7 +90,6 @@ class DataDescriptor:
         self.type_specifier = TypeSpecifier.normalize(type_specifier)
         self.crs = crs
         self.bbox = tuple(bbox) if bbox else None
-        self.spatial_res = spatial_res
         self.time_range = tuple(time_range) if time_range else None
         self.time_period = time_period
         self.open_params_schema = open_params_schema
@@ -106,7 +103,7 @@ class DataDescriptor:
     def to_dict(self) -> Dict[str, Any]:
         """Convert into a JSON-serializable dictionary"""
         d = dict(type_specifier=str(self.type_specifier))
-        _copy_none_null_props(self, d, ['data_id', 'crs', 'bbox', 'spatial_res', 'time_range', 'time_period'])
+        _copy_none_null_props(self, d, ['data_id', 'crs', 'bbox', 'time_range', 'time_period'])
 
         if self.open_params_schema is not None:
             d['open_params_schema'] = self.open_params_schema.to_dict()
@@ -134,11 +131,11 @@ class DatasetDescriptor(DataDescriptor):
     :param type_specifier: A type specifier for the data
     :param crs: A coordinate reference system identifier, as an EPSG, PROJ or WKT string
     :param bbox: A bounding box of the data
-    :param spatial_res: The spatial extent of a pixel in crs units
     :param time_range: Start and end time delimiting this data's temporal extent (see
     https://github.com/dcs4cop/xcube/blob/master/docs/source/storeconv.md#date-time-and-duration-specifications )
     :param time_period: The data's periodicity if it is evenly temporally resolved (see
     https://github.com/dcs4cop/xcube/blob/master/docs/source/storeconv.md#date-time-and-duration-specifications )
+    :param spatial_res: The spatial extent of a pixel in crs units
     :param coords: A list of the dataset's data coordinates
     :param dims: A mapping of the dataset's dimensions to their sizes
     :param data_vars: A mapping of the dataset's variable names to VariableDescriptors
@@ -153,9 +150,9 @@ class DatasetDescriptor(DataDescriptor):
                  type_specifier: Union[str, TypeSpecifier] = TYPE_SPECIFIER_DATASET,
                  crs: str = None,
                  bbox: Tuple[float, float, float, float] = None,
-                 spatial_res: float = None,
                  time_range: Tuple[Optional[str], Optional[str]] = None,
                  time_period: str = None,
+                 spatial_res: float = None,
                  coords: Sequence[str] = None,
                  dims: Mapping[str, int] = None,
                  data_vars: Mapping[str, 'VariableDescriptor'] = None,
@@ -165,13 +162,13 @@ class DatasetDescriptor(DataDescriptor):
                          type_specifier=type_specifier,
                          crs=crs,
                          bbox=bbox,
-                         spatial_res=spatial_res,
                          time_range=time_range,
                          time_period=time_period,
                          open_params_schema=open_params_schema)
         self.coords = coords
         self.dims = dict(dims) if dims else None
         self.data_vars = data_vars if data_vars else None
+        self.spatial_res = spatial_res
         self.attrs = _convert_nans_to_none(dict(attrs)) if attrs else None
 
     @classmethod
@@ -188,9 +185,9 @@ class DatasetDescriptor(DataDescriptor):
                                  type_specifier=d.get('type_specifier', TYPE_SPECIFIER_DATASET),
                                  crs=d.get('crs', None),
                                  bbox=d.get('bbox', None),
-                                 spatial_res=d.get('spatial_res', None),
                                  time_range=d.get('time_range', None),
                                  time_period=d.get('time_period', None),
+                                 spatial_res=d.get('spatial_res', None),
                                  coords=d.get('coords', None),
                                  dims=d.get('dims', None),
                                  data_vars=data_vars_dict,
@@ -204,7 +201,7 @@ class DatasetDescriptor(DataDescriptor):
             d['data_vars'] = {}
             for vd_key, vd_value in self.data_vars.items():
                 d['data_vars'][vd_key] = vd_value.to_dict()
-        _copy_none_null_props(self, d, ['coords', 'dims', 'attrs'])
+        _copy_none_null_props(self, d, ['spatial_res', 'coords', 'dims', 'attrs'])
         return d
 
     @classmethod
