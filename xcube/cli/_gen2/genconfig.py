@@ -1,5 +1,5 @@
 # The MIT License (MIT)
-# Copyright (c) 2020 by the xcube development team and contributors
+# Copyright (c) 2021 by the xcube development team and contributors
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of
 # this software and associated documentation files (the "Software"), to deal in
@@ -20,16 +20,20 @@
 # SOFTWARE.
 
 import json
+import numbers
 import os.path
 import sys
+from collections import Iterable
 from typing import Optional, Dict, Any, Sequence, Mapping, Tuple
 
 import jsonschema
+import pyproj
 import yaml
 
 from xcube.cli._gen2.error import GenError
 from xcube.util.assertions import assert_condition
 from xcube.util.assertions import assert_given
+from xcube.util.assertions import assert_instance
 from xcube.util.jsonschema import JsonArraySchema
 from xcube.util.jsonschema import JsonBooleanSchema
 from xcube.util.jsonschema import JsonDateSchema
@@ -50,8 +54,8 @@ class InputConfig:
         self.store_id = store_id
         self.opener_id = opener_id
         self.data_id = data_id
-        self.store_params = store_params or {}
-        self.open_params = open_params or {}
+        self.store_params = store_params
+        self.open_params = open_params
 
     @classmethod
     def get_schema(cls) -> JsonObjectSchema:
@@ -60,8 +64,8 @@ class InputConfig:
                 store_id=JsonStringSchema(min_length=1),
                 opener_id=JsonStringSchema(min_length=1),
                 data_id=JsonStringSchema(min_length=1),
-                store_params=JsonObjectSchema(additional_properties=True),
-                open_params=JsonObjectSchema(additional_properties=True)
+                store_params=JsonObjectSchema(additional_properties=True, nullable=True),
+                open_params=JsonObjectSchema(additional_properties=True, nullable=True)
             ),
             additional_properties=False,
             required=['data_id'],
@@ -69,18 +73,11 @@ class InputConfig:
         )
 
     def to_dict(self):
-        d = dict()
-        if self.store_id:
-            d.update(store_id=str(self.store_id))
-        if self.opener_id:
-            d.update(writer_id=str(self.opener_id))
-        if self.data_id:
-            d.update(data_id=str(self.data_id))
-        if self.store_params:
-            d.update(store_params=dict(self.store_params))
-        if self.open_params:
-            d.update(open_params=dict(self.open_params))
-        return d
+        return _to_dict(self, ('store_id',
+                               'opener_id',
+                               'data_id',
+                               'store_params',
+                               'open_params'))
 
 
 class CallbackConfig:
@@ -104,13 +101,7 @@ class CallbackConfig:
         )
 
     def to_dict(self) -> dict:
-        d = dict()
-        if self.api_uri:
-            d.update(api_uri=self.api_uri)
-        if self.access_token:
-            d.update(access_token=self.access_token)
-
-        return d
+        return _to_dict(self, ('api_uri', 'access_token'))
 
 
 class OutputConfig:
@@ -126,8 +117,8 @@ class OutputConfig:
         self.store_id = store_id
         self.writer_id = writer_id
         self.data_id = data_id
-        self.store_params = store_params or {}
-        self.write_params = write_params or {}
+        self.store_params = store_params
+        self.write_params = write_params
         self.replace = replace
 
     @classmethod
@@ -137,8 +128,8 @@ class OutputConfig:
                 store_id=JsonStringSchema(min_length=1),
                 writer_id=JsonStringSchema(min_length=1),
                 data_id=JsonStringSchema(default=None),
-                store_params=JsonObjectSchema(additional_properties=True),
-                write_params=JsonObjectSchema(additional_properties=True),
+                store_params=JsonObjectSchema(additional_properties=True, nullable=True),
+                write_params=JsonObjectSchema(additional_properties=True, nullable=True),
                 replace=JsonBooleanSchema(default=False),
             ),
             additional_properties=False,
@@ -147,20 +138,12 @@ class OutputConfig:
         )
 
     def to_dict(self):
-        d = dict()
-        if self.store_id:
-            d.update(store_id=str(self.store_id))
-        if self.writer_id:
-            d.update(writer_id=str(self.writer_id))
-        if self.data_id:
-            d.update(data_id=str(self.data_id))
-        if self.store_params:
-            d.update(store_params=dict(self.store_params))
-        if self.write_params:
-            d.update(write_params=dict(self.write_params))
-        if self.replace:
-            d.update(replace=True)
-        return d
+        return _to_dict(self, ('store_id',
+                               'writer_id',
+                               'data_id',
+                               'store_params',
+                               'write_params',
+                               'replace'))
 
 
 # Need to be aligned with params in resample_cube(cube, **params)
@@ -173,35 +156,55 @@ class CubeConfig:
                  spatial_res: float = None,
                  time_range: Tuple[str, Optional[str]] = None,
                  time_period: str = None):
-        assert_given(variable_names, 'variable_names')
-        assert_given(bbox, 'bbox')
-        assert_given(spatial_res, 'spatial_res')
-        assert_given(time_range, 'time_range')
-        self.variable_names = tuple(variable_names)
-        self.crs = str(crs)
-        self.bbox = tuple(bbox)
-        self.spatial_res = float(spatial_res)
-        self.time_range = tuple(time_range)
-        self.time_period = str(time_period)
+
+        self.variable_names = None
+        if variable_names is not None:
+            assert_condition(len(variable_names) > 0, 'variable_names is invalid')
+            self.variable_names = tuple(map(str, variable_names))
+
+        self.crs = None
+        if crs is not None:
+            assert_instance(crs, str, 'crs')
+            try:
+                pyproj.crs.CRS.from_string(crs)
+            except ValueError:
+                raise ValueError('crs is invalid')
+            self.crs = crs
+
+        self.bbox = None
+        if bbox is not None:
+            assert_condition(len(bbox) == 4, 'bbox is invalid')
+            self.bbox = tuple(map(float, bbox))
+
+        self.spatial_res = None
+        if spatial_res is not None:
+            assert_instance(spatial_res, numbers.Number, 'spatial_res')
+            self.spatial_res = float(spatial_res)
+
+        self.time_range = None
+        if time_range is not None:
+            assert_condition(len(time_range) == 2, 'time_range is invalid')
+            self.time_range = tuple(time_range)
+
+        self.time_period = None
+        if time_period is not None:
+            assert_instance(time_period, str, 'time_period')
+            self.time_period = time_period
 
     def to_dict(self):
-        d = dict(
-            variable_names=list(self.variable_names),
-            bbox=list(self.bbox),
-            spatial_res=float(self.spatial_res),
-            time_range=list(self.time_range)
-        )
-        if self.crs:
-            d.update(crs=str(self.crs))
-        if self.time_period:
-            d.update(time_period=str(self.time_period))
-        return d
+        return _to_dict(self, ('variable_names',
+                               'crs',
+                               'bbox',
+                               'spatial_res',
+                               'time_range',
+                               'time_period'))
 
     @classmethod
     def get_schema(cls):
         return JsonObjectSchema(
             properties=dict(
                 variable_names=JsonArraySchema(
+                    nullable=True,
                     items=JsonStringSchema(min_length=1),
                     min_items=0
                 ),
@@ -214,19 +217,17 @@ class CubeConfig:
                     items=[JsonNumberSchema(),
                            JsonNumberSchema(),
                            JsonNumberSchema(),
-                           JsonNumberSchema()]),
+                           JsonNumberSchema()]
+                ),
                 spatial_res=JsonNumberSchema(
                     nullable=True,
                     exclusive_minimum=0.0),
-                time_range=JsonDateSchema.new_range(
-                    nullable=True
-                ),
+                time_range=JsonDateSchema.new_range(nullable=True),
                 time_period=JsonStringSchema(
                     nullable=True,
                     pattern=r'^([1-9][0-9]*)?[DWMY]$'
                 ),
             ),
-            required=['variable_names'],
             additional_properties=False,
             factory=cls
         )
@@ -318,3 +319,21 @@ class GenConfig:
             raise GenError(f'Error loading generator configuration "{gen_config_file}": {e}') from e
 
         raise GenError(f'Missing cube generator configuration.')
+
+
+def _to_dict(self, keys: Tuple[str, ...]) -> Dict[str, Any]:
+    schema = self.get_schema()
+    d = dict()
+    for k in keys:
+        v = getattr(self, k)
+        if v is not None:
+            s = schema.properties.get(k)
+            if v != s.default:
+                if isinstance(v, str):
+                    pass
+                elif isinstance(v, Mapping):
+                    v = dict(v)
+                elif isinstance(v, Iterable):
+                    v = list(v)
+                d[k] = v
+    return d

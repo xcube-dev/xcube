@@ -1,5 +1,5 @@
 # The MIT License (MIT)
-# Copyright (c) 2020 by the xcube development team and contributors
+# Copyright (c) 2021 by the xcube development team and contributors
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of
 # this software and associated documentation files (the "Software"), to deal in
@@ -38,11 +38,12 @@ def open_cubes(input_configs: Sequence[InputConfig],
     all_cube_params = cube_config.to_dict()
     with observe_progress('Opening input(s)', len(input_configs)) as progress:
         for input_config in input_configs:
-            open_params = {}
             opener_id = input_config.opener_id
+            store_params = input_config.store_params or {}
+            open_params = input_config.open_params or {}
             if input_config.store_id:
                 store_instance = get_data_store_instance(input_config.store_id,
-                                                         store_params=input_config.store_params,
+                                                         store_params=store_params,
                                                          store_pool=store_pool)
                 store = store_instance.store
                 if opener_id is None:
@@ -52,10 +53,10 @@ def open_cubes(input_configs: Sequence[InputConfig],
                         raise DataStoreError(f'Data store "{input_config.store_id}" does not support data cubes')
                     opener_id = opener_ids[0]
                 opener = store
-                open_params.update(opener_id=opener_id, **input_config.open_params)
+                open_params.update(opener_id=opener_id, **open_params)
             else:
                 opener = new_data_opener(opener_id)
-                open_params.update(**input_config.store_params, **input_config.open_params)
+                open_params.update(**store_params, **open_params)
             open_params_schema = opener.get_open_data_params_schema(input_config.data_id)
             cube_params = {k: v for k, v in all_cube_params.items() if k in open_params_schema.properties}
             cube = opener.open_data(input_config.data_id, **open_params, **cube_params)
