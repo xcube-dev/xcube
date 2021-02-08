@@ -21,6 +21,7 @@
 
 import abc
 import copy
+import math
 import threading
 from typing import Any, Tuple, Optional, Union, Mapping
 
@@ -545,6 +546,25 @@ class GridMapping(abc.ABC):
                                             y_coords=y_coords,
                                             crs=crs,
                                             tile_size=tile_size)
+
+    def is_close(self, other: 'GridMapping') -> bool:
+        if self.is_j_axis_up == other.is_j_axis_up \
+               and self.is_lon_360 == other.is_lon_360 \
+               and self.is_regular == other.is_regular \
+               and self.size == other.size \
+               and self.tile_size == other.tile_size \
+               and self.crs == other.crs:
+            sxr, syr = self.xy_res
+            oxr, oyr = other.xy_res
+            if math.isclose(sxr, oxr) \
+                    and math.isclose(syr, oyr):
+                sx1, sy1, sx2, sy2 = self.xy_bbox
+                ox1, oy1, ox2, oy2 = other.xy_bbox
+                return math.isclose(sx1, ox1) \
+                       and math.isclose(sy1, oy1) \
+                       and math.isclose(sx2, ox2) \
+                       and math.isclose(sy2, oy2)
+        return False
 
     def _assert_regular(self):
         if not self.is_regular:
