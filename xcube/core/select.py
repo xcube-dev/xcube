@@ -66,7 +66,8 @@ def select_spatial_subset(dataset: xr.Dataset,
         raise ValueError('One of ij_bbox and xy_bbox must be given')
     if ij_bbox and xy_bbox:
         raise ValueError('Only one of ij_bbox and xy_bbox can be given')
-    geo_coding = geo_coding if geo_coding is not None else GridMapping.from_dataset(dataset, xy_var_names=xy_names)
+    if geo_coding is None:
+        geo_coding = GridMapping.from_dataset(dataset, xy_var_names=xy_names)
     if xy_bbox:
         ij_bbox = geo_coding.ij_bbox_from_xy_bbox(xy_bbox, ij_border=ij_border, xy_border=xy_border)
         if ij_bbox[0] == -1:
