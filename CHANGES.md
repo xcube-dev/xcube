@@ -1,5 +1,7 @@
 ## Changes in 0.6.2 (in development)
 
+* CLI tool `xcube gen2` may now also ingest non-cube datasets.
+
 * Fixed unit tests broken by accident. (#396)
 
 * Added new context manager `xcube.util.observe_dask_progress()` that can be used
