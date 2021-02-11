@@ -1,6 +1,6 @@
 ## Changes in 0.6.2 (in development)
 
-* xcube gen2 may ingest non-cube datasets
+* CLI tool `xcube gen2` may now also ingest non-cube datasets.
 
 * Fixed unit tests broken by accident. (#396)
 

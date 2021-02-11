@@ -54,19 +54,21 @@ def open_cubes(input_configs: Sequence[InputConfig],
                     type_specifiers = store.get_type_specifiers_for_data(input_config.data_id)
                     for type_specifier in type_specifiers:
                         if TYPE_SPECIFIER_CUBE.is_satisfied_by(type_specifier):
-                            opener_ids = store.get_data_opener_ids(
-                                data_id=input_config.data_id, type_specifier=type_specifier)
+                            opener_ids = \
+                                store.get_data_opener_ids(data_id=input_config.data_id,
+                                                          type_specifier=type_specifier)
                             break
                     if not opener_ids:
                         for type_specifier in type_specifiers:
                             if TYPE_SPECIFIER_DATASET.is_satisfied_by(type_specifier):
-                                opener_ids = store.get_data_opener_ids(
-                                    data_id=input_config.data_id, type_specifier=type_specifier)
+                                opener_ids = \
+                                    store.get_data_opener_ids(data_id=input_config.data_id,
+                                                              type_specifier=type_specifier)
                                 normalisation_required = True
                                 break
                     if not opener_ids:
                         raise DataStoreError(f'Data store "{input_config.store_id}" '
-                                             f'does not support data sets')
+                                             f'does not support datasets')
                     opener_id = opener_ids[0]
                 opener = store
                 open_params.update(opener_id=opener_id, **open_params)

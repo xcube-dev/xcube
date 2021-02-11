@@ -19,7 +19,7 @@ class MainTest(unittest.TestCase):
     REQUEST = dict(input_config=dict(store_id='memory',
                                      data_id='S2L2A'),
                    cube_config=dict(variable_names=['B01', 'B02', 'B03'],
-                                    crs='epsg:4326',
+                                    crs='WGS84',
                                     bbox=[12.2, 52.1, 13.9, 54.8],
                                     spatial_res=0.05,
                                     time_range=['2018-01-01', None],
