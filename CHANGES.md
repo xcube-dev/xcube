@@ -5,6 +5,8 @@
   - there was no direct use in xcube itself;
   - xcube plans to get rid of GDAL dependencies.
   
+* CLI tool `xcube gen2` may now also ingest non-cube datasets.
+
 * Fixed unit tests broken by accident. (#396)
 
 * Added new context manager `xcube.util.observe_dask_progress()` that can be used
