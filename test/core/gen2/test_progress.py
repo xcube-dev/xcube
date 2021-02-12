@@ -3,7 +3,7 @@ from unittest.mock import patch
 
 import requests_mock
 
-from xcube.core.gen2.genconfig import GenConfig
+from xcube.core.gen2.config import GenConfig
 from xcube.core.gen2.progress import ApiProgressCallbackObserver
 from xcube.core.gen2.progress import TerminalProgressCallbackObserver
 from xcube.core.gen2.progress import _ThreadedProgressObserver

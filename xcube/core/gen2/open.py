@@ -21,8 +21,8 @@
 
 from typing import Sequence
 
-from xcube.core.gen2 import CubeConfig
-from xcube.core.gen2 import InputConfig
+from xcube.core.gen2.config import CubeConfig
+from xcube.core.gen2.config import InputConfig
 from xcube.core.normalize import normalize_dataset
 from xcube.core.store import DataStoreError
 from xcube.core.store import DataStorePool
