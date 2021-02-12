@@ -21,7 +21,7 @@
 
 import xarray as xr
 
-from xcube.cli._gen2.genconfig import OutputConfig
+from xcube.core.gen2 import OutputConfig
 from xcube.core.store import DataStorePool
 from xcube.core.store import get_data_store_instance
 from xcube.core.store import new_data_writer

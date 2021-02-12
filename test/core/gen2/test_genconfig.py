@@ -1,9 +1,9 @@
 import unittest
 
-from xcube.cli._gen2.genconfig import CubeConfig
-from xcube.cli._gen2.genconfig import GenConfig
-from xcube.cli._gen2.genconfig import InputConfig
-from xcube.cli._gen2.genconfig import OutputConfig
+from xcube.core.gen2.genconfig import CubeConfig
+from xcube.core.gen2.genconfig import GenConfig
+from xcube.core.gen2.genconfig import InputConfig
+from xcube.core.gen2.genconfig import OutputConfig
 
 
 class InputConfigTest(unittest.TestCase):

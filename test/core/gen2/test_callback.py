@@ -1,5 +1,5 @@
 import unittest
-from xcube.cli._gen2.genconfig import CallbackConfig
+from xcube.core.gen2.genconfig import CallbackConfig
 
 
 class TestCallbackConfig(unittest.TestCase):

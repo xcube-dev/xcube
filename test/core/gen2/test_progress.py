@@ -3,9 +3,10 @@ from unittest.mock import patch
 
 import requests_mock
 
-from xcube.cli._gen2.genconfig import GenConfig
-from xcube.cli._gen2.progress import ApiProgressCallbackObserver, TerminalProgressCallbackObserver, \
-    _ThreadedProgressObserver
+from xcube.core.gen2.genconfig import GenConfig
+from xcube.core.gen2.progress import ApiProgressCallbackObserver
+from xcube.core.gen2.progress import TerminalProgressCallbackObserver
+from xcube.core.gen2.progress import _ThreadedProgressObserver
 from xcube.util.progress import ProgressState
 
 
@@ -83,7 +84,7 @@ class TestThreadedProgressObservers(unittest.TestCase):
         self.assertIn('0% Completed', res)
 
     def test_threaded_progress_on_begin(self):
-        _mock_patch = patch('xcube.cli._gen2.progress._ThreadedProgressObserver._start_timer')
+        _mock_patch = patch('xcube.core.gen2.progress._ThreadedProgressObserver._start_timer')
         _mock = _mock_patch.start()
 
         observer = TerminalProgressCallbackObserver()
@@ -102,7 +103,7 @@ class TestThreadedProgressObservers(unittest.TestCase):
         self.assertFalse(_mock.called)
 
     def test_threaded_progress_on_end(self):
-        _mock_patch = patch('xcube.cli._gen2.progress._ThreadedProgressObserver._stop_timer')
+        _mock_patch = patch('xcube.core.gen2.progress._ThreadedProgressObserver._stop_timer')
         _mock = _mock_patch.start()
 
         observer = TerminalProgressCallbackObserver()
@@ -126,21 +127,21 @@ class TestThreadedProgressObservers(unittest.TestCase):
     #     Uncomment the lines below if you want to run and test the termial progress bar output.
     #     """
 
-        # from time import sleep
-        # from xcube.util.progress import observe_progress
-        #
-        # TerminalProgressCallbackObserver().activate()
-        #
-        # with observe_progress('Generating cube', 100) as cm:
-        #     dt = 1
-        #     for i in range(1, 80):
-        #         cm.will_work(1)
-        #         sleep(dt)
-        #         cm.worked(1)
-        #
-        #     cm.will_work(20)
-        #     sleep(dt)
-        #     cm.worked(20)
+    # from time import sleep
+    # from xcube.util.progress import observe_progress
+    #
+    # TerminalProgressCallbackObserver().activate()
+    #
+    # with observe_progress('Generating cube', 100) as cm:
+    #     dt = 1
+    #     for i in range(1, 80):
+    #         cm.will_work(1)
+    #         sleep(dt)
+    #         cm.worked(1)
+    #
+    #     cm.will_work(20)
+    #     sleep(dt)
+    #     cm.worked(20)
 
 
 class TestThreadedProgressObserver(unittest.TestCase):

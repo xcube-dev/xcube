@@ -30,7 +30,7 @@ import jsonschema
 import pyproj
 import yaml
 
-from xcube.cli._gen2.error import GenError
+from xcube.core.gen2.error import GenError
 from xcube.util.assertions import assert_condition
 from xcube.util.assertions import assert_given
 from xcube.util.assertions import assert_instance

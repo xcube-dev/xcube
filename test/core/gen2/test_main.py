@@ -8,7 +8,7 @@ import yaml
 from test.s3test import MOTO_SERVER_ENDPOINT_URL
 from test.s3test import S3Test
 
-from xcube.cli._gen2.main import main
+from xcube.core.gen2 import main
 from xcube.core.dsio import rimraf
 from xcube.core.new import new_cube
 from xcube.core.store import DataStorePool
