@@ -14,7 +14,9 @@
 
 ## Changes in 0.6.1
 
-All changes relate to maintenance of xcube's Python environment requirements in `envrionment.yml`:
+* Updated developer guide (#382)
+
+Changes relating to maintenance of xcube's Python environment requirements in `envrionment.yml`:
 
 * Removed explicit `blas` dependency (which required MKL as of `blas =*.*=mkl`) 
   for better interoperability with existing environments.  
