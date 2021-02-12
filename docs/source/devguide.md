@@ -323,7 +323,8 @@ https://github.com/conda-forge/xcube-feedstock.
 The package is updated by 
 * forking the repository
 * creating a new branch for the changes
-* creating a pull request to merge this branch into conda-forge's feedstock repository. 
+* creating a pull request to merge this branch into conda-forge's feedstock repository 
+  (this is done automatically if the build number is 0). 
 
 The first of these steps is usually already done. 
 You may find forks at `https://github.com/dcs4cop/<repo-name>-feedstock` . 
@@ -366,6 +367,11 @@ In detail, the steps are:
    If it is higher, you will have to create the pull request yourself.
 
 1. Once conda-forge's automated checks have passed, merge the pull request.
+
+1. Merge the newly-merged changes from the master branch on conda-forge back to 
+   the master branch of the dcs4cop fork.
+   This step is not necessarily needed for the release, but it helps to avoid messy
+   parallel branches.
 
 Once the pull request has been merged, the updated package should usually become 
 available from conda-forge within a couple of hours.
