@@ -49,7 +49,20 @@ from xcube.util.jsonschema import JsonObjectSchema
 def new_data_descriptor(data_id: str, data: Any, require: bool = False) -> 'DataDescriptor':
     if isinstance(data, xr.Dataset):
         # TODO: implement me: data -> DatasetDescriptor
-        return DatasetDescriptor(data_id=data_id, type_specifier=get_type_specifier(data))
+        variable_descriptors = []
+        for data_var_name in data.data_vars.keys():
+            data_var = data.data_vars[data_var_name]
+            variable_descriptors.append(VariableDescriptor(name=data_var_name,
+                                                           dtype=data_var.dtype,
+                                                           dims=data_var.dims,
+                                                           attrs=data_var.attrs))
+        return DatasetDescriptor(data_id=data_id,
+                                 type_specifier=get_type_specifier(data),
+                                 bbox=(data.geospatial_lat_min, data.geospatial_lon_min,
+                                       data.geospatial_lat_max, data.geospatial_lon_max),
+                                 time_range=(data.time_coverage_start, data.time_coverage_end),
+                                 dims=dict(data.dims),
+                                 data_vars=variable_descriptors)
     elif isinstance(data, MultiLevelDataset):
         # TODO: implement me: data -> MultiLevelDatasetDescriptor
         return MultiLevelDatasetDescriptor(data_id=data_id, num_levels=5)
