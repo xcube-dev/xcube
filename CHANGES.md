@@ -1,5 +1,10 @@
 ## Changes in 0.6.2 (in development)
 
+* Removed function `reproject_crs_to_wgs84()` and tests (#375) because  
+  - it seemed to be no longer be working with GDAL 3.1+; 
+  - there was no direct use in xcube itself;
+  - xcube plans to get rid of GDAL dependencies.
+  
 * CLI tool `xcube gen2` may now also ingest non-cube datasets.
 
 * Fixed unit tests broken by accident. (#396)
