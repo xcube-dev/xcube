@@ -166,7 +166,7 @@ class CubeConfig:
         if crs is not None:
             assert_instance(crs, str, 'crs')
             try:
-                pyproj.crs.CRS.from_string(crs)
+                pyproj.crs.CRS.from_user_input(crs)
             except ValueError:
                 raise ValueError('crs is invalid')
             self.crs = crs
