@@ -7,15 +7,14 @@ import yaml
 
 from test.s3test import MOTO_SERVER_ENDPOINT_URL
 from test.s3test import S3Test
-
-from xcube.core.gen2.main import main
 from xcube.core.dsio import rimraf
+from xcube.core.gen2.generator import CubeGenerator
 from xcube.core.new import new_cube
 from xcube.core.store import DataStorePool
 from xcube.core.store.stores.memory import MemoryDataStore
 
 
-class MainTest(unittest.TestCase):
+class CubeGeneratorTest(unittest.TestCase):
     REQUEST = dict(input_config=dict(store_id='memory',
                                      data_id='S2L2A'),
                    cube_config=dict(variable_names=['B01', 'B02', 'B03'],
@@ -31,9 +30,9 @@ class MainTest(unittest.TestCase):
 
     def setUp(self) -> None:
         with open('_request.json', 'w') as fp:
-            json.dump(MainTest.REQUEST, fp)
+            json.dump(CubeGeneratorTest.REQUEST, fp)
         with open('_request.yaml', 'w') as fp:
-            yaml.dump(MainTest.REQUEST, fp)
+            yaml.dump(CubeGeneratorTest.REQUEST, fp)
         self.saved_cube_memory = MemoryDataStore.replace_global_data_dict(
             {'S2L2A': new_cube(variables=dict(B01=0.1, B02=0.2, B03=0.3))}
         )
@@ -46,19 +45,19 @@ class MainTest(unittest.TestCase):
     @requests_mock.Mocker()
     def test_json(self, m):
         m.put('https://xcube-gen.test/api/v1/jobs/tomtom/iamajob/callback', json={})
-        main('_request.json', verbose=True)
+        CubeGenerator.from_file('_request.json', verbose=True).run()
         self.assertIsInstance(MemoryDataStore.get_global_data_dict().get('CHL'),
                               xr.Dataset)
 
     @requests_mock.Mocker()
     def test_yaml(self, m):
         m.put('https://xcube-gen.test/api/v1/jobs/tomtom/iamajob/callback', json={})
-        main('_request.yaml', verbose=True)
+        CubeGenerator.from_file('_request.yaml', verbose=True).run()
         self.assertIsInstance(MemoryDataStore.get_global_data_dict().get('CHL'),
                               xr.Dataset)
 
 
-class S3MainTest(S3Test):
+class CubeGeneratorS3Input(S3Test):
     BUCKET_NAME = 'xcube-s3-test'
     S3_REQUEST = dict(
         input_config=dict(
@@ -92,15 +91,18 @@ class S3MainTest(S3Test):
 
     def setUp(self):
         super().setUp()
-        pool = DataStorePool.from_dict(S3MainTest.STORE_CONFIGS)
+        pool = DataStorePool.from_dict(self.STORE_CONFIGS)
         s3_store = pool.get_store("my-s3-store")
         cube = new_cube(variables=dict(a=4.1, b=7.4))
-        s3_store.s3.mkdir(S3MainTest.BUCKET_NAME)
+        s3_store.s3.mkdir(self.BUCKET_NAME)
         s3_store.write_data(cube, 'a_b.zarr')
+        import time
+        time.sleep(5)
+        self.assertTrue(s3_store.has_data('a_b.zarr'))
         with open('_s3_request.json', 'w') as fp:
-            json.dump(S3MainTest.S3_REQUEST, fp)
+            json.dump(self.S3_REQUEST, fp)
         with open('_s3_store_configs.json', 'w') as fp:
-            json.dump(S3MainTest.STORE_CONFIGS, fp)
+            json.dump(self.STORE_CONFIGS, fp)
 
     def tearDown(self) -> None:
         rimraf('_s3_request.json')
@@ -109,6 +111,6 @@ class S3MainTest(S3Test):
     @requests_mock.Mocker()
     def test_json(self, m):
         m.put('https://xcube-gen.test/api/v1/jobs/tomtom/iamajob/callback', json={})
-        main('_s3_request.json', store_configs_path='_s3_store_configs.json', verbose=True)
+        CubeGenerator.from_file('_s3_request.json', store_configs_path='_s3_store_configs.json', verbose=True).run()
         self.assertIsInstance(MemoryDataStore.get_global_data_dict().get('A_B'),
                               xr.Dataset)

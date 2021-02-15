@@ -19,7 +19,19 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+from abc import ABC, abstractmethod
+from typing import Sequence
 
-class CubeGeneratorError(ValueError):
-    def __init__(self, message: str):
-        super().__init__(message)
+import xarray as xr
+
+
+class CubeProcessor(ABC):
+    @abstractmethod
+    def process_cube(self, cube: xr.Dataset) -> xr.Dataset:
+        """Process given *cube* into new cube."""
+
+
+class CubesProcessor(ABC):
+    @abstractmethod
+    def process_cubes(self, cubes: Sequence[xr.Dataset]) -> xr.Dataset:
+        """Process given *cubes* into new cube."""

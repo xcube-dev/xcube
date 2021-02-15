@@ -28,24 +28,30 @@ from xcube.core.store import new_data_writer
 from xcube.util.progress import observe_dask_progress
 
 
-def write_cube(cube: xr.Dataset,
-               output_config: OutputConfig,
-               store_pool: DataStorePool = None) -> str:
-    with observe_dask_progress('Writing output', 100):
-        write_params = output_config.write_params or {}
-        store_params = output_config.store_params or {}
-        if output_config.store_id:
-            store_instance = get_data_store_instance(output_config.store_id,
-                                                     store_params=store_params,
-                                                     store_pool=store_pool)
-            writer = store_instance.store
-            write_params.update(writer_id=output_config.writer_id, **write_params)
-        else:
-            writer = new_data_writer(output_config.writer_id)
-            write_params.update(**store_params, **write_params)
+class CubeWriter:
+    def __init__(self,
+                 output_config: OutputConfig,
+                 store_pool: DataStorePool = None):
+        self._output_config = output_config
+        self._store_pool = store_pool
 
-        data_id = writer.write_data(cube,
-                                    data_id=output_config.data_id,
-                                    replace=output_config.replace or False,
-                                    **write_params)
-        return data_id
+    def write_cube(self, cube: xr.Dataset) -> str:
+        output_config = self._output_config
+        with observe_dask_progress('Writing output', 100):
+            write_params = output_config.write_params or {}
+            store_params = output_config.store_params or {}
+            if output_config.store_id:
+                store_instance = get_data_store_instance(output_config.store_id,
+                                                         store_params=store_params,
+                                                         store_pool=self._store_pool)
+                writer = store_instance.store
+                write_params.update(writer_id=output_config.writer_id, **write_params)
+            else:
+                writer = new_data_writer(output_config.writer_id)
+                write_params.update(**store_params, **write_params)
+
+            data_id = writer.write_data(cube,
+                                        data_id=output_config.data_id,
+                                        replace=output_config.replace or False,
+                                        **write_params)
+            return data_id
