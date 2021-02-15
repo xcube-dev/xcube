@@ -5,6 +5,7 @@ import xarray as xr
 from xcube.core.new import new_cube
 from xcube.core.store import DataStoreError
 from xcube.core.store import DatasetDescriptor
+from xcube.core.store import VariableDescriptor
 from xcube.core.store import TYPE_SPECIFIER_CUBE
 from xcube.core.store import TYPE_SPECIFIER_DATASET
 from xcube.core.store import new_data_store
@@ -62,6 +63,17 @@ class MemoryCubeStoreTest(unittest.TestCase):
             DatasetDescriptor(
                 data_id='cube_1',
                 type_specifier=TYPE_SPECIFIER_CUBE,
+                bbox=(-90.0, -180.0, 90.0, 180.0),
+                time_range=('2010-01-01T00:00:00', '2010-01-06T00:00:00'),
+                data_vars=[
+                    VariableDescriptor(name='B01',
+                                       dtype='float64',
+                                       dims=('time', 'lat', 'lon')),
+                    VariableDescriptor(name='B02',
+                                       dtype='float64',
+                                       dims=('time', 'lat', 'lon'))
+                ],
+                dims={'bnds': 2, 'lat': 180, 'lon': 360, 'time': 5}
             ).to_dict(),
             dd.to_dict())
 
@@ -71,6 +83,17 @@ class MemoryCubeStoreTest(unittest.TestCase):
             DatasetDescriptor(
                 data_id='cube_1',
                 type_specifier=TYPE_SPECIFIER_CUBE,
+                bbox=(-90.0, -180.0, 90.0, 180.0),
+                time_range=('2010-01-01T00:00:00', '2010-01-06T00:00:00'),
+                data_vars=[
+                    VariableDescriptor(name='B01',
+                                       dtype='float64',
+                                       dims=('time', 'lat', 'lon')),
+                    VariableDescriptor(name='B02',
+                                       dtype='float64',
+                                       dims=('time', 'lat', 'lon'))
+                ],
+                dims={'bnds': 2, 'lat': 180, 'lon': 360, 'time': 5}
             ).to_dict(),
             dd.to_dict())
 
