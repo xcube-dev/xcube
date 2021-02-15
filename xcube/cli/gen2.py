@@ -65,8 +65,8 @@ def gen2(gen_config_path: str,
     }
 
     """
-    from xcube.core.gen2.generator import CubeGenerator
-    from xcube.core.gen2.error import CubeGeneratorError
+    from xcube.core.gen2 import CubeGenerator
+    from xcube.core.gen2 import CubeGeneratorError
     from xcube.core.store import DataStoreError
     try:
         CubeGenerator.from_file(gen_config_path,
