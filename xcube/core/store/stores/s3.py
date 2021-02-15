@@ -23,7 +23,7 @@ import os.path
 import uuid
 from typing import Optional, Iterator, Any, Tuple, List
 
-import geopandas as gpd
+import json
 import s3fs
 import xarray as xr
 
@@ -40,6 +40,7 @@ from xcube.core.store import find_data_opener_extensions
 from xcube.core.store import find_data_writer_extensions
 from xcube.core.store import get_data_accessor_predicate
 from xcube.core.store import get_type_specifier
+from xcube.core.store import new_data_descriptor
 from xcube.core.store import new_data_opener
 from xcube.core.store import new_data_writer
 from xcube.core.store.accessors.dataset import S3Mixin
@@ -59,12 +60,15 @@ _FILENAME_EXT_TO_ACCESSOR_ID_PARTS = {
     '.levels': (TYPE_SPECIFIER_MULTILEVEL_DATASET, 'levels', _STORAGE_ID),
 }
 
+_REGISTRY_FILE = 'registry.json'
+
 # TODO: write tests
 # TODO: complete docs
 # TODO: implement '*.levels' support
 # TODO: remove code duplication with ./directory.py and its tests.
 #   - Introduce a file-system-abstracting base class or mixin, see module "fsspec" and impl. "s3fs" as  used in Dask!
 #   - Introduce something like MultiOpenerStoreMixin/MultiWriterStoreMixin!
+
 
 class S3DataStore(DefaultSearchMixin, MutableDataStore):
     """
@@ -82,7 +86,12 @@ class S3DataStore(DefaultSearchMixin, MutableDataStore):
         self._s3, store_params = S3Mixin.consume_s3fs_params(store_params)
         self._bucket_name, store_params = S3Mixin.consume_bucket_name_param(store_params)
         assert_given(self._bucket_name, 'bucket_name')
-        assert_condition(not store_params, f'Unknown keyword arguments: {", ".join(store_params.keys())}')
+        assert_condition(not store_params,
+                         f'Unknown keyword arguments: {", ".join(store_params.keys())}')
+        self._registry = {}
+        if self._s3.exists(f'{self._bucket_name}/{_REGISTRY_FILE}'):
+            with self._s3.open(f'{self._bucket_name}/{_REGISTRY_FILE}', 'r') as registry_file:
+                self._registry = json.load(registry_file)
 
     def close(self):
         pass
@@ -123,6 +132,10 @@ class S3DataStore(DefaultSearchMixin, MutableDataStore):
                 yield item[first_index:], None
 
     def has_data(self, data_id: str, type_specifier: str = None) -> bool:
+        if data_id in self._registry:
+            descriptor = self._registry[data_id]
+            return not (type_specifier and not TypeSpecifier.normalize(type_specifier).
+                        is_satisfied_by(descriptor.type_specifier))
         if type_specifier:
             data_type_specifier, _, _ = self._get_accessor_id_parts(data_id)
             if not TypeSpecifier.parse(data_type_specifier).satisfies(type_specifier):
@@ -131,8 +144,18 @@ class S3DataStore(DefaultSearchMixin, MutableDataStore):
         return self._s3.exists(path)
 
     def describe_data(self, data_id: str, type_specifier: str = None) -> DataDescriptor:
-        # TODO: implement me
-        raise NotImplementedError()
+        if data_id in self._registry:
+            descriptor = self._registry[data_id]
+            if type_specifier and not TypeSpecifier.normalize(type_specifier).\
+                    is_satisfied_by(descriptor.type_specifier):
+                raise DataStoreError(f'Data "{data_id}" is not available as '
+                                     f'type "{type_specifier}". '
+                                     f'It is of type "{descriptor.type_specifier}".')
+            return descriptor
+        if not self.has_data(data_id, type_specifier):
+            if not type_specifier:
+                raise DataStoreError(f'Data "{data_id}" is not available.')
+            raise DataStoreError(f'Data "{data_id}" is not available as type "{type_specifier}".')
 
     def get_data_opener_ids(self, data_id: str = None, type_specifier: str = None) -> Tuple[str, ...]:
         if type_specifier:
@@ -223,12 +246,18 @@ class S3DataStore(DefaultSearchMixin, MutableDataStore):
             raise DataStoreError(f'{e}') from e
 
     def register_data(self, data_id: str, data: Any):
-        # TODO: implement me
-        pass
+        descriptor = new_data_descriptor(data_id, data)
+        self._registry[data_id] = descriptor
+        self._maybe_update_json_registry()
 
     def deregister_data(self, data_id: str):
-        # TODO: implement me
-        pass
+        self._registry.pop(data_id)
+        self._maybe_update_json_registry()
+
+    def _maybe_update_json_registry(self):
+        if self._s3.exists(f'{self._bucket_name}/{_REGISTRY_FILE}'):
+            with self._s3.open(f'{self._bucket_name}/{_REGISTRY_FILE}', 'w') as registry_file:
+                json.dump(self._registry, registry_file)
 
     ###############################################################
     # Implementation helpers

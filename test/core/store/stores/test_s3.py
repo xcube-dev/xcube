@@ -8,6 +8,7 @@ from xcube.core.new import new_cube
 from xcube.core.store import DataStoreError
 from xcube.core.store import TYPE_SPECIFIER_CUBE
 from xcube.core.store import TYPE_SPECIFIER_DATASET
+from xcube.core.store import TYPE_SPECIFIER_MULTILEVEL_DATASET
 from xcube.core.store import new_data_store
 from xcube.core.store.stores.s3 import S3DataStore
 from xcube.util.jsonschema import JsonObjectSchema
@@ -119,6 +120,20 @@ class S3DataStoreTest(S3Test):
         with self.assertRaises(ValueError) as cm:
             self.store.get_data_writer_ids(type_specifier='dataset[cube]')
         self.assertEqual("type_specifier must be one of ('dataset',)", f'{cm.exception}')
+
+    def test_data_registration(self):
+        self.store.s3.mkdir(BUCKET_NAME)
+        dataset = new_cube(variables=dict(a=4.1, b=7.4))
+        self.store.register_data(data_id='cube', data=dataset)
+        self.assertTrue(self.store.has_data(data_id='cube'))
+        self.assertTrue(self.store.has_data(data_id='cube',
+                                            type_specifier=TYPE_SPECIFIER_DATASET))
+        self.assertTrue(self.store.has_data(data_id='cube',
+                                            type_specifier=TYPE_SPECIFIER_CUBE))
+        self.assertFalse(self.store.has_data(data_id='cube',
+                                             type_specifier=TYPE_SPECIFIER_MULTILEVEL_DATASET))
+        self.store.deregister_data(data_id='cube')
+        self.assertFalse(self.store.has_data(data_id='cube'))
 
     @unittest.skip('Currently fails on travis but not locally, execute on demand only')
     def test_write_and_read_and_delete(self):
