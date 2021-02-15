@@ -52,15 +52,26 @@ def new_data_descriptor(data_id: str, data: Any, require: bool = False) -> 'Data
         variable_descriptors = []
         for data_var_name in data.data_vars.keys():
             data_var = data.data_vars[data_var_name]
-            variable_descriptors.append(VariableDescriptor(name=data_var_name,
-                                                           dtype=data_var.dtype,
-                                                           dims=data_var.dims,
-                                                           attrs=data_var.attrs))
+            variable_descriptors.append(
+                VariableDescriptor(name=data_var_name,
+                                   dtype=str(data_var.dtype),
+                                   dims=data_var.dims,
+                                   attrs=data_var.attrs if data_var.attrs else None))
+        bbox = None
+        if 'geospatial_lat_min' in data.attrs and 'geospatial_lon_min' in data.attrs \
+                and 'geospatial_lat_max' in data.attrs and 'geospatial_lon_max' in data.attrs:
+            bbox = (data.geospatial_lat_min, data.geospatial_lon_min,
+                                       data.geospatial_lat_max, data.geospatial_lon_max)
+        time_coverage_start = None
+        time_coverage_end = None
+        if 'time_coverage_start' in data.attrs:
+            time_coverage_start = data.time_coverage_start
+        if 'time_coverage_end' in data.attrs:
+            time_coverage_end = data.time_coverage_end
         return DatasetDescriptor(data_id=data_id,
                                  type_specifier=get_type_specifier(data),
-                                 bbox=(data.geospatial_lat_min, data.geospatial_lon_min,
-                                       data.geospatial_lat_max, data.geospatial_lon_max),
-                                 time_range=(data.time_coverage_start, data.time_coverage_end),
+                                 bbox=bbox,
+                                 time_range=(time_coverage_start, time_coverage_end),
                                  dims=dict(data.dims),
                                  data_vars=variable_descriptors)
     elif isinstance(data, MultiLevelDataset):
