@@ -1,5 +1,8 @@
 ## Changes in 0.6.2 (in development)
 
+* Added `coords` property to `DatasetDescriptor` class. 
+  The `data_vars` property of the `DatasetDescriptor` class is now a dictionary. 
+
 * Removed function `reproject_crs_to_wgs84()` and tests (#375) because  
   - it seemed to be no longer be working with GDAL 3.1+; 
   - there was no direct use in xcube itself;
@@ -16,6 +19,10 @@
   with observe_dask_progress('Writing dataset', 100):
       dataset.to_zarr(store)  
   ```
+* The xcube normalisation process, which ensures that a dataset meets the requirements 
+  of a cube, internally requested a lot of data, causing the process to be slow and
+  expensive in terms of memory consumption. This problem was resolved by avoiding to
+  read in these large amounts of data. (#392)
 
 ## Changes in 0.6.1
 
