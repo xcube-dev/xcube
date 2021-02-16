@@ -201,12 +201,8 @@ def _normalize_lon_360(ds: xr.Dataset) -> xr.Dataset:
     new_vars = dict()
     for var_name in var_names:
         var = ds[var_name]
-        if len(var.dims) >= 1 and var.dims[-1] == 'lon':
-            values = np.copy(var.values)
-            temp = np.copy(values[..., : lon_size_05])
-            values[..., : lon_size_05] = values[..., lon_size_05:]
-            values[..., lon_size_05:] = temp
-            new_var = xr.DataArray(values, dims=var.dims, attrs=var.attrs)
+        if 'lon' in var.dims:
+            new_var = var.roll(lon=lon_size_05, roll_coords=False)
             new_var.encoding.update(var.encoding)
             new_vars[var_name] = new_var
 
@@ -726,6 +722,8 @@ def _normalize_dim_order(ds: xr.Dataset) -> xr.Dataset:
                 ds = ds.copy()
                 copy_created = True
             ds[var_name] = var.transpose(*dim_names)
+            if var.encoding:
+                ds[var_name].encoding['chunks'] = ds[var_name].data.chunksize
 
     return ds
 
