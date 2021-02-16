@@ -49,14 +49,14 @@ from xcube.util.jsonschema import JsonObjectSchema
 def new_data_descriptor(data_id: str, data: Any, require: bool = False) -> 'DataDescriptor':
     if isinstance(data, xr.Dataset):
         # TODO: implement me: data -> DatasetDescriptor
-        variable_descriptors = []
+        variable_descriptors = {}
         for data_var_name in data.data_vars.keys():
             data_var = data.data_vars[data_var_name]
-            variable_descriptors.append(
+            variable_descriptors[data_var_name] = \
                 VariableDescriptor(name=data_var_name,
                                    dtype=str(data_var.dtype),
                                    dims=data_var.dims,
-                                   attrs=data_var.attrs if data_var.attrs else None))
+                                   attrs=data_var.attrs if data_var.attrs else None)
         bbox = None
         if 'geospatial_lat_min' in data.attrs and 'geospatial_lon_min' in data.attrs \
                 and 'geospatial_lat_max' in data.attrs and 'geospatial_lon_max' in data.attrs:
