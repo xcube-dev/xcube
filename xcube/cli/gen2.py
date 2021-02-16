@@ -23,14 +23,24 @@ import click
 
 
 @click.command(name="gen2", hidden=True)
-@click.argument('gen_config_path', type=str, required=False, metavar='GEN_CONFIG')
-@click.option('--store-conf', '-s', 'store_configs_path', metavar='STORE_CONFIGS',
-              help='A JSON file that maps store names to parameterized stores.')
+@click.argument('gen_config_path',
+                type=str,
+                required=False,
+                metavar='GEN_CONFIG')
+@click.option('--stores', 'stores_config_path',
+              metavar='STORES_CONFIG',
+              help='A JSON or YAML file that maps store names to '
+                   'parameterized data stores.')
+@click.option('--service', 'service_config_path',
+              metavar='SERVICE_CONFIG',
+              help='A JSON or YAML file that provides the configuration for an'
+                   ' xcube Generator Service.')
 @click.option('--verbose', '-v',
               is_flag=True,
               help='Control amount of information dumped to stdout.')
 def gen2(gen_config_path: str,
-         store_configs_path: str = None,
+         stores_config_path: str = None,
+         service_config_path: str = None,
          verbose: bool = False):
     """
     Generator tool for data cubes.
@@ -42,7 +52,7 @@ def gen2(gen_config_path: str,
     (file extensions ".json" or ".yaml"). If the GEN_CONFIG file argument is omitted, it is expected that
     the Cube generation request is piped as a JSON string.
 
-    STORE_CONFIGS is a path to a JSON file (file extensions ".json") with data store configurations.
+    STORE_CONFIGS is a path to a JSON or YAML file with xcube data store configurations.
     It is a mapping of arbitrary store names to configured data stores. Entries are dictionaries
     that have a mandatory "store_id" property which is a name of a registered xcube data store.
     The optional "store_params" property may define data store specific parameters.
@@ -64,14 +74,25 @@ def gen2(gen_config_path: str,
         }
     }
 
+    SERVICE_CONFIG is a path to a JSON or YAML file with an xcube Generator
+    service configuration. Here is a JSON example:
+
+    \b
+    {
+        "endpoint_url": "",
+        "key": "ALDLPUIOSD5NHS3103",
+        "secret": "lfaolb3klv904kj23lkdfsjkf430894341"
+    }
+
     """
     from xcube.core.gen2 import CubeGenerator
     from xcube.core.gen2 import CubeGeneratorError
     from xcube.core.store import DataStoreError
     try:
         CubeGenerator.from_file(gen_config_path,
-                                store_configs_path=store_configs_path,
-                                verbose=verbose).run()
+                                stores_config_path=stores_config_path,
+                                service_config_path=service_config_path,
+                                verbose=verbose).generate_cube()
     except (CubeGeneratorError, DataStoreError) as e:
         raise click.ClickException(f'{e}') from e
 

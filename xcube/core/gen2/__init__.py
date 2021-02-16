@@ -26,3 +26,4 @@ from .config import InputConfig
 from .config import OutputConfig
 from .error import CubeGeneratorError
 from .generator import CubeGenerator
+from .generator import LocalCubeGenerator
