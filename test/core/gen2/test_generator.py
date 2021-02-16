@@ -5,12 +5,9 @@ import requests_mock
 import xarray as xr
 import yaml
 
-from test.s3test import MOTO_SERVER_ENDPOINT_URL
-from test.s3test import S3Test
 from xcube.core.dsio import rimraf
 from xcube.core.gen2.generator import CubeGenerator
 from xcube.core.new import new_cube
-from xcube.core.store import DataStorePool
 from xcube.core.store.stores.memory import MemoryDataStore
 
 
