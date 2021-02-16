@@ -65,15 +65,14 @@ def gen2(gen_config_path: str,
     }
 
     """
-    # noinspection PyProtectedMember
-    from xcube.core.gen2 import main
-    from xcube.core.gen2 import GenError
+    from xcube.core.gen2 import CubeGenerator
+    from xcube.core.gen2 import CubeGeneratorError
     from xcube.core.store import DataStoreError
     try:
-        main(gen_config_path,
-             store_configs_path=store_configs_path,
-             verbose=verbose)
-    except (GenError, DataStoreError) as e:
+        CubeGenerator.from_file(gen_config_path,
+                                store_configs_path=store_configs_path,
+                                verbose=verbose).run()
+    except (CubeGeneratorError, DataStoreError) as e:
         raise click.ClickException(f'{e}') from e
 
 

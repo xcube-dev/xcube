@@ -19,10 +19,19 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-from .config import CallbackConfig
-from .config import CubeConfig
-from .config import CubeGeneratorConfig
-from .config import InputConfig
-from .config import OutputConfig
-from .error import CubeGeneratorError
-from .generator import CubeGenerator
+from abc import ABC, abstractmethod
+from typing import Sequence
+
+import xarray as xr
+
+
+class CubeProcessor(ABC):
+    @abstractmethod
+    def process_cube(self, cube: xr.Dataset) -> xr.Dataset:
+        """Process given *cube* into new cube."""
+
+
+class CubesProcessor(ABC):
+    @abstractmethod
+    def process_cubes(self, cubes: Sequence[xr.Dataset]) -> xr.Dataset:
+        """Process given *cubes* into new cube."""

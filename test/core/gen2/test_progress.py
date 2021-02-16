@@ -3,7 +3,7 @@ from unittest.mock import patch
 
 import requests_mock
 
-from xcube.core.gen2.config import GenConfig
+from xcube.core.gen2.config import CubeGeneratorConfig
 from xcube.core.gen2.progress import ApiProgressCallbackObserver
 from xcube.core.gen2.progress import TerminalProgressCallbackObserver
 from xcube.core.gen2.progress import _ThreadedProgressObserver
@@ -26,7 +26,7 @@ class TestThreadedProgressObservers(unittest.TestCase):
                                         access_token='dfsvdfsv'))
 
     def setUp(self) -> None:
-        self._request = GenConfig.from_dict(self.REQUEST)
+        self._request = CubeGeneratorConfig.from_dict(self.REQUEST)
         self._callback_config = self._request.callback_config
 
     @requests_mock.Mocker()

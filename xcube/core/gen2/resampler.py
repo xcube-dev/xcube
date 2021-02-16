@@ -19,32 +19,16 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-from typing import List
-
 import xarray as xr
 
 from xcube.core.gen2.config import CubeConfig
-from xcube.util.progress import observe_progress
+from .processor import CubeProcessor
 
 
-# noinspection PyUnusedLocal
-def resample_cube(cube: xr.Dataset,
-                  cube_config: CubeConfig):
-    # TODO: implement me
-    return cube
+class CubeResampler(CubeProcessor):
+    def __init__(self, cube_config: CubeConfig):
+        self._cube_config = cube_config
 
-
-def resample_and_merge_cubes(cubes: List[xr.Dataset],
-                             cube_config: CubeConfig) -> xr.Dataset:
-    with observe_progress('Resampling cube(s)', len(cubes) + 1) as progress:
-        resampled_cubes = []
-        for cube in cubes:
-            resampled_cube = resample_cube(cube, cube_config)
-            resampled_cubes.append(resampled_cube)
-            progress.worked(1)
-        if len(resampled_cubes) > 1:
-            result_cube = xr.merge(resampled_cubes)
-        else:
-            result_cube = resampled_cubes[0]
-        progress.worked(1)
-        return result_cube
+    def process_cube(self, cube: xr.Dataset) -> xr.Dataset:
+        # TODO: implement me
+        return cube
