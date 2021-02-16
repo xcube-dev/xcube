@@ -30,7 +30,7 @@ import jsonschema
 import pyproj
 import yaml
 
-from xcube.core.gen2.error import GenError
+from xcube.core.gen2.error import CubeGeneratorError
 from xcube.util.assertions import assert_condition
 from xcube.util.assertions import assert_given
 from xcube.util.assertions import assert_instance
@@ -233,7 +233,7 @@ class CubeConfig:
         )
 
 
-class GenConfig:
+class CubeGeneratorConfig:
     def __init__(self,
                  input_config: InputConfig = None,
                  input_configs: Sequence[InputConfig] = None,
@@ -282,15 +282,15 @@ class GenConfig:
         return d
 
     @classmethod
-    def from_dict(cls, request_dict: Dict) -> 'GenConfig':
+    def from_dict(cls, request_dict: Dict) -> 'CubeGeneratorConfig':
         """Create new instance from a JSON-serializable dictionary"""
         try:
             return cls.get_schema().from_instance(request_dict)
         except jsonschema.exceptions.ValidationError as e:
-            raise GenError(f'{e}') from e
+            raise CubeGeneratorError(f'{e}') from e
 
     @classmethod
-    def from_file(cls, request_file: Optional[str], verbose=False) -> 'GenConfig':
+    def from_file(cls, request_file: Optional[str], verbose=False) -> 'CubeGeneratorConfig':
         """Create new instance from a JSON file, or YAML file, or JSON passed via stdin."""
         gen_config_dict = cls._load_gen_config_file(request_file, verbose=verbose)
         if verbose:
@@ -301,7 +301,7 @@ class GenConfig:
     def _load_gen_config_file(cls, gen_config_file: Optional[str], verbose=False) -> Dict:
 
         if gen_config_file is not None and not os.path.exists(gen_config_file):
-            raise GenError(f'Cube generator configuration "{gen_config_file}" not found.')
+            raise CubeGeneratorError(f'Cube generator configuration "{gen_config_file}" not found.')
 
         try:
             if gen_config_file is None:
@@ -316,9 +316,9 @@ class GenConfig:
                     else:
                         return yaml.safe_load(fp)
         except BaseException as e:
-            raise GenError(f'Error loading generator configuration "{gen_config_file}": {e}') from e
+            raise CubeGeneratorError(f'Error loading generator configuration "{gen_config_file}": {e}') from e
 
-        raise GenError(f'Missing cube generator configuration.')
+        raise CubeGeneratorError(f'Missing cube generator configuration.')
 
 
 def _to_dict(self, keys: Tuple[str, ...]) -> Dict[str, Any]:

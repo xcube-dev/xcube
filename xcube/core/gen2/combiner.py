@@ -19,10 +19,35 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-from .config import CallbackConfig
-from .config import CubeConfig
-from .config import CubeGeneratorConfig
-from .config import InputConfig
-from .config import OutputConfig
-from .error import CubeGeneratorError
-from .generator import CubeGenerator
+from typing import Sequence
+
+import xarray as xr
+
+from xcube.core.gen2.config import CubeConfig
+from xcube.util.progress import observe_progress
+from .processor import CubesProcessor
+from .resampler import CubeResampler
+
+
+class CubesCombiner(CubesProcessor):
+
+    def __init__(self, cube_config: CubeConfig):
+        self._cube_config = cube_config
+
+    def process_cubes(self, cubes: Sequence[xr.Dataset]) -> xr.Dataset:
+        with observe_progress('Resampling cube(s)', len(cubes) + 1) as progress:
+            resampled_cubes = []
+            for cube in cubes:
+                resampled_cube = self._resample_cube(cube)
+                resampled_cubes.append(resampled_cube)
+                progress.worked(1)
+            if len(resampled_cubes) > 1:
+                result_cube = xr.merge(resampled_cubes)
+            else:
+                result_cube = resampled_cubes[0]
+            progress.worked(1)
+            return result_cube
+
+    def _resample_cube(self, cube: xr.Dataset):
+        cube_resampler = CubeResampler(self._cube_config)
+        return cube_resampler.process_cube(cube)
