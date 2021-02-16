@@ -160,6 +160,8 @@ annotations.
    If a date without a time is given as the end time,
    it is interpreted as 24:00 on the specified date
    (identical with 00:00 on the date following the specified date).
+   If the end time is specified as `None`,
+   it is interpreted as the current time.
    
  - `time_period: str`  
    The requested temporal aggregation period for the data. See section

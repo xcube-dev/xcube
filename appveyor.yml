@@ -39,13 +39,14 @@ build_script:
   # Install mamba as a dramatically faster conda replacement. Specifying a
   # fixed version makes the installation of mamba itself much faster, and
   # avoids potential breakage due to changes in mamba behaviour.
-  - conda install -c conda-forge mamba=0.7.3
+  - conda install -c conda-forge mamba=0.7.14
 
   # Environments created by mamba can't be referenced by name from conda
   # (presumably a bug), so we use an explicit path instead.
   - mamba env create --prefix $HOME/mamba-env --file environment.yml
   - conda activate $HOME/mamba-env
   - conda list
+  - env
   - python setup.py install
 
   # Setting NUMBA_DISABLE_JIT=1 makes unit tests way too slow, so we accept less code coverage here

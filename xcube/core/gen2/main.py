@@ -19,12 +19,12 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-from xcube.cli._gen2.genconfig import GenConfig
-from xcube.cli._gen2.open import open_cubes
-from xcube.cli._gen2.progress import ApiProgressCallbackObserver
-from xcube.cli._gen2.progress import ConsoleProgressObserver
-from xcube.cli._gen2.resample import resample_and_merge_cubes
-from xcube.cli._gen2.write import write_cube
+from xcube.core.gen2.config import GenConfig
+from xcube.core.gen2.open import open_cubes
+from xcube.core.gen2.progress import ApiProgressCallbackObserver
+from xcube.core.gen2.progress import ConsoleProgressObserver
+from xcube.core.gen2.resample import resample_and_merge_cubes
+from xcube.core.gen2.write import write_cube
 from xcube.core.store import DataStorePool
 from xcube.util.progress import observe_progress
 

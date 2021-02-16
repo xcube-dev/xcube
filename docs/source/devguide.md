@@ -228,15 +228,15 @@ Make sure your change
    1. others
 1. Make sure issue is assigned to you, if unclear agree with team first.
 1. Add issue label "in progress".
-1. Create development branch named "<developer>-<issue>-<title>" 
-   or "<developer>-<issue>-<title>-fix" (see below).
+1. Create development branch named `"<developer>-<issue>-<title>"` 
+   (see [below](#development-branches)).
 1. Develop, having in mind the checklists and implementation hints
    above.
    1. In your first commit, refer the issue so it will appear as link 
       in the issue history
    1. Develop, test, and push to the remote branch as desired. 
    1. In your last commit, utilize checklists above. 
-      (You can include the line "closes #<issue>" in your commit message
+      (You can include the line "closes #`<issue>`" in your commit message
       to auto-close the issue once the PR is merged.)
 1. Create PR if build servers succeed on your branch. If not, fix issue
    first.  
@@ -249,7 +249,7 @@ Make sure your change
 1. If the PR is only partly solving an issue:
    1. Make sure the issue contains a to-do list (checkboxes) to complete
       the issue.
-   1. Do not include the line "closes #<issue>" in your last commit
+   1. Do not include the line "closes #`<issue>`" in your last commit
       message.
    1. Add "relates to issue#" in PR.
    1. Make sure to check the corresponding to-do items (checkboxes) 
@@ -259,54 +259,123 @@ Make sure your change
 
 ## Branches and Releases
 
-### Target Branches
+### Target Branch
 
-* The `master` branch contains latest developments, including new 
-  features and fixes. It is used to generate `<major>.<minor>.0` 
-  releases. That is, either `<major>` or `<minor>` is increased.
-* The `<major>.<minor>.x` branch is the maintenance branch for a 
-  former release tagged `v<major>.<minor>.0`. It is used to generate
-  maintenance `<major>.<minor>.<fix>` releases. That is, only `<fix>` 
-  is increased. Most changes to `<major>.<minor>.x` branch must 
-  obviously be merged into `master` branch too.
-  
-The software version string on all active branches is always 
-`<major>.<minor>.<micro>.dev<n>`. Only for a release, we remove the 
-`.dev<n>` suffix.
+The `master` branch contains latest developments, including new features and fixes. 
+Its software version string is always `<major>.<minor>.<micro>.dev<n>`.
+The branch is used to generate major, minor, or maintenance releases.
+That is, either `<major>`, `<minor>`, or `<fix>` is increased.
+Before a release, the last thing we do is to remove the `.dev<n>` suffix, 
+after a release, the first thing we do is to increase the `micro` version and 
+add the `.dev<n>` suffix.  
 
 ### Development Branches
 
-Development branches that target the `<major>.<minor>.x` branch 
-should indicate that by using the suffix `-fix`, 
-e.g. `coolguy-7633-div_by_zero_in_mean-fix`. After a pull request,
-the development branch will first be merged into the 
-`<major>.<minor>.x` branch then into `master`.
+Development branches should be named `<developer>-<issue>-<title>` where
+* `<developer>` is the github name of the code author
+* `<issue>` is the number of the issue in the github issue tracker that is targeted
+  by the works on this branch
+* `<title>` is either the name of the issue or an abbreviated version of it
 
 ## Release Process
 
-### xcube
+### Release on GitHub
+
+This describes the release process for `xcube`. For a plugin release, 
+you need to adjust the paths accordingly. 
 
 * Check issues in progress, close any open issues that have been fixed.
+* Make sure that all unit tests pass and that test coverage is 100% 
+  (or as near to 100% as practicable).
 * In `xcube/version.py` remove the `.dev` suffix from version name.
-* Make sure `CHANGES.md` is complete. Remove the suffix ` (in development)` from the last version headline.
+* Adjust version in `Dockerfile`  accordingly.
+* Make sure `CHANGES.md` is complete. Remove the suffix ` (in development)` 
+  from the last version headline.
 * Push changes to either master or a new maintenance branch (see above).
 * Await results from Travis CI and ReadTheDocs builds. If broken, fix.
-* Goto [xcube/releases](https://github.com/dcs4cop/xcube/releases) and press button "Draft a new Release".
+* Go to [xcube/releases](https://github.com/dcs4cop/xcube/releases) 
+  and press button "Draft a new Release".
   - Tag version is: `v${version}` (with a "v" prefix)
-  - Release title is: `${version}` 
+  - Release title is: `${version}` (without a "v" prefix) 
   - Paste latest changes from `CHANGES.md` into field "Describe this release"
   - Press "Publish release" button
 * After the release on GitHub, rebase sources, if the branch was `master`, 
   create a new maintenance branch (see above)
-* In `xcube/version.py` increase version number and append a `.dev0` suffix to version name so 
-  that it is still PEP-440 compatible.
+* In `xcube/version.py` increase version number and append a `.dev0` suffix 
+  to the version name so that it is still PEP-440 compatible.
+* Adjust version in `Dockerfile` accordingly.
 * In `CHANGES.md` add a new version headline and attach ` (in development)` to it.
 * Push changes to either master or a new maintenance branch (see above).
 * Activate new doc version on ReadTheDocs. 
 
-Go through the same procedure for all xcube plugin packages dependent on this version of xcube.
+Go through the same procedure for all xcube plugin packages 
+dependent on this version of xcube.
 
-TODO: Describe deployment to xcube conda package after release
+### Release on Conda-Forge
+
+These instructions are based on the documentation at 
+[conda-forge](https://conda-forge.org/docs/maintainer/updating_pkgs.html).
+
+Conda-forge packages are produced from a github feedstock repository belonging 
+to the conda-forge organization. A repository's feedstock is usually located at 
+`https://github.com/conda-forge/<repo-name>-feedstock`, e.g., 
+https://github.com/conda-forge/xcube-feedstock.
+The package is updated by 
+* forking the repository
+* creating a new branch for the changes
+* creating a pull request to merge this branch into conda-forge's feedstock repository 
+  (this is done automatically if the build number is 0). 
+
+The first of these steps is usually already done. 
+You may find forks at `https://github.com/dcs4cop/<repo-name>-feedstock` . 
+
+In detail, the steps are:
+
+1. Update the dcs4cop fork of the feedstock repository, if it's not already 
+   up to date with conda-forge's upstream repository.
+
+1. Clone the repository locally and create a new branch. The name of the branch 
+   is not strictly prescribed, but it's sensible to choose an informative name like 
+   `update_0_5_3`.
+
+1. In case the build number is 0, a bot will render the feedstock during the pull request.
+   Otherwise, conduct the following steps: 
+   Rerender the feedstock using conda-smithy. This updates common conda-forge 
+   feedstock files. It's probably easiest to install conda-smithy in a 
+   fresh environment for this:
+
+   `conda install -c conda-forge conda-smithy`
+    
+   `conda smithy rerender -c auto`
+
+1. Update `recipe/meta.yaml` for the new version. 
+   Mainly this will involve the following steps:
+
+   1. Update the value of the version variable (or, if the version number 
+   has not changed, increment the build number).
+   
+   1. If the version number has changed, ensure that the build number is set to 0.
+
+   1. Update the sha256 hash of the source archive prepared by GitHub.
+
+   1. If the dependencies have changed, update the list of dependencies 
+   in the `-run` subsection to match those in the environment.yml file.
+
+1. Commit the changes and push them to GitHub. 
+   A pull request at the feedstock repository on conda-forge will be automatically 
+   created by a bot if the build number is 0.
+   If it is higher, you will have to create the pull request yourself.
+
+1. Once conda-forge's automated checks have passed, merge the pull request.
+
+1. Merge the newly-merged changes from the master branch on conda-forge back to 
+   the master branch of the dcs4cop fork.
+   This step is not necessarily needed for the release, but it helps to avoid messy
+   parallel branches.
+
+Once the pull request has been merged, the updated package should usually become 
+available from conda-forge within a couple of hours.
+
 TODO: Describe deployment of xcube Docker image after release
 
 If any changes apply to `xcube serve` and the xcube Web API:

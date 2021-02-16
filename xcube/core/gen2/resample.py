@@ -1,5 +1,5 @@
 # The MIT License (MIT)
-# Copyright (c) 2020 by the xcube development team and contributors
+# Copyright (c) 2021 by the xcube development team and contributors
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of
 # this software and associated documentation files (the "Software"), to deal in
@@ -23,7 +23,7 @@ from typing import List
 
 import xarray as xr
 
-from xcube.cli._gen2.genconfig import CubeConfig
+from xcube.core.gen2.config import CubeConfig
 from xcube.util.progress import observe_progress
 
 
@@ -42,6 +42,9 @@ def resample_and_merge_cubes(cubes: List[xr.Dataset],
             resampled_cube = resample_cube(cube, cube_config)
             resampled_cubes.append(resampled_cube)
             progress.worked(1)
-        merged_cube = xr.merge(resampled_cubes) if len(resampled_cubes) > 1 else resampled_cubes[0]
+        if len(resampled_cubes) > 1:
+            result_cube = xr.merge(resampled_cubes)
+        else:
+            result_cube = resampled_cubes[0]
         progress.worked(1)
-        return merged_cube
+        return result_cube

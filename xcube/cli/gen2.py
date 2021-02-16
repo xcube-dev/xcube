@@ -22,7 +22,7 @@
 import click
 
 
-@click.command(name="gen2")
+@click.command(name="gen2", hidden=True)
 @click.argument('gen_config_path', type=str, required=False, metavar='GEN_CONFIG')
 @click.option('--store-conf', '-s', 'store_configs_path', metavar='STORE_CONFIGS',
               help='A JSON file that maps store names to parameterized stores.')
@@ -66,8 +66,8 @@ def gen2(gen_config_path: str,
 
     """
     # noinspection PyProtectedMember
-    from xcube.cli._gen2.main import main
-    from xcube.cli._gen2.error import GenError
+    from xcube.core.gen2 import main
+    from xcube.core.gen2 import GenError
     from xcube.core.store import DataStoreError
     try:
         main(gen_config_path,

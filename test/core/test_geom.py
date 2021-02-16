@@ -2,6 +2,7 @@ import unittest
 
 import numpy as np
 import shapely.geometry
+import shapely.wkt
 import xarray as xr
 
 from xcube.core.chunk import chunk_dataset
@@ -215,8 +216,9 @@ class DatasetGeometryTest(unittest.TestCase):
 
     def _assert_saved_geometry_wkt_is_fine(self, dataset, geometry_wkt_name):
         self.assertIn(geometry_wkt_name, dataset.attrs)
-        self.assertEqual('POLYGON ((-33.75 -33.75, 33.75 33.75, 101.25 -33.75, -33.75 -33.75))',
-                         dataset.attrs[geometry_wkt_name])
+        actual = shapely.wkt.loads(dataset.attrs[geometry_wkt_name])
+        expected = shapely.wkt.loads('POLYGON ((-33.75 -33.75, 33.75 33.75, 101.25 -33.75, -33.75 -33.75))')
+        self.assertTrue(actual.difference(expected).is_empty)
 
 
 class GetGeometryMaskTest(unittest.TestCase):

@@ -2,7 +2,16 @@
 
 * Added `coords` property to `DatasetDescriptor` class. 
   The `data_vars` property of the `DatasetDescriptor` class is now a dictionary. 
+
+* Removed function `reproject_crs_to_wgs84()` and tests (#375) because  
+  - it seemed to be no longer be working with GDAL 3.1+; 
+  - there was no direct use in xcube itself;
+  - xcube plans to get rid of GDAL dependencies.
+  
+* CLI tool `xcube gen2` may now also ingest non-cube datasets.
+
 * Fixed unit tests broken by accident. (#396)
+
 * Added new context manager `xcube.util.observe_dask_progress()` that can be used
   to observe tasks that known to be dominated by Dask computations: 
    
@@ -10,10 +19,16 @@
   with observe_dask_progress('Writing dataset', 100):
       dataset.to_zarr(store)  
   ```
+* The xcube normalisation process, which ensures that a dataset meets the requirements 
+  of a cube, internally requested a lot of data, causing the process to be slow and
+  expensive in terms of memory consumption. This problem was resolved by avoiding to
+  read in these large amounts of data. (#392)
 
 ## Changes in 0.6.1
 
-All changes relate to maintenance of xcube's Python environment requirements in `envrionment.yml`:
+* Updated developer guide (#382)
+
+Changes relating to maintenance of xcube's Python environment requirements in `envrionment.yml`:
 
 * Removed explicit `blas` dependency (which required MKL as of `blas =*.*=mkl`) 
   for better interoperability with existing environments.  

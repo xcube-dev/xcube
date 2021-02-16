@@ -1,9 +1,9 @@
 import unittest
 
-from xcube.cli._gen2.genconfig import CubeConfig
-from xcube.cli._gen2.genconfig import GenConfig
-from xcube.cli._gen2.genconfig import InputConfig
-from xcube.cli._gen2.genconfig import OutputConfig
+from xcube.core.gen2.config import CubeConfig
+from xcube.core.gen2.config import GenConfig
+from xcube.core.gen2.config import InputConfig
+from xcube.core.gen2.config import OutputConfig
 
 
 class InputConfigTest(unittest.TestCase):
@@ -14,8 +14,8 @@ class InputConfigTest(unittest.TestCase):
         self.assertIsInstance(input_config, InputConfig)
         self.assertEqual('sentinelhub', input_config.store_id)
         self.assertEqual('S2L2A', input_config.data_id)
-        self.assertEqual({}, input_config.store_params)
-        self.assertEqual({}, input_config.open_params)
+        self.assertEqual(None, input_config.store_params)
+        self.assertEqual(None, input_config.open_params)
 
 
 class OutputConfigTest(unittest.TestCase):
@@ -26,8 +26,8 @@ class OutputConfigTest(unittest.TestCase):
         self.assertIsInstance(output_config, OutputConfig)
         self.assertEqual('s3', output_config.store_id)
         self.assertEqual('CHL.zarr', output_config.data_id)
-        self.assertEqual({}, output_config.store_params)
-        self.assertEqual({}, output_config.write_params)
+        self.assertEqual(None, output_config.store_params)
+        self.assertEqual(None, output_config.write_params)
 
 
 class CubeConfigTest(unittest.TestCase):
