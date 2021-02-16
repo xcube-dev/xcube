@@ -83,14 +83,12 @@ class MemoryCubeStoreTest(unittest.TestCase):
                 type_specifier=TYPE_SPECIFIER_CUBE,
                 bbox=(-90.0, -180.0, 90.0, 180.0),
                 time_range=('2010-01-01T00:00:00', '2010-01-06T00:00:00'),
-                data_vars=[
-                    VariableDescriptor(name='B01',
-                                       dtype='float64',
-                                       dims=('time', 'lat', 'lon')),
-                    VariableDescriptor(name='B02',
-                                       dtype='float64',
-                                       dims=('time', 'lat', 'lon'))
-                ],
+                data_vars={'B01': VariableDescriptor(name='B01',
+                                                     dtype='float64',
+                                                     dims=('time', 'lat', 'lon')),
+                           'B02': VariableDescriptor(name='B02',
+                                                     dtype='float64',
+                                                     dims=('time', 'lat', 'lon'))},
                 dims={'bnds': 2, 'lat': 180, 'lon': 360, 'time': 5}
             ).to_dict(),
             dd.to_dict())
