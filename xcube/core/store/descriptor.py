@@ -107,7 +107,6 @@ class DataDescriptor:
                               type_specifier=d['type_specifier'],
                               crs=d.get('crs', None),
                               bbox=d.get('bbox', None),
-                              spatial_res=d.get('spatial_res', None),
                               time_range=d.get('time_range', None),
                               time_period=d.get('time_period', None),
                               open_params_schema=d.get('open_params_schema', None))

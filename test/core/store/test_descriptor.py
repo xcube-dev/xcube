@@ -50,7 +50,6 @@ class DataDescriptorTest(unittest.TestCase):
             type_specifier='tsr',
             crs='EPSG:9346',
             bbox=(10., 20., 30., 40.),
-            spatial_res=20.,
             time_range=('2017-06-05', '2017-06-27'),
             time_period='daily',
             open_params_schema=dict(
@@ -70,7 +69,6 @@ class DataDescriptorTest(unittest.TestCase):
         self.assertEqual('tsr', descriptor.type_specifier)
         self.assertEqual('EPSG:9346', descriptor.crs)
         self.assertEqual((10., 20., 30., 40.), descriptor.bbox)
-        self.assertEqual(20., descriptor.spatial_res)
         self.assertEqual(('2017-06-05', '2017-06-27'), descriptor.time_range)
         self.assertEqual('daily', descriptor.time_period)
         self.assertEqual('object', descriptor.open_params_schema.get('type', None))
