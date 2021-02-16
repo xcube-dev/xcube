@@ -2,9 +2,96 @@ import unittest
 
 import numpy as np
 
+from xcube.core.store.descriptor import DataDescriptor
 from xcube.core.store.descriptor import DatasetDescriptor
+from xcube.core.store.descriptor import GeoDataFrameDescriptor
 from xcube.core.store.descriptor import VariableDescriptor
 from xcube.core.store.typespecifier import TypeSpecifier
+
+
+class DataDescriptorTest(unittest.TestCase):
+
+    def test_from_dict_no_data_id(self):
+        with self.assertRaises(ValueError):
+            descriptor_dict = dict()
+            DataDescriptor.from_dict(descriptor_dict)
+
+    def test_from_dict_no_type_specifier(self):
+        with self.assertRaises(ValueError):
+            descriptor_dict = dict(data_id='id')
+            DataDescriptor.from_dict(descriptor_dict)
+
+    def test_from_dict_random_type_specifier(self):
+        descriptor_dict = dict(data_id='xyz', type_specifier='tsr')
+        descriptor = DataDescriptor.from_dict(descriptor_dict)
+        self.assertIsNotNone(descriptor)
+        self.assertEqual('xyz', descriptor.data_id)
+        self.assertEqual('tsr', descriptor.type_specifier)
+
+    def test_from_dict_dataset_type_specifier(self):
+        descriptor_dict = dict(data_id='xyz', type_specifier='dataset')
+        descriptor = DataDescriptor.from_dict(descriptor_dict)
+        self.assertIsNotNone(descriptor)
+        self.assertTrue(DatasetDescriptor, type(descriptor))
+        self.assertEqual('xyz', descriptor.data_id)
+        self.assertEqual('dataset', descriptor.type_specifier)
+
+    def test_from_dict_geodataframe_type_specifier(self):
+        descriptor_dict = dict(data_id='xyz', type_specifier='geodataframe')
+        descriptor = DataDescriptor.from_dict(descriptor_dict)
+        self.assertIsNotNone(descriptor)
+        self.assertTrue(GeoDataFrameDescriptor, type(descriptor))
+        self.assertEqual('xyz', descriptor.data_id)
+        self.assertEqual('geodataframe', descriptor.type_specifier)
+
+    def test_from_dict_full(self):
+        descriptor_dict = dict(
+            data_id='xyz',
+            type_specifier='tsr',
+            crs='EPSG:9346',
+            bbox=(10., 20., 30., 40.),
+            spatial_res=20.,
+            time_range=('2017-06-05', '2017-06-27'),
+            time_period='daily',
+            open_params_schema=dict(
+                type="object",
+                properties=dict(
+                    variable_names=dict(
+                        type='array',
+                        items=dict(
+                            type='string')
+                    )
+                )
+            )
+        )
+        descriptor = DataDescriptor.from_dict(descriptor_dict)
+        self.assertIsNotNone(descriptor)
+        self.assertEqual('xyz', descriptor.data_id)
+        self.assertEqual('tsr', descriptor.type_specifier)
+        self.assertEqual('EPSG:9346', descriptor.crs)
+        self.assertEqual((10., 20., 30., 40.), descriptor.bbox)
+        self.assertEqual(20., descriptor.spatial_res)
+        self.assertEqual(('2017-06-05', '2017-06-27'), descriptor.time_range)
+        self.assertEqual('daily', descriptor.time_period)
+        self.assertEqual('object', descriptor.open_params_schema.get('type', None))
+
+    def test_to_dict(self):
+        descriptor = DatasetDescriptor(data_id='xyz',
+                                       type_specifier=TypeSpecifier('dataset', flags={'cube'}),
+                                       crs='EPSG:9346',
+                                       bbox=(10., 20., 30., 40.),
+                                       spatial_res=20.,
+                                       time_range=('2017-06-05', '2017-06-27'),
+                                       time_period='daily')
+        descriptor_dict = descriptor.to_dict()
+        self.assertEqual(dict(data_id='xyz',
+                              type_specifier='dataset[cube]',
+                              crs='EPSG:9346',
+                              bbox=(10., 20., 30., 40.),
+                              spatial_res=20.,
+                              time_range=('2017-06-05', '2017-06-27'),
+                              time_period='daily'),
+                         descriptor_dict)
 
 
 class DatasetDescriptorTest(unittest.TestCase):
