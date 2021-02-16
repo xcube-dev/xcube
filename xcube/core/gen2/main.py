@@ -19,7 +19,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-from xcube.core.gen2.genconfig import GenConfig
+from xcube.core.gen2.config import GenConfig
 from xcube.core.gen2.open import open_cubes
 from xcube.core.gen2.progress import ApiProgressCallbackObserver
 from xcube.core.gen2.progress import ConsoleProgressObserver

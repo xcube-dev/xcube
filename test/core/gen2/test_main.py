@@ -8,7 +8,7 @@ import yaml
 from test.s3test import MOTO_SERVER_ENDPOINT_URL
 from test.s3test import S3Test
 
-from xcube.core.gen2 import main
+from xcube.core.gen2.main import main
 from xcube.core.dsio import rimraf
 from xcube.core.new import new_cube
 from xcube.core.store import DataStorePool
@@ -101,10 +101,12 @@ class S3MainTest(S3Test):
             json.dump(S3MainTest.S3_REQUEST, fp)
         with open('_s3_store_configs.json', 'w') as fp:
             json.dump(S3MainTest.STORE_CONFIGS, fp)
+        self.saved_cube_memory = MemoryDataStore.get_global_data_dict().copy()
 
     def tearDown(self) -> None:
         rimraf('_s3_request.json')
         rimraf('_s3_store_configs.json')
+        MemoryDataStore.replace_global_data_dict(self.saved_cube_memory)
 
     @requests_mock.Mocker()
     def test_json(self, m):

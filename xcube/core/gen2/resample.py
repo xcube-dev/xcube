@@ -23,7 +23,7 @@ from typing import List
 
 import xarray as xr
 
-from xcube.core.gen2 import CubeConfig
+from xcube.core.gen2.config import CubeConfig
 from xcube.util.progress import observe_progress
 
 
