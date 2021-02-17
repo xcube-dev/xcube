@@ -43,6 +43,7 @@ from xcube.core.store import get_type_specifier
 from xcube.core.store import new_data_descriptor
 from xcube.core.store import new_data_opener
 from xcube.core.store import new_data_writer
+from xcube.core.store import S3ZarrDescriber
 from xcube.core.store.accessors.dataset import S3Mixin
 from xcube.util.assertions import assert_condition
 from xcube.util.assertions import assert_given
@@ -92,6 +93,7 @@ class S3DataStore(DefaultSearchMixin, MutableDataStore):
         if self._s3.exists(f'{self._bucket_name}/{_REGISTRY_FILE}'):
             with self._s3.open(f'{self._bucket_name}/{_REGISTRY_FILE}', 'r') as registry_file:
                 self._registry = json.load(registry_file)
+        self._zarr_describer = S3ZarrDescriber(self._s3, self._bucket_name)
 
     def close(self):
         pass
@@ -156,6 +158,14 @@ class S3DataStore(DefaultSearchMixin, MutableDataStore):
             if not type_specifier:
                 raise DataStoreError(f'Data "{data_id}" is not available.')
             raise DataStoreError(f'Data "{data_id}" is not available as type "{type_specifier}".')
+        _, ext = os.path.splitext(data_id)
+        if ext != '.zarr':
+            data_opener_ids = self.get_data_opener_ids(data_id, type_specifier=type_specifier)
+            if len(data_opener_ids) == 0:
+                raise DataStoreError(f'Cannot describe data {data_id}')
+            data = self.open_data(data_id, data_opener_ids[0])
+            return new_data_descriptor(data_id, data)
+        return self._zarr_describer.describe(data_id)
 
     def get_data_opener_ids(self, data_id: str = None, type_specifier: str = None) -> Tuple[str, ...]:
         if type_specifier:

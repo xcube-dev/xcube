@@ -5,6 +5,7 @@ import xarray as xr
 
 from test.s3test import S3Test, MOTO_SERVER_ENDPOINT_URL
 from xcube.core.new import new_cube
+from xcube.core.store import DatasetDescriptor
 from xcube.core.store import DataStoreError
 from xcube.core.store import TYPE_SPECIFIER_CUBE
 from xcube.core.store import TYPE_SPECIFIER_DATASET
@@ -134,6 +135,37 @@ class S3DataStoreTest(S3Test):
                                              type_specifier=TYPE_SPECIFIER_MULTILEVEL_DATASET))
         self.store.deregister_data(data_id='cube')
         self.assertFalse(self.store.has_data(data_id='cube'))
+
+    def test_write_and_describe_data_from_registry(self):
+        self.store.s3.mkdir(BUCKET_NAME)
+        dataset_1 = new_cube(variables=dict(a=4.1, b=7.4))
+        self.store.write_data(dataset_1, data_id='cube-1.zarr')
+
+        data_descriptor = self.store.describe_data('cube-1.zarr')
+        self.assertIsInstance(data_descriptor, DatasetDescriptor)
+        self.assertEqual('cube-1.zarr', data_descriptor.data_id)
+        self.assertEqual(TYPE_SPECIFIER_CUBE, data_descriptor.type_specifier)
+        self.assertEqual((-90.0, -180.0, 90.0, 180.0), data_descriptor.bbox)
+        self.assertDictEqual(dict(bnds=2, lat=180, lon=360, time=5), data_descriptor.dims)
+        self.assertEqual(('2010-01-01T00:00:00', '2010-01-06T00:00:00'),
+                         data_descriptor.time_range)
+        self.assertEqual({'a', 'b'}, set(data_descriptor.data_vars.keys()))
+
+    def test_write_and_describe_data_from_zarr_describer(self):
+        self.store.s3.mkdir(BUCKET_NAME)
+        dataset_1 = new_cube(variables=dict(a=4.1, b=7.4))
+        self.store.write_data(dataset_1, data_id='cube-1.zarr')
+        self.store.deregister_data('cube-1.zarr')
+
+        data_descriptor = self.store.describe_data('cube-1.zarr')
+        self.assertIsInstance(data_descriptor, DatasetDescriptor)
+        self.assertEqual('cube-1.zarr', data_descriptor.data_id)
+        self.assertEqual(TYPE_SPECIFIER_DATASET, data_descriptor.type_specifier)
+        self.assertEqual((-90.0, -180.0, 90.0, 180.0), data_descriptor.bbox)
+        self.assertDictEqual(dict(bnds=2, lat=180, lon=360, time=5), data_descriptor.dims)
+        self.assertEqual(('2010-01-01T00:00:00', '2010-01-06T00:00:00'),
+                         data_descriptor.time_range)
+        self.assertEqual({'a', 'b'}, set(data_descriptor.data_vars.keys()))
 
     @unittest.skip('Currently fails on travis but not locally, execute on demand only')
     def test_write_and_read_and_delete(self):
