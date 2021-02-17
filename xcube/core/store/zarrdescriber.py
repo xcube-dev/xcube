@@ -146,6 +146,13 @@ class ZarrDescriber(ABC):
 
 
 class S3ZarrDescriber(ZarrDescriber):
+    """
+    A describer that derives a DatasetDescriptor from a S3 file system.
+
+    :param s3: A S3 File System
+    :param bucket_name: The name of the bucket within the file system in
+    which the zarr data is located.
+    """
 
     def __init__(self, s3: s3fs.S3FileSystem, bucket_name: str):
         self._s3 = s3
@@ -159,6 +166,12 @@ class S3ZarrDescriber(ZarrDescriber):
 
 
 class DirectoryZarrDescriber(ZarrDescriber):
+    """
+    A describer that derives a DatasetDescriptor from a file system.
+
+    :param path: The base path within the file system in
+    which the zarr data is located.
+    """
 
     def __init__(self, path: str):
         self._path = path
