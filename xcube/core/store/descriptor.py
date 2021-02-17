@@ -55,7 +55,7 @@ def new_data_descriptor(data_id: str, data: Any, require: bool = False) -> 'Data
             variable_descriptors[data_var_name] = \
                 VariableDescriptor(name=str(data_var_name),
                                    dtype=str(data_var.dtype),
-                                   dims=str(data_var.dims),
+                                   dims=data_var.dims,
                                    attrs=data_var.attrs if data_var.attrs else None)
         bbox = None
         if 'geospatial_lat_min' in data.attrs and 'geospatial_lon_min' in data.attrs \
