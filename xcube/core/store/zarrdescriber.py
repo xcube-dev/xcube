@@ -50,6 +50,7 @@ class ZarrDescriber(ABC):
 
         :param data_id: The name of the zarr dataset.
         """
+        # todo: check whether dataset is cube
         descriptor_dict = {'data_id': data_id}
 
         # Get general dataset information
