@@ -1,5 +1,7 @@
 ## Changes in 0.6.2 (in development)
 
+* Finished implementation of s3 data store
+
 * Added `coords` property to `DatasetDescriptor` class. 
   The `data_vars` property of the `DatasetDescriptor` class is now a dictionary. 
 
