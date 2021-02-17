@@ -9,8 +9,8 @@ from test.s3test import S3Test
 from xcube.core.new import new_cube
 from xcube.core.store import DatasetDescriptor
 from xcube.core.store import TYPE_SPECIFIER_DATASET
-from xcube.core.store.zarrdescriber import DirectoryZarrDescriber
-from xcube.core.store.zarrdescriber import S3ZarrDescriber
+from xcube.core.store import DirectoryZarrDescriber
+from xcube.core.store import S3ZarrDescriber
 
 
 class S3ZarrDescriberTest(S3Test):

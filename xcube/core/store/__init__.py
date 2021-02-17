@@ -52,3 +52,6 @@ from .typespecifier import TYPE_SPECIFIER_GEODATAFRAME
 from .typespecifier import TYPE_SPECIFIER_MULTILEVEL_DATASET
 from .typespecifier import TypeSpecifier
 from .typespecifier import get_type_specifier
+from .zarrdescriber import DirectoryZarrDescriber
+from .zarrdescriber import S3ZarrDescriber
+from .zarrdescriber import ZarrDescriber
