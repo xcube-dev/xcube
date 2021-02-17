@@ -37,7 +37,7 @@ class S3ZarrDescriberTest(S3Test):
         self.assertEqual('cube', descriptor.data_id)
         self.assertEqual(TYPE_SPECIFIER_DATASET, descriptor.type_specifier)
         self.assertEqual((-90, -180, 90, 180), descriptor.bbox)
-        self.assertDictEqual(dict(lat=180, time=5, lon=360), descriptor.dims)
+        self.assertDictEqual(dict(lat=180, time=5, lon=360, bnds=2), descriptor.dims)
         self.assertEqual(('2010-01-01T00:00:00', '2010-01-06T00:00:00'), descriptor.time_range)
 
 
@@ -63,5 +63,5 @@ class DirectoryZarrDescriberTest(unittest.TestCase):
         self.assertEqual('cube', descriptor.data_id)
         self.assertEqual(TYPE_SPECIFIER_DATASET, descriptor.type_specifier)
         self.assertEqual((-90, -180, 90, 180), descriptor.bbox)
-        self.assertDictEqual(dict(lat=180, time=5, lon=360), descriptor.dims)
+        self.assertDictEqual(dict(lat=180, time=5, lon=360, bnds=2), descriptor.dims)
         self.assertEqual(('2010-01-01T00:00:00', '2010-01-06T00:00:00'), descriptor.time_range)

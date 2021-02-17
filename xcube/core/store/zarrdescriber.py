@@ -80,9 +80,7 @@ class ZarrDescriber(ABC):
         zarr_dir_content = self._list_zarr_dir_content(data_id)
         for content in zarr_dir_content:
             content = content.split('/')[-1]
-            if content in ['.zattrs', '.zgroup'] or \
-                    content.endswith('bnds') or content.endswith('bounds') or \
-                    (known_variable_names is not None and content not in known_variable_names):
+            if content in ['.zattrs', '.zgroup']:
                 continue
             # Using term variable now for clarity
             variable_name = content
@@ -110,6 +108,15 @@ class ZarrDescriber(ABC):
         for dim in dataset_dims:
             if dim in data_vars:
                 data_vars.pop(dim)
+        to_be_removed = []
+        for data_var in data_vars.keys():
+            if data_var.endswith('bnds') or data_var.endswith('bounds'):
+                to_be_removed.append(data_var)
+                continue
+            if known_variable_names is not None and data_var not in known_variable_names:
+                to_be_removed.append(data_var)
+        for remove in to_be_removed:
+            data_vars.pop(remove)
 
         descriptor_dict['dims'] = dataset_dims
         descriptor_dict['data_vars'] = data_vars
