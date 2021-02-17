@@ -21,3 +21,4 @@
 
 from .config import ServiceConfig
 from .generator import CubeGeneratorService
+from .response import CubeInfoWithCosts

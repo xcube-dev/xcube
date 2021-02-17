@@ -6,9 +6,13 @@ import xarray as xr
 import yaml
 
 from xcube.core.dsio import rimraf
+from xcube.core.gen2.config import CubeGeneratorConfig
 from xcube.core.gen2.generator import CubeGenerator
+from xcube.core.gen2.generator import LocalCubeGenerator
 from xcube.core.new import new_cube
 from xcube.core.store.stores.memory import MemoryDataStore
+
+
 
 
 class LocalCubeGeneratorTest(unittest.TestCase):
@@ -38,6 +42,13 @@ class LocalCubeGeneratorTest(unittest.TestCase):
         rimraf('_request.json')
         rimraf('_request.yaml')
         MemoryDataStore.replace_global_data_dict(self.saved_cube_memory)
+
+    @requests_mock.Mocker()
+    def test_dict(self, m):
+        m.put('https://xcube-gen.test/api/v1/jobs/tomtom/iamajob/callback', json={})
+        LocalCubeGenerator(CubeGeneratorConfig.from_dict(self.REQUEST), verbose=True).generate_cube()
+        self.assertIsInstance(MemoryDataStore.get_global_data_dict().get('CHL'),
+                              xr.Dataset)
 
     @requests_mock.Mocker()
     def test_json(self, m):

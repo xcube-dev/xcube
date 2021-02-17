@@ -19,7 +19,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 from abc import ABC, abstractmethod
-from typing import Optional
+from typing import Optional, Dict
 
 from xcube.core.store import DataStorePool
 from xcube.util.assertions import assert_condition
@@ -30,6 +30,7 @@ from .config import CubeGeneratorConfig
 from .opener import CubesOpener
 from .progress import ApiProgressCallbackObserver
 from .progress import ConsoleProgressObserver
+from .response import CubeInfo
 from .writer import CubeWriter
 
 
@@ -39,7 +40,7 @@ class CubeGenerator(ABC):
                   gen_config_path: Optional[str],
                   stores_config_path: str = None,
                   service_config_path: str = None,
-                  verbose: bool = False) -> 'LocalCubeGenerator':
+                  verbose: bool = False) -> 'CubeGenerator':
         """
         Create a cube generator from configuration files.
 
@@ -92,6 +93,10 @@ class CubeGenerator(ABC):
             return LocalCubeGenerator(gen_config,
                                       store_pool=store_pool,
                                       verbose=bool(verbose))
+
+    @abstractmethod
+    def get_cube_info(self) -> CubeInfo:
+        """Get data cube information."""
 
     @abstractmethod
     def generate_cube(self):
@@ -156,3 +161,9 @@ class LocalCubeGenerator(CubeGenerator):
         if self._verbose:
             print('Cube "{}" generated within {:.2f} seconds'
                   .format(str(data_id), cm.state.total_time))
+
+    def get_cube_info(self) -> CubeInfo:
+        # TODO: replace by actual computation of target cube dimensions
+        return CubeInfo(dims=dict(time=10 * 365, lat=720, lon=1440),
+                        chunks=dict(time=10, lat=720, lon=1440),
+                        data_vars=dict(CHL=dict(long_name='chlorophyll_concentration', units='mg/m^-1')))

@@ -23,10 +23,10 @@ import click
 
 
 @click.command(name="gen2", hidden=True)
-@click.argument('gen_config_path',
+@click.argument('request_path',
                 type=str,
                 required=False,
-                metavar='GEN_CONFIG')
+                metavar='REQUEST')
 @click.option('--stores', 'stores_config_path',
               metavar='STORES_CONFIG',
               help='A JSON or YAML file that maps store names to '
@@ -34,13 +34,20 @@ import click
 @click.option('--service', 'service_config_path',
               metavar='SERVICE_CONFIG',
               help='A JSON or YAML file that provides the configuration for an'
-                   ' xcube Generator Service.')
+                   ' xcube Generator Service. If provided, the REQUEST will be'
+                   ' passed to the service instead of generating it on this'
+                   ' computer.')
+@click.option('--info', '-i',
+              is_flag=True,
+              help='Output information about the data cube to be generated.'
+                   ' Does not generate the data cube.')
 @click.option('--verbose', '-v',
               is_flag=True,
               help='Control amount of information dumped to stdout.')
-def gen2(gen_config_path: str,
+def gen2(request_path: str,
          stores_config_path: str = None,
          service_config_path: str = None,
+         info: bool = False,
          verbose: bool = False):
     """
     Generator tool for data cubes.
@@ -48,8 +55,8 @@ def gen2(gen_config_path: str,
     Creates a cube view from one or more cube stores, optionally performs some cube transformation,
     and writes the resulting cube to some target cube store.
 
-    GEN_CONFIG is the cube generation request. It may be provided as a JSON or YAML file
-    (file extensions ".json" or ".yaml"). If the GEN_CONFIG file argument is omitted, it is expected that
+    REQUEST is the cube generation request. It may be provided as a JSON or YAML file
+    (file extensions ".json" or ".yaml"). If the REQUEST file argument is omitted, it is expected that
     the Cube generation request is piped as a JSON string.
 
     STORE_CONFIGS is a path to a JSON or YAML file with xcube data store configurations.
@@ -79,9 +86,9 @@ def gen2(gen_config_path: str,
 
     \b
     {
-        "endpoint_url": "",
-        "key": "ALDLPUIOSD5NHS3103",
-        "secret": "lfaolb3klv904kj23lkdfsjkf430894341"
+        "endpoint_url": "https://xcube-gen.eurodatacube.com/api/v2/",
+        "client_id": "ALDLPUIOSD5NHS3103",
+        "client_secret": "lfaolb3klv904kj23lkdfsjkf430894341"
     }
 
     """
@@ -89,10 +96,18 @@ def gen2(gen_config_path: str,
     from xcube.core.gen2 import CubeGeneratorError
     from xcube.core.store import DataStoreError
     try:
-        CubeGenerator.from_file(gen_config_path,
-                                stores_config_path=stores_config_path,
-                                service_config_path=service_config_path,
-                                verbose=verbose).generate_cube()
+        generator = CubeGenerator.from_file(request_path,
+                                            stores_config_path=stores_config_path,
+                                            service_config_path=service_config_path,
+                                            verbose=verbose)
+        if info:
+            import sys
+            import yaml
+            cube_info = generator.get_cube_info()
+            yaml.dump(cube_info.to_dict(), stream=sys.stdout, indent=2)
+        else:
+            generator.generate_cube()
+
     except (CubeGeneratorError, DataStoreError) as e:
         raise click.ClickException(f'{e}') from e
 

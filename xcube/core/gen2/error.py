@@ -19,7 +19,15 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+from typing import Optional
+
 
 class CubeGeneratorError(ValueError):
-    def __init__(self, message: str):
-        super().__init__(message)
+    def __init__(self, *args, remote_traceback: str = None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._remote_traceback = remote_traceback
+
+    @property
+    def remote_traceback(self) -> Optional[str]:
+        """Traceback of an error occurred in a remote process."""
+        return self._remote_traceback

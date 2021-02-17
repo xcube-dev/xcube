@@ -20,24 +20,27 @@
 # SOFTWARE.
 
 import time
+from typing import Type, TypeVar, Dict
 
 import requests
-import xarray as xr
 
 from xcube.util.assertions import assert_instance
 from xcube.util.progress import observe_progress
 from .config import ServiceConfig
+from .response import CubeInfoWithCosts
+from .response import Response
+from .response import Result
+from .response import Token
 from ..config import CubeGeneratorConfig
 from ..error import CubeGeneratorError
 from ..generator import CubeGenerator
 
-DEFAULT_ENDPOINT_URL = 'https://xcube-gen.brockmann-consult.de/api/v2'
-# DEFAULT_ENDPOINT_URL = 'https://stage.xcube-gen.brockmann-consult.de/api/v2'
-
-BASE_HEADERS = {
+_BASE_HEADERS = {
     "Accept": "application/json",
     "Content-Type": "application/json",
 }
+
+R = TypeVar('R')
 
 
 class CubeGeneratorService(CubeGenerator):
@@ -45,16 +48,26 @@ class CubeGeneratorService(CubeGenerator):
     def __init__(self,
                  gen_config: CubeGeneratorConfig,
                  service_config: ServiceConfig,
+                 progress_period: float = 1.0,
                  verbose: bool = False):
         assert_instance(gen_config, CubeGeneratorConfig, 'gen_config')
         assert_instance(service_config, ServiceConfig, 'service_config')
+        assert_instance(progress_period, (int, float), 'progress_period')
         self._gen_config = gen_config
         self._service_config = service_config
         self._access_token = service_config.access_token
+        self._progress_period = progress_period
         self._verbose = verbose
 
     def endpoint_op(self, op_path: str) -> str:
-        return f'{self._service_config.endpoint_url or DEFAULT_ENDPOINT_URL}/{op_path}'
+        return f'{self._service_config.endpoint_url}{op_path}'
+
+    @property
+    def auth_headers(self) -> Dict:
+        return {
+            **_BASE_HEADERS,
+            'Authorization': f'Bearer {self.access_token}',
+        }
 
     @property
     def access_token(self) -> str:
@@ -63,59 +76,82 @@ class CubeGeneratorService(CubeGenerator):
                                      json={
                                          "client_id": self._service_config.client_id,
                                          "client_secret": self._service_config.client_secret,
-                                         # TODO: what to pass here?
-                                         "audience": "audience",
-                                         # TODO: what to pass here?
-                                         "grant_type": "grant_type",
+                                         "audience": "https://xcube-gen.brockmann-consult.de/api/v2/",
+                                         "grant_type": "client-credentials",
                                      },
-                                     headers=BASE_HEADERS)
-            self._maybe_raise(response)
-            self._access_token = response.json().get('access_token')
+                                     headers=_BASE_HEADERS)
+            token_response: Token = self._parse_response(response, Token)
+            self._access_token = token_response.access_token
         return self._access_token
+
+    def get_cube_info(self) -> CubeInfoWithCosts:
+        response = requests.post(self.endpoint_op('cubegens/info'),
+                                 json=self._gen_config.to_dict(),
+                                 headers=self.auth_headers)
+        return self._parse_response(response, CubeInfoWithCosts)
 
     def generate_cube(self):
         response = requests.put(self.endpoint_op('cubegens'),
-                                json=self._gen_config,
-                                headers={
-                                    **BASE_HEADERS,
-                                    'Authorization': f'Bearer {self.access_token}',
-                                })
-        self._maybe_raise(response)
+                                json=self._gen_config.to_dict(),
+                                headers=self.auth_headers)
+        result = self._get_cube_generation_result(response)
+        cubegen_id = result.cubegen_id
 
-        result = response.json().get('result', {})
-        cubegen_id = result.get('cubegen_id')
-
+        last_worked = 0
         with observe_progress('Generating cube', 100) as cm:
             while True:
-                time.sleep(1.0)
+                time.sleep(self._progress_period)
 
                 response = requests.get(self.endpoint_op(f'cubegens/{cubegen_id}'),
-                                        json=self._gen_config,
-                                        headers={
-                                            **BASE_HEADERS,
-                                            'Authorization': f'Bearer {self.access_token}',
-                                        })
-                self._maybe_raise(response)
-
-                result = response.json().get('result')
-                print(result)
-                status = result.get('status')
-                active = status.get('active')
-                failed = status.get('failed')
-                succeeded = result.get('succeeded')
-                if succeeded:
+                                        headers=self.auth_headers)
+                result = self._get_cube_generation_result(response)
+                if result.status.succeeded:
                     return
-                if failed:
-                    raise CubeGeneratorError('Failed to generate cube')
 
-                # TODO: turn response into progress
-                cm.worked(1)
-                if cm.state.progress >= 1.0:
-                    return
+                if result.progress is not None:
+                    total_work = result.progress.total_work
+                    worked = result.progress.worked
+                    cm.worked(100 * ((worked - last_worked) / total_work))
+                    last_worked = worked
 
     @classmethod
-    def _maybe_raise(cls, response):
+    def _parse_response(cls, response: requests.Response, response_type: Type[R]) -> R:
+        cls._maybe_raise(response)
+        data = response.json()
+        # noinspection PyBroadException
+        try:
+            return response_type.from_dict(data)
+        except Exception as e:
+            raise RuntimeError(f'internal error: unexpected response'
+                               f' from API call {response.url}: {e}') from e
+
+    @classmethod
+    def _get_cube_generation_result(cls, response: requests.Response) -> Result:
+        response_instance: Response = cls._parse_response(response, Response)
+        if response_instance.result.status.failed:
+            raise CubeGeneratorError('Cube generation failed',
+                                     remote_traceback=response_instance.traceback)
+        return response_instance.result
+
+    @classmethod
+    def _maybe_raise(cls, response: requests.Response):
         try:
             response.raise_for_status()
         except requests.HTTPError as e:
-            raise CubeGeneratorError(f'{e}') from e
+            traceback = None
+            # noinspection PyBroadException
+            try:
+                json = response.json()
+                if isinstance(json, dict):
+                    traceback = json.get('traceback')
+            except Exception:
+                pass
+            raise CubeGeneratorError(remote_traceback=traceback) from e
+
+    @classmethod
+    def _new_cube_generator_error(cls, message: str, cause: BaseException = None, traceback=None):
+        if cause is not None:
+            message = f'{message}: {cause}'
+        if traceback:
+            message = f'{message}: {cause}\n{traceback}'
+        return CubeGeneratorError(message)
