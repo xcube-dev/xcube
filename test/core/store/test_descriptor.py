@@ -23,6 +23,8 @@ class NewDataDescriptorTest(unittest.TestCase):
         self.assertEqual((-90, -180, 90, 180), descriptor.bbox)
         self.assertIsNone(descriptor.open_params_schema)
         self.assertEqual(('2010-01-01T00:00:00', '2010-01-06T00:00:00'), descriptor.time_range)
+        self.assertEqual('1D', descriptor.time_period)
+        self.assertEqual(1.0, descriptor.spatial_res)
         self.assertEqual({'time': 5, 'lat': 180, 'lon': 360, 'bnds': 2}, descriptor.dims)
         self.assertIsNotNone(descriptor.data_vars)
 
