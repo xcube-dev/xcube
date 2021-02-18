@@ -35,9 +35,10 @@ from xcube.version import version
 @click.version_option(version)
 @cli_option_traceback
 @cli_option_scheduler
-@click.option('--warnings', '-w', is_flag=True,
-        help='Show any warnings produced during operation '
-             '(they are hidden by default)')
+@click.option('--warnings', '-w',
+              is_flag=True,
+              help='Show any warnings produced during operation '
+                   '(warnings are hidden by default)')
 def cli(traceback=False, scheduler=None, warnings=None):
     """
     xcube Toolkit
