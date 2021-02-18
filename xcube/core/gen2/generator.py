@@ -72,7 +72,7 @@ class CubeGenerator(ABC):
         assert_instance(gen_config_path, (str, type(None)), 'gen_config_path')
         assert_instance(stores_config_path, (str, type(None)), 'stores_config_path')
         assert_instance(service_config_path, (str, type(None)), 'service_config_path')
-        assert_condition(not (service_config_path is not None and
+        assert_condition(not (stores_config_path is not None and
                               service_config_path is not None),
                          'stores_config_path and service_config_path cannot be'
                          ' given at the same time.')

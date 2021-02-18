@@ -72,13 +72,15 @@ class CubeGeneratorService(CubeGenerator):
     @property
     def access_token(self) -> str:
         if self._access_token is None:
+            request = {
+                "audience": self._service_config.endpoint_url,
+                "client_id": self._service_config.client_id,
+                "client_secret": self._service_config.client_secret,
+                "grant_type": "client-credentials",
+            }
+            # self.__dump_json(request)
             response = requests.post(self.endpoint_op('oauth/token'),
-                                     json={
-                                         "client_id": self._service_config.client_id,
-                                         "client_secret": self._service_config.client_secret,
-                                         "audience": "https://xcube-gen.brockmann-consult.de/api/v2/",
-                                         "grant_type": "client-credentials",
-                                     },
+                                     json=request,
                                      headers=_BASE_HEADERS)
             token_response: Token = self._parse_response(response, Token)
             self._access_token = token_response.access_token
@@ -146,7 +148,8 @@ class CubeGeneratorService(CubeGenerator):
                     traceback = json.get('traceback')
             except Exception:
                 pass
-            raise CubeGeneratorError(remote_traceback=traceback) from e
+            raise CubeGeneratorError(f'{e}',
+                                     remote_traceback=traceback) from e
 
     @classmethod
     def _new_cube_generator_error(cls, message: str, cause: BaseException = None, traceback=None):
@@ -155,3 +158,9 @@ class CubeGeneratorService(CubeGenerator):
         if traceback:
             message = f'{message}: {cause}\n{traceback}'
         return CubeGeneratorError(message)
+
+    @classmethod
+    def __dump_json(cls, obj):
+        import json
+        import sys
+        json.dump(obj, sys.stdout, indent=2)
