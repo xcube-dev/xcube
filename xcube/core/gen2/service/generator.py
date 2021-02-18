@@ -93,8 +93,10 @@ class CubeGeneratorService(CubeGenerator):
         return self._parse_response(response, CubeInfoWithCosts)
 
     def generate_cube(self):
+        request = self._gen_config.to_dict()
+        # self.__dump_json(request)
         response = requests.put(self.endpoint_op('cubegens'),
-                                json=self._gen_config.to_dict(),
+                                json=request,
                                 headers=self.auth_headers)
         result = self._get_cube_generation_result(response)
         cubegen_id = result.cubegen_id
@@ -117,6 +119,14 @@ class CubeGeneratorService(CubeGenerator):
                     last_worked = worked
 
     @classmethod
+    def _get_cube_generation_result(cls, response: requests.Response) -> Result:
+        response_instance: Response = cls._parse_response(response, Response)
+        if response_instance.result.status.failed:
+            raise CubeGeneratorError('Cube generation failed',
+                                     remote_traceback=response_instance.traceback)
+        return response_instance.result
+
+    @classmethod
     def _parse_response(cls, response: requests.Response, response_type: Type[R]) -> R:
         cls._maybe_raise(response)
         data = response.json()
@@ -128,27 +138,21 @@ class CubeGeneratorService(CubeGenerator):
                                f' from API call {response.url}: {e}') from e
 
     @classmethod
-    def _get_cube_generation_result(cls, response: requests.Response) -> Result:
-        response_instance: Response = cls._parse_response(response, Response)
-        if response_instance.result.status.failed:
-            raise CubeGeneratorError('Cube generation failed',
-                                     remote_traceback=response_instance.traceback)
-        return response_instance.result
-
-    @classmethod
     def _maybe_raise(cls, response: requests.Response):
         try:
             response.raise_for_status()
         except requests.HTTPError as e:
+            detail = None
             traceback = None
             # noinspection PyBroadException
             try:
                 json = response.json()
                 if isinstance(json, dict):
+                    detail = json.get('detail')
                     traceback = json.get('traceback')
             except Exception:
                 pass
-            raise CubeGeneratorError(f'{e}',
+            raise CubeGeneratorError(f'{e}: {detail}' if detail else f'e',
                                      remote_traceback=traceback) from e
 
     @classmethod
