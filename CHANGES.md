@@ -1,5 +1,10 @@
 ## Changes in 0.6.2 (in development)
 
+* The `xcube gen2` data cube generator tool has been hidden from
+  the set of "official" xcube tools. It is considered as an internal tool 
+  that is subject to change at any time until its interface has stabilized.
+  Please refer to `xcube gen2 --help` for more information.
+
 * Added `coords` property to `DatasetDescriptor` class. 
   The `data_vars` property of the `DatasetDescriptor` class is now a dictionary. 
 

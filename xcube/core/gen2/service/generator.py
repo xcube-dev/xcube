@@ -31,7 +31,7 @@ from .response import CubeInfoWithCosts
 from .response import Response
 from .response import Result
 from .response import Token
-from ..config import CubeGeneratorConfig
+from ..request import CubeGeneratorRequest
 from ..error import CubeGeneratorError
 from ..generator import CubeGenerator
 
@@ -46,11 +46,11 @@ R = TypeVar('R')
 class CubeGeneratorService(CubeGenerator):
 
     def __init__(self,
-                 gen_config: CubeGeneratorConfig,
+                 gen_config: CubeGeneratorRequest,
                  service_config: ServiceConfig,
                  progress_period: float = 1.0,
                  verbose: bool = False):
-        assert_instance(gen_config, CubeGeneratorConfig, 'gen_config')
+        assert_instance(gen_config, CubeGeneratorRequest, 'gen_config')
         assert_instance(service_config, ServiceConfig, 'service_config')
         assert_instance(progress_period, (int, float), 'progress_period')
         self._gen_config = gen_config

@@ -19,17 +19,17 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 from abc import ABC, abstractmethod
-from typing import Optional, Dict
+from typing import Optional
 
 from xcube.core.store import DataStorePool
 from xcube.util.assertions import assert_condition
 from xcube.util.assertions import assert_instance
 from xcube.util.progress import observe_progress
 from .combiner import CubesCombiner
-from .config import CubeGeneratorConfig
 from .opener import CubesOpener
 from .progress import ApiProgressCallbackObserver
 from .progress import ConsoleProgressObserver
+from .request import CubeGeneratorRequest
 from .response import CubeInfo
 from .writer import CubeWriter
 
@@ -77,7 +77,7 @@ class CubeGenerator(ABC):
                          'stores_config_path and service_config_path cannot be'
                          ' given at the same time.')
 
-        gen_config = CubeGeneratorConfig.from_file(gen_config_path, verbose=bool(verbose))
+        gen_config = CubeGeneratorRequest.from_file(gen_config_path, verbose=bool(verbose))
 
         if service_config_path is not None:
             from .service import ServiceConfig
@@ -118,10 +118,10 @@ class LocalCubeGenerator(CubeGenerator):
     """
 
     def __init__(self,
-                 gen_config: CubeGeneratorConfig,
+                 gen_config: CubeGeneratorRequest,
                  store_pool: DataStorePool = None,
                  verbose: bool = False):
-        assert_instance(gen_config, CubeGeneratorConfig, 'gen_config')
+        assert_instance(gen_config, CubeGeneratorRequest, 'gen_config')
         if store_pool is not None:
             assert_instance(store_pool, DataStorePool, 'store_pool')
 

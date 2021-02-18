@@ -4,7 +4,7 @@ import requests_mock
 
 from test.util.test_progress import TestProgressObserver
 from xcube.core.gen2 import CubeGeneratorError
-from xcube.core.gen2.config import CubeGeneratorConfig
+from xcube.core.gen2.request import CubeGeneratorRequest
 from xcube.core.gen2.service import CubeGeneratorService
 from xcube.core.gen2.service import ServiceConfig
 from xcube.core.gen2.service.response import CubeInfoWithCosts
@@ -45,7 +45,7 @@ class CubeGeneratorServiceTest(unittest.TestCase):
                                               data_id='CHL'))
 
     def setUp(self) -> None:
-        self.service = CubeGeneratorService(CubeGeneratorConfig.from_dict(self.CUBE_GEN_CONFIG),
+        self.service = CubeGeneratorService(CubeGeneratorRequest.from_dict(self.CUBE_GEN_CONFIG),
                                             ServiceConfig(endpoint_url=self.ENDPOINT_URL,
                                                           client_id='itzibitzispider',
                                                           client_secret='g3ergd36fd2983457fhjder'),
