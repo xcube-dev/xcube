@@ -159,13 +159,11 @@ class S3DataStore(DefaultSearchMixin, MutableDataStore):
                 raise DataStoreError(f'Data "{data_id}" is not available.')
             raise DataStoreError(f'Data "{data_id}" is not available as type "{type_specifier}".')
         _, ext = os.path.splitext(data_id)
-        if ext != '.zarr':
-            data_opener_ids = self.get_data_opener_ids(data_id, type_specifier=type_specifier)
-            if len(data_opener_ids) == 0:
-                raise DataStoreError(f'Cannot describe data {data_id}')
-            data = self.open_data(data_id, data_opener_ids[0])
-            return new_data_descriptor(data_id, data)
-        return self._zarr_describer.describe(data_id)
+        data_opener_ids = self.get_data_opener_ids(data_id, type_specifier=type_specifier)
+        if len(data_opener_ids) == 0:
+            raise DataStoreError(f'Cannot describe data {data_id}')
+        data = self.open_data(data_id, data_opener_ids[0])
+        return new_data_descriptor(data_id, data)
 
     def get_data_opener_ids(self, data_id: str = None, type_specifier: str = None) -> Tuple[str, ...]:
         if type_specifier:
