@@ -31,9 +31,9 @@ from .response import CubeInfoWithCosts
 from .response import Response
 from .response import Result
 from .response import Token
-from ..request import CubeGeneratorRequest
 from ..error import CubeGeneratorError
 from ..generator import CubeGenerator
+from ..request import CubeGeneratorRequest
 
 _BASE_HEADERS = {
     "Accept": "application/json",
@@ -128,40 +128,15 @@ class CubeGeneratorService(CubeGenerator):
 
     @classmethod
     def _parse_response(cls, response: requests.Response, response_type: Type[R]) -> R:
-        cls._maybe_raise(response)
+        CubeGeneratorError.maybe_raise_for_response(response)
         data = response.json()
+        cls.__dump_json(data)
         # noinspection PyBroadException
         try:
             return response_type.from_dict(data)
         except Exception as e:
             raise RuntimeError(f'internal error: unexpected response'
                                f' from API call {response.url}: {e}') from e
-
-    @classmethod
-    def _maybe_raise(cls, response: requests.Response):
-        try:
-            response.raise_for_status()
-        except requests.HTTPError as e:
-            detail = None
-            traceback = None
-            # noinspection PyBroadException
-            try:
-                json = response.json()
-                if isinstance(json, dict):
-                    detail = json.get('detail')
-                    traceback = json.get('traceback')
-            except Exception:
-                pass
-            raise CubeGeneratorError(f'{e}: {detail}' if detail else f'e',
-                                     remote_traceback=traceback) from e
-
-    @classmethod
-    def _new_cube_generator_error(cls, message: str, cause: BaseException = None, traceback=None):
-        if cause is not None:
-            message = f'{message}: {cause}'
-        if traceback:
-            message = f'{message}: {cause}\n{traceback}'
-        return CubeGeneratorError(message)
 
     @classmethod
     def __dump_json(cls, obj):

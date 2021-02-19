@@ -19,8 +19,9 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-from typing import Optional, Dict
+from typing import Optional, Dict, Union, List
 
+from xcube.util.jsonschema import JsonArraySchema
 from xcube.util.jsonschema import JsonBooleanSchema
 from xcube.util.jsonschema import JsonIntegerSchema
 from xcube.util.jsonschema import JsonNumberSchema
@@ -50,17 +51,32 @@ class Token(ResponseBase):
 
 
 class Status(ResponseBase):
-    def __init__(self, succeeded: bool, failed: bool, active: bool):
+    # noinspection PyUnusedLocal
+    def __init__(self,
+                 succeeded: bool = None,
+                 failed: bool = None,
+                 active: bool = None,
+                 start_time: str = None,
+                 completion_time: str = None,
+                 conditions=None,
+                 progress=None,
+                 **additional_properties):
         self.succeeded = succeeded
         self.failed = failed
         self.active = active
+        self.start_time = start_time
+        self.completion_time = completion_time
+        self.conditions = conditions
+        self.additional_properties = additional_properties
 
     @classmethod
     def get_schema(cls) -> JsonObjectSchema:
-        return JsonObjectSchema(properties=dict(succeeded=JsonBooleanSchema(),
-                                                failed=JsonBooleanSchema(),
-                                                active=JsonBooleanSchema()),
-                                required=['succeeded', 'failed', 'active'],
+        return JsonObjectSchema(properties=dict(succeeded=JsonBooleanSchema(nullable=True),
+                                                failed=JsonBooleanSchema(nullable=True),
+                                                active=JsonIntegerSchema(nullable=True),
+                                                start_time=JsonStringSchema(nullable=True),
+                                                completion_time=JsonStringSchema(nullable=True),
+                                                conditions=JsonArraySchema(nullable=True)),
                                 additional_properties=True,
                                 factory=cls)
 
@@ -70,9 +86,10 @@ class Status(ResponseBase):
 
 
 class Progress(ResponseBase):
-    def __init__(self, worked, total_work):
+    def __init__(self, worked: Union[int, float], total_work: Union[int, float], **additional_properties):
         self.worked: float = float(worked)
         self.total_work: float = float(total_work)
+        self.additional_properties = additional_properties
 
     @classmethod
     def get_schema(cls) -> JsonObjectSchema:
@@ -88,15 +105,23 @@ class Progress(ResponseBase):
 
 
 class Result(ResponseBase):
-    def __init__(self, cubegen_id: str, status: Status, progress: Optional[Progress]):
+    def __init__(self,
+                 cubegen_id: str,
+                 status: Status,
+                 output: List[str] = None,
+                 progress: Progress = None,
+                 **additional_properties):
         self.cubegen_id: str = cubegen_id
         self.status: Status = status
+        self.output: Optional[List[str]] = output
         self.progress: Optional[Progress] = progress
+        self.additional_properties = additional_properties
 
     @classmethod
     def get_schema(cls) -> JsonObjectSchema:
         return JsonObjectSchema(properties=dict(cubegen_id=JsonStringSchema(min_length=1),
                                                 status=Status.get_schema(),
+                                                output=JsonArraySchema(items=JsonStringSchema(), nullable=True),
                                                 progress=Progress.get_schema()),
                                 required=['cubegen_id', 'status'],
                                 additional_properties=True,
@@ -108,9 +133,13 @@ class Result(ResponseBase):
 
 
 class Response(ResponseBase):
-    def __init__(self, result: Result, traceback: str = None):
+    def __init__(self,
+                 result: Result,
+                 traceback: str = None,
+                 **additional_properties):
         self.result: Result = result
         self.traceback: Optional[str] = traceback
+        self.additional_properties = additional_properties
 
     @classmethod
     def get_schema(cls) -> JsonObjectSchema:
@@ -126,18 +155,26 @@ class Response(ResponseBase):
 
 
 class CostInfo(ResponseBase):
-    def __init__(self, punits_input: int, punits_output: int, punits_combined: int):
-        self.punits_input: int = punits_input
-        self.punits_output: int = punits_output
-        self.punits_combined: int = punits_combined
+    # def __init__(self,
+    #              punits_input: int,
+    #              punits_output: int,
+    #              punits_combined: int):
+    #     self.punits_input: int = punits_input
+    #     self.punits_output: int = punits_output
+    #     self.punits_combined: int = punits_combined
+    def __init__(self,
+                 **additional_properties):
+        self.additional_properties = additional_properties
 
     @classmethod
     def get_schema(cls) -> JsonObjectSchema:
-        return JsonObjectSchema(properties=dict(punits_input=JsonIntegerSchema(),
-                                                punits_output=JsonIntegerSchema(),
-                                                punits_combined=JsonIntegerSchema()),
-                                required=['punits_input', 'punits_output', 'punits_combined'],
-                                additional_properties=True,
+        # return JsonObjectSchema(properties=dict(punits_input=JsonIntegerSchema(),
+        #                                         punits_output=JsonIntegerSchema(),
+        #                                         punits_combined=JsonIntegerSchema()),
+        #                         required=['punits_input', 'punits_output', 'punits_combined'],
+        #                         additional_properties=True,
+        #                         factory=cls)
+        return JsonObjectSchema(additional_properties=True,
                                 factory=cls)
 
     @classmethod
@@ -164,6 +201,6 @@ class CubeInfoWithCosts(CubeInfo):
     def to_dict(self) -> Dict:
         """Convert this instance to a dictionary."""
         d = _to_dict(self, tuple(CubeInfo.get_schema().properties.keys()))
-        cost_info = _to_dict(self.cost_info, tuple(CostInfo.get_schema().properties.keys()))
+        cost_info = _to_dict(self.cost_info.additional_properties, tuple(CostInfo.get_schema().properties.keys()))
         d.update(cost_info=cost_info)
         return d
