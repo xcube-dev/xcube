@@ -1,5 +1,8 @@
 ## Changes in 0.6.2 (in development)
 
+* The S3 data store  `xcube.core.store.stores.s3.S3DataStore` now implements the `describe_data()` method. 
+  It therefore can also be used as a data store from which data is queried and read.  
+
 * Added `coords` property to `DatasetDescriptor` class. 
   The `data_vars` property of the `DatasetDescriptor` class is now a dictionary. 
 

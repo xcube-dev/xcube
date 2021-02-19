@@ -2,11 +2,31 @@ import unittest
 
 import numpy as np
 
+from xcube.core.new import new_cube
+from xcube.core.store.descriptor import new_data_descriptor
 from xcube.core.store.descriptor import DataDescriptor
 from xcube.core.store.descriptor import DatasetDescriptor
 from xcube.core.store.descriptor import GeoDataFrameDescriptor
 from xcube.core.store.descriptor import VariableDescriptor
 from xcube.core.store.typespecifier import TypeSpecifier
+
+
+class NewDataDescriptorTest(unittest.TestCase):
+
+    def test_new_dataset_descriptor(self):
+        cube = new_cube(variables=dict(a=4.1, b=7.4))
+        descriptor = new_data_descriptor('cube', cube)
+        self.assertIsNotNone(descriptor)
+        self.assertTrue(isinstance(descriptor, DatasetDescriptor))
+        self.assertEqual('cube', descriptor.data_id)
+        self.assertEqual('dataset[cube]', descriptor.type_specifier)
+        self.assertEqual((-90, -180, 90, 180), descriptor.bbox)
+        self.assertIsNone(descriptor.open_params_schema)
+        self.assertEqual(('2010-01-01T00:00:00', '2010-01-06T00:00:00'), descriptor.time_range)
+        self.assertEqual('1D', descriptor.time_period)
+        self.assertEqual(1.0, descriptor.spatial_res)
+        self.assertEqual({'time': 5, 'lat': 180, 'lon': 360, 'bnds': 2}, descriptor.dims)
+        self.assertIsNotNone(descriptor.data_vars)
 
 
 class DataDescriptorTest(unittest.TestCase):

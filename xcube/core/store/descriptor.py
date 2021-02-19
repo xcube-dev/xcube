@@ -23,6 +23,7 @@ from typing import Tuple, Sequence, Mapping, Optional, Dict, Any, Union
 
 import geopandas as gpd
 import numpy as np
+import pandas as pd
 import xarray as xr
 
 from xcube.core.mldataset import MultiLevelDataset
@@ -48,8 +49,37 @@ from xcube.util.jsonschema import JsonObjectSchema
 
 def new_data_descriptor(data_id: str, data: Any, require: bool = False) -> 'DataDescriptor':
     if isinstance(data, xr.Dataset):
-        # TODO: implement me: data -> DatasetDescriptor
-        return DatasetDescriptor(data_id=data_id, type_specifier=get_type_specifier(data))
+        variable_descriptors = {}
+        for data_var_name in data.data_vars.keys():
+            data_var = data.data_vars[data_var_name]
+            variable_descriptors[data_var_name] = \
+                VariableDescriptor(name=str(data_var_name),
+                                   dtype=str(data_var.dtype),
+                                   dims=data_var.dims,
+                                   attrs=data_var.attrs if data_var.attrs else None)
+        bbox = None
+        if 'geospatial_lat_min' in data.attrs and 'geospatial_lon_min' in data.attrs \
+                and 'geospatial_lat_max' in data.attrs and 'geospatial_lon_max' in data.attrs:
+            bbox = (data.geospatial_lat_min, data.geospatial_lon_min,
+                                       data.geospatial_lat_max, data.geospatial_lon_max)
+        spatial_res = _determine_spatial_res(data)
+        time_coverage_start = None
+        time_coverage_end = None
+        if 'time_coverage_start' in data.attrs:
+            time_coverage_start = data.time_coverage_start
+        if 'time_coverage_end' in data.attrs:
+            time_coverage_end = data.time_coverage_end
+        time_period = _determine_time_period(data)
+        return DatasetDescriptor(data_id=data_id,
+                                 type_specifier=get_type_specifier(data),
+                                 bbox=bbox,
+                                 time_range=(time_coverage_start, time_coverage_end),
+                                 time_period=time_period,
+                                 spatial_res=spatial_res,
+                                 coords=list(data.coords.keys()),
+                                 dims=dict(data.dims),
+                                 data_vars=variable_descriptors,
+                                 attrs=data.attrs)
     elif isinstance(data, MultiLevelDataset):
         # TODO: implement me: data -> MultiLevelDatasetDescriptor
         return MultiLevelDatasetDescriptor(data_id=data_id, num_levels=5)
@@ -59,6 +89,30 @@ def new_data_descriptor(data_id: str, data: Any, require: bool = False) -> 'Data
     elif not require:
         return DataDescriptor(data_id=data_id, type_specifier=TYPE_SPECIFIER_ANY)
     raise NotImplementedError()
+
+
+def _determine_spatial_res(data: xr.Dataset):
+    lat_dimensions = ['lat', 'latitude', 'y']
+    for lat_dimension in lat_dimensions:
+        if lat_dimension in data:
+            lat_diff = data[lat_dimension].diff(dim=data[lat_dimension].dims[0]).values
+            lat_res = lat_diff[0]
+            lat_regular = np.allclose(lat_res, lat_diff, 1e-8)
+            if lat_regular:
+                return lat_res
+
+
+def _determine_time_period(data: xr.Dataset):
+    if 'time' in data and len(data['time'].values) > 0:
+        time_diff = data['time'].diff(dim=data['time'].dims[0]).values.astype(np.float64)
+        time_res = time_diff[0]
+        time_regular = np.allclose(time_res, time_diff, 1e-8)
+        if time_regular:
+            time_period = pd.to_timedelta(time_res).isoformat()
+            # remove leading P
+            time_period = time_period[1:]
+            # removing sub-day precision
+            return time_period.split('T')[0]
 
 
 class DataDescriptor:
