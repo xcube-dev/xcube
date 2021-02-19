@@ -24,6 +24,7 @@ from abc import ABC
 import json
 import os
 import s3fs
+from typing import Mapping
 from typing import Sequence
 
 from xcube.core.store import DatasetDescriptor
@@ -70,8 +71,10 @@ class ZarrDescriber(ABC):
                                   ['geospatial_lat_min', 'geospatial_lon_min',
                                    'geospatial_lat_max', 'geospatial_lon_max'],
                                   'bbox')
-            if len(zarr_attrs.get('history', [])) > 0:
-                cube_params = zarr_attrs.get('history', [])[0].get('cube_params', {})
+            history = zarr_attrs.get('history', [])
+            if isinstance(history, Sequence) and len(history) > 0 and \
+                    isinstance(history[0], Mapping):
+                cube_params = history[0].get('cube_params', {})
                 descriptor_dict['bbox'] = cube_params.get('bbox', None)
                 known_variable_names = cube_params.get('variable_names', None)
 
