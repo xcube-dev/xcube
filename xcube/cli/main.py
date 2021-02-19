@@ -48,7 +48,10 @@ def cli(traceback=False, scheduler=None, warnings=None):
     # filter when --warnings is omitted, but it can be needed during
     # unit testing if a previous test has caused the filter to be changed.
     import warnings as _warnings
-    _warnings.simplefilter('default' if warnings else 'ignore')
+    _warnings.simplefilter('default' if warnings else 'ignore',
+                           category=DeprecationWarning, append=False)
+    _warnings.simplefilter('default' if warnings else 'ignore',
+                           category=RuntimeWarning, append=True)
 
 
 # Add registered CLI commands
