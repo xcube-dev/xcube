@@ -5,6 +5,7 @@ import xarray as xr
 from xcube.core.new import new_cube
 from xcube.core.store import DataStoreError
 from xcube.core.store import DatasetDescriptor
+from xcube.core.store import VariableDescriptor
 from xcube.core.store import TYPE_SPECIFIER_CUBE
 from xcube.core.store import TYPE_SPECIFIER_DATASET
 from xcube.core.store import new_data_store
@@ -58,19 +59,63 @@ class MemoryCubeStoreTest(unittest.TestCase):
     def test_describe_data(self):
         dd = self.store.describe_data('cube_1')
         self.assertIsInstance(dd, DatasetDescriptor)
-        self.assertEqual(
+        self.assertDictEqual(
             DatasetDescriptor(
                 data_id='cube_1',
                 type_specifier=TYPE_SPECIFIER_CUBE,
+                bbox=(-90.0, -180.0, 90.0, 180.0),
+                coords=['lon', 'lat', 'time', 'lon_bnds', 'lat_bnds', 'time_bnds'],
+                time_range=('2010-01-01T00:00:00', '2010-01-06T00:00:00'),
+                time_period='1D',
+                spatial_res=1.0,
+                data_vars={'B01': VariableDescriptor(name='B01',
+                                                     dtype='float64',
+                                                     dims=('time', 'lat', 'lon')),
+                           'B02': VariableDescriptor(name='B02',
+                                                     dtype='float64',
+                                                     dims=('time', 'lat', 'lon'))},
+                dims={'bnds': 2, 'lat': 180, 'lon': 360, 'time': 5},
+                attrs={'Conventions': 'CF-1.7',
+                       'title': 'Test Cube',
+                       'time_coverage_start': '2010-01-01T00:00:00',
+                       'time_coverage_end': '2010-01-06T00:00:00',
+                       'geospatial_lon_min': -180.0,
+                       'geospatial_lon_max': 180.0,
+                       'geospatial_lon_units': 'degrees_east',
+                       'geospatial_lat_min': -90.0,
+                       'geospatial_lat_max': 90.0,
+                       'geospatial_lat_units': 'degrees_north'}
             ).to_dict(),
             dd.to_dict())
 
         dd = self.store.describe_data('cube_1', type_specifier='dataset[cube]')
         self.assertIsInstance(dd, DatasetDescriptor)
-        self.assertEqual(
+        self.assertDictEqual(
             DatasetDescriptor(
                 data_id='cube_1',
                 type_specifier=TYPE_SPECIFIER_CUBE,
+                bbox=(-90.0, -180.0, 90.0, 180.0),
+                coords=['lon', 'lat', 'time', 'lon_bnds', 'lat_bnds', 'time_bnds'],
+                time_range=('2010-01-01T00:00:00', '2010-01-06T00:00:00'),
+                time_period='1D',
+                spatial_res=1.0,
+                data_vars={'B01': VariableDescriptor(name='B01',
+                                                     dtype='float64',
+                                                     dims=('time', 'lat', 'lon')),
+                           'B02': VariableDescriptor(name='B02',
+                                                     dtype='float64',
+                                                     dims=('time', 'lat', 'lon'))},
+                dims={'bnds': 2, 'lat': 180, 'lon': 360, 'time': 5},
+                attrs={'Conventions': 'CF-1.7',
+                       'title': 'Test Cube',
+                       'time_coverage_start': '2010-01-01T00:00:00',
+                       'time_coverage_end': '2010-01-06T00:00:00',
+                       'geospatial_lon_min': -180.0,
+                       'geospatial_lon_max': 180.0,
+                       'geospatial_lon_units': 'degrees_east',
+                       'geospatial_lat_min': -90.0,
+                       'geospatial_lat_max': 90.0,
+                       'geospatial_lat_units': 'degrees_north'}
             ).to_dict(),
             dd.to_dict())
 

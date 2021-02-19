@@ -1,5 +1,8 @@
 ## Changes in 0.6.2 (in development)
 
+* The S3 data store  `xcube.core.store.stores.s3.S3DataStore` now implements the `describe_data()` method. 
+  It therefore can also be used as a data store from which data is queried and read.  
+
 * The `xcube gen2` data cube generator tool has been hidden from
   the set of "official" xcube tools. It is considered as an internal tool 
   that is subject to change at any time until its interface has stabilized.
