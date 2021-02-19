@@ -242,9 +242,11 @@ class DataStorePool:
     @classmethod
     def from_file(cls, path: str) -> 'DataStorePool':
         _, ext = os.path.splitext(path)
-        lib = json if ext == '.json' else yaml
         with open(path) as fp:
-            store_configs = lib.load(fp)
+            if ext == '.json':
+                store_configs = json.load(fp)
+            else:
+                store_configs = yaml.safe_load(fp)
         return cls.from_dict(store_configs)
 
     @classmethod
