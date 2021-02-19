@@ -43,7 +43,7 @@ from xcube.core.store import get_type_specifier
 from xcube.core.store import new_data_descriptor
 from xcube.core.store import new_data_opener
 from xcube.core.store import new_data_writer
-from xcube.core.store import S3ZarrDescriber
+from xcube.core.store.stores.zarrdescriber import S3ZarrDescriber
 from xcube.core.store.accessors.dataset import S3Mixin
 from xcube.util.assertions import assert_condition
 from xcube.util.assertions import assert_given
