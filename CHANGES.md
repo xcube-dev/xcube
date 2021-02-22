@@ -3,6 +3,11 @@
 * The S3 data store  `xcube.core.store.stores.s3.S3DataStore` now implements the `describe_data()` method. 
   It therefore can also be used as a data store from which data is queried and read.  
 
+* The `xcube gen2` data cube generator tool has been hidden from
+  the set of "official" xcube tools. It is considered as an internal tool 
+  that is subject to change at any time until its interface has stabilized.
+  Please refer to `xcube gen2 --help` for more information.
+
 * Added `coords` property to `DatasetDescriptor` class. 
   The `data_vars` property of the `DatasetDescriptor` class is now a dictionary. 
 

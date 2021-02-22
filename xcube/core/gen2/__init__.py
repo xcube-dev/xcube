@@ -21,8 +21,10 @@
 
 from .config import CallbackConfig
 from .config import CubeConfig
-from .config import CubeGeneratorConfig
 from .config import InputConfig
 from .config import OutputConfig
 from .error import CubeGeneratorError
 from .generator import CubeGenerator
+from .generator import LocalCubeGenerator
+from .request import CubeGeneratorRequest
+from .response import CubeInfo

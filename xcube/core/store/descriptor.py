@@ -61,7 +61,7 @@ def new_data_descriptor(data_id: str, data: Any, require: bool = False) -> 'Data
         if 'geospatial_lat_min' in data.attrs and 'geospatial_lon_min' in data.attrs \
                 and 'geospatial_lat_max' in data.attrs and 'geospatial_lon_max' in data.attrs:
             bbox = (data.geospatial_lat_min, data.geospatial_lon_min,
-                                       data.geospatial_lat_max, data.geospatial_lon_max)
+                    data.geospatial_lat_max, data.geospatial_lon_max)
         spatial_res = _determine_spatial_res(data)
         time_coverage_start = None
         time_coverage_end = None
@@ -240,32 +240,28 @@ class DatasetDescriptor(DataDescriptor):
     def from_dict(cls, d: Mapping[str, Any]) -> 'DatasetDescriptor':
         """Create new instance from a JSON-serializable dictionary"""
         assert_in('data_id', d)
-        data_vars_dict = None
-        data_vars = d.get('data_vars', None)
+        data_vars = d.get('data_vars')
         if data_vars:
-            data_vars_dict = {}
-            for data_var_key, data_var_value in data_vars.items():
-                data_vars_dict[data_var_key] = VariableDescriptor.from_dict(data_var_value)
+            data_vars = {k: VariableDescriptor.from_dict(v) for k, v in data_vars.items()}
         return DatasetDescriptor(data_id=d['data_id'],
                                  type_specifier=d.get('type_specifier', TYPE_SPECIFIER_DATASET),
-                                 crs=d.get('crs', None),
-                                 bbox=d.get('bbox', None),
-                                 time_range=d.get('time_range', None),
-                                 time_period=d.get('time_period', None),
-                                 spatial_res=d.get('spatial_res', None),
-                                 coords=d.get('coords', None),
-                                 dims=d.get('dims', None),
-                                 data_vars=data_vars_dict,
-                                 attrs=d.get('attrs', None),
-                                 open_params_schema=d.get('open_params_schema', None))
+                                 crs=d.get('crs'),
+                                 bbox=d.get('bbox'),
+                                 time_range=d.get('time_range'),
+                                 time_period=d.get('time_period'),
+                                 spatial_res=d.get('spatial_res'),
+                                 coords=d.get('coords'),
+                                 dims=d.get('dims'),
+                                 data_vars=data_vars,
+                                 attrs=d.get('attrs'),
+                                 open_params_schema=d.get('open_params_schema'))
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert into a JSON-serializable dictionary"""
         d = super().to_dict()
         if self.data_vars is not None:
-            d['data_vars'] = {}
-            for vd_key, vd_value in self.data_vars.items():
-                d['data_vars'][vd_key] = vd_value.to_dict()
+            data_vars = {k: v.to_dict() for k, v in self.data_vars.items()}
+            d['data_vars'] = data_vars
         _copy_none_null_props(self, d, ['spatial_res', 'coords', 'dims', 'attrs'])
         return d
 

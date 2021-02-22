@@ -20,7 +20,7 @@
 # SOFTWARE.
 
 from typing import Sequence
-
+import warnings
 import xarray as xr
 
 from xcube.core.gen2.config import CubeConfig
@@ -54,7 +54,7 @@ class CubesOpener:
         return cubes
 
     def _open_cube(self, input_config: InputConfig) -> xr.Dataset:
-        all_cube_params = self._cube_config.to_dict()
+        cube_params = self._cube_config.to_dict()
         opener_id = input_config.opener_id
         store_params = input_config.store_params or {}
         open_params = input_config.open_params or {}
@@ -91,8 +91,13 @@ class CubesOpener:
             opener = new_data_opener(opener_id)
             open_params.update(**store_params, **open_params)
         open_params_schema = opener.get_open_data_params_schema(input_config.data_id)
-        cube_params = {k: v for k, v in all_cube_params.items() if k in open_params_schema.properties}
-        cube = opener.open_data(input_config.data_id, **open_params, **cube_params)
+        cube_open_params = {k: v for k, v in cube_params.items() if k in open_params_schema.properties}
+        unsupported_cube_params = {k for k in cube_params.keys() if k not in open_params_schema.properties}
+        cube = opener.open_data(input_config.data_id, **open_params, **cube_open_params)
         if normalisation_required:
             cube = normalize_dataset(cube)
+        if unsupported_cube_params:
+            for k in unsupported_cube_params:
+                warnings.warn(f'Unsupported cube_config parameter will be ignored:'
+                              f' {k} = {cube_params[k]!r}')
         return cube
