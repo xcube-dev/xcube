@@ -16,9 +16,9 @@ def result(worked, total_work, failed=False, traceback: str = None):
         "result": {
             "cubegen_id": "93",
             "status": {
-                "failed": failed,
-                "succeeded": worked == total_work,
-                "active": worked != total_work,
+                "failed": True if failed else None,
+                "succeeded": True if worked == total_work else None,
+                "active": 1 if worked != total_work else None,
             },
             "progress": {
                 "worked": worked, "total_work": total_work,
@@ -148,6 +148,10 @@ class CubeGeneratorServiceTest(unittest.TestCase):
         self.assertEqual(dict(CHL=dict(long_name='chlorophyll_concentration',
                                        units='mg/m^-1')),
                          cube_info.data_vars)
-        self.assertEqual(300, cube_info.cost_info.punits_input)
-        self.assertEqual(400, cube_info.cost_info.punits_output)
-        self.assertEqual(500, cube_info.cost_info.punits_combined)
+        self.assertEqual(
+            {
+                "punits_input": 300,
+                "punits_output": 400,
+                "punits_combined": 500
+            },
+            cube_info.cost_info.additional_properties)

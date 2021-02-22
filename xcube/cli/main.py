@@ -49,9 +49,9 @@ def cli(traceback=False, scheduler=None, warnings=None):
     # unit testing if a previous test has caused the filter to be changed.
     import warnings as _warnings
     _warnings.simplefilter('default' if warnings else 'ignore',
-                           category=DeprecationWarning, append=False)
+                           category=DeprecationWarning)
     _warnings.simplefilter('default' if warnings else 'ignore',
-                           category=RuntimeWarning, append=True)
+                           category=RuntimeWarning)
 
 
 # Add registered CLI commands
