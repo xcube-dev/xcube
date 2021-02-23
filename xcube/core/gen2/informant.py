@@ -47,11 +47,11 @@ class CubeInformant:
 
     @property
     def effective_cube_config(self) -> CubeConfig:
-        cube_config, _ = self.compute_effective_cube_config()
+        cube_config, _, _ = self._compute_effective_cube_config()
         return cube_config
 
     def generate(self) -> CubeInfo:
-        cube_config, is_geo_crs = self.compute_effective_cube_config()
+        cube_config, resolved_crs, resolved_time_range = self._compute_effective_cube_config()
 
         x_min, y_min, x_max, y_max = cube_config.bbox
         spatial_res = cube_config.spatial_res
@@ -68,12 +68,7 @@ class CubeInformant:
 
         tile_size = cube_config.tile_size
         if tile_size is not None:
-            try:
-                tile_width, tile_height = tile_size
-            except (TypeError, ValueError):
-                raise ValueError('tile_size must be a tuple (tile_width, tile_height)')
-            assert_instance(tile_width, int, 'tile_width')
-            assert_instance(tile_height, int, 'tile_height')
+            tile_width, tile_height = tile_size
 
             # TODO: this must be made common store logic
             if width > 1.5 * tile_width:
@@ -85,23 +80,16 @@ class CubeInformant:
                 num_tiles_y = _idiv(height, tile_height)
                 height = num_tiles_y * tile_height
 
-        time_range = cube_config.time_range
-        time_period = cube_config.time_period
-        try:
-            date_range = pd.date_range(start=time_range[0], end=time_range[1], freq=time_period)
-        except ValueError as e:
-            raise ValueError(f'invalid time_range or time_period: {e}') from e
-
         variable_names = cube_config.variable_names
 
-        num_times = len(date_range)
+        num_times = len(resolved_time_range)
         num_variables = len(variable_names)
         num_requests = num_variables * num_times * num_tiles_x * num_tiles_y
         # TODO: get original data types from dataset descriptors
         num_bytes_per_pixel = 4
         num_bytes = num_variables * num_times * (height * width * num_bytes_per_pixel)
 
-        x_name, y_name = ('lon', 'lat') if is_geo_crs else ('x', 'y')
+        x_name, y_name = ('lon', 'lat') if resolved_crs.is_geographic else ('x', 'y')
 
         data_id = self._request.output_config.data_id or 'unnamed'
         # TODO: get original variable descriptors from input dataset descriptors
@@ -126,7 +114,7 @@ class CubeInformant:
         return CubeInfo(dataset_descriptor=dataset_descriptor,
                         size_estimation=size_estimation)
 
-    def compute_effective_cube_config(self) -> Tuple[CubeConfig, bool]:
+    def _compute_effective_cube_config(self) -> Tuple[CubeConfig, pyproj.crs.CRS, Sequence[pd.Timestamp]]:
         cube_config = self._request.cube_config
 
         crs = cube_config.crs
@@ -134,7 +122,10 @@ class CubeInformant:
             crs = self.first_input_dataset_descriptor.crs
             if crs is None:
                 crs = 'WGS84'
-        is_geo_crs = pyproj.crs.CRS.from_string(crs).is_geographic
+        try:
+            resolved_crs = pyproj.crs.CRS.from_string(crs)
+        except (ValueError, pyproj.exceptions.CRSError) as e:
+            raise ValueError(f'crs is invalid: {e}') from e
 
         bbox = cube_config.bbox
         if bbox is None:
@@ -147,7 +138,7 @@ class CubeInformant:
         assert_instance(y1, numbers.Number, 'y1 of bbox')
         assert_instance(x2, numbers.Number, 'x2 of bbox')
         assert_instance(y2, numbers.Number, 'y2 of bbox')
-        if is_geo_crs and x2 < x1:
+        if resolved_crs.is_geographic and x2 < x1:
             x2 += 360
         bbox = x1, y1, x2, y2
 
@@ -191,6 +182,11 @@ class CubeInformant:
                 time_period = '1D'
         assert_instance(time_period, str, 'time_period')
 
+        try:
+            resolved_time_range = pd.date_range(start=start_ts, end=end_ts, freq=time_period)
+        except ValueError as e:
+            raise ValueError(f'invalid time_range or time_period: {e}') from e
+
         variable_names = cube_config.variable_names
         if variable_names is None:
             variable_names = list(self.first_input_dataset_descriptor.data_vars.keys())
@@ -201,7 +197,7 @@ class CubeInformant:
                           spatial_res=spatial_res,
                           tile_size=tile_size,
                           time_range=time_range,
-                          time_period=time_period), is_geo_crs
+                          time_period=time_period), resolved_crs, resolved_time_range
 
 
 def _idiv(x: int, y: int) -> int:
