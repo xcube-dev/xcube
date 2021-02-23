@@ -117,8 +117,10 @@ class CubeGeneratorService(CubeGenerator):
                     total_work = progress_state.total_work
                     progress = progress_state.progress or 0
                     worked = progress * total_work
-                    cm.worked(100 * ((worked - last_worked) / total_work))
-                    last_worked = worked
+                    work = 100 * ((worked - last_worked) / total_work)
+                    if work > 0:
+                        cm.worked(work)
+                        last_worked = worked
 
     @classmethod
     def _get_cube_generation_result(cls, response: requests.Response) -> Result:
