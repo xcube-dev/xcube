@@ -134,7 +134,7 @@ class CubeGeneratorService(CubeGenerator):
     def _parse_response(cls, response: requests.Response, response_type: Type[R]) -> R:
         CubeGeneratorError.maybe_raise_for_response(response)
         data = response.json()
-        cls.__dump_json(data)
+        # cls.__dump_json(data)
         # noinspection PyBroadException
         try:
             return response_type.from_dict(data)
