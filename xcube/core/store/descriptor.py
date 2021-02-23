@@ -53,14 +53,8 @@ from xcube.util.jsonschema import JsonStringSchema
 
 def new_data_descriptor(data_id: str, data: Any, require: bool = False) -> 'DataDescriptor':
     if isinstance(data, xr.Dataset):
-        variable_descriptors = {}
-        for data_var_name in data.data_vars.keys():
-            data_var = data.data_vars[data_var_name]
-            variable_descriptors[data_var_name] = \
-                VariableDescriptor(name=str(data_var_name),
-                                   dtype=str(data_var.dtype),
-                                   dims=data_var.dims,
-                                   attrs=data_var.attrs if data_var.attrs else None)
+        coords = _build_variable_descriptor_dict(data.coords)
+        data_vars = _build_variable_descriptor_dict(data.data_vars)
         bbox = None
         if 'geospatial_lat_min' in data.attrs and 'geospatial_lon_min' in data.attrs \
                 and 'geospatial_lat_max' in data.attrs and 'geospatial_lon_max' in data.attrs:
@@ -80,9 +74,9 @@ def new_data_descriptor(data_id: str, data: Any, require: bool = False) -> 'Data
                                  time_range=(time_coverage_start, time_coverage_end),
                                  time_period=time_period,
                                  spatial_res=spatial_res,
-                                 coords=list(data.coords.keys()),
+                                 coords=coords,
                                  dims=dict(data.dims),
-                                 data_vars=variable_descriptors,
+                                 data_vars=data_vars,
                                  attrs=data.attrs)
     elif isinstance(data, MultiLevelDataset):
         # TODO: implement me: data -> MultiLevelDatasetDescriptor
@@ -93,6 +87,14 @@ def new_data_descriptor(data_id: str, data: Any, require: bool = False) -> 'Data
     elif not require:
         return DataDescriptor(data_id=data_id, type_specifier=TYPE_SPECIFIER_ANY)
     raise NotImplementedError()
+
+
+def _build_variable_descriptor_dict(variables) -> Mapping[str, 'VariableDescriptor']:
+    return {str(var_name): VariableDescriptor(name=str(var_name),
+                                              dtype=str(var.dtype),
+                                              dims=var.dims,
+                                              attrs=var.attrs if var.attrs else None)
+            for var_name, var in variables.items()}
 
 
 def _determine_spatial_res(data: xr.Dataset):
@@ -205,7 +207,8 @@ class DatasetDescriptor(DataDescriptor):
     :param time_period: The data's periodicity if it is evenly temporally resolved (see
     https://github.com/dcs4cop/xcube/blob/master/docs/source/storeconv.md#date-time-and-duration-specifications )
     :param spatial_res: The spatial extent of a pixel in crs units
-    :param coords: A list of the dataset's data coordinates
+    :param coords: mapping of the dataset's data coordinate names to VariableDescriptors
+    (``xcube.core.store.VariableDescriptor``).
     :param dims: A mapping of the dataset's dimensions to their sizes
     :param data_vars: A mapping of the dataset's variable names to VariableDescriptors
     (``xcube.core.store.VariableDescriptor``).
@@ -222,7 +225,7 @@ class DatasetDescriptor(DataDescriptor):
                  time_range: Tuple[Optional[str], Optional[str]] = None,
                  time_period: str = None,
                  spatial_res: float = None,
-                 coords: Sequence[str] = None,
+                 coords: Mapping[str, 'VariableDescriptor'] = None,
                  dims: Mapping[str, int] = None,
                  data_vars: Mapping[str, 'VariableDescriptor'] = None,
                  attrs: Mapping[str, any] = None,
@@ -234,7 +237,7 @@ class DatasetDescriptor(DataDescriptor):
                          time_range=time_range,
                          time_period=time_period,
                          open_params_schema=open_params_schema)
-        self.coords = coords
+        self.coords = coords if coords else None
         self.dims = dict(dims) if dims else None
         self.data_vars = data_vars if data_vars else None
         self.spatial_res = spatial_res
@@ -267,6 +270,9 @@ class DatasetDescriptor(DataDescriptor):
     def from_dict(cls, d: Mapping[str, Any]) -> 'DatasetDescriptor':
         """Create new instance from a JSON-serializable dictionary"""
         assert_in('data_id', d)
+        coords = d.get('coords')
+        if coords:
+            coords = {k: VariableDescriptor.from_dict(v) for k, v in coords.items()}
         data_vars = d.get('data_vars')
         if data_vars:
             data_vars = {k: VariableDescriptor.from_dict(v) for k, v in data_vars.items()}
@@ -277,7 +283,7 @@ class DatasetDescriptor(DataDescriptor):
                                  time_range=d.get('time_range'),
                                  time_period=d.get('time_period'),
                                  spatial_res=d.get('spatial_res'),
-                                 coords=d.get('coords'),
+                                 coords=coords,
                                  dims=d.get('dims'),
                                  data_vars=data_vars,
                                  attrs=d.get('attrs'),
@@ -286,10 +292,13 @@ class DatasetDescriptor(DataDescriptor):
     def to_dict(self) -> Dict[str, Any]:
         """Convert into a JSON-serializable dictionary"""
         d = super().to_dict()
+        if self.coords is not None:
+            coords = {k: v.to_dict() for k, v in self.coords.items()}
+            d['coords'] = coords
         if self.data_vars is not None:
             data_vars = {k: v.to_dict() for k, v in self.data_vars.items()}
             d['data_vars'] = data_vars
-        _copy_none_null_props(self, d, ['spatial_res', 'coords', 'dims', 'attrs'])
+        _copy_none_null_props(self, d, ['spatial_res', 'dims', 'attrs'])
         return d
 
     @classmethod
