@@ -25,6 +25,7 @@ class NewDataDescriptorTest(unittest.TestCase):
         self.assertEqual(('2010-01-01T00:00:00', '2010-01-06T00:00:00'), descriptor.time_range)
         self.assertEqual('1D', descriptor.time_period)
         self.assertEqual(1.0, descriptor.spatial_res)
+        self.assertIsNotNone(descriptor.coords)
         self.assertEqual({'time': 5, 'lat': 180, 'lon': 360, 'bnds': 2}, descriptor.dims)
         self.assertIsNotNone(descriptor.data_vars)
 
@@ -151,7 +152,18 @@ class DatasetDescriptorTest(unittest.TestCase):
             spatial_res=20.,
             time_range=('2017-06-05', '2017-06-27'),
             time_period='daily',
-            coords=['hxg', 'drg', 'rtdt'],
+            coords=dict(
+                rtdt=dict(
+                    name='rtdt',
+                    dtype='rj',
+                    dims=('rtdt'),
+                    ndim=2,
+                    attrs=dict(
+                        ssd=6,
+                        zjgrhgu='hgtr'
+                    )
+                )
+            ),
             dims=dict(x=1, y=2, z=3),
             data_vars=dict(
                 xf=dict(
@@ -191,9 +203,11 @@ class DatasetDescriptorTest(unittest.TestCase):
         self.assertEqual(20., descriptor.spatial_res)
         self.assertEqual(('2017-06-05', '2017-06-27'), descriptor.time_range)
         self.assertEqual('daily', descriptor.time_period)
-        self.assertEqual(['hxg', 'drg', 'rtdt'], descriptor.coords)
+        self.assertEqual(1, len(descriptor.coords))
+        self.assertTrue('rtdt' in descriptor.coords)
         self.assertEqual(dict(x=1, y=2, z=3), descriptor.dims)
         self.assertEqual(1, len(descriptor.data_vars))
+        self.assertTrue('xf' in descriptor.data_vars)
         self.assertEqual(236, descriptor.attrs.get('dzus', None))
         self.assertEqual('rt5', descriptor.attrs.get('tgr7h', None))
         self.assertEqual('s8fd4w5', descriptor.attrs.get('df', None))
@@ -225,6 +239,17 @@ class DatasetDescriptorTest(unittest.TestCase):
         self.assertTrue(type(descriptor.data_vars.get('xf')) == VariableDescriptor)
 
     def test_to_dict(self):
+        coords = dict(
+            rtdt=VariableDescriptor(
+                name='rtdt',
+                dtype='rj',
+                dims=('rtdt',),
+                attrs=dict(
+                    ssd=6,
+                    zjgrhgu='hgtr'
+                )
+            )
+        )
         var_descriptors = dict(
             xf=VariableDescriptor(
                 name='xf',
@@ -244,7 +269,7 @@ class DatasetDescriptorTest(unittest.TestCase):
             spatial_res=20.,
             time_range=('2017-06-05', '2017-06-27'),
             time_period='daily',
-            coords=['hxg', 'drg', 'rtdt'],
+            coords=coords,
             dims=dict(
                 x=1, y=2, z=3
             ),
@@ -265,7 +290,18 @@ class DatasetDescriptorTest(unittest.TestCase):
                 spatial_res=20.,
                 time_range=('2017-06-05', '2017-06-27'),
                 time_period='daily',
-                coords=['hxg', 'drg', 'rtdt'],
+                coords=dict(
+                    rtdt=dict(
+                        name='rtdt',
+                        dtype='rj',
+                        dims=('rtdt',),
+                        ndim=1,
+                        attrs=dict(
+                            ssd=6,
+                            zjgrhgu='hgtr'
+                        )
+                    )
+                ),
                 dims=dict(x=1, y=2, z=3),
                 data_vars=dict(
                     xf=dict(
