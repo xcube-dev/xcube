@@ -86,14 +86,11 @@ def new_data_descriptor(data_id: str, data: Any, require: bool = False) -> 'Data
 
 
 def _build_variable_descriptor_dict(variables) -> Mapping[str, 'VariableDescriptor']:
-    var_dict = {}
-    for var_name in variables.keys():
-        var = variables[var_name]
-        var_dict[var_name] = VariableDescriptor(name=str(var_name),
-                                            dtype=str(var.dtype),
-                                            dims=var.dims,
-                                            attrs=var.attrs if var.attrs else None)
-    return var_dict
+    return {str(var_name): VariableDescriptor(name=str(var_name),
+                                              dtype=str(var.dtype),
+                                              dims=var.dims,
+                                              attrs=var.attrs if var.attrs else None)
+            for var_name, var in variables.items()}
 
 
 def _determine_spatial_res(data: xr.Dataset):
