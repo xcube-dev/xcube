@@ -21,7 +21,7 @@
 
 import numbers
 from collections import Iterable
-from typing import Optional, Dict, Any, Sequence, Mapping, Tuple
+from typing import Optional, Dict, Any, Sequence, Mapping, Tuple, Union
 
 import pyproj
 
@@ -31,6 +31,7 @@ from xcube.util.assertions import assert_instance
 from xcube.util.jsonschema import JsonArraySchema
 from xcube.util.jsonschema import JsonBooleanSchema
 from xcube.util.jsonschema import JsonDateSchema
+from xcube.util.jsonschema import JsonIntegerSchema
 from xcube.util.jsonschema import JsonNumberSchema
 from xcube.util.jsonschema import JsonObjectSchema
 from xcube.util.jsonschema import JsonStringSchema
@@ -147,7 +148,8 @@ class CubeConfig:
                  variable_names: Sequence[str] = None,
                  crs: str = None,
                  bbox: Tuple[float, float, float, float] = None,
-                 spatial_res: float = None,
+                 spatial_res: Union[float, Tuple[float]] = None,
+                 tile_size: Union[int, Tuple[int, int]] = None,
                  time_range: Tuple[str, Optional[str]] = None,
                  time_period: str = None):
 
@@ -175,6 +177,19 @@ class CubeConfig:
             assert_instance(spatial_res, numbers.Number, 'spatial_res')
             self.spatial_res = float(spatial_res)
 
+        self.tile_size = None
+        if tile_size is not None:
+            if isinstance(tile_size, int):
+                tile_width, tile_height = tile_size, tile_size
+            else:
+                try:
+                    tile_width, tile_height = tile_size
+                except (ValueError, TypeError):
+                    raise ValueError('tile_size must be an integer or a pair of integers')
+                assert_instance(tile_width, numbers.Number, 'tile_width of tile_size')
+                assert_instance(tile_height, numbers.Number, 'tile_height of tile_size')
+            self.tile_size = tile_width, tile_height
+
         self.time_range = None
         if time_range is not None:
             assert_condition(len(time_range) == 2, 'time_range is invalid')
@@ -190,6 +205,7 @@ class CubeConfig:
                                'crs',
                                'bbox',
                                'spatial_res',
+                               'tile_size',
                                'time_range',
                                'time_period'))
 
@@ -216,6 +232,12 @@ class CubeConfig:
                 spatial_res=JsonNumberSchema(
                     nullable=True,
                     exclusive_minimum=0.0),
+                tile_size=JsonArraySchema(
+                    nullable=True,
+                    items=[
+                        JsonIntegerSchema(minimum=1, maximum=2500),
+                        JsonIntegerSchema(minimum=1, maximum=2500),
+                    ]),
                 time_range=JsonDateSchema.new_range(nullable=True),
                 time_period=JsonStringSchema(
                     nullable=True,
@@ -235,8 +257,10 @@ def _to_dict(self, keys: Tuple[str, ...]) -> Dict[str, Any]:
         if v is not None:
             s = schema.properties.get(k)
             if v != s.default:
-                if isinstance(v, str):
+                if isinstance(v, (str, bool, int, float)):
                     pass
+                elif hasattr(v, 'to_dict') and callable(v.to_dict):
+                    v = v.to_dict()
                 elif isinstance(v, Mapping):
                     v = dict(v)
                 elif isinstance(v, Iterable):

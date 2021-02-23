@@ -36,7 +36,11 @@ from xcube.core.store.typespecifier import get_type_specifier
 from xcube.util.assertions import assert_given
 from xcube.util.assertions import assert_in
 from xcube.util.ipython import register_json_formatter
+from xcube.util.jsonschema import JsonArraySchema
+from xcube.util.jsonschema import JsonDateSchema
+from xcube.util.jsonschema import JsonNumberSchema
 from xcube.util.jsonschema import JsonObjectSchema
+from xcube.util.jsonschema import JsonStringSchema
 
 
 # TODO: IMPORTANT: replace, reuse, or align with
@@ -235,6 +239,29 @@ class DatasetDescriptor(DataDescriptor):
         self.data_vars = data_vars if data_vars else None
         self.spatial_res = spatial_res
         self.attrs = _convert_nans_to_none(dict(attrs)) if attrs else None
+
+    @classmethod
+    def get_schema(cls) -> JsonObjectSchema:
+        return JsonObjectSchema(
+            properties=dict(
+                data_id=JsonStringSchema(min_length=1),
+                type_specifier=JsonStringSchema(default=TYPE_SPECIFIER_DATASET, min_length=1),
+                crs=JsonStringSchema(min_length=1),
+                bbox=JsonArraySchema(items=[JsonNumberSchema(),
+                                            JsonNumberSchema(),
+                                            JsonNumberSchema(),
+                                            JsonNumberSchema()]),
+                time_range=JsonDateSchema.new_range(nullable=True),
+                time_period=JsonStringSchema(min_length=1),
+                spatial_res=JsonNumberSchema(exclusive_minimum=0.0),
+                dims=JsonObjectSchema(additional_properties=True),
+                coords=JsonObjectSchema(additional_properties=True),
+                data_vars=JsonObjectSchema(additional_properties=True),
+                attrs=JsonStringSchema(additional_properties=True),
+                open_params_schema=JsonObjectSchema(additional_properties=True),
+            ),
+            required=['data_id'],
+            additional_properties=False)
 
     @classmethod
     def from_dict(cls, d: Mapping[str, Any]) -> 'DatasetDescriptor':
