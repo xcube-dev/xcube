@@ -44,8 +44,8 @@ class CubeInfo(ResponseBase):
     def __init__(self,
                  dataset_descriptor: DatasetDescriptor,
                  size_estimation: Dict[str, Any]):
-        self.dataset_descriptor = dataset_descriptor
-        self.size_info = size_estimation
+        self.dataset_descriptor: DatasetDescriptor = dataset_descriptor
+        self.size_estimation: dict = size_estimation
 
     @classmethod
     def get_schema(cls) -> JsonObjectSchema:

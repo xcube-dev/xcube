@@ -85,7 +85,7 @@ class Status(ResponseBase):
         return cls.get_schema().from_instance(value)
 
 
-class ProgressStatus(ResponseBase):
+class ProgressState(ResponseBase):
     def __init__(self,
                  progress: float,
                  # worked: Union[int, float],
@@ -113,27 +113,27 @@ class ProgressStatus(ResponseBase):
             factory=cls)
 
     @classmethod
-    def from_dict(cls, value: Dict) -> 'ProgressStatus':
+    def from_dict(cls, value: Dict) -> 'ProgressState':
         return cls.get_schema().from_instance(value)
 
 
 class Progress(ResponseBase):
     def __init__(self,
                  sender: str,
-                 status: ProgressStatus):
+                 state: ProgressState):
         self.sender: str = sender
-        self.status: ProgressStatus = status
+        self.state: ProgressState = state
 
     @classmethod
     def get_schema(cls) -> JsonObjectSchema:
         return JsonObjectSchema(
             properties=dict(
                 sender=JsonStringSchema(),
-                status=ProgressStatus.get_schema(),
+                state=ProgressState.get_schema(),
             ),
             required=[
                 'sender',
-                'status',
+                'state',
             ],
             additional_properties=False,
             factory=cls)

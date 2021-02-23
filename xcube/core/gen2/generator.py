@@ -25,8 +25,8 @@ from xcube.core.store import DataStorePool
 from xcube.util.assertions import assert_condition
 from xcube.util.assertions import assert_instance
 from xcube.util.progress import observe_progress
-from . import CubeInformant
 from .combiner import CubesCombiner
+from .informant import CubeInformant
 from .opener import CubesOpener
 from .progress import ApiProgressCallbackObserver
 from .progress import ConsoleProgressObserver
