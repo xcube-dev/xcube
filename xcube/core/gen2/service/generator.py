@@ -115,7 +115,8 @@ class CubeGeneratorService(CubeGenerator):
                 if result.progress is not None and len(result.progress) > 0:
                     first_progress = result.progress[0]
                     total_work = first_progress.total_work
-                    worked = first_progress.worked
+                    progress = first_progress.progress or 0
+                    worked = progress * total_work
                     cm.worked(100 * ((worked - last_worked) / total_work))
                     last_worked = worked
 

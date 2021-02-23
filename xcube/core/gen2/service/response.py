@@ -86,18 +86,31 @@ class Status(ResponseBase):
 
 
 class Progress(ResponseBase):
-    def __init__(self, worked: Union[int, float], total_work: Union[int, float], **additional_properties):
-        self.worked: float = float(worked)
+    def __init__(self,
+                 progress: float,
+                 # worked: Union[int, float],
+                 total_work: Union[int, float],
+                 **additional_properties):
+        self.progress: float = float(progress)
+        # self.worked: float = float(worked)
         self.total_work: float = float(total_work)
         self.additional_properties = additional_properties
 
     @classmethod
     def get_schema(cls) -> JsonObjectSchema:
-        return JsonObjectSchema(properties=dict(worked=JsonNumberSchema(),
-                                                total_work=JsonNumberSchema()),
-                                required=['worked', 'total_work'],
-                                additional_properties=True,
-                                factory=cls)
+        return JsonObjectSchema(
+            properties=dict(
+                progress=JsonNumberSchema(minimum=0.0),
+                # worked=JsonNumberSchema(minimum=0),
+                total_work=JsonNumberSchema(exclusive_minimum=0)
+            ),
+            required=[
+                'progress',
+                # 'worked',
+                'total_work',
+            ],
+            additional_properties=True,
+            factory=cls)
 
     @classmethod
     def from_dict(cls, value: Dict) -> 'Progress':

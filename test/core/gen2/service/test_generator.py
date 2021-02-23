@@ -22,6 +22,7 @@ def result(worked, total_work, failed=False, traceback: str = None):
             },
             "progress": [
                 {
+                    "progress": worked / total_work,
                     "worked": worked,
                     "total_work": total_work,
                 },
