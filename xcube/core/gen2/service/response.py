@@ -53,9 +53,9 @@ class Token(ResponseBase):
 class Status(ResponseBase):
     # noinspection PyUnusedLocal
     def __init__(self,
-                 succeeded: bool = None,
-                 failed: bool = None,
-                 active: bool = None,
+                 succeeded: int = None,
+                 failed: int = None,
+                 active: int = None,
                  start_time: str = None,
                  completion_time: str = None,
                  conditions=None,
@@ -71,8 +71,8 @@ class Status(ResponseBase):
 
     @classmethod
     def get_schema(cls) -> JsonObjectSchema:
-        return JsonObjectSchema(properties=dict(succeeded=JsonBooleanSchema(nullable=True),
-                                                failed=JsonBooleanSchema(nullable=True),
+        return JsonObjectSchema(properties=dict(succeeded=JsonIntegerSchema(nullable=True),
+                                                failed=JsonIntegerSchema(nullable=True),
                                                 active=JsonIntegerSchema(nullable=True),
                                                 start_time=JsonStringSchema(nullable=True),
                                                 completion_time=JsonStringSchema(nullable=True),

@@ -17,8 +17,8 @@ def result(worked, total_work, failed=False, traceback: str = None):
         "result": {
             "cubegen_id": "93",
             "status": {
-                "failed": True if failed else None,
-                "succeeded": True if worked == total_work else None,
+                "failed": 1 if failed else None,
+                "succeeded": 1 if worked == total_work else None,
                 "active": 1 if worked != total_work else None,
             },
             "progress": [
