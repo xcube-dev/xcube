@@ -20,9 +20,12 @@ def result(worked, total_work, failed=False, traceback: str = None):
                 "succeeded": True if worked == total_work else None,
                 "active": 1 if worked != total_work else None,
             },
-            "progress": {
-                "worked": worked, "total_work": total_work,
-            }
+            "progress": [
+                {
+                    "worked": worked,
+                    "total_work": total_work,
+                },
+            ],
         }
     }
     if traceback:

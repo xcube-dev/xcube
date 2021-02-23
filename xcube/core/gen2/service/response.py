@@ -109,12 +109,12 @@ class Result(ResponseBase):
                  cubegen_id: str,
                  status: Status,
                  output: List[str] = None,
-                 progress: Progress = None,
+                 progress: List[Progress] = None,
                  **additional_properties):
         self.cubegen_id: str = cubegen_id
         self.status: Status = status
         self.output: Optional[List[str]] = output
-        self.progress: Optional[Progress] = progress
+        self.progress: Optional[List[Progress]] = progress
         self.additional_properties = additional_properties
 
     @classmethod
@@ -122,7 +122,7 @@ class Result(ResponseBase):
         return JsonObjectSchema(properties=dict(cubegen_id=JsonStringSchema(min_length=1),
                                                 status=Status.get_schema(),
                                                 output=JsonArraySchema(items=JsonStringSchema(), nullable=True),
-                                                progress=Progress.get_schema()),
+                                                progress=JsonArraySchema(items=Progress.get_schema(), nullable=True)),
                                 required=['cubegen_id', 'status'],
                                 additional_properties=True,
                                 factory=cls)
