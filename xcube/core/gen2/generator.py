@@ -25,6 +25,7 @@ from xcube.core.store import DataStorePool
 from xcube.util.assertions import assert_condition
 from xcube.util.assertions import assert_instance
 from xcube.util.progress import observe_progress
+from . import CubeInformant
 from .combiner import CubesCombiner
 from .opener import CubesOpener
 from .progress import ApiProgressCallbackObserver
@@ -111,41 +112,41 @@ class LocalCubeGenerator(CubeGenerator):
     common grid, optionally performs some cube transformation, and writes
     the resulting cube to some target cube store.
 
-    :param gen_config: Cube generation configuration.
+    :param request: Cube generation request.
     :param store_pool: An optional pool of pre-configured data stores
         referenced from *gen_config* input/output configurations.
     :param verbose: Whether to output progress information to stdout.
     """
 
     def __init__(self,
-                 gen_config: CubeGeneratorRequest,
+                 request: CubeGeneratorRequest,
                  store_pool: DataStorePool = None,
                  verbose: bool = False):
-        assert_instance(gen_config, CubeGeneratorRequest, 'gen_config')
+        assert_instance(request, CubeGeneratorRequest, 'request')
         if store_pool is not None:
             assert_instance(store_pool, DataStorePool, 'store_pool')
 
-        self._gen_config = gen_config
+        self._request = request
         self._store_pool = store_pool if store_pool is not None \
             else DataStorePool()
         self._verbose = verbose
 
     def generate_cube(self):
-        gen_config = self._gen_config
+        request = self._request
 
-        if gen_config.callback_config:
-            ApiProgressCallbackObserver(gen_config.callback_config).activate()
+        if request.callback_config:
+            ApiProgressCallbackObserver(request.callback_config).activate()
 
         if self._verbose:
             ConsoleProgressObserver().activate()
 
-        cubes_opener = CubesOpener(gen_config.input_configs,
-                                   gen_config.cube_config,
+        cubes_opener = CubesOpener(request.input_configs,
+                                   request.cube_config,
                                    store_pool=self._store_pool)
 
-        cube_combiner = CubesCombiner(gen_config.cube_config)
+        cube_combiner = CubesCombiner(request.cube_config)
 
-        cube_writer = CubeWriter(gen_config.output_config,
+        cube_writer = CubeWriter(request.output_config,
                                  store_pool=self._store_pool)
 
         with observe_progress('Generating cube', 100) as cm:
@@ -163,7 +164,5 @@ class LocalCubeGenerator(CubeGenerator):
                   .format(str(data_id), cm.state.total_time))
 
     def get_cube_info(self) -> CubeInfo:
-        # TODO: replace by actual computation of target cube dimensions
-        return CubeInfo(dims=dict(time=10 * 365, lat=720, lon=1440),
-                        chunks=dict(time=10, lat=720, lon=1440),
-                        data_vars=dict(CHL=dict(long_name='chlorophyll_concentration', units='mg/m^-1')))
+        informant = CubeInformant(request=self._request, store_pool=self._store_pool)
+        return informant.generate()

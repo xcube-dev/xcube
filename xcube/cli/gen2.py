@@ -108,8 +108,8 @@ def gen2(request_path: str,
         if info:
             def dump_cube_info(cube_info: CubeInfo):
                 import sys
-                import yaml
-                yaml.dump(cube_info.to_dict(), stream=sys.stdout, indent=2)
+                import json
+                json.dump(cube_info.to_dict(), sys.stdout, indent=2)
 
             dump_cube_info(generator.get_cube_info())
         else:
