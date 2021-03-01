@@ -20,7 +20,7 @@ class NewDataDescriptorTest(unittest.TestCase):
         self.assertTrue(isinstance(descriptor, DatasetDescriptor))
         self.assertEqual('cube', descriptor.data_id)
         self.assertEqual('dataset[cube]', descriptor.type_specifier)
-        self.assertEqual((-90, -180, 90, 180), descriptor.bbox)
+        self.assertEqual((-90.0, -180.0, 90.0, 180.0), descriptor.bbox)
         self.assertIsNone(descriptor.open_params_schema)
         self.assertEqual(('2010-01-01T00:00:00', '2010-01-06T00:00:00'), descriptor.time_range)
         self.assertEqual('1D', descriptor.time_period)

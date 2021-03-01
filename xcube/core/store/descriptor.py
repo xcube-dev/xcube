@@ -51,18 +51,9 @@ def new_data_descriptor(data_id: str, data: Any, require: bool = False) -> 'Data
     if isinstance(data, xr.Dataset):
         coords = _build_variable_descriptor_dict(data.coords)
         data_vars = _build_variable_descriptor_dict(data.data_vars)
-        bbox = None
-        if 'geospatial_lat_min' in data.attrs and 'geospatial_lon_min' in data.attrs \
-                and 'geospatial_lat_max' in data.attrs and 'geospatial_lon_max' in data.attrs:
-            bbox = (data.geospatial_lat_min, data.geospatial_lon_min,
-                    data.geospatial_lat_max, data.geospatial_lon_max)
         spatial_res = _determine_spatial_res(data)
-        time_coverage_start = None
-        time_coverage_end = None
-        if 'time_coverage_start' in data.attrs:
-            time_coverage_start = data.time_coverage_start
-        if 'time_coverage_end' in data.attrs:
-            time_coverage_end = data.time_coverage_end
+        bbox = _determine_bbox(data, spatial_res)
+        time_coverage_start, time_coverage_end = _determine_time_coverage(data)
         time_period = _determine_time_period(data)
         return DatasetDescriptor(data_id=data_id,
                                  type_specifier=get_type_specifier(data),
@@ -93,6 +84,36 @@ def _build_variable_descriptor_dict(variables) -> Mapping[str, 'VariableDescript
             for var_name, var in variables.items()}
 
 
+def _determine_bbox(data: xr.Dataset, spatial_res: float = 0.0) -> (float, float, float, float):
+    min_lat, max_lat, lat_bounds_ending = _determine_min_and_max(data, ['lat', 'latitude', 'y'])
+    min_lon, max_lon, lon_bounds_ending = _determine_min_and_max(data, ['lon', 'longitude', 'x'])
+    lat_spatial_res = 0.0 if lat_bounds_ending != '' else spatial_res
+    lon_spatial_res = 0.0 if lon_bounds_ending != '' else spatial_res
+    if min_lon is not None and min_lat is not None and max_lon is not None and max_lat is not None:
+        return (min_lat - lat_spatial_res / 2,
+                min_lon - lon_spatial_res / 2,
+                max_lat + lat_spatial_res / 2,
+                max_lon + lon_spatial_res / 2)
+    elif 'geospatial_lat_min' in data.attrs and \
+            'geospatial_lon_min' in data.attrs and \
+            'geospatial_lat_max' in data.attrs and \
+            'geospatial_lon_max' in data.attrs:
+        return (data.geospatial_lat_min, data.geospatial_lon_min,
+                data.geospatial_lat_max, data.geospatial_lon_max)
+    return None, None, None, None
+
+
+def _determine_min_and_max(data: xr.Dataset, dimensions: Sequence[str]) -> (float, float, str):
+    bounds_endings = ['bnds', 'bounds', '']
+    for bounds_ending in bounds_endings:
+        for dimension in dimensions:
+            dimension = f'{dimension}_{bounds_ending}'
+            if dimension in data:
+                dimension_data = data[dimension].values
+                return np.min(dimension_data), np.max(dimension_data), bounds_ending
+    return None, None, ''
+
+
 def _determine_spatial_res(data: xr.Dataset):
     lat_dimensions = ['lat', 'latitude', 'y']
     for lat_dimension in lat_dimensions:
@@ -101,7 +122,20 @@ def _determine_spatial_res(data: xr.Dataset):
             lat_res = lat_diff[0]
             lat_regular = np.allclose(lat_res, lat_diff, 1e-8)
             if lat_regular:
-                return lat_res
+                return abs(lat_res)
+
+
+def _determine_time_coverage(data: xr.Dataset):
+    start_time, end_time, _ = _determine_min_and_max(data, ['time'])
+    if start_time is not None:
+        start_time = pd.to_datetime(start_time).isoformat()
+    elif 'time_coverage_start' in data.attrs:
+        start_time = data.time_coverage_start
+    if end_time is not None:
+        end_time = pd.to_datetime(end_time).isoformat()
+    elif 'time_coverage_end' in data.attrs:
+        end_time = data.time_coverage_end
+    return start_time, end_time
 
 
 def _determine_time_period(data: xr.Dataset):
