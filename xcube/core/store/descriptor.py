@@ -264,7 +264,8 @@ class DatasetDescriptor(DataDescriptor):
                 open_params_schema=JsonObjectSchema(additional_properties=True),
             ),
             required=['data_id'],
-            additional_properties=False)
+            additional_properties=False,
+            factory=cls)
 
     @classmethod
     def from_dict(cls, d: Mapping[str, Any]) -> 'DatasetDescriptor':
