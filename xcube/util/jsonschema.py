@@ -390,22 +390,25 @@ class JsonArraySchema(JsonSchema):
             d.update(uniqueItems=self.unique_items)
         return d
 
-    def _to_unvalidated_instance(self, value: Sequence[Any]) -> Sequence[Any]:
+    def _to_unvalidated_instance(self, value: Optional[Sequence[Any]]) -> Optional[Sequence[Any]]:
         if self.serializer:
             return self.serializer(value)
         return self._convert_sequence(value, '_to_unvalidated_instance')
 
     def _from_validated_instance(self, instance: Sequence[Any]) -> Any:
         obj = self._convert_sequence(instance, '_from_validated_instance')
-        return self.factory(obj) if self.factory is not None else obj
+        return self.factory(obj) if self.factory is not None and obj is not None else obj
 
-    def _convert_sequence(self, sequence: Sequence[Any], method_name: str) -> Sequence[Any]:
+    def _convert_sequence(self, sequence: Optional[Sequence[Any]], method_name: str) -> Optional[Sequence[Any]]:
         items_schema = self.items
+        if sequence is None:
+            # Sequence may be null too
+            return None
         if isinstance(items_schema, JsonSchema):
             # Sequence turned into list with items_schema applying to all elements
             return [getattr(items_schema, method_name)(item)
                     for item in sequence]
-        elif items_schema is not None:
+        if items_schema is not None:
             # Sequence turned into tuple with schema for every position
             return [getattr(items_schema[item_index], method_name)(sequence[item_index])
                     for item_index in range(len(items_schema))]
@@ -481,18 +484,22 @@ class JsonObjectSchema(JsonSchema):
                         new_kwargs[k] = property_schema.default
         return new_kwargs, old_kwargs
 
-    def _to_unvalidated_instance(self, value: Any) -> Mapping[str, Any]:
+    def _to_unvalidated_instance(self, value: Any) -> Optional[Mapping[str, Any]]:
         if self.serializer is not None:
             return self.serializer(value)
         return self._convert_mapping(value, '_to_unvalidated_instance')
 
-    def _from_validated_instance(self, instance: Mapping[str, Any]) -> Any:
+    def _from_validated_instance(self, instance: Optional[Mapping[str, Any]]) -> Any:
         obj = self._convert_mapping(instance, '_from_validated_instance')
-        return self.factory(**obj) if self.factory is not None else obj
+        return self.factory(**obj) if self.factory is not None and obj is not None else obj
 
-    def _convert_mapping(self, mapping: Mapping[str, Any], method_name: str) -> Mapping[str, Any]:
+    def _convert_mapping(self, mapping: Optional[Mapping[str, Any]], method_name: str) \
+            -> Optional[Mapping[str, Any]]:
         # TODO: recognise self.dependencies. if dependency is again a schema, compute effective schema
         #       by merging this and the dependency.
+
+        if mapping is None:
+            return None
 
         converted_mapping = dict()
 
