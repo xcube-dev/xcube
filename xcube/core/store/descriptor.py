@@ -77,11 +77,13 @@ def new_data_descriptor(data_id: str, data: Any, require: bool = False) -> 'Data
 
 
 def _build_variable_descriptor_dict(variables) -> Mapping[str, 'VariableDescriptor']:
-    return {str(var_name): VariableDescriptor(name=str(var_name),
-                                              dtype=str(var.dtype),
-                                              dims=var.dims,
-                                              attrs=var.attrs if var.attrs else None)
-            for var_name, var in variables.items()}
+    return {str(var_name): VariableDescriptor(
+        name=str(var_name),
+        dtype=str(var.dtype),
+        dims=var.dims,
+        chunks=tuple([max(chunk) for chunk in tuple(var.chunks)]) if var.chunks else None,
+        attrs=var.attrs if var.attrs else None)
+        for var_name, var in variables.items()}
 
 
 def _determine_bbox(data: xr.Dataset, spatial_res: float = 0.0) -> (float, float, float, float):
@@ -322,6 +324,7 @@ class VariableDescriptor:
     :param name: The variable name
     :param dtype: The data type of the variable.
     :param dims: A list of the names of the variable's dimensions.
+    :param chunks: A list of the chunk sizes of the variable's dimensions
     :param attrs: A mapping containing arbitrary attributes of the variable
     """
 
@@ -329,12 +332,15 @@ class VariableDescriptor:
                  name: str,
                  dtype: str,
                  dims: Sequence[str],
+                 chunks: Sequence[int] = None,
                  attrs: Mapping[str, any] = None):
         assert_given(name, 'name')
         assert_given(dtype, 'dtype')
+        assert_given(dims, 'dims')
         self.name = name
         self.dtype = dtype
         self.dims = tuple(dims)
+        self.chunks = tuple(chunks) if chunks else None
         self.ndim = len(self.dims)
         self.attrs = _convert_nans_to_none(dict(attrs)) if attrs is not None else None
 
@@ -344,12 +350,16 @@ class VariableDescriptor:
         assert_in('name', d)
         assert_in('dtype', d)
         assert_in('dims', d)
-        return VariableDescriptor(d['name'], d['dtype'], d['dims'], d.get('attrs', None))
+        return VariableDescriptor(d['name'],
+                                  d['dtype'],
+                                  d['dims'],
+                                  d.get('chunks'),
+                                  d.get('attrs', None))
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert into a JSON-serializable dictionary"""
         d = dict(name=self.name, dtype=self.dtype)
-        _copy_none_null_props(self, d, ['dims', 'ndim', 'attrs'])
+        _copy_none_null_props(self, d, ['dims', 'ndim', 'chunks', 'attrs'])
         return d
 
 

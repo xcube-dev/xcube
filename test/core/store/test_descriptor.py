@@ -170,6 +170,7 @@ class DatasetDescriptorTest(unittest.TestCase):
                     name='xf',
                     dtype='rj',
                     dims=('dfjhrt', 'sg'),
+                    chunks=(2, 3),
                     ndim=2,
                     attrs=dict(
                         ssd=4,
@@ -222,6 +223,7 @@ class DatasetDescriptorTest(unittest.TestCase):
                     name='xf',
                     dtype='rj',
                     dims=('dfjhrt', 'sg'),
+                    chunks=(2, 3),
                     ndim=2,
                     attrs=dict(
                         ssd=4,
@@ -244,6 +246,7 @@ class DatasetDescriptorTest(unittest.TestCase):
                 name='rtdt',
                 dtype='rj',
                 dims=('rtdt',),
+                chunks=(2,),
                 attrs=dict(
                     ssd=6,
                     zjgrhgu='hgtr'
@@ -255,6 +258,7 @@ class DatasetDescriptorTest(unittest.TestCase):
                 name='xf',
                 dtype='rj',
                 dims=('dfjhrt', 'sg'),
+                chunks=(2, 3),
                 attrs=dict(
                     ssd=4,
                     zjgrhgu='dgfrf'
@@ -295,6 +299,7 @@ class DatasetDescriptorTest(unittest.TestCase):
                         name='rtdt',
                         dtype='rj',
                         dims=('rtdt',),
+                        chunks=(2,),
                         ndim=1,
                         attrs=dict(
                             ssd=6,
@@ -308,6 +313,7 @@ class DatasetDescriptorTest(unittest.TestCase):
                         name='xf',
                         dtype='rj',
                         dims=('dfjhrt', 'sg'),
+                        chunks=(2, 3),
                         ndim=2,
                         attrs=dict(
                             ssd=4,
@@ -328,27 +334,41 @@ class DatasetDescriptorTest(unittest.TestCase):
 class VariableDescriptorTest(unittest.TestCase):
 
     def test_variable_descriptor_basic(self):
-        vd1 = VariableDescriptor('gz', 'zughysz', ['rtdswgt', 'dref', 'zdrs5ge'])
+        vd1 = VariableDescriptor('gz',
+                                 'zughysz',
+                                 ['rtdswgt', 'dref', 'zdrs5ge'],
+                                 (3, 321, 4))
         self.assertEqual('gz', vd1.name)
         self.assertEqual('zughysz', vd1.dtype)
         self.assertEqual(('rtdswgt', 'dref', 'zdrs5ge'), vd1.dims)
+        self.assertEqual((3, 321, 4), vd1.chunks)
         self.assertEqual(3, vd1.ndim)
         self.assertEqual(None, vd1.attrs)
 
-        vd3 = VariableDescriptor('gz', 'zughysz', ['rtdswgt', 'dref', 'zdrs5ge'], {'d': 2, 'zjgu': ''})
+        vd3 = VariableDescriptor('gz',
+                                 'zughysz',
+                                 ['rtdswgt', 'dref', 'zdrs5ge'],
+                                 (3, 321, 4),
+                                 {'d': 2, 'zjgu': ''})
         self.assertEqual('gz', vd3.name)
         self.assertEqual('zughysz', vd3.dtype)
         self.assertEqual(('rtdswgt', 'dref', 'zdrs5ge'), vd3.dims)
+        self.assertEqual((3, 321, 4), vd3.chunks)
         self.assertEqual(3, vd3.ndim)
         self.assertEqual({'d': 2, 'zjgu': ''}, vd3.attrs)
 
     def test_variable_descriptor_to_dict(self):
-        vd = VariableDescriptor('xf', 'rj', ['dfjhrt', 'sg'], {'ssd': 4, 'zjgrhgu': 'dgfrf', 'fill_value': np.NaN})
+        vd = VariableDescriptor('xf',
+                                'rj',
+                                ['dfjhrt', 'sg'],
+                                (3, 2),
+                                {'ssd': 4, 'zjgrhgu': 'dgfrf', 'fill_value': np.NaN})
         expected = {
             'name': 'xf',
             'dtype': 'rj',
             'dims': ('dfjhrt', 'sg'),
             'ndim': 2,
+            'chunks': (3, 2),
             'attrs': {
                 'ssd': 4,
                 'zjgrhgu': 'dgfrf',
@@ -363,6 +383,7 @@ class VariableDescriptorTest(unittest.TestCase):
             'dtype': 'rj',
             'dims': ('dfjhrt', 'sg'),
             'ndim': 2,
+            'chunks':(3, 2),
             'attrs': {
                 'ssd': 4,
                 'zjgrhgu': 'dgfrf',
@@ -374,6 +395,7 @@ class VariableDescriptorTest(unittest.TestCase):
         self.assertEqual('rj', vd.dtype)
         self.assertEqual(('dfjhrt', 'sg'), vd.dims)
         self.assertEqual(2, vd.ndim)
+        self.assertEqual((3, 2), vd.chunks)
         self.assertEqual({'ssd': 4, 'zjgrhgu': 'dgfrf', 'fill_value': None}, vd.attrs)
 
         vd_fail = None
