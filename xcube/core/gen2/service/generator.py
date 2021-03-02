@@ -128,8 +128,8 @@ class CubeGeneratorService(CubeGenerator):
         result = response_instance.result
         if result.status.failed:
             message = 'Cube generation failed'
-            if result.conditions:
-                sub_messages = [item['message'] or '' for item in result.conditions
+            if result.status.conditions:
+                sub_messages = [item['message'] or '' for item in result.status.conditions
                                 if isinstance(item, dict) and 'message' in item]
                 message = f'{message}: {": ".join(sub_messages)}'
             raise CubeGeneratorError(message,
@@ -146,6 +146,7 @@ class CubeGeneratorService(CubeGenerator):
         try:
             return response_type.from_dict(data)
         except Exception as e:
+            print(data)
             raise RuntimeError(f'internal error: unexpected response'
                                f' from API call {response.url}: {e}') from e
 

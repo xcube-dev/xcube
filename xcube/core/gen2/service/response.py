@@ -57,16 +57,15 @@ class Status(ResponseBase):
                  active: int = None,
                  start_time: str = None,
                  completion_time: str = None,
-                 conditions=None,
-                 progress=None,
+                 conditions: List[Dict[str, Any]] = None,
                  **additional_properties):
-        self.succeeded = succeeded
-        self.failed = failed
-        self.active = active
-        self.start_time = start_time
-        self.completion_time = completion_time
-        self.conditions = conditions
-        self.additional_properties = additional_properties
+        self.succeeded: Optional[int] = succeeded
+        self.failed: Optional[int] = failed
+        self.active: Optional[int] = active
+        self.start_time: Optional[str] = start_time
+        self.completion_time: Optional[str] = completion_time
+        self.conditions: Optional[Dict[str, Any]] = conditions
+        self.additional_properties: Dict[str, Any] = additional_properties
 
     @classmethod
     def get_schema(cls) -> JsonObjectSchema:
@@ -75,7 +74,10 @@ class Status(ResponseBase):
                                                 active=JsonIntegerSchema(nullable=True),
                                                 start_time=JsonStringSchema(nullable=True),
                                                 completion_time=JsonStringSchema(nullable=True),
-                                                conditions=JsonArraySchema(nullable=True)),
+                                                conditions=JsonArraySchema(
+                                                    items=JsonObjectSchema(additional_properties=True),
+                                                    nullable=True
+                                                )),
                                 additional_properties=True,
                                 factory=cls)
 
@@ -148,14 +150,12 @@ class Result(ResponseBase):
                  status: Status,
                  output: List[str] = None,
                  progress: List[Progress] = None,
-                 conditions: List[Dict[str, Any]] = None,
                  **additional_properties):
         self.cubegen_id: str = cubegen_id
         self.status: Status = status
         self.output: Optional[List[str]] = output
         self.progress: Optional[List[Progress]] = progress
-        self.conditions: Optional[List[Dict[str, Any]]] = conditions
-        self.additional_properties = additional_properties
+        self.additional_properties: Dict[str, Any] = additional_properties
 
     @classmethod
     def get_schema(cls) -> JsonObjectSchema:
@@ -167,10 +167,6 @@ class Result(ResponseBase):
                                                 ),
                                                 progress=JsonArraySchema(
                                                     items=Progress.get_schema(),
-                                                    nullable=True
-                                                ),
-                                                conditions=JsonArraySchema(
-                                                    items=JsonObjectSchema(additional_properties=True),
                                                     nullable=True
                                                 )),
                                 required=['cubegen_id', 'status'],
