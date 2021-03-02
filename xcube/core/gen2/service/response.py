@@ -19,10 +19,9 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-from typing import Optional, Dict, Union, List
+from typing import Optional, Dict, Union, List, Any
 
 from xcube.util.jsonschema import JsonArraySchema
-from xcube.util.jsonschema import JsonBooleanSchema
 from xcube.util.jsonschema import JsonIntegerSchema
 from xcube.util.jsonschema import JsonNumberSchema
 from xcube.util.jsonschema import JsonObjectSchema
@@ -149,19 +148,31 @@ class Result(ResponseBase):
                  status: Status,
                  output: List[str] = None,
                  progress: List[Progress] = None,
+                 conditions: List[Dict[str, Any]] = None,
                  **additional_properties):
         self.cubegen_id: str = cubegen_id
         self.status: Status = status
         self.output: Optional[List[str]] = output
         self.progress: Optional[List[Progress]] = progress
+        self.conditions: Optional[List[Dict[str, Any]]] = conditions
         self.additional_properties = additional_properties
 
     @classmethod
     def get_schema(cls) -> JsonObjectSchema:
         return JsonObjectSchema(properties=dict(cubegen_id=JsonStringSchema(min_length=1),
                                                 status=Status.get_schema(),
-                                                output=JsonArraySchema(items=JsonStringSchema(), nullable=True),
-                                                progress=JsonArraySchema(items=Progress.get_schema(), nullable=True)),
+                                                output=JsonArraySchema(
+                                                    items=JsonStringSchema(),
+                                                    nullable=True
+                                                ),
+                                                progress=JsonArraySchema(
+                                                    items=Progress.get_schema(),
+                                                    nullable=True
+                                                ),
+                                                conditions=JsonArraySchema(
+                                                    items=JsonObjectSchema(additional_properties=True),
+                                                    nullable=True
+                                                )),
                                 required=['cubegen_id', 'status'],
                                 additional_properties=True,
                                 factory=cls)

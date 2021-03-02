@@ -125,10 +125,17 @@ class CubeGeneratorService(CubeGenerator):
     @classmethod
     def _get_cube_generation_result(cls, response: requests.Response) -> Result:
         response_instance: Response = cls._parse_response(response, Response)
-        if response_instance.result.status.failed:
-            raise CubeGeneratorError('Cube generation failed',
+        result = response_instance.result
+        if result.status.failed:
+            message = 'Cube generation failed'
+            if result.conditions:
+                sub_messages = [item['message'] or '' for item in result.conditions
+                                if isinstance(item, dict) and 'message' in item]
+                message = f'{message}: {": ".join(sub_messages)}'
+            raise CubeGeneratorError(message,
+                                     remote_output=result.output,
                                      remote_traceback=response_instance.traceback)
-        return response_instance.result
+        return result
 
     @classmethod
     def _parse_response(cls, response: requests.Response, response_type: Type[R]) -> R:

@@ -19,6 +19,8 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+import sys
+
 import click
 
 
@@ -115,7 +117,21 @@ def gen2(request_path: str,
         else:
             generator.generate_cube()
 
-    except (CubeGeneratorError, DataStoreError) as e:
+    except CubeGeneratorError as e:
+        print_kwargs = dict(file=sys.stderr, flush=True)
+        if e.remote_output:
+            print(**print_kwargs)
+            print('Remote output:', **print_kwargs)
+            print('==============', **print_kwargs)
+            for line in e.remote_output:
+                print(line, file=sys.stderr, flush=True)
+        if e.remote_traceback:
+            print(**print_kwargs)
+            print('Remote traceback:', **print_kwargs)
+            print('=================', **print_kwargs)
+        raise click.ClickException(f'{e}') from e
+
+    except DataStoreError as e:
         raise click.ClickException(f'{e}') from e
 
 
