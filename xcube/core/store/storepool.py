@@ -27,6 +27,8 @@ import yaml
 
 from xcube.util.assertions import assert_given
 from xcube.util.assertions import assert_instance
+from xcube.util.jsonschema import JsonIntegerSchema
+from xcube.util.jsonschema import JsonNumberSchema
 from xcube.util.jsonschema import JsonObjectSchema
 from xcube.util.jsonschema import JsonStringSchema
 from .store import DataStore
@@ -70,6 +72,16 @@ DATA_STORE_CONFIG_SCHEMA = JsonObjectSchema(
         ),
         title=JsonStringSchema(min_length=1),
         description=JsonStringSchema(min_length=1),
+        cost_params=JsonObjectSchema(
+            properties=dict(
+                input_pixels_per_punit=JsonIntegerSchema(minimum=1),
+                output_pixels_per_punit=JsonIntegerSchema(minimum=1),
+                input_punits_weight=JsonNumberSchema(exclusive_minimum=0.0, default=1.0),
+                output_punits_weight=JsonNumberSchema(exclusive_minimum=0.0, default=1.0),
+            ),
+            additional_properties=False,
+            required=['input_pixels_per_punit', 'output_pixels_per_punit'],
+        )
     ),
     required=['store_id'],
 )
