@@ -3,12 +3,13 @@ import unittest
 import numpy as np
 
 from xcube.core.new import new_cube
-from xcube.core.store.descriptor import new_data_descriptor
 from xcube.core.store.descriptor import DataDescriptor
 from xcube.core.store.descriptor import DatasetDescriptor
 from xcube.core.store.descriptor import GeoDataFrameDescriptor
 from xcube.core.store.descriptor import VariableDescriptor
+from xcube.core.store.descriptor import new_data_descriptor
 from xcube.core.store.typespecifier import TypeSpecifier
+from xcube.util.jsonschema import JsonObjectSchema
 
 
 class NewDataDescriptorTest(unittest.TestCase):
@@ -114,6 +115,10 @@ class DataDescriptorTest(unittest.TestCase):
 
 
 class DatasetDescriptorTest(unittest.TestCase):
+
+    def test_get_schema(self):
+        schema = DatasetDescriptor.get_schema()
+        self.assertIsInstance(schema, JsonObjectSchema)
 
     def test_from_dict_no_data_id(self):
         try:

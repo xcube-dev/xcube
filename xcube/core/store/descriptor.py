@@ -36,7 +36,11 @@ from xcube.core.store.typespecifier import get_type_specifier
 from xcube.util.assertions import assert_given
 from xcube.util.assertions import assert_in
 from xcube.util.ipython import register_json_formatter
+from xcube.util.jsonschema import JsonArraySchema
+from xcube.util.jsonschema import JsonDateSchema
+from xcube.util.jsonschema import JsonNumberSchema
 from xcube.util.jsonschema import JsonObjectSchema
+from xcube.util.jsonschema import JsonStringSchema
 
 
 # TODO: IMPORTANT: replace, reuse, or align with
@@ -241,9 +245,9 @@ class DatasetDescriptor(DataDescriptor):
     :param time_period: The data's periodicity if it is evenly temporally resolved (see
     https://github.com/dcs4cop/xcube/blob/master/docs/source/storeconv.md#date-time-and-duration-specifications )
     :param spatial_res: The spatial extent of a pixel in crs units
+    :param dims: A mapping of the dataset's dimensions to their sizes
     :param coords: mapping of the dataset's data coordinate names to VariableDescriptors
     (``xcube.core.store.VariableDescriptor``).
-    :param dims: A mapping of the dataset's dimensions to their sizes
     :param data_vars: A mapping of the dataset's variable names to VariableDescriptors
     (``xcube.core.store.VariableDescriptor``).
     :param attrs: A mapping containing arbitrary attributes of the dataset
@@ -259,8 +263,8 @@ class DatasetDescriptor(DataDescriptor):
                  time_range: Tuple[Optional[str], Optional[str]] = None,
                  time_period: str = None,
                  spatial_res: float = None,
-                 coords: Mapping[str, 'VariableDescriptor'] = None,
                  dims: Mapping[str, int] = None,
+                 coords: Mapping[str, 'VariableDescriptor'] = None,
                  data_vars: Mapping[str, 'VariableDescriptor'] = None,
                  attrs: Mapping[str, any] = None,
                  open_params_schema: JsonObjectSchema = None):
@@ -271,11 +275,35 @@ class DatasetDescriptor(DataDescriptor):
                          time_range=time_range,
                          time_period=time_period,
                          open_params_schema=open_params_schema)
-        self.coords = coords if coords else None
         self.dims = dict(dims) if dims else None
+        self.coords = coords if coords else None
         self.data_vars = data_vars if data_vars else None
         self.spatial_res = spatial_res
         self.attrs = _convert_nans_to_none(dict(attrs)) if attrs else None
+
+    @classmethod
+    def get_schema(cls) -> JsonObjectSchema:
+        return JsonObjectSchema(
+            properties=dict(
+                data_id=JsonStringSchema(min_length=1),
+                type_specifier=JsonStringSchema(default=TYPE_SPECIFIER_DATASET, min_length=1),
+                crs=JsonStringSchema(min_length=1),
+                bbox=JsonArraySchema(items=[JsonNumberSchema(),
+                                            JsonNumberSchema(),
+                                            JsonNumberSchema(),
+                                            JsonNumberSchema()]),
+                time_range=JsonDateSchema.new_range(nullable=True),
+                time_period=JsonStringSchema(min_length=1),
+                spatial_res=JsonNumberSchema(exclusive_minimum=0.0),
+                dims=JsonObjectSchema(additional_properties=True),
+                coords=JsonObjectSchema(additional_properties=True),
+                data_vars=JsonObjectSchema(additional_properties=True),
+                attrs=JsonObjectSchema(additional_properties=True),
+                open_params_schema=JsonObjectSchema(additional_properties=True),
+            ),
+            required=['data_id'],
+            additional_properties=False,
+            factory=cls)
 
     @classmethod
     def from_dict(cls, d: Mapping[str, Any]) -> 'DatasetDescriptor':

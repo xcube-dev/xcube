@@ -113,12 +113,14 @@ class CubeGeneratorService(CubeGenerator):
                     return
 
                 if result.progress is not None and len(result.progress) > 0:
-                    first_status = result.progress[0].status
-                    total_work = first_status.total_work
-                    progress = first_status.progress or 0
+                    progress_state = result.progress[0].state
+                    total_work = progress_state.total_work
+                    progress = progress_state.progress or 0
                     worked = progress * total_work
-                    cm.worked(100 * ((worked - last_worked) / total_work))
-                    last_worked = worked
+                    work = 100 * ((worked - last_worked) / total_work)
+                    if work > 0:
+                        cm.worked(work)
+                        last_worked = worked
 
     @classmethod
     def _get_cube_generation_result(cls, response: requests.Response) -> Result:
@@ -132,7 +134,7 @@ class CubeGeneratorService(CubeGenerator):
     def _parse_response(cls, response: requests.Response, response_type: Type[R]) -> R:
         CubeGeneratorError.maybe_raise_for_response(response)
         data = response.json()
-        cls.__dump_json(data)
+        # cls.__dump_json(data)
         # noinspection PyBroadException
         try:
             return response_type.from_dict(data)

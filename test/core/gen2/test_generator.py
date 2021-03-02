@@ -9,8 +9,10 @@ from xcube.core.dsio import rimraf
 from xcube.core.gen2.generator import CubeGenerator
 from xcube.core.gen2.generator import LocalCubeGenerator
 from xcube.core.gen2.request import CubeGeneratorRequest
+from xcube.core.gen2.response import CubeInfo
 from xcube.core.new import new_cube
 from xcube.core.store.stores.memory import MemoryDataStore
+from xcube.core.store import DatasetDescriptor
 
 
 class LocalCubeGeneratorTest(unittest.TestCase):
@@ -42,25 +44,36 @@ class LocalCubeGeneratorTest(unittest.TestCase):
         MemoryDataStore.replace_global_data_dict(self.saved_cube_memory)
 
     @requests_mock.Mocker()
-    def test_dict(self, m):
+    def test_generate_cube_from_dict(self, m):
         m.put('https://xcube-gen.test/api/v1/jobs/tomtom/iamajob/callback', json={})
         LocalCubeGenerator(CubeGeneratorRequest.from_dict(self.REQUEST), verbose=True).generate_cube()
         self.assertIsInstance(MemoryDataStore.get_global_data_dict().get('CHL'),
                               xr.Dataset)
 
     @requests_mock.Mocker()
-    def test_json(self, m):
+    def test_generate_cube_from_json(self, m):
         m.put('https://xcube-gen.test/api/v1/jobs/tomtom/iamajob/callback', json={})
         CubeGenerator.from_file('_request.json', verbose=True).generate_cube()
         self.assertIsInstance(MemoryDataStore.get_global_data_dict().get('CHL'),
                               xr.Dataset)
 
     @requests_mock.Mocker()
-    def test_yaml(self, m):
+    def test_generate_cube_from_yaml(self, m):
         m.put('https://xcube-gen.test/api/v1/jobs/tomtom/iamajob/callback', json={})
         CubeGenerator.from_file('_request.yaml', verbose=True).generate_cube()
         self.assertIsInstance(MemoryDataStore.get_global_data_dict().get('CHL'),
                               xr.Dataset)
+
+    @requests_mock.Mocker()
+    def test_get_cube_info_from_dict(self, m):
+        m.put('https://xcube-gen.test/api/v1/jobs/tomtom/iamajob/callback', json={})
+        cube_info = LocalCubeGenerator(CubeGeneratorRequest.from_dict(self.REQUEST), verbose=True).get_cube_info()
+        self.assertIsInstance(cube_info, CubeInfo)
+        self.assertIsInstance(cube_info.dataset_descriptor, DatasetDescriptor)
+        self.assertIsInstance(cube_info.size_estimation, dict)
+
+        import json
+        print(json.dumps(cube_info.to_dict(), indent=2))
 
 # class CubeGeneratorS3Input(S3Test):
 #     BUCKET_NAME = 'xcube-s3-test'

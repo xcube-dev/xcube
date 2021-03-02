@@ -22,6 +22,7 @@
 from abc import ABC, abstractmethod
 from typing import Dict, Any
 
+from xcube.core.store import DatasetDescriptor
 from xcube.util.jsonschema import JsonObjectSchema
 from .config import _to_dict
 
@@ -41,19 +42,16 @@ class ResponseBase(ABC):
 
 class CubeInfo(ResponseBase):
     def __init__(self,
-                 dims: Dict[str, int],
-                 chunks: Dict[str, int],
-                 data_vars: Dict[str, Dict[str, Any]]):
-        self.dims = dims
-        self.chunks = chunks
-        self.data_vars = data_vars
+                 dataset_descriptor: DatasetDescriptor,
+                 size_estimation: Dict[str, Any]):
+        self.dataset_descriptor: DatasetDescriptor = dataset_descriptor
+        self.size_estimation: dict = size_estimation
 
     @classmethod
     def get_schema(cls) -> JsonObjectSchema:
-        return JsonObjectSchema(properties=dict(dims=JsonObjectSchema(additional_properties=True),
-                                                chunks=JsonObjectSchema(additional_properties=True),
-                                                data_vars=JsonObjectSchema(additional_properties=True)),
-                                required=['dims', 'chunks', 'data_vars'],
+        return JsonObjectSchema(properties=dict(dataset_descriptor=DatasetDescriptor.get_schema(),
+                                                size_estimation=JsonObjectSchema(additional_properties=True)),
+                                required=['dataset_descriptor', 'size_estimation'],
                                 additional_properties=False,
                                 factory=cls)
 

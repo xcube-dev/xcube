@@ -8,6 +8,7 @@ from xcube.core.gen2.request import CubeGeneratorRequest
 from xcube.core.gen2.service import CubeGeneratorService
 from xcube.core.gen2.service import ServiceConfig
 from xcube.core.gen2.service.response import CubeInfoWithCosts
+from xcube.core.store import DatasetDescriptor
 from xcube.util.progress import new_progress_observers
 
 
@@ -16,14 +17,14 @@ def result(worked, total_work, failed=False, traceback: str = None):
         "result": {
             "cubegen_id": "93",
             "status": {
-                "failed": True if failed else None,
-                "succeeded": True if worked == total_work else None,
+                "failed": 1 if failed else None,
+                "succeeded": 1 if worked == total_work else None,
                 "active": 1 if worked != total_work else None,
             },
             "progress": [
                 {
                     "sender": "ignored",
-                    "status": {
+                    "state": {
                         "progress": worked / total_work,
                         "worked": worked,
                         "total_work": total_work,
@@ -138,27 +139,55 @@ class CubeGeneratorServiceTest(unittest.TestCase):
                })
 
         m.post(f'{self.ENDPOINT_URL}cubegens/info',
-               json=dict(dims=dict(time=10 * 365, lat=720, lon=1440),
-                         chunks=dict(time=10, lat=720, lon=1440),
-                         data_vars=dict(CHL=dict(long_name='chlorophyll_concentration',
-                                                 units='mg/m^-1')),
-                         cost_info=dict(punits_input=300,
-                                        punits_output=400,
-                                        punits_combined=500)))
+               json={
+                   "dataset_descriptor": {
+                       "type_specifier": "dataset",
+                       "data_id": "CHL",
+                       "crs": "WGS84",
+                       "bbox": [12.2, 52.1, 13.9, 54.8],
+                       "time_range": ["2018-01-01", "2010-01-06"],
+                       "time_period": "4D",
+                       "data_vars": {
+                           "B01": {
+                               "name": "B01",
+                               "dtype": "float32",
+                               "dims": ["time", "lat", "lon"],
+                               "ndim": 3
+                           },
+                           "B02": {
+                               "name": "B02",
+                               "dtype": "float32",
+                               "dims": [
+                                   "time",
+                                   "lat",
+                                   "lon"
+                               ],
+                               "ndim": 3
+                           },
+                           "B03": {
+                               "name": "B03",
+                               "dtype": "float32",
+                               "dims": ["time", "lat", "lon"],
+                               "ndim": 3
+                           }
+                       },
+                       "spatial_res": 0.05,
+                       "dims": {"time": 0, "lat": 54, "lon": 34}
+                   },
+                   "size_estimation": {
+                       "image_size": [34, 54],
+                       "tile_size": [34, 54],
+                       "num_variables": 3,
+                       "num_tiles": [1, 1],
+                       "num_requests": 0,
+                       "num_bytes": 0
+                   },
+                   "cost_info": {
+
+                   }
+               })
 
         cube_info = self.service.get_cube_info()
         self.assertIsInstance(cube_info, CubeInfoWithCosts)
-        self.assertEqual(dict(time=10 * 365, lat=720, lon=1440),
-                         cube_info.dims)
-        self.assertEqual(dict(time=10, lat=720, lon=1440),
-                         cube_info.chunks)
-        self.assertEqual(dict(CHL=dict(long_name='chlorophyll_concentration',
-                                       units='mg/m^-1')),
-                         cube_info.data_vars)
-        self.assertEqual(
-            {
-                "punits_input": 300,
-                "punits_output": 400,
-                "punits_combined": 500
-            },
-            cube_info.cost_info.additional_properties)
+        self.assertIsInstance(cube_info.dataset_descriptor, DatasetDescriptor)
+        self.assertIsInstance(cube_info.size_estimation, dict)

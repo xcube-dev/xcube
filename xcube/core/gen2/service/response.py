@@ -53,9 +53,9 @@ class Token(ResponseBase):
 class Status(ResponseBase):
     # noinspection PyUnusedLocal
     def __init__(self,
-                 succeeded: bool = None,
-                 failed: bool = None,
-                 active: bool = None,
+                 succeeded: int = None,
+                 failed: int = None,
+                 active: int = None,
                  start_time: str = None,
                  completion_time: str = None,
                  conditions=None,
@@ -71,8 +71,8 @@ class Status(ResponseBase):
 
     @classmethod
     def get_schema(cls) -> JsonObjectSchema:
-        return JsonObjectSchema(properties=dict(succeeded=JsonBooleanSchema(nullable=True),
-                                                failed=JsonBooleanSchema(nullable=True),
+        return JsonObjectSchema(properties=dict(succeeded=JsonIntegerSchema(nullable=True),
+                                                failed=JsonIntegerSchema(nullable=True),
                                                 active=JsonIntegerSchema(nullable=True),
                                                 start_time=JsonStringSchema(nullable=True),
                                                 completion_time=JsonStringSchema(nullable=True),
@@ -85,7 +85,7 @@ class Status(ResponseBase):
         return cls.get_schema().from_instance(value)
 
 
-class ProgressStatus(ResponseBase):
+class ProgressState(ResponseBase):
     def __init__(self,
                  progress: float,
                  # worked: Union[int, float],
@@ -113,27 +113,27 @@ class ProgressStatus(ResponseBase):
             factory=cls)
 
     @classmethod
-    def from_dict(cls, value: Dict) -> 'ProgressStatus':
+    def from_dict(cls, value: Dict) -> 'ProgressState':
         return cls.get_schema().from_instance(value)
 
 
 class Progress(ResponseBase):
     def __init__(self,
                  sender: str,
-                 status: ProgressStatus):
+                 state: ProgressState):
         self.sender: str = sender
-        self.status: ProgressStatus = status
+        self.state: ProgressState = state
 
     @classmethod
     def get_schema(cls) -> JsonObjectSchema:
         return JsonObjectSchema(
             properties=dict(
                 sender=JsonStringSchema(),
-                status=ProgressStatus.get_schema(),
+                state=ProgressState.get_schema(),
             ),
             required=[
                 'sender',
-                'status',
+                'state',
             ],
             additional_properties=False,
             factory=cls)
