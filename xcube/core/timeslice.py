@@ -153,7 +153,13 @@ def update_time_slice(store: Union[str, MutableMapping],
                 if var.dims[0] != 'time':
                     raise ValueError(f"dimension 'time' of variable {var_name!r} must be first dimension")
                 time_var_names.append(var_name)
-                encoding[var_name] = cube[var_name].encoding
+                enc = dict(cube[var_name].encoding)
+                # xarray 0.17+ supports engine preferred chunks if exposed by the backend
+                # zarr does that, but when we use the new 'preferred_chunks' when writing to zarr
+                # it raises and says, 'preferred_chunks' is an unsupported encoding
+                if 'preferred_chunks' in enc:
+                    del enc['preferred_chunks']
+                encoding[var_name] = enc
 
     if chunk_sizes:
         time_slice = chunk_dataset(time_slice, chunk_sizes, format_name='zarr')
