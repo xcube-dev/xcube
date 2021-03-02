@@ -1,4 +1,10 @@
-## Changes in 0.6.2 (in development)
+## Changes in 0.6.2.dev2 (in development)
+
+* Fixed a problem in `JsonArraySchema` that occurred if a valid 
+  instance was `None`. A TypeError `TypeError: 'NoneType' object is not iterable` was 
+  raised in this case.
+
+## Changes in 0.6.2.dev1 
 
 * The S3 data store  `xcube.core.store.stores.s3.S3DataStore` now implements the `describe_data()` method. 
   It therefore can also be used as a data store from which data is queried and read.  
