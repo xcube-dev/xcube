@@ -11,6 +11,8 @@
 * Added `coords` property to `DatasetDescriptor` class. 
   The `data_vars` property of the `DatasetDescriptor` class is now a dictionary. 
 
+* Added `chunks` property to `VariableDescriptor` class. 
+
 * Removed function `reproject_crs_to_wgs84()` and tests (#375) because  
   - it seemed to be no longer be working with GDAL 3.1+; 
   - there was no direct use in xcube itself;
