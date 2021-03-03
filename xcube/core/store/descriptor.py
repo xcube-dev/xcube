@@ -90,7 +90,7 @@ def _build_variable_descriptor_dict(variables) -> Mapping[str, 'VariableDescript
         for var_name, var in variables.items()}
 
 
-def _determine_bbox(data: xr.Dataset, spatial_res: float = 0.0) -> (float, float, float, float):
+def _determine_bbox(data: xr.Dataset, spatial_res: float = 0.0) -> Optional[Tuple[float, float, float, float]]:
     # TODO get rid of these hard-coded coord names as soon as new resampling is available
     min_lat, max_lat, lat_bounds_ending = _determine_min_and_max(data, ['lat', 'latitude', 'y'])
     min_lon, max_lon, lon_bounds_ending = _determine_min_and_max(data, ['lon', 'longitude', 'x'])
@@ -107,7 +107,6 @@ def _determine_bbox(data: xr.Dataset, spatial_res: float = 0.0) -> (float, float
             'geospatial_lon_max' in data.attrs:
         return (data.geospatial_lat_min, data.geospatial_lon_min,
                 data.geospatial_lat_max, data.geospatial_lon_max)
-    return None, None, None, None
 
 
 def _determine_min_and_max(data: xr.Dataset, dimensions: Sequence[str]) -> (float, float, str):
