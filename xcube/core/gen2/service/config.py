@@ -23,6 +23,7 @@ import json
 
 import yaml
 
+from xcube.util.jsonschema import JsonObject
 from xcube.util.jsonschema import JsonObjectSchema
 from xcube.util.jsonschema import JsonStringSchema
 from ..error import CubeGeneratorError
@@ -30,7 +31,7 @@ from ..error import CubeGeneratorError
 DEFAULT_ENDPOINT_URL = 'https://xcube-gen.brockmann-consult.de/api/v2/'
 
 
-class ServiceConfig:
+class ServiceConfig(JsonObject):
     def __init__(self,
                  endpoint_url: str = None,
                  client_id: str = None,
@@ -69,10 +70,3 @@ class ServiceConfig:
             required=[],
             factory=cls,
         )
-
-    def to_dict(self):
-        from ..config import _to_dict
-        return _to_dict(self, ('endpoint_url',
-                               'client_id',
-                               'client_secret',
-                               'access_token'))

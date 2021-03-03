@@ -19,28 +19,14 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-from abc import ABC, abstractmethod
 from typing import Dict, Any
 
 from xcube.core.store import DatasetDescriptor
 from xcube.util.jsonschema import JsonObjectSchema
-from .config import _to_dict
+from .config import JsonObject
 
 
-class ResponseBase(ABC):
-
-    @classmethod
-    @abstractmethod
-    def get_schema(cls) -> JsonObjectSchema:
-        """Get JSON object schema."""
-
-    @classmethod
-    def from_dict(cls, value: Dict) -> 'ResponseBase':
-        """Create instance from dictionary *value*."""
-        return cls.get_schema().from_instance(value)
-
-
-class CubeInfo(ResponseBase):
+class CubeInfo(JsonObject):
     def __init__(self,
                  dataset_descriptor: DatasetDescriptor,
                  size_estimation: Dict[str, Any]):
@@ -54,11 +40,3 @@ class CubeInfo(ResponseBase):
                                 required=['dataset_descriptor', 'size_estimation'],
                                 additional_properties=False,
                                 factory=cls)
-
-    @classmethod
-    def from_dict(cls, value: Dict) -> 'CubeInfo':
-        return cls.get_schema().from_instance(value)
-
-    def to_dict(self) -> Dict:
-        """Convert this instance to a dictionary."""
-        return _to_dict(self, tuple(self.get_schema().properties.keys()))

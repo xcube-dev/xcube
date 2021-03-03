@@ -147,7 +147,7 @@ class S3DataStoreTest(S3Test):
         self.assertEqual(TYPE_SPECIFIER_CUBE, data_descriptor.type_specifier)
         self.assertEqual((-90.0, -180.0, 90.0, 180.0), data_descriptor.bbox)
         self.assertDictEqual(dict(bnds=2, lat=180, lon=360, time=5), data_descriptor.dims)
-        self.assertEqual(('2010-01-01T00:00:00', '2010-01-06T00:00:00'),
+        self.assertEqual(('2010-01-01', '2010-01-06'),
                          data_descriptor.time_range)
         self.assertEqual({'a', 'b'}, set(data_descriptor.data_vars.keys()))
 

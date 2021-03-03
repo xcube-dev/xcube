@@ -11,8 +11,8 @@ from xcube.core.gen2.generator import LocalCubeGenerator
 from xcube.core.gen2.request import CubeGeneratorRequest
 from xcube.core.gen2.response import CubeInfo
 from xcube.core.new import new_cube
-from xcube.core.store.stores.memory import MemoryDataStore
 from xcube.core.store import DatasetDescriptor
+from xcube.core.store.stores.memory import MemoryDataStore
 
 
 class LocalCubeGeneratorTest(unittest.TestCase):
@@ -71,9 +71,9 @@ class LocalCubeGeneratorTest(unittest.TestCase):
         self.assertIsInstance(cube_info, CubeInfo)
         self.assertIsInstance(cube_info.dataset_descriptor, DatasetDescriptor)
         self.assertIsInstance(cube_info.size_estimation, dict)
-
-        import json
-        print(json.dumps(cube_info.to_dict(), indent=2))
+        # JSON-serialisation smoke test
+        cube_info_dict = cube_info.to_dict()
+        json.dumps(cube_info_dict, indent=2)
 
 # class CubeGeneratorS3Input(S3Test):
 #     BUCKET_NAME = 'xcube-s3-test'

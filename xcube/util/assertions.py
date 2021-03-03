@@ -33,9 +33,9 @@ def assert_given(value: Any, name: str = None):
         raise ValueError(f'{name or _DEFAULT_NAME} must be given')
 
 
-def assert_instance(value: Any, type: Union[Type, Tuple[Type, ...]], name: str = None):
-    if not isinstance(value, type):
-        raise TypeError(f'{name or _DEFAULT_NAME} must be an instance of {type}')
+def assert_instance(value: Any, dtype: Union[Type, Tuple[Type, ...]], name: str = None):
+    if not isinstance(value, dtype):
+        raise TypeError(f'{name or _DEFAULT_NAME} must be an instance of {dtype}, was {type(value)}')
 
 
 def assert_in(value: Any, container: Container, name: str = None):

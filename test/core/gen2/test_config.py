@@ -1,3 +1,4 @@
+import json
 import unittest
 
 from xcube.core.gen2.config import CallbackConfig
@@ -8,19 +9,27 @@ from xcube.core.gen2.config import OutputConfig
 
 class InputConfigTest(unittest.TestCase):
 
-    def test_from_json_instance(self):
+    def test_from_dict(self):
         json_instance = dict(store_id='sentinelhub', data_id='S2L2A')
-        input_config = InputConfig.get_schema().from_instance(json_instance)
+        input_config = InputConfig.from_dict(json_instance)
         self.assertIsInstance(input_config, InputConfig)
         self.assertEqual('sentinelhub', input_config.store_id)
         self.assertEqual('S2L2A', input_config.data_id)
         self.assertEqual(None, input_config.store_params)
         self.assertEqual(None, input_config.open_params)
 
+    def test_to_dict(self):
+        expected_dict = dict(store_id='sentinelhub', data_id='S2L2A')
+        input_config = InputConfig(**expected_dict)
+        actual_dict = input_config.to_dict()
+        self.assertEqual(expected_dict, actual_dict)
+        # smoke test JSON serialisation
+        json.dumps(actual_dict, indent=2)
+
 
 class OutputConfigTest(unittest.TestCase):
 
-    def test_from_json_instance(self):
+    def test_from_dict(self):
         json_instance = dict(store_id='s3', data_id='CHL.zarr')
         output_config = OutputConfig.get_schema().from_instance(json_instance)
         self.assertIsInstance(output_config, OutputConfig)
@@ -29,17 +38,25 @@ class OutputConfigTest(unittest.TestCase):
         self.assertEqual(None, output_config.store_params)
         self.assertEqual(None, output_config.write_params)
 
+    def test_to_dict(self):
+        expected_dict = dict(store_id='s3', replace=False, data_id='CHL.zarr')
+        output_config = OutputConfig(**expected_dict)
+        actual_dict = output_config.to_dict()
+        self.assertEqual(expected_dict, actual_dict)
+        # smoke test JSON serialisation
+        json.dumps(actual_dict, indent=2)
+
 
 class CubeConfigTest(unittest.TestCase):
 
-    def test_from_json_instance(self):
+    def test_from_dict(self):
         json_instance = dict(variable_names=['B03', 'B04'],
                              crs='WGS84',
                              bbox=[12.2, 52.1, 13.9, 54.8],
                              spatial_res=0.05,
                              time_range=['2018-01-01', None],
                              time_period='4D')
-        cube_config = CubeConfig.get_schema().from_instance(json_instance)
+        cube_config = CubeConfig.from_dict(json_instance)
         self.assertIsInstance(cube_config, CubeConfig)
         self.assertEqual(('B03', 'B04'), cube_config.variable_names)
         self.assertEqual('WGS84', cube_config.crs)
@@ -49,14 +66,18 @@ class CubeConfigTest(unittest.TestCase):
         self.assertEqual('4D', cube_config.time_period)
 
     def test_to_dict(self):
-        json_instance = dict(variable_names=['B03', 'B04'],
+        expected_dict = dict(variable_names=['B03', 'B04'],
                              crs='WGS84',
                              bbox=[12.2, 52.1, 13.9, 54.8],
                              spatial_res=0.05,
                              time_range=['2018-01-01', None],
                              time_period='4D')
-        cube_config = CubeConfig.get_schema().from_instance(json_instance)
-        self.assertEqual(json_instance, cube_config.to_dict())
+        cube_config = CubeConfig.get_schema().from_instance(expected_dict)
+        actual_dict = cube_config.to_dict()
+        self.assertEqual(expected_dict, actual_dict)
+
+        # smoke test JSON serialisation
+        json.dumps(actual_dict, indent=2)
 
 
 class CallbackConfigTest(unittest.TestCase):
@@ -66,11 +87,14 @@ class CallbackConfigTest(unittest.TestCase):
             CallbackConfig()
         self.assertEqual('Both, api_uri and access_token must be given', str(e.exception))
 
-        expected = {
+        expected_dict = {
             "api_uri": 'https://bla.com',
             "access_token": 'dfasovjdasoövjidfs'
         }
-        callback = CallbackConfig(**expected)
-        res = callback.to_dict()
+        callback = CallbackConfig(**expected_dict)
+        actual_dict = callback.to_dict()
 
-        self.assertDictEqual(expected, res)
+        self.assertDictEqual(expected_dict, actual_dict)
+
+        # smoke test JSON serialisation
+        json.dumps(actual_dict, indent=2)
