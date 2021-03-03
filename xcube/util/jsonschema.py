@@ -84,6 +84,8 @@ class JsonSchema(ABC):
             d.update(const=self.const)
         if self.enum is not None:
             d.update(enum=self.enum)
+        if self.nullable is not None:
+            d.update(nullable=self.nullable)
         if self.title is not None:
             d.update(title=self.title)
         if self.description is not None:
@@ -91,6 +93,37 @@ class JsonSchema(ABC):
         if self.examples is not None:
             d.update(examples=self.examples)
         return d
+
+    @classmethod
+    def _get_kw_mapping(cls) -> Dict[str, str]:
+        return dict(type='type',
+                    default='default',
+                    const='const',
+                    enum='enum',
+                    nullable='nullable',
+                    title='title',
+                    description='description',
+                    examples='examples')
+
+    @classmethod
+    def _get_kwargs_from_dict(cls, d: Mapping[str, Any]) -> Dict[str, Any]:
+        kwargs = {}
+        for source_name, target_name in cls._get_kw_mapping().items():
+            if source_name in d:
+                kwargs[target_name] = d[source_name]
+        return kwargs
+
+    @classmethod
+    def from_dict(cls, d: Mapping[str, Any]) -> 'JsonSchema':
+        """Create new instance from a JSON-serializable dictionary"""
+        schema_type = d.get('type')
+        if schema_type is None:
+            raise ValueError('Schema has no schema type')
+        if schema_type not in _TYPE_TO_SCHEMA:
+            raise ValueError(f'Unknown schema type "{schema_type}"')
+        schema = _TYPE_TO_SCHEMA[schema_type]
+        kwargs = schema._get_kwargs_from_dict(d)
+        return schema(**kwargs)
 
     def validate_instance(self, instance: Any):
         """Validate JSON value *instance*."""
@@ -151,6 +184,17 @@ class JsonComplexSchema(JsonSchema):
             d.update(allOf=[schema.to_dict() for schema in self.all_of])
         return d
 
+    @classmethod
+    def _get_kwargs_from_dict(cls, d: Mapping[str, Any]) -> Dict[str, Any]:
+        kwargs = super()._get_kwargs_from_dict(d)
+        if 'oneOf' in d:
+            kwargs['one_of'] = [JsonSchema.from_dict(schema_dict) for schema_dict in d['oneOf']]
+        if 'anyOf' in d:
+            kwargs['any_of'] = [JsonSchema.from_dict(schema_dict) for schema_dict in d['anyOf']]
+        if 'allOf' in d:
+            kwargs['all_of'] = [JsonSchema.from_dict(schema_dict) for schema_dict in d['allOf']]
+        return kwargs
+
     def _to_unvalidated_instance(self, value: Any) -> Any:
         return self.serializer(value) if self.serializer is not None else value
 
@@ -208,6 +252,15 @@ class JsonStringSchema(JsonSimpleSchema):
             d.update(maxLength=self.max_length)
         return d
 
+    @classmethod
+    def _get_kw_mapping(cls) -> Dict[str, str]:
+        kw_mapping = super()._get_kw_mapping()
+        kw_mapping.update(dict(format='format',
+                               pattern='pattern',
+                               minLength='min_length',
+                               maxLength='max_length'))
+        return kw_mapping
+
 
 class JsonDateAndTimeSchemaBase:
     # noinspection PyShadowingBuiltins
@@ -257,6 +310,15 @@ class JsonDateSchema(JsonStringSchema, JsonDateAndTimeSchemaBase):
         return d
 
     @classmethod
+    def _get_kw_mapping(cls) -> Dict[str, str]:
+        kw_mapping = super()._get_kw_mapping()
+        kw_mapping.update(format='format',
+                          pattern='pattern',
+                          minDate='min_date',
+                          maxDate='max_date')
+        return kw_mapping
+
+    @classmethod
     def new_range(cls,
                   min_date: str = None,
                   max_date: str = None,
@@ -302,6 +364,13 @@ class JsonDatetimeSchema(JsonStringSchema, JsonDateAndTimeSchemaBase):
         if self.max_datetime is not None:
             d.update(maxDatetime=self.max_datetime)
         return d
+
+    @classmethod
+    def _get_kw_mapping(cls) -> Dict[str, str]:
+        kw_mapping = super()._get_kw_mapping()
+        kw_mapping.update(minDate='min_date',
+                          maxDate='max_date')
+        return kw_mapping
 
     @classmethod
     def new_range(cls,
@@ -355,6 +424,16 @@ class JsonNumberSchema(JsonSimpleSchema):
             d.update(multipleOf=self.multiple_of)
         return d
 
+    @classmethod
+    def _get_kw_mapping(cls) -> Dict[str, str]:
+        kw_mapping = super()._get_kw_mapping()
+        kw_mapping.update(minimum='minimum',
+                          exclusive_minimum='exclusiveMinimum',
+                          maximum='maximum',
+                          exclusive_maximum='exclusiveMaximum',
+                          multiple_of='multipleOf')
+        return kw_mapping
+
 
 class JsonIntegerSchema(JsonNumberSchema):
     def __init__(self, **kwargs):
@@ -389,6 +468,24 @@ class JsonArraySchema(JsonSchema):
         if self.unique_items is not None:
             d.update(uniqueItems=self.unique_items)
         return d
+
+    @classmethod
+    def _get_kw_mapping(cls) -> Dict[str, str]:
+        kw_mapping = super()._get_kw_mapping()
+        kw_mapping.update(min_items='minItems',
+                          max_items='maxItems',
+                          unique_items='uniqueItems')
+        return kw_mapping
+
+    @classmethod
+    def _get_kwargs_from_dict(cls, d: Mapping[str, Any]) -> Dict[str, Any]:
+        kwargs = super()._get_kwargs_from_dict(d)
+        if 'items' in d:
+            if isinstance(d['items'], Sequence):
+                kwargs['items'] = [JsonSchema.from_dict(item) for item in d['items']]
+            else:
+                kwargs['items'] = JsonSchema.from_dict(d['items'])
+        return kwargs
 
     def _to_unvalidated_instance(self, value: Sequence[Any]) -> Sequence[Any]:
         if self.serializer:
@@ -438,8 +535,9 @@ class JsonObjectSchema(JsonSchema):
         if self.properties:
             d.update(properties={k: v.to_dict() for k, v in self.properties.items()})
         if self.additional_properties is not None:
-            d.update(additionalProperties=self.additional_properties.to_dict() \
-                if isinstance(self.additional_properties, JsonSchema) else self.additional_properties)
+            d.update(additionalProperties=self.additional_properties.to_dict()
+                if isinstance(self.additional_properties, JsonSchema)
+                    else self.additional_properties)
         if self.min_properties is not None:
             d.update(minProperties=self.min_properties)
         if self.max_properties is not None:
@@ -450,6 +548,29 @@ class JsonObjectSchema(JsonSchema):
             d.update(dependencies={k: (v.to_dict() if isinstance(v, JsonSchema) else v)
                                    for k, v in self.dependencies.items()})
         return d
+
+    @classmethod
+    def _get_kw_mapping(cls) -> Dict[str, str]:
+        kw_mapping = super()._get_kw_mapping()
+        kw_mapping.update(min_properties='minProperties',
+                          max_properties='maxProperties',
+                          required='required')
+        return kw_mapping
+
+    @classmethod
+    def _get_kwargs_from_dict(cls, d: Mapping[str, Any]) -> Dict[str, Any]:
+        kwargs = super()._get_kwargs_from_dict(d)
+        if 'properties' in d:
+            kwargs['properties'] = {k: JsonSchema.from_dict(v) for k, v in d['properties'].items()}
+        if 'additionalProperties' in d:
+            if isinstance(d['additionalProperties'], Mapping):
+                kwargs['additional_properties'] = JsonSchema.from_dict(d['additionalProperties'])
+            else:
+                kwargs['additional_properties'] = d['additionalProperties']
+        if 'dependencies' in d:
+            kwargs['dependencies'] = {k: JsonSchema.from_dict(v) if isinstance(v, Mapping) else v
+                                      for k, v in d['dependencies'].items()}
+        return kwargs
 
     # TODO: move away. this is a special-purpose utility
     def process_kwargs_subset(self,
@@ -524,3 +645,14 @@ class JsonObjectSchema(JsonSchema):
 
 
 register_json_formatter(JsonSchema)
+
+
+_TYPE_TO_SCHEMA = {'null': JsonNullSchema,
+                   'boolea': JsonBooleanSchema,
+                   'string': JsonStringSchema,
+                   'date': JsonDateSchema,
+                   'date-time': JsonDatetimeSchema,
+                   'number': JsonNumberSchema,
+                   'integer': JsonIntegerSchema,
+                   'array': JsonArraySchema,
+                   'object': JsonObjectSchema}

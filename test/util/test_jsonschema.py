@@ -11,6 +11,7 @@ from xcube.util.jsonschema import JsonIntegerSchema
 from xcube.util.jsonschema import JsonNullSchema
 from xcube.util.jsonschema import JsonNumberSchema
 from xcube.util.jsonschema import JsonObjectSchema
+from xcube.util.jsonschema import JsonSchema
 from xcube.util.jsonschema import JsonSimpleSchema
 from xcube.util.jsonschema import JsonStringSchema
 
@@ -82,6 +83,22 @@ class JsonSimpleSchemaTest(unittest.TestCase):
                              const=100,
                              default=10,
                              nullable=True).to_dict())
+
+    def test_from_dict(self):
+        schema_dict = dict(type=['integer', 'null'],
+                           title= 'Number of Gnarzes',
+                           description='Not really required',
+                           enum=[10, 100, 1000],
+                           default=10,
+                           const=100)
+        self.assertEqual(JsonSchema.from_dict(schema_dict),
+                         JsonSimpleSchema('integer',
+                                          title='Number of Gnarzes',
+                                          description='Not really required',
+                                          enum=[10, 100, 1000],
+                                          const=100,
+                                          default=10,
+                                          nullable=True))
 
 
 class JsonNullSchemaTest(unittest.TestCase):
