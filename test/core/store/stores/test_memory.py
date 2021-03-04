@@ -63,7 +63,7 @@ class MemoryCubeStoreTest(unittest.TestCase):
             DatasetDescriptor(
                 data_id='cube_1',
                 type_specifier=TYPE_SPECIFIER_CUBE,
-                bbox=(-90.0, -180.0, 90.0, 180.0),
+                bbox=(-180.0, -90.0, 180.0, 90.0),
                 coords={'lon': VariableDescriptor(name='lon',
                                                   dtype='float64',
                                                   dims=('lon',),
@@ -122,7 +122,7 @@ class MemoryCubeStoreTest(unittest.TestCase):
             DatasetDescriptor(
                 data_id='cube_1',
                 type_specifier=TYPE_SPECIFIER_CUBE,
-                bbox=(-90.0, -180.0, 90.0, 180.0),
+                bbox=(-180.0, -90.0, 180.0, 90.0),
                 coords={'lon': VariableDescriptor(name='lon',
                                                   dtype='float64',
                                                   dims=('lon',),

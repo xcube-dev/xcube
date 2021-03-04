@@ -98,10 +98,10 @@ def _determine_bbox(data: xr.Dataset) -> Optional[Tuple[float, float, float, flo
     try:
         return get_dataset_bounds(data)
     except ValueError:
-        if 'geospatial_lat_min' in data.attrs and \
-                'geospatial_lon_min' in data.attrs and \
-                'geospatial_lat_max' in data.attrs and \
-                'geospatial_lon_max' in data.attrs:
+        if 'geospatial_lon_min' in data.attrs and \
+                'geospatial_lat_min' in data.attrs and \
+                'geospatial_lon_max' in data.attrs and \
+                'geospatial_lat_max' in data.attrs:
             return (data.geospatial_lat_min, data.geospatial_lon_min,
                     data.geospatial_lat_max, data.geospatial_lon_max)
 
