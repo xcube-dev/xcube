@@ -22,7 +22,7 @@
 import json
 import os.path
 import sys
-from typing import Optional, Dict, Any, Sequence, Mapping
+from typing import Optional, Dict, Any, Sequence
 
 import jsonschema
 import yaml
@@ -85,7 +85,7 @@ class CubeGeneratorRequest(JsonObject):
             factory=cls,
         )
 
-    def to_dict(self) -> Mapping[str, Any]:
+    def to_dict(self) -> Dict[str, Any]:
         """Convert into a JSON-serializable dictionary"""
         if len(self.input_configs) == 1:
             d = dict(input_config=self.input_configs[0].to_dict())
@@ -101,7 +101,7 @@ class CubeGeneratorRequest(JsonObject):
         return d
 
     @classmethod
-    def from_dict(cls, request_dict: Dict) -> 'CubeGeneratorRequest':
+    def from_dict(cls, request_dict: Dict[str, Any]) -> 'CubeGeneratorRequest':
         """Create new instance from a JSON-serializable dictionary"""
         try:
             return cls.get_schema().from_instance(request_dict)
