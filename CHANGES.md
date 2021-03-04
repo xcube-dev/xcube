@@ -1,7 +1,7 @@
 ## Changes in 0.6.2.dev3
 
 * Introduced abstract base class `xcube.util.jsonschema.JsonObject` which 
-  is now the super class of many clsses that have JSON object representations.
+  is now the super class of many classes that have JSON object representations.
   In Jupyter notebooks, instances of such classes are automatically rendered 
   as JSON trees.
 
