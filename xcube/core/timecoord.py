@@ -72,8 +72,7 @@ def add_time_coords(dataset: xr.Dataset, time_range: Tuple[float, float]) -> xr.
     return dataset
 
 
-def get_time_range_from_data(dataset: xr.Dataset) -> Tuple[Optional[np.datetime64],
-                                                           Optional[np.datetime64]]:
+def get_time_range_from_data(dataset: xr.Dataset) -> Tuple[Optional[float], Optional[float]]:
     if 'time' not in dataset:
         return None, None
     time = dataset["time"]
@@ -110,7 +109,14 @@ def get_end_time_from_attrs(dataset: xr.Dataset) -> Optional[str]:
 def _get_attr(dataset: xr.Dataset, names: Sequence[str]) -> Optional[str]:
     for name in names:
         if name in dataset.attrs:
-            return str(dataset.attrs[name])
+            return remove_time_part_from_isoformat(str(dataset.attrs[name]))
+
+
+def remove_time_part_from_isoformat(datetime_str: str) -> str:
+    date_length = 10  # for example len("2010-02-04") == 10
+    if len(datetime_str) > date_length and datetime_str[date_length] in ('T', ' '):
+        return datetime_str[0: date_length]
+    return datetime_str
 
 
 def to_time_in_days_since_1970(time_str: str, pattern=None) -> float:

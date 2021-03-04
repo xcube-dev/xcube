@@ -28,6 +28,7 @@ import xarray as xr
 
 from xcube.core.mldataset import MultiLevelDataset
 from xcube.core.geom import get_dataset_bounds
+from xcube.core.timecoord import remove_time_part_from_isoformat
 from xcube.core.timecoord import get_end_time_from_attrs
 from xcube.core.timecoord import get_start_time_from_attrs
 from xcube.core.timecoord import get_time_range_from_data
@@ -125,19 +126,12 @@ def _determine_time_coverage(data: xr.Dataset):
     if start_time is None:
         start_time = get_start_time_from_attrs(data)
     else:
-        start_time = pd.to_datetime(start_time).isoformat()
+        start_time = remove_time_part_from_isoformat(pd.to_datetime(start_time).isoformat())
     if end_time is None:
         end_time = get_end_time_from_attrs(data)
     else:
-        end_time = pd.to_datetime(end_time).isoformat()
+        end_time = remove_time_part_from_isoformat(pd.to_datetime(end_time).isoformat())
     return start_time, end_time
-
-
-def _strip_time_from_datetime_str(datetime_str: str) -> str:
-    date_length = 10  # for example len("2010-02-04") == 10
-    if len(datetime_str) > date_length and datetime_str[date_length] in ('T', ' '):
-        return datetime_str[0: date_length]
-    return datetime_str
 
 
 def _determine_time_period(data: xr.Dataset):
