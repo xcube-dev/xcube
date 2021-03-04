@@ -19,7 +19,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 from abc import ABC, abstractmethod
-from typing import Optional
+from typing import Optional, Any
 
 from xcube.core.store import DataStorePool
 from xcube.util.assertions import assert_condition
@@ -97,11 +97,27 @@ class CubeGenerator(ABC):
 
     @abstractmethod
     def get_cube_info(self) -> CubeInfo:
-        """Get data cube information."""
+        """
+        Get data cube information.
+
+        :return: a cube information object
+        :raises CubeGeneratorError: if cube info generation failed
+        :raises DataStoreError: if data store access failed
+        """
 
     @abstractmethod
-    def generate_cube(self):
-        """Generate a data cube."""
+    def generate_cube(self) -> Any:
+        """
+        Generate the data cube.
+
+        Returns the cube reference which can be used as ``data_id`` in
+        ``store.open_data(data_id)`` where *store*  refers to the
+        store configured in ``output_config`` of the cube generator request.
+
+        :return: the cube reference
+        :raises CubeGeneratorError: if cube generation failed
+        :raises DataStoreError: if data store access failed
+        """
 
 
 class LocalCubeGenerator(CubeGenerator):
@@ -131,7 +147,7 @@ class LocalCubeGenerator(CubeGenerator):
             else DataStorePool()
         self._verbosity = verbosity
 
-    def generate_cube(self):
+    def generate_cube(self) -> Any:
         request = self._request
 
         if request.callback_config:
@@ -162,6 +178,8 @@ class LocalCubeGenerator(CubeGenerator):
         if self._verbosity:
             print('Cube "{}" generated within {:.2f} seconds'
                   .format(str(data_id), cm.state.total_time))
+
+        return data_id
 
     def get_cube_info(self) -> CubeInfo:
         informant = CubeInformant(request=self._request, store_pool=self._store_pool)
