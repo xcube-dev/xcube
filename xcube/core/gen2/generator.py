@@ -41,7 +41,7 @@ class CubeGenerator(ABC):
                   gen_config_path: Optional[str],
                   stores_config_path: str = None,
                   service_config_path: str = None,
-                  verbose: bool = False) -> 'CubeGenerator':
+                  verbosity: int = 0) -> 'CubeGenerator':
         """
         Create a cube generator from configuration files.
 
@@ -68,7 +68,7 @@ class CubeGenerator(ABC):
             mapping of store names to rized stores.
         :param service_config_path: A path to a JSON or YAML file that configures an
             xcube generator service.
-        :param verbose: Whether to output progress information to stdout.
+        :param verbosity: Level of verbosity, 0 means off.
         """
         assert_instance(gen_config_path, (str, type(None)), 'gen_config_path')
         assert_instance(stores_config_path, (str, type(None)), 'stores_config_path')
@@ -78,22 +78,22 @@ class CubeGenerator(ABC):
                          'stores_config_path and service_config_path cannot be'
                          ' given at the same time.')
 
-        gen_config = CubeGeneratorRequest.from_file(gen_config_path, verbose=bool(verbose))
+        request = CubeGeneratorRequest.from_file(gen_config_path, verbosity=verbosity)
 
         if service_config_path is not None:
             from .service import ServiceConfig
             from .service import CubeGeneratorService
             service_config = ServiceConfig.from_file(service_config_path) \
                 if service_config_path is not None else None
-            return CubeGeneratorService(gen_config,
+            return CubeGeneratorService(request,
                                         service_config=service_config,
-                                        verbose=bool(verbose))
+                                        verbosity=verbosity)
         else:
             store_pool = DataStorePool.from_file(stores_config_path) \
                 if stores_config_path is not None else None
-            return LocalCubeGenerator(gen_config,
+            return LocalCubeGenerator(request,
                                       store_pool=store_pool,
-                                      verbose=bool(verbose))
+                                      verbosity=verbosity)
 
     @abstractmethod
     def get_cube_info(self) -> CubeInfo:
@@ -115,13 +115,13 @@ class LocalCubeGenerator(CubeGenerator):
     :param request: Cube generation request.
     :param store_pool: An optional pool of pre-configured data stores
         referenced from *gen_config* input/output configurations.
-    :param verbose: Whether to output progress information to stdout.
+    :param verbosity: Level of verbosity, 0 means off.
     """
 
     def __init__(self,
                  request: CubeGeneratorRequest,
                  store_pool: DataStorePool = None,
-                 verbose: bool = False):
+                 verbosity: int = False):
         assert_instance(request, CubeGeneratorRequest, 'request')
         if store_pool is not None:
             assert_instance(store_pool, DataStorePool, 'store_pool')
@@ -129,7 +129,7 @@ class LocalCubeGenerator(CubeGenerator):
         self._request = request
         self._store_pool = store_pool if store_pool is not None \
             else DataStorePool()
-        self._verbose = verbose
+        self._verbosity = verbosity
 
     def generate_cube(self):
         request = self._request
@@ -137,7 +137,7 @@ class LocalCubeGenerator(CubeGenerator):
         if request.callback_config:
             ApiProgressCallbackObserver(request.callback_config).activate()
 
-        if self._verbose:
+        if self._verbosity:
             ConsoleProgressObserver().activate()
 
         cubes_opener = CubesOpener(request.input_configs,
@@ -159,7 +159,7 @@ class LocalCubeGenerator(CubeGenerator):
             cm.will_work(80)
             data_id = cube_writer.write_cube(cube)
 
-        if self._verbose:
+        if self._verbosity:
             print('Cube "{}" generated within {:.2f} seconds'
                   .format(str(data_id), cm.state.total_time))
 

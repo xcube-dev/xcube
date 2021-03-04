@@ -19,6 +19,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+import collections.abc
 from abc import ABC, abstractmethod
 from typing import Dict, Any, Callable, Mapping, Sequence, Union, Tuple, Optional
 
@@ -493,17 +494,30 @@ class JsonObjectSchema(JsonSchema):
         obj = self._convert_mapping(instance, '_from_validated_instance')
         return self.factory(**obj) if self.factory is not None and obj is not None else obj
 
-    def _convert_mapping(self, mapping: Optional[Mapping[str, Any]], method_name: str) \
+    def _convert_mapping(self, mapping_or_obj: Optional[Mapping[str, Any]], method_name: str) \
             -> Optional[Mapping[str, Any]]:
         # TODO: recognise self.dependencies. if dependency is again a schema, compute effective schema
         #       by merging this and the dependency.
 
-        if mapping is None:
+        if mapping_or_obj is None:
             return None
 
         converted_mapping = dict()
 
         required_set = set(self.required) if self.required else set()
+
+        if isinstance(mapping_or_obj, (collections.abc.Mapping, dict)):
+            # An object that is already a Mapping
+            mapping = mapping_or_obj
+        else:
+            # An object that is not a Mapping: convert to mapping.
+            mapping = {}
+            for property_name in dir(mapping_or_obj):
+                if not (property_name.startswith('_') or property_name.endswith('_')):
+                    property_value = getattr(mapping_or_obj, property_name)
+                    if (property_value is not None or property_name in required_set) \
+                            and not callable(property_value):
+                        mapping[property_name] = property_value
 
         for property_name, property_schema in self.properties.items():
             if property_name in mapping:
@@ -518,16 +532,47 @@ class JsonObjectSchema(JsonSchema):
                         converted_mapping[property_name] = converted_property_value
 
         if self.additional_properties is None or self.additional_properties:
-            properties_schema = self.additional_properties \
+            additional_properties_schema = self.additional_properties \
                 if isinstance(self.additional_properties, JsonSchema) else None
             # Note, additional_properties defaults to True
             for property_name, property_value in mapping.items():
                 if property_name not in converted_mapping and property_value is not UNDEFINED:
-                    if properties_schema:
-                        property_value = properties_schema.from_instance(property_value)
+                    if additional_properties_schema:
+                        property_value = getattr(additional_properties_schema, method_name)(property_value)
                     converted_mapping[property_name] = property_value
 
         return converted_mapping
 
 
+class JsonObject(ABC):
+    """
+    The abstract base class for objects
+
+    * whose instances can be created from a JSON-serializable
+      dictionary using their :meth:from_dict class method;
+    * whose instances can be converted into a JSON-serializable dictionary
+      using their :meth:to_dict instance method.
+
+    Derived concrete classes must only implement the :meth:get_schema class method
+    that must return a :class:JsonObjectSchema.
+
+    Instances of this class have a JSON representation in Jupyter/IPython Notebooks.
+    """
+
+    @classmethod
+    @abstractmethod
+    def get_schema(cls) -> JsonObjectSchema:
+        """Get JSON object schema."""
+
+    @classmethod
+    def from_dict(cls, value: Dict[str, Any]) -> 'JsonObject':
+        """Create instance from JSON-serializable dictionary *value*."""
+        return cls.get_schema().from_instance(value)
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Create JSON-serializable dictionary representation."""
+        return self.get_schema().to_instance(self)
+
+
 register_json_formatter(JsonSchema)
+register_json_formatter(JsonObject)

@@ -1,5 +1,6 @@
 import unittest
 
+import jsonschema
 import numpy as np
 
 from xcube.core.new import new_cube
@@ -23,7 +24,7 @@ class NewDataDescriptorTest(unittest.TestCase):
         self.assertEqual('dataset[cube]', descriptor.type_specifier)
         self.assertEqual((-180.0, -90.0, 180.0, 90.0), descriptor.bbox)
         self.assertIsNone(descriptor.open_params_schema)
-        self.assertEqual(('2010-01-01T00:00:00', '2010-01-06T00:00:00'), descriptor.time_range)
+        self.assertEqual(('2010-01-01', '2010-01-06'), descriptor.time_range)
         self.assertEqual('1D', descriptor.time_period)
         self.assertEqual(1.0, descriptor.spatial_res)
         self.assertIsNotNone(descriptor.coords)
@@ -34,12 +35,12 @@ class NewDataDescriptorTest(unittest.TestCase):
 class DataDescriptorTest(unittest.TestCase):
 
     def test_from_dict_no_data_id(self):
-        with self.assertRaises(ValueError):
+        with self.assertRaises(jsonschema.exceptions.ValidationError):
             descriptor_dict = dict()
             DataDescriptor.from_dict(descriptor_dict)
 
     def test_from_dict_no_type_specifier(self):
-        with self.assertRaises(ValueError):
+        with self.assertRaises(jsonschema.exceptions.ValidationError):
             descriptor_dict = dict(data_id='id')
             DataDescriptor.from_dict(descriptor_dict)
 
@@ -107,9 +108,9 @@ class DataDescriptorTest(unittest.TestCase):
         self.assertEqual(dict(data_id='xyz',
                               type_specifier='dataset[cube]',
                               crs='EPSG:9346',
-                              bbox=(10., 20., 30., 40.),
+                              bbox=[10., 20., 30., 40.],
                               spatial_res=20.,
-                              time_range=('2017-06-05', '2017-06-27'),
+                              time_range=['2017-06-05', '2017-06-27'],
                               time_period='daily'),
                          descriptor_dict)
 
@@ -121,16 +122,13 @@ class DatasetDescriptorTest(unittest.TestCase):
         self.assertIsInstance(schema, JsonObjectSchema)
 
     def test_from_dict_no_data_id(self):
-        try:
-            descriptor_dict = dict()
+        descriptor_dict = dict()
+        with self.assertRaises(jsonschema.exceptions.ValidationError):
             DatasetDescriptor.from_dict(descriptor_dict)
-            self.fail('Exception expected')
-        except ValueError:
-            pass
 
     def test_from_dict_wrong_type_specifier(self):
+        descriptor_dict = dict(data_id='xyz', type_specifier='tsr')
         with self.assertRaises(ValueError) as cm:
-            descriptor_dict = dict(data_id='xyz', type_specifier='tsr')
             DatasetDescriptor.from_dict(descriptor_dict)
         self.assertEqual('type_specifier must satisfy type specifier "dataset", but was "tsr"',
                          f'{cm.exception}')
@@ -152,6 +150,7 @@ class DatasetDescriptorTest(unittest.TestCase):
     def test_from_dict_full(self):
         descriptor_dict = dict(
             data_id='xyz',
+            type_specifier='dataset',
             crs='EPSG:9346',
             bbox=(10., 20., 30., 40.),
             spatial_res=20.,
@@ -161,8 +160,7 @@ class DatasetDescriptorTest(unittest.TestCase):
                 rtdt=dict(
                     name='rtdt',
                     dtype='rj',
-                    dims=('rtdt'),
-                    ndim=2,
+                    dims=('rtdt',),
                     attrs=dict(
                         ssd=6,
                         zjgrhgu='hgtr'
@@ -176,7 +174,6 @@ class DatasetDescriptorTest(unittest.TestCase):
                     dtype='rj',
                     dims=('dfjhrt', 'sg'),
                     chunks=(2, 3),
-                    ndim=2,
                     attrs=dict(
                         ssd=4,
                         zjgrhgu='dgfrf'
@@ -229,7 +226,6 @@ class DatasetDescriptorTest(unittest.TestCase):
                     dtype='rj',
                     dims=('dfjhrt', 'sg'),
                     chunks=(2, 3),
-                    ndim=2,
                     attrs=dict(
                         ssd=4,
                         zjgrhgu='dgfrf'
@@ -243,7 +239,7 @@ class DatasetDescriptorTest(unittest.TestCase):
         self.assertEqual('EPSG:9346', descriptor.crs)
         self.assertEqual(1, len(descriptor.data_vars))
         self.assertTrue('xf' in descriptor.data_vars)
-        self.assertTrue(type(descriptor.data_vars.get('xf')) == VariableDescriptor)
+        self.assertIs(VariableDescriptor, type(descriptor.data_vars.get('xf')))
 
     def test_to_dict(self):
         coords = dict(
@@ -295,17 +291,16 @@ class DatasetDescriptorTest(unittest.TestCase):
                 data_id='xyz',
                 type_specifier='dataset[cube]',
                 crs='EPSG:9346',
-                bbox=(10., 20., 30., 40.),
+                bbox=[10., 20., 30., 40.],
                 spatial_res=20.,
-                time_range=('2017-06-05', '2017-06-27'),
+                time_range=['2017-06-05', '2017-06-27'],
                 time_period='daily',
                 coords=dict(
                     rtdt=dict(
                         name='rtdt',
                         dtype='rj',
-                        dims=('rtdt',),
-                        chunks=(2,),
-                        ndim=1,
+                        dims=['rtdt', ],
+                        chunks=[2, ],
                         attrs=dict(
                             ssd=6,
                             zjgrhgu='hgtr'
@@ -317,9 +312,8 @@ class DatasetDescriptorTest(unittest.TestCase):
                     xf=dict(
                         name='xf',
                         dtype='rj',
-                        dims=('dfjhrt', 'sg'),
-                        chunks=(2, 3),
-                        ndim=2,
+                        dims=['dfjhrt', 'sg'],
+                        chunks=[2, 3],
                         attrs=dict(
                             ssd=4,
                             zjgrhgu='dgfrf'
@@ -347,7 +341,6 @@ class VariableDescriptorTest(unittest.TestCase):
         self.assertEqual('zughysz', vd1.dtype)
         self.assertEqual(('rtdswgt', 'dref', 'zdrs5ge'), vd1.dims)
         self.assertEqual((3, 321, 4), vd1.chunks)
-        self.assertEqual(3, vd1.ndim)
         self.assertEqual(None, vd1.attrs)
 
         vd3 = VariableDescriptor('gz',
@@ -359,7 +352,6 @@ class VariableDescriptorTest(unittest.TestCase):
         self.assertEqual('zughysz', vd3.dtype)
         self.assertEqual(('rtdswgt', 'dref', 'zdrs5ge'), vd3.dims)
         self.assertEqual((3, 321, 4), vd3.chunks)
-        self.assertEqual(3, vd3.ndim)
         self.assertEqual({'d': 2, 'zjgu': ''}, vd3.attrs)
 
     def test_variable_descriptor_to_dict(self):
@@ -371,9 +363,8 @@ class VariableDescriptorTest(unittest.TestCase):
         expected = {
             'name': 'xf',
             'dtype': 'rj',
-            'dims': ('dfjhrt', 'sg'),
-            'ndim': 2,
-            'chunks': (3, 2),
+            'dims': ['dfjhrt', 'sg'],
+            'chunks': [3, 2],
             'attrs': {
                 'ssd': 4,
                 'zjgrhgu': 'dgfrf',
@@ -387,8 +378,7 @@ class VariableDescriptorTest(unittest.TestCase):
             'name': 'xf',
             'dtype': 'rj',
             'dims': ('dfjhrt', 'sg'),
-            'ndim': 2,
-            'chunks':(3, 2),
+            'chunks': (3, 2),
             'attrs': {
                 'ssd': 4,
                 'zjgrhgu': 'dgfrf',
@@ -399,25 +389,14 @@ class VariableDescriptorTest(unittest.TestCase):
         self.assertEqual('xf', vd.name)
         self.assertEqual('rj', vd.dtype)
         self.assertEqual(('dfjhrt', 'sg'), vd.dims)
-        self.assertEqual(2, vd.ndim)
         self.assertEqual((3, 2), vd.chunks)
         self.assertEqual({'ssd': 4, 'zjgrhgu': 'dgfrf', 'fill_value': None}, vd.attrs)
 
-        vd_fail = None
-        try:
-            vd_fail = VariableDescriptor.from_dict({'name': 'dhgfr', 'dtype': 'ghdst'})
-            self.fail('Should not come here')
-        except ValueError:
-            self.assertIsNone(vd_fail)
+        with self.assertRaises(jsonschema.exceptions.ValidationError):
+            VariableDescriptor.from_dict({'name': 'dhgfr', 'dtype': 'ghdst'})
 
-        try:
-            vd_fail = VariableDescriptor.from_dict({'name': 'dhgfr', 'dims': ['faer', 'bjunda']})
-            self.fail('Should not come here')
-        except ValueError:
-            self.assertIsNone(vd_fail)
+        with self.assertRaises(jsonschema.exceptions.ValidationError):
+            VariableDescriptor.from_dict({'name': 'dhgfr', 'dims': ['faer', 'bjunda']})
 
-        try:
-            vd_fail = VariableDescriptor.from_dict({'dtype': 'ghdst', 'dims': ['faer', 'bjunda']})
-            self.fail('Should not come here')
-        except ValueError:
-            self.assertIsNone(vd_fail)
+        with self.assertRaises(jsonschema.exceptions.ValidationError):
+            VariableDescriptor.from_dict({'dtype': 'ghdst', 'dims': ['faer', 'bjunda']})

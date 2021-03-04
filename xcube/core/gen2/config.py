@@ -20,8 +20,7 @@
 # SOFTWARE.
 
 import numbers
-from collections import Iterable
-from typing import Optional, Dict, Any, Sequence, Mapping, Tuple, Union
+from typing import Optional, Any, Sequence, Mapping, Tuple, Union
 
 import pyproj
 
@@ -33,11 +32,12 @@ from xcube.util.jsonschema import JsonBooleanSchema
 from xcube.util.jsonschema import JsonDateSchema
 from xcube.util.jsonschema import JsonIntegerSchema
 from xcube.util.jsonschema import JsonNumberSchema
+from xcube.util.jsonschema import JsonObject
 from xcube.util.jsonschema import JsonObjectSchema
 from xcube.util.jsonschema import JsonStringSchema
 
 
-class InputConfig:
+class InputConfig(JsonObject):
     def __init__(self,
                  store_id: str = None,
                  opener_id: str = None,
@@ -67,15 +67,8 @@ class InputConfig:
             factory=cls,
         )
 
-    def to_dict(self):
-        return _to_dict(self, ('store_id',
-                               'opener_id',
-                               'data_id',
-                               'store_params',
-                               'open_params'))
 
-
-class CallbackConfig:
+class CallbackConfig(JsonObject):
     def __init__(self,
                  api_uri: str = None,
                  access_token: str = None):
@@ -95,11 +88,8 @@ class CallbackConfig:
             factory=cls,
         )
 
-    def to_dict(self) -> dict:
-        return _to_dict(self, ('api_uri', 'access_token'))
 
-
-class OutputConfig:
+class OutputConfig(JsonObject):
 
     def __init__(self,
                  store_id: str = None,
@@ -132,17 +122,9 @@ class OutputConfig:
             factory=cls,
         )
 
-    def to_dict(self):
-        return _to_dict(self, ('store_id',
-                               'writer_id',
-                               'data_id',
-                               'store_params',
-                               'write_params',
-                               'replace'))
-
 
 # Need to be aligned with params in resample_cube(cube, **params)
-class CubeConfig:
+class CubeConfig(JsonObject):
 
     def __init__(self,
                  variable_names: Sequence[str] = None,
@@ -200,15 +182,6 @@ class CubeConfig:
             assert_instance(time_period, str, 'time_period')
             self.time_period = time_period
 
-    def to_dict(self):
-        return _to_dict(self, ('variable_names',
-                               'crs',
-                               'bbox',
-                               'spatial_res',
-                               'tile_size',
-                               'time_range',
-                               'time_period'))
-
     @classmethod
     def get_schema(cls):
         return JsonObjectSchema(
@@ -247,23 +220,3 @@ class CubeConfig:
             additional_properties=False,
             factory=cls
         )
-
-
-def _to_dict(self, keys: Tuple[str, ...]) -> Dict[str, Any]:
-    schema = self.get_schema()
-    d = dict()
-    for k in keys:
-        v = getattr(self, k)
-        if v is not None:
-            s = schema.properties.get(k)
-            if v != s.default:
-                if isinstance(v, (str, bool, int, float)):
-                    pass
-                elif hasattr(v, 'to_dict') and callable(v.to_dict):
-                    v = v.to_dict()
-                elif isinstance(v, Mapping):
-                    v = dict(v)
-                elif isinstance(v, Iterable):
-                    v = list(v)
-                d[k] = v
-    return d

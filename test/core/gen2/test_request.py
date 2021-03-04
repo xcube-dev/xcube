@@ -1,3 +1,4 @@
+import json
 import unittest
 
 from xcube.core.gen2.config import CubeConfig
@@ -37,15 +38,20 @@ class CubeGeneratorRequestTest(unittest.TestCase):
         self.assertEqual('4D', gen_config.cube_config.time_period)
 
     def test_to_dict(self):
-        request_dict = dict(input_config=dict(store_id='memory',
-                                              data_id='S2L2A'),
-                            cube_config=dict(variable_names=['B01', 'B02'],
-                                             crs='WGS84',
-                                             bbox=[12.2, 52.1, 13.9, 54.8],
-                                             spatial_res=0.05,
-                                             time_range=['2018-01-01', None],
-                                             time_period='4D'),
-                            output_config=dict(store_id='memory',
-                                               data_id='CHL'))
-        request = CubeGeneratorRequest.from_dict(request_dict)
-        self.assertEqual(request_dict, request.to_dict())
+        expected_dict = dict(input_config=dict(store_id='memory',
+                                               data_id='S2L2A'),
+                             cube_config=dict(variable_names=['B01', 'B02'],
+                                              crs='WGS84',
+                                              bbox=[12.2, 52.1, 13.9, 54.8],
+                                              spatial_res=0.05,
+                                              time_range=['2018-01-01', None],
+                                              time_period='4D'),
+                             output_config=dict(store_id='memory',
+                                                replace=False,
+                                                data_id='CHL'))
+        request = CubeGeneratorRequest.from_dict(expected_dict)
+        actual_dict = request.to_dict()
+        self.assertEqual(expected_dict, actual_dict)
+
+        # JSON-serialisation smoke test
+        json.dumps(actual_dict, indent=2)

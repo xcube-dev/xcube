@@ -58,7 +58,7 @@ class CubeGeneratorServiceTest(unittest.TestCase):
                                                           client_id='itzibitzispider',
                                                           client_secret='g3ergd36fd2983457fhjder'),
                                             progress_period=0,
-                                            verbose=True)
+                                            verbosity=True)
 
     @requests_mock.Mocker()
     def test_generate_cube_success(self, m: requests_mock.Mocker):
@@ -152,7 +152,6 @@ class CubeGeneratorServiceTest(unittest.TestCase):
                                "name": "B01",
                                "dtype": "float32",
                                "dims": ["time", "lat", "lon"],
-                               "ndim": 3
                            },
                            "B02": {
                                "name": "B02",
@@ -162,13 +161,11 @@ class CubeGeneratorServiceTest(unittest.TestCase):
                                    "lat",
                                    "lon"
                                ],
-                               "ndim": 3
                            },
                            "B03": {
                                "name": "B03",
                                "dtype": "float32",
                                "dims": ["time", "lat", "lon"],
-                               "ndim": 3
                            }
                        },
                        "spatial_res": 0.05,

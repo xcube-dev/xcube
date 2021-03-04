@@ -19,11 +19,11 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+import json
 import os.path
 import uuid
 from typing import Optional, Iterator, Any, Tuple, List
 
-import json
 import s3fs
 import xarray as xr
 
@@ -43,7 +43,6 @@ from xcube.core.store import get_type_specifier
 from xcube.core.store import new_data_descriptor
 from xcube.core.store import new_data_opener
 from xcube.core.store import new_data_writer
-from xcube.core.store.stores.zarrdescriber import S3ZarrDescriber
 from xcube.core.store.accessors.dataset import S3Mixin
 from xcube.util.assertions import assert_condition
 from xcube.util.assertions import assert_given
@@ -62,6 +61,7 @@ _FILENAME_EXT_TO_ACCESSOR_ID_PARTS = {
 }
 
 _REGISTRY_FILE = 'registry.json'
+
 
 # TODO: write tests
 # TODO: complete docs
@@ -93,7 +93,6 @@ class S3DataStore(DefaultSearchMixin, MutableDataStore):
         if self._s3.exists(f'{self._bucket_name}/{_REGISTRY_FILE}'):
             with self._s3.open(f'{self._bucket_name}/{_REGISTRY_FILE}', 'r') as registry_file:
                 self._registry = json.load(registry_file)
-        self._zarr_describer = S3ZarrDescriber(self._s3, self._bucket_name)
 
     def close(self):
         pass
@@ -125,7 +124,7 @@ class S3DataStore(DefaultSearchMixin, MutableDataStore):
         data_type_specifier, _, _ = self._get_accessor_id_parts(data_id)
         return data_type_specifier,
 
-    def get_data_ids(self, type_specifier: str = None, include_titles = True) -> Iterator[Tuple[str, Optional[str]]]:
+    def get_data_ids(self, type_specifier: str = None, include_titles=True) -> Iterator[Tuple[str, Optional[str]]]:
         # todo do not ignore type_specifier
         prefix = self._bucket_name + '/'
         first_index = len(prefix)
@@ -148,7 +147,7 @@ class S3DataStore(DefaultSearchMixin, MutableDataStore):
     def describe_data(self, data_id: str, type_specifier: str = None) -> DataDescriptor:
         if data_id in self._registry:
             descriptor = self._registry[data_id]
-            if type_specifier and not TypeSpecifier.normalize(type_specifier).\
+            if type_specifier and not TypeSpecifier.normalize(type_specifier). \
                     is_satisfied_by(descriptor.type_specifier):
                 raise DataStoreError(f'Data "{data_id}" is not available as '
                                      f'type "{type_specifier}". '

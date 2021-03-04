@@ -38,11 +38,13 @@ from xcube.core.store.typespecifier import TYPE_SPECIFIER_MULTILEVEL_DATASET
 from xcube.core.store.typespecifier import TypeSpecifier
 from xcube.core.store.typespecifier import get_type_specifier
 from xcube.util.assertions import assert_given
-from xcube.util.assertions import assert_in
+from xcube.util.assertions import assert_instance
 from xcube.util.ipython import register_json_formatter
 from xcube.util.jsonschema import JsonArraySchema
 from xcube.util.jsonschema import JsonDateSchema
+from xcube.util.jsonschema import JsonIntegerSchema
 from xcube.util.jsonschema import JsonNumberSchema
+from xcube.util.jsonschema import JsonObject
 from xcube.util.jsonschema import JsonObjectSchema
 from xcube.util.jsonschema import JsonStringSchema
 
@@ -65,14 +67,14 @@ def new_data_descriptor(data_id: str, data: Any, require: bool = False) -> 'Data
         time_period = _determine_time_period(data)
         return DatasetDescriptor(data_id=data_id,
                                  type_specifier=get_type_specifier(data),
+                                 dims={str(k): v for k, v in data.dims.items()},
+                                 coords=coords,
+                                 data_vars=data_vars,
                                  bbox=bbox,
                                  time_range=(time_coverage_start, time_coverage_end),
                                  time_period=time_period,
                                  spatial_res=spatial_res,
-                                 coords=coords,
-                                 dims=dict(data.dims),
-                                 data_vars=data_vars,
-                                 attrs=data.attrs)
+                                 attrs={str(k): v for k, v in data.attrs.items()})
     elif isinstance(data, MultiLevelDataset):
         # TODO: implement me: data -> MultiLevelDatasetDescriptor
         return MultiLevelDatasetDescriptor(data_id=data_id, num_levels=5)
@@ -131,6 +133,13 @@ def _determine_time_coverage(data: xr.Dataset):
     return start_time, end_time
 
 
+def _strip_time_from_datetime_str(datetime_str: str) -> str:
+    date_length = 10  # for example len("2010-02-04") == 10
+    if len(datetime_str) > date_length and datetime_str[date_length] in ('T', ' '):
+        return datetime_str[0: date_length]
+    return datetime_str
+
+
 def _determine_time_period(data: xr.Dataset):
     if 'time' in data and len(data['time'].values) > 0:
         time_diff = data['time'].diff(dim=data['time'].dims[0]).values.astype(np.float64)
@@ -144,7 +153,7 @@ def _determine_time_period(data: xr.Dataset):
             return time_period.split('T')[0]
 
 
-class DataDescriptor:
+class DataDescriptor(JsonObject):
     """
     A generic descriptor for any data.
     Also serves as a base class for more specific data descriptors.
@@ -168,7 +177,7 @@ class DataDescriptor:
                  time_period: str = None,
                  open_params_schema: JsonObjectSchema = None):
         assert_given(data_id, 'data_id')
-        self._assert_valid_type_specifier(type_specifier)
+        assert_instance(data_id, (str, TypeSpecifier))
         self.data_id = data_id
         self.type_specifier = TypeSpecifier.normalize(type_specifier)
         self.crs = crs
@@ -178,42 +187,40 @@ class DataDescriptor:
         self.open_params_schema = open_params_schema
 
     @classmethod
-    def from_dict(cls, d: Mapping[str, Any]) -> 'DataDescriptor':
-        """Create new instance from a JSON-serializable dictionary"""
-        assert_in('data_id', d)
-        assert_in('type_specifier', d)
-        if TYPE_SPECIFIER_DATASET.is_satisfied_by(d['type_specifier']):
-            return DatasetDescriptor.from_dict(d)
-        elif TYPE_SPECIFIER_GEODATAFRAME.is_satisfied_by(d['type_specifier']):
-            return GeoDataFrameDescriptor.from_dict(d)
-        return DataDescriptor(data_id=d['data_id'],
-                              type_specifier=d['type_specifier'],
-                              crs=d.get('crs', None),
-                              bbox=d.get('bbox', None),
-                              time_range=d.get('time_range', None),
-                              time_period=d.get('time_period', None),
-                              open_params_schema=d.get('open_params_schema', None))
+    def get_schema(cls) -> JsonObjectSchema:
+        return JsonObjectSchema(
+            properties=dict(
+                data_id=JsonStringSchema(min_length=1),
+                type_specifier=TypeSpecifier.get_schema(),
+                crs=JsonStringSchema(min_length=1),
+                bbox=JsonArraySchema(items=[JsonNumberSchema(),
+                                            JsonNumberSchema(),
+                                            JsonNumberSchema(),
+                                            JsonNumberSchema()]),
+                time_range=JsonDateSchema.new_range(nullable=True),
+                time_period=JsonStringSchema(min_length=1),
+                open_params_schema=JsonObjectSchema(additional_properties=True),
+            ),
+            required=['data_id', 'type_specifier'],
+            additional_properties=True,
+            factory=cls)
 
-    def to_dict(self) -> Dict[str, Any]:
-        """Convert into a JSON-serializable dictionary"""
-        d = dict(type_specifier=str(self.type_specifier))
-        _copy_none_null_props(self, d, ['data_id', 'crs', 'bbox', 'time_range', 'time_period'])
-
-        if self.open_params_schema is not None:
-            d['open_params_schema'] = self.open_params_schema.to_dict()
-        return d
-
-    @classmethod
-    def _get_base_type_specifier(cls) -> TypeSpecifier:
-        return TYPE_SPECIFIER_ANY
-
-    @classmethod
-    def _assert_valid_type_specifier(cls, type_specifier: Optional[str]):
-        assert_given(type_specifier, 'type_specifier')
-        base_type_specifier = cls._get_base_type_specifier()
-        if not base_type_specifier.is_satisfied_by(type_specifier):
-            raise ValueError('type_specifier must satisfy'
-                             f' type specifier "{base_type_specifier}", but was "{type_specifier}"')
+    # @classmethod
+    # def from_dict(cls, mapping: Mapping[str, Any]) -> 'DataDescriptor':
+    #     """Create new instance from a JSON-serializable dictionary"""
+    #     assert_in('data_id', mapping)
+    #     assert_in('type_specifier', mapping)
+    #     if TYPE_SPECIFIER_DATASET.is_satisfied_by(mapping['type_specifier']):
+    #         return DatasetDescriptor.from_dict(mapping)
+    #     elif TYPE_SPECIFIER_GEODATAFRAME.is_satisfied_by(mapping['type_specifier']):
+    #         return GeoDataFrameDescriptor.from_dict(mapping)
+    #     return DataDescriptor(data_id=mapping['data_id'],
+    #                           type_specifier=mapping['type_specifier'],
+    #                           crs=mapping.get('crs'),
+    #                           bbox=mapping.get('bbox'),
+    #                           time_range=mapping.get('time_range'),
+    #                           time_period=mapping.get('time_period'),
+    #                           open_params_schema=mapping.get('open_params_schema'))
 
 
 class DatasetDescriptor(DataDescriptor):
@@ -226,18 +233,18 @@ class DatasetDescriptor(DataDescriptor):
     :param crs: A coordinate reference system identifier, as an EPSG, PROJ or WKT string
     :param bbox: A bounding box of the data
     :param time_range: Start and end time delimiting this data's temporal extent (see
-    https://github.com/dcs4cop/xcube/blob/master/docs/source/storeconv.md#date-time-and-duration-specifications )
+        https://github.com/dcs4cop/xcube/blob/master/docs/source/storeconv.md#date-time-and-duration-specifications )
     :param time_period: The data's periodicity if it is evenly temporally resolved (see
-    https://github.com/dcs4cop/xcube/blob/master/docs/source/storeconv.md#date-time-and-duration-specifications )
+        https://github.com/dcs4cop/xcube/blob/master/docs/source/storeconv.md#date-time-and-duration-specifications )
     :param spatial_res: The spatial extent of a pixel in crs units
     :param dims: A mapping of the dataset's dimensions to their sizes
     :param coords: mapping of the dataset's data coordinate names to VariableDescriptors
-    (``xcube.core.store.VariableDescriptor``).
+        (``xcube.core.store.VariableDescriptor``).
     :param data_vars: A mapping of the dataset's variable names to VariableDescriptors
-    (``xcube.core.store.VariableDescriptor``).
+        (``xcube.core.store.VariableDescriptor``).
     :param attrs: A mapping containing arbitrary attributes of the dataset
     :param open_params_schema: A JSON schema describing the parameters that may be used to open
-    this data
+        this data
     """
 
     def __init__(self,
@@ -260,77 +267,30 @@ class DatasetDescriptor(DataDescriptor):
                          time_range=time_range,
                          time_period=time_period,
                          open_params_schema=open_params_schema)
+        self.type_specifier.assert_satisfies(TYPE_SPECIFIER_DATASET)
         self.dims = dict(dims) if dims else None
+        self.spatial_res = spatial_res
         self.coords = coords if coords else None
         self.data_vars = data_vars if data_vars else None
-        self.spatial_res = spatial_res
         self.attrs = _convert_nans_to_none(dict(attrs)) if attrs else None
 
     @classmethod
     def get_schema(cls) -> JsonObjectSchema:
-        return JsonObjectSchema(
-            properties=dict(
-                data_id=JsonStringSchema(min_length=1),
-                type_specifier=JsonStringSchema(default=TYPE_SPECIFIER_DATASET, min_length=1),
-                crs=JsonStringSchema(min_length=1),
-                bbox=JsonArraySchema(items=[JsonNumberSchema(),
-                                            JsonNumberSchema(),
-                                            JsonNumberSchema(),
-                                            JsonNumberSchema()]),
-                time_range=JsonDateSchema.new_range(nullable=True),
-                time_period=JsonStringSchema(min_length=1),
-                spatial_res=JsonNumberSchema(exclusive_minimum=0.0),
-                dims=JsonObjectSchema(additional_properties=True),
-                coords=JsonObjectSchema(additional_properties=True),
-                data_vars=JsonObjectSchema(additional_properties=True),
-                attrs=JsonObjectSchema(additional_properties=True),
-                open_params_schema=JsonObjectSchema(additional_properties=True),
-            ),
-            required=['data_id'],
-            additional_properties=False,
-            factory=cls)
-
-    @classmethod
-    def from_dict(cls, d: Mapping[str, Any]) -> 'DatasetDescriptor':
-        """Create new instance from a JSON-serializable dictionary"""
-        assert_in('data_id', d)
-        coords = d.get('coords')
-        if coords:
-            coords = {k: VariableDescriptor.from_dict(v) for k, v in coords.items()}
-        data_vars = d.get('data_vars')
-        if data_vars:
-            data_vars = {k: VariableDescriptor.from_dict(v) for k, v in data_vars.items()}
-        return DatasetDescriptor(data_id=d['data_id'],
-                                 type_specifier=d.get('type_specifier', TYPE_SPECIFIER_DATASET),
-                                 crs=d.get('crs'),
-                                 bbox=d.get('bbox'),
-                                 time_range=d.get('time_range'),
-                                 time_period=d.get('time_period'),
-                                 spatial_res=d.get('spatial_res'),
-                                 coords=coords,
-                                 dims=d.get('dims'),
-                                 data_vars=data_vars,
-                                 attrs=d.get('attrs'),
-                                 open_params_schema=d.get('open_params_schema'))
-
-    def to_dict(self) -> Dict[str, Any]:
-        """Convert into a JSON-serializable dictionary"""
-        d = super().to_dict()
-        if self.coords is not None:
-            coords = {k: v.to_dict() for k, v in self.coords.items()}
-            d['coords'] = coords
-        if self.data_vars is not None:
-            data_vars = {k: v.to_dict() for k, v in self.data_vars.items()}
-            d['data_vars'] = data_vars
-        _copy_none_null_props(self, d, ['spatial_res', 'dims', 'attrs'])
-        return d
-
-    @classmethod
-    def _get_base_type_specifier(cls) -> TypeSpecifier:
-        return TYPE_SPECIFIER_DATASET
+        schema = super().get_schema()
+        schema.properties.update(
+            dims=JsonObjectSchema(additional_properties=JsonIntegerSchema(minimum=0)),
+            spatial_res=JsonNumberSchema(exclusive_minimum=0.0),
+            coords=JsonObjectSchema(additional_properties=VariableDescriptor.get_schema()),
+            data_vars=JsonObjectSchema(additional_properties=VariableDescriptor.get_schema()),
+            attrs=JsonObjectSchema(additional_properties=True),
+        )
+        schema.required = ['data_id']
+        schema.additional_properties = False
+        schema.factory = cls
+        return schema
 
 
-class VariableDescriptor:
+class VariableDescriptor(JsonObject):
     """
     A descriptor for dataset variable represented by xarray.DataArray instances.
     They are part of dataset descriptor for an gridded, N-dimensional dataset represented by
@@ -356,26 +316,21 @@ class VariableDescriptor:
         self.dtype = dtype
         self.dims = tuple(dims)
         self.chunks = tuple(chunks) if chunks else None
-        self.ndim = len(self.dims)
         self.attrs = _convert_nans_to_none(dict(attrs)) if attrs is not None else None
 
     @classmethod
-    def from_dict(cls, d: Mapping[str, Any]):
-        """Create new instance from a JSON-serializable dictionary"""
-        assert_in('name', d)
-        assert_in('dtype', d)
-        assert_in('dims', d)
-        return VariableDescriptor(d['name'],
-                                  d['dtype'],
-                                  d['dims'],
-                                  d.get('chunks'),
-                                  d.get('attrs', None))
-
-    def to_dict(self) -> Dict[str, Any]:
-        """Convert into a JSON-serializable dictionary"""
-        d = dict(name=self.name, dtype=self.dtype)
-        _copy_none_null_props(self, d, ['dims', 'ndim', 'chunks', 'attrs'])
-        return d
+    def get_schema(cls) -> JsonObjectSchema:
+        return JsonObjectSchema(
+            properties=dict(
+                name=JsonStringSchema(min_length=1),
+                dtype=JsonStringSchema(min_length=1),
+                dims=JsonArraySchema(items=JsonStringSchema(min_length=1)),
+                chunks=JsonArraySchema(items=JsonIntegerSchema(minimum=0)),
+                attrs=JsonObjectSchema(additional_properties=True),
+            ),
+            required=['name', 'dtype', 'dims'],
+            additional_properties=False,
+            factory=cls)
 
 
 class MultiLevelDatasetDescriptor(DatasetDescriptor):
@@ -396,23 +351,19 @@ class MultiLevelDatasetDescriptor(DatasetDescriptor):
         assert_given(data_id, 'data_id')
         assert_given(num_levels, 'num_levels')
         super().__init__(data_id=data_id, type_specifier=type_specifier, **kwargs)
+        self.type_specifier.assert_satisfies(TYPE_SPECIFIER_MULTILEVEL_DATASET)
         self.num_levels = num_levels
 
     @classmethod
-    def from_dict(cls, d: Mapping[str, Any]) -> 'MultiLevelDatasetDescriptor':
-        """Create new instance from a JSON-serializable dictionary"""
-        # TODO: implement me
-        raise NotImplementedError()
-
-    def to_dict(self) -> Dict[str, Any]:
-        """Convert into a JSON-serializable dictionary"""
-        d = super().to_dict()
-        d['num_levels'] = self.num_levels
-        return d
-
-    @classmethod
-    def _get_base_type_specifier(cls) -> TypeSpecifier:
-        return TYPE_SPECIFIER_MULTILEVEL_DATASET
+    def get_schema(cls) -> JsonObjectSchema:
+        schema = super().get_schema()
+        schema.properties.update(
+            num_levels=JsonIntegerSchema(minimum=1),
+        )
+        schema.required = ['data_id', 'num_levels']
+        schema.additional_properties = False
+        schema.factory = cls
+        return schema
 
 
 class GeoDataFrameDescriptor(DataDescriptor):
@@ -421,51 +372,34 @@ class GeoDataFrameDescriptor(DataDescriptor):
 
     :param data_id: An identifier of the geopandas.GeoDataFrame
     :param feature_schema: A schema describing the properties of the vector data
-    :param open_params_schema: A JSON schema describing the parameters that may be used to open
-    this geopandas.GeoDataFrame
+    :param kwargs: Parameters passed to super :class:DataDescriptor
     """
 
     def __init__(self,
                  data_id: str,
                  type_specifier=TYPE_SPECIFIER_GEODATAFRAME,
-                 feature_schema: Any = None,
-                 open_params_schema: JsonObjectSchema = None,
+                 feature_schema: JsonObjectSchema = None,
                  **kwargs):
         super().__init__(data_id=data_id,
                          type_specifier=type_specifier,
-                         open_params_schema=open_params_schema,
                          **kwargs)
+        self.type_specifier.assert_satisfies(TYPE_SPECIFIER_GEODATAFRAME)
         self.feature_schema = feature_schema
 
     @classmethod
-    def from_dict(cls, d: Mapping[str, Any]) -> 'GeoDataFrameDescriptor':
-        """Create new instance from a JSON-serializable dictionary"""
-        assert_in('data_id', d)
-        return GeoDataFrameDescriptor(data_id=d['data_id'],
-                                      type_specifier=d.get('type_specifier',
-                                                           TYPE_SPECIFIER_GEODATAFRAME),
-                                      open_params_schema=d.get('open_params_schema', None))
-
-    def to_dict(self) -> Dict[str, Any]:
-        """Convert into a JSON-serializable dictionary"""
-        d = super().to_dict()
-        _copy_none_null_props(self, d, ['feature_schema'])
-        return d
-
-    @classmethod
-    def _get_base_type_specifier(cls) -> TypeSpecifier:
-        return TYPE_SPECIFIER_GEODATAFRAME
+    def get_schema(cls) -> JsonObjectSchema:
+        schema = super().get_schema()
+        schema.properties.update(
+            feature_schema=JsonObjectSchema(additional_properties=True),
+        )
+        schema.required = ['data_id']
+        schema.additional_properties = False
+        schema.factory = cls
+        return schema
 
 
 def _convert_nans_to_none(d: Dict[str, Any]) -> Dict[str, Any]:
     return {k: (None if isinstance(v, float) and np.isnan(v) else v) for k, v in d.items()}
-
-
-def _copy_none_null_props(obj: Any, d: Dict[str, Any], names: Sequence[str]):
-    for name in names:
-        value = getattr(obj, name)
-        if value is not None:
-            d[name] = value
 
 
 register_json_formatter(DataDescriptor)
