@@ -178,27 +178,25 @@ class CubeGeneratorResult(JsonObject):
 
 
 class CostEstimation(JsonObject):
-    # def __init__(self,
-    #              punits_input: int,
-    #              punits_output: int,
-    #              punits_combined: int):
-    #     self.punits_input: int = punits_input
-    #     self.punits_output: int = punits_output
-    #     self.punits_combined: int = punits_combined
     def __init__(self,
-                 **additional_properties):
-        self.additional_properties = additional_properties
+                 required: int,
+                 available: int = None,
+                 limit: int = None):
+        self.available: int = available
+        self.limit: Optional[int] = limit
+        self.required: Optional[int] = required
 
     @classmethod
     def get_schema(cls) -> JsonObjectSchema:
-        # return JsonObjectSchema(properties=dict(punits_input=JsonIntegerSchema(),
-        #                                         punits_output=JsonIntegerSchema(),
-        #                                         punits_combined=JsonIntegerSchema()),
-        #                         required=['punits_input', 'punits_output', 'punits_combined'],
-        #                         additional_properties=True,
-        #                         factory=cls)
-        return JsonObjectSchema(additional_properties=True,
-                                factory=cls)
+        return JsonObjectSchema(
+            properties=dict(
+                required=JsonIntegerSchema(minimum=0),
+                available=JsonIntegerSchema(minimum=0),
+                limit=JsonIntegerSchema(minimum=0),
+            ),
+            required=['required'],
+            additional_properties=False,
+            factory=cls)
 
     @classmethod
     def from_dict(cls, value: Dict) -> 'CostEstimation':
