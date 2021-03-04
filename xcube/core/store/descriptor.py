@@ -326,7 +326,8 @@ class VariableDescriptor(JsonObject):
                  dtype: str,
                  dims: Sequence[str],
                  chunks: Sequence[int] = None,
-                 attrs: Mapping[str, any] = None):
+                 attrs: Mapping[str, any] = None,
+                 **additional_properties):
         assert_given(name, 'name')
         assert_given(dtype, 'dtype')
         assert_given(dims, 'dims')
@@ -335,6 +336,7 @@ class VariableDescriptor(JsonObject):
         self.dims = tuple(dims)
         self.chunks = tuple(chunks) if chunks else None
         self.attrs = _convert_nans_to_none(dict(attrs)) if attrs is not None else None
+        self.additional_properties = additional_properties
 
     @classmethod
     def get_schema(cls) -> JsonObjectSchema:
@@ -347,7 +349,7 @@ class VariableDescriptor(JsonObject):
                 attrs=JsonObjectSchema(additional_properties=True),
             ),
             required=['name', 'dtype', 'dims'],
-            additional_properties=False,
+            additional_properties=True,
             factory=cls)
 
 
