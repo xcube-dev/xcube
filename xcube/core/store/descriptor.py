@@ -296,7 +296,7 @@ class DatasetDescriptor(DataDescriptor):
     def get_schema(cls) -> JsonObjectSchema:
         schema = super().get_schema()
         schema.properties.update(
-            dims=JsonObjectSchema(additional_properties=True),
+            dims=JsonObjectSchema(additional_properties=JsonIntegerSchema(minimum=0)),
             spatial_res=JsonNumberSchema(exclusive_minimum=0.0),
             coords=JsonObjectSchema(additional_properties=VariableDescriptor.get_schema()),
             data_vars=JsonObjectSchema(additional_properties=VariableDescriptor.get_schema()),
