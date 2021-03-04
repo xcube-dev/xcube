@@ -20,7 +20,7 @@
 # SOFTWARE.
 
 import datetime
-from typing import Tuple, Union, Sequence
+from typing import Optional, Sequence, Tuple, Union
 
 import numpy as np
 import pandas as pd
@@ -70,6 +70,37 @@ def add_time_coords(dataset: xr.Dataset, time_range: Tuple[float, float]) -> xr.
         time_bnds_var.encoding['units'] = DATETIME_UNITS
         time_bnds_var.encoding['calendar'] = DATETIME_CALENDAR
     return dataset
+
+
+def get_time_range_from_data(dataset: xr.Dataset) -> Tuple[Optional[float], Optional[float]]:
+    if 'time' not in dataset:
+        return None, None
+    time = dataset["time"]
+    time_bnds_name = time.attrs.get("bounds", "time_bnds")
+    if time_bnds_name in dataset:
+        time_bnds = dataset[time_bnds_name]
+        if len(time_bnds.shape) == 2 and time_bnds.shape[1] == 2:
+            return min(time_bnds[:,0]).data, max(time_bnds[:,1]).data
+    return min(time).data, max(time).data
+
+
+def get_time_range_from_attrs(dataset: xr.Dataset) -> Tuple[Optional[str], Optional[str]]:
+    return get_start_time_from_attrs(dataset), get_end_time_from_attrs(dataset)
+
+
+def get_start_time_from_attrs(dataset: xr.Dataset) -> Optional[str]:
+    return _get_attr(dataset, ['time_coverage_start', 'time_start', 'start_time', 'start_date'])
+
+
+def get_end_time_from_attrs(dataset: xr.Dataset) -> Optional[str]:
+    return _get_attr(dataset, ['time_coverage_end', 'time_stop', 'time_end', 'stop_time',
+                               'end_time', 'stop_date', 'end_date'])
+
+
+def _get_attr(dataset: xr.Dataset, names: Sequence[str]) -> Optional[str]:
+    for name in names:
+        if name in dataset.attrs:
+            return str(dataset.attrs[name])
 
 
 def to_time_in_days_since_1970(time_str: str, pattern=None) -> float:

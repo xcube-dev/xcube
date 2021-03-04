@@ -32,6 +32,8 @@ from xcube.core.geocoding import GeoCoding
 from xcube.core.imgeom import ImageGeom
 from xcube.core.rectify import rectify_dataset
 from xcube.core.reproject import reproject_xy_to_wgs84
+from xcube.core.timecoord import get_time_range_from_data
+from xcube.core.timecoord import get_time_range_from_attrs
 from xcube.core.timecoord import to_time_in_days_since_1970
 from xcube.util.plugin import ExtensionComponent, get_extension_registry
 
@@ -404,44 +406,19 @@ class DefaultInputProcessor(XYInputProcessor):
         return _normalize_lon_360(dataset)
 
     def get_time_range(self, dataset: xr.Dataset) -> Tuple[float, float]:
-        time_coverage_start, time_coverage_end = None, None
-        if "time" in dataset:
-            time = dataset["time"]
-            time_bnds_name = time.attrs.get("bounds", "time_bnds")
-            if time_bnds_name in dataset:
-                time_bnds = dataset[time_bnds_name]
-                if time_bnds.shape == (1, 2):
-                    time_coverage_start = str(time_bnds[0][0].data)
-                    time_coverage_end = str(time_bnds[0][1].data)
-            if time_coverage_start is None or time_coverage_end is None:
-                time_coverage_start, time_coverage_end = self.get_time_range_from_attrs(dataset)
-            if time_coverage_start is None or time_coverage_end is None:
-                if time.shape == (1,):
-                    time_coverage_start = str(time[0].data)
-                    time_coverage_end = time_coverage_start
+        time_coverage_start, time_coverage_end = get_time_range_from_data(dataset)
+        if time_coverage_start is not None:
+            time_coverage_start = str(time_coverage_start)
+        if time_coverage_end is not None:
+            time_coverage_end = str(time_coverage_end)
         if time_coverage_start is None or time_coverage_end is None:
-            time_coverage_start, time_coverage_end = self.get_time_range_from_attrs(dataset)
-        if time_coverage_start is None or time_coverage_end is None:
+            time_coverage_start, time_coverage_end = get_time_range_from_attrs(dataset)
+        if time_coverage_start is None:
             raise ValueError("invalid input: missing time coverage information in dataset")
-
-        return to_time_in_days_since_1970(time_coverage_start), to_time_in_days_since_1970(time_coverage_end)
-
-    @classmethod
-    def get_time_range_from_attrs(cls, dataset: xr.Dataset) -> Tuple[str, str]:
-        time_start = time_stop = None
-        if "time_coverage_start" in dataset.attrs:
-            time_start = str(dataset.attrs["time_coverage_start"])
-            time_stop = str(dataset.attrs.get("time_coverage_end", time_start))
-        elif "time_start" in dataset.attrs:
-            time_start = str(dataset.attrs["time_start"])
-            time_stop = str(dataset.attrs.get("time_stop", dataset.attrs.get("time_end", time_start)))
-        elif "start_time" in dataset.attrs:
-            time_start = str(dataset.attrs["start_time"])
-            time_stop = str(dataset.attrs.get("stop_time", dataset.attrs.get("end_time", time_start)))
-        elif "start_date" in dataset.attrs:
-            time_start = str(dataset.attrs["start_date"])
-            time_stop = str(dataset.attrs.get("stop_date", dataset.attrs.get("end_time", time_start)))
-        return time_start, time_stop
+        if time_coverage_end is None:
+            time_coverage_end = time_coverage_start
+        return to_time_in_days_since_1970(time_coverage_start), \
+            to_time_in_days_since_1970(time_coverage_end)
 
     def _validate(self, dataset):
         self._check_coordinate_var(dataset, "lon", min_length=2)
