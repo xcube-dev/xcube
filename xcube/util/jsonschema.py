@@ -565,7 +565,7 @@ class JsonObject(ABC):
         """Get JSON object schema."""
 
     @classmethod
-    def from_dict(cls, value: Dict) -> 'JsonObject':
+    def from_dict(cls, value: Dict[str, Any]) -> 'JsonObject':
         """Create instance from JSON-serializable dictionary *value*."""
         return cls.get_schema().from_instance(value)
 
