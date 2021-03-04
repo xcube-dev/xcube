@@ -22,7 +22,7 @@
 import json
 import os.path
 import sys
-from typing import Optional, Dict, Any, Sequence, Mapping
+from typing import Optional, Dict, Any, Sequence
 
 import jsonschema
 import yaml
@@ -41,12 +41,16 @@ from .config import OutputConfig
 
 class CubeGeneratorRequest(JsonObject):
     """
+    A request used to generate data cubes using cube generators.
 
-    :param input_config:
-    :param input_configs:
-    :param cube_config:
-    :param output_config:
-    :param callback_config:
+    :param input_config: A configuration for a single input.
+        Must be omitted if *input_configs* is given.
+    :param input_configs: A sequence of one or more input configurations.
+        Must be omitted if *input_config* is given.
+    :param cube_config: The target cube configuration.
+    :param output_config: The output configuration for the target cube.
+    :param callback_config: A configuration that allows a cube generator
+        to publish progress information to a compatible endpoint.
     """
 
     def __init__(self,
@@ -81,7 +85,7 @@ class CubeGeneratorRequest(JsonObject):
             factory=cls,
         )
 
-    def to_dict(self) -> Mapping[str, Any]:
+    def to_dict(self) -> Dict[str, Any]:
         """Convert into a JSON-serializable dictionary"""
         if len(self.input_configs) == 1:
             d = dict(input_config=self.input_configs[0].to_dict())
@@ -97,7 +101,7 @@ class CubeGeneratorRequest(JsonObject):
         return d
 
     @classmethod
-    def from_dict(cls, request_dict: Dict) -> 'CubeGeneratorRequest':
+    def from_dict(cls, request_dict: Dict[str, Any]) -> 'CubeGeneratorRequest':
         """Create new instance from a JSON-serializable dictionary"""
         try:
             return cls.get_schema().from_instance(request_dict)
@@ -105,15 +109,15 @@ class CubeGeneratorRequest(JsonObject):
             raise CubeGeneratorError(f'{e}') from e
 
     @classmethod
-    def from_file(cls, request_file: Optional[str], verbose=False) -> 'CubeGeneratorRequest':
+    def from_file(cls, request_file: Optional[str], verbosity: int = 0) -> 'CubeGeneratorRequest':
         """Create new instance from a JSON file, or YAML file, or JSON passed via stdin."""
-        gen_config_dict = cls._load_gen_config_file(request_file, verbose=verbose)
-        if verbose:
+        gen_config_dict = cls._load_gen_config_file(request_file, verbosity=verbosity)
+        if verbosity:
             print(f'Cube generator configuration loaded from {request_file or "TTY"}.')
         return cls.from_dict(gen_config_dict)
 
     @classmethod
-    def _load_gen_config_file(cls, gen_config_file: Optional[str], verbose=False) -> Dict:
+    def _load_gen_config_file(cls, gen_config_file: Optional[str], verbosity: int = 0) -> Dict:
 
         if gen_config_file is not None and not os.path.exists(gen_config_file):
             raise CubeGeneratorError(f'Cube generator configuration "{gen_config_file}" not found.')
@@ -121,7 +125,7 @@ class CubeGeneratorRequest(JsonObject):
         try:
             if gen_config_file is None:
                 if not sys.stdin.isatty():
-                    if verbose:
+                    if verbosity:
                         print('Awaiting generator configuration JSON from TTY...')
                     return json.load(sys.stdin)
             else:

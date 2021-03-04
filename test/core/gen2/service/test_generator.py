@@ -58,7 +58,7 @@ class CubeGeneratorServiceTest(unittest.TestCase):
                                                           client_id='itzibitzispider',
                                                           client_secret='g3ergd36fd2983457fhjder'),
                                             progress_period=0,
-                                            verbose=True)
+                                            verbosity=True)
 
     @requests_mock.Mocker()
     def test_generate_cube_success(self, m: requests_mock.Mocker):

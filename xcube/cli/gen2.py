@@ -20,6 +20,7 @@
 # SOFTWARE.
 
 import sys
+from typing import Sequence
 
 import click
 
@@ -45,12 +46,14 @@ import click
                    ' Does not generate the data cube.')
 @click.option('--verbose', '-v',
               is_flag=True,
-              help='Control amount of information dumped to stdout.')
+              multiple=True,
+              help='Control amount of information dumped to stdout.'
+                   ' May be given multiple time, e.g. "-vvv".')
 def gen2(request_path: str,
          stores_config_path: str = None,
          service_config_path: str = None,
          info: bool = False,
-         verbose: bool = False):
+         verbose: Sequence[bool] = None):
     """
     Generator tool for data cubes.
 
@@ -102,11 +105,14 @@ def gen2(request_path: str,
     from xcube.core.gen2 import CubeGeneratorError
     from xcube.core.gen2 import CubeInfo
     from xcube.core.store import DataStoreError
+
+    verbosity = len(verbose) if verbose else 0
+
     try:
         generator = CubeGenerator.from_file(request_path,
                                             stores_config_path=stores_config_path,
                                             service_config_path=service_config_path,
-                                            verbose=verbose)
+                                            verbosity=verbosity)
         if info:
             def dump_cube_info(cube_info: CubeInfo):
                 import sys
