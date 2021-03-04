@@ -19,10 +19,9 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-import time
-from typing import Type, TypeVar, Dict
 import json
-import sys
+import time
+from typing import Type, TypeVar, Dict, Any
 
 import requests
 
@@ -47,20 +46,16 @@ R = TypeVar('R')
 
 class CubeGeneratorService(CubeGenerator):
     """
-    Generator tool for data cubes.
+    Service for generating data cubes.
 
     Creates cube views from one or more cube stores, resamples them to a
     common grid, optionally performs some cube transformation, and writes
     the resulting cube to some target cube store.
 
     :param request: Cube generation request.
-    :param store_pool: An optional pool of pre-configured data stores
-        referenced from *gen_config* input/output configurations.
+    :param service_config: An service configuration object.
     :param verbosity: Level of verbosity, 0 means off.
     """
-
-    # Allow dumping of JSON responses to stdout
-    _DEBUG = False
 
     def __init__(self,
                  request: CubeGeneratorRequest,
@@ -74,7 +69,7 @@ class CubeGeneratorService(CubeGenerator):
         self._service_config = service_config
         self._access_token = service_config.access_token
         self._progress_period = progress_period
-        self._verbosity = verbosity if not self._DEBUG else 10
+        self._verbosity = verbosity
 
     def endpoint_op(self, op_path: str) -> str:
         return f'{self._service_config.endpoint_url}{op_path}'
@@ -89,7 +84,7 @@ class CubeGeneratorService(CubeGenerator):
     @property
     def access_token(self) -> str:
         if self._access_token is None:
-            request = {
+            request_data = {
                 "audience": self._service_config.endpoint_url,
                 "client_id": self._service_config.client_id,
                 "client_secret": self._service_config.client_secret,
@@ -97,17 +92,18 @@ class CubeGeneratorService(CubeGenerator):
             }
             # self.__dump_json(request)
             response = requests.post(self.endpoint_op('oauth/token'),
-                                     json=request,
+                                     json=request_data,
                                      headers=_BASE_HEADERS)
-            token_response: Token = self._parse_response(response, Token)
+            token_response: Token = self._parse_response(response, Token, request_data=request_data)
             self._access_token = token_response.access_token
         return self._access_token
 
     def get_cube_info(self) -> CubeInfoWithCosts:
+        request_data = self._request.to_dict()
         response = requests.post(self.endpoint_op('cubegens/info'),
-                                 json=self._request.to_dict(),
+                                 json=request_data,
                                  headers=self.auth_headers)
-        return self._parse_response(response, CubeInfoWithCosts)
+        return self._parse_response(response, CubeInfoWithCosts, request_data=request_data)
 
     def generate_cube(self):
         request = self._request.to_dict()
@@ -139,9 +135,11 @@ class CubeGeneratorService(CubeGenerator):
                         cm.worked(work)
                         last_worked = worked
 
-    @classmethod
-    def _get_cube_generation_result(cls, response: requests.Response) -> Result:
-        response_instance: Response = cls._parse_response(response, Response)
+    def _get_cube_generation_result(self, response: requests.Response,
+                                    request_data: Dict[str, Any] = None) -> Result:
+        response_instance: Response = self._parse_response(response,
+                                                           Response,
+                                                           request_data=request_data)
         result = response_instance.result
         if result.status.failed:
             message = 'Cube generation failed'
@@ -154,30 +152,41 @@ class CubeGeneratorService(CubeGenerator):
                                      remote_traceback=response_instance.traceback)
         return result
 
-    def _parse_response(self, response: requests.Response, response_type: Type[R]) -> R:
+    def _parse_response(self,
+                        response: requests.Response,
+                        response_type: Type[R],
+                        request_data: Dict[str, Any] = None) -> R:
         CubeGeneratorError.maybe_raise_for_response(response)
-        data = response.json()
-
-        if self._verbosity > 3:
-            self.__dump_json(data, response.url)
+        response_data = response.json()
+        if self._verbosity >= 3:
+            self.__dump_json(response.request.method, response.url, request_data, response_data)
 
         # noinspection PyBroadException
         try:
-            return response_type.from_dict(data)
+            return response_type.from_dict(response_data)
         except Exception as e:
             raise RuntimeError(f'internal error: unexpected response'
                                f' from API call {response.url}: {e}') from e
 
     @classmethod
-    def __dump_json(cls, obj, url):
+    def __dump_json(cls, method, url, request_data, response_data):
         """
-        Dump *obj* as JSON to stdout.
+        Dump debug info as JSON to stdout.
 
         Used for debugging only.
         """
-        line = f'Response from {url}:'
-        print()
-        print(line)
-        print('=' * len(line))
-        json.dump(obj, sys.stdout, indent=2)
-        print()
+        url_line = f'{method} {url}:'
+        request_line = 'Request:'
+        response_line = 'Response:'
+
+        print('=' * len(url_line))
+        print(url_line)
+        print('=' * len(url_line))
+        print('-' * len(request_line))
+        print(request_line)
+        print('-' * len(request_line))
+        print(json.dumps(request_data, indent=2))
+        print('-' * len(response_line))
+        print(response_line)
+        print('-' * len(response_line))
+        print(json.dumps(response_data, indent=2))
