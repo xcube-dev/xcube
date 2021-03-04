@@ -45,12 +45,13 @@ import click
                    ' Does not generate the data cube.')
 @click.option('--verbose', '-v',
               is_flag=True,
-              help='Control amount of information dumped to stdout.')
+              multiple=True,
+              help='Control amount of information dumped to stdout. Multiple may be given.')
 def gen2(request_path: str,
          stores_config_path: str = None,
          service_config_path: str = None,
          info: bool = False,
-         verbose: bool = False):
+         verbose: int = 0):
     """
     Generator tool for data cubes.
 
@@ -106,7 +107,7 @@ def gen2(request_path: str,
         generator = CubeGenerator.from_file(request_path,
                                             stores_config_path=stores_config_path,
                                             service_config_path=service_config_path,
-                                            verbose=verbose)
+                                            verbosity=verbose)
         if info:
             def dump_cube_info(cube_info: CubeInfo):
                 import sys
