@@ -4,7 +4,12 @@
   is now the super class of many classes that have JSON object representations.
   In Jupyter notebooks, instances of such classes are automatically rendered 
   as JSON trees.
-
+* `xcube gen2` CLI tool can now have multiple `-v` options, e.g. `-vvv`
+  will now output detailed requests and responses.  
+* Added new Juypter notebooks in `examples/notebooks/gen2` 
+  for the _data cube generators_ in the package `xcube.core.gen2`.
+  
+  
 ## Changes in 0.6.2.dev2
 
 * Fixed a problem in `JsonArraySchema` that occurred if a valid 
