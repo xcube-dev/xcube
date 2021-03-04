@@ -115,6 +115,16 @@ class CubeInformant:
                         size_estimation=size_estimation)
 
     def _compute_effective_cube_config(self) -> Tuple[CubeConfig, pyproj.crs.CRS, Sequence[pd.Timestamp]]:
+        """
+        Compute the effective cube configuration.
+
+        This method reflects the behaviour of the LocalCubeGenerator that would
+        normalize, tailor, and optionally resample a dataset based on
+        the dataset descriptor and the cube configuration parameters, in the case
+        that a store is not able to do so.
+
+        :return: effective cube configuration.
+        """
         cube_config = self._request.cube_config
 
         crs = cube_config.crs

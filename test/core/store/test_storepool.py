@@ -62,7 +62,8 @@ class DataStoreConfigTest(unittest.TestCase):
         with self.assertRaises(TypeError) as cm:
             # noinspection PyTypeChecker
             DataStoreConfig('directory', store_params=[1, 'B'])
-        self.assertEqual("store_params must be an instance of <class 'dict'>", f'{cm.exception}')
+        self.assertEqual("store_params must be an instance of <class 'dict'>, was <class 'list'>",
+                         f'{cm.exception}')
 
     def test_to_dict(self):
         store_config = DataStoreConfig('directory', store_params={'base_dir': '.'}, title='Local',

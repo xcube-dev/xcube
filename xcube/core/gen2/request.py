@@ -31,6 +31,7 @@ from xcube.core.gen2.error import CubeGeneratorError
 from xcube.util.assertions import assert_condition
 from xcube.util.assertions import assert_given
 from xcube.util.jsonschema import JsonArraySchema
+from xcube.util.jsonschema import JsonObject
 from xcube.util.jsonschema import JsonObjectSchema
 from .config import CallbackConfig
 from .config import CubeConfig
@@ -38,7 +39,7 @@ from .config import InputConfig
 from .config import OutputConfig
 
 
-class CubeGeneratorRequest:
+class CubeGeneratorRequest(JsonObject):
     """
 
     :param input_config:

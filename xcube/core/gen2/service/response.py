@@ -24,14 +24,13 @@ from typing import Optional, Dict, Union, List, Any
 from xcube.util.jsonschema import JsonArraySchema
 from xcube.util.jsonschema import JsonIntegerSchema
 from xcube.util.jsonschema import JsonNumberSchema
+from xcube.util.jsonschema import JsonObject
 from xcube.util.jsonschema import JsonObjectSchema
 from xcube.util.jsonschema import JsonStringSchema
-from ..config import _to_dict
 from ..response import CubeInfo
-from ..response import ResponseBase
 
 
-class Token(ResponseBase):
+class Token(JsonObject):
     def __init__(self, access_token: str, token_type: str):
         self.access_token = access_token
         self.token_type = token_type
@@ -49,7 +48,7 @@ class Token(ResponseBase):
         return cls.get_schema().from_instance(value)
 
 
-class Status(ResponseBase):
+class Status(JsonObject):
     # noinspection PyUnusedLocal
     def __init__(self,
                  succeeded: int = None,
@@ -86,7 +85,7 @@ class Status(ResponseBase):
         return cls.get_schema().from_instance(value)
 
 
-class ProgressState(ResponseBase):
+class ProgressState(JsonObject):
     def __init__(self,
                  progress: float,
                  # worked: Union[int, float],
@@ -118,7 +117,7 @@ class ProgressState(ResponseBase):
         return cls.get_schema().from_instance(value)
 
 
-class Progress(ResponseBase):
+class Progress(JsonObject):
     def __init__(self,
                  sender: str,
                  state: ProgressState):
@@ -144,7 +143,7 @@ class Progress(ResponseBase):
         return cls.get_schema().from_instance(value)
 
 
-class Result(ResponseBase):
+class Result(JsonObject):
     def __init__(self,
                  cubegen_id: str,
                  status: Status,
@@ -178,7 +177,7 @@ class Result(ResponseBase):
         return cls.get_schema().from_instance(value)
 
 
-class Response(ResponseBase):
+class Response(JsonObject):
     def __init__(self,
                  result: Result,
                  traceback: str = None,
@@ -200,7 +199,7 @@ class Response(ResponseBase):
         return cls.get_schema().from_instance(value)
 
 
-class CostInfo(ResponseBase):
+class CostInfo(JsonObject):
     # def __init__(self,
     #              punits_input: int,
     #              punits_output: int,
@@ -238,15 +237,5 @@ class CubeInfoWithCosts(CubeInfo):
         schema = super().get_schema()
         schema.properties.update(cost_info=CostInfo.get_schema())
         schema.required.add('cost_info')
+        schema.factory = cls
         return schema
-
-    @classmethod
-    def from_dict(cls, value: Dict) -> 'CubeInfoWithCosts':
-        return cls.get_schema().from_instance(value)
-
-    def to_dict(self) -> Dict:
-        """Convert this instance to a dictionary."""
-        d = _to_dict(self, tuple(CubeInfo.get_schema().properties.keys()))
-        cost_info = _to_dict(self.cost_info.additional_properties, tuple(CostInfo.get_schema().properties.keys()))
-        d.update(cost_info=cost_info)
-        return d

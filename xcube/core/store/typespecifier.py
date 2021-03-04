@@ -29,7 +29,8 @@ import xarray as xr
 
 from xcube.core.mldataset import MultiLevelDataset
 from xcube.core.verify import verify_cube
-from xcube.util.assertions import assert_given
+from xcube.util.assertions import assert_given, assert_condition
+from xcube.util.jsonschema import JsonStringSchema
 
 
 class TypeSpecifier:
@@ -135,6 +136,19 @@ class TypeSpecifier:
         name = type_specifier.split('[')[0]
         flags = type_specifier.split('[')[1].split(']')[0].split(',')
         return TypeSpecifier(name, flags=set(flags))
+
+    @classmethod
+    def get_schema(cls) -> JsonStringSchema:
+        return JsonStringSchema(
+            min_length=1,
+            factory=TypeSpecifier.parse,
+            serializer=str
+        )
+
+    def assert_satisfies(self, other: Union[str, 'TypeSpecifier'], name: str = None):
+        assert_condition(self.satisfies(other),
+                         f'{name or "type_specifier"} must satisfy type specifier "{other}",'
+                         f' but was "{self}"')
 
 
 TYPE_SPECIFIER_ANY = TypeSpecifier('*')
