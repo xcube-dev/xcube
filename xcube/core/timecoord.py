@@ -72,7 +72,8 @@ def add_time_coords(dataset: xr.Dataset, time_range: Tuple[float, float]) -> xr.
     return dataset
 
 
-def get_time_range_from_data(dataset: xr.Dataset) -> Tuple[Optional[float], Optional[float]]:
+def get_time_range_from_data(dataset: xr.Dataset) -> Tuple[Optional[np.datetime64],
+                                                           Optional[np.datetime64]]:
     if 'time' not in dataset:
         return None, None
     time = dataset["time"]
@@ -80,8 +81,17 @@ def get_time_range_from_data(dataset: xr.Dataset) -> Tuple[Optional[float], Opti
     if time_bnds_name in dataset:
         time_bnds = dataset[time_bnds_name]
         if len(time_bnds.shape) == 2 and time_bnds.shape[1] == 2:
-            return min(time_bnds[:,0]).data, max(time_bnds[:,1]).data
-    return min(time).data, max(time).data
+            return min(time_bnds[:,0]).values, max(time_bnds[:,1]).values
+    if time.size == 1:
+        return time.values[0], time.values[0]
+    if time.size == 2:
+        return time.values[0], time.values[1]
+    time_diff = time.diff(dim=time.dims[0]).values
+    time_res = time_diff[0]
+    time_regular = all([time_res - diff == np.timedelta64(0) for diff in time_diff[1:]])
+    if time_regular:
+        return min(time).values - time_res / 2, max(time).values + time_res / 2
+    return min(time).values, max(time).values
 
 
 def get_time_range_from_attrs(dataset: xr.Dataset) -> Tuple[Optional[str], Optional[str]]:
