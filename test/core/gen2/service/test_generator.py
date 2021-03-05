@@ -180,7 +180,9 @@ class CubeGeneratorServiceTest(unittest.TestCase):
                        "num_bytes": 0
                    },
                    "cost_estimation": {
-
+                       'required': 3782,
+                       'available': 234979,
+                       'limit': 10000
                    }
                })
 
@@ -189,3 +191,6 @@ class CubeGeneratorServiceTest(unittest.TestCase):
         self.assertIsInstance(cube_info.dataset_descriptor, DatasetDescriptor)
         self.assertIsInstance(cube_info.size_estimation, dict)
         self.assertIsInstance(cube_info.cost_estimation, CostEstimation)
+        self.assertEqual(3782, cube_info.cost_estimation.required)
+        self.assertEqual(234979, cube_info.cost_estimation.available)
+        self.assertEqual(10000, cube_info.cost_estimation.limit)
