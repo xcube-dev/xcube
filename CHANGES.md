@@ -1,3 +1,12 @@
+## Changes in 0.6.2.dev4 (in dev)
+
+* Internal changes (do not include in final CHANGES.md):
+  - Fixed de-serialisation of objects for additional_properties = True
+  - Added VariableDescriptor.ndim property
+  - Warn, if additional properties passed to ctors
+  - Update of xcube generator NBs
+
+
 ## Changes in 0.6.2.dev3
 
 * Introduced abstract base class `xcube.util.jsonschema.JsonObject` which 
@@ -6,7 +15,7 @@
   as JSON trees.
 * `xcube gen2` CLI tool can now have multiple `-v` options, e.g. `-vvv`
   will now output detailed requests and responses.  
-* Added new Juypter notebooks in `examples/notebooks/gen2` 
+* Added new Jupyter notebooks in `examples/notebooks/gen2` 
   for the _data cube generators_ in the package `xcube.core.gen2`.
   
   
