@@ -27,7 +27,7 @@ from xcube.version import version
 
 
 project = 'xcube'
-copyright = '2019, Brockmann Consult GmbH'
+copyright = '2021, Brockmann Consult GmbH'
 author = 'Brockmann Consult GmbH'
 
 # The full version, including alpha/beta/rc tags
