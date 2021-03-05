@@ -1,13 +1,4 @@
-## Changes in 0.6.2.dev4 (in dev)
-
-* Internal changes (do not include in final CHANGES.md):
-  - Fixed de-serialisation of objects for additional_properties = True
-  - Added VariableDescriptor.ndim property
-  - Warn, if additional properties passed to ctors
-  - Update of xcube generator NBs
-
-
-## Changes in 0.6.2.dev3
+## Changes in 0.7.0
 
 * Introduced abstract base class `xcube.util.jsonschema.JsonObject` which 
   is now the super class of many classes that have JSON object representations.
@@ -17,41 +8,26 @@
   will now output detailed requests and responses.  
 * Added new Jupyter notebooks in `examples/notebooks/gen2` 
   for the _data cube generators_ in the package `xcube.core.gen2`.
-  
-  
-## Changes in 0.6.2.dev2
-
 * Fixed a problem in `JsonArraySchema` that occurred if a valid 
   instance was `None`. A TypeError `TypeError: 'NoneType' object is not iterable` was 
   raised in this case.
-
-## Changes in 0.6.2.dev1 
-
 * The S3 data store  `xcube.core.store.stores.s3.S3DataStore` now implements the `describe_data()` method. 
   It therefore can also be used as a data store from which data is queried and read.  
-
 * The `xcube gen2` data cube generator tool has been hidden from
   the set of "official" xcube tools. It is considered as an internal tool 
   that is subject to change at any time until its interface has stabilized.
   Please refer to `xcube gen2 --help` for more information.
-
 * Added `coords` property to `DatasetDescriptor` class. 
   The `data_vars` property of the `DatasetDescriptor` class is now a dictionary. 
-
 * Added `chunks` property to `VariableDescriptor` class. 
-
 * Removed function `reproject_crs_to_wgs84()` and tests (#375) because  
   - it seemed to be no longer be working with GDAL 3.1+; 
   - there was no direct use in xcube itself;
   - xcube plans to get rid of GDAL dependencies.
-  
 * CLI tool `xcube gen2` may now also ingest non-cube datasets.
-
 * Fixed unit tests broken by accident. (#396)
-
 * Added new context manager `xcube.util.observe_dask_progress()` that can be used
   to observe tasks that known to be dominated by Dask computations: 
-   
   ```python
   with observe_dask_progress('Writing dataset', 100):
       dataset.to_zarr(store)  
