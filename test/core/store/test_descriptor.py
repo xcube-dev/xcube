@@ -340,6 +340,7 @@ class VariableDescriptorTest(unittest.TestCase):
         self.assertEqual('gz', vd1.name)
         self.assertEqual('zughysz', vd1.dtype)
         self.assertEqual(('rtdswgt', 'dref', 'zdrs5ge'), vd1.dims)
+        self.assertEqual(3, vd1.ndim)
         self.assertEqual((3, 321, 4), vd1.chunks)
         self.assertEqual(None, vd1.attrs)
 
@@ -351,6 +352,7 @@ class VariableDescriptorTest(unittest.TestCase):
         self.assertEqual('gz', vd3.name)
         self.assertEqual('zughysz', vd3.dtype)
         self.assertEqual(('rtdswgt', 'dref', 'zdrs5ge'), vd3.dims)
+        self.assertEqual(3, vd3.ndim)
         self.assertEqual((3, 321, 4), vd3.chunks)
         self.assertEqual({'d': 2, 'zjgu': ''}, vd3.attrs)
 
@@ -389,6 +391,7 @@ class VariableDescriptorTest(unittest.TestCase):
         self.assertEqual('xf', vd.name)
         self.assertEqual('rj', vd.dtype)
         self.assertEqual(('dfjhrt', 'sg'), vd.dims)
+        self.assertEqual(2, vd.ndim)
         self.assertEqual((3, 2), vd.chunks)
         self.assertEqual({'ssd': 4, 'zjgrhgu': 'dgfrf', 'fill_value': None}, vd.attrs)
 
