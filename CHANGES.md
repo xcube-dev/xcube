@@ -1,3 +1,7 @@
+## Changes in 0.7.1.dev1 (in development)
+
+* Added missing requirements `requests` and `urllib3`.
+
 ## Changes in 0.7.0
 
 * Introduced abstract base class `xcube.util.jsonschema.JsonObject` which 
