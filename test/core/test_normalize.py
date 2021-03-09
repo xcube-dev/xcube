@@ -12,11 +12,11 @@ import xarray as xr
 from jdcal import gcal2jd
 from numpy.testing import assert_array_almost_equal
 
+from xcube.core.normalize import adjust_spatial_attrs
+from xcube.core.normalize import adjust_temporal_attrs
 from xcube.core.normalize import normalize_coord_vars
 from xcube.core.normalize import normalize_dataset
 from xcube.core.normalize import normalize_missing_time
-from xcube.core.normalize import adjust_spatial_attrs
-from xcube.core.normalize import adjust_temporal_attrs
 
 
 # noinspection PyPep8Naming
@@ -85,25 +85,23 @@ class TestNormalize(TestCase):
         dataset = xr.Dataset({'first': (['latitude',
                                          'longitude'], [[1, 2, 3],
                                                         [2, 3, 4]])})
-        # Since normalization puts latitudes into descending order, we
-        # expect the rows to be swapped.
-        expected = xr.Dataset({'first': (['lat', 'lon'], [[2, 3, 4],
-                                                          [1, 2, 3]])})
+        expected = xr.Dataset({'first': (['lat', 'lon'], [[1, 2, 3],
+                                                          [2, 3, 4]])})
         actual = normalize_dataset(dataset)
         assertDatasetEqual(actual, expected)
 
         dataset = xr.Dataset({'first': (['lat', 'long'], [[1, 2, 3],
                                                           [2, 3, 4]])})
-        expected = xr.Dataset({'first': (['lat', 'lon'], [[2, 3, 4],
-                                                          [1, 2, 3]])})
+        expected = xr.Dataset({'first': (['lat', 'lon'], [[1, 2, 3],
+                                                          [2, 3, 4]])})
         actual = normalize_dataset(dataset)
         assertDatasetEqual(actual, expected)
 
         dataset = xr.Dataset({'first': (['latitude',
                                          'spacetime'], [[1, 2, 3],
                                                         [2, 3, 4]])})
-        expected = xr.Dataset({'first': (['lat', 'spacetime'], [[2, 3, 4],
-                                                                [1, 2, 3]])})
+        expected = xr.Dataset({'first': (['lat', 'spacetime'], [[1, 2, 3],
+                                                                [2, 3, 4]])})
         actual = normalize_dataset(dataset)
         assertDatasetEqual(actual, expected)
 
@@ -136,7 +134,7 @@ class TestNormalize(TestCase):
             chunks={'time': 1})
 
         actual = normalize_dataset(ds)
-        xr.testing.assert_equal(actual, expected)
+        xr.testing.assert_equal(actual, ds)
 
     def test_normalize_with_missing_time_dim(self):
         ds = xr.Dataset({'first': (['lat', 'lon'], np.zeros([90, 180])),

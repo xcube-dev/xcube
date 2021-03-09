@@ -59,7 +59,12 @@ def normalize_dataset(ds: xr.Dataset) -> xr.Dataset:
 
     # xcube viewer currently requires decreasing latitude co-ordinates, so
     # we invert them here if necessary.
-    ds = _ensure_lat_decreasing(ds)
+
+    # TODO: commented out as _ensure_lat_decreasing() produces
+    #   chunks in "lat" that have the smallest chunk first. This will
+    #   fail when writing to Zarr. (Hack for #347)
+    #   See also https://github.com/pydata/xarray/issues/2300
+    # ds = _ensure_lat_decreasing(ds)
 
     ds = normalize_missing_time(ds)
     ds = _normalize_jd2datetime(ds)

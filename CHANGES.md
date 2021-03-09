@@ -1,5 +1,8 @@
 ## Changes in 0.7.1.dev1 (in development)
 
+* Dataset normalisation no longer includes reordering increasing
+  latitude coordinates, as this creates datasets that are no longer writable 
+  to Zarr. (#347)
 * Added missing requirements `requests` and `urllib3`.
 
 ## Changes in 0.7.0
