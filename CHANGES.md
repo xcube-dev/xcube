@@ -1,5 +1,6 @@
 ## Changes in 0.7.1.dev1 (in development)
 
+* Added `s3fs`  requirement that has been removed by accident.
 * Dataset normalisation no longer includes reordering increasing
   latitude coordinates, as this creates datasets that are no longer writable 
   to Zarr. (#347)
