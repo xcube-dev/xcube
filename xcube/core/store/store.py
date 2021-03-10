@@ -20,7 +20,7 @@
 # SOFTWARE.
 
 from abc import abstractmethod, ABC
-from typing import Iterator, Tuple, Any, Optional, List, Type, Sequence, Dict, Union
+from typing import Iterator, Tuple, Any, Optional, List, Type, Dict, Union, Container
 
 from xcube.constants import EXTENSION_POINT_DATA_STORES
 from xcube.util.extension import Extension
@@ -155,7 +155,7 @@ class DataStore(DataOpener, ABC):
     @abstractmethod
     def get_data_ids(self,
                      type_specifier: str = None,
-                     include_attrs: Sequence[str] = None) -> \
+                     include_attrs: Container[str] = None) -> \
             Union[Iterator[str], Iterator[Tuple[str, Dict[str, Any]]]]:
         """
         Get an iterator over the data resource identifiers for the given type *type_specifier*.

@@ -22,7 +22,7 @@
 import json
 import os.path
 import uuid
-from typing import Optional, Iterator, Any, Tuple, List, Dict, Union
+from typing import Optional, Iterator, Any, Tuple, List, Dict, Union, Container
 
 import s3fs
 import xarray as xr
@@ -126,7 +126,7 @@ class S3DataStore(DefaultSearchMixin, MutableDataStore):
 
     def get_data_ids(self,
                      type_specifier: str = None,
-                     include_attrs=None) -> \
+                     include_attrs: Container[str] = None) -> \
             Union[Iterator[str], Iterator[Tuple[str, Dict[str, Any]]]]:
         # TODO: do not ignore type_specifier
         # TODO: do not ignore names in include_attrs

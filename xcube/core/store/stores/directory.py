@@ -21,7 +21,7 @@
 
 import os.path
 import uuid
-from typing import Optional, Iterator, Any, Tuple, List, Sequence, Dict, Union
+from typing import Optional, Iterator, Any, Tuple, List, Dict, Union, Container
 
 import geopandas as gpd
 import xarray as xr
@@ -118,7 +118,7 @@ class DirectoryDataStore(DefaultSearchMixin, MutableDataStore):
 
     def get_data_ids(self,
                      type_specifier: str = None,
-                     include_attrs: Sequence[str] = None) -> \
+                     include_attrs: Container[str] = None) -> \
             Union[Iterator[str], Iterator[Tuple[str, Dict[str, Any]]]]:
         # TODO: do not ignore names in include_attrs
         return_tuples = include_attrs is not None

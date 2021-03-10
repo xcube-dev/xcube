@@ -20,7 +20,7 @@
 # SOFTWARE.
 
 import uuid
-from typing import Iterator, Dict, Any, Optional, Tuple, Mapping, Sequence, Union
+from typing import Iterator, Dict, Any, Optional, Tuple, Mapping, Union, Container
 
 from xcube.core.store import DataDescriptor
 from xcube.core.store import DataStoreError
@@ -68,7 +68,7 @@ class MemoryDataStore(DefaultSearchMixin, MutableDataStore):
 
     def get_data_ids(self,
                      type_specifier: str = None,
-                     include_attrs: Sequence[str] = None) -> \
+                     include_attrs: Container[str] = None) -> \
             Union[Iterator[str], Iterator[Tuple[str, Dict[str, Any]]]]:
         # TODO: do not ignore names in include_attrs
         return_tuples = include_attrs is not None
