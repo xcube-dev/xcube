@@ -37,5 +37,5 @@ class DefaultSearchMixin:
         """
         if search_params:
             raise DataStoreError(f'Unsupported search parameters: {", ".join(search_params.keys())}')
-        for data_id, _ in self.get_data_ids(type_specifier=type_specifier):
+        for data_id in self.get_data_ids(type_specifier=type_specifier):
             yield self.describe_data(data_id)
