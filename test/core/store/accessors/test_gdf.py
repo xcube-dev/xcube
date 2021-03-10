@@ -16,7 +16,10 @@ class MemoryCubeStoreTest(unittest.TestCase):
         })
 
     def test_get_data_ids(self):
-        self.assertEqual({('cube_1',None), ('cube_2', None)}, set(self.data_store.get_data_ids()))
+        self.assertEqual({'cube_1', 'cube_2'},
+                         set(self.data_store.get_data_ids()))
+        self.assertEqual({('cube_1', {}), ('cube_2', {})},
+                         set(self.data_store.get_data_ids(include_attrs=[])))
 
     def test_open_data(self):
         cube_1 = self.data_store.open_data('cube_1')

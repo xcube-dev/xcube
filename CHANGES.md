@@ -1,9 +1,15 @@
-## Changes in 0.7.1.dev1 (in development)
+## Changes in 0.8.0.dev0 (in development)
 
-* Slightly changed signature of `xcube.core.store.DataStore.get_dataset_ids()`
-  by adding a new keyword argument `include_attrs: Sequence[str] = None` that
-  can be used to obtain a minimum set of dataset attributes for each returned 
-  dataset identifier. However, `include_attrs` is ignored to far in the "s3", 
+* Changed behaviour and signature of `xcube.core.store.DataStore.get_dataset_ids()`.
+  The keyword argument `include_titles: str = True` has been replaced by 
+  `include_attrs: Sequence[str] = None` and the return value changes accordingly:
+  - If `include_attrs` is None (the default), the method returns an iterator
+    of dataset identifiers *data_id* of type `str`.
+  - If `include_attrs` is a sequence of attribute names, the method returns
+    an iterator of tuples (*data_id*, *attrs*) of type `Tuple[str, Dict]`.
+  Hence `include_attrs`  can be used to obtain a minimum set of dataset 
+  metadata attributes for each returned *data_id*.
+  However, `include_attrs` is not yet implemented so far in the "s3", 
   "memory", and "directory" data stores. (#420) 
 * Added `s3fs`  requirement that has been removed by accident.
 * Added missing requirements `requests` and `urllib3`.

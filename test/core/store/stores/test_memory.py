@@ -43,9 +43,9 @@ class MemoryCubeStoreTest(unittest.TestCase):
         self.assertEqual('Data resource "geodataframe_2" does not exist in store', f'{cm.exception}')
 
     def test_get_data_ids(self):
-        self.assertEqual({('cube_1', None), ('cube_2', None), ('ds_1', None)}, set(self.store.get_data_ids()))
-        self.assertEqual({('cube_1', None), ('cube_2', None), ('ds_1', None)},
-                         set(self.store.get_data_ids(include_titles=False)))
+        self.assertEqual({'cube_1', 'cube_2', 'ds_1'}, set(self.store.get_data_ids()))
+        self.assertEqual({('cube_1', {}), ('cube_2', {}), ('ds_1', {})},
+                         set(self.store.get_data_ids(include_attrs=[])))
 
     def test_has_data(self):
         self.assertEqual(True, self.store.has_data('cube_1'))

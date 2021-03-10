@@ -20,7 +20,7 @@
 # SOFTWARE.
 
 import uuid
-from typing import Iterator, Dict, Any, Optional, Tuple, Mapping, Sequence
+from typing import Iterator, Dict, Any, Optional, Tuple, Mapping, Sequence, Union
 
 from xcube.core.store import DataDescriptor
 from xcube.core.store import DataStoreError
@@ -68,20 +68,19 @@ class MemoryDataStore(DefaultSearchMixin, MutableDataStore):
 
     def get_data_ids(self,
                      type_specifier: str = None,
-                     include_titles: bool = True,
-                     include_attrs: Sequence[str] = None) \
-            -> Iterator[Tuple[str, Optional[str]]]:
-        # TODO: do not ignore include_titles
-        # TODO: do not ignore include_attrs
+                     include_attrs: Sequence[str] = None) -> \
+            Union[Iterator[str], Iterator[Tuple[str, Dict[str, Any]]]]:
+        # TODO: do not ignore names in include_attrs
+        return_tuples = include_attrs is not None
         if type_specifier is None:
             for data_id, data in self._data_dict.items():
-                yield data_id, None
+                yield (data_id, {}) if return_tuples else data_id
         else:
             type_specifier = TypeSpecifier.normalize(type_specifier)
             for data_id, data in self._data_dict.items():
                 data_type_specifier = get_type_specifier(data)
                 if data_type_specifier is None or data_type_specifier.satisfies(type_specifier):
-                    yield data_id, None
+                    yield (data_id, {}) if return_tuples else data_id
 
     def has_data(self, data_id: str, type_specifier: str = None) -> bool:
         assert_given(data_id, 'data_id')
