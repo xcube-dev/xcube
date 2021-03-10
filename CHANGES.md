@@ -1,5 +1,10 @@
 ## Changes in 0.7.1.dev1 (in development)
 
+* Slightly changed signature of `xcube.core.store.DataStore.get_dataset_ids()`
+  by adding a new keyword argument `include_attrs: Sequence[str] = None` that
+  can be used to obtain a minimum set of dataset attributes for each returned 
+  dataset identifier. However, `include_attrs` is ignored to far in the "s3", 
+  "memory", and "directory" data stores. (#420) 
 * Added `s3fs`  requirement that has been removed by accident.
 * Added missing requirements `requests` and `urllib3`.
 

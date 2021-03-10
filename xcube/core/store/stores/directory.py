@@ -21,7 +21,7 @@
 
 import os.path
 import uuid
-from typing import Optional, Iterator, Any, Tuple, List
+from typing import Optional, Iterator, Any, Tuple, List, Sequence
 
 import geopandas as gpd
 import xarray as xr
@@ -116,8 +116,13 @@ class DirectoryDataStore(DefaultSearchMixin, MutableDataStore):
         actual_type_specifier, _, _ = self._get_accessor_id_parts(data_id)
         return actual_type_specifier,
 
-    def get_data_ids(self, type_specifier: str = None, include_titles: bool = True) -> \
+    def get_data_ids(self,
+                     type_specifier: str = None,
+                     include_titles: bool = True,
+                     include_attrs: Sequence[str] = None) -> \
             Iterator[Tuple[str, Optional[str]]]:
+        # TODO: do not ignore include_titles
+        # TODO: do not ignore include_attrs
         if type_specifier is not None:
             type_specifier = TypeSpecifier.normalize(type_specifier)
         # TODO: Use os.walk(), which provides a generator rather than a list

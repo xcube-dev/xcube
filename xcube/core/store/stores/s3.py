@@ -124,8 +124,13 @@ class S3DataStore(DefaultSearchMixin, MutableDataStore):
         data_type_specifier, _, _ = self._get_accessor_id_parts(data_id)
         return data_type_specifier,
 
-    def get_data_ids(self, type_specifier: str = None, include_titles=True) -> Iterator[Tuple[str, Optional[str]]]:
-        # todo do not ignore type_specifier
+    def get_data_ids(self,
+                     type_specifier: str = None,
+                     include_titles=True,
+                     include_attrs=None) -> Iterator[Tuple[str, Optional[str]]]:
+        # TODO: do not ignore type_specifier
+        # TODO: do not ignore include_titles
+        # TODO: do not ignore include_attrs
         prefix = self._bucket_name + '/'
         first_index = len(prefix)
         for item in self._s3.listdir(self._bucket_name, detail=False):

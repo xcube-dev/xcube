@@ -20,7 +20,7 @@
 # SOFTWARE.
 
 from abc import abstractmethod, ABC
-from typing import Iterator, Tuple, Any, Optional, List, Type
+from typing import Iterator, Tuple, Any, Optional, List, Type, Sequence
 
 from xcube.constants import EXTENSION_POINT_DATA_STORES
 from xcube.util.extension import Extension
@@ -153,7 +153,10 @@ class DataStore(DataOpener, ABC):
         """
 
     @abstractmethod
-    def get_data_ids(self, type_specifier: str = None, include_titles: bool = True) -> \
+    def get_data_ids(self,
+                     type_specifier: str = None,
+                     include_titles: bool = True,
+                     include_attrs: Sequence[str] = None) -> \
             Iterator[Tuple[str, Optional[str]]]:
         """
         Get an iterator over the data resource identifiers for the given type *type_specifier*.
@@ -162,13 +165,29 @@ class DataStore(DataOpener, ABC):
         If a store implementation supports only a single data type, it should verify that *type_specifier*
         is either None or compatible with the supported data type.
 
-        The returned iterator items are 2-tuples of the form (*data_id*, *title*), where *data_id*
-        is the actual data identifier and *title* is an optional, human-readable title for the data.
-        If *include_titles* is false, the second item of the result tuple will be None.
+        The returned iterator items are either 2-tuples of the form (*data_id*, *title*)
+        or (*data_id*, *attrs*), where *data_id* is the actual data identifier:
 
-        :param type_specifier: If given, only data identifiers that are available as this type are returned. If this is
-        omitted, all available data identifiers are returned.
+        * The first form is returned if *include_titles* is given.
+          Then *title* is an optional, human-readable title (of type ``str```) for the data.
+        * The second form is returned if *include_attrs* is provided and not empty. and *attrs*.
+          Then *attrs* is a possibly empty mapping (of type ``dict```) of attribute names to values
+          with names given by *include_attrs*.
+
+        For data store backward compatibility, *include_titles* takes preference over *include_attrs*, so if
+        *include_titles* is given (the default), a store should ignore *include_attrs*.
+        Clients should however prefer ```include_attrs=["title", ...]``` over ```include_titles=True```.
+
+        If neither *include_titles* nor *include_attrs* is provided, the second item of the result tuple
+        will be None.
+
+        :param type_specifier: If given, only data identifiers that are available as this type are returned.
+            If this is omitted, all available data identifiers are returned.
         :param include_titles: If true, the store will attempt to also provide a title.
+            In this case, the second tuple item is a ```str``` or None.
+        :param include_attrs: A sequence of names of attributes to be returned for each dataset identifier.
+            If given, the store will attempt to also provide the given set of dataset attributes.
+            In this case, the second tuple item is a ```dict``` or None. (added in 0.7.1)
         :return: An iterator over the identifiers and titles of data resources provided by this data store.
         :raise DataStoreError: If an error occurs.
         """
