@@ -1,5 +1,6 @@
 ## Changes in 0.7.1.dev1 (in development)
 
+* Added `s3fs`  requirement that has been removed by accident.
 * Added missing requirements `requests` and `urllib3`.
 
 ## Changes in 0.7.0
