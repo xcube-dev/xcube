@@ -160,14 +160,11 @@ class DirectoryDataStoreTest(unittest.TestCase):
             set(),
             set(self.store.get_data_ids('dataset[multilevel]'))
         )
-        self.assertEqual(
-            {
-                ('cube-1-250-250.zarr', {}),
-                ('cube-5-100-200.zarr', {}),
-                ('cube.nc', {}),
-            },
-            set(self.store.get_data_ids(include_attrs=["title"]))
-        )
+        data_ids_list = list(self.store.get_data_ids(include_attrs=["title"]))
+        self.assertEqual(3, len(data_ids_list))
+        self.assertIn(('cube-1-250-250.zarr', {}), data_ids_list)
+        self.assertIn(('cube-5-100-200.zarr', {}), data_ids_list)
+        self.assertIn(('cube.nc', {}), data_ids_list)
         self.assertEqual(
             {
                 'cube-1-250-250.zarr',
