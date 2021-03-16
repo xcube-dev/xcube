@@ -186,7 +186,7 @@ class DataStore(DataOpener, ABC):
         :param type_specifier: If given, only data identifiers that are available as this type are returned.
             If this is omitted, all available data identifiers are returned.
         :param include_attrs: A sequence of names of attributes to be returned for each dataset identifier.
-            If given, the store will attempt to also provide the given set of dataset attributes.
+            If given, the store will attempt to provide the set of requested dataset attributes in addition to the data ids.
             (added in xcube 0.8.0)
         :return: An iterator over the identifiers and titles of data resources provided by this data store.
         :raise DataStoreError: If an error occurs.
