@@ -112,23 +112,13 @@ class TestNormalize(TestCase):
         actual = normalize_dataset(dataset)
         assertDatasetEqual(actual, expected)
 
-    def test_normalize_inverted_lat(self):
+    def test_normalize_does_not_reorder_increasing_lat(self):
         first = np.zeros([3, 45, 90])
         first[0, :, :] = np.eye(45, 90)
         ds = xr.Dataset({
             'first': (['time', 'lat', 'lon'], first),
             'second': (['time', 'lat', 'lon'], np.zeros([3, 45, 90])),
             'lat': np.linspace(-88, 88, 45),
-            'lon': np.linspace(-178, 178, 90),
-            'time': [datetime(2000, x, 1) for x in range(1, 4)]}).chunk(
-            chunks={'time': 1})
-
-        first = np.zeros([3, 45, 90])
-        first[0, :, :] = np.flip(np.eye(45, 90), axis=0)
-        expected = xr.Dataset({
-            'first': (['time', 'lat', 'lon'], first),
-            'second': (['time', 'lat', 'lon'], np.zeros([3, 45, 90])),
-            'lat': np.linspace(88, -88, 45),
             'lon': np.linspace(-178, 178, 90),
             'time': [datetime(2000, x, 1) for x in range(1, 4)]}).chunk(
             chunks={'time': 1})

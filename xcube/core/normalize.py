@@ -56,36 +56,8 @@ def normalize_dataset(ds: xr.Dataset) -> xr.Dataset:
     ds = _normalize_lat_lon_2d(ds)
     ds = _normalize_dim_order(ds)
     ds = _normalize_lon_360(ds)
-
-    # xcube viewer currently requires decreasing latitude co-ordinates, so
-    # we invert them here if necessary.
-
-    # TODO: commented out as _ensure_lat_decreasing() produces
-    #   chunks in "lat" that have the smallest chunk first. This will
-    #   fail when writing to Zarr. (Hack for #347)
-    #   See also https://github.com/pydata/xarray/issues/2300
-    # ds = _ensure_lat_decreasing(ds)
-
     ds = normalize_missing_time(ds)
     ds = _normalize_jd2datetime(ds)
-    return ds
-
-
-def _ensure_lat_decreasing(ds: xr.Dataset) -> xr.Dataset:
-    """
-    If the latitude is increasing, invert it to make it decreasing.
-    :param ds: some xarray dataset
-    :return: a normalized xarray dataset
-    """
-    try:
-        if not _is_lat_decreasing(ds.lat):
-            ds = ds.sel(lat=slice(None, None, -1))
-    except AttributeError:
-        # The dataset doesn't have 'lat', probably not geospatial
-        pass
-    except ValueError:
-        # The dataset still has an ND 'lat' array
-        pass
     return ds
 
 
@@ -371,7 +343,7 @@ def normalize_missing_time(ds: xr.Dataset) -> xr.Dataset:
     return ds
 
 
-def adjust_spatial_attrs(ds: xr.Dataset, allow_point: bool=False) -> xr.Dataset:
+def adjust_spatial_attrs(ds: xr.Dataset, allow_point: bool = False) -> xr.Dataset:
     """
     Adjust the global spatial attributes of the dataset by doing some
     introspection of the dataset and adjusting the appropriate attributes
@@ -697,7 +669,6 @@ def _is_lat_decreasing(lat: xr.DataArray) -> bool:
 
 
 def _normalize_dim_order(ds: xr.Dataset) -> xr.Dataset:
-
     copy_created = False
 
     for var_name in ds.data_vars:
