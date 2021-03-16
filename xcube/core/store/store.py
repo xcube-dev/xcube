@@ -168,7 +168,7 @@ class DataStore(DataOpener, ABC):
         The store will then return extra metadata for each returned data resource
         identifier according to the names of the metadata attributes as tuples (*data_id*, *attrs*).
 
-        Hence, the type of the returned iterator items depend on the value of *include_attrs*:
+        Hence, the type of the returned iterator items depends on the value of *include_attrs*:
 
         - If *include_attrs* is None (the default), the method returns an iterator
           of dataset identifiers *data_id* of type `str`.
