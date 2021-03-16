@@ -175,9 +175,11 @@ class DataStore(DataOpener, ABC):
         - If *include_attrs* is a sequence of attribute names, even an empty one,
           the method returns an iterator of tuples (*data_id*, *attrs*) of type
           `Tuple[str, Dict]`, where *attrs* is a dictionary filled according to the
-          names in *include_attrs*.
+          names in *include_attrs*. If a store cannot provide a given attribute, it
+          should simply ignore it. This may even yield to an empty dictionary for a given
+          *data_id*.
 
-        The individual attributes must not exists in the dataset's metadata, they may also be
+        The individual attributes do not have to exist in the dataset's metadata, they may also be
         generated on-the-fly. An example for a generic attribute name is "title".
         A store should try to resolve ```include_attrs=["title"]``` by returning items such as
         ```("ESACCI-L4_GHRSST-SSTdepth-OSTIA-GLOB_CDR2.1-v02.0-fv01.0.zarr",

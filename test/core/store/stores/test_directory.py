@@ -162,6 +162,8 @@ class DirectoryDataStoreTest(unittest.TestCase):
         )
         data_ids_list = list(self.store.get_data_ids(include_attrs=["title"]))
         self.assertEqual(3, len(data_ids_list))
+        # Note, although we expect "title" to be included,
+        # DirectoryStore does not implement it yet.
         self.assertIn(('cube-1-250-250.zarr', {}), data_ids_list)
         self.assertIn(('cube-5-100-200.zarr', {}), data_ids_list)
         self.assertIn(('cube.nc', {}), data_ids_list)
