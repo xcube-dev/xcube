@@ -11,8 +11,12 @@
   metadata attributes for each returned *data_id*.
   However, `include_attrs` is not yet implemented so far in the "s3", 
   "memory", and "directory" data stores. (#420) 
-* Added `s3fs`  requirement that has been removed by accident.
-* Added missing requirements `requests` and `urllib3`.
+* Dataset normalisation no longer includes reordering increasing
+  latitude coordinates, as this creates datasets that are no longer writable 
+  to Zarr. (#347)
+* Updated package requirements
+  - Added `s3fs`  requirement that has been removed by accident.
+  - Added missing requirements `requests` and `urllib3`.
 
 ## Changes in 0.7.0
 
