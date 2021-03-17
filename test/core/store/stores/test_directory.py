@@ -134,25 +134,25 @@ class DirectoryDataStoreTest(unittest.TestCase):
     def test_get_data_ids(self):
         self.assertEqual(
             {
-                ('cube-1-250-250.zarr', None),
-                ('cube-5-100-200.zarr', None),
-                ('cube.nc', None),
+                'cube-1-250-250.zarr',
+                'cube-5-100-200.zarr',
+                'cube.nc',
             },
             set(self.store.get_data_ids())
         )
         self.assertEqual(
             {
-                ('cube-1-250-250.zarr', None),
-                ('cube-5-100-200.zarr', None),
-                ('cube.nc', None),
+                'cube-1-250-250.zarr',
+                'cube-5-100-200.zarr',
+                'cube.nc',
             },
             set(self.store.get_data_ids('*'))
         )
         self.assertEqual(
             {
-                ('cube-1-250-250.zarr', None),
-                ('cube-5-100-200.zarr', None),
-                ('cube.nc', None),
+                'cube-1-250-250.zarr',
+                'cube-5-100-200.zarr',
+                'cube.nc',
             },
             set(self.store.get_data_ids('dataset'))
         )
@@ -160,25 +160,24 @@ class DirectoryDataStoreTest(unittest.TestCase):
             set(),
             set(self.store.get_data_ids('dataset[multilevel]'))
         )
+        data_ids_list = list(self.store.get_data_ids(include_attrs=["title"]))
+        self.assertEqual(3, len(data_ids_list))
+        # Note, although we expect "title" to be included,
+        # DirectoryStore does not implement it yet.
+        self.assertIn(('cube-1-250-250.zarr', {}), data_ids_list)
+        self.assertIn(('cube-5-100-200.zarr', {}), data_ids_list)
+        self.assertIn(('cube.nc', {}), data_ids_list)
         self.assertEqual(
             {
-                ('cube-1-250-250.zarr', None),
-                ('cube-5-100-200.zarr', None),
-                ('cube.nc', None),
+                'cube-1-250-250.zarr',
+                'cube-5-100-200.zarr',
+                'cube.nc',
             },
-            set(self.store.get_data_ids(include_titles=False))
-        )
-        self.assertEqual(
-            {
-                ('cube-1-250-250.zarr', None),
-                ('cube-5-100-200.zarr', None),
-                ('cube.nc', None),
-            },
-            set(self.store.get_data_ids('dataset', include_titles=False))
+            set(self.store.get_data_ids('dataset'))
         )
         self.assertEqual(
             set(),
-            set(self.store.get_data_ids('dataset[multilevel]', include_titles=False))
+            set(self.store.get_data_ids('dataset[multilevel]'))
         )
 
     def test_has_data(self):

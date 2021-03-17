@@ -22,7 +22,7 @@
 import json
 import os.path
 import uuid
-from typing import Optional, Iterator, Any, Tuple, List
+from typing import Optional, Iterator, Any, Tuple, List, Dict, Union, Container
 
 import s3fs
 import xarray as xr
@@ -124,13 +124,19 @@ class S3DataStore(DefaultSearchMixin, MutableDataStore):
         data_type_specifier, _, _ = self._get_accessor_id_parts(data_id)
         return data_type_specifier,
 
-    def get_data_ids(self, type_specifier: str = None, include_titles=True) -> Iterator[Tuple[str, Optional[str]]]:
-        # todo do not ignore type_specifier
+    def get_data_ids(self,
+                     type_specifier: str = None,
+                     include_attrs: Container[str] = None) -> \
+            Union[Iterator[str], Iterator[Tuple[str, Dict[str, Any]]]]:
+        # TODO: do not ignore type_specifier
+        # TODO: do not ignore names in include_attrs
+        return_tuples = include_attrs is not None
         prefix = self._bucket_name + '/'
         first_index = len(prefix)
         for item in self._s3.listdir(self._bucket_name, detail=False):
             if item.startswith(prefix):
-                yield item[first_index:], None
+                data_id = item[first_index:]
+                yield (data_id, {}) if return_tuples else data_id
 
     def has_data(self, data_id: str, type_specifier: str = None) -> bool:
         if data_id in self._registry:
