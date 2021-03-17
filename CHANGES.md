@@ -1,7 +1,11 @@
-## Changes in 0.7.1.dev1 (in development)
+## Changes in 0.7.1
 
-* Added `s3fs`  requirement that has been removed by accident.
-* Added missing requirements `requests` and `urllib3`.
+* Dataset normalisation no longer includes reordering increasing
+  latitude coordinates, as this creates datasets that are no longer writable 
+  to Zarr. (#347)
+* Updated package requirements
+  - Added `s3fs`  requirement that has been removed by accident.
+  - Added missing requirements `requests` and `urllib3`.
 
 ## Changes in 0.7.0
 
