@@ -1,4 +1,4 @@
-## Changes in 0.8.0.dev0 (in development)
+## Changes in 0.8.0.dev1 (in development)
 
 * Changed behaviour and signature of `xcube.core.store.DataStore.get_dataset_ids()`.
   The keyword argument `include_titles: str = True` has been replaced by 
