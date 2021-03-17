@@ -19,7 +19,7 @@ class MemoryCubeStoreTest(unittest.TestCase):
         self.assertEqual({'cube_1', 'cube_2'},
                          set(self.data_store.get_data_ids()))
         list_with_attrs = list(self.data_store.get_data_ids(include_attrs=[]))
-        self.assertEqual(3, len(list_with_attrs))
+        self.assertEqual(2, len(list_with_attrs))
         self.assertIn(('cube_1', {}), list_with_attrs)
         self.assertIn(('cube_2', {}), list_with_attrs)
 
