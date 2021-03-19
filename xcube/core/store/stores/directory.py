@@ -135,7 +135,7 @@ class DirectoryDataStore(DefaultSearchMixin, MutableDataStore):
 
     def has_data(self, data_id: str, type_specifier: str = None) -> bool:
         assert_given(data_id, 'data_id')
-        actual_type_specifier = self._get_type_specifier_for_data_id(data_id)
+        actual_type_specifier = self._get_type_specifier_for_data_id(data_id, require=False)
         if actual_type_specifier is not None:
             if type_specifier is None or actual_type_specifier.satisfies(type_specifier):
                 path = self._resolve_data_id_to_path(data_id)
