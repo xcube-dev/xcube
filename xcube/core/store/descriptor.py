@@ -160,7 +160,7 @@ def _strip_time_from_datetime_str(datetime_str: str) -> str:
 
 
 def _determine_time_period(data: xr.Dataset):
-    if 'time' in data and len(data['time'].values) > 0:
+    if 'time' in data and len(data['time'].values) > 1:
         time_diff = data['time'].diff(dim=data['time'].dims[0]).values.astype(np.float64)
         time_res = time_diff[0]
         time_regular = np.allclose(time_res, time_diff, 1e-8)
