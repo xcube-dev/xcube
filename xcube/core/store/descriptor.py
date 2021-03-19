@@ -113,10 +113,10 @@ def _determine_bbox(data: xr.Dataset, spatial_res: float = 0.0) -> Optional[Tupl
 
 
 def _determine_min_and_max(data: xr.Dataset, dimensions: Sequence[str]) -> (float, float, str):
-    bounds_endings = ['bnds', 'bounds', '']
+    bounds_endings = ['_bnds', '_bounds', '']
     for bounds_ending in bounds_endings:
         for dimension in dimensions:
-            dimension = f'{dimension}_{bounds_ending}'
+            dimension = f'{dimension}{bounds_ending}'
             if dimension in data:
                 dimension_data = data[dimension].values
                 return np.min(dimension_data), np.max(dimension_data), bounds_ending
