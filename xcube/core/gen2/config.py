@@ -134,7 +134,7 @@ class CubeConfig(JsonObject):
                  tile_size: Union[int, Tuple[int, int]] = None,
                  time_range: Tuple[str, Optional[str]] = None,
                  time_period: str = None,
-                 chunks: collections.Mapping[str, Optional[int]] = None):
+                 chunks: Mapping[str, Optional[int]] = None):
 
         self.variable_names = None
         if variable_names is not None:

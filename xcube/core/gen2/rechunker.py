@@ -36,28 +36,30 @@ class CubeRechunker(CubeProcessor):
 
         chunked_cube = xr.Dataset(attrs=cube.attrs)
 
-        # Coordinate variables WILL NOT BE chunked
+        # Coordinate variables SHOULD NOT BE chunked
         chunked_cube = chunked_cube.assign_coords(
             coords={var_name: var.chunk({d: None for d in var.dims})
                     for var_name, var in cube.coords.items()}
         )
-        # Data variables WILL BE chunked according to dim sizes in dim_chunks
+
+        # Data variables SHALL BE chunked according to dim sizes in dim_chunks
         chunked_cube = chunked_cube.assign(
             variables={var_name: var.chunk({d: dim_chunks.get(str(d), 'auto')
                                             for d in var.dims})
                        for var_name, var in cube.data_vars.items()}
         )
+
         # Update variable encoding for Zarr
         for var in chunked_cube.variables.values():
-            assert var.chunks is not None, "var.chunks is not None"
-            var_chunks = var.chunks
-            zarr_chunks = var.ndim * [0]
-            for i in range(var.ndim):
-                sizes = var_chunks[i]
-                if len(sizes) == 1:
-                    zarr_chunks[i] = sizes[0]
-                elif len(sizes) > 1:
-                    zarr_chunks[i] = max(*sizes)
-            var.encoding.update(chunks=zarr_chunks)
+            if var.chunks is not None:
+                var_chunks = var.chunks
+                zarr_chunks = var.ndim * [0]
+                for i in range(var.ndim):
+                    sizes = var_chunks[i]
+                    if len(sizes) == 1:
+                        zarr_chunks[i] = sizes[0]
+                    elif len(sizes) > 1:
+                        zarr_chunks[i] = max(*sizes)
+                var.encoding.update(chunks=zarr_chunks)
 
         return chunked_cube
