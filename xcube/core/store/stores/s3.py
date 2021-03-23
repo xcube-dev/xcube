@@ -133,7 +133,7 @@ class S3DataStore(DefaultSearchMixin, MutableDataStore):
         return_tuples = include_attrs is not None
         prefix = self._bucket_name + '/'
         first_index = len(prefix)
-        for item in self._s3.listdir(self._bucket_name, detail=False):
+        for item in self._s3.listdir(self._bucket_name, detail=False, refresh=True):
             if item.startswith(prefix):
                 data_id = item[first_index:]
                 yield (data_id, {}) if return_tuples else data_id
