@@ -170,16 +170,28 @@ class S3DataStore(DefaultSearchMixin, MutableDataStore):
         data = self.open_data(data_id, data_opener_ids[0])
         return new_data_descriptor(data_id, data)
 
-    def get_data_opener_ids(self, data_id: str = None, type_specifier: str = None) -> Tuple[str, ...]:
+    def get_data_opener_ids(self, data_id: str = None, type_specifier: Optional[str] = None) -> Tuple[str, ...]:
         if type_specifier:
-            type_specifier = TypeSpecifier.normalize(type_specifier)
+            type_specifier = TypeSpecifier.parse(type_specifier)
         if type_specifier == TYPE_SPECIFIER_ANY:
             type_specifier = None
         self._assert_valid_type_specifier(type_specifier)
-        if not type_specifier and data_id:
-            type_specifier, _, _ = self._get_accessor_id_parts(data_id)
+        if data_id:
+            accessor_id_parts = self._get_accessor_id_parts(data_id, require=False)
+            if not accessor_id_parts:
+                return tuple()
+            acc_type_specifier, acc_format, acc_storage_id = accessor_id_parts
+            if not type_specifier:
+                type_specifier = acc_type_specifier
+            return tuple(ext.name for ext in find_data_opener_extensions(
+                predicate=get_data_accessor_predicate(
+                    type_specifier=type_specifier,
+                    format_id=acc_format,
+                    storage_id=acc_storage_id)
+        ))
         return tuple(ext.name for ext in find_data_opener_extensions(
-            predicate=get_data_accessor_predicate(type_specifier=type_specifier, storage_id=_STORAGE_ID)
+            predicate=get_data_accessor_predicate(type_specifier=type_specifier,
+                                                  storage_id=_STORAGE_ID)
         ))
 
     def get_open_data_params_schema(self, data_id: str = None, opener_id: str = None) -> JsonObjectSchema:

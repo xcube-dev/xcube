@@ -89,7 +89,8 @@ class S3DataStoreTest(S3Test):
     #
     #     with self.assertRaises(DataStoreError) as cm:
     #         list(self.store.search_data(type_specifier=TYPE_SPECIFIER_DATASET,
-    #                                     time_range=['2020-03-01', '2020-03-04'], bbox=[52, 11, 54, 12]))
+    #                                     time_range=['2020-03-01', '2020-03-04'],
+    #                                     bbox=[52, 11, 54, 12]))
     #     self.assertEqual('Unsupported search parameters: time_range, bbox', f'{cm.exception}')
 
     def test_get_write_data_params_schema(self):
@@ -108,15 +109,18 @@ class S3DataStoreTest(S3Test):
 
     def test_get_data_opener_ids(self):
         self.assertEqual(('dataset:zarr:s3',), self.store.get_data_opener_ids())
-        self.assertEqual(('dataset:zarr:s3',), self.store.get_data_opener_ids(type_specifier='dataset'))
-        self.assertEqual(('dataset:zarr:s3',), self.store.get_data_opener_ids(type_specifier='*'))
+        self.assertEqual(('dataset:zarr:s3',),
+                         self.store.get_data_opener_ids(type_specifier='dataset'))
+        self.assertEqual(('dataset:zarr:s3',),
+                         self.store.get_data_opener_ids(type_specifier='*'))
         with self.assertRaises(ValueError) as cm:
             self.store.get_data_opener_ids(type_specifier='dataset[cube]')
         self.assertEqual("type_specifier must be one of ('dataset',)", f'{cm.exception}')
 
     def test_get_data_writer_ids(self):
         self.assertEqual(('dataset:zarr:s3',), self.store.get_data_writer_ids())
-        self.assertEqual(('dataset:zarr:s3',), self.store.get_data_writer_ids(type_specifier='dataset'))
+        self.assertEqual(('dataset:zarr:s3',),
+                         self.store.get_data_writer_ids(type_specifier='dataset'))
         self.assertEqual(('dataset:zarr:s3',), self.store.get_data_writer_ids(type_specifier='*'))
         with self.assertRaises(ValueError) as cm:
             self.store.get_data_writer_ids(type_specifier='dataset[cube]')

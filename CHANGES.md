@@ -1,4 +1,4 @@
-## Changes in 0.8.0.dev1 (in development)
+## Changes in 0.8.0.dev4 (in development)
 
 * Changed behaviour and signature of `xcube.core.store.DataStore.get_dataset_ids()`.
   The keyword argument `include_titles: str = True` has been replaced by 
@@ -10,7 +10,9 @@
   Hence `include_attrs`  can be used to obtain a minimum set of dataset 
   metadata attributes for each returned *data_id*.
   However, `include_attrs` is not yet implemented so far in the "s3", 
-  "memory", and "directory" data stores. (#420) 
+  "memory", and "directory" data stores. (#420)
+* Directory and S3 Data Store consider format of data denoted by *data id* when 
+  using `get_opener_ids()`.
 
 ## Changes in 0.7.1
     
