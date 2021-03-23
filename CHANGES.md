@@ -1,3 +1,6 @@
+## Changes in 0.7.2 (in development)
+
+
 ## Changes in 0.7.1
 
 * Dataset normalisation no longer includes reordering increasing
