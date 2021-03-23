@@ -128,7 +128,7 @@ class S3DataStore(DefaultSearchMixin, MutableDataStore):
         # todo do not ignore type_specifier
         prefix = self._bucket_name + '/'
         first_index = len(prefix)
-        for item in self._s3.listdir(self._bucket_name, detail=False):
+        for item in self._s3.listdir(self._bucket_name, detail=False, refresh=True):
             if item.startswith(prefix):
                 yield item[first_index:], None
 
