@@ -67,6 +67,14 @@ class CubeInformant:
         tile_height = height
 
         tile_size = cube_config.tile_size
+        if tile_size is None and cube_config.chunks is not None:
+            # TODO: this is just an assumption, with new Resampling module, use GridMapping
+            #   to identify the actual names for the spatial tile dimensions.
+            tile_size_x = cube_config.chunks.get('lon', cube_config.chunks.get('x'))
+            tile_size_y = cube_config.chunks.get('lat', cube_config.chunks.get('y'))
+            if tile_size_x and tile_size_y:
+                tile_size = tile_size_x, tile_size_y
+
         if tile_size is not None:
             tile_width, tile_height = tile_size
 
