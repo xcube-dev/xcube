@@ -1,5 +1,6 @@
 ## Changes in 0.7.2 (in development)
 
+* Fixed a problem where S3 data store returned outdated bucket items. (#422)
 
 ## Changes in 0.7.1
 
