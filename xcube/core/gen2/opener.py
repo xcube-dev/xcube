@@ -25,6 +25,7 @@ from typing import Sequence, Tuple
 import xarray as xr
 
 from xcube.core.normalize import normalize_dataset
+from xcube.core.select import select_subset
 from xcube.core.store import DataStorePool
 from xcube.core.store import TYPE_SPECIFIER_CUBE
 from xcube.core.store import TYPE_SPECIFIER_DATASET
@@ -36,6 +37,8 @@ from xcube.util.progress import observe_progress
 from .config import CubeConfig
 from .config import InputConfig
 from .error import CubeGeneratorError
+
+SUBSET_PARAMETER_NAMES = ('variable_names', 'bbox', 'time_range')
 
 
 class CubesOpener:
@@ -82,13 +85,30 @@ class CubesOpener:
         open_params_schema = opener.get_open_data_params_schema(input_config.data_id)
         cube_open_params = {k: v for k, v in cube_params.items() if k in open_params_schema.properties}
         unsupported_cube_params = {k for k in cube_params.keys() if k not in open_params_schema.properties}
+        unsupported_cube_subset_params = {}
         if unsupported_cube_params:
             for k in unsupported_cube_params:
-                warnings.warn(f'Unsupported cube_config parameter will be ignored:'
-                              f' {k} = {cube_params[k]!r}')
+                if k in SUBSET_PARAMETER_NAMES:
+                    unsupported_cube_subset_params[k] = cube_params[k]
+                    warnings.warn(f'cube_config parameter not supported by data store or opener:'
+                                  f'manually applying: {k} = {cube_params[k]!r}')
+                else:
+                    warnings.warn(f'cube_config parameter not supported by data store or opener:'
+                                  f'ignoring {k} = {cube_params[k]!r}')
         cube = opener.open_data(input_config.data_id, **open_params, **cube_open_params)
         if normalisation_required:
             cube = normalize_dataset(cube)
+        if unsupported_cube_subset_params:
+            # Try creating subsets given the cube subset parameters not supported
+            # by store in use. Note that we expect some trouble when using bbox
+            # without properly recognising spatial_res or crs. Especially for
+            # multiple inputs with different source spatial_res the bboxes are no
+            # longer aligned. The new resampling module will need to account
+            # for this.
+            cube = select_subset(cube,
+                                 var_names=unsupported_cube_subset_params.get('variable_names'),
+                                 bbox=unsupported_cube_subset_params.get('bbox'),
+                                 time_range=unsupported_cube_subset_params.get('time_range'))
         return cube
 
     @classmethod

@@ -1,5 +1,10 @@
 ## Changes in 0.7.2 (in development)
 
+* `xcube gen2` now creates subsets from datasets returned by data stores that
+  do not recognize cube subset parameters `variable_names`, `bbox`, and
+  `time_range`. (#423)
+
+* Fixed a problem where S3 data store returned outdated bucket items. (#422)
 
 ## Changes in 0.7.1
 
