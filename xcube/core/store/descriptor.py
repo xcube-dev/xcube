@@ -134,7 +134,7 @@ def _determine_spatial_res(data: xr.Dataset):
             lat_res = lat_diff[0]
             lat_regular = np.allclose(lat_res, lat_diff, 1e-8)
             if lat_regular:
-                return abs(lat_res)
+                return float(abs(lat_res))
 
 
 def _determine_time_coverage(data: xr.Dataset):
