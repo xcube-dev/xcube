@@ -56,8 +56,8 @@ _STORAGE_ID = 's3'
 _DEFAULT_FORMAT_ID = 'zarr'
 
 _FILENAME_EXT_TO_ACCESSOR_ID_PARTS = {
-    '.zarr': (TYPE_SPECIFIER_DATASET, 'zarr', _STORAGE_ID),
-    '.levels': (TYPE_SPECIFIER_MULTILEVEL_DATASET, 'levels', _STORAGE_ID),
+    '.zarr': (str(TYPE_SPECIFIER_DATASET), 'zarr', _STORAGE_ID),
+    '.levels': (str(TYPE_SPECIFIER_MULTILEVEL_DATASET), 'levels', _STORAGE_ID),
 }
 
 _REGISTRY_FILE = 'registry.json'

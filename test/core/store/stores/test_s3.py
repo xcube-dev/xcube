@@ -155,6 +155,30 @@ class S3DataStoreTest(S3Test):
                          data_descriptor.time_range)
         self.assertEqual({'a', 'b'}, set(data_descriptor.data_vars.keys()))
 
+    def test_write_and_get_type_specifiers_for_data(self):
+        self.store.s3.mkdir(BUCKET_NAME)
+        dataset_1 = new_cube(variables=dict(a=4.1, b=7.4))
+        self.store.write_data(dataset_1, data_id='cube-1.zarr')
+
+        type_specifiers = self.store.get_type_specifiers_for_data('cube-1.zarr')
+        self.assertEqual(1, len(type_specifiers))
+        self.assertEqual(('dataset',), type_specifiers)
+        self.assertIsInstance(type_specifiers[0], str)
+        from xcube.core.store import TypeSpecifier
+        TypeSpecifier.parse(type_specifiers[0])
+
+    def test_write_and_has_data(self):
+        self.assertFalse(self.store.has_data('cube-1.zarr'))
+
+        self.store.s3.mkdir(BUCKET_NAME)
+        dataset_1 = new_cube(variables=dict(a=4.1, b=7.4))
+        self.store.write_data(dataset_1, data_id='cube-1.zarr')
+
+        self.assertTrue(self.store.has_data('cube-1.zarr'))
+        self.assertTrue(self.store.has_data('cube-1.zarr', type_specifier='dataset'))
+        self.assertFalse(self.store.has_data('cube-1.zarr', type_specifier='geodataframe'))
+        self.assertFalse(self.store.has_data('cube-2.zarr'))
+
     @unittest.skip('Currently fails on appveyor but not locally, execute on demand only')
     def test_write_and_describe_data_from_zarr_describer(self):
         self.store.s3.mkdir(BUCKET_NAME)
