@@ -1,4 +1,4 @@
-## Changes in 0.8.0.dev4 (in development)
+## Changes in 0.8.0 (in development)
 
 * Changed behaviour and signature of `xcube.core.store.DataStore.get_dataset_ids()`.
   The keyword argument `include_titles: str = True` has been replaced by 
@@ -13,6 +13,8 @@
   "memory", and "directory" data stores. (#420)
 * Directory and S3 Data Store consider format of data denoted by *data id* when 
   using `get_opener_ids()`.
+* S3 Data Store will only recognise a `consolidated = True` parameter setting,
+  if the file `{bucket}/{data_id}/.zmetadata` exists. 
 
 ## Changes in 0.7.2 (in development)
 
