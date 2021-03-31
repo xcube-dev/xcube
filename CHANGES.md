@@ -1,5 +1,12 @@
 ## Changes in 0.7.2 (in development)
 
+* `xcube gen2` now allows for specifying the final data cube's chunk
+  sizes. The new `cube_config` parameter is named `chunks`, is optional
+  and if given, must be a dictionary that maps a dimension name to a 
+  chunk size or to `None` (= no chunking). The chunk sizes only apply 
+  to data variables. Coordinate variables will not be affected, e.g. 
+  "time", "lat", "lon" will not be chunked. (#426)
+
 * `xcube gen2` now creates subsets from datasets returned by data stores that
   do not recognize cube subset parameters `variable_names`, `bbox`, and
   `time_range`. (#423)
