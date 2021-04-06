@@ -49,8 +49,8 @@ class CubesCombiner(CubesProcessor):
             else:
                 result_cube = resampled_cubes[0]
 
-            if self._cube_config.chunks:
-                result_cube = self._rechunk_cube(result_cube)
+            # Force cube to have chunks compatible with Zarr.
+            result_cube = self._rechunk_cube(result_cube)
 
             progress.worked(1)
             return result_cube
@@ -60,5 +60,5 @@ class CubesCombiner(CubesProcessor):
         return cube_resampler.process_cube(cube)
 
     def _rechunk_cube(self, cube: xr.Dataset):
-        cube_rechunker = CubeRechunker(self._cube_config.chunks)
+        cube_rechunker = CubeRechunker(self._cube_config.chunks or {})
         return cube_rechunker.process_cube(cube)

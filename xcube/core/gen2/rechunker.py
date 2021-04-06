@@ -19,7 +19,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-from typing import Union, Mapping
+from typing import Union, Mapping, Tuple, Optional
 
 import xarray as xr
 
@@ -27,6 +27,7 @@ from .processor import CubeProcessor
 
 
 class CubeRechunker(CubeProcessor):
+    """Force cube to have chunks compatible with Zarr."""
 
     def __init__(self, chunks: Mapping[str, Union[None, int]]):
         self._chunks = dict(chunks)
@@ -44,22 +45,26 @@ class CubeRechunker(CubeProcessor):
 
         # Data variables SHALL BE chunked according to dim sizes in dim_chunks
         chunked_cube = chunked_cube.assign(
-            variables={var_name: var.chunk({d: dim_chunks.get(str(d), 'auto')
-                                            for d in var.dims})
+            variables={var_name: var.chunk({var.dims[axis]: dim_chunks.get(var.dims[axis],
+                                                                           _default_chunk_size(var.chunks, axis))
+                                            for axis in range(var.ndim)})
                        for var_name, var in cube.data_vars.items()}
         )
 
-        # Update variable encoding for Zarr
+        # Update chunks encoding for Zarr
         for var in chunked_cube.variables.values():
             if var.chunks is not None:
-                var_chunks = var.chunks
-                zarr_chunks = var.ndim * [0]
-                for i in range(var.ndim):
-                    sizes = var_chunks[i]
-                    if len(sizes) == 1:
-                        zarr_chunks[i] = sizes[0]
-                    elif len(sizes) > 1:
-                        zarr_chunks[i] = max(*sizes)
-                var.encoding.update(chunks=zarr_chunks)
+                var.encoding.update(chunks=[sizes[0] for sizes in var.chunks])
 
         return chunked_cube
+
+
+def _default_chunk_size(chunks: Optional[Tuple[Tuple[int, ...], ...]], axis: int) -> Union[str, int]:
+    if chunks is not None:
+        sizes = chunks[axis]
+        num_blocks = len(sizes)
+        if num_blocks > 1:
+            return max(*sizes)
+        if num_blocks == 1:
+            return sizes[0]
+    return 'auto'

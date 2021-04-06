@@ -39,6 +39,7 @@ from .config import InputConfig
 from .error import CubeGeneratorError
 
 SUBSET_PARAMETER_NAMES = ('variable_names', 'bbox', 'time_range')
+CHUNKS_PARAMETER_NAME = 'chunks'
 
 
 class CubesOpener:
@@ -91,10 +92,10 @@ class CubesOpener:
                 if k in SUBSET_PARAMETER_NAMES:
                     unsupported_cube_subset_params[k] = cube_params[k]
                     warnings.warn(f'cube_config parameter not supported by data store or opener:'
-                                  f'manually applying: {k} = {cube_params[k]!r}')
-                else:
+                                  f' manually applying: {k} = {cube_params[k]!r}')
+                elif k != CHUNKS_PARAMETER_NAME:
                     warnings.warn(f'cube_config parameter not supported by data store or opener:'
-                                  f'ignoring {k} = {cube_params[k]!r}')
+                                  f' ignoring {k} = {cube_params[k]!r}')
         cube = opener.open_data(input_config.data_id, **open_params, **cube_open_params)
         if normalisation_required:
             cube = normalize_dataset(cube)
