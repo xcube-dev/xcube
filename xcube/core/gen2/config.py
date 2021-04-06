@@ -19,8 +19,9 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+import collections
 import numbers
-from typing import Optional, Any, Sequence, Mapping, Tuple, Union
+from typing import Optional, Any, Sequence, Mapping, Tuple, Union, Dict
 
 import pyproj
 
@@ -133,7 +134,8 @@ class CubeConfig(JsonObject):
                  spatial_res: Union[float, Tuple[float]] = None,
                  tile_size: Union[int, Tuple[int, int]] = None,
                  time_range: Tuple[str, Optional[str]] = None,
-                 time_period: str = None):
+                 time_period: str = None,
+                 chunks: Mapping[str, Optional[int]] = None):
 
         self.variable_names = None
         if variable_names is not None:
@@ -182,6 +184,14 @@ class CubeConfig(JsonObject):
             assert_instance(time_period, str, 'time_period')
             self.time_period = time_period
 
+        self.chunks = None
+        if chunks is not None:
+            assert_instance(chunks, collections.Mapping, 'chunks')
+            for chunk_dim, chunk_size in chunks.items():
+                assert_instance(chunk_dim, str, 'chunk dimension')
+                assert_instance(chunk_size, (int, type(None)), 'chunk size')
+            self.chunks = dict(chunks)
+
     @classmethod
     def get_schema(cls):
         return JsonObjectSchema(
@@ -215,6 +225,10 @@ class CubeConfig(JsonObject):
                 time_period=JsonStringSchema(
                     nullable=True,
                     pattern=r'^([1-9][0-9]*)?[DWMY]$'
+                ),
+                chunks=JsonObjectSchema(
+                    nullable=True,
+                    additional_properties=JsonIntegerSchema(nullable=True, minimum=1)
                 ),
             ),
             additional_properties=False,
