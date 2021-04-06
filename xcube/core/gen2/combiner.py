@@ -36,7 +36,7 @@ class CubesCombiner(CubesProcessor):
         self._cube_config = cube_config
 
     def process_cubes(self, cubes: Sequence[xr.Dataset]) -> xr.Dataset:
-        with observe_progress('Resampling cube(s)', len(cubes) + 1) as progress:
+        with observe_progress('Processing cube(s)', len(cubes) + 1) as progress:
 
             resampled_cubes = []
             for cube in cubes:
