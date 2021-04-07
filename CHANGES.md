@@ -1,4 +1,4 @@
-## Changes in 0.7.2 (in development)
+## Changes in 0.7.2
 
 * `xcube gen2` now allows for specifying the final data cube's chunk
   sizes. The new `cube_config` parameter is named `chunks`, is optional
