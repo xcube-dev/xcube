@@ -15,8 +15,9 @@
   using `get_opener_ids()`.
 * S3 Data Store will only recognise a `consolidated = True` parameter setting,
   if the file `{bucket}/{data_id}/.zmetadata` exists. 
+*  `xcube gen2` will now ensure that temporal subsets can be created.
 
-## Changes in 0.7.2 (in development)
+## Changes in 0.7.2
 
 * `xcube gen2` now allows for specifying the final data cube's chunk
   sizes. The new `cube_config` parameter is named `chunks`, is optional

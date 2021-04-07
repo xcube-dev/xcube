@@ -1,6 +1,7 @@
 import unittest
 
 import numpy as np
+import xarray as xr
 
 from test.sampledata import create_highroc_dataset
 from xcube.core.new import new_cube
@@ -80,6 +81,12 @@ class SelectSpatialSubsetTest(unittest.TestCase):
 
 
 class SelectTemporalSubsetTest(unittest.TestCase):
+    def test_invalid_dataset(self):
+        ds1 = xr.Dataset(dict(CHL=xr.DataArray([[1, 2], [2, 3]], dims=('lat', 'lon'))))
+        with self.assertRaises(ValueError) as cm:
+            select_temporal_subset(ds1, time_range=('2010-01-02', '2010-01-04'))
+        self.assertEqual('cannot compute temporal subset: variable "time" not found in dataset', f'{cm.exception}')
+
     def test_no_subset_for_open_interval(self):
         ds1 = new_cube(variables=dict(analysed_sst=0.6, mask=8))
         ds2 = select_temporal_subset(ds1, time_range=(None, None))

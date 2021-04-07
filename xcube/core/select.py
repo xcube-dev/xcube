@@ -111,6 +111,9 @@ def select_temporal_subset(dataset: xr.Dataset,
     :return:
     """
     assert_given(time_range, 'time_range')
+    time_name = time_name or 'time'
+    if time_name not in dataset:
+        raise ValueError(f'cannot compute temporal subset: variable "{time_name}" not found in dataset')
     time_1, time_2 = time_range
     time_1 = pd.to_datetime(time_1) if time_1 is not None else None
     time_2 = pd.to_datetime(time_2) if time_2 is not None else None
