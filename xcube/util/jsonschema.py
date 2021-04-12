@@ -502,7 +502,18 @@ class JsonObjectSchema(JsonSchema):
         if mapping_or_obj is None:
             return None
 
-        converted_mapping = dict()
+        # Fix for #432: call object's own to_dict() method but beware of infinite recursion
+        if (hasattr(mapping_or_obj, 'to_dict')
+                and callable(mapping_or_obj.to_dict)
+                # calling JsonSchema.to_dict() is always fine
+                and (isinstance(mapping_or_obj, JsonSchema)
+                     # calling JsonObject.to_dict() would cause infinite recursion
+                     or not isinstance(mapping_or_obj, JsonObject))):
+            # noinspection PyBroadException
+            try:
+                return mapping_or_obj.to_dict()
+            except BaseException:
+                pass
 
         required_set = set(self.required) if self.required else set()
 
@@ -514,6 +525,8 @@ class JsonObjectSchema(JsonSchema):
         additional_properties_schema = None
         if isinstance(additional_properties, JsonSchema):
             additional_properties_schema = additional_properties
+
+        converted_mapping = dict()
 
         if isinstance(mapping_or_obj, (collections.abc.Mapping, dict)):
             # An object that is already a Mapping
@@ -537,6 +550,9 @@ class JsonObjectSchema(JsonSchema):
                 if property_ok and property_value is not UNDEFINED:
                     mapping[property_name] = property_value
 
+        # recursively convert mapping into converted_mapping according to schema
+
+        # process defined properties
         for property_name, property_schema in self.properties.items():
             if property_name in mapping:
                 property_value = mapping[property_name]
@@ -549,6 +565,7 @@ class JsonObjectSchema(JsonSchema):
                     if property_name in required_set or converted_property_value is not None:
                         converted_mapping[property_name] = converted_property_value
 
+        # process additional properties
         if additional_properties:
             for property_name, property_value in mapping.items():
                 if property_name not in converted_mapping and property_value is not UNDEFINED:
