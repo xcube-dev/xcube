@@ -1,5 +1,7 @@
 ## Changes in 0.8.0 (in development)
 
+* Fixed broken JSON object serialisation of objects returned by 
+  `DataStore.describe_object()`. (#432)
 * Changed behaviour and signature of `xcube.core.store.DataStore.get_dataset_ids()`.
   The keyword argument `include_titles: str = True` has been replaced by 
   `include_attrs: Sequence[str] = None` and the return value changes accordingly:

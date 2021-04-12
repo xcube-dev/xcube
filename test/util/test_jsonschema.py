@@ -523,6 +523,24 @@ class JsonObjectSchemaTest(unittest.TestCase):
         self.assertEqual(dict(max_cache_size=2 ** 32),
                          kwargs)
 
+    def test_to_dict(self):
+        schema = JsonObjectSchema(
+            properties=dict(
+                consolidated=JsonBooleanSchema()
+            )
+        )
+        self.assertEqual(
+            {
+                'type': 'object',
+                'properties': {
+                    'consolidated': {
+                        'type': 'boolean'
+                    }
+                },
+            },
+            schema.to_dict()
+        )
+
 
 class IHasAProperty(JsonObject):
     def __init__(self, name, age):
