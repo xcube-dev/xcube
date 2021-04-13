@@ -1,43 +1,78 @@
-## Changes in 0.6.2.dev3
+## Changes in 0.8.0 (in development)
+
+* Fixed broken JSON object serialisation of objects returned by 
+  `DataStore.describe_object()`. (#432)
+* Changed behaviour and signature of `xcube.core.store.DataStore.get_dataset_ids()`.
+  The keyword argument `include_titles: str = True` has been replaced by 
+  `include_attrs: Sequence[str] = None` and the return value changes accordingly:
+  - If `include_attrs` is None (the default), the method returns an iterator
+    of dataset identifiers *data_id* of type `str`.
+  - If `include_attrs` is a sequence of attribute names, the method returns
+    an iterator of tuples (*data_id*, *attrs*) of type `Tuple[str, Dict]`.
+  Hence `include_attrs`  can be used to obtain a minimum set of dataset 
+  metadata attributes for each returned *data_id*.
+  However, `include_attrs` is not yet implemented so far in the "s3", 
+  "memory", and "directory" data stores. (#420)
+* Directory and S3 Data Store consider format of data denoted by *data id* when 
+  using `get_opener_ids()`.
+* S3 Data Store will only recognise a `consolidated = True` parameter setting,
+  if the file `{bucket}/{data_id}/.zmetadata` exists. 
+* `xcube gen2` will now ensure that temporal subsets can be created. (#430)
+
+## Changes in 0.7.2
+
+* `xcube gen2` now allows for specifying the final data cube's chunk
+  sizes. The new `cube_config` parameter is named `chunks`, is optional
+  and if given, must be a dictionary that maps a dimension name to a 
+  chunk size or to `None` (= no chunking). The chunk sizes only apply 
+  to data variables. Coordinate variables will not be affected, e.g. 
+  "time", "lat", "lon" will not be chunked. (#426)
+
+* `xcube gen2` now creates subsets from datasets returned by data stores that
+  do not recognize cube subset parameters `variable_names`, `bbox`, and
+  `time_range`. (#423)
+
+* Fixed a problem where S3 data store returned outdated bucket items. (#422)
+
+## Changes in 0.7.1
+
+* Dataset normalisation no longer includes reordering increasing
+  latitude coordinates, as this creates datasets that are no longer writable 
+  to Zarr. (#347)
+* Updated package requirements
+  - Added `s3fs`  requirement that has been removed by accident.
+  - Added missing requirements `requests` and `urllib3`.
+
+## Changes in 0.7.0
 
 * Introduced abstract base class `xcube.util.jsonschema.JsonObject` which 
   is now the super class of many classes that have JSON object representations.
   In Jupyter notebooks, instances of such classes are automatically rendered 
   as JSON trees.
-
-## Changes in 0.6.2.dev2
-
+* `xcube gen2` CLI tool can now have multiple `-v` options, e.g. `-vvv`
+  will now output detailed requests and responses.  
+* Added new Jupyter notebooks in `examples/notebooks/gen2` 
+  for the _data cube generators_ in the package `xcube.core.gen2`.
 * Fixed a problem in `JsonArraySchema` that occurred if a valid 
   instance was `None`. A TypeError `TypeError: 'NoneType' object is not iterable` was 
   raised in this case.
-
-## Changes in 0.6.2.dev1 
-
 * The S3 data store  `xcube.core.store.stores.s3.S3DataStore` now implements the `describe_data()` method. 
   It therefore can also be used as a data store from which data is queried and read.  
-
 * The `xcube gen2` data cube generator tool has been hidden from
   the set of "official" xcube tools. It is considered as an internal tool 
   that is subject to change at any time until its interface has stabilized.
   Please refer to `xcube gen2 --help` for more information.
-
 * Added `coords` property to `DatasetDescriptor` class. 
   The `data_vars` property of the `DatasetDescriptor` class is now a dictionary. 
-
 * Added `chunks` property to `VariableDescriptor` class. 
-
 * Removed function `reproject_crs_to_wgs84()` and tests (#375) because  
   - it seemed to be no longer be working with GDAL 3.1+; 
   - there was no direct use in xcube itself;
   - xcube plans to get rid of GDAL dependencies.
-  
 * CLI tool `xcube gen2` may now also ingest non-cube datasets.
-
 * Fixed unit tests broken by accident. (#396)
-
 * Added new context manager `xcube.util.observe_dask_progress()` that can be used
   to observe tasks that known to be dominated by Dask computations: 
-   
   ```python
   with observe_dask_progress('Writing dataset', 100):
       dataset.to_zarr(store)  

@@ -375,8 +375,8 @@ def _dump_store_writers(data_store: 'xcube.core.store.DataStore') -> int:
 # noinspection PyUnresolvedReferences
 def _dump_store_data_ids(data_store: 'xcube.core.store.DataStore') -> int:
     count = 0
-    for data_id, title in data_store.get_data_ids():
-        print(f'  {data_id:>32s}  {title or _NO_TITLE}')
+    for data_id, data_attrs in data_store.get_data_ids(include_attrs=['title']):
+        print(f'  {data_id:>32s}  {data_attrs.get("title") or _NO_TITLE}')
         count += 1
     return count
 

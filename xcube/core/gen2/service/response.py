@@ -30,7 +30,7 @@ from xcube.util.jsonschema import JsonStringSchema
 from ..response import CubeInfo
 
 
-class Token(JsonObject):
+class CubeGeneratorToken(JsonObject):
     def __init__(self, access_token: str, token_type: str):
         self.access_token = access_token
         self.token_type = token_type
@@ -44,11 +44,11 @@ class Token(JsonObject):
                                 factory=cls)
 
     @classmethod
-    def from_dict(cls, value: Dict) -> 'Token':
+    def from_dict(cls, value: Dict) -> 'CubeGeneratorToken':
         return cls.get_schema().from_instance(value)
 
 
-class Status(JsonObject):
+class CubeGeneratorJobStatus(JsonObject):
     # noinspection PyUnusedLocal
     def __init__(self,
                  succeeded: int = None,
@@ -81,11 +81,11 @@ class Status(JsonObject):
                                 factory=cls)
 
     @classmethod
-    def from_dict(cls, value: Dict) -> 'Status':
+    def from_dict(cls, value: Dict) -> 'CubeGeneratorJobStatus':
         return cls.get_schema().from_instance(value)
 
 
-class ProgressState(JsonObject):
+class CubeGeneratorProgressState(JsonObject):
     def __init__(self,
                  progress: float,
                  # worked: Union[int, float],
@@ -113,23 +113,23 @@ class ProgressState(JsonObject):
             factory=cls)
 
     @classmethod
-    def from_dict(cls, value: Dict) -> 'ProgressState':
+    def from_dict(cls, value: Dict) -> 'CubeGeneratorProgressState':
         return cls.get_schema().from_instance(value)
 
 
-class Progress(JsonObject):
+class CubeGeneratorProgress(JsonObject):
     def __init__(self,
                  sender: str,
-                 state: ProgressState):
+                 state: CubeGeneratorProgressState):
         self.sender: str = sender
-        self.state: ProgressState = state
+        self.state: CubeGeneratorProgressState = state
 
     @classmethod
     def get_schema(cls) -> JsonObjectSchema:
         return JsonObjectSchema(
             properties=dict(
                 sender=JsonStringSchema(),
-                state=ProgressState.get_schema(),
+                state=CubeGeneratorProgressState.get_schema(),
             ),
             required=[
                 'sender',
@@ -139,33 +139,33 @@ class Progress(JsonObject):
             factory=cls)
 
     @classmethod
-    def from_dict(cls, value: Dict) -> 'Progress':
+    def from_dict(cls, value: Dict) -> 'CubeGeneratorProgress':
         return cls.get_schema().from_instance(value)
 
 
-class Result(JsonObject):
+class CubeGeneratorResult(JsonObject):
     def __init__(self,
                  cubegen_id: str,
-                 status: Status,
+                 status: CubeGeneratorJobStatus,
                  output: List[str] = None,
-                 progress: List[Progress] = None,
+                 progress: List[CubeGeneratorProgress] = None,
                  **additional_properties):
         self.cubegen_id: str = cubegen_id
-        self.status: Status = status
+        self.status: CubeGeneratorJobStatus = status
         self.output: Optional[List[str]] = output
-        self.progress: Optional[List[Progress]] = progress
+        self.progress: Optional[List[CubeGeneratorProgress]] = progress
         self.additional_properties: Dict[str, Any] = additional_properties
 
     @classmethod
     def get_schema(cls) -> JsonObjectSchema:
         return JsonObjectSchema(properties=dict(cubegen_id=JsonStringSchema(min_length=1),
-                                                status=Status.get_schema(),
+                                                status=CubeGeneratorJobStatus.get_schema(),
                                                 output=JsonArraySchema(
                                                     items=JsonStringSchema(),
                                                     nullable=True
                                                 ),
                                                 progress=JsonArraySchema(
-                                                    items=Progress.get_schema(),
+                                                    items=CubeGeneratorProgress.get_schema(),
                                                     nullable=True
                                                 )),
                                 required=['cubegen_id', 'status'],
@@ -173,69 +173,45 @@ class Result(JsonObject):
                                 factory=cls)
 
     @classmethod
-    def from_dict(cls, value: Dict) -> 'Result':
+    def from_dict(cls, value: Dict) -> 'CubeGeneratorResult':
         return cls.get_schema().from_instance(value)
 
 
-class Response(JsonObject):
+class CostEstimation(JsonObject):
     def __init__(self,
-                 result: Result,
-                 traceback: str = None,
-                 **additional_properties):
-        self.result: Result = result
-        self.traceback: Optional[str] = traceback
-        self.additional_properties = additional_properties
+                 required: int,
+                 available: int = None,
+                 limit: int = None):
+        self.available: int = available
+        self.limit: Optional[int] = limit
+        self.required: Optional[int] = required
 
     @classmethod
     def get_schema(cls) -> JsonObjectSchema:
-        return JsonObjectSchema(properties=dict(result=Result.get_schema(),
-                                                traceback=JsonStringSchema()),
-                                required=['result'],
-                                additional_properties=True,
-                                factory=cls)
+        return JsonObjectSchema(
+            properties=dict(
+                required=JsonIntegerSchema(minimum=0),
+                available=JsonIntegerSchema(minimum=0),
+                limit=JsonIntegerSchema(minimum=0),
+            ),
+            required=['required'],
+            additional_properties=False,
+            factory=cls)
 
     @classmethod
-    def from_dict(cls, value: Dict) -> 'Response':
-        return cls.get_schema().from_instance(value)
-
-
-class CostInfo(JsonObject):
-    # def __init__(self,
-    #              punits_input: int,
-    #              punits_output: int,
-    #              punits_combined: int):
-    #     self.punits_input: int = punits_input
-    #     self.punits_output: int = punits_output
-    #     self.punits_combined: int = punits_combined
-    def __init__(self,
-                 **additional_properties):
-        self.additional_properties = additional_properties
-
-    @classmethod
-    def get_schema(cls) -> JsonObjectSchema:
-        # return JsonObjectSchema(properties=dict(punits_input=JsonIntegerSchema(),
-        #                                         punits_output=JsonIntegerSchema(),
-        #                                         punits_combined=JsonIntegerSchema()),
-        #                         required=['punits_input', 'punits_output', 'punits_combined'],
-        #                         additional_properties=True,
-        #                         factory=cls)
-        return JsonObjectSchema(additional_properties=True,
-                                factory=cls)
-
-    @classmethod
-    def from_dict(cls, value: Dict) -> 'CostInfo':
+    def from_dict(cls, value: Dict) -> 'CostEstimation':
         return cls.get_schema().from_instance(value)
 
 
 class CubeInfoWithCosts(CubeInfo):
-    def __init__(self, cost_info: CostInfo, **kwargs):
+    def __init__(self, cost_estimation: CostEstimation, **kwargs):
         super().__init__(**kwargs)
-        self.cost_info: CostInfo = cost_info
+        self.cost_estimation: CostEstimation = cost_estimation
 
     @classmethod
     def get_schema(cls) -> JsonObjectSchema:
         schema = super().get_schema()
-        schema.properties.update(cost_info=CostInfo.get_schema())
-        schema.required.add('cost_info')
+        schema.properties.update(cost_estimation=CostEstimation.get_schema())
+        schema.required.add('cost_estimation')
         schema.factory = cls
         return schema

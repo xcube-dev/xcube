@@ -22,7 +22,7 @@
 import json
 import os.path
 import uuid
-from typing import Optional, Iterator, Any, Tuple, List
+from typing import Optional, Iterator, Any, Tuple, List, Dict, Union, Container
 
 import s3fs
 import xarray as xr
@@ -56,8 +56,8 @@ _STORAGE_ID = 's3'
 _DEFAULT_FORMAT_ID = 'zarr'
 
 _FILENAME_EXT_TO_ACCESSOR_ID_PARTS = {
-    '.zarr': (TYPE_SPECIFIER_DATASET, 'zarr', _STORAGE_ID),
-    '.levels': (TYPE_SPECIFIER_MULTILEVEL_DATASET, 'levels', _STORAGE_ID),
+    '.zarr': (str(TYPE_SPECIFIER_DATASET), 'zarr', _STORAGE_ID),
+    '.levels': (str(TYPE_SPECIFIER_MULTILEVEL_DATASET), 'levels', _STORAGE_ID),
 }
 
 _REGISTRY_FILE = 'registry.json'
@@ -124,13 +124,19 @@ class S3DataStore(DefaultSearchMixin, MutableDataStore):
         data_type_specifier, _, _ = self._get_accessor_id_parts(data_id)
         return data_type_specifier,
 
-    def get_data_ids(self, type_specifier: str = None, include_titles=True) -> Iterator[Tuple[str, Optional[str]]]:
-        # todo do not ignore type_specifier
+    def get_data_ids(self,
+                     type_specifier: str = None,
+                     include_attrs: Container[str] = None) -> \
+            Union[Iterator[str], Iterator[Tuple[str, Dict[str, Any]]]]:
+        # TODO: do not ignore type_specifier
+        # TODO: do not ignore names in include_attrs
+        return_tuples = include_attrs is not None
         prefix = self._bucket_name + '/'
         first_index = len(prefix)
-        for item in self._s3.listdir(self._bucket_name, detail=False):
+        for item in self._s3.listdir(self._bucket_name, detail=False, refresh=True):
             if item.startswith(prefix):
-                yield item[first_index:], None
+                data_id = item[first_index:]
+                yield (data_id, {}) if return_tuples else data_id
 
     def has_data(self, data_id: str, type_specifier: str = None) -> bool:
         if data_id in self._registry:
@@ -164,16 +170,28 @@ class S3DataStore(DefaultSearchMixin, MutableDataStore):
         data = self.open_data(data_id, data_opener_ids[0])
         return new_data_descriptor(data_id, data)
 
-    def get_data_opener_ids(self, data_id: str = None, type_specifier: str = None) -> Tuple[str, ...]:
+    def get_data_opener_ids(self, data_id: str = None, type_specifier: Optional[str] = None) -> Tuple[str, ...]:
         if type_specifier:
-            type_specifier = TypeSpecifier.normalize(type_specifier)
+            type_specifier = TypeSpecifier.parse(type_specifier)
         if type_specifier == TYPE_SPECIFIER_ANY:
             type_specifier = None
         self._assert_valid_type_specifier(type_specifier)
-        if not type_specifier and data_id:
-            type_specifier, _, _ = self._get_accessor_id_parts(data_id)
+        if data_id:
+            accessor_id_parts = self._get_accessor_id_parts(data_id, require=False)
+            if not accessor_id_parts:
+                return tuple()
+            acc_type_specifier, acc_format, acc_storage_id = accessor_id_parts
+            if not type_specifier:
+                type_specifier = acc_type_specifier
+            return tuple(ext.name for ext in find_data_opener_extensions(
+                predicate=get_data_accessor_predicate(
+                    type_specifier=type_specifier,
+                    format_id=acc_format,
+                    storage_id=acc_storage_id)
+        ))
         return tuple(ext.name for ext in find_data_opener_extensions(
-            predicate=get_data_accessor_predicate(type_specifier=type_specifier, storage_id=_STORAGE_ID)
+            predicate=get_data_accessor_predicate(type_specifier=type_specifier,
+                                                  storage_id=_STORAGE_ID)
         ))
 
     def get_open_data_params_schema(self, data_id: str = None, opener_id: str = None) -> JsonObjectSchema:

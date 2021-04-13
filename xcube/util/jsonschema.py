@@ -502,9 +502,31 @@ class JsonObjectSchema(JsonSchema):
         if mapping_or_obj is None:
             return None
 
-        converted_mapping = dict()
+        # Fix for #432: call object's own to_dict() method but beware of infinite recursion
+        if (hasattr(mapping_or_obj, 'to_dict')
+                and callable(mapping_or_obj.to_dict)
+                # calling JsonSchema.to_dict() is always fine
+                and (isinstance(mapping_or_obj, JsonSchema)
+                     # calling JsonObject.to_dict() would cause infinite recursion
+                     or not isinstance(mapping_or_obj, JsonObject))):
+            # noinspection PyBroadException
+            try:
+                return mapping_or_obj.to_dict()
+            except BaseException:
+                pass
 
         required_set = set(self.required) if self.required else set()
+
+        additional_properties = self.additional_properties
+        if additional_properties is None:
+            # As of JSON Schema, additional_properties defaults to True
+            additional_properties = True
+
+        additional_properties_schema = None
+        if isinstance(additional_properties, JsonSchema):
+            additional_properties_schema = additional_properties
+
+        converted_mapping = dict()
 
         if isinstance(mapping_or_obj, (collections.abc.Mapping, dict)):
             # An object that is already a Mapping
@@ -513,12 +535,24 @@ class JsonObjectSchema(JsonSchema):
             # An object that is not a Mapping: convert to mapping.
             mapping = {}
             for property_name in dir(mapping_or_obj):
-                if not (property_name.startswith('_') or property_name.endswith('_')):
+                property_value = UNDEFINED
+                property_ok = False
+                if property_name in self.properties:
+                    # If property_name is defined in properties, we fully trust it
                     property_value = getattr(mapping_or_obj, property_name)
-                    if (property_value is not None or property_name in required_set) \
-                            and not callable(property_value):
-                        mapping[property_name] = property_value
+                    property_ok = True
+                elif additional_properties and not property_name.startswith('_'):
+                    # If property_name is not defined in properties, but additional
+                    # properties are allowed, filter out private variables and callables.
+                    property_value = getattr(mapping_or_obj, property_name)
+                    property_ok = not callable(property_value)
+                property_ok = property_ok and (property_name in required_set or property_value is not None)
+                if property_ok and property_value is not UNDEFINED:
+                    mapping[property_name] = property_value
 
+        # recursively convert mapping into converted_mapping according to schema
+
+        # process defined properties
         for property_name, property_schema in self.properties.items():
             if property_name in mapping:
                 property_value = mapping[property_name]
@@ -531,10 +565,8 @@ class JsonObjectSchema(JsonSchema):
                     if property_name in required_set or converted_property_value is not None:
                         converted_mapping[property_name] = converted_property_value
 
-        if self.additional_properties is None or self.additional_properties:
-            additional_properties_schema = self.additional_properties \
-                if isinstance(self.additional_properties, JsonSchema) else None
-            # Note, additional_properties defaults to True
+        # process additional properties
+        if additional_properties:
             for property_name, property_value in mapping.items():
                 if property_name not in converted_mapping and property_value is not UNDEFINED:
                     if additional_properties_schema:

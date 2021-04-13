@@ -1,7 +1,43 @@
-from typing import Collection, Optional, Tuple
+from typing import Collection, Optional, Tuple, Union
 
+import pandas as pd
 import xarray as xr
+
 from xcube.core.geocoding import GeoCoding
+from xcube.util.assertions import assert_given
+
+Bbox = Tuple[float, float, float, float]
+TimeRange = Union[Tuple[Optional[str], Optional[str]],
+                  Tuple[Optional[pd.Timestamp], Optional[pd.Timestamp]]]
+
+
+def select_subset(dataset: xr.Dataset,
+                  *,
+                  var_names: Collection[str] = None,
+                  bbox: Bbox = None,
+                  time_range: TimeRange = None):
+    """
+    Create a subset from *dataset* given *var_names*, *bbox*, *time_range*.
+
+    This is a high-level convenience function that may invoke
+
+    * :func:select_variables_subset
+    * :func:select_spatial_subset
+    * :func:select_temporal_subset
+
+    :param dataset: The dataset.
+    :param var_names: Optional variable names.
+    :param bbox: Optional bounding box in the dataset's CRS coordinate units.
+    :param time_range: Optional time range
+    :return: a subset of *dataset*, or unchanged *dataset* if no keyword-arguments are used.
+    """
+    if var_names is not None:
+        dataset = select_variables_subset(dataset, var_names=var_names)
+    if bbox is not None:
+        dataset = select_spatial_subset(dataset, xy_bbox=bbox)
+    if time_range is not None:
+        dataset = select_temporal_subset(dataset, time_range=time_range)
+    return dataset
 
 
 def select_variables_subset(dataset: xr.Dataset, var_names: Collection[str] = None) -> xr.Dataset:
@@ -30,8 +66,13 @@ def select_spatial_subset(dataset: xr.Dataset,
     """
     Select a spatial subset of *dataset* for the bounding box *ij_bbox* or *xy_bbox*.
 
+    *ij_bbox* or *xy_bbox* must not be given both.
+
+    :param xy_bbox: Bounding box in coordinates of the dataset's CRS.
+    :param xy_border: Extra border added to *xy_bbox*.
     :param dataset: Source dataset.
     :param ij_bbox: Bounding box (i_min, i_min, j_max, j_max) in pixel coordinates.
+    :param ij_border: Extra border added to *ij_bbox*
     :param geo_coding: Optional dataset geo-coding.
     :param xy_names: Optional tuple of the x- and y-coordinate variables in *dataset*. Ignored if *geo_coding* is given.
     :return: Spatial dataset subset
@@ -54,3 +95,33 @@ def select_spatial_subset(dataset: xr.Dataset,
         j_slice = slice(j_min, j_max + 1)
         return dataset.isel({x_dim: i_slice, y_dim: j_slice})
     return dataset
+
+
+def select_temporal_subset(dataset: xr.Dataset,
+                           time_range: TimeRange,
+                           time_name: str = 'time') -> xr.Dataset:
+    """
+    Select a temporal subset from *dataset* given *time_range*.
+
+    :param dataset: The dataset. Must include time
+    :param time_range: Time range given as two time stamps
+        (start, end) that may be (ISO) strings or datetime objects.
+    :param time_name: optional name of the time coordinate variable.
+        Defaults to "time".
+    :return:
+    """
+    assert_given(time_range, 'time_range')
+    time_name = time_name or 'time'
+    if time_name not in dataset:
+        raise ValueError(f'cannot compute temporal subset: variable "{time_name}" not found in dataset')
+    time_1, time_2 = time_range
+    time_1 = pd.to_datetime(time_1) if time_1 is not None else None
+    time_2 = pd.to_datetime(time_2) if time_2 is not None else None
+    if time_1 is None and time_2 is None:
+        return dataset
+    if time_2 is not None:
+        time_2: pd.Timestamp
+        delta = time_2 - time_2.floor('1D')
+        if delta == pd.Timedelta('0 days 00:00:00'):
+            time_2 += pd.Timedelta('1D')
+    return dataset.sel({time_name or 'time': slice(time_1, time_2)})

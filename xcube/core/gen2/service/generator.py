@@ -21,17 +21,16 @@
 
 import json
 import time
-from typing import Type, TypeVar, Dict, Any
+from typing import Type, TypeVar, Dict, Any, Optional
 
 import requests
 
 from xcube.util.assertions import assert_instance
 from xcube.util.progress import observe_progress
 from .config import ServiceConfig
+from .response import CubeGeneratorResult
+from .response import CubeGeneratorToken
 from .response import CubeInfoWithCosts
-from .response import Response
-from .response import Result
-from .response import Token
 from ..error import CubeGeneratorError
 from ..generator import CubeGenerator
 from ..request import CubeGeneratorRequest
@@ -65,11 +64,11 @@ class CubeGeneratorService(CubeGenerator):
         assert_instance(request, CubeGeneratorRequest, 'request')
         assert_instance(service_config, ServiceConfig, 'service_config')
         assert_instance(progress_period, (int, float), 'progress_period')
-        self._request = request
-        self._service_config = service_config
-        self._access_token = service_config.access_token
-        self._progress_period = progress_period
-        self._verbosity = verbosity
+        self._request: CubeGeneratorRequest = request
+        self._service_config: ServiceConfig = service_config
+        self._access_token: Optional[str] = service_config.access_token
+        self._progress_period: float = progress_period
+        self._verbosity: int = verbosity
 
     def endpoint_op(self, op_path: str) -> str:
         return f'{self._service_config.endpoint_url}{op_path}'
@@ -90,11 +89,12 @@ class CubeGeneratorService(CubeGenerator):
                 "client_secret": self._service_config.client_secret,
                 "grant_type": "client-credentials",
             }
-            # self.__dump_json(request)
             response = requests.post(self.endpoint_op('oauth/token'),
                                      json=request_data,
                                      headers=_BASE_HEADERS)
-            token_response: Token = self._parse_response(response, Token, request_data=request_data)
+            token_response: CubeGeneratorToken = self._parse_response(response,
+                                                                      CubeGeneratorToken,
+                                                                      request_data=request_data)
             self._access_token = token_response.access_token
         return self._access_token
 
@@ -103,11 +103,12 @@ class CubeGeneratorService(CubeGenerator):
         response = requests.post(self.endpoint_op('cubegens/info'),
                                  json=request_data,
                                  headers=self.auth_headers)
-        return self._parse_response(response, CubeInfoWithCosts, request_data=request_data)
+        return self._parse_response(response,
+                                    CubeInfoWithCosts,
+                                    request_data=request_data)
 
-    def generate_cube(self):
+    def generate_cube(self) -> Any:
         request = self._request.to_dict()
-        # self.__dump_json(request)
         response = requests.put(self.endpoint_op('cubegens'),
                                 json=request,
                                 headers=self.auth_headers)
@@ -123,7 +124,7 @@ class CubeGeneratorService(CubeGenerator):
                                         headers=self.auth_headers)
                 result = self._get_cube_generation_result(response)
                 if result.status.succeeded:
-                    return
+                    return self._get_data_id(cubegen_id + '.zarr')
 
                 if result.progress is not None and len(result.progress) > 0:
                     progress_state = result.progress[0].state
@@ -135,12 +136,15 @@ class CubeGeneratorService(CubeGenerator):
                         cm.worked(work)
                         last_worked = worked
 
+    def _get_data_id(self, default: str) -> str:
+        data_id = self._request.output_config.data_id
+        return data_id if data_id else default
+
     def _get_cube_generation_result(self, response: requests.Response,
-                                    request_data: Dict[str, Any] = None) -> Result:
-        response_instance: Response = self._parse_response(response,
-                                                           Response,
-                                                           request_data=request_data)
-        result = response_instance.result
+                                    request_data: Dict[str, Any] = None) -> CubeGeneratorResult:
+        result = self._parse_response(response,
+                                      CubeGeneratorResult,
+                                      request_data=request_data)
         if result.status.failed:
             message = 'Cube generation failed'
             if result.status.conditions:
@@ -148,8 +152,7 @@ class CubeGeneratorService(CubeGenerator):
                                 if isinstance(item, dict) and 'message' in item]
                 message = f'{message}: {": ".join(sub_messages)}'
             raise CubeGeneratorError(message,
-                                     remote_output=result.output,
-                                     remote_traceback=response_instance.traceback)
+                                     remote_output=result.output)
         return result
 
     def _parse_response(self,

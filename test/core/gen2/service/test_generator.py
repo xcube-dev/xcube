@@ -1,4 +1,5 @@
 import unittest
+from typing import List
 
 import requests_mock
 
@@ -8,33 +9,32 @@ from xcube.core.gen2.request import CubeGeneratorRequest
 from xcube.core.gen2.service import CubeGeneratorService
 from xcube.core.gen2.service import ServiceConfig
 from xcube.core.gen2.service.response import CubeInfoWithCosts
+from xcube.core.gen2.service.response import CostEstimation
 from xcube.core.store import DatasetDescriptor
 from xcube.util.progress import new_progress_observers
 
 
-def result(worked, total_work, failed=False, traceback: str = None):
+def result(worked, total_work, failed=False, output: List[str] = None):
     json = {
-        "result": {
-            "cubegen_id": "93",
-            "status": {
-                "failed": 1 if failed else None,
-                "succeeded": 1 if worked == total_work else None,
-                "active": 1 if worked != total_work else None,
+        "cubegen_id": "93",
+        "status": {
+            "failed": 1 if failed else None,
+            "succeeded": 1 if worked == total_work else None,
+            "active": 1 if worked != total_work else None,
+        },
+        "progress": [
+            {
+                "sender": "ignored",
+                "state": {
+                    "progress": worked / total_work,
+                    "worked": worked,
+                    "total_work": total_work,
+                }
             },
-            "progress": [
-                {
-                    "sender": "ignored",
-                    "state": {
-                        "progress": worked / total_work,
-                        "worked": worked,
-                        "total_work": total_work,
-                    }
-                },
-            ],
-        }
+        ],
     }
-    if traceback:
-        json.update(traceback=traceback)
+    if output:
+        json.update(output=output)
     return dict(json=json)
 
 
@@ -111,7 +111,7 @@ class CubeGeneratorServiceTest(unittest.TestCase):
         m.get(f'{self.ENDPOINT_URL}cubegens/93',
               response_list=[
                   result(1, 4),
-                  result(2, 4, failed=True, traceback='1.that\n2.was\n3.bad'),
+                  result(2, 4, failed=True, output=['1.that', '2.was', '3.bad']),
               ])
 
         observer = TestProgressObserver()
@@ -119,7 +119,7 @@ class CubeGeneratorServiceTest(unittest.TestCase):
             with self.assertRaises(CubeGeneratorError) as cm:
                 self.service.generate_cube()
             self.assertEqual('Cube generation failed', f'{cm.exception}')
-            self.assertEqual('1.that\n2.was\n3.bad', cm.exception.remote_traceback)
+            self.assertEqual(['1.that', '2.was', '3.bad'], cm.exception.remote_output)
 
         print(observer.calls)
         self.assertEqual(
@@ -179,8 +179,10 @@ class CubeGeneratorServiceTest(unittest.TestCase):
                        "num_requests": 0,
                        "num_bytes": 0
                    },
-                   "cost_info": {
-
+                   "cost_estimation": {
+                       'required': 3782,
+                       'available': 234979,
+                       'limit': 10000
                    }
                })
 
@@ -188,3 +190,7 @@ class CubeGeneratorServiceTest(unittest.TestCase):
         self.assertIsInstance(cube_info, CubeInfoWithCosts)
         self.assertIsInstance(cube_info.dataset_descriptor, DatasetDescriptor)
         self.assertIsInstance(cube_info.size_estimation, dict)
+        self.assertIsInstance(cube_info.cost_estimation, CostEstimation)
+        self.assertEqual(3782, cube_info.cost_estimation.required)
+        self.assertEqual(234979, cube_info.cost_estimation.available)
+        self.assertEqual(10000, cube_info.cost_estimation.limit)

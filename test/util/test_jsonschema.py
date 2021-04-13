@@ -10,6 +10,7 @@ from xcube.util.jsonschema import JsonDatetimeSchema
 from xcube.util.jsonschema import JsonIntegerSchema
 from xcube.util.jsonschema import JsonNullSchema
 from xcube.util.jsonschema import JsonNumberSchema
+from xcube.util.jsonschema import JsonObject
 from xcube.util.jsonschema import JsonObjectSchema
 from xcube.util.jsonschema import JsonSimpleSchema
 from xcube.util.jsonschema import JsonStringSchema
@@ -521,3 +522,72 @@ class JsonObjectSchemaTest(unittest.TestCase):
                          ds_kwargs)
         self.assertEqual(dict(max_cache_size=2 ** 32),
                          kwargs)
+
+    def test_to_dict(self):
+        schema = JsonObjectSchema(
+            properties=dict(
+                consolidated=JsonBooleanSchema()
+            )
+        )
+        self.assertEqual(
+            {
+                'type': 'object',
+                'properties': {
+                    'consolidated': {
+                        'type': 'boolean'
+                    }
+                },
+            },
+            schema.to_dict()
+        )
+
+
+class IHasAProperty(JsonObject):
+    def __init__(self, name, age):
+        # A private state property
+        self._name = name
+        # A state property
+        self.age = age
+
+    @property
+    def id(self):
+        # A derived property
+        return f'{self.name}_{self.age}'
+
+    @property
+    def name(self):
+        # A state property
+        return self._name
+
+    @classmethod
+    def get_schema(cls):
+        return JsonObjectSchema(
+            properties=dict(
+                name=JsonStringSchema(),
+                age=JsonIntegerSchema()
+            ),
+            required=['name', 'age'],
+            factory=cls
+        )
+
+
+class IHasAProperty2(IHasAProperty):
+    @classmethod
+    def get_schema(cls):
+        schema = super().get_schema()
+        schema.additional_properties = False
+        return schema
+
+
+class JsonObjectWithPropertyTest(unittest.TestCase):
+    def test_with_additional_properties(self):
+        obj_dict = {'name': 'bibo', 'age': 2021 - 1969}
+        obj = IHasAProperty.from_dict(obj_dict)
+        actual_dict = obj.to_dict()
+        self.assertEqual({'age': 52, 'id': 'bibo_52', 'name': 'bibo'}, actual_dict)
+
+    def test_without_additional_properties(self):
+        obj_dict = {'name': 'bibo', 'age': 2021 - 1969}
+        obj = IHasAProperty2.from_dict(obj_dict)
+        actual_dict = obj.to_dict()
+        self.assertEqual(obj_dict, actual_dict)

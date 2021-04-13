@@ -6,6 +6,7 @@ import xarray as xr
 import yaml
 
 from xcube.core.dsio import rimraf
+from xcube.core.gen2 import CubeGeneratorError
 from xcube.core.gen2.generator import CubeGenerator
 from xcube.core.gen2.generator import LocalCubeGenerator
 from xcube.core.gen2.request import CubeGeneratorRequest
@@ -22,8 +23,9 @@ class LocalCubeGeneratorTest(unittest.TestCase):
                                     crs='WGS84',
                                     bbox=[12.2, 52.1, 13.9, 54.8],
                                     spatial_res=0.05,
-                                    time_range=['2018-01-01', None],
-                                    time_period='4D'),
+                                    time_range=['2010-01-01', None],
+                                    time_period='4D',
+                                    chunks=dict(time=None, lat=90, lon=90)),
                    output_config=dict(store_id='memory',
                                       data_id='CHL'),
                    callback_config=dict(api_uri='https://xcube-gen.test/api/v1/jobs/tomtom/iamajob/callback',
@@ -63,6 +65,15 @@ class LocalCubeGeneratorTest(unittest.TestCase):
         CubeGenerator.from_file('_request.yaml', verbosity=True).generate_cube()
         self.assertIsInstance(MemoryDataStore.get_global_data_dict().get('CHL'),
                               xr.Dataset)
+
+    @requests_mock.Mocker()
+    def test_generate_cube_from_yaml_empty(self, m):
+        m.put('https://xcube-gen.test/api/v1/jobs/tomtom/iamajob/callback', json={})
+        request = self.REQUEST.copy()
+        request['cube_config']['time_range'] = ['2019-01-01', '2020-01-01']
+        with self.assertRaises(CubeGeneratorError) as cm:
+            LocalCubeGenerator(CubeGeneratorRequest.from_dict(request)).generate_cube()
+        self.assertEqual('Input dataset subset "S2L2A" is empty', f'{cm.exception}')
 
     @requests_mock.Mocker()
     def test_get_cube_info_from_dict(self, m):

@@ -49,7 +49,6 @@ class CubeWriter:
             else:
                 writer = new_data_writer(output_config.writer_id)
                 write_params.update(**store_params, **write_params)
-
             data_id = writer.write_data(cube,
                                         data_id=output_config.data_id,
                                         replace=output_config.replace or False,

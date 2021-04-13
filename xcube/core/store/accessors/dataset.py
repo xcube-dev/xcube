@@ -287,10 +287,14 @@ class DatasetZarrS3Accessor(ZarrOpenerParamsSchemaMixin,
         if s3 is None:
             s3, open_params = self.consume_s3fs_params(open_params)
         bucket_name, open_params = self.consume_bucket_name_param(open_params)
+        consolidated = open_params.pop('consolidated', False)
+        if consolidated:
+            consolidated = s3.exists(f'{bucket_name}/{data_id}/.zmetadata')
         try:
             return xr.open_zarr(s3fs.S3Map(root=f'{bucket_name}/{data_id}' if bucket_name else data_id,
                                            s3=s3,
                                            check=False),
+                                consolidated=consolidated,
                                 **open_params)
         except ValueError as e:
             raise DataStoreError(f'{e}') from e

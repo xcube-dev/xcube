@@ -19,6 +19,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+import warnings
 from typing import Tuple, Sequence, Mapping, Optional, Dict, Any, Union
 
 import geopandas as gpd
@@ -118,7 +119,7 @@ def _determine_spatial_res(data: xr.Dataset):
             lat_res = lat_diff[0]
             lat_regular = np.allclose(lat_res, lat_diff, 1e-8)
             if lat_regular:
-                return abs(lat_res)
+                return float(abs(lat_res))
 
 
 def _determine_time_coverage(data: xr.Dataset):
@@ -135,7 +136,7 @@ def _determine_time_coverage(data: xr.Dataset):
 
 
 def _determine_time_period(data: xr.Dataset):
-    if 'time' in data and len(data['time'].values) > 0:
+    if 'time' in data and len(data['time'].values) > 1:
         time_diff = data['time'].diff(dim=data['time'].dims[0]).values.astype(np.float64)
         time_res = time_diff[0]
         time_regular = np.allclose(time_res, time_diff, 1e-8)
@@ -169,9 +170,13 @@ class DataDescriptor(JsonObject):
                  bbox: Tuple[float, float, float, float] = None,
                  time_range: Tuple[Optional[str], Optional[str]] = None,
                  time_period: str = None,
-                 open_params_schema: JsonObjectSchema = None):
+                 open_params_schema: JsonObjectSchema = None,
+                 **additional_properties):
         assert_given(data_id, 'data_id')
         assert_instance(data_id, (str, TypeSpecifier))
+        if additional_properties:
+            warnings.warn(f'Additional properties received;'
+                          f' will be ignored: {additional_properties}')
         self.data_id = data_id
         self.type_specifier = TypeSpecifier.normalize(type_specifier)
         self.crs = crs
@@ -199,6 +204,8 @@ class DataDescriptor(JsonObject):
             additional_properties=True,
             factory=cls)
 
+    # TODO: reactivate once needed
+    #
     # @classmethod
     # def from_dict(cls, mapping: Mapping[str, Any]) -> 'DataDescriptor':
     #     """Create new instance from a JSON-serializable dictionary"""
@@ -253,7 +260,8 @@ class DatasetDescriptor(DataDescriptor):
                  coords: Mapping[str, 'VariableDescriptor'] = None,
                  data_vars: Mapping[str, 'VariableDescriptor'] = None,
                  attrs: Mapping[str, any] = None,
-                 open_params_schema: JsonObjectSchema = None):
+                 open_params_schema: JsonObjectSchema = None,
+                 **additional_properties):
         super().__init__(data_id=data_id,
                          type_specifier=type_specifier,
                          crs=crs,
@@ -262,6 +270,9 @@ class DatasetDescriptor(DataDescriptor):
                          time_period=time_period,
                          open_params_schema=open_params_schema)
         self.type_specifier.assert_satisfies(TYPE_SPECIFIER_DATASET)
+        if additional_properties:
+            warnings.warn(f'Additional properties received;'
+                          f' will be ignored: {additional_properties}')
         self.dims = dict(dims) if dims else None
         self.spatial_res = spatial_res
         self.coords = coords if coords else None
@@ -302,15 +313,23 @@ class VariableDescriptor(JsonObject):
                  dtype: str,
                  dims: Sequence[str],
                  chunks: Sequence[int] = None,
-                 attrs: Mapping[str, any] = None):
+                 attrs: Mapping[str, any] = None,
+                 **additional_properties):
         assert_given(name, 'name')
         assert_given(dtype, 'dtype')
         assert_given(dims, 'dims')
+        if additional_properties:
+            warnings.warn(f'Additional properties received; will be ignored: {additional_properties}')
         self.name = name
         self.dtype = dtype
         self.dims = tuple(dims)
         self.chunks = tuple(chunks) if chunks else None
         self.attrs = _convert_nans_to_none(dict(attrs)) if attrs is not None else None
+
+    @property
+    def ndim(self) -> int:
+        """Number of dimensions."""
+        return len(self.dims)
 
     @classmethod
     def get_schema(cls) -> JsonObjectSchema:

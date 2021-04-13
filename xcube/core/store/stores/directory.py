@@ -21,7 +21,7 @@
 
 import os.path
 import uuid
-from typing import Optional, Iterator, Any, Tuple, List
+from typing import Optional, Iterator, Any, Tuple, List, Dict, Union, Container
 
 import geopandas as gpd
 import xarray as xr
@@ -116,8 +116,12 @@ class DirectoryDataStore(DefaultSearchMixin, MutableDataStore):
         actual_type_specifier, _, _ = self._get_accessor_id_parts(data_id)
         return actual_type_specifier,
 
-    def get_data_ids(self, type_specifier: str = None, include_titles: bool = True) -> \
-            Iterator[Tuple[str, Optional[str]]]:
+    def get_data_ids(self,
+                     type_specifier: str = None,
+                     include_attrs: Container[str] = None) -> \
+            Union[Iterator[str], Iterator[Tuple[str, Dict[str, Any]]]]:
+        # TODO: do not ignore names in include_attrs
+        return_tuples = include_attrs is not None
         if type_specifier is not None:
             type_specifier = TypeSpecifier.normalize(type_specifier)
         # TODO: Use os.walk(), which provides a generator rather than a list
@@ -127,11 +131,11 @@ class DirectoryDataStore(DefaultSearchMixin, MutableDataStore):
             actual_type_specifier = self._get_type_specifier_for_data_id(data_id, require=False)
             if actual_type_specifier is not None:
                 if type_specifier is None or actual_type_specifier.satisfies(type_specifier):
-                    yield data_id, None
+                    yield (data_id, {}) if return_tuples else data_id
 
     def has_data(self, data_id: str, type_specifier: str = None) -> bool:
         assert_given(data_id, 'data_id')
-        actual_type_specifier = self._get_type_specifier_for_data_id(data_id)
+        actual_type_specifier = self._get_type_specifier_for_data_id(data_id, require=False)
         if actual_type_specifier is not None:
             if type_specifier is None or actual_type_specifier.satisfies(type_specifier):
                 path = self._resolve_data_id_to_path(data_id)
@@ -157,10 +161,22 @@ class DirectoryDataStore(DefaultSearchMixin, MutableDataStore):
         if type_specifier == TYPE_SPECIFIER_ANY:
             type_specifier = None
         self._assert_valid_type_specifier(type_specifier)
-        if not type_specifier and data_id:
-            type_specifier, _, _ = self._get_accessor_id_parts(data_id)
+        if data_id:
+            accessor_id_parts = self._get_accessor_id_parts(data_id, require=False)
+            if not accessor_id_parts:
+                return tuple()
+            acc_type_specifier, acc_format, acc_storage_id = accessor_id_parts
+            if not type_specifier:
+                type_specifier = acc_type_specifier
+            return tuple(ext.name for ext in find_data_opener_extensions(
+                predicate=get_data_accessor_predicate(
+                    type_specifier=type_specifier,
+                    format_id=acc_format,
+                    storage_id=acc_storage_id)
+        ))
         return tuple(ext.name for ext in find_data_opener_extensions(
-            predicate=get_data_accessor_predicate(type_specifier=type_specifier, storage_id=_STORAGE_ID)
+            predicate=get_data_accessor_predicate(type_specifier=type_specifier,
+                                                  storage_id=_STORAGE_ID)
         ))
 
     def get_open_data_params_schema(self, data_id: str = None, opener_id: str = None) -> JsonObjectSchema:
