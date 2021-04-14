@@ -39,10 +39,10 @@ COPY . /xcube
 # Setup xcube package.
 RUN source activate xcube && python setup.py install
 
-# Export web server port 8000
-EXPOSE 8000
+# Export web server port
+EXPOSE 8080
 
 # Start bash, so we can invoke xcube CLI.
 ENTRYPOINT ["/bin/bash", "-c"]
 # By default, activate xcube environment and print usage help.
-CMD ["source activate xcube && xcube --help"]
+CMD ["source activate xcube && xcube serve -v --address 0.0.0.0 --port 8080 -c ./examples/serve/demo/config.yml"]
