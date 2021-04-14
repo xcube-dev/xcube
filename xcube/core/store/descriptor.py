@@ -139,15 +139,21 @@ def _determine_spatial_res(data: xr.Dataset):
 
 def _determine_time_coverage(data: xr.Dataset):
     start_time, end_time, _ = _determine_min_and_max(data, ['time'])
-    if start_time is not None and isinstance(start_time, pd.DatetimeScalarOrArrayConvertible):
-        start_time = pd.to_datetime(start_time).isoformat()
-    elif 'time_coverage_start' in data.attrs:
+    if start_time is not None:
+        try:
+            start_time = pd.to_datetime(start_time).isoformat()
+        except TypeError:
+            start_time = None
+    if start_time is None and 'time_coverage_start' in data.attrs:
         start_time = data.time_coverage_start
     if start_time is not None:
         start_time = _strip_time_from_datetime_str(start_time)
-    if end_time is not None and isinstance(start_time, pd.DatetimeScalarOrArrayConvertible):
-        end_time = pd.to_datetime(end_time).isoformat()
-    elif 'time_coverage_end' in data.attrs:
+    if end_time is not None:
+        try:
+            end_time = pd.to_datetime(end_time).isoformat()
+        except TypeError:
+            end_time = None
+    if end_time is None and 'time_coverage_end' in data.attrs:
         end_time = data.time_coverage_end
     if end_time is not None:
         end_time = _strip_time_from_datetime_str(end_time)
