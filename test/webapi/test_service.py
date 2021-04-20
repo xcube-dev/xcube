@@ -17,14 +17,14 @@ class DefaultConfigTest(unittest.TestCase):
                     'Format': 'zarr',
                     'Identifier': 'dataset_1',
                     'Path': '/home/bibo/data/cube-1.zarr',
-                    'Title': 'Dataset #1'
+                    'Title': 'cube-1.zarr'
                 },
                 {
                     'FileSystem': 'local',
                     'Format': 'netcdf4',
                     'Identifier': 'dataset_2',
                     'Path': '/home/bibo/data/cube-2.nc',
-                    'Title': 'Dataset #2'
+                    'Title': 'cube-2.nc'
                 }
             ],
             'Styles': [

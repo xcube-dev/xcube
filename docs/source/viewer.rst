@@ -1,6 +1,6 @@
 .. _`xcube viewer demo`: https://xcube-viewer.s3.eu-central-1.amazonaws.com/index.html
 .. _`xcube-viewer`: https://github.com/dcs4cop/xcube-viewer
-.. _`DCS4COP Demo viewer`: https://dcs4cop-demo-viewer.obs-website.eu-de.otc.t-systems.com/
+.. _`DCS4COP Demo viewer`: http://viewer.demo.dcs4cop.eu
 .. _`README`: https://github.com/dcs4cop/xcube-viewer/blob/master/README.md
 
 .. _`Earth System Data Lab`: https://www.earthsystemdatalab.net/
@@ -22,7 +22,7 @@ server instance locally then reload the viewer page, or configure the viewer wit
 To do so open the viewer's settings panels, select "Server". A "Select Server" panel is opened, click the "+"
 button to add a new server. Here are two demo servers that you may add for testing:
 
-* DCS4COP Demo Server (``https://xcube2.dcs4cop.eu/dcs4cop-dev/api/latest``) providing
+* DCS4COP Demo Server (``http://service.demo.dcs4cop.eu/xcube/api/latest``) providing
   ocean color variables in the North Sea area for the `Data Cube Service for Copernicus`_ (DCS4COP) EU project;
 * ESDL Server (``https://xcube.earthsystemdatalab.net``) providing global essential climate variables (ECVs)
   variables for the ESA `Earth System Data Lab`_.

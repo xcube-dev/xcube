@@ -50,15 +50,15 @@ class FindAncillaryVarNamesTest(unittest.TestCase):
 
     def test_xcube_prefix_convention(self):
         a = self._new_array()
-        a_stdev = self._new_array()
+        a_std = self._new_array()
         a_count = self._new_array()
         b = self._new_array()
-        b_stdev = self._new_array()
+        b_std = self._new_array()
 
         ds = xr.Dataset(dict(a=a))
         self.assertEqual({}, find_ancillary_var_names(ds, 'a'))
 
-        ds = xr.Dataset(dict(a=a, a_stdev=a_stdev, a_count=a_count, b=b, b_stdev=b_stdev))
+        ds = xr.Dataset(dict(a=a, a_std=a_std, a_count=a_count, b=b, b_std=b_std))
         self.assertEqual({'number_of_observations': {'a_count'},
-                          'standard_error': {'a_stdev'}},
+                          'standard_error': {'a_std'}},
                          find_ancillary_var_names(ds, 'a'))

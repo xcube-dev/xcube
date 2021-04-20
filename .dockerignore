@@ -1,10 +1,11 @@
+Dockerfile
+
 .git/
 
 build
 dist
 *.egg-info
 *.egg/
-*.pyc
 *.swp
 
 .tox

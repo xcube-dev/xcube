@@ -1,0 +1,23 @@
+{
+  "input_config": {
+    "store_id": "cds",
+    "data_id": "reanalysis-era5-single-levels-monthly-means:monthly_averaged_reanalysis"
+  },
+  "cube_config": {
+    "variable_names": ["2m_temperature", "10m_wind_speed",
+                       "clear_sky_direct_solar_radiation_at_surface"],
+    "crs": "WGS84",
+    "bbox": [5, 50, 15, 60],
+    "spatial_res": 0.25,
+    "time_range": ["2015-01-01", "2020-12-31"],
+    "time_period": "1M"
+  },
+  "output_config": {
+    "store_id": "directory",
+    "data_id": "out.zarr",
+    "store_params": {
+      "base_dir": "examples/gen2"
+    },
+    "replace": true
+  }
+}

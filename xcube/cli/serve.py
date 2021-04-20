@@ -18,6 +18,7 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+
 from typing import List
 
 import click
@@ -38,7 +39,12 @@ VIEWER_ENV_VAR = 'XCUBE_VIEWER_PATH'
               help=f'Port number where the service will listen on. Defaults to {DEFAULT_PORT}.')
 @click.option('--prefix', metavar='PREFIX',
               help='Service URL prefix. May contain template patterns such as "${version}" or "${name}". '
-                   'For example "${name}/api/${version}".')
+                   'For example "${name}/api/${version}". Will be used to prefix all API operation routes '
+                   'and in any URLs returned by the service.')
+@click.option('--revprefix', 'reverse_prefix', metavar='REVPREFIX',
+              help='Service reverse URL prefix. May contain template patterns such as "${version}" or "${name}". '
+                   'For example "${name}/api/${version}". Defaults to PREFIX, if any. Will be used only in URLs '
+                   'returned by the service e.g. the tile URLs returned by the WMTS service.')
 @click.option('--name', metavar='NAME', hidden=True,
               help='Service name. Deprecated, use prefix option instead.')
 @click.option('--update', '-u', 'update_period', metavar='PERIOD', type=float,
@@ -71,10 +77,17 @@ VIEWER_ENV_VAR = 'XCUBE_VIEWER_PATH'
               help="Delegate logging to the console (stderr).")
 @click.option('--traceperf', 'trace_perf', is_flag=True,
               help="Print performance diagnostics (stdout).")
+@click.option('--aws-prof', 'aws_prof', metavar='PROFILE',
+              help="To publish remote CUBEs, use AWS credentials from section "
+                   "[PROFILE] found in ~/.aws/credentials.")
+@click.option('--aws-env', 'aws_env', is_flag=True,
+              help="To publish remote CUBEs, use AWS credentials from environment "
+                   "variables AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY")
 def serve(cube: List[str],
           address: str,
           port: int,
           prefix: str,
+          reverse_prefix: str,
           name: str,
           update_period: float,
           styles: str,
@@ -83,7 +96,9 @@ def serve(cube: List[str],
           tile_comp_mode: int,
           show: bool,
           verbose: bool,
-          trace_perf: bool):
+          trace_perf: bool,
+          aws_prof: str,
+          aws_env: bool):
     """
     Serve data cubes via web service.
 
@@ -100,6 +115,8 @@ def serve(cube: List[str],
         raise click.ClickException("CONFIG and CUBES cannot be used at the same time.")
     if styles:
         styles = parse_cli_kwargs(styles, "STYLES")
+    if (aws_prof or aws_env) and not cube:
+        raise click.ClickException("AWS credentials are only valid in combination with given CUBE argument(s).")
 
     from xcube.version import version
     from xcube.webapi.defaults import SERVER_NAME, SERVER_DESCRIPTION
@@ -109,9 +126,11 @@ def serve(cube: List[str],
         _run_viewer()
 
     from xcube.webapi.app import new_application
+    application = new_application(route_prefix=prefix, base_dir=os.path.dirname(config) if config else '.')
+
     from xcube.webapi.service import Service
-    service = Service(new_application(prefix, os.path.dirname(config)),
-                      prefix=prefix,
+    service = Service(application,
+                      prefix=reverse_prefix or prefix,
                       port=port,
                       address=address,
                       cube_paths=cube,
@@ -121,7 +140,9 @@ def serve(cube: List[str],
                       tile_comp_mode=tile_comp_mode,
                       update_period=update_period,
                       log_to_stderr=verbose,
-                      trace_perf=trace_perf)
+                      trace_perf=trace_perf,
+                      aws_prof=aws_prof,
+                      aws_env=aws_env)
     service.start()
 
     return 0

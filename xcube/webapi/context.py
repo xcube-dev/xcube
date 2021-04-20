@@ -193,7 +193,7 @@ class ServiceContext:
 
     def get_service_url(self, base_url, *path: str):
         if self._prefix:
-            return base_url + '/' + self._prefix + '/' + '/'.join(path)
+            return base_url + self._prefix + '/' + '/'.join(path)
         else:
             return base_url + '/' + '/'.join(path)
 
@@ -212,6 +212,17 @@ class ServiceContext:
                 if var_name not in dataset:
                     raise ServiceResourceNotFoundError(f'Variable "{var_name}" not found in dataset "{ds_id}"')
         return dataset
+
+    def get_time_series_dataset(self, ds_id: str, var_name: str = None) -> xr.Dataset:
+        descriptor = self.get_dataset_descriptor(ds_id)
+        ts_ds_name = descriptor.get('TimeSeriesDataset', ds_id)
+        try:
+            # Try to get more efficient, time-chunked dataset
+            return self.get_dataset(ts_ds_name, expected_var_names=[var_name] if var_name else None)
+        except ServiceResourceNotFoundError:
+            # This happens, if the dataset pointed to by 'TimeSeriesDataset'
+            # does not contain the variable given by var_name.
+            return self.get_dataset(ds_id, expected_var_names=[var_name] if var_name else None)
 
     def get_variable_for_z(self, ds_id: str, var_name: str, z_index: int) -> xr.DataArray:
         ml_dataset = self.get_ml_dataset(ds_id)
@@ -634,13 +645,22 @@ class ServiceContext:
         return cache_size
 
 
-def normalize_prefix(prefix: Optional[str]):
+def normalize_prefix(prefix: Optional[str]) -> str:
     if not prefix:
         return ''
 
-    prefix = prefix.replace('${version}', version).replace('${name}', 'xcube')
+    prefix = prefix.replace('${name}', 'xcube')
+    prefix = prefix.replace('${version}', version)
+    prefix = prefix.replace('//', '/').replace('//', '/')
+
+    if prefix == '/':
+        return ''
+
     if not prefix.startswith('/'):
-        return '/' + prefix
+        prefix = '/' + prefix
+
+    if prefix.endswith('/'):
+        prefix = prefix[0:-1]
 
     return prefix
 
@@ -651,19 +671,28 @@ def _open_ml_dataset_from_object_storage(ctx: ServiceContext,
     ds_id = dataset_descriptor.get('Identifier')
     path = ctx.get_descriptor_path(dataset_descriptor, f"dataset descriptor {ds_id}", is_url=True)
     data_format = dataset_descriptor.get('Format', FORMAT_NAME_ZARR)
-    endpoint_url = None
+
+    s3_kwargs = dict()
+    if 'Anonymous' in dataset_descriptor:
+        s3_kwargs['anon'] = bool(dataset_descriptor['Anonymous'])
+    if 'AccessKeyId' in dataset_descriptor:
+        s3_kwargs['key'] = dataset_descriptor['AccessKeyId']
+    if 'SecretAccessKey' in dataset_descriptor:
+        s3_kwargs['secret'] = dataset_descriptor['SecretAccessKey']
+
+    s3_client_kwargs = dict()
     if 'Endpoint' in dataset_descriptor:
-        endpoint_url = dataset_descriptor['Endpoint']
-    region_name = None
+        s3_client_kwargs['endpoint_url'] = dataset_descriptor['Endpoint']
     if 'Region' in dataset_descriptor:
-        region_name = dataset_descriptor['Region']
+        s3_client_kwargs['region_name'] = dataset_descriptor['Region']
+
     chunk_cache_capacity = ctx.get_dataset_chunk_cache_capacity(dataset_descriptor)
     return open_ml_dataset_from_object_storage(path,
                                                data_format=data_format,
                                                ds_id=ds_id,
                                                exception_type=ServiceConfigError,
-                                               endpoint_url=endpoint_url,
-                                               region_name=region_name,
+                                               s3_kwargs=s3_kwargs,
+                                               s3_client_kwargs=s3_client_kwargs,
                                                chunk_cache_capacity=chunk_cache_capacity)
 
 

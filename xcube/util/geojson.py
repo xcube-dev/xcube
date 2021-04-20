@@ -53,6 +53,13 @@ class GeoJSON:
         return False
 
     @classmethod
+    def is_geometry_collection(cls, obj: Any) -> bool:
+        type_name = cls.get_type_name(obj)
+        if type_name == cls.GEOMETRY_COLLECTION_TYPE:
+            return cls._is_valid_sequence(obj, 'geometries')
+        return False
+
+    @classmethod
     def get_geometry_collection_geometries(cls, obj: Any) -> Optional[Sequence[Dict]]:
         type_name = cls.get_type_name(obj)
         if type_name == cls.GEOMETRY_COLLECTION_TYPE:

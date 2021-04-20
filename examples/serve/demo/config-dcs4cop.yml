@@ -9,10 +9,11 @@ Datasets:
   - Identifier: cmems_sst_sns
     Title: "CMEMS SST SNS"
     BoundingBox: [0.0, 50, 5.0, 52.5]
-    Endpoint: "http://obs.eu-de.otc.t-systems.com"
-    Path: "dcs4cop-obs-01/dcs4cop-bc-sst-sns-l2c-v1.zarr"
+    Endpoint: "https://s3.eu-central-1.amazonaws.com/"
+    Path: "xcube-examples/bc-olci-sns-l2c-2017_1x1024x1024.zarr"
     FileSystem: "obs"
-    Region: "eu-de"
+    Region: "eu-central-1"
+    Anonymous: true
     Style: default
 
 Styles:

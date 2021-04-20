@@ -23,7 +23,7 @@ import os
 import shutil
 import warnings
 from abc import ABCMeta, abstractmethod
-from typing import Any, Callable, Dict, Iterable, List, Optional, Set, Tuple
+from typing import Any, Callable, Dict, Iterable, List, Optional, Set, Tuple, Union, Mapping
 
 import pandas as pd
 import s3fs
@@ -329,7 +329,7 @@ class Netcdf4DatasetIO(DatasetIO):
         ext = _get_ext(path)
         ext_value = ext in {'.nc', '.hdf', '.h5'}
         type_value = 0.0
-        if path_type is "file":
+        if path_type == "file":
             type_value = 1.0
         elif path_type is None:
             type_value = 0.5
@@ -380,7 +380,7 @@ class ZarrDatasetIO(DatasetIO):
         type_value = 0.0
         if ext == ".zarr":
             ext_value = 1.0
-            if path_type is "dir":
+            if path_type == "dir":
                 type_value = 1.0
             elif path_type == "url" or path_type is None:
                 type_value = 0.5
@@ -397,61 +397,60 @@ class ZarrDatasetIO(DatasetIO):
                 else:
                     ext_value = 0.0
             else:
-                if path_type is "dir":
+                if path_type == "dir":
                     type_value = 1.0
                 elif path_type == "url":
                     type_value = 0.5
         return (3 * ext_value + type_value) / 4
 
-    def read(self, path: str, **kwargs) -> xr.Dataset:
+    def read(self,
+             path: str,
+             s3_kwargs: Dict[str, Any] = None,
+             s3_client_kwargs: Dict[str, Any] = None,
+             max_cache_size: int = None,
+             **kwargs) -> xr.Dataset:
+        """
+        Read dataset from some Zarr storage.
+        :param path: File path or object storage URL.
+        :param s3_kwargs: if *path* is an object storage URL, keyword-arguments passed to S3 file system,
+            that is ``s3fs.S3FileSystem(**s3_kwargs, ...)``.
+        :param s3_client_kwargs: if *path* is an object storage URL, keyword-arguments passed to S3 (boto3) client,
+            that is ``s3fs.S3FileSystem(..., client_kwargs=s3_client_kwargs)``.
+        :param max_cache_size: if this is a positive integer, the store will be wrapped in an in-memory cache,
+            that is ``store = zarr.LRUStoreCache(store, max_size=max_cache_size)``.
+        :param kwargs: Keyword-arguments passed to xarray Zarr adapter,
+            that is ``xarray.open_zarr(..., **kwargs)``. In addition, the parameter **
+        :return:
+        """
         path_or_store = path
         consolidated = False
-        root = None
-
         if isinstance(path, str):
-            client_kwargs = {}
-            if 'client_kwargs' in kwargs:
-                client_kwargs = kwargs.pop('client_kwargs')
-            if 'endpoint_url' in kwargs:
-                client_kwargs['endpoint_url'] = kwargs.pop('endpoint_url')
-                root = path
-            if 'region_name' in kwargs:
-                client_kwargs['region_name'] = kwargs.pop('region_name')
-            path_or_store, root, client_kwargs = _get_path_or_store(path_or_store,
-                                                                    client_kwargs=client_kwargs,
-                                                                    mode='read',
-                                                                    root=root)
-            if 'endpoint_url' in client_kwargs and root is not None:
-                s3 = s3fs.S3FileSystem(anon=True, client_kwargs=client_kwargs)
-                consolidated = s3.exists(f'{root}/.zmetadata')
-                path_or_store = s3fs.S3Map(root=root, s3=s3, check=False)
-                if 'max_cache_size' in kwargs:
-                    max_cache_size = kwargs.pop('max_cache_size')
-                    if max_cache_size > 0:
-                        path_or_store = zarr.LRUStoreCache(path_or_store, max_size=max_cache_size)
-            else:
-                consolidated = os.path.exists(os.path.join(path_or_store, '.zmetadata'))
+            path_or_store, consolidated = get_path_or_s3_store(path_or_store,
+                                                               s3_kwargs=s3_kwargs,
+                                                               s3_client_kwargs=s3_client_kwargs,
+                                                               mode='r')
+            if max_cache_size is not None and max_cache_size > 0:
+                path_or_store = zarr.LRUStoreCache(path_or_store, max_size=max_cache_size)
         return xr.open_zarr(path_or_store, consolidated=consolidated, **kwargs)
 
     def write(self,
               dataset: xr.Dataset,
               output_path: str,
-              compress=True,
-              cname=None,
-              clevel=None,
-              shuffle=None,
-              blocksize=None,
-              chunksizes=None,
-              client_kwargs=None,
+              compressor: Dict[str, Any] = None,
+              chunksizes: Dict[str, int] = None,
+              packing: Dict[str, Dict[str, Any]] = None,
+              s3_kwargs: Dict[str, Any] = None,
+              s3_client_kwargs: Dict[str, Any] = None,
               **kwargs):
-        path_or_store, root, client_kwargs = _get_path_or_store(output_path,
-                                                                client_kwargs=client_kwargs,
-                                                                mode='write')
-        encoding = self._get_write_encodings(dataset, compress, cname, clevel, shuffle, blocksize, chunksizes)
-        dataset.to_zarr(path_or_store, mode='w', encoding=encoding)
+        path_or_store, consolidated = get_path_or_s3_store(output_path,
+                                                           s3_kwargs=s3_kwargs,
+                                                           s3_client_kwargs=s3_client_kwargs,
+                                                           mode='w')
+        encoding = self._get_write_encodings(dataset, compressor, chunksizes, packing)
+        dataset.to_zarr(path_or_store, mode='w', encoding=encoding, **kwargs)
 
     @classmethod
-    def _get_write_encodings(cls, dataset, compress, cname, clevel, shuffle, blocksize, chunksizes):
+    def _get_write_encodings(cls, dataset, compressor, chunksizes, packing):
         encoding = None
         if chunksizes:
             encoding = {}
@@ -465,12 +464,20 @@ class ZarrDatasetIO(DatasetIO):
                     else:
                         chunks.append(var.shape[i])
                 encoding[var_name] = dict(chunks=chunks)
-        if compress:
-            blosc_kwargs = dict(cname=cname, clevel=clevel, shuffle=shuffle, blocksize=blocksize)
-            for k in list(blosc_kwargs.keys()):
-                if blosc_kwargs[k] is None:
-                    del blosc_kwargs[k]
-            compressor = zarr.Blosc(**blosc_kwargs)
+        if packing:
+            if encoding:
+                for var_name in packing.keys():
+                    if var_name in encoding.keys():
+                        encoding[var_name].update(dict(packing[var_name]))
+                    else:
+                        encoding[var_name] = dict(packing[var_name])
+            else:
+                encoding = {}
+                for var_name in packing.keys():
+                    encoding[var_name] = dict(packing[var_name])
+
+        if compressor:
+            compressor = zarr.Blosc(**compressor)
 
             if encoding:
                 for var_name in encoding.keys():
@@ -538,39 +545,82 @@ def rimraf(path):
             pass
 
 
-def _get_path_or_store(path: str,
-                       client_kwargs: Dict[str, Any] = None,
-                       mode: str = None,
-                       root: str = None):
-    path_or_store = path
-    anon_mode = True
-    client_kwargs = dict(client_kwargs) if client_kwargs else {}
-    if client_kwargs is not None:
-        if 'provider_access_key_id' in client_kwargs and 'provider_secret_access_key' in client_kwargs:
-            anon_mode = False
-            client_kwargs['aws_access_key_id'] = client_kwargs.pop('provider_access_key_id')
-            client_kwargs['aws_secret_access_key'] = client_kwargs.pop('provider_secret_access_key')
-    if path.startswith("https://") or path.startswith("http://"):
-        import urllib3.util
-        url = urllib3.util.parse_url(path_or_store)
-        if url.port is not None:
-            client_kwargs['endpoint_url'] = f'{url.scheme}://{url.host}:{url.port}'
-        else:
-            client_kwargs['endpoint_url'] = f'{url.scheme}://{url.host}'
-        root = url.path
-        if root.startswith('/'):
-            root = root[1:]
-        if mode == "write":
-            root = f's3://{root}'
-        s3 = s3fs.S3FileSystem(anon=anon_mode, client_kwargs=client_kwargs)
-        path_or_store = s3fs.S3Map(root=root, s3=s3, create=mode == "write")
-    return path_or_store, root, client_kwargs
+def get_path_or_s3_store(path_or_url: str,
+                         s3_kwargs: Mapping[str, Any] = None,
+                         s3_client_kwargs: Mapping[str, Any] = None,
+                         mode: str = 'r') -> Tuple[Union[str, Dict], bool]:
+    """
+    If *path_or_url* is an object storage URL, return a object storage Zarr store (mapping object)
+    using *s3_client_kwargs* and *mode* and a flag indicating whether the Zarr datasets is consolidated.
+
+    Otherwise *path_or_url* is interpreted as a local file system path, retured as-is plus
+    a flag indicating whether the Zarr datasets is consolidated.
+
+    :param path_or_url: A path or a URL.
+    :param s3_kwargs: keyword arguments for S3 file system.
+    :param s3_client_kwargs: keyword arguments for S3 boto3 client.
+    :param mode: "r" or "w"
+    :return: A tuple (path_or_obs_store, consolidated).
+    """
+    if is_s3_url(path_or_url) or s3_kwargs is not None or s3_client_kwargs is not None:
+        root, s3_kwargs, s3_client_kwargs = parse_s3_url_and_kwargs(path_or_url,
+                                                                    s3_kwargs=s3_kwargs,
+                                                                    s3_client_kwargs=s3_client_kwargs)
+        s3 = s3fs.S3FileSystem(**s3_kwargs, client_kwargs=s3_client_kwargs)
+        consolidated = mode == "r" and s3.exists(f'{root}/.zmetadata')
+        return s3fs.S3Map(root=root, s3=s3, check=False, create=mode == "w"), consolidated
+    else:
+        consolidated = os.path.exists(os.path.join(path_or_url, '.zmetadata'))
+        return path_or_url, consolidated
 
 
-def split_bucket_url(path: str):
-    """If *path* is a URL, return tuple (endpoint_url, root), otherwise (None, *path*)"""
+def parse_s3_url_and_kwargs(s3_url: str,
+                            s3_kwargs: Mapping[str, Any] = None,
+                            s3_client_kwargs: Mapping[str, Any] = None) \
+        -> Tuple[str, Dict[str, Any], Dict[str, Any]]:
+    """
+    Parses *obs_url*, *s3_kwargs*, *s3_client_kwargs* and returns a
+    new tuple (*root*, *s3_kwargs*, *s3_client_kwargs*) with updated kwargs whose elements
+    can be passed to the s3fs.S3FileSystem and s3fs.S3Map constructors as follows:::
+
+        obs_fs = s3fs.S3FileSystem(**s3_kwargs, client_kwargs=s3_client_kwargs)
+        obs_map = s3fs.S3Map(root=root, s3=obs_fs)
+
+    :param s3_url: Object storage URL, e.g. "s3://bucket/root", or "https://bucket.s3.amazonaws.com/root".
+    :param s3_kwargs: keyword arguments for S3 file system.
+    :param s3_client_kwargs: keyword arguments for S3 boto3 client.
+    :return: A tuple (root, s3_kwargs, s3_client_kwargs).
+    """
+    endpoint_url, root = split_s3_url(s3_url)
+
+    new_s3_client_kwargs = dict(s3_client_kwargs) if s3_client_kwargs else dict()
+    if endpoint_url:
+        new_s3_client_kwargs['endpoint_url'] = endpoint_url
+
+    # The following key + secret kwargs are no longer supported in client_kwargs and are now moved into s3_kwargs
+    key = secret = None
+    if 'provider_access_key_id' in new_s3_client_kwargs:
+        key = new_s3_client_kwargs.pop('provider_access_key_id')
+    if 'aws_access_key_id' in new_s3_client_kwargs:
+        key = new_s3_client_kwargs.pop('aws_access_key_id')
+    if 'provider_secret_access_key' in new_s3_client_kwargs:
+        secret = new_s3_client_kwargs.pop('provider_secret_access_key')
+    if 'aws_secret_access_key' in new_s3_client_kwargs:
+        secret = new_s3_client_kwargs.pop('aws_secret_access_key')
+
+    new_s3_kwargs = dict(key=key, secret=secret)
+    if s3_kwargs:
+        new_s3_kwargs.update(**s3_kwargs)
+
+    return root, new_s3_kwargs, new_s3_client_kwargs
+
+
+def split_s3_url(path: str) -> Tuple[Optional[str], str]:
+    """
+    If *path* is a URL, return tuple (endpoint_url, root), otherwise (None, *path*)
+    """
     url = urllib3.util.parse_url(path)
-    if all((url.scheme, url.host, url.path)):
+    if all((url.scheme, url.host, url.path)) and url.scheme != 's3':
         if url.port is not None:
             endpoint_url = f'{url.scheme}://{url.host}:{url.port}'
         else:
@@ -579,5 +629,16 @@ def split_bucket_url(path: str):
         if root.startswith('/'):
             root = root[1:]
         return endpoint_url, root
-    else:
-        return None, path
+    return None, path
+
+
+def is_s3_url(path_or_url: str) -> bool:
+    """
+    Test if *path_or_url* is a potential object storage URL.
+
+    :param path_or_url: Path or URL to test.
+    :return: True, if so.
+    """
+    return path_or_url.startswith("https://") \
+           or path_or_url.startswith("http://") \
+           or path_or_url.startswith("s3://")

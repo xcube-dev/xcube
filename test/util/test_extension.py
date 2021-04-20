@@ -145,10 +145,11 @@ class ImportTest(unittest.TestCase):
 
     def test_import_and_transform_component(self):
 
-        def transform(imported_component: Any, loaded_extension_:Extension):
+        def transform(imported_component: Any, loaded_extension_: Extension):
             return imported_component(-1, name=loaded_extension_.name)
 
-        loader = import_component('test.util.test_extension:TestComponent', transform=transform)
+        loader = import_component('test.util.test_extension:TestComponent',
+                                  transform=transform)
         self.assertTrue(callable(loader))
         extension = Extension('test_point', 'test_component', component='dummy')
         component = loader(extension)

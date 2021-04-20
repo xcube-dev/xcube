@@ -18,6 +18,10 @@ Synopsis
       (Re-)chunk xcube dataset. Changes the external chunking of all variables
       of CUBE according to CHUNKS and writes the result to OUTPUT.
 
+      Note: There is a possibly more efficient way to (re-)chunk datasets
+      through the dedicated tool "rechunker", see
+      https://rechunker.readthedocs.io.
+
     Options:
       -o, --output OUTPUT  Output path. Defaults to 'out.zarr'
       -f, --format FORMAT  Format of the output. If not given, guessed from

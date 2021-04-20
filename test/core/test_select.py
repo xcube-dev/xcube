@@ -1,7 +1,14 @@
 import unittest
 
+import numpy as np
+import xarray as xr
+
 from test.sampledata import create_highroc_dataset
-from xcube.core.select import select_spatial_subset, select_variables_subset
+from xcube.core.new import new_cube
+from xcube.core.select import select_spatial_subset
+from xcube.core.select import select_subset
+from xcube.core.select import select_temporal_subset
+from xcube.core.select import select_variables_subset
 
 
 class SelectVariablesSubsetTest(unittest.TestCase):
@@ -72,3 +79,69 @@ class SelectSpatialSubsetTest(unittest.TestCase):
             select_spatial_subset(ds1)
         self.assertEqual("One of ij_bbox and xy_bbox must be given", f'{cm.exception}')
 
+
+class SelectTemporalSubsetTest(unittest.TestCase):
+    def test_invalid_dataset(self):
+        ds1 = xr.Dataset(dict(CHL=xr.DataArray([[1, 2], [2, 3]], dims=('lat', 'lon'))))
+        with self.assertRaises(ValueError) as cm:
+            select_temporal_subset(ds1, time_range=('2010-01-02', '2010-01-04'))
+        self.assertEqual('cannot compute temporal subset: variable "time" not found in dataset', f'{cm.exception}')
+
+    def test_no_subset_for_open_interval(self):
+        ds1 = new_cube(variables=dict(analysed_sst=0.6, mask=8))
+        ds2 = select_temporal_subset(ds1, time_range=(None, None))
+        self.assertIs(ds2, ds1)
+
+    def test_subset_for_closed_interval(self):
+        ds1 = new_cube(variables=dict(analysed_sst=0.6, mask=8))
+        ds2 = select_temporal_subset(ds1, time_range=('2010-01-02', '2010-01-04'))
+        self.assertIsNot(ds2, ds1)
+        np.testing.assert_equal(np.array(['2010-01-02T12:00:00.000000000',
+                                          '2010-01-03T12:00:00.000000000',
+                                          '2010-01-04T12:00:00.000000000'],
+                                         dtype='datetime64[ns]'),
+                                ds2.time.values)
+
+    def test_subset_for_upward_open_interval(self):
+        ds1 = new_cube(variables=dict(analysed_sst=0.6, mask=8))
+        ds2 = select_temporal_subset(ds1, time_range=('2010-01-03', None))
+        self.assertIsNot(ds2, ds1)
+        np.testing.assert_equal(np.array(['2010-01-03T12:00:00.000000000',
+                                          '2010-01-04T12:00:00.000000000',
+                                          '2010-01-05T12:00:00.000000000'],
+                                         dtype='datetime64[ns]'),
+                                ds2.time.values)
+
+    def test_subset_for_downward_open_interval(self):
+        ds1 = new_cube(variables=dict(analysed_sst=0.6, mask=8))
+        ds2 = select_temporal_subset(ds1, time_range=(None, '2010-01-03'))
+        self.assertIsNot(ds2, ds1)
+        np.testing.assert_equal(np.array(['2010-01-01T12:00:00.000000000',
+                                          '2010-01-02T12:00:00.000000000',
+                                          '2010-01-03T12:00:00.000000000'],
+                                         dtype='datetime64[ns]'),
+                                ds2.time.values)
+
+
+class SelectSubsetTest(unittest.TestCase):
+    def test_all_params(self):
+        ds1 = new_cube(variables=dict(analysed_sst=0.6, mask=8), drop_bounds=True)
+        ds2 = select_subset(ds1,
+                            var_names=['analysed_sst'],
+                            bbox=(10, 50, 15, 55),
+                            time_range=('2010-01-02', '2010-01-04'))
+
+        self.assertEqual({'analysed_sst'}, set(ds2.data_vars))
+        self.assertEqual({'time', 'lat', 'lon'}, set(ds2.coords))
+
+        np.testing.assert_almost_equal(np.array([10.5, 11.5, 12.5, 13.5, 14.5]),
+                                       ds2.lon.values)
+
+        np.testing.assert_almost_equal(np.array([50.5, 51.5, 52.5, 53.5, 54.5]),
+                                       ds2.lat.values)
+
+        np.testing.assert_equal(np.array(['2010-01-02T12:00:00.000000000',
+                                          '2010-01-03T12:00:00.000000000',
+                                          '2010-01-04T12:00:00.000000000'],
+                                         dtype='datetime64[ns]'),
+                                ds2.time.values)

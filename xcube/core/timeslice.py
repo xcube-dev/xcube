@@ -20,7 +20,7 @@
 # SOFTWARE.
 
 import tempfile
-from collections import MutableMapping
+from collections.abc import MutableMapping
 from typing import Dict, Union, Tuple
 
 import numpy as np
@@ -145,6 +145,7 @@ def update_time_slice(store: Union[str, MutableMapping],
     insert_mode = mode == 'insert'
 
     time_var_names = []
+    encoding = {}
     with xr.open_zarr(store) as cube:
         for var_name in cube.variables:
             var = cube[var_name]
@@ -152,12 +153,18 @@ def update_time_slice(store: Union[str, MutableMapping],
                 if var.dims[0] != 'time':
                     raise ValueError(f"dimension 'time' of variable {var_name!r} must be first dimension")
                 time_var_names.append(var_name)
+                enc = dict(cube[var_name].encoding)
+                # xarray 0.17+ supports engine preferred chunks if exposed by the backend
+                # zarr does that, but when we use the new 'preferred_chunks' when writing to zarr
+                # it raises and says, 'preferred_chunks' is an unsupported encoding
+                if 'preferred_chunks' in enc:
+                    del enc['preferred_chunks']
+                encoding[var_name] = enc
 
     if chunk_sizes:
         time_slice = chunk_dataset(time_slice, chunk_sizes, format_name='zarr')
-
     temp_dir = tempfile.TemporaryDirectory(prefix='xcube-time-slice-', suffix='.zarr')
-    time_slice.to_zarr(temp_dir.name)
+    time_slice.to_zarr(temp_dir.name, encoding=encoding)
     slice_root_group = zarr.open(temp_dir.name, mode='r')
     slice_arrays = dict(slice_root_group.arrays())
 

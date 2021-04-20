@@ -77,7 +77,7 @@ class CmapsTest(TestCase):
     def test_cmocean_category(self):
         cmaps = get_cmaps()
         category_tuple = cmaps[5][2]
-        self.assertEqual(len(category_tuple), 36)
+        self.assertTrue(len(category_tuple) >= 34)
         self.assertEqual(category_tuple[0][0], 'thermal')
         self.assertEqual(category_tuple[0][1],
                          'iVBORw0KGgoAAAANSUhEUgAAAQAAAAACCAYAAAC3zQLZAAAA2klEQVR4nO2S6xHDMAiDP+FROkL3Xy30RwBju52g8V0OIcnyKxqvtwsD5SfAUPZNE6M4VR2hJTdQeBX6UhlY8xgDY8V24A15pMuIXcQHJo4qwOQYIHlojpT6zWnzqDxRo+/+zFZbR7H2Tx3WvMPf1qDvq+17zz/m7TV97YxHbefEW27ve+7Oe9xZZu3cdXCdr17XokurfvYOcmTXxHJkE2P32ei8eVxww1WJecRlBxZr/cndj+T5MKULbzqm5pnY56MFjnkmPH7cb7xXzvR49RRO3njGM57xt+MDC391Pt11tkYAAAAASUVORK5CYII=')
