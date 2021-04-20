@@ -183,6 +183,7 @@ _SHORT_INCLUDE = ','.join(['store.store_instance_id',
                            'store.store_id',
                            'store.title',
                            'store.description',
+                           'store.data',
                            'data.data_id',
                            'data.bbox',
                            'data.spatial_ref',
@@ -289,9 +290,9 @@ def dump(output_file_path: str,
 
         if include_props or exclude_props:
             if include_props:
-                _filter_search_result(store_descriptor, include_props, lambda c, k: k not in c)
+                store_descriptor = _filter_search_result(store_descriptor, include_props, lambda c, k: k in c)
             if exclude_props:
-                _filter_search_result(store_descriptor, exclude_props, lambda c, k: k in c)
+                store_descriptor = _filter_search_result(store_descriptor, exclude_props, lambda c, k: k not in c)
 
         store_descriptors.append(store_descriptor)
 
@@ -308,22 +309,31 @@ def _filter_search_result(store_descriptor, props, predicate):
     data_props = props['data']
     var_props = props['var']
 
-    for store_key in store_descriptor.keys():
-        if store_props and predicate(store_props, store_key):
-            del store_descriptor[store_key]
-        for data_descriptor in store_descriptor.get('data', []):
-            if data_props:
-                for data_key in data_descriptor.keys():
+    new_store_descriptor = {}
+    for store_key, store_value in store_descriptor.items():
+        if predicate(store_props, store_key):
+            new_store_descriptor[store_key] = store_value
+        if 'data' in new_store_descriptor:
+            new_data_descriptors = []
+            for data_descriptor in new_store_descriptor['data']:
+                new_data_descriptor = {}
+                for data_key, data_value in data_descriptor.items():
                     if predicate(data_props, data_key):
-                        del data_descriptor[data_key]
-            if var_props:
+                        new_data_descriptor[data_key] = data_value
                 for var_container_key in ('coords', 'data_vars'):
-                    if var_container_key in data_descriptor:
-                        var_container = data_descriptor[var_container_key]
-                        for var_descriptor in var_container.values():
-                            for var_key in var_descriptor.keys():
+                    if var_container_key in new_data_descriptor:
+                        new_var_container = {}
+                        var_container = new_data_descriptor[var_container_key]
+                        for var_name, var_descriptor in var_container.items():
+                            new_var_descriptor = {}
+                            for var_key, var_value in var_descriptor.items():
                                 if predicate(var_props, var_key):
-                                    del var_descriptor[var_key]
+                                    new_var_descriptor[var_key] = var_value
+                            new_var_container[var_name] = new_var_descriptor
+                        new_data_descriptor[var_container_key] = new_var_container
+                new_data_descriptors.append(new_data_descriptor)
+            new_store_descriptor['data'] = new_data_descriptors
+    return new_store_descriptor
 
 
 def _parse_props(props: str) -> Dict[str, AbstractSet]:
