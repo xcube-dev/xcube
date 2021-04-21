@@ -28,6 +28,11 @@ import pandas as pd
 import xarray as xr
 
 from xcube.core.mldataset import MultiLevelDataset
+from xcube.core.geom import get_dataset_bounds
+from xcube.core.timecoord import remove_time_part_from_isoformat
+from xcube.core.timecoord import get_end_time_from_attrs
+from xcube.core.timecoord import get_start_time_from_attrs
+from xcube.core.timecoord import get_time_range_from_data
 from xcube.core.store.typespecifier import TYPE_SPECIFIER_ANY
 from xcube.core.store.typespecifier import TYPE_SPECIFIER_DATASET
 from xcube.core.store.typespecifier import TYPE_SPECIFIER_GEODATAFRAME
@@ -59,7 +64,7 @@ def new_data_descriptor(data_id: str, data: Any, require: bool = False) -> 'Data
         coords = _build_variable_descriptor_dict(data.coords)
         data_vars = _build_variable_descriptor_dict(data.data_vars)
         spatial_res = _determine_spatial_res(data)
-        bbox = _determine_bbox(data, spatial_res)
+        bbox = _determine_bbox(data)
         time_coverage_start, time_coverage_end = _determine_time_coverage(data)
         time_period = _determine_time_period(data)
         return DatasetDescriptor(data_id=data_id,
@@ -93,36 +98,16 @@ def _build_variable_descriptor_dict(variables) -> Mapping[str, 'VariableDescript
         for var_name, var in variables.items()}
 
 
-def _determine_bbox(data: xr.Dataset, spatial_res: float = 0.0) -> Optional[Tuple[float, float, float, float]]:
-    if spatial_res is None:
-        spatial_res = 0.0
-    # TODO get rid of these hard-coded coord names as soon as new resampling is available
-    min_lat, max_lat, lat_bounds_ending = _determine_min_and_max(data, ['lat', 'latitude', 'y'])
-    min_lon, max_lon, lon_bounds_ending = _determine_min_and_max(data, ['lon', 'longitude', 'x'])
-    lat_spatial_res = 0.0 if lat_bounds_ending != '' else spatial_res
-    lon_spatial_res = 0.0 if lon_bounds_ending != '' else spatial_res
-    if min_lon is not None and min_lat is not None and max_lon is not None and max_lat is not None:
-        return (min_lat - lat_spatial_res / 2,
-                min_lon - lon_spatial_res / 2,
-                max_lat + lat_spatial_res / 2,
-                max_lon + lon_spatial_res / 2)
-    elif 'geospatial_lat_min' in data.attrs and \
-            'geospatial_lon_min' in data.attrs and \
-            'geospatial_lat_max' in data.attrs and \
-            'geospatial_lon_max' in data.attrs:
-        return (data.geospatial_lat_min, data.geospatial_lon_min,
-                data.geospatial_lat_max, data.geospatial_lon_max)
-
-
-def _determine_min_and_max(data: xr.Dataset, dimensions: Sequence[str]) -> (float, float, str):
-    bounds_endings = ['_bnds', '_bounds', '']
-    for bounds_ending in bounds_endings:
-        for dimension in dimensions:
-            dimension = f'{dimension}{bounds_ending}'
-            if dimension in data:
-                dimension_data = data[dimension].values
-                return np.min(dimension_data), np.max(dimension_data), bounds_ending
-    return None, None, ''
+def _determine_bbox(data: xr.Dataset) -> Optional[Tuple[float, float, float, float]]:
+    try:
+        return get_dataset_bounds(data)
+    except ValueError:
+        if 'geospatial_lon_min' in data.attrs and \
+                'geospatial_lat_min' in data.attrs and \
+                'geospatial_lon_max' in data.attrs and \
+                'geospatial_lat_max' in data.attrs:
+            return (data.geospatial_lat_min, data.geospatial_lon_min,
+                    data.geospatial_lat_max, data.geospatial_lon_max)
 
 
 def _determine_spatial_res(data: xr.Dataset):
@@ -138,33 +123,22 @@ def _determine_spatial_res(data: xr.Dataset):
 
 
 def _determine_time_coverage(data: xr.Dataset):
-    start_time, end_time, _ = _determine_min_and_max(data, ['time'])
+    start_time, end_time = get_time_range_from_data(data)
     if start_time is not None:
         try:
-            start_time = pd.to_datetime(start_time).isoformat()
+            start_time = remove_time_part_from_isoformat(pd.to_datetime(start_time).isoformat())
         except TypeError:
             start_time = None
-    if start_time is None and 'time_coverage_start' in data.attrs:
-        start_time = data.time_coverage_start
-    if start_time is not None:
-        start_time = _strip_time_from_datetime_str(start_time)
+    if start_time is None:
+        start_time = get_start_time_from_attrs(data)
     if end_time is not None:
         try:
-            end_time = pd.to_datetime(end_time).isoformat()
+            end_time = remove_time_part_from_isoformat(pd.to_datetime(end_time).isoformat())
         except TypeError:
             end_time = None
-    if end_time is None and 'time_coverage_end' in data.attrs:
-        end_time = data.time_coverage_end
-    if end_time is not None:
-        end_time = _strip_time_from_datetime_str(end_time)
+    if end_time is None:
+        end_time = get_end_time_from_attrs(data)
     return start_time, end_time
-
-
-def _strip_time_from_datetime_str(datetime_str: str) -> str:
-    date_length = 10  # for example len("2010-02-04") == 10
-    if len(datetime_str) > date_length and datetime_str[date_length] in ('T', ' '):
-        return datetime_str[0: date_length]
-    return datetime_str
 
 
 def _determine_time_period(data: xr.Dataset):

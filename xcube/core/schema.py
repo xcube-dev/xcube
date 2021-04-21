@@ -302,8 +302,6 @@ def get_dataset_xy_var_names(coords: Union[xr.Dataset, xr.DataArray, Mapping[Has
     if must_exist:
         raise ValueError(f'{dataset_arg_name} has no valid spatial coordinate variables')
 
-    return None
-
 
 def get_dataset_time_var_name(dataset: Union[xr.Dataset, xr.DataArray],
                               must_exist: bool = False,

@@ -1,5 +1,9 @@
 ## Changes in 0.8.0 (in development)
 
+* Harmonized retrieval of spatial and temporal bounds of a dataset: 
+  To determine spatial bounds, use `xcube.core.geom.get_dataset_bounds()`, 
+  to determine temporal bounds, use `xcube.core.timecoord.get_time_range_from_data()`. 
+  Both methods will attempt to get the values from associated bounds arrays first. 
 * Fixed broken JSON object serialisation of objects returned by 
   `DataStore.describe_object()`. (#432)
 * Changed behaviour and signature of `xcube.core.store.DataStore.get_dataset_ids()`.
