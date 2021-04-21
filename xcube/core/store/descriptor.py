@@ -124,14 +124,20 @@ def _determine_spatial_res(data: xr.Dataset):
 
 def _determine_time_coverage(data: xr.Dataset):
     start_time, end_time = get_time_range_from_data(data)
+    if start_time is not None:
+        try:
+            start_time = remove_time_part_from_isoformat(pd.to_datetime(start_time).isoformat())
+        except TypeError:
+            start_time = None
     if start_time is None:
         start_time = get_start_time_from_attrs(data)
-    else:
-        start_time = remove_time_part_from_isoformat(pd.to_datetime(start_time).isoformat())
+    if end_time is not None:
+        try:
+            end_time = remove_time_part_from_isoformat(pd.to_datetime(end_time).isoformat())
+        except TypeError:
+            end_time = None
     if end_time is None:
         end_time = get_end_time_from_attrs(data)
-    else:
-        end_time = remove_time_part_from_isoformat(pd.to_datetime(end_time).isoformat())
     return start_time, end_time
 
 

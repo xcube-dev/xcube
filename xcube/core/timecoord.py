@@ -130,9 +130,13 @@ def _maybe_return_time_range_from_metadata(dataset: xr.Dataset,
                 if attr_start_time < data_start_time and attr_end_time > data_end_time:
                     return attr_start_time.to_datetime64(), attr_end_time.to_datetime64()
             except TypeError:
-                if attr_start_time.to_datetime64() < data_start_time \
-                        and attr_end_time.to_datetime64() > data_end_time:
-                    return attr_start_time.to_datetime64(), attr_end_time.to_datetime64()
+                try:
+                    if attr_start_time.to_datetime64() < data_start_time \
+                            and attr_end_time.to_datetime64() > data_end_time:
+                        return attr_start_time.to_datetime64(), attr_end_time.to_datetime64()
+                except TypeError:
+                    # use time values from data
+                    pass
     return data_start_time, data_end_time
 
 
