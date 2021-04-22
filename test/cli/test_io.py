@@ -113,21 +113,30 @@ class IODumpTest(CliTest):
         "this_dir": {
             "store_id": "directory",
             "store_params": {
-                "base_dir": "."
+                "base_dir": os.path.join(os.path.dirname(__file__), "..", "..", "examples", "serve", "demo")
             }
         }
     }
 
-    def setUp(self) -> None:
+    @classmethod
+    def setUpClass(cls) -> None:
         with open('store-conf.yml', 'w') as fp:
-            yaml.dump(self.STORE_CONF, fp)
+            yaml.dump(cls.STORE_CONF, fp)
         with open('store-conf.json', 'w') as fp:
-            json.dump(self.STORE_CONF, fp)
+            json.dump(cls.STORE_CONF, fp)
+
+    @classmethod
+    def tearDownClass(cls) -> None:
+        rimraf('store-conf.json')
+        rimraf('store-conf.yml')
 
     def tearDown(self) -> None:
         rimraf('store-dump.json')
-        rimraf('store-conf.yml')
+        rimraf('store-dump.yml')
+        rimraf('store-dump.csv')
         rimraf('out.json')
+        rimraf('out.jml')
+        rimraf('out.txt')
 
     def test_help_option(self):
         result = self.invoke_cli(['io', 'dump', '--help'])
@@ -138,10 +147,32 @@ class IODumpTest(CliTest):
         self.assertEqual(0, result.exit_code)
         self.assertTrue(os.path.exists('store-dump.json'))
 
+    def test_yaml_config_short_format(self):
+        result = self.invoke_cli(['io', 'dump', '-c', 'store-conf.yml', '--short', '--json'])
+        self.assertEqual(0, result.exit_code)
+        self.assertTrue(os.path.exists('store-dump.json'))
+        result = self.invoke_cli(['io', 'dump', '-c', 'store-conf.yml', '--short', '--yaml'])
+        self.assertEqual(0, result.exit_code)
+        self.assertTrue(os.path.exists('store-dump.yml'))
+        result = self.invoke_cli(['io', 'dump', '-c', 'store-conf.yml', '--short', '--csv'])
+        self.assertEqual(0, result.exit_code)
+        self.assertTrue(os.path.exists('store-dump.csv'))
+
+    def test_json_config_short(self):
+        result = self.invoke_cli(['io', 'dump', '-c', 'store-conf.yml', '--short'])
+        self.assertEqual(0, result.exit_code)
+        self.assertTrue(os.path.exists('store-dump.json'))
+
     def test_json_config_output(self):
         result = self.invoke_cli(['io', 'dump', '-c', 'store-conf.json', '-o', 'out.json'])
         self.assertEqual(0, result.exit_code)
         self.assertTrue(os.path.exists('out.json'))
+        result = self.invoke_cli(['io', 'dump', '-c', 'store-conf.json', '-o', 'out.yml'])
+        self.assertEqual(0, result.exit_code)
+        self.assertTrue(os.path.exists('out.yml'))
+        result = self.invoke_cli(['io', 'dump', '-c', 'store-conf.json', '-o', 'out.txt'])
+        self.assertEqual(0, result.exit_code)
+        self.assertTrue(os.path.exists('out.txt'))
 
     def test_json_config_type(self):
         result = self.invoke_cli(['io', 'dump', '-c', 'store-conf.json', '-t', 'dataset[cube]'])
