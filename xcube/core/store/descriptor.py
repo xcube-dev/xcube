@@ -28,6 +28,11 @@ import pandas as pd
 import xarray as xr
 
 from xcube.core.mldataset import MultiLevelDataset
+from xcube.core.geom import get_dataset_bounds
+from xcube.core.timecoord import remove_time_part_from_isoformat
+from xcube.core.timecoord import get_end_time_from_attrs
+from xcube.core.timecoord import get_start_time_from_attrs
+from xcube.core.timecoord import get_time_range_from_data
 from xcube.core.store.typespecifier import TYPE_SPECIFIER_ANY
 from xcube.core.store.typespecifier import TYPE_SPECIFIER_DATASET
 from xcube.core.store.typespecifier import TYPE_SPECIFIER_GEODATAFRAME
@@ -60,7 +65,7 @@ def new_data_descriptor(data_id: str, data: Any, require: bool = False) -> 'Data
         coords = _build_variable_descriptor_dict(data.coords)
         data_vars = _build_variable_descriptor_dict(data.data_vars)
         spatial_res = _determine_spatial_res(data)
-        bbox = _determine_bbox(data, spatial_res)
+        bbox = _determine_bbox(data)
         time_coverage_start, time_coverage_end = _determine_time_coverage(data)
         time_period = _determine_time_period(data)
         return DatasetDescriptor(data_id=data_id,
@@ -82,6 +87,72 @@ def new_data_descriptor(data_id: str, data: Any, require: bool = False) -> 'Data
     elif not require:
         return DataDescriptor(data_id=data_id, type_specifier=TYPE_SPECIFIER_ANY)
     raise NotImplementedError()
+
+
+def _build_variable_descriptor_dict(variables) -> Mapping[str, 'VariableDescriptor']:
+    return {str(var_name): VariableDescriptor(
+        name=str(var_name),
+        dtype=str(var.dtype),
+        dims=var.dims,
+        chunks=tuple([max(chunk) for chunk in tuple(var.chunks)]) if var.chunks else None,
+        attrs=var.attrs if var.attrs else None)
+        for var_name, var in variables.items()}
+
+
+def _determine_bbox(data: xr.Dataset) -> Optional[Tuple[float, float, float, float]]:
+    try:
+        return get_dataset_bounds(data)
+    except ValueError:
+        if 'geospatial_lon_min' in data.attrs and \
+                'geospatial_lat_min' in data.attrs and \
+                'geospatial_lon_max' in data.attrs and \
+                'geospatial_lat_max' in data.attrs:
+            return (data.geospatial_lat_min, data.geospatial_lon_min,
+                    data.geospatial_lat_max, data.geospatial_lon_max)
+
+
+def _determine_spatial_res(data: xr.Dataset):
+    # TODO get rid of these hard-coded coord names as soon as new resampling is available
+    lat_dimensions = ['lat', 'latitude', 'y']
+    for lat_dimension in lat_dimensions:
+        if lat_dimension in data:
+            lat_diff = data[lat_dimension].diff(dim=data[lat_dimension].dims[0]).values
+            lat_res = lat_diff[0]
+            lat_regular = np.allclose(lat_res, lat_diff, 1e-8)
+            if lat_regular:
+                return float(abs(lat_res))
+
+
+def _determine_time_coverage(data: xr.Dataset):
+    start_time, end_time = get_time_range_from_data(data)
+    if start_time is not None:
+        try:
+            start_time = remove_time_part_from_isoformat(pd.to_datetime(start_time).isoformat())
+        except TypeError:
+            start_time = None
+    if start_time is None:
+        start_time = get_start_time_from_attrs(data)
+    if end_time is not None:
+        try:
+            end_time = remove_time_part_from_isoformat(pd.to_datetime(end_time).isoformat())
+        except TypeError:
+            end_time = None
+    if end_time is None:
+        end_time = get_end_time_from_attrs(data)
+    return start_time, end_time
+
+
+def _determine_time_period(data: xr.Dataset):
+    if 'time' in data and len(data['time'].values) > 1:
+        time_diff = data['time'].diff(dim=data['time'].dims[0]).values.astype(np.float64)
+        time_res = time_diff[0]
+        time_regular = np.allclose(time_res, time_diff, 1e-8)
+        if time_regular:
+            time_period = pd.to_timedelta(time_res).isoformat()
+            # remove leading P
+            time_period = time_period[1:]
+            # removing sub-day precision
+            return time_period.split('T')[0]
 
 
 class DataDescriptor(JsonObject):
@@ -361,107 +432,3 @@ register_json_formatter(DatasetDescriptor)
 register_json_formatter(VariableDescriptor)
 register_json_formatter(MultiLevelDatasetDescriptor)
 register_json_formatter(GeoDataFrameDescriptor)
-
-
-#############################################################################
-# Implementation helpers
-
-
-def _build_variable_descriptor_dict(variables) -> Mapping[str, 'VariableDescriptor']:
-    return {
-        str(var_name): VariableDescriptor(
-            name=str(var_name),
-            dtype=str(var.dtype),
-            dims=var.dims or (),
-            chunks=tuple([max(chunk) for chunk in tuple(var.chunks)]) if var.chunks else None,
-            attrs=var.attrs if var.attrs else None
-        )
-        for var_name, var in variables.items()
-    }
-
-
-def _determine_bbox(data: xr.Dataset, spatial_res: float = 0.0) -> Optional[Tuple[float, float, float, float]]:
-    if spatial_res is None:
-        spatial_res = 0.0
-    # TODO get rid of these hard-coded coord names as soon as new resampling is available
-    min_lat, max_lat, lat_bounds_ending = _determine_min_and_max(data, ['lat', 'latitude', 'y'])
-    min_lon, max_lon, lon_bounds_ending = _determine_min_and_max(data, ['lon', 'longitude', 'x'])
-    lat_spatial_res = 0.0 if lat_bounds_ending != '' else spatial_res
-    lon_spatial_res = 0.0 if lon_bounds_ending != '' else spatial_res
-    if min_lon is not None and min_lat is not None and max_lon is not None and max_lat is not None:
-        return (min_lat - lat_spatial_res / 2,
-                min_lon - lon_spatial_res / 2,
-                max_lat + lat_spatial_res / 2,
-                max_lon + lon_spatial_res / 2)
-    elif 'geospatial_lat_min' in data.attrs and \
-            'geospatial_lon_min' in data.attrs and \
-            'geospatial_lat_max' in data.attrs and \
-            'geospatial_lon_max' in data.attrs:
-        return (data.geospatial_lat_min, data.geospatial_lon_min,
-                data.geospatial_lat_max, data.geospatial_lon_max)
-
-
-def _determine_min_and_max(data: xr.Dataset, dimensions: Sequence[str]) -> (float, float, str):
-    bounds_endings = ['_bnds', '_bounds', '']
-    for bounds_ending in bounds_endings:
-        for dimension in dimensions:
-            dimension = f'{dimension}{bounds_ending}'
-            if dimension in data:
-                dimension_data = data[dimension].values
-                return np.min(dimension_data), np.max(dimension_data), bounds_ending
-    return None, None, ''
-
-
-def _determine_spatial_res(data: xr.Dataset):
-    # TODO get rid of these hard-coded coord names as soon as new resampling is available
-    lat_dimensions = ['lat', 'latitude', 'y']
-    for lat_dimension in lat_dimensions:
-        if lat_dimension in data:
-            lat_diff = data[lat_dimension].diff(dim=data[lat_dimension].dims[0]).values
-            lat_res = lat_diff[0]
-            lat_regular = np.allclose(lat_res, lat_diff, 1e-8)
-            if lat_regular:
-                return float(abs(lat_res))
-
-
-def _determine_time_coverage(data: xr.Dataset):
-    start_time, end_time, _ = _determine_min_and_max(data, ['time'])
-    if start_time is not None:
-        try:
-            start_time = pd.to_datetime(start_time).isoformat()
-        except TypeError:
-            start_time = None
-    if start_time is None and 'time_coverage_start' in data.attrs:
-        start_time = data.time_coverage_start
-    if start_time is not None:
-        start_time = _strip_time_from_datetime_str(start_time)
-    if end_time is not None:
-        try:
-            end_time = pd.to_datetime(end_time).isoformat()
-        except TypeError:
-            end_time = None
-    if end_time is None and 'time_coverage_end' in data.attrs:
-        end_time = data.time_coverage_end
-    if end_time is not None:
-        end_time = _strip_time_from_datetime_str(end_time)
-    return start_time, end_time
-
-
-def _strip_time_from_datetime_str(datetime_str: str) -> str:
-    date_length = 10  # for example len("2010-02-04") == 10
-    if len(datetime_str) > date_length and datetime_str[date_length] in ('T', ' '):
-        return datetime_str[0: date_length]
-    return datetime_str
-
-
-def _determine_time_period(data: xr.Dataset):
-    if 'time' in data and len(data['time'].values) > 1:
-        time_diff = data['time'].diff(dim=data['time'].dims[0]).values.astype(np.float64)
-        time_res = time_diff[0]
-        time_regular = np.allclose(time_res, time_diff, 1e-8)
-        if time_regular:
-            time_period = pd.to_timedelta(time_res).isoformat()
-            # remove leading P
-            time_period = time_period[1:]
-            # removing sub-day precision
-            return time_period.split('T')[0]

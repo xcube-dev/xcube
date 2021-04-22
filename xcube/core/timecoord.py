@@ -20,7 +20,7 @@
 # SOFTWARE.
 
 import datetime
-from typing import Tuple, Union, Sequence
+from typing import Optional, Sequence, Tuple, Union
 
 import numpy as np
 import pandas as pd
@@ -72,10 +72,112 @@ def add_time_coords(dataset: xr.Dataset, time_range: Tuple[float, float]) -> xr.
     return dataset
 
 
+def get_time_range_from_data(dataset: xr.Dataset, maybe_consider_metadata: bool=True) \
+        -> Tuple[Optional[float], Optional[float]]:
+    """
+    Determines a time range from a dataset by inspecting its time_bounds or time data arrays.
+    In cases where no time bounds are given and no time periodicity can be determined,
+    metadata may be considered.
+
+    :param dataset: The dataset of which the time range shall be determined
+    "param maybe_consider_metadata": Whether metadata shall be considered.
+    Only used when the dataset has no time bounds array and no time periodicity.
+    The values will only be set when they do not contradict the values from the data arrays.
+    :return: A tuple with two float values: The first one represents the start time,
+    the second the end time. Either may be None.
+    """
+    time_bounds_names = ['time_bnds', 'time_bounds']
+    for time_bounds_name in time_bounds_names:
+        if time_bounds_name in dataset:
+            return _get_time_range_from_time_bounds(dataset, time_bounds_name)
+    if 'time' not in dataset:
+        return None, None
+    time = dataset["time"]
+    time_bnds_name = time.attrs.get("bounds", "time_bnds")
+    if time_bnds_name in dataset:
+        return _get_time_range_from_time_bounds(dataset, time_bnds_name)
+    if time.size == 1:
+        return _maybe_return_time_range_from_metadata(dataset,
+                                                      time.values[0],
+                                                      time.values[0],
+                                                      maybe_consider_metadata)
+    if time.size == 2:
+        return _maybe_return_time_range_from_metadata(dataset,
+                                                      time.values[0],
+                                                      time.values[1],
+                                                      maybe_consider_metadata)
+    time_diff = time.diff(dim=time.dims[0]).values
+    time_res = time_diff[0]
+    time_regular = all([time_res - diff == np.timedelta64(0) for diff in time_diff[1:]])
+    if time_regular:
+        return min(time).values - time_res / 2, max(time).values + time_res / 2
+    return _maybe_return_time_range_from_metadata(dataset,
+                                                  time.values[0],
+                                                  time.values[-1],
+                                                  maybe_consider_metadata)
+
+
+def _maybe_return_time_range_from_metadata(dataset: xr.Dataset,
+                                           data_start_time: float,
+                                           data_end_time: float,
+                                           maybe_consider_metadata: bool) -> Tuple[float, float]:
+    if maybe_consider_metadata:
+        attr_start_time, attr_end_time = get_time_range_from_attrs(dataset)
+        attr_start_time = pd.to_datetime(attr_start_time, infer_datetime_format=False, utc=True)
+        attr_end_time = pd.to_datetime(attr_end_time, infer_datetime_format=False, utc=True)
+        if attr_start_time is not None and attr_end_time is not None:
+            try:
+                if attr_start_time < data_start_time and attr_end_time > data_end_time:
+                    return attr_start_time.to_datetime64(), attr_end_time.to_datetime64()
+            except TypeError:
+                try:
+                    if attr_start_time.to_datetime64() < data_start_time \
+                            and attr_end_time.to_datetime64() > data_end_time:
+                        return attr_start_time.to_datetime64(), attr_end_time.to_datetime64()
+                except TypeError:
+                    # use time values from data
+                    pass
+    return data_start_time, data_end_time
+
+
+def _get_time_range_from_time_bounds(dataset: xr.Dataset, time_bounds_name: str) \
+        -> Tuple[Optional[float], Optional[float]]:
+    time_bnds = dataset[time_bounds_name]
+    if len(time_bnds.shape) == 2 and time_bnds.shape[1] == 2:
+        return min(time_bnds[:, 0]).values, max(time_bnds[:, 1]).values
+
+
+def get_time_range_from_attrs(dataset: xr.Dataset) -> Tuple[Optional[str], Optional[str]]:
+    return get_start_time_from_attrs(dataset), get_end_time_from_attrs(dataset)
+
+
+def get_start_time_from_attrs(dataset: xr.Dataset) -> Optional[str]:
+    return _get_attr(dataset, ['time_coverage_start', 'time_start', 'start_time', 'start_date'])
+
+
+def get_end_time_from_attrs(dataset: xr.Dataset) -> Optional[str]:
+    return _get_attr(dataset, ['time_coverage_end', 'time_stop', 'time_end', 'stop_time',
+                               'end_time', 'stop_date', 'end_date'])
+
+
+def _get_attr(dataset: xr.Dataset, names: Sequence[str]) -> Optional[str]:
+    for name in names:
+        if name in dataset.attrs:
+            return remove_time_part_from_isoformat(str(dataset.attrs[name]))
+
+
+def remove_time_part_from_isoformat(datetime_str: str) -> str:
+    date_length = 10  # for example len("2010-02-04") == 10
+    if len(datetime_str) > date_length and datetime_str[date_length] in ('T', ' '):
+        return datetime_str[0: date_length]
+    return datetime_str
+
+
 def to_time_in_days_since_1970(time_str: str, pattern=None) -> float:
     datetime = pd.to_datetime(time_str, format=pattern, infer_datetime_format=False, utc=True)
     timedelta = datetime - REF_DATETIME
-    return timedelta.days + timedelta.seconds / SECONDS_PER_DAY + timedelta.microseconds / MICROSECONDS_PER_DAY
+    return timedelta.days + timedelta.seconds / SECONDS_PER_DAY + \
+           timedelta.microseconds / MICROSECONDS_PER_DAY
 
 
 def from_time_in_days_since_1970(time_value: Union[float, Sequence[float]]) -> np.ndarray:
