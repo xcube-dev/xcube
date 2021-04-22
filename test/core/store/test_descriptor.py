@@ -357,7 +357,7 @@ class VariableDescriptorTest(unittest.TestCase):
         vd1 = VariableDescriptor('gz',
                                  'zughysz',
                                  ['rtdswgt', 'dref', 'zdrs5ge'],
-                                 (3, 321, 4))
+                                 chunks=(3, 321, 4))
         self.assertEqual('gz', vd1.name)
         self.assertEqual('zughysz', vd1.dtype)
         self.assertEqual(('rtdswgt', 'dref', 'zdrs5ge'), vd1.dims)
@@ -368,8 +368,8 @@ class VariableDescriptorTest(unittest.TestCase):
         vd3 = VariableDescriptor('gz',
                                  'zughysz',
                                  ['rtdswgt', 'dref', 'zdrs5ge'],
-                                 (3, 321, 4),
-                                 {'d': 2, 'zjgu': ''})
+                                 chunks=(3, 321, 4),
+                                 attrs={'d': 2, 'zjgu': ''})
         self.assertEqual('gz', vd3.name)
         self.assertEqual('zughysz', vd3.dtype)
         self.assertEqual(('rtdswgt', 'dref', 'zdrs5ge'), vd3.dims)
@@ -381,8 +381,8 @@ class VariableDescriptorTest(unittest.TestCase):
         vd = VariableDescriptor('xf',
                                 'rj',
                                 ['dfjhrt', 'sg'],
-                                (3, 2),
-                                {'ssd': 4, 'zjgrhgu': 'dgfrf', 'fill_value': np.NaN})
+                                chunks=(3, 2),
+                                attrs={'ssd': 4, 'zjgrhgu': 'dgfrf', 'fill_value': np.NaN})
         expected = {
             'name': 'xf',
             'dtype': 'rj',

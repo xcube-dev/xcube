@@ -21,7 +21,7 @@
 
 import json
 import sys
-from typing import List, Sequence, Optional
+from typing import List, Sequence, Optional, Dict, AbstractSet, Set, Any
 
 import click
 
@@ -179,15 +179,55 @@ def writer_info(writer_id: str):
     print(_format_params_schema(params_schema))
 
 
+_DEFAULT_DUMP_OUTPUT = 'store-dump.json'
+_SHORT_INCLUDE = ','.join(['store.store_instance_id',
+                           'store.title',
+                           'data.data_id',
+                           'data.bbox',
+                           'data.spatial_res',
+                           'data.time_range',
+                           'data.time_period',
+                           'var.name',
+                           'var.dtype',
+                           'var.dims'])
+
+
 @click.command(name='dump')
-@click.option('-o', '--output', 'output_file_path', metavar='OUTPUT',
-              help='Output filename. Output will be written as JSON.', default='store-dump.json')
+@click.option('-o', '--output', 'output_file_path', metavar='OUTPUT', default=None,
+              help=f'Output filename. Output will be written as JSON.'
+                   f' Defaults to "{_DEFAULT_DUMP_OUTPUT}".')
 @click.option('-c', '--config', 'config_file_path', metavar='CONFIG',
               help='Store configuration filename. May use JSON or YAML format.')
 @click.option('-t', '--type', 'type_specifier', metavar='TYPE',
               help='Type specifier. If given, only data resources that satisfy the '
                    'type specifier are listed. E.g. "dataset" or "dataset[cube]"')
-def dump(output_file_path: str, config_file_path: Optional[str], type_specifier: Optional[str]):
+@click.option('-S', '--short', 'short_form', is_flag=True,
+              help=f'Short form. Forces option "--includes={_SHORT_INCLUDE}".')
+@click.option('-I', '--includes', 'include_props', metavar='INCLUDE_LIST',
+              help='Comma-separated list of properties to be included'
+                   ' from stores (prefix "store."),'
+                   ' data resources (prefix "data.") of stores,'
+                   ' and variables (prefix "var.") of data resources.')
+@click.option('-E', '--excludes', 'exclude_props', metavar='EXCLUDE_LIST',
+              help='Comma-separated list of properties to be excluded'
+                   ' from stores (prefix "store."),'
+                   ' data resources (prefix "data.") of stores,'
+                   ' and variables (prefix "var.") of data resources.')
+@click.option('--csv', 'csv_format', is_flag=True,
+              help=f'Use CSV output format.')
+@click.option('--yaml', 'yaml_format', is_flag=True,
+              help=f'Use YAML output format.')
+@click.option('--json', 'json_format', is_flag=True,
+              help=f'Use JSON output format (the default).')
+def dump(output_file_path: Optional[str],
+         config_file_path: Optional[str],
+         type_specifier: Optional[str],
+         short_form: bool,
+         include_props: str,
+         exclude_props: str,
+         csv_format: bool,
+         yaml_format: bool,
+         json_format: bool):
     """
     Dump metadata of given data stores.
 
@@ -208,7 +248,43 @@ def dump(output_file_path: str, config_file_path: Optional[str], type_specifier:
     """
     from xcube.core.store import DataStoreConfig
     from xcube.core.store import DataStorePool
-    import time
+    import yaml
+    import json
+    import os.path
+
+    if csv_format:
+        output_format = 'csv'
+        ext = '.csv'
+    elif yaml_format:
+        output_format = 'yaml'
+        ext = '.yml'
+    elif json_format:
+        output_format = 'json'
+        ext = '.json'
+    elif output_file_path is not None:
+        path_no_ext, ext = os.path.splitext(output_file_path)
+        if ext in ('.csv', '.txt'):
+            output_format = 'csv'
+        elif ext in ('.yaml', '.yml'):
+            output_format = 'yaml'
+        else:
+            output_format = 'json'
+    else:
+        output_format = 'json'
+        ext = '.json'
+
+    if output_file_path is None:
+        path_no_ext, _ = os.path.splitext(_DEFAULT_DUMP_OUTPUT)
+        output_file_path = path_no_ext + ext
+
+    include_props = _parse_props(include_props) if include_props else None
+    exclude_props = _parse_props(exclude_props) if exclude_props else None
+
+    if short_form:
+        short_include_props = _parse_props(_SHORT_INCLUDE)
+        include_props = include_props or {}
+        for data_key in ('store', 'data', 'var'):
+            include_props[data_key] = include_props.get(data_key, set()).union(short_include_props[data_key])
 
     if config_file_path:
         store_pool = DataStorePool.from_file(config_file_path)
@@ -221,35 +297,149 @@ def dump(output_file_path: str, config_file_path: Optional[str], type_specifier:
                          if extension.name not in ('memory', 'directory', 's3')}
         store_pool = DataStorePool(store_configs)
 
-    stores = []
+    dump_data = _get_store_data_var_tuples(store_pool, type_specifier, include_props, exclude_props)
+
+    if output_format == 'csv':
+        column_names = None
+        column_names_set = None
+        rows = []
+        for store_dict, data_dict, var_dict in dump_data:
+            if store_dict is None:
+                break
+            row = {}
+            row.update({'store.' + k: v for k, v in store_dict.items()})
+            row.update({'data.' + k: v for k, v in data_dict.items()})
+            row.update({'var.' + k: v for k, v in var_dict.items()})
+            rows.append(row)
+            if column_names_set is None:
+                column_names = list(row.keys())
+                column_names_set = set(column_names)
+            else:
+                for k in row.keys():
+                    if k not in column_names_set:
+                        column_names.append(k)
+                        column_names_set.add(k)
+
+        def format_cell_value(value: Any) -> str:
+            return str(value) if value is not None else ''
+
+        sep = '\t'
+        with open(output_file_path, 'w') as fp:
+            fp.write(sep.join(column_names) + '\n')
+            for row in rows:
+                fp.write(sep.join(map(format_cell_value,
+                                      tuple(row.get(k) for k in column_names))) + '\n')
+    else:
+        last_store_dict = None
+        last_data_dict = None
+        vars_list = []
+        data_list = []
+        store_list = []
+        for store_dict, data_dict, var_dict in dump_data:
+            if data_dict is not last_data_dict or data_dict is None:
+                if last_data_dict:
+                    last_data_dict['data_vars'] = vars_list
+                    vars_list = []
+                    data_list.append(last_data_dict)
+                last_data_dict = data_dict
+            if store_dict is not last_store_dict or store_dict is None:
+                if last_store_dict:
+                    last_store_dict['data'] = data_list
+                    data_list = []
+                    store_list.append(last_store_dict)
+                last_store_dict = store_dict
+            if var_dict:
+                vars_list.append(var_dict)
+
+        with open(output_file_path, 'w') as fp:
+            if output_format == 'json':
+                json.dump(dict(stores=store_list), fp, indent=2)
+            else:
+                yaml.dump(dict(stores=store_list), fp, indent=2)
+
+    print(f'Dumped store content to {output_file_path}.')
+
+
+def _get_store_data_var_tuples(store_pool, type_specifier, include_props, exclude_props):
+    import time
+
     for store_instance_id in store_pool.store_instance_ids:
         t0 = time.perf_counter()
         print(f'Generating entries for store "{store_instance_id}"...')
-        try:
-            store_instance = store_pool.get_store(store_instance_id)
-        except BaseException as error:
-            print(f'error: cannot open store "{store_instance_id}": {error}', file=sys.stderr)
-            continue
-
-        try:
-            search_result = [dsd.to_dict() for dsd in store_instance.search_data(type_specifier=type_specifier)]
-        except BaseException as error:
-            print(f'error: cannot search store "{store_instance_id}": {error}', file=sys.stderr)
-            continue
 
         store_config = store_pool.get_store_config(store_instance_id)
-        stores.append(dict(store_instance_id=store_instance_id,
-                           store_id=store_instance_id,
-                           title=store_config.title,
-                           description=store_config.description,
-                           type_specifier=type_specifier,
-                           datasets=search_result))
-        print('Done after {:.2f} seconds'.format(time.perf_counter() - t0))
+        store_dict = dict(store_instance_id=store_instance_id,
+                          store_id=store_instance_id,
+                          title=store_config.title,
+                          description=store_config.description,
+                          type_specifier=type_specifier,
+                          data=[])
+        store_dict = _filter_dict(store_dict, 'store', include_props, exclude_props)
 
-    with open(output_file_path, 'w') as fp:
-        json.dump(dict(stores=stores), fp, indent=2)
+        if 'data' not in store_dict:
+            yield store_dict, {}, {}
+        else:
+            del store_dict['data']
 
-    print(f'Dumped {len(stores)} store(s) to {output_file_path}.')
+            try:
+                store_instance = store_pool.get_store(store_instance_id)
+            except BaseException as error:
+                print(f'error: cannot open store "{store_instance_id}": {error}', file=sys.stderr)
+                continue
+
+            try:
+                data_descriptors = store_instance.search_data(type_specifier=type_specifier)
+            except BaseException as error:
+                print(f'error: cannot search store "{store_instance_id}": {error}', file=sys.stderr)
+                continue
+
+            for data_descriptor in data_descriptors:
+                print(f'Processing data resource "{data_descriptor.data_id}"...')
+                data_dict = data_descriptor.to_dict()
+                data_dict = _filter_dict(data_dict, 'data', include_props, exclude_props)
+                if 'data_vars' not in data_dict:
+                    yield store_dict, data_dict, {}
+                else:
+                    var_dicts = data_dict.pop('data_vars')
+                    for var_name, var_dict in var_dicts.items():
+                        var_dict['name'] = var_name
+                        var_dict = _filter_dict(var_dict, 'var', include_props, exclude_props)
+                        yield store_dict, data_dict, var_dict
+
+        print(f'Done generating entries for store "{store_instance_id}" after '
+              + '{:.2f} seconds'.format(time.perf_counter() - t0))
+
+    # yield Terminator
+    yield None, None, None
+
+
+def _filter_dict(data: Dict[str, Any],
+                 selector: str,
+                 include_props: Dict[str, Set[str]] = None,
+                 exclude_props: Dict[str, Set[str]] = None) -> Dict[str, Any]:
+    includes = (include_props.get(selector) or None) if include_props is not None else None
+    excludes = (exclude_props.get(selector) or None) if exclude_props is not None else None
+    if includes is None and excludes is None:
+        return data
+    return {key: value
+            for key, value in data.items()
+            if (includes is None or key in includes)
+            and (excludes is None or key not in excludes)}
+
+
+def _parse_props(props: str) -> Dict[str, AbstractSet]:
+    parsed_props = dict(store=set(), data=set(), var=set())
+    for p in props.split(','):
+        try:
+            prefix, name = p.strip().split('.')
+            parsed_props[prefix].add(name)
+        except (ValueError, KeyError):
+            raise click.ClickException(f'Invalid include/exclude property: {p}')
+    if parsed_props['var']:
+        parsed_props['data'].add('data_vars')
+    if parsed_props['data']:
+        parsed_props['store'].add('data')
+    return parsed_props
 
 
 @click.group()
