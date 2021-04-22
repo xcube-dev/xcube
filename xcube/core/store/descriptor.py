@@ -36,6 +36,7 @@ from xcube.core.store.typespecifier import TypeSpecifier
 from xcube.core.store.typespecifier import get_type_specifier
 from xcube.util.assertions import assert_given
 from xcube.util.assertions import assert_instance
+from xcube.util.assertions import assert_not_none
 from xcube.util.ipython import register_json_formatter
 from xcube.util.jsonschema import JsonArraySchema
 from xcube.util.jsonschema import JsonDateSchema
@@ -83,14 +84,300 @@ def new_data_descriptor(data_id: str, data: Any, require: bool = False) -> 'Data
     raise NotImplementedError()
 
 
+class DataDescriptor(JsonObject):
+    """
+    A generic descriptor for any data.
+    Also serves as a base class for more specific data descriptors.
+
+    :param data_id: An identifier for the data
+    :param type_specifier: A type specifier for the data
+    :param crs: A coordinate reference system identifier, as an EPSG, PROJ or WKT string
+    :param bbox: A bounding box of the data
+    :param time_range: Start and end time delimiting this data's temporal extent
+    :param time_period: The data's periodicity if it is evenly temporally resolved.
+    :param open_params_schema: A JSON schema describing the parameters that may be used to open
+    this data.
+    """
+
+    def __init__(self,
+                 data_id: str,
+                 type_specifier: Union[str, TypeSpecifier],
+                 *,
+                 crs: str = None,
+                 bbox: Tuple[float, float, float, float] = None,
+                 time_range: Tuple[Optional[str], Optional[str]] = None,
+                 time_period: str = None,
+                 open_params_schema: JsonObjectSchema = None,
+                 **additional_properties):
+        assert_given(data_id, 'data_id')
+        assert_instance(data_id, (str, TypeSpecifier))
+        if additional_properties:
+            warnings.warn(f'Additional properties received;'
+                          f' will be ignored: {additional_properties}')
+        self.data_id = data_id
+        self.type_specifier = TypeSpecifier.normalize(type_specifier)
+        self.crs = crs
+        self.bbox = tuple(bbox) if bbox else None
+        self.time_range = tuple(time_range) if time_range else None
+        self.time_period = time_period
+        self.open_params_schema = open_params_schema
+
+    @classmethod
+    def get_schema(cls) -> JsonObjectSchema:
+        return JsonObjectSchema(
+            properties=dict(
+                data_id=JsonStringSchema(min_length=1),
+                type_specifier=TypeSpecifier.get_schema(),
+                crs=JsonStringSchema(min_length=1),
+                bbox=JsonArraySchema(items=[JsonNumberSchema(),
+                                            JsonNumberSchema(),
+                                            JsonNumberSchema(),
+                                            JsonNumberSchema()]),
+                time_range=JsonDateSchema.new_range(nullable=True),
+                time_period=JsonStringSchema(min_length=1),
+                open_params_schema=JsonObjectSchema(additional_properties=True),
+            ),
+            required=['data_id', 'type_specifier'],
+            additional_properties=True,
+            factory=cls)
+
+    # TODO: reactivate once needed
+    #
+    # @classmethod
+    # def from_dict(cls, mapping: Mapping[str, Any]) -> 'DataDescriptor':
+    #     """Create new instance from a JSON-serializable dictionary"""
+    #     assert_in('data_id', mapping)
+    #     assert_in('type_specifier', mapping)
+    #     if TYPE_SPECIFIER_DATASET.is_satisfied_by(mapping['type_specifier']):
+    #         return DatasetDescriptor.from_dict(mapping)
+    #     elif TYPE_SPECIFIER_GEODATAFRAME.is_satisfied_by(mapping['type_specifier']):
+    #         return GeoDataFrameDescriptor.from_dict(mapping)
+    #     return DataDescriptor(data_id=mapping['data_id'],
+    #                           type_specifier=mapping['type_specifier'],
+    #                           crs=mapping.get('crs'),
+    #                           bbox=mapping.get('bbox'),
+    #                           time_range=mapping.get('time_range'),
+    #                           time_period=mapping.get('time_period'),
+    #                           open_params_schema=mapping.get('open_params_schema'))
+
+
+class DatasetDescriptor(DataDescriptor):
+    """
+    A descriptor for a gridded, N-dimensional dataset represented by xarray.Dataset.
+    Comprises a description of the data variables contained in the dataset.
+
+    :param data_id: An identifier for the data
+    :param type_specifier: A type specifier for the data
+    :param crs: A coordinate reference system identifier, as an EPSG, PROJ or WKT string
+    :param bbox: A bounding box of the data
+    :param time_range: Start and end time delimiting this data's temporal extent (see
+        https://github.com/dcs4cop/xcube/blob/master/docs/source/storeconv.md#date-time-and-duration-specifications )
+    :param time_period: The data's periodicity if it is evenly temporally resolved (see
+        https://github.com/dcs4cop/xcube/blob/master/docs/source/storeconv.md#date-time-and-duration-specifications )
+    :param spatial_res: The spatial extent of a pixel in crs units
+    :param dims: A mapping of the dataset's dimensions to their sizes
+    :param coords: mapping of the dataset's data coordinate names to VariableDescriptors
+        (``xcube.core.store.VariableDescriptor``).
+    :param data_vars: A mapping of the dataset's variable names to VariableDescriptors
+        (``xcube.core.store.VariableDescriptor``).
+    :param attrs: A mapping containing arbitrary attributes of the dataset
+    :param open_params_schema: A JSON schema describing the parameters that may be used to open
+        this data
+    """
+
+    def __init__(self,
+                 data_id: str,
+                 *,
+                 type_specifier: Union[str, TypeSpecifier] = TYPE_SPECIFIER_DATASET,
+                 crs: str = None,
+                 bbox: Tuple[float, float, float, float] = None,
+                 time_range: Tuple[Optional[str], Optional[str]] = None,
+                 time_period: str = None,
+                 spatial_res: float = None,
+                 dims: Mapping[str, int] = None,
+                 coords: Mapping[str, 'VariableDescriptor'] = None,
+                 data_vars: Mapping[str, 'VariableDescriptor'] = None,
+                 attrs: Mapping[str, any] = None,
+                 open_params_schema: JsonObjectSchema = None,
+                 **additional_properties):
+        super().__init__(data_id=data_id,
+                         type_specifier=type_specifier,
+                         crs=crs,
+                         bbox=bbox,
+                         time_range=time_range,
+                         time_period=time_period,
+                         open_params_schema=open_params_schema)
+        self.type_specifier.assert_satisfies(TYPE_SPECIFIER_DATASET)
+        if additional_properties:
+            warnings.warn(f'Additional properties received;'
+                          f' will be ignored: {additional_properties}')
+        self.dims = dict(dims) if dims else None
+        self.spatial_res = spatial_res
+        self.coords = coords if coords else None
+        self.data_vars = data_vars if data_vars else None
+        self.attrs = _convert_nans_to_none(dict(attrs)) if attrs else None
+
+    @classmethod
+    def get_schema(cls) -> JsonObjectSchema:
+        schema = super().get_schema()
+        schema.properties.update(
+            dims=JsonObjectSchema(additional_properties=JsonIntegerSchema(minimum=0)),
+            spatial_res=JsonNumberSchema(exclusive_minimum=0.0),
+            coords=JsonObjectSchema(additional_properties=VariableDescriptor.get_schema()),
+            data_vars=JsonObjectSchema(additional_properties=VariableDescriptor.get_schema()),
+            attrs=JsonObjectSchema(additional_properties=True),
+        )
+        schema.required = ['data_id']
+        schema.additional_properties = False
+        schema.factory = cls
+        return schema
+
+
+class VariableDescriptor(JsonObject):
+    """
+    A descriptor for dataset variable represented by xarray.DataArray instances.
+    They are part of dataset descriptor for an gridded, N-dimensional dataset represented by
+    xarray.Dataset.
+
+    :param name: The variable name
+    :param dtype: The data type of the variable.
+    :param dims: A list of the names of the variable's dimensions.
+    :param chunks: A list of the chunk sizes of the variable's dimensions
+    :param attrs: A mapping containing arbitrary attributes of the variable
+    """
+
+    def __init__(self,
+                 name: str,
+                 dtype: str,
+                 dims: Sequence[str],
+                 *,
+                 chunks: Sequence[int] = None,
+                 attrs: Mapping[str, any] = None,
+                 **additional_properties):
+        assert_given(name, 'name')
+        assert_given(dtype, 'dtype')
+        assert_not_none(dims, 'dims')
+        if additional_properties:
+            warnings.warn(f'Additional properties received; will be ignored: {additional_properties}')
+        self.name = name
+        self.dtype = dtype
+        self.dims = tuple(dims)
+        self.chunks = tuple(chunks) if chunks else None
+        self.attrs = _convert_nans_to_none(dict(attrs)) if attrs is not None else None
+
+    @property
+    def ndim(self) -> int:
+        """Number of dimensions."""
+        return len(self.dims)
+
+    @classmethod
+    def get_schema(cls) -> JsonObjectSchema:
+        return JsonObjectSchema(
+            properties=dict(
+                name=JsonStringSchema(min_length=1),
+                dtype=JsonStringSchema(min_length=1),
+                dims=JsonArraySchema(items=JsonStringSchema(min_length=1)),
+                chunks=JsonArraySchema(items=JsonIntegerSchema(minimum=0)),
+                attrs=JsonObjectSchema(additional_properties=True),
+            ),
+            required=['name', 'dtype', 'dims'],
+            additional_properties=False,
+            factory=cls)
+
+
+class MultiLevelDatasetDescriptor(DatasetDescriptor):
+    """
+    A descriptor for a gridded, N-dimensional, multi-level, multi-resolution dataset represented by
+    xcube.core.mldataset.MultiLevelDataset.
+
+    :param data_id: An identifier of the multi-level dataset
+    :param num_levels: The number of levels of this multi-level dataset
+    :param type_specifier: A type specifier for the multi-level dataset
+    """
+
+    def __init__(self,
+                 data_id: str,
+                 num_levels: int,
+                 *,
+                 type_specifier: Union[str, TypeSpecifier] = TYPE_SPECIFIER_MULTILEVEL_DATASET,
+                 **kwargs):
+        assert_given(data_id, 'data_id')
+        assert_given(num_levels, 'num_levels')
+        super().__init__(data_id=data_id, type_specifier=type_specifier, **kwargs)
+        self.type_specifier.assert_satisfies(TYPE_SPECIFIER_MULTILEVEL_DATASET)
+        self.num_levels = num_levels
+
+    @classmethod
+    def get_schema(cls) -> JsonObjectSchema:
+        schema = super().get_schema()
+        schema.properties.update(
+            num_levels=JsonIntegerSchema(minimum=1),
+        )
+        schema.required = ['data_id', 'num_levels']
+        schema.additional_properties = False
+        schema.factory = cls
+        return schema
+
+
+class GeoDataFrameDescriptor(DataDescriptor):
+    """
+    A descriptor for a geo-vector dataset represented by a geopandas.GeoDataFrame instance.
+
+    :param data_id: An identifier of the geopandas.GeoDataFrame
+    :param feature_schema: A schema describing the properties of the vector data
+    :param kwargs: Parameters passed to super :class:DataDescriptor
+    """
+
+    def __init__(self,
+                 data_id: str,
+                 *,
+                 type_specifier=TYPE_SPECIFIER_GEODATAFRAME,
+                 feature_schema: JsonObjectSchema = None,
+                 **kwargs):
+        super().__init__(data_id=data_id,
+                         type_specifier=type_specifier,
+                         **kwargs)
+        self.type_specifier.assert_satisfies(TYPE_SPECIFIER_GEODATAFRAME)
+        self.feature_schema = feature_schema
+
+    @classmethod
+    def get_schema(cls) -> JsonObjectSchema:
+        schema = super().get_schema()
+        schema.properties.update(
+            feature_schema=JsonObjectSchema(additional_properties=True),
+        )
+        schema.required = ['data_id']
+        schema.additional_properties = False
+        schema.factory = cls
+        return schema
+
+
+def _convert_nans_to_none(d: Dict[str, Any]) -> Dict[str, Any]:
+    return {k: (None if isinstance(v, float) and np.isnan(v) else v) for k, v in d.items()}
+
+
+register_json_formatter(DataDescriptor)
+register_json_formatter(DatasetDescriptor)
+register_json_formatter(VariableDescriptor)
+register_json_formatter(MultiLevelDatasetDescriptor)
+register_json_formatter(GeoDataFrameDescriptor)
+
+
+#############################################################################
+# Implementation helpers
+
+
 def _build_variable_descriptor_dict(variables) -> Mapping[str, 'VariableDescriptor']:
-    return {str(var_name): VariableDescriptor(
-        name=str(var_name),
-        dtype=str(var.dtype),
-        dims=var.dims,
-        chunks=tuple([max(chunk) for chunk in tuple(var.chunks)]) if var.chunks else None,
-        attrs=var.attrs if var.attrs else None)
-        for var_name, var in variables.items()}
+    return {
+        str(var_name): VariableDescriptor(
+            name=str(var_name),
+            dtype=str(var.dtype),
+            dims=var.dims or (),
+            chunks=tuple([max(chunk) for chunk in tuple(var.chunks)]) if var.chunks else None,
+            attrs=var.attrs if var.attrs else None
+        )
+        for var_name, var in variables.items()
+    }
 
 
 def _determine_bbox(data: xr.Dataset, spatial_res: float = 0.0) -> Optional[Tuple[float, float, float, float]]:
@@ -178,277 +465,3 @@ def _determine_time_period(data: xr.Dataset):
             time_period = time_period[1:]
             # removing sub-day precision
             return time_period.split('T')[0]
-
-
-class DataDescriptor(JsonObject):
-    """
-    A generic descriptor for any data.
-    Also serves as a base class for more specific data descriptors.
-
-    :param data_id: An identifier for the data
-    :param type_specifier: A type specifier for the data
-    :param crs: A coordinate reference system identifier, as an EPSG, PROJ or WKT string
-    :param bbox: A bounding box of the data
-    :param time_range: Start and end time delimiting this data's temporal extent
-    :param time_period: The data's periodicity if it is evenly temporally resolved.
-    :param open_params_schema: A JSON schema describing the parameters that may be used to open
-    this data.
-    """
-
-    def __init__(self,
-                 data_id: str,
-                 type_specifier: Union[str, TypeSpecifier],
-                 crs: str = None,
-                 bbox: Tuple[float, float, float, float] = None,
-                 time_range: Tuple[Optional[str], Optional[str]] = None,
-                 time_period: str = None,
-                 open_params_schema: JsonObjectSchema = None,
-                 **additional_properties):
-        assert_given(data_id, 'data_id')
-        assert_instance(data_id, (str, TypeSpecifier))
-        if additional_properties:
-            warnings.warn(f'Additional properties received;'
-                          f' will be ignored: {additional_properties}')
-        self.data_id = data_id
-        self.type_specifier = TypeSpecifier.normalize(type_specifier)
-        self.crs = crs
-        self.bbox = tuple(bbox) if bbox else None
-        self.time_range = tuple(time_range) if time_range else None
-        self.time_period = time_period
-        self.open_params_schema = open_params_schema
-
-    @classmethod
-    def get_schema(cls) -> JsonObjectSchema:
-        return JsonObjectSchema(
-            properties=dict(
-                data_id=JsonStringSchema(min_length=1),
-                type_specifier=TypeSpecifier.get_schema(),
-                crs=JsonStringSchema(min_length=1),
-                bbox=JsonArraySchema(items=[JsonNumberSchema(),
-                                            JsonNumberSchema(),
-                                            JsonNumberSchema(),
-                                            JsonNumberSchema()]),
-                time_range=JsonDateSchema.new_range(nullable=True),
-                time_period=JsonStringSchema(min_length=1),
-                open_params_schema=JsonObjectSchema(additional_properties=True),
-            ),
-            required=['data_id', 'type_specifier'],
-            additional_properties=True,
-            factory=cls)
-
-    # TODO: reactivate once needed
-    #
-    # @classmethod
-    # def from_dict(cls, mapping: Mapping[str, Any]) -> 'DataDescriptor':
-    #     """Create new instance from a JSON-serializable dictionary"""
-    #     assert_in('data_id', mapping)
-    #     assert_in('type_specifier', mapping)
-    #     if TYPE_SPECIFIER_DATASET.is_satisfied_by(mapping['type_specifier']):
-    #         return DatasetDescriptor.from_dict(mapping)
-    #     elif TYPE_SPECIFIER_GEODATAFRAME.is_satisfied_by(mapping['type_specifier']):
-    #         return GeoDataFrameDescriptor.from_dict(mapping)
-    #     return DataDescriptor(data_id=mapping['data_id'],
-    #                           type_specifier=mapping['type_specifier'],
-    #                           crs=mapping.get('crs'),
-    #                           bbox=mapping.get('bbox'),
-    #                           time_range=mapping.get('time_range'),
-    #                           time_period=mapping.get('time_period'),
-    #                           open_params_schema=mapping.get('open_params_schema'))
-
-
-class DatasetDescriptor(DataDescriptor):
-    """
-    A descriptor for a gridded, N-dimensional dataset represented by xarray.Dataset.
-    Comprises a description of the data variables contained in the dataset.
-
-    :param data_id: An identifier for the data
-    :param type_specifier: A type specifier for the data
-    :param crs: A coordinate reference system identifier, as an EPSG, PROJ or WKT string
-    :param bbox: A bounding box of the data
-    :param time_range: Start and end time delimiting this data's temporal extent (see
-        https://github.com/dcs4cop/xcube/blob/master/docs/source/storeconv.md#date-time-and-duration-specifications )
-    :param time_period: The data's periodicity if it is evenly temporally resolved (see
-        https://github.com/dcs4cop/xcube/blob/master/docs/source/storeconv.md#date-time-and-duration-specifications )
-    :param spatial_res: The spatial extent of a pixel in crs units
-    :param dims: A mapping of the dataset's dimensions to their sizes
-    :param coords: mapping of the dataset's data coordinate names to VariableDescriptors
-        (``xcube.core.store.VariableDescriptor``).
-    :param data_vars: A mapping of the dataset's variable names to VariableDescriptors
-        (``xcube.core.store.VariableDescriptor``).
-    :param attrs: A mapping containing arbitrary attributes of the dataset
-    :param open_params_schema: A JSON schema describing the parameters that may be used to open
-        this data
-    """
-
-    def __init__(self,
-                 data_id: str,
-                 type_specifier: Union[str, TypeSpecifier] = TYPE_SPECIFIER_DATASET,
-                 crs: str = None,
-                 bbox: Tuple[float, float, float, float] = None,
-                 time_range: Tuple[Optional[str], Optional[str]] = None,
-                 time_period: str = None,
-                 spatial_res: float = None,
-                 dims: Mapping[str, int] = None,
-                 coords: Mapping[str, 'VariableDescriptor'] = None,
-                 data_vars: Mapping[str, 'VariableDescriptor'] = None,
-                 attrs: Mapping[str, any] = None,
-                 open_params_schema: JsonObjectSchema = None,
-                 **additional_properties):
-        super().__init__(data_id=data_id,
-                         type_specifier=type_specifier,
-                         crs=crs,
-                         bbox=bbox,
-                         time_range=time_range,
-                         time_period=time_period,
-                         open_params_schema=open_params_schema)
-        self.type_specifier.assert_satisfies(TYPE_SPECIFIER_DATASET)
-        if additional_properties:
-            warnings.warn(f'Additional properties received;'
-                          f' will be ignored: {additional_properties}')
-        self.dims = dict(dims) if dims else None
-        self.spatial_res = spatial_res
-        self.coords = coords if coords else None
-        self.data_vars = data_vars if data_vars else None
-        self.attrs = _convert_nans_to_none(dict(attrs)) if attrs else None
-
-    @classmethod
-    def get_schema(cls) -> JsonObjectSchema:
-        schema = super().get_schema()
-        schema.properties.update(
-            dims=JsonObjectSchema(additional_properties=JsonIntegerSchema(minimum=0)),
-            spatial_res=JsonNumberSchema(exclusive_minimum=0.0),
-            coords=JsonObjectSchema(additional_properties=VariableDescriptor.get_schema()),
-            data_vars=JsonObjectSchema(additional_properties=VariableDescriptor.get_schema()),
-            attrs=JsonObjectSchema(additional_properties=True),
-        )
-        schema.required = ['data_id']
-        schema.additional_properties = False
-        schema.factory = cls
-        return schema
-
-
-class VariableDescriptor(JsonObject):
-    """
-    A descriptor for dataset variable represented by xarray.DataArray instances.
-    They are part of dataset descriptor for an gridded, N-dimensional dataset represented by
-    xarray.Dataset.
-
-    :param name: The variable name
-    :param dtype: The data type of the variable.
-    :param dims: A list of the names of the variable's dimensions.
-    :param chunks: A list of the chunk sizes of the variable's dimensions
-    :param attrs: A mapping containing arbitrary attributes of the variable
-    """
-
-    def __init__(self,
-                 name: str,
-                 dtype: str,
-                 dims: Sequence[str],
-                 chunks: Sequence[int] = None,
-                 attrs: Mapping[str, any] = None,
-                 **additional_properties):
-        assert_given(name, 'name')
-        assert_given(dtype, 'dtype')
-        assert_given(dims, 'dims')
-        if additional_properties:
-            warnings.warn(f'Additional properties received; will be ignored: {additional_properties}')
-        self.name = name
-        self.dtype = dtype
-        self.dims = tuple(dims)
-        self.chunks = tuple(chunks) if chunks else None
-        self.attrs = _convert_nans_to_none(dict(attrs)) if attrs is not None else None
-
-    @property
-    def ndim(self) -> int:
-        """Number of dimensions."""
-        return len(self.dims)
-
-    @classmethod
-    def get_schema(cls) -> JsonObjectSchema:
-        return JsonObjectSchema(
-            properties=dict(
-                name=JsonStringSchema(min_length=1),
-                dtype=JsonStringSchema(min_length=1),
-                dims=JsonArraySchema(items=JsonStringSchema(min_length=1)),
-                chunks=JsonArraySchema(items=JsonIntegerSchema(minimum=0)),
-                attrs=JsonObjectSchema(additional_properties=True),
-            ),
-            required=['name', 'dtype', 'dims'],
-            additional_properties=False,
-            factory=cls)
-
-
-class MultiLevelDatasetDescriptor(DatasetDescriptor):
-    """
-    A descriptor for a gridded, N-dimensional, multi-level, multi-resolution dataset represented by
-    xcube.core.mldataset.MultiLevelDataset.
-
-    :param data_id: An identifier of the multi-level dataset
-    :param num_levels: The number of levels of this multi-level dataset
-    :param type_specifier: A type specifier for the multi-level dataset
-    """
-
-    def __init__(self,
-                 data_id: str,
-                 num_levels: int,
-                 type_specifier: Union[str, TypeSpecifier] = TYPE_SPECIFIER_MULTILEVEL_DATASET,
-                 **kwargs):
-        assert_given(data_id, 'data_id')
-        assert_given(num_levels, 'num_levels')
-        super().__init__(data_id=data_id, type_specifier=type_specifier, **kwargs)
-        self.type_specifier.assert_satisfies(TYPE_SPECIFIER_MULTILEVEL_DATASET)
-        self.num_levels = num_levels
-
-    @classmethod
-    def get_schema(cls) -> JsonObjectSchema:
-        schema = super().get_schema()
-        schema.properties.update(
-            num_levels=JsonIntegerSchema(minimum=1),
-        )
-        schema.required = ['data_id', 'num_levels']
-        schema.additional_properties = False
-        schema.factory = cls
-        return schema
-
-
-class GeoDataFrameDescriptor(DataDescriptor):
-    """
-    A descriptor for a geo-vector dataset represented by a geopandas.GeoDataFrame instance.
-
-    :param data_id: An identifier of the geopandas.GeoDataFrame
-    :param feature_schema: A schema describing the properties of the vector data
-    :param kwargs: Parameters passed to super :class:DataDescriptor
-    """
-
-    def __init__(self,
-                 data_id: str,
-                 type_specifier=TYPE_SPECIFIER_GEODATAFRAME,
-                 feature_schema: JsonObjectSchema = None,
-                 **kwargs):
-        super().__init__(data_id=data_id,
-                         type_specifier=type_specifier,
-                         **kwargs)
-        self.type_specifier.assert_satisfies(TYPE_SPECIFIER_GEODATAFRAME)
-        self.feature_schema = feature_schema
-
-    @classmethod
-    def get_schema(cls) -> JsonObjectSchema:
-        schema = super().get_schema()
-        schema.properties.update(
-            feature_schema=JsonObjectSchema(additional_properties=True),
-        )
-        schema.required = ['data_id']
-        schema.additional_properties = False
-        schema.factory = cls
-        return schema
-
-
-def _convert_nans_to_none(d: Dict[str, Any]) -> Dict[str, Any]:
-    return {k: (None if isinstance(v, float) and np.isnan(v) else v) for k, v in d.items()}
-
-
-register_json_formatter(DataDescriptor)
-register_json_formatter(DatasetDescriptor)
-register_json_formatter(VariableDescriptor)
-register_json_formatter(MultiLevelDatasetDescriptor)
-register_json_formatter(GeoDataFrameDescriptor)
