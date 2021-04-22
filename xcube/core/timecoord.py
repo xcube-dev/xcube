@@ -112,8 +112,8 @@ def get_time_range_from_data(dataset: xr.Dataset, maybe_consider_metadata: bool=
     if time_regular:
         return min(time).values - time_res / 2, max(time).values + time_res / 2
     return _maybe_return_time_range_from_metadata(dataset,
-                                                  min(time).values,
-                                                  max(time).values,
+                                                  time.values[0],
+                                                  time.values[-1],
                                                   maybe_consider_metadata)
 
 
