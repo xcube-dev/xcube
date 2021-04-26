@@ -22,6 +22,12 @@
 * S3 Data Store will only recognise a `consolidated = True` parameter setting,
   if the file `{bucket}/{data_id}/.zmetadata` exists. 
 * `xcube gen2` will now ensure that temporal subsets can be created. (#430)
+* Enhance `xcube serve` for use in containers: (#437)
+  * In addition to option `--config` or `-c`, dataset configurations can now 
+    be passed via environment variable `XCUBE_SERVE_CONFIG_FILE`.
+  * Added new option `--base-dir` or `-b` to pass the base directory to
+    resolve relative paths in dataset configurations. In addition, the value
+    can be passed via environment variable `XCUBE_SERVE_BASE_DIR`.
 
 ## Changes in 0.7.2
 
