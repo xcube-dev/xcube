@@ -29,6 +29,8 @@ from xcube.webapi.defaults import DEFAULT_PORT, DEFAULT_ADDRESS, DEFAULT_UPDATE_
 __author__ = "Norman Fomferra (Brockmann Consult GmbH)"
 
 VIEWER_ENV_VAR = 'XCUBE_VIEWER_PATH'
+CONFIG_ENV_VAR = 'XCUBE_SERVE_CONFIG_FILE'
+BASE_ENV_VAR = 'XCUBE_SERVE_BASE_DIR'
 
 
 @click.command(name='serve')
@@ -45,8 +47,6 @@ VIEWER_ENV_VAR = 'XCUBE_VIEWER_PATH'
               help='Service reverse URL prefix. May contain template patterns such as "${version}" or "${name}". '
                    'For example "${name}/api/${version}". Defaults to PREFIX, if any. Will be used only in URLs '
                    'returned by the service e.g. the tile URLs returned by the WMTS service.')
-@click.option('--name', metavar='NAME', hidden=True,
-              help='Service name. Deprecated, use prefix option instead.')
 @click.option('--update', '-u', 'update_period', metavar='PERIOD', type=float,
               default=DEFAULT_UPDATE_PERIOD,
               help='Service will update after given seconds of inactivity. Zero or a negative value will '
@@ -57,9 +57,16 @@ VIEWER_ENV_VAR = 'XCUBE_VIEWER_PATH'
                    'Used only, if one or more CUBE arguments are provided and CONFIG is not given. '
                    'Comma-separated list with elements of the form '
                    '<var>=(<vmin>,<vmax>) or <var>=(<vmin>,<vmax>,"<cmap>")')
-@click.option('--config', '-c', metavar='CONFIG', default=None,
+@click.option('--config', '-c', 'config_file', metavar='CONFIG', default=None,
               help='Use datasets configuration file CONFIG. '
-                   'Cannot be used if CUBES are provided.')
+                   'Cannot be used if CUBES are provided. '
+                   'If not given and also CUBES are not provided, '
+                   f'the configuration may be given by environment variable {CONFIG_ENV_VAR}.')
+@click.option('--base-dir', '-b', 'base_dir', metavar='BASE_DIR', default=None,
+              help='Base directory used to resolve relative dataset paths in CONFIG '
+                   'and relative CUBES paths. '
+                   f'Defaults to value of environment variable {BASE_ENV_VAR}, if given, '
+                   'otherwise defaults to the parent directory of CONFIG.')
 @click.option('--tilecache', 'tile_cache_size', metavar='SIZE', default=DEFAULT_TILE_CACHE_SIZE,
               help=f'In-memory tile cache size in bytes. '
                    f'Unit suffixes {"K"!r}, {"M"!r}, {"G"!r} may be used. '
@@ -67,8 +74,8 @@ VIEWER_ENV_VAR = 'XCUBE_VIEWER_PATH'
                    f'The special value {"OFF"!r} disables tile caching.')
 @click.option('--tilemode', 'tile_comp_mode', metavar='MODE', default=None, type=int,
               help='Tile computation mode. '
-                   'This is an internal option used to switch between different tile computation implementations. '
-                   f'Defaults to {DEFAULT_TILE_COMP_MODE!r}.')
+                   'This is an internal option used to switch between different tile '
+                   f'computation implementations. Defaults to {DEFAULT_TILE_COMP_MODE!r}.')
 @click.option('--show', '-s', is_flag=True,
               help=f"Run viewer app. Requires setting the environment variable {VIEWER_ENV_VAR} "
                    f"to a valid xcube-viewer deployment or build directory. "
@@ -88,10 +95,10 @@ def serve(cube: List[str],
           port: int,
           prefix: str,
           reverse_prefix: str,
-          name: str,
           update_period: float,
           styles: str,
-          config: str,
+          config_file: str,
+          base_dir: str,
           tile_cache_size: str,
           tile_comp_mode: int,
           show: bool,
@@ -109,14 +116,16 @@ def serve(cube: List[str],
     from xcube.cli.common import parse_cli_kwargs
     import os.path
 
-    prefix = prefix or name
-
-    if config and cube:
+    if config_file and cube:
         raise click.ClickException("CONFIG and CUBES cannot be used at the same time.")
+    if not config_file and not cube:
+        config_file = os.environ.get(CONFIG_ENV_VAR)
     if styles:
         styles = parse_cli_kwargs(styles, "STYLES")
     if (aws_prof or aws_env) and not cube:
         raise click.ClickException("AWS credentials are only valid in combination with given CUBE argument(s).")
+
+    base_dir = base_dir or os.environ.get(BASE_ENV_VAR, config_file and os.path.dirname(config_file)) or '.'
 
     from xcube.version import version
     from xcube.webapi.defaults import SERVER_NAME, SERVER_DESCRIPTION
@@ -126,7 +135,7 @@ def serve(cube: List[str],
         _run_viewer()
 
     from xcube.webapi.app import new_application
-    application = new_application(route_prefix=prefix, base_dir=os.path.dirname(config) if config else '.')
+    application = new_application(route_prefix=prefix, base_dir=base_dir)
 
     from xcube.webapi.service import Service
     service = Service(application,
@@ -135,7 +144,7 @@ def serve(cube: List[str],
                       address=address,
                       cube_paths=cube,
                       styles=styles,
-                      config_file=config,
+                      config_file=config_file,
                       tile_cache_size=tile_cache_size,
                       tile_comp_mode=tile_comp_mode,
                       update_period=update_period,
