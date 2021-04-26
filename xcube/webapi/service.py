@@ -1,5 +1,5 @@
 # The MIT License (MIT)
-# Copyright (c) 2019 by the xcube development team and contributors
+# Copyright (c) 2021 by the xcube development team and contributors
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of
 # this software and associated documentation files (the "Software"), to deal in
@@ -71,6 +71,7 @@ class Service:
                  cube_paths: List[str] = None,
                  styles: Dict[str, Tuple] = None,
                  config_file: Optional[str] = None,
+                 base_dir: Optional[str] = None,
                  tile_cache_size: Optional[str] = DEFAULT_TILE_CACHE_SIZE,
                  tile_comp_mode: int = DEFAULT_TILE_COMP_MODE,
                  update_period: Optional[float] = DEFAULT_UPDATE_PERIOD,
@@ -94,6 +95,7 @@ class Service:
         :param port: the port number
         :param cube_paths: optional list of cube paths
         :param config_file: optional configuration file
+        :param base_dir: optional base directory
         :param update_period: if not-None, time of idleness in seconds before service is updated
         :param log_file_prefix: Log file prefix, default is "xcube-serve.log"
         :param log_to_stderr: Whether logging should be shown on stderr
@@ -136,7 +138,6 @@ class Service:
                                  started=datetime.now().isoformat(sep=' '),
                                  pid=os.getpid())
 
-        base_dir = os.path.dirname(self.config_file) if self.config_file else os.path.abspath('')
         self.context = ServiceContext(prefix=prefix,
                                       config=config,
                                       base_dir=base_dir,
@@ -443,7 +444,6 @@ def new_default_config(cube_paths: List[str],
         dataset_list.append(dataset_descriptor)
         index += 1
 
-
     config = dict(Datasets=dataset_list)
     if styles:
         color_mappings = {}
@@ -462,7 +462,9 @@ def new_default_config(cube_paths: List[str],
     return config
 
 
+# TODO (forman): fix this hack
 def _get_custom_color_list(config_file):
+    # global: too bad :(
     global SNAP_CPD_LIST
     config = load_configs(config_file) if config_file else {}
     styles = config.get('Styles')
