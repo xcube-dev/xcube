@@ -1,5 +1,5 @@
 # The MIT License (MIT)
-# Copyright (c) 2019 by the xcube development team and contributors
+# Copyright (c) 2021 by the xcube development team and contributors
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of
 # this software and associated documentation files (the "Software"), to deal in
@@ -124,8 +124,12 @@ def serve(cube: List[str],
         styles = parse_cli_kwargs(styles, "STYLES")
     if (aws_prof or aws_env) and not cube:
         raise click.ClickException("AWS credentials are only valid in combination with given CUBE argument(s).")
+    if config_file and not os.path.isfile(config_file):
+        raise click.ClickException(f"Configuration file not found: {config_file}")
 
     base_dir = base_dir or os.environ.get(BASE_ENV_VAR, config_file and os.path.dirname(config_file)) or '.'
+    if not os.path.isdir(base_dir):
+        raise click.ClickException(f"Base directory not found: {base_dir}")
 
     from xcube.version import version
     from xcube.webapi.defaults import SERVER_NAME, SERVER_DESCRIPTION
@@ -145,6 +149,7 @@ def serve(cube: List[str],
                       cube_paths=cube,
                       styles=styles,
                       config_file=config_file,
+                      base_dir=base_dir,
                       tile_cache_size=tile_cache_size,
                       tile_comp_mode=tile_comp_mode,
                       update_period=update_period,
