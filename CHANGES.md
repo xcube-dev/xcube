@@ -1,4 +1,4 @@
-## Changes in 0.8.0 (in development)
+## Changes in 0.8.0
 
 * Harmonized retrieval of spatial and temporal bounds of a dataset: 
   To determine spatial bounds, use `xcube.core.geom.get_dataset_bounds()`, 
