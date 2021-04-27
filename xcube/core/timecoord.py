@@ -110,7 +110,11 @@ def get_time_range_from_data(dataset: xr.Dataset, maybe_consider_metadata: bool=
     time_res = time_diff[0]
     time_regular = all([time_res - diff == np.timedelta64(0) for diff in time_diff[1:]])
     if time_regular:
-        return min(time).values - time_res / 2, max(time).values + time_res / 2
+        try:
+            return time.values[0] - time_res / 2, time.values[-1] + time_res / 2
+        except TypeError:
+            return (pd.to_datetime(time.values[0].isoformat()) - time_res / 2).to_datetime64(), \
+                   (pd.to_datetime(time.values[-1].isoformat()) + time_res / 2).to_datetime64()
     return _maybe_return_time_range_from_metadata(dataset,
                                                   time.values[0],
                                                   time.values[-1],
