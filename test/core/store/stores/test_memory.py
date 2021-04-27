@@ -1,3 +1,4 @@
+import json
 import unittest
 
 import xarray as xr
@@ -5,9 +6,9 @@ import xarray as xr
 from xcube.core.new import new_cube
 from xcube.core.store import DataStoreError
 from xcube.core.store import DatasetDescriptor
-from xcube.core.store import VariableDescriptor
 from xcube.core.store import TYPE_SPECIFIER_CUBE
 from xcube.core.store import TYPE_SPECIFIER_DATASET
+from xcube.core.store import VariableDescriptor
 from xcube.core.store import new_data_store
 from xcube.core.store.stores.memory import MemoryDataStore
 from xcube.util.jsonschema import JsonObjectSchema
@@ -36,8 +37,8 @@ class MemoryCubeStoreTest(unittest.TestCase):
         self.assertEqual(('*',), self.store.get_type_specifiers())
 
     def test_get_type_specifiers_for_data(self):
-        self.assertEqual(('dataset[cube]', ), self.store.get_type_specifiers_for_data('cube_1'))
-        self.assertEqual(('dataset', ), self.store.get_type_specifiers_for_data('ds_1'))
+        self.assertEqual(('dataset[cube]',), self.store.get_type_specifiers_for_data('cube_1'))
+        self.assertEqual(('dataset',), self.store.get_type_specifiers_for_data('ds_1'))
         with self.assertRaises(DataStoreError) as cm:
             self.store.get_type_specifiers_for_data('geodataframe_2')
         self.assertEqual('Data resource "geodataframe_2" does not exist in store', f'{cm.exception}')
@@ -59,8 +60,9 @@ class MemoryCubeStoreTest(unittest.TestCase):
         self.assertEqual(False, self.store.has_data('ds_1', type_specifier='dataset[cube]'))
 
     def test_describe_data(self):
-        dd = self.store.describe_data('cube_1')
-        self.assertIsInstance(dd, DatasetDescriptor)
+        data_descriptor = self.store.describe_data('cube_1')
+        self.assertIsInstance(data_descriptor, DatasetDescriptor)
+        data_descriptor_dict = data_descriptor.to_dict()
         self.assertDictEqual(
             DatasetDescriptor(
                 data_id='cube_1',
@@ -116,10 +118,14 @@ class MemoryCubeStoreTest(unittest.TestCase):
                        'geospatial_lat_max': 90.0,
                        'geospatial_lat_units': 'degrees_north'}
             ).to_dict(),
-            dd.to_dict())
+            data_descriptor_dict)
+        self.assertIsInstance(data_descriptor_dict, dict)
+        # Assert is JSON-serializable
+        json.dumps(data_descriptor_dict)
 
-        dd = self.store.describe_data('cube_1', type_specifier='dataset[cube]')
-        self.assertIsInstance(dd, DatasetDescriptor)
+        data_descriptor = self.store.describe_data('cube_1', type_specifier='dataset[cube]')
+        self.assertIsInstance(data_descriptor, DatasetDescriptor)
+        data_descriptor_dict = data_descriptor.to_dict()
         self.assertDictEqual(
             DatasetDescriptor(
                 data_id='cube_1',
@@ -175,7 +181,10 @@ class MemoryCubeStoreTest(unittest.TestCase):
                        'geospatial_lat_max': 90.0,
                        'geospatial_lat_units': 'degrees_north'}
             ).to_dict(),
-            dd.to_dict())
+            data_descriptor_dict)
+        self.assertIsInstance(data_descriptor_dict, dict)
+        # Assert is JSON-serializable
+        json.dumps(data_descriptor_dict)
 
     def test_get_search_params_schema(self):
         schema = self.store.get_search_params_schema()
