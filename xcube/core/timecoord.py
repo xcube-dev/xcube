@@ -90,6 +90,8 @@ def get_time_range_from_data(dataset: xr.Dataset, maybe_consider_metadata: bool=
     for time_bounds_name in time_bounds_names:
         if time_bounds_name in dataset:
             return _get_time_range_from_time_bounds(dataset, time_bounds_name)
+    if 'start_time' in dataset and 'end_time' in dataset:
+        return dataset['start_time'].values[0], dataset['end_time'].values[-1]
     time_names = ['time', 't']
     time = None
     for time_name in time_names:
