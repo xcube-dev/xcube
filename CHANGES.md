@@ -1,3 +1,8 @@
+
+## Changes in 0.8.1 (in development)
+
+
+
 ## Changes in 0.8.0
 
 * Harmonized retrieval of spatial and temporal bounds of a dataset: 
