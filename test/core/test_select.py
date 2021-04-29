@@ -1,4 +1,9 @@
+import itertools
+import json
+import math
 import unittest
+from collections import MutableMapping
+from typing import Dict, KeysView, Iterator, Sequence, Any
 
 import numpy as np
 import xarray as xr
@@ -145,3 +150,180 @@ class SelectSubsetTest(unittest.TestCase):
                                           '2010-01-04T12:00:00.000000000'],
                                          dtype='datetime64[ns]'),
                                 ds2.time.values)
+
+    def test_xy_bbox_with_large_dataset(self):
+        ds = self._new_large_dataset()
+        ds_subset = select_spatial_subset(ds, xy_bbox=(0., 0., 5.0, 2.5))
+        self._assert_large_dataset_subset(ds_subset)
+
+    def test_ij_bbox_with_large_dataset(self):
+        ds = self._new_large_dataset()
+        ds_subset = select_spatial_subset(ds, ij_bbox=(129600 // 2, 64800 // 2, 129600 // 2 + 1800, 64800 // 2 + 900))
+        self._assert_large_dataset_subset(ds_subset)
+
+    def _new_large_dataset(self):
+        ds = new_virtual_dataset(lon_size=129600, lat_size=64800, time_size=5,
+                                 lon_chunk=1296, lat_chunk=648, time_chunk=1)
+        # print(ds)
+        self.assertIsInstance(ds, xr.Dataset)
+        self.assertIn('conc_chl', ds)
+        self.assertEqual(('time', 'lat', 'lon'), ds.conc_chl.dims)
+        self.assertEqual((5, 64800, 129600), ds.conc_chl.shape)
+        self.assertEqual((5 * (1,), 100 * (648,), 100 * (1296,)), ds.conc_chl.chunks)
+        return ds
+
+    def _assert_large_dataset_subset(self, ds_subset):
+        # print(ds_subset)
+        self.assertIsInstance(ds_subset, xr.Dataset)
+        self.assertIn('conc_chl', ds_subset)
+        self.assertEqual(('time', 'lat', 'lon'), ds_subset.conc_chl.dims)
+        self.assertEqual((5, 900, 1800), ds_subset.conc_chl.shape)
+        self.assertEqual(((1, 1, 1, 1, 1), (648, 252), (1296, 504)), ds_subset.conc_chl.chunks)
+
+
+def new_virtual_dataset(lon_size: int = 360,
+                        lat_size: int = 180,
+                        time_size: int = 5,
+                        lon_chunk: int = None,
+                        lat_chunk: int = None,
+                        time_chunk: int = None):
+    lon_res = 360. / lon_size
+    lat_res = 180. / lat_size
+
+    lon_values = np.linspace(-180. + lon_res / 2, 180. - lon_res / 2, lon_size)
+    lat_values = np.linspace(-90. + lat_res / 2, 90. - lat_res / 2, lat_size)
+    day1 = 365 * (2021 - 1970)
+    time_values = np.linspace(day1, day1 + time_size, time_size, dtype='int64')
+
+    chunk_store = VirtualChunkStore()
+    chunk_store.add_unchunked_array('lon', ['lon'], lon_values)
+    chunk_store.add_unchunked_array('lat', ['lat'], lat_values)
+    chunk_store.add_unchunked_array('time', ['time'], time_values, attrs={
+        "calendar": "gregorian",
+        "units": "days since 1970-01-01"
+    })
+    chunk_store.add_chunked_array('conc_chl',
+                                  ['time', 'lat', 'lon'],
+                                  [time_size, lat_size, lon_size],
+                                  [time_chunk or time_size, lat_chunk or lat_size, lon_chunk or lon_size])
+
+    return xr.open_zarr(chunk_store)
+
+
+class VirtualChunkStore(MutableMapping):
+
+    def __init__(self, entries: Dict[str, bytes] = None):
+        if entries:
+            self._entries: Dict[str, bytes] = dict(entries)
+        else:
+            self._entries: Dict[str, bytes] = {
+                ".zgroup": bytes(json.dumps({"zarr_format": 2}, indent=2), encoding='utf-8'),
+                ".zattrs": bytes(json.dumps({}, indent=2), encoding='utf-8'),
+            }
+
+    def add_unchunked_array(self,
+                            name: str,
+                            dims: Sequence[str],
+                            values: np.ndarray,
+                            attrs: Dict[str, Any] = None):
+        self._entries.update(self.get_array_entries_unchunked(name, dims, values, attrs=attrs))
+
+    def add_chunked_array(self,
+                          name: str,
+                          dims: Sequence[str],
+                          shape: Sequence[int],
+                          chunks: Sequence[int],
+                          value: float = None):
+        self._entries.update(self.get_array_entries_chunked(name, dims, shape, chunks, value=value))
+
+    def keys(self) -> KeysView[str]:
+        return self._entries.keys()
+
+    def __iter__(self) -> Iterator[str]:
+        return iter(self._entries.keys())
+
+    def __len__(self) -> int:
+        return len(self._entries)
+
+    def __contains__(self, key) -> bool:
+        return key in self._entries
+
+    def __getitem__(self, key: str) -> bytes:
+        return self._entries[key]
+
+    def __setitem__(self, key: str, value: bytes) -> None:
+        self._entries[key] = value
+
+    def __delitem__(self, key: str) -> None:
+        del self._entries[key]
+
+    @classmethod
+    def get_array_entries_unchunked(cls,
+                                    name: str,
+                                    dims: Sequence[str],
+                                    values: np.ndarray,
+                                    attrs: Dict[str, Any] = None) -> Dict[str, bytes]:
+
+        zarray = {
+            "zarr_format": 2,
+            "chunks": list(values.shape),
+            "shape": list(values.shape),
+            "dtype": str(values.dtype.str),
+            "order": "C",
+            "fill_value": None,
+            "compressor": None,
+            "filters": None,
+        }
+
+        zattrs = {
+            # For xarray
+            "_ARRAY_DIMENSIONS": dims,
+        }
+        if attrs:
+            zattrs.update(attrs)
+
+        return {
+            name + '/.zarray': bytes(json.dumps(zarray, indent=2), encoding='utf-8'),
+            name + '/.zattrs': bytes(json.dumps(zattrs, indent=2), encoding='utf-8'),
+            name + '/0': values.tobytes(order="C")
+        }
+
+    @classmethod
+    def get_array_entries_chunked(cls,
+                                  name: str,
+                                  dims: Sequence[str],
+                                  shape: Sequence[int],
+                                  chunks: Sequence[int],
+                                  value: float = None) -> Dict[str, bytes]:
+        dtype = np.dtype('float64')
+
+        zarray = {
+            "zarr_format": 2,
+            "dtype": str(dtype.str),
+            "shape": list(shape),
+            "chunks": list(chunks),
+            "order": "C",
+            "fill_value": "NaN",
+            "compressor": None,
+            "filters": None,
+        }
+
+        zattrs = {
+            # For xarray
+            "_ARRAY_DIMENSIONS": dims
+        }
+
+        entries = {
+            name + '/.zarray': bytes(json.dumps(zarray, indent=2), encoding='utf-8'),
+            name + '/.zattrs': bytes(json.dumps(zattrs, indent=2), encoding='utf-8'),
+        }
+
+        if value is not None:
+            values = np.full(shape, value, dtype=dtype)
+            data = values.tobytes(order="C")
+            chunk_indices = [tuple(range(math.ceil(s / c))) for s, c in zip(shape, chunks)]
+            for index in itertools.product(*chunk_indices):
+                key = f'{name}/{"/".join(index)}'
+                entries[key] = data
+
+        return entries

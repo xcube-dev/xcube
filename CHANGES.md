@@ -1,3 +1,9 @@
+
+## Changes in 0.8.1 (in development)
+
+* Fix out-of-memory error raised if spatial subsets where created from 
+  cubes with large spatial dimensions.
+
 ## Changes in 0.8.0
 
 * Harmonized retrieval of spatial and temporal bounds of a dataset: 
