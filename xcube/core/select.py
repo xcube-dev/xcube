@@ -124,4 +124,11 @@ def select_temporal_subset(dataset: xr.Dataset,
         delta = time_2 - time_2.floor('1D')
         if delta == pd.Timedelta('0 days 00:00:00'):
             time_2 += pd.Timedelta('1D')
-    return dataset.sel({time_name or 'time': slice(time_1, time_2)})
+    try:
+        return dataset.sel({time_name or 'time': slice(time_1, time_2)})
+    except TypeError:
+        import cftime
+        calendar = dataset.time.encoding.get('calendar')
+        time_1 = cftime.datetime(time_1.year, time_1.month, time_1.day, calendar=calendar)
+        time_2 = cftime.datetime(time_2.year, time_2.month, time_2.day, calendar=calendar)
+        return dataset.sel({time_name or 'time': slice(time_1, time_2)})

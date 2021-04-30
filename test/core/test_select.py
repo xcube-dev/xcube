@@ -122,6 +122,21 @@ class SelectTemporalSubsetTest(unittest.TestCase):
                                          dtype='datetime64[ns]'),
                                 ds2.time.values)
 
+    def test_cf_time_subset(self):
+        import cftime
+        ds1 = new_cube(variables=dict(analysed_sst=0.6, mask=8),
+                       time_dtype='cftime.DatetimeJulian',
+                       time_units='days since 1950-01-01',
+                       time_calendar='julian'
+                       )
+        ds2 = select_temporal_subset(ds1, time_range=('2010-01-02', '2010-01-04'))
+        self.assertIsNot(ds2, ds1)
+        np.testing.assert_equal(np.array([cftime.DatetimeJulian(2010, 1, 2, 12 , 0 ,0),
+                                          cftime.DatetimeJulian(2010, 1, 3, 12, 0, 0),
+                                          cftime.DatetimeJulian(2010, 1, 4, 12, 0, 0)],
+                                         dtype='object'),
+                                ds2.time.values)
+
 
 class SelectSubsetTest(unittest.TestCase):
     def test_all_params(self):

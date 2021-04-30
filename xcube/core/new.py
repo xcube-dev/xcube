@@ -107,8 +107,16 @@ def new_cube(title='Test Cube',
         y_var.attrs.update(long_name='y coordinate of projection',
                            standard_name='projection_y_coordinate')
 
-    time_data_p1 = pd.date_range(start=time_start, periods=time_periods + 1, freq=time_freq).values
-    time_data_p1 = time_data_p1.astype(dtype=time_dtype)
+    if time_dtype.startswith('cftime'):
+        time_data_p1 = xr.cftime_range(start=time_start,
+                                       periods=time_periods + 1,
+                                       freq=time_freq,
+                                       calendar=time_calendar).values
+    else:
+        time_data_p1 = pd.date_range(start=time_start,
+                                     periods=time_periods + 1,
+                                     freq=time_freq).values
+        time_data_p1 = time_data_p1.astype(dtype=time_dtype)
 
     time_delta = time_data_p1[1] - time_data_p1[0]
     time_data = time_data_p1[0:-1] + time_delta // 2
