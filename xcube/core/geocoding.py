@@ -25,6 +25,9 @@ import numba as nb
 import numpy as np
 import xarray as xr
 
+from xcube.util.assertions import assert_given
+from xcube.util.assertions import assert_instance
+
 LON_COORD_VAR_NAMES = ('lon', 'long', 'longitude')
 LAT_COORD_VAR_NAMES = ('lat', 'latitude')
 X_COORD_VAR_NAMES = ('x', 'xc') + LON_COORD_VAR_NAMES
@@ -126,9 +129,9 @@ class GeoCoding:
         :param xy_names: Optional tuple of the x- and y-coordinate variables in *dataset*.
         :return: The source dataset's geo-coding.
         """
-        x_name, y_name = _get_dataset_xy_names(dataset, xy_names=xy_names)
-        x = _get_var(dataset, x_name)
-        y = _get_var(dataset, y_name)
+        x_name, y_name = get_dataset_xy_names(dataset, xy_names=xy_names)
+        x = get_xy_var(dataset, x_name)
+        y = get_xy_var(dataset, y_name)
         return cls.from_xy((x, y), xy_names=(x_name, y_name))
 
     @classmethod
@@ -419,7 +422,16 @@ def gu_compute_ij_bboxes(x_image: np.ndarray,
             ij_bboxes[k, 3] = j_max
 
 
-def _get_dataset_xy_names(dataset: xr.Dataset, xy_names: Tuple[str, str] = None) -> Tuple[str, str]:
+def get_xy_var(dataset: xr.Dataset, name: str) -> xr.DataArray:
+    assert_instance(dataset, xr.Dataset, 'dataset')
+    assert_given(name, 'name')
+    if name not in dataset:
+        raise ValueError(f'missing coordinate variable {name!r} in dataset')
+    return dataset[name]
+
+
+def get_dataset_xy_names(dataset: xr.Dataset, xy_names: Tuple[str, str] = None) -> Tuple[str, str]:
+    assert_instance(dataset, xr.Dataset, 'dataset')
     # TODO (forman): merge logic with xcube.core.schema.get_dataset_xy_var_names(dataset) and use it instead
     x_name, y_name = xy_names if xy_names is not None else (None, None)
     return (_get_coord_var_name(dataset, x_name, X_COORD_VAR_NAMES, 'x'),
@@ -443,12 +455,6 @@ def _find_coord_var_name(dataset: xr.Dataset, coord_var_names: Sequence[str], nd
         if coord_var_name in dataset and dataset[coord_var_name].ndim == ndim:
             return coord_var_name
     return None
-
-
-def _get_var(src_ds: xr.Dataset, name: str) -> xr.DataArray:
-    if name not in src_ds:
-        raise ValueError(f'missing coordinate variable {name!r} in dataset')
-    return src_ds[name]
 
 
 def _is_crossing_antimeridian(lon_var: xr.DataArray):
