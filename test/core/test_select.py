@@ -85,7 +85,8 @@ class SelectTemporalSubsetTest(unittest.TestCase):
         ds1 = xr.Dataset(dict(CHL=xr.DataArray([[1, 2], [2, 3]], dims=('lat', 'lon'))))
         with self.assertRaises(ValueError) as cm:
             select_temporal_subset(ds1, time_range=('2010-01-02', '2010-01-04'))
-        self.assertEqual('cannot compute temporal subset: variable "time" not found in dataset', f'{cm.exception}')
+        self.assertEqual('cannot compute temporal subset: variable "time" not found in dataset',
+                         f'{cm.exception}')
 
     def test_no_subset_for_open_interval(self):
         ds1 = new_cube(variables=dict(analysed_sst=0.6, mask=8))
@@ -127,11 +128,10 @@ class SelectTemporalSubsetTest(unittest.TestCase):
         ds1 = new_cube(variables=dict(analysed_sst=0.6, mask=8),
                        time_dtype='cftime.DatetimeJulian',
                        time_units='days since 1950-01-01',
-                       time_calendar='julian'
-                       )
+                       time_calendar='julian')
         ds2 = select_temporal_subset(ds1, time_range=('2010-01-02', '2010-01-04'))
         self.assertIsNot(ds2, ds1)
-        np.testing.assert_equal(np.array([cftime.DatetimeJulian(2010, 1, 2, 12 , 0 ,0),
+        np.testing.assert_equal(np.array([cftime.DatetimeJulian(2010, 1, 2, 12, 0, 0),
                                           cftime.DatetimeJulian(2010, 1, 3, 12, 0, 0),
                                           cftime.DatetimeJulian(2010, 1, 4, 12, 0, 0)],
                                          dtype='object'),
