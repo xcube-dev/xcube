@@ -20,8 +20,9 @@
 # SOFTWARE.
 
 import warnings
-from typing import Tuple, Sequence, Mapping, Optional, Dict, Any, Union
+from typing import Tuple, Sequence, Mapping, Optional, Dict, Any, Union, Hashable
 
+import dask.array
 import geopandas as gpd
 import numpy as np
 import pandas as pd
@@ -77,7 +78,7 @@ def new_data_descriptor(data_id: str, data: Any, require: bool = False) -> 'Data
                                  time_range=(time_coverage_start, time_coverage_end),
                                  time_period=time_period,
                                  spatial_res=spatial_res,
-                                 attrs={str(k): v for k, v in data.attrs.items()})
+                                 attrs=data.attrs)
     elif isinstance(data, MultiLevelDataset):
         # TODO: implement me: data -> MultiLevelDatasetDescriptor
         return MultiLevelDatasetDescriptor(data_id=data_id, num_levels=5)
@@ -202,7 +203,7 @@ class DatasetDescriptor(DataDescriptor):
                  dims: Mapping[str, int] = None,
                  coords: Mapping[str, 'VariableDescriptor'] = None,
                  data_vars: Mapping[str, 'VariableDescriptor'] = None,
-                 attrs: Mapping[str, any] = None,
+                 attrs: Mapping[Hashable, any] = None,
                  open_params_schema: JsonObjectSchema = None,
                  **additional_properties):
         super().__init__(data_id=data_id,
@@ -220,7 +221,7 @@ class DatasetDescriptor(DataDescriptor):
         self.spatial_res = spatial_res
         self.coords = coords if coords else None
         self.data_vars = data_vars if data_vars else None
-        self.attrs = _convert_nans_to_none(dict(attrs)) if attrs else None
+        self.attrs = _attrs_to_json(attrs) if attrs else None
 
     @classmethod
     def get_schema(cls) -> JsonObjectSchema:
@@ -257,7 +258,7 @@ class VariableDescriptor(JsonObject):
                  dims: Sequence[str],
                  *,
                  chunks: Sequence[int] = None,
-                 attrs: Mapping[str, any] = None,
+                 attrs: Mapping[Hashable, any] = None,
                  **additional_properties):
         assert_given(name, 'name')
         assert_given(dtype, 'dtype')
@@ -268,7 +269,7 @@ class VariableDescriptor(JsonObject):
         self.dtype = dtype
         self.dims = tuple(dims)
         self.chunks = tuple(chunks) if chunks else None
-        self.attrs = _convert_nans_to_none(dict(attrs)) if attrs is not None else None
+        self.attrs = _attrs_to_json(attrs) if attrs else None
 
     @property
     def ndim(self) -> int:
@@ -357,10 +358,6 @@ class GeoDataFrameDescriptor(DataDescriptor):
         return schema
 
 
-def _convert_nans_to_none(d: Dict[str, Any]) -> Dict[str, Any]:
-    return {k: (None if isinstance(v, float) and np.isnan(v) else v) for k, v in d.items()}
-
-
 register_json_formatter(DataDescriptor)
 register_json_formatter(DatasetDescriptor)
 register_json_formatter(VariableDescriptor)
@@ -373,12 +370,15 @@ register_json_formatter(GeoDataFrameDescriptor)
 
 
 def _build_variable_descriptor_dict(variables) -> Mapping[str, 'VariableDescriptor']:
-    return {str(var_name): VariableDescriptor(
-        name=str(var_name),
-        dtype=str(var.dtype),
-        dims=var.dims,
-        chunks=tuple([max(chunk) for chunk in tuple(var.chunks)]) if var.chunks else None,
-        attrs=var.attrs if var.attrs else None)
+    return {
+        str(var_name):
+            VariableDescriptor(
+                name=str(var_name),
+                dtype=str(var.dtype),
+                dims=var.dims,
+                chunks=tuple([max(chunk) for chunk in tuple(var.chunks)]) if var.chunks else None,
+                attrs=var.attrs
+            )
         for var_name, var in variables.items()}
 
 
@@ -436,3 +436,16 @@ def _determine_time_period(data: xr.Dataset):
             time_period = time_period[1:]
             # removing sub-day precision
             return time_period.split('T')[0]
+
+
+def _attrs_to_json(attrs: Mapping[Hashable, Any]) -> Optional[Dict[str, Any]]:
+    new_attrs: Dict[str, Any] = {}
+    for k, v in attrs.items():
+        if isinstance(v, np.ndarray):
+            v = v.tolist()
+        elif isinstance(v, dask.array.Array):
+            v = np.array(v).tolist()
+        if isinstance(v, float) and np.isnan(v):
+            v = None
+        new_attrs[str(k)] = v
+    return new_attrs

@@ -325,10 +325,15 @@ def dump(output_file_path: Optional[str],
 
         sep = '\t'
         with open(output_file_path, 'w') as fp:
-            fp.write(sep.join(column_names) + '\n')
-            for row in rows:
-                fp.write(sep.join(map(format_cell_value,
-                                      tuple(row.get(k) for k in column_names))) + '\n')
+            if column_names:
+                fp.write(sep.join(column_names) + '\n')
+                for row in rows:
+                    fp.write(sep.join(map(format_cell_value,
+                                          tuple(row.get(k)
+                                                for k in column_names))) + '\n')
+
+        print(f'Dumped {len(rows)} store entry/ies to {output_file_path}.')
+
     else:
         last_store_dict = None
         last_data_dict = None
@@ -337,13 +342,13 @@ def dump(output_file_path: Optional[str],
         store_list = []
         for store_dict, data_dict, var_dict in dump_data:
             if data_dict is not last_data_dict or data_dict is None:
-                if last_data_dict:
+                if last_data_dict is not None:
                     last_data_dict['data_vars'] = vars_list
                     vars_list = []
                     data_list.append(last_data_dict)
                 last_data_dict = data_dict
             if store_dict is not last_store_dict or store_dict is None:
-                if last_store_dict:
+                if last_store_dict is not None:
                     last_store_dict['data'] = data_list
                     data_list = []
                     store_list.append(last_store_dict)
@@ -357,7 +362,7 @@ def dump(output_file_path: Optional[str],
             else:
                 yaml.dump(dict(stores=store_list), fp, indent=2)
 
-    print(f'Dumped store content to {output_file_path}.')
+        print(f'Dumped entries of {len(store_list)} store(s) to {output_file_path}.')
 
 
 def _get_store_data_var_tuples(store_pool, type_specifier, include_props, exclude_props):

@@ -4,7 +4,7 @@ import jsonschema
 import numpy as np
 
 from xcube.core.new import new_cube
-from xcube.core.store.descriptor import DataDescriptor
+from xcube.core.store.descriptor import DataDescriptor, _attrs_to_json
 from xcube.core.store.descriptor import DatasetDescriptor
 from xcube.core.store.descriptor import GeoDataFrameDescriptor
 from xcube.core.store.descriptor import VariableDescriptor
@@ -424,3 +424,38 @@ class VariableDescriptorTest(unittest.TestCase):
 
         with self.assertRaises(jsonschema.exceptions.ValidationError):
             VariableDescriptor.from_dict({'dtype': 'ghdst', 'dims': ['faer', 'bjunda']})
+
+
+class JsonTest(unittest.TestCase):
+    def test_attrs_to_json_numpy(self):
+        self.assertEqual(
+            {
+                "num_bands": 17,
+                "_FillValue": None,
+                "flag_names": "F1 F2 F3 F4 F5",
+                "flag_values": [1, 2, 4, 8, 16]
+            },
+            _attrs_to_json(
+                {
+                    "num_bands": np.array(17),
+                    "_FillValue": np.nan,
+                    "flag_names": "F1 F2 F3 F4 F5",
+                    "flag_values": np.array([1, 2, 4, 8, 16])
+                }
+            )
+        )
+
+    def test_attrs_to_json_dask(self):
+        import dask.array as da
+        self.assertEqual(
+            {
+                "flag_names": "F1 F2 F3 F4 F5",
+                "flag_values": [1, 2, 4, 8, 16]
+            },
+            _attrs_to_json(
+                {
+                    "flag_names": "F1 F2 F3 F4 F5",
+                    "flag_values": da.from_array([1, 2, 4, 8, 16])
+                }
+            )
+        )

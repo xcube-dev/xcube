@@ -1,3 +1,4 @@
+import json
 import unittest
 
 import s3fs
@@ -5,15 +6,14 @@ import xarray as xr
 
 from test.s3test import S3Test, MOTO_SERVER_ENDPOINT_URL
 from xcube.core.new import new_cube
-from xcube.core.store import DatasetDescriptor
 from xcube.core.store import DataStoreError
+from xcube.core.store import DatasetDescriptor
 from xcube.core.store import TYPE_SPECIFIER_CUBE
 from xcube.core.store import TYPE_SPECIFIER_DATASET
 from xcube.core.store import TYPE_SPECIFIER_MULTILEVEL_DATASET
 from xcube.core.store import new_data_store
 from xcube.core.store.stores.s3 import S3DataStore
 from xcube.util.jsonschema import JsonObjectSchema
-
 
 BUCKET_NAME = 'xcube-test'
 
@@ -155,6 +155,11 @@ class S3DataStoreTest(S3Test):
                          data_descriptor.time_range)
         self.assertEqual({'a', 'b'}, set(data_descriptor.data_vars.keys()))
 
+        d = data_descriptor.to_dict()
+        self.assertIsInstance(d, dict)
+        # Assert is JSON-serializable
+        json.dumps(d)
+
     def test_write_and_get_type_specifiers_for_data(self):
         self.store.s3.mkdir(BUCKET_NAME)
         dataset_1 = new_cube(variables=dict(a=4.1, b=7.4))
@@ -179,6 +184,11 @@ class S3DataStoreTest(S3Test):
         self.assertTrue(self.store.has_data('cube-1.zarr', type_specifier='dataset'))
         self.assertFalse(self.store.has_data('cube-1.zarr', type_specifier='geodataframe'))
         self.assertFalse(self.store.has_data('cube-2.zarr'))
+
+        d = data_descriptor.to_dict()
+        self.assertIsInstance(d, dict)
+        # Assert is JSON-serializable
+        json.dumps(d)
 
     @unittest.skip('Currently fails on appveyor but not locally, execute on demand only')
     def test_write_and_describe_data_from_zarr_describer(self):
