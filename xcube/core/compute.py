@@ -36,6 +36,8 @@ CubeFunc = Callable[..., CubeFuncOutput]
 _PREDEFINED_KEYWORDS = ['input_params', 'dim_coords', 'dim_ranges']
 
 
+# TODO: support vectorize = all cubes have same variables and cube_func receives variables as vectors (with extra dim)
+
 def compute_cube(cube_func: CubeFunc,
                  *input_cubes: xr.Dataset,
                  input_cube_schema: CubeSchema = None,
@@ -51,7 +53,8 @@ def compute_cube(cube_func: CubeFunc,
     from variables named *input_var_names* contained in zero, one, or more
     input data cubes in *input_cubes* using a cube factory function *cube_func*.
 
-    TODO: describe me
+    For a more detailed description of the function usage,
+    please refer to :func:compute_dataset.
 
     :param cube_func: The cube factory function.
     :param input_cubes: An optional sequence of input cube datasets, must be provided if *input_cube_schema* is not.
