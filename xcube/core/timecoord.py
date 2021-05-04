@@ -90,6 +90,8 @@ def get_time_range_from_data(dataset: xr.Dataset, maybe_consider_metadata: bool=
     for time_bounds_name in time_bounds_names:
         if time_bounds_name in dataset:
             return _get_time_range_from_time_bounds(dataset, time_bounds_name)
+    # handle special case with datasets that have special coordinates 'start_time' and 'end_time'.
+    # This is the case for, e.g, ICESHEETS Greenland
     if 'start_time' in dataset and 'end_time' in dataset:
         return dataset['start_time'].values[0], dataset['end_time'].values[-1]
     time_names = ['time', 't']
@@ -97,6 +99,7 @@ def get_time_range_from_data(dataset: xr.Dataset, maybe_consider_metadata: bool=
     for time_name in time_names:
         if time_name in dataset:
             time = dataset[time_name]
+            break
     if time is None:
         return None, None
     time_bnds_name = time.attrs.get("bounds", "time_bnds")

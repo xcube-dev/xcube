@@ -82,6 +82,41 @@ class GetTimeRangeTest(unittest.TestCase):
         self.assertEqual('2010-01-01T00:00:00', pd.Timestamp(time_range[0]).isoformat())
         self.assertEqual('2010-01-06T00:00:00', pd.Timestamp(time_range[1]).isoformat())
 
+    def test_get_time_range_from_data_time_named_t(self):
+        cube = new_cube(drop_bounds=True, time_name='t')
+        time_range = get_time_range_from_data(cube)
+        self.assertIsNotNone(time_range)
+        self.assertEqual('2010-01-01T00:00:00', pd.Timestamp(time_range[0]).isoformat())
+        self.assertEqual('2010-01-06T00:00:00', pd.Timestamp(time_range[1]).isoformat())
+
+    def test_get_time_range_from_data_additional_t_variable(self):
+        import xarray as xr
+        start_time_data = pd.date_range(start='2010-01-03T12:00:00',
+                                        periods=5,
+                                        freq='5D').values.astype(dtype='datetime64[s]')
+        start_time = xr.DataArray(start_time_data, dims='time')
+        end_time_data = pd.date_range(start='2010-01-07T12:00:00',
+                                      periods=5,
+                                      freq='5D').values.astype(dtype='datetime64[s]')
+        end_time = xr.DataArray(end_time_data, dims='time')
+        cube = new_cube(drop_bounds=True,
+                        time_start='2010-01-05T12:00:00',
+                        time_freq='5D',
+                        variables=dict(start_time=start_time, end_time=end_time))
+        time_range = get_time_range_from_data(cube)
+        self.assertIsNotNone(time_range)
+        self.assertEqual('2010-01-03T12:00:00', pd.Timestamp(time_range[0]).isoformat())
+        self.assertEqual('2010-01-27T12:00:00', pd.Timestamp(time_range[1]).isoformat())
+
+    def test_get_time_range_from_data_start_and_end_time_arrays(self):
+        cube = new_cube(drop_bounds=True,
+                        use_cftime=True,
+                        time_dtype=None)
+        time_range = get_time_range_from_data(cube)
+        self.assertIsNotNone(time_range)
+        self.assertEqual('2010-01-01T00:00:00', pd.Timestamp(time_range[0]).isoformat())
+        self.assertEqual('2010-01-06T00:00:00', pd.Timestamp(time_range[1]).isoformat())
+
     def test_get_time_range_from_data_bounds(self):
         cube = new_cube()
         time_range = get_time_range_from_data(cube)
