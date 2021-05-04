@@ -131,7 +131,8 @@ class SelectTemporalSubsetTest(unittest.TestCase):
     def test_cf_time_subset(self):
         import cftime
         ds1 = new_cube(variables=dict(analysed_sst=0.6, mask=8),
-                       time_dtype='cftime.DatetimeJulian',
+                       use_cftime=True,
+                       time_dtype=None,
                        time_units='days since 1950-01-01',
                        time_calendar='julian')
         ds2 = select_temporal_subset(ds1, time_range=('2010-01-02', '2010-01-04'))
