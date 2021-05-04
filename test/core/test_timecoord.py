@@ -48,15 +48,20 @@ class AddTimeCoordsTest(unittest.TestCase):
 
     def test_from_time_in_days_since_1970(self):
         self.assertEqual('2017-06-07T12:00:00.000000000',
-                         str(from_time_in_days_since_1970(to_time_in_days_since_1970('201706071200'))))
+                         str(from_time_in_days_since_1970(
+                             to_time_in_days_since_1970('201706071200'))))
         self.assertEqual('2017-06-08T12:00:00.000000000',
-                         str(from_time_in_days_since_1970(to_time_in_days_since_1970('201706081200'))))
+                         str(from_time_in_days_since_1970(
+                             to_time_in_days_since_1970('201706081200'))))
         self.assertEqual('2018-06-08T12:00:00.000000000',
-                         str(from_time_in_days_since_1970(to_time_in_days_since_1970('2018-06-08 12:00'))))
+                         str(from_time_in_days_since_1970(
+                             to_time_in_days_since_1970('2018-06-08 12:00'))))
         self.assertEqual('2018-06-08T12:00:00.000000000',
-                         str(from_time_in_days_since_1970(to_time_in_days_since_1970('2018-06-08T12:00'))))
+                         str(from_time_in_days_since_1970(
+                             to_time_in_days_since_1970('2018-06-08T12:00'))))
         self.assertEqual('2019-10-04T10:13:48.538000000',
-                         str(from_time_in_days_since_1970(to_time_in_days_since_1970('04-OCT-2019 10:13:48.538184'))))
+                         str(from_time_in_days_since_1970(
+                             to_time_in_days_since_1970('04-OCT-2019 10:13:48.538184'))))
 
 
 class GetTimeRangeTest(unittest.TestCase):
@@ -106,10 +111,14 @@ class TimestampToIsoStringTest(unittest.TestCase):
 
     def test_it_with_h_res(self):
         self.assertEqual("2018-09-05T00:00:00Z",
-                         timestamp_to_iso_string(np.datetime64("2018-09-05"), freq="H"))
+                         timestamp_to_iso_string(np.datetime64("2018-09-05"),
+                                                 freq="H"))
         self.assertEqual("2018-09-05T11:00:00Z",
-                         timestamp_to_iso_string(np.datetime64("2018-09-05 10:35:42"), freq="H"))
+                         timestamp_to_iso_string(np.datetime64("2018-09-05 10:35:42"),
+                                                 freq="H"))
         self.assertEqual("2018-09-05T11:00:00Z",
-                         timestamp_to_iso_string(np.datetime64("2018-09-05 10:35:42.164"), freq="H"))
+                         timestamp_to_iso_string(np.datetime64("2018-09-05 10:35:42.164"),
+                                                 freq="H"))
         self.assertEqual("2019-10-04T10:00:00Z",
-                         timestamp_to_iso_string(pd.to_datetime("04-OCT-2019 10:13:48.538184"), freq="H"))
+                         timestamp_to_iso_string(pd.to_datetime("04-OCT-2019 10:13:48.538184"),
+                                                 freq="H"))
