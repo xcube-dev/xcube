@@ -90,8 +90,13 @@ def select_spatial_subset(dataset: xr.Dataset,
     if x.ndim == 1 and y.ndim == 1:
         # Hotfix für #981 and #985
         if xy_bbox:
-            return dataset.sel(**{x_name: slice(xy_bbox[0] - xy_border, xy_bbox[2] + xy_border),
-                                  y_name: slice(xy_bbox[1] - xy_border, xy_bbox[3] + xy_border)})
+            if y.values[0] < y.values[-1]:
+                ds = dataset.sel(**{x_name: slice(xy_bbox[0] - xy_border, xy_bbox[2] + xy_border),
+                                    y_name: slice(xy_bbox[1] - xy_border, xy_bbox[3] + xy_border)})
+            else:
+                ds = dataset.sel(**{x_name: slice(xy_bbox[0] - xy_border, xy_bbox[2] + xy_border),
+                                    y_name: slice(xy_bbox[3] + xy_border, xy_bbox[1] - xy_border)})
+            return ds
         else:
             return dataset.isel(**{x_name: slice(ij_bbox[0] - ij_border, ij_bbox[2] + ij_border),
                                    y_name: slice(ij_bbox[1] - ij_border, ij_bbox[3] + ij_border)})
