@@ -73,6 +73,15 @@ class GetTimeRangeTest(unittest.TestCase):
         self.assertEqual('2010-01-01T00:00:00', pd.Timestamp(time_range[0]).isoformat())
         self.assertEqual('2010-01-06T00:00:00', pd.Timestamp(time_range[1]).isoformat())
 
+    def test_get_time_range_from_data_cftime(self):
+        cube = new_cube(drop_bounds=True,
+                        use_cftime=True,
+                        time_dtype=None)
+        time_range = get_time_range_from_data(cube)
+        self.assertIsNotNone(time_range)
+        self.assertEqual('2010-01-01T00:00:00', pd.Timestamp(time_range[0]).isoformat())
+        self.assertEqual('2010-01-06T00:00:00', pd.Timestamp(time_range[1]).isoformat())
+
     def test_get_time_range_from_data_bounds(self):
         cube = new_cube()
         time_range = get_time_range_from_data(cube)
