@@ -4,7 +4,7 @@ import jsonschema
 import numpy as np
 
 from xcube.core.new import new_cube
-from xcube.core.store.descriptor import DataDescriptor
+from xcube.core.store.descriptor import DataDescriptor, _attrs_to_json
 from xcube.core.store.descriptor import DatasetDescriptor
 from xcube.core.store.descriptor import GeoDataFrameDescriptor
 from xcube.core.store.descriptor import VariableDescriptor
@@ -23,7 +23,7 @@ class NewDataDescriptorTest(unittest.TestCase):
         self.assertTrue(isinstance(descriptor, DatasetDescriptor))
         self.assertEqual('cube', descriptor.data_id)
         self.assertEqual('dataset[cube]', descriptor.type_specifier)
-        self.assertEqual((-90.0, -180.0, 90.0, 180.0), descriptor.bbox)
+        self.assertEqual((-180.0, -90.0, 180.0, 90.0), descriptor.bbox)
         self.assertIsNone(descriptor.open_params_schema)
         self.assertEqual(('2010-01-01', '2010-01-06'), descriptor.time_range)
         self.assertEqual('1D', descriptor.time_period)
@@ -357,7 +357,7 @@ class VariableDescriptorTest(unittest.TestCase):
         vd1 = VariableDescriptor('gz',
                                  'zughysz',
                                  ['rtdswgt', 'dref', 'zdrs5ge'],
-                                 (3, 321, 4))
+                                 chunks=(3, 321, 4))
         self.assertEqual('gz', vd1.name)
         self.assertEqual('zughysz', vd1.dtype)
         self.assertEqual(('rtdswgt', 'dref', 'zdrs5ge'), vd1.dims)
@@ -368,8 +368,8 @@ class VariableDescriptorTest(unittest.TestCase):
         vd3 = VariableDescriptor('gz',
                                  'zughysz',
                                  ['rtdswgt', 'dref', 'zdrs5ge'],
-                                 (3, 321, 4),
-                                 {'d': 2, 'zjgu': ''})
+                                 chunks=(3, 321, 4),
+                                 attrs={'d': 2, 'zjgu': ''})
         self.assertEqual('gz', vd3.name)
         self.assertEqual('zughysz', vd3.dtype)
         self.assertEqual(('rtdswgt', 'dref', 'zdrs5ge'), vd3.dims)
@@ -381,8 +381,8 @@ class VariableDescriptorTest(unittest.TestCase):
         vd = VariableDescriptor('xf',
                                 'rj',
                                 ['dfjhrt', 'sg'],
-                                (3, 2),
-                                {'ssd': 4, 'zjgrhgu': 'dgfrf', 'fill_value': np.NaN})
+                                chunks=(3, 2),
+                                attrs={'ssd': 4, 'zjgrhgu': 'dgfrf', 'fill_value': np.NaN})
         expected = {
             'name': 'xf',
             'dtype': 'rj',
@@ -424,3 +424,38 @@ class VariableDescriptorTest(unittest.TestCase):
 
         with self.assertRaises(jsonschema.exceptions.ValidationError):
             VariableDescriptor.from_dict({'dtype': 'ghdst', 'dims': ['faer', 'bjunda']})
+
+
+class JsonTest(unittest.TestCase):
+    def test_attrs_to_json_numpy(self):
+        self.assertEqual(
+            {
+                "num_bands": 17,
+                "_FillValue": None,
+                "flag_names": "F1 F2 F3 F4 F5",
+                "flag_values": [1, 2, 4, 8, 16]
+            },
+            _attrs_to_json(
+                {
+                    "num_bands": np.array(17),
+                    "_FillValue": np.nan,
+                    "flag_names": "F1 F2 F3 F4 F5",
+                    "flag_values": np.array([1, 2, 4, 8, 16])
+                }
+            )
+        )
+
+    def test_attrs_to_json_dask(self):
+        import dask.array as da
+        self.assertEqual(
+            {
+                "flag_names": "F1 F2 F3 F4 F5",
+                "flag_values": [1, 2, 4, 8, 16]
+            },
+            _attrs_to_json(
+                {
+                    "flag_names": "F1 F2 F3 F4 F5",
+                    "flag_values": da.from_array([1, 2, 4, 8, 16])
+                }
+            )
+        )

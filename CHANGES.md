@@ -1,5 +1,15 @@
-## Changes in 0.8.0 (in development)
 
+## Changes in 0.8.1 (in development)
+
+* Fixed out-of-memory error raised if spatial subsets where created from 
+  cubes with large spatial dimensions. (#442)
+
+## Changes in 0.8.0
+
+* Harmonized retrieval of spatial and temporal bounds of a dataset: 
+  To determine spatial bounds, use `xcube.core.geom.get_dataset_bounds()`, 
+  to determine temporal bounds, use `xcube.core.timecoord.get_time_range_from_data()`. 
+  Both methods will attempt to get the values from associated bounds arrays first. 
 * Fixed broken JSON object serialisation of objects returned by 
   `DataStore.describe_object()`. (#432)
 * Changed behaviour and signature of `xcube.core.store.DataStore.get_dataset_ids()`.
@@ -18,6 +28,12 @@
 * S3 Data Store will only recognise a `consolidated = True` parameter setting,
   if the file `{bucket}/{data_id}/.zmetadata` exists. 
 * `xcube gen2` will now ensure that temporal subsets can be created. (#430)
+* Enhance `xcube serve` for use in containers: (#437)
+  * In addition to option `--config` or `-c`, dataset configurations can now 
+    be passed via environment variable `XCUBE_SERVE_CONFIG_FILE`.
+  * Added new option `--base-dir` or `-b` to pass the base directory to
+    resolve relative paths in dataset configurations. In addition, the value
+    can be passed via environment variable `XCUBE_SERVE_BASE_DIR`.
 
 ## Changes in 0.7.2
 

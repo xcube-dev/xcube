@@ -1,7 +1,8 @@
+import json
 import os.path
 import unittest
 
-from xcube.core.store import DataStoreError
+from xcube.core.store import DataStoreError, DatasetDescriptor
 from xcube.core.store import TYPE_SPECIFIER_CUBE
 from xcube.core.store import TYPE_SPECIFIER_DATASET
 from xcube.core.store import new_data_store
@@ -104,7 +105,6 @@ class DirectoryDataStoreTest(unittest.TestCase):
         self.assertEqual({'dataset:zarr:posix'},
                          set(self.store.get_data_opener_ids(data_id='dgdf.zarr')))
 
-
     def test_get_type_specifiers_for_data(self):
         self.assertEqual(('dataset',),
                          self.store.get_type_specifiers_for_data('cube-1-250-250.zarr'))
@@ -197,17 +197,34 @@ class DirectoryDataStoreTest(unittest.TestCase):
 
     def test_describe_data(self):
         data_descriptor = self.store.describe_data('cube-1-250-250.zarr')
-        self.assertIsNotNone(data_descriptor)
+        self.assertIsInstance(data_descriptor, DatasetDescriptor)
         self.assertEqual('cube-1-250-250.zarr', data_descriptor.data_id)
         self.assertEqual('dataset[cube]', data_descriptor.type_specifier)
+        d = data_descriptor.to_dict()
+        self.assertIsInstance(d, dict)
+        # Assert is JSON-serializable
+        json.dumps(d)
 
         data_descriptor = self.store.describe_data('cube-1-250-250.zarr', type_specifier='dataset')
-        self.assertIsNotNone(data_descriptor)
+        self.assertIsInstance(data_descriptor, DatasetDescriptor)
         self.assertEqual('cube-1-250-250.zarr', data_descriptor.data_id)
         self.assertEqual('dataset[cube]', data_descriptor.type_specifier)
+        d = data_descriptor.to_dict()
+        self.assertIsInstance(d, dict)
+        # Assert is JSON-serializable
+        json.dumps(d)
+
+        data_descriptor = self.store.describe_data('cube.nc')
+        self.assertIsInstance(data_descriptor, DatasetDescriptor)
+        self.assertEqual('cube.nc', data_descriptor.data_id)
+        self.assertEqual('dataset[cube]', data_descriptor.type_specifier)
+        d = data_descriptor.to_dict()
+        self.assertIsInstance(d, dict)
+        # Assert is JSON-serializable
+        json.dumps(d)
 
         with self.assertRaises(DataStoreError) as cm:
-            set(self.store.describe_data('cube-1-250-250.zarr', type_specifier='geodataframe'))
+            self.store.describe_data('cube-1-250-250.zarr', type_specifier='geodataframe')
         self.assertEqual(
             'Type specifier "geodataframe" cannot be satisfied by type specifier "dataset" '
             'of data resource "cube-1-250-250.zarr"', f'{cm.exception}')

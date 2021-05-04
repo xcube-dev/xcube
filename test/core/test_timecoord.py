@@ -4,8 +4,15 @@ import numpy as np
 import pandas as pd
 
 from test.sampledata import create_highroc_dataset
-from xcube.core.timecoord import add_time_coords, from_time_in_days_since_1970, timestamp_to_iso_string, \
-    to_time_in_days_since_1970
+from xcube.core.new import new_cube
+from xcube.core.timecoord import add_time_coords
+from xcube.core.timecoord import from_time_in_days_since_1970
+from xcube.core.timecoord import get_end_time_from_attrs
+from xcube.core.timecoord import get_start_time_from_attrs
+from xcube.core.timecoord import get_time_range_from_attrs
+from xcube.core.timecoord import get_time_range_from_data
+from xcube.core.timecoord import timestamp_to_iso_string
+from xcube.core.timecoord import to_time_in_days_since_1970
 
 
 class AddTimeCoordsTest(unittest.TestCase):
@@ -50,6 +57,40 @@ class AddTimeCoordsTest(unittest.TestCase):
                          str(from_time_in_days_since_1970(to_time_in_days_since_1970('2018-06-08T12:00'))))
         self.assertEqual('2019-10-04T10:13:48.538000000',
                          str(from_time_in_days_since_1970(to_time_in_days_since_1970('04-OCT-2019 10:13:48.538184'))))
+
+
+class GetTimeRangeTest(unittest.TestCase):
+
+    def test_get_time_range_from_data(self):
+        cube = new_cube(drop_bounds=True)
+        time_range = get_time_range_from_data(cube)
+        self.assertIsNotNone(time_range)
+        self.assertEqual('2010-01-01T00:00:00', pd.Timestamp(time_range[0]).isoformat())
+        self.assertEqual('2010-01-06T00:00:00', pd.Timestamp(time_range[1]).isoformat())
+
+    def test_get_time_range_from_data_bounds(self):
+        cube = new_cube()
+        time_range = get_time_range_from_data(cube)
+        self.assertIsNotNone(time_range)
+        self.assertEqual('2010-01-01T00:00:00', pd.Timestamp(time_range[0]).isoformat())
+        self.assertEqual('2010-01-06T00:00:00', pd.Timestamp(time_range[1]).isoformat())
+
+    def test_get_time_range_from_attrs(self):
+        cube = new_cube()
+        time_range = get_time_range_from_attrs(cube)
+        self.assertIsNotNone(time_range)
+        self.assertEqual('2010-01-01T00:00:00', pd.Timestamp(time_range[0]).isoformat())
+        self.assertEqual('2010-01-06T00:00:00', pd.Timestamp(time_range[1]).isoformat())
+
+    def test_get_start_time_from_attrs(self):
+        cube = new_cube()
+        start_time = get_start_time_from_attrs(cube)
+        self.assertEqual('2010-01-01T00:00:00', pd.Timestamp(start_time).isoformat())
+
+    def test_get_end_time_from_attrs(self):
+        cube = new_cube()
+        end_time = get_end_time_from_attrs(cube)
+        self.assertEqual('2010-01-06T00:00:00', pd.Timestamp(end_time).isoformat())
 
 
 class TimestampToIsoStringTest(unittest.TestCase):

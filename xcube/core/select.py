@@ -3,7 +3,7 @@ from typing import Collection, Optional, Tuple, Union
 import pandas as pd
 import xarray as xr
 
-from xcube.core.geocoding import GeoCoding
+from xcube.core.geocoding import GeoCoding, get_dataset_xy_names, get_xy_var
 from xcube.util.assertions import assert_given
 
 Bbox = Tuple[float, float, float, float]
@@ -82,19 +82,33 @@ def select_spatial_subset(dataset: xr.Dataset,
         raise ValueError('One of ij_bbox and xy_bbox must be given')
     if ij_bbox and xy_bbox:
         raise ValueError('Only one of ij_bbox and xy_bbox can be given')
-    geo_coding = geo_coding if geo_coding is not None else GeoCoding.from_dataset(dataset, xy_names=xy_names)
-    if xy_bbox:
-        ij_bbox = geo_coding.ij_bbox(xy_bbox, ij_border=ij_border, xy_border=xy_border)
-        if ij_bbox[0] == -1:
-            return None
-    width, height = geo_coding.size
-    i_min, j_min, i_max, j_max = ij_bbox
-    if i_min > 0 or j_min > 0 or i_max < width - 1 or j_max < height - 1:
-        x_dim, y_dim = geo_coding.dims
-        i_slice = slice(i_min, i_max + 1)
-        j_slice = slice(j_min, j_max + 1)
-        return dataset.isel({x_dim: i_slice, y_dim: j_slice})
-    return dataset
+
+    x_name, y_name = get_dataset_xy_names(dataset, xy_names=xy_names)
+    x = get_xy_var(dataset, x_name)
+    y = get_xy_var(dataset, y_name)
+
+    if x.ndim == 1 and y.ndim == 1:
+        # Hotfix für #981 and #985
+        if xy_bbox:
+            return dataset.sel(**{x_name: slice(xy_bbox[0] - xy_border, xy_bbox[2] + xy_border),
+                                  y_name: slice(xy_bbox[1] - xy_border, xy_bbox[3] + xy_border)})
+        else:
+            return dataset.isel(**{x_name: slice(ij_bbox[0] - ij_border, ij_bbox[2] + ij_border),
+                                   y_name: slice(ij_bbox[1] - ij_border, ij_bbox[3] + ij_border)})
+    else:
+        geo_coding = geo_coding if geo_coding is not None else GeoCoding.from_xy((x, y), xy_names=xy_names)
+        if xy_bbox:
+            ij_bbox = geo_coding.ij_bbox(xy_bbox, ij_border=ij_border, xy_border=xy_border)
+            if ij_bbox[0] == -1:
+                return None
+        width, height = geo_coding.size
+        i_min, j_min, i_max, j_max = ij_bbox
+        if i_min > 0 or j_min > 0 or i_max < width - 1 or j_max < height - 1:
+            x_dim, y_dim = geo_coding.dims
+            i_slice = slice(i_min, i_max + 1)
+            j_slice = slice(j_min, j_max + 1)
+            return dataset.isel({x_dim: i_slice, y_dim: j_slice})
+        return dataset
 
 
 def select_temporal_subset(dataset: xr.Dataset,

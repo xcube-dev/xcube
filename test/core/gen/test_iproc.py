@@ -67,7 +67,7 @@ class DefaultInputProcessorTest(unittest.TestCase):
         reprojection_info = self.processor.get_reprojection_info(create_default_dataset())
         self.assertIsNotNone(reprojection_info)
 
-    def test_to_time_range(self):
+    def test_get_time_range(self):
         ds = create_default_dataset(time_mode="time")
         t1, t2 = self.processor.get_time_range(ds)
         self.assertEqual(to_time_in_days_since_1970("20100301T120000Z"), t1)
