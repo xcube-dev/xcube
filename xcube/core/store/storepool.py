@@ -259,7 +259,7 @@ class DataStorePool:
                 store_configs = json.load(fp)
             else:
                 store_configs = yaml.safe_load(fp)
-        return cls.from_dict(store_configs)
+        return cls.from_dict(store_configs or {})
 
     @classmethod
     def from_dict(cls, d: Dict[str, Any]) -> 'DataStorePool':
