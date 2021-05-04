@@ -9,7 +9,6 @@ import numpy as np
 import xarray as xr
 
 from test.sampledata import create_highroc_dataset
-from test.sampledata import create_s2plus_dataset
 from xcube.core.new import new_cube
 from xcube.core.select import select_spatial_subset
 from xcube.core.select import select_subset
