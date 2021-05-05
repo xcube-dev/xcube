@@ -58,7 +58,9 @@ def compute_cube(cube_func: CubeFunc,
 
     :param cube_func: The cube factory function.
     :param input_cubes: An optional sequence of input cube datasets, must be provided if *input_cube_schema* is not.
-    :param input_cube_schema: An optional input cube schema, must be provided if *input_cubes* is not.
+    :param input_cube_schema: An optional input cube schema, 
+    must be provided if *input_cubes* is not. 
+    Will be ignored if *input_cubes* is provided.
     :param input_var_names: A sequence of variable names
     :param input_params: Optional dictionary with processing parameters passed to *cube_func*.
     :param output_var_name: Optional name of the output variable, defaults to ``'output'``.
