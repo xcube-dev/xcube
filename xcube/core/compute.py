@@ -197,7 +197,7 @@ def compute_dataset(cube_func: CubeFunc,
 
         if index_chunk.size < 2 * input_cube_schema.ndim:
             if not empty_call:
-                warnings.warn(f"weird index_chunk of size {index_chunk.size} received!")
+                warnings.warn(f"unexpected index_chunk of size {index_chunk.size} received!")
                 return None
 
         dim_ranges = None
