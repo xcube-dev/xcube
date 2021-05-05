@@ -84,6 +84,12 @@ class SelectSpatialSubsetTest(unittest.TestCase):
             select_spatial_subset(ds1)
         self.assertEqual("One of ij_bbox and xy_bbox must be given", f'{cm.exception}')
 
+    def test_select_spatial_subset_descending_y_param(self):
+        ds1 = new_cube(inverse_y=True)
+        ds2 = select_spatial_subset(ds1, xy_bbox=(40., 40., 42., 42.))
+        self.assertEqual((2,), ds2.lon.shape)
+        self.assertEqual((2,), ds2.lat.shape)
+
 
 class SelectTemporalSubsetTest(unittest.TestCase):
     def test_invalid_dataset(self):
