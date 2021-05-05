@@ -1,9 +1,9 @@
-
 ## Changes in 0.8.1 (in development)
 
+* Improved support of datasets with time given as `cftime.DatetimeGregorian` 
+  or `cftime.DatetimeJulian`.
 * Fixed out-of-memory error raised if spatial subsets where created from 
   cubes with large spatial dimensions. (#442)
-  
 * Fixed example Notebook `compute_dask_array` and renamed it 
   into `compute_array_from_func`. (#385)
 
