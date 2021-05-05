@@ -7,6 +7,9 @@
 * Fixed example Notebook `compute_dask_array` and renamed it 
   into `compute_array_from_func`. (#385)
 
+* The functions `xcube.core.compute.compute_cube()` and `xcube.core.compute.compute_dataset()`
+  can now alter the shape of input datasets. (#289)  
+
 ## Changes in 0.8.0
 
 * Harmonized retrieval of spatial and temporal bounds of a dataset: 
