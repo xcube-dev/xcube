@@ -1,4 +1,4 @@
-## Changes in 0.8.1 (in development)
+## Changes in 0.8.1
 
 * Improved support of datasets with time given as `cftime.DatetimeGregorian` 
   or `cftime.DatetimeJulian`.
