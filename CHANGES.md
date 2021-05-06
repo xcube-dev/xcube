@@ -6,6 +6,9 @@
   cubes with large spatial dimensions. (#442)
 * Fixed example Notebook `compute_dask_array` and renamed it 
   into `compute_array_from_func`. (#385)
+* Fixed a problem with the S3 data store that occurred if the store was 
+  configured without `bucket_name` and the (Zarr) data was opened 
+  with `consolidated=True`.
 
 * The functions `xcube.core.compute.compute_cube()` and `xcube.core.compute.compute_dataset()`
   can now alter the shape of input datasets. (#289)  
