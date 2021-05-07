@@ -1,11 +1,18 @@
-## Changes in 0.8.1 (in development)
+## Changes in 0.8.2 (in development)
+
+
+
+## Changes in 0.8.1
 
 * Improved support of datasets with time given as `cftime.DatetimeGregorian` 
   or `cftime.DatetimeJulian`.
-* Fixed out-of-memory error raised if spatial subsets where created from 
+* Fixed out-of-memory error raised if spatial subsets were created from 
   cubes with large spatial dimensions. (#442)
 * Fixed example Notebook `compute_dask_array` and renamed it 
   into `compute_array_from_func`. (#385)
+* Fixed a problem with the S3 data store that occurred if the store was 
+  configured without `bucket_name` and the (Zarr) data was opened 
+  with `consolidated=True`.
 
 * The functions `xcube.core.compute.compute_cube()` and `xcube.core.compute.compute_dataset()`
   can now alter the shape of input datasets. (#289)  
