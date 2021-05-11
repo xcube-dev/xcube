@@ -1,7 +1,9 @@
 import json
 import os.path
+import shutil
 import unittest
 
+from xcube.core.new import new_cube
 from xcube.core.store import DataStoreError, DatasetDescriptor
 from xcube.core.store import TYPE_SPECIFIER_CUBE
 from xcube.core.store import TYPE_SPECIFIER_DATASET
@@ -280,3 +282,99 @@ class DirectoryDataStoreTest(unittest.TestCase):
 
         self.assertIsNone(self.store._get_filename_ext(None))
         self.assertIsNone(self.store._get_filename_ext(DataStoreError('A nonsense object')))
+
+
+class WritableDirectoryDataStoreTest(unittest.TestCase):
+
+    def setUp(self) -> None:
+        self._base_dir = os.path.join(os.path.dirname(__file__), 'dir_store_test')
+        # make sure self._base_dir is empty
+        if os.path.exists(self._base_dir):
+            shutil.rmtree(self._base_dir)
+        os.mkdir(self._base_dir)
+        self._store = new_data_store('directory', base_dir=self._base_dir)
+        self.assertIsInstance(self.store, DirectoryDataStore)
+        # noinspection PyUnresolvedReferences
+        self.assertEqual(self._base_dir, self._store.base_dir)
+        # noinspection PyUnresolvedReferences
+        self.assertEqual(False, self._store.read_only)
+
+    def tearDown(self) -> None:
+        for data_id in self.store.get_data_ids():
+            self.store.delete_data(data_id)
+        shutil.rmtree(self._base_dir)
+
+    @property
+    def store(self) -> DirectoryDataStore:
+        # noinspection PyTypeChecker
+        return self._store
+
+    def test_write_dataset_only_data(self):
+        cube = new_cube()
+        cube_id = self.store.write_data(cube)
+        self.assertIsNotNone(cube_id)
+        self.assertTrue(self.store.has_data(cube_id))
+        cube_from_store = self.store.open_data(cube_id)
+        self.assertIsNotNone(cube_from_store)
+
+    def test_write_dataset_data_id(self):
+        cube = new_cube()
+        cube_id = self.store.write_data(cube, data_id='newcube.nc')
+        self.assertEquals('newcube.nc', cube_id)
+        self.assertTrue(self.store.has_data(cube_id))
+        cube_from_store = self.store.open_data(cube_id)
+        self.assertIsNotNone(cube_from_store)
+
+    def test_write_dataset_data_id_without_extension(self):
+        cube = new_cube()
+        cube_id = self.store.write_data(cube, data_id='newcube')
+        self.assertEquals('newcube.zarr', cube_id)
+        self.assertTrue(self.store.has_data(cube_id))
+        cube_from_store = self.store.open_data(cube_id)
+        self.assertIsNotNone(cube_from_store)
+
+    def test_write_dataset_invalid_data_id(self):
+        cube = new_cube()
+        try:
+            self.store.write_data(cube, data_id='newcube.shp')
+        except DataStoreError as dse:
+            self.assertEqual('Data id "newcube.shp" is not suitable for data of type '
+                             '"dataset[cube]".',
+                             str(dse))
+
+    def test_write_dataset_writer_id(self):
+        cube = new_cube()
+        cube_id = self.store.write_data(cube, writer_id='dataset:netcdf:posix')
+        self.assertTrue(cube_id.endswith('.nc'))
+        self.assertTrue(self.store.has_data(cube_id))
+        cube_from_store = self.store.open_data(cube_id)
+        self.assertIsNotNone(cube_from_store)
+
+    def test_write_dataset_invalid_writer_id(self):
+        cube = new_cube()
+        try:
+            self.store.write_data(cube, writer_id='geodataframe:shapefile:posix')
+        except TypeError as te:
+            self.assertEqual("data must be an instance of "
+                             "(<class 'geopandas.geodataframe.GeoDataFrame'>, "
+                             "<class 'pandas.core.frame.DataFrame'>), was "
+                             "<class 'xarray.core.dataset.Dataset'>", str(te))
+
+    def test_write_dataset_data_id_and_writer_id(self):
+        cube = new_cube()
+        cube_id = self.store.write_data(cube,
+                                        data_id='newcube.nc',
+                                        writer_id='dataset:netcdf:posix')
+        self.assertEquals('newcube.nc', cube_id)
+        self.assertTrue(self.store.has_data(cube_id))
+        cube_from_store = self.store.open_data(cube_id)
+        self.assertIsNotNone(cube_from_store)
+
+    def test_write_dataset_invalid_data_id_and_writer_id(self):
+        cube = new_cube()
+        try:
+            self.store.write_data(cube, data_id='newcube.nc', writer_id='dataset:zarr:posix')
+        except DataStoreError as dse:
+            self.assertEqual('Writer ID "dataset:zarr:posix" seems inappropriate for '
+                             'data id "newcube.nc". Try writer id "dataset:netcdf:posix" instead.',
+                             str(dse))

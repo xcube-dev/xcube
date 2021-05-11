@@ -60,6 +60,11 @@ _FILENAME_EXT_TO_ACCESSOR_ID_PARTS = {
     '.levels': (str(TYPE_SPECIFIER_MULTILEVEL_DATASET), 'levels', _STORAGE_ID),
 }
 
+_FORMAT_TO_FILENAME_EXT = {
+    'zarr': '.zarr',
+    'levels': '.levels'
+}
+
 _REGISTRY_FILE = 'registry.json'
 
 
@@ -243,6 +248,31 @@ class S3DataStore(DefaultSearchMixin, MutableDataStore):
                    replace: bool = False,
                    **write_params) -> str:
         assert_instance(data, (xr.Dataset, MultiLevelDataset))
+        if writer_id and writer_id.split(':')[2] != _STORAGE_ID:
+            raise DataStoreError(f'Invalid writer id "{writer_id}"')
+        if data_id:
+            accessor_id_parts = self._get_accessor_id_parts(data_id, require=False)
+            if accessor_id_parts:
+                data_type_specifier = get_type_specifier(data)
+                if not data_type_specifier.satisfies(accessor_id_parts[0]):
+                    raise DataStoreError(f'Data id "{data_id}" is not suitable for data of type '
+                                         f'"{data_type_specifier}".')
+                predicate = get_data_accessor_predicate(type_specifier=accessor_id_parts[0],
+                                                        format_id=accessor_id_parts[1],
+                                                        storage_id=accessor_id_parts[2])
+                extensions = find_data_writer_extensions(predicate=predicate)
+                assert extensions
+                writer_id_from_data_id = extensions[0].name
+                if writer_id is not None:
+                    # checking that a user-provided data id is suitable for the data type and
+                    # requested format
+                    if writer_id_from_data_id.split(':')[0] != writer_id.split(':')[0] or \
+                            writer_id_from_data_id.split(':')[1] != writer_id.split(':')[1]:
+                        raise DataStoreError(f'Writer ID "{writer_id}" seems inappropriate for '
+                                             f'data id "{data_id}". Try writer id '
+                                             f'"{writer_id_from_data_id}" instead.')
+                else:
+                    writer_id = writer_id_from_data_id
         if not writer_id:
             if isinstance(data, MultiLevelDataset):
                 predicate = get_data_accessor_predicate(type_specifier=TYPE_SPECIFIER_MULTILEVEL_DATASET,
@@ -255,8 +285,10 @@ class S3DataStore(DefaultSearchMixin, MutableDataStore):
             else:
                 raise DataStoreError(f'Unsupported data type "{type(data)}"')
             extensions = find_data_writer_extensions(predicate=predicate)
+            assert extensions
             writer_id = extensions[0].name
-        data_id = self._ensure_valid_data_id(data_id, data)
+        data_format = writer_id.split(':')[1]
+        data_id = self._ensure_valid_data_id(data_format, data_id)
         path = self._resolve_data_id_to_path(data_id)
         self._new_s3_writer(writer_id).write_data(data, data_id=path, replace=replace, **write_params)
         self.register_data(data_id, data)
@@ -296,8 +328,11 @@ class S3DataStore(DefaultSearchMixin, MutableDataStore):
         return new_data_writer(writer_id, s3=self._s3)
 
     @classmethod
-    def _ensure_valid_data_id(cls, data_id: Optional[str], data: Any) -> str:
-        return data_id or str(uuid.uuid4()) + cls._get_filename_ext(data)
+    def _ensure_valid_data_id(cls, data_format: str, data_id: Optional[str]) -> str:
+        extension = _FORMAT_TO_FILENAME_EXT[data_format]
+        if data_id is not None and data_id.endswith(extension):
+            return data_id
+        return (data_id or str(uuid.uuid4())) + extension
 
     def _assert_not_closed(self):
         if self._s3 is None:

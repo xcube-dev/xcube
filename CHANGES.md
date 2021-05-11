@@ -1,5 +1,7 @@
 ## Changes in 0.8.2 (in development)
-
+* Fixed that Directory and S3 Data Store were not able to handle data ids that they
+  had assigned themselves during `write_data`. The stores may extend user-provided
+  data ids by the appropriate file extension. (#450)
 
 ## Changes in 0.8.1
 
