@@ -20,6 +20,7 @@
 # SOFTWARE.
 
 import geopandas as gpd
+import pandas as pd
 
 from xcube.core.store.accessor import DataOpener
 from xcube.core.store.accessor import DataWriter
