@@ -51,7 +51,10 @@ def find_time_slice(store: Union[str, MutableMapping],
         # ValueError raised if cube store does not exist
         try:
             cube = xr.open_dataset(store)
-        except FileNotFoundError:
+        except (FileNotFoundError, ValueError):
+            # If the zarr directory does not exist, open_dataset raises a
+            # FileNotFoundError (with xarray <= 0.17.0) or a ValueError
+            # (with xarray 0.18.0).
             return -1, 'create'
 
     # TODO (forman): optimise following naive search by bi-sectioning or so
