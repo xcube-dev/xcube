@@ -118,17 +118,14 @@ def get_time_range_from_data(dataset: xr.Dataset, maybe_consider_metadata: bool=
     time_diff = time.diff(dim=time.dims[0]).values
     time_res = time_diff[0]
     time_regular = all([time_res - diff == np.timedelta64(0) for diff in time_diff[1:]])
+    is_cf_time = type(time.values[0]).__module__.startswith('cftime')
+    data_start = pd.to_datetime(time.values[0].isoformat()) if is_cf_time else time.values[0]
+    data_end = pd.to_datetime(time.values[-1].isoformat()) if is_cf_time else time.values[-1]
     if time_regular:
-        try:
-            return time.values[0] - time_res / 2, time.values[-1] + time_res / 2
-        except TypeError:
-            # Time is probably given as cftime.DatetimeJulian or cftime.DatetimeGregorian
-            # To convert it to datetime, we must derive its isoformat first.
-            return (pd.to_datetime(time.values[0].isoformat()) - time_res / 2).to_datetime64(), \
-                   (pd.to_datetime(time.values[-1].isoformat()) + time_res / 2).to_datetime64()
+        return data_start - time_res / 2, data_end + time_res / 2
     return _maybe_return_time_range_from_metadata(dataset,
-                                                  time.values[0],
-                                                  time.values[-1],
+                                                  data_start,
+                                                  data_end,
                                                   maybe_consider_metadata)
 
 
