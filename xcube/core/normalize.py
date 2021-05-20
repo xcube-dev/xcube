@@ -19,6 +19,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+import cftime
 import warnings
 from datetime import datetime
 from typing import Optional, Sequence, Union
@@ -27,6 +28,12 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 from jdcal import jd2gcal
+
+from xcube.core.timecoord import get_timestamp_from_string
+from xcube.core.timecoord import get_timestamps_from_string
+
+DatetimeTypes = np.datetime64, cftime.datetime, datetime
+Datetime = Union[np.datetime64, cftime.datetime, datetime]
 
 
 def normalize_dataset(ds: xr.Dataset) -> xr.Dataset:
@@ -270,8 +277,10 @@ def normalize_coord_vars(ds: xr.Dataset) -> xr.Dataset:
 def normalize_missing_time(ds: xr.Dataset) -> xr.Dataset:
     """
     Add a time coordinate variable and their associated bounds coordinate variables
-    if temporal CF attributes ``time_coverage_start`` and ``time_coverage_end``
-    are given but the time dimension is missing.
+    if either temporal CF attributes ``time_coverage_start`` and ``time_coverage_end``
+    are given or time information can be extracted from the file name but the time dimension is missing.
+
+    In case the time information is given by a variable called 't' instead of 'time', it will be renamed into 'time'.
 
     The new time coordinate variable will be named ``time`` with dimension ['time'] and shape [1].
     The time bounds coordinates variable will be named ``time_bnds`` with dimensions ['time', 'bnds'] and shape [1,2].
@@ -280,28 +289,20 @@ def normalize_missing_time(ds: xr.Dataset) -> xr.Dataset:
     :param ds: Dataset to adjust
     :return: Adjusted dataset
     """
-    time_coverage_start = ds.attrs.get('time_coverage_start')
-    if time_coverage_start is not None:
-        # noinspection PyBroadException
-        try:
-            time_coverage_start = pd.to_datetime(time_coverage_start)
-        except BaseException:
-            pass
-
-    time_coverage_end = ds.attrs.get('time_coverage_end')
-    if time_coverage_end is not None:
-        # noinspection PyBroadException
-        try:
-            time_coverage_end = pd.to_datetime(time_coverage_end)
-        except BaseException:
-            pass
+    time_coverage_start, time_coverage_end = _get_time_coverage_from_ds(ds)
 
     if not time_coverage_start and not time_coverage_end:
         # Can't do anything
         return ds
 
-    if 'time' in ds:
-        time = ds.time
+    time = _get_valid_time_coord(ds, 'time')
+    if time is None:
+        time = _get_valid_time_coord(ds, 't')
+        if time is not None:
+            ds = ds.rename_vars({"t": "time"})
+            ds = ds.assign_coords(time=('time', ds.time))
+            time = ds.time
+    if time is not None:
         if not time.dims:
             ds = ds.drop_vars('time')
         elif len(time.dims) == 1:
@@ -343,6 +344,36 @@ def normalize_missing_time(ds: xr.Dataset) -> xr.Dataset:
     return ds
 
 
+def _get_valid_time_coord(ds: xr.Dataset, name: str) -> Optional[xr.DataArray]:
+    if name in ds:
+        time = ds[name]
+        if time.size > 0 \
+                and time.ndim == 1 \
+                and _is_supported_time_dtype(time.dtype):
+            return time
+    return None
+
+
+def _is_supported_time_dtype(dtype: np.dtype) -> bool:
+    return any(np.issubdtype(dtype, t) for t in DatetimeTypes)
+
+
+def _get_time_coverage_from_ds(ds: xr.Dataset) -> (pd.Timestamp, pd.Timestamp):
+    time_coverage_start = ds.attrs.get('time_coverage_start')
+    if time_coverage_start is not None:
+        time_coverage_start = get_timestamp_from_string(time_coverage_start)
+
+    time_coverage_end = ds.attrs.get('time_coverage_end')
+    if time_coverage_end is not None:
+        time_coverage_end = get_timestamp_from_string(time_coverage_end)
+
+    if time_coverage_start or time_coverage_end:
+        return time_coverage_start, time_coverage_end
+
+    filename = ds.encoding.get('source', '').split('/')[-1]
+    return get_timestamps_from_string(filename)
+
+
 def adjust_spatial_attrs(ds: xr.Dataset, allow_point: bool = False) -> xr.Dataset:
     """
     Adjust the global spatial attributes of the dataset by doing some
@@ -364,7 +395,7 @@ def adjust_spatial_attrs(ds: xr.Dataset, allow_point: bool = False) -> xr.Datase
     copied = False
 
     for dim in ('lon', 'lat'):
-        geo_spatial_attrs = _get_geo_spatial_cf_attrs_from_var(ds, dim, allow_point=allow_point)
+        geo_spatial_attrs = get_geo_spatial_cf_attrs_from_var(ds, dim, allow_point=allow_point)
         if geo_spatial_attrs:
             # Copy any new attributes into the shallow Dataset copy
             for key in geo_spatial_attrs:
@@ -401,37 +432,6 @@ def adjust_spatial_attrs(ds: xr.Dataset, allow_point: bool = False) -> xr.Datase
     return ds
 
 
-def adjust_temporal_attrs(ds: xr.Dataset) -> xr.Dataset:
-    """
-    Adjust the global temporal attributes of the dataset by doing some
-    introspection of the dataset and adjusting the appropriate attributes
-    accordingly.
-
-    In case the determined attributes do not exist in the dataset, these will
-    be added.
-
-    For more information on suggested global attributes see
-    `Attribute Convention for Data Discovery
-    <http://wiki.esipfed.org/index.php/Attribute_Convention_for_Data_Discovery>`_
-
-    :param ds: Dataset to adjust
-    :return: Adjusted dataset
-    """
-
-    temporal_attrs = _get_temporal_cf_attrs_from_var(ds)
-
-    if temporal_attrs:
-        ds = ds.copy()
-        # Align temporal attributes with the ones from the shallow Dataset copy
-        for key in temporal_attrs:
-            if temporal_attrs[key] is not None:
-                ds.attrs[key] = temporal_attrs[key]
-            else:
-                ds.attrs.pop(key, None)
-
-    return ds
-
-
 def is_coord_var(ds: xr.Dataset, var: xr.DataArray):
     if len(var.dims) == 1 and var.name == var.dims[0]:
         return True
@@ -447,79 +447,9 @@ def is_bounds_var(ds: xr.Dataset, var: xr.DataArray):
     return False
 
 
-def _get_temporal_cf_attrs_from_var(ds: xr.Dataset, var_name: str = 'time') -> Optional[dict]:
-    """
-    Get temporal boundaries, resolution and duration of the given dataset. If
-    the 'bounds' are explicitly defined, these will be used for calculation,
-    otherwise it will rest on information gathered from the 'time' dimension
-    itself.
-
-    :param ds: Dataset
-    :param var_name: The variable/dimension name.
-    :return: A dictionary {'attr_name': attr_value}
-    """
-
-    if var_name not in ds:
-        return None
-
-    var = ds[var_name]
-
-    if 'bounds' in var.attrs:
-        # According to CF Conventions the corresponding 'bounds' coordinate variable name
-        # should be in the attributes of the coordinate variable
-        bnds_name = var.attrs['bounds']
-    else:
-        # If 'bounds' attribute is missing, the bounds coordinate variable may be named "<dim>_bnds"
-        bnds_name = f'{var_name}_bnds'
-
-    dim_min = dim_max = None
-    dim_var = None
-
-    if bnds_name in ds:
-        bnds_var = ds[bnds_name]
-        if len(bnds_var.shape) == 2 and bnds_var.shape[0] > 0 and bnds_var.shape[1] == 2:
-            dim_var = bnds_var
-            if bnds_var.shape[0] > 1:
-                dim_min = bnds_var.values[0][0]
-                dim_max = bnds_var.values[-1][1]
-            else:
-                dim_min = bnds_var.values[0][0]
-                dim_max = bnds_var.values[0][1]
-
-    if dim_var is None:
-        if len(var.shape) == 1 and var.shape[0] > 0:
-            dim_var = var
-            if var.shape[0] > 1:
-                dim_min = var.values[0]
-                dim_max = var.values[-1]
-            else:
-                dim_min = var.values[0]
-                dim_max = var.values[0]
-
-    # Make sure dim_min and dim_max are valid and are instances of np.datetime64
-    # See https://github.com/CCI-Tools/cate/issues/643
-    if dim_var is None \
-            or not np.issubdtype(dim_var.dtype, np.datetime64):
-        # Cannot determine temporal extent for dimension var_name
-        return None
-
-    if dim_min != dim_max:
-        duration = _get_duration(dim_min, dim_max)
-    else:
-        duration = None
-
-    if dim_min < dim_max and len(var) >= 2:
-        resolution = _get_temporal_res(var.values)
-    else:
-        resolution = None
-
-    return dict(time_coverage_start=str(dim_min),
-                time_coverage_end=str(dim_max),
-                time_coverage_duration=duration,
-                time_coverage_resolution=resolution)
-
-
-def _get_geo_spatial_cf_attrs_from_var(ds: xr.Dataset, var_name: str, allow_point: bool = False) -> Optional[dict]:
+def get_geo_spatial_cf_attrs_from_var(ds: xr.Dataset,
+                                      var_name: str,
+                                      allow_point: bool = False) -> Optional[dict]:
     """
     Get spatial boundaries, resolution and units of the given dimension of the given
     dataset. If the 'bounds' are explicitly defined, these will be used for
@@ -536,6 +466,10 @@ def _get_geo_spatial_cf_attrs_from_var(ds: xr.Dataset, var_name: str, allow_poin
         return None
 
     var = ds[var_name]
+    res_name = 'geospatial_{}_resolution'.format(var_name)
+    min_name = 'geospatial_{}_min'.format(var_name)
+    max_name = 'geospatial_{}_max'.format(var_name)
+    units_name = 'geospatial_{}_units'.format(var_name)
 
     if 'bounds' in var.attrs:
         # According to CF Conventions the corresponding 'bounds' coordinate variable name
@@ -551,27 +485,47 @@ def _get_geo_spatial_cf_attrs_from_var(ds: xr.Dataset, var_name: str, allow_poin
         bnds_var = ds[bnds_name]
         if len(bnds_var.shape) == 2 and bnds_var.shape[0] > 0 and bnds_var.shape[1] == 2:
             dim_var = bnds_var
-            dim_res = abs(bnds_var.values[0][1] - bnds_var.values[0][0])
+            dim_res = abs(bnds_var[0, 1] - bnds_var[0, 0])
             if bnds_var.shape[0] > 1:
-                dim_min = min(bnds_var.values[0][0], bnds_var.values[-1][1])
-                dim_max = max(bnds_var.values[0][0], bnds_var.values[-1][1])
+                dim_min = min(bnds_var[0, 0], bnds_var[-1, 1])
+                dim_max = max(bnds_var[0, 0], bnds_var[-1, 1])
             else:
-                dim_min = min(bnds_var.values[0][0], bnds_var.values[0][1])
-                dim_max = max(bnds_var.values[0][0], bnds_var.values[0][1])
+                dim_min = min(bnds_var[0, 0], bnds_var[0, 1])
+                dim_max = max(bnds_var[0, 0], bnds_var[0, 1])
 
     if dim_var is None:
         if len(var.shape) == 1 and var.shape[0] > 0:
             if var.shape[0] > 1:
                 dim_var = var
-                dim_res = abs(var.values[1] - var.values[0])
-                dim_min = min(var.values[0], var.values[-1]) - 0.5 * dim_res
-                dim_max = max(var.values[0], var.values[-1]) + 0.5 * dim_res
-            elif len(var.values) == 1 and allow_point:
-                dim_var = var
-                # Actually a point with no extent
-                dim_res = 0.0
-                dim_min = var.values[0]
-                dim_max = var.values[0]
+                dim_res = abs(var[1] - var[0])
+                dim_min = min(var[0], var[-1]) - 0.5 * dim_res
+                dim_max = max(var[0], var[-1]) + 0.5 * dim_res
+            elif var.size == 1:
+                if res_name in ds.attrs:
+                    dim_res = ds.attrs[res_name]
+                    if isinstance(dim_res, str):
+                        # remove any units from string
+                        dim_res = dim_res.replace('degree', '').replace('deg', '').replace('°',
+                                                                                           '').strip()
+                    try:
+                        dim_res = float(dim_res)
+                        dim_var = var
+                        # Consider extent in metadata if provided
+                        dim_min = var[0] - 0.5 * dim_res
+                        dim_max = var[0] + 0.5 * dim_res
+                    except ValueError:
+                        if allow_point:
+                            dim_var = var
+                            # Actually a point with no extent
+                            dim_res = 0.0
+                            dim_min = var[0]
+                            dim_max = var[0]
+                elif allow_point:
+                    dim_var = var
+                    # Actually a point with no extent
+                    dim_res = 0.0
+                    dim_min = var[0]
+                    dim_max = var[0]
 
     if dim_var is None:
         # Cannot determine spatial extent for variable/dimension var_name
@@ -581,11 +535,6 @@ def _get_geo_spatial_cf_attrs_from_var(ds: xr.Dataset, var_name: str, allow_poin
         dim_units = var.attrs['units']
     else:
         dim_units = None
-
-    res_name = 'geospatial_{}_resolution'.format(var_name)
-    min_name = 'geospatial_{}_min'.format(var_name)
-    max_name = 'geospatial_{}_max'.format(var_name)
-    units_name = 'geospatial_{}_units'.format(var_name)
 
     geo_spatial_attrs = dict()
     # noinspection PyUnboundLocalVariable
@@ -597,40 +546,6 @@ def _get_geo_spatial_cf_attrs_from_var(ds: xr.Dataset, var_name: str, allow_poin
     geo_spatial_attrs[units_name] = dim_units
 
     return geo_spatial_attrs
-
-
-def _get_temporal_res(time: np.ndarray) -> str:
-    """
-    Determine temporal resolution of the given datetimes array.
-
-    See also: `ISO 8601 Durations <https://en.wikipedia.org/wiki/ISO_8601#Durations>`_
-
-    :param time: A numpy array containing np.datetime64 objects
-    :return: Temporal resolution formatted as an ISO 8601:2004 duration string
-    """
-    delta = time[1] - time[0]
-    days = delta.astype('timedelta64[D]') / np.timedelta64(1, 'D')
-
-    if (27 < days) and (days < 32):
-        return 'P1M'
-    else:
-        return 'P{}D'.format(int(days))
-
-
-def _get_duration(tmin: np.datetime64, tmax: np.datetime64) -> str:
-    """
-    Determine the duration of the given datetimes.
-
-    See also: `ISO 8601 Durations <https://en.wikipedia.org/wiki/ISO_8601#Durations>`_
-
-    :param tmin: Time minimum
-    :param tmax: Time maximum
-    :return: Temporal resolution formatted as an ISO 8601:2004 duration string
-    """
-    delta = tmax - tmin
-    day = np.timedelta64(1, 'D')
-    days = (delta.astype('timedelta64[D]') / day) + 1
-    return 'P{}D'.format(int(days))
 
 
 def get_lon_dim_name_impl(ds: Union[xr.Dataset, xr.DataArray]) -> Optional[str]:
@@ -656,16 +571,6 @@ def _get_dim_name(ds: Union[xr.Dataset, xr.DataArray], possible_names: Sequence[
         if name in ds.dims:
             return name
     return None
-
-
-def _is_lat_decreasing(lat: xr.DataArray) -> bool:
-    """
-    Determine if the latitude is decreasing
-    """
-    if lat.values[0] > lat.values[-1]:
-        return True
-
-    return False
 
 
 def _normalize_dim_order(ds: xr.Dataset) -> xr.Dataset:
