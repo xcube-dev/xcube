@@ -24,6 +24,7 @@ from typing import Optional, Sequence, Tuple, Union
 
 import numpy as np
 import pandas as pd
+import re
 import xarray as xr
 
 REF_DATETIME_STR = '1970-01-01 00:00:00'
@@ -32,6 +33,12 @@ DATETIME_UNITS = f'days since {REF_DATETIME_STR}'
 DATETIME_CALENDAR = 'gregorian'
 SECONDS_PER_DAY = 24 * 60 * 60
 MICROSECONDS_PER_DAY = 1000 * 1000 * SECONDS_PER_DAY
+
+_RE_TO_DATETIME_FORMATS = patterns = [(re.compile(14 * '\\d'), '%Y%m%d%H%M%S'),
+                                      (re.compile(12 * '\\d'), '%Y%m%d%H%M'),
+                                      (re.compile(8 * '\\d'), '%Y%m%d'),
+                                      (re.compile(6 * '\\d'), '%Y%m'),
+                                      (re.compile(4 * '\\d'), '%Y')]
 
 
 def add_time_coords(dataset: xr.Dataset, time_range: Tuple[float, float]) -> xr.Dataset:
@@ -214,3 +221,37 @@ def timestamp_to_iso_string(time: Union[np.datetime64, datetime.datetime], freq=
     """
     # All times are UTC (Z = Zulu Time Zone = UTC)
     return pd.Timestamp(time).round(freq).isoformat() + 'Z'
+
+
+def find_datetime_format(line: str) -> Tuple[Optional[str], int, int]:
+    for regex, time_format in _RE_TO_DATETIME_FORMATS:
+        searcher = regex.search(line)
+        if searcher:
+            p1, p2 = searcher.span()
+            return time_format, p1, p2
+    return None, -1, -1
+
+
+def get_timestamp_from_string(string: str) -> Optional[pd.Timestamp]:
+    time_format, p1, p2 = find_datetime_format(string)
+    if time_format:
+        try:
+            return pd.to_datetime(string[p1:p2], format=time_format)
+        except ValueError:
+            pass
+
+
+def get_timestamps_from_string(string: str) -> (pd.Timestamp, pd.Timestamp):
+    first_time = None
+    second_time = None
+    time_format, p1, p2 = find_datetime_format(string)
+    try:
+        if time_format:
+            first_time = pd.to_datetime(string[p1:p2], format=time_format)
+        string_rest = string[p2:]
+        time_format, p1, p2 = find_datetime_format(string_rest)
+        if time_format:
+            second_time = pd.to_datetime(string_rest[p1:p2], format=time_format)
+    except ValueError:
+        pass
+    return first_time, second_time
