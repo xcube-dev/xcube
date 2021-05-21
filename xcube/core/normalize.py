@@ -37,7 +37,7 @@ DatetimeTypes = np.datetime64, cftime.datetime, datetime
 Datetime = Union[np.datetime64, cftime.datetime, datetime]
 
 
-def cubify(ds: xr.Dataset) -> xr.Dataset:
+def cubify_dataset(ds: xr.Dataset) -> xr.Dataset:
     """
     Normalize the geo- and time-coding upon opening the given dataset w.r.t. a common
     (CF-compatible) convention.
