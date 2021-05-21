@@ -1,5 +1,7 @@
 ## Changes in 0.8.2 (in development)
-
+* Enhanced `normalize_dataset` by methods to handle datasets with latitudes given as 
+  `latitude_centers` and to invert decreasing latitude values.
+* Introduced `cubify_dataset` to normalize a dataset and assert the result is a cube.
 
 ## Changes in 0.8.1
 
