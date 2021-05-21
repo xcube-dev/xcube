@@ -24,7 +24,7 @@ from typing import Sequence, Tuple
 
 import xarray as xr
 
-from xcube.core.normalize import normalize_dataset
+from xcube.core.normalize import cubify
 from xcube.core.select import select_subset
 from xcube.core.store import DataStorePool
 from xcube.core.store import TYPE_SPECIFIER_CUBE
@@ -104,7 +104,7 @@ class CubesOpener:
         dataset = opener.open_data(input_config.data_id, **open_params, **cube_open_params)
 
         if normalisation_required:
-            dataset = normalize_dataset(dataset)
+            dataset = cubify(dataset)
 
         # Make sure cube contains non-empty data variables.
         dataset = self._ensure_dataset_not_empty(dataset, input_config.data_id)

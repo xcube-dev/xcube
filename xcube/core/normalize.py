@@ -31,16 +31,29 @@ from jdcal import jd2gcal
 
 from xcube.core.timecoord import get_timestamp_from_string
 from xcube.core.timecoord import get_timestamps_from_string
+from xcube.core.verify import assert_cube
 
 DatetimeTypes = np.datetime64, cftime.datetime, datetime
 Datetime = Union[np.datetime64, cftime.datetime, datetime]
 
 
-def normalize_dataset(ds: xr.Dataset) -> xr.Dataset:
+def cubify(ds: xr.Dataset) -> xr.Dataset:
     """
-    Normalize the geo- and time-coding upon opening the given dataset w.r.t.
-    to a common (CF-compatible) convention used within Cate. This will maximize the compatibility of
-    a dataset for usage with Cate's operations.
+    Normalize the geo- and time-coding upon opening the given dataset w.r.t. a common
+    (CF-compatible) convention.
+
+    Will throw a value error if the dataset could not not be converted to a cube.
+    """
+    ds = normalize_dataset(ds)
+    return assert_cube(ds)
+
+
+def normalize_dataset(ds: xr.Dataset,
+                      normalize_decreasing_lat: bool = True
+                      ) -> xr.Dataset:
+    """
+    Normalize the geo- and time-coding upon opening the given dataset w.r.t. a common
+    (CF-compatible) convention.
 
     That is,
     * variables named "latitude" will be renamed to "lat";
@@ -50,22 +63,85 @@ def normalize_dataset(ds: xr.Dataset) -> xr.Dataset:
     * Remove 2D "lat" and "lon" variables;
     * Two new 1D coordinate variables "lat" and "lon" will be generated from original 2D forms.
 
-    Then, if no coordinate variable time is present but the CF attributes "time_coverage_start" and optionally
-    "time_coverage_end" are given, a scalar time dimension and coordinate variable will be generated.
+    Then, if no coordinate variable time is present but the CF attributes "time_coverage_start"
+    and optionally "time_coverage_end" are given, a scalar time dimension and coordinate variable
+    will be generated.
 
     Finally, it will be ensured that a "time" coordinate variable will be of type *datetime*.
 
     :param ds: The dataset to normalize.
+    :param normalize_decreasing_lat: Whether decreasing latitude values shall be normalized so they
+        are increasing
     :return: The normalized dataset, or the original dataset, if it is already "normal".
     """
+    ds = _normalize_zonal_lat_lon(ds)
     ds = normalize_coord_vars(ds)
     ds = _normalize_lat_lon(ds)
     ds = _normalize_lat_lon_2d(ds)
     ds = _normalize_dim_order(ds)
     ds = _normalize_lon_360(ds)
+    if normalize_decreasing_lat:
+        ds = _normalize_decreasing_lat(ds)
     ds = normalize_missing_time(ds)
     ds = _normalize_jd2datetime(ds)
     return ds
+
+
+def _normalize_zonal_lat_lon(ds: xr.Dataset) -> xr.Dataset:
+    """
+    In case that the dataset only contains lat_centers and is a zonal mean dataset,
+    the longitude dimension created and filled with the variable value of certain latitude.
+    :param ds: some xarray dataset
+    :return: a normalized xarray dataset
+    """
+
+    if 'latitude_centers' not in ds.coords or 'lon' in ds.coords:
+        return ds
+
+    ds_zonal = ds.copy()
+    resolution = (ds.latitude_centers[1].values - ds.latitude_centers[0].values)
+    ds_zonal = ds_zonal.assign_coords(
+        lon=[i + (resolution / 2) for i in np.arange(-180.0, 180.0, resolution)])
+
+    for var in ds_zonal.data_vars:
+        if 'latitude_centers' in ds_zonal[var].dims:
+            ds_zonal[var] = xr.concat([ds_zonal[var] for _ in ds_zonal.lon], 'lon')
+            ds_zonal[var]['lon'] = ds_zonal.lon
+            var_dims = ds_zonal[var].attrs.get('dimensions', [])
+            lat_center_index = var_dims.index('latitude_centers')
+            var_dims.remove('latitude_centers')
+            var_dims.append('lat')
+            var_dims.append('lon')
+            var_chunk_sizes = ds_zonal[var].attrs.get('chunk_sizes', [])
+            lat_chunk_size = var_chunk_sizes[lat_center_index]
+            del var_chunk_sizes[lat_center_index]
+            var_chunk_sizes.append(lat_chunk_size)
+            var_chunk_sizes.append(ds_zonal.lon.size)
+    ds_zonal = ds_zonal.rename_dims({'latitude_centers': 'lat'})
+    ds_zonal = ds_zonal.assign_coords(lat=ds.latitude_centers.values)
+    ds_zonal = ds_zonal.drop('latitude_centers')
+    ds_zonal = ds_zonal.transpose(..., 'lat', 'lon')
+
+    has_lon_bnds = 'lon_bnds' in ds_zonal.coords or 'lon_bnds' in ds_zonal
+    if not has_lon_bnds:
+        lon_values = [[i - (resolution / 2), i + (resolution / 2)] for i in ds_zonal.lon.values]
+        ds_zonal = ds_zonal.assign_coords(lon_bnds=xr.DataArray(lon_values, dims=['lon', 'bnds']))
+    has_lat_bnds = 'lat_bnds' in ds_zonal.coords or 'lat_bnds' in ds_zonal
+    if not has_lat_bnds:
+        lat_values = [[i - (resolution / 2), i + (resolution / 2)] for i in ds_zonal.lat.values]
+        ds_zonal = ds_zonal.assign_coords(lat_bnds=xr.DataArray(lat_values, dims=['lat', 'bnds']))
+
+    ds_zonal.lon.attrs['bounds'] = 'lon_bnds'
+    ds_zonal.lon.attrs['long_name'] = 'longitude'
+    ds_zonal.lon.attrs['standard_name'] = 'longitude'
+    ds_zonal.lon.attrs['units'] = 'degrees_east'
+
+    ds_zonal.lat.attrs['bounds'] = 'lat_bnds'
+    ds_zonal.lat.attrs['long_name'] = 'latitude'
+    ds_zonal.lat.attrs['standard_name'] = 'latitude'
+    ds_zonal.lat.attrs['units'] = 'degrees_north'
+
+    return ds_zonal
 
 
 def _normalize_lat_lon(ds: xr.Dataset) -> xr.Dataset:
@@ -94,7 +170,8 @@ def _normalize_lat_lon_2d(ds: xr.Dataset) -> xr.Dataset:
     """
     Detect 2D 'lat', 'lon' variables that span a equi-rectangular grid. Then:
     Drop original 'lat', 'lon' variables
-    Rename original dimensions names of 'lat', 'lon' variables, usually ('y', 'x'), to ('lat', 'lon').
+    Rename original dimensions names of 'lat', 'lon' variables, usually ('y', 'x'), to
+    ('lat', 'lon').
     Insert new 1D 'lat', 'lon' coordinate variables with dimensions 'lat' and 'lon', respectively.
     :param ds: some xarray dataset
     :return: a normalized xarray dataset, or the original one
@@ -125,8 +202,8 @@ def _normalize_lat_lon_2d(ds: xr.Dataset) -> xr.Dataset:
     equal_lat = np.allclose(lat_data_1, lat_data_2, equal_nan=True)
     equal_lon = np.allclose(lon_data_1, lon_data_2, equal_nan=True)
 
-    # Drop lat lon in any case. If note qual_lat and equal_lon subset_spatial_impl will subsequently
-    # fail with a ValidationError
+    # Drop lat lon in any case. If note qual_lat and equal_lon subset_spatial_impl will
+    # subsequently fail with a ValidationError
 
     ds = ds.drop_vars(['lon', 'lat'])
 
@@ -193,6 +270,24 @@ def _normalize_lon_360(ds: xr.Dataset) -> xr.Dataset:
     return ds.assign(**new_vars)
 
 
+def _normalize_decreasing_lat(ds: xr.Dataset) -> xr.Dataset:
+    """
+    In case the latitude decreases, invert it
+    :param ds: some xarray dataset
+    :return: a normalized xarray dataset
+    """
+    try:
+        if _is_lat_decreasing(ds.lat):
+            ds = ds.sel(lat=slice(None, None, -1))
+    except AttributeError:
+        # The dataset doesn't have 'lat', probably not geospatial
+        pass
+    except ValueError:
+        # The dataset still has an ND 'lat' array
+        pass
+    return ds
+
+
 def _normalize_jd2datetime(ds: xr.Dataset) -> xr.Dataset:
     """
     Convert the time dimension of the given dataset from Julian date to
@@ -247,8 +342,8 @@ def normalize_coord_vars(ds: xr.Dataset) -> xr.Dataset:
     Any data variable is considered a coordinate variable
 
     * whose name is its only dimension name;
-    * whose number of dimensions is two and where the first dimension name is also a variable namd and
-      whose last dimension is named "bnds".
+    * whose number of dimensions is two and where the first dimension name is also a variable name
+        and whose last dimension is named "bnds".
 
     :param ds: The dataset
     :return: The same dataset or a shallow copy with potential coordinate
@@ -269,7 +364,8 @@ def normalize_coord_vars(ds: xr.Dataset) -> xr.Dataset:
 
     old_ds = ds
     ds = old_ds.drop_vars(coord_var_names)
-    ds = ds.assign_coords(**{bounds_var_name: old_ds[bounds_var_name] for bounds_var_name in coord_var_names})
+    ds = ds.assign_coords(**{bounds_var_name: old_ds[bounds_var_name]
+                             for bounds_var_name in coord_var_names})
 
     return ds
 
@@ -278,12 +374,15 @@ def normalize_missing_time(ds: xr.Dataset) -> xr.Dataset:
     """
     Add a time coordinate variable and their associated bounds coordinate variables
     if either temporal CF attributes ``time_coverage_start`` and ``time_coverage_end``
-    are given or time information can be extracted from the file name but the time dimension is missing.
+    are given or time information can be extracted from the file name but the time dimension is
+    missing.
 
-    In case the time information is given by a variable called 't' instead of 'time', it will be renamed into 'time'.
+    In case the time information is given by a variable called 't' instead of 'time', it will be
+    renamed into 'time'.
 
     The new time coordinate variable will be named ``time`` with dimension ['time'] and shape [1].
-    The time bounds coordinates variable will be named ``time_bnds`` with dimensions ['time', 'bnds'] and shape [1,2].
+    The time bounds coordinates variable will be named ``time_bnds``
+    with dimensions ['time', 'bnds'] and shape [1,2].
     Both are of data type ``datetime64``.
 
     :param ds: Dataset to adjust
@@ -307,7 +406,8 @@ def normalize_missing_time(ds: xr.Dataset) -> xr.Dataset:
             ds = ds.drop_vars('time')
         elif len(time.dims) == 1:
             time_dim_name = time.dims[0]
-            is_time_used_as_dim = any([(time_dim_name in ds[var_name].dims) for var_name in ds.data_vars])
+            is_time_used_as_dim = any([(time_dim_name in ds[var_name].dims)
+                                       for var_name in ds.data_vars])
             if is_time_used_as_dim:
                 # It seems we already have valid time coordinates
                 return ds
@@ -315,7 +415,8 @@ def normalize_missing_time(ds: xr.Dataset) -> xr.Dataset:
             if time_bnds_var_name in ds:
                 ds = ds.drop_vars(time_bnds_var_name)
             ds = ds.drop_vars('time')
-            ds = ds.drop_vars([var_name for var_name in ds.coords if time_dim_name in ds.coords[var_name].dims])
+            ds = ds.drop_vars([var_name for var_name in ds.coords
+                               if time_dim_name in ds.coords[var_name].dims])
 
     try:
         ds = ds.expand_dims('time')
@@ -329,8 +430,9 @@ def normalize_missing_time(ds: xr.Dataset) -> xr.Dataset:
     if time_coverage_start and time_coverage_end:
         has_time_bnds = 'time_bnds' in ds.coords or 'time_bnds' in ds
         if not has_time_bnds:
-            new_coord_vars.update(time_bnds=xr.DataArray([[time_coverage_start, time_coverage_end]],
-                                                         dims=['time', 'bnds']))
+            new_coord_vars.update(
+                time_bnds=xr.DataArray([[time_coverage_start, time_coverage_end]],
+                                       dims=['time', 'bnds']))
     ds = ds.assign_coords(**new_coord_vars)
     ds.coords['time'].attrs['long_name'] = 'time'
     ds.coords['time'].attrs['standard_name'] = 'time'
@@ -415,8 +517,9 @@ def adjust_spatial_attrs(ds: xr.Dataset, allow_point: bool = False) -> xr.Datase
         if not copied:
             ds = ds.copy()
 
-        ds.attrs['geospatial_bounds'] = 'POLYGON(({} {}, {} {}, {} {}, {} {}, {} {}))'. \
-            format(lon_min, lat_min, lon_min, lat_max, lon_max, lat_max, lon_max, lat_min, lon_min, lat_min)
+        ds.attrs['geospatial_bounds'] = f'POLYGON(({lon_min} {lat_min}, {lon_min} {lat_max}, ' \
+                                        f'{lon_max} {lat_max}, {lon_max} {lat_min}, ' \
+                                        f'{lon_min} {lat_min}))'
 
         # Determination of the following attributes from introspection in a general
         # way is ambiguous, hence it is safer to drop them than to risk preserving
@@ -476,7 +579,8 @@ def get_geo_spatial_cf_attrs_from_var(ds: xr.Dataset,
         # should be in the attributes of the coordinate variable
         bnds_name = var.attrs['bounds']
     else:
-        # If 'bounds' attribute is missing, the bounds coordinate variable may be named "<dim>_bnds"
+        # If 'bounds' attribute is missing, the bounds coordinate variable may be named
+        # "<dim>_bnds"
         bnds_name = '%s_bnds' % var_name
 
     dim_var = None
@@ -505,8 +609,8 @@ def get_geo_spatial_cf_attrs_from_var(ds: xr.Dataset,
                     dim_res = ds.attrs[res_name]
                     if isinstance(dim_res, str):
                         # remove any units from string
-                        dim_res = dim_res.replace('degree', '').replace('deg', '').replace('°',
-                                                                                           '').strip()
+                        dim_res = dim_res.replace('degree', '').replace('deg', '').\
+                            replace('°', '').strip()
                     try:
                         dim_res = float(dim_res)
                         dim_var = var
@@ -566,11 +670,22 @@ def get_lat_dim_name_impl(ds: Union[xr.Dataset, xr.DataArray]) -> Optional[str]:
     return _get_dim_name(ds, ['lat', 'latitude'])
 
 
-def _get_dim_name(ds: Union[xr.Dataset, xr.DataArray], possible_names: Sequence[str]) -> Optional[str]:
+def _get_dim_name(ds: Union[xr.Dataset, xr.DataArray], possible_names: Sequence[str]) \
+        -> Optional[str]:
     for name in possible_names:
         if name in ds.dims:
             return name
     return None
+
+
+def _is_lat_decreasing(lat: xr.DataArray) -> bool:
+    """
+    Determine if the latitude is decreasing
+    """
+    if lat[0] > lat[-1]:
+        return True
+
+    return False
 
 
 def _normalize_dim_order(ds: xr.Dataset) -> xr.Dataset:
@@ -603,7 +718,7 @@ def _normalize_dim_order(ds: xr.Dataset) -> xr.Dataset:
                 ds = ds.copy()
                 copy_created = True
             ds[var_name] = var.transpose(*dim_names)
-            if var.encoding:
+            if var.encoding and 'chunksize' in ds[var_name].data:
                 ds[var_name].encoding['chunks'] = ds[var_name].data.chunksize
 
     return ds

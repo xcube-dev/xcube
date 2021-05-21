@@ -28,6 +28,60 @@ def assertDatasetEqual(expected, actual):
 
 class TestNormalize(TestCase):
 
+    def test_normalize_zonal_lat_lon(self):
+        resolution = 10
+        lat_size = 3
+        lat_coords = np.arange(0, 30, resolution)
+        lon_coords = [i + 5. for i in np.arange(-180.0, 180.0, resolution)]
+        lon_size = len(lon_coords)
+        one_more_dim_size = 2
+        one_more_dim_coords = np.random.random(2)
+
+        var_values_1_1d = xr.DataArray(np.random.random(lat_size),
+                                       coords=[('latitude_centers', lat_coords)],
+                                       dims=['latitude_centers'],
+                                       attrs=dict(chunk_sizes=[lat_size],
+                                                  dimensions=['latitude_centers']))
+        var_values_1_1d.encoding = {'chunks': (lat_size)}
+        var_values_1_2d = xr.DataArray(np.array([var_values_1_1d.values for _ in lon_coords]).T,
+                                       coords={'lat': lat_coords, 'lon': lon_coords},
+                                       dims=['lat', 'lon'],
+                                       attrs=dict(chunk_sizes=[lat_size, lon_size],
+                                                  dimensions=['lat', 'lon']))
+        var_values_1_2d.encoding = {'chunks':  (lat_size, lon_size)}
+        var_values_2_2d = xr.DataArray(np.random.random(lat_size * one_more_dim_size).
+                                       reshape(lat_size, one_more_dim_size),
+                                       coords={'latitude_centers': lat_coords,
+                                               'one_more_dim': one_more_dim_coords},
+                                       dims=['latitude_centers', 'one_more_dim'],
+                                       attrs=dict(chunk_sizes=[lat_size, one_more_dim_size],
+                                                  dimensions=['latitude_centers', 'one_more_dim']))
+        var_values_2_2d.encoding = {'chunks': (lat_size, one_more_dim_size)}
+        var_values_2_3d = xr.DataArray(np.array([var_values_2_2d.values for _ in lon_coords]).T,
+                                       coords={'one_more_dim': one_more_dim_coords,
+                                               'lat': lat_coords,
+                                               'lon': lon_coords,},
+                                       dims=['one_more_dim', 'lat', 'lon',],
+                                       attrs=dict(chunk_sizes=[one_more_dim_size,
+                                                               lat_size,
+                                                               lon_size],
+                                                  dimensions=['one_more_dim', 'lat', 'lon']))
+        var_values_2_3d.encoding = {'chunks':  (one_more_dim_size, lat_size, lon_size)}
+
+        dataset = xr.Dataset({'first': var_values_1_1d, 'second': var_values_2_2d})
+        expected = xr.Dataset({'first': var_values_1_2d, 'second': var_values_2_3d})
+        expected = expected.assign_coords(
+            lon_bnds=xr.DataArray([[i - (resolution / 2), i + (resolution / 2)] for i in expected.lon.values],
+                                  dims=['lon', 'bnds']))
+        expected = expected.assign_coords(
+            lat_bnds=xr.DataArray([[i - (resolution / 2), i + (resolution / 2)] for i in expected.lat.values],
+                                  dims=['lat', 'bnds']))
+        actual = normalize_dataset(dataset)
+
+        xr.testing.assert_equal(actual, expected)
+        self.assertEqual(actual.first.chunk_sizes, expected.first.chunk_sizes)
+        self.assertEqual(actual.second.chunk_sizes, expected.second.chunk_sizes)
+
     def test_normalize_lon_lat_2d(self):
         """
         Test nominal execution
@@ -42,9 +96,9 @@ class TestNormalize(TestCase):
         a_data = np.random.random_sample((t_size, y_size, x_size))
         b_data = np.random.random_sample((t_size, y_size, x_size))
         time_data = [1, 2]
-        lat_data = [[30., 30., 30., 30.],
+        lat_data = [[10., 10., 10., 10.],
                     [20., 20., 20., 20.],
-                    [10., 10., 10., 10.]]
+                    [30., 30., 30., 30.]]
         lon_data = [[-10., 0., 10., 20.],
                     [-10., 0., 10., 20.],
                     [-10., 0., 10., 20.]]
@@ -66,7 +120,7 @@ class TestNormalize(TestCase):
         expected = xr.Dataset({'a': (new_dims, a_data, attribs),
                                'b': (new_dims, b_data, attribs)},
                               {'time': (('time',), time_data),
-                               'lat': (('lat',), [30., 20., 10.]),
+                               'lat': (('lat',), [10., 20., 30.]),
                                'lon': (('lon',), [-10., 0., 10., 20.]),
                                },
                               {'geospatial_lon_min': -15.,
@@ -175,17 +229,17 @@ class TestNormalize(TestCase):
         tuples = [gcal2jd(2000, x, 1) for x in range(1, 13)]
 
         ds = xr.Dataset({
-            'first': (['lat', 'lon', 'time'], np.zeros([45, 90, 12])),
-            'second': (['lat', 'lon', 'time'], np.zeros([45, 90, 12])),
-            'lat': np.linspace(88, -88, 45),
+            'first': (['lat', 'lon', 'time'], np.zeros([88, 90, 12])),
+            'second': (['lat', 'lon', 'time'], np.zeros([88, 90, 12])),
+            'lat': np.linspace(-88, 45, 88),
             'lon': np.linspace(-178, 178, 90),
             'time': [x[0] + x[1] for x in tuples]})
         ds.time.attrs['long_name'] = 'time in julian days'
 
         expected = xr.Dataset({
-            'first': (['time', 'lat', 'lon'], np.zeros([12, 45, 90])),
-            'second': (['time', 'lat', 'lon'], np.zeros([12, 45, 90])),
-            'lat': np.linspace(88, -88, 45),
+            'first': (['time', 'lat', 'lon'], np.zeros([12, 88, 90])),
+            'second': (['time', 'lat', 'lon'], np.zeros([12, 88, 90])),
+            'lat': np.linspace(-88, 45, 88),
             'lon': np.linspace(-178, 178, 90),
             'time': [datetime(2000, x, 1) for x in range(1, 13)]})
         expected.time.attrs['long_name'] = 'time'
@@ -598,6 +652,49 @@ class TestNormalizeMissingTime(TestCase):
         new_ds = normalize_missing_time(ds)
         self.assertIs(ds, new_ds)
 
+    def test_normalize_with_missing_time_dim(self):
+        ds = xr.Dataset({'first': (['lat', 'lon'], np.zeros([90, 180])),
+                         'second': (['lat', 'lon'], np.zeros([90, 180]))},
+                        coords={'lat': np.linspace(-89.5, 89.5, 90),
+                                'lon': np.linspace(-179.5, 179.5, 180)},
+                        attrs={'time_coverage_start': '20120101',
+                               'time_coverage_end': '20121231'})
+        norm_ds = normalize_dataset(ds)
+        self.assertIsNot(norm_ds, ds)
+        self.assertEqual(len(norm_ds.coords), 4)
+        self.assertIn('lon', norm_ds.coords)
+        self.assertIn('lat', norm_ds.coords)
+        self.assertIn('time', norm_ds.coords)
+        self.assertIn('time_bnds', norm_ds.coords)
+
+        self.assertEqual(norm_ds.first.shape, (1, 90, 180))
+        self.assertEqual(norm_ds.second.shape, (1, 90, 180))
+        self.assertEqual(norm_ds.coords['time'][0], xr.DataArray(pd.to_datetime('2012-07-01T12:00:00')))
+        self.assertEqual(norm_ds.coords['time_bnds'][0][0], xr.DataArray(pd.to_datetime('2012-01-01')))
+        self.assertEqual(norm_ds.coords['time_bnds'][0][1], xr.DataArray(pd.to_datetime('2012-12-31')))
+
+    def test_normalize_with_missing_time_dim_from_filename(self):
+        ds = xr.Dataset({'first': (['lat', 'lon'], np.zeros([90, 180])),
+                         'second': (['lat', 'lon'], np.zeros([90, 180]))},
+                        coords={'lat': np.linspace(-89.5, 89.5, 90),
+                                'lon': np.linspace(-179.5, 179.5, 180)},
+                        )
+        ds_encoding = dict(source='20150204_etfgz_20170309_dtsrgth')
+        ds.encoding.update(ds_encoding)
+        norm_ds = normalize_dataset(ds)
+        self.assertIsNot(norm_ds, ds)
+        self.assertEqual(len(norm_ds.coords), 4)
+        self.assertIn('lon', norm_ds.coords)
+        self.assertIn('lat', norm_ds.coords)
+        self.assertIn('time', norm_ds.coords)
+        self.assertIn('time_bnds', norm_ds.coords)
+
+        self.assertEqual(norm_ds.first.shape, (1, 90, 180))
+        self.assertEqual(norm_ds.second.shape, (1, 90, 180))
+        self.assertEqual(norm_ds.coords['time'][0], xr.DataArray(pd.to_datetime('2016-02-21T00:00:00')))
+        self.assertEqual(norm_ds.coords['time_bnds'][0][0], xr.DataArray(pd.to_datetime('2015-02-04')))
+        self.assertEqual(norm_ds.coords['time_bnds'][0][1], xr.DataArray(pd.to_datetime('2017-03-09')))
+
 
 class Fix360Test(TestCase):
 
@@ -613,13 +710,13 @@ class Fix360Test(TestCase):
                        np.random.random_sample([time_size, lat_size,
                                                 lon_size]))},
             coords={'lon': np.linspace(1., 360., lon_size),
-                    'lat': np.linspace(65., -64., lat_size),
+                    'lat': np.linspace(-65., 64., lat_size),
                     'time': [datetime(2000, x, 1)
                              for x in range(1, time_size + 1)]},
             attrs=dict(geospatial_lon_min=0.,
                        geospatial_lon_max=360.,
-                       geospatial_lat_min=-64.5,
-                       geospatial_lat_max=+65.5,
+                       geospatial_lat_min=-65.5,
+                       geospatial_lat_max=+64.5,
                        geospatial_lon_resolution=1.,
                        geospatial_lat_resolution=1.))
 
@@ -628,7 +725,7 @@ class Fix360Test(TestCase):
         self.assertEqual(ds.dims, new_ds.dims)
         self.assertEqual(ds.sizes, new_ds.sizes)
         assert_array_almost_equal(new_ds.lon, np.linspace(-179.5, 179.5, 360))
-        assert_array_almost_equal(new_ds.lat, np.linspace(65., -64., 130))
+        assert_array_almost_equal(new_ds.lat, np.linspace(-65., 64., 130))
         assert_array_almost_equal(new_ds.first[..., :180], ds.first[..., 180:])
         assert_array_almost_equal(new_ds.first[..., 180:], ds.first[..., :180])
         assert_array_almost_equal(new_ds.second[..., :180],
@@ -637,8 +734,8 @@ class Fix360Test(TestCase):
                                   ds.second[..., :180])
         self.assertEqual(-180., new_ds.attrs['geospatial_lon_min'])
         self.assertEqual(+180., new_ds.attrs['geospatial_lon_max'])
-        self.assertEqual(-64.5, new_ds.attrs['geospatial_lat_min'])
-        self.assertEqual(+65.5, new_ds.attrs['geospatial_lat_max'])
+        self.assertEqual(-65.5, new_ds.attrs['geospatial_lat_min'])
+        self.assertEqual(+64.5, new_ds.attrs['geospatial_lat_max'])
         self.assertEqual(1., new_ds.attrs['geospatial_lon_resolution'])
         self.assertEqual(1., new_ds.attrs['geospatial_lat_resolution'])
 
@@ -662,7 +759,7 @@ class NormalizeDimOrder(TestCase):
                        np.random.random_sample([time_size, lat_size,
                                                 lon_size]))},
             coords={'lon': np.linspace(-179.5, -179.5, lon_size),
-                    'lat': np.linspace(65., -64., lat_size),
+                    'lat': np.linspace(-65., 64., lat_size),
                     'time': [datetime(2000, x, 1)
                              for x in range(1, time_size + 1)]})
         ds2 = normalize_dataset(ds)
