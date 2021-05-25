@@ -166,7 +166,7 @@ def _get_time_range_from_time_bounds(dataset: xr.Dataset, time_bounds_name: str)
         -> Tuple[Optional[float], Optional[float]]:
     time_bnds = dataset[time_bounds_name]
     if len(time_bnds.shape) == 2 and time_bnds.shape[1] == 2:
-        return min(time_bnds[:, 0]).values, max(time_bnds[:, 1]).values
+        return time_bnds[0, 0].values, time_bnds[-1, 1].values
 
 
 def get_time_range_from_attrs(dataset: xr.Dataset) -> Tuple[Optional[str], Optional[str]]:
