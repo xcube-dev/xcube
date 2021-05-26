@@ -2,7 +2,11 @@
 
 * Fixed the issue that xcube gen2 would not print tracebacks to stderr when raising
   CubeGeneratorErrors (#448).
-  * Fixed that Directory and S3 Data Store were not able to handle data ids that they
+* Enhanced `xcube.core.normalize.normalize_dataset()` function to also normalize datasets with latitudes given as 
+  `latitude_centers` and to invert decreasing latitude coordinate values.
+* Introduced `xcube.core.normalize.cubify_dataset()` function to normalize a dataset 
+  and finally assert the result complies to the [xcube dataset conventions](https://github.com/dcs4cop/xcube/blob/master/docs/source/cubespec.md).
+* Fixed that Directory and S3 Data Store were not able to handle data ids that they
   had assigned themselves during `write_data`. The stores may extend user-provided
   data ids by the appropriate file extension. (#450)
 

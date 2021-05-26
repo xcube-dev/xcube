@@ -13,6 +13,9 @@ from xcube.core.timecoord import get_time_range_from_attrs
 from xcube.core.timecoord import get_time_range_from_data
 from xcube.core.timecoord import timestamp_to_iso_string
 from xcube.core.timecoord import to_time_in_days_since_1970
+# from xcube.core.timecoord import find_datetime_format
+# from xcube.core.timecoord import get_timestamp_from_string
+# from xcube.core.timecoord import get_timestamps_from_string
 
 
 class AddTimeCoordsTest(unittest.TestCase):
@@ -206,3 +209,59 @@ class TimestampToIsoStringTest(unittest.TestCase):
         self.assertEqual("2019-10-04T10:00:00Z",
                          timestamp_to_iso_string(pd.to_datetime("04-OCT-2019 10:13:48.538184"),
                                                  freq="H"))
+
+
+# class TimeStampsTest(unittest.TestCase):
+#
+#     def test_find_datetime_format(self):
+#         dt_format, start_index, end_index = find_datetime_format('ftze20140305131415dgs')
+#         self.assertEqual('%Y%m%d%H%M%S', dt_format)
+#         self.assertEqual(4, start_index)
+#         self.assertEqual(18, end_index)
+#
+#         dt_format, start_index, end_index = find_datetime_format('ftze201403051314dgs')
+#         self.assertEqual('%Y%m%d%H%M', dt_format)
+#         self.assertEqual(4, start_index)
+#         self.assertEqual(16, end_index)
+#
+#         dt_format, start_index, end_index = find_datetime_format('ft2ze20140307dgs')
+#         self.assertEqual('%Y%m%d', dt_format)
+#         self.assertEqual(5, start_index)
+#         self.assertEqual(13, end_index)
+#
+#         dt_format, start_index, end_index = find_datetime_format('ft2ze201512dgs')
+#         self.assertEqual('%Y%m', dt_format)
+#         self.assertEqual(5, start_index)
+#         self.assertEqual(11, end_index)
+#
+#         dt_format, start_index, end_index = find_datetime_format('ft2s6ze2016dgs')
+#         self.assertEqual('%Y', dt_format)
+#         self.assertEqual(7, start_index)
+#         self.assertEqual(11, end_index)
+#
+#     def test_get_timestamp_from_string(self):
+#         timestamp = get_timestamp_from_string('ftze20140305131415dg0023s')
+#         self.assertEqual(pd.Timestamp('2014-03-05T13:14:15'), timestamp)
+#
+#         timestamp = get_timestamp_from_string('ftze201403051314dgs')
+#         self.assertEqual(pd.Timestamp('2014-03-05T13:14:00'), timestamp)
+#
+#         timestamp = get_timestamp_from_string('ftze20140305dgs')
+#         self.assertEqual(pd.Timestamp('2014-03-05T00:00:00'), timestamp)
+#
+#         timestamp = get_timestamp_from_string('ftze201403dgs')
+#         self.assertEqual(pd.Timestamp('2014-03-01T00:00:00'), timestamp)
+#
+#         timestamp = get_timestamp_from_string('ftze2014dgs')
+#         self.assertEqual(pd.Timestamp('2014-01-01T00:00:00'), timestamp)
+#
+#     def test_get_timestamps_from_string(self):
+#         timestamp_1, timestamp_2 = get_timestamps_from_string(
+#             '20020401-20020406-ESACCI-L3C_AEROSOL-AEX-GOMOS_ENVISAT-AERGOM_5days-fv2.19.nc')
+#         self.assertEqual(pd.Timestamp('2002-04-01'), timestamp_1)
+#         self.assertEqual(pd.Timestamp('2002-04-06'), timestamp_2)
+#
+#         timestamp_1, timestamp_2 = get_timestamps_from_string(
+#             '20020401-ESACCI-L3C_AEROSOL-AEX-GOMOS_ENVISAT-AERGOM_5days-fv2.19.nc')
+#         self.assertEqual(pd.Timestamp('2002-04-01'), timestamp_1)
+#         self.assertIsNone(timestamp_2)
