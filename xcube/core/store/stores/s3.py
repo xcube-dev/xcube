@@ -23,6 +23,7 @@ import json
 import os.path
 import uuid
 from typing import Optional, Iterator, Any, Tuple, List, Dict, Union, Container
+import warnings
 
 import s3fs
 import xarray as xr
@@ -330,9 +331,13 @@ class S3DataStore(DefaultSearchMixin, MutableDataStore):
     @classmethod
     def _ensure_valid_data_id(cls, data_format: str, data_id: Optional[str]) -> str:
         extension = _FORMAT_TO_FILENAME_EXT[data_format]
-        if data_id is not None and data_id.endswith(extension):
+        if data_id is not None:
+            if not data_id.endswith(extension):
+                warnings.warn(f'Data if "{data_id}" has no expected file extension.'
+                              f'It will be written as "{data_format}".'
+                              f'You may encounter issues with accessing the data from the store.')
             return data_id
-        return (data_id or str(uuid.uuid4())) + extension
+        return str(uuid.uuid4()) + extension
 
     def _assert_not_closed(self):
         if self._s3 is None:

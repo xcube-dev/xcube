@@ -281,10 +281,7 @@ class WritingToS3DataStoreTest(S3Test):
     def test_write_dataset_data_id_without_extension(self):
         cube = new_cube()
         cube_id = self.store.write_data(cube, data_id='newcube')
-        self.assertEquals('newcube.zarr', cube_id)
-        self.assertTrue(self.store.has_data(cube_id))
-        cube_from_store = self.store.open_data(cube_id)
-        self.assertIsNotNone(cube_from_store)
+        self.assertEquals('newcube', cube_id)
 
     def test_write_dataset_invalid_data_id(self):
         cube = new_cube()
