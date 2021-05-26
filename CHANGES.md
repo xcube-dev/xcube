@@ -6,6 +6,8 @@
   `latitude_centers` and to invert decreasing latitude coordinate values.
 * Introduced `xcube.core.normalize.cubify_dataset()` function to normalize a dataset 
   and finally assert the result complies to the [xcube dataset conventions](https://github.com/dcs4cop/xcube/blob/master/docs/source/cubespec.md).
+* Fixed that data stores `directory` and `s3` were not able to handle data identifiers that they
+  had assigned themselves during `write_data()`.  (#450)
 
 ## Changes in 0.8.1
 
