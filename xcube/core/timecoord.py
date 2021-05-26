@@ -58,7 +58,8 @@ def add_time_coords(dataset: xr.Dataset, time_range: Tuple[float, float]) -> xr.
     if t1 != t2:
         time_var.attrs['bounds'] = 'time_bnds'
         dataset = dataset.assign_coords(
-            time_bnds=(['time', 'bnds'], from_time_in_days_since_1970([t1, t2]).reshape(1, 2)))
+            time_bnds=(['time', 'bnds'], from_time_in_days_since_1970([t1, t2]).reshape(1, 2))
+        )
         time_bnds_var = dataset.coords['time_bnds']
         time_bnds_var.attrs['long_name'] = 'time'
         time_bnds_var.attrs['standard_name'] = 'time'
