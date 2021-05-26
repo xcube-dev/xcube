@@ -194,8 +194,8 @@ def to_time_in_days_since_1970(time_str: str, pattern=None) -> float:
 
 def from_time_in_days_since_1970(time_value: Union[float, Sequence[float]]) -> np.ndarray:
     if isinstance(time_value, int) or isinstance(time_value, float):
-        return pd.to_datetime(time_value, utc=True, unit='d', origin='unix').round(freq='ms').\
-            to_datetime64()
+        return pd.to_datetime(time_value, utc=True, unit='d', origin='unix').round(freq='ms') \
+            .to_datetime64()
     else:
         return np.array(list(map(from_time_in_days_since_1970, time_value)))
 
