@@ -49,7 +49,7 @@ def cubify_dataset(ds: xr.Dataset) -> xr.Dataset:
 
 
 def normalize_dataset(ds: xr.Dataset,
-                      normalize_decreasing_lat: bool = True
+                      reverse_decreasing_lat: bool = False
                       ) -> xr.Dataset:
     """
     Normalize the geo- and time-coding upon opening the given dataset w.r.t. a common
@@ -70,7 +70,7 @@ def normalize_dataset(ds: xr.Dataset,
     Finally, it will be ensured that a "time" coordinate variable will be of type *datetime*.
 
     :param ds: The dataset to normalize.
-    :param normalize_decreasing_lat: Whether decreasing latitude values shall be normalized so they
+    :param reverse_decreasing_lat: Whether decreasing latitude values shall be normalized so they
         are increasing
     :return: The normalized dataset, or the original dataset, if it is already "normal".
     """
@@ -80,8 +80,8 @@ def normalize_dataset(ds: xr.Dataset,
     ds = _normalize_lat_lon_2d(ds)
     ds = _normalize_dim_order(ds)
     ds = _normalize_lon_360(ds)
-    if normalize_decreasing_lat:
-        ds = _normalize_decreasing_lat(ds)
+    if reverse_decreasing_lat:
+        ds = _reverse_decreasing_lat(ds)
     ds = normalize_missing_time(ds)
     ds = _normalize_jd2datetime(ds)
     return ds
@@ -270,7 +270,7 @@ def _normalize_lon_360(ds: xr.Dataset) -> xr.Dataset:
     return ds.assign(**new_vars)
 
 
-def _normalize_decreasing_lat(ds: xr.Dataset) -> xr.Dataset:
+def _reverse_decreasing_lat(ds: xr.Dataset) -> xr.Dataset:
     """
     In case the latitude decreases, invert it
     :param ds: some xarray dataset
@@ -497,7 +497,7 @@ def adjust_spatial_attrs(ds: xr.Dataset, allow_point: bool = False) -> xr.Datase
     copied = False
 
     for dim in ('lon', 'lat'):
-        geo_spatial_attrs = get_geo_spatial_cf_attrs_from_var(ds, dim, allow_point=allow_point)
+        geo_spatial_attrs = get_geo_spatial_attrs_from_var(ds, dim, allow_point=allow_point)
         if geo_spatial_attrs:
             # Copy any new attributes into the shallow Dataset copy
             for key in geo_spatial_attrs:
@@ -550,9 +550,9 @@ def is_bounds_var(ds: xr.Dataset, var: xr.DataArray):
     return False
 
 
-def get_geo_spatial_cf_attrs_from_var(ds: xr.Dataset,
-                                      var_name: str,
-                                      allow_point: bool = False) -> Optional[dict]:
+def get_geo_spatial_attrs_from_var(ds: xr.Dataset,
+                                   var_name: str,
+                                   allow_point: bool = False) -> Optional[dict]:
     """
     Get spatial boundaries, resolution and units of the given dimension of the given
     dataset. If the 'bounds' are explicitly defined, these will be used for
