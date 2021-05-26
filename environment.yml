@@ -9,7 +9,7 @@ dependencies:
   - affine >=2.2
   - click >=7.0
   - cmocean >=2.0
-  - dask >=1.2
+  - dask >=1.2,<=2021.04.1  # Remove "<=2021.04.1" after xarray 0.18.1 release
   - fiona >=1.8
   - gdal >=3.0
   - geopandas >=0.8
