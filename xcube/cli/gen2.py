@@ -135,6 +135,7 @@ def gen2(request_path: str,
             print(**print_kwargs)
             print('Remote traceback:', **print_kwargs)
             print('=================', **print_kwargs)
+            print(e.remote_traceback, **print_kwargs)
         raise click.ClickException(f'{e}') from e
 
     except DataStoreError as e:
