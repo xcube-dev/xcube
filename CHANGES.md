@@ -1,6 +1,6 @@
 ## Changes in 0.8.2 (in development)
-* Enhanced `normalize_dataset` by methods to handle datasets with latitudes given as 
-  `latitude_centers` and to invert decreasing latitude values.
+* Enhanced `xcube.core.normalize.normalize_dataset()` function to also normalize datasets with latitudes given as 
+  `latitude_centers` and to invert decreasing latitude coordinate values.
 * Introduced `xcube.core.normalize.cubify_dataset()` function to normalize a dataset 
   and finally assert the result complies to the [xcube dataset conventions](https://github.com/dcs4cop/xcube/blob/master/docs/source/cubespec.md).
 
