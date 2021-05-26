@@ -76,6 +76,24 @@ class GetTimeRangeTest(unittest.TestCase):
         self.assertEqual('2010-01-01T00:00:00', pd.Timestamp(time_range[0]).isoformat())
         self.assertEqual('2010-01-06T00:00:00', pd.Timestamp(time_range[1]).isoformat())
 
+    def test_get_time_range_from_data_with_irregular_data(self):
+        cube = new_cube(drop_bounds=True,
+                        time_freq='M')
+        time_range = get_time_range_from_data(cube)
+        self.assertIsNotNone(time_range)
+        self.assertEqual('2010-01-31T00:00:00', pd.Timestamp(time_range[0]).isoformat())
+        self.assertEqual('2010-06-30T00:00:00', pd.Timestamp(time_range[1]).isoformat())
+
+    def test_get_time_range_from_data_with_irregular_data_and_no_metadata(self):
+        cube = new_cube(drop_bounds=True,
+                        time_freq='M')
+        cube.attrs.pop('time_coverage_start')
+        cube.attrs.pop('time_coverage_end')
+        time_range = get_time_range_from_data(cube)
+        self.assertIsNotNone(time_range)
+        self.assertEqual('2010-02-14T00:00:00', pd.Timestamp(time_range[0]).isoformat())
+        self.assertEqual('2010-06-14T00:00:00', pd.Timestamp(time_range[1]).isoformat())
+
     def test_get_time_range_from_data_cftime(self):
         cube = new_cube(drop_bounds=True,
                         use_cftime=True,
@@ -84,6 +102,28 @@ class GetTimeRangeTest(unittest.TestCase):
         self.assertIsNotNone(time_range)
         self.assertEqual('2010-01-01T00:00:00', pd.Timestamp(time_range[0]).isoformat())
         self.assertEqual('2010-01-06T00:00:00', pd.Timestamp(time_range[1]).isoformat())
+
+    def test_get_time_range_from_data_with_irregular_cftime_data(self):
+        cube = new_cube(drop_bounds=True,
+                        time_freq='M',
+                        use_cftime=True,
+                        time_dtype=None)
+        time_range = get_time_range_from_data(cube)
+        self.assertIsNotNone(time_range)
+        self.assertEqual('2010-01-31T00:00:00', pd.Timestamp(time_range[0]).isoformat())
+        self.assertEqual('2010-06-30T00:00:00', pd.Timestamp(time_range[1]).isoformat())
+
+    def test_get_time_range_from_data_with_irregular_cftime_data_and_no_metadata(self):
+        cube = new_cube(drop_bounds=True,
+                        time_freq='M',
+                        use_cftime=True,
+                        time_dtype=None)
+        cube.attrs.pop('time_coverage_start')
+        cube.attrs.pop('time_coverage_end')
+        time_range = get_time_range_from_data(cube)
+        self.assertIsNotNone(time_range)
+        self.assertEqual('2010-02-14T00:00:00', pd.Timestamp(time_range[0]).isoformat())
+        self.assertEqual('2010-06-14T00:00:00', pd.Timestamp(time_range[1]).isoformat())
 
     def test_get_time_range_from_data_time_named_t(self):
         cube = new_cube(drop_bounds=True, time_name='t')

@@ -19,6 +19,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+import cftime
 import datetime
 from typing import Optional, Sequence, Tuple, Union
 
@@ -63,15 +64,17 @@ def add_time_coords(dataset: xr.Dataset, time_range: Tuple[float, float]) -> xr.
     time_var.encoding['calendar'] = DATETIME_CALENDAR
     if t1 != t2:
         time_var.attrs['bounds'] = 'time_bnds'
-        dataset = dataset.assign_coords(time_bnds=(['time', 'bnds'],
-                                                   from_time_in_days_since_1970([t1, t2]).reshape(1, 2)))
+        dataset = dataset.assign_coords(
+            time_bnds=(['time', 'bnds'], from_time_in_days_since_1970([t1, t2]).reshape(1, 2))
+        )
         time_bnds_var = dataset.coords['time_bnds']
         time_bnds_var.attrs['long_name'] = 'time'
         time_bnds_var.attrs['standard_name'] = 'time'
         # Avoiding xarray error:
-        #   ValueError: failed to prevent overwriting existing key units in attrs on variable 'time'.
-        #   This is probably an encoding field used by xarray to describe how a variable is serialized.
-        #   To proceed, remove this key from the variable's attributes manually.
+        #   ValueError: failed to prevent overwriting existing key units in attrs on variable
+        #   'time'. This is probably an encoding field used by xarray to describe how a variable
+        #   is serialized.
+        # To proceed, remove this key from the variable's attributes manually.
         # time_bnds_var.attrs['units'] = DATETIME_UNITS
         # time_bnds_var.attrs['calendar'] = DATETIME_CALENDAR
         time_bnds_var.encoding['units'] = DATETIME_UNITS
@@ -79,7 +82,7 @@ def add_time_coords(dataset: xr.Dataset, time_range: Tuple[float, float]) -> xr.
     return dataset
 
 
-def get_time_range_from_data(dataset: xr.Dataset, maybe_consider_metadata: bool=True) \
+def get_time_range_from_data(dataset: xr.Dataset, maybe_consider_metadata: bool = True) \
         -> Tuple[Optional[float], Optional[float]]:
     """
     Determines a time range from a dataset by inspecting its time_bounds or time data arrays.
@@ -87,7 +90,7 @@ def get_time_range_from_data(dataset: xr.Dataset, maybe_consider_metadata: bool=
     metadata may be considered.
 
     :param dataset: The dataset of which the time range shall be determined
-    "param maybe_consider_metadata": Whether metadata shall be considered.
+    :param maybe_consider_metadata: Whether metadata shall be considered.
     Only used when the dataset has no time bounds array and no time periodicity.
     The values will only be set when they do not contradict the values from the data arrays.
     :return: A tuple with two float values: The first one represents the start time,
@@ -112,30 +115,24 @@ def get_time_range_from_data(dataset: xr.Dataset, maybe_consider_metadata: bool=
     time_bnds_name = time.attrs.get("bounds", "time_bnds")
     if time_bnds_name in dataset:
         return _get_time_range_from_time_bounds(dataset, time_bnds_name)
-    if time.size == 1:
+    is_cf_time = isinstance(time[0].values.item(), cftime.datetime)
+    data_start = pd.to_datetime(time[0].values.item().isoformat()) \
+        if is_cf_time else time[0].values
+    data_end = pd.to_datetime(time[-1].values.item().isoformat()) \
+        if is_cf_time else time[-1].values
+    if time.size < 3:
         return _maybe_return_time_range_from_metadata(dataset,
-                                                      time.values[0],
-                                                      time.values[0],
-                                                      maybe_consider_metadata)
-    if time.size == 2:
-        return _maybe_return_time_range_from_metadata(dataset,
-                                                      time.values[0],
-                                                      time.values[1],
+                                                      data_start,
+                                                      data_end,
                                                       maybe_consider_metadata)
     time_diff = time.diff(dim=time.dims[0]).values
     time_res = time_diff[0]
     time_regular = all([time_res - diff == np.timedelta64(0) for diff in time_diff[1:]])
     if time_regular:
-        try:
-            return time.values[0] - time_res / 2, time.values[-1] + time_res / 2
-        except TypeError:
-            # Time is probably given as cftime.DatetimeJulian or cftime.DatetimeGregorian
-            # To convert it to datetime, we must derive its isoformat first.
-            return (pd.to_datetime(time.values[0].isoformat()) - time_res / 2).to_datetime64(), \
-                   (pd.to_datetime(time.values[-1].isoformat()) + time_res / 2).to_datetime64()
+        return data_start - time_res / 2, data_end + time_res / 2
     return _maybe_return_time_range_from_metadata(dataset,
-                                                  time.values[0],
-                                                  time.values[-1],
+                                                  data_start,
+                                                  data_end,
                                                   maybe_consider_metadata)
 
 
@@ -196,15 +193,16 @@ def remove_time_part_from_isoformat(datetime_str: str) -> str:
 
 
 def to_time_in_days_since_1970(time_str: str, pattern=None) -> float:
-    datetime = pd.to_datetime(time_str, format=pattern, infer_datetime_format=False, utc=True)
-    timedelta = datetime - REF_DATETIME
+    date_time = pd.to_datetime(time_str, format=pattern, infer_datetime_format=False, utc=True)
+    timedelta = date_time - REF_DATETIME
     return timedelta.days + timedelta.seconds / SECONDS_PER_DAY + \
            timedelta.microseconds / MICROSECONDS_PER_DAY
 
 
 def from_time_in_days_since_1970(time_value: Union[float, Sequence[float]]) -> np.ndarray:
     if isinstance(time_value, int) or isinstance(time_value, float):
-        return pd.to_datetime(time_value, utc=True, unit='d', origin='unix').round(freq='ms').to_datetime64()
+        return pd.to_datetime(time_value, utc=True, unit='d', origin='unix').round(freq='ms') \
+            .to_datetime64()
     else:
         return np.array(list(map(from_time_in_days_since_1970, time_value)))
 
@@ -214,8 +212,9 @@ def timestamp_to_iso_string(time: Union[np.datetime64, datetime.datetime], freq=
     Convert a UTC timestamp given as nanos, millis, seconds, etc. since 1970-01-01 00:00:00
     to an ISO-format string.
 
-    :param time: UTC timestamp given as time delta since since 1970-01-01 00:00:00 in the units given by
-           the numpy datetime64 type, so it can be as nanos, millis, seconds since 1970-01-01 00:00:00.
+    :param time: UTC timestamp given as time delta since since 1970-01-01 00:00:00 in the units
+        given by the numpy datetime64 type, so it can be as nanos, millis,
+        seconds since 1970-01-01 00:00:00.
     :param freq: time rounding resolution. See pandas.Timestamp.round().
     :return: ISO-format string.
     """
