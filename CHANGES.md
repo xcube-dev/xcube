@@ -2,6 +2,10 @@
 
 * Fixed the issue that xcube gen2 would not print tracebacks to stderr when raising
   CubeGeneratorErrors (#448).
+* Enhanced `xcube.core.normalize.normalize_dataset()` function to also normalize datasets with latitudes given as 
+  `latitude_centers` and to invert decreasing latitude coordinate values.
+* Introduced `xcube.core.normalize.cubify_dataset()` function to normalize a dataset 
+  and finally assert the result complies to the [xcube dataset conventions](https://github.com/dcs4cop/xcube/blob/master/docs/source/cubespec.md).
 
 ## Changes in 0.8.1
 
