@@ -199,9 +199,11 @@ class WritingToS3DataStoreTest(S3Test):
         self.assertFalse(self.store.has_data('cube-1.zarr', type_specifier='geodataframe'))
         self.assertFalse(self.store.has_data('cube-2.zarr'))
 
-    def test_write_and_describe_data_from_zarr_describer(self):
+    def test_write_and_describe_data_without_registry(self):
         dataset_1 = new_cube(variables=dict(a=4.1, b=7.4))
         self.store.write_data(dataset_1, data_id='cube-1.zarr')
+
+        self.store.deregister_data(data_id='cube-1.zarr')
 
         data_descriptor = self.store.describe_data('cube-1.zarr')
         self.assertIsInstance(data_descriptor, DatasetDescriptor)
