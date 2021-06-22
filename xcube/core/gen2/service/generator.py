@@ -64,7 +64,7 @@ class CubeGeneratorService(CubeGenerator):
         assert_instance(request, CubeGeneratorRequest, 'request')
         assert_instance(service_config, ServiceConfig, 'service_config')
         assert_instance(progress_period, (int, float), 'progress_period')
-        self._request: CubeGeneratorRequest = request
+        self._request: CubeGeneratorRequest = request.for_service()
         self._service_config: ServiceConfig = service_config
         self._access_token: Optional[str] = service_config.access_token
         self._progress_period: float = progress_period
@@ -108,10 +108,21 @@ class CubeGeneratorService(CubeGenerator):
                                     request_data=request_data)
 
     def generate_cube(self) -> Any:
-        request = self._request.to_dict()
-        response = requests.put(self.endpoint_op('cubegens'),
-                                json=request,
-                                headers=self.auth_headers)
+        request = self._request
+
+        files = None
+        if request.code_config is not None \
+                and request.code_config.file_set is not None:
+            files = dict(user_code=request.code_config.file_set.path)
+
+        request_json = request.to_dict()
+
+        response = requests.request('PUT',
+                                    self.endpoint_op('cubegens'),
+                                    json=request_json,
+                                    headers=self.auth_headers,
+                                    files=files)
+
         result = self._get_cube_generation_result(response)
         cubegen_id = result.cubegen_id
 

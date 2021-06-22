@@ -24,83 +24,131 @@ import os.path
 import re
 import tempfile
 import zipfile
-from typing import Optional, Iterator, List, Collection
+from typing import Any, Dict, Optional, List, Collection, Iterator, Tuple
+
+import fsspec
 
 from xcube.util.assertions import assert_given
-from xcube.util.jsonschema import JsonObject, JsonObjectSchema, JsonStringSchema, JsonArraySchema
-
+from xcube.util.assertions import assert_instance
+from xcube.util.jsonschema import JsonObject
+from xcube.util.jsonschema import JsonObjectSchema
+from xcube.util.jsonschema import JsonStringSchema
+from xcube.util.jsonschema import JsonArraySchema
 
 class FileSet(JsonObject):
 
     def __init__(self,
-                 base_dir: str,
+                 path: str,
                  includes: Collection[str] = None,
-                 excludes: Collection[str] = None):
-        assert_given(base_dir, 'base_dir')
-        self._base_dir = os.path.normpath(base_dir)
-        self._includes = list(includes) if includes is not None else includes
-        self._excludes = list(excludes) if excludes is not None else excludes
+                 excludes: Collection[str] = None,
+                 parameters: Dict[str, Any] = None):
+        assert_instance(path, str, 'path')
+        assert_given(path, 'path')
+        self._path = path
+        self._parameters = dict(parameters) if parameters is not None else None
+        self._includes = list(includes) if includes is not None else None
+        self._excludes = list(excludes) if excludes is not None else None
+        # computed members
         self._include_patterns = self._translate_patterns(includes or [])
         self._exclude_patterns = self._translate_patterns(excludes or [])
+        # cached, computed members
+        self._fs_root: Optional[Tuple[fsspec.AbstractFileSystem, str]] = None
+        self._mapper: Optional[fsspec.FSMap] = None
 
     @classmethod
     def get_schema(cls) -> JsonObjectSchema:
         return JsonObjectSchema(
             properties=dict(
-                base_dir=JsonStringSchema(min_length=1),
+                path=JsonStringSchema(min_length=1),
+                parameters=JsonObjectSchema(additional_properties=True),
                 includes=JsonArraySchema(items=JsonStringSchema(min_length=1)),
                 excludes=JsonArraySchema(items=JsonStringSchema(min_length=1)),
             ),
             additional_properties=False,
-            required=['base_dir'],
+            required=['path'],
             factory=cls,
         )
 
     @property
-    def base_dir(self) -> str:
-        return self._base_dir
+    def path(self) -> str:
+        return self._path
 
     @property
-    def includes(self) -> List[str]:
+    def parameters(self) -> Optional[Dict[str, Any]]:
+        return self._parameters
+
+    @property
+    def includes(self) -> Optional[List[str]]:
         return self._includes
 
     @property
-    def excludes(self) -> List[str]:
+    def excludes(self) -> Optional[List[str]]:
         return self._excludes
 
-    @property
-    def files(self) -> Iterator[str]:
-        for root, dirs, files in os.walk(self._base_dir):
-            for file in files:
-                file_path = os.path.join(root, file)
-                if self.includes_path(file_path) \
-                        and not self.excludes_path(file_path):
-                    yield file_path
+    def keys(self) -> Iterator[str]:
+        for key in self._get_mapper().keys():
+            if self._accepts_key(key):
+                yield key
 
-    def includes_path(self, file_path: str) -> bool:
-        return self._matches_path(self._include_patterns, True, file_path.replace(os.path.sep, "/"))
+    def is_local_dir(self):
+        return os.path.isdir(self._path)
 
-    def excludes_path(self, file_path: str) -> bool:
-        return self._matches_path(self._exclude_patterns, False, file_path.replace(os.path.sep, "/"))
+    def to_local_dir(self, dir_path: str = None) -> 'FileSet':
 
-    def zip(self, zip_path: str = None) -> str:
+        if os.path.isdir(self._path):
+            # ignore given dir_path
+            return self
+
+        if dir_path:
+            if not os.path.exists(dir_path):
+                os.makedirs(dir_path)
+        else:
+            dir_path = tempfile.mkdtemp()
+
+        mapper = self._get_mapper()
+        for key in self.keys():
+            file_path = os.path.join(dir_path, key)
+            file_dir_path = os.path.dirname(file_path)
+            if not os.path.isdir(file_dir_path):
+                os.mkdir(file_dir_path)
+            with open(file_path, 'wb') as stream:
+                stream.write(mapper[key])
+
+        return FileSet(dir_path)
+
+    def is_local_zip(self):
+        return zipfile.is_zipfile(self._path)
+
+    def to_local_zip(self, zip_path: str = None) -> 'FileSet':
+        """
+        Zip this file set and return it as a new local directory file set.
+        If this is already a ZIP archive, return this file set.
+
+        :param zip_path: The desired local ZIP archive path.
+        :return: the file set representing the ZIP archive.
+        """
+        if self.is_local_zip():
+            # ignore given zip_path
+            return self
         if not zip_path:
             zip_path = tempfile.mktemp(suffix='.zip')
         with zipfile.ZipFile(zip_path, 'w') as zip_file:
-            for file_path in self.files:
-                item_name = os.path.relpath(file_path, self._base_dir)
-                zip_file.write(file_path, arcname=item_name)
-        return zip_path
+            for key in self.keys():
+                file_path = os.path.join(self._path, key)
+                zip_file.write(file_path, arcname=key)
+        return FileSet(zip_path)
+
+    def _accepts_key(self, key: str) -> bool:
+        key = '/' + key.replace(os.path.sep, "/")
+        return self._key_matches(key, self._include_patterns, True) \
+               and not self._key_matches(key, self._exclude_patterns, False)
 
     @classmethod
-    def _matches_path(cls,
-                      patterns: List[re.Pattern],
-                      empty_value: bool,
-                      path: str) -> bool:
+    def _key_matches(cls, key: str, patterns: List[re.Pattern], empty_value: bool) -> bool:
         if not patterns:
             return empty_value
-        for exclude in patterns:
-            if exclude.match(path):
+        for pattern in patterns:
+            if pattern.match(key):
                 return True
         return False
 
@@ -128,7 +176,25 @@ class FileSet(JsonObject):
                     f'*/{pattern}*']
         else:
             return [pattern,
-                    f'/{pattern}',
-                    f'/{pattern}/*',
                     f'*/{pattern}',
                     f'*/{pattern}/*']
+
+    def _get_mapper(self) -> fsspec.FSMap:
+        if self._mapper is None:
+            fs, root = self._get_fs_root()
+            self._mapper = fsspec.FSMap(root, fs)
+        return self._mapper
+
+    def _get_fs_root(self) -> Tuple[fsspec.AbstractFileSystem, str]:
+        if self._fs_root is None:
+            url_path = self._path
+            if '://' not in url_path:
+                url_path = 'file://' + url_path
+            if zipfile.is_zipfile(self._path) or self._path.endswith('.zip'):
+                url_path = 'zip::' + url_path
+            self._fs_root = fsspec.core.url_to_fs(url_path,
+                                                  **(self._parameters or {}))
+        return self._fs_root
+
+    def _get_fs(self) -> fsspec.AbstractFileSystem:
+        return self._get_fs_root()[0]

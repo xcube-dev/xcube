@@ -151,6 +151,15 @@ class LocalCubeGenerator(CubeGenerator):
     def generate_cube(self) -> Any:
         request = self._request
 
+        def user_code_processor(ds, **kwargs):
+            return ds
+
+        user_code_parameters = {}
+
+        if request.code_config:
+            user_code_processor = request.code_config.get_callable()
+            user_code_parameters = request.code_config.parameters or {}
+
         if request.callback_config:
             ApiProgressCallbackObserver(request.callback_config).activate()
 
@@ -172,6 +181,7 @@ class LocalCubeGenerator(CubeGenerator):
 
             cm.will_work(10)
             cube = cube_combiner.process_cubes(cubes)
+            cube = user_code_processor(cube, **user_code_parameters)
 
             cm.will_work(80)
             data_id = cube_writer.write_cube(cube)

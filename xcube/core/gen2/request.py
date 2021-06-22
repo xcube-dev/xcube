@@ -30,6 +30,7 @@ import yaml
 from xcube.core.gen2.error import CubeGeneratorError
 from xcube.util.assertions import assert_condition
 from xcube.util.assertions import assert_given
+from xcube.util.assertions import assert_instance
 from xcube.util.jsonschema import JsonArraySchema
 from xcube.util.jsonschema import JsonObject
 from xcube.util.jsonschema import JsonObjectSchema
@@ -37,6 +38,7 @@ from .config import CallbackConfig
 from .config import CubeConfig
 from .config import InputConfig
 from .config import OutputConfig
+from .byoa.config import CodeConfig
 
 
 class CubeGeneratorRequest(JsonObject):
@@ -48,6 +50,7 @@ class CubeGeneratorRequest(JsonObject):
     :param input_configs: A sequence of one or more input configurations.
         Must be omitted if *input_config* is given.
     :param cube_config: The target cube configuration.
+    :param code_config: The user-code configuration.
     :param output_config: The output configuration for the target cube.
     :param callback_config: A configuration that allows a cube generator
         to publish progress information to a compatible endpoint.
@@ -57,19 +60,43 @@ class CubeGeneratorRequest(JsonObject):
                  input_config: InputConfig = None,
                  input_configs: Sequence[InputConfig] = None,
                  cube_config: CubeConfig = None,
+                 code_config: CodeConfig = None,
                  output_config: OutputConfig = None,
                  callback_config: Optional[CallbackConfig] = None):
-        assert_condition(input_config or input_configs, 'one of input_config and input_configs must be given')
-        assert_condition(not (input_config and input_configs), 'input_config and input_configs cannot be given both')
-        if input_config:
+        assert_condition(input_config or input_configs,
+                         'one of input_config and input_configs must be given')
+        assert_condition(not (input_config and input_configs),
+                         'input_config and input_configs cannot be given both')
+        if input_config is not None:
+            assert_instance(input_config, InputConfig, 'input_config')
             input_configs = [input_config]
-        assert_given(input_configs, 'input_configs')
-        assert_given(cube_config, 'cube_config')
-        assert_given(output_config, 'output_config')
+        elif input_configs is not None:
+            assert_instance(input_configs, (list, tuple), 'input_configs')
+            for i in range(len(input_configs)):
+                assert_instance(input_configs[i], InputConfig,
+                                f'input_configs[{i}]')
+        assert_instance(cube_config, CubeConfig, 'cube_config')
+        if code_config is not None:
+            assert_instance(code_config, CodeConfig, 'code_config')
+        assert_instance(output_config, OutputConfig, 'output_config')
+        if callback_config is not None:
+            assert_instance(callback_config, CallbackConfig, 'callback_config')
         self.input_configs = input_configs
         self.cube_config = cube_config
+        self.code_config = code_config
         self.output_config = output_config
         self.callback_config = callback_config
+
+    def for_service(self) -> 'CubeGeneratorRequest':
+        code_config = self.code_config.for_service() \
+            if self.code_config is not None else self.code_config
+        return CubeGeneratorRequest(
+            input_configs=self.input_configs,
+            cube_config=self.cube_config,
+            code_config=code_config,
+            output_config=self.output_config,
+            callback_config=self.callback_config,
+        )
 
     @classmethod
     def get_schema(cls):
@@ -78,6 +105,7 @@ class CubeGeneratorRequest(JsonObject):
                 input_config=InputConfig.get_schema(),
                 input_configs=JsonArraySchema(items=InputConfig.get_schema(), min_items=1),
                 cube_config=CubeConfig.get_schema(),
+                code_config=CodeConfig.get_schema(),
                 output_config=OutputConfig.get_schema(),
                 callback_config=CallbackConfig.get_schema()
             ),
@@ -87,15 +115,21 @@ class CubeGeneratorRequest(JsonObject):
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert into a JSON-serializable dictionary"""
-        if len(self.input_configs) == 1:
-            d = dict(input_config=self.input_configs[0].to_dict())
-        else:
-            d = dict(input_configs=[ic.to_dict() for ic in self.input_configs])
+        d = {}
+
+        if self.input_configs is not None:
+            if len(self.input_configs) == 1:
+                d.update(input_config=self.input_configs[0].to_dict())
+            else:
+                d.update(input_configs=[ic.to_dict() for ic in self.input_configs])
 
         d.update(cube_config=self.cube_config.to_dict(),
                  output_config=self.output_config.to_dict())
 
-        if self.callback_config:
+        if self.code_config is not None:
+            d.update(code_config=self.code_config.to_dict())
+
+        if self.callback_config is not None:
             d.update(callback_config=self.callback_config.to_dict())
 
         return d
