@@ -18,31 +18,64 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+import warnings
 from typing import Any, Union, Tuple, Type, Container
 
 _DEFAULT_NAME = 'value'
 
 
-def assert_not_none(value: Any, name: str = None):
+def assert_not_none(value: Any,
+                    name: str = None,
+                    exception_type: Type[Exception] = ValueError):
     if value is None:
-        raise ValueError(f'{name or _DEFAULT_NAME} must not be None')
+        raise exception_type(f'{name or _DEFAULT_NAME} must not be None')
 
 
-def assert_given(value: Any, name: str = None):
+def assert_given(value: Any,
+                 name: str = None,
+                 exception_type: Type[Exception] = ValueError):
     if not value:
-        raise ValueError(f'{name or _DEFAULT_NAME} must be given')
+        raise exception_type(f'{name or _DEFAULT_NAME} must be given')
 
 
-def assert_instance(value: Any, dtype: Union[Type, Tuple[Type, ...]], name: str = None):
+def assert_instance(value: Any,
+                    dtype: Union[Type, Tuple[Type, ...]],
+                    name: str = None,
+                    exception_type: Type[Exception] = TypeError):
     if not isinstance(value, dtype):
-        raise TypeError(f'{name or _DEFAULT_NAME} must be an instance of {dtype}, was {type(value)}')
+        raise exception_type(f'{name or _DEFAULT_NAME} must be '
+                             f'an instance of {dtype}, was {type(value)}')
 
 
-def assert_in(value: Any, container: Container, name: str = None):
+def assert_in(value: Any,
+              container: Container,
+              name: str = None,
+              exception_type: Type[Exception] = ValueError):
     if value not in container:
-        raise ValueError(f'{name or _DEFAULT_NAME} must be one of {container}')
+        raise exception_type(f'{name or _DEFAULT_NAME} must be '
+                             f'one of {container}')
 
 
-def assert_condition(condition: Any, message: str):
+def assert_true(value: Any,
+                message: str,
+                exception_type: Type[Exception] = ValueError):
+    if not value:
+        raise exception_type(message)
+
+
+def assert_false(value: Any,
+                 message: str,
+                 exception_type: Type[Exception] = ValueError):
+    if value:
+        raise exception_type(message)
+
+
+def assert_condition(condition: Any,
+                     message: str,
+                     exception_type: Type[Exception] = ValueError):
+    """Deprecated. Use assert_true()"""
+    warnings.warn('assert_condition() has been deprecated. '
+                  'Use assert_true() or assert_false() instead.',
+                  DeprecationWarning)
     if not condition:
-        raise ValueError(message)
+        raise exception_type(message)

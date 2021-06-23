@@ -21,7 +21,7 @@ class CodeConfigTest(unittest.TestCase):
         self.assertIsInstance(code_config, CodeConfig)
         self.assertEqual(INLINE_CODE, code_config.inline_code)
         self.assertEqual({'text': 'good bye'}, code_config.parameters)
-        self.assertEqual('user_code_1:process_dataset', code_config.callable_ref)
+        self.assertRegexpMatches(code_config.callable_ref, 'user_code_1:process_dataset')
         self.assertTrue(callable(code_config.get_callable()))
 
     def test_from_code_with_function_refs(self):
@@ -57,10 +57,8 @@ class CodeConfigTest(unittest.TestCase):
         code_config = CodeConfig.from_callable(modify_dataset, parameters=dict(text='Good bye!'))
         self.assertIsInstance(code_config, CodeConfig)
         self.assertIsNone(code_config.inline_code)
-        self.assertIsInstance(code_config.file_set, FileSet)
-        self.assertTrue(code_config.file_set.is_local_dir())
-        self.assertEqual('xcube', os.path.basename(code_config.file_set.path))
-        self.assertEqual('test.core.gen2.byoa.test_config:modify_dataset', code_config.callable_ref)
+        self.assertIsNone(code_config.file_set, FileSet)
+        self.assertIsNone(code_config.callable_ref)
         self.assertIs(modify_dataset, code_config.get_callable())
 
     def test_from_file_set_dir(self):
@@ -81,6 +79,18 @@ class CodeConfigTest(unittest.TestCase):
         self.assertEqual('processor:process_dataset', code_config.callable_ref)
         self.assertTrue(callable(code_config.get_callable()))
 
+    # def test_for_local_from_callable(self):
+    #     code_config = CodeConfig.from_callable(modify_dataset, parameters=dict(text='Good bye!'))
+    #     local_code_config = code_config.for_local()
+    #     self.assertIsInstance(local_code_config, CodeConfig)
+    #     self.assertIsNone(code_config._)
+    #     self.assertIsNone(code_config.inline_code)
+    #     self.assertIsInstance(code_config.file_set, FileSet)
+    #     self.assertTrue(code_config.file_set.is_local_dir())
+    #     self.assertEqual('xcube', os.path.basename(code_config.file_set.path))
+    #     self.assertEqual('test.core.gen2.byoa.test_config:modify_dataset', code_config.callable_ref)
+    #     self.assertIs(modify_dataset, code_config.get_callable())
+
     def test_for_service(self):
         dir_path = os.path.join(os.path.dirname(__file__), 'test_data', 'user_code')
 
@@ -96,6 +106,10 @@ class CodeConfigTest(unittest.TestCase):
         self.assertTrue(service_code_config.file_set.is_local_zip())
 
     def test_to_dict(self):
+        d = CodeConfig.from_callable(modify_dataset).to_dict()
+        # Shall we raise instead?
+        self.assertEqual({}, d)
+
         d = CodeConfig.from_code(INLINE_CODE, module_name='user_code').to_dict()
         self.assertEqual(
             {
@@ -104,11 +118,6 @@ class CodeConfigTest(unittest.TestCase):
             },
             d
         )
-
-        d = CodeConfig.from_callable(modify_dataset).to_dict()
-        self.assertEqual(('test.core.gen2.byoa.test_config:'
-                          'modify_dataset'),
-                         d.get('callable_ref'))
 
         d = CodeConfig.from_file_set(FileSet('github://dcs4cop:xcube@v0.8.2.dev0',
                                              includes='*.py'),
