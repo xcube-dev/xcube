@@ -79,31 +79,118 @@ class CodeConfigTest(unittest.TestCase):
         self.assertEqual('processor:process_dataset', code_config.callable_ref)
         self.assertTrue(callable(code_config.get_callable()))
 
-    # def test_for_local_from_callable(self):
-    #     code_config = CodeConfig.from_callable(modify_dataset, parameters=dict(text='Good bye!'))
-    #     local_code_config = code_config.for_local()
-    #     self.assertIsInstance(local_code_config, CodeConfig)
-    #     self.assertIsNone(code_config._)
-    #     self.assertIsNone(code_config.inline_code)
-    #     self.assertIsInstance(code_config.file_set, FileSet)
-    #     self.assertTrue(code_config.file_set.is_local_dir())
-    #     self.assertEqual('xcube', os.path.basename(code_config.file_set.path))
-    #     self.assertEqual('test.core.gen2.byoa.test_config:modify_dataset', code_config.callable_ref)
-    #     self.assertIs(modify_dataset, code_config.get_callable())
+    def test_for_local_from_callable(self):
+        user_code_config = CodeConfig.from_callable(modify_dataset)
 
-    def test_for_service(self):
-        dir_path = os.path.join(os.path.dirname(__file__), 'test_data', 'user_code')
+        local_code_config = user_code_config.for_local()
+        self.assertIs(user_code_config, local_code_config)
+        self.assertIs(modify_dataset, local_code_config.get_callable())
 
-        local_code_config = CodeConfig.from_file_set(dir_path, 'processor:process_dataset')
+    def test_for_local_from_inline_code(self):
+        user_code_config = CodeConfig.from_code(INLINE_CODE)
+
+        local_code_config = user_code_config.for_local()
+        self.assertIsInstance(local_code_config, CodeConfig)
+        self.assertIsInstance(local_code_config.callable_ref, str)
+        self.assertIsNone(local_code_config._callable)
+        self.assertIsNone(local_code_config.inline_code)
+        self.assertIsInstance(local_code_config.file_set, FileSet)
         self.assertTrue(local_code_config.file_set.is_local_dir())
+        self.assertRegexpMatches(os.path.basename(local_code_config.file_set.path),
+                                 'xcube-gen-byoa-*.')
+        self.assertRegexpMatches(local_code_config.callable_ref,
+                                 'xcube_gen_byoa_*.:process_dataset')
+        self.assertTrue(callable(local_code_config.get_callable()))
 
-        service_code_config = local_code_config.for_service()
+    def test_for_local_from_file_set_dir(self):
+        dir_path = os.path.join(os.path.dirname(__file__),
+                                'test_data', 'user_code')
+        user_code_config = CodeConfig.from_file_set(dir_path,
+                                                    'processor:process_dataset')
+
+        local_code_config = user_code_config.for_local()
+        self.assertIs(user_code_config, local_code_config)
+        self.assertIsInstance(local_code_config.file_set, FileSet)
+        self.assertIs(user_code_config.file_set, local_code_config.file_set)
+        self.assertEqual(dir_path, local_code_config.file_set.path)
+        self.assertTrue(callable(local_code_config.get_callable()))
+
+    def test_for_local_from_file_set_zip(self):
+        zip_path = os.path.join(os.path.dirname(__file__),
+                                'test_data', 'user_code.zip')
+        user_code_config = CodeConfig.from_file_set(zip_path,
+                                                    'processor:process_dataset')
+
+        local_code_config = user_code_config.for_local()
+        self.assertIsInstance(local_code_config, CodeConfig)
+        self.assertIsInstance(local_code_config.callable_ref, str)
+        self.assertIsNone(local_code_config._callable)
+        self.assertIsNone(local_code_config.inline_code)
+        self.assertIsInstance(local_code_config.file_set, FileSet)
+        self.assertTrue(local_code_config.file_set.is_local_dir())
+        self.assertRegexpMatches(os.path.basename(local_code_config.file_set.path),
+                                 'xcube-gen-byoa-*.')
         self.assertEqual(local_code_config.callable_ref,
-                         service_code_config.callable_ref)
-        self.assertNotEqual(local_code_config.file_set,
-                            service_code_config.file_set)
+                         'processor:process_dataset')
+        self.assertTrue(callable(local_code_config.get_callable()))
+
+    def test_for_local_illegal_state(self):
+        code_config = CodeConfig.from_code(INLINE_CODE)
+        code_config.inline_code = None
+        with self.assertRaises(RuntimeError) as e:
+            code_config.for_local()
+        self.assertEqual(('for_local() failed due to an invalid CodeConfig state',),
+                         e.exception.args)
+
+    def test_for_service_from_callable(self):
+        user_code_config = CodeConfig.from_callable(transform_dataset)
+
+        service_code_config = user_code_config.for_service()
+        self.assertIsInstance(service_code_config, CodeConfig)
+        self.assertIsInstance(service_code_config.callable_ref, str)
+        self.assertIsNone(service_code_config._callable)
+        self.assertIsNone(service_code_config.inline_code)
         self.assertIsInstance(service_code_config.file_set, FileSet)
         self.assertTrue(service_code_config.file_set.is_local_zip())
+
+    def test_for_service_from_file_set_zip(self):
+        zip_path = os.path.join(os.path.dirname(__file__),
+                                'test_data', 'user_code.zip')
+        user_code_config = CodeConfig.from_file_set(zip_path,
+                                                    'processor:process_dataset')
+
+        service_code_config = user_code_config.for_service()
+        self.assertIs(user_code_config, service_code_config)
+        self.assertIs(user_code_config.file_set, service_code_config.file_set)
+        self.assertIsInstance(service_code_config.file_set, FileSet)
+        self.assertEqual(zip_path, service_code_config.file_set.path)
+
+    def test_for_service_from_file_set_dir(self):
+        dir_path = os.path.join(os.path.dirname(__file__),
+                                'test_data', 'user_code')
+        user_code_config = CodeConfig.from_file_set(dir_path,
+                                                    'processor:process_dataset')
+
+        service_code_config = user_code_config.for_service()
+        self.assertIsInstance(service_code_config, CodeConfig)
+        self.assertIsInstance(service_code_config.callable_ref, str)
+        self.assertIsNone(service_code_config._callable)
+        self.assertIsNone(service_code_config.inline_code)
+        self.assertIsInstance(service_code_config.file_set, FileSet)
+        self.assertTrue(service_code_config.file_set.is_local_zip())
+        self.assertRegexpMatches(os.path.basename(service_code_config.file_set.path),
+                                 'xcube-gen-byoa-*.')
+        self.assertEqual(service_code_config.callable_ref,
+                         'processor:process_dataset')
+        self.assertTrue(callable(service_code_config.get_callable()))
+
+    def test_for_service_illegal_state(self):
+        code_config = CodeConfig.from_code(INLINE_CODE)
+        code_config.inline_code = None
+        with self.assertRaises(RuntimeError) as e:
+            code_config.for_service()
+        self.assertEqual(('for_service() failed due to an invalid CodeConfig state',),
+                         e.exception.args)
 
     def test_to_dict(self):
         d = CodeConfig.from_callable(modify_dataset).to_dict()

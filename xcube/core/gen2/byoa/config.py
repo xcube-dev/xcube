@@ -34,10 +34,10 @@ from xcube.util.jsonschema import JsonBooleanSchema
 from xcube.util.jsonschema import JsonObject
 from xcube.util.jsonschema import JsonObjectSchema
 from xcube.util.jsonschema import JsonStringSchema
+from .constants import DEFAULT_CALLABLE_NAME
+from .constants import DEFAULT_MODULE_NAME
+from .constants import DEFAULT_TEMP_FILE_PREFIX
 from .fileset import FileSet
-
-DEFAULT_CALLABLE_NAME = 'process_dataset'
-DEFAULT_MODULE_NAME = 'xcube_byoa'
 
 
 class CodeConfig(JsonObject):
@@ -240,9 +240,8 @@ class CodeConfig(JsonObject):
             )
         if code_config.file_set is None \
                 or not code_config.file_set.is_local_zip():
-            raise RuntimeError('for_local() failed to convert CodeConfig, '
-                               'file_set does not represent '
-                               'a local ZIP archive')
+            raise RuntimeError('for_service() failed due to an '
+                               'invalid CodeConfig state')
         # At this point, code_config.file_set
         # is always a local ZIP archive.
         return code_config
@@ -284,9 +283,8 @@ class CodeConfig(JsonObject):
             )
         if code_config.file_set is None \
                 or not code_config.file_set.is_local_dir():
-            raise RuntimeError('for_local() failed to convert CodeConfig, '
-                               'file_set does not represent '
-                               'a local directory')
+            raise RuntimeError('for_local() failed due to an '
+                               'invalid CodeConfig state')
         # At this point, code_config.file_set
         # is always a local directory.
         return code_config
@@ -418,7 +416,7 @@ def _inline_code_to_module(inline_code: str,
                            callable_ref: str,
                            parameters: Dict[str, Any] = None):
     module_name, callable_name = _normalize_callable_ref(callable_ref)
-    dir_path = tempfile.mkdtemp()
+    dir_path = tempfile.mkdtemp(prefix=DEFAULT_TEMP_FILE_PREFIX)
     with open(os.path.join(dir_path, f'{module_name}.py'), 'w') as stream:
         stream.write(inline_code)
     return CodeConfig.from_file_set(file_set=FileSet(dir_path),

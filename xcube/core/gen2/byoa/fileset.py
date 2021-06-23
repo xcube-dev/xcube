@@ -34,6 +34,8 @@ from xcube.util.jsonschema import JsonObject
 from xcube.util.jsonschema import JsonObjectSchema
 from xcube.util.jsonschema import JsonStringSchema
 from xcube.util.jsonschema import JsonArraySchema
+from .constants import DEFAULT_TEMP_FILE_PREFIX
+
 
 class FileSet(JsonObject):
 
@@ -103,7 +105,7 @@ class FileSet(JsonObject):
             if not os.path.exists(dir_path):
                 os.makedirs(dir_path)
         else:
-            dir_path = tempfile.mkdtemp()
+            dir_path = tempfile.mkdtemp(prefix=DEFAULT_TEMP_FILE_PREFIX)
 
         mapper = self._get_mapper()
         for key in self.keys():
@@ -131,7 +133,7 @@ class FileSet(JsonObject):
             # ignore given zip_path
             return self
         if not zip_path:
-            zip_path = tempfile.mktemp(suffix='.zip')
+            zip_path = tempfile.mktemp(prefix=DEFAULT_TEMP_FILE_PREFIX, suffix='.zip')
         with zipfile.ZipFile(zip_path, 'w') as zip_file:
             for key in self.keys():
                 file_path = os.path.join(self._path, key)
