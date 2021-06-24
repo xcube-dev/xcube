@@ -22,7 +22,6 @@
 import fnmatch
 import os.path
 import re
-import tempfile
 import zipfile
 from typing import Any, Dict, Optional, List, Collection, Iterator, Tuple
 
@@ -30,14 +29,50 @@ import fsspec
 
 from xcube.util.assertions import assert_given
 from xcube.util.assertions import assert_instance
+from xcube.util.jsonschema import JsonArraySchema
 from xcube.util.jsonschema import JsonObject
 from xcube.util.jsonschema import JsonObjectSchema
 from xcube.util.jsonschema import JsonStringSchema
-from xcube.util.jsonschema import JsonArraySchema
-from .constants import DEFAULT_TEMP_FILE_PREFIX
+from .temp import new_temp_dir
+from .temp import new_temp_file
 
 
 class FileSet(JsonObject):
+    """
+    A set of files that can found at some abstract root *path*.
+    The *path* may identify local or remote filesystems.
+    A filesystem may require specific *parameters*, e.g.
+    user credentials.
+
+    This implementation is based on the ``fsspec``
+    package and the documentation about the different
+    possible file systems and their specific parameters
+    can be found at https://filesystem-spec.readthedocs.io/.
+
+    Examples:
+
+        FileSet('eurodatacube/my_processor')
+
+        FileSet('eurodatacube/my_processor.zip')
+
+        FileSet('s3://eurodatacube/my_processor.zip',
+                parameters=dict(key='...',
+                                secret='...')
+
+        FileSet('github://dcs4cop:xcube@v0.8.1/',
+                parameters=dict(username='...',
+                                token='ghp_...')
+
+    If *includes* wildcard patterns are given, only files
+    whose paths match any of the patterns are included.
+    If *excludes* wildcard patterns are given, only files
+    whose paths do not match all of the patterns are included.
+
+    :param path: Root path of the file set.
+    :param includes: Wildcard patterns used to include a file.
+    :param excludes: Wildcard patterns used to exclude a file.
+    :param parameters: File system specific parameters.
+    """
 
     def __init__(self,
                  path: str,
@@ -59,6 +94,7 @@ class FileSet(JsonObject):
 
     @classmethod
     def get_schema(cls) -> JsonObjectSchema:
+        """Get the JSON-schema for FileSet objects."""
         return JsonObjectSchema(
             properties=dict(
                 path=JsonStringSchema(min_length=1),
@@ -73,67 +109,120 @@ class FileSet(JsonObject):
 
     @property
     def path(self) -> str:
+        """Get the root path."""
         return self._path
 
     @property
     def parameters(self) -> Optional[Dict[str, Any]]:
+        """
+        Get optional parameters for the file system
+        :attribute:path is referring to.
+        """
         return self._parameters
 
     @property
     def includes(self) -> Optional[List[str]]:
+        """Wildcard patterns used to include a file."""
         return self._includes
 
     @property
     def excludes(self) -> Optional[List[str]]:
+        """Wildcard patterns used to exclude a file."""
         return self._excludes
 
     def keys(self) -> Iterator[str]:
+        """
+        Get keys in this file set.
+        A key is a normalized path relative to the root *path*.
+        The forward slash "/" is used as path separator.
+        """
         for key in self._get_mapper().keys():
+            print('-->', key)
             if self._accepts_key(key):
                 yield key
 
-    def is_local_dir(self):
-        return os.path.isdir(self._path)
+    def is_remote(self) -> bool:
+        """
+        Test whether this file set refers to a location in the internet.
+        """
+        # Following implementation may need some refinement.
+        # There should be some implementation in fsspec.
+        protocols = ('github', 'https', 'http',
+                     'ftp', 's3', 'gcp')
+        prefixes = [p + '://' for p in protocols] \
+                   + [p + '::' for p in protocols]
+        for p in prefixes:
+            if p in self._path:
+                return True
+        return False
+
+    def is_local_dir(self) -> bool:
+        """
+        Test whether this file set refers to an existing local directory.
+        """
+        path = _to_local_path(self.path)
+        if path is None:
+            return False
+        return os.path.isdir(path)
 
     def to_local_dir(self, dir_path: str = None) -> 'FileSet':
+        """
+        Convert this file set into a file set that refers to a
+        directory in the local file system.
 
-        if os.path.isdir(self._path):
+        :param dir_path: An optional directory path.
+            If not given, a temporary directory is created.
+        :return: The file set representing the local directory.
+        """
+        path = _to_local_path(self.path)
+
+        if path is not None and os.path.isdir(path):
             # ignore given dir_path
             return self
 
         if dir_path:
             if not os.path.exists(dir_path):
                 os.makedirs(dir_path)
+            else:
+                # We should assert an empty existing directory
+                pass
         else:
-            dir_path = tempfile.mkdtemp(prefix=DEFAULT_TEMP_FILE_PREFIX)
+            dir_path = new_temp_dir()
 
         mapper = self._get_mapper()
         for key in self.keys():
-            file_path = os.path.join(dir_path, key)
+            file_path = os.path.join(dir_path, key.replace('/', os.path.sep))
             file_dir_path = os.path.dirname(file_path)
             if not os.path.isdir(file_dir_path):
-                os.mkdir(file_dir_path)
+                os.makedirs(file_dir_path)
             with open(file_path, 'wb') as stream:
                 stream.write(mapper[key])
 
         return FileSet(dir_path)
 
     def is_local_zip(self):
-        return zipfile.is_zipfile(self._path)
+        """
+        Test whether this file set refers to an existing local ZIP archive.
+        """
+        path = _to_local_path(self.path)
+        if path is None:
+            return False
+        return zipfile.is_zipfile(path)
 
     def to_local_zip(self, zip_path: str = None) -> 'FileSet':
         """
         Zip this file set and return it as a new local directory file set.
         If this is already a ZIP archive, return this file set.
 
-        :param zip_path: The desired local ZIP archive path.
-        :return: the file set representing the ZIP archive.
+        :param zip_path: An optional path for the new ZIP archive.
+            If not given, a temporary file will be created.
+        :return: The file set representing the local ZIP archive.
         """
         if self.is_local_zip():
             # ignore given zip_path
             return self
         if not zip_path:
-            zip_path = tempfile.mktemp(prefix=DEFAULT_TEMP_FILE_PREFIX, suffix='.zip')
+            zip_path = new_temp_file(suffix='.zip')
         with zipfile.ZipFile(zip_path, 'w') as zip_file:
             for key in self.keys():
                 file_path = os.path.join(self._path, key)
@@ -200,3 +289,12 @@ class FileSet(JsonObject):
 
     def _get_fs(self) -> fsspec.AbstractFileSystem:
         return self._get_fs_root()[0]
+
+
+def _to_local_path(path: str) -> Optional[str]:
+    url = path.split('::')[-1]
+    if '://' not in url:
+        return url
+    if url.startswith('file://'):
+        return url[len('file://'):]
+    return None

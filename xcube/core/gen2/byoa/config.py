@@ -23,7 +23,6 @@ import importlib
 import inspect
 import os.path
 import sys
-import tempfile
 import warnings
 from typing import Any, Union, Dict, Callable, Sequence, Optional, Tuple
 
@@ -36,8 +35,8 @@ from xcube.util.jsonschema import JsonObjectSchema
 from xcube.util.jsonschema import JsonStringSchema
 from .constants import DEFAULT_CALLABLE_NAME
 from .constants import DEFAULT_MODULE_NAME
-from .constants import DEFAULT_TEMP_FILE_PREFIX
 from .fileset import FileSet
+from .temp import new_temp_dir
 
 
 class CodeConfig(JsonObject):
@@ -214,37 +213,7 @@ class CodeConfig(JsonObject):
         inline code or a file set that represents a local
         ZIP archive.
         """
-        code_config = self
-        if code_config.inline_code is not None:
-            # If we have inline code,
-            # there is no need to do anything else.
-            return code_config
-        if code_config._callable is not None \
-                and code_config.inline_code is None \
-                and code_config.file_set is None:
-            # If we have callable that was not loaded
-            # from inline string or files set,
-            # find its package and turn into file set.
-            code_config = _callable_to_module(code_config._callable,
-                                              code_config.parameters)
-        if code_config.file_set is not None \
-                and code_config.file_set.is_local_dir():
-            # If we have a file set that is a local
-            # directory, turn it into a local ZIP Archive.
-            file_set = code_config.file_set.to_local_zip()
-            code_config = code_config.from_file_set(
-                file_set=file_set,
-                callable_ref=code_config.callable_ref,
-                parameters=code_config.parameters,
-                install_required=code_config.install_required
-            )
-        if code_config.file_set is None \
-                or not code_config.file_set.is_local_zip():
-            raise RuntimeError('for_service() failed due to an '
-                               'invalid CodeConfig state')
-        # At this point, code_config.file_set
-        # is always a local ZIP archive.
-        return code_config
+        return _for_service(self)
 
     def for_local(self) -> 'CodeConfig':
         """
@@ -260,34 +229,7 @@ class CodeConfig(JsonObject):
         used after installation (i.e. by executing
         ```python setup.py install```).
         """
-        code_config = self
-        if code_config._callable is not None:
-            # If the callable is already defined,
-            # there is not need to do anything else.
-            return code_config
-        if code_config.inline_code:
-            # Turn inline code into a local Python module.
-            code_config = _inline_code_to_module(code_config.inline_code,
-                                                 code_config.callable_ref,
-                                                 code_config.parameters)
-        if code_config.file_set is not None \
-                and not code_config.file_set.is_local_dir():
-            # If the file set is not a local directory,
-            # turn it into one.
-            file_set = code_config.file_set.to_local_dir()
-            code_config = code_config.from_file_set(
-                file_set=file_set,
-                callable_ref=code_config.callable_ref,
-                install_required=code_config.install_required,
-                parameters=code_config.parameters
-            )
-        if code_config.file_set is None \
-                or not code_config.file_set.is_local_dir():
-            raise RuntimeError('for_local() failed due to an '
-                               'invalid CodeConfig state')
-        # At this point, code_config.file_set
-        # is always a local directory.
-        return code_config
+        return _for_local(self)
 
     def get_callable(self) -> Callable:
         """
@@ -321,6 +263,97 @@ class CodeConfig(JsonObject):
         return _load_callable(code_config.file_set.path,
                               code_config.callable_ref,
                               code_config.install_required)
+
+
+def _for_service(code_config: CodeConfig) -> 'CodeConfig':
+    if code_config.inline_code is not None:
+        # If we have inline code,
+        # there is no need to do anything else.
+        return code_config
+
+    if code_config.file_set is not None \
+            and code_config.file_set.is_remote():
+        # For service requests, remote file set will
+        # simply turn into JSON. for_local() will download
+        # them when request is executed.
+        # So we are done here.
+        return code_config
+
+    # noinspection PyProtectedMember
+    if code_config._callable is not None \
+            and code_config.inline_code is None \
+            and code_config.file_set is None:
+        # If we have callable that was not loaded
+        # from inline string or files set,
+        # turn into a local Python module.
+        # noinspection PyProtectedMember
+        code_config = _callable_to_module(code_config._callable,
+                                          code_config.parameters)
+
+    if code_config.file_set is not None \
+            and code_config.file_set.is_local_dir():
+        # If we have a file set that is a local
+        # directory, turn it into a local ZIP Archive.
+        file_set = code_config.file_set.to_local_zip()
+        code_config = code_config.from_file_set(
+            file_set=file_set,
+            callable_ref=code_config.callable_ref,
+            parameters=code_config.parameters,
+            install_required=code_config.install_required
+        )
+
+    if code_config.file_set is not None \
+            and code_config.file_set.is_local_zip():
+        # Local ZIP archives will become file-attachments
+        # to HTTP service requests. In the request's JSON we will
+        # still have the local path.
+        # So we are done here.
+        return code_config
+
+    if code_config.file_set is not None \
+            and (code_config.file_set.is_remote()
+                 or code_config.file_set.is_local_zip()):
+        # At this point, code_config.file_set
+        # is always a local ZIP archive.
+        return code_config
+
+    raise RuntimeError('for_service() failed due to an '
+                       'invalid CodeConfig state')
+
+
+def _for_local(code_config: CodeConfig) -> 'CodeConfig':
+    # noinspection PyProtectedMember
+    if code_config._callable is not None:
+        # If the callable is already defined,
+        # there is not need to do anything else.
+        return code_config
+
+    if code_config.inline_code:
+        # Turn inline code into a local Python module.
+        code_config = _inline_code_to_module(code_config.inline_code,
+                                             code_config.callable_ref,
+                                             code_config.parameters)
+
+    if code_config.file_set is not None \
+            and not code_config.file_set.is_local_dir():
+        # If the file set is not a local directory,
+        # turn it into one.
+        file_set = code_config.file_set.to_local_dir()
+        code_config = code_config.from_file_set(
+            file_set=file_set,
+            callable_ref=code_config.callable_ref,
+            install_required=code_config.install_required,
+            parameters=code_config.parameters
+        )
+
+    if code_config.file_set is not None \
+            and code_config.file_set.is_local_dir():
+        # At this point, code_config.file_set
+        # is always a local directory.
+        return code_config
+
+    raise RuntimeError('for_local() failed due to an '
+                       'invalid CodeConfig state')
 
 
 def _load_callable(dir_path: str,
@@ -416,7 +449,7 @@ def _inline_code_to_module(inline_code: str,
                            callable_ref: str,
                            parameters: Dict[str, Any] = None):
     module_name, callable_name = _normalize_callable_ref(callable_ref)
-    dir_path = tempfile.mkdtemp(prefix=DEFAULT_TEMP_FILE_PREFIX)
+    dir_path = new_temp_dir()
     with open(os.path.join(dir_path, f'{module_name}.py'), 'w') as stream:
         stream.write(inline_code)
     return CodeConfig.from_file_set(file_set=FileSet(dir_path),
