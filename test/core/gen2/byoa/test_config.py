@@ -146,10 +146,13 @@ class CodeConfigTest(unittest.TestCase):
                          'because it accesses the internet and it is slow.\n'
                          'To activate, set ENABLE_XCUBE_BYOA_FILE_SET_REMOTE_TESTS=1')
     def test_for_local_from_file_set_remote(self):
+        # 'zip://xcube-0.8.1/*'
+        url = FileSet('::filecache://xcube-0.8.1.zip'
+                      '::https://github.com/dcs4cop/xcube/archive/v0.8.1.zip',
+                       parameters=dict(filecache={'cache_storage': '.',
+                                                  'compression': 'infer'}))
         # url = FileSet('zip::simplecache::https://github.com/dcs4cop/xcube/archive/v0.8.1.zip',
         #               parameters=dict(simplecache={'cache_storage': '.'}))
-        url = FileSet('zip::simplecache::https://github.com/dcs4cop/xcube/archive/v0.8.1.zip',
-                      parameters=dict(simplecache={'cache_storage': '.'}))
         # url = FileSet('github://dcs4cop:xcube@17a3a8526e0105ee610c86fcf5fe82fd62f9b273/',
         #               parameters=dict(username='forman',
         #                               token='...'))
