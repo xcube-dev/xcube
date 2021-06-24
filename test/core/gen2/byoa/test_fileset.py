@@ -48,7 +48,7 @@ class FileSetTest(unittest.TestCase):
 
     def test_is_remote(self):
         self.assertTrue(FileSet('s3://xcube/user_code').is_remote())
-        self.assertTrue(FileSet('gcp://xcube/user_code').is_remote())
+        self.assertTrue(FileSet('gcs://xcube/user_code').is_remote())
         self.assertTrue(FileSet('zip::https://xcube/user_code.zip').is_remote())
         self.assertTrue(FileSet('github://dcs4cop:xcube@v0.8.1').is_remote())
         self.assertFalse(FileSet('file://test_data/user_code').is_remote())
