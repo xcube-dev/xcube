@@ -232,7 +232,7 @@ class FileSet(JsonObject):
                 and not self.excludes:
             return self
 
-        if not self.is_remote():
+        if self.is_remote():
             return FileSet('simplecache::' + self.path,
                            includes=self.includes,
                            excludes=self.excludes,

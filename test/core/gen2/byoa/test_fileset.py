@@ -4,6 +4,7 @@ import os.path
 import unittest
 
 from xcube.core.gen2.byoa.fileset import FileSet
+from xcube.core.gen2.byoa.constants import DEFAULT_TEMP_FILE_PREFIX
 
 PARENT_DIR = os.path.dirname(__file__)
 
@@ -102,13 +103,16 @@ class FileSetTest(unittest.TestCase):
             },
             set(file_set.keys()))
 
-    def test_zip_and_unzip(self):
-        base_dir = os.path.join(PARENT_DIR, 'test_data/user_code')
-        zip_file_set = FileSet(base_dir).to_local_zip()
+    def test_to_local_zip_then_to_local_dir(self):
+        dir_path = os.path.join(PARENT_DIR, 'test_data', 'user_code')
+
+        zip_file_set = FileSet(dir_path).to_local_zip()
         self.assertIsInstance(zip_file_set, FileSet)
-        self.assertTrue(zip_file_set.path.endswith('.zip'))
+        self.assertTrue(zip_file_set.is_local())
         self.assertFalse(zip_file_set.is_local_dir())
         self.assertTrue(zip_file_set.is_local_zip())
+        self.assertRegex(zip_file_set.path,
+                         f'^.*{DEFAULT_TEMP_FILE_PREFIX}.*\\.zip$')
         self.assertEqual(
             {
                 'NOTES.md',
@@ -121,9 +125,11 @@ class FileSetTest(unittest.TestCase):
 
         dir_file_set = zip_file_set.to_local_dir()
         self.assertIsInstance(dir_file_set, FileSet)
-        self.assertFalse(dir_file_set.path.endswith('.zip'))
+        self.assertTrue(zip_file_set.is_local())
         self.assertTrue(dir_file_set.is_local_dir())
         self.assertFalse(dir_file_set.is_local_zip())
+        self.assertRegex(dir_file_set.path,
+                         f'^.*{DEFAULT_TEMP_FILE_PREFIX}.*$')
         self.assertEqual(
             {
                 'NOTES.md',
@@ -132,4 +138,41 @@ class FileSetTest(unittest.TestCase):
                 'impl/algorithm.py',
             },
             set(dir_file_set.keys())
+        )
+
+    def test_to_local_dir_then_to_local_zip(self):
+        zip_path = os.path.join(PARENT_DIR, 'test_data', 'user_code.zip')
+
+        dir_file_set = FileSet(zip_path).to_local_dir()
+        self.assertIsInstance(dir_file_set, FileSet)
+        self.assertTrue(dir_file_set.is_local())
+        self.assertTrue(dir_file_set.is_local_dir())
+        self.assertFalse(dir_file_set.is_local_zip())
+        self.assertRegex(dir_file_set.path,
+                         f'^.*{DEFAULT_TEMP_FILE_PREFIX}.*$')
+        self.assertEqual(
+            {
+                'NOTES.md',
+                'processor.py',
+                'impl/__init__.py',
+                'impl/algorithm.py',
+            },
+            set(dir_file_set.keys())
+        )
+
+        zip_file_set = dir_file_set.to_local_zip()
+        self.assertIsInstance(zip_file_set, FileSet)
+        self.assertTrue(dir_file_set.is_local())
+        self.assertFalse(zip_file_set.is_local_dir())
+        self.assertTrue(zip_file_set.is_local_zip())
+        self.assertRegex(zip_file_set.path,
+                         f'^.*{DEFAULT_TEMP_FILE_PREFIX}.*\\.zip$')
+        self.assertEqual(
+            {
+                'NOTES.md',
+                'processor.py',
+                'impl/__init__.py',
+                'impl/algorithm.py',
+            },
+            set(zip_file_set.keys())
         )
