@@ -4,6 +4,7 @@ import os.path
 import unittest
 
 from xcube.core.gen2.byoa.fileset import FileSet
+from xcube.core.gen2.byoa.constants import DEFAULT_TEMP_FILE_PREFIX
 
 PARENT_DIR = os.path.dirname(__file__)
 
@@ -48,8 +49,7 @@ class FileSetTest(unittest.TestCase):
 
     def test_is_remote(self):
         self.assertTrue(FileSet('s3://xcube/user_code').is_remote())
-        self.assertTrue(FileSet('gcs://xcube/user_code').is_remote())
-        self.assertTrue(FileSet('zip::https://xcube/user_code.zip').is_remote())
+        self.assertTrue(FileSet('https://xcube/user_code.zip').is_remote())
         self.assertTrue(FileSet('github://dcs4cop:xcube@v0.8.1').is_remote())
         self.assertFalse(FileSet('file://test_data/user_code').is_remote())
         self.assertFalse(FileSet('test_data/user_code').is_remote())
@@ -58,7 +58,6 @@ class FileSetTest(unittest.TestCase):
         local_dir_path = os.path.join(PARENT_DIR, 'test_data', 'user_code')
         self.assertTrue(FileSet(local_dir_path).is_local_dir())
         self.assertTrue(FileSet('file://' + local_dir_path).is_local_dir())
-        self.assertTrue(FileSet('zip::file://' + local_dir_path).is_local_dir())
         self.assertFalse(FileSet('s3://eurodatacube/test/').is_local_dir())
         self.assertFalse(FileSet('s3://eurodatacube/test.zip').is_local_dir())
 
@@ -66,18 +65,17 @@ class FileSetTest(unittest.TestCase):
         local_zip_path = os.path.join(PARENT_DIR, 'test_data', 'user_code.zip')
         self.assertTrue(FileSet(local_zip_path).is_local_zip())
         self.assertTrue(FileSet('file://' + local_zip_path).is_local_zip())
-        self.assertTrue(FileSet('zip::file://' + local_zip_path).is_local_zip())
         self.assertFalse(FileSet('s3://eurodatacube/test/').is_local_zip())
         self.assertFalse(FileSet('s3://eurodatacube/test.zip').is_local_zip())
 
     def test_keys(self):
-        self._test_keys_for_local_dir('test_data/user_code')
-        self._test_keys_for_local_dir('test_data/user_code.zip')
+        self._test_keys_for_local('test_data/user_code')
+        self._test_keys_for_local('test_data/user_code.zip')
 
-    def _test_keys_for_local_dir(self, rel_path: str):
-        base_dir = os.path.join(PARENT_DIR, rel_path)
+    def _test_keys_for_local(self, rel_path: str):
+        path = os.path.join(PARENT_DIR, rel_path)
 
-        file_set = FileSet(base_dir)
+        file_set = FileSet(path)
         self.assertEqual(
             {
                 'NOTES.md',
@@ -87,7 +85,7 @@ class FileSetTest(unittest.TestCase):
             },
             set(file_set.keys()))
 
-        file_set = FileSet(base_dir, includes=['*.py'])
+        file_set = FileSet(path, includes=['*.py'])
         self.assertEqual(
             {
                 'processor.py',
@@ -96,7 +94,7 @@ class FileSetTest(unittest.TestCase):
             },
             set(file_set.keys()))
 
-        file_set = FileSet(base_dir, excludes=['NOTES.md'])
+        file_set = FileSet(path, excludes=['NOTES.md'])
         self.assertEqual(
             {
                 'processor.py',
@@ -105,13 +103,16 @@ class FileSetTest(unittest.TestCase):
             },
             set(file_set.keys()))
 
-    def test_zip_and_unzip(self):
-        base_dir = os.path.join(PARENT_DIR, 'test_data/user_code')
-        zip_file_set = FileSet(base_dir).to_local_zip()
+    def test_to_local_zip_then_to_local_dir(self):
+        dir_path = os.path.join(PARENT_DIR, 'test_data', 'user_code')
+
+        zip_file_set = FileSet(dir_path).to_local_zip()
         self.assertIsInstance(zip_file_set, FileSet)
-        self.assertTrue(zip_file_set.path.endswith('.zip'))
+        self.assertTrue(zip_file_set.is_local())
         self.assertFalse(zip_file_set.is_local_dir())
         self.assertTrue(zip_file_set.is_local_zip())
+        self.assertRegex(zip_file_set.path,
+                         f'^.*{DEFAULT_TEMP_FILE_PREFIX}.*\\.zip$')
         self.assertEqual(
             {
                 'NOTES.md',
@@ -124,9 +125,11 @@ class FileSetTest(unittest.TestCase):
 
         dir_file_set = zip_file_set.to_local_dir()
         self.assertIsInstance(dir_file_set, FileSet)
-        self.assertFalse(dir_file_set.path.endswith('.zip'))
+        self.assertTrue(zip_file_set.is_local())
         self.assertTrue(dir_file_set.is_local_dir())
         self.assertFalse(dir_file_set.is_local_zip())
+        self.assertRegex(dir_file_set.path,
+                         f'^.*{DEFAULT_TEMP_FILE_PREFIX}.*$')
         self.assertEqual(
             {
                 'NOTES.md',
@@ -135,4 +138,41 @@ class FileSetTest(unittest.TestCase):
                 'impl/algorithm.py',
             },
             set(dir_file_set.keys())
+        )
+
+    def test_to_local_dir_then_to_local_zip(self):
+        zip_path = os.path.join(PARENT_DIR, 'test_data', 'user_code.zip')
+
+        dir_file_set = FileSet(zip_path).to_local_dir()
+        self.assertIsInstance(dir_file_set, FileSet)
+        self.assertTrue(dir_file_set.is_local())
+        self.assertTrue(dir_file_set.is_local_dir())
+        self.assertFalse(dir_file_set.is_local_zip())
+        self.assertRegex(dir_file_set.path,
+                         f'^.*{DEFAULT_TEMP_FILE_PREFIX}.*$')
+        self.assertEqual(
+            {
+                'NOTES.md',
+                'processor.py',
+                'impl/__init__.py',
+                'impl/algorithm.py',
+            },
+            set(dir_file_set.keys())
+        )
+
+        zip_file_set = dir_file_set.to_local_zip()
+        self.assertIsInstance(zip_file_set, FileSet)
+        self.assertTrue(dir_file_set.is_local())
+        self.assertFalse(zip_file_set.is_local_dir())
+        self.assertTrue(zip_file_set.is_local_zip())
+        self.assertRegex(zip_file_set.path,
+                         f'^.*{DEFAULT_TEMP_FILE_PREFIX}.*\\.zip$')
+        self.assertEqual(
+            {
+                'NOTES.md',
+                'processor.py',
+                'impl/__init__.py',
+                'impl/algorithm.py',
+            },
+            set(zip_file_set.keys())
         )
