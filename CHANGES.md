@@ -1,14 +1,19 @@
 ## Changes in 0.8.2 (in development)
 
-* Fixed the issue that xcube gen2 would not print tracebacks to stderr when raising
-  CubeGeneratorErrors (#448).
-* Enhanced `xcube.core.normalize.normalize_dataset()` function to also normalize datasets with latitudes given as 
+* Fixed the issue that xcube gen2 would not print tracebacks to stderr when 
+  raising CubeGeneratorErrors (#448).
+* Enhanced `xcube.core.normalize.normalize_dataset()` function to also 
+  normalize datasets with latitudes given as 
   `latitude_centers` and to invert decreasing latitude coordinate values.
-* Introduced `xcube.core.normalize.cubify_dataset()` function to normalize a dataset 
-  and finally assert the result complies to the [xcube dataset conventions](https://github.com/dcs4cop/xcube/blob/master/docs/source/cubespec.md).
-* Fixed that data stores `directory` and `s3` were not able to handle data identifiers that they
-  had assigned themselves during `write_data()`.  (#450)
-
+* Introduced `xcube.core.normalize.cubify_dataset()` function to normalize 
+  a dataset and finally assert the result complies to the 
+  [xcube dataset conventions](https://github.com/dcs4cop/xcube/blob/master/docs/source/cubespec.md).
+* Fixed that data stores `directory` and `s3` were not able to handle data 
+  identifiers that they had assigned themselves during `write_data()`.  (#450)
+* The `xcube prune` tool is no longer restricted to data cube datasets 
+  and should now be able to deal with datasets that comprise very many 
+  chunks. (#469)
+  
 ## Changes in 0.8.1
 
 * Improved support of datasets with time given as `cftime.DatetimeGregorian` 
