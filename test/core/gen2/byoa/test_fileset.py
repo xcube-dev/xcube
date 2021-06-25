@@ -48,8 +48,7 @@ class FileSetTest(unittest.TestCase):
 
     def test_is_remote(self):
         self.assertTrue(FileSet('s3://xcube/user_code').is_remote())
-        self.assertTrue(FileSet('gcs://xcube/user_code').is_remote())
-        self.assertTrue(FileSet('zip::https://xcube/user_code.zip').is_remote())
+        self.assertTrue(FileSet('https://xcube/user_code.zip').is_remote())
         self.assertTrue(FileSet('github://dcs4cop:xcube@v0.8.1').is_remote())
         self.assertFalse(FileSet('file://test_data/user_code').is_remote())
         self.assertFalse(FileSet('test_data/user_code').is_remote())
@@ -58,7 +57,6 @@ class FileSetTest(unittest.TestCase):
         local_dir_path = os.path.join(PARENT_DIR, 'test_data', 'user_code')
         self.assertTrue(FileSet(local_dir_path).is_local_dir())
         self.assertTrue(FileSet('file://' + local_dir_path).is_local_dir())
-        self.assertTrue(FileSet('zip::file://' + local_dir_path).is_local_dir())
         self.assertFalse(FileSet('s3://eurodatacube/test/').is_local_dir())
         self.assertFalse(FileSet('s3://eurodatacube/test.zip').is_local_dir())
 
@@ -66,18 +64,17 @@ class FileSetTest(unittest.TestCase):
         local_zip_path = os.path.join(PARENT_DIR, 'test_data', 'user_code.zip')
         self.assertTrue(FileSet(local_zip_path).is_local_zip())
         self.assertTrue(FileSet('file://' + local_zip_path).is_local_zip())
-        self.assertTrue(FileSet('zip::file://' + local_zip_path).is_local_zip())
         self.assertFalse(FileSet('s3://eurodatacube/test/').is_local_zip())
         self.assertFalse(FileSet('s3://eurodatacube/test.zip').is_local_zip())
 
     def test_keys(self):
-        self._test_keys_for_local_dir('test_data/user_code')
-        self._test_keys_for_local_dir('test_data/user_code.zip')
+        self._test_keys_for_local('test_data/user_code')
+        self._test_keys_for_local('test_data/user_code.zip')
 
-    def _test_keys_for_local_dir(self, rel_path: str):
-        base_dir = os.path.join(PARENT_DIR, rel_path)
+    def _test_keys_for_local(self, rel_path: str):
+        path = os.path.join(PARENT_DIR, rel_path)
 
-        file_set = FileSet(base_dir)
+        file_set = FileSet(path)
         self.assertEqual(
             {
                 'NOTES.md',
@@ -87,7 +84,7 @@ class FileSetTest(unittest.TestCase):
             },
             set(file_set.keys()))
 
-        file_set = FileSet(base_dir, includes=['*.py'])
+        file_set = FileSet(path, includes=['*.py'])
         self.assertEqual(
             {
                 'processor.py',
@@ -96,7 +93,7 @@ class FileSetTest(unittest.TestCase):
             },
             set(file_set.keys()))
 
-        file_set = FileSet(base_dir, excludes=['NOTES.md'])
+        file_set = FileSet(path, excludes=['NOTES.md'])
         self.assertEqual(
             {
                 'processor.py',

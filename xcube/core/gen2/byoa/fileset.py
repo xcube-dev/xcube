@@ -23,7 +23,7 @@ import fnmatch
 import os.path
 import re
 import zipfile
-from typing import Any, Dict, Optional, List, Collection, Iterator, Tuple
+from typing import Any, Dict, Optional, List, Collection, Iterator, Union
 
 import fsspec
 
@@ -36,18 +36,59 @@ from xcube.util.jsonschema import JsonStringSchema
 from .temp import new_temp_dir
 from .temp import new_temp_file
 
-# Following set may need some refinement.
-# There should be some implementation in fsspec.
-_REMOTE_PROTOCOLS = {
-    'adl', 'abfs', 'az',  # Azure File Systems
-    'dask',  # Dask worker file system
-    'ftp',  # FTP
-    'gcs', 'gs',  # Google Cloud Storage
-    'github',  # GitHub
-    'hdfs',  # Hadoop Distributed File System
-    'https', 'http',  # HTTP
-    's3',  # AWS S3-like
-}
+
+class _FileSetDetails:
+    def __init__(self,
+                 fs: fsspec.AbstractFileSystem,
+                 root: str,
+                 local_path: Union[None, str]):
+        """
+        Stores file system details about a FileSet instance.
+        Internal helper class.
+        :param fs: file system
+        :param root: root in file system
+        :param local_path: the local or network path.
+            None, if this is not a local path.
+        """
+        self._fs = fs
+        self._root = root
+        self._local_path = local_path
+        self._mapper: Optional[fsspec.FSMap] = None
+
+    @classmethod
+    def new(cls,
+            path: str,
+            parameters: Dict[str, Any] = None) -> '_FileSetDetails':
+        try:
+            fs, root = fsspec.core.url_to_fs(path,
+                                             **(parameters or {}))
+        except (ImportError, OSError) as e:
+            raise ValueError(f'Illegal file set {path!r}') from e
+        local_path = root if fs.protocol == 'file' else None
+        return _FileSetDetails(fs, root, local_path)
+
+    @property
+    def fs(self) -> fsspec.AbstractFileSystem:
+        return self._fs
+
+    @property
+    def root(self) -> str:
+        return self._root
+
+    @property
+    def local_path(self) -> Optional[str]:
+        return self._local_path
+
+    @property
+    def mapper(self) -> fsspec.FSMap:
+        if self._mapper is None:
+            fs, root = self.fs, self.root
+            if self.local_path \
+                    and zipfile.is_zipfile(self.local_path):
+                from fsspec.implementations.zip import ZipFileSystem
+                fs, root = ZipFileSystem(self.local_path), ''
+            self._mapper = fsspec.FSMap(root, fs)
+        return self._mapper
 
 
 class FileSet(JsonObject):
@@ -102,8 +143,7 @@ class FileSet(JsonObject):
         self._include_patterns = _translate_patterns(includes or [])
         self._exclude_patterns = _translate_patterns(excludes or [])
         # cached, computed members
-        self._fs_root: Optional[Tuple[fsspec.AbstractFileSystem, str]] = None
-        self._mapper: Optional[fsspec.FSMap] = None
+        self._details: Optional[_FileSetDetails] = None
 
     @classmethod
     def get_schema(cls) -> JsonObjectSchema:
@@ -149,7 +189,7 @@ class FileSet(JsonObject):
         A key is a normalized path relative to the root *path*.
         The forward slash "/" is used as path separator.
         """
-        for key in self._get_mapper().keys():
+        for key in self._get_details().mapper.keys():
             # print('-->', key)
             if self._accepts_key(key):
                 yield key
@@ -158,40 +198,46 @@ class FileSet(JsonObject):
         """
         Test whether this file set refers to a remote location.
         """
-        urls = self._path.split('::')
-        count = len(urls)
-        for url, index in zip(urls, range(count)):
-            if index < count - 1 and url in _REMOTE_PROTOCOLS:
-                return True
-            protocol_and_path = url.split('://', maxsplit=1)
-            if len(protocol_and_path) == 2:
-                if protocol_and_path[0] in _REMOTE_PROTOCOLS:
-                    return True
-        return False
+        return self._get_details().local_path is None
+
+    def is_local(self) -> bool:
+        """
+        Test whether this file set refers to a local file or directory.
+        """
+        return self._get_details().local_path is not None
 
     def is_local_dir(self) -> bool:
         """
         Test whether this file set refers to an existing local directory.
         """
-        path = _to_local_path(self.path)
-        if path is None:
-            return False
-        return os.path.isdir(path)
+        local_path = self._get_details().local_path
+        return os.path.isdir(local_path) \
+            if local_path is not None else False
 
     def to_local_dir(self, dir_path: str = None) -> 'FileSet':
         """
         Convert this file set into a file set that refers to a
         directory in the local file system.
 
+        The *dir_path* parameter is used only if this fileset
+        does not already refer to an existing local directory.
+
         :param dir_path: An optional directory path.
             If not given, a temporary directory is created.
         :return: The file set representing the local directory.
         """
-        path = _to_local_path(self.path)
-
-        if path is not None and os.path.isdir(path):
-            # ignore given dir_path
+        if self.is_local_dir() \
+                and dir_path is None \
+                and not self.includes \
+                and not self.excludes:
             return self
+
+        if not self.is_remote():
+            return FileSet('simplecache::' + self.path,
+                           includes=self.includes,
+                           excludes=self.excludes,
+                           parameters=self.parameters) \
+                .to_local_dir(dir_path=dir_path)
 
         if dir_path:
             if not os.path.exists(dir_path):
@@ -202,7 +248,7 @@ class FileSet(JsonObject):
         else:
             dir_path = new_temp_dir()
 
-        mapper = self._get_mapper()
+        mapper = self._get_details().mapper
         for key in self.keys():
             file_path = os.path.join(dir_path, key.replace('/', os.path.sep))
             file_dir_path = os.path.dirname(file_path)
@@ -217,10 +263,9 @@ class FileSet(JsonObject):
         """
         Test whether this file set refers to an existing local ZIP archive.
         """
-        path = _to_local_path(self.path)
-        if path is None:
-            return False
-        return zipfile.is_zipfile(path)
+        local_path = self._get_details().local_path
+        return zipfile.is_zipfile(local_path) \
+            if local_path is not None else False
 
     def to_local_zip(self, zip_path: str = None) -> 'FileSet':
         """
@@ -231,15 +276,27 @@ class FileSet(JsonObject):
             If not given, a temporary file will be created.
         :return: The file set representing the local ZIP archive.
         """
-        if self.is_local_zip():
-            # ignore given zip_path
+        if self.is_local_zip() \
+                and zip_path is None \
+                and not self._includes \
+                and not self._excludes:
             return self
+
+        if self.is_remote():
+            return FileSet('simplecache::' + self.path,
+                           includes=self.includes,
+                           excludes=self.excludes,
+                           parameters=self.parameters) \
+                .to_local_zip(zip_path=zip_path)
+
         if not zip_path:
             zip_path = new_temp_file(suffix='.zip')
+
         with zipfile.ZipFile(zip_path, 'w') as zip_file:
             for key in self.keys():
                 file_path = os.path.join(self._path, key)
                 zip_file.write(file_path, arcname=key)
+
         return FileSet(zip_path)
 
     def _accepts_key(self, key: str) -> bool:
@@ -247,34 +304,13 @@ class FileSet(JsonObject):
         return _key_matches(key, self._include_patterns, True) \
                and not _key_matches(key, self._exclude_patterns, False)
 
-    def _get_mapper(self) -> fsspec.FSMap:
-        if self._mapper is None:
-            fs, root = self._get_fs_root()
-            self._mapper = fsspec.FSMap(root, fs)
-        return self._mapper
-
-    def _get_fs_root(self) -> Tuple[fsspec.AbstractFileSystem, str]:
-        if self._fs_root is None:
-            url_path = self._path
-            if '://' not in url_path:
-                url_path = 'file://' + url_path
-            if zipfile.is_zipfile(self._path) or self._path.endswith('.zip'):
-                url_path = 'zip::' + url_path
-            self._fs_root = fsspec.core.url_to_fs(url_path,
-                                                  **(self._parameters or {}))
-        return self._fs_root
+    def _get_details(self) -> _FileSetDetails:
+        if self._details is None:
+            self._details = _FileSetDetails.new(self.path, self.parameters)
+        return self._details
 
     def _get_fs(self) -> fsspec.AbstractFileSystem:
-        return self._get_fs_root()[0]
-
-
-def _to_local_path(path: str) -> Optional[str]:
-    url = path.split('::')[-1]
-    if '://' not in url:
-        return url
-    if url.startswith('file://'):
-        return url[len('file://'):]
-    return None
+        return self._get_details().fs
 
 
 def _key_matches(key: str,
