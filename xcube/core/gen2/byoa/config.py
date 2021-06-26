@@ -272,7 +272,7 @@ def _for_service(code_config: CodeConfig) -> 'CodeConfig':
         return code_config
 
     if code_config.file_set is not None \
-            and code_config.file_set.is_remote():
+            and not code_config.file_set.is_local():
         # For service requests, remote file set will
         # simply turn into JSON. for_local() will download
         # them when request is executed.
@@ -311,8 +311,7 @@ def _for_service(code_config: CodeConfig) -> 'CodeConfig':
         return code_config
 
     if code_config.file_set is not None \
-            and (code_config.file_set.is_remote()
-                 or code_config.file_set.is_local_zip()):
+            and code_config.file_set.is_local_zip():
         # At this point, code_config.file_set
         # is always a local ZIP archive.
         return code_config

@@ -47,12 +47,12 @@ class FileSetTest(unittest.TestCase):
             },
             file_set.to_dict())
 
-    def test_is_remote(self):
-        self.assertTrue(FileSet('s3://xcube/user_code').is_remote())
-        self.assertTrue(FileSet('https://xcube/user_code.zip').is_remote())
-        self.assertTrue(FileSet('github://dcs4cop:xcube@v0.8.1').is_remote())
-        self.assertFalse(FileSet('file://test_data/user_code').is_remote())
-        self.assertFalse(FileSet('test_data/user_code').is_remote())
+    def test_is_local(self):
+        self.assertTrue(FileSet('test_data/user_code').is_local())
+        self.assertTrue(FileSet('file://test_data/user_code').is_local())
+        self.assertFalse(FileSet('s3://xcube/user_code').is_local())
+        self.assertFalse(FileSet('https://xcube/user_code.zip').is_local())
+        self.assertFalse(FileSet('github://dcs4cop:xcube@v0.8.1').is_local())
 
     def test_is_local_dir(self):
         local_dir_path = os.path.join(PARENT_DIR, 'test_data', 'user_code')

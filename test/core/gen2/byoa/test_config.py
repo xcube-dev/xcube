@@ -231,7 +231,6 @@ class CodeConfigTest(unittest.TestCase):
         self.assertIsNone(service_code_config._callable)
         self.assertIsNone(service_code_config.inline_code)
         self.assertIsInstance(service_code_config.file_set, FileSet)
-        self.assertTrue(service_code_config.file_set.is_remote())
         self.assertEqual(url, service_code_config.file_set.path)
         self.assertEqual(callable_ref, service_code_config.callable_ref)
 
