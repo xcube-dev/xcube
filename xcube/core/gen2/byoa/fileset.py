@@ -194,23 +194,53 @@ class FileSet(JsonObject):
             if self._accepts_key(key):
                 yield key
 
-    def is_remote(self) -> bool:
+    def get_local_path(self) -> Optional[str]:
         """
-        Test whether this file set refers to a remote location.
+        Get the local path, if this file set is local,
+        otherwise return None.
         """
-        return self._get_details().local_path is None
+        return self._get_details().local_path
 
     def is_local(self) -> bool:
         """
         Test whether this file set refers to a local file or directory.
+        The test is made on the this path's protocol.
         """
-        return self._get_details().local_path is not None
+        if self._details is not None:
+            return self._details.local_path is not None
+        protocol, _ = fsspec.core.split_protocol(self._path)
+        return protocol is None or protocol == 'file'
+
+    def to_local(self) -> 'FileSet':
+        """
+        Turn this file set into an existing, local file set.
+        """
+        if self.is_local():
+            return self
+
+        details = self._get_details()
+        fs, root = details.fs, details.root
+        temp_dir = new_temp_dir()
+        # TODO: replace by loop so we can apply includes/excludes.
+        #   see impl of fs.get().
+        fs.get(root, temp_dir + "/", recursive=True)
+        files = os.listdir(temp_dir)
+        if len(files) == 1:
+            zip_file = os.path.join(temp_dir, files[0])
+            if zipfile.is_zipfile(zip_file):
+                return FileSet(zip_file,
+                               includes=self.includes,
+                               excludes=self.excludes)
+
+        return FileSet(temp_dir,
+                       includes=self.includes,
+                       excludes=self.excludes)
 
     def is_local_dir(self) -> bool:
         """
         Test whether this file set refers to an existing local directory.
         """
-        local_path = self._get_details().local_path
+        local_path = self.get_local_path()
         return os.path.isdir(local_path) \
             if local_path is not None else False
 
@@ -226,18 +256,12 @@ class FileSet(JsonObject):
             If not given, a temporary directory is created.
         :return: The file set representing the local directory.
         """
-        if self.is_local_dir() \
+        file_set = self.to_local()
+        if file_set.is_local_dir() \
                 and dir_path is None \
-                and not self.includes \
-                and not self.excludes:
-            return self
-
-        if not self.is_remote():
-            return FileSet('simplecache::' + self.path,
-                           includes=self.includes,
-                           excludes=self.excludes,
-                           parameters=self.parameters) \
-                .to_local_dir(dir_path=dir_path)
+                and not file_set.includes \
+                and not file_set.excludes:
+            return file_set
 
         if dir_path:
             if not os.path.exists(dir_path):
@@ -248,8 +272,8 @@ class FileSet(JsonObject):
         else:
             dir_path = new_temp_dir()
 
-        mapper = self._get_details().mapper
-        for key in self.keys():
+        mapper = file_set._get_details().mapper
+        for key in file_set.keys():
             file_path = os.path.join(dir_path, key.replace('/', os.path.sep))
             file_dir_path = os.path.dirname(file_path)
             if not os.path.isdir(file_dir_path):
@@ -263,7 +287,7 @@ class FileSet(JsonObject):
         """
         Test whether this file set refers to an existing local ZIP archive.
         """
-        local_path = self._get_details().local_path
+        local_path = self.get_local_path()
         return zipfile.is_zipfile(local_path) \
             if local_path is not None else False
 
@@ -276,25 +300,21 @@ class FileSet(JsonObject):
             If not given, a temporary file will be created.
         :return: The file set representing the local ZIP archive.
         """
-        if self.is_local_zip() \
+        file_set = self.to_local()
+        if file_set.is_local_zip() \
                 and zip_path is None \
-                and not self._includes \
-                and not self._excludes:
-            return self
+                and not file_set._includes \
+                and not file_set._excludes:
+            return file_set
 
-        if self.is_remote():
-            return FileSet('simplecache::' + self.path,
-                           includes=self.includes,
-                           excludes=self.excludes,
-                           parameters=self.parameters) \
-                .to_local_zip(zip_path=zip_path)
+        local_dir_path = file_set.get_local_path()
 
         if not zip_path:
             zip_path = new_temp_file(suffix='.zip')
 
         with zipfile.ZipFile(zip_path, 'w') as zip_file:
-            for key in self.keys():
-                file_path = os.path.join(self._path, key)
+            for key in file_set.keys():
+                file_path = os.path.join(local_dir_path, key)
                 zip_file.write(file_path, arcname=key)
 
         return FileSet(zip_path)
