@@ -22,11 +22,11 @@ class CodeConfigTest(unittest.TestCase):
         code_config = CodeConfig.from_code(
             INLINE_CODE,
             module_name='user_code_1',
-            parameters={'text': 'good bye'}
+            callable_params={'text': 'good bye'}
         )
         self.assertIsInstance(code_config, CodeConfig)
         self.assertEqual(INLINE_CODE, code_config.inline_code)
-        self.assertEqual({'text': 'good bye'}, code_config.parameters)
+        self.assertEqual({'text': 'good bye'}, code_config.callable_params)
         self.assertEqual('user_code_1:process_dataset',
                          code_config.callable_ref)
         self.assertTrue(callable(code_config.get_callable()))
@@ -39,7 +39,7 @@ class CodeConfigTest(unittest.TestCase):
                 transform_dataset
             ],
             module_name='user_code_2',
-            parameters={'text': 'good bye'}
+            callable_params={'text': 'good bye'}
         )
         self.assertIsInstance(code_config, CodeConfig)
         self.assertEqual(
@@ -56,14 +56,14 @@ class CodeConfigTest(unittest.TestCase):
             ),
             code_config.inline_code)
         self.assertIsNone(code_config.file_set)
-        self.assertEqual({'text': 'good bye'}, code_config.parameters)
+        self.assertEqual({'text': 'good bye'}, code_config.callable_params)
         self.assertEqual('user_code_2:modify_dataset', code_config.callable_ref)
         self.assertTrue(callable(code_config.get_callable()))
 
     def test_from_callable(self):
         code_config = CodeConfig.from_callable(
             modify_dataset,
-            parameters=dict(text='Good bye!')
+            callable_params=dict(text='Good bye!')
         )
         self.assertIsInstance(code_config, CodeConfig)
         self.assertIsNone(code_config.inline_code)

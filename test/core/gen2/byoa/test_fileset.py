@@ -35,13 +35,13 @@ class FileSetTest(unittest.TestCase):
             file_set.to_dict())
 
         file_set = FileSet('s3://xcube/user_code',
-                           parameters={'anon': True},
+                           storage_params={'anon': True},
                            includes=['*.py'],
                            excludes=['NOTES.md'])
         self.assertEqual(
             {
                 'path': 's3://xcube/user_code',
-                'parameters': {'anon': True},
+                'storage_params': {'anon': True},
                 'includes': ['*.py'],
                 'excludes': ['NOTES.md'],
             },

@@ -62,7 +62,7 @@ class CodeConfig(JsonObject):
     :param install_required: Whether *file_set* contains
         Python modules or packages that must be installed.
         Can only be True if *file_set* is given.
-    :param parameters: Optional parameters passed
+    :param callable_params: Optional parameters passed
         as keyword-arguments to the callable.
         Must be a dictionary if given.
     """
@@ -70,10 +70,10 @@ class CodeConfig(JsonObject):
     def __init__(self,
                  _callable: Callable = None,
                  callable_ref: str = None,
+                 callable_params: Dict[str, Any] = None,
                  inline_code: str = None,
                  file_set: FileSet = None,
-                 install_required: bool = None,
-                 parameters: Dict[str, Any] = None):
+                 install_required: bool = None):
         if callable_ref is not None:
             assert_instance(callable_ref, str, 'callable_ref')
             msg = ('callable_ref must have form '
@@ -88,8 +88,8 @@ class CodeConfig(JsonObject):
         if _callable is not None:
             assert_true(callable(_callable),
                         '_callable must be a function or class')
-        if parameters is not None:
-            assert_instance(parameters, dict, 'parameters')
+        if callable_params is not None:
+            assert_instance(callable_params, dict, 'callable_params')
         if inline_code is not None:
             assert_instance(inline_code, str, 'inline_code')
         if file_set is not None:
@@ -102,9 +102,9 @@ class CodeConfig(JsonObject):
                     'install_required can only be used if file_set is given')
         self._callable = _callable
         self.callable_ref = callable_ref
+        self.callable_params = callable_params
         self.inline_code = inline_code
         self.file_set = file_set
-        self.parameters = parameters
         self.install_required = install_required
 
     @classmethod
@@ -113,7 +113,7 @@ class CodeConfig(JsonObject):
         return JsonObjectSchema(
             properties=dict(
                 callable_ref=JsonStringSchema(min_length=1),
-                parameters=JsonObjectSchema(additional_properties=True),
+                callable_params=JsonObjectSchema(additional_properties=True),
                 inline_code=JsonStringSchema(min_length=1),
                 file_set=FileSet.get_schema(),
                 install_required=JsonBooleanSchema(),
@@ -127,7 +127,7 @@ class CodeConfig(JsonObject):
                   code: Union[str, Callable, Sequence[Union[str, Callable]]],
                   callable_name: str = None,
                   module_name: str = None,
-                  parameters: Dict[str, Any] = None) -> 'CodeConfig':
+                  callable_params: Dict[str, Any] = None) -> 'CodeConfig':
         """
         Create a code configuration from the given *code* which may be
         a code string or a callable or a sequence of code strings
@@ -142,7 +142,7 @@ class CodeConfig(JsonObject):
             Otherwise it defaults to "process_dataset".
         :param module_name: The module name. If not given,
             defaults to "user_code".
-        :param parameters: The parameters passed
+        :param callable_params: The parameters passed
             as keyword-arguments to the callable.
         :return: A new code configuration.
         """
@@ -154,12 +154,12 @@ class CodeConfig(JsonObject):
         )
         return CodeConfig(callable_ref=callable_ref,
                           inline_code=inline_code,
-                          parameters=parameters)
+                          callable_params=callable_params)
 
     @classmethod
     def from_callable(cls,
                       _callable: Callable,
-                      parameters: Dict[str, Any] = None) -> 'CodeConfig':
+                      callable_params: Dict[str, Any] = None) -> 'CodeConfig':
         """
         Create a code configuration from the callable *_callable*.
 
@@ -170,20 +170,20 @@ class CodeConfig(JsonObject):
         using the :meth:to_service first.
 
         :param _callable: A function or class
-        :param parameters: The parameters passed
+        :param callable_params: The parameters passed
             as keyword-arguments to the callable.
         :return: A new code configuration.
         """
         assert_given(_callable, '_callable')
         return CodeConfig(_callable=_callable,
-                          parameters=parameters)
+                          callable_params=callable_params)
 
     @classmethod
     def from_file_set(cls,
                       file_set: Union[FileSet, str, Any],
                       callable_ref: str,
                       install_required: Optional[bool] = None,
-                      parameters: Optional[Dict[str, Any]] = None) \
+                      callable_params: Optional[Dict[str, Any]] = None) \
             -> 'CodeConfig':
         """
         Create a code configuration from a file set.
@@ -194,7 +194,7 @@ class CodeConfig(JsonObject):
             must have form "<module-name>:<callable-name>"
         :param install_required: Whether the *file_set* is
             a package that must be installed.
-        :param parameters: Parameters to be passed
+        :param callable_params: Parameters to be passed
             as keyword-arguments to the the callable.
         :return: A new code configuration.
         """
@@ -203,7 +203,7 @@ class CodeConfig(JsonObject):
         return CodeConfig(callable_ref=callable_ref,
                           file_set=_normalize_file_set(file_set),
                           install_required=install_required,
-                          parameters=parameters)
+                          callable_params=callable_params)
 
     @classmethod
     def from_github_archive(cls,
@@ -212,7 +212,7 @@ class CodeConfig(JsonObject):
                             gh_tag: str,
                             gh_release: str,
                             callable_ref: str,
-                            parameters: Optional[Dict[str, Any]] = None,
+                            callable_params: Optional[Dict[str, Any]] = None,
                             gh_username: Optional[str] = None,
                             gh_token: Optional[str] = None):
         """
@@ -226,7 +226,7 @@ class CodeConfig(JsonObject):
             "<gh_repo>-<gh_release>".
         :param callable_ref: Reference to the callable in the *file_set*,
             must have form "<module-name>:<callable-name>"
-        :param parameters: Parameters to be passed
+        :param callable_params: Parameters to be passed
             as keyword-arguments to the the callable.
         :param gh_username: Optional GitHub user name.
         :param gh_token: Optional GitHub user name.
@@ -245,9 +245,9 @@ class CodeConfig(JsonObject):
             assert_given(gh_token, 'gh_token')  # fails always
         return CodeConfig(file_set=FileSet(gh_url,
                                            sub_path=gh_sub_path,
-                                           parameters=gh_params),
+                                           storage_params=gh_params),
                           callable_ref=callable_ref,
-                          parameters=parameters)
+                          callable_params=callable_params)
 
     def for_service(self) -> 'CodeConfig':
         """
@@ -333,7 +333,7 @@ def _for_service(code_config: CodeConfig) -> 'CodeConfig':
         # turn into a local Python module.
         # noinspection PyProtectedMember
         code_config = _callable_to_module(code_config._callable,
-                                          code_config.parameters)
+                                          code_config.callable_params)
 
     if code_config.file_set is not None \
             and code_config.file_set.is_local_dir():
@@ -343,7 +343,7 @@ def _for_service(code_config: CodeConfig) -> 'CodeConfig':
         code_config = code_config.from_file_set(
             file_set=file_set,
             callable_ref=code_config.callable_ref,
-            parameters=code_config.parameters,
+            callable_params=code_config.callable_params,
             install_required=code_config.install_required
         )
 
@@ -376,7 +376,7 @@ def _for_local(code_config: CodeConfig) -> 'CodeConfig':
         # Turn inline code into a local Python module.
         code_config = _inline_code_to_module(code_config.inline_code,
                                              code_config.callable_ref,
-                                             code_config.parameters)
+                                             code_config.callable_params)
 
     if code_config.file_set is not None \
             and not code_config.file_set.is_local_dir():
@@ -387,7 +387,7 @@ def _for_local(code_config: CodeConfig) -> 'CodeConfig':
             file_set=file_set,
             callable_ref=code_config.callable_ref,
             install_required=code_config.install_required,
-            parameters=code_config.parameters
+            callable_params=code_config.callable_params
         )
 
     if code_config.file_set is not None \
@@ -446,7 +446,7 @@ def _next_user_module_name() -> str:
 
 
 def _callable_to_module(_callable: Callable,
-                        parameters: Dict[str, Any] = None) -> CodeConfig:
+                        callable_params: Dict[str, Any] = None) -> CodeConfig:
     """
     Create a code configuration from the callable *_callable*.
 
@@ -454,7 +454,7 @@ def _callable_to_module(_callable: Callable,
     which contains the source code for the *func_or_class*.
 
     :param _callable: A function or class
-    :param parameters: The parameters passed
+    :param callable_params: The parameters passed
         as keyword-arguments to the callable.
     :return: A new code configuration.
     """
@@ -486,7 +486,7 @@ def _callable_to_module(_callable: Callable,
         file_set=FileSet(module_path,
                          includes=['*.py']),
         callable_ref=f'{module_name}:{callable_name}',
-        parameters=parameters
+        callable_params=callable_params
     )
     code_config.set_callable(_callable)
     return code_config
@@ -494,14 +494,14 @@ def _callable_to_module(_callable: Callable,
 
 def _inline_code_to_module(inline_code: str,
                            callable_ref: str,
-                           parameters: Dict[str, Any] = None):
+                           callable_params: Dict[str, Any] = None):
     module_name, callable_name = _normalize_callable_ref(callable_ref)
     dir_path = new_temp_dir()
     with open(os.path.join(dir_path, f'{module_name}.py'), 'w') as stream:
         stream.write(inline_code)
     return CodeConfig.from_file_set(file_set=FileSet(dir_path),
                                     callable_ref=callable_ref,
-                                    parameters=parameters)
+                                    callable_params=callable_params)
 
 
 def _normalize_file_set(file_set: Union[FileSet, str, Any]) -> FileSet:

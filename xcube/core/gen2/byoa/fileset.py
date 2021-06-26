@@ -58,10 +58,10 @@ class _FileSetDetails:
     @classmethod
     def new(cls,
             path: str,
-            parameters: Dict[str, Any] = None) -> '_FileSetDetails':
+            storage_params: Dict[str, Any] = None) -> '_FileSetDetails':
         try:
             fs, root = fsspec.core.url_to_fs(path,
-                                             **(parameters or {}))
+                                             **(storage_params or {}))
         except (ImportError, OSError) as e:
             raise ValueError(f'Illegal file set {path!r}') from e
         local_path = root if fs.protocol == 'file' else None
@@ -131,7 +131,7 @@ class FileSet(JsonObject):
         Note: wildcard characters are not yet allowed.
     :param includes: Wildcard patterns used to include a file.
     :param excludes: Wildcard patterns used to exclude a file.
-    :param parameters: File system specific storage parameters.
+    :param storage_params: File system specific storage parameters.
     """
 
     def __init__(self,
@@ -139,14 +139,14 @@ class FileSet(JsonObject):
                  sub_path: str = None,
                  includes: Collection[str] = None,
                  excludes: Collection[str] = None,
-                 parameters: Dict[str, Any] = None):
+                 storage_params: Dict[str, Any] = None):
         assert_instance(path, str, 'path')
         assert_given(path, 'path')
         if sub_path is not None:
             assert_instance(sub_path, str, 'sub_path')
         self._path = path
         self._sub_path = sub_path
-        self._parameters = dict(parameters) if parameters is not None else None
+        self._storage_params = dict(storage_params) if storage_params is not None else None
         self._includes = list(includes) if includes is not None else None
         self._excludes = list(excludes) if excludes is not None else None
         # computed members
@@ -162,7 +162,7 @@ class FileSet(JsonObject):
             properties=dict(
                 path=JsonStringSchema(min_length=1),
                 rel_path=JsonStringSchema(min_length=1),
-                parameters=JsonObjectSchema(additional_properties=True),
+                storage_params=JsonObjectSchema(additional_properties=True),
                 includes=JsonArraySchema(items=JsonStringSchema(min_length=1)),
                 excludes=JsonArraySchema(items=JsonStringSchema(min_length=1)),
             ),
@@ -182,12 +182,12 @@ class FileSet(JsonObject):
         return self._sub_path
 
     @property
-    def parameters(self) -> Optional[Dict[str, Any]]:
+    def storage_params(self) -> Optional[Dict[str, Any]]:
         """
         Get optional parameters for the file system
         :attribute:path is referring to.
         """
-        return self._parameters
+        return self._storage_params
 
     @property
     def includes(self) -> Optional[List[str]]:
@@ -362,7 +362,7 @@ class FileSet(JsonObject):
 
     def _get_details(self) -> _FileSetDetails:
         if self._details is None:
-            self._details = _FileSetDetails.new(self.path, self.parameters)
+            self._details = _FileSetDetails.new(self.path, self.storage_params)
         return self._details
 
     def _get_fs(self) -> fsspec.AbstractFileSystem:
