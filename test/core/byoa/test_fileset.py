@@ -3,49 +3,13 @@ import os.path
 import os.path
 import unittest
 
-from xcube.core.gen2.byoa.fileset import FileSet
-from xcube.core.gen2.byoa.constants import DEFAULT_TEMP_FILE_PREFIX
+from xcube.core.byoa.constants import DEFAULT_TEMP_FILE_PREFIX
+from xcube.core.byoa import FileSet
 
 PARENT_DIR = os.path.dirname(__file__)
 
 
 class FileSetTest(unittest.TestCase):
-    def test_to_dict(self):
-        file_set = FileSet('test_data/user_code')
-        self.assertEqual(
-            {'path': 'test_data/user_code'},
-            file_set.to_dict())
-
-        file_set = FileSet('test_data/user_code',
-                           includes=['*.py'])
-        self.assertEqual(
-            {
-                'path': 'test_data/user_code',
-                'includes': ['*.py']
-            },
-            file_set.to_dict())
-
-        file_set = FileSet('test_data/user_code',
-                           excludes=['NOTES.md'])
-        self.assertEqual(
-            {
-                'path': 'test_data/user_code',
-                'excludes': ['NOTES.md']
-            },
-            file_set.to_dict())
-
-        file_set = FileSet('s3://xcube/user_code',
-                           storage_params={'anon': True},
-                           includes=['*.py'],
-                           excludes=['NOTES.md'])
-        self.assertEqual(
-            {
-                'path': 's3://xcube/user_code',
-                'storage_params': {'anon': True},
-                'includes': ['*.py'],
-                'excludes': ['NOTES.md'],
-            },
-            file_set.to_dict())
 
     def test_is_local(self):
         self.assertTrue(FileSet('test_data/user_code').is_local())
@@ -176,3 +140,40 @@ class FileSetTest(unittest.TestCase):
             },
             set(zip_file_set.keys())
         )
+
+    def test_to_dict(self):
+        file_set = FileSet('test_data/user_code')
+        self.assertEqual(
+            {'path': 'test_data/user_code'},
+            file_set.to_dict())
+
+        file_set = FileSet('test_data/user_code',
+                           includes=['*.py'])
+        self.assertEqual(
+            {
+                'path': 'test_data/user_code',
+                'includes': ['*.py']
+            },
+            file_set.to_dict())
+
+        file_set = FileSet('test_data/user_code',
+                           excludes=['NOTES.md'])
+        self.assertEqual(
+            {
+                'path': 'test_data/user_code',
+                'excludes': ['NOTES.md']
+            },
+            file_set.to_dict())
+
+        file_set = FileSet('s3://xcube/user_code',
+                           storage_params={'anon': True},
+                           includes=['*.py'],
+                           excludes=['NOTES.md'])
+        self.assertEqual(
+            {
+                'path': 's3://xcube/user_code',
+                'storage_params': {'anon': True},
+                'includes': ['*.py'],
+                'excludes': ['NOTES.md'],
+            },
+            file_set.to_dict())

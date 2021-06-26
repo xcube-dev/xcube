@@ -27,9 +27,8 @@ from typing import Optional, Dict, Any, Sequence
 import jsonschema
 import yaml
 
-from xcube.core.gen2.error import CubeGeneratorError
+from xcube.core.byoa import CodeConfig
 from xcube.util.assertions import assert_condition
-from xcube.util.assertions import assert_given
 from xcube.util.assertions import assert_instance
 from xcube.util.jsonschema import JsonArraySchema
 from xcube.util.jsonschema import JsonObject
@@ -38,7 +37,7 @@ from .config import CallbackConfig
 from .config import CubeConfig
 from .config import InputConfig
 from .config import OutputConfig
-from .byoa.config import CodeConfig
+from .error import CubeGeneratorError
 
 
 class CubeGeneratorRequest(JsonObject):

@@ -1,8 +1,7 @@
 import xarray as xr
 
 from xcube.core.compute import compute_dataset
-
-from test.core.gen2.byoa.test_data.user_code.impl.algorithm import compute_chunk
+from impl.algorithm import compute_chunk
 
 
 def process_dataset(dataset: xr.Dataset,

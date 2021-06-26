@@ -1,8 +1,8 @@
 import os.path
 import unittest
 
-from xcube.core.gen2.byoa.config import CodeConfig
-from xcube.core.gen2.byoa.fileset import FileSet
+from xcube.core.byoa import CodeConfig
+from xcube.core.byoa import FileSet
 
 INLINE_CODE = (
     'def process_dataset(ds, text="Hello"):\n'
@@ -245,22 +245,6 @@ class CodeConfigTest(unittest.TestCase):
         self.assertEqual('processor:process_dataset',
                          service_code_config.callable_ref)
 
-    # def test_for_service_from_file_set_remote(self):
-    #     url = 'https://github.com/dcs4cop/xcube/archive/refs/tags/v0.8.2.dev0.zip'
-    #     callable_ref = 'test.core.gen2.byoa.test_data.' \
-    #                    'user_code.processor:process_dataset'
-    #     user_code_config = CodeConfig.from_file_set(url,
-    #                                                 callable_ref=callable_ref)
-    #
-    #     service_code_config = user_code_config.for_service()
-    #     self.assertIsInstance(service_code_config, CodeConfig)
-    #     self.assertIsInstance(service_code_config.callable_ref, str)
-    #     self.assertIsNone(service_code_config._callable)
-    #     self.assertIsNone(service_code_config.inline_code)
-    #     self.assertIsInstance(service_code_config.file_set, FileSet)
-    #     self.assertEqual(url, service_code_config.file_set.path)
-    #     self.assertEqual(callable_ref, service_code_config.callable_ref)
-
     def test_for_service_from_github_release(self):
         user_code_config = CodeConfig.from_github_archive(
             gh_org='dcs4cop',
@@ -312,11 +296,11 @@ class CodeConfigTest(unittest.TestCase):
         d = CodeConfig.from_file_set(
             FileSet('github://dcs4cop:xcube@v0.8.2.dev0',
                     includes='*.py'),
-            callable_ref=('test.core.gen2.byoa.test_config:'
+            callable_ref=('test.core.byoa.test_config:'
                           'modify_dataset')
         ).to_dict()
         self.assertIsInstance(d.get('file_set'), dict)
-        self.assertEqual(('test.core.gen2.byoa.test_config:'
+        self.assertEqual(('test.core.byoa.test_config:'
                           'modify_dataset'),
                          d.get('callable_ref'))
 
