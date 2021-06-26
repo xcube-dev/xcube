@@ -183,7 +183,8 @@ class CodeConfig(JsonObject):
                       file_set: Union[FileSet, str, Any],
                       callable_ref: str,
                       install_required: Optional[bool] = None,
-                      parameters: Optional[Dict[str, Any]] = None) -> 'CodeConfig':
+                      parameters: Optional[Dict[str, Any]] = None) \
+            -> 'CodeConfig':
         """
         Create a code configuration from a file set.
 
@@ -202,6 +203,50 @@ class CodeConfig(JsonObject):
         return CodeConfig(callable_ref=callable_ref,
                           file_set=_normalize_file_set(file_set),
                           install_required=install_required,
+                          parameters=parameters)
+
+    @classmethod
+    def from_github_archive(cls,
+                            gh_org: str,
+                            gh_repo: str,
+                            gh_tag: str,
+                            gh_release: str,
+                            callable_ref: str,
+                            parameters: Optional[Dict[str, Any]] = None,
+                            gh_username: Optional[str] = None,
+                            gh_token: Optional[str] = None):
+        """
+        Create a code configuration from a GitHub archive.
+
+        :param gh_org: GitHub organisation name or user name
+        :param gh_repo:  GitHub repository name
+        :param gh_tag: GitHub release tag
+        :param gh_release: The name of a GitHub release. It is used to
+            form the sub-path into the archive. The sub-path has the form
+            "<gh_repo>-<gh_release>".
+        :param callable_ref: Reference to the callable in the *file_set*,
+            must have form "<module-name>:<callable-name>"
+        :param parameters: Parameters to be passed
+            as keyword-arguments to the the callable.
+        :param gh_username: Optional GitHub user name.
+        :param gh_token: Optional GitHub user name.
+        :return:
+        """
+        assert_given(gh_org, 'gh_org')
+        assert_given(gh_org, 'gh_repo')
+        assert_given(gh_org, 'gh_tag')
+        assert_given(gh_org, 'gh_release')
+        gh_url = f'https://github.com/{gh_org}/{gh_repo}/archive/{gh_tag}.zip'
+        gh_sub_path = f'{gh_repo}-{gh_release}'
+        gh_params = None
+        if gh_token is not None:
+            gh_params = dict(token=gh_token, username=gh_username or gh_org)
+        elif gh_username is not None:
+            assert_given(gh_token, 'gh_token')  # fails always
+        return CodeConfig(file_set=FileSet(gh_url,
+                                           sub_path=gh_sub_path,
+                                           parameters=gh_params),
+                          callable_ref=callable_ref,
                           parameters=parameters)
 
     def for_service(self) -> 'CodeConfig':
@@ -437,9 +482,12 @@ def _callable_to_module(_callable: Callable,
 
     module_path = os.path.normpath(module_path[0: -len(module_name)])
 
-    code_config = CodeConfig.from_file_set(file_set=FileSet(module_path, includes=['*.py']),
-                                           callable_ref=f'{module_name}:{callable_name}',
-                                           parameters=parameters)
+    code_config = CodeConfig.from_file_set(
+        file_set=FileSet(module_path,
+                         includes=['*.py']),
+        callable_ref=f'{module_name}:{callable_name}',
+        parameters=parameters
+    )
     code_config.set_callable(_callable)
     return code_config
 
@@ -462,9 +510,11 @@ def _normalize_file_set(file_set: Union[FileSet, str, Any]) -> FileSet:
     return FileSet(str(file_set))
 
 
-def _normalize_inline_code(code: Union[str, Callable, Sequence[Union[str, Callable]]],
-                           callable_name: str = None,
-                           module_name: str = None) -> Tuple[str, str]:
+def _normalize_inline_code(
+        code: Union[str, Callable, Sequence[Union[str, Callable]]],
+        callable_name: str = None,
+        module_name: str = None
+) -> Tuple[str, str]:
     if isinstance(code, str) or isinstance(code, Callable):
         code = [code]
     if not callable_name:

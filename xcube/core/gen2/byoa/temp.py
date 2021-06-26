@@ -27,7 +27,7 @@ import tempfile
 from .constants import DEFAULT_TEMP_FILE_PREFIX
 
 
-def new_temp_dir(suffix: str = None) -> str:
+def new_temp_dir(suffix: str = '') -> str:
     """
     Create new temporary directory
     that will be removed when the process ends.
@@ -38,7 +38,7 @@ def new_temp_dir(suffix: str = None) -> str:
     )
 
 
-def new_temp_file(suffix: str = None) -> str:
+def new_temp_file(suffix: str = '') -> str:
     """
     Create new temporary file
     that will be removed when the process ends.

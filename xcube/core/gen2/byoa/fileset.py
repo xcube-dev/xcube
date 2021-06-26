@@ -123,19 +123,29 @@ class FileSet(JsonObject):
     whose paths do not match all of the patterns are included.
 
     :param path: Root path of the file set.
+    :param sub_path: An optional sub-path relative to *path*.
+        If given, this is where the actual file sets starts.
+        For example, the only top-level directory entry in a
+        ZIP archive. In archive files from GitHub this would
+        be typically "<gh_repo>-<gh-release-name>".
+        Note: wildcard characters are not yet allowed.
     :param includes: Wildcard patterns used to include a file.
     :param excludes: Wildcard patterns used to exclude a file.
-    :param parameters: File system specific parameters.
+    :param parameters: File system specific storage parameters.
     """
 
     def __init__(self,
                  path: str,
+                 sub_path: str = None,
                  includes: Collection[str] = None,
                  excludes: Collection[str] = None,
                  parameters: Dict[str, Any] = None):
         assert_instance(path, str, 'path')
         assert_given(path, 'path')
+        if sub_path is not None:
+            assert_instance(sub_path, str, 'sub_path')
         self._path = path
+        self._sub_path = sub_path
         self._parameters = dict(parameters) if parameters is not None else None
         self._includes = list(includes) if includes is not None else None
         self._excludes = list(excludes) if excludes is not None else None
@@ -151,6 +161,7 @@ class FileSet(JsonObject):
         return JsonObjectSchema(
             properties=dict(
                 path=JsonStringSchema(min_length=1),
+                rel_path=JsonStringSchema(min_length=1),
                 parameters=JsonObjectSchema(additional_properties=True),
                 includes=JsonArraySchema(items=JsonStringSchema(min_length=1)),
                 excludes=JsonArraySchema(items=JsonStringSchema(min_length=1)),
@@ -164,6 +175,11 @@ class FileSet(JsonObject):
     def path(self) -> str:
         """Get the root path."""
         return self._path
+
+    @property
+    def sub_path(self) -> Optional[str]:
+        """Get the sub-path relative to *path*."""
+        return self._sub_path
 
     @property
     def parameters(self) -> Optional[Dict[str, Any]]:
@@ -220,21 +236,29 @@ class FileSet(JsonObject):
 
         details = self._get_details()
         fs, root = details.fs, details.root
-        temp_dir = new_temp_dir()
-        # TODO: replace by loop so we can apply includes/excludes.
-        #   see impl of fs.get().
-        fs.get(root, temp_dir + "/", recursive=True)
-        files = os.listdir(temp_dir)
-        if len(files) == 1:
-            zip_file = os.path.join(temp_dir, files[0])
-            if zipfile.is_zipfile(zip_file):
-                return FileSet(zip_file,
-                               includes=self.includes,
-                               excludes=self.excludes)
 
-        return FileSet(temp_dir,
-                       includes=self.includes,
-                       excludes=self.excludes)
+        url_path = fsspec.core.strip_protocol(self.path)
+        suffix = ''
+        for suffix in reversed(url_path.split('/')):
+            if suffix != '':
+                break
+
+        if root.endswith('/'):
+            temp_dir = new_temp_dir(suffix=suffix)
+            # TODO: replace by loop so we can apply includes/excludes
+            #   before downloading actual files. See impl of fs.get().
+            fs.get(root, temp_dir + "/", recursive=True)
+            return FileSet(temp_dir,
+                           sub_path=self.sub_path,
+                           includes=self.includes,
+                           excludes=self.excludes)
+        else:
+            temp_file = new_temp_file(suffix=suffix)
+            fs.get_file(root, temp_file)
+            return FileSet(temp_file,
+                           sub_path=self.sub_path,
+                           includes=self.includes,
+                           excludes=self.excludes)
 
     def is_local_dir(self) -> bool:
         """
@@ -262,26 +286,7 @@ class FileSet(JsonObject):
                 and not file_set.includes \
                 and not file_set.excludes:
             return file_set
-
-        if dir_path:
-            if not os.path.exists(dir_path):
-                os.makedirs(dir_path)
-            else:
-                # We should assert an empty existing directory
-                pass
-        else:
-            dir_path = new_temp_dir()
-
-        mapper = file_set._get_details().mapper
-        for key in file_set.keys():
-            file_path = os.path.join(dir_path, key.replace('/', os.path.sep))
-            file_dir_path = os.path.dirname(file_path)
-            if not os.path.isdir(file_dir_path):
-                os.makedirs(file_dir_path)
-            with open(file_path, 'wb') as stream:
-                stream.write(mapper[key])
-
-        return FileSet(dir_path)
+        return file_set._write_local_dir(dir_path)
 
     def is_local_zip(self):
         """
@@ -306,18 +311,49 @@ class FileSet(JsonObject):
                 and not file_set._includes \
                 and not file_set._excludes:
             return file_set
+        return file_set._write_local_zip(zip_path)
 
-        local_dir_path = file_set.get_local_path()
+    def _write_local_dir(self, dir_path: Optional[str]) -> 'FileSet':
+        """Write file set into local directory."""
+        if dir_path:
+            if not os.path.exists(dir_path):
+                os.makedirs(dir_path, exist_ok=True)
+            else:
+                # We should assert an empty existing directory
+                pass
+        else:
+            dir_path = new_temp_dir()
+
+        mapper = self._get_details().mapper
+
+        sub_path = _normalize_sub_path(self.sub_path)
+
+        for key in self.keys():
+            file_path = os.path.join(dir_path,
+                                     _key_to_path(key, sub_path))
+            file_dir_path = os.path.dirname(file_path)
+            if not os.path.exists(file_dir_path):
+                os.makedirs(file_dir_path, exist_ok=True)
+            with open(file_path, 'wb') as stream:
+                stream.write(mapper[key])
+
+        return FileSet(dir_path)
+
+    def _write_local_zip(self, zip_path: Optional[str]) -> 'FileSet':
+        """Write file set into local ZIP archive."""
+        local_dir_path = self.get_local_path()
 
         if not zip_path:
             zip_path = new_temp_file(suffix='.zip')
 
-        with zipfile.ZipFile(zip_path, 'w') as zip_file:
-            for key in file_set.keys():
-                file_path = os.path.join(local_dir_path, key)
-                zip_file.write(file_path, arcname=key)
+        sub_path = _normalize_sub_path(self.sub_path)
 
-        return FileSet(zip_path)
+        with zipfile.ZipFile(zip_path, 'w') as zip_file:
+            for key in self.keys():
+                file_path = os.path.join(local_dir_path, key)
+                zip_file.write(file_path, arcname=_trim_key(key, sub_path))
+
+        return FileSet(zip_path, sub_path=self.sub_path)
 
     def _accepts_key(self, key: str) -> bool:
         key = '/' + key.replace(os.path.sep, "/")
@@ -351,6 +387,17 @@ def _translate_patterns(patterns: Optional[Collection[str]]) \
             for np in _normalize_pattern(p)]
 
 
+def _normalize_sub_path(sub_path: str) -> str:
+    if sub_path:
+        while sub_path.startswith('/'):
+            sub_path = sub_path[1:]
+        while sub_path.endswith('/'):
+            sub_path = sub_path[:-1]
+        if sub_path:
+            sub_path += '/'
+    return sub_path or ''
+
+
 def _normalize_pattern(pattern: str) -> List[str]:
     pattern = pattern.replace(os.path.sep, '/')
     start_sep = pattern.startswith('/')
@@ -370,3 +417,17 @@ def _normalize_pattern(pattern: str) -> List[str]:
         return [pattern,
                 f'*/{pattern}',
                 f'*/{pattern}/*']
+
+
+def _trim_key(key: str, sub_path: str):
+    if key.startswith(sub_path):
+        return key[len(sub_path):]
+    return key
+
+
+def _key_to_path(key: str, sub_path: str):
+    key_path = key
+    if sub_path:
+        if key.startswith(sub_path):
+            key_path = key[len(sub_path):]
+    return key_path.replace('/', os.path.sep)

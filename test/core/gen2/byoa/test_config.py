@@ -27,7 +27,8 @@ class CodeConfigTest(unittest.TestCase):
         self.assertIsInstance(code_config, CodeConfig)
         self.assertEqual(INLINE_CODE, code_config.inline_code)
         self.assertEqual({'text': 'good bye'}, code_config.parameters)
-        self.assertRegex(code_config.callable_ref, 'user_code_1:process_dataset')
+        self.assertEqual('user_code_1:process_dataset',
+                         code_config.callable_ref)
         self.assertTrue(callable(code_config.get_callable()))
 
     def test_from_code_with_function_refs(self):
@@ -60,8 +61,10 @@ class CodeConfigTest(unittest.TestCase):
         self.assertTrue(callable(code_config.get_callable()))
 
     def test_from_callable(self):
-        code_config = CodeConfig.from_callable(modify_dataset,
-                                               parameters=dict(text='Good bye!'))
+        code_config = CodeConfig.from_callable(
+            modify_dataset,
+            parameters=dict(text='Good bye!')
+        )
         self.assertIsInstance(code_config, CodeConfig)
         self.assertIsNone(code_config.inline_code)
         self.assertIsNone(code_config.file_set, FileSet)
@@ -69,22 +72,45 @@ class CodeConfigTest(unittest.TestCase):
         self.assertIs(modify_dataset, code_config.get_callable())
 
     def test_from_file_set_dir(self):
-        code_config = CodeConfig.from_file_set(LOCAL_MODULE_DIR,
-                                               'processor:process_dataset')
+        code_config = CodeConfig.from_file_set(
+            LOCAL_MODULE_DIR,
+            'processor:process_dataset'
+        )
         self.assertIsInstance(code_config, CodeConfig)
-        self.assertIsInstance(code_config.file_set, FileSet)
         self.assertIsNone(code_config.inline_code)
+        self.assertIsInstance(code_config.file_set, FileSet)
         self.assertEqual('processor:process_dataset', code_config.callable_ref)
         self.assertTrue(callable(code_config.get_callable()))
 
     def test_from_file_set_zip(self):
-        code_config = CodeConfig.from_file_set(LOCAL_MODULE_ZIP,
-                                               'processor:process_dataset')
+        code_config = CodeConfig.from_file_set(
+            LOCAL_MODULE_ZIP,
+            'processor:process_dataset'
+        )
         self.assertIsInstance(code_config, CodeConfig)
-        self.assertIsInstance(code_config.file_set, FileSet)
         self.assertIsNone(code_config.inline_code)
-        self.assertEqual('processor:process_dataset', code_config.callable_ref)
+        self.assertIsInstance(code_config.file_set, FileSet)
+        self.assertEqual('processor:process_dataset',
+                         code_config.callable_ref)
         self.assertTrue(callable(code_config.get_callable()))
+
+    def test_from_github_release(self):
+        code_config = CodeConfig.from_github_archive(
+            'dcs4cop',
+            'xcube-byoa-examples',
+            'v0.1.0.dev0',
+            '0.1.0.dev0',
+            'xcube_byoa_1.processor:process_dataset'
+        )
+
+        self.assertIsInstance(code_config, CodeConfig)
+        self.assertIsNone(code_config.inline_code)
+        self.assertIsInstance(code_config.file_set, FileSet)
+        self.assertEqual('https://github.com/dcs4cop/'
+                         'xcube-byoa-examples/archive/v0.1.0.dev0.zip',
+                         code_config.file_set.path)
+        self.assertEqual('xcube_byoa_1.processor:process_dataset',
+                         code_config.callable_ref)
 
     def test_for_local_from_callable(self):
         user_code_config = CodeConfig.from_callable(modify_dataset)
@@ -112,8 +138,10 @@ class CodeConfigTest(unittest.TestCase):
         self.assertTrue(callable(local_code_config.get_callable()))
 
     def test_for_local_from_file_set_dir(self):
-        user_code_config = CodeConfig.from_file_set(LOCAL_MODULE_DIR,
-                                                    'processor:process_dataset')
+        user_code_config = CodeConfig.from_file_set(
+            LOCAL_MODULE_DIR,
+            'processor:process_dataset'
+        )
 
         local_code_config = user_code_config.for_local()
         self.assertIs(user_code_config, local_code_config)
@@ -124,8 +152,10 @@ class CodeConfigTest(unittest.TestCase):
         self.assertTrue(callable(local_code_config.get_callable()))
 
     def test_for_local_from_file_set_zip(self):
-        user_code_config = CodeConfig.from_file_set(LOCAL_MODULE_ZIP,
-                                                    'processor:process_dataset')
+        user_code_config = CodeConfig.from_file_set(
+            LOCAL_MODULE_ZIP,
+            'processor:process_dataset'
+        )
 
         local_code_config = user_code_config.for_local()
         self.assertIsInstance(local_code_config, CodeConfig)
@@ -136,30 +166,19 @@ class CodeConfigTest(unittest.TestCase):
         self.assertTrue(local_code_config.file_set.is_local_dir())
         self.assertRegex(os.path.basename(local_code_config.file_set.path),
                          'xcube-gen-byoa-*.')
-        self.assertEqual(local_code_config.callable_ref,
-                         'processor:process_dataset')
+        self.assertEqual('processor:process_dataset',
+                         local_code_config.callable_ref)
         # CodeConfigs from for_local() shall be able to load callable
         self.assertTrue(callable(local_code_config.get_callable()))
 
-    @unittest.skipUnless(os.environ.get('ENABLE_XCUBE_BYOA_FILE_SET_REMOTE_TESTS') == '1',
-                         'This is a manual test, '
-                         'because it accesses the internet and it is slow.\n'
-                         'To activate, set ENABLE_XCUBE_BYOA_FILE_SET_REMOTE_TESTS=1')
-    def test_for_local_from_file_set_remote(self):
-        # 'zip://xcube-0.8.1/*'
-        url = FileSet('::filecache://xcube-0.8.1.zip'
-                      '::https://github.com/dcs4cop/xcube/archive/v0.8.1.zip',
-                       parameters=dict(filecache={'cache_storage': '.',
-                                                  'compression': 'infer'}))
-        # url = FileSet('zip::simplecache::https://github.com/dcs4cop/xcube/archive/v0.8.1.zip',
-        #               parameters=dict(simplecache={'cache_storage': '.'}))
-        # url = FileSet('github://dcs4cop:xcube@17a3a8526e0105ee610c86fcf5fe82fd62f9b273/',
-        #               parameters=dict(username='forman',
-        #                               token='...'))
-        callable_ref = 'test.core.gen2.byoa.test_data.' \
-                       'user_code.processor:process_dataset'
-        user_code_config = CodeConfig.from_file_set(url,
-                                                    callable_ref=callable_ref)
+    def test_for_local_from_github_release(self):
+        user_code_config = CodeConfig.from_github_archive(
+            gh_org='dcs4cop',
+            gh_repo='xcube-byoa-examples',
+            gh_tag='v0.1.0.dev0',
+            gh_release='0.1.0.dev0',
+            callable_ref='xcube_byoa_ex1.processor:process_dataset',
+        )
 
         local_code_config = user_code_config.for_local()
         self.assertIsInstance(local_code_config, CodeConfig)
@@ -168,8 +187,10 @@ class CodeConfigTest(unittest.TestCase):
         self.assertIsNone(local_code_config.inline_code)
         self.assertIsInstance(local_code_config.file_set, FileSet)
         self.assertTrue(local_code_config.file_set.is_local_dir())
-        self.assertEqual(url, local_code_config.file_set.path)
-        self.assertEqual(callable_ref, local_code_config.callable_ref)
+        self.assertRegex(os.path.basename(local_code_config.file_set.path),
+                         'xcube-gen-byoa-*.')
+        self.assertEqual('xcube_byoa_ex1.processor:process_dataset',
+                         local_code_config.callable_ref)
         # CodeConfigs from for_local() shall be able to load callable
         self.assertTrue(callable(local_code_config.get_callable()))
 
@@ -178,8 +199,10 @@ class CodeConfigTest(unittest.TestCase):
         code_config.inline_code = None
         with self.assertRaises(RuntimeError) as e:
             code_config.for_local()
-        self.assertEqual(('for_local() failed due to an invalid CodeConfig state',),
-                         e.exception.args)
+        self.assertEqual(
+            ('for_local() failed due to an invalid CodeConfig state',),
+            e.exception.args
+        )
 
     def test_for_service_from_callable(self):
         user_code_config = CodeConfig.from_callable(transform_dataset)
@@ -193,8 +216,10 @@ class CodeConfigTest(unittest.TestCase):
         self.assertTrue(service_code_config.file_set.is_local_zip())
 
     def test_for_service_from_file_set_zip(self):
-        user_code_config = CodeConfig.from_file_set(LOCAL_MODULE_ZIP,
-                                                    'processor:process_dataset')
+        user_code_config = CodeConfig.from_file_set(
+            LOCAL_MODULE_ZIP,
+            'processor:process_dataset'
+        )
 
         service_code_config = user_code_config.for_service()
         self.assertIs(user_code_config, service_code_config)
@@ -203,8 +228,10 @@ class CodeConfigTest(unittest.TestCase):
         self.assertEqual(LOCAL_MODULE_ZIP, service_code_config.file_set.path)
 
     def test_for_service_from_file_set_dir(self):
-        user_code_config = CodeConfig.from_file_set(LOCAL_MODULE_DIR,
-                                                    'processor:process_dataset')
+        user_code_config = CodeConfig.from_file_set(
+            LOCAL_MODULE_DIR,
+            'processor:process_dataset'
+        )
 
         service_code_config = user_code_config.for_service()
         self.assertIsInstance(service_code_config, CodeConfig)
@@ -215,15 +242,33 @@ class CodeConfigTest(unittest.TestCase):
         self.assertTrue(service_code_config.file_set.is_local_zip())
         self.assertRegex(os.path.basename(service_code_config.file_set.path),
                          'xcube-gen-byoa-*.')
-        self.assertEqual(service_code_config.callable_ref,
-                         'processor:process_dataset')
+        self.assertEqual('processor:process_dataset',
+                         service_code_config.callable_ref)
 
-    def test_for_service_from_file_set_remote(self):
-        url = 'https://github.com/dcs4cop/xcube/archive/refs/tags/v0.8.2.dev0.zip'
-        callable_ref = 'test.core.gen2.byoa.test_data.' \
-                       'user_code.processor:process_dataset'
-        user_code_config = CodeConfig.from_file_set(url,
-                                                    callable_ref=callable_ref)
+    # def test_for_service_from_file_set_remote(self):
+    #     url = 'https://github.com/dcs4cop/xcube/archive/refs/tags/v0.8.2.dev0.zip'
+    #     callable_ref = 'test.core.gen2.byoa.test_data.' \
+    #                    'user_code.processor:process_dataset'
+    #     user_code_config = CodeConfig.from_file_set(url,
+    #                                                 callable_ref=callable_ref)
+    #
+    #     service_code_config = user_code_config.for_service()
+    #     self.assertIsInstance(service_code_config, CodeConfig)
+    #     self.assertIsInstance(service_code_config.callable_ref, str)
+    #     self.assertIsNone(service_code_config._callable)
+    #     self.assertIsNone(service_code_config.inline_code)
+    #     self.assertIsInstance(service_code_config.file_set, FileSet)
+    #     self.assertEqual(url, service_code_config.file_set.path)
+    #     self.assertEqual(callable_ref, service_code_config.callable_ref)
+
+    def test_for_service_from_github_release(self):
+        user_code_config = CodeConfig.from_github_archive(
+            gh_org='dcs4cop',
+            gh_repo='xcube-byoa-examples',
+            gh_tag='v0.1.0.dev0',
+            gh_release='0.1.0.dev0',
+            callable_ref='xcube_byoa_1.processor:process_dataset'
+        )
 
         service_code_config = user_code_config.for_service()
         self.assertIsInstance(service_code_config, CodeConfig)
@@ -231,23 +276,31 @@ class CodeConfigTest(unittest.TestCase):
         self.assertIsNone(service_code_config._callable)
         self.assertIsNone(service_code_config.inline_code)
         self.assertIsInstance(service_code_config.file_set, FileSet)
-        self.assertEqual(url, service_code_config.file_set.path)
-        self.assertEqual(callable_ref, service_code_config.callable_ref)
+        self.assertFalse(service_code_config.file_set.is_local_dir())
+        self.assertEqual('https://github.com/dcs4cop/'
+                         'xcube-byoa-examples/archive/v0.1.0.dev0.zip',
+                         service_code_config.file_set.path)
+        self.assertEqual('xcube_byoa_1.processor:process_dataset',
+                         service_code_config.callable_ref)
 
     def test_for_service_illegal_state(self):
         code_config = CodeConfig.from_code(INLINE_CODE)
         code_config.inline_code = None
         with self.assertRaises(RuntimeError) as e:
             code_config.for_service()
-        self.assertEqual(('for_service() failed due to an invalid CodeConfig state',),
-                         e.exception.args)
+        self.assertEqual(
+            ('for_service() failed due to an invalid CodeConfig state',),
+            e.exception.args
+        )
 
     def test_to_dict(self):
         d = CodeConfig.from_callable(modify_dataset).to_dict()
         # Shall we raise instead?
         self.assertEqual({}, d)
 
-        d = CodeConfig.from_code(INLINE_CODE, module_name='user_code').to_dict()
+        d = CodeConfig.from_code(
+            INLINE_CODE, module_name='user_code'
+        ).to_dict()
         self.assertEqual(
             {
                 'callable_ref': 'user_code:process_dataset',
@@ -256,10 +309,12 @@ class CodeConfigTest(unittest.TestCase):
             d
         )
 
-        d = CodeConfig.from_file_set(FileSet('github://dcs4cop:xcube@v0.8.2.dev0',
-                                             includes='*.py'),
-                                     callable_ref=('test.core.gen2.byoa.test_config:'
-                                                   'modify_dataset')).to_dict()
+        d = CodeConfig.from_file_set(
+            FileSet('github://dcs4cop:xcube@v0.8.2.dev0',
+                    includes='*.py'),
+            callable_ref=('test.core.gen2.byoa.test_config:'
+                          'modify_dataset')
+        ).to_dict()
         self.assertIsInstance(d.get('file_set'), dict)
         self.assertEqual(('test.core.gen2.byoa.test_config:'
                           'modify_dataset'),
