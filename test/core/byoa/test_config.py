@@ -131,9 +131,9 @@ class CodeConfigTest(unittest.TestCase):
         self.assertIsInstance(local_code_config.file_set, FileSet)
         self.assertTrue(local_code_config.file_set.is_local_dir())
         self.assertRegex(os.path.basename(local_code_config.file_set.path),
-                         'xcube-gen-byoa-*.')
+                         'xcube-byoa-*.')
         self.assertRegex(local_code_config.callable_ref,
-                         'xcube_gen_byoa_*.:process_dataset')
+                         'xcube_byoa_*.:process_dataset')
         # CodeConfigs from for_local() shall be able to load callable
         self.assertTrue(callable(local_code_config.get_callable()))
 
@@ -165,7 +165,7 @@ class CodeConfigTest(unittest.TestCase):
         self.assertIsInstance(local_code_config.file_set, FileSet)
         self.assertTrue(local_code_config.file_set.is_local_dir())
         self.assertRegex(os.path.basename(local_code_config.file_set.path),
-                         'xcube-gen-byoa-*.')
+                         'xcube-byoa-*.')
         self.assertEqual('processor:process_dataset',
                          local_code_config.callable_ref)
         # CodeConfigs from for_local() shall be able to load callable
@@ -188,7 +188,7 @@ class CodeConfigTest(unittest.TestCase):
         self.assertIsInstance(local_code_config.file_set, FileSet)
         self.assertTrue(local_code_config.file_set.is_local_dir())
         self.assertRegex(os.path.basename(local_code_config.file_set.path),
-                         'xcube-gen-byoa-*.')
+                         'xcube-byoa-*.')
         self.assertEqual('xcube_byoa_ex1.processor:process_dataset',
                          local_code_config.callable_ref)
         # CodeConfigs from for_local() shall be able to load callable
@@ -241,7 +241,7 @@ class CodeConfigTest(unittest.TestCase):
         self.assertIsInstance(service_code_config.file_set, FileSet)
         self.assertTrue(service_code_config.file_set.is_local_zip())
         self.assertRegex(os.path.basename(service_code_config.file_set.path),
-                         'xcube-gen-byoa-*.')
+                         'xcube-byoa-*.')
         self.assertEqual('processor:process_dataset',
                          service_code_config.callable_ref)
 
