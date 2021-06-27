@@ -415,7 +415,7 @@ def _load_callable(dir_path: str,
     """
     module_name, callable_name = _normalize_callable_ref(callable_red)
     if install_required:
-        warnings.warn(f'This user code configuration requires '
+        warnings.warn(f'This user-code configuration requires '
                       f'package installation, '
                       f'but this is not supported yet')
     # Ok, we change global state here, but the main use case

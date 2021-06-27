@@ -87,12 +87,23 @@ class CubeGeneratorRequest(JsonObject):
         self.callback_config = callback_config
 
     def for_service(self) -> 'CubeGeneratorRequest':
-        code_config = self.code_config.for_service() \
-            if self.code_config is not None else self.code_config
+        if self.code_config is None:
+            return self
         return CubeGeneratorRequest(
             input_configs=self.input_configs,
             cube_config=self.cube_config,
-            code_config=code_config,
+            code_config=self.code_config.for_service(),
+            output_config=self.output_config,
+            callback_config=self.callback_config,
+        )
+
+    def for_local(self) -> 'CubeGeneratorRequest':
+        if self.code_config is None:
+            return self
+        return CubeGeneratorRequest(
+            input_configs=self.input_configs,
+            cube_config=self.cube_config,
+            code_config=self.code_config.for_local(),
             output_config=self.output_config,
             callback_config=self.callback_config,
         )

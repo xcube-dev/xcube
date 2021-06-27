@@ -105,17 +105,19 @@ class FileSet(JsonObject):
 
     Examples:
 
-        FileSet('eurodatacube/my_processor')
+        FileSet('eurodatacube/my_processor',
+                includes=['*.py'])
 
-        FileSet('eurodatacube/my_processor.zip')
+        FileSet('eurodatacube/my_processor.zip',
+                excludes=['*.zarr'])
 
         FileSet('s3://eurodatacube/my_processor.zip',
-                parameters=dict(key='...',
-                                secret='...')
+                storage_params=dict(key='...',
+                                    secret='...')
 
         FileSet('github://dcs4cop:xcube@v0.8.1/',
-                parameters=dict(username='...',
-                                token='ghp_...')
+                storage_params=dict(username='...',
+                                    token='ghp_...')
 
     If *includes* wildcard patterns are given, only files
     whose paths match any of the patterns are included.
@@ -161,7 +163,7 @@ class FileSet(JsonObject):
         return JsonObjectSchema(
             properties=dict(
                 path=JsonStringSchema(min_length=1),
-                rel_path=JsonStringSchema(min_length=1),
+                sub_path=JsonStringSchema(min_length=1),
                 storage_params=JsonObjectSchema(additional_properties=True),
                 includes=JsonArraySchema(items=JsonStringSchema(min_length=1)),
                 excludes=JsonArraySchema(items=JsonStringSchema(min_length=1)),
