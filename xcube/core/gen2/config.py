@@ -25,7 +25,7 @@ from typing import Optional, Any, Sequence, Mapping, Tuple, Union, Dict
 
 import pyproj
 
-from xcube.util.assertions import assert_condition
+from xcube.util.assertions import assert_true
 from xcube.util.assertions import assert_given
 from xcube.util.assertions import assert_instance
 from xcube.util.jsonschema import JsonArraySchema
@@ -45,7 +45,8 @@ class InputConfig(JsonObject):
                  data_id: str = None,
                  store_params: Mapping[str, Any] = None,
                  open_params: Mapping[str, Any] = None):
-        assert_condition(store_id or opener_id, 'One of store_id and opener_id must be given')
+        assert_true(store_id or opener_id,
+                    'One of store_id and opener_id must be given')
         assert_given(data_id, 'data_id')
         self.store_id = store_id
         self.opener_id = opener_id
@@ -60,8 +61,10 @@ class InputConfig(JsonObject):
                 store_id=JsonStringSchema(min_length=1),
                 opener_id=JsonStringSchema(min_length=1),
                 data_id=JsonStringSchema(min_length=1),
-                store_params=JsonObjectSchema(additional_properties=True, nullable=True),
-                open_params=JsonObjectSchema(additional_properties=True, nullable=True)
+                store_params=JsonObjectSchema(additional_properties=True,
+                                              nullable=True),
+                open_params=JsonObjectSchema(additional_properties=True,
+                                             nullable=True)
             ),
             additional_properties=False,
             required=['data_id'],
@@ -73,7 +76,8 @@ class CallbackConfig(JsonObject):
     def __init__(self,
                  api_uri: str = None,
                  access_token: str = None):
-        assert_condition(api_uri and access_token, 'Both, api_uri and access_token must be given')
+        assert_true(api_uri and access_token,
+                    'Both, api_uri and access_token must be given')
         self.api_uri = api_uri
         self.access_token = access_token
 
@@ -99,7 +103,8 @@ class OutputConfig(JsonObject):
                  store_params: Mapping[str, Any] = None,
                  write_params: Mapping[str, Any] = None,
                  replace: bool = None):
-        assert_condition(store_id or writer_id, 'One of store_id and writer_id must be given')
+        assert_true(store_id or writer_id,
+                    'One of store_id and writer_id must be given')
         self.store_id = store_id
         self.writer_id = writer_id
         self.data_id = data_id
@@ -114,8 +119,10 @@ class OutputConfig(JsonObject):
                 store_id=JsonStringSchema(min_length=1),
                 writer_id=JsonStringSchema(min_length=1),
                 data_id=JsonStringSchema(default=None),
-                store_params=JsonObjectSchema(additional_properties=True, nullable=True),
-                write_params=JsonObjectSchema(additional_properties=True, nullable=True),
+                store_params=JsonObjectSchema(additional_properties=True,
+                                              nullable=True),
+                write_params=JsonObjectSchema(additional_properties=True,
+                                              nullable=True),
                 replace=JsonBooleanSchema(default=False),
             ),
             additional_properties=False,
@@ -139,7 +146,7 @@ class CubeConfig(JsonObject):
 
         self.variable_names = None
         if variable_names is not None:
-            assert_condition(len(variable_names) > 0, 'variable_names is invalid')
+            assert_true(len(variable_names) > 0, 'variable_names is invalid')
             self.variable_names = tuple(map(str, variable_names))
 
         self.crs = None
@@ -153,7 +160,7 @@ class CubeConfig(JsonObject):
 
         self.bbox = None
         if bbox is not None:
-            assert_condition(len(bbox) == 4, 'bbox is invalid')
+            assert_true(len(bbox) == 4, 'bbox is invalid')
             self.bbox = tuple(map(float, bbox))
 
         self.spatial_res = None
@@ -169,14 +176,17 @@ class CubeConfig(JsonObject):
                 try:
                     tile_width, tile_height = tile_size
                 except (ValueError, TypeError):
-                    raise ValueError('tile_size must be an integer or a pair of integers')
-                assert_instance(tile_width, numbers.Number, 'tile_width of tile_size')
-                assert_instance(tile_height, numbers.Number, 'tile_height of tile_size')
+                    raise ValueError('tile_size must be an integer '
+                                     'or a pair of integers')
+                assert_instance(tile_width, numbers.Number,
+                                'tile_width of tile_size')
+                assert_instance(tile_height, numbers.Number,
+                                'tile_height of tile_size')
             self.tile_size = tile_width, tile_height
 
         self.time_range = None
         if time_range is not None:
-            assert_condition(len(time_range) == 2, 'time_range is invalid')
+            assert_true(len(time_range) == 2, 'time_range is invalid')
             self.time_range = tuple(time_range)
 
         self.time_period = None
@@ -228,7 +238,8 @@ class CubeConfig(JsonObject):
                 ),
                 chunks=JsonObjectSchema(
                     nullable=True,
-                    additional_properties=JsonIntegerSchema(nullable=True, minimum=1)
+                    additional_properties=JsonIntegerSchema(nullable=True,
+                                                            minimum=1)
                 ),
             ),
             additional_properties=False,
