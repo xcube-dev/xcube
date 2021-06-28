@@ -38,7 +38,7 @@ from ..request import CubeGeneratorRequest
 
 _BASE_HEADERS = {
     "Accept": "application/json",
-    "Content-Type": "application/json",
+    # "Content-Type": "application/json",
 }
 
 R = TypeVar('R')
@@ -76,14 +76,21 @@ class CubeGeneratorService(CubeGenerator):
 
     @property
     def auth_headers(self) -> Dict:
-        return {
-            **_BASE_HEADERS,
-            'Authorization': f'Bearer {self.access_token}',
-        }
+        access_token = self.access_token
+        if access_token is not None:
+            return {
+                **_BASE_HEADERS,
+                'Authorization': f'Bearer {self.access_token}',
+            }
+        return dict(_BASE_HEADERS)
 
     @property
-    def access_token(self) -> str:
+    def access_token(self) -> Optional[str]:
         if self._access_token is None:
+            if self._service_config.client_id is None \
+                    and self._service_config.client_secret is None:
+                return None
+
             request_data = {
                 "audience": self._service_config.endpoint_url,
                 "client_id": self._service_config.client_id,
@@ -126,6 +133,8 @@ class CubeGeneratorService(CubeGenerator):
                 )
                 result = self._get_cube_generation_result(response)
                 if result.status.succeeded:
+                    return self._get_data_id(cubegen_id + '.zarr')
+                if result.status.failed:
                     return self._get_data_id(cubegen_id + '.zarr')
 
                 if result.progress is not None and len(result.progress) > 0:
@@ -177,7 +186,8 @@ class CubeGeneratorService(CubeGenerator):
         data_id = self._request.output_config.data_id
         return data_id if data_id else default
 
-    def _get_cube_generation_result(self, response: requests.Response,
+    def _get_cube_generation_result(self,
+                                    response: requests.Response,
                                     request_data: Dict[str, Any] = None) \
             -> CubeGeneratorResult:
         result = self._parse_response(response,

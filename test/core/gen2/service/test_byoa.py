@@ -5,6 +5,10 @@ import unittest
 
 import requests
 
+from xcube.core.gen2 import CubeGeneratorRequest
+from xcube.core.gen2.service import CubeGeneratorService
+from xcube.core.gen2.service import ServiceConfig
+
 PARENT_DIR = os.path.dirname(__file__)
 SERVER_URL = 'http://127.0.0.1:5000'
 
@@ -52,7 +56,7 @@ class ByoaTest(unittest.TestCase):
             },
             "code_config": {
                 "file_set": {
-                    "path": user_code_filename,
+                    "path": user_code_path,
                 },
                 "callable_ref": "processor:process_dataset",
                 "callable_params": {
@@ -70,27 +74,9 @@ class ByoaTest(unittest.TestCase):
             }
         }
 
-        with open(user_code_path, 'rb') as stream:
-            response = requests.put(
-                SERVER_URL + '/generate',
-                files={
-                    'body': (
-                        'request.json',
-                        json.dumps(request_dict, indent=2),
-                        'application/json'
-                    ),
-                    'user_code': (
-                        user_code_filename,
-                        open(user_code_path, 'rb'),
-                        'application/octet-stream'
-                    )
-                }
-            )
-        self.assertEqual(200, response.status_code)
+        service = CubeGeneratorService(CubeGeneratorRequest.from_dict(request_dict),
+                                       ServiceConfig(endpoint_url=SERVER_URL))
 
-        response_dict = response.json()
-        self.assertIsInstance(response_dict, dict)
-        print(response_dict.get('output'))
-        self.assertEqual(0, response_dict.get('code'))
-        self.assertEqual('ok', response_dict.get('status'))
-        self.assertIsInstance(response_dict.get('output'), str)
+        data_id = service.generate_cube()
+        print('Data ID:', data_id, flush=True)
+        self.assertEqual('OUTPUT.zarr', data_id)

@@ -1,12 +1,12 @@
 import atexit
+import datetime
 import json
 import os
 import os.path
 import shutil
 import subprocess
 import tempfile
-import datetime
-from typing import Dict
+from typing import Dict, Any, Tuple, Optional
 
 import click
 import flask
@@ -16,7 +16,7 @@ import yaml
 app = flask.Flask(__name__)
 
 STORES_CONFIG_PATH: str = ''
-JOBS: Dict[int, subprocess.Popen] = {}
+JOBS: Dict[str, Tuple[subprocess.Popen, str, Dict[str, Any]]] = {}
 
 
 @app.route('/status')
@@ -24,58 +24,30 @@ def status():
     return {'status': 'ok'}
 
 
-@app.route('/cubegens/<job_id>', methods=['GET'])
-def generate(job_id: str):
-    try:
-        pid = int(job_id)
-    except ValueError:
-        raise werkzeug.exceptions.BadRequest('invalid job ID')
-    process = JOBS.get(pid)
-    if process is None:
-        raise werkzeug.exceptions.BadRequest('invalid job ID')
-    output = process.stdout.readlines()
-
-
-@app.route('/cubegens/info', methods=['POST'])
-def generate(job_id: str):
-    try:
-        pid = int(job_id)
-    except ValueError:
-        raise werkzeug.exceptions.BadRequest('invalid job ID')
-    process = JOBS.get(pid)
-    if process is None:
-        raise werkzeug.exceptions.BadRequest('invalid job ID')
-    output = process.stdout.readlines()
-
-
 @app.route('/cubegens', methods=['PUT'])
-def generate():
+def generate_cube():
     request_path = _new_request_file(flask.request)
-
     try:
         process = subprocess.Popen(['xcube', 'gen2',
                                     '-vvv',
                                     '--stores', STORES_CONFIG_PATH,
                                     request_path],
                                    stderr=subprocess.STDOUT)
-        global JOBS
-        JOBS[process.pid] = process
+        return _process_to_generator_result(process, None)
     except subprocess.CalledProcessError as e:
         raise werkzeug.exceptions.InternalServerError(
             'failed to invoke generator process'
         ) from e
 
-    output = output.decode('utf-8') if output is not None else ''
 
-    return {
-        'cubegen_id': process.pid,
-        'status': {
-            'active': True,
-            'start_time': datetime.datetime.utcnow().isoformat(),
-        },
-        'output': process.stdout.readlines(),
+@app.route('/cubegens/<job_id>', methods=['GET'])
+def get_cube_generator_status(job_id: str):
+    return _process_to_generator_result(None, job_id)
 
-    }
+
+@app.route('/cubegens/info', methods=['POST'])
+def get_cube_info():
+    raise werkzeug.exceptions.NotImplemented()
 
 
 def _new_request_file(request: flask.Request) -> str:
@@ -156,6 +128,42 @@ def _init_local_store():
             stream)
     print(f' * Store base directory: {local_base_dir}')
     print(f' * Store configuration: {STORES_CONFIG_PATH}')
+
+
+def _process_to_generator_result(process: Optional[subprocess.Popen],
+                                 job_id: Optional[str]) -> Dict[str, Any]:
+    global JOBS
+    if process is not None:
+        job_id = str(process.pid)
+        start_time = datetime.datetime.utcnow().isoformat()
+        result = {}
+        JOBS[job_id] = process, start_time, result
+    elif job_id in JOBS:
+        process, start_time, result = JOBS[job_id]
+    else:
+        raise werkzeug.exceptions.BadRequest(
+            f'invalid job ID: {job_id}'
+        )
+    output = process.stdout.readlines() \
+        if process.stdout is not None else None
+    return_code = process.poll()
+    active, succeeded, failed = None, None, None
+    if return_code is None:
+        active = 1
+    else:
+        succeeded = 1 if return_code == 0 else 0
+        failed = 1 if return_code != 0 else 0
+    result.update({
+        'cubegen_id': job_id,
+        'status': {
+            'active': active,
+            'succeeded': succeeded,
+            'failed': failed,
+            'start_time': start_time,
+        },
+        'output': output,
+    })
+    return result
 
 
 def _new_temp_file(suffix=''):
