@@ -45,7 +45,7 @@ from xcube.core.store import new_data_descriptor
 from xcube.core.store import new_data_opener
 from xcube.core.store import new_data_writer
 from xcube.core.store.accessors.dataset import S3Mixin
-from xcube.util.assertions import assert_condition
+from xcube.util.assertions import assert_true
 from xcube.util.assertions import assert_given
 from xcube.util.assertions import assert_in
 from xcube.util.assertions import assert_instance
@@ -93,8 +93,8 @@ class S3DataStore(DefaultSearchMixin, MutableDataStore):
         self._s3, store_params = S3Mixin.consume_s3fs_params(store_params)
         self._bucket_name, store_params = S3Mixin.consume_bucket_name_param(store_params)
         assert_given(self._bucket_name, 'bucket_name')
-        assert_condition(not store_params,
-                         f'Unknown keyword arguments: {", ".join(store_params.keys())}')
+        assert_true(not store_params,
+                    f'Unknown keyword arguments: {", ".join(store_params.keys())}')
         self._registry = {}
         if self._s3.exists(f'{self._bucket_name}/{_REGISTRY_FILE}'):
             with self._s3.open(f'{self._bucket_name}/{_REGISTRY_FILE}', 'r') as registry_file:
@@ -194,7 +194,7 @@ class S3DataStore(DefaultSearchMixin, MutableDataStore):
                     type_specifier=type_specifier,
                     format_id=acc_format,
                     storage_id=acc_storage_id)
-        ))
+            ))
         return tuple(ext.name for ext in find_data_opener_extensions(
             predicate=get_data_accessor_predicate(type_specifier=type_specifier,
                                                   storage_id=_STORAGE_ID)

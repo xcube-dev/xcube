@@ -31,7 +31,7 @@ from xcube.core.store import TYPE_SPECIFIER_CUBE
 from xcube.core.store import TYPE_SPECIFIER_DATASET
 from xcube.core.store import get_data_store_instance
 from xcube.core.store import new_data_opener
-from xcube.util.assertions import assert_condition
+from xcube.util.assertions import assert_true
 from xcube.util.assertions import assert_instance
 from xcube.util.progress import observe_progress
 from .config import CubeConfig
@@ -48,8 +48,8 @@ class CubesOpener:
                  input_configs: Sequence[InputConfig],
                  cube_config: CubeConfig,
                  store_pool: DataStorePool = None):
-        assert_condition(len(input_configs) > 0,
-                         'At least one input must be given')
+        assert_true(len(input_configs) > 0,
+                    'At least one input must be given')
         assert_instance(cube_config, CubeConfig, 'cube_config')
         if store_pool is not None:
             assert_instance(store_pool, DataStorePool, 'store_pool')

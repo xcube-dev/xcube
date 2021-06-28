@@ -30,7 +30,7 @@ import pyproj
 from xcube.core.store import DataStorePool
 from xcube.core.store import DatasetDescriptor
 from xcube.core.store import VariableDescriptor
-from xcube.util.assertions import assert_condition
+from xcube.util.assertions import assert_true
 from xcube.util.assertions import assert_instance
 from .config import CubeConfig
 from .describer import DatasetsDescriber
@@ -185,7 +185,7 @@ class CubeInformant:
         if spatial_res is None:
             spatial_res = self.first_input_dataset_descriptor.spatial_res
         assert_instance(spatial_res, numbers.Number, 'spatial_res')
-        assert_condition(spatial_res > 0, 'spatial_res must be positive')
+        assert_true(spatial_res > 0, 'spatial_res must be positive')
 
         tile_size = cube_config.tile_size
         if tile_size is not None:

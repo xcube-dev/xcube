@@ -28,7 +28,7 @@ from xcube.core.store import TYPE_SPECIFIER_CUBE
 from xcube.core.store import TYPE_SPECIFIER_DATASET
 from xcube.core.store import get_data_store_instance
 from xcube.core.store import new_data_opener
-from xcube.util.assertions import assert_condition
+from xcube.util.assertions import assert_true
 from xcube.util.assertions import assert_instance
 from xcube.util.progress import observe_progress
 from .config import InputConfig
@@ -40,8 +40,8 @@ class DatasetsDescriber:
     def __init__(self,
                  input_configs: Sequence[InputConfig],
                  store_pool: DataStorePool = None):
-        assert_condition(len(input_configs) > 0,
-                         'At least one input must be given')
+        assert_true(len(input_configs) > 0,
+                    'At least one input must be given')
         if store_pool is not None:
             assert_instance(store_pool, DataStorePool, 'store_pool')
         self._input_configs = input_configs
@@ -49,31 +49,40 @@ class DatasetsDescriber:
 
     def describe_datasets(self) -> Sequence[DatasetDescriptor]:
         descriptors = []
-        with observe_progress('Fetching dataset information', len(self._input_configs)) as progress:
+        with observe_progress('Fetching dataset information',
+                              len(self._input_configs)) as progress:
             for input_config in self._input_configs:
                 descriptors.append(self._describe_dataset(input_config))
                 progress.worked(1)
         return descriptors
 
-    def _describe_dataset(self, input_config: InputConfig) -> DatasetDescriptor:
+    def _describe_dataset(self, input_config: InputConfig) \
+            -> DatasetDescriptor:
         opener_id = input_config.opener_id
         store_params = input_config.store_params or {}
         if input_config.store_id:
-            store_instance = get_data_store_instance(input_config.store_id,
-                                                     store_params=store_params,
-                                                     store_pool=self._store_pool)
+            store_instance = get_data_store_instance(
+                input_config.store_id,
+                store_params=store_params,
+                store_pool=self._store_pool
+            )
             opener = store_instance.store
         else:
             opener = new_data_opener(opener_id)
         try:
-            descriptor = opener.describe_data(input_config.data_id, TYPE_SPECIFIER_CUBE)
+            descriptor = opener.describe_data(input_config.data_id,
+                                              TYPE_SPECIFIER_CUBE)
         except DataStoreError:
             try:
-                descriptor = opener.describe_data(input_config.data_id, TYPE_SPECIFIER_DATASET)
+                descriptor = opener.describe_data(input_config.data_id,
+                                                  TYPE_SPECIFIER_DATASET)
             except DataStoreError:
-                raise CubeGeneratorError(f'Data store "{input_config.store_id}" '
+                raise CubeGeneratorError(f'Data store '
+                                         f'"{input_config.store_id}" '
                                          f'does not support datasets')
         if not isinstance(descriptor, DatasetDescriptor):
-            raise RuntimeError(f'internal error: data store "{input_config.store_id}": '
-                               f'expected DatasetDescriptor but got a {type(descriptor)}')
+            raise RuntimeError(f'internal error: data store '
+                               f'"{input_config.store_id}": '
+                               f'expected DatasetDescriptor but got '
+                               f'a {type(descriptor)}')
         return descriptor
