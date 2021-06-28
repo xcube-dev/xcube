@@ -93,9 +93,10 @@ class CubeGeneratorService(CubeGenerator):
             response = requests.post(self.endpoint_op('oauth/token'),
                                      json=request_data,
                                      headers=_BASE_HEADERS)
-            token_response: CubeGeneratorToken = self._parse_response(response,
-                                                                      CubeGeneratorToken,
-                                                                      request_data=request_data)
+            token_response: CubeGeneratorToken = \
+                self._parse_response(response,
+                                     CubeGeneratorToken,
+                                     request_data=request_data)
             self._access_token = token_response.access_token
         return self._access_token
 
