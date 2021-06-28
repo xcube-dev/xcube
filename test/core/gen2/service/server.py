@@ -5,6 +5,8 @@ import os.path
 import shutil
 import subprocess
 import tempfile
+import datetime
+from typing import Dict
 
 import click
 import flask
@@ -13,7 +15,8 @@ import yaml
 
 app = flask.Flask(__name__)
 
-STORES_CONFIG_PATH = ''
+STORES_CONFIG_PATH: str = ''
+JOBS: Dict[int, subprocess.Popen] = {}
 
 
 @app.route('/status')
@@ -21,27 +24,57 @@ def status():
     return {'status': 'ok'}
 
 
-@app.route('/generate', methods=['PUT'])
+@app.route('/cubegens/<job_id>', methods=['GET'])
+def generate(job_id: str):
+    try:
+        pid = int(job_id)
+    except ValueError:
+        raise werkzeug.exceptions.BadRequest('invalid job ID')
+    process = JOBS.get(pid)
+    if process is None:
+        raise werkzeug.exceptions.BadRequest('invalid job ID')
+    output = process.stdout.readlines()
+
+
+@app.route('/cubegens/info', methods=['POST'])
+def generate(job_id: str):
+    try:
+        pid = int(job_id)
+    except ValueError:
+        raise werkzeug.exceptions.BadRequest('invalid job ID')
+    process = JOBS.get(pid)
+    if process is None:
+        raise werkzeug.exceptions.BadRequest('invalid job ID')
+    output = process.stdout.readlines()
+
+
+@app.route('/cubegens', methods=['PUT'])
 def generate():
     request_path = _new_request_file(flask.request)
 
     try:
-        output = subprocess.check_output(['xcube', 'gen2',
-                                          '-vvv',
-                                          '--stores', STORES_CONFIG_PATH,
-                                          request_path],
-                                         stderr=subprocess.STDOUT)
-        code = 0
+        process = subprocess.Popen(['xcube', 'gen2',
+                                    '-vvv',
+                                    '--stores', STORES_CONFIG_PATH,
+                                    request_path],
+                                   stderr=subprocess.STDOUT)
+        global JOBS
+        JOBS[process.pid] = process
     except subprocess.CalledProcessError as e:
-        output = e.output
-        code = e.returncode
+        raise werkzeug.exceptions.InternalServerError(
+            'failed to invoke generator process'
+        ) from e
 
     output = output.decode('utf-8') if output is not None else ''
 
     return {
-        'status': 'ok' if code == 0 else 'error',
-        'code': int(code),
-        'output': output
+        'cubegen_id': process.pid,
+        'status': {
+            'active': True,
+            'start_time': datetime.datetime.utcnow().isoformat(),
+        },
+        'output': process.stdout.readlines(),
+
     }
 
 
