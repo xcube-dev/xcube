@@ -425,11 +425,9 @@ def _normalize_series(
         for col_name in col_names:
             if col_name in points:
                 col = points[col_name]
-                if not isinstance(col, (np.ndarray,
-                                        da.Array,
-                                        xr.DataArray,
-                                        pd.Series)):
-                    new_points[col_name] = xr.DataArray(col)
+                if not isinstance(col, xr.DataArray):
+                    col = xr.DataArray(col)
+                new_points[col_name] = col
         points = new_points
 
     num_points = None
