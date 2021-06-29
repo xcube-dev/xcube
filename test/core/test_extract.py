@@ -28,6 +28,7 @@ class GetCubeValuesForPointsTest(unittest.TestCase):
                                    "2010-01-20", "2010-01-01",
                                    "2010-01-05", "2010-01-03",
                                    ], dtype="datetime64[ns]"),
+                    # Note "lat" is a list (see issue #434)
                     lat=[50.0, 51.3, 49.7, 50.1, 51.9, 50.8, 50.2, 52.0],
                     lon=np.array([0.0, 0.1, 0.4, 2.9, 1.6, 0.7, -0.5, 4.0]))
 
