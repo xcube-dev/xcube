@@ -38,7 +38,7 @@ Monitor = Callable[[str, int], None]
                    'for example "-vvv".')
 @click.option('--dry-run', is_flag=True,
               help='Just read and process input, '
-                   'but don\'t produce any outputs.')
+                   'but don\'t produce any output.')
 def prune(dataset_path: str,
           verbose: Tuple[bool, ...],
           dry_run: bool):
