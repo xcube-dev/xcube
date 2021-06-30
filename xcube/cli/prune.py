@@ -67,7 +67,7 @@ def _prune(input_path: str,
 
     input_format = guess_dataset_format(input_path)
     if input_format != FORMAT_NAME_ZARR:
-        raise click.ClickException("input must be a dataset in ZARR format")
+        raise click.ClickException("input must be a dataset in Zarr format")
 
     num_deleted_total = 0
 
