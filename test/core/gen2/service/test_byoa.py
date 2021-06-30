@@ -1,4 +1,3 @@
-import json
 import os.path
 import sys
 import unittest
@@ -14,6 +13,20 @@ SERVER_URL = 'http://127.0.0.1:5000'
 
 
 class ByoaTest(unittest.TestCase):
+    """
+    This test demonstrates the BYOA feature within the
+    Generator service.
+    It requires you to first start "test/core/gen2/service/server.py"
+    which is a working processing service compatible with the
+    actual xcube Generator REST API.
+
+    This test sets up a generator request with a use-code configuration
+    that will cause the generator to
+    1. open a dataset "DATASET-1.zarr" in store "@test"
+    2. invoke function "process_dataset()" in module "processor" from
+       "test/core/byoa/test_data/user_code.zip".
+    3. write a dataset "OUTPUT.zarr" in store "@test"
+    """
 
     @classmethod
     def setUpClass(cls):
@@ -26,7 +39,7 @@ class ByoaTest(unittest.TestCase):
             server_path = os.path.join(PARENT_DIR, "server.py")
             print(f'Tests in {__file__} ignored,')
             print(f'test server at {SERVER_URL} is not running.')
-            print(f'You can run the test server using:')
+            print(f'You can start the test server using:')
             print(f'$ {sys.executable} {server_path}')
 
     def test_service_byoa(self):
@@ -74,9 +87,14 @@ class ByoaTest(unittest.TestCase):
             }
         }
 
-        service = CubeGeneratorService(CubeGeneratorRequest.from_dict(request_dict),
-                                       ServiceConfig(endpoint_url=SERVER_URL))
+        service = CubeGeneratorService(
+            CubeGeneratorRequest.from_dict(request_dict),
+            ServiceConfig(endpoint_url=SERVER_URL)
+        )
 
         data_id = service.generate_cube()
         print('Data ID:', data_id, flush=True)
+
         self.assertEqual('OUTPUT.zarr', data_id)
+        # TODO: verify OUTPUT.zarr contains variable "X" with expected values
+        #   Current problem: we have no clue where it is :)

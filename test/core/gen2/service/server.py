@@ -1,3 +1,14 @@
+"""
+A simple processing service compatible with the actual xcube Generator
+REST API (in xcube-hub).
+
+It generates data cubes by invoking "xcube gen2" CLI as local processes,
+see generate_cube().
+
+It creates and uses a simple data store named "test" that contains two
+datasets: DATASET-1.zarr and DATASET-2.zarr, see _init_local_store().
+"""
+
 import atexit
 import datetime
 import json
