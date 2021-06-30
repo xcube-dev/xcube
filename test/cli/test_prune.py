@@ -119,7 +119,7 @@ class PruneDataTest(CliTest):
                                  'precipitation', '0.3.76')
         dir_path = os.path.join(self.TEST_CUBE,
                                 'precipitation', '0', '3', '76')
-        self.assertEqual(f"Error: could neither find block file "
+        self.assertEqual(f"Error: could find neither block file "
                          f"{file_path} nor "
                          f"{dir_path}", actual_message)
 
