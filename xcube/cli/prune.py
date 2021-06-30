@@ -129,6 +129,6 @@ def _delete_block_file(input_path: str,
             monitor(f'Error: failed to delete '
                     f'block file {block_path}: {e}', 0)
     else:
-        monitor(f'Error: could neither find '
+        monitor(f'Error: could find neither '
                 f'block file {block_path_1} nor {block_path_2}', 0)
     return False
