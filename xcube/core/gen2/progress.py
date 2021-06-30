@@ -27,8 +27,10 @@ from typing import Sequence
 import requests
 
 from xcube.core.gen2.config import CallbackConfig
-from xcube.util.assertions import assert_given, assert_condition
-from xcube.util.progress import ProgressState, ProgressObserver
+from xcube.util.assertions import assert_given
+from xcube.util.assertions import assert_true
+from xcube.util.progress import ProgressState
+from xcube.util.progress import ProgressObserver
 
 
 def _format_time(t):
@@ -65,8 +67,8 @@ class _ThreadedProgressObserver(ProgressObserver):
         :type minimum: float
         """
         super().__init__()
-        assert_condition(dt >= 0, "The timer's time step must be >=0")
-        assert_condition(minimum >= 0, "The timer's minimum must be >=0")
+        assert_true(dt >= 0, "The timer's time step must be >=0")
+        assert_true(minimum >= 0, "The timer's minimum must be >=0")
         self._running = False
         self._start_time = None
         self._minimum = minimum
@@ -136,7 +138,10 @@ class _ThreadedProgressObserver(ProgressObserver):
         if self._running and len(state_stack) == 1:
             self._stop_timer(False)
 
-    def callback(self, sender: str, elapsed: float, state_stack: Sequence[ProgressState]):
+    def callback(self,
+                 sender: str,
+                 elapsed: float,
+                 state_stack: Sequence[ProgressState]):
         """
 
         :param sender:
@@ -147,14 +152,21 @@ class _ThreadedProgressObserver(ProgressObserver):
 
 
 class ApiProgressCallbackObserver(_ThreadedProgressObserver):
-    def __init__(self, callback_config: CallbackConfig, minimum: float = 0, dt: float = 1, timeout: float = False):
+    def __init__(self,
+                 callback_config: CallbackConfig,
+                 minimum: float = 0,
+                 dt: float = 1,
+                 timeout: float = False):
         super().__init__(minimum=minimum, dt=dt, timeout=timeout)
-        assert_condition(callback_config.api_uri and callback_config.access_token,
-                         "Both, api_uri and access_token must be given.")
+        assert_true(callback_config.api_uri and callback_config.access_token,
+                    "Both, api_uri and access_token must be given.")
 
         self.callback_config = callback_config
 
-    def callback(self, sender: str, elapsed: float, state_stack: Sequence[ProgressState]):
+    def callback(self,
+                 sender: str,
+                 elapsed: float,
+                 state_stack: Sequence[ProgressState]):
         assert_given(state_stack, "ProgressStates")
         state = state_stack[0]
         callback = {
@@ -175,17 +187,17 @@ class ApiProgressCallbackObserver(_ThreadedProgressObserver):
 
 
 class TerminalProgressCallbackObserver(_ThreadedProgressObserver):
-    def __init__(self, minimum: float = 0, dt: float = 1, timeout: float = False):
+    def __init__(self,
+                 minimum: float = 0,
+                 dt: float = 1,
+                 timeout: float = False):
         super().__init__(minimum=minimum, dt=dt, timeout=timeout)
 
-    def callback(self, sender: str, elapsed: float, state_stack: [ProgressState], prt: bool = True):
-        """
-
-        :param state_stack:
-        :param sender:
-        :param elapsed:
-        """
-
+    def callback(self,
+                 sender: str,
+                 elapsed: float,
+                 state_stack: [ProgressState],
+                 prt: bool = True):
         state = state_stack[0]
 
         bar = "#" * int(state.total_work * state.progress)
@@ -216,16 +228,23 @@ class ConsoleProgressObserver(ProgressObserver):
             print(self._format_progress(state_stack, status_label='done.'))
 
     @classmethod
-    def _format_progress(cls, state_stack: Sequence[ProgressState], status_label=None) -> str:
+    def _format_progress(cls,
+                         state_stack: Sequence[ProgressState],
+                         status_label=None) -> str:
         if status_label:
             state_stack_part = cls._format_state_stack(state_stack[0:-1])
-            state_part = cls._format_state(state_stack[-1], marker=status_label)
-            return state_part if not state_stack_part else state_stack_part + ': ' + state_part
+            state_part = cls._format_state(state_stack[-1],
+                                           marker=status_label)
+            return state_part \
+                if not state_stack_part \
+                else state_stack_part + ': ' + state_part
         else:
             return cls._format_state_stack(state_stack)
 
     @classmethod
-    def _format_state_stack(cls, state_stack: Sequence[ProgressState], marker=None) -> str:
+    def _format_state_stack(cls,
+                            state_stack: Sequence[ProgressState],
+                            marker=None) -> str:
         return ': '.join([cls._format_state(s) for s in state_stack])
 
     @classmethod

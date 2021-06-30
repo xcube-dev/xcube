@@ -23,7 +23,7 @@ from abc import ABC, abstractmethod
 from typing import Optional, Any
 
 from xcube.core.store import DataStorePool
-from xcube.util.assertions import assert_condition
+from xcube.util.assertions import assert_true
 from xcube.util.assertions import assert_instance
 from xcube.util.progress import observe_progress
 from .combiner import CubesCombiner
@@ -62,24 +62,29 @@ class CubeGenerator(ABC):
         at the same time.
 
         :param gen_config_path: Cube generation configuration. It may be
-            provided as a JSON or YAML file (file extensions ".json" or ".yaml").
+            provided as a JSON or YAML file
+            (file extensions ".json" or ".yaml").
             If None is passed, it is expected that
             the cube generator configuration is piped as a JSON string.
-        :param stores_config_path: A path to a JSON or YAML file that represents
-            mapping of store names to rized stores.
-        :param service_config_path: A path to a JSON or YAML file that configures an
-            xcube generator service.
+        :param stores_config_path: A path to a JSON or YAML file that
+            represents a mapping of store names to configured data stores.
+        :param service_config_path: A path to a JSON or YAML file
+            that configures an xcube generator service.
         :param verbosity: Level of verbosity, 0 means off.
         """
-        assert_instance(gen_config_path, (str, type(None)), 'gen_config_path')
-        assert_instance(stores_config_path, (str, type(None)), 'stores_config_path')
-        assert_instance(service_config_path, (str, type(None)), 'service_config_path')
-        assert_condition(not (stores_config_path is not None and
-                              service_config_path is not None),
-                         'stores_config_path and service_config_path cannot be'
-                         ' given at the same time.')
+        assert_instance(gen_config_path, (str, type(None)),
+                        'gen_config_path')
+        assert_instance(stores_config_path, (str, type(None)),
+                        'stores_config_path')
+        assert_instance(service_config_path, (str, type(None)),
+                        'service_config_path')
+        assert_true(not (stores_config_path is not None and
+                         service_config_path is not None),
+                    'stores_config_path and service_config_path cannot be'
+                    ' given at the same time.')
 
-        request = CubeGeneratorRequest.from_file(gen_config_path, verbosity=verbosity)
+        request = CubeGeneratorRequest.from_file(gen_config_path,
+                                                 verbosity=verbosity)
 
         if service_config_path is not None:
             from .service import ServiceConfig
@@ -183,5 +188,6 @@ class LocalCubeGenerator(CubeGenerator):
         return data_id
 
     def get_cube_info(self) -> CubeInfo:
-        informant = CubeInformant(request=self._request, store_pool=self._store_pool)
+        informant = CubeInformant(request=self._request,
+                                  store_pool=self._store_pool)
         return informant.generate()

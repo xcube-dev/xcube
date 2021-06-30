@@ -28,7 +28,7 @@ import jsonschema
 import yaml
 
 from xcube.core.gen2.error import CubeGeneratorError
-from xcube.util.assertions import assert_condition
+from xcube.util.assertions import assert_true
 from xcube.util.assertions import assert_given
 from xcube.util.jsonschema import JsonArraySchema
 from xcube.util.jsonschema import JsonObject
@@ -59,8 +59,10 @@ class CubeGeneratorRequest(JsonObject):
                  cube_config: CubeConfig = None,
                  output_config: OutputConfig = None,
                  callback_config: Optional[CallbackConfig] = None):
-        assert_condition(input_config or input_configs, 'one of input_config and input_configs must be given')
-        assert_condition(not (input_config and input_configs), 'input_config and input_configs cannot be given both')
+        assert_true(input_config or input_configs,
+                    'one of input_config and input_configs must be given')
+        assert_true(not (input_config and input_configs),
+                    'input_config and input_configs cannot be given both')
         if input_config:
             input_configs = [input_config]
         assert_given(input_configs, 'input_configs')
@@ -76,7 +78,9 @@ class CubeGeneratorRequest(JsonObject):
         return JsonObjectSchema(
             properties=dict(
                 input_config=InputConfig.get_schema(),
-                input_configs=JsonArraySchema(items=InputConfig.get_schema(), min_items=1),
+                input_configs=JsonArraySchema(
+                    items=InputConfig.get_schema(), min_items=1
+                ),
                 cube_config=CubeConfig.get_schema(),
                 output_config=OutputConfig.get_schema(),
                 callback_config=CallbackConfig.get_schema()
@@ -109,24 +113,34 @@ class CubeGeneratorRequest(JsonObject):
             raise CubeGeneratorError(f'{e}') from e
 
     @classmethod
-    def from_file(cls, request_file: Optional[str], verbosity: int = 0) -> 'CubeGeneratorRequest':
-        """Create new instance from a JSON file, or YAML file, or JSON passed via stdin."""
-        gen_config_dict = cls._load_gen_config_file(request_file, verbosity=verbosity)
+    def from_file(cls, request_file: Optional[str], verbosity: int = 0) \
+            -> 'CubeGeneratorRequest':
+        """
+        Create new instance from a JSON file, or YAML file,
+        or JSON passed via stdin.
+        """
+        gen_config_dict = cls._load_gen_config_file(request_file,
+                                                    verbosity=verbosity)
         if verbosity:
-            print(f'Cube generator configuration loaded from {request_file or "TTY"}.')
+            print(f'Cube generator configuration loaded '
+                  f'from {request_file or "TTY"}.')
         return cls.from_dict(gen_config_dict)
 
     @classmethod
-    def _load_gen_config_file(cls, gen_config_file: Optional[str], verbosity: int = 0) -> Dict:
+    def _load_gen_config_file(cls,
+                              gen_config_file: Optional[str],
+                              verbosity: int = 0) -> Dict:
 
         if gen_config_file is not None and not os.path.exists(gen_config_file):
-            raise CubeGeneratorError(f'Cube generator configuration "{gen_config_file}" not found.')
+            raise CubeGeneratorError(f'Cube generator configuration '
+                                     f'"{gen_config_file}" not found.')
 
         try:
             if gen_config_file is None:
                 if not sys.stdin.isatty():
                     if verbosity:
-                        print('Awaiting generator configuration JSON from TTY...')
+                        print('Awaiting generator'
+                              ' configuration JSON from TTY...')
                     return json.load(sys.stdin)
             else:
                 with open(gen_config_file, 'r') as fp:
@@ -135,6 +149,7 @@ class CubeGeneratorRequest(JsonObject):
                     else:
                         return yaml.safe_load(fp)
         except BaseException as e:
-            raise CubeGeneratorError(f'Error loading generator configuration "{gen_config_file}": {e}') from e
+            raise CubeGeneratorError(f'Error loading generator configuration'
+                                     f' "{gen_config_file}": {e}') from e
 
         raise CubeGeneratorError(f'Missing cube generator configuration.')

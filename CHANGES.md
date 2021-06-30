@@ -1,7 +1,7 @@
 ## Changes in 0.8.2 (in development)
 
-* Fixed the issue that xcube gen2 would not print tracebacks to stderr when 
-  raising CubeGeneratorErrors (#448).
+* Fixed the issue that xcube gen2 would not print tracebacks to stderr 
+  when raising errors of type `CubeGeneratorError` (#448).
 * Enhanced `xcube.core.normalize.normalize_dataset()` function to also 
   normalize datasets with latitudes given as 
   `latitude_centers` and to invert decreasing latitude coordinate values.
@@ -9,11 +9,17 @@
   a dataset and finally assert the result complies to the 
   [xcube dataset conventions](https://github.com/dcs4cop/xcube/blob/master/docs/source/cubespec.md).
 * Fixed that data stores `directory` and `s3` were not able to handle data 
-  identifiers that they had assigned themselves during `write_data()`.  (#450)
+  identifiers that they had assigned themselves during `write_data()`.  
+  (#450)
 * The `xcube prune` tool is no longer restricted to data cube datasets 
   and should now be able to deal with datasets that comprise very many 
   chunks. (#469)
-  
+* The `xcube.core.extract.get_cube_values_for_points()` function has been 
+  enhanced to also accept lists or tuples in the item values of 
+  the `points` arguments. (#431)   
+* Fixed exception raised in `xcube extract` CLI tool when called with the 
+  `--ref` option. This issue occurred with `xarray 0.18.2+`.
+
 ## Changes in 0.8.1
 
 * Improved support of datasets with time given as `cftime.DatetimeGregorian` 
@@ -619,7 +625,8 @@ versions.
 
 ### Fixes
 - `xcube gen` now parses time stamps correcly from input data. (#207)
-- Dataset multi-resolution pyramids (`*.levels` directories) can be stored in cloud object storage and are now usable with `xcube serve` (#179)
+- Dataset multi-resolution pyramids (`*.levels` directories) can be stored in cloud object storage
+  and are now usable with `xcube serve` (#179)
 - `xcube optimize` now consolidates metadata only after consolidating
   coordinate variables. (#194)
 - Removed broken links from `./README.md` (#197)
@@ -629,16 +636,20 @@ versions.
 
 ### New
 
-* Added first version of the [xcube documentation](https://xcube.readthedocs.io/) generated from `./docs` folder.
+* Added first version of the [xcube documentation](https://xcube.readthedocs.io/) generated from
+  `./docs` folder.
 
 ### Enhancements
 
 * Reorganisation of the Documentation and Examples Section (partly addressing #106)
 * Loosened python conda environment to satisfy conda-forge requirements
-* xcube is now available as a conda package on the conda-forge channel. To install latest xcube package, you can now type: `conda install -c conda-forge xcube`
+* xcube is now available as a conda package on the conda-forge channel. To install
+  latest xcube package, you can now type: `conda install -c conda-forge xcube`
 * Changed the unittesting code to minimize warnings reported by 3rd-party packages
-* Making CLI parameters consistent and removing or changing parameter abbreviations in case they were used twice for different params. (partly addressing #91)
-  For every CLI command which is generating an output a path must be provided by the option `-o`, `--output`. If not provided by the user, a default output_path is generated.
+* Making CLI parameters consistent and removing or changing parameter abbreviations
+  in case they were used twice for different params. (partly addressing #91)
+  For every CLI command which is generating an output a path must be provided by the
+  option `-o`, `--output`. If not provided by the user, a default output_path is generated.
   The following CLI parameter have changed and their abbreviation is not enabled anymore : 
 
     - `xcube gen -v` is now only `xcube gen --vars` or `xcube gen --variables` 
@@ -738,7 +749,7 @@ versions.
 * Restructured and clarified code base (#27)
 * Moved to Python 3.7 (#25)
 * Excluding all input processors except for the default one. They are now plugins and have own repositories within the 
-xcube's organisation. (#49)
+  xcube's organisation. (#49)
 
 
 ### Fixes
