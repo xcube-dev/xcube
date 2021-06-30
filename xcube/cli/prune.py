@@ -46,7 +46,7 @@ def prune(dataset_path: str,
     Delete empty chunks.
     Deletes all data files associated with empty
     (NaN-only) chunks in given DATASET,
-    which must have ZARR format.
+    which must have Zarr format.
     """
     max_verbosity = sum(verbose)
 
