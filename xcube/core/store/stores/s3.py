@@ -173,7 +173,11 @@ class S3DataStore(DefaultSearchMixin, MutableDataStore):
         data_opener_ids = self.get_data_opener_ids(data_id, type_specifier=type_specifier)
         if len(data_opener_ids) == 0:
             raise DataStoreError(f'Cannot describe data {data_id}')
-        data = self.open_data(data_id, data_opener_ids[0])
+        open_params = {}
+        op_schema = self._new_s3_opener(data_opener_ids[0]).get_open_data_params_schema(data_id)
+        if 'consolidated' in op_schema.properties:
+            open_params['consolidated'] = True
+        data = self.open_data(data_id, data_opener_ids[0], **open_params)
         return new_data_descriptor(data_id, data)
 
     def get_data_opener_ids(self, data_id: str = None, type_specifier: Optional[str] = None) -> Tuple[str, ...]:
