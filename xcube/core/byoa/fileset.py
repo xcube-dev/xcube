@@ -121,8 +121,10 @@ class FileSet(JsonObject):
 
     If *includes* wildcard patterns are given, only files
     whose paths match any of the patterns are included.
-    If *excludes* wildcard patterns are given, only files
-    whose paths do not match all of the patterns are included.
+    If *excludes* wildcard patterns are given, any file
+    matching one of the patterns is excluded.
+    The *includes*, if any, are applied before the
+    *excludes*, if any.
 
     :param path: Root path of the file set.
     :param sub_path: An optional sub-path relative to *path*.
@@ -353,7 +355,7 @@ class FileSet(JsonObject):
         with zipfile.ZipFile(zip_path, 'w') as zip_file:
             for key in self.keys():
                 file_path = os.path.join(local_dir_path, key)
-                zip_file.write(file_path, arcname=_trim_key(key, sub_path))
+                zip_file.write(file_path, arcname=_strip_sub_path_from_key(key, sub_path))
 
         return FileSet(zip_path, sub_path=self.sub_path)
 
@@ -421,7 +423,7 @@ def _normalize_pattern(pattern: str) -> List[str]:
                 f'*/{pattern}/*']
 
 
-def _trim_key(key: str, sub_path: str):
+def _strip_sub_path_from_key(key: str, sub_path: str):
     if key.startswith(sub_path):
         return key[len(sub_path):]
     return key
@@ -430,6 +432,5 @@ def _trim_key(key: str, sub_path: str):
 def _key_to_path(key: str, sub_path: str):
     key_path = key
     if sub_path:
-        if key.startswith(sub_path):
-            key_path = key[len(sub_path):]
+        key_path = _strip_sub_path_from_key(key, sub_path)
     return key_path.replace('/', os.path.sep)
