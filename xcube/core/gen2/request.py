@@ -28,7 +28,8 @@ import jsonschema
 import yaml
 
 from xcube.core.byoa import CodeConfig
-from xcube.util.assertions import assert_condition
+from xcube.util.assertions import assert_false
+from xcube.util.assertions import assert_true
 from xcube.util.assertions import assert_instance
 from xcube.util.jsonschema import JsonArraySchema
 from xcube.util.jsonschema import JsonObject
