@@ -37,8 +37,6 @@ class ServiceConfig(JsonObject):
                  client_id: str = None,
                  client_secret: str = None,
                  access_token: str = None):
-        # if not access_token and (not client_id or not client_secret):
-        #     raise CubeGeneratorError('client_id and client_secret must both be given')
         endpoint_url = endpoint_url or DEFAULT_ENDPOINT_URL
         if not endpoint_url.endswith('/'):
             endpoint_url += '/'
