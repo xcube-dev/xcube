@@ -66,7 +66,7 @@ class CubeGenerator(ABC):
             ".json" or ".yaml"). If None is passed, it is expected that
             the cube generator configuration is piped as a JSON string.
         :param stores_config_path: A path to a JSON or YAML file that
-            represents mapping of store names to rized stores.
+            represents mapping of store names to configured data stores.
         :param service_config_path: A path to a JSON or YAML file that
             configures an xcube generator service.
         :param verbosity: Level of verbosity, 0 means off.
