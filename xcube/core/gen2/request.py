@@ -64,7 +64,7 @@ class CubeGeneratorRequest(JsonObject):
                  callback_config: Optional[CallbackConfig] = None):
         assert_true(input_config or input_configs,
                          'one of input_config and input_configs must be given')
-        assert_condition(not (input_config and input_configs),
+        assert_false(input_config and input_configs,
                          'input_config and input_configs cannot be given both')
         if input_config is not None:
             assert_instance(input_config, InputConfig, 'input_config')
