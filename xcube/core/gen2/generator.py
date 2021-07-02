@@ -23,8 +23,8 @@ from abc import ABC, abstractmethod
 from typing import Optional, Any
 
 from xcube.core.store import DataStorePool
-from xcube.util.assertions import assert_true
 from xcube.util.assertions import assert_instance
+from xcube.util.assertions import assert_true
 from xcube.util.progress import observe_progress
 from .combiner import CubesCombiner
 from .informant import CubeInformant
@@ -62,22 +62,21 @@ class CubeGenerator(ABC):
         at the same time.
 
         :param gen_config_path: Cube generation configuration. It may be
-            provided as a JSON or YAML file
-            (file extensions ".json" or ".yaml").
-            If None is passed, it is expected that
+            provided as a JSON or YAML file (file extensions
+            ".json" or ".yaml"). If None is passed, it is expected that
             the cube generator configuration is piped as a JSON string.
         :param stores_config_path: A path to a JSON or YAML file that
-            represents a mapping of store names to configured data stores.
-        :param service_config_path: A path to a JSON or YAML file
-            that configures an xcube generator service.
+            represents mapping of store names to configured data stores.
+        :param service_config_path: A path to a JSON or YAML file that
+            configures an xcube generator service.
         :param verbosity: Level of verbosity, 0 means off.
         """
-        assert_instance(gen_config_path, (str, type(None)),
-                        'gen_config_path')
-        assert_instance(stores_config_path, (str, type(None)),
-                        'stores_config_path')
-        assert_instance(service_config_path, (str, type(None)),
-                        'service_config_path')
+        assert_instance(gen_config_path,
+                        (str, type(None)), 'gen_config_path')
+        assert_instance(stores_config_path,
+                        (str, type(None)), 'stores_config_path')
+        assert_instance(service_config_path,
+                        (str, type(None)), 'service_config_path')
         assert_true(not (stores_config_path is not None and
                          service_config_path is not None),
                     'stores_config_path and service_config_path cannot be'
@@ -148,13 +147,25 @@ class LocalCubeGenerator(CubeGenerator):
         if store_pool is not None:
             assert_instance(store_pool, DataStorePool, 'store_pool')
 
-        self._request = request
+        self._request = request.for_local()
         self._store_pool = store_pool if store_pool is not None \
             else DataStorePool()
         self._verbosity = verbosity
 
     def generate_cube(self) -> Any:
         request = self._request
+
+        # noinspection PyUnusedLocal
+        def _no_op_callable(ds, **kwargs):
+            return ds
+
+        code_config = request.code_config
+        if code_config is not None:
+            user_code_callable = code_config.get_callable()
+            user_code_callable_params = code_config.callable_params or {}
+        else:
+            user_code_callable = _no_op_callable
+            user_code_callable_params = {}
 
         if request.callback_config:
             ApiProgressCallbackObserver(request.callback_config).activate()
@@ -177,6 +188,7 @@ class LocalCubeGenerator(CubeGenerator):
 
             cm.will_work(10)
             cube = cube_combiner.process_cubes(cubes)
+            cube = user_code_callable(cube, **user_code_callable_params)
 
             cm.will_work(80)
             data_id = cube_writer.write_cube(cube)

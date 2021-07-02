@@ -68,17 +68,21 @@ class CubeGeneratorJobStatus(JsonObject):
 
     @classmethod
     def get_schema(cls) -> JsonObjectSchema:
-        return JsonObjectSchema(properties=dict(succeeded=JsonIntegerSchema(nullable=True),
-                                                failed=JsonIntegerSchema(nullable=True),
-                                                active=JsonIntegerSchema(nullable=True),
-                                                start_time=JsonStringSchema(nullable=True),
-                                                completion_time=JsonStringSchema(nullable=True),
-                                                conditions=JsonArraySchema(
-                                                    items=JsonObjectSchema(additional_properties=True),
-                                                    nullable=True
-                                                )),
-                                additional_properties=True,
-                                factory=cls)
+        return JsonObjectSchema(
+            properties=dict(
+                succeeded=JsonIntegerSchema(nullable=True),
+                failed=JsonIntegerSchema(nullable=True),
+                active=JsonIntegerSchema(nullable=True),
+                start_time=JsonStringSchema(nullable=True),
+                completion_time=JsonStringSchema(nullable=True),
+                conditions=JsonArraySchema(
+                    items=JsonObjectSchema(additional_properties=True),
+                    nullable=True
+                )
+            ),
+            additional_properties=True,
+            factory=cls
+        )
 
     @classmethod
     def from_dict(cls, value: Dict) -> 'CubeGeneratorJobStatus':
@@ -158,19 +162,23 @@ class CubeGeneratorResult(JsonObject):
 
     @classmethod
     def get_schema(cls) -> JsonObjectSchema:
-        return JsonObjectSchema(properties=dict(cubegen_id=JsonStringSchema(min_length=1),
-                                                status=CubeGeneratorJobStatus.get_schema(),
-                                                output=JsonArraySchema(
-                                                    items=JsonStringSchema(),
-                                                    nullable=True
-                                                ),
-                                                progress=JsonArraySchema(
-                                                    items=CubeGeneratorProgress.get_schema(),
-                                                    nullable=True
-                                                )),
-                                required=['cubegen_id', 'status'],
-                                additional_properties=True,
-                                factory=cls)
+        return JsonObjectSchema(
+            properties=dict(
+                cubegen_id=JsonStringSchema(min_length=1),
+                status=CubeGeneratorJobStatus.get_schema(),
+                output=JsonArraySchema(
+                    items=JsonStringSchema(),
+                    nullable=True
+                ),
+                progress=JsonArraySchema(
+                    items=CubeGeneratorProgress.get_schema(),
+                    nullable=True
+                )
+            ),
+            required=['cubegen_id', 'status'],
+            additional_properties=True,
+            factory=cls
+        )
 
     @classmethod
     def from_dict(cls, value: Dict) -> 'CubeGeneratorResult':

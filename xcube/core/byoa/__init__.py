@@ -19,4 +19,5 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-version = '0.9.0.dev0'
+from .config import CodeConfig
+from .fileset import FileSet

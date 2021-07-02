@@ -1,3 +1,19 @@
+## Changes in 0.9.0 (in development)
+
+* Added a new feature to xcube called "BYOA" - Bring your own Algorithm.
+  It is a generic utility that allows for execution of user-supplied 
+  Python code in both local and remote contexts. (#467)
+  The new `xcube.core.byoa` package hosts the BYOA implementation and API.
+  The entry point to the functionality is the `xcube.core.byoa.CodeConfig`
+  class. It is currently utilized by the xcube Cube Generator that can now
+  deal with an optional `code_config` request parameter. If given,
+  the generated data cube will be post-processed by the configured user-code.
+  The xcube Cube Generator with the BYOA feature is made available through the 
+  1. Generator API `xcube.core.gen2.LocalCubeGenerator` and
+    `xcube.core.gen2.service.CubeGeneratorService`;
+  2. Generator CLI `xcube gen2`.
+  
+  
 ## Changes in 0.8.2 (in development)
 
 * Fixed the issue that xcube gen2 would not print tracebacks to stderr 
@@ -32,7 +48,8 @@
   configured without `bucket_name` and the (Zarr) data was opened 
   with `consolidated=True`.
 
-* The functions `xcube.core.compute.compute_cube()` and `xcube.core.compute.compute_dataset()`
+* The functions `xcube.core.compute.compute_cube()` 
+  and `xcube.core.compute.compute_dataset()`
   can now alter the shape of input datasets. (#289)  
 
 ## Changes in 0.8.0
