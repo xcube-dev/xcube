@@ -21,4 +21,5 @@
 
 DEFAULT_CALLABLE_NAME = 'process_dataset'
 DEFAULT_MODULE_NAME = 'xcube_byoa'
-DEFAULT_TEMP_FILE_PREFIX = f'{DEFAULT_MODULE_NAME.replace("_", "-")}-'
+
+TEMP_FILE_PREFIX = 'xcube-byoa'

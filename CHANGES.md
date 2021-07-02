@@ -12,7 +12,9 @@
   1. Generator API `xcube.core.gen2.LocalCubeGenerator` and
     `xcube.core.gen2.service.CubeGeneratorService`;
   2. Generator CLI `xcube gen2`.
-  
+* Added a new utility module `xcube.util.temp` that allows for creating 
+  temporary files and directories that will be deleted when the current 
+  process ends.
   
 ## Changes in 0.8.2 (in development)
 

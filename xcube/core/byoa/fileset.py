@@ -26,15 +26,17 @@ import zipfile
 from typing import Any, Dict, Optional, List, Collection, Iterator, Union
 
 import fsspec
+import fsspec.implementations.zip
 
+from xcube.core.byoa.constants import TEMP_FILE_PREFIX
 from xcube.util.assertions import assert_given
 from xcube.util.assertions import assert_instance
 from xcube.util.jsonschema import JsonArraySchema
 from xcube.util.jsonschema import JsonObject
 from xcube.util.jsonschema import JsonObjectSchema
 from xcube.util.jsonschema import JsonStringSchema
-from .temp import new_temp_dir
-from .temp import new_temp_file
+from xcube.util.temp import new_temp_dir
+from xcube.util.temp import new_temp_file
 
 
 class _FileSetDetails:
@@ -85,8 +87,8 @@ class _FileSetDetails:
             fs, root = self.fs, self.root
             if self.local_path \
                     and zipfile.is_zipfile(self.local_path):
-                from fsspec.implementations.zip import ZipFileSystem
-                fs, root = ZipFileSystem(self.local_path), ''
+                fs = fsspec.implementations.zip.ZipFileSystem(self.local_path)
+                root = ''
             self._mapper = fsspec.FSMap(root, fs)
         return self._mapper
 
@@ -248,7 +250,8 @@ class FileSet(JsonObject):
                 break
 
         if root.endswith('/'):
-            temp_dir = new_temp_dir(suffix=suffix)
+            temp_dir = new_temp_dir(prefix=TEMP_FILE_PREFIX,
+                                    suffix=suffix)
             # TODO: replace by loop so we can apply includes/excludes
             #   before downloading actual files. See impl of fs.get().
             fs.get(root, temp_dir + "/", recursive=True)
@@ -257,7 +260,8 @@ class FileSet(JsonObject):
                            includes=self.includes,
                            excludes=self.excludes)
         else:
-            temp_file = new_temp_file(suffix=suffix)
+            _, temp_file = new_temp_file(prefix=TEMP_FILE_PREFIX,
+                                         suffix=suffix)
             fs.get_file(root, temp_file)
             return FileSet(temp_file,
                            sub_path=self.sub_path,
@@ -326,7 +330,7 @@ class FileSet(JsonObject):
                 # We should assert an empty existing directory
                 pass
         else:
-            dir_path = new_temp_dir()
+            dir_path = new_temp_dir(prefix=TEMP_FILE_PREFIX)
 
         mapper = self._get_details().mapper
 
@@ -348,14 +352,16 @@ class FileSet(JsonObject):
         local_dir_path = self.get_local_path()
 
         if not zip_path:
-            zip_path = new_temp_file(suffix='.zip')
+            _, zip_path = new_temp_file(prefix=TEMP_FILE_PREFIX,
+                                        suffix='.zip')
 
         sub_path = _normalize_sub_path(self.sub_path)
 
         with zipfile.ZipFile(zip_path, 'w') as zip_file:
             for key in self.keys():
                 file_path = os.path.join(local_dir_path, key)
-                zip_file.write(file_path, arcname=_strip_sub_path_from_key(key, sub_path))
+                zip_file.write(file_path,
+                               arcname=_strip_sub_path_from_key(key, sub_path))
 
         return FileSet(zip_path, sub_path=self.sub_path)
 

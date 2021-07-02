@@ -33,10 +33,11 @@ from xcube.util.jsonschema import JsonBooleanSchema
 from xcube.util.jsonschema import JsonObject
 from xcube.util.jsonschema import JsonObjectSchema
 from xcube.util.jsonschema import JsonStringSchema
+from xcube.util.temp import new_temp_dir
 from .constants import DEFAULT_CALLABLE_NAME
 from .constants import DEFAULT_MODULE_NAME
+from .constants import TEMP_FILE_PREFIX
 from .fileset import FileSet
-from .temp import new_temp_dir
 
 
 class CodeConfig(JsonObject):
@@ -496,7 +497,7 @@ def _inline_code_to_module(inline_code: str,
                            callable_ref: str,
                            callable_params: Dict[str, Any] = None):
     module_name, callable_name = _normalize_callable_ref(callable_ref)
-    dir_path = new_temp_dir()
+    dir_path = new_temp_dir(prefix=TEMP_FILE_PREFIX)
     with open(os.path.join(dir_path, f'{module_name}.py'), 'w') as stream:
         stream.write(inline_code)
     return CodeConfig.from_file_set(file_set=FileSet(dir_path),
