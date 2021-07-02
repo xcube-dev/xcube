@@ -360,6 +360,8 @@ class FileSet(JsonObject):
         return FileSet(zip_path, sub_path=self.sub_path)
 
     def _accepts_key(self, key: str) -> bool:
+        if key == '':
+            return False
         key = '/' + key.replace(os.path.sep, "/")
         return _key_matches(key, self._include_patterns, True) \
                and not _key_matches(key, self._exclude_patterns, False)
