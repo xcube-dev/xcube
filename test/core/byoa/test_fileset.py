@@ -39,7 +39,7 @@ class FileSetTest(unittest.TestCase):
     def _test_keys_for_local(self, rel_path: str):
         path = os.path.join(PARENT_DIR, rel_path)
 
-        file_set = FileSet(path)
+        file_set = FileSet(path, excludes=['__pycache__'])
         self.assertEqual(
             {
                 'NOTES.md',
@@ -58,7 +58,7 @@ class FileSetTest(unittest.TestCase):
             },
             set(file_set.keys()))
 
-        file_set = FileSet(path, excludes=['NOTES.md'])
+        file_set = FileSet(path, excludes=['NOTES.md', '__pycache__'])
         self.assertEqual(
             {
                 'processor.py',
@@ -70,7 +70,8 @@ class FileSetTest(unittest.TestCase):
     def test_to_local_zip_then_to_local_dir(self):
         dir_path = os.path.join(PARENT_DIR, 'test_data', 'user_code')
 
-        zip_file_set = FileSet(dir_path).to_local_zip()
+        file_set = FileSet(dir_path, excludes=['__pycache__'])
+        zip_file_set = file_set.to_local_zip()
         self.assertIsInstance(zip_file_set, FileSet)
         self.assertTrue(zip_file_set.is_local())
         self.assertFalse(zip_file_set.is_local_dir())
