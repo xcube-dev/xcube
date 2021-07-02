@@ -313,8 +313,9 @@ class S3DataStore(DefaultSearchMixin, MutableDataStore):
         self._maybe_update_json_registry()
 
     def deregister_data(self, data_id: str):
-        self._registry.pop(data_id)
-        self._maybe_update_json_registry()
+        if data_id in self._registry:
+            self._registry.pop(data_id)
+            self._maybe_update_json_registry()
 
     def _maybe_update_json_registry(self):
         if self._s3.exists(f'{self._bucket_name}/{_REGISTRY_FILE}'):
