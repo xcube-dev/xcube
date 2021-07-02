@@ -9,8 +9,8 @@ dependencies:
   - affine >=2.2
   - click >=7.0
   - cmocean >=2.0
-  - dask >=2021.4
-  - distributed >=2021.4
+  - dask >=2021.6
+  - distributed >=2021.6
   - fiona >=1.8
   - fsspec >=2021.6
   - gdal >=3.0
