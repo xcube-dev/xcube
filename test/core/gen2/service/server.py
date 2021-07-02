@@ -9,20 +9,20 @@ It creates and uses a simple data store named "test" that contains two
 datasets: DATASET-1.zarr and DATASET-2.zarr, see _init_local_store().
 """
 
-import atexit
 import datetime
 import json
 import os
 import os.path
-import shutil
 import subprocess
-import tempfile
 from typing import Dict, Any, Tuple, Optional
 
 import click
 import flask
 import werkzeug.exceptions
 import yaml
+
+from xcube.util.temp import new_temp_dir
+from xcube.util.temp import new_temp_file
 
 app = flask.Flask(__name__)
 
@@ -79,7 +79,7 @@ def _new_request_file(request: flask.Request) -> str:
 
         # "user_code" is a ZIP archive with the user code.
         user_code_storage = request_files.get('user_code')
-        user_code_path = _new_temp_file(suffix=user_code_storage.filename)
+        _, user_code_path = new_temp_file(suffix=user_code_storage.filename)
         user_code_storage.save(user_code_path)
         print(f' * User code file: {user_code_path}')
     else:
@@ -103,7 +103,7 @@ def _new_request_file(request: flask.Request) -> str:
                 file_set['path'] = user_code_path
 
     # Write the request to a temporary file
-    request_path = _new_temp_file(suffix='_request.yaml')
+    _, request_path = new_temp_file(suffix='_request.yaml')
     with open(request_path, 'w') as stream:
         yaml.dump(request_dict, stream)
 
@@ -117,14 +117,14 @@ def _init_local_store():
     """
     from xcube.core.new import new_cube
 
-    local_base_dir = _new_temp_dir(suffix='_local_store')
+    local_base_dir = new_temp_dir(suffix='_local_store')
     dataset_1 = new_cube(width=36, height=18, variables={'A': 0.1, 'B': 0.2})
     dataset_2 = new_cube(width=36, height=18, variables={'C': 0.2, 'D': 0.3})
     dataset_1.to_zarr(os.path.join(local_base_dir, 'DATASET-1.zarr'))
     dataset_2.to_zarr(os.path.join(local_base_dir, 'DATASET-2.zarr'))
 
     global STORES_CONFIG_PATH
-    STORES_CONFIG_PATH = _new_temp_file(suffix='_stores.yaml')
+    _, STORES_CONFIG_PATH = new_temp_file(suffix='_stores.yaml')
     with open(STORES_CONFIG_PATH, 'w') as stream:
         yaml.dump(
             {
@@ -175,35 +175,6 @@ def _process_to_generator_result(process: Optional[subprocess.Popen],
         'output': output,
     })
     return result
-
-
-def _new_temp_file(suffix=''):
-    return _register_for_removal(
-        tempfile.mktemp(prefix='xcube-gen2-testserver_', suffix=suffix)
-    )
-
-
-def _new_temp_dir(suffix=''):
-    return _register_for_removal(
-        tempfile.mkdtemp(prefix='xcube-gen2-testserver_', suffix=suffix)
-    )
-
-
-def _register_for_removal(path: str) -> str:
-    atexit.register(_remove_path, path)
-    return path
-
-
-def _remove_path(path: str):
-    # noinspection PyBroadException
-    try:
-        print(f' * Removing {path}')
-        if os.path.isdir(path):
-            shutil.rmtree(path, ignore_errors=True)
-        elif os.path.isfile(path):
-            os.remove(path)
-    except BaseException:
-        pass
 
 
 @click.command()

@@ -3,7 +3,7 @@ import os.path
 import os.path
 import unittest
 
-from xcube.core.byoa.constants import DEFAULT_TEMP_FILE_PREFIX
+from xcube.core.byoa.constants import TEMP_FILE_PREFIX
 from xcube.core.byoa import FileSet
 
 PARENT_DIR = os.path.dirname(__file__)
@@ -76,7 +76,7 @@ class FileSetTest(unittest.TestCase):
         self.assertFalse(zip_file_set.is_local_dir())
         self.assertTrue(zip_file_set.is_local_zip())
         self.assertRegex(zip_file_set.path,
-                         f'^.*{DEFAULT_TEMP_FILE_PREFIX}.*\\.zip$')
+                         f'^.*{TEMP_FILE_PREFIX}.*\\.zip$')
         self.assertEqual(
             {
                 'NOTES.md',
@@ -93,7 +93,7 @@ class FileSetTest(unittest.TestCase):
         self.assertTrue(dir_file_set.is_local_dir())
         self.assertFalse(dir_file_set.is_local_zip())
         self.assertRegex(dir_file_set.path,
-                         f'^.*{DEFAULT_TEMP_FILE_PREFIX}.*$')
+                         f'^.*{TEMP_FILE_PREFIX}.*$')
         self.assertEqual(
             {
                 'NOTES.md',
@@ -113,7 +113,7 @@ class FileSetTest(unittest.TestCase):
         self.assertTrue(dir_file_set.is_local_dir())
         self.assertFalse(dir_file_set.is_local_zip())
         self.assertRegex(dir_file_set.path,
-                         f'^.*{DEFAULT_TEMP_FILE_PREFIX}.*$')
+                         f'^.*{TEMP_FILE_PREFIX}.*$')
         self.assertEqual(
             {
                 'NOTES.md',
@@ -130,7 +130,7 @@ class FileSetTest(unittest.TestCase):
         self.assertFalse(zip_file_set.is_local_dir())
         self.assertTrue(zip_file_set.is_local_zip())
         self.assertRegex(zip_file_set.path,
-                         f'^.*{DEFAULT_TEMP_FILE_PREFIX}.*\\.zip$')
+                         f'^.*{TEMP_FILE_PREFIX}.*\\.zip$')
         self.assertEqual(
             {
                 'NOTES.md',
