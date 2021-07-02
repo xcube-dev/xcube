@@ -19,6 +19,10 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+# noinspection PyUnresolvedReferences
+from xcube.core.byoa import CodeConfig
+# noinspection PyUnresolvedReferences
+from xcube.core.byoa import FileSet
 from .config import CallbackConfig
 from .config import CubeConfig
 from .config import InputConfig
