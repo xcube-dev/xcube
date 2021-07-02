@@ -1,5 +1,9 @@
-# PyCharm
-.idea/
+# IDEs
+/.idea/
+/.vscode/
+
+# Dask
+dask-worker-space/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
