@@ -1,3 +1,7 @@
+# xcube
+edc-service.yml
+edc-stores.yml
+
 # IDEs
 /.idea/
 /.vscode/
