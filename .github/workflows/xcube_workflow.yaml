@@ -52,7 +52,7 @@ jobs:
           echo "EVENT: ${{ github.event_name }}"
       - uses: mr-smithers-excellent/docker-build-push@v5
         name: build-push-docker-image-latest
-        if: ${{ github.event_name == 'push'K  }}
+        if: ${{ github.event_name == 'push'  }}
         with:
           image: ${{ env.ORG_NAME }}/${{ env.APP_NAME }}
           tags: master, latest
