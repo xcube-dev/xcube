@@ -1,5 +1,4 @@
-# Image from https://hub.docker.com (syntax: repo/image:version)
-FROM continuumio/miniconda3:latest
+FROM quay.io/bcdev/xcube-python-base:0.8.0
 
 ARG INSTALL_PLUGINS=1
 
@@ -12,16 +11,11 @@ LABEL conda_env=xcube
 # Ensure usage of bash (ensures conda calls succeed)
 SHELL ["/bin/bash", "-c"]
 
-# Update system and install dependencies
+USER root
+# Update system for security checks
 RUN apt-get -y update && apt-get -y upgrade
-# Allow editing files in container
-RUN apt-get -y install vim
 
-# Install mamba as a much faster conda replacement. We specify an
-# explicit version number because (1) it makes installation of mamba
-# much faster and (2) mamba is still in beta, so it's best to stick
-# to a known-good version.
-RUN conda install -c conda-forge mamba
+USER xcube
 
 # Setup conda environment
 # Copy yml config into image
@@ -32,11 +26,10 @@ COPY environment.yml /tmp/environment.yml
 RUN mamba env create --file /tmp/environment.yml
 
 # Set work directory for xcube installation
-RUN mkdir /xcube
-WORKDIR /xcube
+WORKDIR /home/xcube
 
 # Copy sources into xcube
-COPY . /xcube
+COPY . ./
 
 # Setup xcube package.
 RUN source activate xcube && python setup.py install
@@ -55,6 +48,4 @@ RUN bash install_xcube-datastore.sh xcube-cds ${XCUBE_CDS_VERSION} release
 EXPOSE 8080
 
 # Start bash, so we can invoke xcube CLI.
-ENTRYPOINT ["/bin/bash", "-c"]
-# By default, activate xcube environment and print usage help.
-CMD ["source activate xcube && xcube serve -v --address 0.0.0.0 --port 8080 -c ./examples/serve/demo/config.yml"]
+CMD ["/bin/bash"]
