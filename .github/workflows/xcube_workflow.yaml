@@ -1,4 +1,4 @@
-name: Unittest xcube-hub
+name: Unittest and docker builds
 
 on:
   push:
@@ -8,23 +8,21 @@ on:
 jobs:
   unittest:
     runs-on: ubuntu-latest
-    env:
-      UNITTEST_SKIP_K8S: 0
     steps:
       - uses: actions/checkout@v2
       - uses: conda-incubator/setup-miniconda@v2
         with:
           mamba-version: "*"
           channels: conda-forge
-          activate-environment: xcube-hub
+          activate-environment: xcube
           environment-file: environment.yml
-      - name: setup xcube-hub
+      - name: setup-xcube
         shell: bash -l {0}
         run: |
           conda info
           conda list
           python setup.py develop
-      - name: unittest-xcube-hub
+      - name: unittest-xcube
         shell: bash -l {0}
         run: |
           pip install pytest pytest-cov
