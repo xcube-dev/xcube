@@ -34,7 +34,7 @@ jobs:
           verbose: true # optional (default = false)
   build-docker-image:
     runs-on: ubuntu-latest
-    needs: unittest
+    #needs: unittest
     name: build-docker-image
     env:
       APP_NAME: xcube
@@ -52,7 +52,7 @@ jobs:
           echo "EVENT: ${{ github.event_name }}"
       - uses: mr-smithers-excellent/docker-build-push@v5
         name: build-push-docker-image-latest
-        if: ${{ github.event_name == 'push' && steps.release.outputs.tag == 'master'  }}
+        if: ${{ github.event_name == 'push'K  }}
         with:
           image: ${{ env.ORG_NAME }}/${{ env.APP_NAME }}
           tags: master, latest
