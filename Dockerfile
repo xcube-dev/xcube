@@ -1,10 +1,12 @@
 # Image from https://hub.docker.com (syntax: repo/image:version)
 FROM continuumio/miniconda3:latest
 
+ARG INSTALL_PLUGINS=1
+
 # Metadata
 LABEL maintainer="helge.dzierzon@brockmann-consult.de"
 LABEL name=xcube
-LABEL version=0.8.0.dev7
+LABEL version=0.9.0.dev0
 LABEL conda_env=xcube
 
 # Ensure usage of bash (ensures conda calls succeed)
@@ -19,7 +21,7 @@ RUN apt-get -y install vim
 # explicit version number because (1) it makes installation of mamba
 # much faster and (2) mamba is still in beta, so it's best to stick
 # to a known-good version.
-RUN conda install -c conda-forge mamba=0.7.14
+RUN conda install -c conda-forge mamba
 
 # Setup conda environment
 # Copy yml config into image
@@ -38,6 +40,16 @@ COPY . /xcube
 
 # Setup xcube package.
 RUN source activate xcube && python setup.py install
+
+WORKDIR /tmp
+ADD scripts/install_xcube-datastore.sh ./
+
+ENV XCUBE_SH_VERSION=0.8.0
+RUN bash install_xcube-datastore.sh xcube-sh ${XCUBE_SH_VERSION} release
+ENV XCUBE_CCI_VERSION=0.8.1.dev3
+RUN bash install_xcube-datastore.sh xcube-cci ${XCUBE_CCI_VERSION} release
+ENV XCUBE_CDS_VERSION=0.8.1
+RUN bash install_xcube-datastore.sh xcube-cds ${XCUBE_CDS_VERSION} release
 
 # Export web server port
 EXPOSE 8080
