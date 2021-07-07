@@ -33,11 +33,9 @@ class CodeConfigTest(unittest.TestCase):
 
     def test_from_code_with_function_refs(self):
         code_config = CodeConfig.from_code(
-            code=[
-                'import xarray as xr\n',
-                modify_dataset,
-                transform_dataset
-            ],
+            'import xarray as xr\n',
+            modify_dataset,
+            transform_dataset,
             module_name='user_code_2',
             callable_params={'text': 'good bye'}
         )
