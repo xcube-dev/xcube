@@ -44,9 +44,9 @@ _BASE_HEADERS = {
 R = TypeVar('R')
 
 
-class CubeGeneratorService(CubeGenerator):
+class RemoteCubeGenerator(CubeGenerator):
     """
-    Service for generating data cubes.
+    A cube generator that uses a remote cube generator service.
 
     Creates cube views from one or more cube stores, resamples them to a
     common grid, optionally performs some cube transformation, and writes

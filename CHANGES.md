@@ -10,7 +10,7 @@
   the generated data cube will be post-processed by the configured user-code.
   The xcube Cube Generator with the BYOA feature is made available through the 
   1. Generator API `xcube.core.gen2.LocalCubeGenerator` and
-    `xcube.core.gen2.service.CubeGeneratorService`;
+    `xcube.core.gen2.service.RemoteCubeGenerator`;
   2. Generator CLI `xcube gen2`.
 * Added a new utility module `xcube.util.temp` that allows for creating 
   temporary files and directories that will be deleted when the current 

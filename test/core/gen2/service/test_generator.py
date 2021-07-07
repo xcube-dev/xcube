@@ -6,7 +6,7 @@ import requests_mock
 from test.util.test_progress import TestProgressObserver
 from xcube.core.gen2 import CubeGeneratorError
 from xcube.core.gen2.request import CubeGeneratorRequest
-from xcube.core.gen2.service import CubeGeneratorService
+from xcube.core.gen2.service import RemoteCubeGenerator
 from xcube.core.gen2.service import ServiceConfig
 from xcube.core.gen2.service.response import CostEstimation
 from xcube.core.gen2.service.response import CubeInfoWithCosts
@@ -38,7 +38,7 @@ def result(worked, total_work, failed=False, output: List[str] = None):
     return dict(json=json)
 
 
-class CubeGeneratorServiceTest(unittest.TestCase):
+class RemoteCubeGeneratorTest(unittest.TestCase):
     ENDPOINT_URL = 'https://xcube-gen.com/api/v2/'
 
     CUBE_GEN_CONFIG = dict(
@@ -55,7 +55,7 @@ class CubeGeneratorServiceTest(unittest.TestCase):
     )
 
     def setUp(self) -> None:
-        self.service = CubeGeneratorService(
+        self.service = RemoteCubeGenerator(
             CubeGeneratorRequest.from_dict(
                 self.CUBE_GEN_CONFIG),
             ServiceConfig(endpoint_url=self.ENDPOINT_URL,

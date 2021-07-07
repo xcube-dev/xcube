@@ -48,7 +48,8 @@ import click
               is_flag=True,
               multiple=True,
               help='Control amount of information dumped to stdout.'
-                   ' May be given multiple time, e.g. "-vvv".')
+                   ' May be given multiple time to output more details,'
+                   ' e.g. "-vvv".')
 def gen2(request_path: str,
          stores_config_path: str = None,
          service_config_path: str = None,
@@ -109,10 +110,12 @@ def gen2(request_path: str,
     verbosity = len(verbose) if verbose else 0
 
     try:
-        generator = CubeGenerator.from_file(request_path,
-                                            stores_config_path=stores_config_path,
-                                            service_config_path=service_config_path,
-                                            verbosity=verbosity)
+        generator = CubeGenerator.from_file(
+            request_path,
+            stores_config_path=stores_config_path,
+            service_config_path=service_config_path,
+            verbosity=verbosity
+        )
         if info:
             def dump_cube_info(cube_info: CubeInfo):
                 import sys

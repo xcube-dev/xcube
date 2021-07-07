@@ -87,12 +87,12 @@ class CubeGenerator(ABC):
 
         if service_config_path is not None:
             from .service import ServiceConfig
-            from .service import CubeGeneratorService
+            from .service import RemoteCubeGenerator
             service_config = ServiceConfig.from_file(service_config_path) \
                 if service_config_path is not None else None
-            return CubeGeneratorService(request,
-                                        service_config=service_config,
-                                        verbosity=verbosity)
+            return RemoteCubeGenerator(request,
+                                       service_config=service_config,
+                                       verbosity=verbosity)
         else:
             store_pool = DataStorePool.from_file(stores_config_path) \
                 if stores_config_path is not None else None

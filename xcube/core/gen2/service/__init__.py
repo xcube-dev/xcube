@@ -20,5 +20,5 @@
 # SOFTWARE.
 
 from .config import ServiceConfig
-from .generator import CubeGeneratorService
+from .generator import RemoteCubeGenerator
 from .response import CubeInfoWithCosts
