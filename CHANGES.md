@@ -15,6 +15,9 @@
 * xcube now issues a warning, if a data cube is opened from object 
   storage, and credentials have been neither passed not can be found, 
   and the object storage has been opened with the default `anon=False`. (#412)
+* xcube no longer internally caches directory listings, which prevents 
+  the situation where a data cube, that has recently been written into object 
+  storage, cannot be found. 
 * Added a new utility module `xcube.util.temp` that allows for creating 
   temporary files and directories that will be deleted when the current 
   process ends.
