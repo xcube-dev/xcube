@@ -618,6 +618,10 @@ def new_s3_file_system(s3_kwargs: Mapping[str, Any] = None,
     """
 
     s3_kwargs = s3_kwargs or {}
+    if 'use_listings_cache' not in s3_kwargs:
+        # The default is not to cache any directory listings
+        # because we want current contents
+        s3_kwargs['use_listings_cache'] = False
     client_kwargs = s3_kwargs.pop('client_kwargs', {})
     client_kwargs.update(s3_client_kwargs or {})
     try:
