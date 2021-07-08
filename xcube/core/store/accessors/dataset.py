@@ -245,7 +245,7 @@ class S3Mixin:
         aws_secret_access_key = params.pop('aws_secret_access_key', None)
         aws_session_token = params.pop('aws_session_token', None)
         anon = params.pop('anon', False)
-        region_name = params.pop('region_name', None),
+        region_name = params.pop('region_name', None)
         endpoint_url = params.pop('endpoint_url', None)
         s3 = new_s3_file_system(
             s3_kwargs=dict(
