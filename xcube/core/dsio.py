@@ -625,8 +625,10 @@ def new_s3_file_system(s3_kwargs: Mapping[str, Any] = None,
     client_kwargs = s3_kwargs.pop('client_kwargs', {})
     client_kwargs.update(s3_client_kwargs or {})
     try:
-        return s3fs.S3FileSystem(**s3_kwargs,
+        s3 = s3fs.S3FileSystem(**s3_kwargs,
                                  client_kwargs=client_kwargs)
+        s3.exists('')  # Force potential NoCredentialsError
+        return s3
     except botocore.exceptions.NoCredentialsError:
         if s3_kwargs.get('anon') is False:
             warnings.warn('No object storage credentials where'
