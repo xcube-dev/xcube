@@ -15,6 +15,8 @@
 * Added a new utility module `xcube.util.temp` that allows for creating 
   temporary files and directories that will be deleted when the current 
   process ends.
+* Removed warning `module 'xcube_xyz' looks like an xcube-plugin but 
+  lacks a callable named 'init_plugin`.
   
 ## Changes in 0.8.2 (in development)
 

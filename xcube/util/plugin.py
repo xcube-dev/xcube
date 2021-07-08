@@ -151,7 +151,6 @@ class _ModuleEntryPoint:
         Load function "init_plugin()" either from "<module_name>.plugin" or "<module_name>"
         :return: plugin init function
         """
-        module_name = self._module_name
         try:
             plugin_module = importlib.import_module(self._module_name + '.' + PLUGIN_MODULE_NAME)
         except ModuleNotFoundError:
@@ -163,8 +162,8 @@ class _ModuleEntryPoint:
             if callable(module_func):
                 return module_func
 
-        warnings.warn(f'module {module_name!r} looks like an xcube-plugin '
-                      f'but lacks a callable named {module_func_name!r}')
+        # Here: The module name looks like an xcube-plugin
+        # but lacks a callable named module_func_name
 
         return None
 
