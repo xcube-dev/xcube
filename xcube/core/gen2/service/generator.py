@@ -35,6 +35,7 @@ from .response import CubeInfoWithCosts
 from ..error import CubeGeneratorError
 from ..generator import CubeGenerator
 from ..request import CubeGeneratorRequest
+from ..response import CubeInfo
 
 _BASE_HEADERS = {
     "Accept": "application/json",
@@ -112,8 +113,9 @@ class RemoteCubeGenerator(CubeGenerator):
         response = requests.post(self.endpoint_op('cubegens/info'),
                                  json=request_data,
                                  headers=self.auth_headers)
+        response_type = CubeInfoWithCosts if self._access_token else CubeInfo
         return self._parse_response(response,
-                                    CubeInfoWithCosts,
+                                    response_type=response_type,
                                     request_data=request_data)
 
     def generate_cube(self) -> Any:
@@ -160,7 +162,7 @@ class RemoteCubeGenerator(CubeGenerator):
             request_dict['code_config']['file_set']['path'] \
                 = user_code_filename
             return requests.put(
-                self.endpoint_op('cubegens'),
+                self.endpoint_op('cubegens/code'),
                 headers=self.auth_headers,
                 files={
                     'body': (

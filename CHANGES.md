@@ -17,6 +17,9 @@
   process ends.
 * Added a GitHub action that will run xcube unit tests, and build and push Docker images. The
   version tag of the image is either `latest` when the master changed or the release tag 
+* Removed warning `module 'xcube_xyz' looks like an xcube-plugin but 
+  lacks a callable named 'init_plugin`.
+
   
 ## Changes in 0.8.2 (in development)
 
