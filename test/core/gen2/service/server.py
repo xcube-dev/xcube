@@ -37,18 +37,12 @@ def status():
 
 @app.route('/cubegens', methods=['PUT'])
 def generate_cube():
-    request_path = _new_request_file(flask.request)
-    try:
-        process = subprocess.Popen(['xcube', 'gen2',
-                                    '-vvv',
-                                    '--stores', STORES_CONFIG_PATH,
-                                    request_path],
-                                   stderr=subprocess.STDOUT)
-        return _process_to_generator_result(process, None)
-    except subprocess.CalledProcessError as e:
-        raise werkzeug.exceptions.InternalServerError(
-            'failed to invoke generator process'
-        ) from e
+    return _generate_cube()
+
+
+@app.route('/cubegens/code', methods=['PUT'])
+def generate_cube_from_code():
+    return _generate_cube()
 
 
 @app.route('/cubegens/<job_id>', methods=['GET'])
@@ -58,7 +52,45 @@ def get_cube_generator_status(job_id: str):
 
 @app.route('/cubegens/info', methods=['POST'])
 def get_cube_info():
-    raise werkzeug.exceptions.NotImplemented()
+    return _get_cube_info()
+
+
+def _generate_cube():
+    request_path = _new_request_file(flask.request)
+    args = ['xcube', 'gen2',
+            '-vv',
+            '--stores', STORES_CONFIG_PATH,
+            request_path]
+    try:
+        process = subprocess.Popen(args, stderr=subprocess.STDOUT)
+    except subprocess.CalledProcessError as e:
+        raise werkzeug.exceptions.InternalServerError(
+            f'failed to invoke generator process: {args!r}'
+        ) from e
+    return _process_to_generator_result(process, None)
+
+
+def _get_cube_info():
+    request_path = _new_request_file(flask.request)
+    args = ['xcube', 'gen2',
+            '--info',
+            '--stores', STORES_CONFIG_PATH,
+            request_path]
+    try:
+        output = subprocess.check_output(args)
+    except subprocess.CalledProcessError as e:
+        raise werkzeug.exceptions.InternalServerError(
+            f'failed to invoke generator process: {args!r}'
+        ) from e
+    json_text = output.decode('utf-8')
+    ansi_suffix = '\x1b[0m'
+    if json_text.endswith(ansi_suffix):
+        # remove ANSI escape sequence (on Windows only?)
+        json_text = json_text[0:-len(ansi_suffix)]
+    print(80 * '=')
+    print(json_text)
+    print(80 * '=')
+    return json.loads(json_text)
 
 
 def _new_request_file(request: flask.Request) -> str:
