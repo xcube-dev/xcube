@@ -24,6 +24,7 @@ from typing import Dict, Any, Tuple, Optional
 import s3fs
 import xarray as xr
 
+from xcube.core.dsio import new_s3_file_system
 from xcube.core.store import DataOpener
 from xcube.core.store import DataStoreError
 from xcube.core.store import DataWriter
@@ -238,18 +239,27 @@ class S3Mixin:
         )
 
     @classmethod
-    def consume_s3fs_params(cls, params: Dict[str, Any]) -> Tuple[s3fs.S3FileSystem, Dict[str, Any]]:
+    def consume_s3fs_params(cls, params: Dict[str, Any],
+                            params_name: str = None) -> Tuple[s3fs.S3FileSystem, Dict[str, Any]]:
         aws_access_key_id = params.pop('aws_access_key_id', None)
         aws_secret_access_key = params.pop('aws_secret_access_key', None)
         aws_session_token = params.pop('aws_session_token', None)
-        anon = params.pop('anon', None)
-        client_kwargs = dict(region_name=params.pop('region_name', None),
-                             endpoint_url=params.pop('endpoint_url', None))
-        return s3fs.S3FileSystem(anon=anon,
-                                 key=aws_access_key_id,
-                                 secret=aws_secret_access_key,
-                                 token=aws_session_token,
-                                 client_kwargs=client_kwargs), params
+        anon = params.pop('anon', False)
+        region_name = params.pop('region_name', None),
+        endpoint_url = params.pop('endpoint_url', None)
+        s3 = new_s3_file_system(
+            s3_kwargs=dict(
+                anon=anon,
+                key=aws_access_key_id,
+                secret=aws_secret_access_key,
+                token=aws_session_token,
+            ),
+            s3_client_kwargs=dict(
+                region_name=region_name,
+                endpoint_url=endpoint_url,
+            ),
+            s3_config_param_name=params_name or 'open_params')
+        return s3, params
 
     @classmethod
     def consume_bucket_name_param(cls, params: Dict[str, Any]) -> Tuple[Optional[str], Dict[str, Any]]:
@@ -285,7 +295,8 @@ class DatasetZarrS3Accessor(ZarrOpenerParamsSchemaMixin,
     def open_data(self, data_id: str, **open_params) -> xr.Dataset:
         s3 = self._s3
         if s3 is None:
-            s3, open_params = self.consume_s3fs_params(open_params)
+            s3, open_params = self.consume_s3fs_params(open_params,
+                                                       params_name='open_params')
         bucket_name, open_params = self.consume_bucket_name_param(open_params)
         data_path = f'{bucket_name}/{data_id}' if bucket_name else data_id
         consolidated = open_params.pop('consolidated', False)
@@ -312,7 +323,8 @@ class DatasetZarrS3Accessor(ZarrOpenerParamsSchemaMixin,
         assert_instance(data, xr.Dataset, 'data')
         s3 = self._s3
         if s3 is None:
-            s3, write_params = self.consume_s3fs_params(write_params)
+            s3, write_params = self.consume_s3fs_params(write_params,
+                                                        params_name='write_params')
         bucket_name, write_params = self.consume_bucket_name_param(write_params)
         try:
             data.to_zarr(s3fs.S3Map(root=f'{bucket_name}/{data_id}' if bucket_name else data_id,

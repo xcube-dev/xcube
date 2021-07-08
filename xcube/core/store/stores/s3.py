@@ -90,7 +90,8 @@ class S3DataStore(DefaultSearchMixin, MutableDataStore):
     """
 
     def __init__(self, **store_params):
-        self._s3, store_params = S3Mixin.consume_s3fs_params(store_params)
+        self._s3, store_params = S3Mixin.consume_s3fs_params(store_params,
+                                                             params_name='store_params')
         self._bucket_name, store_params = S3Mixin.consume_bucket_name_param(store_params)
         assert_given(self._bucket_name, 'bucket_name')
         assert_true(not store_params,

@@ -25,6 +25,7 @@ import warnings
 from abc import ABCMeta, abstractmethod
 from typing import Any, Callable, Dict, Iterable, List, Optional, Set, Tuple, Union, Mapping
 
+import botocore.exceptions
 import pandas as pd
 import s3fs
 import urllib3.util
@@ -563,15 +564,73 @@ def get_path_or_s3_store(path_or_url: str,
     :return: A tuple (path_or_obs_store, consolidated).
     """
     if is_s3_url(path_or_url) or s3_kwargs is not None or s3_client_kwargs is not None:
-        root, s3_kwargs, s3_client_kwargs = parse_s3_url_and_kwargs(path_or_url,
-                                                                    s3_kwargs=s3_kwargs,
-                                                                    s3_client_kwargs=s3_client_kwargs)
-        s3 = s3fs.S3FileSystem(**s3_kwargs, client_kwargs=s3_client_kwargs)
+        s3, root = parse_s3_fs_and_root(path_or_url,
+                                        s3_kwargs=s3_kwargs,
+                                        s3_client_kwargs=s3_client_kwargs)
         consolidated = mode == "r" and s3.exists(f'{root}/.zmetadata')
         return s3fs.S3Map(root=root, s3=s3, check=False, create=mode == "w"), consolidated
     else:
         consolidated = os.path.exists(os.path.join(path_or_url, '.zmetadata'))
         return path_or_url, consolidated
+
+
+def parse_s3_fs_and_root(s3_url: str,
+                         s3_kwargs: Mapping[str, Any] = None,
+                         s3_client_kwargs: Mapping[str, Any] = None) \
+        -> Tuple[s3fs.S3FileSystem, str]:
+    """
+    Parses *s3_url*, *s3_kwargs*, *s3_client_kwargs* and returns a
+    new tuple (*obs_fs*, *root_path*). For example
+
+    ```
+    obs_fs, root_path = parse_s3_fs_and_root(s3_url, s3_kwargs, s3_client_kwargs)
+    obs_map = s3fs.S3Map(root=root_path, s3=obs_fs)
+    ```
+
+    :param s3_url: Object storage URL, e.g. "s3://bucket/root",
+        or "https://bucket.s3.amazonaws.com/root".
+    :param s3_kwargs: keyword arguments for S3 file system.
+    :param s3_client_kwargs: keyword arguments for S3 boto3 client.
+    :return: A tuple (*obs_fs*, *root_path*).
+    """
+
+    root, s3_kwargs, s3_client_kwargs = parse_s3_url_and_kwargs(
+        s3_url,
+        s3_kwargs=s3_kwargs,
+        s3_client_kwargs=s3_client_kwargs
+    )
+    s3 = new_s3_file_system(s3_kwargs, s3_client_kwargs)
+    return s3, root
+
+
+def new_s3_file_system(s3_kwargs: Mapping[str, Any] = None,
+                       s3_client_kwargs: Mapping[str, Any] = None,
+                       s3_config_param_name: str = 's3_kwargs') \
+        -> s3fs.S3FileSystem:
+    """
+    Wrapper for s3fs.S3FileSystem() constructor that issues warnings
+    in case the file system can not be created.
+
+    :param s3_kwargs: keyword arguments for S3 file system.
+    :param s3_client_kwargs: keyword arguments for S3 boto3 client.
+    :param s3_config_param_name: the name of the configuration parameter.
+    :return: A s3fs.S3FileSystem instance.
+    """
+
+    s3_kwargs = s3_kwargs or {}
+    client_kwargs = s3_kwargs.pop('client_kwargs', {})
+    client_kwargs.update(s3_client_kwargs or {})
+    try:
+        return s3fs.S3FileSystem(**s3_kwargs,
+                                 client_kwargs=client_kwargs)
+    except botocore.exceptions.NoCredentialsError:
+        if s3_kwargs.get('anon') is False:
+            warnings.warn('No object storage credentials where'
+                          ' passed or found.\n'
+                          'If you intend to access a public object storage,'
+                          ' please pass '
+                          + s3_config_param_name + '={"anon": True, ...}\n')
+        raise
 
 
 def parse_s3_url_and_kwargs(s3_url: str,

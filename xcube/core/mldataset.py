@@ -15,7 +15,7 @@ from xcube.constants import FORMAT_NAME_SCRIPT
 from xcube.constants import FORMAT_NAME_ZARR
 from xcube.core.dsio import guess_dataset_format
 from xcube.core.dsio import is_s3_url
-from xcube.core.dsio import parse_s3_url_and_kwargs
+from xcube.core.dsio import parse_s3_fs_and_root
 from xcube.core.dsio import write_cube
 from xcube.core.geom import get_dataset_bounds
 from xcube.core.verify import assert_cube
@@ -652,10 +652,9 @@ def open_ml_dataset_from_object_storage(path: str,
                                         **kwargs) -> MultiLevelDataset:
     data_format = data_format or guess_ml_dataset_format(path)
 
-    root, s3_kwargs, s3_client_kwargs = parse_s3_url_and_kwargs(path,
-                                                                s3_kwargs=s3_kwargs,
-                                                                s3_client_kwargs=s3_client_kwargs)
-    s3 = s3fs.S3FileSystem(**s3_kwargs, client_kwargs=s3_client_kwargs)
+    s3, root = parse_s3_fs_and_root(path,
+                                    s3_kwargs=s3_kwargs,
+                                    s3_client_kwargs=s3_client_kwargs)
 
     if data_format == FORMAT_NAME_ZARR:
         store = s3fs.S3Map(root=root, s3=s3, check=False)
