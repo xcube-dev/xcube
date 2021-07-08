@@ -38,11 +38,11 @@ WORKDIR /tmp
 ADD scripts/install_xcube-datastore.sh ./
 
 ENV XCUBE_SH_VERSION=0.8.0
-RUN bash install_xcube-datastore.sh xcube-sh ${XCUBE_SH_VERSION} release
+RUN if [[ ${INSTALL_PLUGINS} == '1' ]]; then bash install_xcube-datastore.sh xcube-sh ${XCUBE_SH_VERSION} release; fi;
 ENV XCUBE_CCI_VERSION=0.8.1.dev3
-RUN bash install_xcube-datastore.sh xcube-cci ${XCUBE_CCI_VERSION} release
+RUN if [[ ${INSTALL_PLUGINS} == '1' ]]; then bash install_xcube-datastore.sh xcube-cci ${XCUBE_CCI_VERSION} release; fi;
 ENV XCUBE_CDS_VERSION=0.8.1
-RUN bash install_xcube-datastore.sh xcube-cds ${XCUBE_CDS_VERSION} release
+RUN if [[ ${INSTALL_PLUGINS} == '1' ]]; then bash install_xcube-datastore.sh xcube-cds ${XCUBE_CDS_VERSION} release; fi;
 
 # Export web server port
 EXPOSE 8080
