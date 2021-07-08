@@ -281,10 +281,10 @@ class _ExprTranspiler:
         x = '{x0}'
         y = '{x1}'
 
-        if self._is_nan(right):
-            nan_op = x
-        elif self._is_nan(right):
+        if self._is_nan(left):
             nan_op = y
+        elif self._is_nan(right):
+            nan_op = x
         else:
             nan_op = None
 
@@ -305,8 +305,10 @@ class _ExprTranspiler:
         right_op = getattr(right, 'op', None)
         if right_op:
             _, other_precedence, other_assoc = self.get_op_info(right_op)
-            if other_precedence < precedence or other_precedence == precedence \
-                    and assoc == 'L' and other_assoc is not None:
+            if other_precedence < precedence \
+                    or (other_precedence == precedence
+                        and assoc == 'L'
+                        and other_assoc is not None):
                 y = '(%s)' % y
 
         return '%s %s %s' % (x, name, y)

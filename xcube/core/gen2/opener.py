@@ -31,8 +31,8 @@ from xcube.core.store import TYPE_SPECIFIER_CUBE
 from xcube.core.store import TYPE_SPECIFIER_DATASET
 from xcube.core.store import get_data_store_instance
 from xcube.core.store import new_data_opener
-from xcube.util.assertions import assert_true
 from xcube.util.assertions import assert_instance
+from xcube.util.assertions import assert_true
 from xcube.util.progress import observe_progress
 from .config import CubeConfig
 from .config import InputConfig
@@ -79,10 +79,12 @@ class CubesOpener:
             if opener_id is None:
                 opener_id, normalisation_required = self._get_opener_id(input_config, store)
             opener = store
-            open_params.update(opener_id=opener_id, **open_params)
+            open_params = dict(open_params)
+            open_params['opener_id'] = opener_id
         else:
             opener = new_data_opener(opener_id)
-            open_params.update(**store_params, **open_params)
+            open_params = dict(open_params)
+            open_params.update(store_params)
 
         open_params_schema = opener.get_open_data_params_schema(input_config.data_id)
 

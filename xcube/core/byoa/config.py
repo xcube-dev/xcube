@@ -125,14 +125,13 @@ class CodeConfig(JsonObject):
 
     @classmethod
     def from_code(cls,
-                  code: Union[str, Callable, Sequence[Union[str, Callable]]],
+                  *code: Union[str, Callable],
                   callable_name: str = None,
                   module_name: str = None,
                   callable_params: Dict[str, Any] = None) -> 'CodeConfig':
         """
         Create a code configuration from the given *code* which may be
-        a code string or a callable or a sequence of code strings
-        or a callables.
+        given as one or more plain text strings or callables.
 
         This will create a configuration that uses an inline
         ``code_string`` which contains the source code.
@@ -512,12 +511,10 @@ def _normalize_file_set(file_set: Union[FileSet, str, Any]) -> FileSet:
 
 
 def _normalize_inline_code(
-        code: Union[str, Callable, Sequence[Union[str, Callable]]],
+        code: Tuple[Union[str, Callable], ...],
         callable_name: str = None,
         module_name: str = None
 ) -> Tuple[str, str]:
-    if isinstance(code, str) or isinstance(code, Callable):
-        code = [code]
     if not callable_name:
         first_callable = next(filter(callable, code), None)
         if first_callable is not None:

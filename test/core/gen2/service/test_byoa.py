@@ -5,7 +5,7 @@ import unittest
 import requests
 
 from xcube.core.gen2 import CubeGeneratorRequest
-from xcube.core.gen2.service import CubeGeneratorService
+from xcube.core.gen2.service import RemoteCubeGenerator
 from xcube.core.gen2.service import ServiceConfig
 
 PARENT_DIR = os.path.dirname(__file__)
@@ -87,7 +87,7 @@ class ByoaTest(unittest.TestCase):
             }
         }
 
-        service = CubeGeneratorService(
+        service = RemoteCubeGenerator(
             CubeGeneratorRequest.from_dict(request_dict),
             ServiceConfig(endpoint_url=SERVER_URL)
         )
