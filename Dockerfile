@@ -38,11 +38,11 @@ COPY . ./
 RUN source activate xcube && python setup.py install
 
 WORKDIR /tmp
-ADD scripts/install_xcube-datastore.sh ./
+ADD scripts/install_xcube.sh ./
 
-RUN if [[ ${INSTALL_PLUGINS} == '1' ]]; then bash install_xcube-datastore.sh xcube-sh ${XCUBE_SH_VERSION} release; fi;
-RUN if [[ ${INSTALL_PLUGINS} == '1' ]]; then bash install_xcube-datastore.sh xcube-cci ${XCUBE_CCI_VERSION} release; fi;
-RUN if [[ ${INSTALL_PLUGINS} == '1' ]]; then bash install_xcube-datastore.sh xcube-cds ${XCUBE_CDS_VERSION} release; fi;
+RUN if [[ ${INSTALL_PLUGINS} == '1' ]]; then bash install_xcube.sh xcube-sh ${XCUBE_SH_VERSION} release; fi;
+RUN if [[ ${INSTALL_PLUGINS} == '1' ]]; then bash install_xcube.sh xcube-cci ${XCUBE_CCI_VERSION} release; fi;
+RUN if [[ ${INSTALL_PLUGINS} == '1' ]]; then bash install_xcube.sh xcube-cds ${XCUBE_CDS_VERSION} release; fi;
 
 # Export web server port
 EXPOSE 8080
