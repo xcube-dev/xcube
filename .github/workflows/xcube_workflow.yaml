@@ -45,7 +45,7 @@ jobs:
     name: build-docker-image
     env:
       APP_NAME: xcube
-      ORG_NAME: bcdev
+      ORG_NAME: bc-org
     steps:
       - name: git-checkout
         uses: actions/checkout@v2
