@@ -26,7 +26,8 @@ import numpy as np
 import xarray as xr
 
 from xcube.core.maskset import MaskSet
-from xcube.util.config import NameDictPairList, to_resolved_name_dict_pairs
+from xcube.util.config import NameDictPairList
+from xcube.util.config import to_resolved_name_dict_pairs
 from xcube.util.expression import compute_array_expr
 
 
@@ -34,33 +35,54 @@ def evaluate_dataset(dataset: xr.Dataset,
                      processed_variables: NameDictPairList = None,
                      errors: str = 'raise') -> xr.Dataset:
     """
-    Compute a dataset from another dataset by evaluating expressions provided as variable attributes.
+    Compute new variables or mask existing variables in *dataset*
+    by the evaluation of Python expressions, that may refer to other
+    existing or new variables.
+    Returns a new dataset that contains the old and new variables,
+    where both may bew now masked.
 
-    New variables are computed according to the value of an ``expression`` attribute which, if given,
-    must by a valid Python expression that can reference any other preceding variables by name.
-    The expression can also reference any flags defined by another variable according the their CF
-    attributes ``flag_meaning`` and ``flag_values``.
+    Expressions may be given by attributes of existing variables in
+    *dataset* or passed a via the *processed_variables* argument
+    which is a sequence of variable name / attributes tuples.
 
-    Invalid values may be masked out using the value of an
-    optional ``valid_pixel_expression`` attribute that forms a boolean Python expression.
-    The value of the ``_FillValue`` attribute or NaN will be used in the new variable where the
-    expression returns zero or false.
+    Two types of expression attributes are recognized in the attributes:
+
+    1. The attribute ``expression`` generates
+       a new variable computed from its attribute value.
+    2. The attribute ``valid_pixel_expression`` masks out
+       invalid variable values.
+
+    In both cases the attribuite value must be a string that forms
+    a valid Python expression that can reference any other preceding
+    variables by name.
+    The expression can also reference any flags defined by another
+    variable according the their CF attributes ``flag_meaning``
+    and ``flag_values``.
+
+    Invalid variable values may be masked out using the value the
+    ``valid_pixel_expression`` attribute whose value should form
+    a Boolean Python expression. In case, the expression
+    returns zero or false, the value of the ``_FillValue`` attribute
+    or NaN will be used in the new variable.
 
     Other attributes will be stored as variable metadata as-is.
 
     :param dataset: A dataset.
-    :param processed_variables: Optional list of variables that will be loaded or computed in the order given.
-           Each variable is either identified by name or by a name to variable attributes mapping.
+    :param processed_variables: Optional list of variable
+        name-attributes pairs that will processed in the given order.
     :param errors: How to deal with errors while evaluating expressions.
            May be be one of "raise", "warn", or "ignore".
     :return: new dataset with computed variables
     """
 
     if processed_variables:
-        processed_variables = to_resolved_name_dict_pairs(processed_variables, dataset, keep=True)
+        processed_variables = to_resolved_name_dict_pairs(
+            processed_variables, dataset, keep=True
+        )
     else:
         var_names = list(dataset.data_vars)
-        var_names = sorted(var_names, key=functools.partial(_get_var_sort_key, dataset))
+        var_names = sorted(var_names,
+                           key=functools.partial(_get_var_sort_key, dataset))
         processed_variables = [(var_name, None) for var_name in var_names]
 
     # Initialize namespace with some constants and modules
@@ -111,10 +133,12 @@ def evaluate_dataset(dataset: xr.Dataset,
             # Compute new mask for existing variable
             if var is None:
                 raise ValueError(f'undefined variable {var_name!r}')
-            valid_mask = compute_array_expr(valid_pixel_expression,
-                                            namespace=namespace,
-                                            result_name=f'valid mask for {var_name!r}',
-                                            errors=errors)
+            valid_mask = compute_array_expr(
+                valid_pixel_expression,
+                namespace=namespace,
+                result_name=f'valid mask for {var_name!r}',
+                errors=errors
+            )
             if valid_mask is not None:
                 masked_var = var.where(valid_mask)
                 if hasattr(masked_var, 'attrs'):
