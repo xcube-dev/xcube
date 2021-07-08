@@ -12,18 +12,21 @@ jobs:
       NUMBA_DISABLE_JIT: 1
     steps:
       - uses: actions/checkout@v2
+      # Setup miniconda nd build env
       - uses: conda-incubator/setup-miniconda@v2
         with:
           mamba-version: "*"
           channels: conda-forge
           activate-environment: xcube
           environment-file: environment.yml
+      # Setup xcube
       - name: setup-xcube
         shell: bash -l {0}
         run: |
           conda info
           conda list
           python setup.py develop
+      # Run unittests
       - name: unittest-xcube
         shell: bash -l {0}
         run: |
@@ -36,7 +39,9 @@ jobs:
           verbose: true # optional (default = false)
   build-docker-image:
     runs-on: ubuntu-latest
+    # Only run if unittests succeed
     needs: unittest
+    # Build the docker image and push to quay.io
     name: build-docker-image
     env:
       APP_NAME: xcube
@@ -44,14 +49,17 @@ jobs:
     steps:
       - name: git-checkout
         uses: actions/checkout@v2
+      # Strip the release tag from refs
       - name: get-release-tag
         id: release
         run: echo ::set-output name=tag::${GITHUB_REF#refs/*/}
+      # Print some info
       - name: info
         id: info
         run: |
           echo "TAG: ${{ steps.release.outputs.tag }}"
           echo "EVENT: ${{ github.event_name }}"
+      # Build and push docker image 'latest' to quay.io when the event is a 'push' and branch 'master'
       - uses: mr-smithers-excellent/docker-build-push@v5
         name: build-push-docker-image-latest
         if: ${{ github.event_name == 'push' && steps.release.outputs.tag == 'master'  }}
@@ -61,6 +69,7 @@ jobs:
           registry: quay.io
           username: ${{ secrets.QUAY_DOCKER_REPO_USERNAME }}
           password: ${{ secrets.QUAY_DOCKER_REPO_PASSWORD }}
+      # Build and push docker release to quay.io when the event is a 'release'
       - uses: mr-smithers-excellent/docker-build-push@v5
         name: build-push-docker-image-release
         if: ${{ github.event_name == 'release' }}

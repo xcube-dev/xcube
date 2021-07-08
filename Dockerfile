@@ -1,4 +1,4 @@
-FROM quay.io/bcdev/xcube-python-base:0.8.0
+FROM quay.io/bcdev/xcube-python-base:0.8.1
 
 ARG INSTALL_PLUGINS=1
 
