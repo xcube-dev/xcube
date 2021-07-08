@@ -15,7 +15,7 @@
 * Added a new utility module `xcube.util.temp` that allows for creating 
   temporary files and directories that will be deleted when the current 
   process ends.
-* Added a GitHub action that will unittest xcube, and build and push docker images. The
+* Added a GitHub action that will run xcube unit tests, and build and push Docker images. The
   version tag of the image is either `latest` when the master changed or the release tag 
   
 ## Changes in 0.8.2 (in development)
