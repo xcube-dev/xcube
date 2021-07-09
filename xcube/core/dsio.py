@@ -551,22 +551,27 @@ def get_path_or_s3_store(path_or_url: str,
                          s3_client_kwargs: Mapping[str, Any] = None,
                          mode: str = 'r') -> Tuple[Union[str, Dict], bool]:
     """
-    If *path_or_url* is an object storage URL, return a object storage Zarr store (mapping object)
-    using *s3_client_kwargs* and *mode* and a flag indicating whether the Zarr datasets is consolidated.
-
-    Otherwise *path_or_url* is interpreted as a local file system path, retured as-is plus
+    If *path_or_url* is an object storage URL, return a object storage
+    Zarr store (mapping object) using *s3_client_kwargs* and *mode* and
     a flag indicating whether the Zarr datasets is consolidated.
+
+    Otherwise *path_or_url* is interpreted as a local file system path,
+    returned as-is plus a flag indicating whether the Zarr datasets
+    is consolidated.
 
     :param path_or_url: A path or a URL.
     :param s3_kwargs: keyword arguments for S3 file system.
     :param s3_client_kwargs: keyword arguments for S3 boto3 client.
-    :param mode: "r" or "w"
+    :param mode: access mode "r" or "w". "r" is default.
     :return: A tuple (path_or_obs_store, consolidated).
     """
-    if is_s3_url(path_or_url) or s3_kwargs is not None or s3_client_kwargs is not None:
+    if is_s3_url(path_or_url) \
+            or s3_kwargs is not None \
+            or s3_client_kwargs is not None:
         s3, root = parse_s3_fs_and_root(path_or_url,
                                         s3_kwargs=s3_kwargs,
-                                        s3_client_kwargs=s3_client_kwargs)
+                                        s3_client_kwargs=s3_client_kwargs,
+                                        mode=mode)
         consolidated = mode == "r" and s3.exists(f'{root}/.zmetadata')
         return s3fs.S3Map(root=root, s3=s3, check=False, create=mode == "w"), consolidated
     else:
@@ -576,7 +581,8 @@ def get_path_or_s3_store(path_or_url: str,
 
 def parse_s3_fs_and_root(s3_url: str,
                          s3_kwargs: Mapping[str, Any] = None,
-                         s3_client_kwargs: Mapping[str, Any] = None) \
+                         s3_client_kwargs: Mapping[str, Any] = None,
+                         mode: str = 'r') \
         -> Tuple[s3fs.S3FileSystem, str]:
     """
     Parses *s3_url*, *s3_kwargs*, *s3_client_kwargs* and returns a
@@ -591,6 +597,7 @@ def parse_s3_fs_and_root(s3_url: str,
         or "https://bucket.s3.amazonaws.com/root".
     :param s3_kwargs: keyword arguments for S3 file system.
     :param s3_client_kwargs: keyword arguments for S3 boto3 client.
+    :param mode: Access mode "r" or "w",  "r" is default.
     :return: A tuple (*obs_fs*, *root_path*).
     """
 
@@ -599,13 +606,16 @@ def parse_s3_fs_and_root(s3_url: str,
         s3_kwargs=s3_kwargs,
         s3_client_kwargs=s3_client_kwargs
     )
-    s3 = new_s3_file_system(s3_kwargs, s3_client_kwargs)
+    s3 = new_s3_file_system(s3_kwargs=s3_kwargs,
+                            s3_client_kwargs=s3_client_kwargs,
+                            check_path=root if mode == 'r' else None)
     return s3, root
 
 
 def new_s3_file_system(s3_kwargs: Mapping[str, Any] = None,
                        s3_client_kwargs: Mapping[str, Any] = None,
-                       s3_config_param_name: str = 's3_kwargs') \
+                       s3_config_param_name: str = 's3_kwargs',
+                       check_path: str = None) \
         -> s3fs.S3FileSystem:
     """
     Wrapper for s3fs.S3FileSystem() constructor that issues warnings
@@ -614,6 +624,9 @@ def new_s3_file_system(s3_kwargs: Mapping[str, Any] = None,
     :param s3_kwargs: keyword arguments for S3 file system.
     :param s3_client_kwargs: keyword arguments for S3 boto3 client.
     :param s3_config_param_name: the name of the configuration parameter.
+    :param check_path: an optional root path.
+        If given, we call s3.exists(check_path)
+        as a check whether S3 file system is valid.
     :return: A s3fs.S3FileSystem instance.
     """
 
@@ -626,8 +639,10 @@ def new_s3_file_system(s3_kwargs: Mapping[str, Any] = None,
     client_kwargs.update(s3_client_kwargs or {})
     try:
         s3 = s3fs.S3FileSystem(**s3_kwargs,
-                                 client_kwargs=client_kwargs)
-        s3.exists('')  # Force potential NoCredentialsError
+                               client_kwargs=client_kwargs)
+        if check_path is not None:
+            # Force potential NoCredentialsError
+            s3.exists(check_path)
         return s3
     except botocore.exceptions.NoCredentialsError:
         if s3_kwargs.get('anon') is False:

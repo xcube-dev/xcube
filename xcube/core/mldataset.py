@@ -654,7 +654,8 @@ def open_ml_dataset_from_object_storage(path: str,
 
     s3, root = parse_s3_fs_and_root(path,
                                     s3_kwargs=s3_kwargs,
-                                    s3_client_kwargs=s3_client_kwargs)
+                                    s3_client_kwargs=s3_client_kwargs,
+                                    mode='r')
 
     if data_format == FORMAT_NAME_ZARR:
         store = s3fs.S3Map(root=root, s3=s3, check=False)

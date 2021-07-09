@@ -191,7 +191,7 @@ class S3Mixin:
     ]
 
     @classmethod
-    def get_s3_params_schema(self) -> JsonObjectSchema:
+    def get_s3_params_schema(cls) -> JsonObjectSchema:
         # TODO: Use defaults as described in
         #   https://boto3.amazonaws.com/v1/documentation/api/latest/guide/configuration.html
         return JsonObjectSchema(
@@ -232,15 +232,29 @@ class S3Mixin:
                 region_name=JsonStringSchema(
                     min_length=1,
                     default='eu-central-1',
-                    enum=[r[1] for r in self._regions],
+                    enum=[r[1] for r in cls._regions],
                     title='AWS storage region name'
                 ),
             ),
         )
 
     @classmethod
-    def consume_s3fs_params(cls, params: Dict[str, Any],
-                            params_name: str = None) -> Tuple[s3fs.S3FileSystem, Dict[str, Any]]:
+    def consume_s3fs_params(cls,
+                            params: Dict[str, Any],
+                            check_path: str = None,
+                            params_name: str = None) \
+            -> Tuple[s3fs.S3FileSystem, Dict[str, Any]]:
+        """
+        Extract all the values from *params* used to create the S3
+        file system instance, then return S3 file system instance and
+        modified *params*.
+
+        :param params: The S3 file system parameters (and others)
+        :param check_path: Optional path to check for existence.
+        :param params_name: The name of the configuration
+            parameter that provided *params*.
+        :return: A tuple (S3 file system instance, mod. *params*)
+        """
         aws_access_key_id = params.pop('aws_access_key_id', None)
         aws_secret_access_key = params.pop('aws_secret_access_key', None)
         aws_session_token = params.pop('aws_session_token', None)
@@ -258,7 +272,9 @@ class S3Mixin:
                 region_name=region_name,
                 endpoint_url=endpoint_url,
             ),
-            s3_config_param_name=params_name or 'open_params')
+            s3_config_param_name=params_name or 'open_params',
+            check_path=check_path
+        )
         return s3, params
 
     @classmethod
@@ -294,11 +310,12 @@ class DatasetZarrS3Accessor(ZarrOpenerParamsSchemaMixin,
 
     def open_data(self, data_id: str, **open_params) -> xr.Dataset:
         s3 = self._s3
-        if s3 is None:
-            s3, open_params = self.consume_s3fs_params(open_params,
-                                                       params_name='open_params')
         bucket_name, open_params = self.consume_bucket_name_param(open_params)
         data_path = f'{bucket_name}/{data_id}' if bucket_name else data_id
+        if s3 is None:
+            s3, open_params = self.consume_s3fs_params(open_params,
+                                                       check_path=data_path,
+                                                       params_name='open_params')
         consolidated = open_params.pop('consolidated', False)
         if consolidated:
             consolidated = s3.exists(f'{data_path}/.zmetadata')
@@ -321,13 +338,15 @@ class DatasetZarrS3Accessor(ZarrOpenerParamsSchemaMixin,
 
     def write_data(self, data: xr.Dataset, data_id: str, replace=False, **write_params):
         assert_instance(data, xr.Dataset, 'data')
+        bucket_name, write_params = self.consume_bucket_name_param(write_params)
         s3 = self._s3
         if s3 is None:
             s3, write_params = self.consume_s3fs_params(write_params,
+                                                        check_path=bucket_name,
                                                         params_name='write_params')
-        bucket_name, write_params = self.consume_bucket_name_param(write_params)
+        data_path = f'{bucket_name}/{data_id}' if bucket_name else data_id
         try:
-            data.to_zarr(s3fs.S3Map(root=f'{bucket_name}/{data_id}' if bucket_name else data_id,
+            data.to_zarr(s3fs.S3Map(root=data_path,
                                     s3=s3,
                                     check=False),
                          mode='w' if replace else None,
