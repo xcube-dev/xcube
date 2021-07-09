@@ -645,7 +645,7 @@ def new_s3_file_system(s3_kwargs: Mapping[str, Any] = None,
             s3.exists(check_path)
         return s3
     except botocore.exceptions.NoCredentialsError:
-        if s3_kwargs.get('anon') is False:
+        if not s3_kwargs.get('anon'):
             warnings.warn('No object storage credentials were'
                           ' passed or found.\n'
                           'If you intend to access a public object storage,'
