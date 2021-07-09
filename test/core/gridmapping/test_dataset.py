@@ -56,7 +56,8 @@ class DatasetGridMappingTest(unittest.TestCase):
     def test_from_real_olci(self):
         olci_l2_path = os.path.join(os.path.dirname(__file__),
                                     '..', '..', '..',
-                                    'examples', 'notebooks', 'S3-OLCI-L2A.zarr.zip')
+                                    'examples', 'notebooks', 'inputdata',
+                                    'S3-OLCI-L2A.zarr.zip')
 
         dataset = xr.open_zarr(olci_l2_path)
         gm = GridMapping.from_dataset(dataset)

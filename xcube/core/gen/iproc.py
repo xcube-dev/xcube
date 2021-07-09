@@ -28,14 +28,10 @@ import xarray as xr
 
 from xcube.constants import CRS_WKT_EPSG_4326
 from xcube.constants import EXTENSION_POINT_INPUT_PROCESSORS
-from xcube.core.geocoding import GeoCoding
-from xcube.core.imgeom import ImageGeom
-from xcube.core.rectify import rectify_dataset
-from xcube.core.reproject import reproject_xy_to_wgs84
-from xcube.core.timecoord import get_time_range_from_data
-from xcube.core.timecoord import get_time_range_from_attrs
 from xcube.core.gridmapping import GridMapping
 from xcube.core.resampling import rectify_dataset
+from xcube.core.timecoord import get_time_range_from_attrs
+from xcube.core.timecoord import get_time_range_from_data
 from xcube.core.timecoord import to_time_in_days_since_1970
 from xcube.util.plugin import ExtensionComponent
 from xcube.util.plugin import get_extension_registry
@@ -421,7 +417,7 @@ class DefaultInputProcessor(XYInputProcessor):
         if time_coverage_end is None:
             time_coverage_end = time_coverage_start
         return to_time_in_days_since_1970(time_coverage_start), \
-            to_time_in_days_since_1970(time_coverage_end)
+               to_time_in_days_since_1970(time_coverage_end)
 
     def _validate(self, dataset):
         self._check_coordinate_var(dataset, "lon", min_length=2)

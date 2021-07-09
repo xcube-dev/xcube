@@ -29,9 +29,9 @@ import numpy as np
 import pyproj
 import xarray as xr
 
-from xcube.util.assertions import assert_condition
 from xcube.util.assertions import assert_given
 from xcube.util.assertions import assert_instance
+from xcube.util.assertions import assert_true
 from xcube.util.dask import get_block_iterators
 from xcube.util.dask import get_chunk_sizes
 from .helpers import AffineTransformMatrix
@@ -87,12 +87,12 @@ class GridMapping(abc.ABC):
                  is_j_axis_up: Optional[bool]):
 
         width, height = _normalize_int_pair(size, name='size')
-        assert_condition(width > 1 and height > 1,
-                         'invalid size')
+        assert_true(width > 1 and height > 1,
+                    'invalid size')
 
         tile_width, tile_height = _normalize_int_pair(tile_size, default=(width, height))
-        assert_condition(tile_width > 1 and tile_height > 1,
-                         'invalid tile_size')
+        assert_true(tile_width > 1 and tile_height > 1,
+                    'invalid tile_size')
 
         assert_given(xy_bbox, name='xy_bbox')
         assert_given(xy_res, name='xy_res')
@@ -102,8 +102,8 @@ class GridMapping(abc.ABC):
 
         x_min, y_min, x_max, y_max = xy_bbox
         x_res, y_res = _normalize_number_pair(xy_res, name='xy_res')
-        assert_condition(x_res > 0 and y_res > 0,
-                         'invalid xy_res')
+        assert_true(x_res > 0 and y_res > 0,
+                    'invalid xy_res')
 
         self._lock = threading.RLock()
 
@@ -134,7 +134,7 @@ class GridMapping(abc.ABC):
             other._xy_dim_names = xy_dim_names
         if tile_size is not None:
             tile_width, tile_height = _normalize_int_pair(tile_size, name='tile_size')
-            assert_condition(tile_width > 1 and tile_height > 1, 'invalid tile_size')
+            assert_true(tile_width > 1 and tile_height > 1, 'invalid tile_size')
             tile_size = tile_width, tile_height
             if other.tile_size != tile_size:
                 other._tile_size = tile_width, tile_height
@@ -549,11 +549,11 @@ class GridMapping(abc.ABC):
 
     def is_close(self, other: 'GridMapping') -> bool:
         if self.is_j_axis_up == other.is_j_axis_up \
-               and self.is_lon_360 == other.is_lon_360 \
-               and self.is_regular == other.is_regular \
-               and self.size == other.size \
-               and self.tile_size == other.tile_size \
-               and self.crs == other.crs:
+                and self.is_lon_360 == other.is_lon_360 \
+                and self.is_regular == other.is_regular \
+                and self.size == other.size \
+                and self.tile_size == other.tile_size \
+                and self.crs == other.crs:
             sxr, syr = self.xy_res
             oxr, oyr = other.xy_res
             if math.isclose(sxr, oxr) \
