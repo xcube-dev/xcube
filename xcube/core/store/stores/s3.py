@@ -22,8 +22,8 @@
 import json
 import os.path
 import uuid
-from typing import Optional, Iterator, Any, Tuple, List, Dict, Union, Container
 import warnings
+from typing import Optional, Iterator, Any, Tuple, List, Dict, Union, Container
 
 import s3fs
 import xarray as xr
@@ -45,10 +45,10 @@ from xcube.core.store import new_data_descriptor
 from xcube.core.store import new_data_opener
 from xcube.core.store import new_data_writer
 from xcube.core.store.accessors.dataset import S3Mixin
-from xcube.util.assertions import assert_true
 from xcube.util.assertions import assert_given
 from xcube.util.assertions import assert_in
 from xcube.util.assertions import assert_instance
+from xcube.util.assertions import assert_true
 from xcube.util.extension import Extension
 from xcube.util.jsonschema import JsonObjectSchema
 
@@ -90,14 +90,20 @@ class S3DataStore(DefaultSearchMixin, MutableDataStore):
     """
 
     def __init__(self, **store_params):
-        self._s3, store_params = S3Mixin.consume_s3fs_params(store_params)
-        self._bucket_name, store_params = S3Mixin.consume_bucket_name_param(store_params)
+        self._bucket_name, store_params = \
+            S3Mixin.consume_bucket_name_param(store_params)
         assert_given(self._bucket_name, 'bucket_name')
+        self._s3, store_params = \
+            S3Mixin.consume_s3fs_params(store_params,
+                                        check_path=self._bucket_name,
+                                        params_name='store_params')
         assert_true(not store_params,
-                    f'Unknown keyword arguments: {", ".join(store_params.keys())}')
+                    'Unknown keyword arguments:'
+                    f' {", ".join(store_params.keys())}')
+        registry_path = f'{self._bucket_name}/{_REGISTRY_FILE}'
         self._registry = {}
-        if self._s3.exists(f'{self._bucket_name}/{_REGISTRY_FILE}'):
-            with self._s3.open(f'{self._bucket_name}/{_REGISTRY_FILE}', 'r') as registry_file:
+        if self._s3.exists(registry_path):
+            with self._s3.open(registry_path, 'r') as registry_file:
                 self._registry = json.load(registry_file)
 
     def close(self):
@@ -318,8 +324,9 @@ class S3DataStore(DefaultSearchMixin, MutableDataStore):
             self._maybe_update_json_registry()
 
     def _maybe_update_json_registry(self):
-        if self._s3.exists(f'{self._bucket_name}/{_REGISTRY_FILE}'):
-            with self._s3.open(f'{self._bucket_name}/{_REGISTRY_FILE}', 'w') as registry_file:
+        registry_path = f'{self._bucket_name}/{_REGISTRY_FILE}'
+        if self._s3.exists(registry_path):
+            with self._s3.open(registry_path, 'w') as registry_file:
                 json.dump(self._registry, registry_file)
 
     ###############################################################

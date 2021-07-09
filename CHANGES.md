@@ -12,6 +12,12 @@
   1. Generator API `xcube.core.gen2.LocalCubeGenerator` and
     `xcube.core.gen2.service.RemoteCubeGenerator`;
   2. Generator CLI `xcube gen2`.
+* xcube now issues a warning, if a data cube is opened from object 
+  storage, and credentials have neither been passed nor can be found, 
+  and the object storage has been opened with the default `anon=False`. (#412)
+* xcube no longer internally caches directory listings, which prevents 
+  the situation where a data cube that has recently been written into object 
+  storage cannot be found. 
 * Added a new utility module `xcube.util.temp` that allows for creating 
   temporary files and directories that will be deleted when the current 
   process ends.
