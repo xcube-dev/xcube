@@ -20,7 +20,7 @@
 # SOFTWARE.
 
 from abc import abstractmethod, ABC
-from typing import Iterator, Tuple, Any, Optional, List, Type
+from typing import Iterator, Tuple, Any, Optional, List, Type, Dict, Union, Container
 
 from xcube.constants import EXTENSION_POINT_DATA_STORES
 from xcube.util.extension import Extension
@@ -153,22 +153,43 @@ class DataStore(DataOpener, ABC):
         """
 
     @abstractmethod
-    def get_data_ids(self, type_specifier: str = None, include_titles: bool = True) -> \
-            Iterator[Tuple[str, Optional[str]]]:
+    def get_data_ids(self,
+                     type_specifier: str = None,
+                     include_attrs: Container[str] = None) -> \
+            Union[Iterator[str], Iterator[Tuple[str, Dict[str, Any]]]]:
         """
         Get an iterator over the data resource identifiers for the given type *type_specifier*.
         If *type_specifier* is omitted, all data resource identifiers are returned.
 
-        If a store implementation supports only a single data type, it should verify that *type_specifier*
-        is either None or compatible with the supported data type.
+        If a store implementation supports only a single data type, it should verify that
+        *type_specifier* is either None or compatible with the supported data type.
 
-        The returned iterator items are 2-tuples of the form (*data_id*, *title*), where *data_id*
-        is the actual data identifier and *title* is an optional, human-readable title for the data.
-        If *include_titles* is false, the second item of the result tuple will be None.
+        If *include_attrs* is provided, it must be a sequence of names of metadata attributes.
+        The store will then return extra metadata for each returned data resource
+        identifier according to the names of the metadata attributes as tuples (*data_id*, *attrs*).
 
-        :param type_specifier: If given, only data identifiers that are available as this type are returned. If this is
-        omitted, all available data identifiers are returned.
-        :param include_titles: If true, the store will attempt to also provide a title.
+        Hence, the type of the returned iterator items depends on the value of *include_attrs*:
+
+        - If *include_attrs* is None (the default), the method returns an iterator
+          of dataset identifiers *data_id* of type `str`.
+        - If *include_attrs* is a sequence of attribute names, even an empty one,
+          the method returns an iterator of tuples (*data_id*, *attrs*) of type
+          `Tuple[str, Dict]`, where *attrs* is a dictionary filled according to the
+          names in *include_attrs*. If a store cannot provide a given attribute, it
+          should simply ignore it. This may even yield to an empty dictionary for a given
+          *data_id*.
+
+        The individual attributes do not have to exist in the dataset's metadata, they may also be
+        generated on-the-fly. An example for a generic attribute name is "title".
+        A store should try to resolve ```include_attrs=["title"]``` by returning items such as
+        ```("ESACCI-L4_GHRSST-SSTdepth-OSTIA-GLOB_CDR2.1-v02.0-fv01.0.zarr",
+        {"title": "Level-4 GHRSST Analysed Sea Surface Temperature"})```.
+
+        :param type_specifier: If given, only data identifiers that are available as this type are returned.
+            If this is omitted, all available data identifiers are returned.
+        :param include_attrs: A sequence of names of attributes to be returned for each dataset identifier.
+            If given, the store will attempt to provide the set of requested dataset attributes in addition to the data ids.
+            (added in xcube 0.8.0)
         :return: An iterator over the identifiers and titles of data resources provided by this data store.
         :raise DataStoreError: If an error occurs.
         """

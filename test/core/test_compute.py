@@ -1,3 +1,4 @@
+import os
 import unittest
 from typing import Any, Dict, Tuple
 
@@ -7,6 +8,7 @@ import xarray as xr
 from xcube.core.chunk import chunk_dataset
 from xcube.core.compute import CubeFuncOutput
 from xcube.core.compute import compute_cube
+from xcube.core.compute import compute_dataset
 from xcube.core.new import new_cube
 from xcube.core.schema import CubeSchema
 
@@ -53,8 +55,8 @@ class ComputeCubeTest(unittest.TestCase):
         values = output_var.values
         self.assertEqual(2 * 2 * 4, len(calls))
         self.assertEqual((6, 180, 360), values.shape)
-        self.assertEqual(0.74, values[0, 0, 0])
-        self.assertEqual(0.74, values[-1, -1, -1])
+        self.assertAlmostEqual(0.74, values[0, 0, 0])
+        self.assertAlmostEqual(0.74, values[-1, -1, -1])
 
     def test_from_two_inputs(self):
         calls = []
@@ -79,12 +81,44 @@ class ComputeCubeTest(unittest.TestCase):
         self.assertEqual(0, len(calls))
         self.assertEqual(('time', 'lat', 'lon'), output_var.dims)
         self.assertEqual((6, 180, 360), output_var.shape)
+        self.assertEqual(((3, 3), (90, 90), (90, 90, 90, 90)), output_var.chunks)
 
         values = output_var.values
         self.assertEqual(2 * 2 * 4, len(calls))
         self.assertEqual((6, 180, 360), values.shape)
-        self.assertEqual(275.3 + 0.5 * 2.1, values[0, 0, 0])
-        self.assertEqual(275.3 + 0.5 * 2.1, values[-1, -1, -1])
+        self.assertAlmostEqual(275.3 + 0.5 * 2.1, values[0, 0, 0])
+        self.assertAlmostEqual(275.3 + 0.5 * 2.1, values[-1, -1, -1])
+
+    def test_from_two_inputs_reduce_time(self):
+        calls = []
+
+        def my_cube_func(analysed_sst: np.ndarray,
+                         analysis_error: np.ndarray) -> CubeFuncOutput:
+            nonlocal calls
+            calls.append((analysed_sst, analysis_error))
+            analysed_sst_mean = np.nanmean(analysed_sst, -1)
+            analysis_error_max = np.nanmax(analysis_error, -1)
+            return analysed_sst_mean + analysis_error_max
+
+        output_dataset = compute_dataset(my_cube_func,
+                                         self.cube,
+                                         input_var_names=['analysed_sst', 'analysis_error'],
+                                         output_var_name='analysed_sst_max',
+                                         output_var_dims={'lat', 'lon'})
+
+        self.assertIsInstance(output_dataset, xr.Dataset)
+        self.assertIn('analysed_sst_max', output_dataset.data_vars)
+        output_var = output_dataset.analysed_sst_max
+        self.assertEqual(0, len(calls))
+        self.assertEqual(('lat', 'lon'), output_var.dims)
+        self.assertEqual((180, 360), output_var.shape)
+        self.assertEqual(((90, 90), (90, 90, 90, 90)), output_var.chunks)
+
+        values = output_var.values
+        self.assertEqual(2 * 4, len(calls))
+        self.assertEqual((180, 360), values.shape)
+        self.assertAlmostEqual(275.3 + 2.1, values[0, 0])
+        self.assertAlmostEqual(275.3 + 2.1, values[-1, -1])
 
     def test_invalid_cube_func(self):
         def my_cube_func(analysis_error: np.ndarray) -> CubeFuncOutput:
@@ -126,6 +160,8 @@ class ComputeCubeTest(unittest.TestCase):
                          f'{cm.exception}')
 
     def test_inspect(self):
+        """This test is about making sure we get expected results from inspect.getfullargspec(func)"""
+
         def func():
             pass
 
@@ -188,3 +224,54 @@ class ComputeCubeTest(unittest.TestCase):
         self.assertEqual(exp_kwonlyargs, argspec[4], msg='kwonlyargs')
         self.assertEqual(exp_kwonlydefaults, argspec[5], msg='kwonlydefaults')
         self.assertEqual(exp_annotations, argspec[6], msg='annotations')
+
+    def test_xarray_apply_with_dim_reduction(self):
+        def compute_block(block: np.ndarray, axis: int = None):
+            # print('--> block:', block.shape)
+            result = np.nanmean(block, axis=axis)
+            # print('<-- result:', result.shape)
+            return result
+
+        def compute(obj: xr.Dataset, dim: str):
+            return xr.apply_ufunc(compute_block, obj,
+                                  kwargs=dict(axis=-1),  # note: apply always moves core dimensions to the end
+                                  dask='parallelized',
+                                  input_core_dims=[[dim]],
+                                  output_dtypes=[np.float64])
+
+        ds = xr.open_zarr(os.path.join(os.path.dirname(__file__), '../../examples/serve/demo/cube-1-250-250.zarr'))
+        var = ds.conc_chl
+
+        var_rechunked = var.chunk({'time': -1, 'lat': 250, 'lon': 250})
+        var_computed = compute(var_rechunked, 'time')
+
+        # This assertion succeeds
+        self.assertEqual((1000, 2000), var_computed.shape)
+
+        # Trigger computations of all chunks
+        values = var_computed.values
+        # This assertion succeeds fails, because values.shape is now (250, 250).
+        # This must be an error in xarray or dask.
+        self.assertEqual((1000, 2000), values.shape)
+
+    def test_xarray_map_blocks(self):
+        def compute_block(block: xr.Dataset):
+            # print('--> block:', block)
+            return block
+
+        def compute(obj: xr.Dataset, dim: str):
+            return obj.map_blocks(compute_block)
+
+        ds = xr.open_zarr(os.path.join(os.path.dirname(__file__), '../../examples/serve/demo/cube-1-250-250.zarr'))
+        var = ds.conc_chl
+
+        var_computed = compute(var, 'time')
+
+        # This assertion succeeds
+        self.assertEqual((5, 1000, 2000), var_computed.shape)
+
+        # Trigger computations of all chunks
+        values = var_computed.values
+        # This assertion succeeds fails, because values.shape is now (250, 250).
+        # This must be an error in xarray or dask.
+        self.assertEqual((5, 1000, 2000), values.shape)

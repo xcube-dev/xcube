@@ -237,7 +237,7 @@ class HandlersTest(AsyncHTTPTestCase):
         self.assertResponseOK(response)
         response = self.fetch(self.prefix + '/s3bucket/demo/conc_chl/.zgroup', method=method)
         self.assertResourceNotFoundResponse(response)
-        response = self.fetch(self.prefix + '/s3bucket/demo/conc_chl/1.2.4', method=method)
+        response = self.fetch(self.prefix + '/s3bucket/demo/conc_chl/3.2.4', method=method)
         self.assertResponseOK(response)
 
     def test_fetch_dataset_tile(self):

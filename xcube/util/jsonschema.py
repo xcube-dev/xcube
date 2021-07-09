@@ -19,6 +19,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+import collections.abc
 from abc import ABC, abstractmethod
 from typing import Dict, Any, Callable, Mapping, Sequence, Union, Tuple, Optional
 
@@ -390,22 +391,25 @@ class JsonArraySchema(JsonSchema):
             d.update(uniqueItems=self.unique_items)
         return d
 
-    def _to_unvalidated_instance(self, value: Sequence[Any]) -> Sequence[Any]:
+    def _to_unvalidated_instance(self, value: Optional[Sequence[Any]]) -> Optional[Sequence[Any]]:
         if self.serializer:
             return self.serializer(value)
         return self._convert_sequence(value, '_to_unvalidated_instance')
 
     def _from_validated_instance(self, instance: Sequence[Any]) -> Any:
         obj = self._convert_sequence(instance, '_from_validated_instance')
-        return self.factory(obj) if self.factory is not None else obj
+        return self.factory(obj) if self.factory is not None and obj is not None else obj
 
-    def _convert_sequence(self, sequence: Sequence[Any], method_name: str) -> Sequence[Any]:
+    def _convert_sequence(self, sequence: Optional[Sequence[Any]], method_name: str) -> Optional[Sequence[Any]]:
         items_schema = self.items
+        if sequence is None:
+            # Sequence may be null too
+            return None
         if isinstance(items_schema, JsonSchema):
             # Sequence turned into list with items_schema applying to all elements
             return [getattr(items_schema, method_name)(item)
                     for item in sequence]
-        elif items_schema is not None:
+        if items_schema is not None:
             # Sequence turned into tuple with schema for every position
             return [getattr(items_schema[item_index], method_name)(sequence[item_index])
                     for item_index in range(len(items_schema))]
@@ -481,23 +485,74 @@ class JsonObjectSchema(JsonSchema):
                         new_kwargs[k] = property_schema.default
         return new_kwargs, old_kwargs
 
-    def _to_unvalidated_instance(self, value: Any) -> Mapping[str, Any]:
+    def _to_unvalidated_instance(self, value: Any) -> Optional[Mapping[str, Any]]:
         if self.serializer is not None:
             return self.serializer(value)
         return self._convert_mapping(value, '_to_unvalidated_instance')
 
-    def _from_validated_instance(self, instance: Mapping[str, Any]) -> Any:
+    def _from_validated_instance(self, instance: Optional[Mapping[str, Any]]) -> Any:
         obj = self._convert_mapping(instance, '_from_validated_instance')
-        return self.factory(**obj) if self.factory is not None else obj
+        return self.factory(**obj) if self.factory is not None and obj is not None else obj
 
-    def _convert_mapping(self, mapping: Mapping[str, Any], method_name: str) -> Mapping[str, Any]:
+    def _convert_mapping(self, mapping_or_obj: Optional[Mapping[str, Any]], method_name: str) \
+            -> Optional[Mapping[str, Any]]:
         # TODO: recognise self.dependencies. if dependency is again a schema, compute effective schema
         #       by merging this and the dependency.
 
-        converted_mapping = dict()
+        if mapping_or_obj is None:
+            return None
+
+        # Fix for #432: call object's own to_dict() method but beware of infinite recursion
+        if (hasattr(mapping_or_obj, 'to_dict')
+                and callable(mapping_or_obj.to_dict)
+                # calling JsonSchema.to_dict() is always fine
+                and (isinstance(mapping_or_obj, JsonSchema)
+                     # calling JsonObject.to_dict() would cause infinite recursion
+                     or not isinstance(mapping_or_obj, JsonObject))):
+            # noinspection PyBroadException
+            try:
+                return mapping_or_obj.to_dict()
+            except BaseException:
+                pass
 
         required_set = set(self.required) if self.required else set()
 
+        additional_properties = self.additional_properties
+        if additional_properties is None:
+            # As of JSON Schema, additional_properties defaults to True
+            additional_properties = True
+
+        additional_properties_schema = None
+        if isinstance(additional_properties, JsonSchema):
+            additional_properties_schema = additional_properties
+
+        converted_mapping = dict()
+
+        if isinstance(mapping_or_obj, (collections.abc.Mapping, dict)):
+            # An object that is already a Mapping
+            mapping = mapping_or_obj
+        else:
+            # An object that is not a Mapping: convert to mapping.
+            mapping = {}
+            for property_name in dir(mapping_or_obj):
+                property_value = UNDEFINED
+                property_ok = False
+                if property_name in self.properties:
+                    # If property_name is defined in properties, we fully trust it
+                    property_value = getattr(mapping_or_obj, property_name)
+                    property_ok = True
+                elif additional_properties and not property_name.startswith('_'):
+                    # If property_name is not defined in properties, but additional
+                    # properties are allowed, filter out private variables and callables.
+                    property_value = getattr(mapping_or_obj, property_name)
+                    property_ok = not callable(property_value)
+                property_ok = property_ok and (property_name in required_set or property_value is not None)
+                if property_ok and property_value is not UNDEFINED:
+                    mapping[property_name] = property_value
+
+        # recursively convert mapping into converted_mapping according to schema
+
+        # process defined properties
         for property_name, property_schema in self.properties.items():
             if property_name in mapping:
                 property_value = mapping[property_name]
@@ -510,17 +565,46 @@ class JsonObjectSchema(JsonSchema):
                     if property_name in required_set or converted_property_value is not None:
                         converted_mapping[property_name] = converted_property_value
 
-        if self.additional_properties is None or self.additional_properties:
-            properties_schema = self.additional_properties \
-                if isinstance(self.additional_properties, JsonSchema) else None
-            # Note, additional_properties defaults to True
+        # process additional properties
+        if additional_properties:
             for property_name, property_value in mapping.items():
                 if property_name not in converted_mapping and property_value is not UNDEFINED:
-                    if properties_schema:
-                        property_value = properties_schema.from_instance(property_value)
+                    if additional_properties_schema:
+                        property_value = getattr(additional_properties_schema, method_name)(property_value)
                     converted_mapping[property_name] = property_value
 
         return converted_mapping
 
 
+class JsonObject(ABC):
+    """
+    The abstract base class for objects
+
+    * whose instances can be created from a JSON-serializable
+      dictionary using their :meth:from_dict class method;
+    * whose instances can be converted into a JSON-serializable dictionary
+      using their :meth:to_dict instance method.
+
+    Derived concrete classes must only implement the :meth:get_schema class method
+    that must return a :class:JsonObjectSchema.
+
+    Instances of this class have a JSON representation in Jupyter/IPython Notebooks.
+    """
+
+    @classmethod
+    @abstractmethod
+    def get_schema(cls) -> JsonObjectSchema:
+        """Get JSON object schema."""
+
+    @classmethod
+    def from_dict(cls, value: Dict[str, Any]) -> 'JsonObject':
+        """Create instance from JSON-serializable dictionary *value*."""
+        return cls.get_schema().from_instance(value)
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Create JSON-serializable dictionary representation."""
+        return self.get_schema().to_instance(self)
+
+
 register_json_formatter(JsonSchema)
+register_json_formatter(JsonObject)

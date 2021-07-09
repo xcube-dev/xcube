@@ -1,70 +1,51 @@
-# Image from https://hub.docker.com (syntax: repo/image:version)
-FROM continuumio/miniconda3:latest
+FROM quay.io/bcdev/xcube-python-base:0.8.1
 
-# Person responsible
-MAINTAINER helge.dzierzon@brockmann-consult.de
+ARG INSTALL_PLUGINS=1
+ENV XCUBE_SH_VERSION=0.8.0
+ENV XCUBE_CCI_VERSION=0.8.1.dev3
+ENV XCUBE_CDS_VERSION=0.8.1
 
+# Metadata
+LABEL maintainer="helge.dzierzon@brockmann-consult.de"
 LABEL name=xcube
-LABEL version=0.6.2.dev0
+LABEL version=0.9.0.dev0
 LABEL conda_env=xcube
 
-# Ensure usage of bash (simplifies source activate calls)
+# Ensure usage of bash (ensures conda calls succeed)
 SHELL ["/bin/bash", "-c"]
 
-# Update system and install dependencies
+USER root
+# Update system for security checks
 RUN apt-get -y update && apt-get -y upgrade
-RUN apt-get -y install vim
 
-# && apt-get -y install  git build-essential libyaml-cpp-dev
-
-# Install mamba as a much faster conda replacement. We specify an
-# explicit version number because (1) it makes installation of mamba
-# much faster and (2) mamba is still in beta, so it's best to stick
-# to a known-good version.
-RUN conda install mamba=0.1.2 -c conda-forge
+USER xcube
 
 # Setup conda environment
 # Copy yml config into image
-ADD environment.yml /tmp/environment.yml
+COPY environment.yml /tmp/environment.yml
 
 # Use mamba to create an environment based on the specifications in
-# environment.yml. At present, evironments created by mamba can't be
-# referenced by name from conda (presumably a bug), so we use --preix
-# to specify an explicit path instead.
+# environment.yml. 
 RUN mamba env create --file /tmp/environment.yml
 
-# Set work directory for xcube_server installation
-RUN mkdir /xcube
-WORKDIR /xcube
+# Set work directory for xcube installation
+WORKDIR /home/xcube
 
-# Copy local github repo into image (will be replaced by either git clone or as a conda dep)
-RUN git clone https://github.com/dcs4cop/xcube-cds.git
-RUN git clone https://github.com/dcs4cop/xcube-sh.git
-RUN git clone https://github.com/dcs4cop/xcube-cci.git
+# Copy sources into xcube
+COPY . ./
 
-RUN echo 'HH2'
+# Setup xcube package.
+RUN source activate xcube && python setup.py install
 
-RUN source activate xcube && cd xcube-sh && python setup.py develop && sed "s/- xcube/# - xcube/g" -i environment.yml && mamba env update -n xcube
-RUN source activate xcube && cd xcube-cds && python setup.py develop && sed "s/- xcube/# - xcube/g" -i environment.yml && mamba env update -n xcube
-RUN source activate xcube && cd xcube-cci && python setup.py develop && sed "s/- xcube/# - xcube/g" -i environment.yml && mamba env update -n xcube
+WORKDIR /tmp
+ADD scripts/install_xcube.sh ./
 
-ADD . /xcube
+RUN if [[ ${INSTALL_PLUGINS} == '1' ]]; then bash install_xcube.sh xcube-sh ${XCUBE_SH_VERSION} release; fi;
+RUN if [[ ${INSTALL_PLUGINS} == '1' ]]; then bash install_xcube.sh xcube-cci ${XCUBE_CCI_VERSION} release; fi;
+RUN if [[ ${INSTALL_PLUGINS} == '1' ]]; then bash install_xcube.sh xcube-cds ${XCUBE_CDS_VERSION} release; fi;
 
-# Setup xcube_server package, specifying the environment by path rather
-# than by name (see above).
-RUN source activate xcube && python setup.py develop
+# Export web server port
+EXPOSE 8080
 
-
-ADD --chown=1000:1000 store_config.json store_config.json
-ADD .cdsapirc /root/.cdsapirc
-
-# Test xcube package
-# ENV NUMBA_DISABLE_JIT 1
-# RUN source activate xcube && pytest
-
-# Export web server port 8000
-EXPOSE 8000
-
-# Start server
-ENTRYPOINT ["/bin/bash", "-c"]
-CMD ["source activate xcube && xcube --help"]
+# Start bash, so we can invoke xcube CLI.
+CMD ["/bin/bash"]

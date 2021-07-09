@@ -85,7 +85,6 @@ def resample_in_time(cube: xr.Dataset,
     resampler = cube.resample(skipna=True,
                               closed='left',
                               label='left',
-                              keep_attrs=True,
                               time=frequency,
                               loffset=offset,
                               base=base)

@@ -28,8 +28,31 @@ def compute_array_expr(expr: str,
                        namespace: Dict[str, Any] = None,
                        errors: str = 'raise',
                        result_name: str = None):
+    """
+    Safely evaluate a Python expression and return the result.
+
+    The namespace is expected to contain variable references
+    which, when evaluated, return numpy-like data arrays.
+
+    For example, the Python expression
+    "B01 <= 0 and not min(B01) > 2" contains the variable reference
+    "B01". The expression is first transpiled to the new expression
+    "np.logical_and(B01 <= 0, np.logical_not(np.fmin(B01) > 2))"
+    which is then being evaluated instead.
+
+    :param expr: A valid Python expression.
+    :param namespace: A dictionary that represents the namespace
+        for the evaluation.
+    :param result_name: Name of the result (used for error messages only)
+    :param errors: How to deal with errors raised when
+        evaluating the expression. May be one of "raise" or "warn".
+    :return: The result computed from the evaluating the expression.
+    """
     expr = transpile_expr(expr, warn=errors == 'warn')
-    return compute_expr(expr, namespace=namespace, errors=errors, result_name=result_name)
+    return compute_expr(expr,
+                        namespace=namespace,
+                        errors=errors,
+                        result_name=result_name)
 
 
 def compute_expr(expr: str,
@@ -37,20 +60,23 @@ def compute_expr(expr: str,
                  errors: str = 'raise',
                  result_name: str = None):
     """
-    Compute a Python expression and return the result.
+    Safely evaluate a Python expression and return the result.
 
     :param expr: A valid Python expression.
-    :param namespace: A dictionary that represents the namespace for the computation.
+    :param namespace: A dictionary that represents the namespace
+        for the evaluation.
     :param result_name: Name of the result (used for error messages only)
-    :param errors: How to deal with errors raised when computing the expression. May be one of "raise" or "warn".
-    :return: The result computed from the expression.
+    :param errors: How to deal with errors raised when
+        evaluating the expression. May be one of "raise" or "warn".
+    :return: The result computed from the evaluating the expression.
     """
     try:
         result = eval(expr, namespace, None)
     except Exception as e:
         result = None
         if result_name:
-            msg = f'failed computing {result_name} from expression {expr!r}: {e}'
+            msg = f'failed computing {result_name}' \
+                  f' from expression {expr!r}: {e}'
         else:
             msg = f'failed computing expression {expr!r}: {e}'
         if errors == 'raise':
@@ -79,7 +105,11 @@ class _ExprTranspiler:
     See https://greentreesnakes.readthedocs.io/en/latest/nodes.html#expressions
     """
 
-    _KEYWORDS = {'in', 'not in', 'is', 'is not', 'and', 'or', 'not', 'True', 'False', 'None'}
+    _KEYWORDS = {
+        'in', 'not in', 'is', 'is not',
+        'and', 'or', 'not',
+        'True', 'False', 'None'
+    }
 
     _OP_INFOS = {
 
@@ -140,7 +170,8 @@ class _ExprTranspiler:
             return pat.format(x=x)
         if isinstance(node, ast.Call):
             pat = self.transform_call(node.func, node.args)
-            xes = {'x%s' % i: self._transpile(node.args[i]) for i in range(len(node.args))}
+            xes = {'x%s' % i: self._transpile(node.args[i])
+                   for i in range(len(node.args))}
             return pat.format(**xes)
         if isinstance(node, ast.UnaryOp):
             pat = self.transform_unary_op(node.op, node.operand)
@@ -159,14 +190,17 @@ class _ExprTranspiler:
             return pat.format(x=x, y=y, z=z)
         if isinstance(node, ast.BoolOp):
             pat = self.transform_bool_op(node.op, node.values)
-            xes = {'x%s' % i: self._transpile(node.values[i]) for i in range(len(node.values))}
+            xes = {'x%s' % i: self._transpile(node.values[i])
+                   for i in range(len(node.values))}
             return pat.format(**xes)
         if isinstance(node, ast.Compare):
             pat = self.transform_compare(node.left, node.ops, node.comparators)
             xes = {'x0': self._transpile(node.left)}
-            xes.update({'x%s' % (i + 1): self._transpile(node.comparators[i]) for i in range(len(node.comparators))})
+            xes.update({'x%s' % (i + 1): self._transpile(node.comparators[i])
+                        for i in range(len(node.comparators))})
             return pat.format(**xes)
-        raise ValueError('unrecognized expression node %s in "%s"' % (node.__class__.__name__, self.expr))
+        raise ValueError('unrecognized expression node %s in "%s"'
+                         % (node.__class__.__name__, self.expr))
 
     def transform_name(self, name: ast.Name):
         return name.id
@@ -206,8 +240,9 @@ class _ExprTranspiler:
         right_op = getattr(operand, 'op', None)
         if right_op:
             _, other_precedence, other_assoc = self.get_op_info(right_op)
-            if other_precedence < precedence or other_precedence == precedence \
-                    and other_assoc is not None:
+            if other_precedence < precedence \
+                    or (other_precedence == precedence
+                        and other_assoc is not None):
                 x = '({x})'
 
         if name in self._KEYWORDS:
@@ -229,14 +264,18 @@ class _ExprTranspiler:
 
         if left_op:
             _, other_precedence, other_assoc = self.get_op_info(left_op)
-            if other_precedence < precedence or other_precedence == precedence \
-                    and assoc == 'R' and other_assoc is not None:
+            if other_precedence < precedence \
+                    or (other_precedence == precedence
+                        and assoc == 'R'
+                        and other_assoc is not None):
                 x = '({x})'
 
         if right_op:
             _, other_precedence, other_assoc = self.get_op_info(right_op)
-            if other_precedence < precedence or other_precedence == precedence \
-                    and assoc == 'L' and other_assoc is not None:
+            if other_precedence < precedence \
+                    or (other_precedence == precedence
+                        and assoc == 'L'
+                        and other_assoc is not None):
                 y = '({y})'
 
         return "%s %s %s" % (x, name, y)
@@ -251,7 +290,8 @@ class _ExprTranspiler:
         if name == 'and' or name == 'or':
             expr = None
             for i in range(1, len(values)):
-                expr = 'np.logical_%s(%s, {x%d})' % (name, '{x0}' if i == 1 else expr, i)
+                expr = 'np.logical_%s(%s, {x%d})' \
+                       % (name, '{x0}' if i == 1 else expr, i)
             return expr
 
         xes = []
@@ -272,7 +312,8 @@ class _ExprTranspiler:
     def transform_compare(self, left, ops, comparators):
 
         if len(ops) != 1:
-            raise ValueError('expression "%s" uses an n-ary comparison, but only binary are supported' % self.expr)
+            raise ValueError('expression "%s" uses an n-ary comparison,'
+                             ' but only binary are supported' % self.expr)
 
         right = comparators[0]
         op = ops[0]
@@ -281,16 +322,17 @@ class _ExprTranspiler:
         x = '{x0}'
         y = '{x1}'
 
-        if self._is_nan(right):
-            nan_op = x
-        elif self._is_nan(right):
+        if self._is_nan(left):
             nan_op = y
+        elif self._is_nan(right):
+            nan_op = x
         else:
             nan_op = None
 
         if nan_op:
             if self.warn:
-                warnings.warn('Use of NaN as operand with comparison "%s" is ambiguous: "%s"' % (name, self.expr))
+                warnings.warn('Use of NaN as operand with comparison'
+                              ' "%s" is ambiguous: "%s"' % (name, self.expr))
             if name == '==':
                 return 'np.isnan(%s)' % nan_op
             if name == '!=':
@@ -305,8 +347,10 @@ class _ExprTranspiler:
         right_op = getattr(right, 'op', None)
         if right_op:
             _, other_precedence, other_assoc = self.get_op_info(right_op)
-            if other_precedence < precedence or other_precedence == precedence \
-                    and assoc == 'L' and other_assoc is not None:
+            if other_precedence < precedence \
+                    or (other_precedence == precedence
+                        and assoc == 'L'
+                        and other_assoc is not None):
                 y = '(%s)' % y
 
         return '%s %s %s' % (x, name, y)

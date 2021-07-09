@@ -4,6 +4,7 @@ from typing import Any, Dict, Optional, Sequence, Tuple
 
 import numpy as np
 import xarray as xr
+
 from test.core.gen.helpers import get_inputdata_path
 from xcube.core.dsio import rimraf
 from xcube.core.gen.config import get_config_dict
@@ -32,11 +33,12 @@ class DefaultProcessTest(unittest.TestCase):
             [get_inputdata_path('20170101-IFR-L4_GHRSST-SSTfnd-ODYSSEA-NWE_002-v2.0-fv1.0.nc')], 'l2c-single.nc')
         self.assertEqual(True, status)
         self.assertTrue('\nstep 9 of 9: creating input slice in l2c-single.nc...\n' in output)
-        self.assert_cube_ok(xr.open_dataset('l2c-single.nc', autoclose=True),
-                            expected_time_dim=1,
-                            expected_extra_attrs=dict(date_modified=None,
-                                                      time_coverage_start='2016-12-31T12:00:00.000000000',
-                                                      time_coverage_end='2017-01-01T12:00:00.000000000'))
+        with xr.open_dataset('l2c-single.nc') as dataset:
+            self.assert_cube_ok(dataset,
+                                expected_time_dim=1,
+                                expected_extra_attrs=dict(date_modified=None,
+                                                          time_coverage_start='2016-12-31T12:00:00.000000000',
+                                                          time_coverage_end='2017-01-01T12:00:00.000000000'))
 
     def test_process_inputs_single_nc_processed_vars(self):
         status, output = gen_cube_wrapper(
@@ -60,12 +62,13 @@ class DefaultProcessTest(unittest.TestCase):
         )
         self.assertEqual(True, status)
         self.assertTrue('\nstep 9 of 9: creating input slice in l2c-single.nc...\n' in output)
-        self.assert_cube_ok(xr.open_dataset('l2c-single.nc', autoclose=True),
-                            expected_time_dim=1,
-                            expected_output_vars=('SST', 'SST_uncertainty', 'sea_ice_fraction'),
-                            expected_extra_attrs=dict(date_modified=None,
-                                                      time_coverage_start='2016-12-31T12:00:00.000000000',
-                                                      time_coverage_end='2017-01-01T12:00:00.000000000'))
+        with xr.open_dataset('l2c-single.nc') as dataset:
+            self.assert_cube_ok(dataset,
+                                expected_time_dim=1,
+                                expected_output_vars=('SST', 'SST_uncertainty', 'sea_ice_fraction'),
+                                expected_extra_attrs=dict(date_modified=None,
+                                                          time_coverage_start='2016-12-31T12:00:00.000000000',
+                                                          time_coverage_end='2017-01-01T12:00:00.000000000'))
 
     def test_process_inputs_append_multiple_nc(self):
         status, output = gen_cube_wrapper(
@@ -74,11 +77,12 @@ class DefaultProcessTest(unittest.TestCase):
         self.assertEqual(True, status)
         self.assertTrue('\nstep 9 of 9: creating input slice in l2c.nc...\n' in output)
         self.assertTrue('\nstep 9 of 9: appending input slice to l2c.nc...\n' in output)
-        self.assert_cube_ok(xr.open_dataset('l2c.nc', autoclose=True),
-                            expected_time_dim=3,
-                            expected_extra_attrs=dict(date_modified=None,
-                                                      time_coverage_start='2016-12-31T12:00:00.000000000',
-                                                      time_coverage_end='2017-01-03T12:00:00.000000000'))
+        with xr.open_dataset('l2c.nc') as dataset:
+            self.assert_cube_ok(dataset,
+                                expected_time_dim=3,
+                                expected_extra_attrs=dict(date_modified=None,
+                                                          time_coverage_start='2016-12-31T12:00:00.000000000',
+                                                          time_coverage_end='2017-01-03T12:00:00.000000000'))
 
     def test_process_inputs_single_zarr(self):
         status, output = gen_cube_wrapper(

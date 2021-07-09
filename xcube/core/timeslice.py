@@ -51,7 +51,10 @@ def find_time_slice(store: Union[str, MutableMapping],
         # ValueError raised if cube store does not exist
         try:
             cube = xr.open_dataset(store)
-        except FileNotFoundError:
+        except (FileNotFoundError, ValueError):
+            # If the zarr directory does not exist, open_dataset raises a
+            # FileNotFoundError (with xarray <= 0.17.0) or a ValueError
+            # (with xarray 0.18.0).
             return -1, 'create'
 
     # TODO (forman): optimise following naive search by bi-sectioning or so
@@ -153,7 +156,13 @@ def update_time_slice(store: Union[str, MutableMapping],
                 if var.dims[0] != 'time':
                     raise ValueError(f"dimension 'time' of variable {var_name!r} must be first dimension")
                 time_var_names.append(var_name)
-                encoding[var_name] = cube[var_name].encoding
+                enc = dict(cube[var_name].encoding)
+                # xarray 0.17+ supports engine preferred chunks if exposed by the backend
+                # zarr does that, but when we use the new 'preferred_chunks' when writing to zarr
+                # it raises and says, 'preferred_chunks' is an unsupported encoding
+                if 'preferred_chunks' in enc:
+                    del enc['preferred_chunks']
+                encoding[var_name] = enc
 
     if chunk_sizes:
         time_slice = chunk_dataset(time_slice, chunk_sizes, format_name='zarr')

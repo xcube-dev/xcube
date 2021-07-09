@@ -30,13 +30,16 @@ import xarray as xr
 from xcube.core.mldataset import MultiLevelDataset
 from xcube.core.verify import verify_cube
 from xcube.util.assertions import assert_given
+from xcube.util.assertions import assert_true
+from xcube.util.jsonschema import JsonStringSchema
 
 
 class TypeSpecifier:
     """
-    A type specifier denotes a type of data. It is used to group similar types of data and
-    distinguish between different types of data. It can be used by stores to state what
-    types of data can be read from and/or written to them.
+    A type specifier denotes a type of data. It is used to group similar types
+    of data and distinguish between different types of data. It can be used
+    by stores to state what types of data can be read from and/or written
+    to them.
 
     A type specifier consists of a name and an arbitrary number of flags.
     Flags can be used to further refine a type specifier if needed.
@@ -83,14 +86,16 @@ class TypeSpecifier:
 
     def satisfies(self, other: Union[str, "TypeSpecifier"]) -> bool:
         """
-        Tests whether this type specifier satisfies (the requirements of) another type specifier.
+        Tests whether this type specifier satisfies (the requirements of)
+        another type specifier.
 
         This type specifier satisfies type specifier *other*
 
         1. if either this or *other* is "*" (= any) or
         2. if the type names of this and *other* are equal and
           - if *other* has no flags or
-          - if all the flags of *other* are a subset of the flags (if any) of this type specifier.
+          - if all the flags of *other* are a subset of the flags (if any)
+            of this type specifier.
 
         :param other: Another type specifier, as string or *TypeSpecifier*.
         :return: Whether this type specifier satisfies another type specifier.
@@ -106,10 +111,11 @@ class TypeSpecifier:
 
     def is_satisfied_by(self, other: Union[str, "TypeSpecifier"]) -> bool:
         """
-        Tests whether this type specifier is satisfied by another type specifier.
+        Tests whether this type specifier is satisfied by another
+        type specifier.
 
-        This is the inverse operation of :meth:satisfies and may be more handy
-        or intuitive in some situations. It is equivalent to:
+        This is the inverse operation of :meth:satisfies and may
+        be more handy or intuitive in some situations. It is equivalent to:
 
             self.normalize(other).satisfies(self)
 
@@ -119,29 +125,51 @@ class TypeSpecifier:
         return self.normalize(other).satisfies(self)
 
     @classmethod
-    def normalize(cls, type_specifier: Union[str, "TypeSpecifier"]) -> "TypeSpecifier":
+    def normalize(cls, type_specifier: Union[str, "TypeSpecifier"]) \
+            -> "TypeSpecifier":
         if isinstance(type_specifier, TypeSpecifier):
             return type_specifier
         if isinstance(type_specifier, str):
             return cls.parse(type_specifier)
-        raise TypeError('type_specifier must be of type "str" or "TypeSpecifier"')
+        raise TypeError('type_specifier must be of type '
+                        '"str" or "TypeSpecifier"')
 
     @classmethod
     def parse(cls, type_specifier: str) -> "TypeSpecifier":
         if '[' not in type_specifier:
             return TypeSpecifier(type_specifier)
         if not type_specifier.endswith(']'):
-            raise SyntaxError(f'"{type_specifier}" cannot be parsed: No end brackets found')
+            raise SyntaxError(f'"{type_specifier}" cannot be parsed: '
+                              f'No end brackets found')
         name = type_specifier.split('[')[0]
         flags = type_specifier.split('[')[1].split(']')[0].split(',')
         return TypeSpecifier(name, flags=set(flags))
 
+    @classmethod
+    def get_schema(cls) -> JsonStringSchema:
+        return JsonStringSchema(
+            min_length=1,
+            factory=TypeSpecifier.parse,
+            serializer=str
+        )
+
+    def assert_satisfies(self,
+                         other: Union[str, 'TypeSpecifier'],
+                         name: str = None):
+        assert_true(self.satisfies(other),
+                    f'{name or "type_specifier"} must satisfy'
+                    f' type specifier "{other}",'
+                    f' but was "{self}"')
+
 
 TYPE_SPECIFIER_ANY = TypeSpecifier('*')
 TYPE_SPECIFIER_DATASET = TypeSpecifier('dataset')
-TYPE_SPECIFIER_CUBE = TypeSpecifier('dataset', flags={'cube'})
-TYPE_SPECIFIER_MULTILEVEL_DATASET = TypeSpecifier('dataset', flags={'multilevel'})
-TYPE_SPECIFIER_MULTILEVEL_CUBE = TypeSpecifier('dataset', flags={'multilevel', 'cube'})
+TYPE_SPECIFIER_CUBE = TypeSpecifier('dataset',
+                                    flags={'cube'})
+TYPE_SPECIFIER_MULTILEVEL_DATASET = TypeSpecifier('dataset',
+                                                  flags={'multilevel'})
+TYPE_SPECIFIER_MULTILEVEL_CUBE = TypeSpecifier('dataset',
+                                               flags={'multilevel', 'cube'})
 TYPE_SPECIFIER_GEODATAFRAME = TypeSpecifier('geodataframe')
 
 

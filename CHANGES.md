@@ -1,3 +1,124 @@
+## Changes in 0.9.0 (in development)
+
+* Added a new feature to xcube called "BYOA" - Bring your own Algorithm.
+  It is a generic utility that allows for execution of user-supplied 
+  Python code in both local and remote contexts. (#467)
+  The new `xcube.core.byoa` package hosts the BYOA implementation and API.
+  The entry point to the functionality is the `xcube.core.byoa.CodeConfig`
+  class. It is currently utilized by the xcube Cube Generator that can now
+  deal with an optional `code_config` request parameter. If given,
+  the generated data cube will be post-processed by the configured user-code.
+  The xcube Cube Generator with the BYOA feature is made available through the 
+  1. Generator API `xcube.core.gen2.LocalCubeGenerator` and
+    `xcube.core.gen2.service.RemoteCubeGenerator`;
+  2. Generator CLI `xcube gen2`.
+* xcube now issues a warning, if a data cube is opened from object 
+  storage, and credentials have neither been passed nor can be found, 
+  and the object storage has been opened with the default `anon=False`. (#412)
+* xcube no longer internally caches directory listings, which prevents 
+  the situation where a data cube that has recently been written into object 
+  storage cannot be found. 
+* Added a new utility module `xcube.util.temp` that allows for creating 
+  temporary files and directories that will be deleted when the current 
+  process ends.
+* Added a GitHub action that will run xcube unit tests, and build and push Docker images. The
+  version tag of the image is either `latest` when the master changed or the release tag 
+* Removed warning `module 'xcube_xyz' looks like an xcube-plugin but 
+  lacks a callable named 'init_plugin`.
+
+  
+## Changes in 0.8.2 (in development)
+
+* Fixed the issue that xcube gen2 would not print tracebacks to stderr 
+  when raising errors of type `CubeGeneratorError` (#448).
+* Enhanced `xcube.core.normalize.normalize_dataset()` function to also 
+  normalize datasets with latitudes given as 
+  `latitude_centers` and to invert decreasing latitude coordinate values.
+* Introduced `xcube.core.normalize.cubify_dataset()` function to normalize 
+  a dataset and finally assert the result complies to the 
+  [xcube dataset conventions](https://github.com/dcs4cop/xcube/blob/master/docs/source/cubespec.md).
+* Fixed that data stores `directory` and `s3` were not able to handle data 
+  identifiers that they had assigned themselves during `write_data()`.  
+  (#450)
+* The `xcube prune` tool is no longer restricted to data cube datasets 
+  and should now be able to deal with datasets that comprise very many 
+  chunks. (#469)
+* The `xcube.core.extract.get_cube_values_for_points()` function has been 
+  enhanced to also accept lists or tuples in the item values of 
+  the `points` arguments. (#431)   
+* Fixed exception raised in `xcube extract` CLI tool when called with the 
+  `--ref` option. This issue occurred with `xarray 0.18.2+`.
+
+## Changes in 0.8.1
+
+* Improved support of datasets with time given as `cftime.DatetimeGregorian` 
+  or `cftime.DatetimeJulian`.
+* Fixed out-of-memory error raised if spatial subsets were created from 
+  cubes with large spatial dimensions. (#442)
+* Fixed example Notebook `compute_dask_array` and renamed it 
+  into `compute_array_from_func`. (#385)
+* Fixed a problem with the S3 data store that occurred if the store was 
+  configured without `bucket_name` and the (Zarr) data was opened 
+  with `consolidated=True`.
+
+* The functions `xcube.core.compute.compute_cube()` 
+  and `xcube.core.compute.compute_dataset()`
+  can now alter the shape of input datasets. (#289)  
+
+## Changes in 0.8.0
+
+* Harmonized retrieval of spatial and temporal bounds of a dataset: 
+  To determine spatial bounds, use `xcube.core.geom.get_dataset_bounds()`, 
+  to determine temporal bounds, use `xcube.core.timecoord.get_time_range_from_data()`. 
+  Both methods will attempt to get the values from associated bounds arrays first. 
+* Fixed broken JSON object serialisation of objects returned by 
+  `DataStore.describe_object()`. (#432)
+* Changed behaviour and signature of `xcube.core.store.DataStore.get_dataset_ids()`.
+  The keyword argument `include_titles: str = True` has been replaced by 
+  `include_attrs: Sequence[str] = None` and the return value changes accordingly:
+  - If `include_attrs` is None (the default), the method returns an iterator
+    of dataset identifiers *data_id* of type `str`.
+  - If `include_attrs` is a sequence of attribute names, the method returns
+    an iterator of tuples (*data_id*, *attrs*) of type `Tuple[str, Dict]`.
+  Hence `include_attrs`  can be used to obtain a minimum set of dataset 
+  metadata attributes for each returned *data_id*.
+  However, `include_attrs` is not yet implemented so far in the "s3", 
+  "memory", and "directory" data stores. (#420)
+* Directory and S3 Data Store consider format of data denoted by *data id* when 
+  using `get_opener_ids()`.
+* S3 Data Store will only recognise a `consolidated = True` parameter setting,
+  if the file `{bucket}/{data_id}/.zmetadata` exists. 
+* `xcube gen2` will now ensure that temporal subsets can be created. (#430)
+* Enhance `xcube serve` for use in containers: (#437)
+  * In addition to option `--config` or `-c`, dataset configurations can now 
+    be passed via environment variable `XCUBE_SERVE_CONFIG_FILE`.
+  * Added new option `--base-dir` or `-b` to pass the base directory to
+    resolve relative paths in dataset configurations. In addition, the value
+    can be passed via environment variable `XCUBE_SERVE_BASE_DIR`.
+
+## Changes in 0.7.2
+
+* `xcube gen2` now allows for specifying the final data cube's chunk
+  sizes. The new `cube_config` parameter is named `chunks`, is optional
+  and if given, must be a dictionary that maps a dimension name to a 
+  chunk size or to `None` (= no chunking). The chunk sizes only apply 
+  to data variables. Coordinate variables will not be affected, e.g. 
+  "time", "lat", "lon" will not be chunked. (#426)
+
+* `xcube gen2` now creates subsets from datasets returned by data stores that
+  do not recognize cube subset parameters `variable_names`, `bbox`, and
+  `time_range`. (#423)
+
+* Fixed a problem where S3 data store returned outdated bucket items. (#422)
+
+## Changes in 0.7.1
+
+* Dataset normalisation no longer includes reordering increasing
+  latitude coordinates, as this creates datasets that are no longer writable 
+  to Zarr. (#347)
+* Updated package requirements
+  - Added `s3fs`  requirement that has been removed by accident.
+  - Added missing requirements `requests` and `urllib3`.
 ## Changes in 0.7.0 (in development)
 
 * Numerous breaking changes have been applied to this version
@@ -21,19 +142,50 @@
   
 * Removed example notebooks that used hard-coded local file paths. (#400)
 
-* Fixed unit tests broken by accident. (#396)
+## Changes in 0.7.0
 
+* Introduced abstract base class `xcube.util.jsonschema.JsonObject` which 
+  is now the super class of many classes that have JSON object representations.
+  In Jupyter notebooks, instances of such classes are automatically rendered 
+  as JSON trees.
+* `xcube gen2` CLI tool can now have multiple `-v` options, e.g. `-vvv`
+  will now output detailed requests and responses.  
+* Added new Jupyter notebooks in `examples/notebooks/gen2` 
+  for the _data cube generators_ in the package `xcube.core.gen2`.
+* Fixed a problem in `JsonArraySchema` that occurred if a valid 
+  instance was `None`. A TypeError `TypeError: 'NoneType' object is not iterable` was 
+  raised in this case.
+* The S3 data store  `xcube.core.store.stores.s3.S3DataStore` now implements the `describe_data()` method. 
+  It therefore can also be used as a data store from which data is queried and read.  
+* The `xcube gen2` data cube generator tool has been hidden from
+  the set of "official" xcube tools. It is considered as an internal tool 
+  that is subject to change at any time until its interface has stabilized.
+  Please refer to `xcube gen2 --help` for more information.
+* Added `coords` property to `DatasetDescriptor` class. 
+  The `data_vars` property of the `DatasetDescriptor` class is now a dictionary. 
+* Added `chunks` property to `VariableDescriptor` class. 
+* Removed function `reproject_crs_to_wgs84()` and tests (#375) because  
+  - it seemed to be no longer be working with GDAL 3.1+; 
+  - there was no direct use in xcube itself;
+  - xcube plans to get rid of GDAL dependencies.
+* CLI tool `xcube gen2` may now also ingest non-cube datasets.
+* Fixed unit tests broken by accident. (#396)
 * Added new context manager `xcube.util.observe_dask_progress()` that can be used
   to observe tasks that known to be dominated by Dask computations: 
-   
   ```python
   with observe_dask_progress('Writing dataset', 100):
       dataset.to_zarr(store)  
   ```
+* The xcube normalisation process, which ensures that a dataset meets the requirements 
+  of a cube, internally requested a lot of data, causing the process to be slow and
+  expensive in terms of memory consumption. This problem was resolved by avoiding to
+  read in these large amounts of data. (#392)
 
 ## Changes in 0.6.1
 
-All changes relate to maintenance of xcube's Python environment requirements in `envrionment.yml`:
+* Updated developer guide (#382)
+
+Changes relating to maintenance of xcube's Python environment requirements in `envrionment.yml`:
 
 * Removed explicit `blas` dependency (which required MKL as of `blas =*.*=mkl`) 
   for better interoperability with existing environments.  
@@ -525,7 +677,8 @@ versions.
 
 ### Fixes
 - `xcube gen` now parses time stamps correcly from input data. (#207)
-- Dataset multi-resolution pyramids (`*.levels` directories) can be stored in cloud object storage and are now usable with `xcube serve` (#179)
+- Dataset multi-resolution pyramids (`*.levels` directories) can be stored in cloud object storage
+  and are now usable with `xcube serve` (#179)
 - `xcube optimize` now consolidates metadata only after consolidating
   coordinate variables. (#194)
 - Removed broken links from `./README.md` (#197)
@@ -535,16 +688,20 @@ versions.
 
 ### New
 
-* Added first version of the [xcube documentation](https://xcube.readthedocs.io/) generated from `./docs` folder.
+* Added first version of the [xcube documentation](https://xcube.readthedocs.io/) generated from
+  `./docs` folder.
 
 ### Enhancements
 
 * Reorganisation of the Documentation and Examples Section (partly addressing #106)
 * Loosened python conda environment to satisfy conda-forge requirements
-* xcube is now available as a conda package on the conda-forge channel. To install latest xcube package, you can now type: `conda install -c conda-forge xcube`
+* xcube is now available as a conda package on the conda-forge channel. To install
+  latest xcube package, you can now type: `conda install -c conda-forge xcube`
 * Changed the unittesting code to minimize warnings reported by 3rd-party packages
-* Making CLI parameters consistent and removing or changing parameter abbreviations in case they were used twice for different params. (partly addressing #91)
-  For every CLI command which is generating an output a path must be provided by the option `-o`, `--output`. If not provided by the user, a default output_path is generated.
+* Making CLI parameters consistent and removing or changing parameter abbreviations
+  in case they were used twice for different params. (partly addressing #91)
+  For every CLI command which is generating an output a path must be provided by the
+  option `-o`, `--output`. If not provided by the user, a default output_path is generated.
   The following CLI parameter have changed and their abbreviation is not enabled anymore : 
 
     - `xcube gen -v` is now only `xcube gen --vars` or `xcube gen --variables` 
@@ -644,7 +801,7 @@ versions.
 * Restructured and clarified code base (#27)
 * Moved to Python 3.7 (#25)
 * Excluding all input processors except for the default one. They are now plugins and have own repositories within the 
-xcube's organisation. (#49)
+  xcube's organisation. (#49)
 
 
 ### Fixes

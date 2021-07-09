@@ -35,9 +35,10 @@ from xcube.version import version
 @click.version_option(version)
 @cli_option_traceback
 @cli_option_scheduler
-@click.option('--warnings', '-w', is_flag=True,
-        help='Show any warnings produced during operation '
-             '(they are hidden by default)')
+@click.option('--warnings', '-w',
+              is_flag=True,
+              help='Show any warnings produced during operation '
+                   '(warnings are hidden by default)')
 def cli(traceback=False, scheduler=None, warnings=None):
     """
     xcube Toolkit
@@ -47,7 +48,10 @@ def cli(traceback=False, scheduler=None, warnings=None):
     # filter when --warnings is omitted, but it can be needed during
     # unit testing if a previous test has caused the filter to be changed.
     import warnings as _warnings
-    _warnings.simplefilter('default' if warnings else 'ignore')
+    _warnings.simplefilter('default' if warnings else 'ignore',
+                           category=DeprecationWarning)
+    _warnings.simplefilter('default' if warnings else 'ignore',
+                           category=RuntimeWarning)
 
 
 # Add registered CLI commands

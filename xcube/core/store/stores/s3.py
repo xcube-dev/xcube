@@ -19,11 +19,12 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+import json
 import os.path
 import uuid
-from typing import Optional, Iterator, Any, Tuple, List
+import warnings
+from typing import Optional, Iterator, Any, Tuple, List, Dict, Union, Container
 
-import geopandas as gpd
 import s3fs
 import xarray as xr
 
@@ -40,13 +41,14 @@ from xcube.core.store import find_data_opener_extensions
 from xcube.core.store import find_data_writer_extensions
 from xcube.core.store import get_data_accessor_predicate
 from xcube.core.store import get_type_specifier
+from xcube.core.store import new_data_descriptor
 from xcube.core.store import new_data_opener
 from xcube.core.store import new_data_writer
 from xcube.core.store.accessors.dataset import S3Mixin
-from xcube.util.assertions import assert_condition
 from xcube.util.assertions import assert_given
 from xcube.util.assertions import assert_in
 from xcube.util.assertions import assert_instance
+from xcube.util.assertions import assert_true
 from xcube.util.extension import Extension
 from xcube.util.jsonschema import JsonObjectSchema
 
@@ -55,9 +57,17 @@ _STORAGE_ID = 's3'
 _DEFAULT_FORMAT_ID = 'zarr'
 
 _FILENAME_EXT_TO_ACCESSOR_ID_PARTS = {
-    '.zarr': (TYPE_SPECIFIER_DATASET, 'zarr', _STORAGE_ID),
-    '.levels': (TYPE_SPECIFIER_MULTILEVEL_DATASET, 'levels', _STORAGE_ID),
+    '.zarr': (str(TYPE_SPECIFIER_DATASET), 'zarr', _STORAGE_ID),
+    '.levels': (str(TYPE_SPECIFIER_MULTILEVEL_DATASET), 'levels', _STORAGE_ID),
 }
+
+_FORMAT_TO_FILENAME_EXT = {
+    'zarr': '.zarr',
+    'levels': '.levels'
+}
+
+_REGISTRY_FILE = 'registry.json'
+
 
 # TODO: write tests
 # TODO: complete docs
@@ -65,6 +75,7 @@ _FILENAME_EXT_TO_ACCESSOR_ID_PARTS = {
 # TODO: remove code duplication with ./directory.py and its tests.
 #   - Introduce a file-system-abstracting base class or mixin, see module "fsspec" and impl. "s3fs" as  used in Dask!
 #   - Introduce something like MultiOpenerStoreMixin/MultiWriterStoreMixin!
+
 
 class S3DataStore(DefaultSearchMixin, MutableDataStore):
     """
@@ -79,10 +90,21 @@ class S3DataStore(DefaultSearchMixin, MutableDataStore):
     """
 
     def __init__(self, **store_params):
-        self._s3, store_params = S3Mixin.consume_s3fs_params(store_params)
-        self._bucket_name, store_params = S3Mixin.consume_bucket_name_param(store_params)
+        self._bucket_name, store_params = \
+            S3Mixin.consume_bucket_name_param(store_params)
         assert_given(self._bucket_name, 'bucket_name')
-        assert_condition(not store_params, f'Unknown keyword arguments: {", ".join(store_params.keys())}')
+        self._s3, store_params = \
+            S3Mixin.consume_s3fs_params(store_params,
+                                        check_path=self._bucket_name,
+                                        params_name='store_params')
+        assert_true(not store_params,
+                    'Unknown keyword arguments:'
+                    f' {", ".join(store_params.keys())}')
+        registry_path = f'{self._bucket_name}/{_REGISTRY_FILE}'
+        self._registry = {}
+        if self._s3.exists(registry_path):
+            with self._s3.open(registry_path, 'r') as registry_file:
+                self._registry = json.load(registry_file)
 
     def close(self):
         pass
@@ -114,15 +136,25 @@ class S3DataStore(DefaultSearchMixin, MutableDataStore):
         data_type_specifier, _, _ = self._get_accessor_id_parts(data_id)
         return data_type_specifier,
 
-    def get_data_ids(self, type_specifier: str = None, include_titles = True) -> Iterator[Tuple[str, Optional[str]]]:
-        # todo do not ignore type_specifier
+    def get_data_ids(self,
+                     type_specifier: str = None,
+                     include_attrs: Container[str] = None) -> \
+            Union[Iterator[str], Iterator[Tuple[str, Dict[str, Any]]]]:
+        # TODO: do not ignore type_specifier
+        # TODO: do not ignore names in include_attrs
+        return_tuples = include_attrs is not None
         prefix = self._bucket_name + '/'
         first_index = len(prefix)
-        for item in self._s3.listdir(self._bucket_name, detail=False):
+        for item in self._s3.listdir(self._bucket_name, detail=False, refresh=True):
             if item.startswith(prefix):
-                yield item[first_index:], None
+                data_id = item[first_index:]
+                yield (data_id, {}) if return_tuples else data_id
 
     def has_data(self, data_id: str, type_specifier: str = None) -> bool:
+        if data_id in self._registry:
+            descriptor = self._registry[data_id]
+            return not (type_specifier and not TypeSpecifier.normalize(type_specifier).
+                        is_satisfied_by(descriptor.type_specifier))
         if type_specifier:
             data_type_specifier, _, _ = self._get_accessor_id_parts(data_id)
             if not TypeSpecifier.parse(data_type_specifier).satisfies(type_specifier):
@@ -131,19 +163,51 @@ class S3DataStore(DefaultSearchMixin, MutableDataStore):
         return self._s3.exists(path)
 
     def describe_data(self, data_id: str, type_specifier: str = None) -> DataDescriptor:
-        # TODO: implement me
-        raise NotImplementedError()
+        if data_id in self._registry:
+            descriptor = self._registry[data_id]
+            if type_specifier and not TypeSpecifier.normalize(type_specifier). \
+                    is_satisfied_by(descriptor.type_specifier):
+                raise DataStoreError(f'Data "{data_id}" is not available as '
+                                     f'type "{type_specifier}". '
+                                     f'It is of type "{descriptor.type_specifier}".')
+            return descriptor
+        if not self.has_data(data_id, type_specifier):
+            if not type_specifier:
+                raise DataStoreError(f'Data "{data_id}" is not available.')
+            raise DataStoreError(f'Data "{data_id}" is not available as type "{type_specifier}".')
+        _, ext = os.path.splitext(data_id)
+        data_opener_ids = self.get_data_opener_ids(data_id, type_specifier=type_specifier)
+        if len(data_opener_ids) == 0:
+            raise DataStoreError(f'Cannot describe data {data_id}')
+        open_params = {}
+        op_schema = self._new_s3_opener(data_opener_ids[0]).get_open_data_params_schema(data_id)
+        if 'consolidated' in op_schema.properties:
+            open_params['consolidated'] = True
+        data = self.open_data(data_id, data_opener_ids[0], **open_params)
+        return new_data_descriptor(data_id, data)
 
-    def get_data_opener_ids(self, data_id: str = None, type_specifier: str = None) -> Tuple[str, ...]:
+    def get_data_opener_ids(self, data_id: str = None, type_specifier: Optional[str] = None) -> Tuple[str, ...]:
         if type_specifier:
-            type_specifier = TypeSpecifier.normalize(type_specifier)
+            type_specifier = TypeSpecifier.parse(type_specifier)
         if type_specifier == TYPE_SPECIFIER_ANY:
             type_specifier = None
         self._assert_valid_type_specifier(type_specifier)
-        if not type_specifier and data_id:
-            type_specifier, _, _ = self._get_accessor_id_parts(data_id)
+        if data_id:
+            accessor_id_parts = self._get_accessor_id_parts(data_id, require=False)
+            if not accessor_id_parts:
+                return tuple()
+            acc_type_specifier, acc_format, acc_storage_id = accessor_id_parts
+            if not type_specifier:
+                type_specifier = acc_type_specifier
+            return tuple(ext.name for ext in find_data_opener_extensions(
+                predicate=get_data_accessor_predicate(
+                    type_specifier=type_specifier,
+                    format_id=acc_format,
+                    storage_id=acc_storage_id)
+            ))
         return tuple(ext.name for ext in find_data_opener_extensions(
-            predicate=get_data_accessor_predicate(type_specifier=type_specifier, storage_id=_STORAGE_ID)
+            predicate=get_data_accessor_predicate(type_specifier=type_specifier,
+                                                  storage_id=_STORAGE_ID)
         ))
 
     def get_open_data_params_schema(self, data_id: str = None, opener_id: str = None) -> JsonObjectSchema:
@@ -195,6 +259,31 @@ class S3DataStore(DefaultSearchMixin, MutableDataStore):
                    replace: bool = False,
                    **write_params) -> str:
         assert_instance(data, (xr.Dataset, MultiLevelDataset))
+        if writer_id and writer_id.split(':')[2] != _STORAGE_ID:
+            raise DataStoreError(f'Invalid writer id "{writer_id}"')
+        if data_id:
+            accessor_id_parts = self._get_accessor_id_parts(data_id, require=False)
+            if accessor_id_parts:
+                data_type_specifier = get_type_specifier(data)
+                if not data_type_specifier.satisfies(accessor_id_parts[0]):
+                    raise DataStoreError(f'Data id "{data_id}" is not suitable for data of type '
+                                         f'"{data_type_specifier}".')
+                predicate = get_data_accessor_predicate(type_specifier=accessor_id_parts[0],
+                                                        format_id=accessor_id_parts[1],
+                                                        storage_id=accessor_id_parts[2])
+                extensions = find_data_writer_extensions(predicate=predicate)
+                assert extensions
+                writer_id_from_data_id = extensions[0].name
+                if writer_id is not None:
+                    # checking that a user-provided data id is suitable for the data type and
+                    # requested format
+                    if writer_id_from_data_id.split(':')[0] != writer_id.split(':')[0] or \
+                            writer_id_from_data_id.split(':')[1] != writer_id.split(':')[1]:
+                        raise DataStoreError(f'Writer ID "{writer_id}" seems inappropriate for '
+                                             f'data id "{data_id}". Try writer id '
+                                             f'"{writer_id_from_data_id}" instead.')
+                else:
+                    writer_id = writer_id_from_data_id
         if not writer_id:
             if isinstance(data, MultiLevelDataset):
                 predicate = get_data_accessor_predicate(type_specifier=TYPE_SPECIFIER_MULTILEVEL_DATASET,
@@ -207,8 +296,10 @@ class S3DataStore(DefaultSearchMixin, MutableDataStore):
             else:
                 raise DataStoreError(f'Unsupported data type "{type(data)}"')
             extensions = find_data_writer_extensions(predicate=predicate)
+            assert extensions
             writer_id = extensions[0].name
-        data_id = self._ensure_valid_data_id(data_id, data)
+        data_format = writer_id.split(':')[1]
+        data_id = self._ensure_valid_data_id(data_format, data_id)
         path = self._resolve_data_id_to_path(data_id)
         self._new_s3_writer(writer_id).write_data(data, data_id=path, replace=replace, **write_params)
         self.register_data(data_id, data)
@@ -223,12 +314,20 @@ class S3DataStore(DefaultSearchMixin, MutableDataStore):
             raise DataStoreError(f'{e}') from e
 
     def register_data(self, data_id: str, data: Any):
-        # TODO: implement me
-        pass
+        descriptor = new_data_descriptor(data_id, data)
+        self._registry[data_id] = descriptor
+        self._maybe_update_json_registry()
 
     def deregister_data(self, data_id: str):
-        # TODO: implement me
-        pass
+        if data_id in self._registry:
+            self._registry.pop(data_id)
+            self._maybe_update_json_registry()
+
+    def _maybe_update_json_registry(self):
+        registry_path = f'{self._bucket_name}/{_REGISTRY_FILE}'
+        if self._s3.exists(registry_path):
+            with self._s3.open(registry_path, 'w') as registry_file:
+                json.dump(self._registry, registry_file)
 
     ###############################################################
     # Implementation helpers
@@ -242,8 +341,15 @@ class S3DataStore(DefaultSearchMixin, MutableDataStore):
         return new_data_writer(writer_id, s3=self._s3)
 
     @classmethod
-    def _ensure_valid_data_id(cls, data_id: Optional[str], data: Any) -> str:
-        return data_id or str(uuid.uuid4()) + cls._get_filename_ext(data)
+    def _ensure_valid_data_id(cls, data_format: str, data_id: Optional[str]) -> str:
+        extension = _FORMAT_TO_FILENAME_EXT[data_format]
+        if data_id is not None:
+            if not data_id.endswith(extension):
+                warnings.warn(f'Data if "{data_id}" has no expected file extension.'
+                              f'It will be written as "{data_format}".'
+                              f'You may encounter issues with accessing the data from the store.')
+            return data_id
+        return str(uuid.uuid4()) + extension
 
     def _assert_not_closed(self):
         if self._s3 is None:

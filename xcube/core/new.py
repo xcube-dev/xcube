@@ -47,6 +47,7 @@ def new_cube(title='Test Cube',
              time_periods=5,
              time_freq="D",
              time_start='2010-01-01T00:00:00',
+             use_cftime=False,
              drop_bounds=False,
              variables=None):
     """
@@ -78,9 +79,13 @@ def new_cube(title='Test Cube',
     :param time_periods: Number of time steps. Defaults to 5.
     :param time_freq: Duration of each time step. Defaults to `1D'.
     :param time_start: First time value. Defaults to '2010-01-01T00:00:00'.
-    :param time_dtype: Numpy data type for time coordinates. Defaults to 'datetime64[s]'.
+    :param time_dtype: Numpy data type for time coordinates. Defaults to 'datetime64[s]'. If used,
+    parameter 'use_cftime' must be False.
     :param time_units: Units for time coordinates. Defaults to 'seconds since 1970-01-01T00:00:00'.
     :param time_calendar: Calender for time coordinates. Defaults to 'proleptic_gregorian'.
+    :param use_cftime: If True, the time will be given as data types according to the 'cftime'
+    package. If used, the time_calendar parameter must be also be given with an appropriate value
+    such as 'gregorian' or 'julian'. If used, parameter 'time_dtype' must be None.
     :param drop_bounds: If True, coordinate bounds variables are not created. Defaults to False.
     :param variables: Dictionary of data variables to be added. None by default.
     :return: A cube instance
@@ -91,6 +96,9 @@ def new_cube(title='Test Cube',
         raise ValueError()
     if time_periods < 0:
         raise ValueError()
+
+    if use_cftime and time_dtype is not None:
+        raise ValueError('If "use_cftime" is True, "time_dtype" must not be set.')
 
     x_is_lon = x_name == 'lon' or x_units == 'degrees_east'
     y_is_lat = y_name == 'lat' or y_units == 'degrees_north'
@@ -128,8 +136,16 @@ def new_cube(title='Test Cube',
         y_var.attrs.update(long_name='y coordinate of projection',
                            standard_name='projection_y_coordinate')
 
-    time_data_p1 = pd.date_range(start=time_start, periods=time_periods + 1, freq=time_freq).values
-    time_data_p1 = time_data_p1.astype(dtype=time_dtype)
+    if use_cftime:
+        time_data_p1 = xr.cftime_range(start=time_start,
+                                       periods=time_periods + 1,
+                                       freq=time_freq,
+                                       calendar=time_calendar).values
+    else:
+        time_data_p1 = pd.date_range(start=time_start,
+                                     periods=time_periods + 1,
+                                     freq=time_freq).values
+        time_data_p1 = time_data_p1.astype(dtype=time_dtype)
 
     time_delta = time_data_p1[1] - time_data_p1[0]
     time_data = time_data_p1[0:-1] + time_delta // 2

@@ -31,36 +31,69 @@ Serve data cubes via web service.
       https://app.swaggerhub.com/apis/bcdev/xcube-server.
 
     Options:
-      -A, --address ADDRESS  Service address. Defaults to 'localhost'.
-      -P, --port PORT        Port number where the service will listen on.
-                             Defaults to 8080.
-      --prefix PREFIX        Service URL prefix. May contain template patterns
-                             such as "${version}" or "${name}". For example
-                             "${name}/api/${version}".
-      -u, --update PERIOD    Service will update after given seconds of
-                             inactivity. Zero or a negative value will disable
-                             update checks. Defaults to 2.0.
-      -S, --styles STYLES    Color mapping styles for variables. Used only, if one
-                             or more CUBE arguments are provided and CONFIG is not
-                             given. Comma-separated list with elements of the form
-                             <var>=(<vmin>,<vmax>) or
-                             <var>=(<vmin>,<vmax>,"<cmap>")
-      -c, --config CONFIG    Use datasets configuration file CONFIG. Cannot be
-                             used if CUBES are provided.
-      --tilecache SIZE       In-memory tile cache size in bytes. Unit suffixes
-                             'K', 'M', 'G' may be used. Defaults to '512M'. The
-                             special value 'OFF' disables tile caching.
-      --tilemode MODE        Tile computation mode. This is an internal option
-                             used to switch between different tile computation
-                             implementations. Defaults to 0.
-      -s, --show             Run viewer app. Requires setting the environment
-                             variable XCUBE_VIEWER_PATH to a valid xcube-viewer
-                             deployment or build directory. Refer to
-                             https://github.com/dcs4cop/xcube-viewer for more
-                             information.
-      -v, --verbose          Delegate logging to the console (stderr).
-      --traceperf            Print performance diagnostics (stdout).
-      --help                 Show this message and exit.
+      -A, --address ADDRESS    Service address. Defaults to 'localhost'.
+      -P, --port PORT          Port number where the service will listen on.
+                               Defaults to 8080.
+
+      --prefix PREFIX          Service URL prefix. May contain template patterns
+                               such as "${version}" or "${name}". For example
+                               "${name}/api/${version}". Will be used to prefix
+                               all API operation routes and in any URLs returned
+                               by the service.
+
+      --revprefix REVPREFIX    Service reverse URL prefix. May contain template
+                               patterns such as "${version}" or "${name}". For
+                               example "${name}/api/${version}". Defaults to
+                               PREFIX, if any. Will be used only in URLs returned
+                               by the service e.g. the tile URLs returned by the
+                               WMTS service.
+
+      -u, --update PERIOD      Service will update after given seconds of
+                               inactivity. Zero or a negative value will disable
+                               update checks. Defaults to 2.0.
+
+      -S, --styles STYLES      Color mapping styles for variables. Used only, if
+                               one or more CUBE arguments are provided and CONFIG
+                               is not given. Comma-separated list with elements of
+                               the form <var>=(<vmin>,<vmax>) or
+                               <var>=(<vmin>,<vmax>,"<cmap>")
+
+      -c, --config CONFIG      Use datasets configuration file CONFIG. Cannot be
+                               used if CUBES are provided. If not given and also
+                               CUBES are not provided, the configuration may be
+                               given by environment variable
+                               XCUBE_SERVE_CONFIG_FILE.
+
+      -b, --base-dir BASE_DIR  Base directory used to resolve relative dataset
+                               paths in CONFIG and relative CUBES paths. Defaults
+                               to value of environment variable
+                               XCUBE_SERVE_BASE_DIR, if given, otherwise defaults
+                               to the parent directory of CONFIG.
+
+      --tilecache SIZE         In-memory tile cache size in bytes. Unit suffixes
+                               'K', 'M', 'G' may be used. Defaults to '512M'. The
+                               special value 'OFF' disables tile caching.
+
+      --tilemode MODE          Tile computation mode. This is an internal option
+                               used to switch between different tile computation
+                               implementations. Defaults to 0.
+
+      -s, --show               Run viewer app. Requires setting the environment
+                               variable XCUBE_VIEWER_PATH to a valid xcube-viewer
+                               deployment or build directory. Refer to
+                               https://github.com/dcs4cop/xcube-viewer for more
+                               information.
+
+      -v, --verbose            Delegate logging to the console (stderr).
+      --traceperf              Print performance diagnostics (stdout).
+      --aws-prof PROFILE       To publish remote CUBEs, use AWS credentials from
+                               section [PROFILE] found in ~/.aws/credentials.
+
+      --aws-env                To publish remote CUBEs, use AWS credentials from
+                               environment variables AWS_ACCESS_KEY_ID and
+                               AWS_SECRET_ACCESS_KEY
+
+      --help                   Show this message and exit.
 
 
 Configuration File

@@ -21,7 +21,8 @@
 
 import os.path
 import uuid
-from typing import Optional, Iterator, Any, Tuple, List
+from typing import Optional, Iterator, Any, Tuple, List, Dict, Union, Container
+import warnings
 
 import geopandas as gpd
 import xarray as xr
@@ -61,6 +62,14 @@ _FILENAME_EXT_TO_ACCESSOR_ID_PARTS = {
     '.nc': (str(TYPE_SPECIFIER_DATASET), 'netcdf', _STORAGE_ID),
     '.shp': (str(TYPE_SPECIFIER_GEODATAFRAME), 'shapefile', _STORAGE_ID),
     '.geojson': (str(TYPE_SPECIFIER_GEODATAFRAME), 'geojson', _STORAGE_ID),
+}
+
+_FORMAT_TO_FILENAME_EXT = {
+    'zarr': '.zarr',
+    'levels': '.levels',
+    'netcdf': '.nc',
+    'shapefile': '.shp',
+    'geojson': '.geojson'
 }
 
 
@@ -116,8 +125,12 @@ class DirectoryDataStore(DefaultSearchMixin, MutableDataStore):
         actual_type_specifier, _, _ = self._get_accessor_id_parts(data_id)
         return actual_type_specifier,
 
-    def get_data_ids(self, type_specifier: str = None, include_titles: bool = True) -> \
-            Iterator[Tuple[str, Optional[str]]]:
+    def get_data_ids(self,
+                     type_specifier: str = None,
+                     include_attrs: Container[str] = None) -> \
+            Union[Iterator[str], Iterator[Tuple[str, Dict[str, Any]]]]:
+        # TODO: do not ignore names in include_attrs
+        return_tuples = include_attrs is not None
         if type_specifier is not None:
             type_specifier = TypeSpecifier.normalize(type_specifier)
         # TODO: Use os.walk(), which provides a generator rather than a list
@@ -127,11 +140,11 @@ class DirectoryDataStore(DefaultSearchMixin, MutableDataStore):
             actual_type_specifier = self._get_type_specifier_for_data_id(data_id, require=False)
             if actual_type_specifier is not None:
                 if type_specifier is None or actual_type_specifier.satisfies(type_specifier):
-                    yield data_id, None
+                    yield (data_id, {}) if return_tuples else data_id
 
     def has_data(self, data_id: str, type_specifier: str = None) -> bool:
         assert_given(data_id, 'data_id')
-        actual_type_specifier = self._get_type_specifier_for_data_id(data_id)
+        actual_type_specifier = self._get_type_specifier_for_data_id(data_id, require=False)
         if actual_type_specifier is not None:
             if type_specifier is None or actual_type_specifier.satisfies(type_specifier):
                 path = self._resolve_data_id_to_path(data_id)
@@ -157,10 +170,22 @@ class DirectoryDataStore(DefaultSearchMixin, MutableDataStore):
         if type_specifier == TYPE_SPECIFIER_ANY:
             type_specifier = None
         self._assert_valid_type_specifier(type_specifier)
-        if not type_specifier and data_id:
-            type_specifier, _, _ = self._get_accessor_id_parts(data_id)
+        if data_id:
+            accessor_id_parts = self._get_accessor_id_parts(data_id, require=False)
+            if not accessor_id_parts:
+                return tuple()
+            acc_type_specifier, acc_format, acc_storage_id = accessor_id_parts
+            if not type_specifier:
+                type_specifier = acc_type_specifier
+            return tuple(ext.name for ext in find_data_opener_extensions(
+                predicate=get_data_accessor_predicate(
+                    type_specifier=type_specifier,
+                    format_id=acc_format,
+                    storage_id=acc_storage_id)
+        ))
         return tuple(ext.name for ext in find_data_opener_extensions(
-            predicate=get_data_accessor_predicate(type_specifier=type_specifier, storage_id=_STORAGE_ID)
+            predicate=get_data_accessor_predicate(type_specifier=type_specifier,
+                                                  storage_id=_STORAGE_ID)
         ))
 
     def get_open_data_params_schema(self, data_id: str = None, opener_id: str = None) -> JsonObjectSchema:
@@ -215,11 +240,37 @@ class DirectoryDataStore(DefaultSearchMixin, MutableDataStore):
                    replace: bool = False,
                    **write_params) -> str:
         assert_instance(data, (xr.Dataset, MultiLevelDataset, gpd.GeoDataFrame))
+        if writer_id and writer_id.split(':')[2] != _STORAGE_ID:
+            raise DataStoreError(f'Invalid writer id "{writer_id}"')
+        if data_id:
+            accessor_id_parts = self._get_accessor_id_parts(data_id, require=False)
+            if accessor_id_parts:
+                data_type_specifier = get_type_specifier(data)
+                if not data_type_specifier.satisfies(accessor_id_parts[0]):
+                    raise DataStoreError(f'Data id "{data_id}" is not suitable for data of type '
+                                         f'"{data_type_specifier}".')
+                predicate = get_data_accessor_predicate(type_specifier=accessor_id_parts[0],
+                                                        format_id=accessor_id_parts[1],
+                                                        storage_id=accessor_id_parts[2])
+                extensions = find_data_writer_extensions(predicate=predicate)
+                assert extensions
+                writer_id_from_data_id = extensions[0].name
+                if writer_id is not None:
+                    # checking that a user-provided data id is suitable for the data type and
+                    # requested format
+                    if writer_id_from_data_id.split(':')[0] != writer_id.split(':')[0] or \
+                            writer_id_from_data_id.split(':')[1] != writer_id.split(':')[1]:
+                        raise DataStoreError(f'Writer ID "{writer_id}" seems inappropriate for '
+                                             f'data id "{data_id}". Try writer id '
+                                             f'"{writer_id_from_data_id}" instead.')
+                else:
+                    writer_id = writer_id_from_data_id
         if not writer_id:
             if isinstance(data, MultiLevelDataset):
-                predicate = get_data_accessor_predicate(type_specifier=TYPE_SPECIFIER_MULTILEVEL_DATASET,
-                                                        format_id='levels',
-                                                        storage_id=_STORAGE_ID)
+                predicate = get_data_accessor_predicate(
+                    type_specifier=TYPE_SPECIFIER_MULTILEVEL_DATASET,
+                    format_id='levels',
+                    storage_id=_STORAGE_ID)
             elif isinstance(data, xr.Dataset):
                 predicate = get_data_accessor_predicate(type_specifier=TYPE_SPECIFIER_DATASET,
                                                         format_id='zarr',
@@ -233,7 +284,8 @@ class DirectoryDataStore(DefaultSearchMixin, MutableDataStore):
             extensions = find_data_writer_extensions(predicate=predicate)
             assert extensions
             writer_id = extensions[0].name
-        data_id = self._ensure_valid_data_id(data_id, data)
+        data_format = writer_id.split(':')[1]
+        data_id = self._ensure_valid_data_id(data_format, data_id)
         path = self._resolve_data_id_to_path(data_id)
         new_data_writer(writer_id).write_data(data, path, replace=replace, **write_params)
         return data_id
@@ -256,8 +308,15 @@ class DirectoryDataStore(DefaultSearchMixin, MutableDataStore):
     # Implementation helpers
 
     @classmethod
-    def _ensure_valid_data_id(cls, data_id: Optional[str], data: Any) -> str:
-        return data_id or str(uuid.uuid4()) + cls._get_filename_ext(data)
+    def _ensure_valid_data_id(cls, data_format: str, data_id: Optional[str]) -> str:
+        extension = _FORMAT_TO_FILENAME_EXT[data_format]
+        if data_id is not None:
+            if not data_id.endswith(extension):
+                warnings.warn(f'Data if "{data_id}" has no expected file extension.'
+                              f'It will be written as "{data_format}".'
+                              f'You may encounter issues with accessing the data from the store.')
+            return data_id
+        return str(uuid.uuid4()) + extension
 
     def _assert_valid_data_id(self, data_id):
         if not self.has_data(data_id):

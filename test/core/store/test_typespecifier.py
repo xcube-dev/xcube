@@ -11,6 +11,7 @@ from xcube.core.store.typespecifier import TYPE_SPECIFIER_GEODATAFRAME
 from xcube.core.store.typespecifier import TYPE_SPECIFIER_MULTILEVEL_DATASET
 from xcube.core.store.typespecifier import TypeSpecifier
 from xcube.core.store.typespecifier import get_type_specifier
+from xcube.util.jsonschema import JsonStringSchema
 
 
 class TypeSpecifierTest(unittest.TestCase):
@@ -115,6 +116,10 @@ class TypeSpecifierTest(unittest.TestCase):
         with self.assertRaises(SyntaxError) as cm:
             TypeSpecifier.parse('An unparseable expression[')
         self.assertEqual('"An unparseable expression[" cannot be parsed: No end brackets found', f'{cm.exception}')
+
+    def test_parse_exception(self):
+        schema = TypeSpecifier.get_schema()
+        self.assertIsInstance(schema, JsonStringSchema)
 
 
 class GetTypeSpecifierTest(unittest.TestCase):
