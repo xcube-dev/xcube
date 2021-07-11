@@ -29,13 +29,15 @@ from .cfconv import get_dataset_grid_mappings
 from .coords import new_grid_mapping_from_coords
 
 
-def new_grid_mapping_from_dataset(dataset: xr.Dataset,
-                                  *,
-                                  xy_var_names: Tuple[str, str] = None,
-                                  tile_size: Union[int, Tuple[str, str]] = None,
-                                  prefer_crs: pyproj.crs.CRS = None,
-                                  prefer_is_regular: bool = None,
-                                  emit_warnings: bool = False) -> Optional[GridMapping]:
+def new_grid_mapping_from_dataset(
+        dataset: xr.Dataset,
+        *,
+        xy_var_names: Tuple[str, str] = None,
+        tile_size: Union[int, Tuple[str, str]] = None,
+        prefer_crs: pyproj.crs.CRS = None,
+        prefer_is_regular: bool = None,
+        emit_warnings: bool = False
+) -> Optional[GridMapping]:
     if xy_var_names is not None:
         x_var_name, y_var_name = xy_var_names
         if x_var_name not in dataset or y_var_name not in dataset:
@@ -44,18 +46,24 @@ def new_grid_mapping_from_dataset(dataset: xr.Dataset,
         # TODO: create new instance using named coordinate variables
         raise NotImplementedError('xy_var_names not yet supported')
 
-    grid_mappings = get_dataset_grid_mappings(dataset,
-                                              emit_warnings=emit_warnings).values()
-    grid_mappings = [new_grid_mapping_from_coords(x_coords=gm.coords.x,
-                                                  y_coords=gm.coords.y,
-                                                  crs=gm.crs,
-                                                  tile_size=tile_size)
-                     for gm in grid_mappings]
+    grid_mappings = get_dataset_grid_mappings(
+        dataset,
+        emit_warnings=emit_warnings
+    ).values()
+    grid_mappings = [
+        new_grid_mapping_from_coords(x_coords=gm.coords.x,
+                                     y_coords=gm.coords.y,
+                                     crs=gm.crs,
+                                     tile_size=tile_size)
+        for gm in grid_mappings
+    ]
 
     if len(grid_mappings) > 1:
-        if prefer_crs is not None and prefer_is_regular is not None:
+        if prefer_crs is not None \
+                and prefer_is_regular is not None:
             for gm in grid_mappings:
-                if gm.crs == prefer_crs and gm.is_regular == prefer_is_regular:
+                if gm.crs == prefer_crs \
+                        and gm.is_regular == prefer_is_regular:
                     return gm
 
         if prefer_crs is not None:

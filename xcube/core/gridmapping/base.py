@@ -90,7 +90,8 @@ class GridMapping(abc.ABC):
         assert_true(width > 1 and height > 1,
                     'invalid size')
 
-        tile_width, tile_height = _normalize_int_pair(tile_size, default=(width, height))
+        tile_width, tile_height = _normalize_int_pair(tile_size,
+                                                      default=(width, height))
         assert_true(tile_width > 1 and tile_height > 1,
                     'invalid tile_size')
 
@@ -133,14 +134,17 @@ class GridMapping(abc.ABC):
             _assert_valid_xy_names(xy_dim_names, name='xy_dim_names')
             other._xy_dim_names = xy_dim_names
         if tile_size is not None:
-            tile_width, tile_height = _normalize_int_pair(tile_size, name='tile_size')
+            tile_width, tile_height = _normalize_int_pair(tile_size,
+                                                          name='tile_size')
             assert_true(tile_width > 1 and tile_height > 1, 'invalid tile_size')
             tile_size = tile_width, tile_height
             if other.tile_size != tile_size:
                 other._tile_size = tile_width, tile_height
                 with self._lock:
                     if other._xy_coords is not None:
-                        other._xy_coords = other._xy_coords.chunk(other.xy_coords_chunks)
+                        other._xy_coords = other._xy_coords.chunk(
+                            other.xy_coords_chunks
+                        )
         if is_j_axis_up is not None:
             other._is_j_axis_up = is_j_axis_up
         return other
@@ -207,14 +211,16 @@ class GridMapping(abc.ABC):
     @property
     def xy_var_names(self) -> Tuple[str, str]:
         """
-        The variable names of the x,y coordinates as tuple (x_var_name, y_var_name).
+        The variable names of the x,y coordinates as
+        tuple (x_var_name, y_var_name).
         """
         return self._xy_var_names
 
     @property
     def xy_dim_names(self) -> Tuple[str, str]:
         """
-        The dimension names of the x,y coordinates as tuple (x_dim_name, y_dim_name).
+        The dimension names of the x,y coordinates as
+        tuple (x_dim_name, y_dim_name).
         """
         return self._xy_dim_names
 
@@ -277,8 +283,10 @@ class GridMapping(abc.ABC):
     def is_regular(self) -> Optional[bool]:
         """
         Do the x,y coordinates for a regular grid?
-        A regular grid has a constant delta in both x- and y-directions of the x- and y-coordinates.
-        :return None, if this property cannot be determined, True or False otherwise.
+        A regular grid has a constant delta in both
+        x- and y-directions of the x- and y-coordinates.
+        :return None, if this property cannot be determined,
+            True or False otherwise.
         """
         return self._is_regular
 
@@ -287,7 +295,8 @@ class GridMapping(abc.ABC):
         """
         Does the positive image j-axis point up?
         By default, the positive image j-axis points down.
-         :return None, if this property cannot be determined, True or False otherwise.
+         :return None, if this property cannot be determined,
+            True or False otherwise.
         """
         return self._is_j_axis_up
 
@@ -321,7 +330,8 @@ class GridMapping(abc.ABC):
     def ij_transform_to(self, other: 'GridMapping') -> AffineTransformMatrix:
         """
         Get the affine transformation matrix that transforms
-        image coordinates of *other* into image coordinates of this image geometry.
+        image coordinates of *other* into image coordinates
+        of this image geometry.
 
         Defined only for grid mappings with rectified x,y coordinates.
 
@@ -329,7 +339,7 @@ class GridMapping(abc.ABC):
         :return: Affine transformation matrix
         """
         self._assert_regular()
-        assert_regular_grid_mapping(other, name='other')
+        self.assert_regular(other, name='other')
         a = _to_affine(self.ij_to_xy_transform)
         b = _to_affine(other.xy_to_ij_transform)
         return _from_affine(b * a)
@@ -337,7 +347,8 @@ class GridMapping(abc.ABC):
     def ij_transform_from(self, other: 'GridMapping') -> AffineTransformMatrix:
         """
         Get the affine transformation matrix that transforms
-        image coordinates of this image geometry to image coordinates of *other*.
+        image coordinates of this image geometry to image
+        coordinates of *other*.
 
         Defined only for grid mappings with rectified x,y coordinates.
 
@@ -345,7 +356,7 @@ class GridMapping(abc.ABC):
         :return: Affine transformation matrix
         """
         self._assert_regular()
-        assert_regular_grid_mapping(other, name='other')
+        self.assert_regular(other, name='other')
         a = _to_affine(self.ij_transform_to(other))
         return _from_affine(~a)
 
@@ -375,12 +386,16 @@ class GridMapping(abc.ABC):
     def xy_bboxes(self) -> np.ndarray:
         """The image tiles' bounding boxes in CRS coordinates."""
         if self.is_j_axis_up:
-            xy_offset = np.array([self.x_min, self.y_min, self.x_min, self.y_min])
-            xy_scale = np.array([self.x_res, self.y_res, self.x_res, self.y_res])
+            xy_offset = np.array([self.x_min, self.y_min,
+                                  self.x_min, self.y_min])
+            xy_scale = np.array([self.x_res, self.y_res,
+                                 self.x_res, self.y_res])
             xy_bboxes = xy_offset + xy_scale * self.ij_bboxes
         else:
-            xy_offset = np.array([self.x_min, self.y_max, self.x_min, self.y_max])
-            xy_scale = np.array([self.x_res, -self.y_res, self.x_res, -self.y_res])
+            xy_offset = np.array([self.x_min, self.y_max,
+                                  self.x_min, self.y_max])
+            xy_scale = np.array([self.x_res, -self.y_res,
+                                 self.x_res, -self.y_res])
             xy_bboxes = xy_offset + xy_scale * self.ij_bboxes
             xy_bboxes[:, [1, 3]] = xy_bboxes[:, [3, 1]]
         return xy_bboxes
@@ -388,19 +403,28 @@ class GridMapping(abc.ABC):
     def ij_bbox_from_xy_bbox(self,
                              xy_bbox: Tuple[float, float, float, float],
                              xy_border: float = 0.0,
-                             ij_border: int = 0) -> Tuple[int, int, int, int]:
+                             ij_border: int = 0) \
+            -> Tuple[int, int, int, int]:
         """
-        Compute bounding box in i,j pixel coordinates given a bounding box *xy_bbox* in x,y coordinates.
+        Compute bounding box in i,j pixel coordinates given a
+        bounding box *xy_bbox* in x,y coordinates.
 
-        :param xy_bbox: Box (x_min, y_min, x_max, y_max) given in the same CS as x and y.
-        :param xy_border: If non-zero, grows the bounding box *xy_bbox* before using it for comparisons. Defaults to 0.
-        :param ij_border: If non-zero, grows the returned i,j bounding box and clips it to size. Defaults to 0.
-        :return: Bounding box in (i_min, j_min, i_max, j_max) in pixel coordinates.
-            Returns ``(-1, -1, -1, -1)`` if *xy_bbox* isn't intersecting any of the x,y coordinates.
+        :param xy_bbox: Box (x_min, y_min, x_max, y_max) given in
+            the same CS as x and y.
+        :param xy_border: If non-zero, grows the bounding box *xy_bbox*
+            before using it for comparisons. Defaults to 0.
+        :param ij_border: If non-zero, grows the returned i,j
+            bounding box and clips it to size. Defaults to 0.
+        :return: Bounding box in (i_min, j_min, i_max, j_max)
+            in pixel coordinates. Returns ``(-1, -1, -1, -1)``
+            if *xy_bbox* isn't intersecting any of the x,y coordinates.
         """
         xy_bboxes = np.array([xy_bbox], dtype=np.float64)
         ij_bboxes = np.full_like(xy_bboxes, -1, dtype=np.int64)
-        self.ij_bboxes_from_xy_bboxes(xy_bboxes, xy_border=xy_border, ij_border=ij_border, ij_bboxes=ij_bboxes)
+        self.ij_bboxes_from_xy_bboxes(xy_bboxes,
+                                      xy_border=xy_border,
+                                      ij_border=ij_border,
+                                      ij_bboxes=ij_bboxes)
         # noinspection PyTypeChecker
         return tuple(map(int, ij_bboxes[0]))
 
@@ -408,7 +432,8 @@ class GridMapping(abc.ABC):
                                  xy_bboxes: np.ndarray,
                                  xy_border: float = 0.0,
                                  ij_border: int = 0,
-                                 ij_bboxes: np.ndarray = None) -> np.ndarray:
+                                 ij_bboxes: np.ndarray = None) \
+            -> np.ndarray:
         """
         Compute bounding boxes in pixel coordinates given bounding boxes
         *xy_bboxes* [[x_min, y_min, x_max, y_max], ...] in x,y coordinates.
@@ -423,14 +448,15 @@ class GridMapping(abc.ABC):
         so the i,j pixel coordinates can be used as array index slices.
 
         :param xy_bboxes: Numpy array of x,y bounding boxes
-            [[x_min, y_min, x_max, y_max], ...] given in the same CS as x and y.
-        :param xy_border: If non-zero, grows the bounding box *xy_bbox* before
-            using it for comparisons. Defaults to 0.
-        :param ij_border: If non-zero, grows the returned i,j bounding box
-            and clips it to size. Defaults to 0.
+            [[x_min, y_min, x_max, y_max], ...] given in the same
+            CS as x and y.
+        :param xy_border: If non-zero, grows the bounding box *xy_bbox*
+            before using it for comparisons. Defaults to 0.
+        :param ij_border: If non-zero, grows the returned i,j
+            bounding box and clips it to size. Defaults to 0.
         :param ij_bboxes: Numpy array of pixel i,j bounding boxes
-            [[x_min, y_min, x_max, y_max], ...]. If given, must have same
-            shape as *xy_bboxes*.
+            [[x_min, y_min, x_max, y_max], ...]. If given, must have
+            same shape as *xy_bboxes*.
         :return: Bounding boxes in [[i_min, j_min, i_max, j_max], ..]]
             in pixel coordinates.
         """
@@ -451,15 +477,20 @@ class GridMapping(abc.ABC):
     def to_coords(self,
                   xy_var_names: Tuple[str, str] = None,
                   xy_dim_names: Tuple[str, str] = None,
-                  exclude_bounds: bool = False) -> Mapping[str, xr.DataArray]:
+                  exclude_bounds: bool = False) \
+            -> Mapping[str, xr.DataArray]:
         """
-        Get CF-compliant axis coordinate variables and cell boundary coordinate variables.
+        Get CF-compliant axis coordinate variables and cell boundary
+        coordinate variables.
 
         Defined only for grid mappings with regular x,y coordinates.
 
-        :param xy_var_names: Optional coordinate variable names (x_var_name, y_var_name).
-        :param xy_dim_names: Optional coordinate dimensions names (x_dim_name, y_dim_name).
-        :param exclude_bounds: If True, do not create bounds coordinates. Defaults to False.
+        :param xy_var_names: Optional coordinate variable
+            names (x_var_name, y_var_name).
+        :param xy_dim_names: Optional coordinate dimensions
+            names (x_dim_name, y_dim_name).
+        :param exclude_bounds: If True, do not create bounds
+            coordinates. Defaults to False.
         :return: dictionary with coordinate variables
         """
         self._assert_regular()
@@ -473,7 +504,17 @@ class GridMapping(abc.ABC):
                   crs: pyproj.crs.CRS,
                   *,
                   tile_size: Union[int, Tuple[int, int]] = None,
-                  xy_var_names: Tuple[str, str] = None) -> 'GridMapping':
+                  xy_var_names: Tuple[str, str] = None) \
+            -> 'GridMapping':
+        """
+        Transform this grid mapping so it uses the given
+        spatial coordinate reference system into another *crs*.
+
+        :param crs: The new spatial coordinate reference system.
+        :param tile_size: Optional new tile size.
+        :param xy_var_names: Optional new coordinate names.
+        :return: A new grid mapping that uses *crs*.
+        """
         from .transform import transform_grid_mapping
         return transform_grid_mapping(self,
                                       crs,
@@ -489,6 +530,18 @@ class GridMapping(abc.ABC):
                 *,
                 tile_size: Union[int, Tuple[int, int]] = None,
                 is_j_axis_up: bool = False) -> 'GridMapping':
+        """
+        Create a new regular grid mapping.
+
+        :param size: Size in pixels.
+        :param xy_min: Minimum x- and y-coordinates.
+        :param xy_res: Resolution in x- and y-directions.
+        :param crs: Spatial coordinate reference system.
+        :param tile_size: Optional tile size.
+        :param is_j_axis_up: Whether positive j-axis points up.
+            Defaults to false.
+        :return: A new regular grid mapping.
+        """
         from .regular import new_regular_grid_mapping
         return new_regular_grid_mapping(size=size,
                                         xy_min=xy_min,
@@ -500,6 +553,15 @@ class GridMapping(abc.ABC):
     def to_regular(self,
                    tile_size: Union[int, Tuple[int, int]] = None,
                    is_j_axis_up: bool = False) -> 'GridMapping':
+        """
+        Transform this grid mapping into one that is regular.
+
+        :param tile_size: Optional tile size.
+        :param is_j_axis_up: Whether positive j-axis points up.
+            Defaults to false.
+        :return: A new regular grid mapping or this grid mapping,
+            if it is already regular.
+        """
         from .regular import to_regular_grid_mapping
         return to_regular_grid_mapping(self,
                                        tile_size=tile_size,
@@ -515,24 +577,29 @@ class GridMapping(abc.ABC):
                      prefer_crs: pyproj.crs.CRS = None,
                      emit_warnings: bool = False) -> 'GridMapping':
         """
-        Get the grid mapping for the given *dataset*.
+        Create a grid mapping for the given *dataset*.
 
         :param dataset: The dataset.
-        :param xy_var_names: Optional tuple of the x- and y-coordinate variables in *dataset*.
+        :param xy_var_names: Optional tuple of the x- and
+            y-coordinate variables in *dataset*.
         :param tile_size: Optional tile size
-        :param prefer_is_regular: Whether to prefer a regular grid mapping if multiple found.
-            Default is True.
-        :param prefer_crs: The preferred CRS of a grid mapping if multiple found.
-        :param emit_warnings: Whether to emit warning for non-CF compliant datasets.
+        :param prefer_is_regular: Whether to prefer a regular
+            grid mapping if multiple found. Default is True.
+        :param prefer_crs: The preferred CRS of a grid mapping
+            if multiple found.
+        :param emit_warnings: Whether to emit warning for
+            non-CF compliant datasets.
         :return: a new grid mapping instance.
         """
         from .dataset import new_grid_mapping_from_dataset
-        return new_grid_mapping_from_dataset(dataset=dataset,
-                                             xy_var_names=xy_var_names,
-                                             tile_size=tile_size,
-                                             prefer_is_regular=prefer_is_regular,
-                                             prefer_crs=prefer_crs,
-                                             emit_warnings=emit_warnings)
+        return new_grid_mapping_from_dataset(
+            dataset=dataset,
+            xy_var_names=xy_var_names,
+            tile_size=tile_size,
+            prefer_is_regular=prefer_is_regular,
+            prefer_crs=prefer_crs,
+            emit_warnings=emit_warnings
+        )
 
     @classmethod
     def from_coords(cls,
@@ -540,7 +607,19 @@ class GridMapping(abc.ABC):
                     y_coords: xr.DataArray,
                     crs: pyproj.crs.CRS,
                     *,
-                    tile_size: Union[int, Tuple[int, int]] = None) -> 'GridMapping':
+                    tile_size: Union[int, Tuple[int, int]] = None) \
+            -> 'GridMapping':
+        """
+        Create a grid mapping from given x- and y-coordinates
+        *x_coords*, *y_coords* and spatial coordinate reference
+        system *crs*.
+
+        :param x_coords: The x-coordinates.
+        :param y_coords: The y-coordinates.
+        :param crs: The spatial coordinate reference system.
+        :param tile_size: Optional tile size.
+        :return: A new grid mapping.
+        """
         from .coords import new_grid_mapping_from_coords
         return new_grid_mapping_from_coords(x_coords=x_coords,
                                             y_coords=y_coords,
@@ -548,6 +627,12 @@ class GridMapping(abc.ABC):
                                             tile_size=tile_size)
 
     def is_close(self, other: 'GridMapping') -> bool:
+        """
+        Tests whether this grid mapping is close to *other*.
+
+        :param other: The other grid mapping.
+        :return: True, if so, False otherwise.
+        """
         if self.is_j_axis_up == other.is_j_axis_up \
                 and self.is_lon_360 == other.is_lon_360 \
                 and self.is_regular == other.is_regular \
@@ -566,12 +651,14 @@ class GridMapping(abc.ABC):
                        and math.isclose(sy2, oy2)
         return False
 
+    @classmethod
+    def assert_regular(cls, value: Any, name: str = None):
+        assert_instance(value, GridMapping, name=name)
+        if not value.is_regular:
+            raise ValueError(f'{name or "value"} must'
+                             f' be a regular grid mapping')
+
     def _assert_regular(self):
         if not self.is_regular:
-            raise NotImplementedError('Operation not implemented for non-regular grid mappings')
-
-
-def assert_regular_grid_mapping(value: Any, name: str = None):
-    assert_instance(value, GridMapping, name=name)
-    if not value.is_regular:
-        raise ValueError(f'{name or "value"} must be a regular grid mapping')
+            raise NotImplementedError('Operation not implemented'
+                                      ' for non-regular grid mappings')

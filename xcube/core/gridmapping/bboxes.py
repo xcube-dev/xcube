@@ -38,15 +38,20 @@ def compute_ij_bboxes(x_image: np.ndarray,
     x,y coordinates *x_image*, *y_image* and bounding boxes
     in x,y coordinates *xy_boxes*.
 
-    *ij_boxes* must be pre-allocated to match shape of *xy_boxes* and initialised
-    with negative integers.
+    *ij_boxes* must be pre-allocated to match shape of
+    *xy_boxes* and initialised with negative integers.
 
-    :param x_image: The x coordinates image. A 2D array of shape (height, width).
-    :param y_image: The y coordinates image. A 2D array of shape (height, width).
+    :param x_image: The x coordinates image.
+        A 2D array of shape (height, width).
+    :param y_image: The y coordinates image.
+        A 2D array of shape (height, width).
     :param xy_boxes: The x,y bounding boxes.
-    :param xy_border: A border added to the x,y bounding boxes.
-    :param ij_border: A border added to the resulting i,j bounding boxes.
-    :param ij_boxes: The resulting i,j bounding boxes.
+    :param xy_border: A border added to the
+        x,y bounding boxes.
+    :param ij_border: A border added to the resulting
+        i,j bounding boxes.
+    :param ij_boxes: The resulting
+        i,j bounding boxes.
     """
     h = x_image.shape[0]
     w = x_image.shape[1]
@@ -103,32 +108,39 @@ def compute_ij_bboxes(x_image: np.ndarray,
             ij_bbox[3] = j_max
 
 
-def compute_xy_bbox(xy_coords: Union[xr.DataArray, np.ndarray, da.Array]) -> Tuple[float, float, float, float]:
+def compute_xy_bbox(xy_coords: Union[xr.DataArray, np.ndarray, da.Array]) \
+        -> Tuple[float, float, float, float]:
     xy_coords = da.asarray(xy_coords)
-    result = da.reduction(xy_coords,
-                          compute_xy_bbox_chunk,
-                          compute_xy_bbox_aggregate,
-                          keepdims=True,
-                          # concatenate=False,
-                          dtype=xy_coords.dtype,
-                          axis=(1, 2),
-                          meta=np.array([[0, 0], [0, 0]], dtype=xy_coords.dtype))
+    result = da.reduction(
+        xy_coords,
+        compute_xy_bbox_chunk,
+        compute_xy_bbox_aggregate,
+        keepdims=True,
+        # concatenate=False,
+        dtype=xy_coords.dtype,
+        axis=(1, 2),
+        meta=np.array([[0, 0], [0, 0]],
+                      dtype=xy_coords.dtype)
+    )
     x_min, x_max, y_min, y_max = map(float, result.compute().flatten())
     return x_min, y_min, x_max, y_max
 
 
+# noinspection PyUnusedLocal
 @nb.jit(nopython=True)
 def compute_xy_bbox_chunk(xy_block: np.ndarray, axis: int, keepdims: bool):
     # print('\ncompute_xy_bbox_chunk:', xy_block, axis, keepdims)
     return compute_xy_bbox_block(xy_block, axis, keepdims)
 
 
+# noinspection PyUnusedLocal
 @nb.jit(nopython=True)
 def compute_xy_bbox_aggregate(xy_block: np.ndarray, axis: int, keepdims: bool):
     # print('\ncompute_xy_bbox_aggregate:', xy_block, axis, keepdims)
     return compute_xy_bbox_block(xy_block, axis, keepdims)
 
 
+# noinspection PyUnusedLocal
 @nb.jit(nopython=True)
 def compute_xy_bbox_block(xy_block: np.ndarray, axis: int, keepdims: bool):
     x_block = xy_block[0].flatten()
@@ -153,4 +165,5 @@ def compute_xy_bbox_block(xy_block: np.ndarray, axis: int, keepdims: bool):
     y_min = y_min if y_min != np.inf else np.nan
     x_max = x_max if x_max != -np.inf else np.nan
     y_max = y_max if y_max != -np.inf else np.nan
-    return np.array([[[x_min, x_max]], [[y_min, y_max]]], dtype=xy_block.dtype)
+    return np.array([[[x_min, x_max]], [[y_min, y_max]]],
+                    dtype=xy_block.dtype)

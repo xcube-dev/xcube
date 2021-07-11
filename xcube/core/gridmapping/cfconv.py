@@ -54,11 +54,14 @@ class GridMapping:
         self.coords = coords
 
 
-def get_dataset_grid_mappings(dataset: xr.Dataset, *,
-                              missing_latitude_longitude_crs: pyproj.crs.CRS = None,
-                              missing_rotated_latitude_longitude_crs: pyproj.crs.CRS = None,
-                              missing_projected_crs: pyproj.crs.CRS = None,
-                              emit_warnings: bool = False) -> Dict[Union[Hashable, None], GridMapping]:
+def get_dataset_grid_mappings(
+        dataset: xr.Dataset,
+        *,
+        missing_latitude_longitude_crs: pyproj.crs.CRS = None,
+        missing_rotated_latitude_longitude_crs: pyproj.crs.CRS = None,
+        missing_projected_crs: pyproj.crs.CRS = None,
+        emit_warnings: bool = False
+) -> Dict[Union[Hashable, None], GridMapping]:
     """
     Find grid mappings encoded as described in the CF conventions
     [Horizontal Coordinate Reference Systems, Grid Mappings, and Projections]
@@ -167,7 +170,8 @@ def get_dataset_grid_mappings(dataset: xr.Dataset, *,
         if grid_mapping.coords is not None \
                 and grid_mapping.coords.x is not None \
                 and grid_mapping.coords.y is not None:
-            # TODO: add more consistency checks, eg both 1d or both 2d with same dims
+            # TODO: add more consistency checks,
+            #   e.g. both 1d or both 2d with same dims
             complete_grid_mappings[var_name] = grid_mapping
         elif emit_warnings:
             warnings.warn(f'CRS "{grid_mapping.name}": '
@@ -178,7 +182,8 @@ def get_dataset_grid_mappings(dataset: xr.Dataset, *,
     return complete_grid_mappings
 
 
-def _parse_crs_from_attrs(attrs: Dict[Hashable, Any]) -> Optional[GridMapping]:
+def _parse_crs_from_attrs(attrs: Dict[Hashable, Any]) \
+        -> Optional[GridMapping]:
     # noinspection PyBroadException
     try:
         crs = pyproj.crs.CRS.from_cf(attrs)
@@ -187,10 +192,12 @@ def _parse_crs_from_attrs(attrs: Dict[Hashable, Any]) -> Optional[GridMapping]:
     return GridMapping(crs=crs, name=attrs.get('grid_mapping_name'), coords=None)
 
 
-def _complement_grid_mapping_coords(coords: GridCoords,
-                                    grid_mapping_name: Optional[str],
-                                    missing_crs: Optional[pyproj.crs.CRS],
-                                    grid_mappings: Dict[Optional[str], GridMapping]):
+def _complement_grid_mapping_coords(
+        coords: GridCoords,
+        grid_mapping_name: Optional[str],
+        missing_crs: Optional[pyproj.crs.CRS],
+        grid_mappings: Dict[Optional[str], GridMapping]
+):
     if coords.x is not None or coords.y is not None:
         grid_mapping = next((grid_mapping
                              for grid_mapping in grid_mappings.values()
@@ -242,7 +249,9 @@ def _find_potential_coord_vars(dataset: xr.Dataset) -> List[Hashable]:
     return potential_coord_vars
 
 
-def _is_potential_coord_var(dataset: xr.Dataset, bounds_var_names: Set[str], var_name: Hashable) -> bool:
+def _is_potential_coord_var(dataset: xr.Dataset,
+                            bounds_var_names: Set[str],
+                            var_name: Hashable) -> bool:
     if var_name in dataset:
         var = dataset[var_name]
         return var.ndim in (1, 2) and var_name not in bounds_var_names

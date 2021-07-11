@@ -30,7 +30,7 @@ import numpy as np
 import pyproj.crs
 import xarray as xr
 
-from xcube.util.assertions import assert_condition
+from xcube.util.assertions import assert_true
 from xcube.util.assertions import assert_given
 from xcube.util.assertions import assert_instance
 from xcube.util.undefined import UNDEFINED
@@ -42,8 +42,9 @@ AffineTransformMatrix = Tuple[Tuple[Number, Number, Number],
 
 def _to_int_or_float(x: Number) -> Number:
     """
-    If x is an int or is close to an int return it as int otherwise as float.
-    Helps avoiding errors introduced by inaccurate floating point ops.
+    If x is an int or is close to an int return it
+    as int otherwise as float. Helps avoiding errors
+    introduced by inaccurate floating point ops.
     """
     if isinstance(x, int):
         return x
@@ -60,9 +61,11 @@ def _to_affine(matrix: AffineTransformMatrix) -> affine.Affine:
     return affine.Affine(*matrix[0], *matrix[1])
 
 
-def _normalize_int_pair(value: Any,
-                        name: str = None,
-                        default: Optional[Tuple[int, int]] = UNDEFINED) -> Optional[Tuple[int, int]]:
+def _normalize_int_pair(
+        value: Any,
+        name: str = None,
+        default: Optional[Tuple[int, int]] = UNDEFINED
+) -> Optional[Tuple[int, int]]:
     if isinstance(value, int):
         return value, value
     elif value is not None:
@@ -72,12 +75,15 @@ def _normalize_int_pair(value: Any,
         return default
     else:
         assert_given(name, 'name')
-        raise ValueError(f'{name} must be an int or a sequence of two ints')
+        raise ValueError(f'{name} must be an int'
+                         f' or a sequence of two ints')
 
 
-def _normalize_number_pair(value: Any,
-                           name: str = None,
-                           default: Optional[Tuple[Number, Number]] = UNDEFINED) -> Optional[Tuple[Number, Number]]:
+def _normalize_number_pair(
+        value: Any,
+        name: str = None,
+        default: Optional[Tuple[Number, Number]] = UNDEFINED
+) -> Optional[Tuple[Number, Number]]:
     if isinstance(value, (float, int)):
         x, y = value, value
         return _to_int_or_float(x), _to_int_or_float(y)
@@ -88,7 +94,8 @@ def _normalize_number_pair(value: Any,
         return default
     else:
         assert_given(name, 'name')
-        raise ValueError(f'{name} must be a number or a sequence of two numbers')
+        raise ValueError(f'{name} must be a number'
+                         f' or a sequence of two numbers')
 
 
 def to_lon_360(lon_var: Union[np.ndarray, da.Array, xr.DataArray]):
@@ -117,19 +124,20 @@ def _default_xy_dim_names(crs: pyproj.crs.CRS) -> Tuple[str, str]:
 
 def _assert_valid_xy_names(value: Any, name: str = None):
     assert_instance(value, tuple, name=name)
-    assert_condition(len(value) == 2
-                     and all(value)
-                     and value[0] != value[1],
-                     f'invalid {name or "value"}')
+    assert_true(len(value) == 2
+                and all(value)
+                and value[0] != value[1],
+                f'invalid {name or "value"}')
 
 
 def _assert_valid_xy_coords(xy_coords: Any):
     assert_instance(xy_coords, xr.DataArray, name='xy_coords')
-    assert_condition(xy_coords.ndim == 3
-                     and xy_coords.shape[0] == 2
-                     and xy_coords.shape[1] >= 2
-                     and xy_coords.shape[2] >= 2,
-                     'xy_coords must have dimensions (2, height, width) with height >= 2 and width >= 2')
+    assert_true(xy_coords.ndim == 3
+                and xy_coords.shape[0] == 2
+                and xy_coords.shape[1] >= 2
+                and xy_coords.shape[2] >= 2,
+                'xy_coords must have dimensions'
+                ' (2, height, width) with height >= 2 and width >= 2')
 
 
 _RESOLUTIONS = {
@@ -147,7 +155,8 @@ def round_to_fraction(value: float,
                       digits: int = 2,
                       resolution: float = 1) -> Fraction:
     """
-    Round *value* at position given by significant *digits* and return result as fraction.
+    Round *value* at position given by significant
+    *digits* and return result as fraction.
 
     :param value: The value
     :param digits: The number of significant digits.

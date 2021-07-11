@@ -5,10 +5,11 @@ from xcube.core.dsio import open_cube
 
 
 def show_remote_cubes(bucket, endpoint_url, region_name='eu-central-1'):
-    s3_client_kwargs = {}
-    s3_client_kwargs['endpoint_url'] = endpoint_url
-    s3_client_kwargs['region_name'] = region_name
-    obs_file_system = s3fs.S3FileSystem(anon=True, client_kwargs=s3_client_kwargs)
+    obs_file_system = s3fs.S3FileSystem(
+        anon=True, 
+        client_kwargs=dict(endpoint_url=endpoint_url,
+                           region_name=region_name)
+    )
 
     cube_names = []
     df = pd.DataFrame(

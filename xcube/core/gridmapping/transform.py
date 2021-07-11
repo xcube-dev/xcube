@@ -47,11 +47,13 @@ from .helpers import _assert_valid_xy_names
 #         return self._xy_coords
 #
 
-def transform_grid_mapping(grid_mapping: GridMapping,
-                           crs: pyproj.crs.CRS,
-                           *,
-                           tile_size: Union[int, Tuple[int, int]] = None,
-                           xy_var_names: Tuple[str, str] = None) -> GridMapping:
+def transform_grid_mapping(
+        grid_mapping: GridMapping,
+        crs: pyproj.crs.CRS,
+        *,
+        tile_size: Union[int, Tuple[int, int]] = None,
+        xy_var_names: Tuple[str, str] = None
+) -> GridMapping:
     if xy_var_names:
         _assert_valid_xy_names(xy_var_names, name='xy_var_names')
 
@@ -63,25 +65,30 @@ def transform_grid_mapping(grid_mapping: GridMapping,
 
     transformer = pt.Transformer.from_crs(grid_mapping.crs, crs)
 
-    def transform(block):
+    def _transform(block):
         x1, y1 = block
         x2, y2 = transformer.transform(x1, y1)
         return np.stack([x2, y2])
 
-    xy_coords = xr.apply_ufunc(transform,
+    xy_coords = xr.apply_ufunc(_transform,
                                grid_mapping.xy_coords,
                                output_dtypes=[np.float64],
                                dask='parallelized')
 
     xy_var_names = xy_var_names or ('transformed_x', 'transformed_y')
 
-    # TODO: splitting the xy_coords dask array into x,y components is very inefficient
-    #       because x, cannot be computed independently from y. This means, any access
-    #       of x chunks will cause y chunks to be computed too and vice versa. As same
-    #       operations are performed on x and y arrays, this will take twice as long as
-    #       if operation would be performed on the xy_coords dask array directly
+    # TODO: Use a specialized grid mapping here that can store the
+    #   *xy_coords* directly. Splitting the xy_coords dask array into
+    #   x,y components as done here may be very inefficient for larger
+    #   arrays, because x cannot be computed independently from y.
+    #   This means, any access of x chunks will cause y chunks to be
+    #   computed too and vice versa. As same operations are performed
+    #   on x and y arrays, this will take twice as long as if operation
+    #   would be performed on the xy_coords dask array directly.
 
-    return new_grid_mapping_from_coords(x_coords=xr.DataArray(xy_coords[0], name=xy_var_names[0]),
-                                        y_coords=xr.DataArray(xy_coords[1], name=xy_var_names[1]),
-                                        crs=crs,
-                                        tile_size=tile_size)
+    return new_grid_mapping_from_coords(
+        x_coords=xr.DataArray(xy_coords[0], name=xy_var_names[0]),
+        y_coords=xr.DataArray(xy_coords[1], name=xy_var_names[1]),
+        crs=crs,
+        tile_size=tile_size
+    )

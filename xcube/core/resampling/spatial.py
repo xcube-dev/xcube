@@ -26,7 +26,6 @@ import xarray as xr
 from dask import array as da
 
 from xcube.core.gridmapping import GridMapping
-from xcube.core.gridmapping import assert_regular_grid_mapping
 from .affine import affine_transform_dataset
 from .rectify import rectify_dataset
 
@@ -37,6 +36,16 @@ Aggregator = Callable[[NDImage], NDImage]
 def resample_in_space(source_ds: xr.Dataset,
                       source_gm: GridMapping = None,
                       target_gm: GridMapping = None):
+    """
+    Compute a spatially resampled *dataset*.
+
+    :param source_ds: The source dataset.
+    :param source_gm: The source grid mapping.
+        If not given, it is derived from *dataset*.
+    :param target_gm: The target grid mapping. Must be regular.
+        If not given, *source_gm.to_regular()* is used.
+    :return: The spatially resampled dataset.
+    """
     if source_gm is None:
         # No source grid mapping given, so do derive it from dataset
         source_gm = GridMapping.from_dataset(source_ds)
@@ -46,12 +55,14 @@ def resample_in_space(source_ds: xr.Dataset,
         target_gm = source_gm.to_regular()
 
     # target_gm must be regular
-    assert_regular_grid_mapping(target_gm, name='target_gm')
+    GridMapping.assert_regular(target_gm, name='target_gm')
 
     # Are source and target both geographic grid mappings?
-    both_geographic = source_gm.crs.is_geographic and target_gm.crs.is_geographic
+    both_geographic = source_gm.crs.is_geographic \
+                      and target_gm.crs.is_geographic
 
-    if not both_geographic and source_gm.crs != target_gm.crs:
+    if not both_geographic \
+            and source_gm.crs != target_gm.crs:
         # If CRSes are not both geographic and their CRSes are different
         # transform the source_gm so its CRS matches the target CRS:
         transformed_geo_coding = source_gm.transform(target_gm.crs)
@@ -65,7 +76,7 @@ def resample_in_space(source_ds: xr.Dataset,
             # to an affine transformation.
             return affine_transform_dataset(source_ds,
                                             source_gm=source_gm,
-                                            target_cm=target_gm)
+                                            target_gm=target_gm)
         else:
             # If the source is not regular, we need to rectify it,
             # so the target is regular. Our rectification implementations
@@ -82,13 +93,17 @@ def resample_in_space(source_ds: xr.Dataset,
             else:
                 # Source has higher resolution than target.
                 # Downscale first, then rectify
-                downscaled_dataset = affine_transform_dataset(source_ds,
-                                                              source_gm=source_gm,
-                                                              target_cm=target_gm)
+                downscaled_dataset = affine_transform_dataset(
+                    source_ds,
+                    source_gm=source_gm,
+                    target_gm=target_gm
+                )
                 x_name, y_name = source_gm.xy_var_names
-                downscaled_gm = GridMapping.from_coords(downscaled_dataset[x_name],
-                                                        downscaled_dataset[y_name],
-                                                        source_gm.crs)
+                downscaled_gm = GridMapping.from_coords(
+                    downscaled_dataset[x_name],
+                    downscaled_dataset[y_name],
+                    source_gm.crs
+                )
                 return rectify_dataset(downscaled_dataset,
                                        source_gm=downscaled_gm,
                                        target_gm=target_gm)

@@ -22,4 +22,3 @@
 from .base import CRS_CRS84
 from .base import CRS_WGS84
 from .base import GridMapping
-from .base import assert_regular_grid_mapping

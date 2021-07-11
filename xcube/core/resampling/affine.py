@@ -28,28 +28,30 @@ from dask import array as da
 from dask_image import ndinterp
 
 from xcube.core.gridmapping import GridMapping
-from xcube.core.gridmapping import assert_regular_grid_mapping
-from xcube.util.assertions import assert_condition
+from xcube.util.assertions import assert_true
 
 NDImage = Union[np.ndarray, da.Array]
 Aggregator = Callable[[NDImage], NDImage]
 
 
-def affine_transform_dataset(source_ds: xr.Dataset,
-                             source_gm: GridMapping = None,
-                             target_cm: GridMapping = None,
-                             var_configs: Mapping[Hashable, Mapping[str, Any]] = None):
-    if source_gm.crs != target_cm.crs:
-        raise ValueError(f'CRS of source_gm and target_cm must be equal, '
-                         f'was "{source_gm.crs.name}" and "{target_cm.crs.name}"')
-    assert_regular_grid_mapping(source_gm, name='source_gm')
-    assert_regular_grid_mapping(target_cm, name='target_cm')
+def affine_transform_dataset(
+        source_ds: xr.Dataset,
+        source_gm: GridMapping = None,
+        target_gm: GridMapping = None,
+        var_configs: Mapping[Hashable, Mapping[str, Any]] = None
+):
+    if source_gm.crs != target_gm.crs:
+        raise ValueError(f'CRS of source_gm and target_gm must be equal,'
+                         f' was "{source_gm.crs.name}"'
+                         f' and "{target_gm.crs.name}"')
+    GridMapping.assert_regular(source_gm, name='source_gm')
+    GridMapping.assert_regular(target_gm, name='target_gm')
     var_configs = var_configs or {}
-    matrix = target_cm.ij_transform_to(source_gm)
+    matrix = target_gm.ij_transform_to(source_gm)
     ((i_scale, _, i_off), (_, j_scale, j_off)) = matrix
     x_dim, y_dim = source_gm.xy_dim_names
-    width, height = target_cm.size
-    tile_width, tile_height = target_cm.tile_size
+    width, height = target_gm.size
+    tile_width, tile_height = target_gm.tile_size
     yx_dims = (y_dim, x_dim)
     coords = dict()
     data_vars = dict()
@@ -84,7 +86,7 @@ def affine_transform_dataset(source_ds: xr.Dataset,
             elif k in source_ds.data_vars:
                 data_vars[k] = new_var
     exclude_bounds = not source_ds[source_gm.xy_var_names[0]].attrs.get('bounds')
-    coords.update(target_cm.to_coords(xy_var_names=source_gm.xy_var_names,
+    coords.update(target_gm.to_coords(xy_var_names=source_gm.xy_var_names,
                                       xy_dim_names=source_gm.xy_dim_names,
                                       exclude_bounds=exclude_bounds))
     return xr.Dataset(data_vars=data_vars, coords=coords, attrs=source_ds.attrs)
@@ -113,15 +115,18 @@ def resample_ndimage(im: NDImage,
         # Downsampling
         # ------------
         axes = {im.ndim - 2: divisor_y, im.ndim - 1: divisor_x}
-        elongation = _normalize_scale((scale_y / divisor_y, scale_x / divisor_x), im.ndim)
+        elongation = _normalize_scale((scale_y / divisor_y,
+                                       scale_x / divisor_x), im.ndim)
         larger_shape = resize_shape(shape, (divisor_y, divisor_x),
-                                    divisor_x=divisor_x, divisor_y=divisor_y)
+                                    divisor_x=divisor_x,
+                                    divisor_y=divisor_y)
         # print('Downsampling: ', scale)
         # print('  divisor:', (divisor_y, divisor_x))
         # print('  elongation:', elongation)
         # print('  shape:', shape)
         # print('  larger_shape:', larger_shape)
-        divisible_chunks = _make_divisible_tiles(larger_shape, divisor_x, divisor_y)
+        divisible_chunks = _make_divisible_tiles(larger_shape,
+                                                 divisor_x, divisor_y)
         im = _transform_array(im,
                               elongation, offset,
                               larger_shape, divisible_chunks,
@@ -149,10 +154,10 @@ def _transform_array(im: da.Array,
                      chunks: Optional[Tuple[int, ...]],
                      spline_order: int,
                      recover_nan: bool) -> da.Array:
-    assert_condition(len(scale) == im.ndim, 'invalid scale')
-    assert_condition(len(offset) == im.ndim, 'invalid offset')
-    assert_condition(len(shape) == im.ndim, 'invalid shape')
-    assert_condition(chunks is None or len(chunks) == im.ndim, 'invalid chunks')
+    assert_true(len(scale) == im.ndim, 'invalid scale')
+    assert_true(len(offset) == im.ndim, 'invalid offset')
+    assert_true(len(shape) == im.ndim, 'invalid shape')
+    assert_true(chunks is None or len(chunks) == im.ndim, 'invalid chunks')
     if _is_no_op(im, scale, offset, shape):
         return im
     matrix = scale
@@ -173,11 +178,18 @@ def _transform_array(im: da.Array,
             # 1. replace NaN by zero
             filled_im = da.where(mask, 0.0, im)
             # 2. transform the zeo-filled image
-            scaled_im = ndinterp.affine_transform(filled_im, matrix, **at_kwargs, cval=0.0)
+            scaled_im = ndinterp.affine_transform(filled_im,
+                                                  matrix,
+                                                  **at_kwargs,
+                                                  cval=0.0)
             # 3. transform the inverted mask
-            scaled_norm = ndinterp.affine_transform(1.0 - mask, matrix, **at_kwargs, cval=0.0)
+            scaled_norm = ndinterp.affine_transform(1.0 - mask,
+                                                    matrix,
+                                                    **at_kwargs,
+                                                    cval=0.0)
             # 4. put back NaN where there was zero, otherwise decode using scaled mask
-            return da.where(da.isclose(scaled_norm, 0.0), np.nan, scaled_im / scaled_norm)
+            return da.where(da.isclose(scaled_norm, 0.0),
+                            np.nan, scaled_im / scaled_norm)
 
     # No dealing with NaN required
     return ndinterp.affine_transform(im, matrix, **at_kwargs, cval=np.nan)
@@ -200,8 +212,10 @@ def resize_shape(shape: Sequence[int],
 def _make_divisible_tiles(larger_shape: Tuple[int, ...],
                           divisor_x: int,
                           divisor_y: int) -> Tuple[int, ...]:
-    w = min(larger_shape[-1], divisor_x * ((2048 + divisor_x - 1) // divisor_x))
-    h = min(larger_shape[-2], divisor_y * ((2048 + divisor_y - 1) // divisor_y))
+    w = min(larger_shape[-1],
+            divisor_x * ((2048 + divisor_x - 1) // divisor_x))
+    h = min(larger_shape[-2],
+            divisor_y * ((2048 + divisor_y - 1) // divisor_y))
     return (len(larger_shape) - 2) * (1,) + (h, w)
 
 
@@ -209,15 +223,20 @@ def _normalize_image(im: NDImage) -> da.Array:
     return da.asarray(im)
 
 
-def _normalize_offset(offset: Optional[Sequence[float]], ndim: int) -> Tuple[int, ...]:
+def _normalize_offset(offset: Optional[Sequence[float]],
+                      ndim: int) -> Tuple[int, ...]:
     return _normalize_pair(offset, 0.0, ndim, 'offset')
 
 
-def _normalize_scale(scale: Optional[Sequence[float]], ndim: int) -> Tuple[int, ...]:
+def _normalize_scale(scale: Optional[Sequence[float]],
+                     ndim: int) -> Tuple[int, ...]:
     return _normalize_pair(scale, 1.0, ndim, 'scale')
 
 
-def _normalize_pair(pair: Optional[Sequence[float]], default: float, ndim: int, name: str) -> Tuple[int, ...]:
+def _normalize_pair(pair: Optional[Sequence[float]],
+                    default: float,
+                    ndim: int,
+                    name: str) -> Tuple[int, ...]:
     if pair is None:
         pair = [default, default]
     elif isinstance(pair, (int, float)):
@@ -227,7 +246,8 @@ def _normalize_pair(pair: Optional[Sequence[float]], default: float, ndim: int, 
     return (ndim - 2) * (default,) + tuple(pair)
 
 
-def _normalize_shape(shape: Optional[Sequence[int]], im: NDImage) -> Tuple[int, ...]:
+def _normalize_shape(shape: Optional[Sequence[int]],
+                     im: NDImage) -> Tuple[int, ...]:
     if shape is None:
         return im.shape
     if len(shape) != 2:
