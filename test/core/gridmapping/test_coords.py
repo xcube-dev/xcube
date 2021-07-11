@@ -139,8 +139,8 @@ class Coords2DGridMappingTest(unittest.TestCase):
             crs=GEO_CRS)
         self.assertEqual((4, 3), gm.size)
         self.assertEqual((4, 3), gm.tile_size)
-        self.assertEqual((0.2, 0.2), gm.xy_res)
-        self.assertEqual((9.9, 51.9, 10.6, 53.1), gm.xy_bbox)
+        self.assertEqual((0.3, 0.3), gm.xy_res)
+        self.assertEqual((9.85, 51.85, 10.65, 53.15), gm.xy_bbox)
         self.assertEqual(GEO_CRS, gm.crs)
         self.assertEqual(False, gm.is_regular)
         self.assertEqual(True, gm.is_j_axis_up)
@@ -203,9 +203,9 @@ class Coords2DGridMappingTest(unittest.TestCase):
             crs=GEO_CRS)
         self.assertEqual((4, 3), gm.size)
         self.assertEqual((4, 3), gm.tile_size)
-        self.assertAlmostEqual(0.53, gm.x_res)
-        self.assertAlmostEqual(0.53, gm.y_res)
-        self.assertEqual((177.235, 52.135, 182.765, 53.065), gm.xy_bbox)
+        self.assertAlmostEqual(0.2, gm.x_res)
+        self.assertAlmostEqual(0.2, gm.y_res)
+        self.assertEqual((177.4, 52.3, 182.6, 52.9), gm.xy_bbox)
         self.assertEqual(GEO_CRS, gm.crs)
         self.assertEqual(False, gm.is_regular)
         self.assertEqual(True, gm.is_j_axis_up)
@@ -220,8 +220,8 @@ class Coords2DGridMappingTest(unittest.TestCase):
         gm_irr = GridMapping.from_coords(lon, lat, GEO_CRS)
         gm_reg_actual = gm_irr.to_regular()
         gm_reg_expected = GridMapping.regular(size=(4, 4),
-                                              xy_min=(-1.575, 48.425),
-                                              xy_res=3.15,
+                                              xy_min=(-2, 48),
+                                              xy_res=4.0,
                                               crs=GEO_CRS)
         self.assertEqual(gm_reg_expected.size, gm_reg_actual.size)
         self.assertEqual(gm_reg_expected.tile_size, gm_reg_actual.tile_size)

@@ -29,7 +29,7 @@ from xcube.core.select import select_variables_subset
 from xcube.core.verify import assert_cube
 
 
-def resample_in_time(cube: xr.Dataset,
+def resample_in_time(dataset: xr.Dataset,
                      frequency: str,
                      method: Union[str, Sequence[str]],
                      offset=None,
@@ -41,7 +41,7 @@ def resample_in_time(cube: xr.Dataset,
                      metadata: Dict[str, Any] = None,
                      cube_asserted: bool = False) -> xr.Dataset:
     """
-    Resample a xcube dataset in the time dimension.
+    Resample a dataset in the time dimension.
 
     The argument *method* may be one or a sequence of
     ``'all'``, ``'any'``,
@@ -61,7 +61,7 @@ def resample_in_time(cube: xr.Dataset,
     In this case, use the ``compute()`` or ``load()`` method
     to convert dask arrays into numpy arrays.
 
-    :param cube: The xcube dataset.
+    :param dataset: The xcube dataset.
     :param frequency: Temporal aggregation frequency.
         Use format "<count><offset>" where <offset> is one of
         'H', 'D', 'W', 'M', 'Q', 'Y'.
@@ -85,23 +85,23 @@ def resample_in_time(cube: xr.Dataset,
     :return: A new xcube dataset resampled in time.
     """
     if not cube_asserted:
-        assert_cube(cube)
+        assert_cube(dataset)
 
     if frequency == 'all':
-        time_gap = np.array(cube.time[-1]) - np.array(cube.time[0])
+        time_gap = np.array(dataset.time[-1]) - np.array(dataset.time[0])
         days = int((np.timedelta64(time_gap, 'D')
                     / np.timedelta64(1, 'D')) + 1)
         frequency = f'{days}D'
 
     if var_names:
-        cube = select_variables_subset(cube, var_names)
+        dataset = select_variables_subset(dataset, var_names)
 
-    resampler = cube.resample(skipna=True,
-                              closed='left',
-                              label='left',
-                              time=frequency,
-                              loffset=offset,
-                              base=base)
+    resampler = dataset.resample(skipna=True,
+                                 closed='left',
+                                 label='left',
+                                 time=frequency,
+                                 loffset=offset,
+                                 base=base)
 
     if isinstance(method, str):
         methods = [method]
@@ -138,15 +138,15 @@ def resample_in_time(cube: xr.Dataset,
         resampled_cube = xr.merge(resampled_cubes)
 
     # TODO: add time_bnds to resampled_ds
-    time_coverage_start = '%s' % cube.time[0]
-    time_coverage_end = '%s' % cube.time[-1]
+    time_coverage_start = '%s' % dataset.time[0]
+    time_coverage_end = '%s' % dataset.time[-1]
 
     resampled_cube.attrs.update(metadata or {})
     # TODO: add other time_coverage_ attributes
     resampled_cube.attrs.update(time_coverage_start=time_coverage_start,
                                 time_coverage_end=time_coverage_end)
 
-    schema = CubeSchema.new(cube)
+    schema = CubeSchema.new(dataset)
     chunk_sizes = {schema.dims[i]: schema.chunks[i] for i in range(schema.ndim)}
 
     if isinstance(time_chunk_size, int) and time_chunk_size >= 0:

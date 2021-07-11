@@ -24,6 +24,7 @@ from typing import Optional, Union, Tuple
 import pyproj
 import xarray as xr
 
+from .base import DEFAULT_TOLERANCE
 from .base import GridMapping
 from .cfconv import get_dataset_grid_mappings
 from .coords import new_grid_mapping_from_coords
@@ -36,7 +37,8 @@ def new_grid_mapping_from_dataset(
         tile_size: Union[int, Tuple[str, str]] = None,
         prefer_crs: pyproj.crs.CRS = None,
         prefer_is_regular: bool = None,
-        emit_warnings: bool = False
+        emit_warnings: bool = False,
+        tolerance: float = DEFAULT_TOLERANCE
 ) -> Optional[GridMapping]:
     if xy_var_names is not None:
         x_var_name, y_var_name = xy_var_names
@@ -54,7 +56,8 @@ def new_grid_mapping_from_dataset(
         new_grid_mapping_from_coords(x_coords=gm.coords.x,
                                      y_coords=gm.coords.y,
                                      crs=gm.crs,
-                                     tile_size=tile_size)
+                                     tile_size=tile_size,
+                                     tolerance=tolerance)
         for gm in grid_mappings
     ]
 

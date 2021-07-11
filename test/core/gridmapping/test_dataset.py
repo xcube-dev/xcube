@@ -51,7 +51,7 @@ class DatasetGridMappingTest(unittest.TestCase):
         self.assertEqual(None, gm.is_j_axis_up)
         self.assertEqual((2, 3, 4), gm.xy_coords.shape)
         self.assertEqual(('coord', 'y', 'x'), gm.xy_coords.dims)
-        self.assertEqual((0.93, 0.93), gm.xy_res)
+        self.assertEqual((0.8, 0.8), gm.xy_res)
 
     def test_from_real_olci(self):
         olci_l2_path = os.path.join(os.path.dirname(__file__),
@@ -64,7 +64,7 @@ class DatasetGridMappingTest(unittest.TestCase):
         self.assertEqual((1189, 1890), gm.size)
         self.assertEqual((512, 512), gm.tile_size)
         self.assertEqual(GEO_CRS, gm.crs)
-        self.assertEqual((0.00098, 0.00098), gm.xy_res)
+        self.assertEqual((0.0025, 0.0025), gm.xy_res)
         # self.assertAlmostEqual(12.693771178309552, gm.x_min)
         # self.assertAlmostEqual(20.005413821690446, gm.x_max)
         # self.assertAlmostEqual(55.19965017830955, gm.y_min)
@@ -76,7 +76,7 @@ class DatasetGridMappingTest(unittest.TestCase):
         self.assertEqual(('coord', 'y', 'x'), gm.xy_coords.dims)
 
         gm = gm.to_regular()
-        self.assertEqual((7462, 5551), gm.size)
+        self.assertEqual((2926, 2177), gm.size)
 
     def test_from_sentinel_2(self):
         dataset = create_s2plus_dataset()

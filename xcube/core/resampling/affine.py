@@ -20,7 +20,8 @@
 # SOFTWARE.
 
 import math
-from typing import Union, Callable, Optional, Sequence, Tuple, Mapping, Hashable, Any
+from typing import Union, Callable, Optional, \
+    Sequence, Tuple, Mapping, Hashable, Any
 
 import numpy as np
 import xarray as xr
@@ -39,7 +40,7 @@ def affine_transform_dataset(
         source_gm: GridMapping = None,
         target_gm: GridMapping = None,
         var_configs: Mapping[Hashable, Mapping[str, Any]] = None
-):
+) -> xr.Dataset:
     if source_gm.crs != target_gm.crs:
         raise ValueError(f'CRS of source_gm and target_gm must be equal,'
                          f' was "{source_gm.crs.name}"'
@@ -77,7 +78,9 @@ def affine_transform_dataset(
                 aggregator=var_config.get('aggregator', aggregator),
                 recover_nan=var_config.get('recover_nan', recover_nan),
             )
-            new_var = xr.DataArray(var_data, dims=var.dims, attrs=var.attrs)
+            new_var = xr.DataArray(var_data,
+                                   dims=var.dims,
+                                   attrs=var.attrs)
         elif x_dim not in var.dims and y_dim not in var.dims:
             new_var = var.copy()
         if new_var is not None:
@@ -85,11 +88,15 @@ def affine_transform_dataset(
                 coords[k] = new_var
             elif k in source_ds.data_vars:
                 data_vars[k] = new_var
-    exclude_bounds = not source_ds[source_gm.xy_var_names[0]].attrs.get('bounds')
-    coords.update(target_gm.to_coords(xy_var_names=source_gm.xy_var_names,
-                                      xy_dim_names=source_gm.xy_dim_names,
-                                      exclude_bounds=exclude_bounds))
-    return xr.Dataset(data_vars=data_vars, coords=coords, attrs=source_ds.attrs)
+    has_bounds = any(source_ds[var_name].attrs.get('bounds')
+                     for var_name in source_gm.xy_var_names)
+    new_coords = target_gm.to_coords(xy_var_names=source_gm.xy_var_names,
+                                     xy_dim_names=source_gm.xy_dim_names,
+                                     exclude_bounds=not has_bounds)
+    coords.update(new_coords)
+    return xr.Dataset(data_vars=data_vars,
+                      coords=coords,
+                      attrs=source_ds.attrs)
 
 
 def resample_ndimage(im: NDImage,

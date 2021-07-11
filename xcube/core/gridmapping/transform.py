@@ -19,7 +19,6 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-import abc
 from typing import Union, Tuple
 
 import numpy as np
@@ -27,6 +26,7 @@ import pyproj
 import pyproj.transformer as pt
 import xarray as xr
 
+from .base import DEFAULT_TOLERANCE
 from .base import GridMapping
 from .coords import new_grid_mapping_from_coords
 from .helpers import _assert_valid_xy_names
@@ -52,7 +52,8 @@ def transform_grid_mapping(
         crs: pyproj.crs.CRS,
         *,
         tile_size: Union[int, Tuple[int, int]] = None,
-        xy_var_names: Tuple[str, str] = None
+        xy_var_names: Tuple[str, str] = None,
+        tolerance: float = DEFAULT_TOLERANCE,
 ) -> GridMapping:
     if xy_var_names:
         _assert_valid_xy_names(xy_var_names, name='xy_var_names')
@@ -90,5 +91,6 @@ def transform_grid_mapping(
         x_coords=xr.DataArray(xy_coords[0], name=xy_var_names[0]),
         y_coords=xr.DataArray(xy_coords[1], name=xy_var_names[1]),
         crs=crs,
-        tile_size=tile_size
+        tile_size=tile_size,
+        tolerance=tolerance,
     )

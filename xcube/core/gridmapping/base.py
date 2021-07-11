@@ -49,6 +49,10 @@ CRS_WGS84 = pyproj.crs.CRS(4326)
 # WGS84, axis order: lon, lat
 CRS_CRS84 = pyproj.crs.CRS.from_string("urn:ogc:def:crs:OGC:1.3:CRS84")
 
+# Default tolerance for all operations that
+# accept a key-word argument "tolerance":
+DEFAULT_TOLERANCE = 1.0e-5
+
 
 class GridMapping(abc.ABC):
     """
@@ -126,6 +130,15 @@ class GridMapping(abc.ABC):
                xy_dim_names: Tuple[str, str] = None,
                tile_size: Union[int, Tuple[int, int]] = None,
                is_j_axis_up: bool = None):
+        """
+        Derive a new grid mapping from this one with some properties changed.
+
+        :param xy_var_names: The new x-, and y-variable names.
+        :param xy_dim_names: The new x-, and y-dimension names.
+        :param tile_size: The new tile size
+        :param is_j_axis_up: Whether j-axis points up.
+        :return: A new, derived grid mapping.
+        """
         other = copy.copy(self)
         if xy_var_names is not None:
             _assert_valid_xy_names(xy_var_names, name='xy_var_names')
@@ -504,7 +517,8 @@ class GridMapping(abc.ABC):
                   crs: pyproj.crs.CRS,
                   *,
                   tile_size: Union[int, Tuple[int, int]] = None,
-                  xy_var_names: Tuple[str, str] = None) \
+                  xy_var_names: Tuple[str, str] = None,
+                  tolerance: float = DEFAULT_TOLERANCE) \
             -> 'GridMapping':
         """
         Transform this grid mapping so it uses the given
@@ -513,13 +527,17 @@ class GridMapping(abc.ABC):
         :param crs: The new spatial coordinate reference system.
         :param tile_size: Optional new tile size.
         :param xy_var_names: Optional new coordinate names.
+        :param tolerance: Absolute tolerance used when comparing
+            coordinates with each other. Must be in the units
+            of the *crs* and must be greater zero.
         :return: A new grid mapping that uses *crs*.
         """
         from .transform import transform_grid_mapping
         return transform_grid_mapping(self,
                                       crs,
                                       tile_size=tile_size,
-                                      xy_var_names=xy_var_names)
+                                      xy_var_names=xy_var_names,
+                                      tolerance=tolerance)
 
     @classmethod
     def regular(cls,
@@ -575,7 +593,8 @@ class GridMapping(abc.ABC):
                      tile_size: Union[int, Tuple[str, str]] = None,
                      prefer_is_regular: bool = True,
                      prefer_crs: pyproj.crs.CRS = None,
-                     emit_warnings: bool = False) -> 'GridMapping':
+                     emit_warnings: bool = False,
+                     tolerance: float = DEFAULT_TOLERANCE) -> 'GridMapping':
         """
         Create a grid mapping for the given *dataset*.
 
@@ -589,6 +608,9 @@ class GridMapping(abc.ABC):
             if multiple found.
         :param emit_warnings: Whether to emit warning for
             non-CF compliant datasets.
+        :param tolerance: Absolute tolerance used when comparing
+            coordinates with each other. Must be in the units
+            of the *crs* and must be greater zero.
         :return: a new grid mapping instance.
         """
         from .dataset import new_grid_mapping_from_dataset
@@ -598,7 +620,8 @@ class GridMapping(abc.ABC):
             tile_size=tile_size,
             prefer_is_regular=prefer_is_regular,
             prefer_crs=prefer_crs,
-            emit_warnings=emit_warnings
+            emit_warnings=emit_warnings,
+            tolerance=tolerance
         )
 
     @classmethod
@@ -607,7 +630,8 @@ class GridMapping(abc.ABC):
                     y_coords: xr.DataArray,
                     crs: pyproj.crs.CRS,
                     *,
-                    tile_size: Union[int, Tuple[int, int]] = None) \
+                    tile_size: Union[int, Tuple[int, int]] = None,
+                    tolerance: float = DEFAULT_TOLERANCE) \
             -> 'GridMapping':
         """
         Create a grid mapping from given x- and y-coordinates
@@ -618,19 +642,28 @@ class GridMapping(abc.ABC):
         :param y_coords: The y-coordinates.
         :param crs: The spatial coordinate reference system.
         :param tile_size: Optional tile size.
+        :param tolerance: Absolute tolerance used when comparing
+            coordinates with each other. Must be in the units
+            of the *crs* and must be greater zero.
         :return: A new grid mapping.
         """
         from .coords import new_grid_mapping_from_coords
         return new_grid_mapping_from_coords(x_coords=x_coords,
                                             y_coords=y_coords,
                                             crs=crs,
-                                            tile_size=tile_size)
+                                            tile_size=tile_size,
+                                            tolerance=tolerance)
 
-    def is_close(self, other: 'GridMapping') -> bool:
+    def is_close(self,
+                 other: 'GridMapping',
+                 tolerance: float = DEFAULT_TOLERANCE) -> bool:
         """
         Tests whether this grid mapping is close to *other*.
 
         :param other: The other grid mapping.
+        :param tolerance: Absolute tolerance used when comparing
+            coordinates with each other. Must be in the units
+            of the *crs* and must be greater zero.
         :return: True, if so, False otherwise.
         """
         if self.is_j_axis_up == other.is_j_axis_up \
@@ -641,14 +674,14 @@ class GridMapping(abc.ABC):
                 and self.crs == other.crs:
             sxr, syr = self.xy_res
             oxr, oyr = other.xy_res
-            if math.isclose(sxr, oxr) \
-                    and math.isclose(syr, oyr):
+            if math.isclose(sxr, oxr, abs_tol=tolerance) \
+                    and math.isclose(syr, oyr, abs_tol=tolerance):
                 sx1, sy1, sx2, sy2 = self.xy_bbox
                 ox1, oy1, ox2, oy2 = other.xy_bbox
-                return math.isclose(sx1, ox1) \
-                       and math.isclose(sy1, oy1) \
-                       and math.isclose(sx2, ox2) \
-                       and math.isclose(sy2, oy2)
+                return math.isclose(sx1, ox1, abs_tol=tolerance) \
+                       and math.isclose(sy1, oy1, abs_tol=tolerance) \
+                       and math.isclose(sx2, ox2, abs_tol=tolerance) \
+                       and math.isclose(sy2, oy2, abs_tol=tolerance)
         return False
 
     @classmethod
@@ -662,3 +695,28 @@ class GridMapping(abc.ABC):
         if not self.is_regular:
             raise NotImplementedError('Operation not implemented'
                                       ' for non-regular grid mappings')
+
+    def _repr_markdown_(self) -> str:
+        """Generate an IPython Notebook Markdown representation."""
+        is_regular = self.is_regular \
+            if self.is_regular is not None else "_unknown_"
+        is_j_axis_up = self.is_j_axis_up \
+            if self.is_j_axis_up is not None else "_unknown_"
+        is_lon_360 = self.is_lon_360 \
+            if self.is_lon_360 is not None else "_unknown_"
+        xy_res = repr(self.xy_res) \
+                 + ('' if self.is_regular else '  _estimated_')
+        return '\n'.join([
+            f'class: **{self.__class__.__name__}**',
+            f'* is_regular: {is_regular}',
+            f'* is_j_axis_up: {is_j_axis_up}',
+            f'* is_lon_360: {is_lon_360}',
+            f'* crs: {self.crs}',
+            f'* xy_res: {xy_res}',
+            f'* xy_bbox: {self.xy_bbox}',
+            f'* ij_bbox: {self.ij_bbox}',
+            f'* xy_dim_names: {self.xy_dim_names}',
+            f'* xy_var_names: {self.xy_var_names}',
+            f'* size: {self.size}',
+            f'* tile_size: {self.tile_size}',
+        ])

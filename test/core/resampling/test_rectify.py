@@ -499,27 +499,43 @@ class RectifySentinel2DatasetTest(SourceDatasetMixin, unittest.TestCase):
         source_ds = create_s2plus_dataset()
 
         expected_data = np.array([
-            [nan, nan, nan, nan, nan, nan, nan],
-            [nan, 0.019001, 0.008999, 0.008999, 0.012001, 0.022999, nan],
-            [nan, 0.022999, 0.022999, 0.007999, 0.008999, 0.023998, nan],
-            [nan, 0.022999, 0.022999, 0.007, 0.009998, 0.021, nan],
-            [nan, nan, nan, nan, nan, nan, nan]
+            [nan, nan, nan, nan, nan, nan, nan, nan, nan],
+            [nan, 0.019001, 0.019001, 0.008999, 0.012001, 0.012001, 0.022999, nan, nan],
+            [nan, 0.021, 0.021, 0.009998, 0.009998, 0.008999, 0.022999, nan, nan],
+            [nan, 0.022999, 0.022999, 0.007999, 0.007999, 0.008999, 0.023998, nan, nan],
+            [nan, 0.022999, 0.022999, 0.007, 0.007, 0.009998, 0.021, nan, nan],
+            [nan, nan, nan, nan, nan, nan, nan, nan, nan]
         ])
 
         source_gm = GridMapping.from_dataset(source_ds, prefer_crs=CRS_WGS84)
 
-        target_ds = rectify_dataset(source_ds, source_gm=source_gm, tile_size=None)
+        target_ds = rectify_dataset(source_ds,
+                                    source_gm=source_gm,
+                                    tile_size=None)
         self.assertEqual(None, target_ds.rrs_665.chunks)
-        np.testing.assert_almost_equal(target_ds.rrs_665.values, expected_data, decimal=3)
+        print(repr(target_ds.rrs_665.values))
+        np.testing.assert_almost_equal(target_ds.rrs_665.values,
+                                       expected_data, decimal=3)
 
-        target_ds = rectify_dataset(source_ds, source_gm=source_gm, tile_size=5)
-        self.assertEqual(((5,), (5, 2)), target_ds.rrs_665.chunks)
-        np.testing.assert_almost_equal(target_ds.rrs_665.values, expected_data, decimal=3)
+        target_ds = rectify_dataset(source_ds,
+                                    source_gm=source_gm,
+                                    tile_size=5)
+        self.assertEqual(((5, 1), (5, 4)), target_ds.rrs_665.chunks)
+        np.testing.assert_almost_equal(target_ds.rrs_665.values,
+                                       expected_data, decimal=3)
 
-        target_ds = rectify_dataset(source_ds, source_gm=source_gm, tile_size=None, is_j_axis_up=True)
+        target_ds = rectify_dataset(source_ds,
+                                    source_gm=source_gm,
+                                    tile_size=None,
+                                    is_j_axis_up=True)
         self.assertEqual(None, target_ds.rrs_665.chunks)
-        np.testing.assert_almost_equal(target_ds.rrs_665.values, expected_data[::-1], decimal=3)
+        np.testing.assert_almost_equal(target_ds.rrs_665.values,
+                                       expected_data[::-1], decimal=3)
 
-        target_ds = rectify_dataset(source_ds, source_gm=source_gm, tile_size=5, is_j_axis_up=True)
-        self.assertEqual(((5,), (5, 2)), target_ds.rrs_665.chunks)
-        np.testing.assert_almost_equal(target_ds.rrs_665.values, expected_data[::-1], decimal=3)
+        target_ds = rectify_dataset(source_ds,
+                                    source_gm=source_gm,
+                                    tile_size=5,
+                                    is_j_axis_up=True)
+        self.assertEqual(((5, 1), (5, 4)), target_ds.rrs_665.chunks)
+        np.testing.assert_almost_equal(target_ds.rrs_665.values,
+                                       expected_data[::-1], decimal=3)
