@@ -30,9 +30,9 @@ import numpy as np
 import pyproj.crs
 import xarray as xr
 
-from xcube.util.assertions import assert_true
 from xcube.util.assertions import assert_given
 from xcube.util.assertions import assert_instance
+from xcube.util.assertions import assert_true
 from xcube.util.undefined import UNDEFINED
 
 Number = Union[int, float]
@@ -187,3 +187,21 @@ def round_to_fraction(value: float,
     scaled_value = value / magnitude
     discrete_value = resolution * round(scaled_value / resolution)
     return (sign * discrete_value) * magnitude
+
+
+def scale_xy_res_and_size(xy_res: Tuple[float, float],
+                          size: Tuple[int, int],
+                          xy_scale: Tuple[float, float]) \
+        -> Tuple[Tuple[float, float], Tuple[int, int]]:
+    """
+    Scale given *xy_res* and *size* using *xy_scale*.
+    Make sure, size components are not less than 2.
+    """
+    x_res, y_res = xy_res
+    x_scale, y_scale = xy_scale
+    w, h = size
+    w, h = round(x_scale * w), round(y_scale * h)
+    return ((x_res / x_scale,
+             y_res / y_scale),
+            (w if w >= 2 else 2,
+             h if h >= 2 else 2))

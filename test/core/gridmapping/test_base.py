@@ -8,6 +8,7 @@ from test.sampledata import SourceDatasetMixin
 from xcube.core.gridmapping import GridMapping
 # noinspection PyProtectedMember
 from xcube.core.gridmapping.helpers import _to_affine
+from xcube.core.gridmapping.regular import RegularGridMapping
 
 GEO_CRS = pyproj.crs.CRS(4326)
 NOT_A_GEO_CRS = pyproj.crs.CRS(5243)
@@ -231,7 +232,32 @@ class GridMappingTest(SourceDatasetMixin, unittest.TestCase):
 
         derived_xy_coords = derived_gm.xy_coords
         self.assertIsNot(xy_coords, derived_xy_coords)
-        self.assertEqual(((2,), (270, 90), (270, 270, 180)), derived_xy_coords.chunks)
+        self.assertEqual(((2,), (270, 90), (270, 270, 180)),
+                         derived_xy_coords.chunks)
+
+    def test_scale(self):
+        gm = TestGridMapping(**self.kwargs())
+        self.assertEqual((720, 360), gm.size)
+        self.assertEqual((360, 180), gm.tile_size)
+        self.assertEqual(False, gm.is_j_axis_up)
+
+        # force creating of xy_coords array and save value
+        xy_coords = gm.xy_coords
+
+        scaled_gm = gm.scale((0.25, 0.5))
+
+        self.assertIsNot(gm, scaled_gm)
+        self.assertIsInstance(scaled_gm, RegularGridMapping)
+        self.assertEqual((180, 180), scaled_gm.size)
+        self.assertEqual((180, 180), scaled_gm.tile_size)
+        self.assertEqual(False, scaled_gm.is_j_axis_up)
+        self.assertEqual(('x', 'y'), scaled_gm.xy_var_names)
+        self.assertEqual(('x', 'y'), scaled_gm.xy_dim_names)
+
+        scaled_xy_coords = scaled_gm.xy_coords
+        self.assertIsNot(xy_coords, scaled_xy_coords)
+        self.assertEqual(((2,), (180,), (180,)),
+                         scaled_xy_coords.chunks)
 
     def test_ij_bbox_from_xy_bbox(self):
         gm = TestGridMapping(**self.kwargs())

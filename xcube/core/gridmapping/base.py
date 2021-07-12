@@ -42,6 +42,7 @@ from .helpers import _from_affine
 from .helpers import _normalize_int_pair
 from .helpers import _normalize_number_pair
 from .helpers import _to_affine
+from .helpers import scale_xy_res_and_size
 
 # WGS84, axis order: lat, lon
 CRS_WGS84 = pyproj.crs.CRS(4326)
@@ -70,6 +71,7 @@ class GridMapping(abc.ABC):
     Some instance methods can be used to derive new instances:
 
     * :meth:derive()
+    * :meth:scale()
     * :meth:transform()
     * :meth:to_regular()
 
@@ -161,6 +163,47 @@ class GridMapping(abc.ABC):
         if is_j_axis_up is not None:
             other._is_j_axis_up = is_j_axis_up
         return other
+
+    def scale(self,
+              xy_scale: Union[Number, Tuple[Number, Number]],
+              tile_size: Union[int, Tuple[int, int]] = None) -> 'GridMapping':
+        """
+        Derive a scaled version of this regular grid mapping.
+
+        Scaling factors lower than one correspond to up-scaling
+        (pixels sizes decrease, image size increases).
+
+        Scaling factors larger than one correspond to down-scaling.
+        (pixels sizes increase, image size decreases).
+
+        :param xy_scale: The x-, and y-scaling factors.
+            May be a single number or tuple.
+        :param tile_size: The new tile size
+        :return: A new, scaled grid mapping.
+        """
+        self._assert_regular()
+        x_scale, y_scale = _normalize_number_pair(xy_scale)
+        new_xy_res, new_size = scale_xy_res_and_size(self.xy_res,
+                                                     self.size,
+                                                     (x_scale, y_scale))
+        if tile_size is not None:
+            tile_width, tile_height = _normalize_int_pair(tile_size,
+                                                          name='tile_size')
+        else:
+            tile_width, tile_height = self.tile_size
+        tile_width = min(new_size[0], tile_width)
+        tile_height = min(new_size[1], tile_height)
+        return self.regular(
+            new_size,
+            (self.x_min, self.y_min),
+            new_xy_res,
+            self.crs,
+            tile_size=(tile_width, tile_height),
+            is_j_axis_up=self.is_j_axis_up
+        ).derive(
+            xy_dim_names=self.xy_dim_names,
+            xy_var_names=self.xy_var_names
+        )
 
     @property
     def size(self) -> Tuple[int, int]:
@@ -590,7 +633,7 @@ class GridMapping(abc.ABC):
                      dataset: xr.Dataset,
                      *,
                      xy_var_names: Tuple[str, str] = None,
-                     tile_size: Union[int, Tuple[str, str]] = None,
+                     tile_size: Union[int, Tuple[int, int]] = None,
                      prefer_is_regular: bool = True,
                      prefer_crs: pyproj.crs.CRS = None,
                      emit_warnings: bool = False,

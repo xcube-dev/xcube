@@ -29,6 +29,7 @@ from dask import array as da
 from dask_image import ndinterp
 
 from xcube.core.gridmapping import GridMapping
+from xcube.core.gridmapping.helpers import AffineTransformMatrix
 from xcube.util.assertions import assert_true
 
 NDImage = Union[np.ndarray, da.Array]
@@ -36,31 +37,81 @@ Aggregator = Callable[[NDImage], NDImage]
 
 
 def affine_transform_dataset(
-        source_ds: xr.Dataset,
-        source_gm: GridMapping = None,
-        target_gm: GridMapping = None,
+        dataset: xr.Dataset,
+        source_gm: GridMapping,
+        target_gm: GridMapping,
         var_configs: Mapping[Hashable, Mapping[str, Any]] = None
 ) -> xr.Dataset:
+    """
+    Resample dataset according to an affine transformation.
+
+    :param dataset: The source dataset
+    :param source_gm: Source grid mapping of *dataset*.
+        Must be regular. Must have same CRS as *target_gm*.
+    :param target_gm: Target grid mapping.
+        Must be regular. Must have same CRS as *source_gm*.
+    :param var_configs: Optional resampling configurations
+        for individual variables.
+    :return: The resampled target dataset.
+    """
     if source_gm.crs != target_gm.crs:
         raise ValueError(f'CRS of source_gm and target_gm must be equal,'
                          f' was "{source_gm.crs.name}"'
                          f' and "{target_gm.crs.name}"')
     GridMapping.assert_regular(source_gm, name='source_gm')
     GridMapping.assert_regular(target_gm, name='target_gm')
-    var_configs = var_configs or {}
-    matrix = target_gm.ij_transform_to(source_gm)
+    resampled_dataset = resample_dataset(
+        dataset=dataset,
+        matrix=target_gm.ij_transform_to(source_gm),
+        size=target_gm.size,
+        tile_size=target_gm.tile_size,
+        xy_dim_names=source_gm.xy_dim_names,
+        var_configs=var_configs
+    )
+    has_bounds = any(dataset[var_name].attrs.get('bounds')
+                     for var_name in source_gm.xy_var_names)
+    new_coords = target_gm.to_coords(
+        xy_var_names=source_gm.xy_var_names,
+        xy_dim_names=source_gm.xy_dim_names,
+        exclude_bounds=not has_bounds
+    )
+    return resampled_dataset.assign_coords(new_coords)
+
+
+def resample_dataset(
+        dataset: xr.Dataset,
+        matrix: AffineTransformMatrix,
+        size: Tuple[int, int],
+        tile_size: Tuple[int, int],
+        xy_dim_names: Tuple[str, str],
+        var_configs: Mapping[Hashable, Mapping[str, Any]] = None,
+) -> xr.Dataset:
+    """
+    Resample dataset according to an affine transformation.
+
+    :param dataset: The source dataset
+    :param matrix: Affine transformation matrix.
+    :param size: Target image size.
+    :param tile_size: Target image tile size.
+    :param xy_dim_names: Names of the spatial dimensions.
+    :param var_configs: Optional resampling configurations
+        for individual variables.
+    :return: The resampled target dataset.
+    """
     ((i_scale, _, i_off), (_, j_scale, j_off)) = matrix
-    x_dim, y_dim = source_gm.xy_dim_names
-    width, height = target_gm.size
-    tile_width, tile_height = target_gm.tile_size
+    width, height = size
+    tile_width, tile_height = tile_size
+    x_dim, y_dim = xy_dim_names
     yx_dims = (y_dim, x_dim)
     coords = dict()
+    var_configs = var_configs or {}
     data_vars = dict()
-    for k, var in source_ds.variables.items():
+    for k, var in dataset.variables.items():
         new_var = None
         if var.ndim >= 2 and var.dims[-2:] == yx_dims:
             var_config = var_configs.get(k, dict())
-            if np.issubdtype(var.dtype, int) or np.issubdtype(var.dtype, bool):
+            if np.issubdtype(var.dtype, int) \
+                    or np.issubdtype(var.dtype, bool):
                 spline_order = 0
                 aggregator = None
                 recover_nan = False
@@ -84,36 +135,33 @@ def affine_transform_dataset(
         elif x_dim not in var.dims and y_dim not in var.dims:
             new_var = var.copy()
         if new_var is not None:
-            if k in source_ds.coords:
+            if k in dataset.coords:
                 coords[k] = new_var
-            elif k in source_ds.data_vars:
+            elif k in dataset.data_vars:
                 data_vars[k] = new_var
-    has_bounds = any(source_ds[var_name].attrs.get('bounds')
-                     for var_name in source_gm.xy_var_names)
-    new_coords = target_gm.to_coords(xy_var_names=source_gm.xy_var_names,
-                                     xy_dim_names=source_gm.xy_dim_names,
-                                     exclude_bounds=not has_bounds)
-    coords.update(new_coords)
+
     return xr.Dataset(data_vars=data_vars,
                       coords=coords,
-                      attrs=source_ds.attrs)
+                      attrs=dataset.attrs)
 
 
-def resample_ndimage(im: NDImage,
-                     scale: Union[float, Tuple[float, float]] = 1,
-                     offset: Union[float, Tuple[float, float]] = None,
-                     shape: Union[int, Tuple[int, int]] = None,
-                     chunks: Sequence[int] = None,
-                     spline_order: int = 1,
-                     aggregator: Optional[Aggregator] = np.nanmean,
-                     recover_nan: bool = False) -> da.Array:
-    im = da.asarray(im)
-    offset = _normalize_offset(offset, im.ndim)
-    scale = _normalize_scale(scale, im.ndim)
+def resample_ndimage(
+        image: NDImage,
+        scale: Union[float, Tuple[float, float]] = 1,
+        offset: Union[float, Tuple[float, float]] = None,
+        shape: Union[int, Tuple[int, int]] = None,
+        chunks: Sequence[int] = None,
+        spline_order: int = 1,
+        aggregator: Optional[Aggregator] = np.nanmean,
+        recover_nan: bool = False
+) -> da.Array:
+    image = da.asarray(image)
+    offset = _normalize_offset(offset, image.ndim)
+    scale = _normalize_scale(scale, image.ndim)
     if shape is None:
-        shape = resize_shape(im.shape, scale)
+        shape = resize_shape(image.shape, scale)
     else:
-        shape = _normalize_shape(shape, im)
+        shape = _normalize_shape(shape, image)
     chunks = _normalize_chunks(chunks, shape)
     scale_y, scale_x = scale[-2], scale[-1]
     divisor_x = math.ceil(abs(scale_x))
@@ -121,9 +169,9 @@ def resample_ndimage(im: NDImage,
     if (divisor_x >= 2 or divisor_y >= 2) and aggregator is not None:
         # Downsampling
         # ------------
-        axes = {im.ndim - 2: divisor_y, im.ndim - 1: divisor_x}
+        axes = {image.ndim - 2: divisor_y, image.ndim - 1: divisor_x}
         elongation = _normalize_scale((scale_y / divisor_y,
-                                       scale_x / divisor_x), im.ndim)
+                                       scale_x / divisor_x), image.ndim)
         larger_shape = resize_shape(shape, (divisor_y, divisor_x),
                                     divisor_x=divisor_x,
                                     divisor_y=divisor_y)
@@ -134,39 +182,40 @@ def resample_ndimage(im: NDImage,
         # print('  larger_shape:', larger_shape)
         divisible_chunks = _make_divisible_tiles(larger_shape,
                                                  divisor_x, divisor_y)
-        im = _transform_array(im,
-                              elongation, offset,
-                              larger_shape, divisible_chunks,
-                              spline_order, recover_nan)
-        im = da.coarsen(aggregator, im, axes)
-        if shape != im.shape:
-            im = im[..., 0:shape[-2], 0:shape[-1]]
+        image = _transform_array(image,
+                                 elongation, offset,
+                                 larger_shape, divisible_chunks,
+                                 spline_order, recover_nan)
+        image = da.coarsen(aggregator, image, axes)
+        if shape != image.shape:
+            image = image[..., 0:shape[-2], 0:shape[-1]]
         if chunks is not None:
-            im = im.rechunk(chunks)
+            image = image.rechunk(chunks)
     else:
         # Upsampling
         # ----------
         # print('Upsampling: ', scale)
-        im = _transform_array(im,
-                              scale, offset,
-                              shape, chunks,
-                              spline_order, recover_nan)
-    return im
+        image = _transform_array(image,
+                                 scale, offset,
+                                 shape, chunks,
+                                 spline_order, recover_nan)
+    return image
 
 
-def _transform_array(im: da.Array,
+def _transform_array(image: da.Array,
                      scale: Tuple[float, ...],
                      offset: Tuple[float, ...],
                      shape: Tuple[int, ...],
                      chunks: Optional[Tuple[int, ...]],
                      spline_order: int,
                      recover_nan: bool) -> da.Array:
-    assert_true(len(scale) == im.ndim, 'invalid scale')
-    assert_true(len(offset) == im.ndim, 'invalid offset')
-    assert_true(len(shape) == im.ndim, 'invalid shape')
-    assert_true(chunks is None or len(chunks) == im.ndim, 'invalid chunks')
-    if _is_no_op(im, scale, offset, shape):
-        return im
+    assert_true(len(scale) == image.ndim, 'invalid scale')
+    assert_true(len(offset) == image.ndim, 'invalid offset')
+    assert_true(len(shape) == image.ndim, 'invalid shape')
+    assert_true(chunks is None or len(chunks) == image.ndim,
+                'invalid chunks')
+    if _is_no_op(image, scale, offset, shape):
+        return image
     matrix = scale
     at_kwargs = dict(
         offset=offset,
@@ -178,12 +227,12 @@ def _transform_array(im: da.Array,
     if recover_nan and spline_order > 0:
         # We can "recover" values that are neighbours to NaN values
         # that would otherwise become NaN too.
-        mask = da.isnan(im)
+        mask = da.isnan(image)
         # First check if there are NaN values ar all
         if da.any(mask):
             # Yes, then
             # 1. replace NaN by zero
-            filled_im = da.where(mask, 0.0, im)
+            filled_im = da.where(mask, 0.0, image)
             # 2. transform the zeo-filled image
             scaled_im = ndinterp.affine_transform(filled_im,
                                                   matrix,
@@ -194,12 +243,13 @@ def _transform_array(im: da.Array,
                                                     matrix,
                                                     **at_kwargs,
                                                     cval=0.0)
-            # 4. put back NaN where there was zero, otherwise decode using scaled mask
+            # 4. put back NaN where there was zero,
+            #    otherwise decode using scaled mask
             return da.where(da.isclose(scaled_norm, 0.0),
                             np.nan, scaled_im / scaled_norm)
 
     # No dealing with NaN required
-    return ndinterp.affine_transform(im, matrix, **at_kwargs, cval=np.nan)
+    return ndinterp.affine_transform(image, matrix, **at_kwargs, cval=np.nan)
 
 
 def resize_shape(shape: Sequence[int],
