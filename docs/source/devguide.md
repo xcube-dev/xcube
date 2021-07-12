@@ -48,7 +48,7 @@ A significant portion of the existing codebase does not adhere to our current
 code style guidelines. It is of course a goal to bring these parts into
 conformance with the style guide, but major style changes should not be
 bundled into pull requests focused on other improvements or bug fixes, because
-they obscure the significant code changes and make review difficult.
+they obscure the significant code changes and make reviews difficult.
 Large-scale style and formatting updates should instead be made via dedicated
 pull requests.
 
