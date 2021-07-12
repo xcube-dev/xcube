@@ -38,7 +38,30 @@ The current software version is in `xcube/version.py`.
 
 ## Coding Style
 
-We try adhering to [PEP-8](https://www.python.org/dev/peps/pep-0008/).
+We follow [PEP-8](https://www.python.org/dev/peps/pep-0008/), including
+its recommendation of [PEP-484](https://www.python.org/dev/peps/pep-0484/)
+syntax for type hints.
+
+### Updating code style in the existing codebase
+
+A significant portion of the existing codebase does not adhere to our current
+code style guidelines. It is of course a goal to bring these parts into
+conformance with the style guide, but major style changes should not be
+bundled into pull requests focused on other improvements or bug fixes, because
+they obscure the significant code changes and make reviews difficult.
+Large-scale style and formatting updates should instead be made via dedicated
+pull requests.
+
+### Line length
+
+As recommended in PEP-8, all lines should be limited to a maximum of 79
+characters, including docstrings and comments.
+
+### Quotation marks for string literals
+
+In general, single quotation marks should always be used for string literals.
+Double quotation marks should only be used if there is a compelling reason to
+do so in a particular case.
 
 ## Main Packages
 
