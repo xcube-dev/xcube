@@ -55,7 +55,7 @@ pull requests.
 ### Line length
 
 As recommended in PEP-8, all lines should be limited to a maximum of 79
-characters.
+characters, including docstrings and comments.
 
 ### Quotation marks for string literals
 
