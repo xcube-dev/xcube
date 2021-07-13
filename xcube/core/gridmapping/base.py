@@ -62,7 +62,7 @@ class GridMapping(abc.ABC):
     defined in a well-known coordinate reference system (CRS).
 
     This class cannot be instantiated directly. Use one of its factory methods
-    the create instances:
+    to create instances:
 
     * :meth:regular()
     * :meth:from_dataset()
