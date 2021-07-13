@@ -25,10 +25,3 @@ class ResampleInSpaceTest(unittest.TestCase):
 
         # TODO: assert stuff
         resample_in_space(source_ds, source_gm, target_gm)
-
-    # noinspection PyMethodMayBeStatic
-    def test_affine_transform_dataset(self):
-        source_ds = xr.open_zarr('D:\\Projects\\xcube\\examples\\notebooks\\resampling\\target_ds.zarr')
-        source_gm = GridMapping.from_dataset(source_ds)
-        target_gm = source_gm.scale(0.25)
-        resample_in_space(source_ds, source_gm, target_gm)
