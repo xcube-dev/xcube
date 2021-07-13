@@ -259,6 +259,38 @@ class GridMappingTest(SourceDatasetMixin, unittest.TestCase):
         self.assertEqual(((2,), (180,), (180,)),
                          scaled_xy_coords.chunks)
 
+    def test_is_close(self):
+        gm1 = TestGridMapping(**self.kwargs(xy_min=(0, 0),
+                                            size=(400, 200),
+                                            xy_res=(0.01, 0.01)))
+        gm2 = TestGridMapping(**self.kwargs(xy_min=(0, 0),
+                                            size=(400, 200),
+                                            xy_res=(0.01, 0.01)))
+        self.assertTrue(gm1.is_close(gm1))
+        self.assertTrue(gm2.is_close(gm2))
+        self.assertTrue(gm1.is_close(gm2))
+        self.assertTrue(gm2.is_close(gm1))
+
+        tolerance = 0.001
+
+        gm2 = TestGridMapping(**self.kwargs(xy_min=(tolerance / 2,
+                                                    tolerance / 2),
+                                            size=(400, 200),
+                                            xy_res=(0.01, 0.01)))
+        self.assertTrue(gm1.is_close(gm1, tolerance=tolerance))
+        self.assertTrue(gm2.is_close(gm2, tolerance=tolerance))
+        self.assertTrue(gm1.is_close(gm2, tolerance=tolerance))
+        self.assertTrue(gm2.is_close(gm1, tolerance=tolerance))
+
+        gm2 = TestGridMapping(**self.kwargs(xy_min=(tolerance * 2,
+                                                    tolerance * 2),
+                                            size=(400, 200),
+                                            xy_res=(0.01, 0.01)))
+        self.assertTrue(gm1.is_close(gm1, tolerance=tolerance))
+        self.assertTrue(gm2.is_close(gm2, tolerance=tolerance))
+        self.assertFalse(gm1.is_close(gm2, tolerance=tolerance))
+        self.assertFalse(gm2.is_close(gm1, tolerance=tolerance))
+
     def test_ij_bbox_from_xy_bbox(self):
         gm = TestGridMapping(**self.kwargs())
 

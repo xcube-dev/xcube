@@ -709,6 +709,8 @@ class GridMapping(abc.ABC):
             of the *crs* and must be greater zero.
         :return: True, if so, False otherwise.
         """
+        if self is other:
+            return True
         if self.is_j_axis_up == other.is_j_axis_up \
                 and self.is_lon_360 == other.is_lon_360 \
                 and self.is_regular == other.is_regular \
