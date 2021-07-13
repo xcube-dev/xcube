@@ -110,8 +110,8 @@ def resample_dataset(
         new_var = None
         if var.ndim >= 2 and var.dims[-2:] == yx_dims:
             var_config = var_configs.get(k, dict())
-            if np.issubdtype(var.dtype, int) \
-                    or np.issubdtype(var.dtype, bool):
+            if np.issubdtype(var.dtype, np.integer) \
+                    or np.issubdtype(var.dtype, np.bool):
                 spline_order = 0
                 aggregator = None
                 recover_nan = False
@@ -216,7 +216,10 @@ def _transform_array(image: da.Array,
                 'invalid chunks')
     if _is_no_op(image, scale, offset, shape):
         return image
-    matrix = scale
+    # as of scipy 0.18, matrix = scale is no longer supported
+    # se we use the ((sx, 0), (0, sy)) form.
+    x_scale, y_scale = scale
+    matrix = ((x_scale, 0), (0, y_scale))
     at_kwargs = dict(
         offset=offset,
         order=spline_order,
