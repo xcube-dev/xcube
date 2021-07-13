@@ -557,7 +557,7 @@ class GridMapping(abc.ABC):
                                       exclude_bounds=exclude_bounds)
 
     def transform(self,
-                  crs: pyproj.crs.CRS,
+                  crs: Union[str, pyproj.crs.CRS],
                   *,
                   tile_size: Union[int, Tuple[int, int]] = None,
                   xy_var_names: Tuple[str, str] = None,
@@ -587,7 +587,7 @@ class GridMapping(abc.ABC):
                 size: Union[int, Tuple[int, int]],
                 xy_min: Tuple[float, float],
                 xy_res: Union[float, Tuple[float, float]],
-                crs: pyproj.crs.CRS,
+                crs: Union[str, pyproj.crs.CRS],
                 *,
                 tile_size: Union[int, Tuple[int, int]] = None,
                 is_j_axis_up: bool = False) -> 'GridMapping':
@@ -635,7 +635,7 @@ class GridMapping(abc.ABC):
                      xy_var_names: Tuple[str, str] = None,
                      tile_size: Union[int, Tuple[int, int]] = None,
                      prefer_is_regular: bool = True,
-                     prefer_crs: pyproj.crs.CRS = None,
+                     prefer_crs: Union[str, pyproj.crs.CRS] = None,
                      emit_warnings: bool = False,
                      tolerance: float = DEFAULT_TOLERANCE) -> 'GridMapping':
         """
@@ -671,7 +671,7 @@ class GridMapping(abc.ABC):
     def from_coords(cls,
                     x_coords: xr.DataArray,
                     y_coords: xr.DataArray,
-                    crs: pyproj.crs.CRS,
+                    crs: Union[str, pyproj.crs.CRS],
                     *,
                     tile_size: Union[int, Tuple[int, int]] = None,
                     tolerance: float = DEFAULT_TOLERANCE) \

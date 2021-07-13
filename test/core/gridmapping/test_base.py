@@ -7,6 +7,7 @@ import xarray as xr
 from test.sampledata import SourceDatasetMixin
 from xcube.core.gridmapping import GridMapping
 # noinspection PyProtectedMember
+from xcube.core.gridmapping.coords import Coords2DGridMapping
 from xcube.core.gridmapping.helpers import _to_affine
 from xcube.core.gridmapping.regular import RegularGridMapping
 
@@ -258,6 +259,24 @@ class GridMappingTest(SourceDatasetMixin, unittest.TestCase):
         self.assertIsNot(xy_coords, scaled_xy_coords)
         self.assertEqual(((2,), (180,), (180,)),
                          scaled_xy_coords.chunks)
+
+    def test_transform(self):
+        gm = TestGridMapping(**self.kwargs(xy_min=(20, 56),
+                                           size=(400, 200),
+                                           xy_res=(0.01, 0.01)))
+        transformed_gm = gm.transform('EPSG:32633')
+
+        self.assertIsNot(gm, transformed_gm)
+        self.assertIsInstance(transformed_gm, Coords2DGridMapping)
+        self.assertEqual(pyproj.CRS.from_string('EPSG:32633'),
+                         transformed_gm.crs)
+        self.assertEqual((400, 200), transformed_gm.size)
+        self.assertEqual((400, 200), transformed_gm.tile_size)
+        self.assertEqual(None, transformed_gm.is_j_axis_up)
+        self.assertEqual(('transformed_x', 'transformed_y'),
+                         transformed_gm.xy_var_names)
+        self.assertEqual(('lon', 'lat'),
+                         transformed_gm.xy_dim_names)
 
     def test_is_close(self):
         gm1 = TestGridMapping(**self.kwargs(xy_min=(0, 0),

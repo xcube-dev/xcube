@@ -209,6 +209,18 @@ def _transform_array(image: da.Array,
                      chunks: Optional[Tuple[int, ...]],
                      spline_order: int,
                      recover_nan: bool) -> da.Array:
+    """
+    Apply affine transformation to ND-image.
+
+    :param image: ND-image with shape (..., size_y, size_x)
+    :param scale: Scaling factors (1, ..., 1, sy, sx)
+    :param offset: Offset values (0, ..., 0, oy, ox)
+    :param shape: (..., size_y, size_x)
+    :param chunks: (..., chunk_size_y, chunk_size_x)
+    :param spline_order: 0 ... 5
+    :param recover_nan: True/False
+    :return: Transformed ND-image.
+    """
     assert_true(len(scale) == image.ndim, 'invalid scale')
     assert_true(len(offset) == image.ndim, 'invalid offset')
     assert_true(len(shape) == image.ndim, 'invalid shape')
@@ -216,10 +228,10 @@ def _transform_array(image: da.Array,
                 'invalid chunks')
     if _is_no_op(image, scale, offset, shape):
         return image
-    # as of scipy 0.18, matrix = scale is no longer supported
-    # se we use the ((sx, 0), (0, sy)) form.
-    x_scale, y_scale = scale
-    matrix = ((x_scale, 0), (0, y_scale))
+    # As of scipy 0.18, matrix = scale is no longer supported.
+    # Therefore we use the diagonal matrix form here,
+    # where scale is the diagonal.
+    matrix = np.diag(scale)
     at_kwargs = dict(
         offset=offset,
         order=spline_order,

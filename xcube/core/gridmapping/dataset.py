@@ -28,6 +28,7 @@ from .base import DEFAULT_TOLERANCE
 from .base import GridMapping
 from .cfconv import get_dataset_grid_mappings
 from .coords import new_grid_mapping_from_coords
+from .helpers import _normalize_crs
 
 
 def new_grid_mapping_from_dataset(
@@ -35,11 +36,13 @@ def new_grid_mapping_from_dataset(
         *,
         xy_var_names: Tuple[str, str] = None,
         tile_size: Union[int, Tuple[str, str]] = None,
-        prefer_crs: pyproj.crs.CRS = None,
+        prefer_crs: Union[str, pyproj.crs.CRS] = None,
         prefer_is_regular: bool = None,
         emit_warnings: bool = False,
         tolerance: float = DEFAULT_TOLERANCE
 ) -> Optional[GridMapping]:
+    if prefer_crs is not None:
+        prefer_crs = _normalize_crs(prefer_crs)
     if xy_var_names is not None:
         x_var_name, y_var_name = xy_var_names
         if x_var_name not in dataset or y_var_name not in dataset:

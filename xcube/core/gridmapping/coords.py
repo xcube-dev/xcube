@@ -30,10 +30,11 @@ import xarray as xr
 
 from xcube.util.assertions import assert_instance
 from xcube.util.assertions import assert_true
-from .base import GridMapping
 from .base import DEFAULT_TOLERANCE
+from .base import GridMapping
 from .helpers import _assert_valid_xy_names
 from .helpers import _default_xy_var_names
+from .helpers import _normalize_crs
 from .helpers import _normalize_int_pair
 from .helpers import _to_int_or_float
 from .helpers import from_lon_360
@@ -41,6 +42,7 @@ from .helpers import round_to_fraction
 from .helpers import to_lon_360
 
 _ER = 6371000
+
 
 class CoordsGridMapping(GridMapping, abc.ABC):
     """
@@ -84,16 +86,16 @@ class Coords2DGridMapping(CoordsGridMapping):
 def new_grid_mapping_from_coords(
         x_coords: xr.DataArray,
         y_coords: xr.DataArray,
-        crs: pyproj.crs.CRS,
+        crs: Union[str, pyproj.crs.CRS],
         *,
         tile_size: Union[int, Tuple[int, int]] = None,
         tolerance: float = DEFAULT_TOLERANCE,
 ) -> GridMapping:
+    crs = _normalize_crs(crs)
     assert_instance(x_coords, xr.DataArray, name='x_coords')
     assert_instance(y_coords, xr.DataArray, name='y_coords')
     assert_true(x_coords.ndim in (1, 2),
                 'x_coords and y_coords must be either 1D or 2D arrays')
-    assert_instance(crs, pyproj.crs.CRS, name='crs')
     assert_instance(tolerance, float, name='tolerance')
     assert_true(tolerance > 0.0,
                 'tolerance must be greater zero')

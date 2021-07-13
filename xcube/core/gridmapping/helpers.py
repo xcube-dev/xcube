@@ -61,6 +61,13 @@ def _to_affine(matrix: AffineTransformMatrix) -> affine.Affine:
     return affine.Affine(*matrix[0], *matrix[1])
 
 
+def _normalize_crs(crs: Union[str, pyproj.CRS]) -> pyproj.CRS:
+    if isinstance(crs, pyproj.CRS):
+        return crs
+    assert_instance(crs, str, 'crs')
+    return pyproj.CRS.from_string(crs)
+
+
 def _normalize_int_pair(
         value: Any,
         name: str = None,

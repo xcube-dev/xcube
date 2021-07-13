@@ -30,6 +30,7 @@ from .base import DEFAULT_TOLERANCE
 from .base import GridMapping
 from .coords import new_grid_mapping_from_coords
 from .helpers import _assert_valid_xy_names
+from .helpers import _normalize_crs
 
 
 # class TransformedGridMapping(GridMapping, abc.ABC):
@@ -49,12 +50,14 @@ from .helpers import _assert_valid_xy_names
 
 def transform_grid_mapping(
         grid_mapping: GridMapping,
-        crs: pyproj.crs.CRS,
+        crs: Union[str, pyproj.crs.CRS],
         *,
         tile_size: Union[int, Tuple[int, int]] = None,
         xy_var_names: Tuple[str, str] = None,
         tolerance: float = DEFAULT_TOLERANCE,
 ) -> GridMapping:
+    crs = _normalize_crs(crs)
+
     if xy_var_names:
         _assert_valid_xy_names(xy_var_names, name='xy_var_names')
 

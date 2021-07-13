@@ -18,6 +18,7 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+
 from typing import Tuple, Union
 
 import dask.array as da
@@ -25,10 +26,10 @@ import pyproj
 import xarray as xr
 
 from xcube.util.assertions import assert_true
-from xcube.util.assertions import assert_instance
 from .base import GridMapping
 from .helpers import _default_xy_dim_names
 from .helpers import _default_xy_var_names
+from .helpers import _normalize_crs
 from .helpers import _normalize_int_pair
 from .helpers import _normalize_number_pair
 from .helpers import _to_int_or_float
@@ -67,7 +68,7 @@ def new_regular_grid_mapping(
         size: Union[int, Tuple[int, int]],
         xy_min: Tuple[float, float],
         xy_res: Union[float, Tuple[float, float]],
-        crs: pyproj.crs.CRS,
+        crs: Union[str, pyproj.crs.CRS],
         *,
         tile_size: Union[int, Tuple[int, int]] = None,
         is_j_axis_up: bool = False
@@ -80,7 +81,7 @@ def new_regular_grid_mapping(
     x_res, y_res = _normalize_number_pair(xy_res, name='xy_res')
     assert_true(x_res > 0 and y_res > 0, 'invalid xy_res')
 
-    assert_instance(crs, pyproj.crs.CRS, name='crs')
+    crs = _normalize_crs(crs)
 
     x_min = _to_int_or_float(x_min)
     y_min = _to_int_or_float(y_min)
