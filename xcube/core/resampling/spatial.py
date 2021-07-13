@@ -190,6 +190,16 @@ def resample_in_space(
     # If CRSes are not both geographic and their CRSes are different
     # transform the source_gm so its CRS matches the target CRS:
     transformed_source_gm = source_gm.transform(target_gm.crs)
-    return resample_in_space(dataset,
-                             source_gm=transformed_source_gm,
-                             target_gm=target_gm)
+    transformed_x, transformed_y = transformed_source_gm.xy_coords
+    reprojected_dataset = resample_in_space(
+        dataset.assign(transformed_x=transformed_x,
+                       transformed_y=transformed_y),
+        source_gm=transformed_source_gm,
+        target_gm=target_gm
+    )
+    if not target_gm.crs.is_geographic:
+        # Add 'crs' variable according to CF conventions
+        reprojected_dataset = reprojected_dataset.assign(
+            crs=xr.DataArray(0, attrs=target_gm.crs.to_cf())
+        )
+    return reprojected_dataset
