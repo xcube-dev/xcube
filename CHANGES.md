@@ -1,5 +1,26 @@
 ## Changes in 0.9.0 (in development)
 
+### New features
+
+* Numerous breaking changes have been applied to this version
+  in order to address generic resampling (#391) and support other
+  CRS than WGS-84 (#112): 
+  * The following components have been removed entirely 
+    - module `xcube.core.imgeom` with class `ImageGeom` 
+    - module `xcube.core.geocoding` with class `GeoCoding`
+    - module `xcube.core.reproject` and all its functions
+  * The following components have been added 
+    - module `xcube.core.gridmapping` with new class `GridMapping`
+      is a CF compliant replacement for classes `ImageGeom` and `GeoCoding`
+  * The following components have changed in an incompatible way:
+    - Function`xcube.core.rectify.rectify_dataset()` now uses 
+      `source_gm: GridMapping` and `target_gm: GridMapping` instead of 
+      `geo_coding: GeoCoding` and `output_geom: ImageGeom`. 
+    - Function`xcube.core.gen.iproc.InputProcessor.process()` now uses 
+      `source_gm: GridMapping` and `target_gm: GridMapping` instead of 
+      `geo_coding: GeoCoding` and `output_geom: ImageGeom`. 
+  * xcube no longer depends on GDAL (at least not directly).
+
 * Added a new feature to xcube called "BYOA" - Bring your own Algorithm.
   It is a generic utility that allows for execution of user-supplied 
   Python code in both local and remote contexts. (#467)
@@ -12,20 +33,25 @@
   1. Generator API `xcube.core.gen2.LocalCubeGenerator` and
     `xcube.core.gen2.service.RemoteCubeGenerator`;
   2. Generator CLI `xcube gen2`.
+  
+* Added a new utility module `xcube.util.temp` that allows for creating 
+  temporary files and directories that will be deleted when the current 
+  process ends.
+
+### Other
+
 * xcube now issues a warning, if a data cube is opened from object 
   storage, and credentials have neither been passed nor can be found, 
   and the object storage has been opened with the default `anon=False`. (#412)
 * xcube no longer internally caches directory listings, which prevents 
   the situation where a data cube that has recently been written into object 
   storage cannot be found. 
-* Added a new utility module `xcube.util.temp` that allows for creating 
-  temporary files and directories that will be deleted when the current 
-  process ends.
-* Added a GitHub action that will run xcube unit tests, and build and push Docker images. The
-  version tag of the image is either `latest` when the master changed or the release tag 
+* Removed example notebooks that used hard-coded local file paths. (#400)
+* Added a GitHub action that will run xcube unit tests, and build and 
+  push Docker images. The version tag of the image is either `latest` when 
+  the master changed or equals the release tag. 
 * Removed warning `module 'xcube_xyz' looks like an xcube-plugin but 
   lacks a callable named 'init_plugin`.
-
   
 ## Changes in 0.8.2 (in development)
 

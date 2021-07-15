@@ -5,6 +5,7 @@ import unittest
 from collections import MutableMapping
 from typing import Dict, KeysView, Iterator, Sequence, Any
 
+import cftime
 import numpy as np
 import xarray as xr
 
@@ -65,7 +66,7 @@ class SelectSpatialSubsetTest(unittest.TestCase):
     def test_select_spatial_subset_some_xy_bbox(self):
         ds1 = create_highroc_dataset()
         ds2 = select_spatial_subset(ds1, xy_bbox=(8., 55, 10., 56.))
-        self.assertEqual((2, 2), ds2.conc_chl.shape)
+        self.assertEqual((3, 3), ds2.conc_chl.shape)
 
     def test_select_spatial_subset_none_xy_bbox(self):
         ds1 = create_highroc_dataset()
@@ -87,8 +88,7 @@ class SelectSpatialSubsetTest(unittest.TestCase):
     def test_select_spatial_subset_descending_y_param(self):
         ds1 = new_cube(inverse_y=True)
         ds2 = select_spatial_subset(ds1, xy_bbox=(40., 40., 42., 42.))
-        self.assertEqual((2,), ds2.lon.shape)
-        self.assertEqual((2,), ds2.lat.shape)
+        self.assertEqual(((2,), (2,)), (ds2.lon.shape, ds2.lat.shape))
 
 
 class SelectTemporalSubsetTest(unittest.TestCase):
@@ -135,7 +135,6 @@ class SelectTemporalSubsetTest(unittest.TestCase):
                                 ds2.time.values)
 
     def test_cf_time_subset(self):
-        import cftime
         ds1 = new_cube(variables=dict(analysed_sst=0.6, mask=8),
                        use_cftime=True,
                        time_dtype=None,

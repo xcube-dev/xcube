@@ -4,12 +4,13 @@ channels:
   - defaults
 dependencies:
   # Python
-  - python >=3.6
+  - python >=3.8
   # Required
   - affine >=2.2
   - click >=7.0
   - cmocean >=2.0
   - dask >=2021.6
+  - dask-image >=0.6
   - distributed >=2021.6
   - fiona >=1.8
   - fsspec >=2021.6
