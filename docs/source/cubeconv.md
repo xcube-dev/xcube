@@ -98,9 +98,9 @@ ARD links:
 * Data variables: 
   * MAY have any dimensionality, including no dimensions at all.
   * SHALL have the spatial dimensions at the innermost position in case it has 
-    spatial dimensions (e.g., [..., y, x])
+    spatial dimensions (e.g., `[..., y, x]`)
   * SHALL have its time dimension at the outermost position in case it has a
-    time dimension (e.g., [time, ...])
+    time dimension (e.g., `[time, ...]`)
   * MAY have extra dimensions, e.g. `layer` (of the atmosphere) or 
     `band` (of a spectrum). These extra dimensions MUST be positioned between
     the time and the spatial coordinates
