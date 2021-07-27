@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 
-from xcube.core.verify import assert_cube
+from xcube.core.treatascube import split_cube
 
 DEFAULT_INDEX_NAME_PATTERN = '{name}_index'
 DEFAULT_REF_NAME_PATTERN = '{name}_ref'
@@ -41,8 +41,7 @@ def get_cube_values_for_points(
         index_name_pattern: str = DEFAULT_INDEX_NAME_PATTERN,
         include_refs: bool = False,
         ref_name_pattern: str = DEFAULT_REF_NAME_PATTERN,
-        method: str = DEFAULT_INTERP_POINT_METHOD,
-        cube_asserted: bool = False
+        method: str = DEFAULT_INTERP_POINT_METHOD
 ) -> xr.Dataset:
     """
     Extract values from *cube* variables at given
@@ -77,8 +76,7 @@ def get_cube_values_for_points(
     :return: A new data frame whose columns are values from *cube* variables
         at given *points*.
     """
-    if not cube_asserted:
-        assert_cube(cube)
+    cube, other_vars = split_cube(cube)
 
     index_dtype = np.int64 \
         if method == POINT_INTERP_METHOD_NEAREST else np.float64
@@ -87,8 +85,7 @@ def get_cube_values_for_points(
         cube,
         points,
         index_name_pattern=index_name_pattern,
-        index_dtype=index_dtype,
-        cube_asserted=True
+        index_dtype=index_dtype
     )
 
     cube_values = get_cube_values_for_indexes(
@@ -98,8 +95,7 @@ def get_cube_values_for_points(
         include_bounds,
         data_var_names=var_names,
         index_name_pattern=index_name_pattern,
-        method=method,
-        cube_asserted=True
+        method=method
     )
 
     if include_indexes:
@@ -131,8 +127,7 @@ def get_cube_values_for_indexes(
         include_bounds: bool = False,
         data_var_names: Sequence[str] = None,
         index_name_pattern: str = DEFAULT_INDEX_NAME_PATTERN,
-        method: str = DEFAULT_INTERP_POINT_METHOD,
-        cube_asserted: bool = False
+        method: str = DEFAULT_INTERP_POINT_METHOD
 ) -> xr.Dataset:
     """
     Get values from the *cube* at given *indexes*.
@@ -155,8 +150,7 @@ def get_cube_values_for_indexes(
     :return: A new data frame whose columns are values from *cube* variables
         at given *indexes*.
     """
-    if not cube_asserted:
-        assert_cube(cube)
+    cube, other_vars = split_cube(cube)
 
     if method not in {POINT_INTERP_METHOD_NEAREST, POINT_INTERP_METHOD_LINEAR}:
         raise ValueError(f"invalid method {method!r}")
@@ -263,8 +257,7 @@ def get_cube_point_indexes(
         points: PointsLike,
         dim_name_mapping: Mapping[str, str] = None,
         index_name_pattern: str = DEFAULT_INDEX_NAME_PATTERN,
-        index_dtype=np.float64,
-        cube_asserted: bool = False
+        index_dtype=np.float64
 ) -> xr.Dataset:
     """
     Get indexes of given point coordinates *points* into the given *dataset*.
@@ -288,8 +281,7 @@ def get_cube_point_indexes(
         it is expected to be a valid cube.
     :return: A dataset containing the index columns.
     """
-    if not cube_asserted:
-        assert_cube(cube)
+    cube, _ = split_cube(cube)
 
     dim_name_mapping = dim_name_mapping if dim_name_mapping is not None else {}
     dim_names = _get_cube_data_var_dims(cube)

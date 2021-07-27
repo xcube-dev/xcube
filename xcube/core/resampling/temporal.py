@@ -26,7 +26,8 @@ import xarray as xr
 
 from xcube.core.schema import CubeSchema
 from xcube.core.select import select_variables_subset
-from xcube.core.verify import assert_cube
+from xcube.core.treatascube import merge_cube
+from xcube.core.treatascube import split_cube
 
 
 def resample_in_time(dataset: xr.Dataset,
@@ -38,8 +39,7 @@ def resample_in_time(dataset: xr.Dataset,
                      interp_kind=None,
                      time_chunk_size=None,
                      var_names: Sequence[str] = None,
-                     metadata: Dict[str, Any] = None,
-                     cube_asserted: bool = False) -> xr.Dataset:
+                     metadata: Dict[str, Any] = None) -> xr.Dataset:
     """
     Resample a dataset in the time dimension.
 
@@ -84,8 +84,7 @@ def resample_in_time(dataset: xr.Dataset,
         otherwise it is expected to be a valid cube.
     :return: A new xcube dataset resampled in time.
     """
-    if not cube_asserted:
-        assert_cube(dataset)
+    dataset, other_data_vars = split_cube(dataset)
 
     if frequency == 'all':
         time_gap = np.array(dataset.time[-1]) - np.array(dataset.time[0])
@@ -151,6 +150,9 @@ def resample_in_time(dataset: xr.Dataset,
 
     if isinstance(time_chunk_size, int) and time_chunk_size >= 0:
         chunk_sizes['time'] = time_chunk_size
+
+    # TODO consider cases where a data var in other_data_vars has time dimension
+    resampled_cube = merge_cube(resampled_cube, other_data_vars)
 
     return resampled_cube.chunk(chunk_sizes)
 

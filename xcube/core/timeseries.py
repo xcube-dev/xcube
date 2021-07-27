@@ -29,7 +29,7 @@ import xarray as xr
 
 from xcube.core.geom import mask_dataset_by_geometry, convert_geometry, GeometryLike, get_dataset_geometry
 from xcube.core.select import select_variables_subset
-from xcube.core.verify import assert_cube
+from xcube.core.treatascube import split_cube
 
 Date = Union[np.datetime64, str]
 
@@ -61,8 +61,7 @@ def get_time_series(cube: xr.Dataset,
                     agg_methods: Union[str, Sequence[str], AbstractSet[str]] = AGG_MEAN,
                     include_count: bool = False,
                     include_stdev: bool = False,
-                    use_groupby: bool = False,
-                    cube_asserted: bool = False) -> Optional[xr.Dataset]:
+                    use_groupby: bool = False) -> Optional[xr.Dataset]:
     """
     Get a time series dataset from a data *cube*.
 
@@ -97,8 +96,7 @@ def get_time_series(cube: xr.Dataset,
     :return: A new dataset with time-series for each variable.
     """
 
-    if not cube_asserted:
-        assert_cube(cube)
+    cube, other_data_vars = split_cube(cube)
 
     geometry = convert_geometry(geometry)
 

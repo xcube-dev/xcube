@@ -18,7 +18,6 @@ from xcube.core.dsio import is_s3_url
 from xcube.core.dsio import parse_s3_fs_and_root
 from xcube.core.dsio import write_cube
 from xcube.core.geom import get_dataset_bounds
-from xcube.core.verify import assert_cube
 from xcube.util.perf import measure_time
 from xcube.util.tilegrid import TileGrid
 
@@ -287,7 +286,7 @@ class FileStorageMultiLevelDataset(LazyMultiLevelDataset):
                     base_dir = os.path.dirname(self._dir_path)
                     level_path = os.path.join(base_dir, level_path)
         with measure_time(tag=f"opened local dataset {level_path} for level {index}"):
-            return assert_cube(xr.open_zarr(level_path, **parameters), name=level_path)
+            return xr.open_zarr(level_path, **parameters)
 
     def _get_tile_grid_lazily(self):
         """
@@ -386,7 +385,7 @@ class ObjectStorageMultiLevelDataset(LazyMultiLevelDataset):
             store = zarr.LRUStoreCache(store, max_size=max_size)
         with measure_time(tag=f"opened remote dataset {level_path} for level {index}"):
             consolidated = self._s3_file_system.exists(f'{level_path}/.zmetadata')
-            return assert_cube(xr.open_zarr(store, consolidated=consolidated, **parameters), name=level_path)
+            return xr.open_zarr(store, consolidated=consolidated, **parameters)
 
     def _get_tile_grid_lazily(self):
         """
@@ -510,7 +509,7 @@ class ComputedMultiLevelDataset(LazyMultiLevelDataset):
             raise self._exception_type(f"Failed to compute in-memory dataset {self.ds_id!r} at level {index} "
                                        f"from function {self._callable_name!r}: "
                                        f"expected an xarray.Dataset but got {type(computed_value)}")
-        return assert_cube(computed_value, name=self.ds_id)
+        return computed_value
 
 
 def get_dataset_tile_grid(dataset: xr.Dataset, num_levels: int = None) -> TileGrid:
@@ -663,7 +662,7 @@ def open_ml_dataset_from_object_storage(path: str,
             store = zarr.LRUStoreCache(store, max_size=chunk_cache_capacity)
         with measure_time(tag=f"opened remote zarr dataset {path}"):
             consolidated = s3.exists(f'{root}/.zmetadata')
-            ds = assert_cube(xr.open_zarr(store, consolidated=consolidated, **kwargs))
+            ds = xr.open_zarr(store, consolidated=consolidated, **kwargs)
         return BaseMultiLevelDataset(ds, ds_id=ds_id)
     elif data_format == FORMAT_NAME_LEVELS:
         with measure_time(tag=f"opened remote levels dataset {path}"):
@@ -686,11 +685,11 @@ def open_ml_dataset_from_local_fs(path: str,
 
     if data_format == FORMAT_NAME_NETCDF4:
         with measure_time(tag=f"opened local NetCDF dataset {path}"):
-            ds = assert_cube(xr.open_dataset(path, **kwargs))
+            ds = xr.open_dataset(path, **kwargs)
             return BaseMultiLevelDataset(ds, ds_id=ds_id)
     elif data_format == FORMAT_NAME_ZARR:
         with measure_time(tag=f"opened local zarr dataset {path}"):
-            ds = assert_cube(xr.open_zarr(path, **kwargs))
+            ds = xr.open_zarr(path, **kwargs)
             return BaseMultiLevelDataset(ds, ds_id=ds_id)
     elif data_format == FORMAT_NAME_LEVELS:
         with measure_time(tag=f"opened local levels dataset {path}"):
