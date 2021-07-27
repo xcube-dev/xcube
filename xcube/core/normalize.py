@@ -49,7 +49,9 @@ def cubify_dataset(ds: xr.Dataset) -> xr.Dataset:
 
 
 def normalize_dataset(ds: xr.Dataset,
-                      reverse_decreasing_lat: bool = False
+                      *,
+                      reverse_decreasing_lat: bool = False,
+                      do_not_normalize_spatial_dims: bool = False
                       ) -> xr.Dataset:
     """
     Normalize the geo- and time-coding upon opening the given dataset w.r.t. a common
@@ -74,12 +76,15 @@ def normalize_dataset(ds: xr.Dataset,
         are increasing
     :return: The normalized dataset, or the original dataset, if it is already "normal".
     """
-    ds = _normalize_zonal_lat_lon(ds)
+    if not do_not_normalize_spatial_dims:
+        ds = _normalize_zonal_lat_lon(ds)
     ds = normalize_coord_vars(ds)
-    ds = _normalize_lat_lon(ds)
-    ds = _normalize_lat_lon_2d(ds)
+    if not do_not_normalize_spatial_dims:
+        ds = _normalize_lat_lon(ds)
+        ds = _normalize_lat_lon_2d(ds)
     ds = _normalize_dim_order(ds)
-    ds = _normalize_lon_360(ds)
+    if not do_not_normalize_spatial_dims:
+        ds = _normalize_lon_360(ds)
     if reverse_decreasing_lat:
         ds = _reverse_decreasing_lat(ds)
     ds = normalize_missing_time(ds)
