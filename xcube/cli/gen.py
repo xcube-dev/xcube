@@ -52,8 +52,15 @@ resampling_methods = sorted(RESAMPLING_METHOD_NAMES)
                    'xcube gen --info. If omitted, the format will be guessed from the given output path.')
 @click.option('--size', '-S', metavar='SIZE',
               help='Output size in pixels using format "<width>,<height>".')
+@click.option('--crs', metavar='CRS',
+              help='The target coordinate reference system. Must be given as'
+                   'either (a) a WKT-String decribing a CRS or (b) an EPSG-code'
+                   '(with or without leading "EPSG:". If not provided, the '
+                   'output cube will be resampled to the WGS84 CRS.')
 @click.option('--region', '-R', metavar='REGION',
-              help='Output region using format "<lon-min>,<lat-min>,<lon-max>,<lat-max>"')
+              help='Output region using format '
+                   '"<X-min>,<Y-min>,<X-max>,<y-max>". Output region '
+                   'must be given in coordinates of the output crs.')
 @click.option('--variables', '--vars', metavar='VARIABLES',
               help='Variables to be included in output. '
                    'Comma-separated list of names which may contain wildcard characters "*" and "?".')
@@ -81,6 +88,7 @@ def gen(input: Sequence[str],
         output: str,
         format: str,
         size: str,
+        crs: str,
         region: str,
         variables: str,
         resampling: str,
@@ -115,6 +123,7 @@ def gen(input: Sequence[str],
         output_path=output,
         output_writer_name=format,
         output_size=size,
+        output_crs=crs,
         output_region=region,
         output_variables=variables,
         output_resampling=resampling,

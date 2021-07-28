@@ -37,97 +37,6 @@ from xcube.util.plugin import ExtensionComponent
 from xcube.util.plugin import get_extension_registry
 
 
-class ReprojectionInfo:
-    """
-    Characterize input datasets so we can reproject.
-
-    :param xy_names: Names of variables providing the spatial x- and y-coordinates,
-           e.g. ('longitude', 'latitude')
-    :param xy_tp_names: Optional names of tie-point variables providing the spatial y- and y-coordinates,
-           e.g. ('TP_longitude', 'TP_latitude')
-    :param xy_crs: Optional spatial reference system, e.g. 'EPSG:4326' or WKT or proj4 mapping
-    :param xy_gcp_step: Optional step size for collecting ground control points from spatial
-           coordinate arrays denoted by *xy_names*.
-    :param xy_tp_gcp_step: Optional step size for collecting ground control points from spatial
-           coordinate arrays denoted by *xy_tp_names*.
-    """
-
-    def __init__(self,
-                 xy_names: Tuple[str, str] = None,
-                 xy_tp_names: Tuple[str, str] = None,
-                 xy_crs: Any = None,
-                 xy_gcp_step: Union[int, Tuple[int, int]] = None,
-                 xy_tp_gcp_step: Union[int, Tuple[int, int]] = None):
-        self._xy_names = self._assert_name_pair('xy_names', xy_names)
-        self._xy_tp_names = self._assert_name_pair('xy_tp_names', xy_tp_names)
-        self._xy_crs = xy_crs
-        self._xy_gcp_step = self._assert_step_pair('xy_gcp_step', xy_gcp_step)
-        self._xy_tp_gcp_step = self._assert_step_pair('xy_tp_gcp_step', xy_tp_gcp_step)
-
-    def derive(self,
-               xy_names: Tuple[str, str] = None,
-               xy_tp_names: Tuple[str, str] = None,
-               xy_crs: Any = None,
-               xy_gcp_step: Union[int, Tuple[int, int]] = None,
-               xy_tp_gcp_step: Union[int, Tuple[int, int]] = None):
-        return ReprojectionInfo(self.xy_names if xy_names is None else xy_names,
-                                xy_tp_names=self.xy_tp_names if xy_tp_names is None else xy_tp_names,
-                                xy_crs=self.xy_crs if xy_crs is None else xy_crs,
-                                xy_gcp_step=self.xy_gcp_step if xy_gcp_step is None else xy_gcp_step,
-                                xy_tp_gcp_step=self.xy_tp_gcp_step if xy_tp_gcp_step is None else xy_tp_gcp_step)
-
-    @property
-    def xy_names(self) -> Optional[Tuple[str, str]]:
-        return self._xy_names
-
-    @property
-    def xy_tp_names(self) -> Optional[Tuple[str, str]]:
-        return self._xy_tp_names
-
-    @property
-    def xy_crs(self) -> Any:
-        return self._xy_crs
-
-    @property
-    def xy_gcp_step(self) -> Optional[int]:
-        return self._xy_gcp_step
-
-    @property
-    def xy_tp_gcp_step(self) -> Optional[int]:
-        return self._xy_tp_gcp_step
-
-    def _assert_name_pair(self, keyword: str, value):
-        if value is not None:
-            v1, v2 = value
-            self._assert_name(keyword, v1)
-            self._assert_name(keyword, v2)
-            return v1, v2
-        return value
-
-    def _assert_step_pair(self, keyword: str, value):
-        if value is not None:
-            if isinstance(value, int):
-                v1, v2 = value, value
-            else:
-                v1, v2 = value
-            self._assert_step(keyword, v1)
-            self._assert_step(keyword, v2)
-            return v1, v2
-        return value
-
-    def _assert_name(self, keyword: str, value):
-        if value is None:
-            raise ValueError(f'invalid {keyword}, missing name')
-        if not isinstance(value, str) or not value:
-            raise ValueError(f'invalid {keyword}, name must be a non-empty string')
-
-    def _assert_step(self, keyword: str, value):
-        if value is None:
-            raise ValueError(f'invalid {keyword}, missing name')
-        if not isinstance(value, int) or value <= 0:
-            raise ValueError(f'invalid {keyword}, step must be an integer number')
-
-
 class InputProcessor(ExtensionComponent, metaclass=ABCMeta):
     """
     Read and process inputs for the gen tool.
@@ -270,32 +179,17 @@ class XYInputProcessor(InputProcessor, metaclass=ABCMeta):
         default_parameters.update(xy_names=('lon', 'lat'))
         return default_parameters
 
-    def get_reprojection_info(self, dataset: xr.Dataset) -> ReprojectionInfo:
-        """
-        Information about special fields in input datasets used for reprojection.
-        :param dataset: The dataset.
-        :return: The reprojection information of the dataset or None.
-        """
-        parameters = self.parameters
-        return ReprojectionInfo(xy_names=parameters.get('xy_names', ('lon', 'lat')),
-                                xy_tp_names=parameters.get('xy_tp_names'),
-                                xy_crs=parameters.get('xy_crs'),
-                                xy_gcp_step=parameters.get('xy_gcp_step'),
-                                xy_tp_gcp_step=parameters.get('xy_tp_gcp_step'))
-
     def get_extra_vars(self, dataset: xr.Dataset) -> Optional[Collection[str]]:
         """
         Return the names of variables containing spatial coordinates.
         They should not be removed, as they are required for the reprojection.
         """
-        reprojection_info = self.get_reprojection_info(dataset)
-        if reprojection_info is None:
+        gridmapping = GridMapping.from_dataset(dataset)
+        if gridmapping is None:
             return dataset
         extra_vars = set()
-        if reprojection_info.xy_names:
-            extra_vars.update(set(reprojection_info.xy_names))
-        if reprojection_info.xy_tp_names:
-            extra_vars.update(set(reprojection_info.xy_tp_names))
+        if gridmapping.xy_var_names:
+            extra_vars.update(set(gridmapping.xy_var_names))
         return extra_vars
 
     def process(self,
@@ -305,23 +199,26 @@ class XYInputProcessor(InputProcessor, metaclass=ABCMeta):
                 output_resampling: str,
                 include_non_spatial_vars=False) -> xr.Dataset:
         """
-        Perform reprojection using tie-points / ground control points.
+        Perform reprojection.
         """
-        reprojection_info = self.get_reprojection_info(dataset)
+        xy_names = self.parameters.get('xy_names', ('lon', 'lat'))
+        xy_tp_names = self.parameters.get('xy_tp_names'),
+        xy_crs = self.parameters.get('xy_crs'),
+        xy_gcp_step = self.parameters.get('xy_gcp_step'),
+        xy_tp_gcp_step = self.parameters.get('xy_tp_gcp_step')
 
         warn_prefix = 'unsupported argument in np-GCP rectification mode'
-        if reprojection_info.xy_crs is not None:
+        if xy_crs is not None:
+            warnings.warn(f'{warn_prefix}: ignoring xy_crs = {xy_crs!r}')
+        if xy_tp_names is not None:
             warnings.warn(f'{warn_prefix}: ignoring '
-                          f'reprojection_info.xy_crs = {reprojection_info.xy_crs!r}')
-        if reprojection_info.xy_tp_names is not None:
+                          f'xy_tp_names = {xy_tp_names!r}')
+        if xy_gcp_step is not None:
             warnings.warn(f'{warn_prefix}: ignoring '
-                          f'reprojection_info.xy_tp_names = {reprojection_info.xy_tp_names!r}')
-        if reprojection_info.xy_gcp_step is not None:
+                          f'xy_gcp_step = {xy_gcp_step!r}')
+        if xy_tp_gcp_step is not None:
             warnings.warn(f'{warn_prefix}: ignoring '
-                          f'reprojection_info.xy_gcp_step = {reprojection_info.xy_gcp_step!r}')
-        if reprojection_info.xy_tp_gcp_step is not None:
-            warnings.warn(f'{warn_prefix}: ignoring '
-                          f'reprojection_info.xy_tp_gcp_step = {reprojection_info.xy_tp_gcp_step!r}')
+                          f'xy_tp_gcp_step = {xy_tp_gcp_step!r}')
         if output_resampling != 'Nearest':
             warnings.warn(f'{warn_prefix}: ignoring '
                           f'dst_resampling = {output_resampling!r}')
@@ -329,8 +226,7 @@ class XYInputProcessor(InputProcessor, metaclass=ABCMeta):
             warnings.warn(f'{warn_prefix}: ignoring '
                           f'include_non_spatial_vars = {include_non_spatial_vars!r}')
 
-        geo_coding = geo_coding.derive(xy_var_names=(reprojection_info.xy_names[0],
-                                                     reprojection_info.xy_names[1]))
+        geo_coding = geo_coding.derive(xy_var_names=(xy_names[0], xy_names[1]))
 
         dataset = rectify_dataset(dataset,
                                   compute_subset=False,

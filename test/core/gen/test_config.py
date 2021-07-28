@@ -113,15 +113,19 @@ class GetConfigDictTest(unittest.TestCase):
         config_obj = dict(output_region='50,_2,55,21')
         with self.assertRaises(ValueError) as cm:
             get_config_dict(**config_obj)
-        self.assertEqual("output_region must have the form <lon_min>,<lat_min>,<lon_max>,<lat_max>,"
-                         " where all four numbers must be floating point numbers in degrees",
+        self.assertEqual("output_region must have the form "
+                         "<x_min>,<y_min>,<x_max>,<y_max>,"
+                         " where all four numbers must be floating point "
+                         "numbers in the units of the output CRS",
                          f'{cm.exception}')
 
         config_obj = dict(output_region='50, 20, 55')
         with self.assertRaises(ValueError) as cm:
             get_config_dict(**config_obj)
-        self.assertEqual("output_region must have the form <lon_min>,<lat_min>,<lon_max>,<lat_max>,"
-                         " where all four numbers must be floating point numbers in degrees",
+        self.assertEqual("output_region must have the form "
+                         "<x_min>,<y_min>,<x_max>,<y_max>,"
+                         " where all four numbers must be floating point "
+                         "numbers in the units of the output CRS",
                          f'{cm.exception}')
 
     def test_output_variables_option(self):

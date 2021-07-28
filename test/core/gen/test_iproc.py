@@ -4,49 +4,8 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 
-from xcube.core.gen.iproc import DefaultInputProcessor, ReprojectionInfo
+from xcube.core.gen.iproc import DefaultInputProcessor
 from xcube.core.timecoord import to_time_in_days_since_1970
-
-
-class ReprojectionInfoTest(unittest.TestCase):
-    def test_success(self):
-        # noinspection PyTypeChecker
-        ri = ReprojectionInfo(xy_names=['x', 'y'])
-        self.assertEqual(('x', 'y'), ri.xy_names)
-        self.assertEqual(None, ri.xy_tp_names)
-        self.assertEqual(None, ri.xy_crs)
-        self.assertEqual(None, ri.xy_gcp_step)
-        self.assertEqual(None, ri.xy_tp_gcp_step)
-
-        # noinspection PyTypeChecker
-        ri = ReprojectionInfo(xy_names=['x', 'y'], xy_gcp_step=[2, 1])
-        self.assertEqual(('x', 'y'), ri.xy_names)
-        self.assertEqual(None, ri.xy_tp_names)
-        self.assertEqual(None, ri.xy_crs)
-        self.assertEqual((2, 1), ri.xy_gcp_step)
-        self.assertEqual(None, ri.xy_tp_gcp_step)
-
-        # noinspection PyTypeChecker
-        ri = ReprojectionInfo(xy_gcp_step=4, xy_tp_gcp_step=2)
-        self.assertEqual(None, ri.xy_names)
-        self.assertEqual(None, ri.xy_tp_names)
-        self.assertEqual(None, ri.xy_crs)
-        self.assertEqual((4, 4), ri.xy_gcp_step)
-        self.assertEqual((2, 2), ri.xy_tp_gcp_step)
-
-    def test_fail(self):
-        with self.assertRaises(ValueError):
-            # noinspection PyTypeChecker
-            ReprojectionInfo(xy_names=['x', ''])
-        with self.assertRaises(ValueError):
-            # noinspection PyTypeChecker
-            ReprojectionInfo(xy_names=[0, 'y'])
-        with self.assertRaises(ValueError):
-            # noinspection PyTypeChecker
-            ReprojectionInfo(xy_gcp_step=[7, 'y'])
-        with self.assertRaises(ValueError):
-            # noinspection PyTypeChecker
-            ReprojectionInfo(xy_gcp_step=[7, 0])
 
 
 class DefaultInputProcessorTest(unittest.TestCase):
@@ -61,11 +20,6 @@ class DefaultInputProcessorTest(unittest.TestCase):
 
         processor = DefaultInputProcessor(input_reader="zarr")
         self.assertEqual('zarr', processor.input_reader)
-
-    def test_reprojection_info(self):
-        # noinspection PyNoneFunctionAssignment
-        reprojection_info = self.processor.get_reprojection_info(create_default_dataset())
-        self.assertIsNotNone(reprojection_info)
 
     def test_get_time_range(self):
         ds = create_default_dataset(time_mode="time")

@@ -3,6 +3,7 @@ from typing import Union
 
 import cftime
 import pandas as pd
+import pyproj
 import xarray as xr
 
 from xcube.core.gridmapping import GridMapping
@@ -37,7 +38,10 @@ TimeRange = Union[Tuple[Optional[str], Optional[str]],
 def select_subset(dataset: xr.Dataset,
                   *,
                   var_names: Collection[str] = None,
+                  crs: str = None,
                   bbox: Bbox = None,
+                  spatial_res: Union[float, Tuple[float]] = None,
+                  tile_size: Union[int, Tuple[int, int]] = None,
                   time_range: TimeRange = None):
     """
     Create a subset from *dataset* given *var_names*,
@@ -51,8 +55,13 @@ def select_subset(dataset: xr.Dataset,
 
     :param dataset: The dataset.
     :param var_names: Optional variable names.
+    :param crs: The dataset's CRS. If not set the dataset's current CRS will
+        be used.
     :param bbox: Optional bounding box in the dataset's
         CRS coordinate units.
+    :param spatial_res: Otional spatial resolution in the dataset's
+        CRS coordinate units.
+    :param tile_size: Optional tile size
     :param time_range: Optional time range
     :return: a subset of *dataset*, or unchanged *dataset*
         if no keyword-arguments are used.
@@ -60,7 +69,29 @@ def select_subset(dataset: xr.Dataset,
     if var_names is not None:
         dataset = select_variables_subset(dataset, var_names=var_names)
     if bbox is not None:
-        dataset = select_spatial_subset(dataset, xy_bbox=bbox)
+        geo_coding = None
+        if crs is not None:
+            if spatial_res is None:
+                raise ValueError('If CRS is provided, '
+                                 'spatial_res must be given')
+            import math
+            crs = pyproj.crs.CRS.from_string(crs)
+            x_min, y_min, x_max, y_max = bbox
+            x_res = spatial_res[0] if isinstance(spatial_res, tuple) \
+                else spatial_res
+            width = math.ceil((x_max - x_min) / x_res)
+            y_res = spatial_res[1] if isinstance(spatial_res, tuple) \
+                else spatial_res
+            height = math.ceil((y_max - y_min) / y_res)
+            geo_coding = GridMapping.regular(size=(width, height),
+                                             xy_min=(x_min, y_min),
+                                             xy_res=spatial_res,
+                                             crs=crs,
+                                             tile_size=tile_size)
+
+        dataset = select_spatial_subset(dataset,
+                                        xy_bbox=bbox,
+                                        geo_coding=geo_coding)
     if time_range is not None:
         dataset = select_temporal_subset(dataset, time_range=time_range)
     return dataset

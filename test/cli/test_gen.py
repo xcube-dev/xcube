@@ -33,12 +33,18 @@ class GenCliTest(CliTest):
     def test_main_with_illegal_region_option(self):
         with self.assertRaises(ValueError) as cm:
             self.invoke_cli(['gen', '-R', '50,_2,55,21', 'input.nc'])
-        self.assertEqual("output_region must have the form <lon_min>,<lat_min>,<lon_max>,<lat_max>,"
-                         " where all four numbers must be floating point numbers in degrees", f'{cm.exception}')
+        self.assertEqual("output_region must have the form "
+                         "<x_min>,<y_min>,<x_max>,<y_max>,"
+                         " where all four numbers must be floating point "
+                         "numbers in the units of the output CRS",
+                         f'{cm.exception}')
         with self.assertRaises(ValueError) as cm:
             self.invoke_cli(['gen', '-R', '50,20,55', 'input.nc'])
-        self.assertEqual("output_region must have the form <lon_min>,<lat_min>,<lon_max>,<lat_max>,"
-                         " where all four numbers must be floating point numbers in degrees", f'{cm.exception}')
+        self.assertEqual("output_region must have the form "
+                         "<x_min>,<y_min>,<x_max>,<y_max>,"
+                         " where all four numbers must be floating point "
+                         "numbers in the units of the output CRS",
+                         f'{cm.exception}')
 
     def test_main_with_illegal_variable_option(self):
         with self.assertRaises(ValueError) as cm:

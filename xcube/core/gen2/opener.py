@@ -38,7 +38,8 @@ from .config import CubeConfig
 from .config import InputConfig
 from .error import CubeGeneratorError
 
-SUBSET_PARAMETER_NAMES = ('variable_names', 'bbox', 'time_range')
+SUBSET_PARAMETER_NAMES = ('variable_names', 'crs', 'bbox',
+                          'spatial_res', 'tile_size', 'time_range')
 CHUNKS_PARAMETER_NAME = 'chunks'
 
 
@@ -92,18 +93,27 @@ class CubesOpener:
                             if k in open_params_schema.properties and k != CHUNKS_PARAMETER_NAME}
         unsupported_cube_params = {k for k in cube_params.keys()
                                    if k not in open_params_schema.properties and k != CHUNKS_PARAMETER_NAME}
-        unsupported_cube_subset_params = {}
+
+        # TODO better handle case when crs is a store parameter but the crs in
+        #  the config is not supported by the store
+
+        subset_params = {}
         if unsupported_cube_params:
             for k in unsupported_cube_params:
                 if k in SUBSET_PARAMETER_NAMES:
-                    unsupported_cube_subset_params[k] = cube_params[k]
-                    warnings.warn(f'cube_config parameter not supported by data store or opener:'
-                                  f' manually applying: {k} = {cube_params[k]!r}')
+                    subset_params[k] = cube_params[k]
+                    warnings.warn(f'cube_config parameter not supported by '
+                                  f'data store or opener:'
+                                  f' manually applying: {k} = '
+                                  f'{cube_params[k]!r}')
                 else:
-                    warnings.warn(f'cube_config parameter not supported by data store or opener:'
+                    warnings.warn(f'cube_config parameter not supported by '
+                                  f'data store or opener:'
                                   f' ignoring {k} = {cube_params[k]!r}')
 
-        dataset = opener.open_data(input_config.data_id, **open_params, **cube_open_params)
+        dataset = opener.open_data(input_config.data_id,
+                                   **open_params,
+                                   **cube_open_params)
 
         if normalisation_required:
             dataset = cubify_dataset(dataset)
@@ -111,17 +121,18 @@ class CubesOpener:
         # Make sure cube contains non-empty data variables.
         dataset = self._ensure_dataset_not_empty(dataset, input_config.data_id)
 
-        if unsupported_cube_subset_params:
-            # Try creating subsets given the cube subset parameters not supported
-            # by store in use. Note that we expect some trouble when using bbox
-            # without properly recognising spatial_res or crs. Especially for
-            # multiple inputs with different source spatial_res the bboxes are no
-            # longer aligned. The new resampling module will need to account
-            # for this.
+        if subset_params:
+            # Try creating subsets given the cube subset parameters not
+            # supported by store in use.
             dataset = select_subset(dataset,
-                                    var_names=unsupported_cube_subset_params.get('variable_names'),
-                                    bbox=unsupported_cube_subset_params.get('bbox'),
-                                    time_range=unsupported_cube_subset_params.get('time_range'))
+                                    var_names=subset_params.get(
+                                        'variable_names'),
+                                    crs=subset_params.get('crs'),
+                                    bbox=subset_params.get('bbox'),
+                                    spatial_res=subset_params.get(
+                                        'spatial_res'),
+                                    tile_size=subset_params.get('tile_size'),
+                                    time_range=subset_params.get('time_range'))
 
             # Make sure cube contains non-empty data variables.
             dataset = self._ensure_dataset_not_empty(dataset, input_config.data_id, subset=True)

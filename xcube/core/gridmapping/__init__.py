@@ -21,5 +21,6 @@
 
 from .base import CRS_CRS84
 from .base import CRS_WGS84
+from .base import DEFAULT_CRS
 from .base import DEFAULT_TOLERANCE
 from .base import GridMapping
