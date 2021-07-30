@@ -58,8 +58,7 @@ ARD links:
     [Attribute Convention for Data Discovery](http://wiki.esipfed.org/index.php/Attribute_Convention_for_Data_Discovery) 
 * Dimensions: 
   * SHALL all be greater than zero.
-  + SHALL include two spatial dimensions  
-  * SHOULD include a dimension `time`
+  + SHALL include one temporal and two spatial dimensions  
   * SHOULD include a dimension `bnds` of size 2 that may be used by bounding 
     coordinate variables
 * Coordinate Variables
@@ -70,10 +69,10 @@ ARD links:
   * 1-dimensional coordinate variables SHOULD be named like the dimension they 
     describe 
   * For each dimension of a data variable, a coordinate variable MUST exist
-* Temporal coordinate variables: 
+* Temporal coordinate variable: 
   * SHALL provide time coordinates for a given time index.
   * MAY be non-equidistant or equidistant.
-  * SHOULD be named `time`    
+  * SHALL be named `time`    
   * One variable value SHALL provide observation or average time of 
     *cell centers*.
   * Attributes: 
@@ -95,12 +94,10 @@ ARD links:
   * SHOULD be named `<dim_name>_bnds`
   * `<bound_var>[<coord_dim>, 0]` SHALL provide the *lower cell boundary*,
     `<bound_var>[<coord_dim>, 1]` SHALL provide the *upper cell boundary*
-* Data variables: 
-  * MAY have any dimensionality, including no dimensions at all.
-  * SHALL have the spatial dimensions at the innermost position in case it has 
-    spatial dimensions (e.g., `[..., y, x]`)
-  * SHALL have its time dimension at the outermost position in case it has a
-    time dimension (e.g., `[time, ...]`)
+* Cube Data variables:
+  * SHALL have its time dimension at the outermost position and the 
+    spatial dimensions at the innermost positions (`[time, ..., y, x]` 
+    in this order (where `y` and `x` denote the spatial dimensions))
   * MAY have extra dimensions, e.g. `layer` (of the atmosphere) or 
     `band` (of a spectrum). These extra dimensions MUST be positioned between
     the time and the spatial coordinates
@@ -117,6 +114,10 @@ ARD links:
        for applying the colour bar. If not provided, minimum and maximum
        default to `valid_min`, `valid_max`. If neither are provided, 
        minimum and maximum default to `0` and `1`.
+* Non-Cube Data variables:
+  * Consists of all data variables that are not cube data variables as 
+    described above
+  * MAY have any dimensionality, including no dimensions at all
 
 ### WGS84 Schema (extends Basic)
 
@@ -134,7 +135,7 @@ ARD links:
 ### Generic Schema (extends Basic)
 
 * Dimensions:
-  * SHALL include two spatial dimensions, which SHOULD be named `y` and `x`
+  * SHALL include two spatial dimensions, the names `y` and `x` are RECOMMENDED
 * Spatial coordinate variables: 
   * MAY use any spatial grid and CRS.
   * SHOULD have attributes `standard_name`, `units`
@@ -143,7 +144,7 @@ ARD links:
   * MAY have `lon[<y_dim_name>,<x_dim_name>]`: longitude of *cell centers*. 
     *  Attributes: `standard_name="longitude"`, `units="degrees_east"`.
 * Grid Mapping variable:
-  * SHALL be included in case the CRS is not WGS84.
+  * MUST be included in case the CRS is not WGS84.
   * SHALL not carry any data, therefore it MAY be of any type
   * SHOULD be named `crs`  
   * MUST have attributes that describe a CF Grid Mapping v1.8 (see 
