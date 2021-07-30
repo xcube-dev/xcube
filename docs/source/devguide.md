@@ -181,7 +181,7 @@ Create new module in `xcube.core` and add your functions.
 For any functions added make sure naming is in line with other API.
 Add clear doc-string to the new API. Use Sphinx RST format.
 
-Decide if your API methods requires [xcube datasets](./cubespec.md) as 
+Decide if your API methods requires [xcube datasets](./cubeconv.md) as 
 inputs, if so, name the primary dataset argument `cube` and add a 
 keyword parameter `cube_asserted: bool = False`. 
 Otherwise name the primary dataset argument `dataset`.

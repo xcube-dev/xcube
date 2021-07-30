@@ -28,6 +28,7 @@ import xarray as xr
 
 from xcube.core.schema import CubeSchema
 from xcube.core.chunkstore import ChunkStore
+from xcube.core.treatascube import split_cube
 from xcube.core.verify import assert_cube
 
 CubeFuncOutput = Union[xr.DataArray, np.ndarray, Sequence[Union[xr.DataArray, np.ndarray]]]
@@ -79,8 +80,7 @@ def compute_cube(cube_func: CubeFunc,
                            output_var_name=output_var_name,
                            output_var_dtype=output_var_dtype,
                            output_var_attrs=output_var_attrs,
-                           vectorize=vectorize,
-                           cube_asserted=cube_asserted)
+                           vectorize=vectorize)
 
 
 def compute_dataset(cube_func: CubeFunc,
@@ -92,8 +92,7 @@ def compute_dataset(cube_func: CubeFunc,
                     output_var_dims: AbstractSet[str] = None,
                     output_var_dtype: Any = np.float64,
                     output_var_attrs: Dict[str, Any] = None,
-                    vectorize: bool = None,
-                    cube_asserted: bool = False) -> xr.Dataset:
+                    vectorize: bool = None) -> xr.Dataset:
     """
     Compute a new output dataset with a single variable named *output_var_name*
     from variables named *input_var_names* contained in zero, one, or more
@@ -139,7 +138,6 @@ def compute_dataset(cube_func: CubeFunc,
     :param output_var_attrs: Optional metadata attributes for the output variable.
     :param vectorize: Whether all *input_cubes* have the same variables which are concatenated and passed as vectors
         to *cube_func*. Not implemented yet.
-    :param cube_asserted: If False, *cube* will be verified, otherwise it is expected to be a valid cube.
     :return: A new dataset that contains the computed output variable.
     """
     if vectorize is not None:
@@ -147,16 +145,18 @@ def compute_dataset(cube_func: CubeFunc,
         #       receives variables as vectors (with extra dim)
         raise NotImplementedError('vectorize is not supported yet')
 
-    if not cube_asserted:
-        for cube in input_cubes:
-            assert_cube(cube)
+    # TODO resample all input cubes to WGS84
+    split_input_cubes = []
+    for cube in input_cubes:
+        cube, _ = split_cube(cube)
+        assert_cube(cube)
+        split_input_cubes.append(cube)
+    input_cubes = tuple(split_input_cubes)
 
     # Check compatibility of inputs
     if input_cubes:
         input_cube_schema = CubeSchema.new(input_cubes[0])
         for cube in input_cubes:
-            if not cube_asserted:
-                assert_cube(cube)
             if cube != input_cubes[0]:
                 # noinspection PyUnusedLocal
                 other_schema = CubeSchema.new(cube)

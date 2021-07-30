@@ -21,25 +21,33 @@
 
 import xarray as xr
 
-from xcube.core.verify import assert_cube
+from xcube.core.treatascube import merge_cube
+from xcube.core.treatascube import split_cube
 
 
 def vars_to_dim(cube: xr.Dataset,
                 dim_name: str = 'var',
                 var_name='data',
-                cube_asserted: bool = False):
+                consider_cube_data_vars_only: bool = False):
     """
     Convert data variables into a dimension.
 
     :param cube: The xcube dataset.
-    :param dim_name: The name of the new dimension and coordinate variable. Defaults to 'var'.
-    :param var_name: The name of the new, single data variable. Defaults to 'data'.
-    :param cube_asserted: If False, *cube* will be verified, otherwise it is expected to be a valid cube.
-    :return: A new xcube dataset with data variables turned into a new dimension.
+    :param dim_name: The name of the new dimension and coordinate variable.
+    Defaults to 'var'.
+    :param var_name: The name of the new, single data variable.
+    Defaults to 'data'.
+    :param consider_cube_data_vars_only: If true, the dimension will only consider the data
+    variables that carry spatial dimensions
+    If False, *cube* will be verified, otherwise it is expected to be a valid
+    cube.
+    :return: A new xcube dataset with data variables turned into a new
+    dimension.
     """
 
-    if not cube_asserted:
-        assert_cube(cube)
+    other_data_vars = {}
+    if consider_cube_data_vars_only:
+        cube, other_data_vars = split_cube(cube)
 
     if var_name == dim_name:
         raise ValueError("var_name must be different from dim_name")
@@ -48,8 +56,14 @@ def vars_to_dim(cube: xr.Dataset,
     if not data_var_names:
         raise ValueError("cube must not be empty")
 
-    da = xr.concat([cube[data_var_name] for data_var_name in data_var_names], dim_name)
+    da = xr.concat([cube[data_var_name] for data_var_name in data_var_names],
+                   dim_name)
     new_coord_var = xr.DataArray(data_var_names, dims=[dim_name])
     da = da.assign_coords(**{dim_name: new_coord_var})
 
-    return xr.Dataset(dict(**{var_name: da}))
+    dataset = xr.Dataset(dict(**{var_name: da}))
+
+    if consider_cube_data_vars_only:
+        dataset = merge_cube(dataset, other_data_vars)
+
+    return dataset
