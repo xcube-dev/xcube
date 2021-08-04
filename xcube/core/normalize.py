@@ -119,7 +119,7 @@ def _normalize_zonal_lat_lon(ds: xr.Dataset) -> xr.Dataset:
             var_chunk_sizes.append(ds_zonal.lon.size)
     ds_zonal = ds_zonal.rename_dims({'latitude_centers': 'lat'})
     ds_zonal = ds_zonal.assign_coords(lat=ds.latitude_centers.values)
-    ds_zonal = ds_zonal.drop('latitude_centers')
+    ds_zonal = ds_zonal.drop_vars('latitude_centers')
     ds_zonal = ds_zonal.transpose(..., 'lat', 'lon')
 
     has_lon_bnds = 'lon_bnds' in ds_zonal.coords or 'lon_bnds' in ds_zonal
@@ -399,7 +399,7 @@ def normalize_missing_time(ds: xr.Dataset) -> xr.Dataset:
         time = _get_valid_time_coord(ds, 't')
         if time is not None:
             ds = ds.rename_vars({"t": "time"})
-            ds = ds.assign_coords(time=('time', ds.time))
+            ds = ds.assign_coords(time=('time', ds.time.data))
             time = ds.time
     if time is not None:
         if not time.dims:
