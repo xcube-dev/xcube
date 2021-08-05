@@ -8,6 +8,9 @@
   and finally assert the result complies to the [xcube dataset conventions](https://github.com/dcs4cop/xcube/blob/master/docs/source/cubespec.md).
 * Fixed that data stores `directory` and `s3` were not able to handle data identifiers that they
   had assigned themselves during `write_data()`.  (#450)
+* Pinned dependencies
+  - dask =2021.3.1 because of memory leaks in versions >=2021.4
+  - xarray =0.18.2 because a lot of tests fail with versions >= 0.19
 
 ## Changes in 0.8.1
 
