@@ -11,6 +11,7 @@
 * Pinned dependencies
   - dask =2021.3.1 because of memory leaks in versions >=2021.4
   - xarray =0.18.2 because a lot of tests fail with versions >= 0.19
+  - pandas >1.1,<1.3 because 1.3+ doesn't work with xarray < 0.19
 
 ## Changes in 0.8.1
 
