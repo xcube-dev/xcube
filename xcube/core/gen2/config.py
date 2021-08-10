@@ -21,13 +21,13 @@
 
 import collections
 import numbers
-from typing import Optional, Any, Sequence, Mapping, Tuple, Union, Dict
+from typing import Optional, Any, Sequence, Mapping, Tuple, Union
 
 import pyproj
 
-from xcube.util.assertions import assert_true
 from xcube.util.assertions import assert_given
 from xcube.util.assertions import assert_instance
+from xcube.util.assertions import assert_true
 from xcube.util.jsonschema import JsonArraySchema
 from xcube.util.jsonschema import JsonBooleanSchema
 from xcube.util.jsonschema import JsonDateSchema

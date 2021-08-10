@@ -21,7 +21,7 @@
 
 import json
 import os.path
-from typing import Any, Dict, Optional, List
+from typing import Any, Dict, Optional, List, Union
 
 import yaml
 
@@ -178,6 +178,9 @@ class DataStoreInstance:
             store.close()
 
 
+DataStorePoolLike = Union[str, Dict, 'DataStorePool']
+
+
 class DataStorePool:
     """
     A pool of configured data store instances.
@@ -250,6 +253,34 @@ class DataStorePool:
     def close_all_stores(self):
         for instance in self._instances.values():
             instance.close()
+
+    @classmethod
+    def normalize(cls, data_store_pool: DataStorePoolLike) \
+            -> 'DataStorePool':
+        """
+        Normalize given *data_store_pool* to an instance of
+        :class:DataStorePool.
+
+        If *data_store_pool* is already a DataStorePool it is returned as is.
+        If it is a ``str``, it is interpreted as a YAML or JSON file path
+        and the request is read from file using ``DataStorePool.from_file()``.
+        If it is a ``dict``, it is interpreted as a JSON object and the
+        request is parsed using ``DataStorePool.from_dict()``.
+
+        :param data_store_pool The data store pool instance,
+            or data stores configuration file path, or data store pool
+            JSON object.
+        :raise TypeError if *data_store_pool* is not a ``CubeGeneratorRequest``,
+            ``str``, or ``dict``.
+        """
+        if isinstance(data_store_pool, DataStorePool):
+            return data_store_pool
+        if isinstance(data_store_pool, str):
+            return DataStorePool.from_file(data_store_pool)
+        if isinstance(data_store_pool, dict):
+            return DataStorePool.from_dict(data_store_pool)
+        raise TypeError('data_store_pool must be a str, dict, '
+                        'or a DataStorePool instance')
 
     @classmethod
     def from_file(cls, path: str) -> 'DataStorePool':

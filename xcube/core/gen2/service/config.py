@@ -19,16 +19,22 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+import io
 import json
+import os
+import string
+from typing import Any, Union
+from typing import Dict
 
 import yaml
 
 from xcube.util.jsonschema import JsonObject
 from xcube.util.jsonschema import JsonObjectSchema
 from xcube.util.jsonschema import JsonStringSchema
-from ..error import CubeGeneratorError
 
 DEFAULT_ENDPOINT_URL = 'https://xcube-gen.brockmann-consult.de/api/v2/'
+
+ServiceConfigLike = Union[str, Dict, 'ServiceConfig']
 
 
 class ServiceConfig(JsonObject):
@@ -46,12 +52,40 @@ class ServiceConfig(JsonObject):
         self.access_token = access_token
 
     @classmethod
+    def normalize(cls, service_config: ServiceConfigLike) \
+            -> 'ServiceConfig':
+        """
+        Normalize given *service_config* to an instance of
+        :class:ServiceConfig.
+
+        If *service_config* is already a ServiceConfig it is returned as is.
+
+        If it is a ``str``, it is interpreted as a YAML or JSON file path
+        and the configuration is read from file
+        using ``ServiceConfig.from_file()``.´The file content may include
+        template variables that are interpolated by environment variables,
+        e.g. "${XCUBE_GEN_CLIENT_SECRET}".
+
+        If it is a ``dict``, it is interpreted as a JSON object and the
+        request is parsed using ``ServiceConfig.from_dict()``.
+
+        :param service_config The service configuration,
+            or configuration file path, or configuration JSON object.
+        :raise TypeError if *service_config* is not a ``CubeGeneratorRequest``,
+            ``str``, or ``dict``.
+        """
+        if isinstance(service_config, ServiceConfig):
+            return service_config
+        if isinstance(service_config, str):
+            return ServiceConfig.from_file(service_config)
+        if isinstance(service_config, dict):
+            return ServiceConfig.from_dict(service_config)
+        raise TypeError('service_config must be a str, dict, '
+                        'or a ServiceConfig instance')
+
+    @classmethod
     def from_file(cls, service_config_file: str) -> 'ServiceConfig':
-        with open(service_config_file, 'r') as fp:
-            if service_config_file.endswith('.json'):
-                service_config = json.load(fp)
-            else:
-                service_config = yaml.safe_load(fp)
+        service_config = load_json_or_yaml_file(service_config_file)
         cls.get_schema().validate_instance(service_config)
         return ServiceConfig(**service_config)
 
@@ -68,3 +102,15 @@ class ServiceConfig(JsonObject):
             required=[],
             factory=cls,
         )
+
+
+def load_json_or_yaml_file(config_file: str) -> Any:
+    with open(config_file, 'r') as fp:
+        file_content = fp.read()
+    template = string.Template(file_content)
+    file_content = template.safe_substitute(os.environ)
+    with io.StringIO(file_content) as fp:
+        if config_file.endswith('.json'):
+            return json.load(fp)
+        else:
+            return yaml.safe_load(fp)
