@@ -4,7 +4,6 @@ FROM continuumio/miniconda3:latest
 # Metadata
 LABEL maintainer="helge.dzierzon@brockmann-consult.de"
 LABEL name=xcube
-LABEL version=0.8.2.dev4
 LABEL conda_env=xcube
 
 # Ensure usage of bash (ensures conda calls succeed)
