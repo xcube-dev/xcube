@@ -8,7 +8,6 @@ ENV XCUBE_CDS_VERSION=0.8.1
 # Metadata
 LABEL maintainer="helge.dzierzon@brockmann-consult.de"
 LABEL name=xcube
-LABEL version=0.9.0.dev0
 LABEL conda_env=xcube
 
 # Ensure usage of bash (ensures conda calls succeed)
