@@ -185,6 +185,8 @@ class DataStoreDatasetConfig(_ConfigObject):
             ],
             properties=dict(
                 Identifier=IdentifierSchema,
+                StoreInstanceId=IdentifierSchema,  # will be set by server
+                StoreOpenParams=JsonObjectSchema(additional_properties=True),
                 **_get_common_dataset_properties()
             ),
             additional_properties=False,

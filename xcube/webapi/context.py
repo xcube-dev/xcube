@@ -19,6 +19,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+import fnmatch
 import glob
 import os
 import os.path
@@ -30,19 +31,27 @@ from typing import Sequence
 import fiona
 import numpy as np
 import pandas as pd
+import pyproj
 import xarray as xr
 
 from xcube.constants import FORMAT_NAME_ZARR, LOG
-from xcube.core.mldataset import MultiLevelDataset
+from xcube.core.mldataset import MultiLevelDataset, BaseMultiLevelDataset
 from xcube.core.mldataset import augment_ml_dataset
 from xcube.core.mldataset import open_ml_dataset_from_local_fs
 from xcube.core.mldataset import open_ml_dataset_from_object_storage
 from xcube.core.mldataset import open_ml_dataset_from_python_code
+from xcube.core.store import DataStoreConfig
+from xcube.core.store import DataStorePool
+from xcube.core.store import DatasetDescriptor
+from xcube.core.store import TYPE_SPECIFIER_DATASET
 from xcube.core.tile import get_var_cmap_params
 from xcube.core.tile import get_var_valid_range
-from xcube.util.cache import MemoryCacheStore, Cache, parse_mem_size
+from xcube.core.verify import assert_cube
+from xcube.util.cache import Cache
+from xcube.util.cache import MemoryCacheStore
+from xcube.util.cache import parse_mem_size
 from xcube.util.cmaps import get_cmap
-from xcube.util.perf import measure_time_cm
+from xcube.util.perf import measure_time_cm, measure_time
 from xcube.util.tilegrid import TileGrid
 from xcube.version import version
 from xcube.webapi.defaults import DEFAULT_TRACE_PERF
@@ -55,12 +64,18 @@ from xcube.webapi.reqparams import RequestParams
 COMPUTE_DATASET = 'compute_dataset'
 COMPUTE_VARIABLES = 'compute_variables'
 
+# We use tilde, because it is not a reserved URI characters
+STORE_DS_ID_SEPARATOR = '~'
+
 ALL_PLACES = "all"
 
 Config = Dict[str, Any]
-DatasetDescriptor = Dict[str, Any]
+DatasetDescriptorDict = Dict[str, Any]
 
-MultiLevelDatasetOpener = Callable[["ServiceContext", DatasetDescriptor], MultiLevelDataset]
+MultiLevelDatasetOpener = Callable[
+    ["ServiceContext", DatasetDescriptorDict],
+    MultiLevelDataset
+]
 
 
 # noinspection PyMethodMayBeStatic
@@ -78,15 +93,25 @@ class ServiceContext:
         self._base_dir = os.path.abspath(base_dir or '')
         self._config = config if config is not None else dict()
         self._config_mtime = 0.0
+        # TODO: clear on server config change
         self._place_group_cache = dict()
         self._feature_index = 0
         self._ml_dataset_openers = ml_dataset_openers
         self._tile_comp_mode = tile_comp_mode
         self._trace_perf = trace_perf
         self._lock = threading.RLock()
-        self._dataset_cache = dict()  # contains tuples of form (MultiLevelDataset, ds_descriptor)
+        # contains tuples of form (MultiLevelDataset, ds_descriptor)
+        # TODO: clear on server config change
+        self._dataset_cache = dict()
+        # cache for all dataset descriptors
+        # TODO: set to None on server config change
+        self._dataset_descriptors: Optional[List[DatasetDescriptorDict]] = None
+        # TODO: clear on server config change
         self._image_cache = dict()
+        # TODO: set to None on server config change
+        self._data_store_pool: Optional[DataStorePool] = None
         if tile_cache_capacity:
+            # TODO: set to None on server config change
             self._tile_cache = Cache(MemoryCacheStore(),
                                      capacity=tile_cache_capacity,
                                      threshold=0.75)
@@ -164,18 +189,18 @@ class ServiceContext:
         return self.access_control.get('RequiredScopes', [])
 
     def get_required_dataset_scopes(self,
-                                    dataset_descriptor: DatasetDescriptor) -> Set[str]:
+                                    dataset_descriptor: DatasetDescriptorDict) -> Set[str]:
         return self._get_required_scopes(dataset_descriptor, 'read:dataset', 'Dataset',
                                          dataset_descriptor['Identifier'])
 
     def get_required_variable_scopes(self,
-                                     dataset_descriptor: DatasetDescriptor,
+                                     dataset_descriptor: DatasetDescriptorDict,
                                      var_name: str) -> Set[str]:
         return self._get_required_scopes(dataset_descriptor, 'read:variable', 'Variable',
                                          var_name)
 
     def _get_required_scopes(self,
-                             dataset_descriptor: DatasetDescriptor,
+                             dataset_descriptor: DatasetDescriptorDict,
                              base_scope: str,
                              value_name: str,
                              value: str) -> Set[str]:
@@ -192,10 +217,12 @@ class ServiceContext:
         return dataset_required_scopes
 
     def get_service_url(self, base_url, *path: str):
+        # noinspection PyTypeChecker
+        path_comp = '/'.join(path)
         if self._prefix:
-            return base_url + self._prefix + '/' + '/'.join(path)
+            return base_url + self._prefix + '/' + path_comp
         else:
-            return base_url + '/' + '/'.join(path)
+            return base_url + '/' + path_comp
 
     def get_ml_dataset(self, ds_id: str) -> MultiLevelDataset:
         ml_dataset, _ = self._get_dataset_entry(ds_id)
@@ -234,16 +261,98 @@ class ServiceContext:
             raise ServiceResourceNotFoundError(f'Variable "{var_name}" not found in dataset "{ds_id}"')
         return dataset[var_name]
 
-    def get_dataset_descriptors(self):
-        dataset_descriptors = self._config.get('Datasets')
-        if not dataset_descriptors:
-            raise ServiceConfigError(f"No datasets configured")
-        return dataset_descriptors
+    def get_dataset_descriptors(self) -> List[DatasetDescriptorDict]:
+        if self._dataset_descriptors is None:
+            with self._lock:
+                dataset_descriptors = self._config.get('Datasets', [])
+                dataset_descriptors += \
+                    self.get_dataset_descriptors_from_stores()
+                self._dataset_descriptors = dataset_descriptors
+        return self._dataset_descriptors
+
+    def get_dataset_descriptors_from_stores(self) \
+            -> List[DatasetDescriptorDict]:
+
+        data_store_pool = self.get_data_store_pool()
+        if data_store_pool is None:
+            return []
+
+        all_dataset_descriptors: List[DatasetDescriptorDict] = []
+        for store_instance_id in data_store_pool.store_instance_ids:
+            data_store_config = data_store_pool.get_store_config(
+                store_instance_id
+            )
+            data_store = data_store_pool.get_store(store_instance_id)
+            store_dataset_ids = data_store.get_data_ids(
+                # type_specifier=TYPE_SPECIFIER_CUBE,
+                type_specifier=TYPE_SPECIFIER_DATASET,
+            )
+            for store_dataset_id in store_dataset_ids:
+                # noinspection PyTypeChecker
+                dataset_metadata: DatasetDescriptor \
+                    = data_store.describe_data(store_dataset_id)
+                if dataset_metadata.crs is not None:
+                    crs = pyproj.CRS.from_string(dataset_metadata.crs)
+                    if not crs.is_geographic:
+                        LOG.warn(f'ignoring dataset {store_dataset_id!r} from'
+                                 f' store instance {store_instance_id!r}'
+                                 f' because it uses a non-geographic CRS')
+                        continue
+                dataset_descriptor_base = {}
+                store_dataset_descriptors: List[DatasetDescriptorDict] \
+                    = data_store_config.user_data
+                if store_dataset_descriptors:
+                    for store_dataset_descriptor in store_dataset_descriptors:
+                        dataset_id_pattern = store_dataset_descriptor.get(
+                            'Identifier', '*'
+                        )
+                        if fnmatch.fnmatch(store_dataset_id,
+                                           dataset_id_pattern):
+                            dataset_descriptor_base = store_dataset_descriptor
+                        else:
+                            dataset_descriptor_base = None
+                if dataset_descriptor_base is not None:
+                    dataset_descriptor = dict(
+                        StoreInstanceId=store_instance_id,
+                        **dataset_descriptor_base
+                    )
+                    dataset_descriptor['Identifier'] \
+                        = f'{store_instance_id}{STORE_DS_ID_SEPARATOR}' \
+                          f'{store_dataset_id}'
+                    if 'Title' not in dataset_descriptor:
+                        dataset_descriptor['Title'] \
+                            = dataset_metadata.attrs.get('title') \
+                              or dataset_metadata.attrs.get('name') \
+                              or dataset_descriptor['Identifier']
+                    if 'BoundingBox' not in dataset_descriptor:
+                        dataset_descriptor['BoundingBox'] \
+                            = dataset_metadata.bbox
+                    all_dataset_descriptors.append(dataset_descriptor)
+
+        return all_dataset_descriptors
+
+    def get_data_store_pool(self) -> Optional[DataStorePool]:
+        data_store_descriptors = self._config.get('DataStores', [])
+        if not data_store_descriptors:
+            self._data_store_pool = None
+        elif self._data_store_pool is None:
+            if not isinstance(data_store_descriptors, list):
+                raise ServiceConfigError('DataStores must be a list')
+            store_configs: Dict[str, DataStoreConfig] = {}
+            for data_store_descriptor in data_store_descriptors:
+                store_instance_id = data_store_descriptor.get('Identifier')
+                store_id = data_store_descriptor.get('StoreId')
+                store_params = data_store_descriptor.get('StoreParams', {})
+                store_dataset_descriptors = data_store_descriptor.get('Datasets')
+                store_config = DataStoreConfig(store_id,
+                                               store_params=store_params,
+                                               user_data=store_dataset_descriptors)
+                store_configs[store_instance_id] = store_config
+            self._data_store_pool = DataStorePool(store_configs)
+        return self._data_store_pool
 
     def get_dataset_descriptor(self, ds_id: str) -> Dict[str, Any]:
         dataset_descriptors = self.get_dataset_descriptors()
-        if not dataset_descriptors:
-            raise ServiceConfigError(f"No datasets configured")
         dataset_descriptor = self.find_dataset_descriptor(dataset_descriptors, ds_id)
         if dataset_descriptor is None:
             raise ServiceResourceNotFoundError(f'Dataset "{ds_id}" not found')
@@ -325,13 +434,13 @@ class ServiceContext:
             return style.get('ColorMappings')
         return None
 
-    def _get_dataset_entry(self, ds_id: str) -> Tuple[MultiLevelDataset, DatasetDescriptor]:
+    def _get_dataset_entry(self, ds_id: str) -> Tuple[MultiLevelDataset, DatasetDescriptorDict]:
         if ds_id not in self._dataset_cache:
             with self._lock:
                 self._set_dataset_entry(self._create_dataset_entry(ds_id))
         return self._dataset_cache[ds_id]
 
-    def _set_dataset_entry(self, dataset_entry: Tuple[MultiLevelDataset, DatasetDescriptor]):
+    def _set_dataset_entry(self, dataset_entry: Tuple[MultiLevelDataset, DatasetDescriptorDict]):
         ml_dataset, dataset_descriptor = dataset_entry
         self._dataset_cache[ml_dataset.ds_id] = ml_dataset, dataset_descriptor
 
@@ -340,16 +449,27 @@ class ServiceContext:
         ml_dataset = self._open_ml_dataset(dataset_descriptor)
         return ml_dataset, dataset_descriptor
 
-    def _open_ml_dataset(self, dataset_descriptor: DatasetDescriptor) -> MultiLevelDataset:
-        ds_id = dataset_descriptor.get('Identifier')
-        fs_type = dataset_descriptor.get('FileSystem', 'local')
-        if self._ml_dataset_openers and fs_type in self._ml_dataset_openers:
-            ml_dataset_opener = self._ml_dataset_openers[fs_type]
-        elif fs_type in _DEFAULT_MULTI_LEVEL_DATASET_OPENERS:
-            ml_dataset_opener = _DEFAULT_MULTI_LEVEL_DATASET_OPENERS[fs_type]
+    def _open_ml_dataset(self, dataset_descriptor: DatasetDescriptorDict) -> MultiLevelDataset:
+        ds_id: str = dataset_descriptor.get('Identifier')
+        store_instance_id = dataset_descriptor.get('StoreInstanceId')
+        if store_instance_id:
+            data_store_pool = self.get_data_store_pool()
+            data_store = data_store_pool.get_store(store_instance_id)
+            _, data_id = ds_id.split(STORE_DS_ID_SEPARATOR, maxsplit=1)
+            open_params = dataset_descriptor.get('StoreOpenParams') or {}
+            dataset = data_store.open_data(data_id, **open_params)
+            with measure_time(tag=f"opened dataset {ds_id!r} from data store"):
+                dataset = assert_cube(dataset)
+                ml_dataset = BaseMultiLevelDataset(dataset, ds_id=ds_id)
         else:
-            raise ServiceConfigError(f"Invalid fs={fs_type!r} in dataset descriptor {ds_id!r}")
-        ml_dataset = ml_dataset_opener(self, dataset_descriptor)
+            fs_type = dataset_descriptor.get('FileSystem', 'local')
+            if self._ml_dataset_openers and fs_type in self._ml_dataset_openers:
+                ml_dataset_opener = self._ml_dataset_openers[fs_type]
+            elif fs_type in _DEFAULT_MULTI_LEVEL_DATASET_OPENERS:
+                ml_dataset_opener = _DEFAULT_MULTI_LEVEL_DATASET_OPENERS[fs_type]
+            else:
+                raise ServiceConfigError(f"Invalid FileSystem {fs_type!r} in dataset descriptor {ds_id!r}")
+            ml_dataset = ml_dataset_opener(self, dataset_descriptor)
         augmentation = dataset_descriptor.get('Augmentation')
         if augmentation:
             script_path = self.get_descriptor_path(augmentation,
@@ -624,7 +744,7 @@ class ServiceContext:
             path = os.path.join(self._base_dir, path)
         return path
 
-    def get_dataset_chunk_cache_capacity(self, dataset_descriptor: DatasetDescriptor) -> Optional[int]:
+    def get_dataset_chunk_cache_capacity(self, dataset_descriptor: DatasetDescriptorDict) -> Optional[int]:
         cache_size = self.get_chunk_cache_capacity(dataset_descriptor, 'ChunkCacheSize')
         if cache_size is None:
             cache_size = self.get_chunk_cache_capacity(self.config, 'DatasetChunkCacheSize')
@@ -667,7 +787,7 @@ def normalize_prefix(prefix: Optional[str]) -> str:
 
 # noinspection PyUnusedLocal
 def _open_ml_dataset_from_object_storage(ctx: ServiceContext,
-                                         dataset_descriptor: DatasetDescriptor) -> MultiLevelDataset:
+                                         dataset_descriptor: DatasetDescriptorDict) -> MultiLevelDataset:
     ds_id = dataset_descriptor.get('Identifier')
     path = ctx.get_descriptor_path(dataset_descriptor, f"dataset descriptor {ds_id}", is_url=True)
     data_format = dataset_descriptor.get('Format', FORMAT_NAME_ZARR)
@@ -697,7 +817,7 @@ def _open_ml_dataset_from_object_storage(ctx: ServiceContext,
 
 
 def _open_ml_dataset_from_local_fs(ctx: ServiceContext,
-                                   dataset_descriptor: DatasetDescriptor) -> MultiLevelDataset:
+                                   dataset_descriptor: DatasetDescriptorDict) -> MultiLevelDataset:
     ds_id = dataset_descriptor.get('Identifier')
     path = ctx.get_descriptor_path(dataset_descriptor, f"dataset descriptor {ds_id}")
     data_format = dataset_descriptor.get('Format')
@@ -711,7 +831,7 @@ def _open_ml_dataset_from_local_fs(ctx: ServiceContext,
 
 
 def _open_ml_dataset_from_python_code(ctx: ServiceContext,
-                                      dataset_descriptor: DatasetDescriptor) -> MultiLevelDataset:
+                                      dataset_descriptor: DatasetDescriptorDict) -> MultiLevelDataset:
     ds_id = dataset_descriptor.get('Identifier')
     path = ctx.get_descriptor_path(dataset_descriptor, f"dataset descriptor {ds_id}")
     callable_name = dataset_descriptor.get('Function', COMPUTE_DATASET)

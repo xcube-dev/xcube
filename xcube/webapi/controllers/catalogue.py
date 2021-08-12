@@ -137,8 +137,6 @@ def get_dataset(ctx: ServiceContext,
 
         variable_dicts.append(variable_dict)
 
-    ctx.get_rgb_color_mapping(ds_id)
-
     dataset_dict["variables"] = variable_dicts
 
     rgb_var_names, rgb_norm_ranges = ctx.get_rgb_color_mapping(ds_id)

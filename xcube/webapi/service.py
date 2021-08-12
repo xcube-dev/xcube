@@ -167,8 +167,9 @@ class Service:
         test_url = self.context.get_service_url(f"http://{address}:{port}", "datasets")
         LOG.info(f'service running, listening on {address}:{port}, try {test_url}')
         LOG.info(f'press CTRL+C to stop service')
-        if len(self.context.config.get('Datasets', {})) == 0:
-            LOG.warning('no datasets configured')
+        if not self.context.config.get('Datasets', []) \
+                and not self.context.config.get('DataStores', []):
+            LOG.warning('no datasets or data stores configured')
         tornado.ioloop.PeriodicCallback(self._try_shutdown, 100).start()
         IOLoop.current().start()
 

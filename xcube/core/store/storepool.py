@@ -100,13 +100,15 @@ class DataStoreConfig:
     :param store_params: optional store parameters
     :param title: a human-readable title for the store instance
     :param description: a human-readable description of the store instance
+    :param user_data: optional user-data
     """
 
     def __init__(self,
                  store_id: str,
                  store_params: Dict[str, Any] = None,
                  title: str = None,
-                 description: str = None):
+                 description: str = None,
+                 user_data: Any = None):
         assert_given(store_id, name='store_id')
         if store_params is not None:
             assert_instance(store_params, dict, name='store_params')
@@ -114,6 +116,7 @@ class DataStoreConfig:
         self._store_params = store_params
         self._title = title
         self._description = description
+        self._user_data = user_data
 
     @property
     def store_id(self) -> Optional[str]:
@@ -130,6 +133,10 @@ class DataStoreConfig:
     @property
     def description(self) -> Optional[str]:
         return self._description
+
+    @property
+    def user_data(self) -> Optional[Any]:
+        return self._user_data
 
     @classmethod
     def from_dict(cls, d: Dict[str, Any]) -> 'DataStoreConfig':
