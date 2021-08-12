@@ -1,3 +1,5 @@
+from abc import ABC
+
 from xcube.util.jsonschema import JsonArraySchema
 from xcube.util.jsonschema import JsonBooleanSchema
 from xcube.util.jsonschema import JsonNumberSchema
@@ -21,10 +23,17 @@ BoundingBoxSchema = JsonArraySchema(items=[
 FileSystemSchema = JsonStringSchema(enum=['memory', 'obs', 'local'])
 
 
-class ServiceConfig(JsonObject):
+class _ConfigObject(JsonObject, ABC):
+    def __init__(self, **kwargs):
+        self._inject_attrs(kwargs)
+
+
+class ServiceConfig(_ConfigObject):
+
     @classmethod
     def get_schema(cls) -> JsonObjectSchema:
         return JsonObjectSchema(
+            factory=ServiceConfig,
             properties=dict(
                 Authentication=Authentication.get_schema(),
                 DatasetAttribution=JsonArraySchema(items=StringSchema),
@@ -34,14 +43,16 @@ class ServiceConfig(JsonObject):
                 PlaceGroups=JsonArraySchema(items=PlaceGroupConfig.get_schema()),
                 Styles=JsonArraySchema(items=StyleConfig.get_schema()),
                 ServiceProvider=ServiceProvider.get_schema(),
-            )
+            ),
+            additional_properties=False,
         )
 
 
-class Authentication(JsonObject):
+class Authentication(_ConfigObject):
     @classmethod
     def get_schema(cls) -> JsonObjectSchema:
         return JsonObjectSchema(
+            factory=Authentication,
             required=[
                 'Domain',
                 'Audience',
@@ -49,50 +60,81 @@ class Authentication(JsonObject):
             properties=dict(
                 Domain=JsonStringSchema(),
                 Audience=UrlSchema,
-            )
+                Algorithms=JsonArraySchema(items=IdentifierSchema),
+            ),
+            additional_properties=False,
         )
 
 
-class DatasetConfig(JsonObject):
+def _get_common_dataset_properties():
+    return dict(
+        Title=StringSchema,
+        TimeSeriesDataset=IdentifierSchema,
+        BoundingBox=BoundingBoxSchema,
+        ChunkCacheSize=ChunkSizeSchema,
+        Augmentation=Augmentation.get_schema(),
+        Style=IdentifierSchema,
+        Hidden=BooleanSchema,
+        AccessControl=AccessControl.get_schema(),
+        PlaceGroups=JsonArraySchema(items=JsonObjectSchema(
+            properties=dict(
+                PlaceGroupRef=IdentifierSchema,
+            ),
+        )),
+    )
+
+
+class DatasetConfig(_ConfigObject):
     @classmethod
     def get_schema(cls) -> JsonObjectSchema:
         return JsonObjectSchema(
+            factory=DatasetConfig,
             required=[
                 'Identifier',
-                'Path',
             ],
             properties=dict(
                 Identifier=IdentifierSchema,
-                TimeSeriesDataset=IdentifierSchema,
-                Title=StringSchema,
                 Path=PathSchema,
                 FileSystem=FileSystemSchema,
                 Anonymous=BooleanSchema,
                 Endpoint=UrlSchema,
                 Region=IdentifierSchema,
-                BoundingBox=BoundingBoxSchema,
                 Function=IdentifierSchema,
                 InputDatasets=JsonArraySchema(items=IdentifierSchema),
                 InputParameters=JsonObjectSchema(
                     additional_properties=True,
                 ),
-                ChunkCacheSize=ChunkSizeSchema,
-                Style=IdentifierSchema,
-                Hidden=BooleanSchema,
-                AccessControl=AccessControl.get_schema(),
-                PlaceGroups=JsonArraySchema(items=JsonObjectSchema(
-                    properties=dict(
-                        PlaceGroupRef=IdentifierSchema,
-                    ),
-                )),
-            )
+                **_get_common_dataset_properties(),
+            ),
+            additional_properties=False,
         )
 
 
-class PlaceGroupConfig(JsonObject):
+class Augmentation(_ConfigObject):
     @classmethod
     def get_schema(cls) -> JsonObjectSchema:
         return JsonObjectSchema(
+            factory=Authentication,
+            required=[
+                'Path',
+                'Function',
+            ],
+            properties=dict(
+                Path=PathSchema,
+                Function=IdentifierSchema,
+                InputParameters=JsonObjectSchema(
+                    additional_properties=True,
+                ),
+            ),
+            additional_properties=False,
+        )
+
+
+class PlaceGroupConfig(_ConfigObject):
+    @classmethod
+    def get_schema(cls) -> JsonObjectSchema:
+        return JsonObjectSchema(
+            factory=PlaceGroupConfig,
             required=[
                 'Identifier',
                 'Path',
@@ -105,57 +147,55 @@ class PlaceGroupConfig(JsonObject):
                 PropertyMapping=JsonObjectSchema(
                     additional_properties=PathSchema,
                 ),
-            )
+            ),
+            additional_properties=False,
         )
 
 
-class DataStoreConfig(JsonObject):
+class DataStoreConfig(_ConfigObject):
     @classmethod
     def get_schema(cls) -> JsonObjectSchema:
         return JsonObjectSchema(
+            factory=DataStoreConfig,
             required=[
                 'Identifier',
-                'Path',
+                'StoreId',
             ],
             properties=dict(
                 Identifier=IdentifierSchema,
-                Params=JsonObjectSchema(
+                StoreId=IdentifierSchema,
+                StoreParams=JsonObjectSchema(
                     additional_properties=True,
                 ),
                 Datasets=JsonArraySchema(
-                    items=DataStoreDataConfig.get_schema()
+                    items=DataStoreDatasetConfig.get_schema(),
                 ),
-            )
+            ),
+            additional_properties=False,
         )
 
 
-class DataStoreDataConfig(JsonObject):
+class DataStoreDatasetConfig(_ConfigObject):
     @classmethod
     def get_schema(cls) -> JsonObjectSchema:
         return JsonObjectSchema(
+            factory=DataStoreDatasetConfig,
             required=[
-                'Identifier',
-                'Path',
+                'Identifier'
             ],
             properties=dict(
-                TimeSeriesDataset=IdentifierSchema,
-                ChunkCacheSize=ChunkSizeSchema,
-                Style=IdentifierSchema,
-                Hidden=BooleanSchema,
-                AccessControl=AccessControl.get_schema(),
-                PlaceGroups=JsonArraySchema(items=JsonObjectSchema(
-                    properties=dict(
-                        PlaceGroupRef=IdentifierSchema,
-                    ),
-                )),
-            )
+                Identifier=IdentifierSchema,
+                **_get_common_dataset_properties()
+            ),
+            additional_properties=False,
         )
 
 
-class PlaceGroupJoin(JsonObject):
+class PlaceGroupJoin(_ConfigObject):
     @classmethod
     def get_schema(cls) -> JsonObjectSchema:
         return JsonObjectSchema(
+            factory=PlaceGroupJoin,
             required=[
                 'Property',
                 'Path',
@@ -163,14 +203,16 @@ class PlaceGroupJoin(JsonObject):
             properties=dict(
                 Property=IdentifierSchema,
                 Path=PathSchema,
-            )
+            ),
+            additional_properties=False,
         )
 
 
-class StyleConfig(JsonObject):
+class StyleConfig(_ConfigObject):
     @classmethod
     def get_schema(cls) -> JsonObjectSchema:
         return JsonObjectSchema(
+            factory=StyleConfig,
             required=[
                 'Identifier',
                 'ColorMappings',
@@ -180,11 +222,12 @@ class StyleConfig(JsonObject):
                 ColorMappings=JsonObjectSchema(
                     additional_properties=ColorMapping.get_schema()
                 )
-            )
+            ),
+            additional_properties=False,
         )
 
 
-class ColorMapping(JsonObject):
+class ColorMapping(_ConfigObject):
     @classmethod
     def get_schema(cls) -> JsonObjectSchema:
         return JsonObjectSchema(
@@ -198,11 +241,12 @@ class ColorMapping(JsonObject):
                     JsonNumberSchema(),
                     JsonNumberSchema()
                 ])
-            )
+            ),
+            additional_properties=False,
         )
 
 
-class ServiceProvider(JsonObject):
+class ServiceProvider(_ConfigObject):
     @classmethod
     def get_schema(cls) -> JsonObjectSchema:
         return JsonObjectSchema(
@@ -210,12 +254,13 @@ class ServiceProvider(JsonObject):
         )
 
 
-class AccessControl(JsonObject):
+class AccessControl(_ConfigObject):
     @classmethod
     def get_schema(cls) -> JsonObjectSchema:
         return JsonObjectSchema(
             properties=dict(
                 IsSubstitute=JsonBooleanSchema(),
                 RequiredScopes=JsonArraySchema(items=IdentifierSchema)
-            )
+            ),
+            additional_properties=False,
         )

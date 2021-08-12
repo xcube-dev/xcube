@@ -25,6 +25,9 @@ from typing import Dict, Any, Callable, Mapping, Sequence, Union, Tuple, Optiona
 
 # Make sure strict-rfc3339 package is installed. The package jsonschema uses it for validating
 # instances of the JsonDateSchema and JsonDatetimeSchema.
+from xcube.util.assertions import assert_true
+from xcube.util.assertions import assert_instance
+
 __import__('strict_rfc3339')
 import jsonschema
 
@@ -575,6 +578,10 @@ class JsonObjectSchema(JsonSchema):
 
         return converted_mapping
 
+    @classmethod
+    def inject_attrs(cls, obj: object, attrs: Dict[str, Any]):
+        for k, v in (attrs or {}).items():
+            setattr(obj, k, v)
 
 class JsonObject(ABC):
     """
@@ -604,6 +611,15 @@ class JsonObject(ABC):
     def to_dict(self) -> Dict[str, Any]:
         """Create JSON-serializable dictionary representation."""
         return self.get_schema().to_instance(self)
+
+    def _inject_attrs(self, attrs: Dict[str, Any]):
+        assert_instance(attrs, dict, name='attrs')
+        schema = self.get_schema()
+        assert_true(isinstance(schema, JsonObjectSchema),
+                    message='schema must be a JSON object schema')
+        all_attrs = {k: None for k in (schema.properties or {}).keys()}
+        all_attrs.update(attrs)
+        JsonObjectSchema.inject_attrs(self, all_attrs)
 
 
 register_json_formatter(JsonSchema)
