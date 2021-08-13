@@ -172,13 +172,16 @@ class S3DataStore(DefaultSearchMixin, MutableDataStore):
                                      f'It is of type "{descriptor.type_specifier}".')
             return descriptor
         if not self.has_data(data_id, type_specifier):
+            msg = f'Data "{data_id}" is not available'
             if not type_specifier:
-                raise DataStoreError(f'Data "{data_id}" is not available.')
-            raise DataStoreError(f'Data "{data_id}" is not available as type "{type_specifier}".')
-        _, ext = os.path.splitext(data_id)
+                raise DataStoreError(msg)
+            raise DataStoreError(msg + f' as type "{type_specifier}"')
         data_opener_ids = self.get_data_opener_ids(data_id, type_specifier=type_specifier)
         if len(data_opener_ids) == 0:
-            raise DataStoreError(f'Cannot describe data {data_id}')
+            msg = f'Cannot describe data {data_id}, no opener found'
+            if not type_specifier:
+                raise DataStoreError(msg)
+            raise DataStoreError(msg + f' for type "{type_specifier}"')
         open_params = {}
         op_schema = self._new_s3_opener(data_opener_ids[0]).get_open_data_params_schema(data_id)
         if 'consolidated' in op_schema.properties:
