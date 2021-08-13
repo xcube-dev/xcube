@@ -1,0 +1,91 @@
+DataStores:
+
+#  - Identifier: local
+#    StoreId: directory
+#    StoreParams:
+#      base_dir: .
+#    Datasets:
+#      - Identifier: "S2L2A"
+#        Style: "default"
+
+#  - Identifier: esacci
+#    StoreId: s3
+#    StoreParams:
+#      endpoint_url: https://cci-ke-o.s3-ext.jc.rl.ac.uk:8443
+#      bucket_name: esacci
+#      anon: true
+#    Datasets:
+#      - Identifier: "*.zarr"
+#        Style: "default"
+
+  - Identifier: edc
+    StoreId: s3
+    StoreParams:
+      endpoint_url: https://s3.eu-central-1.amazonaws.com
+      bucket_name: eurodatacube-scratch
+      anon: true
+    Datasets:
+      - Identifier: "*.zarr"
+        Style: "default"
+
+DatasetAttribution:
+  - "© by Brockmann Consult GmbH 2020, contains modified Copernicus Data 2019, processed by ESA"
+  - "© by EU H2020 CyanoAlert project"
+
+DatasetChunkCacheSize: 100M
+
+PlaceGroups:
+  - Identifier: inside-cube
+    Title: Points inside the cube
+    Path: "places/inside-cube.geojson"
+    Join:
+      Property: "ID"
+      Path: "places/inside-cube-media.geojson"
+    PropertyMapping:
+      image: "${base_url}/images/inside-cube/${image}"
+  - Identifier: outside-cube
+    Title: Points outside the cube
+    Path: "places/outside-cube.geojson"
+    PropertyMapping:
+      image: "${base_url}/images/outside-cube/${ID}.jpg"
+
+Styles:
+  - Identifier: default
+    ColorMappings:
+      conc_chl:
+        ColorBar: "plasma"
+        ValueRange: [0., 24.]
+      conc_tsm:
+        ColorBar: "PuBuGn"
+        ValueRange: [0., 100.]
+      kd489:
+        ColorBar: "jet"
+        ValueRange: [0., 6.]
+      rgb:
+        Red:
+          Variable: conc_chl
+          ValueRange: [0., 24.]
+        Green:
+          Variable: conc_tsm
+          ValueRange: [0., 100.]
+        Blue:
+          Variable: kd489
+          ValueRange: [0., 6.]
+
+ServiceProvider:
+  ProviderName: "Brockmann Consult GmbH"
+  ProviderSite: "https://www.brockmann-consult.de"
+  ServiceContact:
+    IndividualName: "Norman Fomferra"
+    PositionName: "Senior Software Engineer"
+    ContactInfo:
+      Phone:
+        Voice: "+49 4152 889 303"
+        Facsimile: "+49 4152 889 330"
+      Address:
+        DeliveryPoint: "HZG / GITZ"
+        City: "Geesthacht"
+        AdministrativeArea: "Herzogtum Lauenburg"
+        PostalCode: "21502"
+        Country: "Germany"
+        ElectronicMailAddress: "norman.fomferra@brockmann-consult.de"

@@ -21,6 +21,7 @@
 
 import fnmatch
 import glob
+import json
 import os
 import os.path
 import threading
@@ -40,7 +41,7 @@ from xcube.core.mldataset import augment_ml_dataset
 from xcube.core.mldataset import open_ml_dataset_from_local_fs
 from xcube.core.mldataset import open_ml_dataset_from_object_storage
 from xcube.core.mldataset import open_ml_dataset_from_python_code
-from xcube.core.store import DataStoreConfig
+from xcube.core.store import DataStoreConfig, DataStore
 from xcube.core.store import DataStorePool
 from xcube.core.store import DatasetDescriptor
 from xcube.core.store import TYPE_SPECIFIER_DATASET
@@ -85,6 +86,7 @@ class ServiceContext:
                  prefix: str = None,
                  base_dir: str = None,
                  config: Config = None,
+                 data_store_pool: DataStorePool = None,
                  trace_perf: bool = DEFAULT_TRACE_PERF,
                  tile_comp_mode: int = None,
                  tile_cache_capacity: int = None,
@@ -108,8 +110,8 @@ class ServiceContext:
         self._dataset_descriptors: Optional[List[DatasetDescriptorDict]] = None
         # TODO: clear on server config change
         self._image_cache = dict()
-        # TODO: set to None on server config change
-        self._data_store_pool: Optional[DataStorePool] = None
+        # TODO: remove_all_store_configs() on server config change
+        self._data_store_pool = data_store_pool or None
         if tile_cache_capacity:
             # TODO: set to None on server config change
             self._tile_cache = Cache(MemoryCacheStore(),
@@ -279,25 +281,16 @@ class ServiceContext:
 
         all_dataset_descriptors: List[DatasetDescriptorDict] = []
         for store_instance_id in data_store_pool.store_instance_ids:
+            LOG.debug(f'scanning store {store_instance_id!r}')
             data_store_config = data_store_pool.get_store_config(
                 store_instance_id
             )
             data_store = data_store_pool.get_store(store_instance_id)
             store_dataset_ids = data_store.get_data_ids(
-                # type_specifier=TYPE_SPECIFIER_CUBE,
-                type_specifier=TYPE_SPECIFIER_DATASET,
+                type_specifier='dataset'
             )
             for store_dataset_id in store_dataset_ids:
-                # noinspection PyTypeChecker
-                dataset_metadata: DatasetDescriptor \
-                    = data_store.describe_data(store_dataset_id)
-                if dataset_metadata.crs is not None:
-                    crs = pyproj.CRS.from_string(dataset_metadata.crs)
-                    if not crs.is_geographic:
-                        LOG.warn(f'ignoring dataset {store_dataset_id!r} from'
-                                 f' store instance {store_instance_id!r}'
-                                 f' because it uses a non-geographic CRS')
-                        continue
+                dataset_metadata: Optional[DatasetDescriptor] = None
                 dataset_descriptor_base = {}
                 store_dataset_descriptors: List[DatasetDescriptorDict] \
                     = data_store_config.user_data
@@ -312,6 +305,18 @@ class ServiceContext:
                         else:
                             dataset_descriptor_base = None
                 if dataset_descriptor_base is not None:
+                    LOG.debug(f'selected dataset {store_dataset_id!r}')
+
+                    # Only fetch metadata if required
+                    if dataset_metadata is None:
+                        # noinspection PyTypeChecker
+                        dataset_metadata = self.new_dataset_metadata(
+                            store_instance_id,
+                            store_dataset_id
+                        )
+                        if dataset_metadata is None:
+                            # Try next store_dataset_id
+                            continue
                     dataset_descriptor = dict(
                         StoreInstanceId=store_instance_id,
                         **dataset_descriptor_base
@@ -329,7 +334,31 @@ class ServiceContext:
                             = dataset_metadata.bbox
                     all_dataset_descriptors.append(dataset_descriptor)
 
+        # Just for testing:
+        debug_file = 'all_dataset_descriptors.json'
+        with open(debug_file, 'w') as stream:
+            json.dump(all_dataset_descriptors, stream)
+            LOG.debug(f'wrote file {debug_file!r}')
+
         return all_dataset_descriptors
+
+    def new_dataset_metadata(self,
+                             store_instance_id: str,
+                             dataset_id: str) -> Optional[DatasetDescriptor]:
+        data_store = self._data_store_pool.get_store(store_instance_id)
+        dataset_metadata = data_store.describe_data(
+            dataset_id,
+            type_specifier='dataset'
+        )
+        if dataset_metadata.crs is not None:
+            crs = pyproj.CRS.from_string(dataset_metadata.crs)
+            if not crs.is_geographic:
+                LOG.warn(f'ignoring dataset {dataset_id!r} from'
+                         f' store instance {store_instance_id!r}'
+                         f' because it uses a non-geographic CRS')
+                return None
+        # noinspection PyTypeChecker
+        return dataset_metadata
 
     def get_data_store_pool(self) -> Optional[DataStorePool]:
         data_store_descriptors = self._config.get('DataStores', [])
@@ -343,17 +372,19 @@ class ServiceContext:
                 store_instance_id = data_store_descriptor.get('Identifier')
                 store_id = data_store_descriptor.get('StoreId')
                 store_params = data_store_descriptor.get('StoreParams', {})
-                store_dataset_descriptors = data_store_descriptor.get('Datasets')
+                dataset_descriptors = data_store_descriptor.get('Datasets')
                 store_config = DataStoreConfig(store_id,
                                                store_params=store_params,
-                                               user_data=store_dataset_descriptors)
+                                               user_data=dataset_descriptors)
                 store_configs[store_instance_id] = store_config
             self._data_store_pool = DataStorePool(store_configs)
         return self._data_store_pool
 
     def get_dataset_descriptor(self, ds_id: str) -> Dict[str, Any]:
         dataset_descriptors = self.get_dataset_descriptors()
-        dataset_descriptor = self.find_dataset_descriptor(dataset_descriptors, ds_id)
+        dataset_descriptor = self.find_dataset_descriptor(
+            dataset_descriptors, ds_id
+        )
         if dataset_descriptor is None:
             raise ServiceResourceNotFoundError(f'Dataset "{ds_id}" not found')
         return dataset_descriptor

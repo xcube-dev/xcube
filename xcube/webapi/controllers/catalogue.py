@@ -131,9 +131,14 @@ def get_dataset(ctx: ServiceContext,
         variable_dict["colorBarMax"] = cmap_vmax
 
         if hasattr(var.data, '_repr_html_'):
+            # noinspection PyProtectedMember
             variable_dict["htmlRepr"] = var.data._repr_html_()
 
-        variable_dict["attrs"] = {key: var.attrs[key] for key in sorted(list(var.attrs.keys()))}
+        variable_dict["attrs"] = {
+            key: ("NaN" if isinstance(value, float)
+                           and np.isnan(value) else value)
+            for key, value in var.attrs.items()
+        }
 
         variable_dicts.append(variable_dict)
 
