@@ -26,7 +26,6 @@ import xarray as xr
 
 from xcube.constants import EXTENSION_POINT_DATA_OPENERS
 from xcube.constants import EXTENSION_POINT_DATA_WRITERS
-from xcube.core.store.typespecifier import TYPE_SPECIFIER_ANY
 from xcube.core.store.typespecifier import TypeSpecifier
 from xcube.util.assertions import assert_given
 from xcube.util.extension import Extension
@@ -129,16 +128,24 @@ def get_data_accessor_predicate(type_specifier: Union[str, TypeSpecifier] = None
     :raise DataStoreError: If an error occurs.
     """
     if any((type_specifier, format_id, storage_id)):
+        type_specifier = TypeSpecifier.normalize(type_specifier) \
+            if type_specifier is not None else None
+
         def _predicate(extension: Extension) -> bool:
             extension_parts = extension.name.split(':', maxsplit=4)
-            if len(extension_parts) < 3:
-                raise DataStoreError(f'Illegal data opener/writer extension name "{extension.name}"')
-            extension_type = TypeSpecifier.parse(extension_parts[0])
-            type_ok = type_specifier is None or extension_type == TYPE_SPECIFIER_ANY or \
-                      extension_type == TypeSpecifier.normalize(type_specifier)
-            format_ok = format_id is None or extension_parts[1] == '*' or extension_parts[1] == format_id
-            storage_ok = storage_id is None or extension_parts[2] == '*' or extension_parts[2] == storage_id
-            return type_ok and format_ok and storage_ok
+            if storage_id is not None:
+                ext_storage_id = extension_parts[2]
+                if ext_storage_id != '*' and ext_storage_id != storage_id:
+                    return False
+            if format_id is not None:
+                ext_format_id = extension_parts[1]
+                if ext_format_id != '*' and ext_format_id != format_id:
+                    return False
+            if type_specifier is not None:
+                ext_type_specifier = TypeSpecifier.normalize(extension_parts[0])
+                if not ext_type_specifier.satisfies(type_specifier):
+                    return False
+            return True
     else:
         # noinspection PyUnusedLocal
         def _predicate(extension: Extension) -> bool:

@@ -21,19 +21,17 @@
 
 from abc import ABC
 
-import fsspec
-import fsspec.implementations.local
-import fsspec.implementations.memory
 import xarray as xr
 
-from xcube.core.store import DataStoreError
 from xcube.util.assertions import assert_instance
 from xcube.util.jsonschema import JsonArraySchema
 from xcube.util.jsonschema import JsonBooleanSchema
 from xcube.util.jsonschema import JsonObjectSchema
 from xcube.util.jsonschema import JsonStringSchema
 from xcube.util.temp import new_temp_file
-from .common import FsDataAccessor
+from .helpers import is_local_fs
+from ..accessor import FsDataAccessor
+from ...store import DataStoreError
 
 
 class DatasetFsDataAccessor(FsDataAccessor, ABC):
@@ -41,83 +39,6 @@ class DatasetFsDataAccessor(FsDataAccessor, ABC):
     @classmethod
     def get_type_specifier(cls) -> str:
         return 'dataset'
-
-
-class DatasetNetcdfFsDataAccessor(DatasetFsDataAccessor, ABC):
-    """
-    Opener/writer extension name: "dataset:netcdf:<fs_protocol>"
-    """
-
-    @classmethod
-    def get_format_id(cls) -> str:
-        return 'netcdf'
-
-    def get_open_data_params_schema(self, data_id: str = None) \
-            -> JsonObjectSchema:
-        return JsonObjectSchema(
-            properties=dict(
-                # TODO: add more from xr.open_dataset()
-                fs_params=self.get_fs_params_schema()
-            ),
-            additional_properties=False,
-        )
-
-    def open_data(self,
-                  data_id: str,
-                  **open_params) -> xr.Dataset:
-        fs, open_params = self.get_fs(open_params)
-        engine = open_params.pop('engine', 'netcdf4')
-        if isinstance(fs, fsspec.implementations.local.LocalFileSystem):
-            return xr.open_dataset(data_id, engine=engine, **open_params)
-        temp_file = new_temp_file(suffix='.nc')
-        fs.get_file(data_id, temp_file)
-        return xr.open_dataset(temp_file, engine=engine, **open_params)
-
-    def get_write_data_params_schema(self) -> JsonObjectSchema:
-        return JsonObjectSchema(
-            properties=dict(
-                # TODO: add more from ds.to_netcdf()
-                fs_params=self.get_fs_params_schema()
-            ),
-            additional_properties=False,
-        )
-
-    def write_data(self,
-                   data: xr.Dataset,
-                   data_id: str,
-                   replace=False,
-                   **write_params):
-        fs, write_params = self.get_fs(write_params)
-        assert_instance(data, xr.Dataset, 'data')
-        if not replace and fs.exists(data_id):
-            raise DataStoreError(f'data resource {data_id} already exists')
-        if isinstance(fs, fsspec.implementations.local.LocalFileSystem):
-            data.to_netcdf(data_id, **write_params)
-            return
-        temp_file = new_temp_file(suffix='.nc')
-        data.to_netcdf(temp_file, **write_params)
-        fs.put_file(temp_file, data_id)
-
-
-# class DatasetNetcdfFileFsDataAccessor(FileFsAccessor,
-#                                     DatasetNetcdfDataAccessor):
-#     """
-#     Opener/writer extension name: "dataset:netcdf:file"
-#     """
-#
-#
-# class DatasetNetcdfS3FsDataAccessor(S3FsAccessor,
-#                                   DatasetNetcdfDataAccessor):
-#     """
-#     Opener/writer extension name: "dataset:netcdf:s3"
-#     """
-#
-#
-# class DatasetNetcdfMemoryFsDataAccessor(MemoryFsAccessor,
-#                                       DatasetNetcdfDataAccessor):
-#     """
-#     Opener/writer extension name: "dataset:netcdf:memory"
-#     """
 
 
 class DatasetZarrFsDataAccessor(DatasetFsDataAccessor, ABC):
@@ -190,7 +111,7 @@ class DatasetZarrFsDataAccessor(DatasetFsDataAccessor, ABC):
         )
 
     def open_data(self, data_id: str, **open_params) -> xr.Dataset:
-        fs, open_params = self.get_fs(open_params)
+        fs, open_params = self.load_fs(open_params)
         zarr_store = fs.get_mapper(data_id)
         consolidated = open_params.pop('consolidated',
                                        fs.exists(f'{data_id}/.zmetadata'))
@@ -205,6 +126,7 @@ class DatasetZarrFsDataAccessor(DatasetFsDataAccessor, ABC):
     def get_write_data_params_schema(self) -> JsonObjectSchema:
         return JsonObjectSchema(
             properties=dict(
+                fs_params=self.get_fs_params_schema(),
                 group=JsonStringSchema(
                     description='Group path.'
                                 ' (a.k.a. path in zarr terminology.).',
@@ -223,15 +145,14 @@ class DatasetZarrFsDataAccessor(DatasetFsDataAccessor, ABC):
                     additional_properties=True,
                 ),
                 consolidated=JsonBooleanSchema(
-                    description='If True, apply Zarr’s consolidate_metadata() '
-                                'function to the store after writing.'
+                    description='If True, apply Zarr’s consolidate_metadata()'
+                                ' function to the store after writing.'
                 ),
                 append_dim=JsonStringSchema(
                     description='If set, the dimension on which the'
                                 ' data will be appended.',
                     min_length=1,
                 ),
-                fs_params=self.get_fs_params_schema(),
             ),
             additional_properties=False
         )
@@ -242,8 +163,8 @@ class DatasetZarrFsDataAccessor(DatasetFsDataAccessor, ABC):
                    replace=False,
                    **write_params):
         assert_instance(data, xr.Dataset, 'data')
-        fs, write_params = self.get_fs(write_params)
-        zarr_store = fs.get_mapper(data_id)
+        fs, write_params = self.load_fs(write_params)
+        zarr_store = fs.get_mapper(data_id, create=True)
         consolidated = write_params.pop('consolidated', True)
         try:
             data.to_zarr(zarr_store,
@@ -253,23 +174,69 @@ class DatasetZarrFsDataAccessor(DatasetFsDataAccessor, ABC):
         except ValueError as e:
             raise DataStoreError(f'failed to write {data_id}: {e}') from e
 
-#
-# class DatasetZarrFileFsDataAccessor(FileFsAccessor,
-#                                   DatasetZarrDataAccessor):
-#     """
-#     Opener/writer extension name: "dataset:zarr:file"
-#     """
-#
-#
-# class DatasetZarrS3FsDataAccessor(S3FsAccessor,
-#                                 DatasetZarrDataAccessor):
-#     """
-#     Opener/writer extension name: "dataset:zarr:s3"
-#     """
-#
-#
-# class DatasetZarrMemoryFsDataAccessor(MemoryFsAccessor,
-#                                     DatasetZarrDataAccessor):
-#     """
-#     Opener/writer extension name: "dataset:zarr:memory"
-#     """
+    def delete_data(self,
+                    data_id: str,
+                    **delete_params):
+        fs, delete_params = self.load_fs(delete_params)
+        delete_params.pop('recursive', None)
+        fs.delete(data_id, recursive=True, **delete_params)
+
+
+class DatasetNetcdfFsDataAccessor(DatasetFsDataAccessor, ABC):
+    """
+    Opener/writer extension name: "dataset:netcdf:<fs_protocol>"
+    """
+
+    @classmethod
+    def get_format_id(cls) -> str:
+        return 'netcdf'
+
+    def get_open_data_params_schema(self, data_id: str = None) \
+            -> JsonObjectSchema:
+        return JsonObjectSchema(
+            properties=dict(
+                fs_params=self.get_fs_params_schema()
+                # TODO: add more from xr.open_dataset()
+            ),
+            additional_properties=True,
+        )
+
+    def open_data(self,
+                  data_id: str,
+                  **open_params) -> xr.Dataset:
+        fs, open_params = self.load_fs(open_params)
+        engine = open_params.pop('engine', 'netcdf4')
+        is_local = is_local_fs(fs)
+        if is_local:
+            file_path = data_id
+        else:
+            file_path = new_temp_file(suffix='.nc')
+            fs.get_file(data_id, file_path)
+        return xr.open_dataset(file_path, engine=engine, **open_params)
+
+    def get_write_data_params_schema(self) -> JsonObjectSchema:
+        return JsonObjectSchema(
+            properties=dict(
+                fs_params=self.get_fs_params_schema()
+                # TODO: add more from ds.to_netcdf()
+            ),
+            additional_properties=True,
+        )
+
+    def write_data(self,
+                   data: xr.Dataset,
+                   data_id: str,
+                   replace=False,
+                   **write_params):
+        fs, write_params = self.load_fs(write_params)
+        assert_instance(data, xr.Dataset, 'data')
+        if not replace and fs.exists(data_id):
+            raise DataStoreError(f'data resource {data_id} already exists')
+        is_local = is_local_fs(fs)
+        if is_local:
+            file_path = data_id
+        else:
+            file_path = new_temp_file(suffix='.nc')
+        data.to_netcdf(file_path, **write_params)
+        if not is_local:
+            fs.put_file(file_path, data_id)

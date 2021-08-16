@@ -43,15 +43,11 @@ from xcube.core.store import TypeSpecifier
 from xcube.core.store import find_data_opener_extensions
 from xcube.core.store import find_data_writer_extensions
 from xcube.core.store import get_data_accessor_predicate
-from xcube.core.store import get_type_specifier
 from xcube.core.store import new_data_descriptor
 from xcube.core.store import new_data_opener
 from xcube.core.store import new_data_writer
-from xcube.core.store.fs.common import FS_PARAMS_PARAM_NAME
-from xcube.core.store.fs.common import FileFsAccessor
-from xcube.core.store.fs.common import FsAccessor
-from xcube.core.store.fs.common import MemoryFsAccessor
-from xcube.core.store.fs.common import S3FsAccessor
+from xcube.core.store.fs.accessor import FS_PARAMS_PARAM_NAME
+from xcube.core.store.fs.accessor import FsAccessor
 from xcube.util.assertions import assert_given
 from xcube.util.assertions import assert_in
 from xcube.util.assertions import assert_instance
@@ -92,11 +88,11 @@ _FORMAT_TO_FILENAME_EXT = {
 
 class BaseFsDataStore(MutableDataStore):
     """
-    Base class for data stores that use an underlying file system
-    (fs.AbstractFileSystem).
+    Base class for data stores that use an underlying filesystem
+    of type ``fsspec.AbstractFileSystem``.
 
-    :param fs: Optional file system. If not given,
-        :meth:_get_fs() should return a file system instance.
+    :param fs: Optional filesystem. If not given,
+        :meth:_load_fs() must return a filesystem instance.
     :param root: Root or base directory.
         Defaults to "".
     :param max_depth: Maximum recursion depth. None means limitless.
@@ -112,39 +108,40 @@ class BaseFsDataStore(MutableDataStore):
                  read_only: bool = False):
         if fs is not None:
             assert_instance(fs, fsspec.AbstractFileSystem, name='fs')
+        self._fs = fs
         self._root = root or ''
         self._max_depth = max_depth
         self._read_only = read_only
-        self._fs = fs
         self._lock = Lock()
 
     @property
     def fs_protocol(self) -> str:
         """
-        Get the file system protocol.
+        Get the filesystem protocol.
         Should be overridden by clients, as the default
-        implementation instantiates the file system.
+        implementation instantiates the filesystem.
         """
         return self.fs.protocol
 
     @property
     def fs(self) -> fsspec.AbstractFileSystem:
         """
-        Return the underlying file system .
-        :return: An instance of ``fs.AbstractFileSystem``.
+        Return the underlying filesystem .
+        :return: An instance of ``fsspec.AbstractFileSystem``.
         """
         if self._fs is None:
-            # Lazily instantiate file system.
+            # Lazily instantiate filesystem.
             with self._lock:
                 self._fs = self._load_fs()
         return self._fs
 
     def _load_fs(self) -> fsspec.AbstractFileSystem:
         """
-        Get an instance of the underlying file system.
-        :return: An instance of ``fs.AbstractFileSystem``.
+        Get an instance of the underlying filesystem.
+        Default implementation raises NotImplementedError.
+        :return: An instance of ``fsspec.AbstractFileSystem``.
         """
-        raise NotImplementedError()
+        raise NotImplementedError('unknown filesystem')
 
     @property
     def root(self) -> str:
@@ -178,7 +175,7 @@ class BaseFsDataStore(MutableDataStore):
 
     def get_type_specifiers_for_data(self, data_id: str) -> Tuple[str, ...]:
         self._assert_valid_data_id(data_id)
-        actual_type_specifier, _, _ = self._get_accessor_id_parts(data_id)
+        actual_type_specifier, _, _ = self._guess_accessor_id_parts(data_id)
         return actual_type_specifier,
 
     def get_data_ids(self,
@@ -188,10 +185,21 @@ class BaseFsDataStore(MutableDataStore):
         type_specifier = TypeSpecifier.normalize(type_specifier)
         # TODO: do not ignore names in include_attrs
         return_tuples = include_attrs is not None
-        # TODO: Use self.fs.walk() to support self.max_depth
+        root_offs = len(self._root)
+
+        def strip_path(path: str):
+            path = path[root_offs:]
+            if path.startswith('/') or path.startswith(self.fs.sep):
+                path = path[1:]
+            return path
+
+        paths = list(map(strip_path,
+                         self.fs.find(self._root,
+                                      maxdepth=self._max_depth,
+                                      withdirs=True)))
         # os.listdir does not guarantee any ordering of the entries, so
         # sort them to ensure predictable behaviour.
-        potential_data_ids = sorted(self.fs.listdir(self._root))
+        potential_data_ids = sorted(paths)
         for data_id in potential_data_ids:
             if self._is_data_specified(data_id, type_specifier):
                 yield (data_id, {}) if return_tuples else data_id
@@ -228,7 +236,7 @@ class BaseFsDataStore(MutableDataStore):
         format_id = None
         storage_id = self.fs_protocol
         if data_id:
-            accessor_id_parts = self._get_accessor_id_parts(
+            accessor_id_parts = self._guess_accessor_id_parts(
                 data_id, require=False
             )
             if not accessor_id_parts:
@@ -312,11 +320,11 @@ class BaseFsDataStore(MutableDataStore):
                            **delete_params)
 
     def register_data(self, data_id: str, data: Any):
-        # We don't need this as we use the file system
+        # We don't need this as we use the filesystem
         pass
 
     def deregister_data(self, data_id: str):
-        # We don't need this as we use the file system
+        # We don't need this as we use the filesystem
         pass
 
     ###############################################################
@@ -326,7 +334,7 @@ class BaseFsDataStore(MutableDataStore):
         type_specifier = None
         format_id = None
         if data_id:
-            accessor_id_parts = self._get_accessor_id_parts(
+            accessor_id_parts = self._guess_accessor_id_parts(
                 data_id, require=False
             )
             if accessor_id_parts:
@@ -384,20 +392,20 @@ class BaseFsDataStore(MutableDataStore):
                            type_specifier,
                            require: bool = False) -> bool:
         type_specifier = TypeSpecifier.normalize(type_specifier)
-        actual_type_specifier = self._get_type_specifier_for_data_id(
+        actual_type_specifier = self._guess_type_specifier_for_data_id(
             data_id, require=False
         )
         if actual_type_specifier is None:
             if require:
-                raise DataStoreError(f'Data resource "{data_id}" not found')
+                raise DataStoreError(f'Cannot determine data type of'
+                                     f' resource {data_id!r}')
             return False
         if not actual_type_specifier.satisfies(type_specifier):
             if require:
-                raise DataStoreError(f'Type specifier "{type_specifier}"'
-                                     f' cannot be satisfied'
-                                     f' by type specifier'
-                                     f' "{actual_type_specifier}" of'
-                                     f' data resource "{data_id}"')
+                raise DataStoreError(f'Data type {type_specifier!r}'
+                                     f' is not compatible with type'
+                                     f' {actual_type_specifier!r} of'
+                                     f' data resource {data_id!r}')
             return False
         return True
 
@@ -472,7 +480,7 @@ class BaseFsDataStore(MutableDataStore):
                                   data_id: str = None,
                                   require=True) -> List[Extension]:
         if data_id:
-            accessor_id_parts = self._get_accessor_id_parts(
+            accessor_id_parts = self._guess_accessor_id_parts(
                 data_id,
                 require=require
             )
@@ -500,16 +508,16 @@ class BaseFsDataStore(MutableDataStore):
             return []
         return extensions
 
-    def _get_type_specifier_for_data_id(self, data_id: str, require=True) \
+    def _guess_type_specifier_for_data_id(self, data_id: str, require=True) \
             -> Optional[TypeSpecifier]:
-        accessor_id_parts = self._get_accessor_id_parts(data_id,
-                                                        require=require)
+        accessor_id_parts = self._guess_accessor_id_parts(data_id,
+                                                          require=require)
         if accessor_id_parts is None:
             return None
         actual_type_specifier, _, _ = accessor_id_parts
         return TypeSpecifier.parse(actual_type_specifier)
 
-    def _get_accessor_id_parts(self, data_id: str, require=True) \
+    def _guess_accessor_id_parts(self, data_id: str, require=True) \
             -> Optional[Tuple[str, str, str]]:
         assert_given(data_id, 'data_id')
         ext = self._get_filename_ext(data_id)
@@ -521,17 +529,6 @@ class BaseFsDataStore(MutableDataStore):
                                      f' "{data_id}" is not supported')
             return None
         return type_specifier, format_name, self.fs_protocol
-
-    @classmethod
-    def _get_filename_ext_for_data(cls, data: Any) -> Optional[str]:
-        type_specifier = get_type_specifier(data)
-        if type_specifier is None:
-            return None
-        if TYPE_SPECIFIER_MULTILEVEL_DATASET.is_satisfied_by(type_specifier):
-            return '.levels'
-        if TYPE_SPECIFIER_GEODATAFRAME.is_satisfied_by(type_specifier):
-            return '.geojson'
-        return '.zarr'
 
     def _get_filename_ext(self, data_path: str) -> str:
         dot_pos = data_path.rfind('.')
@@ -548,56 +545,11 @@ class BaseFsDataStore(MutableDataStore):
         return data_path[dot_pos:]
 
 
-class DeferredFsDataStore(BaseFsDataStore):
-    """
-    Specialization of :class:BaseFsDataStore
-    which defers instantiation of the filesystem until needed.
-
-    :param fs_protocol: The file system protocol,
-        e.g. "file", "s3", "gfs".
-    :param fs_params: Optional parameters specific for the file system
-        identified by *fs_protocol*.
-    :param root: Root or base directory.
-        Defaults to "".
-    :param max_depth: Maximum recursion depth. None means limitless.
-        Defaults to 1.
-    :param read_only: Whether this is a read-only store.
-        Defaults to False.
-    """
-
-    def __init__(self,
-                 fs_protocol: str,
-                 fs_params: Dict[str, Any] = None,
-                 root: str = '',
-                 max_depth: Optional[int] = 1,
-                 read_only: bool = False):
-        assert_given(fs_protocol, name='fs_protocol')
-        self._fs_protocol = fs_protocol
-        self._fs_params = fs_params or {}
-        super().__init__(root=root,
-                         max_depth=max_depth,
-                         read_only=read_only)
-
-    @property
-    def fs_protocol(self) -> str:
-        # Base class returns self.fs.protocol which
-        # instantiates the file system.
-        # Avoid this, as we know the protocol up front.
-        return self._fs_protocol
-
-    @property
-    def fs_params(self) -> Dict[str, Any]:
-        return self._fs_params
-
-    def _load_fs(self) -> fsspec.AbstractFileSystem:
-        return fsspec.filesystem(self._fs_protocol, **self._fs_params)
-
-
 class FsDataStore(BaseFsDataStore, FsAccessor):
     """
     Specialization of a :class:BaseFsDataStore that
     also implements a :class:FsAccessor which serves
-    the file system.
+    the filesystem.
 
     :param fs_params: Parameters specific to the underlying filesystem.
         Used to instantiate the filesystem.
@@ -622,7 +574,7 @@ class FsDataStore(BaseFsDataStore, FsAccessor):
     @property
     def fs_protocol(self) -> str:
         # Base class returns self.fs.protocol which
-        # instantiates the file system.
+        # instantiates the filesystem.
         # Avoid this, as we know the protocol up front.
         return self.get_fs_protocol()
 
@@ -631,7 +583,8 @@ class FsDataStore(BaseFsDataStore, FsAccessor):
         return self._fs_params
 
     def _load_fs(self) -> fsspec.AbstractFileSystem:
-        fs, _ = self.get_fs({FS_PARAMS_PARAM_NAME: self._fs_params})
+        # Note, this is invoked only once per store instance.
+        fs, _ = self.load_fs({FS_PARAMS_PARAM_NAME: self._fs_params})
         return fs
 
     @classmethod
@@ -640,21 +593,3 @@ class FsDataStore(BaseFsDataStore, FsAccessor):
         schema = copy.deepcopy(schema)
         schema.properties[FS_PARAMS_PARAM_NAME] = cls.get_fs_params_schema()
         return schema
-
-
-class FileFsDataStore(FsDataStore, FileFsAccessor):
-    """
-    A data store that uses the local filesystem.
-    """
-
-
-class S3FsDataStore(FsDataStore, S3FsAccessor):
-    """
-    A data store that uses AWS S3 compatible object storage.
-    """
-
-
-class MemoryFsDataStore(FsDataStore, MemoryFsAccessor):
-    """
-    A data store that uses an in-memory filesystem.
-    """

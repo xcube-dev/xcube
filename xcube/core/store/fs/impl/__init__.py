@@ -1,5 +1,5 @@
 # The MIT License (MIT)
-# Copyright (c) 2019 by the xcube development team and contributors
+# Copyright (c) 2021 by the xcube development team and contributors
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of
 # this software and associated documentation files (the "Software"), to deal in
@@ -18,31 +18,3 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-
-
-__author__ = "Norman Fomferra (Brockmann Consult GmbH)"
-
-UNDEFINED_STR = "UNDEFINED"
-
-
-class _Undefined:
-    """
-    Represents the UNDEFINED value.
-    """
-    _hash_code = hash(UNDEFINED_STR) + 1
-
-    def __str__(self):
-        return UNDEFINED_STR
-
-    def __repr__(self):
-        return UNDEFINED_STR
-
-    def __eq__(self, other):
-        return self is other or isinstance(other, _Undefined)
-
-    def __hash__(self) -> int:
-        return _Undefined._hash_code
-
-
-#: Singleton value used to indicate an undefined state.
-UNDEFINED = _Undefined()

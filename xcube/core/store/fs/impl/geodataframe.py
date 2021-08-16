@@ -25,7 +25,9 @@ import pandas as pd
 
 from xcube.util.assertions import assert_instance
 from xcube.util.jsonschema import JsonObjectSchema
-from .common import FsDataAccessor
+from xcube.util.temp import new_temp_file
+from .helpers import is_local_fs
+from ..accessor import FsDataAccessor
 
 
 class GeoDataFrameFsDataAccessor(FsDataAccessor, ABC):
@@ -45,27 +47,46 @@ class GeoDataFrameFsDataAccessor(FsDataAccessor, ABC):
     def get_open_data_params_schema(self, data_id: str = None) -> JsonObjectSchema:
         return JsonObjectSchema(
             properties=dict(
-                # TODO: add more, see https://geopandas.org/io.html
                 fs_params=self.get_fs_params_schema(),
+                # TODO: add more, see https://geopandas.org/io.html
             ),
         )
 
     def open_data(self, data_id: str, **open_params) -> gpd.GeoDataFrame:
-        # TODO: implement me correctly
-        return gpd.read_file(data_id, driver=self.get_driver_name(), **open_params)
+        # TODO: implement me correctly,
+        #  this is not valid for shapefile AND geojson
+        fs, open_params = self.load_fs(open_params)
+        is_local = is_local_fs(fs)
+        if is_local:
+            file_path = data_id
+        else:
+            file_path = new_temp_file()
+            fs.get_file(data_id, file_path)
+        return gpd.read_file(file_path,
+                             driver=self.get_driver_name(),
+                             **open_params)
 
     def get_write_data_params_schema(self) -> JsonObjectSchema:
         return JsonObjectSchema(
             properties=dict(
-                # TODO: add more, see https://geopandas.org/io.html
                 fs_params=self.get_fs_params_schema(),
+                # TODO: add more, see https://geopandas.org/io.html
             ),
         )
 
     def write_data(self, data: gpd.GeoDataFrame, data_id: str, **write_params):
-        # TODO: implement me correctly
+        # TODO: implement me correctly,
+        #  this is not valid for shapefile AND geojson
         assert_instance(data, (gpd.GeoDataFrame, pd.DataFrame), 'data')
-        data.to_file(data_id, driver=self.get_driver_name(), **write_params)
+        fs, write_params = self.load_fs(write_params)
+        is_local = is_local_fs(fs)
+        if is_local:
+            file_path = data_id
+        else:
+            file_path = new_temp_file()
+        data.to_file(file_path, driver=self.get_driver_name(), **write_params)
+        if not is_local:
+            fs.put_file(file_path, data_id)
 
 
 class GeoDataFrameShapefileFsDataAccessor(GeoDataFrameFsDataAccessor, ABC):
@@ -82,27 +103,6 @@ class GeoDataFrameShapefileFsDataAccessor(GeoDataFrameFsDataAccessor, ABC):
         return 'ESRI Shapefile'
 
 
-# class GeoDataFrameShapefileFileFsDataAccessor(FileFsAccessor,
-#                                             GeoDataFrameShapefileDataAccessor):
-#     """
-#     Opener/writer extension name: "geodataframe:shapefile:file"
-#     """
-#
-#
-# class GeoDataFrameShapefileS3FsDataAccessor(S3FsAccessor,
-#                                           GeoDataFrameShapefileDataAccessor):
-#     """
-#     Opener/writer extension name: "geodataframe:shapefile:s3"
-#     """
-#
-#
-# class GeoDataFrameShapefileMemoryFsDataAccessor(MemoryFsAccessor,
-#                                               GeoDataFrameShapefileDataAccessor):
-#     """
-#     Opener/writer extension name: "geodataframe:shapefile:memory"
-#     """
-
-
 class GeoDataFrameGeoJsonFsDataAccessor(GeoDataFrameFsDataAccessor, ABC):
     """
     Extension name: "geodataframe:geojson:<fs_protocol>"
@@ -115,23 +115,3 @@ class GeoDataFrameGeoJsonFsDataAccessor(GeoDataFrameFsDataAccessor, ABC):
     @classmethod
     def get_driver_name(cls) -> str:
         return 'GeoJSON'
-
-# class GeoDataFrameGeoJsonFileFsDataAccessor(FileFsAccessor,
-#                                           GeoDataFrameGeoJsonDataAccessor):
-#     """
-#     Opener/writer extension name: "geodataframe:geojson:file"
-#     """
-#
-#
-# class GeoDataFrameGeoJsonS3FsDataAccessor(S3FsAccessor,
-#                                         GeoDataFrameGeoJsonDataAccessor):
-#     """
-#     Opener/writer extension name: "geodataframe:geojson:s3"
-#     """
-#
-#
-# class GeoDataFrameGeoJsonMemoryFsDataAccessor(MemoryFsAccessor,
-#                                             GeoDataFrameGeoJsonDataAccessor):
-#     """
-#     Opener/writer extension name: "geodataframe:geojson:memory"
-#     """

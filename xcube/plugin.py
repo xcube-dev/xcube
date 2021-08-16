@@ -97,6 +97,9 @@ _FS_DATA_ACCESSOR_ITEMS = (
     ('geodataframe', 'geojson', 'gpd.GeoDataFrame in GeoJSON format'),
 )
 
+_FS_DATA_OPENER_ITEMS = _FS_DATA_ACCESSOR_ITEMS
+_FS_DATA_WRITER_ITEMS = _FS_DATA_ACCESSOR_ITEMS
+
 
 def _register_data_stores(ext_registry: extension.ExtensionRegistry):
     """
@@ -120,28 +123,39 @@ def _register_data_accessors(ext_registry: extension.ExtensionRegistry):
     """
     factory = 'xcube.core.store.fs.registry:get_fs_data_accessor_class'
 
-    for storage_id, storage_description in _FS_STORAGE_ITEMS:
-        for type_specifier, format_id, data_accessor_description in _FS_DATA_ACCESSOR_ITEMS:
-            name = f'{type_specifier}:{format_id}:{storage_id}'
-            factory_args = (type_specifier, format_id, storage_id)
-            loader = extension.import_component(factory,
-                                                call_args=factory_args)
-            ext_registry.add_extension(
-                point=EXTENSION_POINT_DATA_OPENERS,
-                loader=loader,
-                name=name,
-                description=f'Data opener for'
-                            f' a {data_accessor_description}'
-                            f' in {storage_description}'
-            )
-            ext_registry.add_extension(
-                point=EXTENSION_POINT_DATA_WRITERS,
-                loader=loader,
-                name=name,
-                description=f'Data writer for'
-                            f' a {data_accessor_description}'
-                            f' in {storage_description}'
-            )
+    # noinspection PyShadowingNames
+    def _add_fs_data_accessor_ext(point: str,
+                                  ext_type: str,
+                                  fs_protocol: str,
+                                  type_specifier: str,
+                                  format_id: str):
+        factory_args = (fs_protocol, type_specifier, format_id)
+        loader = extension.import_component(factory,
+                                            call_args=factory_args)
+        ext_registry.add_extension(
+            point=point,
+            loader=loader,
+            name=f'{type_specifier}:{format_id}:{fs_protocol}',
+            description=f'Data {ext_type} for'
+                        f' a {data_accessor_description}'
+                        f' in {storage_description}'
+        )
+
+    for fs_protocol, storage_description in _FS_STORAGE_ITEMS:
+        for type_specifier, format_id, data_accessor_description \
+                in _FS_DATA_OPENER_ITEMS:
+            _add_fs_data_accessor_ext(EXTENSION_POINT_DATA_OPENERS,
+                                      'opener',
+                                      fs_protocol,
+                                      type_specifier,
+                                      format_id)
+        for type_specifier, format_id, data_accessor_description \
+                in _FS_DATA_WRITER_ITEMS:
+            _add_fs_data_accessor_ext(EXTENSION_POINT_DATA_WRITERS,
+                                      'writer',
+                                      fs_protocol,
+                                      type_specifier,
+                                      format_id)
 
 
 def _register_cli_commands(ext_registry: extension.ExtensionRegistry):
