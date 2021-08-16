@@ -529,9 +529,9 @@ def _format_param_schema(param_schema: 'xcube.util.jsonschema.JsonSchema'):
         param_info.append(param_schema.description + ('' if param_schema.description.endswith('.') else '.'))
     if param_schema.enum:
         param_info.append(f'Must be one of {", ".join(map(json.dumps, param_schema.enum))}.')
-    if param_schema.const is not UNDEFINED:
+    if param_schema.const != UNDEFINED:
         param_info.append(f'Must be {json.dumps(param_schema.const)}.')
-    if param_schema.default is not UNDEFINED:
+    if param_schema.default != UNDEFINED:
         param_info.append(f'Defaults to {json.dumps(param_schema.default)}.')
     param_info_text = ' ' + " ".join(param_info) if param_info else ''
     return f'({param_schema.type}){param_info_text}'
