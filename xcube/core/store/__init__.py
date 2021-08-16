@@ -44,6 +44,7 @@ from .store import new_data_store
 from .storepool import DataStoreConfig
 from .storepool import DataStoreInstance
 from .storepool import DataStorePool
+from .storepool import DataStorePoolLike
 from .storepool import get_data_store_instance
 from .typespecifier import TYPE_SPECIFIER_ANY
 from .typespecifier import TYPE_SPECIFIER_CUBE

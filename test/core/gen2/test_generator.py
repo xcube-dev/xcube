@@ -9,7 +9,6 @@ from xcube.core.dsio import rimraf
 from xcube.core.gen2 import CubeGeneratorError
 from xcube.core.gen2.generator import CubeGenerator
 from xcube.core.gen2.generator import LocalCubeGenerator
-from xcube.core.gen2.request import CubeGeneratorRequest
 from xcube.core.gen2.response import CubeInfo
 from xcube.core.new import new_cube
 from xcube.core.store import DatasetDescriptor
@@ -17,19 +16,29 @@ from xcube.core.store.stores.memory import MemoryDataStore
 
 
 class LocalCubeGeneratorTest(unittest.TestCase):
-    REQUEST = dict(input_config=dict(store_id='memory',
-                                     data_id='S2L2A'),
-                   cube_config=dict(variable_names=['B01', 'B02', 'B03'],
-                                    crs='WGS84',
-                                    bbox=[12.2, 52.1, 13.9, 54.8],
-                                    spatial_res=0.05,
-                                    time_range=['2010-01-01', None],
-                                    time_period='4D',
-                                    chunks=dict(time=None, lat=90, lon=90)),
-                   output_config=dict(store_id='memory',
-                                      data_id='CHL'),
-                   callback_config=dict(api_uri='https://xcube-gen.test/api/v1/jobs/tomtom/iamajob/callback',
-                                        access_token='dfsvdfsv'))
+    REQUEST = dict(
+        input_config=dict(
+            store_id='memory',
+            data_id='S2L2A'
+        ),
+        cube_config=dict(
+            variable_names=['B01', 'B02', 'B03'],
+            crs='WGS84',
+            bbox=[12.2, 52.1, 13.9, 54.8],
+            spatial_res=0.05,
+            time_range=['2010-01-01', None],
+            time_period='4D',
+            chunks=dict(time=None, lat=90, lon=90)
+        ),
+        output_config=dict(
+            store_id='memory',
+            data_id='CHL'
+        ),
+        callback_config=dict(
+            api_uri='https://xcube-gen.test/api/v1/jobs/tomtom/iamajob/callback',
+            access_token='dfsvdfsv'
+        )
+    )
 
     def setUp(self) -> None:
         with open('_request.json', 'w') as fp:
@@ -48,21 +57,21 @@ class LocalCubeGeneratorTest(unittest.TestCase):
     @requests_mock.Mocker()
     def test_generate_cube_from_dict(self, m):
         m.put('https://xcube-gen.test/api/v1/jobs/tomtom/iamajob/callback', json={})
-        LocalCubeGenerator(CubeGeneratorRequest.from_dict(self.REQUEST), verbosity=True).generate_cube()
+        LocalCubeGenerator(verbosity=1).generate_cube(self.REQUEST)
         self.assertIsInstance(MemoryDataStore.get_global_data_dict().get('CHL'),
                               xr.Dataset)
 
     @requests_mock.Mocker()
     def test_generate_cube_from_json(self, m):
         m.put('https://xcube-gen.test/api/v1/jobs/tomtom/iamajob/callback', json={})
-        CubeGenerator.from_file('_request.json', verbosity=True).generate_cube()
+        CubeGenerator.new(verbosity=1).generate_cube('_request.json')
         self.assertIsInstance(MemoryDataStore.get_global_data_dict().get('CHL'),
                               xr.Dataset)
 
     @requests_mock.Mocker()
     def test_generate_cube_from_yaml(self, m):
         m.put('https://xcube-gen.test/api/v1/jobs/tomtom/iamajob/callback', json={})
-        CubeGenerator.from_file('_request.yaml', verbosity=True).generate_cube()
+        CubeGenerator.new(verbosity=1).generate_cube('_request.yaml')
         self.assertIsInstance(MemoryDataStore.get_global_data_dict().get('CHL'),
                               xr.Dataset)
 
@@ -72,13 +81,13 @@ class LocalCubeGeneratorTest(unittest.TestCase):
         request = self.REQUEST.copy()
         request['cube_config']['time_range'] = ['2019-01-01', '2020-01-01']
         with self.assertRaises(CubeGeneratorError) as cm:
-            LocalCubeGenerator(CubeGeneratorRequest.from_dict(request)).generate_cube()
+            LocalCubeGenerator().generate_cube(request)
         self.assertEqual('Input dataset subset "S2L2A" is empty', f'{cm.exception}')
 
     @requests_mock.Mocker()
     def test_get_cube_info_from_dict(self, m):
         m.put('https://xcube-gen.test/api/v1/jobs/tomtom/iamajob/callback', json={})
-        cube_info = LocalCubeGenerator(CubeGeneratorRequest.from_dict(self.REQUEST), verbosity=True).get_cube_info()
+        cube_info = LocalCubeGenerator(verbosity=1).get_cube_info(self.REQUEST)
         self.assertIsInstance(cube_info, CubeInfo)
         self.assertIsInstance(cube_info.dataset_descriptor, DatasetDescriptor)
         self.assertIsInstance(cube_info.size_estimation, dict)

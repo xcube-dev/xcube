@@ -101,19 +101,32 @@ def gen2(request_path: str,
         "client_secret": "lfaolb3klv904kj23lkdfsjkf430894341"
     }
 
+    Values in the file may also be interpolated from current
+    environment variables. In this case templates are used, for example:
+
+    \b
+    {
+        "endpoint_url": "https://xcube-gen.eurodatacube.com/api/v2/",
+        "client_id": "${XCUBE_GEN_CLIENT_ID}",
+        "client_secret": "${XCUBE_GEN_CLIENT_SECRET}"
+    }
+
     """
     from xcube.core.gen2 import CubeGenerator
     from xcube.core.gen2 import CubeGeneratorError
+    from xcube.core.gen2 import CubeGeneratorRequest
     from xcube.core.gen2 import CubeInfo
     from xcube.core.store import DataStoreError
 
     verbosity = len(verbose) if verbose else 0
 
     try:
-        generator = CubeGenerator.from_file(
-            request_path,
-            stores_config_path=stores_config_path,
-            service_config_path=service_config_path,
+        request = CubeGeneratorRequest.from_file(request_path,
+                                                 verbosity=verbosity)
+
+        generator = CubeGenerator.new(
+            stores_config=stores_config_path,
+            service_config=service_config_path,
             verbosity=verbosity
         )
         if info:
@@ -122,9 +135,9 @@ def gen2(request_path: str,
                 import json
                 json.dump(cube_info.to_dict(), sys.stdout, indent=2)
 
-            dump_cube_info(generator.get_cube_info())
+            dump_cube_info(generator.get_cube_info(request))
         else:
-            generator.generate_cube()
+            generator.generate_cube(request)
 
     except CubeGeneratorError as e:
         print_kwargs = dict(file=sys.stderr, flush=True)
