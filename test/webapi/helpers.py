@@ -36,6 +36,6 @@ class RequestParamsMock(RequestParams):
 
     def get_query_argument(self, name: str, default: Optional[str] = UNDEFINED) -> Optional[str]:
         value = self.kvp.get(name, default)
-        if value is UNDEFINED:
+        if value == UNDEFINED:
             raise ServiceBadRequestError(f'Missing query parameter "{name}"')
         return value
