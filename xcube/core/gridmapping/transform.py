@@ -33,8 +33,12 @@ from .helpers import _assert_valid_xy_names
 from .helpers import _normalize_crs
 
 
+# Cannot be used, but should, see TODO in transform_grid_mapping()
+#
 # class TransformedGridMapping(GridMapping, abc.ABC):
-#     """Grid mapping constructed from 1D/2D coordinate variables and a CRS."""
+#     """
+#     Grid mapping constructed from 1D/2D coordinate variables and a CRS.
+#     """
 #
 #     def __init__(self,
 #                  /,
@@ -56,20 +60,23 @@ def transform_grid_mapping(
         xy_var_names: Tuple[str, str] = None,
         tolerance: float = DEFAULT_TOLERANCE,
 ) -> GridMapping:
-    crs = _normalize_crs(crs)
+    target_crs = _normalize_crs(crs)
 
     if xy_var_names:
         _assert_valid_xy_names(xy_var_names, name='xy_var_names')
 
-    if grid_mapping.crs == crs:
+    source_crs = grid_mapping.crs
+    if source_crs == target_crs:
         if tile_size is not None or xy_var_names is not None:
             return grid_mapping.derive(tile_size=tile_size,
                                        xy_var_names=xy_var_names)
         return grid_mapping
 
-    transformer = pt.Transformer.from_crs(grid_mapping.crs, crs)
+    transformer = pt.Transformer.from_crs(source_crs,
+                                          target_crs,
+                                          always_xy=True)
 
-    def _transform(block):
+    def _transform(block: np.ndarray) -> np.ndarray:
         x1, y1 = block
         x2, y2 = transformer.transform(x1, y1)
         return np.stack([x2, y2])
@@ -93,7 +100,7 @@ def transform_grid_mapping(
     return new_grid_mapping_from_coords(
         x_coords=xr.DataArray(xy_coords[0], name=xy_var_names[0]),
         y_coords=xr.DataArray(xy_coords[1], name=xy_var_names[1]),
-        crs=crs,
+        crs=target_crs,
         tile_size=tile_size,
         tolerance=tolerance,
     )
