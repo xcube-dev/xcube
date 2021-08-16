@@ -299,7 +299,7 @@ def import_component(spec: str,
         component = _import_component(spec, force_component=call)
         if transform is not None:
             component = transform(component, extension)
-        if call:
+        if call or call_args or call_kwargs:
             component = component(*(call_args or []), **(call_kwargs or {}))
         return component
 
