@@ -46,8 +46,6 @@ from xcube.core.store import get_data_accessor_predicate
 from xcube.core.store import new_data_descriptor
 from xcube.core.store import new_data_opener
 from xcube.core.store import new_data_writer
-from xcube.core.store.fs.accessor import FS_PARAMS_PARAM_NAME
-from xcube.core.store.fs.accessor import FsAccessor
 from xcube.util.assertions import assert_given
 from xcube.util.assertions import assert_in
 from xcube.util.assertions import assert_instance
@@ -55,6 +53,9 @@ from xcube.util.extension import Extension
 from xcube.util.jsonschema import JsonBooleanSchema, JsonIntegerSchema
 from xcube.util.jsonschema import JsonObjectSchema
 from xcube.util.jsonschema import JsonStringSchema
+from .accessor import FS_PARAMS_PARAM_NAME
+from .accessor import FsAccessor
+from .helpers import normalize_path
 
 _DEFAULT_TYPE_SPECIFIER = 'dataset'
 _DEFAULT_FORMAT_ID = 'zarr'
@@ -109,7 +110,7 @@ class BaseFsDataStore(MutableDataStore):
         if fs is not None:
             assert_instance(fs, fsspec.AbstractFileSystem, name='fs')
         self._fs = fs
-        self._root = root or ''
+        self._root = normalize_path(root or '')
         self._max_depth = max_depth
         self._read_only = read_only
         self._lock = Lock()
@@ -118,10 +119,11 @@ class BaseFsDataStore(MutableDataStore):
     def fs_protocol(self) -> str:
         """
         Get the filesystem protocol.
-        Should be overridden by clients, as the default
+        Should be overridden by clients, because the default
         implementation instantiates the filesystem.
         """
-        return self.fs.protocol
+        protocol = self.fs.protocol
+        return protocol if isinstance(protocol, str) else protocol[0]
 
     @property
     def fs(self) -> fsspec.AbstractFileSystem:
@@ -185,21 +187,13 @@ class BaseFsDataStore(MutableDataStore):
         type_specifier = TypeSpecifier.normalize(type_specifier)
         # TODO: do not ignore names in include_attrs
         return_tuples = include_attrs is not None
-        root_offs = len(self._root)
 
-        def strip_path(path: str):
-            path = path[root_offs:]
-            if path.startswith('/') or path.startswith(self.fs.sep):
-                path = path[1:]
-            return path
-
-        paths = list(map(strip_path,
-                         self.fs.find(self._root,
-                                      maxdepth=self._max_depth,
-                                      withdirs=True)))
-        # os.listdir does not guarantee any ordering of the entries, so
-        # sort them to ensure predictable behaviour.
-        potential_data_ids = sorted(paths)
+        potential_data_ids = sorted(list(map(
+            self._convert_fs_path_into_data_id,
+            self.fs.find(self._root,
+                         maxdepth=self._max_depth,
+                         withdirs=True)
+        )))
         for data_id in potential_data_ids:
             if self._is_data_specified(data_id, type_specifier):
                 yield (data_id, {}) if return_tuples else data_id
@@ -207,14 +201,15 @@ class BaseFsDataStore(MutableDataStore):
     def has_data(self, data_id: str, type_specifier: str = None) -> bool:
         assert_given(data_id, 'data_id')
         if self._is_data_specified(data_id, type_specifier):
-            path = self._resolve_data_id_to_path(data_id)
-            return self.fs.exists(path)
+            fs_path = self._convert_data_id_into_fs_path(data_id)
+            return self.fs.exists(fs_path)
         return False
 
     def describe_data(self, data_id: str, type_specifier: str = None) \
             -> DataDescriptor:
         self._assert_valid_data_id(data_id)
         self._assert_data_specified(data_id, type_specifier)
+        # TODO: optimize me, this is very, very slow!
         data = self.open_data(data_id)
         return new_data_descriptor(data_id, data, require=True)
 
@@ -265,8 +260,8 @@ class BaseFsDataStore(MutableDataStore):
                   opener_id: str = None,
                   **open_params) -> xr.Dataset:
         opener = self._find_opener(opener_id=opener_id, data_id=data_id)
-        path = self._resolve_data_id_to_path(data_id)
-        return opener.open_data(path, fs=self.fs, **open_params)
+        fs_path = self._convert_data_id_into_fs_path(data_id)
+        return opener.open_data(fs_path, fs=self.fs, **open_params)
 
     def get_data_writer_ids(self, type_specifier: str = None) \
             -> Tuple[str, ...]:
@@ -296,9 +291,10 @@ class BaseFsDataStore(MutableDataStore):
             writer_id = self._guess_writer_id(data, data_id=data_id)
         writer = self._find_writer(writer_id=writer_id)
         data_id = self._ensure_valid_data_id(writer_id, data_id=data_id)
-        path = self._resolve_data_id_to_path(data_id)
+        fs_path = self._convert_data_id_into_fs_path(data_id)
+        self.fs.makedirs(self._root, exist_ok=True)
         writer.write_data(data,
-                          path,
+                          fs_path,
                           replace=replace,
                           fs=self.fs,
                           **write_params)
@@ -314,8 +310,8 @@ class BaseFsDataStore(MutableDataStore):
         if self.read_only:
             raise DataStoreError('Data store is read-only.')
         writer = self._find_writer(data_id=data_id)
-        path = self._resolve_data_id_to_path(data_id)
-        writer.delete_data(path,
+        fs_path = self._convert_data_id_into_fs_path(data_id)
+        writer.delete_data(fs_path,
                            fs=self.fs,
                            **delete_params)
 
@@ -431,9 +427,26 @@ class BaseFsDataStore(MutableDataStore):
             raise DataStoreError(f'Data resource "{data_id}"'
                                  f' does not exist in store')
 
-    def _resolve_data_id_to_path(self, data_id: str) -> str:
+    def _convert_data_id_into_fs_path(self, data_id: str) -> str:
         assert_given(data_id, 'data_id')
-        return f'{self._root}/{data_id}'
+        root = self.root
+        fs_path = f'{root}/{data_id}' if root else data_id
+        return fs_path
+
+    def _convert_fs_path_into_data_id(self, fs_path: str) -> str:
+        assert_given(fs_path, 'fs_path')
+        fs_path = normalize_path(fs_path)
+        root = self.root
+        if root:
+            root_pos = fs_path.find(root)
+            if root_pos == -1:
+                raise RuntimeError('internal error')
+            data_id = fs_path[root_pos + len(root):]
+        else:
+            data_id = fs_path
+        while data_id.startswith('/'):
+            data_id = data_id[1:]
+        return data_id
 
     def _assert_valid_type_specifier(self,
                                      type_specifier: TypeSpecifier):

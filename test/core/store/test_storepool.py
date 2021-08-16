@@ -11,41 +11,57 @@ from xcube.core.store import DataStoreError
 from xcube.core.store import DataStoreInstance
 from xcube.core.store import DataStorePool
 from xcube.core.store import get_data_store_instance
-from xcube.core.store.stores.directory import DirectoryDataStore
 
 
 class GetDataStoreTest(unittest.TestCase):
 
     def test_get_data_store_instance_new_inst(self):
-        instance = get_data_store_instance('directory', store_params=dict(base_dir='.'))
+        instance = get_data_store_instance('memory')
         self.assertIsInstance(instance, DataStoreInstance)
-        self.assertIsInstance(instance.store, DirectoryDataStore)
-        instance2 = get_data_store_instance('directory', store_params=dict(base_dir='.'))
+        self.assertIsInstance(instance.store, DataStore)
+        instance2 = get_data_store_instance('memory')
         self.assertIsNot(instance, instance2)
         self.assertIsNot(instance.store, instance2.store)
 
     def test_get_data_store_instance_from_pool(self):
-        pool = DataStorePool({'dir': DataStoreConfig('directory', store_params=dict(base_dir='.'))})
+        pool = DataStorePool({
+            'dir': DataStoreConfig('file',
+                                   store_params=dict(root='.'))
+        })
         instance = get_data_store_instance('@dir', store_pool=pool)
-        self.assertIsInstance(instance.store, DirectoryDataStore)
+        self.assertTrue(hasattr(instance.store, 'root'))
+        # noinspection PyUnresolvedReferences
+        self.assertEqual('.', instance.store.root)
         instance2 = get_data_store_instance('@dir', store_pool=pool)
         self.assertIs(instance, instance2)
 
     def test_get_data_store_instance_from_pool_with_params(self):
-        pool = DataStorePool({'@dir': DataStoreConfig('directory', store_params=dict(base_dir='.'))})
+        pool = DataStorePool({
+            '@dir': DataStoreConfig('file',
+                                    store_params=dict(root='.'))
+        })
         with self.assertRaises(ValueError) as cm:
-            get_data_store_instance('@dir', store_pool=pool, store_params={'thres': 5})
-        self.assertEqual('store_params cannot be given, with store_id ("@dir") referring to a configured store',
+            get_data_store_instance(
+                '@dir', store_pool=pool, store_params={'auto_mkdir': True}
+            )
+        self.assertEqual('store_params cannot be given,'
+                         ' with store_id ("@dir") referring'
+                         ' to a configured store',
                          f'{cm.exception}')
 
     def test_get_data_store_instance_from_pool_without_pool(self):
         with self.assertRaises(ValueError) as cm:
             get_data_store_instance('@dir')
-        self.assertEqual('store_pool must be given, with store_id ("@dir") referring to a configured store',
+        self.assertEqual('store_pool must be given,'
+                         ' with store_id ("@dir") referring'
+                         ' to a configured store',
                          f'{cm.exception}')
 
     def test_normalize(self):
-        pool = DataStorePool({'@dir': DataStoreConfig('directory', store_params=dict(base_dir='.'))})
+        pool = DataStorePool({
+            '@dir': DataStoreConfig('directory',
+                                    store_params=dict(root='.'))
+        })
         file_path = '_test-data-stores-pool.json'
         with open(file_path, 'w') as fp:
             json.dump(pool.to_dict(), fp)
@@ -67,10 +83,12 @@ class GetDataStoreTest(unittest.TestCase):
 class DataStoreConfigTest(unittest.TestCase):
 
     def test_constructor_and_instance_props(self):
-        store_config = DataStoreConfig('directory', store_params={'base_dir': '.'}, title='Local',
+        store_config = DataStoreConfig('file',
+                                       store_params={'root': '.'},
+                                       title='Local',
                                        description='Local files')
-        self.assertEqual('directory', store_config.store_id)
-        self.assertEqual({'base_dir': '.'}, store_config.store_params)
+        self.assertEqual('file', store_config.store_id)
+        self.assertEqual({'root': '.'}, store_config.store_params)
         self.assertEqual('Local', store_config.title)
         self.assertEqual('Local files', store_config.description)
 
@@ -82,11 +100,14 @@ class DataStoreConfigTest(unittest.TestCase):
         with self.assertRaises(TypeError) as cm:
             # noinspection PyTypeChecker
             DataStoreConfig('directory', store_params=[1, 'B'])
-        self.assertEqual("store_params must be an instance of <class 'dict'>, was <class 'list'>",
+        self.assertEqual("store_params must be an instance"
+                         " of <class 'dict'>, was <class 'list'>",
                          f'{cm.exception}')
 
     def test_to_dict(self):
-        store_config = DataStoreConfig('directory', store_params={'base_dir': '.'}, title='Local',
+        store_config = DataStoreConfig('directory',
+                                       store_params={'base_dir': '.'},
+                                       title='Local',
                                        description='Local files')
         self.assertEqual({'description': 'Local files',
                           'name': 'Local',
@@ -95,29 +116,33 @@ class DataStoreConfigTest(unittest.TestCase):
                          store_config.to_dict())
 
     def test_from_dict(self):
-        store_config = DataStoreConfig.from_dict({'description': 'Local files',
-                                                  'title': 'Local',
-                                                  'store_id': 'directory',
-                                                  'store_params': {'base_dir': '.'}})
+        store_config = DataStoreConfig.from_dict({
+            'description': 'Local files',
+            'title': 'Local',
+            'store_id': 'file',
+            'store_params': {'root': '.'}
+        })
         self.assertIsInstance(store_config, DataStoreConfig)
-        self.assertEqual('directory', store_config.store_id)
-        self.assertEqual({'base_dir': '.'}, store_config.store_params)
+        self.assertEqual('file', store_config.store_id)
+        self.assertEqual({'root': '.'}, store_config.store_params)
         self.assertEqual('Local', store_config.title)
         self.assertEqual('Local files', store_config.description)
 
     def test_from_dict_with_valid_cost_params(self):
-        store_config = DataStoreConfig.from_dict({'description': 'Local files',
-                                                  'title': 'Local',
-                                                  'store_id': 'directory',
-                                                  'store_params': {'base_dir': '.'},
-                                                  'cost_params': {
-                                                      'input_pixels_per_punit': 500,
-                                                      'output_pixels_per_punit': 100,
-                                                      'input_punits_weight': 1.1,
-                                                  }})
+        store_config = DataStoreConfig.from_dict({
+            'description': 'Local files',
+            'title': 'Local',
+            'store_id': 'file',
+            'store_params': {'root': '.'},
+            'cost_params': {
+                'input_pixels_per_punit': 500,
+                'output_pixels_per_punit': 100,
+                'input_punits_weight': 1.1,
+            }
+        })
         self.assertIsInstance(store_config, DataStoreConfig)
-        self.assertEqual('directory', store_config.store_id)
-        self.assertEqual({'base_dir': '.'}, store_config.store_params)
+        self.assertEqual('file', store_config.store_id)
+        self.assertEqual({'root': '.'}, store_config.store_params)
         self.assertEqual('Local', store_config.title)
         self.assertEqual('Local files', store_config.description)
 
@@ -214,16 +239,17 @@ class DataStorePoolTest(unittest.TestCase):
     def test_get_store(self):
         store_configs = {
             "dir-1": {
-                "store_id": "directory",
+                "store_id": "file",
                 "store_params": {
-                    "base_dir": "bibo"
+                    "root": "./bibo"
                 }
             },
         }
         pool = DataStorePool.from_dict(store_configs)
         store = pool.get_store('dir-1')
-        self.assertIsInstance(store, DirectoryDataStore)
-        self.assertEqual('bibo', store.base_dir)
+        self.assertTrue(hasattr(store, 'root'))
+        # noinspection PyUnresolvedReferences
+        self.assertEqual('./bibo', store.root)
         # Should stay same instance
         self.assertIs(store, pool.get_store('dir-1'))
         self.assertIs(store, pool.get_store('dir-1'))
@@ -278,15 +304,15 @@ class DataStorePoolTest(unittest.TestCase):
                 "store_id": "memory",
             },
             "local-1": {
-                "store_id": "directory",
+                "store_id": "file",
                 "store_params": {
-                    "base_dir": "/home/bibo/datacubes-1",
+                    "root": "/home/bibo/datacubes-1",
                 }
             },
             "local-2": {
-                "store_id": "directory",
+                "store_id": "file",
                 "store_params": {
-                    "base_dir": "/home/bibo/datacubes-2",
+                    "root": "/home/bibo/datacubes-2",
                 }
             },
         }

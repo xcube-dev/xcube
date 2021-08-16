@@ -67,40 +67,56 @@ class S3FsAccessor(FsAccessor):
         return JsonObjectSchema(
             properties=dict(
                 anon=JsonBooleanSchema(
-                    title='Whether to anonymously connect to AWS S3'
+                    title='Whether to anonymously connect to AWS S3.'
                 ),
                 key=JsonStringSchema(
                     min_length=1,
-                    title='AWS access key identifier',
+                    title='AWS access key identifier.',
                     description='Can also be set in profile section'
                                 ' of ~/.aws/config, or by environment'
-                                ' variable AWS_ACCESS_KEY_ID'
+                                ' variable AWS_ACCESS_KEY_ID.'
                 ),
                 secret=JsonStringSchema(
                     min_length=1,
-                    title='AWS secret access key',
+                    title='AWS secret access key.',
                     description='Can also be set in profile section'
                                 ' of ~/.aws/config, or by environment'
-                                ' variable AWS_SECRET_ACCESS_KEY'
+                                ' variable AWS_SECRET_ACCESS_KEY.'
                 ),
                 token=JsonStringSchema(
                     min_length=1,
                     title='Session token.',
                     description='Can also be set in profile section'
                                 ' of ~/.aws/config, or by environment'
-                                ' variable AWS_SESSION_TOKEN'
+                                ' variable AWS_SESSION_TOKEN.'
+                ),
+                use_ssl=JsonBooleanSchema(
+                    description='Whether to use SSL in connections to S3;'
+                                ' may be faster without, but insecure.',
+                    default=True,
+                ),
+                requester_pays=JsonBooleanSchema(
+                    description='If "RequesterPays" buckets are supported.',
+                    default=False,
+                ),
+                s3_additional_kwargs=JsonObjectSchema(
+                    description='parameters that are used when calling'
+                                ' S3 API methods. Typically used for'
+                                ' things like "ServerSideEncryption".',
+                    additional_properties=True,
                 ),
                 client_kwargs=JsonObjectSchema(
+                    description='Parameters for the botocore client.',
                     properties=dict(
                         endpoint_url=JsonStringSchema(
                             min_length=1,
                             format='uri',
-                            title='Alternative endpoint URL'
+                            title='Alternative endpoint URL.'
                         ),
-                        bucket_name=JsonStringSchema(
-                            min_length=1,
-                            title='Name of the bucket'
-                        ),
+                        # bucket_name=JsonStringSchema(
+                        #     min_length=1,
+                        #     title='Name of the bucket'
+                        # ),
                         profile_name=JsonStringSchema(
                             min_length=1,
                             title='Name of the AWS configuration profile',

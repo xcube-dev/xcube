@@ -26,8 +26,8 @@ import pandas as pd
 from xcube.util.assertions import assert_instance
 from xcube.util.jsonschema import JsonObjectSchema
 from xcube.util.temp import new_temp_file
-from .helpers import is_local_fs
 from ..accessor import FsDataAccessor
+from ..helpers import is_local_fs
 
 
 class GeoDataFrameFsDataAccessor(FsDataAccessor, ABC):
@@ -60,7 +60,7 @@ class GeoDataFrameFsDataAccessor(FsDataAccessor, ABC):
         if is_local:
             file_path = data_id
         else:
-            file_path = new_temp_file()
+            _, file_path = new_temp_file()
             fs.get_file(data_id, file_path)
         return gpd.read_file(file_path,
                              driver=self.get_driver_name(),
@@ -83,7 +83,7 @@ class GeoDataFrameFsDataAccessor(FsDataAccessor, ABC):
         if is_local:
             file_path = data_id
         else:
-            file_path = new_temp_file()
+            _, file_path = new_temp_file()
         data.to_file(file_path, driver=self.get_driver_name(), **write_params)
         if not is_local:
             fs.put_file(file_path, data_id)

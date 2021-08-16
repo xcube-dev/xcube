@@ -29,8 +29,8 @@ from xcube.util.jsonschema import JsonBooleanSchema
 from xcube.util.jsonschema import JsonObjectSchema
 from xcube.util.jsonschema import JsonStringSchema
 from xcube.util.temp import new_temp_file
-from .helpers import is_local_fs
 from ..accessor import FsDataAccessor
+from ..helpers import is_local_fs
 from ...store import DataStoreError
 
 
@@ -205,13 +205,19 @@ class DatasetNetcdfFsDataAccessor(DatasetFsDataAccessor, ABC):
                   data_id: str,
                   **open_params) -> xr.Dataset:
         fs, open_params = self.load_fs(open_params)
-        engine = open_params.pop('engine', 'netcdf4')
+
+        # This doesn't yet work as expected with fsspec and netcdf:
+        # engine = open_params.pop('engine', 'scipy')
+        # with fs.open(data_id, 'rb') as file:
+        #     return xr.open_dataset(file, engine=engine, **open_params)
+
         is_local = is_local_fs(fs)
         if is_local:
             file_path = data_id
         else:
-            file_path = new_temp_file(suffix='.nc')
+            _, file_path = new_temp_file(suffix='.nc')
             fs.get_file(data_id, file_path)
+        engine = open_params.pop('engine', 'netcdf4')
         return xr.open_dataset(file_path, engine=engine, **open_params)
 
     def get_write_data_params_schema(self) -> JsonObjectSchema:
@@ -231,12 +237,19 @@ class DatasetNetcdfFsDataAccessor(DatasetFsDataAccessor, ABC):
         fs, write_params = self.load_fs(write_params)
         assert_instance(data, xr.Dataset, 'data')
         if not replace and fs.exists(data_id):
-            raise DataStoreError(f'data resource {data_id} already exists')
+            raise DataStoreError(f'Data resource {data_id} already exists')
+
+        # This doesn't yet work as expected with fsspec and netcdf:
+        # engine = write_params.pop('engine', 'scipy')
+        # with fs.open(data_id, 'wb') as file:
+        #     data.to_netcdf(file, engine=engine, **write_params)
+
         is_local = is_local_fs(fs)
         if is_local:
             file_path = data_id
         else:
-            file_path = new_temp_file(suffix='.nc')
-        data.to_netcdf(file_path, **write_params)
+            _, file_path = new_temp_file(suffix='.nc')
+        engine = write_params.pop('engine', 'netcdf4')
+        data.to_netcdf(file_path, engine=engine, **write_params)
         if not is_local:
             fs.put_file(file_path, data_id)

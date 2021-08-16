@@ -1,5 +1,5 @@
 # The MIT License (MIT)
-# Copyright (c) 2020 by the xcube development team and contributors
+# Copyright (c) 2021 by the xcube development team and contributors
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of
 # this software and associated documentation files (the "Software"), to deal in
@@ -18,20 +18,14 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-import os.path
 
-from xcube.core.dsio import rimraf
-from xcube.core.store import DataDeleter
-from xcube.core.store import DataStoreError
+import fsspec
+from fsspec.implementations.local import LocalFileSystem
 
 
-class PosixDataDeleterMixin(DataDeleter):
-    """
-    Implements a DataWriter's :meth:delete_data() method for storage types supporting POSIX file handling.
-    """
+def is_local_fs(fs: fsspec.AbstractFileSystem) -> bool:
+    return fs.protocol == 'file' or isinstance(fs, LocalFileSystem)
 
-    # noinspection PyMethodMayBeStatic
-    def delete_data(self, data_id: str):
-        if not os.path.exists(data_id):
-            raise DataStoreError(f'A dataset named "{data_id}" does not exist')
-        rimraf(data_id)
+
+def normalize_path(path: str) -> str:
+    return path.replace('\\', '/') if '\\' in path else path
