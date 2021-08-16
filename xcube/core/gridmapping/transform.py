@@ -33,8 +33,12 @@ from .helpers import _assert_valid_xy_names
 from .helpers import _normalize_crs
 
 
+# Cannot be used, but should, see TODO in transform_grid_mapping()
+#
 # class TransformedGridMapping(GridMapping, abc.ABC):
-#     """Grid mapping constructed from 1D/2D coordinate variables and a CRS."""
+#     """
+#     Grid mapping constructed from 1D/2D coordinate variables and a CRS.
+#     """
 #
 #     def __init__(self,
 #                  /,
