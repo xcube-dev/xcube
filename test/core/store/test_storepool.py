@@ -1,4 +1,5 @@
 import json
+import os
 import unittest
 
 import jsonschema
@@ -42,6 +43,25 @@ class GetDataStoreTest(unittest.TestCase):
             get_data_store_instance('@dir')
         self.assertEqual('store_pool must be given, with store_id ("@dir") referring to a configured store',
                          f'{cm.exception}')
+
+    def test_normalize(self):
+        pool = DataStorePool({'@dir': DataStoreConfig('directory', store_params=dict(base_dir='.'))})
+        file_path = '_test-data-stores-pool.json'
+        with open(file_path, 'w') as fp:
+            json.dump(pool.to_dict(), fp)
+        try:
+            pool_1 = DataStorePool.normalize(file_path)
+            self.assertIsInstance(pool_1, DataStorePool)
+            pool_2 = DataStorePool.normalize(pool_1)
+            self.assertIs(pool_2, pool_1)
+            pool_3 = DataStorePool.normalize(pool_2.to_dict())
+            self.assertIsInstance(pool_3, DataStorePool)
+        finally:
+            os.remove(file_path)
+
+        with self.assertRaises(TypeError):
+            # noinspection PyTypeChecker
+            DataStorePool.normalize(42)
 
 
 class DataStoreConfigTest(unittest.TestCase):
@@ -104,10 +124,10 @@ class DataStoreConfigTest(unittest.TestCase):
     def test_from_dict_with_invalid_cost_params(self):
         with self.assertRaises(jsonschema.exceptions.ValidationError):
             DataStoreConfig.from_dict({'description': 'Local files',
-                                                  'title': 'Local',
-                                                  'store_id': 'directory',
-                                                  'store_params': {'base_dir': '.'},
-                                                  'cost_params': {}})
+                                       'title': 'Local',
+                                       'store_id': 'directory',
+                                       'store_params': {'base_dir': '.'},
+                                       'cost_params': {}})
 
 
 class DataStorePoolTest(unittest.TestCase):

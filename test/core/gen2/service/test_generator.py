@@ -4,12 +4,11 @@ from typing import List
 import requests_mock
 
 from test.util.test_progress import TestProgressObserver
+from xcube.core.gen2 import CostEstimation, CubeGenerator
 from xcube.core.gen2 import CubeGeneratorError
-from xcube.core.gen2.request import CubeGeneratorRequest
-from xcube.core.gen2.service import RemoteCubeGenerator
-from xcube.core.gen2.service import ServiceConfig
-from xcube.core.gen2.service.response import CostEstimation
-from xcube.core.gen2.service.response import CubeInfoWithCosts
+from xcube.core.gen2 import CubeInfoWithCosts
+from xcube.core.gen2 import RemoteCubeGenerator
+from xcube.core.gen2 import ServiceConfig
 from xcube.core.store import DatasetDescriptor
 from xcube.util.progress import new_progress_observers
 
@@ -41,7 +40,7 @@ def result(worked, total_work, failed=False, output: List[str] = None):
 class RemoteCubeGeneratorTest(unittest.TestCase):
     ENDPOINT_URL = 'https://xcube-gen.com/api/v2/'
 
-    CUBE_GEN_CONFIG = dict(
+    REQUEST = dict(
         input_config=dict(store_id='memory',
                           data_id='S2L2A'),
         cube_config=dict(variable_names=['B01', 'B02', 'B03'],
@@ -55,15 +54,14 @@ class RemoteCubeGeneratorTest(unittest.TestCase):
     )
 
     def setUp(self) -> None:
-        self.service = RemoteCubeGenerator(
-            CubeGeneratorRequest.from_dict(
-                self.CUBE_GEN_CONFIG),
+        self.generator = CubeGenerator.new(
             ServiceConfig(endpoint_url=self.ENDPOINT_URL,
                           client_id='itzibitzispider',
                           client_secret='g3ergd36fd2983457fhjder'),
-            progress_period=0,
-            verbosity=True
+            verbosity=True,
+            progress_period = 0,
         )
+        self.assertIsInstance(self.generator, RemoteCubeGenerator)
 
     @requests_mock.Mocker()
     def test_generate_cube_success(self, m: requests_mock.Mocker):
@@ -88,7 +86,7 @@ class RemoteCubeGeneratorTest(unittest.TestCase):
 
         observer = TestProgressObserver()
         with new_progress_observers(observer):
-            self.service.generate_cube()
+            self.generator.generate_cube(self.REQUEST)
 
         self.assertEqual(
             [
@@ -124,7 +122,7 @@ class RemoteCubeGeneratorTest(unittest.TestCase):
         observer = TestProgressObserver()
         with new_progress_observers(observer):
             with self.assertRaises(CubeGeneratorError) as cm:
-                self.service.generate_cube()
+                self.generator.generate_cube(self.REQUEST)
             self.assertEqual('Cube generation failed', f'{cm.exception}')
             self.assertEqual(['1.that', '2.was', '3.bad'],
                              cm.exception.remote_output)
@@ -194,7 +192,7 @@ class RemoteCubeGeneratorTest(unittest.TestCase):
                    }
                })
 
-        cube_info = self.service.get_cube_info()
+        cube_info = self.generator.get_cube_info(self.REQUEST)
         self.assertIsInstance(cube_info, CubeInfoWithCosts)
         self.assertIsInstance(cube_info.dataset_descriptor, DatasetDescriptor)
         self.assertIsInstance(cube_info.size_estimation, dict)

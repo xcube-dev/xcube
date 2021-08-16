@@ -37,11 +37,15 @@ class CubeGeneratorToken(JsonObject):
 
     @classmethod
     def get_schema(cls) -> JsonObjectSchema:
-        return JsonObjectSchema(properties=dict(access_token=JsonStringSchema(min_length=1),
-                                                token_type=JsonStringSchema(min_length=1)),
-                                required=['access_token', 'token_type'],
-                                additional_properties=False,
-                                factory=cls)
+        return JsonObjectSchema(
+            properties=dict(
+                access_token=JsonStringSchema(min_length=1),
+                token_type=JsonStringSchema(min_length=1)
+            ),
+            required=['access_token', 'token_type'],
+            additional_properties=False,
+            factory=cls
+        )
 
     @classmethod
     def from_dict(cls, value: Dict) -> 'CubeGeneratorToken':
