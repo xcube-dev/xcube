@@ -147,12 +147,16 @@ class DataStoreConfigTest(unittest.TestCase):
         self.assertEqual('Local files', store_config.description)
 
     def test_from_dict_with_invalid_cost_params(self):
-        with self.assertRaises(jsonschema.exceptions.ValidationError):
+        with self.assertRaises(DataStoreError):
             DataStoreConfig.from_dict({'description': 'Local files',
                                        'title': 'Local',
-                                       'store_id': 'directory',
-                                       'store_params': {'base_dir': '.'},
-                                       'cost_params': {}})
+                                       'store_id': 'file',
+                                       'store_params': {'root': '.'},
+                                       'cost_params': {
+                                           # Required:
+                                           # 'input_pixels_per_punit': 10,
+                                           # 'output_pixels_per_punit': 20,
+                                       }})
 
 
 class DataStorePoolTest(unittest.TestCase):

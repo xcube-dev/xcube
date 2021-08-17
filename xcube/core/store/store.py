@@ -28,37 +28,44 @@ from xcube.util.extension import ExtensionPredicate
 from xcube.util.extension import ExtensionRegistry
 from xcube.util.jsonschema import JsonObjectSchema
 from xcube.util.plugin import get_extension_registry
+from .assertions import assert_valid_params
 from .accessor import DataOpener
 from .accessor import DataWriter
 from .descriptor import DataDescriptor
 from .error import DataStoreError
 
-
 #######################################################
 # Data store instantiation and registry query
 #######################################################
+
 
 def new_data_store(data_store_id: str,
                    extension_registry: Optional[ExtensionRegistry] = None,
                    **data_store_params) \
         -> Union['DataStore', 'MutableDataStore']:
     """
-    Create a new data store instance for given *data_store_id* and *data_store_params*.
+    Create a new data store instance for given
+    *data_store_id* and *data_store_params*.
 
     :param data_store_id: A data store identifier.
-    :param extension_registry: Optional extension registry. If not given, the global extension registry will be used.
+    :param extension_registry: Optional extension registry.
+        If not given, the global extension registry will be used.
     :param data_store_params: Data store specific parameters.
     :return: A new data store instance
     """
-    data_store_class = get_data_store_class(data_store_id, extension_registry=extension_registry)
+    data_store_class = get_data_store_class(data_store_id,
+                                            extension_registry=extension_registry)
     data_store_params_schema = data_store_class.get_data_store_params_schema()
-    data_store_params = data_store_params_schema.from_instance(data_store_params) \
-        if data_store_params else {}
+    assert_valid_params(data_store_params,
+                        name='data_store_params',
+                        schema=data_store_params_schema)
+    # noinspection PyArgumentList
     return data_store_class(**data_store_params)
 
 
 def get_data_store_class(data_store_id: str,
-                         extension_registry: Optional[ExtensionRegistry] = None) -> Type['DataStore']:
+                         extension_registry: Optional[ExtensionRegistry] = None) \
+        -> Type[Union['DataStore', 'MutableDataStore']]:
     """
     Get the class for the data store identified by *data_store_id*.
 

@@ -17,8 +17,9 @@ class PluginTest(unittest.TestCase):
         self.assertTrue(ext_reg.has_extension('xcube.core.dsio', 'csv'))
         self.assertTrue(ext_reg.has_extension('xcube.core.dsio', 'mem'))
 
+        self.assertTrue(ext_reg.has_extension('xcube.core.store', 'file'))
         self.assertTrue(ext_reg.has_extension('xcube.core.store', 'memory'))
-        self.assertTrue(ext_reg.has_extension('xcube.core.store', 'directory'))
+        self.assertTrue(ext_reg.has_extension('xcube.core.store', 's3'))
 
         self.assertTrue(ext_reg.has_extension('xcube.cli', 'compute'))
         self.assertTrue(ext_reg.has_extension('xcube.cli', 'extract'))

@@ -1,8 +1,8 @@
 from typing import Iterator
 
-from xcube.core.store import DataDescriptor
-from xcube.core.store import DataStoreError
 from xcube.util.jsonschema import JsonObjectSchema
+from .descriptor import DataDescriptor
+from .error import DataStoreError
 
 
 # noinspection PyUnresolvedReferences

@@ -18,11 +18,11 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+
 from typing import Type, Dict, Optional, Any
 
 import fsspec
 
-from xcube.core.store import DataStoreError
 from .accessor import FsAccessor
 from .accessor import FsDataAccessor
 from .impl.dataset import DatasetNetcdfFsDataAccessor
@@ -33,10 +33,11 @@ from .impl.fs import S3FsAccessor
 from .impl.geodataframe import GeoDataFrameGeoJsonFsDataAccessor
 from .impl.geodataframe import GeoDataFrameShapefileFsDataAccessor
 from .store import FsDataStore
+from ..assertions import assert_valid_params
+from ..error import DataStoreError
 
 ############################################
 # FsAccessor
-
 
 _FS_ACCESSOR_CLASSES: Dict[str, Type[FsAccessor]] = {}
 
@@ -201,5 +202,7 @@ def new_fs_data_store(fs_protocol: str,
                                      max_depth=max_depth,
                                      read_only=read_only).items()
                     if v is not None}
-    store_params_schema.validate_instance(store_params)
+    assert_valid_params(store_params,
+                        name='store_params',
+                        schema=store_params_schema)
     return fs_data_store_class(**store_params)

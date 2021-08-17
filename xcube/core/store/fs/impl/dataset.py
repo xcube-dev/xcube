@@ -31,7 +31,7 @@ from xcube.util.jsonschema import JsonStringSchema
 from xcube.util.temp import new_temp_file
 from ..accessor import FsDataAccessor
 from ..helpers import is_local_fs
-from ...store import DataStoreError
+from ...error import DataStoreError
 
 
 class DatasetFsDataAccessor(FsDataAccessor, ABC):

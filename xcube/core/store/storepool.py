@@ -31,8 +31,9 @@ from xcube.util.jsonschema import JsonIntegerSchema
 from xcube.util.jsonschema import JsonNumberSchema
 from xcube.util.jsonschema import JsonObjectSchema
 from xcube.util.jsonschema import JsonStringSchema
+from .assertions import assert_valid_config
+from .error import DataStoreError
 from .store import DataStore
-from .store import DataStoreError
 from .store import new_data_store
 
 
@@ -144,22 +145,27 @@ class DataStoreConfig:
         return self._description
 
     @classmethod
-    def from_dict(cls, d: Dict[str, Any]) -> 'DataStoreConfig':
-        DATA_STORE_CONFIG_SCHEMA.validate_instance(d)
-        return DataStoreConfig(d['store_id'],
-                               store_params=d.get('store_params'),
-                               title=d.get('title'),
-                               description=d.get('description'))
+    def from_dict(cls, data_store_config: Dict[str, Any]) \
+            -> 'DataStoreConfig':
+        assert_valid_config(data_store_config,
+                            name='data_store_config',
+                            schema=DATA_STORE_CONFIG_SCHEMA)
+        return DataStoreConfig(
+            data_store_config['store_id'],
+            store_params=data_store_config.get('store_params'),
+            title=data_store_config.get('title'),
+            description=data_store_config.get('description')
+        )
 
     def to_dict(self) -> Dict[str, Any]:
-        d = dict(store_id=self._store_id)
+        data_store_config = dict(store_id=self._store_id)
         if self._store_params:
-            d.update(store_params=self._store_params)
+            data_store_config.update(store_params=self._store_params)
         if self._title:
-            d.update(name=self._title)
+            data_store_config.update(name=self._title)
         if self._description:
-            d.update(description=self._description)
-        return d
+            data_store_config.update(description=self._description)
+        return data_store_config
 
 
 class DataStoreInstance:

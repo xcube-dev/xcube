@@ -30,22 +30,6 @@ import geopandas as gpd
 import xarray as xr
 
 from xcube.core.mldataset import MultiLevelDataset
-from xcube.core.store import DataDescriptor
-from xcube.core.store import DataOpener
-from xcube.core.store import DataStoreError
-from xcube.core.store import DataWriter
-from xcube.core.store import MutableDataStore
-from xcube.core.store import TYPE_SPECIFIER_ANY
-from xcube.core.store import TYPE_SPECIFIER_DATASET
-from xcube.core.store import TYPE_SPECIFIER_GEODATAFRAME
-from xcube.core.store import TYPE_SPECIFIER_MULTILEVEL_DATASET
-from xcube.core.store import TypeSpecifier
-from xcube.core.store import find_data_opener_extensions
-from xcube.core.store import find_data_writer_extensions
-from xcube.core.store import get_data_accessor_predicate
-from xcube.core.store import new_data_descriptor
-from xcube.core.store import new_data_opener
-from xcube.core.store import new_data_writer
 from xcube.util.assertions import assert_given
 from xcube.util.assertions import assert_in
 from xcube.util.assertions import assert_instance
@@ -56,6 +40,23 @@ from xcube.util.jsonschema import JsonStringSchema
 from .accessor import FS_PARAMS_PARAM_NAME
 from .accessor import FsAccessor
 from .helpers import normalize_path
+from ..accessor import DataOpener
+from ..accessor import DataWriter
+from ..accessor import find_data_opener_extensions
+from ..accessor import find_data_writer_extensions
+from ..accessor import get_data_accessor_predicate
+from ..accessor import new_data_opener
+from ..accessor import new_data_writer
+from ..assertions import assert_valid_params
+from ..descriptor import DataDescriptor
+from ..descriptor import new_data_descriptor
+from ..error import DataStoreError
+from ..store import MutableDataStore
+from ..typespecifier import TYPE_SPECIFIER_ANY
+from ..typespecifier import TYPE_SPECIFIER_DATASET
+from ..typespecifier import TYPE_SPECIFIER_GEODATAFRAME
+from ..typespecifier import TYPE_SPECIFIER_MULTILEVEL_DATASET
+from ..typespecifier import TypeSpecifier
 
 _DEFAULT_TYPE_SPECIFIER = 'dataset'
 _DEFAULT_FORMAT_ID = 'zarr'
@@ -209,19 +210,38 @@ class BaseFsDataStore(MutableDataStore):
             -> DataDescriptor:
         self._assert_valid_data_id(data_id)
         self._assert_data_specified(data_id, type_specifier)
-        # TODO: optimize me, this is very, very slow!
+        # TODO: optimize me, self.open_data() may be very slow!
+        #   For Zarr, try using self.fs to load metadata only
+        #   rather than instantiating xr.Dataset instances which
+        #   can be very expensive for large Zarrs (xarray 0.18.2),
+        #   especially in S3 filesystems.
         data = self.open_data(data_id)
         return new_data_descriptor(data_id, data, require=True)
+
+    @classmethod
+    def get_search_params_schema(cls, type_specifier: str = None) \
+            -> JsonObjectSchema:
+        # TODO: allow for search parameters
+        return JsonObjectSchema(additional_properties=False)
 
     def search_data(self,
                     type_specifier: str = None,
                     **search_params) \
             -> Iterator[DataDescriptor]:
-        # TODO: implement me!
-        raise NotImplementedError(
-            f'search_data() is not yet implemented'
-            f' for {BaseFsDataStore}'
+        search_params_schema = self.get_search_params_schema(
+            type_specifier=type_specifier
         )
+        assert_valid_params(search_params,
+                            name='search_params',
+                            schema=search_params_schema)
+        for data_id in self.get_data_ids(type_specifier=type_specifier):
+            data_descriptor = self.describe_data(
+                data_id,
+                type_specifier=type_specifier
+            )
+            # TODO: apply predicate based on search_params
+            #  to decide whether to yield data_descriptor or not
+            yield data_descriptor
 
     def get_data_opener_ids(self,
                             data_id: str = None,
@@ -252,14 +272,18 @@ class BaseFsDataStore(MutableDataStore):
                                     opener_id: str = None) \
             -> JsonObjectSchema:
         opener = self._find_opener(opener_id=opener_id, data_id=data_id)
-        schema = opener.get_open_data_params_schema(data_id=data_id)
-        return self._strip_data_accessor_params_schema(schema)
+        return self._get_open_data_params_schema(opener, data_id)
 
     def open_data(self,
                   data_id: str,
                   opener_id: str = None,
                   **open_params) -> xr.Dataset:
         opener = self._find_opener(opener_id=opener_id, data_id=data_id)
+        open_params_schema = self._get_open_data_params_schema(opener,
+                                                               data_id)
+        assert_valid_params(open_params,
+                            name='open_params',
+                            schema=open_params_schema)
         fs_path = self._convert_data_id_into_fs_path(data_id)
         return opener.open_data(fs_path, fs=self.fs, **open_params)
 
@@ -276,8 +300,7 @@ class BaseFsDataStore(MutableDataStore):
     def get_write_data_params_schema(self, writer_id: str = None) \
             -> JsonObjectSchema:
         writer = self._find_writer(writer_id=writer_id)
-        schema = writer.get_write_data_params_schema()
-        return self._strip_data_accessor_params_schema(schema)
+        return self._get_write_data_params_schema(writer)
 
     def write_data(self,
                    data: Any,
@@ -290,6 +313,10 @@ class BaseFsDataStore(MutableDataStore):
         if not writer_id:
             writer_id = self._guess_writer_id(data, data_id=data_id)
         writer = self._find_writer(writer_id=writer_id)
+        write_params_schema = self._get_write_data_params_schema(writer)
+        assert_valid_params(write_params,
+                            name='write_params',
+                            schema=write_params_schema)
         data_id = self._ensure_valid_data_id(writer_id, data_id=data_id)
         fs_path = self._convert_data_id_into_fs_path(data_id)
         self.fs.makedirs(self._root, exist_ok=True)
@@ -303,13 +330,16 @@ class BaseFsDataStore(MutableDataStore):
     def get_delete_data_params_schema(self, data_id: str = None) \
             -> JsonObjectSchema:
         writer = self._find_writer(data_id=data_id)
-        schema = writer.get_delete_data_params_schema(data_id)
-        return self._strip_data_accessor_params_schema(schema)
+        return self._get_delete_data_params_schema(writer, data_id)
 
     def delete_data(self, data_id: str, **delete_params):
         if self.read_only:
             raise DataStoreError('Data store is read-only.')
         writer = self._find_writer(data_id=data_id)
+        delete_params_schema = self._get_delete_data_params_schema(writer, data_id)
+        assert_valid_params(delete_params,
+                            name='delete_params',
+                            schema=delete_params_schema)
         fs_path = self._convert_data_id_into_fs_path(data_id)
         writer.delete_data(fs_path,
                            fs=self.fs,
@@ -325,6 +355,20 @@ class BaseFsDataStore(MutableDataStore):
 
     ###############################################################
     # Implementation helpers
+
+    def _get_open_data_params_schema(self, opener: DataOpener,
+                                     data_id: str):
+        schema = opener.get_open_data_params_schema(data_id=data_id)
+        return self._strip_data_accessor_params_schema(schema)
+
+    def _get_write_data_params_schema(self, writer: DataWriter):
+        schema = writer.get_write_data_params_schema()
+        return self._strip_data_accessor_params_schema(schema)
+
+    def _get_delete_data_params_schema(self, writer: DataWriter,
+                                       data_id: str):
+        schema = writer.get_delete_data_params_schema(data_id)
+        return self._strip_data_accessor_params_schema(schema)
 
     def _guess_writer_id(self, data, data_id: str = None):
         type_specifier = None

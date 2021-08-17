@@ -24,14 +24,14 @@ from typing import Dict, Any, Tuple
 
 import fsspec
 
-from xcube.core.store import DataOpener
-from xcube.core.store import DataStoreError
-from xcube.core.store import DataWriter
 from xcube.util.assertions import assert_instance
 from xcube.util.jsonschema import JsonBooleanSchema
 from xcube.util.jsonschema import JsonIntegerSchema
 from xcube.util.jsonschema import JsonNumberSchema
 from xcube.util.jsonschema import JsonObjectSchema
+from ..accessor import DataOpener
+from ..accessor import DataWriter
+from ..error import DataStoreError
 
 COMMON_FS_PARAMS_SCHEMA_PROPERTIES = dict(
     # passed to ``DirCache``, if the implementation supports
