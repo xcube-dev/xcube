@@ -2,6 +2,14 @@
 
 ### New features
 
+* The implementations of the default data stores `s3`, `dictionary`, 
+  and `memory` have been replaced entirely by a new implementation
+  that utilize the [fsspec](https://filesystem-spec.readthedocs.io/) 
+  Python package. The preliminary filesystem-based data stores 
+  are now `s3`, `file`, and `memory`. All share a common implementations 
+  and tests. Others filesystem-based data stores can be added easily
+  and will follow soon, for example `hdfs`. (#446)
+
 * Numerous breaking changes have been applied to this version
   in order to address generic resampling (#391) and support other
   CRS than WGS-84 (#112): 
