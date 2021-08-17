@@ -40,7 +40,8 @@ from .error import DataStoreError
 
 def new_data_store(data_store_id: str,
                    extension_registry: Optional[ExtensionRegistry] = None,
-                   **data_store_params) -> 'DataStore':
+                   **data_store_params) \
+        -> Union['DataStore', 'MutableDataStore']:
     """
     Create a new data store instance for given *data_store_id* and *data_store_params*.
 
