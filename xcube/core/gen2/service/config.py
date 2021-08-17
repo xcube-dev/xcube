@@ -99,7 +99,7 @@ class ServiceConfig(JsonObject):
                 access_token=JsonStringSchema(min_length=1),
             ),
             additional_properties=False,
-            required=[],
+            required=['client_id', 'client_secret'],
             factory=cls,
         )
 
