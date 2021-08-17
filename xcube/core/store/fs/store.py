@@ -20,6 +20,7 @@
 # SOFTWARE.
 
 import copy
+import os.path
 import uuid
 import warnings
 from threading import Lock
@@ -39,6 +40,7 @@ from xcube.util.jsonschema import JsonObjectSchema
 from xcube.util.jsonschema import JsonStringSchema
 from .accessor import FS_PARAMS_PARAM_NAME
 from .accessor import FsAccessor
+from .helpers import is_local_fs
 from .helpers import normalize_path
 from ..accessor import DataOpener
 from ..accessor import DataWriter
@@ -111,7 +113,8 @@ class BaseFsDataStore(MutableDataStore):
         if fs is not None:
             assert_instance(fs, fsspec.AbstractFileSystem, name='fs')
         self._fs = fs
-        self._root = normalize_path(root or '')
+        self._raw_root: str = root or ''
+        self._root: Optional[str] = None
         self._max_depth = max_depth
         self._read_only = read_only
         self._lock = Lock()
@@ -148,6 +151,14 @@ class BaseFsDataStore(MutableDataStore):
 
     @property
     def root(self) -> str:
+        if self._root is None:
+            # Lazily instantiate root path.
+            is_local = is_local_fs(self.fs)
+            with self._lock:
+                root = self._raw_root
+                if is_local:
+                    root = os.path.abspath(root)
+                self._root = normalize_path(root)
         return self._root
 
     @property
@@ -191,7 +202,7 @@ class BaseFsDataStore(MutableDataStore):
 
         potential_data_ids = sorted(list(map(
             self._convert_fs_path_into_data_id,
-            self.fs.find(self._root,
+            self.fs.find(self.root,
                          maxdepth=self._max_depth,
                          withdirs=True)
         )))
@@ -319,7 +330,7 @@ class BaseFsDataStore(MutableDataStore):
                             schema=write_params_schema)
         data_id = self._ensure_valid_data_id(writer_id, data_id=data_id)
         fs_path = self._convert_data_id_into_fs_path(data_id)
-        self.fs.makedirs(self._root, exist_ok=True)
+        self.fs.makedirs(self.root, exist_ok=True)
         writer.write_data(data,
                           fs_path,
                           replace=replace,

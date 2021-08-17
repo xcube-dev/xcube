@@ -31,7 +31,8 @@ class GetDataStoreTest(unittest.TestCase):
         instance = get_data_store_instance('@dir', store_pool=pool)
         self.assertTrue(hasattr(instance.store, 'root'))
         # noinspection PyUnresolvedReferences
-        self.assertEqual('.', instance.store.root)
+        self.assertTrue(os.path.isabs(instance.store.root))
+        self.assertTrue(os.path.isdir(instance.store.root))
         instance2 = get_data_store_instance('@dir', store_pool=pool)
         self.assertIs(instance, instance2)
 
@@ -253,7 +254,8 @@ class DataStorePoolTest(unittest.TestCase):
         store = pool.get_store('dir-1')
         self.assertTrue(hasattr(store, 'root'))
         # noinspection PyUnresolvedReferences
-        self.assertEqual('./bibo', store.root)
+        self.assertTrue(os.path.isabs(store.root))
+        self.assertFalse(os.path.exists(store.root))
         # Should stay same instance
         self.assertIs(store, pool.get_store('dir-1'))
         self.assertIs(store, pool.get_store('dir-1'))
