@@ -28,11 +28,13 @@ from xcube.util.extension import ExtensionPredicate
 from xcube.util.extension import ExtensionRegistry
 from xcube.util.jsonschema import JsonObjectSchema
 from xcube.util.plugin import get_extension_registry
-from .assertions import assert_valid_params
 from .accessor import DataOpener
 from .accessor import DataWriter
+from .assertions import assert_valid_params
 from .descriptor import DataDescriptor
 from .error import DataStoreError
+from .search import DataSearcher
+
 
 #######################################################
 # Data store instantiation and registry query
@@ -109,7 +111,7 @@ def find_data_store_extensions(predicate: ExtensionPredicate = None,
 # Classes
 #######################################################
 
-class DataStore(DataOpener, ABC):
+class DataStore(DataOpener, DataSearcher, ABC):
     """
     A data store represents a collection of data resources that can be enumerated, queried, and opened in order to
     obtain in-memory representations. A data resource may be available as different types. Therefore, many functions
@@ -225,38 +227,6 @@ class DataStore(DataOpener, ABC):
         :param type_specifier: If given, the descriptor of the data will describe the data as
         specified by the type
         :return a data-type specific data descriptor
-        :raise DataStoreError: If an error occurs.
-        """
-
-    @classmethod
-    def get_search_params_schema(cls, type_specifier: str = None) -> JsonObjectSchema:
-        """
-        Get the schema for the parameters that can be passed as *search_params* to :meth:search_data().
-        Parameters are named and described by the properties of the returned JSON object schema.
-        The default implementation returns JSON object schema that can have any properties.
-
-        :param type_specifier: If given, the search parameters will allow to search for data as specified by
-        this parameter. If not given, the params will resort to a default type specifier.
-        :return: A JSON object schema whose properties describe this store's search parameters.
-        """
-        return JsonObjectSchema()
-
-    @abstractmethod
-    def search_data(self, type_specifier: str = None, **search_params) -> Iterator[DataDescriptor]:
-        """
-        Search this store for data resources.
-        If *type_specifier* is given, the search is restricted to data resources of that type.
-
-        Returns an iterator over the search results.
-        The returned data descriptors may contain less information than returned by the :meth:describe_data()
-        method.
-
-        If a store implementation supports only a single data type, it should verify that *type_specifier*
-        is either None or compatible with the supported data type specifier.
-
-        :param type_specifier: An optional data type specifier that is known to be supported by this data store.
-        :param search_params: The search parameters.
-        :return: An iterator of data descriptors for the found data resources.
         :raise DataStoreError: If an error occurs.
         """
 
@@ -435,7 +405,7 @@ class MutableDataStore(DataStore, DataWriter, ABC):
         """
 
     @abstractmethod
-    def delete_data(self, data_id: str):
+    def delete_data(self, data_id: str, **delete_params):
         """
         Delete the data resource identified by *data_id*.
 

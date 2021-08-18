@@ -59,6 +59,7 @@ from ..typespecifier import TYPE_SPECIFIER_DATASET
 from ..typespecifier import TYPE_SPECIFIER_GEODATAFRAME
 from ..typespecifier import TYPE_SPECIFIER_MULTILEVEL_DATASET
 from ..typespecifier import TypeSpecifier
+from ..search import DefaultSearchMixin
 
 _DEFAULT_TYPE_SPECIFIER = 'dataset'
 _DEFAULT_FORMAT_ID = 'zarr'
@@ -90,7 +91,7 @@ _FORMAT_TO_FILENAME_EXT = {
 }
 
 
-class BaseFsDataStore(MutableDataStore):
+class BaseFsDataStore(DefaultSearchMixin, MutableDataStore):
     """
     Base class for data stores that use an underlying filesystem
     of type ``fsspec.AbstractFileSystem``.
@@ -228,31 +229,6 @@ class BaseFsDataStore(MutableDataStore):
         #   especially in S3 filesystems.
         data = self.open_data(data_id)
         return new_data_descriptor(data_id, data, require=True)
-
-    @classmethod
-    def get_search_params_schema(cls, type_specifier: str = None) \
-            -> JsonObjectSchema:
-        # TODO: allow for search parameters
-        return JsonObjectSchema(additional_properties=False)
-
-    def search_data(self,
-                    type_specifier: str = None,
-                    **search_params) \
-            -> Iterator[DataDescriptor]:
-        search_params_schema = self.get_search_params_schema(
-            type_specifier=type_specifier
-        )
-        assert_valid_params(search_params,
-                            name='search_params',
-                            schema=search_params_schema)
-        for data_id in self.get_data_ids(type_specifier=type_specifier):
-            data_descriptor = self.describe_data(
-                data_id,
-                type_specifier=type_specifier
-            )
-            # TODO: apply predicate based on search_params
-            #  to decide whether to yield data_descriptor or not
-            yield data_descriptor
 
     def get_data_opener_ids(self,
                             data_id: str = None,
