@@ -18,20 +18,23 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-from typing import Any, Optional, Callable
 
+from typing import Any, Optional, Callable, Type, Dict
+
+import jsonschema
 import xarray as xr
 
 from xcube.core.byoa import CodeConfig
+from xcube.util.jsonschema import JsonObjectSchema
 from .error import CubeGeneratorError
 from .processor import CubeProcessor
-from ...util.jsonschema import JsonObjectSchema
+from .usercode import DatasetProcessor
 
 _CLASS_METHOD_NAME_PROCESS_DATASET = 'process_dataset'
 _CLASS_METHOD_NAME_GET_PARAMS_SCHEMA = 'get_params_schema'
 
 
-class CubeCodeExecutor(CubeProcessor):
+class CubeUserCodeExecutor(CubeProcessor):
     """Execute user code."""
 
     def __init__(self, code_config: CodeConfig):
@@ -39,7 +42,7 @@ class CubeCodeExecutor(CubeProcessor):
         user_code_callable_params = code_config.callable_params or {}
 
         if isinstance(user_code_callable, type):
-            user_code_callable = self._get_user_code_callable_from_class(
+            user_code_callable = self._get_callable_from_class(
                 user_code_callable,
                 user_code_callable_params
             )
@@ -51,29 +54,41 @@ class CubeCodeExecutor(CubeProcessor):
         return self._callable(cube, **self._callable_params)
 
     @classmethod
-    def _get_user_code_callable_from_class(cls, user_code_callable, user_code_callable_params):
-        user_code_class = user_code_callable
-        user_code_object = user_code_class()
-        user_code_callable = cls._get_user_code_callable(
-            user_code_object,
-            _CLASS_METHOD_NAME_PROCESS_DATASET,
-            require=True
-        )
-        params_schema_getter = cls._get_user_code_callable(
-            user_code_object,
-            _CLASS_METHOD_NAME_GET_PARAMS_SCHEMA,
-            require=False
-        )
-        if params_schema_getter:
-            params_schema = params_schema_getter()
-            if not isinstance(params_schema, JsonObjectSchema):
+    def _get_callable_from_class(
+            cls,
+            process_class: Type[Any],
+            process_params: Dict[str, Any],
+    ) -> Callable:
+        process_object = process_class()
+        process_params_schema = None
+        if isinstance(process_object, DatasetProcessor):
+            process_callable = process_object.process_dataset
+            process_params_schema = process_object.get_process_params_schema()
+        else:
+            process_callable = cls._get_user_code_callable(
+                process_object,
+                _CLASS_METHOD_NAME_PROCESS_DATASET,
+                require=True
+            )
+            process_params_schema_getter = cls._get_user_code_callable(
+                process_object,
+                _CLASS_METHOD_NAME_GET_PARAMS_SCHEMA,
+                require=False
+            )
+            if process_params_schema_getter is not None:
+                process_params_schema = process_params_schema_getter()
+        if process_params_schema is not None:
+            if not isinstance(process_params_schema, JsonObjectSchema):
                 raise CubeGeneratorError(
-                    f'Parameter schema returned by method'
-                    f' {_CLASS_METHOD_NAME_GET_PARAMS_SCHEMA!r}'
-                    f' of user code class {user_code_class!r}'
-                    f' must be an instance of JsonObjectSchema')
-            params_schema.validate_instance(user_code_callable_params)
-        return user_code_callable
+                    f'Parameter schema returned by'
+                    f' user code class {process_class!r}'
+                    f' must be an instance of {JsonObjectSchema!r}')
+            try:
+                process_params_schema.validate_instance(process_params)
+            except jsonschema.ValidationError as e:
+                raise CubeGeneratorError(f'Invalid processing parameters:'
+                                         f' {e}') from e
+        return process_callable
 
     @classmethod
     def _get_user_code_callable(cls,

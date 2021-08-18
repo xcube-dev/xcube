@@ -39,3 +39,4 @@ from .service.config import ServiceConfigLike
 from .service.generator import RemoteCubeGenerator
 from .service.response import CostEstimation
 from .service.response import CubeInfoWithCosts
+from .usercode import DatasetProcessor

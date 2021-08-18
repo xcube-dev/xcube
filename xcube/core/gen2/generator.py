@@ -27,7 +27,7 @@ from xcube.core.store import DataStorePoolLike
 from xcube.util.assertions import assert_instance
 from xcube.util.assertions import assert_true
 from xcube.util.progress import observe_progress
-from .codeexec import CubeCodeExecutor
+from .usercodeexec import CubeUserCodeExecutor
 from .combiner import CubesCombiner
 from .informant import CubeInformant
 from .opener import CubesOpener
@@ -198,7 +198,7 @@ class LocalCubeGenerator(CubeGenerator):
             return ds
 
         if request.code_config is not None:
-            code_executor = CubeCodeExecutor(request.code_config)
+            code_executor = CubeUserCodeExecutor(request.code_config)
         else:
             code_executor = NoOpCubeProcessor()
 
