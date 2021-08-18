@@ -1,5 +1,5 @@
 # The MIT License (MIT)
-# Copyright (c) 2020 by the xcube development team and contributors
+# Copyright (c) 2021 by the xcube development team and contributors
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of
 # this software and associated documentation files (the "Software"), to deal in
@@ -28,6 +28,8 @@ from .accessor import find_data_writer_extensions
 from .accessor import get_data_accessor_predicate
 from .accessor import new_data_opener
 from .accessor import new_data_writer
+from .assertions import assert_valid_config
+from .assertions import assert_valid_params
 from .descriptor import DataDescriptor
 from .descriptor import DatasetDescriptor
 from .descriptor import GeoDataFrameDescriptor
@@ -44,6 +46,7 @@ from .store import new_data_store
 from .storepool import DataStoreConfig
 from .storepool import DataStoreInstance
 from .storepool import DataStorePool
+from .storepool import DataStorePoolLike
 from .storepool import get_data_store_instance
 from .typespecifier import TYPE_SPECIFIER_ANY
 from .typespecifier import TYPE_SPECIFIER_CUBE

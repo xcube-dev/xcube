@@ -1,5 +1,5 @@
 # The MIT License (MIT)
-# Copyright (c) 2020 by the xcube development team and contributors
+# Copyright (c) 2021 by the xcube development team and contributors
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of
 # this software and associated documentation files (the "Software"), to deal in
@@ -21,7 +21,7 @@
 
 import json
 import os.path
-from typing import Any, Dict, Optional, List
+from typing import Any, Dict, Optional, List, Union
 
 import yaml
 
@@ -31,8 +31,9 @@ from xcube.util.jsonschema import JsonIntegerSchema
 from xcube.util.jsonschema import JsonNumberSchema
 from xcube.util.jsonschema import JsonObjectSchema
 from xcube.util.jsonschema import JsonStringSchema
+from .assertions import assert_valid_config
+from .error import DataStoreError
 from .store import DataStore
-from .store import DataStoreError
 from .store import new_data_store
 
 
@@ -44,12 +45,12 @@ def get_data_store_instance(store_id: str,
     Get a data store instance for identifier *store_id*.
 
     If *store_id* is prefixed by a "@", it is an "instance identifier".
-    In this case the store instance is retrieved from the
-    expected *store_pool* argument.
-    Otherwise a new store instance is created using optional *store_params*.
+    In this case the store instance is retrieved from
+    the expected *store_pool* argument. Otherwise a new store instance
+    is created using optional *store_params*.
 
-    :param store_id: Store identifier, may be prefixed by a "@"
-        to indicate a store instance identifier.
+    :param store_id: Store identifier, may be prefixed by
+        a "@" to indicate a store instance identifier.
     :param store_params: Store parameters, only valid if *store_id*
         is not an instance identifier.
     :param store_pool: A pool of configured store instances used
@@ -106,7 +107,7 @@ class DataStoreConfig:
     """
     The configuration of a data store.
     The class is used by :class:DataStorePool to instantiate
-    data stores in a deferred manner.
+    stores in a deferred manner.
 
     :param store_id: the data store identifier
     :param store_params: optional store parameters
@@ -151,28 +152,33 @@ class DataStoreConfig:
         return self._user_data
 
     @classmethod
-    def from_dict(cls, d: Dict[str, Any]) -> 'DataStoreConfig':
-        DATA_STORE_CONFIG_SCHEMA.validate_instance(d)
-        return DataStoreConfig(d['store_id'],
-                               store_params=d.get('store_params'),
-                               title=d.get('title'),
-                               description=d.get('description'))
+    def from_dict(cls, data_store_config: Dict[str, Any]) \
+            -> 'DataStoreConfig':
+        assert_valid_config(data_store_config,
+                            name='data_store_config',
+                            schema=DATA_STORE_CONFIG_SCHEMA)
+        return DataStoreConfig(
+            data_store_config['store_id'],
+            store_params=data_store_config.get('store_params'),
+            title=data_store_config.get('title'),
+            description=data_store_config.get('description')
+        )
 
     def to_dict(self) -> Dict[str, Any]:
-        d = dict(store_id=self._store_id)
+        data_store_config = dict(store_id=self._store_id)
         if self._store_params:
-            d.update(store_params=self._store_params)
+            data_store_config.update(store_params=self._store_params)
         if self._title:
-            d.update(name=self._title)
+            data_store_config.update(name=self._title)
         if self._description:
-            d.update(description=self._description)
-        return d
+            data_store_config.update(description=self._description)
+        return data_store_config
 
 
 class DataStoreInstance:
     """
     Internal class used by DataStorePool to maintain
-    data store configurations and instances.
+    store configurations + instances.
     """
 
     def __init__(self, store_config: DataStoreConfig):
@@ -290,6 +296,34 @@ class DataStorePool:
     def close_all_stores(self):
         for instance in self._instances.values():
             instance.close()
+
+    @classmethod
+    def normalize(cls, data_store_pool: DataStorePoolLike) \
+            -> 'DataStorePool':
+        """
+        Normalize given *data_store_pool* to an instance of
+        :class:DataStorePool.
+
+        If *data_store_pool* is already a DataStorePool it is returned as is.
+        If it is a ``str``, it is interpreted as a YAML or JSON file path
+        and the request is read from file using ``DataStorePool.from_file()``.
+        If it is a ``dict``, it is interpreted as a JSON object and the
+        request is parsed using ``DataStorePool.from_dict()``.
+
+        :param data_store_pool The data store pool instance,
+            or data stores configuration file path, or data store pool
+            JSON object.
+        :raise TypeError if *data_store_pool* is not
+            a ``CubeGeneratorRequest``, ``str``, or ``dict``.
+        """
+        if isinstance(data_store_pool, DataStorePool):
+            return data_store_pool
+        if isinstance(data_store_pool, str):
+            return DataStorePool.from_file(data_store_pool)
+        if isinstance(data_store_pool, dict):
+            return DataStorePool.from_dict(data_store_pool)
+        raise TypeError('data_store_pool must be a str, dict, '
+                        'or a DataStorePool instance')
 
     @classmethod
     def from_file(cls, path: str) -> 'DataStorePool':

@@ -82,9 +82,9 @@ class JsonSchema(ABC):
                 d.update(type=self.type)
         elif self.nullable is True:
             d.update(type='null')
-        if self.default is not UNDEFINED:
+        if self.default != UNDEFINED:
             d.update(default=self.default)
-        if self.const is not UNDEFINED:
+        if self.const != UNDEFINED:
             d.update(const=self.const)
         if self.enum is not None:
             d.update(enum=self.enum)
@@ -481,10 +481,10 @@ class JsonObjectSchema(JsonSchema):
                 new_kwargs[k] = old_kwargs.pop(k)
             elif k in self.properties:
                 property_schema = self.properties[k]
-                if property_schema.const is not UNDEFINED:
+                if property_schema.const != UNDEFINED:
                     new_kwargs[k] = property_schema.const
-                elif property_schema.default is not UNDEFINED and k in self.required:
-                    if property_schema.default is not UNDEFINED:
+                elif property_schema.default != UNDEFINED and k in self.required:
+                    if property_schema.default != UNDEFINED:
                         new_kwargs[k] = property_schema.default
         return new_kwargs, old_kwargs
 
@@ -550,7 +550,7 @@ class JsonObjectSchema(JsonSchema):
                     property_value = getattr(mapping_or_obj, property_name)
                     property_ok = not callable(property_value)
                 property_ok = property_ok and (property_name in required_set or property_value is not None)
-                if property_ok and property_value is not UNDEFINED:
+                if property_ok and property_value != UNDEFINED:
                     mapping[property_name] = property_value
 
         # recursively convert mapping into converted_mapping according to schema
@@ -563,7 +563,7 @@ class JsonObjectSchema(JsonSchema):
                 converted_mapping[property_name] = converted_property_value
             else:
                 property_value = property_schema.default
-                if property_value is not UNDEFINED:
+                if property_value != UNDEFINED:
                     converted_property_value = getattr(property_schema, method_name)(property_value)
                     if property_name in required_set or converted_property_value is not None:
                         converted_mapping[property_name] = converted_property_value
@@ -571,7 +571,7 @@ class JsonObjectSchema(JsonSchema):
         # process additional properties
         if additional_properties:
             for property_name, property_value in mapping.items():
-                if property_name not in converted_mapping and property_value is not UNDEFINED:
+                if property_name not in converted_mapping and property_value != UNDEFINED:
                     if additional_properties_schema:
                         property_value = getattr(additional_properties_schema, method_name)(property_value)
                     converted_mapping[property_name] = property_value

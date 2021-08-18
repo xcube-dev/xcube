@@ -34,3 +34,8 @@ from .generator import LocalCubeGenerator
 from .informant import CubeInformant
 from .request import CubeGeneratorRequest
 from .response import CubeInfo
+from .service.config import ServiceConfig
+from .service.config import ServiceConfigLike
+from .service.generator import RemoteCubeGenerator
+from .service.response import CostEstimation
+from .service.response import CubeInfoWithCosts

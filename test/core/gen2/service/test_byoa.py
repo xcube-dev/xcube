@@ -6,8 +6,8 @@ import unittest
 import requests
 
 from xcube.core.gen2 import CubeGeneratorRequest, CubeGeneratorError
-from xcube.core.gen2.service import RemoteCubeGenerator
-from xcube.core.gen2.service import ServiceConfig
+from xcube.core.gen2 import RemoteCubeGenerator
+from xcube.core.gen2 import ServiceConfig
 
 PARENT_DIR = os.path.dirname(__file__)
 SERVER_URL = 'http://127.0.0.1:5000'

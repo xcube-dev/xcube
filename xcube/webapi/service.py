@@ -333,7 +333,7 @@ class ServiceRequestParams(RequestParams):
         :raise: ServiceBadRequestError
         """
         value = self.handler.get_query_argument(name, default=default)
-        if value is UNDEFINED:
+        if value == UNDEFINED:
             raise ServiceBadRequestError(f'Missing query parameter "{name}"')
         return value
 

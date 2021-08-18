@@ -64,7 +64,7 @@ class GeoJSON:
         type_name = cls.get_type_name(obj)
         if type_name == cls.GEOMETRY_COLLECTION_TYPE:
             geometries = cls._get_sequence(obj, 'geometries')
-            if geometries is UNDEFINED:
+            if geometries == UNDEFINED:
                 return None
             elif geometries is None:
                 return []
@@ -77,7 +77,7 @@ class GeoJSON:
         type_name = cls.get_type_name(obj)
         if type_name == cls.FEATURE_COLLECTION_TYPE:
             features = cls._get_sequence(obj, 'features')
-            if features is UNDEFINED:
+            if features == UNDEFINED:
                 return None
             elif features is None:
                 return []
@@ -105,7 +105,7 @@ class GeoJSON:
 
     @classmethod
     def _is_valid_sequence(cls, obj: Any, attr_name: str) -> bool:
-        return cls._get_sequence(obj, attr_name) is not UNDEFINED
+        return cls._get_sequence(obj, attr_name) != UNDEFINED
 
     @classmethod
     def _get_sequence(cls, obj: Any, attr_name: str) -> Optional[Sequence[Any]]:

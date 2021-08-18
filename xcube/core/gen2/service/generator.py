@@ -35,6 +35,7 @@ from .response import CubeInfoWithCosts
 from ..error import CubeGeneratorError
 from ..generator import CubeGenerator
 from ..request import CubeGeneratorRequest
+from ..request import CubeGeneratorRequestLike
 from ..response import CubeInfo
 
 _BASE_HEADERS = {
@@ -53,20 +54,16 @@ class RemoteCubeGenerator(CubeGenerator):
     common grid, optionally performs some cube transformation, and writes
     the resulting cube to some target cube store.
 
-    :param request: Cube generation request.
     :param service_config: An service configuration object.
     :param verbosity: Level of verbosity, 0 means off.
     """
 
     def __init__(self,
-                 request: CubeGeneratorRequest,
                  service_config: ServiceConfig,
                  progress_period: float = 1.0,
                  verbosity: int = 0):
-        assert_instance(request, CubeGeneratorRequest, 'request')
         assert_instance(service_config, ServiceConfig, 'service_config')
         assert_instance(progress_period, (int, float), 'progress_period')
-        self._request: CubeGeneratorRequest = request.for_service()
         self._service_config: ServiceConfig = service_config
         self._access_token: Optional[str] = service_config.access_token
         self._progress_period: float = progress_period
@@ -108,8 +105,10 @@ class RemoteCubeGenerator(CubeGenerator):
             self._access_token = token_response.access_token
         return self._access_token
 
-    def get_cube_info(self) -> CubeInfoWithCosts:
-        request_data = self._request.to_dict()
+    def get_cube_info(self, request: CubeGeneratorRequestLike) \
+            -> CubeInfoWithCosts:
+        request = CubeGeneratorRequest.normalize(request).for_service()
+        request_data = request.to_dict()
         response = requests.post(self.endpoint_op('cubegens/info'),
                                  json=request_data,
                                  headers=self.auth_headers)
@@ -118,8 +117,9 @@ class RemoteCubeGenerator(CubeGenerator):
                                     response_type=response_type,
                                     request_data=request_data)
 
-    def generate_cube(self) -> Any:
-        response = self._submit_gen_request()
+    def generate_cube(self, request: CubeGeneratorRequestLike) -> Any:
+        request = CubeGeneratorRequest.normalize(request).for_service()
+        response = self._submit_gen_request(request)
 
         result = self._get_cube_generation_result(response)
         cubegen_id = result.cubegen_id
@@ -135,9 +135,9 @@ class RemoteCubeGenerator(CubeGenerator):
                 )
                 result = self._get_cube_generation_result(response)
                 if result.status.succeeded:
-                    return self._get_data_id(cubegen_id + '.zarr')
+                    return self._get_data_id(request, cubegen_id + '.zarr')
                 if result.status.failed:
-                    return self._get_data_id(cubegen_id + '.zarr')
+                    return self._get_data_id(request, cubegen_id + '.zarr')
 
                 if result.progress is not None and len(result.progress) > 0:
                     progress_state = result.progress[0].state
@@ -149,8 +149,8 @@ class RemoteCubeGenerator(CubeGenerator):
                         cm.worked(work)
                         last_worked = worked
 
-    def _submit_gen_request(self):
-        request_dict = self._request.to_dict()
+    def _submit_gen_request(self, request: CubeGeneratorRequest):
+        request_dict = request.to_dict()
 
         user_code_path = request_dict \
             .get('code_config', {}) \
@@ -184,8 +184,9 @@ class RemoteCubeGenerator(CubeGenerator):
                 headers=self.auth_headers
             )
 
-    def _get_data_id(self, default: str) -> str:
-        data_id = self._request.output_config.data_id
+    @staticmethod
+    def _get_data_id(request: CubeGeneratorRequest, default: str) -> str:
+        data_id = request.output_config.data_id
         return data_id if data_id else default
 
     def _get_cube_generation_result(self,
