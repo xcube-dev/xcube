@@ -100,11 +100,11 @@ class CubeUserCodeExecutorTest(unittest.TestCase):
                                  callable_params=self.good_params)
         with self.assertRaises(CubeGeneratorError) as ctx:
             CubeUserCodeExecutor(code_config)
-        self.assertEqual("Parameter schema returned by"
-                         " user code class"
-                         " <class 'test_usercodeexec.BadSchemaProcessor'>"
-                         " must be an instance of"
-                         " <class 'xcube.util.jsonschema.JsonObjectSchema'>",
+        self.assertEqual(f"Parameter schema returned by"
+                         f" user code class"
+                         f" {BadSchemaProcessor!r}"
+                         f" must be an instance of"
+                         f" {JsonObjectSchema!r}",
                          f'{ctx.exception}')
 
     def test_class_no_process(self):
@@ -112,9 +112,9 @@ class CubeUserCodeExecutorTest(unittest.TestCase):
                                  callable_params=self.good_params)
         with self.assertRaises(CubeGeneratorError) as ctx:
             CubeUserCodeExecutor(code_config)
-        self.assertEqual("Missing method 'process_dataset'"
-                         " in user code class"
-                         " <class 'test_usercodeexec.NoProcessProcessor'>",
+        self.assertEqual(f"Missing method 'process_dataset'"
+                         f" in user code class"
+                         f" {NoProcessProcessor!r}",
                          f'{ctx.exception}')
 
     def test_class_bad_process(self):
@@ -122,8 +122,8 @@ class CubeUserCodeExecutorTest(unittest.TestCase):
                                  callable_params=self.good_params)
         with self.assertRaises(CubeGeneratorError) as ctx:
             CubeUserCodeExecutor(code_config)
-        self.assertEqual("Attribute 'process_dataset'"
-                         " of user code class"
-                         " <class 'test_usercodeexec.BadProcessProcessor'>"
-                         " must be callable",
+        self.assertEqual(f"Attribute 'process_dataset'"
+                         f" of user code class"
+                         f" {BadProcessProcessor!r}"
+                         f" must be callable",
                          f'{ctx.exception}')
