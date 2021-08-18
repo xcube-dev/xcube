@@ -2,7 +2,7 @@
 
 ### New features
 
-* The implementations of the default data stores `s3`, `dictionary`, 
+* The implementations of the default data stores `s3`, `directory`, 
   and `memory` have been replaced entirely by a new implementation
   that utilize the [fsspec](https://filesystem-spec.readthedocs.io/) 
   Python package. The preliminary filesystem-based data stores 
