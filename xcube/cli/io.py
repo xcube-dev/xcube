@@ -88,10 +88,20 @@ def store_info(store_id: str,
     extension = get_extension_registry().get_extension(EXTENSION_POINT_DATA_STORES, store_id)
     from xcube.core.store import get_data_store_params_schema
     from xcube.core.store import MutableDataStore
+    from xcube.core.store import DataStoreError
     params_schema = get_data_store_params_schema(store_id)
     description = extension.metadata.get('description')
     requires_store_instance = any((show_openers, show_writers, show_data_ids))
-    data_store = _new_data_store(store_id, store_params) if requires_store_instance else None
+    data_store = None
+    try:
+        if requires_store_instance:
+            data_store = _new_data_store(store_id, store_params)
+    except DataStoreError as e:
+        msg = f'Failed to instantiate data store {store_id!r}'
+        if store_params:
+            msg += f' with parameters {store_params!r}'
+        msg += f': {e}'
+        raise click.ClickException(msg) from e
     if use_json_format:
         d = dict()
         d['store_id'] = store_id
@@ -601,7 +611,6 @@ def _dump_data_resources(data_store: 'xcube.core.store.DataStore') -> int:
 def _new_data_store(store_id: str, store_params: List[str]) -> 'xcube.core.store.DataStore':
     from xcube.core.store import get_data_store_params_schema
     from xcube.core.store import new_data_store
-    params_schema = get_data_store_params_schema(store_id)
     store_params_dict = dict()
     if store_params:
         for p_assignment in store_params:
@@ -620,7 +629,4 @@ def _new_data_store(store_id: str, store_params: List[str]) -> 'xcube.core.store
                 # Passed name as flag
                 p_value = True
             store_params_dict[p_name] = p_value
-    elif params_schema.required:
-        raise click.ClickException(f'Data store "{store_id}" has required parameters, but none were given.\n'
-                                   f'{_format_required_params_schema(params_schema)}')
     return new_data_store(store_id, **store_params_dict)
