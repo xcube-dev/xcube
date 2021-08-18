@@ -1,5 +1,5 @@
 # The MIT License (MIT)
-# Copyright (c) 2020 by the xcube development team and contributors
+# Copyright (c) 2021 by the xcube development team and contributors
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of
 # this software and associated documentation files (the "Software"), to deal in
@@ -125,14 +125,17 @@ class TypeSpecifier:
         return self.normalize(other).satisfies(self)
 
     @classmethod
-    def normalize(cls, type_specifier: Union[str, "TypeSpecifier"]) \
+    def normalize(cls,
+                  type_specifier: Union[None, str, "TypeSpecifier"]) \
             -> "TypeSpecifier":
+        if type_specifier is None:
+            return TYPE_SPECIFIER_ANY
         if isinstance(type_specifier, TypeSpecifier):
             return type_specifier
         if isinstance(type_specifier, str):
             return cls.parse(type_specifier)
-        raise TypeError('type_specifier must be of type '
-                        '"str" or "TypeSpecifier"')
+        raise TypeError('type_specifier must be None or a '
+                        ' str or TypeSpecifier')
 
     @classmethod
     def parse(cls, type_specifier: str) -> "TypeSpecifier":
@@ -141,6 +144,7 @@ class TypeSpecifier:
         if not type_specifier.endswith(']'):
             raise SyntaxError(f'"{type_specifier}" cannot be parsed: '
                               f'No end brackets found')
+        # TODO: clean up, this code is a mess
         name = type_specifier.split('[')[0]
         flags = type_specifier.split('[')[1].split(']')[0].split(',')
         return TypeSpecifier(name, flags=set(flags))
