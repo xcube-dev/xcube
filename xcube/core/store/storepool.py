@@ -211,6 +211,8 @@ class DataStoreInstance:
 DataStoreConfigDict = Dict[str, DataStoreConfig]
 DataStoreInstanceDict = Dict[str, DataStoreInstance]
 
+DataStorePoolLike = Union[str, Dict[str, Any], 'DataStorePool']
+
 
 class DataStorePool:
     """

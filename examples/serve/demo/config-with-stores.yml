@@ -1,19 +1,20 @@
 DataStores:
 
 #  - Identifier: local
-#    StoreId: directory
+#    StoreId: file
 #    StoreParams:
-#      base_dir: .
+#      root: .
 #    Datasets:
-#      - Identifier: "S2L2A"
+#      - Identifier: "*.zarr"
 #        Style: "default"
 
 #  - Identifier: esacci
 #    StoreId: s3
 #    StoreParams:
-#      endpoint_url: https://cci-ke-o.s3-ext.jc.rl.ac.uk:8443
-#      bucket_name: esacci
-#      anon: true
+#      root: esacci
+#        anon: true
+#        client_kwargs:
+#          endpoint_url: https://cci-ke-o.s3-ext.jc.rl.ac.uk:8443
 #    Datasets:
 #      - Identifier: "*.zarr"
 #        Style: "default"
@@ -21,9 +22,11 @@ DataStores:
   - Identifier: edc
     StoreId: s3
     StoreParams:
-      endpoint_url: https://s3.eu-central-1.amazonaws.com
-      bucket_name: eurodatacube-scratch
-      anon: true
+      root: eurodatacube-scratch
+      fs_params:
+        anon: true
+        # client_kwargs:
+        #  endpoint_url: https://s3.eu-central-1.amazonaws.com
     Datasets:
       - Identifier: "*.zarr"
         Style: "default"
