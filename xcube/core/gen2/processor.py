@@ -35,3 +35,8 @@ class CubesProcessor(ABC):
     @abstractmethod
     def process_cubes(self, cubes: Sequence[xr.Dataset]) -> xr.Dataset:
         """Process given *cubes* into new cube."""
+
+
+class NoOpCubeProcessor(CubeProcessor):
+    def process_cube(self, cube: xr.Dataset):
+        return cube

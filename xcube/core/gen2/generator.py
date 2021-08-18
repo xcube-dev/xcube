@@ -27,9 +27,11 @@ from xcube.core.store import DataStorePoolLike
 from xcube.util.assertions import assert_instance
 from xcube.util.assertions import assert_true
 from xcube.util.progress import observe_progress
+from .codeexec import CubeCodeExecutor
 from .combiner import CubesCombiner
 from .informant import CubeInformant
 from .opener import CubesOpener
+from .processor import NoOpCubeProcessor
 from .progress import ApiProgressCallbackObserver
 from .progress import ConsoleProgressObserver
 from .request import CubeGeneratorRequest
@@ -37,6 +39,9 @@ from .request import CubeGeneratorRequestLike
 from .response import CubeInfo
 from .service.config import ServiceConfigLike
 from .writer import CubeWriter
+
+_CLASS_METHOD_NAME_PROCESS_DATASET = 'process_dataset'
+_CLASS_METHOD_NAME_GET_PARAMS_SCHEMA = 'get_params_schema'
 
 
 class CubeGenerator(ABC):
@@ -192,13 +197,10 @@ class LocalCubeGenerator(CubeGenerator):
         def _no_op_callable(ds, **kwargs):
             return ds
 
-        code_config = request.code_config
-        if code_config is not None:
-            user_code_callable = code_config.get_callable()
-            user_code_callable_params = code_config.callable_params or {}
+        if request.code_config is not None:
+            code_executor = CubeCodeExecutor(request.code_config)
         else:
-            user_code_callable = _no_op_callable
-            user_code_callable_params = {}
+            code_executor = NoOpCubeProcessor()
 
         if request.callback_config:
             ApiProgressCallbackObserver(request.callback_config).activate()
@@ -221,7 +223,7 @@ class LocalCubeGenerator(CubeGenerator):
 
             cm.will_work(10)
             cube = cube_combiner.process_cubes(cubes)
-            cube = user_code_callable(cube, **user_code_callable_params)
+            cube = code_executor.process_cube(cube)
 
             cm.will_work(80)
             data_id = cube_writer.write_cube(cube)
