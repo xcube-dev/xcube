@@ -26,11 +26,11 @@ from typing import Sequence
 
 import requests
 
-from xcube.core.gen2.config import CallbackConfig
 from xcube.util.assertions import assert_given
 from xcube.util.assertions import assert_true
-from xcube.util.progress import ProgressState
 from xcube.util.progress import ProgressObserver
+from xcube.util.progress import ProgressState
+from .config import CallbackConfig
 
 
 def _format_time(t):

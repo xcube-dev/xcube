@@ -5,9 +5,10 @@ import unittest
 
 import requests
 
-from xcube.core.gen2 import CubeGeneratorRequest, CubeGeneratorError
-from xcube.core.gen2 import RemoteCubeGenerator
+from xcube.core.gen2 import CubeGeneratorError
+from xcube.core.gen2 import CubeGeneratorRequest
 from xcube.core.gen2 import ServiceConfig
+from xcube.core.gen2.remote.generator import RemoteCubeGenerator
 
 PARENT_DIR = os.path.dirname(__file__)
 SERVER_URL = 'http://127.0.0.1:5000'
@@ -16,9 +17,9 @@ SERVER_URL = 'http://127.0.0.1:5000'
 class ByoaTest(unittest.TestCase):
     """
     This test demonstrates the BYOA feature within the
-    Generator service.
-    It requires you to first start "test/core/gen2/service/server.py"
-    which is a working processing service compatible with the
+    Generator remote.
+    It requires you to first start "test/core/gen2/remote/server.py"
+    which is a working processing remote compatible with the
     actual xcube Generator REST API.
 
     This test sets up a generator request with a use-code configuration

@@ -35,8 +35,12 @@ class CubeInfo(JsonObject):
 
     @classmethod
     def get_schema(cls) -> JsonObjectSchema:
-        return JsonObjectSchema(properties=dict(dataset_descriptor=DatasetDescriptor.get_schema(),
-                                                size_estimation=JsonObjectSchema(additional_properties=True)),
-                                required=['dataset_descriptor', 'size_estimation'],
-                                additional_properties=False,
-                                factory=cls)
+        return JsonObjectSchema(
+            properties=dict(
+                dataset_descriptor=DatasetDescriptor.get_schema(),
+                size_estimation=JsonObjectSchema(additional_properties=True)
+            ),
+            required=['dataset_descriptor', 'size_estimation'],
+            additional_properties=False,
+            factory=cls
+        )

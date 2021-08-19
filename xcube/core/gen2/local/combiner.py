@@ -24,10 +24,10 @@ from typing import Sequence
 import xarray as xr
 
 from xcube.util.progress import observe_progress
-from .config import CubeConfig
 from .processor import CubesProcessor
 from .rechunker import CubeRechunker
 from .resampler import CubeResampler
+from ..config import CubeConfig
 
 
 class CubesCombiner(CubesProcessor):

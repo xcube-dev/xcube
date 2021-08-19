@@ -1,5 +1,5 @@
 """
-A simple processing service compatible with the actual xcube Generator
+A simple processing remote compatible with the actual xcube Generator
 REST API (in xcube-hub).
 
 It generates data cubes by invoking "xcube gen2" CLI as local processes,
