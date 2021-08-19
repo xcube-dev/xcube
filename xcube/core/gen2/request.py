@@ -164,7 +164,8 @@ class CubeGeneratorRequest(JsonObject):
             if len(self.input_configs) == 1:
                 d.update(input_config=self.input_configs[0].to_dict())
             else:
-                d.update(input_configs=[ic.to_dict() for ic in self.input_configs])
+                d.update(input_configs=[ic.to_dict()
+                                        for ic in self.input_configs])
 
         d.update(cube_config=self.cube_config.to_dict(),
                  output_config=self.output_config.to_dict())
@@ -178,7 +179,8 @@ class CubeGeneratorRequest(JsonObject):
         return d
 
     @classmethod
-    def from_dict(cls, request_dict: Dict[str, Any]) -> 'CubeGeneratorRequest':
+    def from_dict(cls, request_dict: Dict[str, Any]) \
+            -> 'CubeGeneratorRequest':
         """Create new instance from a JSON-serializable dictionary"""
         try:
             return cls.get_schema().from_instance(request_dict)
@@ -204,7 +206,8 @@ class CubeGeneratorRequest(JsonObject):
                               gen_config_file: Optional[str],
                               verbosity: int = 0) -> Dict:
 
-        if gen_config_file is not None and not os.path.exists(gen_config_file):
+        if gen_config_file is not None \
+                and not os.path.exists(gen_config_file):
             raise CubeGeneratorError(f'Cube generator configuration '
                                      f'"{gen_config_file}" not found.')
 

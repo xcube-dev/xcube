@@ -48,13 +48,13 @@ R = TypeVar('R')
 
 class RemoteCubeGenerator(CubeGenerator):
     """
-    A cube generator that uses a remote cube generator service.
+    A cube generator that uses a remote cube generator remote.
 
     Creates cube views from one or more cube stores, resamples them to a
     common grid, optionally performs some cube transformation, and writes
     the resulting cube to some target cube store.
 
-    :param service_config: An service configuration object.
+    :param service_config: An remote configuration object.
     :param verbosity: Level of verbosity, 0 means off.
     """
 

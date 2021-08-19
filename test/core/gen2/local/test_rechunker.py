@@ -1,6 +1,6 @@
 import unittest
 
-from xcube.core.gen2.rechunker import CubeRechunker
+from xcube.core.gen2.local.rechunker import CubeRechunker
 from xcube.core.new import new_cube
 
 

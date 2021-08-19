@@ -9,7 +9,7 @@ import yaml
 from xcube.core.dsio import rimraf
 from xcube.core.gen2 import CubeGeneratorError
 from xcube.core.gen2.generator import CubeGenerator
-from xcube.core.gen2.generator import LocalCubeGenerator
+from xcube.core.gen2.local.generator import LocalCubeGenerator
 from xcube.core.gen2.response import CubeInfo
 from xcube.core.new import new_cube
 from xcube.core.store import DatasetDescriptor
@@ -92,7 +92,8 @@ class LocalCubeGeneratorTest(unittest.TestCase):
         request['cube_config']['time_range'] = ['2019-01-01', '2020-01-01']
         with self.assertRaises(CubeGeneratorError) as cm:
             LocalCubeGenerator().generate_cube(request)
-        self.assertEqual('Input dataset subset "S2L2A.zarr" is empty', f'{cm.exception}')
+        self.assertEqual("Input dataset subset 'S2L2A.zarr' is empty",
+                         f'{cm.exception}')
 
     @requests_mock.Mocker()
     def test_get_cube_info_from_dict(self, m):

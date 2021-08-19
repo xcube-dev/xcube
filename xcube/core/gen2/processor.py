@@ -19,24 +19,61 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-from abc import ABC, abstractmethod
-from typing import Sequence
+from abc import abstractmethod, ABC
 
 import xarray as xr
 
+from xcube.util.jsonschema import JsonObjectSchema
 
-class CubeProcessor(ABC):
+# Name of the (instance) method that processes a
+# dataset and returns a new one.
+# The one and only argument of the method is an xarray.Dataset.
+# Then any number of processing parameters can be passed as
+# keyword-arguments.
+# See :meth:DatasetProcessor#process_dataset.
+METHOD_NAME_DATASET_PROCESSOR = 'process_dataset'
+
+# Name of the (static/class) method that returns
+# the JSON Object Schema for the processor parameters.
+# The methods takes no arguments.
+# See :meth:DatasetProcessor#get_process_params_schema.
+METHOD_NAME_PARAMS_SCHEMA_GETTER = 'get_process_params_schema'
+
+
+class DatasetProcessor(ABC):
+    """
+    A generic dataset processor.
+    """
+
     @abstractmethod
-    def process_cube(self, cube: xr.Dataset) -> xr.Dataset:
-        """Process given *cube* into new cube."""
+    def process_dataset(self,
+                        dataset: xr.Dataset,
+                        **process_params) -> xr.Dataset:
+        """
+        Process *dataset* into a new dataset using the
+        given processing parameters *process_params*.
 
+        The passed *process_params* must validate against
+        the JSON schema returned by the :meth:get_process_params_schema
+        class method.
 
-class CubesProcessor(ABC):
-    @abstractmethod
-    def process_cubes(self, cubes: Sequence[xr.Dataset]) -> xr.Dataset:
-        """Process given *cubes* into new cube."""
+        :param dataset: The dataset to be processed.
+        :param process_params: The processing parameters.
+        :return: A new dataset.
+        """
 
+    @classmethod
+    def get_process_params_schema(cls) -> JsonObjectSchema:
+        """
+        Get the JSON Schema for the processing parameters passed
+        to :meth:process_dataset.
 
-class NoOpCubeProcessor(CubeProcessor):
-    def process_cube(self, cube: xr.Dataset):
-        return cube
+        The parameters are described by the JSON Object Schema's
+        properties.
+
+        The default implementation returns a JSON Schema
+        that allows for any parameters of any type.
+
+        :return: a JSON Object Schema.
+        """
+        return JsonObjectSchema(additional_properties=True)

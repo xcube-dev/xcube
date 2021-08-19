@@ -4,8 +4,8 @@ import xarray as xr
 
 from xcube.core.byoa import CodeConfig
 from xcube.core.gen2 import CubeGeneratorError
-from xcube.core.gen2.usercode import DatasetProcessor
-from xcube.core.gen2.usercodeexec import CubeUserCodeExecutor
+from xcube.core.gen2.processor import DatasetProcessor
+from xcube.core.gen2.local.usercode import CubeUserCodeExecutor
 from xcube.util.jsonschema import JsonIntegerSchema
 from xcube.util.jsonschema import JsonObjectSchema
 from xcube.util.jsonschema import JsonStringSchema

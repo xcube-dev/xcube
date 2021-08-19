@@ -30,12 +30,12 @@ import pyproj
 from xcube.core.store import DataStorePool
 from xcube.core.store import DatasetDescriptor
 from xcube.core.store import VariableDescriptor
-from xcube.util.assertions import assert_true
 from xcube.util.assertions import assert_instance
-from .config import CubeConfig
+from xcube.util.assertions import assert_true
 from .describer import DatasetsDescriber
-from .request import CubeGeneratorRequest
-from .response import CubeInfo
+from ..config import CubeConfig
+from ..request import CubeGeneratorRequest
+from ..response import CubeInfo
 
 
 class CubeInformant:

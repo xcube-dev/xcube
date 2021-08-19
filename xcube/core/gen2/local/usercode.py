@@ -26,12 +26,11 @@ import xarray as xr
 
 from xcube.core.byoa import CodeConfig
 from xcube.util.jsonschema import JsonObjectSchema
-from .error import CubeGeneratorError
 from .processor import CubeProcessor
-from .usercode import DatasetProcessor
-
-_CLASS_METHOD_NAME_PROCESS_DATASET = 'process_dataset'
-_CLASS_METHOD_NAME_GET_PARAMS_SCHEMA = 'get_params_schema'
+from ..error import CubeGeneratorError
+from ..processor import DatasetProcessor
+from ..processor import METHOD_NAME_DATASET_PROCESSOR
+from ..processor import METHOD_NAME_PARAMS_SCHEMA_GETTER
 
 
 class CubeUserCodeExecutor(CubeProcessor):
@@ -67,12 +66,12 @@ class CubeUserCodeExecutor(CubeProcessor):
         else:
             process_callable = cls._get_user_code_callable(
                 process_object,
-                _CLASS_METHOD_NAME_PROCESS_DATASET,
+                METHOD_NAME_DATASET_PROCESSOR,
                 require=True
             )
             process_params_schema_getter = cls._get_user_code_callable(
                 process_object,
-                _CLASS_METHOD_NAME_GET_PARAMS_SCHEMA,
+                METHOD_NAME_PARAMS_SCHEMA_GETTER,
                 require=False
             )
             if process_params_schema_getter is not None:
@@ -106,7 +105,7 @@ class CubeUserCodeExecutor(CubeProcessor):
         user_code_callable = getattr(user_code_object, method_name)
         if not callable(user_code_callable):
             raise CubeGeneratorError(
-                f'Attribute {_CLASS_METHOD_NAME_PROCESS_DATASET!r}'
+                f'Attribute {METHOD_NAME_DATASET_PROCESSOR!r}'
                 f' of user code class {type(user_code_object)!r}'
                 f' must be callable'
             )

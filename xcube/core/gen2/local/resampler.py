@@ -29,9 +29,9 @@ from xcube.core.resampling import resample_in_space
 from xcube.util.assertions import assert_given
 from xcube.util.assertions import assert_instance
 from xcube.util.assertions import assert_true
-from .config import CubeConfig
 from .processor import CubeProcessor
 from .processor import NoOpCubeProcessor
+from ..config import CubeConfig
 
 
 class CubeResampler(CubeProcessor):
