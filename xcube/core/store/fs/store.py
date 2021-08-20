@@ -53,13 +53,13 @@ from ..assertions import assert_valid_params
 from ..descriptor import DataDescriptor
 from ..descriptor import new_data_descriptor
 from ..error import DataStoreError
+from ..search import DefaultSearchMixin
 from ..store import MutableDataStore
 from ..typespecifier import TYPE_SPECIFIER_ANY
 from ..typespecifier import TYPE_SPECIFIER_DATASET
 from ..typespecifier import TYPE_SPECIFIER_GEODATAFRAME
 from ..typespecifier import TYPE_SPECIFIER_MULTILEVEL_DATASET
 from ..typespecifier import TypeSpecifier
-from ..search import DefaultSearchMixin
 
 _DEFAULT_TYPE_SPECIFIER = 'dataset'
 _DEFAULT_FORMAT_ID = 'zarr'
@@ -343,19 +343,22 @@ class BaseFsDataStore(DefaultSearchMixin, MutableDataStore):
     ###############################################################
     # Implementation helpers
 
-    def _get_open_data_params_schema(self, opener: DataOpener,
+    @staticmethod
+    def _get_open_data_params_schema(opener: DataOpener,
                                      data_id: str):
         schema = opener.get_open_data_params_schema(data_id=data_id)
-        return self._strip_data_accessor_params_schema(schema)
+        return FsAccessor.remove_fs_params_from_params_schema(schema)
 
-    def _get_write_data_params_schema(self, writer: DataWriter):
+    @staticmethod
+    def _get_write_data_params_schema(writer: DataWriter):
         schema = writer.get_write_data_params_schema()
-        return self._strip_data_accessor_params_schema(schema)
+        return FsAccessor.remove_fs_params_from_params_schema(schema)
 
-    def _get_delete_data_params_schema(self, writer: DataWriter,
+    @staticmethod
+    def _get_delete_data_params_schema(writer: DataWriter,
                                        data_id: str):
         schema = writer.get_delete_data_params_schema(data_id)
-        return self._strip_data_accessor_params_schema(schema)
+        return FsAccessor.remove_fs_params_from_params_schema(schema)
 
     def _guess_writer_id(self, data, data_id: str = None):
         type_specifier = None
@@ -383,8 +386,9 @@ class BaseFsDataStore(DefaultSearchMixin, MutableDataStore):
         )
         extensions = find_data_writer_extensions(predicate=predicate)
         if not extensions:
-            raise DataStoreError(f'Can not determine data writer'
-                                 f' for data of type {type(data)!r}')
+            raise DataStoreError(f'Can not find suitable data writer'
+                                 f' for data of type {type(data)!r}'
+                                 f' and format {format_id!r}')
         return extensions[0].name
 
     def _find_opener(self,
@@ -406,13 +410,6 @@ class BaseFsDataStore(DefaultSearchMixin, MutableDataStore):
             if writer_id is None:
                 return None
         return new_data_writer(writer_id)
-
-    @classmethod
-    def _strip_data_accessor_params_schema(cls, schema: JsonObjectSchema):
-        if FS_PARAMS_PARAM_NAME in schema.properties:
-            schema = copy.deepcopy(schema)
-            del schema.properties[FS_PARAMS_PARAM_NAME]
-        return schema
 
     def _is_data_specified(self,
                            data_id: str,
@@ -633,7 +630,6 @@ class FsDataStore(BaseFsDataStore, FsAccessor):
 
     @classmethod
     def get_data_store_params_schema(cls) -> JsonObjectSchema:
-        schema = super().get_data_store_params_schema()
-        schema = copy.deepcopy(schema)
-        schema.properties[FS_PARAMS_PARAM_NAME] = cls.get_fs_params_schema()
-        return schema
+        return cls.add_fs_params_to_params_schema(
+            super().get_data_store_params_schema()
+        )

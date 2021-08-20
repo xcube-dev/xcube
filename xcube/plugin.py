@@ -91,10 +91,16 @@ _FS_STORAGE_ITEMS = (
 )
 
 _FS_DATA_ACCESSOR_ITEMS = (
-    ('dataset', 'netcdf', 'xr.Dataset in NetCDF format'),
-    ('dataset', 'zarr', 'xr.Dataset in Zarr format'),
-    ('geodataframe', 'shapefile', 'gpd.GeoDataFrame in ESRI Shapefile format'),
-    ('geodataframe', 'geojson', 'gpd.GeoDataFrame in GeoJSON format'),
+    ('dataset', 'netcdf',
+     'xarray.Dataset in NetCDF format'),
+    ('dataset', 'zarr',
+     'xarray.Dataset in Zarr format'),
+    ('dataset[multilevel]', 'levels',
+     'xcube.core.mldataset.MultiLevelImage in leveled Zarr format'),
+    ('geodataframe', 'shapefile',
+     'gpd.GeoDataFrame in ESRI Shapefile format'),
+    ('geodataframe', 'geojson',
+     'gpd.GeoDataFrame in GeoJSON format'),
 )
 
 _FS_DATA_OPENER_ITEMS = _FS_DATA_ACCESSOR_ITEMS
