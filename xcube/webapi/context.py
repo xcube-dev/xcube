@@ -35,8 +35,10 @@ import pandas as pd
 import pyproj
 import xarray as xr
 
-from xcube.constants import FORMAT_NAME_ZARR, LOG
-from xcube.core.mldataset import MultiLevelDataset, BaseMultiLevelDataset
+from xcube.constants import FORMAT_NAME_ZARR
+from xcube.constants import LOG
+from xcube.core.mldataset import BaseMultiLevelDataset
+from xcube.core.mldataset import MultiLevelDataset
 from xcube.core.mldataset import augment_ml_dataset
 from xcube.core.mldataset import open_ml_dataset_from_local_fs
 from xcube.core.mldataset import open_ml_dataset_from_object_storage
@@ -94,7 +96,6 @@ class ServiceContext:
         self._base_dir = os.path.abspath(base_dir or '')
         self._config = config if config is not None else dict()
         self._config_mtime = 0.0
-        # TODO: clear on server config change
         self._place_group_cache = dict()
         self._feature_index = 0
         self._ml_dataset_openers = ml_dataset_openers
@@ -102,17 +103,12 @@ class ServiceContext:
         self._trace_perf = trace_perf
         self._lock = threading.RLock()
         # contains tuples of form (MultiLevelDataset, ds_descriptor)
-        # TODO: clear on server config change
         self._dataset_cache = dict()
         # cache for all dataset descriptors
-        # TODO: set to None on server config change
         self._dataset_descriptors: Optional[List[DatasetDescriptorDict]] = None
-        # TODO: clear on server config change
         self._image_cache = dict()
-        # TODO: remove_all_store_configs() on server config change
         self._data_store_pool = data_store_pool or None
         if tile_cache_capacity:
-            # TODO: set to None on server config change
             self._tile_cache = Cache(MemoryCacheStore(),
                                      capacity=tile_cache_capacity,
                                      threshold=0.75)
@@ -143,6 +139,9 @@ class ServiceContext:
                     self._tile_cache.clear()
                 if self._place_group_cache:
                     self._place_group_cache.clear()
+                if self._data_store_pool:
+                    self._data_store_pool.remove_all_store_configs()
+                self._dataset_descriptors = None
         self._config = config
 
     @property
@@ -493,7 +492,7 @@ class ServiceContext:
             if isinstance(dataset, MultiLevelDataset):
                 ml_dataset = dataset
             else:
-                cube = get_dataset_cube_subset(dataset, normalize=True)
+                cube, _ = get_dataset_cube_subset(dataset, normalize=True)
                 ml_dataset = BaseMultiLevelDataset(cube, ds_id=ds_id)
         else:
             fs_type = dataset_descriptor.get('FileSystem', 'local')
