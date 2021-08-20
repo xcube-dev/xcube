@@ -41,18 +41,17 @@ from xcube.core.mldataset import augment_ml_dataset
 from xcube.core.mldataset import open_ml_dataset_from_local_fs
 from xcube.core.mldataset import open_ml_dataset_from_object_storage
 from xcube.core.mldataset import open_ml_dataset_from_python_code
-from xcube.core.store import DataStoreConfig, DataStore
+from xcube.core.normalize import get_dataset_cube_subset
+from xcube.core.store import DataStoreConfig
 from xcube.core.store import DataStorePool
 from xcube.core.store import DatasetDescriptor
-from xcube.core.store import TYPE_SPECIFIER_DATASET
 from xcube.core.tile import get_var_cmap_params
 from xcube.core.tile import get_var_valid_range
-from xcube.core.verify import assert_cube
 from xcube.util.cache import Cache
 from xcube.util.cache import MemoryCacheStore
 from xcube.util.cache import parse_mem_size
 from xcube.util.cmaps import get_cmap
-from xcube.util.perf import measure_time_cm, measure_time
+from xcube.util.perf import measure_time_cm
 from xcube.util.tilegrid import TileGrid
 from xcube.version import version
 from xcube.webapi.defaults import DEFAULT_TRACE_PERF
@@ -281,7 +280,7 @@ class ServiceContext:
 
         all_dataset_descriptors: List[DatasetDescriptorDict] = []
         for store_instance_id in data_store_pool.store_instance_ids:
-            LOG.debug(f'scanning store {store_instance_id!r}')
+            LOG.info(f'scanning store {store_instance_id!r}')
             data_store_config = data_store_pool.get_store_config(
                 store_instance_id
             )
@@ -488,10 +487,14 @@ class ServiceContext:
             data_store = data_store_pool.get_store(store_instance_id)
             _, data_id = ds_id.split(STORE_DS_ID_SEPARATOR, maxsplit=1)
             open_params = dataset_descriptor.get('StoreOpenParams') or {}
-            dataset = data_store.open_data(data_id, **open_params)
-            with measure_time(tag=f"opened dataset {ds_id!r} from data store"):
-                dataset = assert_cube(dataset)
-                ml_dataset = BaseMultiLevelDataset(dataset, ds_id=ds_id)
+            with self.measure_time(tag=f"opened dataset {ds_id!r}"
+                                       f" from data store {store_instance_id!r}"):
+                dataset = data_store.open_data(data_id, **open_params)
+            if isinstance(dataset, MultiLevelDataset):
+                ml_dataset = dataset
+            else:
+                cube = get_dataset_cube_subset(dataset, normalize=True)
+                ml_dataset = BaseMultiLevelDataset(cube, ds_id=ds_id)
         else:
             fs_type = dataset_descriptor.get('FileSystem', 'local')
             if self._ml_dataset_openers and fs_type in self._ml_dataset_openers:
