@@ -288,7 +288,6 @@ class ServiceContext:
                 type_specifier='dataset'
             )
             for store_dataset_id in store_dataset_ids:
-                dataset_descriptor: Optional[DatasetDescriptor] = None
                 dataset_config_base = {}
                 store_dataset_configs: List[DatasetConfigDict] \
                     = data_store_config.user_data
@@ -304,32 +303,13 @@ class ServiceContext:
                             dataset_config_base = None
                 if dataset_config_base is not None:
                     LOG.debug(f'selected dataset {store_dataset_id!r}')
-
-                    # Only fetch metadata if required
-                    if dataset_descriptor is None:
-                        # noinspection PyTypeChecker
-                        dataset_descriptor = self.new_dataset_metadata(
-                            store_instance_id,
-                            store_dataset_id
-                        )
-                        if dataset_descriptor is None:
-                            # Try next store_dataset_id
-                            continue
                     dataset_config = dict(
                         StoreInstanceId=store_instance_id,
                         **dataset_config_base
                     )
-                    dataset_config['Identifier'] \
-                        = f'{store_instance_id}{STORE_DS_ID_SEPARATOR}' \
-                          f'{store_dataset_id}'
-                    if 'Title' not in dataset_config:
-                        dataset_config['Title'] \
-                            = dataset_descriptor.attrs.get('title') \
-                              or dataset_descriptor.attrs.get('name') \
-                              or dataset_config['Identifier']
-                    if 'BoundingBox' not in dataset_config:
-                        dataset_config['BoundingBox'] \
-                            = dataset_descriptor.bbox
+                    dataset_config['Identifier'] = \
+                        f'{store_instance_id}{STORE_DS_ID_SEPARATOR}' \
+                        f'{store_dataset_id}'
                     all_dataset_configs.append(dataset_config)
 
         # Just for testing:
