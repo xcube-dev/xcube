@@ -501,8 +501,11 @@ class ServiceContext:
             elif fs_type in _DEFAULT_MULTI_LEVEL_DATASET_OPENERS:
                 ml_dataset_opener = _DEFAULT_MULTI_LEVEL_DATASET_OPENERS[fs_type]
             else:
-                raise ServiceConfigError(f"Invalid FileSystem {fs_type!r} in dataset descriptor {ds_id!r}")
-            ml_dataset = ml_dataset_opener(self, dataset_descriptor)
+                raise ServiceConfigError(f"Invalid FileSystem {fs_type!r}"
+                                         f" in dataset descriptor {ds_id!r}")
+            with self.measure_time(tag=f"opened dataset {ds_id!r}"
+                                       f" from {fs_type!r}"):
+                ml_dataset = ml_dataset_opener(self, dataset_descriptor)
         augmentation = dataset_descriptor.get('Augmentation')
         if augmentation:
             script_path = self.get_descriptor_path(augmentation,
