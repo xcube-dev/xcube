@@ -122,10 +122,13 @@ def get_dataset(ctx: ServiceContext,
         required_scopes = ctx.get_required_dataset_scopes(dataset_config)
         assert_scopes(required_scopes, granted_scopes or set())
 
-    ds_title = dataset_config['Title']
-    dataset_dict = dict(id=ds_id, title=ds_title)
-
     ds = ctx.get_dataset(ds_id)
+
+    ds_title = dataset_config.get('Title',
+                                  ds.attrs.get('title',
+                                               ds.attrs.get('name',
+                                                            ds_id)))
+    dataset_dict = dict(id=ds_id, title=ds_title)
 
     if "bbox" not in dataset_dict:
         dataset_dict["bbox"] = list(get_dataset_bounds(ds))
