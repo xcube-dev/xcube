@@ -2,7 +2,7 @@ import json
 import os
 import unittest
 
-from xcube.core.gen2.service.config import ServiceConfig
+from xcube.core.gen2.remote.config import ServiceConfig
 
 
 class ServiceConfigTest(unittest.TestCase):
@@ -11,7 +11,7 @@ class ServiceConfigTest(unittest.TestCase):
             endpoint_url='https://stage.xcube-gen.brockmann-consult.de/api/v2',
             access_token='02945ugjhklojg908ijr023jgbpij202jbv00897v0798v65472'
         )
-        file_path = '_test-service-config.json'
+        file_path = '_test-remote-config.json'
         with open(file_path, 'w') as fp:
             json.dump(json_instance, fp)
         try:
@@ -33,7 +33,7 @@ class ServiceConfigTest(unittest.TestCase):
             endpoint_url='$_TEST_ENDPOINT_URL',
             access_token='${_TEST_ACCESS_TOKEN}'
         )
-        file_path = '_test-service-config.json'
+        file_path = '_test-remote-config.json'
         with open(file_path, 'w') as fp:
             json.dump(json_instance, fp)
         try:

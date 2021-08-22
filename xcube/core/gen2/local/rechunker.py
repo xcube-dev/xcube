@@ -43,23 +43,32 @@ class CubeRechunker(CubeProcessor):
                     for var_name, var in cube.coords.items()}
         )
 
-        # Data variables SHALL BE chunked according to dim sizes in dim_chunks
+        # Data variables SHALL BE chunked according
+        # to dim sizes in dim_chunks
         chunked_cube = chunked_cube.assign(
-            variables={var_name: var.chunk({var.dims[axis]: dim_chunks.get(var.dims[axis],
-                                                                           _default_chunk_size(var.chunks, axis))
-                                            for axis in range(var.ndim)})
-                       for var_name, var in cube.data_vars.items()}
+            variables={
+                var_name: var.chunk({
+                    var.dims[axis]: dim_chunks.get(
+                        var.dims[axis],
+                        _default_chunk_size(var.chunks, axis)
+                    )
+                    for axis in range(var.ndim)
+                })
+                for var_name, var in cube.data_vars.items()
+            }
         )
 
         # Update chunks encoding for Zarr
         for var in chunked_cube.variables.values():
             if var.chunks is not None:
-                var.encoding.update(chunks=[sizes[0] for sizes in var.chunks])
+                var.encoding.update(chunks=[sizes[0]
+                                            for sizes in var.chunks])
 
         return chunked_cube
 
 
-def _default_chunk_size(chunks: Optional[Tuple[Tuple[int, ...], ...]], axis: int) -> Union[str, int]:
+def _default_chunk_size(chunks: Optional[Tuple[Tuple[int, ...], ...]],
+                        axis: int) -> Union[str, int]:
     if chunks is not None:
         sizes = chunks[axis]
         num_blocks = len(sizes)

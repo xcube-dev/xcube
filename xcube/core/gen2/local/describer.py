@@ -28,11 +28,11 @@ from xcube.core.store import TYPE_SPECIFIER_CUBE
 from xcube.core.store import TYPE_SPECIFIER_DATASET
 from xcube.core.store import get_data_store_instance
 from xcube.core.store import new_data_opener
-from xcube.util.assertions import assert_true
 from xcube.util.assertions import assert_instance
+from xcube.util.assertions import assert_true
 from xcube.util.progress import observe_progress
-from .config import InputConfig
-from .error import CubeGeneratorError
+from ..config import InputConfig
+from ..error import CubeGeneratorError
 
 
 class DatasetsDescriber:

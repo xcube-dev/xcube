@@ -19,22 +19,24 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-# noinspection PyUnresolvedReferences
-from xcube.core.byoa import CodeConfig
-# noinspection PyUnresolvedReferences
-from xcube.core.byoa import FileSet
-from .config import CallbackConfig
-from .config import CubeConfig
-from .config import InputConfig
-from .config import OutputConfig
-from .error import CubeGeneratorError
-from .generator import CubeGenerator
-from .processor import DatasetProcessor
-from .processor import METHOD_NAME_DATASET_PROCESSOR
-from .processor import METHOD_NAME_PARAMS_SCHEMA_GETTER
-from .remote.config import ServiceConfig
-from .remote.config import ServiceConfigLike
-from .remote.response import CostEstimation
-from .remote.response import CubeInfoWithCosts
-from .request import CubeGeneratorRequest
-from .response import CubeInfo
+from abc import ABC, abstractmethod
+from typing import Sequence
+
+import xarray as xr
+
+
+class CubeProcessor(ABC):
+    @abstractmethod
+    def process_cube(self, cube: xr.Dataset) -> xr.Dataset:
+        """Process given *cube* into new cube."""
+
+
+class CubesProcessor(ABC):
+    @abstractmethod
+    def process_cubes(self, cubes: Sequence[xr.Dataset]) -> xr.Dataset:
+        """Process given *cubes* into new cube."""
+
+
+class NoOpCubeProcessor(CubeProcessor):
+    def process_cube(self, cube: xr.Dataset):
+        return cube

@@ -26,17 +26,9 @@ from xcube.core.store import DataStorePool
 from xcube.core.store import DataStorePoolLike
 from xcube.util.assertions import assert_instance
 from xcube.util.assertions import assert_true
-from xcube.util.progress import observe_progress
-from .combiner import CubesCombiner
-from .informant import CubeInformant
-from .opener import CubesOpener
-from .progress import ApiProgressCallbackObserver
-from .progress import ConsoleProgressObserver
-from .request import CubeGeneratorRequest
 from .request import CubeGeneratorRequestLike
 from .response import CubeInfo
-from .service.config import ServiceConfigLike
-from .writer import CubeWriter
+from .remote.config import ServiceConfigLike
 
 
 class CubeGenerator(ABC):
@@ -57,17 +49,18 @@ class CubeGenerator(ABC):
         Create a new cube generator from given configurations.
 
         If *service_config* is given, it describes a remote xcube
-        generator service, otherwise a local cube generator is configured
+        generator remote, otherwise a local cube generator is configured
         using optional *stores_config*.
 
         The *service_config* parameter can be passed in different ways:
 
         * An instance of :class:ServiceConfig.
         * A ``str``. Then it is interpreted as a path to a YAML or JSON file
-          and the service configuration is loaded from this file.
-          The file content may include template variables that are interpolated
-          by environment variables, e.g. "${XCUBE_GEN_CLIENT_SECRET}".
-        * A ``dict``. Then it is interpreted as a service configuration
+          and the remote configuration is loaded from this file.
+          The file content may include template variables that are
+          interpolated by environment variables,
+          e.g. "${XCUBE_GEN_CLIENT_SECRET}".
+        * A ``dict``. Then it is interpreted as a remote configuration
           JSON object.
 
         If *stores_config* is given, it describes a pool of data stores to be
@@ -96,8 +89,8 @@ class CubeGenerator(ABC):
         :param kwargs: Extra arguments passed to the generator constructors.
         """
         if service_config is not None:
-            from .service.config import ServiceConfig
-            from .service.generator import RemoteCubeGenerator
+            from .remote.config import ServiceConfig
+            from .remote.generator import RemoteCubeGenerator
             assert_true(stores_config is None,
                         'service_config and stores_config cannot be'
                         ' given at the same time.')
@@ -110,6 +103,7 @@ class CubeGenerator(ABC):
                                        verbosity=verbosity,
                                        **kwargs)
         else:
+            from .local.generator import LocalCubeGenerator
             assert_instance(stores_config,
                             (str, dict, DataStorePool, type(None)),
                             'stores_config')
@@ -159,81 +153,3 @@ class CubeGenerator(ABC):
         :raises CubeGeneratorError: if cube generation failed
         :raises DataStoreError: if data store access failed
         """
-
-
-class LocalCubeGenerator(CubeGenerator):
-    """
-    Generator tool for data cubes.
-
-    Creates cube views from one or more cube stores, resamples them to a
-    common grid, optionally performs some cube transformation, and writes
-    the resulting cube to some target cube store.
-
-    :param store_pool: An optional pool of pre-configured data stores
-        referenced from *gen_config* input/output configurations.
-    :param verbosity: Level of verbosity, 0 means off.
-    """
-
-    def __init__(self,
-                 store_pool: DataStorePool = None,
-                 verbosity: int = 0):
-        if store_pool is not None:
-            assert_instance(store_pool, DataStorePool, 'store_pool')
-
-        self._store_pool = store_pool if store_pool is not None \
-            else DataStorePool()
-        self._verbosity = verbosity
-
-    def generate_cube(self, request: CubeGeneratorRequestLike) -> Any:
-        request = CubeGeneratorRequest.normalize(request)
-        request = request.for_local()
-
-        # noinspection PyUnusedLocal
-        def _no_op_callable(ds, **kwargs):
-            return ds
-
-        code_config = request.code_config
-        if code_config is not None:
-            user_code_callable = code_config.get_callable()
-            user_code_callable_params = code_config.callable_params or {}
-        else:
-            user_code_callable = _no_op_callable
-            user_code_callable_params = {}
-
-        if request.callback_config:
-            ApiProgressCallbackObserver(request.callback_config).activate()
-
-        if self._verbosity:
-            ConsoleProgressObserver().activate()
-
-        cubes_opener = CubesOpener(request.input_configs,
-                                   request.cube_config,
-                                   store_pool=self._store_pool)
-
-        cube_combiner = CubesCombiner(request.cube_config)
-
-        cube_writer = CubeWriter(request.output_config,
-                                 store_pool=self._store_pool)
-
-        with observe_progress('Generating cube', 100) as cm:
-            cm.will_work(10)
-            cubes = cubes_opener.open_cubes()
-
-            cm.will_work(10)
-            cube = cube_combiner.process_cubes(cubes)
-            cube = user_code_callable(cube, **user_code_callable_params)
-
-            cm.will_work(80)
-            data_id = cube_writer.write_cube(cube)
-
-        if self._verbosity:
-            print('Cube "{}" generated within {:.2f} seconds'
-                  .format(str(data_id), cm.state.total_time))
-
-        return data_id
-
-    def get_cube_info(self, request: CubeGeneratorRequestLike) -> CubeInfo:
-        request = CubeGeneratorRequest.normalize(request)
-        informant = CubeInformant(request=request.for_local(),
-                                  store_pool=self._store_pool)
-        return informant.generate()
