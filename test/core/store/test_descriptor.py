@@ -1,10 +1,12 @@
 import unittest
+from typing import Type
 
 import jsonschema
 import numpy as np
 
+from xcube.core.mldataset import BaseMultiLevelDataset
 from xcube.core.new import new_cube
-from xcube.core.store.descriptor import DataDescriptor, _attrs_to_json
+from xcube.core.store.descriptor import DataDescriptor, _attrs_to_json, MultiLevelDatasetDescriptor
 from xcube.core.store.descriptor import DatasetDescriptor
 from xcube.core.store.descriptor import GeoDataFrameDescriptor
 from xcube.core.store.descriptor import VariableDescriptor
@@ -19,10 +21,25 @@ class NewDataDescriptorTest(unittest.TestCase):
     def test_new_dataset_descriptor(self):
         cube = new_cube(variables=dict(a=4.1, b=7.4))
         descriptor = new_data_descriptor('cube', cube)
-        self.assertIsNotNone(descriptor)
-        self.assertTrue(isinstance(descriptor, DatasetDescriptor))
+        self.assertExpectedDescriptor(descriptor,
+                                      DatasetDescriptor,
+                                      'dataset')
+
+    def test_new_ml_dataset_descriptor(self):
+        cube = new_cube(variables=dict(a=4.1, b=7.4))
+        ml_cube = BaseMultiLevelDataset(cube)
+        descriptor = new_data_descriptor('cube', ml_cube)
+        self.assertExpectedDescriptor(descriptor,
+                                      MultiLevelDatasetDescriptor,
+                                      'dataset[multilevel]')
+
+    def assertExpectedDescriptor(self, descriptor: DataDescriptor,
+                                 expected_type: Type[DataDescriptor],
+                                 expected_type_specifier: str):
+        self.assertIsInstance(descriptor, DatasetDescriptor)
+        self.assertIsInstance(descriptor, expected_type)
+        self.assertEqual(expected_type_specifier, descriptor.type_specifier)
         self.assertEqual('cube', descriptor.data_id)
-        self.assertEqual('dataset[cube]', descriptor.type_specifier)
         self.assertEqual((-180.0, -90.0, 180.0, 90.0), descriptor.bbox)
         self.assertIsNone(descriptor.open_params_schema)
         self.assertEqual(('2010-01-01', '2010-01-06'), descriptor.time_range)

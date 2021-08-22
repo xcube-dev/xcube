@@ -1,4 +1,5 @@
 import unittest
+from abc import ABC, abstractmethod
 from typing import Type, Union
 
 import xarray as xr
@@ -7,20 +8,63 @@ from test.s3test import MOTO_SERVER_ENDPOINT_URL
 from test.s3test import S3Test
 from xcube.core.mldataset import MultiLevelDataset
 from xcube.core.new import new_cube
-from xcube.core.store import MutableDataStore, DatasetDescriptor, DataStoreError
+from xcube.core.store import DataDescriptor
+from xcube.core.store import DataStoreError
+from xcube.core.store import DatasetDescriptor
+from xcube.core.store import MultiLevelDatasetDescriptor
+from xcube.core.store import MutableDataStore
 from xcube.core.store.fs.registry import new_fs_data_store
+from xcube.core.store.fs.store import FsDataStore
 from xcube.util.temp import new_temp_dir
 
 
-class FsDataStoresTest(unittest.TestCase):
+# noinspection PyUnresolvedReferences,PyPep8Naming
+class FsDataStoresTestMixin(ABC):
+    @abstractmethod
+    def create_data_store(self) -> FsDataStore:
+        pass
+
+    def test_mldataset_levels(self):
+        data_store = self.create_data_store()
+        self.assertMultiLevelDatasetFormatSupported(data_store)
+
+    def test_dataset_zarr(self):
+        data_store = self.create_data_store()
+        self.assertDatasetFormatSupported(data_store, '.zarr')
+
+    def test_dataset_netcdf(self):
+        data_store = self.create_data_store()
+        self.assertDatasetFormatSupported(data_store, '.nc')
+
     # TODO: add assertGeoDataFrameSupport
 
-    def assertDatasetSupport(self,
-                             data_store: MutableDataStore,
-                             filename_ext: str,
-                             expected_type_specifier: str,
-                             expected_type: Union[Type[xr.Dataset],
-                                                  Type[MultiLevelDataset]]):
+    def assertMultiLevelDatasetFormatSupported(self,
+                                               data_store: MutableDataStore):
+        self.assertDatasetSupported(data_store,
+                                    '.levels',
+                                    'dataset[multilevel]',
+                                    MultiLevelDataset,
+                                    MultiLevelDatasetDescriptor)
+
+    def assertDatasetFormatSupported(self,
+                                     data_store: MutableDataStore,
+                                     filename_ext: str):
+        self.assertDatasetSupported(data_store,
+                                    filename_ext,
+                                    'dataset',
+                                    xr.Dataset,
+                                    DatasetDescriptor)
+
+    def assertDatasetSupported(
+            self,
+            data_store: MutableDataStore,
+            filename_ext: str,
+            expected_type_specifier: str,
+            expected_type: Union[Type[xr.Dataset],
+                                 Type[MultiLevelDataset]],
+            expected_descriptor_type: Union[Type[DatasetDescriptor],
+                                            Type[MultiLevelDatasetDescriptor]]
+    ):
         """
         Call all DataStore operations to ensure data of type
         xr.Dataset//MultiLevelDataset is supported by *data_store*.
@@ -28,7 +72,9 @@ class FsDataStoresTest(unittest.TestCase):
         :param data_store: The filesystem data store instance.
         :param filename_ext: Filename extension that identifies
             a supported dataset format.
+        :param expected_type_specifier: The expected data type specifier.
         :param expected_type: The expected data type.
+        :param expected_descriptor_type: The expected data descriptor type.
         """
 
         data_id = f'ds{filename_ext}'
@@ -52,7 +98,8 @@ class FsDataStoresTest(unittest.TestCase):
 
         data_descriptors = list(data_store.search_data())
         self.assertEqual(1, len(data_descriptors))
-        self.assertIsInstance(data_descriptors[0], DatasetDescriptor)
+        self.assertIsInstance(data_descriptors[0], DataDescriptor)
+        self.assertIsInstance(data_descriptors[0], expected_descriptor_type)
 
         data = data_store.open_data(data_id)
         self.assertIsInstance(data, expected_type)
@@ -67,82 +114,29 @@ class FsDataStoresTest(unittest.TestCase):
         self.assertEqual([], list(data_store.get_data_ids()))
 
 
-class FileFsDataStoresTest(FsDataStoresTest):
+class FileFsDataStoresTest(FsDataStoresTestMixin, unittest.TestCase):
 
-    def test_mldataset_levels(self):
-        data_store = new_fs_data_store('file',
-                                       root=new_temp_dir(prefix='xcube-test'))
-        self.assertDatasetSupport(data_store, '.levels',
-                                  'dataset[multilevel]',
-                                  MultiLevelDataset)
-
-    def test_dataset_zarr(self):
-        data_store = new_fs_data_store('file',
-                                       root=new_temp_dir(prefix='xcube-test'))
-        self.assertDatasetSupport(data_store, '.zarr',
-                                  'dataset',
-                                  xr.Dataset)
-
-    def test_dataset_netcdf(self):
-        data_store = new_fs_data_store('file',
-                                       root=new_temp_dir(prefix='xcube-test'))
-        self.assertDatasetSupport(data_store, '.nc',
-                                  'dataset',
-                                  xr.Dataset)
+    def create_data_store(self) -> FsDataStore:
+        return new_fs_data_store('file',
+                                 root=new_temp_dir(prefix='xcube-test'))
 
 
-class MemoryFsDataStoresTest(FsDataStoresTest):
+class MemoryFsDataStoresTest(FsDataStoresTestMixin, unittest.TestCase):
 
-    def test_mldataset_levels(self):
-        data_store = new_fs_data_store('memory',
-                                       root='xcube-test')
-        self.assertDatasetSupport(data_store, '.levels',
-                                  'dataset[multilevel]',
-                                  MultiLevelDataset)
-
-    def test_dataset_zarr(self):
-        data_store = new_fs_data_store('memory',
-                                       root='xcube-test')
-        self.assertDatasetSupport(data_store, '.zarr',
-                                  'dataset',
-                                  xr.Dataset)
-
-    def test_dataset_netcdf(self):
-        data_store = new_fs_data_store('memory',
-                                       root='xcube-test')
-        self.assertDatasetSupport(data_store, '.nc',
-                                  'dataset',
-                                  xr.Dataset)
+    def create_data_store(self) -> FsDataStore:
+        return new_fs_data_store('memory',
+                                 root='xcube-test')
 
 
-class S3FsDataStoresTest(S3Test, FsDataStoresTest):
-    fs_params = dict(
-        anon=False,
-        client_kwargs=dict(
-            endpoint_url=MOTO_SERVER_ENDPOINT_URL,
+class S3FsDataStoresTest(FsDataStoresTestMixin, S3Test):
+
+    def create_data_store(self) -> FsDataStore:
+        fs_params = dict(
+            anon=False,
+            client_kwargs=dict(
+                endpoint_url=MOTO_SERVER_ENDPOINT_URL,
+            )
         )
-    )
-
-    def test_mldataset_levels(self):
-        data_store = new_fs_data_store('s3',
-                                       root='xcube-test',
-                                       fs_params=self.fs_params)
-        self.assertDatasetSupport(data_store, '.levels',
-                                  'dataset[multilevel]',
-                                  MultiLevelDataset)
-
-    def test_dataset_zarr(self):
-        data_store = new_fs_data_store('s3',
-                                       root='xcube-test',
-                                       fs_params=self.fs_params)
-        self.assertDatasetSupport(data_store, '.zarr',
-                                  'dataset',
-                                  xr.Dataset)
-
-    def test_dataset_netcdf(self):
-        data_store = new_fs_data_store('s3',
-                                       root='xcube-test',
-                                       fs_params=self.fs_params)
-        self.assertDatasetSupport(data_store, '.nc',
-                                  'dataset',
-                                  xr.Dataset)
+        return new_fs_data_store('s3',
+                                 root='xcube-test',
+                                 fs_params=fs_params)
