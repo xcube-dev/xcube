@@ -1,3 +1,24 @@
+# The MIT License (MIT)
+# Copyright (c) 2021 by the xcube development team and contributors
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy of
+# this software and associated documentation files (the "Software"), to deal in
+# the Software without restriction, including without limitation the rights to
+# use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
+# of the Software, and to permit persons to whom the Software is furnished to do
+# so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
 import functools
 import json
 from typing import Dict, Tuple, List, Set
@@ -26,33 +47,33 @@ def get_datasets(ctx: ServiceContext,
                  granted_scopes: Set[str] = None) -> Dict:
     granted_scopes = granted_scopes or set()
 
-    dataset_descriptors = list(ctx.get_dataset_descriptors())
+    dataset_configs = list(ctx.get_dataset_configs())
 
     dataset_dicts = list()
-    for dataset_descriptor in dataset_descriptors:
+    for dataset_config in dataset_configs:
 
-        ds_id = dataset_descriptor['Identifier']
+        ds_id = dataset_config['Identifier']
 
-        if dataset_descriptor.get('Hidden'):
+        if dataset_config.get('Hidden'):
             continue
 
         if 'read:dataset:*' not in granted_scopes:
-            required_scopes = ctx.get_required_dataset_scopes(dataset_descriptor)
-            is_substitute = dataset_descriptor.get('AccessControl', {}).get('IsSubstitute', False)
+            required_scopes = ctx.get_required_dataset_scopes(dataset_config)
+            is_substitute = dataset_config.get('AccessControl', {}).get('IsSubstitute', False)
             if not check_scopes(required_scopes, granted_scopes, is_substitute=is_substitute):
                 continue
 
         dataset_dict = dict(id=ds_id)
 
-        if 'Title' in dataset_descriptor:
-            ds_title = dataset_descriptor['Title']
+        if 'Title' in dataset_config:
+            ds_title = dataset_config['Title']
             if ds_title and isinstance(ds_title, str):
                 dataset_dict['title'] = ds_title
             else:
                 dataset_dict['title'] = ds_id
 
-        if 'BoundingBox' in dataset_descriptor:
-            ds_bbox = dataset_descriptor['BoundingBox']
+        if 'BoundingBox' in dataset_config:
+            ds_bbox = dataset_config['BoundingBox']
             if ds_bbox \
                     and len(ds_bbox) == 4 \
                     and all(map(lambda c: isinstance(c, float) or isinstance(c, int), ds_bbox)):
@@ -94,14 +115,14 @@ def get_dataset(ctx: ServiceContext,
                 granted_scopes: Set[str] = None) -> Dict:
     granted_scopes = granted_scopes or set()
 
-    dataset_descriptor = ctx.get_dataset_descriptor(ds_id)
-    ds_id = dataset_descriptor['Identifier']
+    dataset_config = ctx.get_dataset_config(ds_id)
+    ds_id = dataset_config['Identifier']
 
     if 'read:dataset:*' not in granted_scopes:
-        required_scopes = ctx.get_required_dataset_scopes(dataset_descriptor)
+        required_scopes = ctx.get_required_dataset_scopes(dataset_config)
         assert_scopes(required_scopes, granted_scopes or set())
 
-    ds_title = dataset_descriptor['Title']
+    ds_title = dataset_config['Title']
     dataset_dict = dict(id=ds_id, title=ds_title)
 
     ds = ctx.get_dataset(ds_id)
@@ -117,7 +138,7 @@ def get_dataset(ctx: ServiceContext,
             continue
 
         if 'read:variable:*' not in granted_scopes:
-            required_scopes = ctx.get_required_variable_scopes(dataset_descriptor, var_name)
+            required_scopes = ctx.get_required_variable_scopes(dataset_config, var_name)
             if not check_scopes(required_scopes, granted_scopes):
                 continue
 
@@ -175,7 +196,7 @@ def get_dataset(ctx: ServiceContext,
 
     dataset_dict["attrs"] = {key: ds.attrs[key] for key in sorted(list(ds.attrs.keys()))}
 
-    dataset_attributions = dataset_descriptor.get('DatasetAttribution', ctx.config.get('DatasetAttribution'))
+    dataset_attributions = dataset_config.get('DatasetAttribution', ctx.config.get('DatasetAttribution'))
     if dataset_attributions is not None:
         if isinstance(dataset_attributions, str):
             dataset_attributions = [dataset_attributions]
