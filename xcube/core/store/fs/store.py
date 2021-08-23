@@ -23,8 +23,9 @@ import copy
 import os.path
 import uuid
 import warnings
-from threading import Lock
-from typing import Optional, Iterator, Any, Tuple, List, Dict, Union, Container, Callable
+from threading import RLock
+from typing import Optional, Iterator, Any, Tuple, List, Dict, \
+    Union, Container, Callable
 
 import fsspec
 import geopandas as gpd
@@ -118,7 +119,7 @@ class BaseFsDataStore(DefaultSearchMixin, MutableDataStore):
         self._root: Optional[str] = None
         self._max_depth = max_depth
         self._read_only = read_only
-        self._lock = Lock()
+        self._lock = RLock()
 
     @property
     def fs_protocol(self) -> str:

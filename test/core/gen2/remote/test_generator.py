@@ -7,8 +7,8 @@ from test.util.test_progress import TestProgressObserver
 from xcube.core.gen2 import CostEstimation, CubeGenerator
 from xcube.core.gen2 import CubeGeneratorError
 from xcube.core.gen2 import CubeInfoWithCosts
-from xcube.core.gen2 import RemoteCubeGenerator
 from xcube.core.gen2 import ServiceConfig
+from xcube.core.gen2.remote.generator import RemoteCubeGenerator
 from xcube.core.store import DatasetDescriptor
 from xcube.util.progress import new_progress_observers
 
@@ -59,7 +59,7 @@ class RemoteCubeGeneratorTest(unittest.TestCase):
                           client_id='itzibitzispider',
                           client_secret='g3ergd36fd2983457fhjder'),
             verbosity=True,
-            progress_period = 0,
+            progress_period=0,
         )
         self.assertIsInstance(self.generator, RemoteCubeGenerator)
 

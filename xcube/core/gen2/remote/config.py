@@ -69,7 +69,7 @@ class ServiceConfig(JsonObject):
         If it is a ``dict``, it is interpreted as a JSON object and the
         request is parsed using ``ServiceConfig.from_dict()``.
 
-        :param service_config The service configuration,
+        :param service_config The remote configuration,
             or configuration file path, or configuration JSON object.
         :raise TypeError if *service_config* is not a ``CubeGeneratorRequest``,
             ``str``, or ``dict``.
