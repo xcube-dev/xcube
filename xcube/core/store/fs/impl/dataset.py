@@ -146,6 +146,7 @@ class DatasetZarrFsDataAccessor(DatasetFsDataAccessor, ABC):
         )
 
     def open_data(self, data_id: str, **open_params) -> xr.Dataset:
+        assert_instance(data_id, str, name='data_id')
         fs, open_params = self.load_fs(open_params)
         zarr_store = fs.get_mapper(data_id)
         consolidated = open_params.pop('consolidated',
@@ -169,7 +170,8 @@ class DatasetZarrFsDataAccessor(DatasetFsDataAccessor, ABC):
                    data_id: str,
                    replace=False,
                    **write_params):
-        assert_instance(data, xr.Dataset, 'data')
+        assert_instance(data, xr.Dataset, name='data')
+        assert_instance(data_id, str, name='data_id')
         fs, write_params = self.load_fs(write_params)
         zarr_store = fs.get_mapper(data_id, create=True)
         consolidated = write_params.pop('consolidated', True)
@@ -223,6 +225,7 @@ class DatasetNetcdfFsDataAccessor(DatasetFsDataAccessor, ABC):
     def open_data(self,
                   data_id: str,
                   **open_params) -> xr.Dataset:
+        assert_instance(data_id, str, name='data_id')
         fs, open_params = self.load_fs(open_params)
 
         # This doesn't yet work as expected with fsspec and netcdf:
@@ -249,8 +252,9 @@ class DatasetNetcdfFsDataAccessor(DatasetFsDataAccessor, ABC):
                    data_id: str,
                    replace=False,
                    **write_params):
+        assert_instance(data, xr.Dataset, name='data')
+        assert_instance(data_id, str, name='data_id')
         fs, write_params = self.load_fs(write_params)
-        assert_instance(data, xr.Dataset, 'data')
         if not replace and fs.exists(data_id):
             raise DataStoreError(f'Data resource {data_id} already exists')
 

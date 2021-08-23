@@ -19,7 +19,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 import os.path
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Union
 
 import fsspec
 import xarray as xr
@@ -47,15 +47,17 @@ class MultiLevelDatasetFsDataAccessor(DatasetZarrFsDataAccessor):
         return 'levels'
 
     def open_data(self, data_id: str, **open_params) -> MultiLevelDataset:
+        assert_instance(data_id, str, name='data_id')
         fs, open_params = self.load_fs(open_params)
         return FsMultiLevelDataset(fs, data_id, **open_params)
 
     def write_data(self,
-                   data: [xr.Dataset, MultiLevelDataset],
+                   data: Union[xr.Dataset, MultiLevelDataset],
                    data_id: str,
                    replace=False,
                    **write_params):
-        assert_instance(data, (xr.Dataset, MultiLevelDataset), 'data')
+        assert_instance(data, (xr.Dataset, MultiLevelDataset), name='data')
+        assert_instance(data_id, str, name='data_id')
         if isinstance(data, MultiLevelDataset):
             ml_dataset = data
         else:
