@@ -116,7 +116,7 @@ class TypeSpecifierTest(unittest.TestCase):
             TypeSpecifier.parse('An unparseable expression[')
         self.assertEqual('"An unparseable expression[" cannot be parsed: No end brackets found', f'{cm.exception}')
 
-    def test_parse_exception(self):
+    def test_get_schema(self):
         schema = TypeSpecifier.get_schema()
         self.assertIsInstance(schema, JsonStringSchema)
 
