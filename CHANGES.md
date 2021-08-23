@@ -10,7 +10,7 @@
   and tests. Others filesystem-based data stores can be added easily
   and will follow soon, for example `hdfs`. 
   All filesystem-based data stores now support xarray
-  datasets (type `xarray.Dataset`) in Zarr and NerCDF format as 
+  datasets (type `xarray.Dataset`) in Zarr and NetCDF format as 
   well as image pyramids (type`xcube.core.multilevel.MultiLevelDataset`) 
   using a Zarr-based multi-level format. (#446)
 
