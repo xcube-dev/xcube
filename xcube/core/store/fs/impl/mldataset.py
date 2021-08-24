@@ -68,7 +68,7 @@ class MultiLevelDatasetFsDataAccessor(DatasetZarrFsDataAccessor):
         # TODO: should/can we parallelize this?
         for index in range(ml_dataset.num_levels):
             level_dataset = ml_dataset.get_dataset(index)
-            level_path = f'{data_id}/{index}'
+            level_path = f'{data_id}/{index}.zarr'
             zarr_store = fs.get_mapper(level_path, create=True)
             try:
                 level_dataset.to_zarr(
@@ -95,7 +95,7 @@ class FsMultiLevelDataset(LazyMultiLevelDataset):
 
     def _get_dataset_lazily(self, index: int, parameters) \
             -> xr.Dataset:
-        level_path = f'{self.ds_id}/{index}'
+        level_path = f'{self.ds_id}/{index}.zarr'
         level_zarr_store = self._fs.get_mapper(level_path)
         consolidated = self._open_params.pop(
             'consolidated',
@@ -142,6 +142,16 @@ class FsMultiLevelDataset(LazyMultiLevelDataset):
         for dir_name in (os.path.basename(dir_path['name'])
                          for dir_path in fs.listdir(data_id, detail=True)
                          if dir_path['type'] == 'directory'):
+            # No ext, i.e. dir_name = "<level>", is proposed by
+            # https://github.com/zarr-developers/zarr-specs/issues/50.
+            # xcube already selected dir_name = "<level>.zarr".
+            basename, ext = os.path.splitext(dir_name)
+            if basename and (ext == '' or ext == '.zarr'):
+                try:
+                    level = int(basename)
+                except ValueError:
+                    continue
+                levels.append(level)
             try:
                 level = int(dir_name)
             except ValueError:
