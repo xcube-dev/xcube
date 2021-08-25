@@ -60,7 +60,10 @@
   the master changed or equals the release tag. 
 * Removed warning `module 'xcube_xyz' looks like an xcube-plugin but 
   lacks a callable named 'init_plugin`.
-  
+* Fixed an issue where `xcube serve` provided wrong layer source options for 
+  [OpenLayers XYZ](https://openlayers.org/en/latest/apidoc/module-ol_source_XYZ-XYZ.html) 
+  when latitude coordinates where increasing with the coordinate index. (#251)
+
 ## Changes in 0.8.2 (in development)
 
 * Fixed the issue that xcube gen2 would not print tracebacks to stderr 
