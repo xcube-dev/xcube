@@ -166,7 +166,7 @@ def new_color_mapped_image(ml_dataset,
                                                                              exception_type)
     cmap_name, cmap_range = get_var_cmap_params(var, cmap_name, cmap_range, valid_range)
     tile_grid = ml_dataset.tile_grid
-    image = ArrayImage(array.values,
+    image = ArrayImage(array,
                        image_id=f'ai-{image_id}',
                        tile_size=tile_grid.tile_size,
                        trace_perf=trace_perf)
