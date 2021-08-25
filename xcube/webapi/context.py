@@ -461,7 +461,8 @@ class ServiceContext:
         ml_dataset = self._open_ml_dataset(dataset_config)
         return ml_dataset, dataset_config
 
-    def _open_ml_dataset(self, dataset_config: DatasetConfigDict) -> MultiLevelDataset:
+    def _open_ml_dataset(self, dataset_config: DatasetConfigDict) \
+            -> MultiLevelDataset:
         ds_id: str = dataset_config.get('Identifier')
         store_instance_id = dataset_config.get('StoreInstanceId')
         if store_instance_id:
@@ -469,8 +470,16 @@ class ServiceContext:
             data_store = data_store_pool.get_store(store_instance_id)
             _, data_id = ds_id.split(STORE_DS_ID_SEPARATOR, maxsplit=1)
             open_params = dataset_config.get('StoreOpenParams') or {}
+            # Inject chunk_cache_capacity into open parameters
+            chunk_cache_capacity = self.get_dataset_chunk_cache_capacity(
+                dataset_config
+            )
+            if (ds_id.endswith('.zarr') or ds_id.endswith('.levels')) \
+                    and 'cache_size' not in open_params:
+                open_params['cache_size'] = chunk_cache_capacity
             with self.measure_time(tag=f"opened dataset {ds_id!r}"
-                                       f" from data store {store_instance_id!r}"):
+                                       f" from data store"
+                                       f" {store_instance_id!r}"):
                 dataset = data_store.open_data(data_id, **open_params)
             if isinstance(dataset, MultiLevelDataset):
                 ml_dataset = dataset
@@ -479,13 +488,15 @@ class ServiceContext:
                 ml_dataset = BaseMultiLevelDataset(cube, ds_id=ds_id)
         else:
             fs_type = dataset_config.get('FileSystem', 'local')
-            if self._ml_dataset_openers and fs_type in self._ml_dataset_openers:
+            if self._ml_dataset_openers \
+                    and fs_type in self._ml_dataset_openers:
                 ml_dataset_opener = self._ml_dataset_openers[fs_type]
-            elif fs_type in _DEFAULT_MULTI_LEVEL_DATASET_OPENERS:
-                ml_dataset_opener = _DEFAULT_MULTI_LEVEL_DATASET_OPENERS[fs_type]
+            elif fs_type in _MULTI_LEVEL_DATASET_OPENERS:
+                ml_dataset_opener = _MULTI_LEVEL_DATASET_OPENERS[fs_type]
             else:
                 raise ServiceConfigError(f"Invalid FileSystem {fs_type!r}"
-                                         f" in dataset configuration {ds_id!r}")
+                                         f" in dataset configuration"
+                                         f" {ds_id!r}")
             with self.measure_time(tag=f"opened dataset {ds_id!r}"
                                        f" from {fs_type!r}"):
                 ml_dataset = ml_dataset_opener(self, dataset_config)
@@ -497,13 +508,15 @@ class ServiceContext:
             )
             input_parameters = augmentation.get('InputParameters')
             callable_name = augmentation.get('Function', COMPUTE_VARIABLES)
-            ml_dataset = augment_ml_dataset(ml_dataset,
-                                            script_path,
-                                            callable_name,
-                                            self.get_ml_dataset,
-                                            self.set_ml_dataset,
-                                            input_parameters=input_parameters,
-                                            exception_type=ServiceConfigError)
+            ml_dataset = augment_ml_dataset(
+                ml_dataset,
+                script_path,
+                callable_name,
+                self.get_ml_dataset,
+                self.set_ml_dataset,
+                input_parameters=input_parameters,
+                exception_type=ServiceConfigError
+            )
         return ml_dataset
 
     def get_legend_label(self, ds_id: str, var_name: str):
@@ -881,7 +894,7 @@ def _open_ml_dataset_from_python_code(ctx: ServiceContext,
                                             exception_type=ServiceConfigError)
 
 
-_DEFAULT_MULTI_LEVEL_DATASET_OPENERS = {
+_MULTI_LEVEL_DATASET_OPENERS = {
     "obs": _open_ml_dataset_from_object_storage,
     "local": _open_ml_dataset_from_local_fs,
     "memory": _open_ml_dataset_from_python_code,
