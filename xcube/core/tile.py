@@ -104,14 +104,15 @@ def get_ml_dataset_tile(
 
         if trace_perf:
             tile_grid = ml_dataset.tile_grid
-            LOG.info(f'Created tiled image {image_id!r} of size {image.size}.')
-            LOG.info(f'Took %.2f seconds' % measured_time.duration)
-            LOG.info(f'Tile grid:')
-            LOG.info(f'  num_levels: {tile_grid.num_levels}')
-            LOG.info(f'  num_level_zero_tiles: {tile_grid.num_tiles(0)}')
-            LOG.info(f'  tile_size: {tile_grid.tile_size}')
-            LOG.info(f'  geo_extent: {tile_grid.geo_extent}')
-            LOG.info(f'  inv_y: {tile_grid.inv_y}')
+            LOG.info(
+                f'Created tiled image {image_id!r} of size {image.size}.\n'
+                f'Took {measured_time.duration:.2f} seconds. Tile grid:\n'
+                f'  num_levels: {tile_grid.num_levels}\n'
+                f'  num_level_zero_tiles: {tile_grid.num_tiles(0)}\n'
+                f'  tile_size: {tile_grid.tile_size}\n'
+                f'  geo_extent: {tile_grid.geo_extent}\n'
+                f'  inv_y: {tile_grid.inv_y}'
+            )
 
     if trace_perf:
         LOG.info(f'>>> tile {image_id}/{z}/{y}/{x}')
