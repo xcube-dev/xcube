@@ -227,7 +227,7 @@ def _tile_grid_to_ol4x_xyz_source_options(tile_grid: TileGrid, url: str):
                 minZoom=0,
                 maxZoom=tile_grid.num_levels - 1,
                 tileGrid=dict(extent=[west, south, east, north],
-                              origin=[west, south if tile_grid.inv_y else north],
+                              origin=[west, north],
                               tileSize=[tile_grid.tile_size[0], tile_grid.tile_size[1]],
                               resolutions=[res0 / (2 ** i) for i in range(tile_grid.num_levels)]))
 
