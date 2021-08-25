@@ -352,8 +352,6 @@ class TransformArrayImage(DecoratorImage):
     :param source_image: The source image
     :param image_id: Optional unique image identifier
     :param flip_y: Whether to flip pixels in y-direction
-    :param force_masked: Whether to force creation of masked arrays
-    :param no_data_value: Optional no-data value for mask creation
     :param tile_cache: Optional tile cache
     :param trace_perf: Whether to log runtime performance information
     """
@@ -362,28 +360,14 @@ class TransformArrayImage(DecoratorImage):
                  source_image: TiledImage,
                  image_id: str = None,
                  flip_y: bool = False,
-                 force_masked: bool = True,
                  force_2d: bool = False,
-                 no_data_value: Number = None,
-                 valid_range: Tuple[Number, Number] = None,
                  norm_range: Tuple[Number, Number] = None,
                  tile_cache: Cache = None,
                  trace_perf: bool = False):
         super().__init__(source_image, image_id=image_id, tile_cache=tile_cache, trace_perf=trace_perf)
-        self._force_masked = force_masked
         self._force_2d = force_2d
         self._flip_y = flip_y
-        self._no_data_value = no_data_value
-        self._valid_range = valid_range
         self._norm_range = norm_range
-
-    @property
-    def no_data_value(self) -> Optional[Number]:
-        return self._no_data_value
-
-    @property
-    def valid_range(self) -> Optional[Tuple[Number]]:
-        return self._valid_range
 
     def compute_tile(self, tile_x: int, tile_y: int, rectangle: Rectangle2D) -> Tile:
         if self._flip_y:
@@ -407,24 +391,6 @@ class TransformArrayImage(DecoratorImage):
             with measure_time(tile_tag + "flip y"):
                 # Flip tile using fancy indexing
                 tile = tile[..., ::-1, :]
-
-        if self._force_masked and not np.ma.is_masked(tile):
-            with measure_time(tile_tag + "mask"):
-                # TODO (forman): optimize: remove code block, assume xarray did the masking
-                # if tile is not masked
-                if self._no_data_value is not None:
-                    # and we have a fill value, return a masked tile
-                    tile = np.ma.masked_equal(tile, self._no_data_value)
-                elif self._valid_range is not None:
-                    valid_min, valid_max = self._valid_range
-                    # and we have a valid min or max, return a masked tile
-                    if valid_min is not None:
-                        tile = np.ma.masked_less(tile, valid_min)
-                    if valid_max is not None:
-                        tile = np.ma.masked_greater(tile, valid_max)
-                elif np.issubdtype(tile.dtype, np.floating) or np.issubdtype(tile.dtype, np.complexfloating):
-                    # and it is of float type, return a masked tile with a mask from invalids, i.e. NaN, -Inf, +Inf
-                    tile = np.ma.masked_invalid(tile)
 
         if self._norm_range is not None:
             norm_min, norm_max = self._norm_range

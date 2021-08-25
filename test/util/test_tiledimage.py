@@ -94,54 +94,6 @@ class NdarrayImageTest(TestCase):
         self.assertEqual(target_image.get_tile(2, 1).tolist(), [[208, 212],
                                                                 [304, 308]])
 
-    def test_force_masked(self):
-        a = np.arange(0, 24, dtype=np.int32)
-        a.shape = 4, 6
-        source_image = FastNdarrayDownsamplingImage(a, (2, 2), 0)
-        target_image = TransformArrayImage(source_image, force_masked=True, no_data_value=14)
-
-        self.assertEqual(target_image.size, (6, 4))
-        self.assertEqual(target_image.tile_size, (2, 2))
-        self.assertEqual(target_image.num_tiles, (3, 2))
-
-        self.assertEqual(target_image.get_tile(0, 0).tolist(), [[0, 1],
-                                                                [6, 7]])
-        self.assertEqual(target_image.get_tile(1, 0).tolist(), [[2, 3],
-                                                                [8, 9]])
-        self.assertEqual(target_image.get_tile(2, 0).tolist(), [[4, 5],
-                                                                [10, 11]])
-
-        self.assertEqual(target_image.get_tile(0, 1).tolist(), [[12, 13],
-                                                                [18, 19]])
-        self.assertEqual(target_image.get_tile(1, 1).tolist(), [[None, 15],
-                                                                [20, 21]])
-        self.assertEqual(target_image.get_tile(2, 1).tolist(), [[16, 17],
-                                                                [22, 23]])
-
-        a = np.arange(0, 24, dtype=np.float64)
-        a.shape = 4, 6
-        a[1, 2] = np.nan
-        a[2, 5] = np.inf
-        source_image = FastNdarrayDownsamplingImage(a, (2, 2), 0)
-        target_image = TransformArrayImage(source_image, force_masked=True)
-
-        self.assertEqual(target_image.size, (6, 4))
-        self.assertEqual(target_image.num_tiles, (3, 2))
-
-        self.assertEqual(target_image.get_tile(0, 0).tolist(), [[0, 1],
-                                                                [6, 7]])
-        self.assertEqual(target_image.get_tile(1, 0).tolist(), [[2, 3],
-                                                                [None, 9]])
-        self.assertEqual(target_image.get_tile(2, 0).tolist(), [[4, 5],
-                                                                [10, 11]])
-
-        self.assertEqual(target_image.get_tile(0, 1).tolist(), [[12, 13],
-                                                                [18, 19]])
-        self.assertEqual(target_image.get_tile(1, 1).tolist(), [[14, 15],
-                                                                [20, 21]])
-        self.assertEqual(target_image.get_tile(2, 1).tolist(), [[16, None],
-                                                                [22, 23]])
-
     def test_force_2d(self):
         a = np.arange(0, 48, dtype=np.int32)
         a.shape = 2, 4, 6

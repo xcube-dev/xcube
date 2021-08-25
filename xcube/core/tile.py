@@ -141,7 +141,7 @@ def new_rgb_image(ml_dataset,
     images = []
     for i in range(3):
         var_name = var_names[i]
-        array, no_data_value, valid_range, _ = \
+        array, _, _ = \
             _get_var_2d_array_and_mask_info(
                 ml_dataset, var_name, z, labels,
                 labels_are_indices,
@@ -155,9 +155,6 @@ def new_rgb_image(ml_dataset,
         image = TransformArrayImage(image,
                                     image_id=f'tai-{image_id}',
                                     flip_y=tile_grid.inv_y,
-                                    force_masked=True,
-                                    no_data_value=no_data_value,
-                                    valid_range=valid_range,
                                     norm_range=norm_ranges[i],
                                     trace_perf=trace_perf)
         images.append(image)
@@ -181,7 +178,7 @@ def new_color_mapped_image(ml_dataset,
                            tile_cache,
                            trace_perf,
                            exception_type):
-    array, no_data_value, valid_range, var = \
+    array, valid_range, var = \
         _get_var_2d_array_and_mask_info(
             ml_dataset, var_name, z, labels,
             labels_are_indices,
@@ -199,9 +196,6 @@ def new_color_mapped_image(ml_dataset,
     image = TransformArrayImage(image,
                                 image_id=f'tai-{image_id}',
                                 flip_y=tile_grid.inv_y,
-                                force_masked=True,
-                                no_data_value=no_data_value,
-                                valid_range=valid_range,
                                 norm_range=cmap_range,
                                 trace_perf=trace_perf)
     if cmap_name is None and cmap_range is None:
@@ -225,14 +219,13 @@ def _get_var_2d_array_and_mask_info(ml_dataset,
                                     exception_type):
     dataset = ml_dataset.get_dataset(ml_dataset.num_levels - 1 - z)
     var = dataset[var_name]
-    no_data_value = var.attrs.get('_FillValue')
     valid_range = get_var_valid_range(var)
     array = _get_var_2d_array(var,
                               labels,
                               labels_are_indices,
                               exception_type,
                               ml_dataset.ds_id)
-    return array, no_data_value, valid_range, var
+    return array, valid_range, var
 
 
 def _get_var_2d_array(var: xr.DataArray,
