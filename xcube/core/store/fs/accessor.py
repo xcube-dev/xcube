@@ -19,6 +19,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+import copy
 from abc import ABC, abstractmethod
 from typing import Dict, Any, Tuple
 
@@ -112,6 +113,32 @@ class FsAccessor:
         except (ValueError, ImportError):
             raise DataStoreError(f"Cannot instantiate"
                                  f" filesystem {fs_protocol!r}")
+
+    @classmethod
+    def add_fs_params_to_params_schema(
+            cls, params_schema: JsonObjectSchema
+    ) -> JsonObjectSchema:
+        """
+        Utility method to be used by subclasses to add the schema
+        for the parameter "fs_param" to given *param_schema*.
+        """
+        params_schema = copy.deepcopy(params_schema)
+        params_schema.properties[FS_PARAMS_PARAM_NAME] = \
+            cls.get_fs_params_schema()
+        return params_schema
+
+    @classmethod
+    def remove_fs_params_from_params_schema(
+            cls, params_schema: JsonObjectSchema
+    ) -> JsonObjectSchema:
+        """
+        Utility method to be used by subclasses to remove the schema
+        for the parameter "fs_param" from given *param_schema*.
+        """
+        if FS_PARAMS_PARAM_NAME in params_schema.properties:
+            params_schema = copy.deepcopy(params_schema)
+            del params_schema.properties[FS_PARAMS_PARAM_NAME]
+        return params_schema
 
 
 class FsDataAccessor(DataOpener,

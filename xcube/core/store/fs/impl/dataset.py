@@ -26,14 +26,109 @@ import zarr
 
 from xcube.core.chunkstore import LoggingStore
 from xcube.util.assertions import assert_instance
-from xcube.util.jsonschema import JsonArraySchema, JsonIntegerSchema
+from xcube.util.jsonschema import JsonArraySchema
 from xcube.util.jsonschema import JsonBooleanSchema
+from xcube.util.jsonschema import JsonIntegerSchema
 from xcube.util.jsonschema import JsonObjectSchema
 from xcube.util.jsonschema import JsonStringSchema
 from xcube.util.temp import new_temp_file
 from ..accessor import FsDataAccessor
 from ..helpers import is_local_fs
 from ...error import DataStoreError
+
+ZARR_OPEN_DATA_PARAMS_SCHEMA = JsonObjectSchema(
+    properties=dict(
+        log_access=JsonBooleanSchema(
+            default=False
+        ),
+        cache_size=JsonIntegerSchema(
+            minimum=0,
+        ),
+        group=JsonStringSchema(
+            description='Group path.'
+                        ' (a.k.a. path in zarr terminology.).',
+            min_length=1,
+        ),
+        chunks=JsonObjectSchema(
+            description='Optional chunk sizes along each dimension.'
+                        ' Chunk size values may be None, "auto"'
+                        ' or an integer value.',
+            examples=[{'time': None, 'lat': 'auto', 'lon': 90},
+                      {'time': 1, 'y': 512, 'x': 512}],
+            additional_properties=True,
+        ),
+        decode_cf=JsonBooleanSchema(
+            description='Whether to decode these variables,'
+                        ' assuming they were saved according to'
+                        ' CF conventions.',
+            default=True,
+        ),
+        mask_and_scale=JsonBooleanSchema(
+            description='If True, replace array values equal'
+                        ' to attribute "_FillValue" with NaN. '
+                        ' Use "scaling_factor" and "add_offset"'
+                        ' attributes to compute actual values.',
+            default=True,
+        ),
+        decode_times=JsonBooleanSchema(
+            description='If True, decode times encoded in the'
+                        ' standard NetCDF datetime format '
+                        'into datetime objects. Otherwise,'
+                        ' leave them encoded as numbers.',
+            default=True,
+        ),
+        decode_coords=JsonBooleanSchema(
+            description='If True, decode the \"coordinates\"'
+                        ' attribute to identify coordinates in '
+                        'the resulting dataset.',
+            default=True,
+        ),
+        drop_variables=JsonArraySchema(
+            items=JsonStringSchema(min_length=1),
+        ),
+        consolidated=JsonBooleanSchema(
+            description='Whether to open the store using'
+                        ' Zarr\'s consolidated metadata '
+                        'capability. Only works for stores that'
+                        ' have already been consolidated.',
+            default=False,
+        ),
+    ),
+    required=[],
+    additional_properties=False
+)
+
+ZARR_WRITE_DATA_PARAMS_SCHEMA = JsonObjectSchema(
+    properties=dict(
+        group=JsonStringSchema(
+            description='Group path.'
+                        ' (a.k.a. path in zarr terminology.).',
+            min_length=1,
+        ),
+        encoding=JsonObjectSchema(
+            description='Nested dictionary with variable'
+                        ' names as keys and dictionaries of'
+                        ' variable specific encodings as values.',
+            examples=[{
+                'my_variable': {
+                    'dtype': 'int16',
+                    'scale_factor': 0.1
+                }
+            }],
+            additional_properties=True,
+        ),
+        consolidated=JsonBooleanSchema(
+            description='If True, apply Zarr’s consolidate_metadata()'
+                        ' function to the store after writing.'
+        ),
+        append_dim=JsonStringSchema(
+            description='If set, the dimension on which the'
+                        ' data will be appended.',
+            min_length=1,
+        ),
+    ),
+    additional_properties=False
+)
 
 
 class DatasetFsDataAccessor(FsDataAccessor, ABC):
@@ -55,70 +150,12 @@ class DatasetZarrFsDataAccessor(DatasetFsDataAccessor, ABC):
     # noinspection PyUnusedLocal,PyMethodMayBeStatic
     def get_open_data_params_schema(self, data_id: str = None) \
             -> JsonObjectSchema:
-        return JsonObjectSchema(
-            properties=dict(
-                log_access=JsonBooleanSchema(
-                    default=False
-                ),
-                cache_size=JsonIntegerSchema(
-                    minimum=0,
-                ),
-                group=JsonStringSchema(
-                    description='Group path.'
-                                ' (a.k.a. path in zarr terminology.).',
-                    min_length=1,
-                ),
-                chunks=JsonObjectSchema(
-                    description='Optional chunk sizes along each dimension.'
-                                ' Chunk size values may be None, "auto"'
-                                ' or an integer value.',
-                    examples=[{'time': None, 'lat': 'auto', 'lon': 90},
-                              {'time': 1, 'y': 512, 'x': 512}],
-                    additional_properties=True,
-                ),
-                decode_cf=JsonBooleanSchema(
-                    description='Whether to decode these variables,'
-                                ' assuming they were saved according to'
-                                ' CF conventions.',
-                    default=True,
-                ),
-                mask_and_scale=JsonBooleanSchema(
-                    description='If True, replace array values equal'
-                                ' to attribute "_FillValue" with NaN. '
-                                ' Use "scaling_factor" and "add_offset"'
-                                ' attributes to compute actual values.',
-                    default=True,
-                ),
-                decode_times=JsonBooleanSchema(
-                    description='If True, decode times encoded in the'
-                                ' standard NetCDF datetime format '
-                                'into datetime objects. Otherwise,'
-                                ' leave them encoded as numbers.',
-                    default=True,
-                ),
-                decode_coords=JsonBooleanSchema(
-                    description='If True, decode the \"coordinates\"'
-                                ' attribute to identify coordinates in '
-                                'the resulting dataset.',
-                    default=True,
-                ),
-                drop_variables=JsonArraySchema(
-                    items=JsonStringSchema(min_length=1),
-                ),
-                consolidated=JsonBooleanSchema(
-                    description='Whether to open the store using'
-                                ' Zarr\'s consolidated metadata '
-                                'capability. Only works for stores that'
-                                ' have already been consolidated.',
-                    default=False,
-                ),
-                fs_params=self.get_fs_params_schema(),
-            ),
-            required=[],
-            additional_properties=False
+        return self.add_fs_params_to_params_schema(
+            ZARR_OPEN_DATA_PARAMS_SCHEMA
         )
 
     def open_data(self, data_id: str, **open_params) -> xr.Dataset:
+        assert_instance(data_id, str, name='data_id')
         fs, open_params = self.load_fs(open_params)
         zarr_store = fs.get_mapper(data_id)
         cache_size = open_params.pop('cache_size', None)
@@ -135,44 +172,13 @@ class DatasetZarrFsDataAccessor(DatasetFsDataAccessor, ABC):
                                 consolidated=consolidated,
                                 **open_params)
         except ValueError as e:
-            raise DataStoreError(f'failed to open {data_id}: {e}') from e
+            raise DataStoreError(f'Failed to open'
+                                 f' dataset {data_id!r}: {e}') from e
 
     # noinspection PyMethodMayBeStatic
     def get_write_data_params_schema(self) -> JsonObjectSchema:
-        return JsonObjectSchema(
-            properties=dict(
-                log_access=JsonBooleanSchema(
-                    default=False
-                ),
-                group=JsonStringSchema(
-                    description='Group path.'
-                                ' (a.k.a. path in zarr terminology.).',
-                    min_length=1,
-                ),
-                encoding=JsonObjectSchema(
-                    description='Nested dictionary with variable'
-                                ' names as keys and dictionaries of'
-                                ' variable specific encodings as values.',
-                    examples=[{
-                        'my_variable': {
-                            'dtype': 'int16',
-                            'scale_factor': 0.1
-                        }
-                    }],
-                    additional_properties=True,
-                ),
-                consolidated=JsonBooleanSchema(
-                    description='If True, apply Zarr’s consolidate_metadata()'
-                                ' function to the store after writing.'
-                ),
-                append_dim=JsonStringSchema(
-                    description='If set, the dimension on which the'
-                                ' data will be appended.',
-                    min_length=1,
-                ),
-                fs_params=self.get_fs_params_schema(),
-            ),
-            additional_properties=False
+        return self.add_fs_params_to_params_schema(
+            ZARR_WRITE_DATA_PARAMS_SCHEMA
         )
 
     def write_data(self,
@@ -180,7 +186,8 @@ class DatasetZarrFsDataAccessor(DatasetFsDataAccessor, ABC):
                    data_id: str,
                    replace=False,
                    **write_params):
-        assert_instance(data, xr.Dataset, 'data')
+        assert_instance(data, xr.Dataset, name='data')
+        assert_instance(data_id, str, name='data_id')
         fs, write_params = self.load_fs(write_params)
         zarr_store = fs.get_mapper(data_id, create=True)
         log_access = write_params.pop('log_access', None)
@@ -194,7 +201,8 @@ class DatasetZarrFsDataAccessor(DatasetFsDataAccessor, ABC):
                          consolidated=consolidated,
                          **write_params)
         except ValueError as e:
-            raise DataStoreError(f'failed to write {data_id}: {e}') from e
+            raise DataStoreError(f'Failed to write'
+                                 f' dataset {data_id!r}: {e}') from e
 
     def delete_data(self,
                     data_id: str,
@@ -202,6 +210,21 @@ class DatasetZarrFsDataAccessor(DatasetFsDataAccessor, ABC):
         fs, delete_params = self.load_fs(delete_params)
         delete_params.pop('recursive', None)
         fs.delete(data_id, recursive=True, **delete_params)
+
+
+NETCDF_OPEN_DATA_PARAMS_SCHEMA = JsonObjectSchema(
+    properties=dict(
+        # TODO: add more from xr.open_dataset()
+    ),
+    additional_properties=True,
+)
+
+NETCDF_WRITE_DATA_PARAMS_SCHEMA = JsonObjectSchema(
+    properties=dict(
+        # TODO: add more from ds.to_netcdf()
+    ),
+    additional_properties=True,
+)
 
 
 class DatasetNetcdfFsDataAccessor(DatasetFsDataAccessor, ABC):
@@ -215,17 +238,14 @@ class DatasetNetcdfFsDataAccessor(DatasetFsDataAccessor, ABC):
 
     def get_open_data_params_schema(self, data_id: str = None) \
             -> JsonObjectSchema:
-        return JsonObjectSchema(
-            properties=dict(
-                fs_params=self.get_fs_params_schema()
-                # TODO: add more from xr.open_dataset()
-            ),
-            additional_properties=True,
+        return self.add_fs_params_to_params_schema(
+            NETCDF_OPEN_DATA_PARAMS_SCHEMA
         )
 
     def open_data(self,
                   data_id: str,
                   **open_params) -> xr.Dataset:
+        assert_instance(data_id, str, name='data_id')
         fs, open_params = self.load_fs(open_params)
 
         # This doesn't yet work as expected with fsspec and netcdf:
@@ -243,12 +263,8 @@ class DatasetNetcdfFsDataAccessor(DatasetFsDataAccessor, ABC):
         return xr.open_dataset(file_path, engine=engine, **open_params)
 
     def get_write_data_params_schema(self) -> JsonObjectSchema:
-        return JsonObjectSchema(
-            properties=dict(
-                fs_params=self.get_fs_params_schema()
-                # TODO: add more from ds.to_netcdf()
-            ),
-            additional_properties=True,
+        return self.add_fs_params_to_params_schema(
+            NETCDF_WRITE_DATA_PARAMS_SCHEMA
         )
 
     def write_data(self,
@@ -256,8 +272,9 @@ class DatasetNetcdfFsDataAccessor(DatasetFsDataAccessor, ABC):
                    data_id: str,
                    replace=False,
                    **write_params):
+        assert_instance(data, xr.Dataset, name='data')
+        assert_instance(data_id, str, name='data_id')
         fs, write_params = self.load_fs(write_params)
-        assert_instance(data, xr.Dataset, 'data')
         if not replace and fs.exists(data_id):
             raise DataStoreError(f'Data resource {data_id} already exists')
 

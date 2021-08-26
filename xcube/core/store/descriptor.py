@@ -30,12 +30,6 @@ import xarray as xr
 
 from xcube.core.geom import get_dataset_bounds
 from xcube.core.mldataset import MultiLevelDataset
-from xcube.core.store.typespecifier import TYPE_SPECIFIER_ANY
-from xcube.core.store.typespecifier import TYPE_SPECIFIER_DATASET
-from xcube.core.store.typespecifier import TYPE_SPECIFIER_GEODATAFRAME
-from xcube.core.store.typespecifier import TYPE_SPECIFIER_MULTILEVEL_DATASET
-from xcube.core.store.typespecifier import TypeSpecifier
-from xcube.core.store.typespecifier import get_type_specifier
 from xcube.core.timecoord import get_end_time_from_attrs
 from xcube.core.timecoord import get_start_time_from_attrs
 from xcube.core.timecoord import get_time_range_from_data
@@ -51,6 +45,11 @@ from xcube.util.jsonschema import JsonNumberSchema
 from xcube.util.jsonschema import JsonObject
 from xcube.util.jsonschema import JsonObjectSchema
 from xcube.util.jsonschema import JsonStringSchema
+from .typespecifier import TYPE_SPECIFIER_ANY
+from .typespecifier import TYPE_SPECIFIER_DATASET
+from .typespecifier import TYPE_SPECIFIER_GEODATAFRAME
+from .typespecifier import TYPE_SPECIFIER_MULTILEVEL_DATASET
+from .typespecifier import TypeSpecifier
 
 
 # TODO: IMPORTANT: replace, reuse, or align with
@@ -61,33 +60,65 @@ from xcube.util.jsonschema import JsonStringSchema
 # TODO: validate params
 
 
-def new_data_descriptor(data_id: str, data: Any, require: bool = False) -> 'DataDescriptor':
+def new_data_descriptor(data_id: str, data: Any, require: bool = False) \
+        -> 'DataDescriptor':
+    if isinstance(data, MultiLevelDataset):
+        dataset_descriptor_kwargs = _get_common_dataset_descriptor_props(
+            data_id,
+            # Note The highest level should have same metadata
+            # and maybe loads faster.
+            # data.get_dataset(data.num_levels - 1)
+            data.get_dataset(0)
+        )
+        return MultiLevelDatasetDescriptor(
+            type_specifier='dataset[multilevel]',
+            num_levels=data.num_levels,
+            **dataset_descriptor_kwargs
+        )
+
     if isinstance(data, xr.Dataset):
-        coords = _build_variable_descriptor_dict(data.coords)
-        data_vars = _build_variable_descriptor_dict(data.data_vars)
-        spatial_res = _determine_spatial_res(data)
-        bbox = _determine_bbox(data)
-        time_coverage_start, time_coverage_end = _determine_time_coverage(data)
-        time_period = _determine_time_period(data)
-        return DatasetDescriptor(data_id=data_id,
-                                 type_specifier=get_type_specifier(data),
-                                 dims={str(k): v for k, v in data.dims.items()},
-                                 coords=coords,
-                                 data_vars=data_vars,
-                                 bbox=bbox,
-                                 time_range=(time_coverage_start, time_coverage_end),
-                                 time_period=time_period,
-                                 spatial_res=spatial_res,
-                                 attrs=data.attrs)
-    elif isinstance(data, MultiLevelDataset):
-        # TODO: implement me: data -> MultiLevelDatasetDescriptor
-        return MultiLevelDatasetDescriptor(data_id=data_id, num_levels=5)
-    elif isinstance(data, gpd.GeoDataFrame):
+        dataset_descriptor_kwargs = _get_common_dataset_descriptor_props(
+            data_id,
+            data
+        )
+        return DatasetDescriptor(
+            type_specifier='dataset',
+            **dataset_descriptor_kwargs
+        )
+
+    if isinstance(data, gpd.GeoDataFrame):
         # TODO: implement me: data -> GeoDataFrameDescriptor
         return GeoDataFrameDescriptor(data_id=data_id)
-    elif not require:
-        return DataDescriptor(data_id=data_id, type_specifier=TYPE_SPECIFIER_ANY)
+
+    if not require:
+        return DataDescriptor(data_id=data_id,
+                              type_specifier=TYPE_SPECIFIER_ANY)
+
     raise NotImplementedError()
+
+
+def _get_common_dataset_descriptor_props(
+        data_id: str,
+        dataset: Union[xr.Dataset, MultiLevelDataset]
+) -> Dict[str, Any]:
+    dims = {str(k): v for k, v in dataset.dims.items()}
+    coords = _build_variable_descriptor_dict(dataset.coords)
+    data_vars = _build_variable_descriptor_dict(dataset.data_vars)
+    spatial_res = _determine_spatial_res(dataset)
+    bbox = _determine_bbox(dataset)
+    time_range = _determine_time_coverage(dataset)
+    time_period = _determine_time_period(dataset)
+    return dict(
+        data_id=data_id,
+        dims=dims,
+        coords=coords,
+        data_vars=data_vars,
+        bbox=bbox,
+        time_range=time_range,
+        time_period=time_period,
+        spatial_res=spatial_res,
+        attrs=dataset.attrs
+    )
 
 
 class DataDescriptor(JsonObject):

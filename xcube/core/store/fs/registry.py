@@ -32,6 +32,7 @@ from .impl.fs import MemoryFsAccessor
 from .impl.fs import S3FsAccessor
 from .impl.geodataframe import GeoDataFrameGeoJsonFsDataAccessor
 from .impl.geodataframe import GeoDataFrameShapefileFsDataAccessor
+from .impl.mldataset import MultiLevelDatasetFsDataAccessor
 from .store import FsDataStore
 from ..assertions import assert_valid_params
 from ..error import DataStoreError
@@ -117,6 +118,7 @@ def register_fs_data_accessor_class(
 
 for cls in (DatasetZarrFsDataAccessor,
             DatasetNetcdfFsDataAccessor,
+            MultiLevelDatasetFsDataAccessor,
             GeoDataFrameShapefileFsDataAccessor,
             GeoDataFrameGeoJsonFsDataAccessor):
     register_fs_data_accessor_class(cls)
