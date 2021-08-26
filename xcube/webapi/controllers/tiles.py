@@ -7,12 +7,16 @@ import matplotlib.colorbar
 import matplotlib.colors
 import matplotlib.figure
 
-from xcube.core.tile import get_ml_dataset_tile, parse_non_spatial_labels
-from xcube.util.cmaps import get_norm, get_cmap
+from xcube.core.tile import get_ml_dataset_tile
+from xcube.core.tile import parse_non_spatial_labels
+from xcube.util.cmaps import get_cmap
+from xcube.util.cmaps import get_norm
 from xcube.util.tilegrid import TileGrid
 from xcube.webapi.context import ServiceContext
-from xcube.webapi.defaults import DEFAULT_CMAP_WIDTH, DEFAULT_CMAP_HEIGHT
-from xcube.webapi.errors import ServiceBadRequestError, ServiceResourceNotFoundError
+from xcube.webapi.defaults import DEFAULT_CMAP_HEIGHT
+from xcube.webapi.defaults import DEFAULT_CMAP_WIDTH
+from xcube.webapi.errors import ServiceBadRequestError
+from xcube.webapi.errors import ServiceResourceNotFoundError
 from xcube.webapi.ne2 import NaturalEarth2Image
 from xcube.webapi.reqparams import RequestParams
 
@@ -26,7 +30,6 @@ def get_dataset_tile(ctx: ServiceContext,
     y = RequestParams.to_int('y', y)
     z = RequestParams.to_int('z', z)
 
-    tile_comp_mode = params.get_query_argument_int('mode', ctx.tile_comp_mode)
     trace_perf = params.get_query_argument_int('debug', ctx.trace_perf) != 0
     format = params.get_query_argument('format', 'png')
 
@@ -87,7 +90,6 @@ def get_dataset_tile(ctx: ServiceContext,
                                cmap_range=cmap_range,
                                image_cache=ctx.image_cache,
                                tile_cache=ctx.tile_cache,
-                               tile_comp_mode=tile_comp_mode,
                                trace_perf=trace_perf,
                                exception_type=ServiceBadRequestError)
 

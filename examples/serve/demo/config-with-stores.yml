@@ -1,3 +1,9 @@
+DatasetAttribution:
+  - "© by Brockmann Consult GmbH 2020, contains modified Copernicus Data 2019, processed by ESA"
+  - "© by EU H2020 CyanoAlert project"
+
+DatasetChunkCacheSize: 100M
+
 DataStores:
 
 #  - Identifier: local
@@ -30,12 +36,7 @@ DataStores:
     Datasets:
       - Identifier: "*.zarr"
         Style: "default"
-
-DatasetAttribution:
-  - "© by Brockmann Consult GmbH 2020, contains modified Copernicus Data 2019, processed by ESA"
-  - "© by EU H2020 CyanoAlert project"
-
-DatasetChunkCacheSize: 100M
+        # ChunkCacheSize: 1G
 
 PlaceGroups:
   - Identifier: inside-cube

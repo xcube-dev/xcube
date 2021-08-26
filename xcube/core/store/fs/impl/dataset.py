@@ -22,10 +22,13 @@
 from abc import ABC
 
 import xarray as xr
+import zarr
 
+from xcube.core.chunkstore import LoggingStore
 from xcube.util.assertions import assert_instance
 from xcube.util.jsonschema import JsonArraySchema
 from xcube.util.jsonschema import JsonBooleanSchema
+from xcube.util.jsonschema import JsonIntegerSchema
 from xcube.util.jsonschema import JsonObjectSchema
 from xcube.util.jsonschema import JsonStringSchema
 from xcube.util.temp import new_temp_file
@@ -35,6 +38,12 @@ from ...error import DataStoreError
 
 ZARR_OPEN_DATA_PARAMS_SCHEMA = JsonObjectSchema(
     properties=dict(
+        log_access=JsonBooleanSchema(
+            default=False
+        ),
+        cache_size=JsonIntegerSchema(
+            minimum=0,
+        ),
         group=JsonStringSchema(
             description='Group path.'
                         ' (a.k.a. path in zarr terminology.).',
@@ -149,6 +158,13 @@ class DatasetZarrFsDataAccessor(DatasetFsDataAccessor, ABC):
         assert_instance(data_id, str, name='data_id')
         fs, open_params = self.load_fs(open_params)
         zarr_store = fs.get_mapper(data_id)
+        cache_size = open_params.pop('cache_size', None)
+        if isinstance(cache_size, int) and cache_size > 0:
+            zarr_store = zarr.LRUStoreCache(zarr_store, max_size=cache_size)
+        log_access = open_params.pop('log_access', None)
+        if log_access:
+            zarr_store = LoggingStore(zarr_store,
+                                      name=f'zarr_store({data_id!r})')
         consolidated = open_params.pop('consolidated',
                                        fs.exists(f'{data_id}/.zmetadata'))
         try:
@@ -174,6 +190,10 @@ class DatasetZarrFsDataAccessor(DatasetFsDataAccessor, ABC):
         assert_instance(data_id, str, name='data_id')
         fs, write_params = self.load_fs(write_params)
         zarr_store = fs.get_mapper(data_id, create=True)
+        log_access = write_params.pop('log_access', None)
+        if log_access:
+            zarr_store = LoggingStore(zarr_store,
+                                      name=f'zarr_store({data_id!r})')
         consolidated = write_params.pop('consolidated', True)
         try:
             data.to_zarr(zarr_store,

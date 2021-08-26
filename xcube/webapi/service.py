@@ -427,25 +427,25 @@ def new_default_config(cube_paths: List[str],
         if aws_secret_access_key is None:
             raise ValueError(f'environment variable AWS_SECRET_ACCESS_KEY not set')
 
-    dataset_list = list()
+    dataset_configs = list()
     index = 0
     for cube_path in cube_paths:
-        dataset_descriptor = dict(Identifier=f"dataset_{index + 1}",
-                                  Format=guess_ml_dataset_format(cube_path),
-                                  Path=cube_path)
+        dataset_config = dict(Identifier=f"dataset_{index + 1}",
+                              Format=guess_ml_dataset_format(cube_path),
+                              Path=cube_path)
         if is_s3_url(cube_path):
-            dataset_descriptor.update(Title=cube_path.split('/')[-1],
-                                      FileSystem='obs')
+            dataset_config.update(Title=cube_path.split('/')[-1],
+                                  FileSystem='obs')
             if aws_access_key_id and aws_secret_access_key:
-                dataset_descriptor.update(AccessKeyId=aws_access_key_id,
-                                          SecretAccessKey=aws_secret_access_key)
+                dataset_config.update(AccessKeyId=aws_access_key_id,
+                                      SecretAccessKey=aws_secret_access_key)
         else:
-            dataset_descriptor.update(Title=os.path.split(cube_path)[-1],
-                                      FileSystem='local')
-        dataset_list.append(dataset_descriptor)
+            dataset_config.update(Title=os.path.split(cube_path)[-1],
+                                  FileSystem='local')
+        dataset_configs.append(dataset_config)
         index += 1
 
-    config = dict(Datasets=dataset_list)
+    config = dict(Datasets=dataset_configs)
     if styles:
         color_mappings = {}
         for var_name, style_data in styles.items():
