@@ -149,7 +149,7 @@ def get_dataset_tile_grid(ctx: ServiceContext,
                           tile_client: str,
                           base_url: str) -> Dict[str, Any]:
     tile_grid = ctx.get_tile_grid(ds_id)
-    if tile_client in ['ol4', 'cesium', 'leaflet']:
+    if tile_client in ['ol', 'ol4', 'cesium', 'leaflet']:
         return get_tile_source_options(tile_grid,
                                        get_dataset_tile_url(ctx, ds_id, var_name, base_url),
                                        client=tile_client)
@@ -157,8 +157,17 @@ def get_dataset_tile_grid(ctx: ServiceContext,
         raise ServiceBadRequestError(f'Unknown tile client "{tile_client}"')
 
 
-def get_dataset_tile_url(ctx: ServiceContext, ds_id: str, var_name: str, base_url: str):
-    return ctx.get_service_url(base_url, 'datasets', ds_id, 'vars', var_name, 'tiles', '{z}/{x}/{y}.png')
+def get_dataset_tile_url(ctx: ServiceContext,
+                         ds_id: str,
+                         var_name: str,
+                         base_url: str):
+    return ctx.get_service_url(base_url,
+                               'datasets',
+                               ds_id,
+                               'vars',
+                               var_name,
+                               'tiles',
+                               '{z}/{x}/{y}.png')
 
 
 # noinspection PyUnusedLocal
@@ -182,19 +191,19 @@ def get_ne2_tile_url(ctx: ServiceContext, base_url: str):
     return ctx.get_service_url(base_url, 'ne2', 'tiles', '{z}/{x}/{y}.jpg')
 
 
-def get_tile_source_options(tile_grid: TileGrid, url: str, client: str = 'ol4'):
-    if client == 'ol4':
-        # OpenLayers 4.x
-        return _tile_grid_to_ol4x_xyz_source_options(tile_grid, url)
+def get_tile_source_options(tile_grid: TileGrid, url: str, client: str = 'ol'):
+    if client == 'ol' or client == 'ol4':
+        # OpenLayers 4.x - 6.x
+        return _tile_grid_to_ol_xyz_source_options(tile_grid, url)
     elif client == 'cesium':
         # Cesium 1.x
-        return _tile_grid_to_cesium1x_source_options(tile_grid, url)
+        return _tile_grid_to_cesium_source_options(tile_grid, url)
     else:  # client == 'leaflet':
         # Leaflet 1.x
-        return _tile_grid_to_leaflet1x_source_options(tile_grid, url)
+        return _tile_grid_to_leaflet_source_options(tile_grid, url)
 
 
-def _tile_grid_to_ol4x_xyz_source_options(tile_grid: TileGrid, url: str):
+def _tile_grid_to_ol_xyz_source_options(tile_grid: TileGrid, url: str):
     """
     Convert TileGrid into options to be used with ol.source.XYZ(options) of OpenLayers 4.x.
 
@@ -232,7 +241,7 @@ def _tile_grid_to_ol4x_xyz_source_options(tile_grid: TileGrid, url: str):
                               resolutions=[res0 / (2 ** i) for i in range(tile_grid.num_levels)]))
 
 
-def _tile_grid_to_cesium1x_source_options(tile_grid: TileGrid, url: str):
+def _tile_grid_to_cesium_source_options(tile_grid: TileGrid, url: str):
     """
     Convert TileGrid into options to be used with Cesium.UrlTemplateImageryProvider(options) of Cesium 1.45+.
 
@@ -257,7 +266,7 @@ def _tile_grid_to_cesium1x_source_options(tile_grid: TileGrid, url: str):
                                   numberOfLevelZeroTilesY=tile_grid.num_level_zero_tiles_y))
 
 
-def _tile_grid_to_leaflet1x_source_options(tile_grid: TileGrid, url: str):
+def _tile_grid_to_leaflet_source_options(tile_grid: TileGrid, url: str):
     """
     Convert TileGrid into options to be used with L.tileLayer(options) of Leaflet 1.7+.
 

@@ -48,8 +48,8 @@ class ServiceResourceNotFoundError(ServiceError):
     def __init__(self, reason: str, log_message: str = None):
         super().__init__(reason, status_code=404, log_message=log_message)
 
+
 class ServiceAuthError(ServiceError):
 
     def __init__(self, reason: str, log_message: str = None):
         super().__init__(reason, status_code=401, log_message=log_message)
-

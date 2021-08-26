@@ -8,7 +8,11 @@
   Python package. The preliminary filesystem-based data stores 
   are now `s3`, `file`, and `memory`. All share a common implementations 
   and tests. Others filesystem-based data stores can be added easily
-  and will follow soon, for example `hdfs`. (#446)
+  and will follow soon, for example `hdfs`. 
+  All filesystem-based data stores now support xarray
+  datasets (type `xarray.Dataset`) in Zarr and NetCDF format as 
+  well as image pyramids (type`xcube.core.multilevel.MultiLevelDataset`) 
+  using a Zarr-based multi-level format. (#446)
 
 * Numerous breaking changes have been applied to this version
   in order to address generic resampling (#391) and support other

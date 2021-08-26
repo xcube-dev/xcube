@@ -23,6 +23,7 @@ import itertools
 
 import numpy as np
 import pandas as pd
+import pyproj
 import xarray as xr
 
 
@@ -49,7 +50,8 @@ def new_cube(title='Test Cube',
              time_start='2010-01-01T00:00:00',
              use_cftime=False,
              drop_bounds=False,
-             variables=None):
+             variables=None,
+             crs=None):
     """
     Create a new empty cube. Useful for creating cubes templates with predefined
     coordinate variables and metadata. The function is also heavily used
@@ -88,6 +90,7 @@ def new_cube(title='Test Cube',
     such as 'gregorian' or 'julian'. If used, parameter 'time_dtype' must be None.
     :param drop_bounds: If True, coordinate bounds variables are not created. Defaults to False.
     :param variables: Dictionary of data variables to be added. None by default.
+    :param crs: pyproj-compatible CRS string or instance of pyproj.CRS or None
     :return: A cube instance
     """
     y_dtype = y_dtype if y_dtype is not None else y_dtype
@@ -222,5 +225,10 @@ def new_cube(title='Test Cube',
                 data_vars[var_name] = xr.DataArray(np.random.uniform(0.0, 1.0, size).reshape(shape), dims=dims)
             else:
                 data_vars[var_name] = xr.DataArray(data, dims=dims)
+
+    if isinstance(crs, str):
+        data_vars['crs'] = xr.DataArray(0, attrs=pyproj.CRS.from_string(crs).to_cf())
+    elif isinstance(crs, pyproj.CRS):
+        data_vars['crs'] = xr.DataArray(0, attrs=crs.to_cf())
 
     return xr.Dataset(data_vars=data_vars, coords=coords, attrs=attrs)

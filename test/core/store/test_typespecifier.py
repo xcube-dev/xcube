@@ -5,10 +5,9 @@ import xarray as xr
 
 from xcube.core.mldataset import BaseMultiLevelDataset
 from xcube.core.new import new_cube
-from xcube.core.store.typespecifier import TYPE_SPECIFIER_CUBE
+from xcube.core.store.typespecifier import TYPE_SPECIFIER_CUBE, TYPE_SPECIFIER_MULTILEVEL_CUBE
 from xcube.core.store.typespecifier import TYPE_SPECIFIER_DATASET
 from xcube.core.store.typespecifier import TYPE_SPECIFIER_GEODATAFRAME
-from xcube.core.store.typespecifier import TYPE_SPECIFIER_MULTILEVEL_DATASET
 from xcube.core.store.typespecifier import TypeSpecifier
 from xcube.core.store.typespecifier import get_type_specifier
 from xcube.util.jsonschema import JsonStringSchema
@@ -117,7 +116,7 @@ class TypeSpecifierTest(unittest.TestCase):
             TypeSpecifier.parse('An unparseable expression[')
         self.assertEqual('"An unparseable expression[" cannot be parsed: No end brackets found', f'{cm.exception}')
 
-    def test_parse_exception(self):
+    def test_get_schema(self):
         schema = TypeSpecifier.get_schema()
         self.assertIsInstance(schema, JsonStringSchema)
 
@@ -125,8 +124,26 @@ class TypeSpecifierTest(unittest.TestCase):
 class GetTypeSpecifierTest(unittest.TestCase):
 
     def test_get_type_specifier(self):
-        self.assertIsNone(get_type_specifier(dict()))
-        self.assertEqual(get_type_specifier(new_cube()), TYPE_SPECIFIER_CUBE)
-        self.assertEqual(get_type_specifier(xr.Dataset()), TYPE_SPECIFIER_DATASET)
-        self.assertEqual(get_type_specifier(BaseMultiLevelDataset(xr.Dataset())), TYPE_SPECIFIER_MULTILEVEL_DATASET)
-        self.assertEqual(get_type_specifier(gpd.GeoDataFrame()), TYPE_SPECIFIER_GEODATAFRAME)
+        self.assertIsNone(
+            get_type_specifier(dict())
+        )
+        self.assertEqual(
+            TYPE_SPECIFIER_DATASET,
+            get_type_specifier(xr.Dataset()),
+        )
+        self.assertEqual(
+            TYPE_SPECIFIER_CUBE,
+            get_type_specifier(
+                new_cube(variables=dict(A=0.15))
+            )
+        )
+        self.assertEqual(
+            TYPE_SPECIFIER_MULTILEVEL_CUBE,
+            get_type_specifier(
+                BaseMultiLevelDataset(new_cube(variables=dict(A=0.15)))
+            )
+        )
+        self.assertEqual(
+            TYPE_SPECIFIER_GEODATAFRAME,
+            get_type_specifier(gpd.GeoDataFrame())
+        )

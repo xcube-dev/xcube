@@ -4,13 +4,17 @@ from typing import Dict, Tuple, List, Set
 
 import numpy as np
 
+from xcube.constants import LOG
 from xcube.core.geom import get_dataset_bounds
+from xcube.core.normalize import DatasetIsNotACubeError
 from xcube.core.timecoord import timestamp_to_iso_string
 from xcube.util.cmaps import get_cmaps
-from xcube.webapi.auth import assert_scopes, check_scopes
+from xcube.webapi.auth import assert_scopes
+from xcube.webapi.auth import check_scopes
 from xcube.webapi.context import ServiceContext
 from xcube.webapi.controllers.places import GeoJsonFeatureCollection
-from xcube.webapi.controllers.tiles import get_tile_source_options, get_dataset_tile_url
+from xcube.webapi.controllers.tiles import get_dataset_tile_url
+from xcube.webapi.controllers.tiles import get_tile_source_options
 from xcube.webapi.errors import ServiceBadRequestError
 
 
@@ -22,7 +26,7 @@ def get_datasets(ctx: ServiceContext,
                  granted_scopes: Set[str] = None) -> Dict:
     granted_scopes = granted_scopes or set()
 
-    dataset_descriptors = ctx.get_dataset_descriptors()
+    dataset_descriptors = list(ctx.get_dataset_descriptors())
 
     dataset_dicts = list()
     for dataset_descriptor in dataset_descriptors:
@@ -56,16 +60,25 @@ def get_datasets(ctx: ServiceContext,
 
         dataset_dicts.append(dataset_dict)
 
-    if details or point:
-        for dataset_dict in dataset_dicts:
-            ds_id = dataset_dict["id"]
-            if point:
-                ds = ctx.get_dataset(ds_id)
-                if "bbox" not in dataset_dict:
-                    dataset_dict["bbox"] = list(get_dataset_bounds(ds))
-            if details:
-                dataset_dict.update(get_dataset(ctx, ds_id, client, base_url, granted_scopes=granted_scopes))
-
+        if details or point:
+            filtered_dataset_dicts = []
+            for dataset_dict in dataset_dicts:
+                ds_id = dataset_dict["id"]
+                try:
+                    if point:
+                        ds = ctx.get_dataset(ds_id)
+                        if "bbox" not in dataset_dict:
+                            dataset_dict["bbox"] = list(get_dataset_bounds(ds))
+                    if details:
+                        dataset_dict.update(
+                            get_dataset(ctx, ds_id, client,
+                                        base_url,
+                                        granted_scopes=granted_scopes)
+                        )
+                    filtered_dataset_dicts.append(dataset_dict)
+                except DatasetIsNotACubeError as e:
+                    LOG.warn(f'skipping dataset: {e}')
+            dataset_dicts = filtered_dataset_dicts
     if point:
         is_point_in_dataset_bbox = functools.partial(_is_point_in_dataset_bbox, point)
         # noinspection PyTypeChecker
@@ -131,13 +144,16 @@ def get_dataset(ctx: ServiceContext,
         variable_dict["colorBarMax"] = cmap_vmax
 
         if hasattr(var.data, '_repr_html_'):
+            # noinspection PyProtectedMember
             variable_dict["htmlRepr"] = var.data._repr_html_()
 
-        variable_dict["attrs"] = {key: var.attrs[key] for key in sorted(list(var.attrs.keys()))}
+        variable_dict["attrs"] = {
+            key: ("NaN" if isinstance(value, float)
+                           and np.isnan(value) else value)
+            for key, value in var.attrs.items()
+        }
 
         variable_dicts.append(variable_dict)
-
-    ctx.get_rgb_color_mapping(ds_id)
 
     dataset_dict["variables"] = variable_dicts
 
