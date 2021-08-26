@@ -42,7 +42,7 @@ class FsDataStoresTestMixin(ABC):
                                                data_store: MutableDataStore):
         self.assertDatasetSupported(data_store,
                                     '.levels',
-                                    'dataset[multilevel]',
+                                    'mldataset',
                                     MultiLevelDataset,
                                     MultiLevelDatasetDescriptor)
 
@@ -59,7 +59,7 @@ class FsDataStoresTestMixin(ABC):
             self,
             data_store: MutableDataStore,
             filename_ext: str,
-            expected_type_specifier: str,
+            expected_data_type_alias: str,
             expected_type: Union[Type[xr.Dataset],
                                  Type[MultiLevelDataset]],
             expected_descriptor_type: Union[Type[DatasetDescriptor],
@@ -72,7 +72,7 @@ class FsDataStoresTestMixin(ABC):
         :param data_store: The filesystem data store instance.
         :param filename_ext: Filename extension that identifies
             a supported dataset format.
-        :param expected_type_specifier: The expected data type specifier.
+        :param expected_data_type_alias: The expected data type alias.
         :param expected_type: The expected data type.
         :param expected_descriptor_type: The expected data descriptor type.
         """
@@ -81,18 +81,18 @@ class FsDataStoresTestMixin(ABC):
 
         self.assertIsInstance(data_store, MutableDataStore)
 
-        self.assertEqual({'dataset', 'dataset[multilevel]', 'geodataframe'},
-                         set(data_store.get_type_specifiers()))
+        self.assertEqual({'dataset', 'mldataset', 'geodataframe'},
+                         set(data_store.get_data_types()))
 
         with self.assertRaises(DataStoreError):
-            data_store.get_type_specifiers_for_data(data_id)
+            data_store.get_data_types_for_data(data_id)
         self.assertEqual(False, data_store.has_data(data_id))
         self.assertEqual([], list(data_store.get_data_ids()))
 
         data = new_cube(variables=dict(A=8, B=9))
         data_store.write_data(data, data_id)
-        self.assertEqual({expected_type_specifier},
-                         set(data_store.get_type_specifiers_for_data(data_id)))
+        self.assertEqual({expected_data_type_alias},
+                         set(data_store.get_data_types_for_data(data_id)))
         self.assertEqual(True, data_store.has_data(data_id))
         self.assertEqual([data_id], list(data_store.get_data_ids()))
 
@@ -109,7 +109,7 @@ class FsDataStoresTestMixin(ABC):
         except PermissionError:  # Typically occurs on win32 due to fsspec
             return
         with self.assertRaises(DataStoreError):
-            data_store.get_type_specifiers_for_data(data_id)
+            data_store.get_data_types_for_data(data_id)
         self.assertEqual(False, data_store.has_data(data_id))
         self.assertEqual([], list(data_store.get_data_ids()))
 

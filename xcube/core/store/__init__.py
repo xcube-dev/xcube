@@ -30,6 +30,12 @@ from .accessor import new_data_opener
 from .accessor import new_data_writer
 from .assertions import assert_valid_config
 from .assertions import assert_valid_params
+from .datatype import ANY_TYPE
+from .datatype import DATASET_TYPE
+from .datatype import DataType
+from .datatype import DataTypeLike
+from .datatype import GEO_DATA_FRAME_TYPE
+from .datatype import MULTI_LEVEL_DATASET_TYPE
 from .descriptor import DataDescriptor
 from .descriptor import DatasetDescriptor
 from .descriptor import GeoDataFrameDescriptor
@@ -48,10 +54,3 @@ from .storepool import DataStoreInstance
 from .storepool import DataStorePool
 from .storepool import DataStorePoolLike
 from .storepool import get_data_store_instance
-from .typespecifier import TYPE_SPECIFIER_ANY
-from .typespecifier import TYPE_SPECIFIER_CUBE
-from .typespecifier import TYPE_SPECIFIER_DATASET
-from .typespecifier import TYPE_SPECIFIER_GEODATAFRAME
-from .typespecifier import TYPE_SPECIFIER_MULTILEVEL_DATASET
-from .typespecifier import TypeSpecifier
-from .typespecifier import get_type_specifier

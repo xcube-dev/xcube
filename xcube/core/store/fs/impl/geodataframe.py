@@ -18,7 +18,9 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+
 from abc import abstractmethod, ABC
+from typing import Tuple
 
 import geopandas as gpd
 import pandas as pd
@@ -28,6 +30,8 @@ from xcube.util.jsonschema import JsonObjectSchema
 from xcube.util.temp import new_temp_file
 from ..accessor import FsDataAccessor
 from ..helpers import is_local_fs
+from ...datatype import DataType
+from ...datatype import GEO_DATA_FRAME_TYPE
 
 
 class GeoDataFrameFsDataAccessor(FsDataAccessor, ABC):
@@ -36,15 +40,16 @@ class GeoDataFrameFsDataAccessor(FsDataAccessor, ABC):
     """
 
     @classmethod
-    def get_type_specifier(cls) -> str:
-        return 'geodataframe'
+    def get_data_types(cls) -> Tuple[DataType, ...]:
+        return GEO_DATA_FRAME_TYPE,
 
     @classmethod
     @abstractmethod
     def get_driver_name(cls) -> str:
         """Get the GeoDataFrame I/O driver name"""
 
-    def get_open_data_params_schema(self, data_id: str = None) -> JsonObjectSchema:
+    def get_open_data_params_schema(self, data_id: str = None) \
+            -> JsonObjectSchema:
         return JsonObjectSchema(
             properties=dict(
                 fs_params=self.get_fs_params_schema(),

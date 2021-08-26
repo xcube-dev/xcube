@@ -95,7 +95,9 @@ _FS_DATA_ACCESSOR_ITEMS = (
      'xarray.Dataset in NetCDF format'),
     ('dataset', 'zarr',
      'xarray.Dataset in Zarr format'),
-    ('dataset[multilevel]', 'levels',
+    ('dataset', 'levels',
+     'xarray.Dataset in leveled Zarr format'),
+    ('mldataset', 'levels',
      'xcube.core.mldataset.MultiLevelImage in leveled Zarr format'),
     ('geodataframe', 'shapefile',
      'gpd.GeoDataFrame in ESRI Shapefile format'),
@@ -133,34 +135,34 @@ def _register_data_accessors(ext_registry: extension.ExtensionRegistry):
     def _add_fs_data_accessor_ext(point: str,
                                   ext_type: str,
                                   fs_protocol: str,
-                                  type_specifier: str,
+                                  data_type: str,
                                   format_id: str):
-        factory_args = (fs_protocol, type_specifier, format_id)
+        factory_args = (fs_protocol, data_type, format_id)
         loader = extension.import_component(factory,
                                             call_args=factory_args)
         ext_registry.add_extension(
             point=point,
             loader=loader,
-            name=f'{type_specifier}:{format_id}:{fs_protocol}',
+            name=f'{data_type}:{format_id}:{fs_protocol}',
             description=f'Data {ext_type} for'
                         f' a {data_accessor_description}'
                         f' in {storage_description}'
         )
 
     for fs_protocol, storage_description in _FS_STORAGE_ITEMS:
-        for type_specifier, format_id, data_accessor_description \
+        for data_type, format_id, data_accessor_description \
                 in _FS_DATA_OPENER_ITEMS:
             _add_fs_data_accessor_ext(EXTENSION_POINT_DATA_OPENERS,
                                       'opener',
                                       fs_protocol,
-                                      type_specifier,
+                                      data_type,
                                       format_id)
-        for type_specifier, format_id, data_accessor_description \
+        for data_type, format_id, data_accessor_description \
                 in _FS_DATA_WRITER_ITEMS:
             _add_fs_data_accessor_ext(EXTENSION_POINT_DATA_WRITERS,
                                       'writer',
                                       fs_protocol,
-                                      type_specifier,
+                                      data_type,
                                       format_id)
 
 

@@ -208,9 +208,9 @@ _SHORT_INCLUDE = ','.join(['store.store_instance_id',
                    f' Defaults to "{_DEFAULT_DUMP_OUTPUT}".')
 @click.option('-c', '--config', 'config_file_path', metavar='CONFIG',
               help='Store configuration filename. May use JSON or YAML format.')
-@click.option('-t', '--type', 'type_specifier', metavar='TYPE',
-              help='Type specifier. If given, only data resources that satisfy the '
-                   'type specifier are listed. E.g. "dataset" or "dataset[cube]"')
+@click.option('-t', '--type', 'data_type', metavar='TYPE',
+              help='Data type. If given, only data resources that satisfy the '
+                   'data type are listed. E.g. "dataset" or "geodataframe"')
 @click.option('-S', '--short', 'short_form', is_flag=True,
               help=f'Short form. Forces option "--includes={_SHORT_INCLUDE}".')
 @click.option('-I', '--includes', 'include_props', metavar='INCLUDE_LIST',
@@ -231,7 +231,7 @@ _SHORT_INCLUDE = ','.join(['store.store_instance_id',
               help=f'Use JSON output format (the default).')
 def dump(output_file_path: Optional[str],
          config_file_path: Optional[str],
-         type_specifier: Optional[str],
+         data_type: Optional[str],
          short_form: bool,
          include_props: str,
          exclude_props: str,
@@ -307,7 +307,7 @@ def dump(output_file_path: Optional[str],
                          if extension.name not in ('memory', 'directory', 's3')}
         store_pool = DataStorePool(store_configs)
 
-    dump_data = _get_store_data_var_tuples(store_pool, type_specifier, include_props, exclude_props)
+    dump_data = _get_store_data_var_tuples(store_pool, data_type, include_props, exclude_props)
 
     if output_format == 'csv':
         column_names = None
@@ -375,7 +375,7 @@ def dump(output_file_path: Optional[str],
         print(f'Dumped entries of {len(store_list)} store(s) to {output_file_path}.')
 
 
-def _get_store_data_var_tuples(store_pool, type_specifier, include_props, exclude_props):
+def _get_store_data_var_tuples(store_pool, data_type, include_props, exclude_props):
     import time
 
     for store_instance_id in store_pool.store_instance_ids:
@@ -387,7 +387,7 @@ def _get_store_data_var_tuples(store_pool, type_specifier, include_props, exclud
                           store_id=store_instance_id,
                           title=store_config.title,
                           description=store_config.description,
-                          type_specifier=type_specifier,
+                          data_type=data_type,
                           data=[])
         store_dict = _filter_dict(store_dict, 'store', include_props, exclude_props)
 
@@ -403,7 +403,7 @@ def _get_store_data_var_tuples(store_pool, type_specifier, include_props, exclud
                 continue
 
             try:
-                data_descriptors = store_instance.search_data(type_specifier=type_specifier)
+                data_descriptors = store_instance.search_data(data_type=data_type)
             except BaseException as error:
                 print(f'error: cannot search store "{store_instance_id}": {error}', file=sys.stderr)
                 continue

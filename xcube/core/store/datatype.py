@@ -28,7 +28,6 @@ import xarray
 
 from xcube.core.mldataset import MultiLevelDataset
 from xcube.util.assertions import assert_instance
-from xcube.util.assertions import assert_true
 from xcube.util.jsonschema import JsonStringSchema
 
 # A data type name or a DataType
@@ -126,36 +125,28 @@ class DataType:
             return DataType(data_type)
         raise ValueError(f'cannot convert {data_type!r} into a data type')
 
-    def satisfies(self, data_type: DataTypeLike) -> bool:
+    def is_sub_type_of(self, data_type: DataTypeLike) -> bool:
         """
-        Tests whether this data type satisfies
-        another data type.
-
-        This data type satisfies data type *data_type* if
-        this data type's *dtype* is a subclass of *data_type.dtype*.
+        Tests whether this data type is a sub-type of or the same
+        as another data type.
 
         :param data_type: The other data type, may be given as type
             alias name, as a type, or as a DataType instance.
         :return: Whether this data type satisfies another data type.
         """
         return issubclass(self.dtype,
-                          self.normalize(data_type).dtype)
+                          self._normalize_dtype(data_type))
 
-    def is_satisfied_by(self, data_type: DataTypeLike) -> bool:
+    def is_super_type_of(self, data_type: DataTypeLike) -> bool:
         """
-        Tests whether this data type is satisfied by another
-        data type.
-
-        This is the inverse operation of :meth:satisfies and may
-        be more handy or intuitive in some situations. It is equivalent to:
-
-            self.normalize(data_type).satisfies(self)
+        Tests whether this data type is a super-type of or the same
+        as another data type.
 
         :param data_type: The other data type, may be given as type
             alias name, as a type, or as a DataType instance.
         :return: Whether this data type satisfies another data type.
         """
-        return issubclass(self.normalize(data_type).dtype,
+        return issubclass(self._normalize_dtype(data_type),
                           self.dtype)
 
     @classmethod
@@ -167,16 +158,13 @@ class DataType:
             serializer=str
         )
 
-    def assert_satisfies(self,
-                         data_type: DataTypeLike,
-                         name: str = None):
-        """Assert that this data type satisfies another *data_type*."""
-        name = name or 'data_type'
-        data_type = self.normalize(data_type)
-        assert_true(self.satisfies(data_type),
-                    f'{name} must satisfy'
-                    f' data type {data_type!r},'
-                    f' but was {self!r}')
+    @classmethod
+    def _normalize_dtype(cls, data_type: DataTypeLike) -> Type:
+        if isinstance(data_type, DataType):
+            return data_type.dtype
+        if isinstance(data_type, type):
+            return data_type
+        return cls.normalize(data_type).dtype
 
     @staticmethod
     def _get_fully_qualified_type_name(data_type: Type) -> str:

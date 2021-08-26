@@ -118,46 +118,49 @@ class DataTypeTest(unittest.TestCase):
         self.assertEqual(hash(copy.deepcopy(DATASET_TYPE)), hash(DATASET_TYPE))
         self.assertNotEqual(hash(MULTI_LEVEL_DATASET_TYPE), hash(DATASET_TYPE))
 
-    def test_satisfies(self):
-        self.assertTrue(ANY_TYPE.satisfies(ANY_TYPE))
-        self.assertFalse(ANY_TYPE.satisfies(DATASET_TYPE))
-        self.assertFalse(ANY_TYPE.satisfies(MULTI_LEVEL_DATASET_TYPE))
+    def test_is_sub_type_of(self):
+        self.assertTrue(ANY_TYPE.is_sub_type_of(ANY_TYPE))
+        self.assertFalse(ANY_TYPE.is_sub_type_of(DATASET_TYPE))
+        self.assertFalse(ANY_TYPE.is_sub_type_of(MULTI_LEVEL_DATASET_TYPE))
 
-        self.assertTrue(DATASET_TYPE.satisfies(ANY_TYPE))
-        self.assertTrue(DATASET_TYPE.satisfies(DATASET_TYPE))
-        self.assertFalse(DATASET_TYPE.satisfies(MULTI_LEVEL_DATASET_TYPE))
-
-        a_type = DataType.normalize(A)
-        b_type = DataType.normalize(B)
-        c_type = DataType.normalize(C)
-        self.assertTrue(a_type.satisfies(a_type))
-        self.assertTrue(b_type.satisfies(a_type))
-        self.assertFalse(c_type.satisfies(a_type))
-
-    def test_is_satisfied_by(self):
-        self.assertTrue(ANY_TYPE.is_satisfied_by(ANY_TYPE))
-        self.assertTrue(ANY_TYPE.is_satisfied_by(DATASET_TYPE))
-        self.assertTrue(ANY_TYPE.is_satisfied_by(DATASET_TYPE))
-
-        self.assertTrue(ANY_TYPE.is_satisfied_by(DATASET_TYPE))
-        self.assertTrue(DATASET_TYPE.is_satisfied_by(DATASET_TYPE))
-        self.assertFalse(MULTI_LEVEL_DATASET_TYPE.is_satisfied_by(DATASET_TYPE))
+        self.assertTrue(DATASET_TYPE.is_sub_type_of(ANY_TYPE))
+        self.assertTrue(DATASET_TYPE.is_sub_type_of(DATASET_TYPE))
+        self.assertFalse(DATASET_TYPE.is_sub_type_of(MULTI_LEVEL_DATASET_TYPE))
 
         a_type = DataType.normalize(A)
         b_type = DataType.normalize(B)
         c_type = DataType.normalize(C)
-        self.assertTrue(a_type.is_satisfied_by(a_type))
-        self.assertFalse(b_type.is_satisfied_by(a_type))
-        self.assertFalse(c_type.is_satisfied_by(a_type))
+        self.assertTrue(a_type.is_sub_type_of(a_type))
+        self.assertFalse(a_type.is_sub_type_of(b_type))
+        self.assertFalse(a_type.is_sub_type_of(c_type))
+        self.assertTrue(b_type.is_sub_type_of(a_type))
+        self.assertTrue(b_type.is_sub_type_of(b_type))
+        self.assertFalse(b_type.is_sub_type_of(c_type))
+        self.assertFalse(c_type.is_sub_type_of(a_type))
+        self.assertFalse(c_type.is_sub_type_of(b_type))
+        self.assertTrue(c_type.is_sub_type_of(c_type))
 
-    def test_assert_satisfies(self):
-        DATASET_TYPE.assert_satisfies('dataset')  # ok!
-        with self.assertRaises(ValueError) as cm:
-            # noinspection PyTypeChecker
-            DATASET_TYPE.assert_satisfies('mldataset', name='dt')
-        self.assertEqual("dt must satisfy data type 'mldataset',"
-                         " but was 'dataset'",
-                         f'{cm.exception}')
+    def test_is_super_type_of(self):
+        self.assertTrue(ANY_TYPE.is_super_type_of(ANY_TYPE))
+        self.assertTrue(ANY_TYPE.is_super_type_of(DATASET_TYPE))
+        self.assertTrue(ANY_TYPE.is_super_type_of(DATASET_TYPE))
+
+        self.assertTrue(ANY_TYPE.is_super_type_of(DATASET_TYPE))
+        self.assertTrue(DATASET_TYPE.is_super_type_of(DATASET_TYPE))
+        self.assertFalse(MULTI_LEVEL_DATASET_TYPE.is_super_type_of(DATASET_TYPE))
+
+        a_type = DataType.normalize(A)
+        b_type = DataType.normalize(B)
+        c_type = DataType.normalize(C)
+        self.assertTrue(a_type.is_super_type_of(a_type))
+        self.assertTrue(a_type.is_super_type_of(b_type))
+        self.assertFalse(a_type.is_super_type_of(c_type))
+        self.assertFalse(b_type.is_super_type_of(a_type))
+        self.assertTrue(b_type.is_super_type_of(b_type))
+        self.assertFalse(b_type.is_super_type_of(c_type))
+        self.assertFalse(c_type.is_super_type_of(a_type))
+        self.assertFalse(c_type.is_super_type_of(b_type))
+        self.assertTrue(c_type.is_super_type_of(c_type))
 
     def test_schema(self):
         self.assertIsInstance(DATASET_TYPE.get_schema(), JsonStringSchema)

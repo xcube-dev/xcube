@@ -44,6 +44,7 @@ from xcube.core.mldataset import open_ml_dataset_from_local_fs
 from xcube.core.mldataset import open_ml_dataset_from_object_storage
 from xcube.core.mldataset import open_ml_dataset_from_python_code
 from xcube.core.normalize import get_dataset_cube_subset
+from xcube.core.store import DATASET_TYPE
 from xcube.core.store import DataStoreConfig
 from xcube.core.store import DataStorePool
 from xcube.core.store import DatasetDescriptor
@@ -285,7 +286,7 @@ class ServiceContext:
             )
             data_store = data_store_pool.get_store(store_instance_id)
             store_dataset_ids = data_store.get_data_ids(
-                type_specifier='dataset'
+                data_type=DATASET_TYPE
             )
             for store_dataset_id in store_dataset_ids:
                 dataset_config_base = {}
@@ -326,7 +327,7 @@ class ServiceContext:
         data_store = self._data_store_pool.get_store(store_instance_id)
         dataset_metadata = data_store.describe_data(
             dataset_id,
-            type_specifier='dataset'
+            data_type='dataset'
         )
         if dataset_metadata.crs is not None:
             crs = pyproj.CRS.from_string(dataset_metadata.crs)

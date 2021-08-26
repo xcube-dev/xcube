@@ -21,11 +21,10 @@
 
 from typing import Sequence
 
+from xcube.core.store import DATASET_TYPE
 from xcube.core.store import DataStoreError
 from xcube.core.store import DataStorePool
 from xcube.core.store import DatasetDescriptor
-from xcube.core.store import TYPE_SPECIFIER_CUBE
-from xcube.core.store import TYPE_SPECIFIER_DATASET
 from xcube.core.store import get_data_store_instance
 from xcube.core.store import new_data_opener
 from xcube.util.assertions import assert_instance
@@ -71,15 +70,11 @@ class DatasetsDescriber:
             opener = new_data_opener(opener_id)
         try:
             descriptor = opener.describe_data(input_config.data_id,
-                                              TYPE_SPECIFIER_CUBE)
+                                              data_type=DATASET_TYPE)
         except DataStoreError:
-            try:
-                descriptor = opener.describe_data(input_config.data_id,
-                                                  TYPE_SPECIFIER_DATASET)
-            except DataStoreError:
-                raise CubeGeneratorError(f'Data store '
-                                         f'"{input_config.store_id}" '
-                                         f'does not support datasets')
+            raise CubeGeneratorError(f'Data store '
+                                     f'"{input_config.store_id}" '
+                                     f'does not support datasets')
         if not isinstance(descriptor, DatasetDescriptor):
             raise RuntimeError(f'internal error: data store '
                                f'"{input_config.store_id}": '
