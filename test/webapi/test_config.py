@@ -54,9 +54,9 @@ class ServiceConfigTest(unittest.TestCase):
             "DataStores": [
                 {
                     "Identifier": "local",
-                    "StoreId": "directory",
+                    "StoreId": "file",
                     "StoreParams": {
-                        "base_dir": f"{test_dir}/../../examples/serve/demo",
+                        "root": f"{test_dir}/../../examples/serve/demo",
                     },
                     "Datasets": [
                         {
