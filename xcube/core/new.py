@@ -53,9 +53,9 @@ def new_cube(title='Test Cube',
              variables=None,
              crs=None):
     """
-    Create a new empty cube. Useful for creating cubes templates with predefined
-    coordinate variables and metadata. The function is also heavily used
-    by xcube's unit tests.
+    Create a new empty cube. Useful for creating cubes templates with
+    predefined coordinate variables and metadata. The function is also
+    heavily used by xcube's unit tests.
 
     The values of the *variables* dictionary can be either constants,
     array-like objects, or functions that compute their return value from
@@ -81,16 +81,24 @@ def new_cube(title='Test Cube',
     :param time_periods: Number of time steps. Defaults to 5.
     :param time_freq: Duration of each time step. Defaults to `1D'.
     :param time_start: First time value. Defaults to '2010-01-01T00:00:00'.
-    :param time_dtype: Numpy data type for time coordinates. Defaults to 'datetime64[s]'. If used,
-    parameter 'use_cftime' must be False.
-    :param time_units: Units for time coordinates. Defaults to 'seconds since 1970-01-01T00:00:00'.
-    :param time_calendar: Calender for time coordinates. Defaults to 'proleptic_gregorian'.
-    :param use_cftime: If True, the time will be given as data types according to the 'cftime'
-    package. If used, the time_calendar parameter must be also be given with an appropriate value
-    such as 'gregorian' or 'julian'. If used, parameter 'time_dtype' must be None.
-    :param drop_bounds: If True, coordinate bounds variables are not created. Defaults to False.
-    :param variables: Dictionary of data variables to be added. None by default.
-    :param crs: pyproj-compatible CRS string or instance of pyproj.CRS or None
+    :param time_dtype: Numpy data type for time coordinates.
+        Defaults to 'datetime64[s]'.
+        If used, parameter 'use_cftime' must be False.
+    :param time_units: Units for time coordinates.
+        Defaults to 'seconds since 1970-01-01T00:00:00'.
+    :param time_calendar: Calender for time coordinates.
+        Defaults to 'proleptic_gregorian'.
+    :param use_cftime: If True, the time will be given as data types
+        according to the 'cftime' package. If used, the time_calendar
+        parameter must be also be given with an appropriate value
+        such as 'gregorian' or 'julian'. If used, parameter 'time_dtype'
+        must be None.
+    :param drop_bounds: If True, coordinate bounds variables are not created.
+        Defaults to False.
+    :param variables: Dictionary of data variables to be added.
+        None by default.
+    :param crs: pyproj-compatible CRS string or instance
+        of pyproj.CRS or None
     :return: A cube instance
     """
     y_dtype = y_dtype if y_dtype is not None else y_dtype
@@ -101,7 +109,8 @@ def new_cube(title='Test Cube',
         raise ValueError()
 
     if use_cftime and time_dtype is not None:
-        raise ValueError('If "use_cftime" is True, "time_dtype" must not be set.')
+        raise ValueError('If "use_cftime" is True,'
+                         ' "time_dtype" must not be set.')
 
     x_is_lon = x_name == 'lon' or x_units == 'degrees_east'
     y_is_lat = y_name == 'lat' or y_units == 'degrees_north'
@@ -118,8 +127,10 @@ def new_cube(title='Test Cube',
     x_res_05 = 0.5 * x_res
     y_res_05 = 0.5 * y_res
 
-    x_data = np.linspace(x_start + x_res_05, x_end - x_res_05, width, dtype=x_dtype)
-    y_data = np.linspace(y_start + y_res_05, y_end - y_res_05, height, dtype=y_dtype)
+    x_data = np.linspace(x_start + x_res_05, x_end - x_res_05,
+                         width, dtype=x_dtype)
+    y_data = np.linspace(y_start + y_res_05, y_end - y_res_05,
+                         height, dtype=y_dtype)
 
     x_var = xr.DataArray(x_data, dims=x_name, attrs=dict(units=x_units))
     y_var = xr.DataArray(y_data, dims=y_name, attrs=dict(units=y_units))
@@ -165,30 +176,42 @@ def new_cube(title='Test Cube',
         bnds_dim = 'bnds'
 
         x_bnds_data = np.zeros((width, 2), dtype=np.float64)
-        x_bnds_data[:, 0] = np.linspace(x_start, x_end - x_res, width, dtype=x_dtype)
-        x_bnds_data[:, 1] = np.linspace(x_start + x_res, x_end, width, dtype=x_dtype)
+        x_bnds_data[:, 0] = np.linspace(x_start, x_end - x_res,
+                                        width, dtype=x_dtype)
+        x_bnds_data[:, 1] = np.linspace(x_start + x_res, x_end,
+                                        width, dtype=x_dtype)
         y_bnds_data = np.zeros((height, 2), dtype=np.float64)
-        y_bnds_data[:, 0] = np.linspace(y_start, y_end - x_res, height, dtype=y_dtype)
-        y_bnds_data[:, 1] = np.linspace(y_start + x_res, y_end, height, dtype=y_dtype)
+        y_bnds_data[:, 0] = np.linspace(y_start, y_end - x_res,
+                                        height, dtype=y_dtype)
+        y_bnds_data[:, 1] = np.linspace(y_start + x_res, y_end,
+                                        height, dtype=y_dtype)
         if inverse_y:
             y_bnds_data = y_bnds_data[::-1, ::-1]
 
-        x_bnds_var = xr.DataArray(x_bnds_data, dims=(x_name, bnds_dim), attrs=dict(units=x_units))
-        y_bnds_var = xr.DataArray(y_bnds_data, dims=(y_name, bnds_dim), attrs=dict(units=y_units))
+        x_bnds_var = xr.DataArray(x_bnds_data,
+                                  dims=(x_name, bnds_dim),
+                                  attrs=dict(units=x_units))
+        y_bnds_var = xr.DataArray(y_bnds_data,
+                                  dims=(y_name, bnds_dim),
+                                  attrs=dict(units=y_units))
 
         x_var.attrs['bounds'] = x_bnds_name
         y_var.attrs['bounds'] = y_bnds_name
 
-        time_bnds_data = np.zeros((time_periods, 2), dtype=time_data_p1.dtype)
+        time_bnds_data = np.zeros((time_periods, 2),
+                                  dtype=time_data_p1.dtype)
         time_bnds_data[:, 0] = time_data_p1[:-1]
         time_bnds_data[:, 1] = time_data_p1[1:]
-        time_bnds_var = xr.DataArray(time_bnds_data, dims=(time_name, bnds_dim))
+        time_bnds_var = xr.DataArray(time_bnds_data,
+                                     dims=(time_name, bnds_dim))
         time_bnds_var.encoding['units'] = time_units
         time_bnds_var.encoding['calendar'] = time_calendar
 
         time_var.attrs['bounds'] = time_bnds_name
 
-        coords.update({x_bnds_name: x_bnds_var, y_bnds_name: y_bnds_var, time_bnds_name: time_bnds_var})
+        coords.update({x_bnds_name: x_bnds_var,
+                       y_bnds_name: y_bnds_var,
+                       time_bnds_name: time_bnds_var})
 
     attrs = dict(Conventions="CF-1.7",
                  title=title,
@@ -213,8 +236,12 @@ def new_cube(title='Test Cube',
         for var_name, data in variables.items():
             if isinstance(data, xr.DataArray):
                 data_vars[var_name] = data
-            elif isinstance(data, int) or isinstance(data, float) or isinstance(data, bool):
-                data_vars[var_name] = xr.DataArray(np.full(shape, data), dims=dims)
+            elif isinstance(data, int) \
+                    or isinstance(data, float) \
+                    or isinstance(data, bool):
+                data_vars[var_name] = xr.DataArray(
+                    np.full(shape, data), dims=dims
+                )
             elif callable(data):
                 func = data
                 data = np.zeros(shape)
@@ -222,13 +249,17 @@ def new_cube(title='Test Cube',
                     data[index] = func(*index)
                 data_vars[var_name] = xr.DataArray(data, dims=dims)
             elif data is None:
-                data_vars[var_name] = xr.DataArray(np.random.uniform(0.0, 1.0, size).reshape(shape), dims=dims)
+                data_vars[var_name] = xr.DataArray(
+                    np.random.uniform(0.0, 1.0, size).reshape(shape),
+                    dims=dims
+                )
             else:
                 data_vars[var_name] = xr.DataArray(data, dims=dims)
 
     if isinstance(crs, str):
-        data_vars['crs'] = xr.DataArray(0, attrs=pyproj.CRS.from_string(crs).to_cf())
-    elif isinstance(crs, pyproj.CRS):
+        crs = pyproj.CRS.from_string(crs)
+
+    if isinstance(crs, pyproj.CRS):
         data_vars['crs'] = xr.DataArray(0, attrs=crs.to_cf())
 
     return xr.Dataset(data_vars=data_vars, coords=coords, attrs=attrs)
