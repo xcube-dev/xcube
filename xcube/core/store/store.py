@@ -72,7 +72,7 @@ def new_data_store(data_store_id: str,
 def get_data_store_class(
         data_store_id: str,
         extension_registry: Optional[ExtensionRegistry] = None
-) -> Type[Union['DataStore', 'MutableDataStore']]:
+) -> Union[Type['DataStore'], Type['MutableDataStore']]:
     """
     Get the class for the data store identified by *data_store_id*.
 
