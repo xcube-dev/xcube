@@ -33,34 +33,27 @@ There are no further restrictions for data source and data store identifiers.
 
 A data accessor identifier MUST correspond to the following scheme:
 
-`<type_specifier>:<format_identifier>:<storage_identifier>[:<version>]`
+`<data_type>:<format>:<storage>[:<version>]`
 
-`<type_specifier>` specifies a data type. 
-Its intention and format is described in the sub-section below.
-In case the type specifier has flags, the flags MUST be given within square brackets, in alphabetic order, separated by 
-single commas and without spaces (e.g., `"dataset[cube,multilevel]"`).
-The `<format_identifier>` describes the data format that may be accessed, e.g., `zarr` or `netcdf`.
-The `<storage_identifier>` describes the kind of storage or data provision the accessor can access.
-Example values are `memory`, `s3` or `sentinelhub`.
-The `<version>` finally is an optional notifier about a data accessor's version.
-The version SHOULD follow the [Semantic Versioning](https://semver.org).
+`<data_type>` identifies the in-memory data type to represent the data, 
+e.g., `dataset` (or `xarray.Dataset`), `geodataframe` 
+(or `geopandas.GeoDataFrame`).
+`<format>` identifies the data format that may be accessed, 
+e.g., `zarr`, `netcdf`, `geojson`.
+`<storage>` identifies the kind of storage or data provision the 
+accessor can access. Example values are `file` (the local file system), 
+`s3` (AWS S3-compatible object storage), or `sentinelhub` 
+(the Sentinel Hub API), or `cciodp` (the ESA CCI Open Data Portal API).
+The `<version>` finally is an optional notifier 
+about a data accessor's version. The version MUST follow the 
+[Semantic Versioning](https://semver.org).
 
 Examples for valid data accessors identifiers are:
 
-`dataset[cube]:netcdf:posix`.
-`geodataframe:shapefile:cciodp:0.4.1`
-
-### Type Specifiers
-
-Type Specifiers are used to specify a data type.
-They consist of a name and an arbitrary number of optional flags, given in square brackets. 
-These flags are used to define characteristics of a type, e.g., the type specifier "`dataset[cube]`" denotes a dataset 
-which also meets the requirements of a cube. 
-A dataset specified by `dataset[cube, multilevel]` is a cube and has multiple levels.
-The order of flags is irrelevant, i.e., `dataset[cube, multilevel]` is the same as `dataset[multilevel, cube]`. 
-A type specifier with a flag is compatible to a type specifier that does not have the same flag set but is otherwise 
-similar, e.g., `dataset[cube]` is compatible with `dataset`.
-The value `*` indicates that any type is supported.
+* `dataset:netcdf:file`
+* `dataset:zarr:sentinelhub`
+* `geodataframe:geojson:file`
+* `geodataframe:shapefile:cciodp:0.4.1`
 
 ## Open Parameters
 
