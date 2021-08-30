@@ -4,8 +4,11 @@ from typing import Tuple
 
 import numpy as np
 import xarray as xr
+from zarr.storage import MemoryStore
 
 from xcube.core.chunkstore import ChunkStore
+from xcube.core.chunkstore import LoggingStore
+from xcube.core.chunkstore import MutableLoggingStore
 
 
 class ChunkStoreTest(unittest.TestCase):
@@ -76,3 +79,52 @@ def gen_index_var(dims, shape, chunks):
 
     ds = xr.open_zarr(store)
     return ds.__index_var__
+
+
+class LoggingStoreTest(unittest.TestCase):
+    def test_immutable_new(self):
+        self.assertReadOk(LoggingStore.new(self.original_store))
+
+    def test_mutable_new(self):
+        self.assertWriteOk(LoggingStore.new(self.original_store))
+
+    def test_immutable(self):
+        self.assertReadOk(LoggingStore(self.original_store))
+
+    def test_mutable(self):
+        self.assertWriteOk(MutableLoggingStore(self.original_store))
+
+    def setUp(self) -> None:
+        self.zattrs_value = bytes()
+        self.original_store = MemoryStore()
+        self.original_store.update({'chl/.zattrs': self.zattrs_value})
+
+    def assertReadOk(self, logging_store: LoggingStore):
+        # noinspection PyUnresolvedReferences
+        self.assertEqual(['.zattrs'],
+                         logging_store.listdir('chl'))
+        # noinspection PyUnresolvedReferences
+        self.assertEqual(0,
+                         logging_store.getsize('chl'))
+        self.assertEqual({'chl/.zattrs'},
+                         set(logging_store.keys()))
+        self.assertEqual(['chl/.zattrs'],
+                         list(iter(logging_store)))
+        self.assertTrue('chl/.zattrs' in logging_store)
+        self.assertEqual(1,
+                         len(logging_store))
+        self.assertEqual(self.zattrs_value,
+                         logging_store.get('chl/.zattrs'))
+        # assert original_store not changed
+        self.assertEqual({'chl/.zattrs'},
+                         set(self.original_store.keys()))
+
+    def assertWriteOk(self, logging_store: MutableLoggingStore):
+        zarray_value = bytes()
+        logging_store['chl/.zarray'] = zarray_value
+        self.assertEqual({'chl/.zattrs',
+                          'chl/.zarray'},
+                         set(self.original_store.keys()))
+        del logging_store['chl/.zarray']
+        self.assertEqual({'chl/.zattrs'},
+                         set(self.original_store.keys()))

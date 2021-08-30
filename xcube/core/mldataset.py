@@ -17,6 +17,7 @@ from xcube.core.dsio import guess_dataset_format
 from xcube.core.dsio import is_s3_url
 from xcube.core.dsio import parse_s3_fs_and_root
 from xcube.core.dsio import write_cube
+from xcube.core.normalize import get_dataset_cube_subset
 from xcube.core.geom import get_dataset_bounds
 from xcube.core.verify import assert_cube
 from xcube.util.perf import measure_time
@@ -410,6 +411,9 @@ class BaseMultiLevelDataset(LazyMultiLevelDataset):
         if base_dataset is None:
             raise ValueError("base_dataset must be given")
         self._base_dataset = base_dataset
+        self._base_cube, self._grid_mapping = get_dataset_cube_subset(
+            base_dataset
+        )
 
     def _get_dataset_lazily(self, index: int, parameters: Dict[str, Any]) -> xr.Dataset:
         """
@@ -423,14 +427,15 @@ class BaseMultiLevelDataset(LazyMultiLevelDataset):
         if index == 0:
             level_dataset = self._base_dataset
         else:
-            base_dataset = self._base_dataset
+            base_dataset = self._base_cube
             step = 2 ** index
             data_vars = {}
             for var_name in base_dataset.data_vars:
                 var = base_dataset[var_name]
                 var = var[..., ::step, ::step]
                 data_vars[var_name] = var
-            level_dataset = xr.Dataset(data_vars, attrs=base_dataset.attrs)
+            level_dataset = xr.Dataset(data_vars,
+                                       attrs= self._base_dataset.attrs)
         return level_dataset
 
 

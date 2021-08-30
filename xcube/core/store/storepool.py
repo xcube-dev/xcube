@@ -113,13 +113,15 @@ class DataStoreConfig:
     :param store_params: optional store parameters
     :param title: a human-readable title for the store instance
     :param description: a human-readable description of the store instance
+    :param user_data: optional user-data
     """
 
     def __init__(self,
                  store_id: str,
                  store_params: Dict[str, Any] = None,
                  title: str = None,
-                 description: str = None):
+                 description: str = None,
+                 user_data: Any = None):
         assert_given(store_id, name='store_id')
         if store_params is not None:
             assert_instance(store_params, dict, name='store_params')
@@ -127,6 +129,7 @@ class DataStoreConfig:
         self._store_params = store_params
         self._title = title
         self._description = description
+        self._user_data = user_data
 
     @property
     def store_id(self) -> Optional[str]:
@@ -143,6 +146,10 @@ class DataStoreConfig:
     @property
     def description(self) -> Optional[str]:
         return self._description
+
+    @property
+    def user_data(self) -> Optional[Any]:
+        return self._user_data
 
     @classmethod
     def from_dict(cls, data_store_config: Dict[str, Any]) \
@@ -201,7 +208,10 @@ class DataStoreInstance:
             store.close()
 
 
-DataStorePoolLike = Union[str, Dict, 'DataStorePool']
+DataStoreConfigDict = Dict[str, DataStoreConfig]
+DataStoreInstanceDict = Dict[str, DataStoreInstance]
+
+DataStorePoolLike = Union[str, Dict[str, Any], 'DataStorePool']
 
 
 class DataStorePool:
@@ -230,15 +240,19 @@ class DataStorePool:
         identifiers to to store configurations.
     """
 
-    def __init__(self, store_configs: Dict[str, DataStoreConfig] = None):
+    def __init__(self, store_configs: DataStoreConfigDict = None):
         if store_configs is not None:
             assert_instance(store_configs, dict, name='stores_configs')
-            self._instances: Dict[str, DataStoreInstance] = {
-                k: DataStoreInstance(v)
-                for k, v in store_configs.items()
-            }
         else:
-            self._instances: Dict[str, DataStoreInstance] = {}
+            store_configs = {}
+        self._instances: DataStoreInstanceDict = {
+            k: DataStoreInstance(v) for k, v in
+            store_configs.items()
+        }
+
+    @property
+    def is_empty(self) -> bool:
+        return len(self._instances) == 0
 
     @property
     def store_instance_ids(self) -> List[str]:
@@ -265,6 +279,9 @@ class DataStorePool:
         self._assert_valid_instance_id(store_instance_id)
         self._instances[store_instance_id].close()
         del self._instances[store_instance_id]
+
+    def remove_all_store_configs(self):
+        self._instances.clear()
 
     def get_store_config(self, store_instance_id: str) -> DataStoreConfig:
         self._assert_valid_instance_id(store_instance_id)

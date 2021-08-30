@@ -2,17 +2,20 @@
 Test for the normalization operation
 """
 
-import calendar
 from datetime import datetime
 from unittest import TestCase
 
 import numpy as np
 import pandas as pd
+import pyproj
 import xarray as xr
 from jdcal import gcal2jd
 from numpy.testing import assert_array_almost_equal
 
-from xcube.core.normalize import adjust_spatial_attrs
+from xcube.core.gridmapping import GridMapping
+from xcube.core.new import new_cube
+from xcube.core.normalize import adjust_spatial_attrs, DatasetIsNotACubeError
+from xcube.core.normalize import get_dataset_cube_subset
 from xcube.core.normalize import normalize_coord_vars
 from xcube.core.normalize import normalize_dataset
 from xcube.core.normalize import normalize_missing_time
@@ -24,6 +27,55 @@ def assertDatasetEqual(expected, actual):
     # `assert expected == actual`, but it
     # checks each aspect of equality separately for easier debugging
     assert expected.equals(actual), (expected, actual)
+
+
+class CubeSubsetTest(TestCase):
+    def test_cube_stays_cube(self):
+        dataset = new_cube(variables=dict(a=1, b=2, c=3))
+        cube, grid_mapping = get_dataset_cube_subset(dataset)
+        self.assertIs(dataset, cube)
+        self.assertIsInstance(grid_mapping, GridMapping)
+        self.assertTrue(grid_mapping.crs.is_geographic)
+
+    def test_no_cube_vars_are_dropped(self):
+        dataset = new_cube(variables=dict(a=1, b=2, c=3))
+        dataset = dataset.assign(
+            d=xr.DataArray([8, 9, 10], dims='level'),
+            crs=xr.DataArray(0, attrs=pyproj.CRS.from_string('CRS84').to_cf()),
+        )
+        self.assertEqual({'a', 'b', 'c', 'd', 'crs'}, set(dataset.data_vars))
+        cube, grid_mapping = get_dataset_cube_subset(dataset)
+        self.assertIsInstance(cube, xr.Dataset)
+        self.assertIsInstance(grid_mapping, GridMapping)
+        self.assertEqual({'a', 'b', 'c'}, set(cube.data_vars))
+        self.assertEqual(pyproj.CRS.from_string('CRS84'), grid_mapping.crs)
+
+    def test_no_cube_vars_found(self):
+        dataset = new_cube()
+        self.assertEqual(set(), set(dataset.data_vars))
+        with self.assertRaises(DatasetIsNotACubeError) as cm:
+            get_dataset_cube_subset(dataset)
+        self.assertEqual("No variables found"
+                         " with dimensions"
+                         " ('time', [...] 'lat', 'lon')",
+                         f'{cm.exception}')
+
+    def test_no_grid_mapping(self):
+        dataset = xr.Dataset(dict(a=[1, 2, 3], b=0.5))
+        with self.assertRaises(DatasetIsNotACubeError) as cm:
+            get_dataset_cube_subset(dataset)
+        self.assertEqual("Failed to detect grid mapping:"
+                         " cannot find any grid mapping in dataset",
+                         f'{cm.exception}')
+
+    def test_grid_mapping_not_geographic(self):
+        dataset = new_cube(x_name='x', y_name='y',
+                           variables=dict(a=0.5), crs='epsg:25832')
+        with self.assertRaises(DatasetIsNotACubeError) as cm:
+            get_dataset_cube_subset(dataset)
+        self.assertEqual("Grid mapping must use geographic CRS,"
+                         " but was 'ETRS89 / UTM zone 32N'",
+                         f'{cm.exception}')
 
 
 class TestNormalize(TestCase):
@@ -42,13 +94,13 @@ class TestNormalize(TestCase):
                                        dims=['latitude_centers'],
                                        attrs=dict(chunk_sizes=[lat_size],
                                                   dimensions=['latitude_centers']))
-        var_values_1_1d.encoding = {'chunks': (lat_size)}
+        var_values_1_1d.encoding = {'chunks': (lat_size,)}
         var_values_1_2d = xr.DataArray(np.array([var_values_1_1d.values for _ in lon_coords]).T,
                                        coords={'lat': lat_coords, 'lon': lon_coords},
                                        dims=['lat', 'lon'],
                                        attrs=dict(chunk_sizes=[lat_size, lon_size],
                                                   dimensions=['lat', 'lon']))
-        var_values_1_2d.encoding = {'chunks':  (lat_size, lon_size)}
+        var_values_1_2d.encoding = {'chunks': (lat_size, lon_size)}
         var_values_2_2d = xr.DataArray(np.random.random(lat_size * one_more_dim_size).
                                        reshape(lat_size, one_more_dim_size),
                                        coords={'latitude_centers': lat_coords,
@@ -60,13 +112,13 @@ class TestNormalize(TestCase):
         var_values_2_3d = xr.DataArray(np.array([var_values_2_2d.values for _ in lon_coords]).T,
                                        coords={'one_more_dim': one_more_dim_coords,
                                                'lat': lat_coords,
-                                               'lon': lon_coords,},
-                                       dims=['one_more_dim', 'lat', 'lon',],
+                                               'lon': lon_coords, },
+                                       dims=['one_more_dim', 'lat', 'lon', ],
                                        attrs=dict(chunk_sizes=[one_more_dim_size,
                                                                lat_size,
                                                                lon_size],
                                                   dimensions=['one_more_dim', 'lat', 'lon']))
-        var_values_2_3d.encoding = {'chunks':  (one_more_dim_size, lat_size, lon_size)}
+        var_values_2_3d.encoding = {'chunks': (one_more_dim_size, lat_size, lon_size)}
 
         dataset = xr.Dataset({'first': var_values_1_1d, 'second': var_values_2_2d})
         expected = xr.Dataset({'first': var_values_1_2d, 'second': var_values_2_3d})
@@ -87,7 +139,7 @@ class TestNormalize(TestCase):
         Test nominal execution
         """
         dims = ('time', 'y', 'x')
-        attribs = {'valid_min': 0., 'valid_max': 1.}
+        attrs = {'valid_min': 0., 'valid_max': 1.}
 
         t_size = 2
         y_size = 3
@@ -102,8 +154,8 @@ class TestNormalize(TestCase):
         lon_data = [[-10., 0., 10., 20.],
                     [-10., 0., 10., 20.],
                     [-10., 0., 10., 20.]]
-        dataset = xr.Dataset({'a': (dims, a_data, attribs),
-                              'b': (dims, b_data, attribs)
+        dataset = xr.Dataset({'a': (dims, a_data, attrs),
+                              'b': (dims, b_data, attrs)
                               },
                              {'time': (('time',), time_data),
                               'lat': (('y', 'x'), lat_data),
@@ -117,8 +169,8 @@ class TestNormalize(TestCase):
                              )
 
         new_dims = ('time', 'lat', 'lon')
-        expected = xr.Dataset({'a': (new_dims, a_data, attribs),
-                               'b': (new_dims, b_data, attribs)},
+        expected = xr.Dataset({'a': (new_dims, a_data, attrs),
+                               'b': (new_dims, b_data, attrs)},
                               {'time': (('time',), time_data),
                                'lat': (('lat',), [10., 20., 30.]),
                                'lon': (('lon',), [-10., 0., 10., 20.]),
@@ -249,7 +301,7 @@ class TestNormalize(TestCase):
         assertDatasetEqual(actual, expected)
 
 
-class TestAdjustSpatial(TestCase):
+class AdjustSpatialTest(TestCase):
     def test_nominal(self):
         ds = xr.Dataset({
             'first': (['lat', 'lon', 'time'], np.zeros([45, 90, 12])),
@@ -522,7 +574,7 @@ class TestAdjustSpatial(TestCase):
         self.assertIs(ds2, ds)
 
 
-class TestNormalizeCoordVars(TestCase):
+class NormalizeCoordVarsTest(TestCase):
 
     def test_ds_with_potential_coords(self):
         ds = xr.Dataset({'first': (['lat', 'lon'], np.zeros([90, 180])),
@@ -576,7 +628,7 @@ class TestNormalizeCoordVars(TestCase):
         self.assertIs(ds, new_ds)
 
 
-class TestNormalizeMissingTime(TestCase):
+class NormalizeMissingTimeTest(TestCase):
     def test_ds_without_time(self):
         ds = xr.Dataset({'first': (['lat', 'lon'], np.zeros([90, 180])),
                          'second': (['lat', 'lon'], np.zeros([90, 180]))},
@@ -740,7 +792,7 @@ class Fix360Test(TestCase):
         self.assertEqual(1., new_ds.attrs['geospatial_lat_resolution'])
 
 
-class NormalizeDimOrder(TestCase):
+class NormalizeDimOrderTest(TestCase):
     """
     Test normalize_cci_sea_level operation
     """
@@ -780,7 +832,8 @@ class NormalizeDimOrder(TestCase):
         self.assertEqual(['time', 'period', 'lat', 'lon'], list(ds2.ampl.dims))
         self.assertEqual(['time', 'period', 'lat', 'lon'], list(ds2.phase.dims))
 
-    def new_cci_seal_level_ds(self):
+    @staticmethod
+    def new_cci_seal_level_ds():
         period_size = 2
         lon_size = 4
         lat_size = 2

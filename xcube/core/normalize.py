@@ -1,5 +1,5 @@
 # The MIT License (MIT)
-# Copyright (c) 2020 by the xcube development team and contributors
+# Copyright (c) 2021 by the xcube development team and contributors
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of
 # this software and associated documentation files (the "Software"), to deal in
@@ -19,22 +19,33 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-import cftime
 import warnings
 from datetime import datetime
-from typing import Optional, Sequence, Union
+from typing import Optional, Sequence, Union, Tuple
 
+import cftime
 import numpy as np
 import pandas as pd
 import xarray as xr
 from jdcal import jd2gcal
 
+from xcube.core.gridmapping import GridMapping
 from xcube.core.timecoord import get_timestamp_from_string
 from xcube.core.timecoord import get_timestamps_from_string
 from xcube.core.verify import assert_cube
 
 DatetimeTypes = np.datetime64, cftime.datetime, datetime
 Datetime = Union[np.datetime64, cftime.datetime, datetime]
+
+
+class DatasetIsNotACubeError(BaseException):
+    """
+    Raised, if at least a subset of a dataset's variables
+    have data cube dimensions ('time' , [...], y_dim_name, x_dim_name),
+    where y_dim_name and x_dim_name are determined by a dataset's
+    :class:GridMapping.
+    """
+    pass
 
 
 def cubify_dataset(ds: xr.Dataset) -> xr.Dataset:
@@ -85,6 +96,61 @@ def normalize_dataset(ds: xr.Dataset,
     ds = normalize_missing_time(ds)
     ds = _normalize_jd2datetime(ds)
     return ds
+
+
+def get_dataset_cube_subset(dataset: xr.Dataset,
+                            normalize: bool = False) \
+        -> Tuple[xr.Dataset, GridMapping]:
+    """
+    Get the data cube subset from *dataset* and the
+    cube's grid mapping.
+
+    The returned data cube comprises all variables in *dataset*
+    whose dimensions are ('time' , [...], y_dim_name, x_dim_name).
+    Here y_dim_name and x_dim_name are determined by the
+    :class:GridMapping derived from *dataset*.
+
+    :param dataset: The dataset.
+    :param normalize: Whether to normalize the dataset,
+        before the subset is determined.
+    :return: A tuple comprising the data cube subset of *dataset*
+        and the cube's grid mapping.
+    :raise DatasetIsNotACubeError: If it is not possible to
+        determine a data cube subset from *dataset*.
+    """
+    if normalize:
+        dataset = normalize_dataset(dataset)
+    try:
+        grid_mapping = GridMapping.from_dataset(dataset)
+    except ValueError as e:
+        raise DatasetIsNotACubeError(f'Failed to detect grid mapping:'
+                                     f' {e}') from e
+    if not grid_mapping.crs.is_geographic:
+        # We will need to overcome this soon!
+        raise DatasetIsNotACubeError(f'Grid mapping must use geographic CRS,'
+                                     f' but was {grid_mapping.crs.name!r}')
+
+    x_dim_name, y_dim_name = grid_mapping.xy_dim_names
+    time_name = 'time'
+    dropped_vars = [
+        var_name for var_name, var in dataset.data_vars.items()
+        if var.ndim < 3
+           or var.dims[0] != time_name
+           or var.dims[-2] != y_dim_name
+           or var.dims[-1] != x_dim_name
+    ]
+
+    if len(dropped_vars) == len(dataset.data_vars):
+        # Or just return empty dataset?
+        raise DatasetIsNotACubeError(f'No variables found with dimensions'
+                                     f' ({time_name!r}, [...]'
+                                     f' {y_dim_name!r}, {x_dim_name!r})')
+
+    if not dropped_vars:
+        # Pure cube!
+        return dataset, grid_mapping
+
+    return dataset.drop_vars(dropped_vars), grid_mapping
 
 
 def _normalize_zonal_lat_lon(ds: xr.Dataset) -> xr.Dataset:
@@ -609,7 +675,7 @@ def get_geo_spatial_attrs_from_var(ds: xr.Dataset,
                     dim_res = ds.attrs[res_name]
                     if isinstance(dim_res, str):
                         # remove any units from string
-                        dim_res = dim_res.replace('degree', '').replace('deg', '').\
+                        dim_res = dim_res.replace('degree', '').replace('deg', ''). \
                             replace('°', '').strip()
                     try:
                         dim_res = float(dim_res)

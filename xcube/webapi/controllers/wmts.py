@@ -110,7 +110,6 @@ def get_wmts_capabilities_xml(ctx: ServiceContext, base_url: str):
         f"    </ows:OperationsMetadata>\n"
     )
 
-    dataset_descriptors = ctx.get_dataset_descriptors()
     written_tile_grids = []
     indent = '    '
 
@@ -119,8 +118,8 @@ def get_wmts_capabilities_xml(ctx: ServiceContext, base_url: str):
     dimensions_xml_cache = dict()
 
     contents_xml_lines = [(0, '<Contents>')]
-    for dataset_descriptor in dataset_descriptors:
-        ds_name = dataset_descriptor['Identifier']
+    for dataset_config in ctx.get_dataset_configs():
+        ds_name = dataset_config['Identifier']
         ds = ctx.get_dataset(ds_name)
         var_names = sorted(ds.data_vars)
         for var_name in var_names:
@@ -245,10 +244,10 @@ def get_wmts_capabilities_xml(ctx: ServiceContext, base_url: str):
     contents_xml = '\n'.join(['%s%s' % (n * indent, xml) for n, xml in contents_xml_lines])
 
     themes_xml_lines = [(0, '<Themes>')]
-    for dataset_descriptor in dataset_descriptors:
-        ds_name = dataset_descriptor.get('Identifier')
+    for dataset_config in ctx.get_dataset_configs():
+        ds_name = dataset_config.get('Identifier')
         ds = ctx.get_dataset(ds_name)
-        ds_title = dataset_descriptor.get('Title', ds.attrs.get('title', f'{ds_name} xcube dataset'))
+        ds_title = dataset_config.get('Title', ds.attrs.get('title', f'{ds_name} xcube dataset'))
         ds_abstract = ds.attrs.get('comment', '')
         themes_xml_lines.append((2, '<Theme>'))
         themes_xml_lines.append((3, f'<ows:Title>{ds_title}</ows:Title>'))

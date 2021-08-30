@@ -20,15 +20,14 @@
 # SOFTWARE.
 
 import warnings
-from typing import Sequence, Tuple
+from typing import Sequence
 
 import xarray as xr
 
-from xcube.core.normalize import cubify_dataset
+from xcube.core.normalize import get_dataset_cube_subset
 from xcube.core.select import select_subset
+from xcube.core.store import DATASET_TYPE
 from xcube.core.store import DataStorePool
-from xcube.core.store import TYPE_SPECIFIER_CUBE
-from xcube.core.store import TYPE_SPECIFIER_DATASET
 from xcube.core.store import get_data_store_instance
 from xcube.core.store import new_data_opener
 from xcube.util.assertions import assert_instance
@@ -71,7 +70,6 @@ class CubesOpener:
         opener_id = input_config.opener_id
         store_params = input_config.store_params or {}
         open_params = input_config.open_params or {}
-        normalisation_required = False
         if input_config.store_id:
             store_instance = get_data_store_instance(
                 input_config.store_id,
@@ -80,7 +78,7 @@ class CubesOpener:
             )
             store = store_instance.store
             if opener_id is None:
-                opener_id, normalisation_required = self._get_opener_id(
+                opener_id = self._get_opener_id(
                     input_config, store
                 )
             opener = store
@@ -97,11 +95,13 @@ class CubesOpener:
 
         cube_open_params = {
             k: v for k, v in cube_params.items()
-            if k in open_params_schema.properties and k != CHUNKS_PARAMETER_NAME
+            if k in open_params_schema.properties
+               and k != CHUNKS_PARAMETER_NAME
         }
         unsupported_cube_params = {
             k for k in cube_params.keys()
-            if k not in open_params_schema.properties and k != CHUNKS_PARAMETER_NAME
+            if k not in open_params_schema.properties
+               and k != CHUNKS_PARAMETER_NAME
         }
         unsupported_cube_subset_params = {}
         if unsupported_cube_params:
@@ -121,8 +121,9 @@ class CubesOpener:
                                    **open_params,
                                    **cube_open_params)
 
-        if normalisation_required:
-            dataset = cubify_dataset(dataset)
+        # TODO: save grid_mapping so we don't need to compute it later
+        dataset, grid_mapping = get_dataset_cube_subset(dataset,
+                                                        normalize=True)
 
         # Make sure cube contains non-empty data variables.
         dataset = self._ensure_dataset_not_empty(dataset,
@@ -153,35 +154,24 @@ class CubesOpener:
         return dataset
 
     @classmethod
-    def _get_opener_id(cls, input_config, store) -> Tuple[str, bool]:
-        normalisation_required = False
+    def _get_opener_id(cls, input_config, store) -> str:
         opener_ids = None
-        type_specifiers = store.get_type_specifiers_for_data(
+        data_type_names = store.get_data_types_for_data(
             input_config.data_id
         )
-        for type_specifier in type_specifiers:
-            if TYPE_SPECIFIER_CUBE.is_satisfied_by(type_specifier):
+        for data_type_name in data_type_names:
+            if DATASET_TYPE.is_super_type_of(data_type_name):
                 opener_ids = \
                     store.get_data_opener_ids(
                         data_id=input_config.data_id,
-                        type_specifier=type_specifier
+                        data_type=data_type_name
                     )
                 break
-        if not opener_ids:
-            for type_specifier in type_specifiers:
-                if TYPE_SPECIFIER_DATASET.is_satisfied_by(type_specifier):
-                    opener_ids = \
-                        store.get_data_opener_ids(
-                            data_id=input_config.data_id,
-                            type_specifier=type_specifier
-                        )
-                    normalisation_required = True
-                    break
         if not opener_ids:
             raise CubeGeneratorError(f'Data store {input_config.store_id!r}'
                                      f' does not support datasets')
         opener_id = opener_ids[0]
-        return opener_id, normalisation_required
+        return opener_id
 
     @classmethod
     def _ensure_dataset_not_empty(cls, cube: xr.Dataset,

@@ -8,7 +8,11 @@
   Python package. The preliminary filesystem-based data stores 
   are now `s3`, `file`, and `memory`. All share a common implementations 
   and tests. Others filesystem-based data stores can be added easily
-  and will follow soon, for example `hdfs`. (#446)
+  and will follow soon, for example `hdfs`. 
+  All filesystem-based data stores now support xarray
+  datasets (type `xarray.Dataset`) in Zarr and NetCDF format as 
+  well as image pyramids (type`xcube.core.multilevel.MultiLevelDataset`) 
+  using a Zarr-based multi-level format. (#446)
 
 * Numerous breaking changes have been applied to this version
   in order to address generic resampling (#391) and support other
@@ -60,6 +64,9 @@
   the master changed or equals the release tag. 
 * Removed warning `module 'xcube_xyz' looks like an xcube-plugin but 
   lacks a callable named 'init_plugin`.
+* Fixed an issue where `xcube serve` provided wrong layer source options for 
+  [OpenLayers XYZ](https://openlayers.org/en/latest/apidoc/module-ol_source_XYZ-XYZ.html) 
+  when latitude coordinates where increasing with the coordinate index. (#251)
   
 ## Changes in 0.8.2 (in development)
 

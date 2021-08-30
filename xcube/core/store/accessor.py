@@ -20,19 +20,20 @@
 # SOFTWARE.
 
 from abc import abstractmethod, ABC
-from typing import Any, List, Optional, Union
+from typing import Any, List, Optional
 
 import xarray as xr
 
 from xcube.constants import EXTENSION_POINT_DATA_OPENERS
 from xcube.constants import EXTENSION_POINT_DATA_WRITERS
-from xcube.core.store.typespecifier import TypeSpecifier
 from xcube.util.assertions import assert_given
 from xcube.util.extension import Extension
 from xcube.util.extension import ExtensionPredicate
 from xcube.util.extension import ExtensionRegistry
 from xcube.util.jsonschema import JsonObjectSchema
 from xcube.util.plugin import get_extension_registry
+from .datatype import DataType
+from .datatype import DataTypeLike
 from .error import DataStoreError
 
 
@@ -46,11 +47,13 @@ def new_data_opener(opener_id: str,
     """
     Get an instance of the data opener identified by *opener_id*.
 
-    The optional, extra opener parameters *opener_params* may be used by data store
-    (``xcube.core.store.DataStore``) implementations so they can share their internal state with the opener.
+    The optional, extra opener parameters *opener_params* may
+    be used by data store (``xcube.core.store.DataStore``)
+    implementations so they can share their internal state with the opener.
 
     :param opener_id: The data opener identifier.
-    :param extension_registry: Optional extension registry. If not given, the global extension registry will be used.
+    :param extension_registry: Optional extension registry.
+        If not given, the global extension registry will be used.
     :param opener_params: Extra opener parameters.
     :return: A data opener instance.
     """
@@ -70,11 +73,13 @@ def new_data_writer(writer_id: str,
     """
     Get an instance of the data writer identified by *writer_id*.
 
-    The optional, extra writer parameters *writer_params* may be used by data store
-    (``xcube.core.store.DataStore``) implementations so they can share their internal state with the writer.
+    The optional, extra writer parameters *writer_params* may be used by
+    data store (``xcube.core.store.DataStore``) implementations so they
+    can share their internal state with the writer.
 
     :param writer_id: The data writer identifier.
-    :param extension_registry: Optional extension registry. If not given, the global extension registry will be used.
+    :param extension_registry: Optional extension registry.
+        If not given, the global extension registry will be used.
     :param writer_params: Extra writer parameters.
     :return: A data writer instance.
     """
@@ -88,48 +93,66 @@ def new_data_writer(writer_id: str,
                                             writer_id)(**writer_params)
 
 
-def find_data_opener_extensions(predicate: ExtensionPredicate = None,
-                                extension_registry: Optional[ExtensionRegistry] = None) -> List[Extension]:
+def find_data_opener_extensions(
+        predicate: ExtensionPredicate = None,
+        extension_registry: Optional[ExtensionRegistry] = None
+) -> List[Extension]:
     """
-    Get registered data opener extensions using the optional filter function *predicate*.
+    Get registered data opener extensions using the optional
+    filter function *predicate*.
 
     :param predicate: An optional filter function.
-    :param extension_registry: Optional extension registry. If not given, the global extension registry will be used.
+    :param extension_registry: Optional extension registry.
+        If not given, the global extension registry will be used.
     :return: List of matching extensions.
     """
     extension_registry = extension_registry or get_extension_registry()
-    return extension_registry.find_extensions(EXTENSION_POINT_DATA_OPENERS, predicate=predicate)
+    return extension_registry.find_extensions(
+        EXTENSION_POINT_DATA_OPENERS,
+        predicate=predicate
+    )
 
 
-def find_data_writer_extensions(predicate: ExtensionPredicate = None,
-                                extension_registry: Optional[ExtensionRegistry] = None) -> List[Extension]:
+def find_data_writer_extensions(
+        predicate: ExtensionPredicate = None,
+        extension_registry: Optional[ExtensionRegistry] = None
+) -> List[Extension]:
     """
-    Get registered data writer extensions using the optional filter function *predicate*.
+    Get registered data writer extensions using the optional filter
+    function *predicate*.
 
     :param predicate: An optional filter function.
-    :param extension_registry: Optional extension registry. If not given, the global extension registry will be used.
+    :param extension_registry: Optional extension registry.
+        If not given, the global extension registry will be used.
     :return: List of matching extensions.
     """
     extension_registry = extension_registry or get_extension_registry()
-    return extension_registry.find_extensions(EXTENSION_POINT_DATA_WRITERS, predicate=predicate)
+    return extension_registry.find_extensions(
+        EXTENSION_POINT_DATA_WRITERS,
+        predicate=predicate
+    )
 
 
-def get_data_accessor_predicate(type_specifier: Union[str, TypeSpecifier] = None,
-                                format_id: str = None,
-                                storage_id: str = None) -> ExtensionPredicate:
+def get_data_accessor_predicate(
+        data_type: DataTypeLike = None,
+        format_id: str = None,
+        storage_id: str = None
+) -> ExtensionPredicate:
     """
     Get a predicate that checks if a data accessor extensions's name is
-    compliant with *type_specifier*, *format_id*, *storage_id*.
+    compliant with *data_type*, *format_id*, *storage_id*.
 
-    :param type_specifier: Optional data type specifier to be supported.
+    :param data_type: Optional data data type to be supported.
+        May be given as type alias name, as a type,
+        or as a DataType instance.
     :param format_id: Optional data format identifier to be supported.
     :param storage_id: Optional data storage identifier to be supported.
     :return: A filter function.
     :raise DataStoreError: If an error occurs.
     """
-    if any((type_specifier, format_id, storage_id)):
-        type_specifier = TypeSpecifier.normalize(type_specifier) \
-            if type_specifier is not None else None
+    if any((data_type, format_id, storage_id)):
+        data_type = DataType.normalize(data_type) \
+            if data_type is not None else None
 
         def _predicate(extension: Extension) -> bool:
             extension_parts = extension.name.split(':', maxsplit=4)
@@ -141,9 +164,9 @@ def get_data_accessor_predicate(type_specifier: Union[str, TypeSpecifier] = None
                 ext_format_id = extension_parts[1]
                 if ext_format_id != '*' and ext_format_id != format_id:
                     return False
-            if type_specifier is not None:
-                ext_type_specifier = TypeSpecifier.normalize(extension_parts[0])
-                if not ext_type_specifier.satisfies(type_specifier):
+            if data_type is not None:
+                ext_data_type = DataType.normalize(extension_parts[0])
+                if not data_type.is_super_type_of(ext_data_type):
                     return False
             return True
     else:
@@ -173,12 +196,16 @@ class DataOpener(ABC):
     """
 
     @abstractmethod
-    def get_open_data_params_schema(self, data_id: str = None) -> JsonObjectSchema:
+    def get_open_data_params_schema(self, data_id: str = None) \
+            -> JsonObjectSchema:
         """
-        Get the schema for the parameters passed as *open_params* to :meth:open_data(data_id, open_params).
-        If *data_id* is given, the returned schema will be tailored to the constraints implied by the
-        identified data resource. Some openers might not support this, therefore *data_id* is optional, and if
-        it is omitted, the returned schema will be less restrictive.
+        Get the schema for the parameters passed as *open_params* to
+        :meth:open_data(data_id, open_params).
+        If *data_id* is given, the returned schema will be tailored
+        to the constraints implied by the identified data resource.
+        Some openers might not support this, therefore *data_id*
+        is optional, and if it is omitted, the returned schema will be
+        less restrictive.
 
         :param data_id: An optional data resource identifier.
         :return: The schema for the parameters in *open_params*.
@@ -186,9 +213,10 @@ class DataOpener(ABC):
         """
 
     @abstractmethod
-    def open_data(self, data_id: str, **open_params) -> xr.Dataset:
+    def open_data(self, data_id: str, **open_params) -> Any:
         """
-        Open the data resource given by the data resource identifier *data_id* using the supplied *open_params*.
+        Open the data resource given by the data resource identifier
+        *data_id* using the supplied *open_params*.
 
         Raises if *data_id* does not exist.
 

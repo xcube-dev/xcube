@@ -32,6 +32,7 @@ from .impl.fs import MemoryFsAccessor
 from .impl.fs import S3FsAccessor
 from .impl.geodataframe import GeoDataFrameGeoJsonFsDataAccessor
 from .impl.geodataframe import GeoDataFrameShapefileFsDataAccessor
+from .impl.mldataset import MultiLevelDatasetLevelsFsDataAccessor
 from .store import FsDataStore
 from ..assertions import assert_valid_params
 from ..error import DataStoreError
@@ -109,26 +110,27 @@ def register_fs_data_accessor_class(
     :param fs_data_accessor_class: an abstract class
         that extends :class:FsDataAccessor.
     """
-    type_specifier = fs_data_accessor_class.get_type_specifier()
     format_id = fs_data_accessor_class.get_format_id()
-    key = f'{type_specifier}:{format_id}'
-    _FS_DATA_ACCESSOR_CLASSES[key] = fs_data_accessor_class
+    for data_type in fs_data_accessor_class.get_data_types():
+        key = f'{data_type}:{format_id}'
+        _FS_DATA_ACCESSOR_CLASSES[key] = fs_data_accessor_class
 
 
 for cls in (DatasetZarrFsDataAccessor,
             DatasetNetcdfFsDataAccessor,
+            MultiLevelDatasetLevelsFsDataAccessor,
             GeoDataFrameShapefileFsDataAccessor,
             GeoDataFrameGeoJsonFsDataAccessor):
     register_fs_data_accessor_class(cls)
 
 
 def get_fs_data_accessor_class(fs_protocol: str,
-                               type_specifier: str,
+                               data_type_alias: str,
                                format_id: str) -> Type[FsDataAccessor]:
     """
     Get the class for a filesystem data accessor.
 
-    :param type_specifier: The data type specifier,
+    :param data_type_alias: The data type alias name,
         for example "dataset", "geodataframe".
     :param format_id: The format identifier,
         for example "zarr", "geojson".
@@ -136,10 +138,10 @@ def get_fs_data_accessor_class(fs_protocol: str,
         for example "file", "s3", "memory".
     :return: A class that derives from :class:FsAccessor
     """
-    accessor_id = f'{type_specifier}:{format_id}'
+    accessor_id = f'{data_type_alias}:{format_id}'
     data_accessor_class = _FS_DATA_ACCESSOR_CLASSES.get(accessor_id)
     if data_accessor_class is None:
-        raise DataStoreError(f'Combination of data type {type_specifier!r}'
+        raise DataStoreError(f'Combination of data type {data_type_alias!r}'
                              f' and format {format_id!r} is not supported')
 
     fs_accessor_class = get_fs_accessor_class(fs_protocol)
