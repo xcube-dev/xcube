@@ -19,7 +19,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 import os.path
-from typing import Dict, Any, List, Union
+from typing import Dict, Any, List, Union, Tuple
 
 import fsspec
 import xarray as xr
@@ -30,17 +30,21 @@ from xcube.core.mldataset import MultiLevelDataset
 from xcube.core.mldataset import get_dataset_tile_grid
 from xcube.util.assertions import assert_instance
 from .dataset import DatasetZarrFsDataAccessor
+from ...datatype import DATASET_TYPE
+from ...datatype import DataType
+from ...datatype import MULTI_LEVEL_DATASET_TYPE
 from ...error import DataStoreError
 
 
-class MultiLevelDatasetFsDataAccessor(DatasetZarrFsDataAccessor):
+class MultiLevelDatasetLevelsFsDataAccessor(DatasetZarrFsDataAccessor):
     """
-    Opener/writer extension name: "dataset[multilevel]:levels:<fs_protocol>"
+    Opener/writer extension name: "mldataset:levels:<fs_protocol>"
+    and "dataset:levels:<fs_protocol>"
     """
 
     @classmethod
-    def get_type_specifier(cls) -> str:
-        return 'dataset[multilevel]'
+    def get_data_types(cls) -> Tuple[DataType, ...]:
+        return MULTI_LEVEL_DATASET_TYPE, DATASET_TYPE
 
     @classmethod
     def get_format_id(cls) -> str:

@@ -32,6 +32,7 @@ from xcube.util.jsonschema import JsonNumberSchema
 from xcube.util.jsonschema import JsonObjectSchema
 from ..accessor import DataOpener
 from ..accessor import DataWriter
+from ..datatype import DataType
 from ..error import DataStoreError
 
 COMMON_FS_PARAMS_SCHEMA_PROPERTIES = dict(
@@ -152,10 +153,9 @@ class FsDataAccessor(DataOpener,
 
     @classmethod
     @abstractmethod
-    def get_type_specifier(cls) -> str:
+    def get_data_types(cls) -> Tuple[DataType, ...]:
         """
-        Get the data type specifier,
-        for example "dataset" or "geodataframe".
+        Get the supported data types.
         """
 
     @classmethod

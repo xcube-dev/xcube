@@ -20,6 +20,7 @@
 # SOFTWARE.
 
 from abc import ABC
+from typing import Tuple
 
 import xarray as xr
 import zarr
@@ -34,6 +35,8 @@ from xcube.util.jsonschema import JsonStringSchema
 from xcube.util.temp import new_temp_file
 from ..accessor import FsDataAccessor
 from ..helpers import is_local_fs
+from ...datatype import DATASET_TYPE
+from ...datatype import DataType
 from ...error import DataStoreError
 
 ZARR_OPEN_DATA_PARAMS_SCHEMA = JsonObjectSchema(
@@ -132,10 +135,13 @@ ZARR_WRITE_DATA_PARAMS_SCHEMA = JsonObjectSchema(
 
 
 class DatasetFsDataAccessor(FsDataAccessor, ABC):
+    """
+    Opener/writer extension name: "dataset:<format>:<fs_protocol>"
+    """
 
     @classmethod
-    def get_type_specifier(cls) -> str:
-        return 'dataset'
+    def get_data_types(cls) -> Tuple[DataType, ...]:
+        return DATASET_TYPE,
 
 
 class DatasetZarrFsDataAccessor(DatasetFsDataAccessor, ABC):

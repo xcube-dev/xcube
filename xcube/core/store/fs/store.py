@@ -19,7 +19,6 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-import copy
 import os.path
 import uuid
 import warnings
@@ -36,7 +35,8 @@ from xcube.util.assertions import assert_given
 from xcube.util.assertions import assert_in
 from xcube.util.assertions import assert_instance
 from xcube.util.extension import Extension
-from xcube.util.jsonschema import JsonBooleanSchema, JsonIntegerSchema
+from xcube.util.jsonschema import JsonBooleanSchema
+from xcube.util.jsonschema import JsonIntegerSchema
 from xcube.util.jsonschema import JsonObjectSchema
 from xcube.util.jsonschema import JsonStringSchema
 from .accessor import FS_PARAMS_PARAM_NAME
@@ -51,33 +51,30 @@ from ..accessor import get_data_accessor_predicate
 from ..accessor import new_data_opener
 from ..accessor import new_data_writer
 from ..assertions import assert_valid_params
+from ..datatype import ANY_TYPE
+from ..datatype import DATASET_TYPE
+from ..datatype import DataType
+from ..datatype import DataTypeLike
+from ..datatype import GEO_DATA_FRAME_TYPE
+from ..datatype import MULTI_LEVEL_DATASET_TYPE
 from ..descriptor import DataDescriptor
 from ..descriptor import new_data_descriptor
 from ..error import DataStoreError
 from ..search import DefaultSearchMixin
 from ..store import MutableDataStore
-from ..typespecifier import TYPE_SPECIFIER_ANY
-from ..typespecifier import TYPE_SPECIFIER_DATASET
-from ..typespecifier import TYPE_SPECIFIER_GEODATAFRAME
-from ..typespecifier import TYPE_SPECIFIER_MULTILEVEL_DATASET
-from ..typespecifier import TypeSpecifier
 
-_DEFAULT_TYPE_SPECIFIER = 'dataset'
+_DEFAULT_DATA_TYPE = DATASET_TYPE.alias
 _DEFAULT_FORMAT_ID = 'zarr'
 
-_FILENAME_EXT_TO_TYPE_SPECIFIER_STR = {
-    '.zarr': str(TYPE_SPECIFIER_DATASET),
-    '.levels': str(TYPE_SPECIFIER_MULTILEVEL_DATASET),
-    '.nc': str(TYPE_SPECIFIER_DATASET),
-    '.shp': str(TYPE_SPECIFIER_GEODATAFRAME),
-    '.geojson': str(TYPE_SPECIFIER_GEODATAFRAME),
+_FILENAME_EXT_TO_DATA_TYPE_ALIAS = {
+    '.zarr': DATASET_TYPE.alias,
+    '.levels': MULTI_LEVEL_DATASET_TYPE.alias,
+    '.nc': DATASET_TYPE.alias,
+    '.shp': GEO_DATA_FRAME_TYPE.alias,
+    '.geojson': GEO_DATA_FRAME_TYPE.alias,
 }
 
-_TYPE_SPECIFIER_STR_TO_FILENAME = {
-    v: k for k, v in _FILENAME_EXT_TO_TYPE_SPECIFIER_STR.items()
-}
-
-_FILENAME_EXT_SET = set(_FILENAME_EXT_TO_TYPE_SPECIFIER_STR.keys())
+_FILENAME_EXT_SET = set(_FILENAME_EXT_TO_DATA_TYPE_ALIAS.keys())
 
 _FILENAME_EXT_TO_FORMAT = {
     '.zarr': 'zarr',
@@ -186,19 +183,19 @@ class BaseFsDataStore(DefaultSearchMixin, MutableDataStore):
         )
 
     @classmethod
-    def get_type_specifiers(cls) -> Tuple[str, ...]:
-        return tuple(_TYPE_SPECIFIER_STR_TO_FILENAME.keys())
+    def get_data_types(cls) -> Tuple[str, ...]:
+        return tuple(set(_FILENAME_EXT_TO_DATA_TYPE_ALIAS.values()))
 
-    def get_type_specifiers_for_data(self, data_id: str) -> Tuple[str, ...]:
+    def get_data_types_for_data(self, data_id: str) -> Tuple[str, ...]:
         self._assert_valid_data_id(data_id)
-        actual_type_specifier, _, _ = self._guess_accessor_id_parts(data_id)
-        return actual_type_specifier,
+        data_type_alias, _, _ = self._guess_accessor_id_parts(data_id)
+        return data_type_alias,
 
     def get_data_ids(self,
-                     type_specifier: str = None,
+                     data_type: DataTypeLike = None,
                      include_attrs: Container[str] = None) -> \
             Union[Iterator[str], Iterator[Tuple[str, Dict[str, Any]]]]:
-        type_specifier = TypeSpecifier.normalize(type_specifier)
+        data_type = DataType.normalize(data_type)
         # TODO: do not ignore names in include_attrs
         return_tuples = include_attrs is not None
 
@@ -209,20 +206,20 @@ class BaseFsDataStore(DefaultSearchMixin, MutableDataStore):
                          withdirs=True)
         )))
         for data_id in potential_data_ids:
-            if self._is_data_specified(data_id, type_specifier):
+            if self._is_data_specified(data_id, data_type):
                 yield (data_id, {}) if return_tuples else data_id
 
-    def has_data(self, data_id: str, type_specifier: str = None) -> bool:
+    def has_data(self, data_id: str, data_type: DataTypeLike = None) -> bool:
         assert_given(data_id, 'data_id')
-        if self._is_data_specified(data_id, type_specifier):
+        if self._is_data_specified(data_id, data_type):
             fs_path = self._convert_data_id_into_fs_path(data_id)
             return self.fs.exists(fs_path)
         return False
 
-    def describe_data(self, data_id: str, type_specifier: str = None) \
+    def describe_data(self, data_id: str, data_type: DataTypeLike = None) \
             -> DataDescriptor:
         self._assert_valid_data_id(data_id)
-        self._assert_data_specified(data_id, type_specifier)
+        self._assert_data_specified(data_id, data_type)
         # TODO: optimize me, self.open_data() may be very slow!
         #   For Zarr, try using self.fs to load metadata only
         #   rather than instantiating xr.Dataset instances which
@@ -233,9 +230,9 @@ class BaseFsDataStore(DefaultSearchMixin, MutableDataStore):
 
     def get_data_opener_ids(self,
                             data_id: str = None,
-                            type_specifier: Optional[str] = None) \
+                            data_type: DataTypeLike = None) \
             -> Tuple[str, ...]:
-        type_specifier = TypeSpecifier.normalize(type_specifier)
+        data_type = DataType.normalize(data_type)
         format_id = None
         storage_id = self.fs_protocol
         if data_id:
@@ -244,12 +241,12 @@ class BaseFsDataStore(DefaultSearchMixin, MutableDataStore):
             )
             if not accessor_id_parts:
                 return ()  # nothing found
-            acc_type_specifier, format_id, storage_id = accessor_id_parts
-            if type_specifier == TYPE_SPECIFIER_ANY:
-                type_specifier = acc_type_specifier
+            acc_data_type_alias, format_id, storage_id = accessor_id_parts
+            if data_type == ANY_TYPE:
+                data_type = DataType.normalize(acc_data_type_alias)
         return tuple(ext.name for ext in find_data_opener_extensions(
             predicate=get_data_accessor_predicate(
-                type_specifier=type_specifier,
+                data_type=data_type,
                 format_id=format_id,
                 storage_id=storage_id
             )
@@ -275,12 +272,12 @@ class BaseFsDataStore(DefaultSearchMixin, MutableDataStore):
         fs_path = self._convert_data_id_into_fs_path(data_id)
         return opener.open_data(fs_path, fs=self.fs, **open_params)
 
-    def get_data_writer_ids(self, type_specifier: str = None) \
+    def get_data_writer_ids(self, data_type: str = None) \
             -> Tuple[str, ...]:
-        type_specifier = TypeSpecifier.normalize(type_specifier)
+        data_type = DataType.normalize(data_type)
         return tuple(ext.name for ext in find_data_writer_extensions(
             predicate=get_data_accessor_predicate(
-                type_specifier=type_specifier,
+                data_type=data_type,
                 storage_id=self.fs_protocol
             )
         ))
@@ -362,26 +359,26 @@ class BaseFsDataStore(DefaultSearchMixin, MutableDataStore):
         return FsAccessor.remove_fs_params_from_params_schema(schema)
 
     def _guess_writer_id(self, data, data_id: str = None):
-        type_specifier = None
+        data_type = None
         format_id = None
         if data_id:
             accessor_id_parts = self._guess_accessor_id_parts(
                 data_id, require=False
             )
             if accessor_id_parts:
-                type_specifier = accessor_id_parts[0]
+                data_type = accessor_id_parts[0]
                 format_id = accessor_id_parts[1]
         if isinstance(data, xr.Dataset):
-            type_specifier = str(TYPE_SPECIFIER_DATASET)
+            data_type = DATASET_TYPE.alias
             format_id = format_id or 'zarr'
         elif isinstance(data, MultiLevelDataset):
-            type_specifier = str(TYPE_SPECIFIER_MULTILEVEL_DATASET)
+            data_type = MULTI_LEVEL_DATASET_TYPE.alias
             format_id = format_id or 'levels'
         elif isinstance(data, gpd.GeoDataFrame):
-            type_specifier = str(TYPE_SPECIFIER_GEODATAFRAME)
+            data_type = GEO_DATA_FRAME_TYPE.alias
             format_id = format_id or 'geojson'
         predicate = get_data_accessor_predicate(
-            type_specifier=type_specifier,
+            data_type=data_type,
             format_id=format_id,
             storage_id=self.fs_protocol
         )
@@ -414,28 +411,28 @@ class BaseFsDataStore(DefaultSearchMixin, MutableDataStore):
 
     def _is_data_specified(self,
                            data_id: str,
-                           type_specifier,
+                           data_type: DataTypeLike,
                            require: bool = False) -> bool:
-        type_specifier = TypeSpecifier.normalize(type_specifier)
-        actual_type_specifier = self._guess_type_specifier_for_data_id(
+        data_type = DataType.normalize(data_type)
+        actual_data_type = self._guess_data_type_for_data_id(
             data_id, require=False
         )
-        if actual_type_specifier is None:
+        if actual_data_type is None:
             if require:
                 raise DataStoreError(f'Cannot determine data type of'
                                      f' resource {data_id!r}')
             return False
-        if not actual_type_specifier.satisfies(type_specifier):
+        if not data_type.is_super_type_of(actual_data_type):
             if require:
-                raise DataStoreError(f'Data type {type_specifier!r}'
+                raise DataStoreError(f'Data type {data_type!r}'
                                      f' is not compatible with type'
-                                     f' {actual_type_specifier!r} of'
+                                     f' {actual_data_type!r} of'
                                      f' data resource {data_id!r}')
             return False
         return True
 
-    def _assert_data_specified(self, data_id, type_specifier):
-        self._is_data_specified(data_id, type_specifier, require=True)
+    def _assert_data_specified(self, data_id, data_type: DataTypeLike):
+        self._is_data_specified(data_id, data_type, require=True)
 
     @classmethod
     def _ensure_valid_data_id(cls, writer_id: str, data_id: str = None) -> str:
@@ -477,12 +474,12 @@ class BaseFsDataStore(DefaultSearchMixin, MutableDataStore):
             data_id = data_id[1:]
         return data_id
 
-    def _assert_valid_type_specifier(self,
-                                     type_specifier: TypeSpecifier):
-        if type_specifier != TYPE_SPECIFIER_ANY:
-            assert_in(type_specifier,
-                      self.get_type_specifiers(),
-                      name='type_specifier')
+    def _assert_valid_data_type(self,
+                                data_type: DataType):
+        if data_type != ANY_TYPE:
+            assert_in(data_type,
+                      self.get_data_types(),
+                      name='data_type')
 
     def _find_opener_id(self, data_id: str = None, require=True) \
             -> Optional[str]:
@@ -528,15 +525,15 @@ class BaseFsDataStore(DefaultSearchMixin, MutableDataStore):
             )
             if not accessor_id_parts:
                 return []
-            type_specifier = accessor_id_parts[0]
+            data_type_alias = accessor_id_parts[0]
             format_id = accessor_id_parts[1]
             storage_id = accessor_id_parts[2]
         else:
-            type_specifier = _DEFAULT_TYPE_SPECIFIER
+            data_type_alias = _DEFAULT_DATA_TYPE
             format_id = _DEFAULT_FORMAT_ID
             storage_id = self.fs_protocol
         predicate = get_data_accessor_predicate(
-            type_specifier=type_specifier,
+            data_type=data_type_alias,
             format_id=format_id,
             storage_id=storage_id
         )
@@ -550,27 +547,27 @@ class BaseFsDataStore(DefaultSearchMixin, MutableDataStore):
             return []
         return extensions
 
-    def _guess_type_specifier_for_data_id(self, data_id: str, require=True) \
-            -> Optional[TypeSpecifier]:
+    def _guess_data_type_for_data_id(self, data_id: str, require=True) \
+            -> Optional[DataType]:
         accessor_id_parts = self._guess_accessor_id_parts(data_id,
                                                           require=require)
         if accessor_id_parts is None:
             return None
-        actual_type_specifier, _, _ = accessor_id_parts
-        return TypeSpecifier.parse(actual_type_specifier)
+        data_type_alias, _, _ = accessor_id_parts
+        return DataType.normalize(data_type_alias)
 
     def _guess_accessor_id_parts(self, data_id: str, require=True) \
             -> Optional[Tuple[str, str, str]]:
         assert_given(data_id, 'data_id')
         ext = self._get_filename_ext(data_id)
-        type_specifier = _FILENAME_EXT_TO_TYPE_SPECIFIER_STR.get(ext)
+        data_type_alias = _FILENAME_EXT_TO_DATA_TYPE_ALIAS.get(ext)
         format_name = _FILENAME_EXT_TO_FORMAT.get(ext)
-        if type_specifier is None or format is None:
+        if data_type_alias is None or format is None:
             if require:
-                raise DataStoreError(f'A dataset named'
-                                     f' "{data_id}" is not supported')
+                raise DataStoreError(f'Cannot determine data type for '
+                                     f' data resource {data_id!r}')
             return None
-        return type_specifier, format_name, self.fs_protocol
+        return data_type_alias, format_name, self.fs_protocol
 
     def _get_filename_ext(self, data_path: str) -> str:
         dot_pos = data_path.rfind('.')

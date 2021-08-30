@@ -147,8 +147,8 @@ class RemoteCubeGeneratorTest(unittest.TestCase):
         m.post(f'{self.ENDPOINT_URL}cubegens/info',
                json={
                    "dataset_descriptor": {
-                       "type_specifier": "dataset",
                        "data_id": "CHL",
+                       "data_type": "dataset",
                        "crs": "WGS84",
                        "bbox": [12.2, 52.1, 13.9, 54.8],
                        "time_range": ["2018-01-01", "2010-01-06"],

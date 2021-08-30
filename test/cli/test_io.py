@@ -206,6 +206,6 @@ class IODumpTest(CliTest):
     def test_json_config_type(self):
         result = self.invoke_cli(['io', 'dump',
                                   '-c', 'store-conf.json',
-                                  '-t', 'dataset[cube]'])
+                                  '-t', 'dataset'])
         self.assertEqual(0, result.exit_code)
         self.assertTrue(os.path.exists('store-dump.json'))
