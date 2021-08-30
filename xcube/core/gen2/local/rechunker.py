@@ -23,16 +23,18 @@ from typing import Union, Mapping, Tuple, Optional
 
 import xarray as xr
 
-from .processor import CubeProcessor
+from .processor import DatasetTransformer
+from ...gridmapping import GridMapping
 
 
-class CubeRechunker(CubeProcessor):
+class CubeRechunker(DatasetTransformer):
     """Force cube to have chunks compatible with Zarr."""
 
     def __init__(self, chunks: Mapping[str, Union[None, int]]):
         self._chunks = dict(chunks)
 
-    def process_cube(self, cube: xr.Dataset) -> xr.Dataset:
+    def transform_dataset(self, cube: xr.Dataset, gm: GridMapping) \
+            -> Tuple[xr.Dataset, GridMapping]:
         dim_chunks = self._chunks
 
         chunked_cube = xr.Dataset(attrs=cube.attrs)
@@ -64,7 +66,7 @@ class CubeRechunker(CubeProcessor):
                 var.encoding.update(chunks=[sizes[0]
                                             for sizes in var.chunks])
 
-        return chunked_cube
+        return chunked_cube, gm
 
 
 def _default_chunk_size(chunks: Optional[Tuple[Tuple[int, ...], ...]],

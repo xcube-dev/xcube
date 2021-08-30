@@ -21,6 +21,8 @@
 
 import xarray as xr
 
+from xcube.core.gridmapping import GridMapping
+from xcube.core.normalize import encode_cube
 from xcube.core.store import DataStorePool
 from xcube.core.store import get_data_store_instance
 from xcube.core.store import new_data_writer
@@ -35,7 +37,8 @@ class CubeWriter:
         self._output_config = output_config
         self._store_pool = store_pool
 
-    def write_cube(self, cube: xr.Dataset) -> str:
+    def write_cube(self, cube: xr.Dataset, gm: GridMapping) -> str:
+        dataset = encode_cube(cube, grid_mapping=gm)
         output_config = self._output_config
         with observe_dask_progress('Writing output', 100):
             write_params = output_config.write_params or {}
@@ -55,9 +58,9 @@ class CubeWriter:
                 writer = new_data_writer(output_config.writer_id)
                 write_params.update(**store_params, **write_params)
             data_id = writer.write_data(
-                cube,
+                dataset,
                 data_id=output_config.data_id,
                 replace=output_config.replace or False,
                 **write_params
             )
-            return data_id
+        return data_id

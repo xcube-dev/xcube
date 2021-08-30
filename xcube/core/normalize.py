@@ -50,21 +50,21 @@ class DatasetIsNotACubeError(BaseException):
 
 def cubify_dataset(ds: xr.Dataset) -> xr.Dataset:
     """
-    Normalize the geo- and time-coding upon opening the given dataset w.r.t. a common
-    (CF-compatible) convention.
+    Normalize the geo- and time-coding upon opening the given
+    dataset w.r.t. a common (CF-compatible) convention.
 
-    Will throw a value error if the dataset could not not be converted to a cube.
+    Will throw a value error if the dataset could not not be
+    converted to a cube.
     """
     ds = normalize_dataset(ds)
     return assert_cube(ds)
 
 
 def normalize_dataset(ds: xr.Dataset,
-                      reverse_decreasing_lat: bool = False
-                      ) -> xr.Dataset:
+                      reverse_decreasing_lat: bool = False) -> xr.Dataset:
     """
-    Normalize the geo- and time-coding upon opening the given dataset w.r.t. a common
-    (CF-compatible) convention.
+    Normalize the geo- and time-coding upon opening the given
+    dataset w.r.t. a common (CF-compatible) convention.
 
     That is,
     * variables named "latitude" will be renamed to "lat";
@@ -72,18 +72,23 @@ def normalize_dataset(ds: xr.Dataset,
 
     Then, for equi-rectangular grids,
     * Remove 2D "lat" and "lon" variables;
-    * Two new 1D coordinate variables "lat" and "lon" will be generated from original 2D forms.
+    * Two new 1D coordinate variables "lat" and "lon" will be generated
+    from original 2D forms.
 
-    Then, if no coordinate variable time is present but the CF attributes "time_coverage_start"
-    and optionally "time_coverage_end" are given, a scalar time dimension and coordinate variable
+    Then, if no coordinate variable time is present but the CF attributes
+    "time_coverage_start"
+    and optionally "time_coverage_end" are given, a scalar time dimension
+    and coordinate variable
     will be generated.
 
-    Finally, it will be ensured that a "time" coordinate variable will be of type *datetime*.
+    Finally, it will be ensured that a "time" coordinate variable will
+    be of type *datetime*.
 
     :param ds: The dataset to normalize.
-    :param reverse_decreasing_lat: Whether decreasing latitude values shall be normalized so they
-        are increasing
-    :return: The normalized dataset, or the original dataset, if it is already "normal".
+    :param reverse_decreasing_lat: Whether decreasing latitude values
+        shall be normalized so they are increasing
+    :return: The normalized dataset, or the original dataset, if it is
+        already "normal".
     """
     ds = _normalize_zonal_lat_lon(ds)
     ds = normalize_coord_vars(ds)
@@ -98,59 +103,132 @@ def normalize_dataset(ds: xr.Dataset,
     return ds
 
 
-def get_dataset_cube_subset(dataset: xr.Dataset,
-                            normalize: bool = False) \
-        -> Tuple[xr.Dataset, GridMapping]:
+def encode_cube(cube: xr.Dataset,
+                grid_mapping: Optional[GridMapping] = None,
+                non_cube_subset: Optional[xr.Dataset] = None) \
+        -> xr.Dataset:
     """
-    Get the data cube subset from *dataset* and the
-    cube's grid mapping.
+    Encode a *cube* with its *grid_mapping*, and additional variables in
+    *non_cube_subset* into a new dataset.
+
+    This is the inverse of the operation :func:decode_cube:
+
+        cube, gm, non_cube = decode_cube(dataset)
+        dataset = encode_cube(cube, gm, non_cube)
+
+    The returned data cube comprises all variables in *cube*,
+    whose dimensions should be ("time" , [...], y_dim_name, x_dim_name),
+    and where y_dim_name, x_dim_name are defined by *grid_mapping*, if
+    given.
+    If *grid_mapping* is not geographic, a new variable "crs" will
+    be added that holds CF-compliant attributes which encode the
+    cube's spatial CRS. *non_cube_subset*, if given may be used
+    to add other con-cube variables the to resulting dataset.
+
+    :param cube: data cube dataset, whose dimensions should
+        be ("time" , [...], y_dim_name, x_dim_name)
+    :param grid_mapping: Optional grid mapping for *cube*.
+    :param non_cube_subset: An optional dataset providing
+        non-cube data variables.
+    :return:
+    """
+    if non_cube_subset is not None:
+        dataset = cube.assign(**non_cube_subset.data_vars)
+    else:
+        dataset = cube
+
+    if grid_mapping is None:
+        return dataset
+
+    if grid_mapping.crs.is_geographic \
+            and grid_mapping.is_regular \
+            and grid_mapping.xy_dim_names == ('lon', 'lat') \
+            and grid_mapping.xy_var_names == ('lon', 'lat'):
+        # No need to add CRS variable
+        return dataset
+
+    return dataset.assign(
+        crs=xr.DataArray(0, attrs=grid_mapping.crs.to_cf())
+    )
+
+
+def decode_cube(dataset: xr.Dataset,
+                normalize: bool = False,
+                force_copy: bool = False,
+                force_non_empty: bool = False,
+                force_geographic: bool = False) \
+        -> Tuple[xr.Dataset, GridMapping, xr.Dataset]:
+    """
+    Decode a *dataset* into a cube variable subset, a grid mapping, and
+    the non-cube variables of *dataset*.
+
+    This is the inverse of the operation :func:encode_cube:
+
+        cube, gm, non_cube = decode_cube(dataset)
+        dataset = encode_cube(cube, gm, non_cube)
 
     The returned data cube comprises all variables in *dataset*
-    whose dimensions are ('time' , [...], y_dim_name, x_dim_name).
+    whose dimensions are ("time" , [...], y_dim_name, x_dim_name).
     Here y_dim_name and x_dim_name are determined by the
     :class:GridMapping derived from *dataset*.
-
+    
     :param dataset: The dataset.
-    :param normalize: Whether to normalize the dataset,
-        before the subset is determined.
-    :return: A tuple comprising the data cube subset of *dataset*
-        and the cube's grid mapping.
+    :param normalize: Whether to normalize the *dataset*,
+        before the cube subset is determined.
+        If normalisation fails, cube subset is created from *dataset*.
+    :param force_copy: whether to create a copy of this dataset
+        even if this dataset is identical to its cube subset.
+    :param force_non_empty: whether the resulting cube
+        must have at least one data variable.
+    :param force_geographic: whether a geographic grid mapping
+        is required.
+    :return: A 3-tuple comprising the data cube subset of *dataset*
+        the cube's grid mapping, and the remaining variables.
     :raise DatasetIsNotACubeError: If it is not possible to
         determine a data cube subset from *dataset*.
     """
     if normalize:
-        dataset = normalize_dataset(dataset)
+        try:
+            dataset = normalize_dataset(dataset)
+        except ValueError:
+            pass
     try:
         grid_mapping = GridMapping.from_dataset(dataset)
     except ValueError as e:
         raise DatasetIsNotACubeError(f'Failed to detect grid mapping:'
                                      f' {e}') from e
-    if not grid_mapping.crs.is_geographic:
+    if force_geographic and not grid_mapping.crs.is_geographic:
         # We will need to overcome this soon!
         raise DatasetIsNotACubeError(f'Grid mapping must use geographic CRS,'
                                      f' but was {grid_mapping.crs.name!r}')
 
     x_dim_name, y_dim_name = grid_mapping.xy_dim_names
     time_name = 'time'
-    dropped_vars = [
-        var_name for var_name, var in dataset.data_vars.items()
-        if var.ndim < 3
-           or var.dims[0] != time_name
-           or var.dims[-2] != y_dim_name
-           or var.dims[-1] != x_dim_name
-    ]
 
-    if len(dropped_vars) == len(dataset.data_vars):
+    cube_vars = set()
+    dropped_vars = set()
+    for var_name, var in dataset.data_vars.items():
+        if var.ndim >= 3 \
+                and var.dims[0] == time_name \
+                and var.dims[-2] == y_dim_name \
+                and var.dims[-1] == x_dim_name:
+            cube_vars.add(var_name)
+        else:
+            dropped_vars.add(var_name)
+
+    if force_non_empty and len(dropped_vars) == len(dataset.data_vars):
         # Or just return empty dataset?
         raise DatasetIsNotACubeError(f'No variables found with dimensions'
                                      f' ({time_name!r}, [...]'
                                      f' {y_dim_name!r}, {x_dim_name!r})')
 
-    if not dropped_vars:
+    if not force_copy and not dropped_vars:
         # Pure cube!
-        return dataset, grid_mapping
+        return dataset, grid_mapping, xr.Dataset()
 
-    return dataset.drop_vars(dropped_vars), grid_mapping
+    return (dataset.drop_vars(dropped_vars),
+            grid_mapping,
+            dataset.drop_vars(cube_vars))
 
 
 def _normalize_zonal_lat_lon(ds: xr.Dataset) -> xr.Dataset:

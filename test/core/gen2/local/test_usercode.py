@@ -4,11 +4,15 @@ import xarray as xr
 
 from xcube.core.byoa import CodeConfig
 from xcube.core.gen2 import CubeGeneratorError
-from xcube.core.gen2.processor import DatasetProcessor
 from xcube.core.gen2.local.usercode import CubeUserCodeExecutor
+from xcube.core.gen2.processor import DatasetProcessor
+from xcube.core.gridmapping import GridMapping
+from xcube.core.new import new_cube
 from xcube.util.jsonschema import JsonIntegerSchema
 from xcube.util.jsonschema import JsonObjectSchema
 from xcube.util.jsonschema import JsonStringSchema
+# noinspection PyUnresolvedReferences
+import xcube.core.xarray
 
 
 def process_dataset_function(dataset: xr.Dataset,
@@ -72,9 +76,10 @@ class CubeUserCodeExecutorTest(unittest.TestCase):
         code_config = CodeConfig(_callable=user_code_callable,
                                  callable_params=self.good_params)
         executor = CubeUserCodeExecutor(code_config)
-        ds_input = xr.Dataset()
-        ds_output = executor.process_cube(ds_input)
+        ds_input = new_cube(variables=dict(a=1))
+        ds_output, gm = executor.transform_dataset(ds_input, ds_input.xcube.gm)
         self.assertIsInstance(ds_output, xr.Dataset)
+        self.assertIsInstance(gm, GridMapping)
         self.assertIsNot(ds_output, ds_input)
         self.assertIn('X', ds_output)
         self.assertEqual(42, ds_output.X)

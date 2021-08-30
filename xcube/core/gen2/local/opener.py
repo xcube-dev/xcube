@@ -20,11 +20,13 @@
 # SOFTWARE.
 
 import warnings
-from typing import Sequence
+from typing import Sequence, Tuple
 
 import xarray as xr
 
-from xcube.core.normalize import get_dataset_cube_subset
+from xcube.core.gridmapping import GridMapping
+from xcube.core.normalize import DatasetIsNotACubeError
+from xcube.core.normalize import decode_cube
 from xcube.core.select import select_subset
 from xcube.core.store import DATASET_TYPE
 from xcube.core.store import DataStorePool
@@ -41,7 +43,7 @@ SUBSET_PARAMETER_NAMES = ('variable_names', 'bbox', 'time_range')
 CHUNKS_PARAMETER_NAME = 'chunks'
 
 
-class CubesOpener:
+class DatasetsOpener:
 
     def __init__(self,
                  input_configs: Sequence[InputConfig],
@@ -56,7 +58,8 @@ class CubesOpener:
         self._cube_config = cube_config
         self._store_pool = store_pool
 
-    def open_cubes(self) -> Sequence[xr.Dataset]:
+    def open_cubes(self) -> Sequence[Tuple[xr.Dataset, GridMapping]]:
+        # Note we could parallelize this loop (forman)
         cubes = []
         with observe_progress('Opening input dataset(s)',
                               len(self._input_configs)) as progress:
@@ -65,7 +68,8 @@ class CubesOpener:
                 progress.worked(1)
         return cubes
 
-    def _open_cube(self, input_config: InputConfig) -> xr.Dataset:
+    def _open_cube(self, input_config: InputConfig) \
+            -> Tuple[xr.Dataset, GridMapping]:
         cube_params = self._cube_config.to_dict()
         opener_id = input_config.opener_id
         store_params = input_config.store_params or {}
@@ -93,7 +97,7 @@ class CubesOpener:
             input_config.data_id
         )
 
-        cube_open_params = {
+        dataset_open_params = {
             k: v for k, v in cube_params.items()
             if k in open_params_schema.properties
                and k != CHUNKS_PARAMETER_NAME
@@ -119,15 +123,7 @@ class CubesOpener:
 
         dataset = opener.open_data(input_config.data_id,
                                    **open_params,
-                                   **cube_open_params)
-
-        # TODO: save grid_mapping so we don't need to compute it later
-        dataset, grid_mapping = get_dataset_cube_subset(dataset,
-                                                        normalize=True)
-
-        # Make sure cube contains non-empty data variables.
-        dataset = self._ensure_dataset_not_empty(dataset,
-                                                 input_config.data_id)
+                                   **dataset_open_params)
 
         if unsupported_cube_subset_params:
             # Try creating subsets given the cube subset parameters
@@ -144,14 +140,14 @@ class CubesOpener:
                 time_range=unsupported_cube_subset_params.get('time_range')
             )
 
-            # Make sure cube contains non-empty data variables.
-            dataset = self._ensure_dataset_not_empty(
-                dataset,
-                input_config.data_id,
-                subset=True
-            )
-
-        return dataset
+        # Turn dataset into cube and grid_mapping
+        try:
+            cube, gm, _ = decode_cube(dataset,
+                                      force_non_empty=True,
+                                      normalize=True)
+        except DatasetIsNotACubeError as e:
+            raise CubeGeneratorError(f'{e}') from e
+        return cube, gm
 
     @classmethod
     def _get_opener_id(cls, input_config, store) -> str:
@@ -172,26 +168,3 @@ class CubesOpener:
                                      f' does not support datasets')
         opener_id = opener_ids[0]
         return opener_id
-
-    @classmethod
-    def _ensure_dataset_not_empty(cls, cube: xr.Dataset,
-                                  data_id: str,
-                                  subset: bool = False) -> xr.Dataset:
-        subset_text = " subset" if subset else ""
-        names_of_empty_vars = []
-        for var_name, var in cube.data_vars.items():
-            for dim_name, size in var.sizes.items():
-                if size == 0:
-                    warnings.warn(f'Dropping variable {var_name!r}'
-                                  f' of input dataset{subset_text}'
-                                  f' {data_id!r} because its has'
-                                  f' an empty dimension {dim_name!r}')
-                    names_of_empty_vars.append(var_name)
-                    break
-        if not names_of_empty_vars:
-            return cube
-        cube = cube.drop_vars(names_of_empty_vars)
-        if not cube.data_vars:
-            raise CubeGeneratorError(f'Input dataset{subset_text}'
-                                     f' {data_id!r} is empty')
-        return cube

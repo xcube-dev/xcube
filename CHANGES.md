@@ -15,8 +15,9 @@
   using a Zarr-based multi-level format. (#446)
 
 * Numerous breaking changes have been applied to this version
-  in order to address generic resampling (#391) and support other
-  CRS than WGS-84 (#112): 
+  in order to address generic resampling (#391), to support other
+  CRS than WGS-84 (#112), and to move from the struct data cube 
+  specification to a more relaxed cube convention (#488): 
   * The following components have been removed entirely 
     - module `xcube.core.imgeom` with class `ImageGeom` 
     - module `xcube.core.geocoding` with class `GeoCoding`

@@ -26,8 +26,8 @@ from xcube.util.assertions import assert_instance
 from xcube.util.progress import observe_progress
 from .combiner import CubesCombiner
 from .informant import CubeInformant
-from .opener import CubesOpener
-from .processor import NoOpCubeProcessor
+from .opener import DatasetsOpener
+from .processor import DatasetIdentity
 from .usercode import CubeUserCodeExecutor
 from .writer import CubeWriter
 from ..generator import CubeGenerator
@@ -72,7 +72,7 @@ class LocalCubeGenerator(CubeGenerator):
         if request.code_config is not None:
             code_executor = CubeUserCodeExecutor(request.code_config)
         else:
-            code_executor = NoOpCubeProcessor()
+            code_executor = DatasetIdentity()
 
         if request.callback_config:
             ApiProgressCallbackObserver(request.callback_config).activate()
@@ -80,9 +80,9 @@ class LocalCubeGenerator(CubeGenerator):
         if self._verbosity:
             ConsoleProgressObserver().activate()
 
-        cubes_opener = CubesOpener(request.input_configs,
-                                   request.cube_config,
-                                   store_pool=self._store_pool)
+        cubes_opener = DatasetsOpener(request.input_configs,
+                                      request.cube_config,
+                                      store_pool=self._store_pool)
 
         cube_combiner = CubesCombiner(request.cube_config)
 
@@ -94,11 +94,11 @@ class LocalCubeGenerator(CubeGenerator):
             cubes = cubes_opener.open_cubes()
 
             cm.will_work(10)
-            cube = cube_combiner.process_cubes(cubes)
-            cube = code_executor.process_cube(cube)
+            cube, gm = cube_combiner.combine_datasets(cubes)
+            cube, gm = code_executor.transform_dataset(cube, gm)
 
             cm.will_work(80)
-            data_id = cube_writer.write_cube(cube)
+            data_id = cube_writer.write_cube(cube, gm)
 
         if self._verbosity:
             print('Cube "{}" generated within {:.2f} seconds'

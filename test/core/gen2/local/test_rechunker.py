@@ -1,6 +1,9 @@
 import unittest
 
+import xarray as xr
+
 from xcube.core.gen2.local.rechunker import CubeRechunker
+from xcube.core.gridmapping import GridMapping
 from xcube.core.new import new_cube
 
 
@@ -12,8 +15,10 @@ class CubeRechunkerTest(unittest.TestCase):
             self.assertIsNone(var.chunks)
 
         rc = CubeRechunker(chunks=dict(time=2, lat=100, lon=200))
-        cube2 = rc.process_cube(cube1)
+        cube2, gm = rc.transform_dataset(cube1, cube1.xcube.gm)
 
+        self.assertIsInstance(cube2, xr.Dataset)
+        self.assertIsInstance(gm, GridMapping)
         self.assertEqual(cube1.attrs, cube2.attrs)
         self.assertEqual(set(cube1.coords), set(cube2.coords))
         self.assertEqual(set(cube1.data_vars), set(cube2.data_vars))
@@ -36,8 +41,10 @@ class CubeRechunkerTest(unittest.TestCase):
             self.assertIsNone(var.chunks)
 
         rc = CubeRechunker(chunks=dict(time=64, lat=512, lon=512))
-        cube2 = rc.process_cube(cube1)
+        cube2, gm = rc.transform_dataset(cube1, cube1.xcube.gm)
 
+        self.assertIsInstance(cube2, xr.Dataset)
+        self.assertIsInstance(gm, GridMapping)
         self.assertEqual(cube1.attrs, cube2.attrs)
         self.assertEqual(set(cube1.coords), set(cube2.coords))
         self.assertEqual(set(cube1.data_vars), set(cube2.data_vars))

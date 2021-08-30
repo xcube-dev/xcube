@@ -19,7 +19,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-from typing import Sequence
+from typing import Sequence, Tuple
 
 import pyproj.crs
 import xarray as xr
@@ -29,41 +29,58 @@ from xcube.core.resampling import resample_in_space
 from xcube.util.assertions import assert_given
 from xcube.util.assertions import assert_instance
 from xcube.util.assertions import assert_true
-from .processor import CubeProcessor
-from .processor import NoOpCubeProcessor
+from .processor import DatasetTransformer
 from ..config import CubeConfig
 
 
-class CubeResampler(CubeProcessor):
+class CubeResampler(DatasetTransformer):
     @classmethod
-    def new(cls, cubes: Sequence[xr.Dataset], cube_config: CubeConfig) \
-            -> CubeProcessor:
+    def new(cls,
+            cubes: Sequence[Tuple[xr.Dataset, GridMapping]],
+            cube_config: CubeConfig) -> 'CubeResampler':
         assert_given(cubes, 'cubes')
         assert_true(len(cubes) > 0, 'cubes must be a non-empty sequence')
         assert_instance(cube_config, CubeConfig, 'cube_config')
 
-        must_resample = _cube_config_has_spatial_props(cube_config) \
-                        or len(cubes) > 1
-        if not must_resample:
-            return NoOpCubeProcessor()
-        else:
-            return CubeResampler(cubes[0], cube_config)
+        identity = _cube_config_has_spatial_props(cube_config) \
+                   or len(cubes) > 1
+        first_cube, source_gm = cubes[0]
+        return CubeResampler(first_cube, source_gm, cube_config,
+                             identity=identity)
 
-    def __init__(self, first_cube: xr.Dataset, cube_config: CubeConfig):
-        source_gm = GridMapping.from_dataset(first_cube)
-        if not source_gm.is_regular:
-            source_gm = source_gm.to_regular()
-        target_gm = _get_target_grid_mapping(source_gm, cube_config)
+    def __init__(self,
+                 first_cube: xr.Dataset,
+                 source_gm: GridMapping,
+                 cube_config: CubeConfig,
+                 identity: bool = False):
+        source_gm = source_gm.to_regular() \
+            if not source_gm.is_regular else source_gm
+        target_gm = source_gm \
+            if identity \
+            else _get_target_grid_mapping(source_gm, cube_config)
         self._first_cube = first_cube
         self._source_gm = source_gm
         self._target_gm = target_gm
 
-    def process_cube(self, cube: xr.Dataset) -> xr.Dataset:
+    @property
+    def source_gm(self) -> GridMapping:
+        return self._source_gm
+
+    @property
+    def target_gm(self) -> GridMapping:
+        return self._target_gm
+
+    def transform_dataset(self,
+                          cube: xr.Dataset,
+                          gm: GridMapping) -> Tuple[xr.Dataset, GridMapping]:
+        if self._source_gm is self._target_gm:
+            return cube, self._target_gm
+        gm = gm.to_regular() if not gm.is_regular else gm
         return resample_in_space(
             cube,
-            source_gm=self._source_gm if cube is self._first_cube else None,
+            source_gm=gm,
             target_gm=self._target_gm
-        )
+        ), self._target_gm
 
 
 def _cube_config_has_spatial_props(cube_config: CubeConfig) -> bool:

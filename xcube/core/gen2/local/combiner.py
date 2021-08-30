@@ -19,32 +19,39 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-from typing import Sequence
+from typing import Sequence, Tuple
 
 import xarray as xr
 
 from xcube.util.progress import observe_progress
-from .processor import CubesProcessor
 from .rechunker import CubeRechunker
 from .resampler import CubeResampler
 from ..config import CubeConfig
+from ...gridmapping import GridMapping
 
 
-class CubesCombiner(CubesProcessor):
+class CubesCombiner:
 
     def __init__(self, cube_config: CubeConfig):
         self._cube_config = cube_config
 
-    def process_cubes(self, cubes: Sequence[xr.Dataset]) -> xr.Dataset:
+    def combine_datasets(self,
+                         cubes: Sequence[Tuple[xr.Dataset, GridMapping]]) \
+            -> Tuple[xr.Dataset, GridMapping]:
 
-        cube_resampler = CubeResampler.new(cubes, self._cube_config)
+        cube_resampler = CubeResampler.new(cubes,
+                                           self._cube_config)
+
+        target_gm = cube_resampler.target_gm
+
         cube_rechunker = CubeRechunker(self._cube_config.chunks or {})
 
         with observe_progress('Processing cube(s)', len(cubes) + 1) as progress:
 
             resampled_cubes = []
-            for cube in cubes:
-                resampled_cubes.append(cube_resampler.process_cube(cube))
+            for cube, gm in cubes:
+                cube, _ = cube_resampler.transform_dataset(cube, gm)
+                resampled_cubes.append(cube)
                 progress.worked(1)
 
             if len(resampled_cubes) > 1:
@@ -53,7 +60,8 @@ class CubesCombiner(CubesProcessor):
                 result_cube = resampled_cubes[0]
 
             # Force cube to have chunks compatible with Zarr.
-            result_cube = cube_rechunker.process_cube(result_cube)
-
+            result_cube, _ = cube_rechunker.transform_dataset(result_cube,
+                                                              target_gm)
             progress.worked(1)
-            return result_cube
+
+        return result_cube, target_gm

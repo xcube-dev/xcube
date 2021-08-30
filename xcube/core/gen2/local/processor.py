@@ -20,23 +20,25 @@
 # SOFTWARE.
 
 from abc import ABC, abstractmethod
-from typing import Sequence
+from typing import Tuple
 
 import xarray as xr
 
+from xcube.core.gridmapping import GridMapping
 
-class CubeProcessor(ABC):
+
+class DatasetTransformer(ABC):
     @abstractmethod
-    def process_cube(self, cube: xr.Dataset) -> xr.Dataset:
-        """Process given *cube* into new cube."""
+    def transform_dataset(self, dataset: xr.Dataset, gm: GridMapping) \
+            -> Tuple[xr.Dataset, GridMapping]:
+        """
+        Transform given *dataset* and grid mapping *gm*
+        into a new dataset and grid mapping.
+        """
 
 
-class CubesProcessor(ABC):
-    @abstractmethod
-    def process_cubes(self, cubes: Sequence[xr.Dataset]) -> xr.Dataset:
-        """Process given *cubes* into new cube."""
-
-
-class NoOpCubeProcessor(CubeProcessor):
-    def process_cube(self, cube: xr.Dataset):
-        return cube
+class DatasetIdentity(DatasetTransformer):
+    def transform_dataset(self, dataset: xr.Dataset, gm: GridMapping) \
+            -> Tuple[xr.Dataset, GridMapping]:
+        """Return *dataset* and grid mapping *gm*."""
+        return dataset, gm
