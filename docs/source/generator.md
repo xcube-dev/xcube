@@ -114,11 +114,11 @@ When using the command-line interface, a *store configuration* file may
 optionally be supplied
 
 In the command-line interface, an additional YAML or JSON file containing one
-or more *store configurations* may be supplied. A store configuration consists
-of a data store ID and a set of store parameters, which can then be referenced
-by an associated *store configuration identifier*. This identifier can be used
-in the input configuration, as described below. A typical YAML store
-configuration might look as follows:
+or more *store configurations* may be supplied. A store configuration
+encapsulates a data store ID and an associated set of store parameters, which
+can then be referenced by an associated *store configuration identifier*. This
+identifier can be used in the input configuration, as described below. A
+typical YAML store configuration might look as follows:
 
 ```
 sentinelhub_eu:
@@ -127,15 +127,26 @@ sentinelhub_eu:
   store_id: sentinelhub
   store_params:
     api_url: https://services.sentinel-hub.com
+    client_id: myid123
+    client_secret: 0c5892208a0a82f1599df026b5e19017
 
 cds:
   title: C3S Climate Data Store (CDS)
   description: Selected datasets from the Copernicus CDS API
   store_id: cds
-  store_params: TODO
+  store_params:
+    num_retries: 3
 
 my_data_bucket:
-  title: TODO
+  title: S3 output bucket
+  description: An S3 bucket for output data sets
+  store_id: s3
+  store_params:
+    fs_params:
+      key: qwerty12345
+      secret: 7ff889c0aea254d5e00440858289b85c
+      client_kwargs:
+        endpoint_url: https://my-endpoint.some-domain.org/
 ```
 
 ### Input configuration
