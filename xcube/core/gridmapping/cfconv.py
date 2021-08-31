@@ -39,7 +39,7 @@ class GridCoords:
         self.y = y
 
 
-class GridMapping:
+class GridMappingProxy:
     """
     Grid mapping comprising *crs* of type pyproj.crs.CRS,
     grid coordinates and an optional name.
@@ -54,14 +54,14 @@ class GridMapping:
         self.coords = coords
 
 
-def get_dataset_grid_mappings(
+def get_dataset_grid_mapping_proxies(
         dataset: xr.Dataset,
         *,
         missing_latitude_longitude_crs: pyproj.crs.CRS = None,
         missing_rotated_latitude_longitude_crs: pyproj.crs.CRS = None,
         missing_projected_crs: pyproj.crs.CRS = None,
         emit_warnings: bool = False
-) -> Dict[Union[Hashable, None], GridMapping]:
+) -> Dict[Union[Hashable, None], GridMappingProxy]:
     """
     Find grid mappings encoded as described in the CF conventions
     [Horizontal Coordinate Reference Systems, Grid Mappings, and Projections]
@@ -183,20 +183,22 @@ def get_dataset_grid_mappings(
 
 
 def _parse_crs_from_attrs(attrs: Dict[Hashable, Any]) \
-        -> Optional[GridMapping]:
+        -> Optional[GridMappingProxy]:
     # noinspection PyBroadException
     try:
         crs = pyproj.crs.CRS.from_cf(attrs)
     except pyproj.crs.CRSError:
         return None
-    return GridMapping(crs=crs, name=attrs.get('grid_mapping_name'), coords=None)
+    return GridMappingProxy(crs=crs,
+                            name=attrs.get('grid_mapping_name'),
+                            coords=None)
 
 
 def _complement_grid_mapping_coords(
         coords: GridCoords,
         grid_mapping_name: Optional[str],
         missing_crs: Optional[pyproj.crs.CRS],
-        grid_mappings: Dict[Optional[str], GridMapping]
+        grid_mappings: Dict[Optional[str], GridMappingProxy]
 ):
     if coords.x is not None or coords.y is not None:
         grid_mapping = next((grid_mapping
@@ -205,9 +207,9 @@ def _complement_grid_mapping_coords(
         if grid_mapping is None:
             grid_mapping = grid_mappings.get(None)
             if grid_mapping is None and missing_crs is not None:
-                grid_mapping = GridMapping(crs=missing_crs,
-                                           name=grid_mapping_name,
-                                           coords=None)
+                grid_mapping = GridMappingProxy(crs=missing_crs,
+                                                name=grid_mapping_name,
+                                                coords=None)
                 grid_mappings[None] = grid_mapping
 
         if grid_mapping is not None and grid_mapping.coords is None:

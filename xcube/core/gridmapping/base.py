@@ -632,6 +632,7 @@ class GridMapping(abc.ABC):
     def from_dataset(cls,
                      dataset: xr.Dataset,
                      *,
+                     crs: Union[str, pyproj.crs.CRS] = None,
                      xy_var_names: Tuple[str, str] = None,
                      tile_size: Union[int, Tuple[int, int]] = None,
                      prefer_is_regular: bool = True,
@@ -642,6 +643,7 @@ class GridMapping(abc.ABC):
         Create a grid mapping for the given *dataset*.
 
         :param dataset: The dataset.
+        :param crs: Optional spatial coordinate reference system.
         :param xy_var_names: Optional tuple of the x- and
             y-coordinate variables in *dataset*.
         :param tile_size: Optional tile size
@@ -659,6 +661,7 @@ class GridMapping(abc.ABC):
         from .dataset import new_grid_mapping_from_dataset
         return new_grid_mapping_from_dataset(
             dataset=dataset,
+            crs=crs,
             xy_var_names=xy_var_names,
             tile_size=tile_size,
             prefer_is_regular=prefer_is_regular,

@@ -19,23 +19,27 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-from typing import Union, Mapping, Tuple, Optional
+from typing import Union, Tuple, Optional
 
 import xarray as xr
 
-from .processor import DatasetTransformer
-from ...gridmapping import GridMapping
+from xcube.core.gridmapping import GridMapping
+from .transformer import CubeTransformer
+from .transformer import TransformedCube
+from ..config import CubeConfig
 
 
-class CubeRechunker(DatasetTransformer):
+class CubeRechunker(CubeTransformer):
     """Force cube to have chunks compatible with Zarr."""
 
-    def __init__(self, chunks: Mapping[str, Union[None, int]]):
-        self._chunks = dict(chunks)
+    def transform_cube(self,
+                       cube: xr.Dataset,
+                       gm: GridMapping,
+                       cube_config: CubeConfig) -> TransformedCube:
 
-    def transform_dataset(self, cube: xr.Dataset, gm: GridMapping) \
-            -> Tuple[xr.Dataset, GridMapping]:
-        dim_chunks = self._chunks
+        dim_chunks = cube_config.chunks
+        if dim_chunks is None:
+            return cube, gm, cube_config
 
         chunked_cube = xr.Dataset(attrs=cube.attrs)
 
@@ -66,7 +70,7 @@ class CubeRechunker(DatasetTransformer):
                 var.encoding.update(chunks=[sizes[0]
                                             for sizes in var.chunks])
 
-        return chunked_cube, gm
+        return chunked_cube, gm, cube_config
 
 
 def _default_chunk_size(chunks: Optional[Tuple[Tuple[int, ...], ...]],

@@ -27,7 +27,7 @@ from xcube.core.store import DataStorePoolLike
 from xcube.util.assertions import assert_instance
 from xcube.util.assertions import assert_true
 from .request import CubeGeneratorRequestLike
-from .response import CubeInfo
+from .response import CubeInfo, CubeGeneratorResult
 from .remote.config import ServiceConfigLike
 
 
@@ -132,7 +132,8 @@ class CubeGenerator(ABC):
         """
 
     @abstractmethod
-    def generate_cube(self, request: CubeGeneratorRequestLike) -> Any:
+    def generate_cube(self, request: CubeGeneratorRequestLike) \
+            -> CubeGeneratorResult:
         """
         Generate the data cube for given *request*.
 

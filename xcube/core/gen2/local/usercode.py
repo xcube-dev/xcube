@@ -19,14 +19,16 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-from typing import Any, Optional, Callable, Type, Dict, Tuple
+from typing import Any, Optional, Callable, Type, Dict
 
 import jsonschema
 import xarray as xr
 
 from xcube.core.byoa import CodeConfig
 from xcube.util.jsonschema import JsonObjectSchema
-from .processor import DatasetTransformer
+from .transformer import CubeTransformer
+from .transformer import TransformedCube
+from ..config import CubeConfig
 from ..error import CubeGeneratorError
 from ..processor import DatasetProcessor
 from ..processor import METHOD_NAME_DATASET_PROCESSOR
@@ -34,7 +36,7 @@ from ..processor import METHOD_NAME_PARAMS_SCHEMA_GETTER
 from ...gridmapping import GridMapping
 
 
-class CubeUserCodeExecutor(DatasetTransformer):
+class CubeUserCodeExecutor(CubeTransformer):
     """Execute user code."""
 
     def __init__(self, code_config: CodeConfig):
@@ -50,9 +52,11 @@ class CubeUserCodeExecutor(DatasetTransformer):
         self._callable = user_code_callable
         self._callable_params = user_code_callable_params
 
-    def transform_dataset(self, cube: xr.Dataset, gm: GridMapping) \
-            -> Tuple[xr.Dataset, GridMapping]:
-        return self._callable(cube, **self._callable_params), gm
+    def transform_cube(self,
+                       cube: xr.Dataset,
+                       gm: GridMapping,
+                       cube_config: CubeConfig) -> TransformedCube:
+        return self._callable(cube, **self._callable_params), gm, cube_config
 
     @classmethod
     def _get_callable_from_class(

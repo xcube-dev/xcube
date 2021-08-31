@@ -118,12 +118,6 @@ def new_cube(title='Test Cube',
     x_end = x_start + width * x_res
     y_end = y_start + height * y_res
 
-    if x_is_lon and x_start < -180. or x_end > 180.:
-        raise ValueError()
-
-    if y_is_lat and y_start < -90. or y_end > 90.:
-        raise ValueError()
-
     x_res_05 = 0.5 * x_res
     y_res_05 = 0.5 * y_res
 

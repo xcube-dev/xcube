@@ -3,7 +3,7 @@ import unittest
 import xarray as xr
 
 from xcube.core.byoa import CodeConfig
-from xcube.core.gen2 import CubeGeneratorError
+from xcube.core.gen2 import CubeGeneratorError, CubeConfig
 from xcube.core.gen2.local.usercode import CubeUserCodeExecutor
 from xcube.core.gen2.processor import DatasetProcessor
 from xcube.core.gridmapping import GridMapping
@@ -77,9 +77,10 @@ class CubeUserCodeExecutorTest(unittest.TestCase):
                                  callable_params=self.good_params)
         executor = CubeUserCodeExecutor(code_config)
         ds_input = new_cube(variables=dict(a=1))
-        ds_output, gm = executor.transform_dataset(ds_input, ds_input.xcube.gm)
+        ds_output, gm, cc = executor.transform_cube(ds_input, ds_input.xcube.gm, CubeConfig())
         self.assertIsInstance(ds_output, xr.Dataset)
         self.assertIsInstance(gm, GridMapping)
+        self.assertIsInstance(cc, CubeConfig)
         self.assertIsNot(ds_output, ds_input)
         self.assertIn('X', ds_output)
         self.assertEqual(42, ds_output.X)

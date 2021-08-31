@@ -19,26 +19,20 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-from abc import ABC, abstractmethod
-from typing import Tuple
-
+import numpy as np
 import xarray as xr
 
-from xcube.core.gridmapping import GridMapping
+
+def is_empty_cube(cube: xr.Dataset) -> bool:
+    return len(cube.data_vars) == 0
 
 
-class DatasetTransformer(ABC):
-    @abstractmethod
-    def transform_dataset(self, dataset: xr.Dataset, gm: GridMapping) \
-            -> Tuple[xr.Dataset, GridMapping]:
-        """
-        Transform given *dataset* and grid mapping *gm*
-        into a new dataset and grid mapping.
-        """
-
-
-class DatasetIdentity(DatasetTransformer):
-    def transform_dataset(self, dataset: xr.Dataset, gm: GridMapping) \
-            -> Tuple[xr.Dataset, GridMapping]:
-        """Return *dataset* and grid mapping *gm*."""
-        return dataset, gm
+def strip_cube(cube: xr.Dataset) -> xr.Dataset:
+    drop_vars = [k for k, v in cube.data_vars.items()
+                 if len(v.shape) < 3
+                 or np.product(v.shape) == 0
+                 or v.shape[-2] < 2
+                 or v.shape[-1] < 2]
+    if drop_vars:
+        return cube.drop_vars(drop_vars)
+    return cube

@@ -180,8 +180,10 @@ def decode_cube(dataset: xr.Dataset,
         even if this dataset is identical to its cube subset.
     :param force_non_empty: whether the resulting cube
         must have at least one data variable.
+        If True, a :class:DatasetIsNotACubeError may be raised.
     :param force_geographic: whether a geographic grid mapping
         is required.
+        If True, a :class:DatasetIsNotACubeError may be raised.
     :return: A 3-tuple comprising the data cube subset of *dataset*
         the cube's grid mapping, and the remaining variables.
     :raise DatasetIsNotACubeError: If it is not possible to
@@ -211,7 +213,10 @@ def decode_cube(dataset: xr.Dataset,
         if var.ndim >= 3 \
                 and var.dims[0] == time_name \
                 and var.dims[-2] == y_dim_name \
-                and var.dims[-1] == x_dim_name:
+                and var.dims[-1] == x_dim_name \
+                and np.product(var.shape) > 0 \
+                and var.shape[-2] > 1 \
+                and var.shape[-1] > 1:
             cube_vars.add(var_name)
         else:
             dropped_vars.add(var_name)
@@ -220,7 +225,8 @@ def decode_cube(dataset: xr.Dataset,
         # Or just return empty dataset?
         raise DatasetIsNotACubeError(f'No variables found with dimensions'
                                      f' ({time_name!r}, [...]'
-                                     f' {y_dim_name!r}, {x_dim_name!r})')
+                                     f' {y_dim_name!r}, {x_dim_name!r})'
+                                     f' or dimension sizes too small')
 
     if not force_copy and not dropped_vars:
         # Pure cube!

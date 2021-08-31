@@ -6,8 +6,8 @@ import xarray as xr
 
 from test.sampledata import SourceDatasetMixin
 from xcube.core.gridmapping import GridMapping
-# noinspection PyProtectedMember
 from xcube.core.gridmapping.coords import Coords2DGridMapping
+# noinspection PyProtectedMember
 from xcube.core.gridmapping.helpers import _to_affine
 from xcube.core.gridmapping.regular import RegularGridMapping
 

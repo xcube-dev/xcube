@@ -7,7 +7,6 @@ import xarray as xr
 import yaml
 
 from xcube.core.dsio import rimraf
-from xcube.core.gen2 import CubeGeneratorError
 from xcube.core.gen2.generator import CubeGenerator
 from xcube.core.gen2.local.generator import LocalCubeGenerator
 from xcube.core.gen2.response import CubeInfo
@@ -67,22 +66,28 @@ class LocalCubeGeneratorTest(unittest.TestCase):
     @requests_mock.Mocker()
     def test_generate_cube_from_dict(self, m):
         m.put(CALLBACK_MOCK_URL, json={})
-        LocalCubeGenerator(verbosity=1).generate_cube(self.REQUEST)
-        self.assertIsInstance(self.data_store.open_data('CHL.zarr'),
+        result = LocalCubeGenerator(verbosity=1).generate_cube(self.REQUEST)
+        self.assertEqual('ok', result.status)
+        self.assertEqual('CHL.zarr', result.data_id)
+        self.assertIsInstance(self.data_store.open_data(result.data_id),
                               xr.Dataset)
 
     @requests_mock.Mocker()
     def test_generate_cube_from_json(self, m):
         m.put(CALLBACK_MOCK_URL, json={})
-        CubeGenerator.new(verbosity=1).generate_cube('_request.json')
-        self.assertIsInstance(self.data_store.open_data('CHL.zarr'),
+        result = CubeGenerator.new(verbosity=1).generate_cube('_request.json')
+        self.assertEqual('ok', result.status)
+        self.assertEqual('CHL.zarr', result.data_id)
+        self.assertIsInstance(self.data_store.open_data(result.data_id),
                               xr.Dataset)
 
     @requests_mock.Mocker()
     def test_generate_cube_from_yaml(self, m):
         m.put(CALLBACK_MOCK_URL, json={})
-        CubeGenerator.new(verbosity=1).generate_cube('_request.yaml')
-        self.assertIsInstance(self.data_store.open_data('CHL.zarr'),
+        result = CubeGenerator.new(verbosity=1).generate_cube('_request.yaml')
+        self.assertEqual('ok', result.status)
+        self.assertEqual('CHL.zarr', result.data_id)
+        self.assertIsInstance(self.data_store.open_data(result.data_id),
                               xr.Dataset)
 
     @requests_mock.Mocker()
@@ -90,10 +95,13 @@ class LocalCubeGeneratorTest(unittest.TestCase):
         m.put(CALLBACK_MOCK_URL, json={})
         request = self.REQUEST.copy()
         request['cube_config']['time_range'] = ['2019-01-01', '2020-01-01']
-        with self.assertRaises(CubeGeneratorError) as cm:
-            LocalCubeGenerator().generate_cube(request)
-        self.assertEqual("Input dataset subset 'S2L2A.zarr' is empty",
-                         f'{cm.exception}')
+
+        result = LocalCubeGenerator().generate_cube(request)
+        self.assertEqual('warning', result.status)
+        self.assertEqual('CHL.zarr', result.data_id)
+        self.assertEqual('An empty cube has been generated,'
+                         ' hence it has not been written at all.',
+                         result.message)
 
     @requests_mock.Mocker()
     def test_get_cube_info_from_dict(self, m):

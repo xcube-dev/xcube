@@ -2,6 +2,7 @@ import unittest
 
 import xarray as xr
 
+from xcube.core.gen2 import CubeConfig
 from xcube.core.gen2.local.rechunker import CubeRechunker
 from xcube.core.gridmapping import GridMapping
 from xcube.core.new import new_cube
@@ -14,12 +15,18 @@ class CubeRechunkerTest(unittest.TestCase):
         for var in cube1.variables.values():
             self.assertIsNone(var.chunks)
 
-        rc = CubeRechunker(chunks=dict(time=2, lat=100, lon=200))
-        cube2, gm = rc.transform_dataset(cube1, cube1.xcube.gm)
+        rc = CubeRechunker()
+        cube2, gm, cc = rc.transform_cube(cube1,
+                                          cube1.xcube.gm,
+                                          CubeConfig(chunks=dict(time=2,
+                                                                 lat=100,
+                                                                 lon=200)))
 
         self.assertIsInstance(cube2, xr.Dataset)
         self.assertIsInstance(gm, GridMapping)
+        self.assertIsInstance(cc, CubeConfig)
         self.assertEqual(cube1.attrs, cube2.attrs)
+        self.assertEqual({'time': 2, 'lat': 100, 'lon': 200}, cc.chunks)
         self.assertEqual(set(cube1.coords), set(cube2.coords))
         self.assertEqual(set(cube1.data_vars), set(cube2.data_vars))
 
@@ -40,11 +47,16 @@ class CubeRechunkerTest(unittest.TestCase):
         for var in cube1.variables.values():
             self.assertIsNone(var.chunks)
 
-        rc = CubeRechunker(chunks=dict(time=64, lat=512, lon=512))
-        cube2, gm = rc.transform_dataset(cube1, cube1.xcube.gm)
+        rc = CubeRechunker()
+        cube2, gm, cc = rc.transform_cube(cube1,
+                                          cube1.xcube.gm,
+                                          CubeConfig(chunks=dict(time=64,
+                                                                 lat=512,
+                                                                 lon=512)))
 
         self.assertIsInstance(cube2, xr.Dataset)
         self.assertIsInstance(gm, GridMapping)
+        self.assertIsInstance(cc, CubeConfig)
         self.assertEqual(cube1.attrs, cube2.attrs)
         self.assertEqual(set(cube1.coords), set(cube2.coords))
         self.assertEqual(set(cube1.data_vars), set(cube2.data_vars))

@@ -19,11 +19,42 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-from typing import Dict, Any
+from typing import Dict, Any, Optional, Sequence
 
 from xcube.core.store import DatasetDescriptor
+from xcube.util.jsonschema import JsonArraySchema
 from xcube.util.jsonschema import JsonObjectSchema
+from xcube.util.jsonschema import JsonStringSchema
 from .config import JsonObject
+
+
+class CubeGeneratorResult(JsonObject):
+    def __init__(self,
+                 data_id: str,
+                 status: str,
+                 message: Optional[str] = None,
+                 output: Optional[Sequence[str]] = None):
+        self.data_id = data_id
+        self.status = status
+        self.message = message
+        self.output = list(output) if output else None
+
+    @classmethod
+    def get_schema(cls) -> JsonObjectSchema:
+        return JsonObjectSchema(
+            properties=dict(
+                data_id=JsonStringSchema(min_length=1),
+                status=JsonStringSchema(enum=['ok', 'error', 'warning']),
+                message=JsonStringSchema(),
+                output=JsonArraySchema(items=JsonStringSchema()),
+            ),
+            required=['data_id', 'status'],
+            additional_properties=True,
+        )
+
+    @classmethod
+    def from_dict(cls, value: Dict) -> 'CubeGeneratorResult':
+        return cls.get_schema().from_instance(value)
 
 
 class CubeInfo(JsonObject):

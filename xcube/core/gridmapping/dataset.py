@@ -26,7 +26,7 @@ import xarray as xr
 
 from .base import DEFAULT_TOLERANCE
 from .base import GridMapping
-from .cfconv import get_dataset_grid_mappings
+from .cfconv import get_dataset_grid_mapping_proxies
 from .coords import new_grid_mapping_from_coords
 from .helpers import _normalize_crs
 
@@ -34,6 +34,7 @@ from .helpers import _normalize_crs
 def new_grid_mapping_from_dataset(
         dataset: xr.Dataset,
         *,
+        crs: Union[str, pyproj.crs.CRS] = None,
         xy_var_names: Tuple[str, str] = None,
         tile_size: Union[int, Tuple[str, str]] = None,
         prefer_crs: Union[str, pyproj.crs.CRS] = None,
@@ -41,8 +42,12 @@ def new_grid_mapping_from_dataset(
         emit_warnings: bool = False,
         tolerance: float = DEFAULT_TOLERANCE
 ) -> Optional[GridMapping]:
+    if crs is not None:
+        crs = _normalize_crs(crs)
     if prefer_crs is not None:
         prefer_crs = _normalize_crs(prefer_crs)
+    else:
+        prefer_crs = crs
     if xy_var_names is not None:
         x_var_name, y_var_name = xy_var_names
         if x_var_name not in dataset or y_var_name not in dataset:
@@ -51,17 +56,21 @@ def new_grid_mapping_from_dataset(
         # TODO: create new instance using named coordinate variables
         raise NotImplementedError('xy_var_names not yet supported')
 
-    grid_mappings = get_dataset_grid_mappings(
+    grid_mapping_proxies = get_dataset_grid_mapping_proxies(
         dataset,
-        emit_warnings=emit_warnings
+        emit_warnings=emit_warnings,
+        missing_projected_crs=crs,
+        missing_rotated_latitude_longitude_crs=crs,
+        missing_latitude_longitude_crs=crs,
     ).values()
+
     grid_mappings = [
-        new_grid_mapping_from_coords(x_coords=gm.coords.x,
-                                     y_coords=gm.coords.y,
-                                     crs=gm.crs,
+        new_grid_mapping_from_coords(x_coords=gmp.coords.x,
+                                     y_coords=gmp.coords.y,
+                                     crs=gmp.crs,
                                      tile_size=tile_size,
                                      tolerance=tolerance)
-        for gm in grid_mappings
+        for gmp in grid_mapping_proxies
     ]
 
     if len(grid_mappings) > 1:
