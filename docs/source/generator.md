@@ -110,9 +110,6 @@ client_secret: "d2l0aG91dCByZXN0cmljdGlvbiwgaW5jbHVkaW5nIHd"
 
 ### Store configuration
 
-When using the command-line interface, a *store configuration* file may
-optionally be supplied
-
 In the command-line interface, an additional YAML or JSON file containing one
 or more *store configurations* may be supplied. A store configuration
 encapsulates a data store ID and an associated set of store parameters, which
@@ -135,6 +132,7 @@ cds:
   description: Selected datasets from the Copernicus CDS API
   store_id: cds
   store_params:
+    normalize_names: true
     num_retries: 3
 
 my_data_bucket:
@@ -174,16 +172,24 @@ by an `@` symbol. If a store configuration identifier is supplied in place of
 a store identifier, `store_params` values will be supplied from the predefined
 store configuration and can be omitted from the input configuration.
 
-You can list the currently available store
-identifiers in a Python environment with the expression `list(map(lambda e:
-e.name, xcube.core.store.find_data_store_extensions()))`. (TODO and
-via the generator?). 
-
 `data_id` is a string identifier for the dataset within a particular
-store. (TODO: describe how to list them.)
+store.
 
 The format and content of the `store_params` and `open_params` dictionaries
 is defined by the individual store or opener.
+
+The generator service does not yet provide a remote interface to list
+available data stores, datasets, and store parameters (i.e. allowed values for
+the parameters in the table above). In a local xcube Python environment, you
+can list the currently available store identifiers with the expression
+`list(map(lambda e: e.name, xcube.core.store.find_data_store_extensions()))`.
+You can create a local store object for an identifier `store_id` with
+`xcube.core.store.get_data_store_instance(store_id).store`. The store object
+provides methods `get_data_ids`, `get_data_store_params_schema`, and
+`get_open_data_params_schema` to describe the allowed values for the
+corresponding parameters. Note that the available stores and datasets on a
+remote xcube generator server may not be the same as those available in your
+local xcube environment.
 
 ### Cube configuration
 
@@ -231,25 +237,67 @@ specified by the `variable_names` parameter) to chunk sizes.
 
 ### Code configuration
 
-Since the code configuration can work directly with instantiated Python
-objects (which can't be stored in a YAML file), there are some differences
-in code configuration between the Python API and the YAML format. All
-parameters are optional (as is the entire code configuration itself).
+The code configuration supports multiple ways to define a *dataset processor*
+– fundamentally, a Python function which takes a dataset and returns a
+processed version of the input dataset. Since the code configuration can work
+directly with instantiated Python objects (which can't be stored in a YAML
+file), there are some differences in code configuration between the Python API
+and the YAML format.
 
-| Parameter          | Type            | Units/description                                                                       |
-|--------------------|-----------------|-----------------------------------------------------------------------------------------|
-| `_callable` | Callable | Function to be called to process the datacube. Only available via Python API |
-| `callable_ref`     | str (non-empty) | A reference to a Python class or function, in the format `<module>:<function_or_class>` |
-| `callable_params`  | map(str→`*`)    | Parameters to be passed to the specified callable                                       |
-| `inline_code`      | str (non-empty) | An inline snippet of Python code                                                        |
-| `file_set`         | FileSet         | A bundle of Python modules or packages (see details below)                              |
-| `install_required` | boolean         | If set, indicates that `file_set` contains modules or packages to be installed.          |
+| Parameter          | Type                          | Units/description                                                                       |
+|--------------------|-------------------------------|-----------------------------------------------------------------------------------------|
+| `_callable` †      | Callable                      | Function to be called to process the datacube. Only available via Python API            |
+| `callable_ref`     | str (non-empty)               | A reference to a Python class or function, in the format `<module>:<function_or_class>` |
+| `callable_params`  | map(str→`*`)                  | Parameters to be passed to the specified callable                                       |
+| `inline_code` †    | str (non-empty)               | An inline snippet of Python code                                                        |
+| `file_set` †       | FileSet (Python) / map (YAML) | A bundle of Python modules or packages (see details below)                              |
+| `install_required` | boolean                       | If set, indicates that `file_set` contains modules or packages to be installed.         |
 
-TODO: further details here.
+All parameters are optional (as is the entire code configuration itself). The
+three parameters marked † are mutually exclusive: at most one of them may be
+given.
 
-#### The `file_set` parameter
+`_callable` provides the dataset processor directly and is only available in
+the Python API. It must be either a function or a class.
 
-TODO
+ - If a function, it takes a `Dataset` and optional additional named
+   parameters, and returns a `Dataset`. Any additional parameters are supplied
+   in the `callable_params` parameter of the code configuration.
+ - If an object, it must implement a method `process_dataset`, which is
+   treated like the function described above, and may optionally implement a
+   class method `get_process_params_schema`, which returns a
+   `JsonObjectSchema` describing the additional parameters. For convenience
+   and clarity, the object may extend the abstract base class
+   `DatasetProcessor`, which declares both these methods.
+
+`callable_ref` is a string with the structure `<module>:<function_or_class>`,
+and specifies the function or class to call when `inline_code` or `file_set`
+is provided. The specified function or class is handled like the `_callable`
+parameter described above.
+
+`callable_params` specifies a dictionary of named parameters which are passed
+to the processor function or method.
+
+`inline_code` is a string containing Python source code. If supplied, it
+should contain the definition of a function or object as described for the
+`_callable` parameter. The module and class identifiers for the callable in
+the inline code snippet should be specified in `callable_ref` parameter.
+
+`file_set` specifies a set of files which should be read from an
+[fsspec](https://filesystem-spec.readthedocs.io/) file system and which
+contain a definition of a dataset processor. As with `inline_code`, the
+parameter `callable_ref` should also be supplied to tell the generator which
+class or function in the file set is the actual processor. The parameters of
+`file_set` are identical with those of the constructor of the corresponding
+Python `FileSet` class, and are as follows:
+
+| Parameter        | Type         | Description                                  |
+|------------------|--------------|----------------------------------------------|
+| `path`           | str          | fsspec-compatible root path specifier        |
+| `sub_path`       | str          | optional sub-path to append to main path     |
+| `includes`       | [str]        | include files matching any of these patterns |
+| `excludes`       | [str]        | exclude files matching any of these patterns |
+| `storage_params` | map(str→`*`) | FS-specific parameters (passed to fsspec)    |
 
 ### Output configuration
 
