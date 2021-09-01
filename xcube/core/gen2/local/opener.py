@@ -102,10 +102,8 @@ class DatasetsOpener:
         # Turn dataset into cube and grid_mapping
         try:
             cube, gm, _ = decode_cube(dataset,
-                                      force_non_empty=True,
                                       normalize=True)
         except DatasetIsNotACubeError as e:
-            # or better just warn?
             raise CubeGeneratorError(f'{e}') from e
 
         if dataset_open_params:
