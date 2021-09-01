@@ -20,7 +20,7 @@
 # SOFTWARE.
 
 import warnings
-from typing import Optional, Dict, Any, Hashable, Union, Set, List
+from typing import Optional, Dict, Any, Hashable, Union, Set, List, Tuple
 
 import pyproj
 import xarray as xr
@@ -32,26 +32,25 @@ class GridCoords:
     type xarray.DataArray.
     """
 
-    def __init__(self,
-                 x: xr.DataArray = None,
-                 y: xr.DataArray = None):
-        self.x = x
-        self.y = y
+    def __init__(self):
+        self.x: Optional[xr.DataArray] = None
+        self.y: Optional[xr.DataArray] = None
 
 
 class GridMappingProxy:
     """
     Grid mapping comprising *crs* of type pyproj.crs.CRS,
-    grid coordinates and an optional name.
+    grid coordinates, an optional name, coordinates, and a
+    tile size (= spatial chunk sizes).
     """
 
     def __init__(self,
                  crs: pyproj.crs.CRS,
-                 name: str = None,
-                 coords: GridCoords = None):
-        self.crs = crs
-        self.name = name
-        self.coords = coords
+                 name: Optional[str] = None):
+        self.crs: pyproj.crs.CRS = crs
+        self.name: Optional[str] = name
+        self.coords: Optional[xr.DataArray] = None
+        self.tile_size: Optional[Tuple[int, int]] = None
 
 
 def get_dataset_grid_mapping_proxies(
@@ -76,26 +75,26 @@ def get_dataset_grid_mapping_proxies(
     """
     # Find any grid mapping variables
     #
-    grid_mappings = dict()
+    grid_mapping_proxies = dict()
     for var_name, var in dataset.variables.items():
-        grid_mapping = _parse_crs_from_attrs(var.attrs)
-        if grid_mapping is not None:
-            grid_mappings[var_name] = grid_mapping
+        gmp = _parse_crs_from_attrs(var.attrs)
+        if gmp is not None:
+            grid_mapping_proxies[var_name] = gmp
 
     # If no grid mapping variables found,
     # try if CRS is encoded in dataset attributes
     #
-    if not grid_mappings:
-        grid_mapping = _parse_crs_from_attrs(dataset.attrs)
-        if grid_mapping is not None:
-            grid_mappings[None] = grid_mapping
+    if not grid_mapping_proxies:
+        gmp = _parse_crs_from_attrs(dataset.attrs)
+        if gmp is not None:
+            grid_mapping_proxies[None] = gmp
 
     # Find coordinate variables.
     #
 
-    latitude_longitude_coords = GridCoords(x=None, y=None)
-    rotated_latitude_longitude_coords = GridCoords(x=None, y=None)
-    projected_coords = GridCoords(x=None, y=None)
+    latitude_longitude_coords = GridCoords()
+    rotated_latitude_longitude_coords = GridCoords()
+    projected_coords = GridCoords()
 
     potential_coord_vars = _find_potential_coord_vars(dataset)
 
@@ -142,42 +141,57 @@ def get_dataset_grid_mapping_proxies(
 
     # Assign found coordinates to grid mappings
     #
-    for grid_mapping in grid_mappings.values():
-        if grid_mapping.name == 'latitude_longitude':
-            grid_mapping.coords = latitude_longitude_coords
-        elif grid_mapping.name == 'rotated_latitude_longitude':
-            grid_mapping.coords = rotated_latitude_longitude_coords
+    for gmp in grid_mapping_proxies.values():
+        if gmp.name == 'latitude_longitude':
+            gmp.coords = latitude_longitude_coords
+        elif gmp.name == 'rotated_latitude_longitude':
+            gmp.coords = rotated_latitude_longitude_coords
         else:
-            grid_mapping.coords = projected_coords
+            gmp.coords = projected_coords
 
     _complement_grid_mapping_coords(latitude_longitude_coords,
                                     'latitude_longitude',
                                     missing_latitude_longitude_crs
                                     or pyproj.crs.CRS(4326),
-                                    grid_mappings)
+                                    grid_mapping_proxies)
     _complement_grid_mapping_coords(rotated_latitude_longitude_coords,
                                     'rotated_latitude_longitude',
                                     missing_rotated_latitude_longitude_crs,
-                                    grid_mappings)
+                                    grid_mapping_proxies)
     _complement_grid_mapping_coords(projected_coords,
                                     None,
                                     missing_projected_crs,
-                                    grid_mappings)
+                                    grid_mapping_proxies)
 
     # Collect complete grid mappings
     complete_grid_mappings = dict()
-    for var_name, grid_mapping in grid_mappings.items():
-        if grid_mapping.coords is not None \
-                and grid_mapping.coords.x is not None \
-                and grid_mapping.coords.y is not None:
-            # TODO: add more consistency checks,
-            #   e.g. both 1d or both 2d with same dims
-            complete_grid_mappings[var_name] = grid_mapping
+    for var_name, gmp in grid_mapping_proxies.items():
+        if gmp.coords is not None \
+                and gmp.coords.x is not None \
+                and gmp.coords.y is not None \
+                and gmp.coords.x.size >= 2 \
+                and gmp.coords.y.size >= 2 \
+                and gmp.coords.x.ndim == gmp.coords.y.ndim:
+            if gmp.coords.x.ndim == 1:
+                gmp.tile_size = _find_dataset_tile_sizes(
+                    dataset,
+                    gmp.coords.x.dims[0],
+                    gmp.coords.y.dims[0]
+                )
+                complete_grid_mappings[var_name] = gmp
+            elif gmp.coords.x.ndim == 2 \
+                    and gmp.coords.x.dims == gmp.coords.y.dims:
+                gmp.tile_size = _find_dataset_tile_sizes(
+                    dataset,
+                    gmp.coords.x.dims[1],
+                    gmp.coords.x.dims[0]
+                )
+                complete_grid_mappings[var_name] = gmp
         elif emit_warnings:
-            warnings.warn(f'CRS "{grid_mapping.name}": '
+            warnings.warn(f'CRS "{gmp.name}": '
                           f'missing x- and/or y-coordinates '
                           f'(grid mapping variable "{var_name}": '
-                          f'grid_mapping_name="{grid_mapping.name}")')
+                          f'grid_mapping_name="{gmp.name}")')
 
     return complete_grid_mappings
 
@@ -190,8 +204,7 @@ def _parse_crs_from_attrs(attrs: Dict[Hashable, Any]) \
     except pyproj.crs.CRSError:
         return None
     return GridMappingProxy(crs=crs,
-                            name=attrs.get('grid_mapping_name'),
-                            coords=None)
+                            name=attrs.get('grid_mapping_name'))
 
 
 def _complement_grid_mapping_coords(
@@ -208,8 +221,7 @@ def _complement_grid_mapping_coords(
             grid_mapping = grid_mappings.get(None)
             if grid_mapping is None and missing_crs is not None:
                 grid_mapping = GridMappingProxy(crs=missing_crs,
-                                                name=grid_mapping_name,
-                                                coords=None)
+                                                name=grid_mapping_name)
                 grid_mappings[None] = grid_mapping
 
         if grid_mapping is not None and grid_mapping.coords is None:
@@ -258,3 +270,35 @@ def _is_potential_coord_var(dataset: xr.Dataset,
         var = dataset[var_name]
         return var.ndim in (1, 2) and var_name not in bounds_var_names
     return False
+
+
+def _find_dataset_tile_sizes(dataset: xr.Dataset,
+                             x_dim_name: Hashable,
+                             y_dim_name: Hashable) \
+        -> Optional[Tuple[int, int]]:
+    """Find the most likely tile size in *dataset*"""
+    tile_sizes: Dict[Any, int] = {}
+    for var_name, var in dataset.variables.items():
+        if var.ndim >= 2 \
+                and var.dims[-1] == x_dim_name \
+                and var.dims[-2] == y_dim_name \
+                and var.chunks \
+                and len(var.chunks) == var.ndim:
+            x_chunks = var.chunks[-1]
+            y_chunks = var.chunks[-2]
+            tile_size = (
+                max(0, *x_chunks),
+                max(0, *y_chunks)
+            )
+            if tile_size in tile_sizes:
+                tile_sizes[tile_size] += 1
+            else:
+                tile_sizes[tile_size] = 1
+
+    common_tile_size = None
+    max_count = 0
+    for tile_size, count in tile_sizes.items():
+        if count > max_count:
+            max_count = count
+            common_tile_size = tile_size
+    return common_tile_size
