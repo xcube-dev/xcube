@@ -1,4 +1,5 @@
-from typing import Dict, List, Mapping, Any, Union, Sequence
+import threading
+from typing import Dict, List, Mapping, Any, Union, Sequence, Optional
 
 import numpy as np
 import pandas as pd
@@ -7,13 +8,16 @@ import xarray as xr
 from xcube.core.chunk import chunk_dataset
 from xcube.core.dsio import open_cube, write_cube
 from xcube.core.dump import dump_dataset
-# noinspection PyUnresolvedReferences
-from xcube.core.evaluate import evaluate_dataset
-from xcube.core.extract import get_cube_values_for_points, get_cube_point_indexes, get_cube_values_for_indexes, \
-    get_dataset_indexes, DEFAULT_INDEX_NAME_PATTERN
-# noinspection PyUnresolvedReferences
-from xcube.core.level import compute_levels, read_levels, write_levels
+from xcube.core.extract import DEFAULT_INDEX_NAME_PATTERN
+from xcube.core.extract import get_cube_point_indexes
+from xcube.core.extract import get_cube_values_for_indexes
+from xcube.core.extract import get_cube_values_for_points
+from xcube.core.extract import get_dataset_indexes
+from xcube.core.gridmapping import GridMapping
+from xcube.core.level import compute_levels
 from xcube.core.new import new_cube
+from xcube.core.normalize import DatasetIsNotACubeError
+from xcube.core.normalize import decode_cube
 from xcube.core.schema import CubeSchema, get_cube_schema
 from xcube.core.select import select_variables_subset
 from xcube.core.vars2dim import vars_to_dim
@@ -25,13 +29,74 @@ class DatasetAccessor:
     """
     The xcube xarray API.
 
-    The API is made available via the ``xcube`` attribute of xarray.Dataset instances.
+    The API is made available via the ``xcube`` attribute of
+    xarray.Dataset instances.
 
-    :param dataset: An xarray dataset instance, that should conform to xcube's data cube specification.
+    It defines new xcube-specific properties for xarray datasets:
+
+    * :attr:cube The subset of variables of this dataset
+        which all have cube dimensions (time, ..., <y_name>, <x_name>).
+        May be an empty dataset.
+    * :attr:non_cube The subset of variables of this dataset
+        minus the data variables from :attr:cube.
+        May be the same as this dataset.
+    * :attr:gm The grid mapping used by this dataset.
+        It is an instance of :class:GridMapping.
+        May be None, if this dataset does not define a grid mapping.
     """
 
     def __init__(self, dataset: xr.Dataset):
-        self._dataset = dataset
+        self._dataset: xr.Dataset = dataset
+        self._cube_subset: Optional[xr.Dataset] = None
+        self._grid_mapping: Optional[GridMapping] = None
+        self._lock = threading.RLock()
+
+    @property
+    def cube(self) -> xr.Dataset:
+        if self._cube_subset is None:
+            with self._lock:
+                self._init_cube_subset()
+        return self._cube_subset
+
+    @property
+    def non_cube(self) -> xr.Dataset:
+        if self._cube_subset is None:
+            with self._lock:
+                self._init_cube_subset()
+        return self._non_cube_subset
+
+    @property
+    def gm(self) -> Optional[GridMapping]:
+        if self._cube_subset is None:
+            with self._lock:
+                self._init_cube_subset()
+        return self._grid_mapping
+
+    def _init_cube_subset(self):
+        try:
+            cube, grid_mapping, non_cube = decode_cube(self._dataset,
+                                                       normalize=True,
+                                                       force_copy=True)
+        except DatasetIsNotACubeError:
+            cube, grid_mapping, non_cube = xr.Dataset(), None, self._dataset
+        self._cube_subset = cube
+        self._grid_mapping = grid_mapping
+        self._non_cube_subset = non_cube
+
+    ########################################################################
+    # Old API from here on.
+    #
+    # Let's quickly agree, if we should deprecate all this stuff. I guess,
+    # no one uses it.
+    #
+    # We should only add props and methods to this accessor
+    # that require a certain state to be hold.
+    # Such state could be props that are expensive to recompute,
+    # such as grid mappings.
+    #
+    # It causes too much overhead and maintenance work
+    # if we continue putting any xcube function here.
+    ########################################################################
 
     @classmethod
     def new(cls, **kwargs) -> xr.Dataset:
