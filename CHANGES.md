@@ -14,6 +14,20 @@
   well as image pyramids (type`xcube.core.multilevel.MultiLevelDataset`) 
   using a Zarr-based multi-level format. (#446)
 
+* Several changes became necessary on the xcube Generator
+  package `xcube.core.gen2` and CLI `xcube gen2`. 
+  They are mostly not backward compatible:
+  - The only supported way to instantiate cube generators is the
+    `CubeGenerator.new()` factory method. 
+  - `CubeGenerator.generate_cube()` and `CubeGenerator.get_cube_info()`
+    both now receive the request object that has formerly been passed 
+    to the generator constructors.
+  - The `CubeGenerator.generate_cube()` method now returns a 
+    `CubeGeneratorResult` object rather than a simple string 
+    (the written `data_id`).  
+  - Empty cubes are no longer written, a warning status is 
+    generated instead.
+    
 * Numerous breaking changes have been applied to this version
   in order to address generic resampling (#391), to support other
   CRS than WGS-84 (#112), and to move from the struct data cube 
@@ -33,7 +47,7 @@
       `source_gm: GridMapping` and `target_gm: GridMapping` instead of 
       `geo_coding: GeoCoding` and `output_geom: ImageGeom`. 
   * xcube no longer depends on GDAL (at least not directly).
-
+    
 * Added a new feature to xcube called "BYOA" - Bring your own Algorithm.
   It is a generic utility that allows for execution of user-supplied 
   Python code in both local and remote contexts. (#467)
