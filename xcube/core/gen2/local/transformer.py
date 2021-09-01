@@ -58,7 +58,7 @@ class CubeIdentity(CubeTransformer):
         return cube, gm, cube_config
 
 
-def transform(transformer: CubeTransformer, t_cube: TransformedCube) -> TransformedCube:
+def transform_cube(t_cube: TransformedCube, transformer: CubeTransformer) -> TransformedCube:
     if is_empty_cube(t_cube[0]):
         return t_cube
     t_cube = transformer.transform_cube(*t_cube)

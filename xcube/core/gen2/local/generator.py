@@ -35,7 +35,7 @@ from .resamplert import CubeResamplerT
 from .resamplerxy import CubeResamplerXY
 from .subsetter import CubeSubsetter
 from .transformer import CubeIdentity
-from .transformer import transform
+from .transformer import transform_cube
 from .usercode import CubeUserCodeExecutor
 from .writer import CubeWriter
 from ..generator import CubeGenerator
@@ -137,13 +137,13 @@ class LocalCubeGenerator(CubeGenerator):
                 t_cube = cubes_opener.open_cube(input_config)
 
                 progress.will_work(subsetter_work)
-                t_cube = transform(cube_subsetter, t_cube)
+                t_cube = transform_cube(t_cube, cube_subsetter)
 
                 progress.will_work(resampler_t_work)
-                t_cube = transform(cube_resampler_t, t_cube)
+                t_cube = transform_cube(t_cube, cube_resampler_t)
 
                 progress.will_work(resampler_xy_work)
-                t_cube = transform(cube_resampler_xy, t_cube)
+                t_cube = transform_cube(t_cube, cube_resampler_xy)
 
                 t_cubes.append(t_cube)
 
@@ -151,10 +151,10 @@ class LocalCubeGenerator(CubeGenerator):
             t_cube = cube_combiner.combine_cubes(t_cubes)
 
             progress.will_work(rechunker_work)
-            t_cube = transform(cube_rechunker, t_cube)
+            t_cube = transform_cube(t_cube, cube_rechunker)
 
             progress.will_work(executor_work)
-            t_cube = transform(code_executor, t_cube)
+            t_cube = transform_cube(t_cube, code_executor)
 
             progress.will_work(writer_work)
             cube, gm, _ = t_cube
