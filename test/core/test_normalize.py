@@ -73,9 +73,9 @@ class DecodeCubeTest(TestCase):
         self.assertEqual(set(), set(dataset.data_vars))
         with self.assertRaises(DatasetIsNotACubeError) as cm:
             decode_cube(dataset, force_non_empty=True)
-        self.assertEqual("No variables found"
-                         " with dimensions"
-                         " ('time', [...] 'lat', 'lon')",
+        self.assertEqual("No variables found with dimensions"
+                         " ('time', [...] 'lat', 'lon')"
+                         " or dimension sizes too small",
                          f'{cm.exception}')
 
     def test_no_grid_mapping(self):

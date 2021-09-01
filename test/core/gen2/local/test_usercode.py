@@ -2,6 +2,8 @@ import unittest
 
 import xarray as xr
 
+# noinspection PyUnresolvedReferences
+import xcube.core.xarray
 from xcube.core.byoa import CodeConfig
 from xcube.core.gen2 import CubeGeneratorError, CubeConfig
 from xcube.core.gen2.local.usercode import CubeUserCodeExecutor
@@ -11,8 +13,6 @@ from xcube.core.new import new_cube
 from xcube.util.jsonschema import JsonIntegerSchema
 from xcube.util.jsonschema import JsonObjectSchema
 from xcube.util.jsonschema import JsonStringSchema
-# noinspection PyUnresolvedReferences
-import xcube.core.xarray
 
 
 def process_dataset_function(dataset: xr.Dataset,
@@ -77,7 +77,11 @@ class CubeUserCodeExecutorTest(unittest.TestCase):
                                  callable_params=self.good_params)
         executor = CubeUserCodeExecutor(code_config)
         ds_input = new_cube(variables=dict(a=1))
-        ds_output, gm, cc = executor.transform_cube(ds_input, ds_input.xcube.gm, CubeConfig())
+        ds_output, gm, cc = executor.transform_cube(
+            ds_input,
+            GridMapping.from_dataset(ds_input),
+            CubeConfig()
+        )
         self.assertIsInstance(ds_output, xr.Dataset)
         self.assertIsInstance(gm, GridMapping)
         self.assertIsInstance(cc, CubeConfig)

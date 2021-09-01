@@ -17,7 +17,7 @@ class CubeRechunkerTest(unittest.TestCase):
 
         rc = CubeRechunker()
         cube2, gm, cc = rc.transform_cube(cube1,
-                                          cube1.xcube.gm,
+                                          GridMapping.from_dataset(cube1),
                                           CubeConfig(chunks=dict(time=2,
                                                                  lat=100,
                                                                  lon=200)))
@@ -49,7 +49,7 @@ class CubeRechunkerTest(unittest.TestCase):
 
         rc = CubeRechunker()
         cube2, gm, cc = rc.transform_cube(cube1,
-                                          cube1.xcube.gm,
+                                          GridMapping.from_dataset(cube1),
                                           CubeConfig(chunks=dict(time=64,
                                                                  lat=512,
                                                                  lon=512)))
