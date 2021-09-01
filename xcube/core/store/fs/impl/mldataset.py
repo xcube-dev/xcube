@@ -82,8 +82,6 @@ class MultiLevelDatasetLevelsFsDataAccessor(DatasetZarrFsDataAccessor):
         consolidated = write_params.pop('consolidated', True)
         use_saved_levels = write_params.pop('use_saved_levels', False)
 
-        print(f'{data_id}: tile_grid: {ml_dataset.tile_grid}')
-
         if use_saved_levels:
             ml_dataset = BaseMultiLevelDataset(
                 ml_dataset.get_dataset(0),
