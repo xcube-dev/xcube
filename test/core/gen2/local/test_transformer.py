@@ -3,8 +3,9 @@ import unittest
 import xarray as xr
 
 from xcube.core.gen2 import CubeConfig
-from xcube.core.gen2.local.transformer import CubeIdentity, TransformedCube
+from xcube.core.gen2.local.transformer import CubeIdentity
 from xcube.core.gen2.local.transformer import CubeTransformer
+from xcube.core.gen2.local.transformer import TransformedCube
 from xcube.core.gen2.local.transformer import transform_cube
 from xcube.core.gridmapping import GridMapping
 from xcube.core.new import new_cube
