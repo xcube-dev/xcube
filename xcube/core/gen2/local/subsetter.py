@@ -84,12 +84,4 @@ class CubeSubsetter(CubeTransformer):
                                           time_range=desired_time_range)
             cube_config = cube_config.drop_props('time_range')
 
-        drop_vars = [k for k, v in cube.data_vars.items()
-                     if len(v.shape) < 3
-                     or np.product(v.shape) == 0
-                     or v.shape[-2] < 2
-                     or v.shape[-1] < 2]
-        if drop_vars:
-            cube = cube.drop_vars(drop_vars)
-
         return cube, gm, cube_config
