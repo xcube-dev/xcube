@@ -20,7 +20,6 @@
 # SOFTWARE.
 import math
 
-import numpy as np
 import pyproj
 import xarray as xr
 
@@ -48,14 +47,23 @@ class CubeSubsetter(CubeTransformer):
 
         desired_bbox = cube_config.bbox
         if desired_bbox is not None:
+            # Find out whether its possible to make a spatial subset
+            # without resampling. First, grid mapping must be regular.
+            can_do_spatial_subset = False
             if gm.is_regular:
                 can_do_spatial_subset = True
+                # Current spatial resolution must be the
+                # desired spatial resolution, otherwise spatial resampling
+                # is required later, which will include the desired
+                # subsetting.
                 desired_res = cube_config.spatial_res
                 if desired_res is not None \
                         and not (math.isclose(gm.x_res, desired_res)
                                  and math.isclose(gm.y_res, desired_res)):
                     can_do_spatial_subset = False
                 if can_do_spatial_subset:
+                    # Finally, the desired CRS must be equal to the current
+                    # one, or they must both be geographic.
                     desired_crs = cube_config.crs
                     if desired_crs:
                         desired_crs = pyproj.CRS.from_string(desired_crs)
@@ -63,20 +71,20 @@ class CubeSubsetter(CubeTransformer):
                                 and not (desired_crs.is_geographic
                                          and gm.crs.is_geographic):
                             can_do_spatial_subset = False
-                if can_do_spatial_subset:
-                    cube = select_spatial_subset(cube,
-                                                 xy_bbox=desired_bbox)
-                    # Now that we have a new cube subset, we must adjust
-                    # its grid mapping.
-                    gm = GridMapping.from_dataset(
-                        cube,
-                        crs=gm.crs,
-                        xy_var_names=gm.xy_var_names,
-                    )
-                    # Consume spatial properties
-                    cube_config = cube_config.drop_props(['bbox',
-                                                          'spatial_res',
-                                                          'crs'])
+            if can_do_spatial_subset:
+                cube = select_spatial_subset(cube,
+                                             xy_bbox=desired_bbox)
+                # Now that we have a new cube subset, we must adjust
+                # its grid mapping.
+                gm = GridMapping.from_dataset(
+                    cube,
+                    crs=gm.crs,
+                    xy_var_names=gm.xy_var_names,
+                )
+                # Consume spatial properties
+                cube_config = cube_config.drop_props(['bbox',
+                                                      'spatial_res',
+                                                      'crs'])
 
         desired_time_range = cube_config.time_range
         if desired_time_range:
