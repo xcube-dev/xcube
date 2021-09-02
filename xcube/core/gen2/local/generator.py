@@ -131,7 +131,7 @@ class LocalCubeGenerator(CubeGenerator):
                      + writer_work
 
         t_cubes = []
-        with observe_progress('Processing input dataset(s)',
+        with observe_progress('Generating cube',
                               total_work) as progress:
             for input_config in request.input_configs:
                 progress.will_work(opener_work)
