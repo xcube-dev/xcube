@@ -27,7 +27,10 @@
     (the written `data_id`).  
   - Empty cubes are no longer written, a warning status is 
     generated instead.
-    
+  - The xcube gen2 CLI `xcube gen2` has a new option `--output RESULT` 
+    to write the result to a JSON file. If it is omitted, 
+    the CLI will dump the result as JSON to stdout.
+
 * Numerous breaking changes have been applied to this version
   in order to address generic resampling (#391), to support other
   CRS than WGS-84 (#112), and to move from the struct data cube 
