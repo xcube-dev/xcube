@@ -29,14 +29,14 @@ import requests
 from xcube.util.assertions import assert_instance
 from xcube.util.progress import observe_progress
 from .config import ServiceConfig
-from .response import CubeGeneratorResult
+from .response import CubeGeneratorState
 from .response import CubeGeneratorToken
 from .response import CubeInfoWithCosts
 from ..error import CubeGeneratorError
 from ..generator import CubeGenerator
 from ..request import CubeGeneratorRequest
 from ..request import CubeGeneratorRequestLike
-from ..response import CubeInfo
+from ..response import CubeInfo, CubeGeneratorResult
 
 _BASE_HEADERS = {
     "Accept": "application/json",
@@ -117,12 +117,19 @@ class RemoteCubeGenerator(CubeGenerator):
                                     response_type=response_type,
                                     request_data=request_data)
 
-    def generate_cube(self, request: CubeGeneratorRequestLike) -> Any:
+    def generate_cube(self, request: CubeGeneratorRequestLike) \
+            -> CubeGeneratorResult:
         request = CubeGeneratorRequest.normalize(request).for_service()
         response = self._submit_gen_request(request)
 
-        result = self._get_cube_generation_result(response)
-        cubegen_id = result.cubegen_id
+        state = self._get_cube_generator_state(response)
+        if state.status.failed:
+            return CubeGeneratorResult(data_id=request.output_config.data_id,
+                                       status='error',
+                                       output=state.output)
+
+        cubegen_id = state.cubegen_id
+        data_id = self._get_data_id(request, cubegen_id + '.zarr')
 
         last_worked = 0
         with observe_progress('Generating cube', 100) as cm:
@@ -133,14 +140,15 @@ class RemoteCubeGenerator(CubeGenerator):
                     self.endpoint_op(f'cubegens/{cubegen_id}'),
                     headers=self.auth_headers
                 )
-                result = self._get_cube_generation_result(response)
-                if result.status.succeeded:
-                    return self._get_data_id(request, cubegen_id + '.zarr')
-                if result.status.failed:
-                    return self._get_data_id(request, cubegen_id + '.zarr')
+                state = self._get_cube_generator_state(response)
+                if state.status.succeeded or state.status.failed:
+                    status = 'ok' if state.status.succeeded else 'error'
+                    return CubeGeneratorResult(data_id=data_id,
+                                               status=status,
+                                               output=state.output)
 
-                if result.progress is not None and len(result.progress) > 0:
-                    progress_state = result.progress[0].state
+                if state.progress is not None and len(state.progress) > 0:
+                    progress_state = state.progress[0].state
                     total_work = progress_state.total_work
                     progress = progress_state.progress or 0
                     worked = progress * total_work
@@ -189,24 +197,14 @@ class RemoteCubeGenerator(CubeGenerator):
         data_id = request.output_config.data_id
         return data_id if data_id else default
 
-    def _get_cube_generation_result(self,
-                                    response: requests.Response,
-                                    request_data: Dict[str, Any] = None) \
-            -> CubeGeneratorResult:
-        result = self._parse_response(response,
-                                      CubeGeneratorResult,
-                                      request_data=request_data)
-        if result.status.failed:
-            message = 'Cube generation failed'
-            if result.status.conditions:
-                sub_messages = [item['message'] or ''
-                                for item in result.status.conditions
-                                if isinstance(item, dict)
-                                and 'message' in item]
-                message = f'{message}: {": ".join(sub_messages)}'
-            raise CubeGeneratorError(message,
-                                     remote_output=result.output)
-        return result
+    def _get_cube_generator_state(self,
+                                  response: requests.Response,
+                                  request_data: Dict[str, Any] = None) \
+            -> CubeGeneratorState:
+        state = self._parse_response(response,
+                                     CubeGeneratorState,
+                                     request_data=request_data)
+        return state
 
     def _parse_response(self,
                         response: requests.Response,

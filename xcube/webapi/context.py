@@ -43,7 +43,7 @@ from xcube.core.mldataset import augment_ml_dataset
 from xcube.core.mldataset import open_ml_dataset_from_local_fs
 from xcube.core.mldataset import open_ml_dataset_from_object_storage
 from xcube.core.mldataset import open_ml_dataset_from_python_code
-from xcube.core.normalize import get_dataset_cube_subset
+from xcube.core.normalize import decode_cube
 from xcube.core.store import DATASET_TYPE
 from xcube.core.store import DataStoreConfig
 from xcube.core.store import DataStorePool
@@ -485,7 +485,10 @@ class ServiceContext:
             if isinstance(dataset, MultiLevelDataset):
                 ml_dataset = dataset
             else:
-                cube, _ = get_dataset_cube_subset(dataset, normalize=True)
+                cube, _, _ = decode_cube(dataset,
+                                         normalize=True,
+                                         force_non_empty=True,
+                                         force_geographic=True)
                 ml_dataset = BaseMultiLevelDataset(cube, ds_id=ds_id)
         else:
             fs_type = dataset_config.get('FileSystem', 'local')

@@ -19,24 +19,20 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-from abc import ABC, abstractmethod
-from typing import Sequence
-
+import numpy as np
 import xarray as xr
 
 
-class CubeProcessor(ABC):
-    @abstractmethod
-    def process_cube(self, cube: xr.Dataset) -> xr.Dataset:
-        """Process given *cube* into new cube."""
+def is_empty_cube(cube: xr.Dataset) -> bool:
+    return len(cube.data_vars) == 0
 
 
-class CubesProcessor(ABC):
-    @abstractmethod
-    def process_cubes(self, cubes: Sequence[xr.Dataset]) -> xr.Dataset:
-        """Process given *cubes* into new cube."""
-
-
-class NoOpCubeProcessor(CubeProcessor):
-    def process_cube(self, cube: xr.Dataset):
-        return cube
+def strip_cube(cube: xr.Dataset) -> xr.Dataset:
+    drop_vars = [k for k, v in cube.data_vars.items()
+                 if len(v.shape) < 3
+                 or np.product(v.shape) == 0
+                 or v.shape[-2] < 2
+                 or v.shape[-1] < 2]
+    if drop_vars:
+        return cube.drop_vars(drop_vars)
+    return cube

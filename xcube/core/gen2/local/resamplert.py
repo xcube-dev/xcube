@@ -19,25 +19,19 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-from typing import Sequence
-
 import xarray as xr
 
+from xcube.core.gridmapping import GridMapping
+from .transformer import CubeTransformer
 from .transformer import TransformedCube
 from ..config import CubeConfig
 
 
-class CubesCombiner:
-    def __init__(self, cube_config: CubeConfig):
-        self._cube_config = cube_config
+class CubeResamplerT(CubeTransformer):
 
-    # noinspection PyMethodMayBeStatic
-    def combine_cubes(self, t_cubes: Sequence[TransformedCube]) \
-            -> TransformedCube:
-        cube, gm, _ = t_cubes[0]
-        if len(t_cubes) == 1:
-            return cube, gm, self._cube_config
-
-        cube = xr.merge([t_cube[0] for t_cube in t_cubes])
-
-        return cube, gm, self._cube_config
+    def transform_cube(self,
+                       cube: xr.Dataset,
+                       gm: GridMapping,
+                       cube_config: CubeConfig) -> TransformedCube:
+        # TODO (forman): implement me
+        return cube, gm, cube_config

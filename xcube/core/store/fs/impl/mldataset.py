@@ -29,6 +29,8 @@ from xcube.core.mldataset import LazyMultiLevelDataset
 from xcube.core.mldataset import MultiLevelDataset
 from xcube.core.mldataset import get_dataset_tile_grid
 from xcube.util.assertions import assert_instance
+from xcube.util.jsonschema import JsonBooleanSchema
+from xcube.util.jsonschema import JsonObjectSchema
 from .dataset import DatasetZarrFsDataAccessor
 from ...datatype import DATASET_TYPE
 from ...datatype import DataType
@@ -55,6 +57,16 @@ class MultiLevelDatasetLevelsFsDataAccessor(DatasetZarrFsDataAccessor):
         fs, open_params = self.load_fs(open_params)
         return FsMultiLevelDataset(fs, data_id, **open_params)
 
+    def get_write_data_params_schema(self) -> JsonObjectSchema:
+        schema = super().get_write_data_params_schema()
+        schema.properties['use_saved_levels'] = JsonBooleanSchema(
+            description='Whether to open an already saved level'
+                        ' and downscale it then.'
+                        ' May be used to avoid computation of'
+                        ' entire Dask graphs at each level.'
+        )
+        return schema
+
     def write_data(self,
                    data: Union[xr.Dataset, MultiLevelDataset],
                    data_id: str,
@@ -68,10 +80,17 @@ class MultiLevelDatasetLevelsFsDataAccessor(DatasetZarrFsDataAccessor):
             ml_dataset = BaseMultiLevelDataset(data)
         fs, write_params = self.load_fs(write_params)
         consolidated = write_params.pop('consolidated', True)
+        use_saved_levels = write_params.pop('use_saved_levels', False)
 
-        # TODO: should/can we parallelize this?
+        if use_saved_levels:
+            ml_dataset = BaseMultiLevelDataset(
+                ml_dataset.get_dataset(0),
+                tile_grid=ml_dataset.tile_grid
+            )
+
         for index in range(ml_dataset.num_levels):
             level_dataset = ml_dataset.get_dataset(index)
+
             level_path = f'{data_id}/{index}.zarr'
             zarr_store = fs.get_mapper(level_path, create=True)
             try:
@@ -85,6 +104,10 @@ class MultiLevelDatasetLevelsFsDataAccessor(DatasetZarrFsDataAccessor):
                 # TODO: remove already written data!
                 raise DataStoreError(f'Failed to write'
                                      f' dataset {data_id}: {e}') from e
+            if use_saved_levels:
+                level_dataset = xr.open_zarr(zarr_store,
+                                             consolidated=consolidated)
+                ml_dataset.set_dataset(index, level_dataset)
 
 
 class FsMultiLevelDataset(LazyMultiLevelDataset):

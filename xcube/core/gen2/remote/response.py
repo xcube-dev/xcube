@@ -94,6 +94,8 @@ class CubeGeneratorJobStatus(JsonObject):
 
 
 class CubeGeneratorProgressState(JsonObject):
+    """Current progress state of the remote generator."""
+
     def __init__(self,
                  progress: float,
                  # worked: Union[int, float],
@@ -126,6 +128,7 @@ class CubeGeneratorProgressState(JsonObject):
 
 
 class CubeGeneratorProgress(JsonObject):
+    """Current progress of the remote generator."""
     def __init__(self,
                  sender: str,
                  state: CubeGeneratorProgressState):
@@ -151,7 +154,9 @@ class CubeGeneratorProgress(JsonObject):
         return cls.get_schema().from_instance(value)
 
 
-class CubeGeneratorResult(JsonObject):
+class CubeGeneratorState(JsonObject):
+    """Current state of the remote generator."""
+
     def __init__(self,
                  cubegen_id: str,
                  status: CubeGeneratorJobStatus,
@@ -185,7 +190,7 @@ class CubeGeneratorResult(JsonObject):
         )
 
     @classmethod
-    def from_dict(cls, value: Dict) -> 'CubeGeneratorResult':
+    def from_dict(cls, value: Dict) -> 'CubeGeneratorState':
         return cls.get_schema().from_instance(value)
 
 

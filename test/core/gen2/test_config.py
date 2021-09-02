@@ -79,6 +79,35 @@ class CubeConfigTest(unittest.TestCase):
         # smoke test JSON serialisation
         json.dumps(actual_dict, indent=2)
 
+    def test_drop_props(self):
+        cube_config = CubeConfig(variable_names=['B03', 'B04'],
+                                 crs='WGS84',
+                                 bbox=(12.2, 52.1, 13.9, 54.8),
+                                 spatial_res=0.05,
+                                 time_range=('2018-01-01', None),
+                                 time_period='4D')
+
+        self.assertIs(cube_config, cube_config.drop_props([]))
+
+        lesser_cube_config = cube_config.drop_props(['crs',
+                                                     'spatial_res',
+                                                     'bbox'])
+        self.assertEqual(None, lesser_cube_config.crs)
+        self.assertEqual(None, lesser_cube_config.bbox)
+        self.assertEqual(None, lesser_cube_config.spatial_res)
+        self.assertEqual(('B03', 'B04'), lesser_cube_config.variable_names)
+        self.assertEqual(('2018-01-01', None), lesser_cube_config.time_range)
+        self.assertEqual('4D', lesser_cube_config.time_period)
+
+        lesser_cube_config = cube_config.drop_props('variable_names')
+        self.assertEqual(None, lesser_cube_config.variable_names)
+
+        with self.assertRaises(ValueError) as cm:
+            cube_config.drop_props('variable_shames')
+        self.assertEqual("variable_shames is not a property of"
+                         " <class 'xcube.core.gen2.config.CubeConfig'>",
+                         f'{cm.exception}')
+
 
 class CallbackConfigTest(unittest.TestCase):
 

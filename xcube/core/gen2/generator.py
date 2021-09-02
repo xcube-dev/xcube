@@ -20,15 +20,16 @@
 # SOFTWARE.
 
 from abc import ABC, abstractmethod
-from typing import Any, Optional
+from typing import Optional
 
 from xcube.core.store import DataStorePool
 from xcube.core.store import DataStorePoolLike
 from xcube.util.assertions import assert_instance
 from xcube.util.assertions import assert_true
-from .request import CubeGeneratorRequestLike
-from .response import CubeInfo
 from .remote.config import ServiceConfigLike
+from .request import CubeGeneratorRequestLike
+from .response import CubeGeneratorResult
+from .response import CubeInfo
 
 
 class CubeGenerator(ABC):
@@ -132,7 +133,8 @@ class CubeGenerator(ABC):
         """
 
     @abstractmethod
-    def generate_cube(self, request: CubeGeneratorRequestLike) -> Any:
+    def generate_cube(self, request: CubeGeneratorRequestLike) \
+            -> CubeGeneratorResult:
         """
         Generate the data cube for given *request*.
 

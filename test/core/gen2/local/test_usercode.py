@@ -2,10 +2,14 @@ import unittest
 
 import xarray as xr
 
+# noinspection PyUnresolvedReferences
+import xcube.core.xarray
 from xcube.core.byoa import CodeConfig
-from xcube.core.gen2 import CubeGeneratorError
-from xcube.core.gen2.processor import DatasetProcessor
+from xcube.core.gen2 import CubeGeneratorError, CubeConfig
 from xcube.core.gen2.local.usercode import CubeUserCodeExecutor
+from xcube.core.gen2.processor import DatasetProcessor
+from xcube.core.gridmapping import GridMapping
+from xcube.core.new import new_cube
 from xcube.util.jsonschema import JsonIntegerSchema
 from xcube.util.jsonschema import JsonObjectSchema
 from xcube.util.jsonschema import JsonStringSchema
@@ -72,9 +76,15 @@ class CubeUserCodeExecutorTest(unittest.TestCase):
         code_config = CodeConfig(_callable=user_code_callable,
                                  callable_params=self.good_params)
         executor = CubeUserCodeExecutor(code_config)
-        ds_input = xr.Dataset()
-        ds_output = executor.process_cube(ds_input)
+        ds_input = new_cube(variables=dict(a=1))
+        ds_output, gm, cc = executor.transform_cube(
+            ds_input,
+            GridMapping.from_dataset(ds_input),
+            CubeConfig()
+        )
         self.assertIsInstance(ds_output, xr.Dataset)
+        self.assertIsInstance(gm, GridMapping)
+        self.assertIsInstance(cc, CubeConfig)
         self.assertIsNot(ds_output, ds_input)
         self.assertIn('X', ds_output)
         self.assertEqual(42, ds_output.X)
