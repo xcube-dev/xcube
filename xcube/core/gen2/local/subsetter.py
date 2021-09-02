@@ -63,7 +63,7 @@ class CubeSubsetter(CubeTransformer):
                     can_do_spatial_subset = False
                 if can_do_spatial_subset:
                     # Finally, the desired CRS must be equal to the current
-                    # one, or they are both geographic.
+                    # one, or they must both be geographic.
                     desired_crs = cube_config.crs
                     if desired_crs:
                         desired_crs = pyproj.CRS.from_string(desired_crs)
