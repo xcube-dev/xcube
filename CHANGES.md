@@ -61,6 +61,22 @@
     `xcube.core.gen2.service.RemoteCubeGenerator`;
   2. Generator CLI `xcube gen2`.
   
+* A dataset's cube subset and its grid mapping can now be accessed through
+  the `xcube` property of `xarray.Dataset` instances. This feature requires 
+  importing the `xcube.core.xarray`package. Let `dataset` be an 
+  instance of `xarray.Dataset`, then
+  - `dataset.xcube.cube` is a `xarray.Dataset` that contains all cube 
+     variables of `dataset`, namely the ones with dimensions 
+     `("time", [...,], y_dim_name, x_dim_name)`, where `y_dim_name`, 
+    `x_dim_name` are determined by the dataset's grid mapping.
+     May be empty, if `dataset` has no cube variables.
+  - `dataset.xcube.gm` is a `xcube.core.gridmapping.GridMapping` that 
+     describes the CF-compliant grid mapping of `dataset`. 
+     May be `None`, if `dataset` does not define a grid mapping.
+  - `dataset.xcube.non_cube` is a `xarray.Dataset` that contains all
+     variables of `dataset` that are not in `dataset.xcube.cube`.
+     May be same as `dataset`, if `dataset.xcube.cube` is empty.
+  
 * Added a new utility module `xcube.util.temp` that allows for creating 
   temporary files and directories that will be deleted when the current 
   process ends.
