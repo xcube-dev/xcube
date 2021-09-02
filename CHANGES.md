@@ -73,6 +73,9 @@
   - `dataset.xcube.gm` is a `xcube.core.gridmapping.GridMapping` that 
      describes the CF-compliant grid mapping of `dataset`. 
      May be `None`, if `dataset` does not define a grid mapping.
+  - `dataset.xcube.non_cube` is a `xarray.Dataset` that contains all
+     variables of `dataset` that are not in `dataset.xcube.cube`.
+     May be same as `dataset`, if `dataset.xcube.cube` is empty.
   
 * Added a new utility module `xcube.util.temp` that allows for creating 
   temporary files and directories that will be deleted when the current 
