@@ -13,6 +13,7 @@ from xcube.constants import FORMAT_NAME_LEVELS
 from xcube.constants import FORMAT_NAME_NETCDF4
 from xcube.constants import FORMAT_NAME_SCRIPT
 from xcube.constants import FORMAT_NAME_ZARR
+from xcube.core.chunk import chunk_dataset
 from xcube.core.dsio import guess_dataset_format
 from xcube.core.dsio import is_s3_url
 from xcube.core.dsio import parse_s3_fs_and_root
@@ -482,10 +483,22 @@ class BaseMultiLevelDataset(LazyMultiLevelDataset):
                 data_vars[var_name] = var
             level_dataset = xr.Dataset(data_vars,
                                        attrs=self._base_cube.attrs)
+
+        # Tile each level according to grid mapping
+        tile_size = self.grid_mapping.tile_size
+        if tile_size is not None:
+            tile_width, tile_height = tile_size
+            x_dim_name, y_dim_name = self.grid_mapping.xy_dim_names
+            level_dataset = chunk_dataset(level_dataset, {
+                x_dim_name: tile_width,
+                y_dim_name: tile_height
+            })
+
         return level_dataset
 
 
 # TODO (forman): rename to ScriptedMultiLevelDataset
+# TODO (forman): use new xcube.core.byoa package here
 
 class ComputedMultiLevelDataset(LazyMultiLevelDataset):
     """
