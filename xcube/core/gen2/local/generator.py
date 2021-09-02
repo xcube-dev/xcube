@@ -156,6 +156,9 @@ class LocalCubeGenerator(CubeGenerator):
             progress.will_work(executor_work)
             t_cube = transform_cube(t_cube, code_executor)
 
+            progress.will_work(rechunker_work)
+            t_cube = transform_cube(t_cube, cube_rechunker)
+
             progress.will_work(writer_work)
             cube, gm, _ = t_cube
             if not is_empty_cube(cube):
