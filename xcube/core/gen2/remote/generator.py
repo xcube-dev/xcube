@@ -204,16 +204,6 @@ class RemoteCubeGenerator(CubeGenerator):
         state = self._parse_response(response,
                                      CubeGeneratorState,
                                      request_data=request_data)
-        # if state.status.failed:
-        #     message = 'Cube generation failed'
-        #     if state.status.conditions:
-        #         sub_messages = [item['message'] or ''
-        #                         for item in state.status.conditions
-        #                         if isinstance(item, dict)
-        #                         and 'message' in item]
-        #         message = f'{message}: {": ".join(sub_messages)}'
-        #     raise CubeGeneratorError(message,
-        #                              remote_output=state.output)
         return state
 
     def _parse_response(self,
