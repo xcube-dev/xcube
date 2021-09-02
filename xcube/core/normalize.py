@@ -175,7 +175,7 @@ def decode_cube(dataset: xr.Dataset,
     :param dataset: The dataset.
     :param normalize: Whether to normalize the *dataset*,
         before the cube subset is determined.
-        If normalisation fails, cube subset is created from *dataset*.
+        If normalisation fails, the cube subset is created from *dataset*.
     :param force_copy: whether to create a copy of this dataset
         even if this dataset is identical to its cube subset.
     :param force_non_empty: whether the resulting cube
