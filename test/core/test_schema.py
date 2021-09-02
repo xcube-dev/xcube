@@ -4,7 +4,7 @@ import numpy as np
 import xarray as xr
 
 from xcube.core.new import new_cube
-from xcube.core.schema import CubeSchema
+from xcube.core.schema import CubeSchema, get_dataset_chunks
 
 
 class CubeSchemaTest(unittest.TestCase):
@@ -184,3 +184,42 @@ class CubeSchemaTest(unittest.TestCase):
         self.assertEqual("dimension 'lat' of variable 'a' has chunks of different sizes: (44, 43, 46, 47)",
                          f'{cm.exception}')
 
+
+class GetDatasetChunksTest(unittest.TestCase):
+
+    def test_empty_dataset(self):
+        dataset = xr.Dataset()
+        self.assertEqual({}, get_dataset_chunks(dataset))
+
+    def test_only_coords_dataset(self):
+        dataset = xr.Dataset(
+            coords=dict(
+                x=xr.DataArray(np.linspace(0, 1, 100), dims='x').chunk(10),
+                y=xr.DataArray(np.linspace(0, 1, 100), dims='y').chunk(20),
+            )
+        )
+        self.assertEqual({}, get_dataset_chunks(dataset))
+
+    def test_different_chunks(self):
+        dataset = xr.Dataset(data_vars=dict(
+            a=xr.DataArray(
+                np.linspace(0, 1, 100 * 100).reshape((100, 100)),
+                dims=('y', 'x')
+            ).chunk((30, 10)),
+            b=xr.DataArray(
+                np.linspace(0, 1, 100 * 100).reshape((100, 100)),
+                dims=('y', 'x')
+            ).chunk((25, 15)),
+            c=xr.DataArray(
+                np.linspace(0, 1, 100 * 100).reshape((1, 100, 100)),
+                dims=('time', 'y', 'x')
+            ).chunk((1, 25, 10)),
+            d=xr.DataArray(  # d is not chunked!
+                np.linspace(0, 1, 100 * 100).reshape((1, 100, 100)),
+                dims=('time', 'y', 'x')
+            ),
+        ))
+        self.assertEqual(
+            {'time': 1, 'x': 10, 'y': 25},
+            get_dataset_chunks(dataset)
+        )

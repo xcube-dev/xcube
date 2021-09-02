@@ -167,8 +167,8 @@ def gen2(request_path: str,
                              'Cube generation failed.'
                              if error is None else f'{error}')
         click_error = click.ClickException(message)
-        if error is not None:
-            raise click_error from error
+        # if error is not None:
+        #     raise click_error from error
         raise click_error
 
 

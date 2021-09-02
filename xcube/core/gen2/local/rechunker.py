@@ -19,11 +19,10 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-from typing import Union, Tuple, Optional
-
 import xarray as xr
 
 from xcube.core.gridmapping import GridMapping
+from xcube.core.schema import get_dataset_chunks
 from .transformer import CubeTransformer
 from .transformer import TransformedCube
 from ..config import CubeConfig
@@ -37,28 +36,47 @@ class CubeRechunker(CubeTransformer):
                        gm: GridMapping,
                        cube_config: CubeConfig) -> TransformedCube:
 
-        dim_chunks = cube_config.chunks
-        if dim_chunks is None:
+        # get initial cube chunks from existing dataset
+        cube_chunks = get_dataset_chunks(cube)
+
+        # if tile sizes are specified, use them to overwrite
+        # the spatial dimensions
+        x_dim_name, y_dim_name = gm.xy_dim_names
+        for dim_name, i in ((x_dim_name, 0), (y_dim_name, 1)):
+            if dim_name not in cube_chunks:
+                if cube_config.tile_size is not None:
+                    cube_chunks[dim_name] = cube_config.tile_size[i]
+                elif gm.tile_size is not None:
+                    cube_chunks[dim_name] = gm.tile_size[i]
+
+        # cube_config.chunks will overwrite any defaults
+        if cube_config.chunks:
+            for dim_name, chunks in cube_config.chunks:
+                cube_chunks[dim_name] = chunks
+
+        # If there is no chunking, return identities
+        if not cube_chunks:
             return cube, gm, cube_config
 
         chunked_cube = xr.Dataset(attrs=cube.attrs)
 
-        # Coordinate variables SHOULD NOT BE chunked
+        # Coordinate variables are chunked automatically
         chunked_cube = chunked_cube.assign_coords(
-            coords={var_name: var.chunk({d: None for d in var.dims})
-                    for var_name, var in cube.coords.items()}
+            coords={
+                var_name: var.chunk({
+                    dim_name: 'auto'
+                    for dim_name in var.dims
+                })
+                for var_name, var in cube.coords.items()
+            }
         )
 
-        # Data variables SHALL BE chunked according
-        # to dim sizes in dim_chunks
+        # Data variables are chunked according to cube_chunks
         chunked_cube = chunked_cube.assign(
             variables={
                 var_name: var.chunk({
-                    var.dims[axis]: dim_chunks.get(
-                        var.dims[axis],
-                        _default_chunk_size(var.chunks, axis)
-                    )
-                    for axis in range(var.ndim)
+                    dim_name: cube_chunks.get(dim_name, 'auto')
+                    for dim_name in var.dims
                 })
                 for var_name, var in cube.data_vars.items()
             }
@@ -67,19 +85,10 @@ class CubeRechunker(CubeTransformer):
         # Update chunks encoding for Zarr
         for var in chunked_cube.variables.values():
             if var.chunks is not None:
-                var.encoding.update(chunks=[sizes[0]
-                                            for sizes in var.chunks])
+                # sizes[0] is the first of
+                # e.g. sizes = (512, 512, 71)
+                var.encoding.update(chunks=[
+                    sizes[0] for sizes in var.chunks
+                ])
 
         return chunked_cube, gm, cube_config
-
-
-def _default_chunk_size(chunks: Optional[Tuple[Tuple[int, ...], ...]],
-                        axis: int) -> Union[str, int]:
-    if chunks is not None:
-        sizes = chunks[axis]
-        num_blocks = len(sizes)
-        if num_blocks > 1:
-            return max(*sizes)
-        if num_blocks == 1:
-            return sizes[0]
-    return 'auto'

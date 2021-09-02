@@ -335,3 +335,53 @@ def get_dataset_bounds_var_name(dataset: Union[xr.Dataset, xr.DataArray],
         raise ValueError(f'{dataset_arg_name} has no valid bounds variable for variable {var_name!r}')
 
     return None
+
+
+def get_dataset_chunks(dataset: xr.Dataset) -> Dict[Hashable, int]:
+    """
+    Get the most common chunk sizes for each
+    chunked dimension of *dataset*.
+
+    Note: Only data variables are considered.
+
+    :param dataset: A dataset.
+    :return: A dictionary that maps dimension names
+        to common chunk sizes.
+    """
+
+    # Record the frequencies of chunk sizes for
+    # each dimension d in each data variable var
+    dim_size_counts: Dict[Hashable, Dict[int, int]] = {}
+    for var_name, var in dataset.data_vars.items():
+        if var.chunks:
+            for d, c in zip(var.dims, var.chunks):
+                # compute max chunk size max_c from
+                # e.g.  c = (512, 512, 512, 193)
+                max_c = max(0, *c)
+                # for dimension d, save the frequencies
+                # of the different max_c
+                if d not in dim_size_counts:
+                    size_counts = {max_c: 1}
+                    dim_size_counts[d] = size_counts
+                else:
+                    size_counts = dim_size_counts[d]
+                    if max_c not in size_counts:
+                        size_counts[max_c] = 1
+                    else:
+                        size_counts[max_c] += 1
+
+    # For each dimension d, determine the most frequently
+    # seen chunk size max_c
+    dim_sizes: Dict[Hashable, int] = {}
+    for d, size_counts in dim_size_counts.items():
+        max_count = 0
+        best_max_c = 0
+        for max_c, count in size_counts.items():
+            if count > max_count:
+                # Should always come here, because count=1 is minimum
+                max_count = count
+                best_max_c = max_c
+        assert best_max_c > 0
+        dim_sizes[d] = best_max_c
+
+    return dim_sizes

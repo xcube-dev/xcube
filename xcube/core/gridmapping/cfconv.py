@@ -25,6 +25,8 @@ from typing import Optional, Dict, Any, Hashable, Union, Set, List, Tuple
 import pyproj
 import xarray as xr
 
+from xcube.core.schema import get_dataset_chunks
+
 
 class GridCoords:
     """
@@ -173,7 +175,7 @@ def get_dataset_grid_mapping_proxies(
                 and gmp.coords.y.size >= 2 \
                 and gmp.coords.x.ndim == gmp.coords.y.ndim:
             if gmp.coords.x.ndim == 1:
-                gmp.tile_size = _find_dataset_tile_sizes(
+                gmp.tile_size = _find_dataset_tile_size(
                     dataset,
                     gmp.coords.x.dims[0],
                     gmp.coords.y.dims[0]
@@ -181,7 +183,7 @@ def get_dataset_grid_mapping_proxies(
                 complete_grid_mappings[var_name] = gmp
             elif gmp.coords.x.ndim == 2 \
                     and gmp.coords.x.dims == gmp.coords.y.dims:
-                gmp.tile_size = _find_dataset_tile_sizes(
+                gmp.tile_size = _find_dataset_tile_size(
                     dataset,
                     gmp.coords.x.dims[1],
                     gmp.coords.x.dims[0]
@@ -272,33 +274,14 @@ def _is_potential_coord_var(dataset: xr.Dataset,
     return False
 
 
-def _find_dataset_tile_sizes(dataset: xr.Dataset,
-                             x_dim_name: Hashable,
-                             y_dim_name: Hashable) \
+def _find_dataset_tile_size(dataset: xr.Dataset,
+                            x_dim_name: Hashable,
+                            y_dim_name: Hashable) \
         -> Optional[Tuple[int, int]]:
     """Find the most likely tile size in *dataset*"""
-    tile_sizes: Dict[Any, int] = {}
-    for var_name, var in dataset.variables.items():
-        if var.ndim >= 2 \
-                and var.dims[-1] == x_dim_name \
-                and var.dims[-2] == y_dim_name \
-                and var.chunks \
-                and len(var.chunks) == var.ndim:
-            x_chunks = var.chunks[-1]
-            y_chunks = var.chunks[-2]
-            tile_size = (
-                max(0, *x_chunks),
-                max(0, *y_chunks)
-            )
-            if tile_size in tile_sizes:
-                tile_sizes[tile_size] += 1
-            else:
-                tile_sizes[tile_size] = 1
-
-    common_tile_size = None
-    max_count = 0
-    for tile_size, count in tile_sizes.items():
-        if count > max_count:
-            max_count = count
-            common_tile_size = tile_size
-    return common_tile_size
+    dataset_chunks = get_dataset_chunks(dataset)
+    tile_width = dataset_chunks.get(x_dim_name)
+    tile_height = dataset_chunks.get(y_dim_name)
+    if tile_width is not None and tile_height is not None:
+        return tile_width, tile_height
+    return None
