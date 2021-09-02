@@ -42,6 +42,11 @@ def new_grid_mapping_from_dataset(
         emit_warnings: bool = False,
         tolerance: float = DEFAULT_TOLERANCE
 ) -> Optional[GridMapping]:
+    # Note `crs` is used if CRS is known in advance,
+    # so the code forces its use. `prefer_crs` is used if
+    # multiple CRSes are found, and a preference exists.
+    # If it is not given, but `crs` is given,
+    # then they are the same.
     if crs is not None:
         crs = _normalize_crs(crs)
     if prefer_crs is not None:
