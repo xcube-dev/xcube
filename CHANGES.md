@@ -61,7 +61,7 @@
     `xcube.core.gen2.service.RemoteCubeGenerator`;
   2. Generator CLI `xcube gen2`.
   
-* A data's cube subset and its grid mapping can now be accessed through
+* A dataset's cube subset and its grid mapping can now be accessed through
   the `xcube` property of `xarray.Dataset` instances. This feature requires 
   importing the `xcube.core.xarray`package. Let `dataset` be an 
   instance of `xarray.Dataset`, then
