@@ -128,7 +128,7 @@ class CubeGeneratorProgressState(JsonObject):
 
 
 class CubeGeneratorProgress(JsonObject):
-    """Current progress state of the remote generator."""
+    """Current progress of the remote generator."""
     def __init__(self,
                  sender: str,
                  state: CubeGeneratorProgressState):

@@ -43,7 +43,8 @@ from ..progress import ApiProgressCallbackObserver
 from ..progress import ConsoleProgressObserver
 from ..request import CubeGeneratorRequest
 from ..request import CubeGeneratorRequestLike
-from ..response import CubeInfo, CubeGeneratorResult
+from ..response import CubeGeneratorResult
+from ..response import CubeInfo
 
 
 class LocalCubeGenerator(CubeGenerator):
