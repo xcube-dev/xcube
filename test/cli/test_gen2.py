@@ -106,19 +106,19 @@ class Gen2CliTest(CliTest):
 
     # TODO (forman): zarr writing fails because of invalid chunking
     #   Make this test work in a subsequent PR.
-    #
-    # def test_copy_levels_gen(self):
-    #     request_file = os.path.join(os.path.dirname(__file__),
-    #                                 'gen2-requests', 'copy-levels.yml')
-    #     result = self.invoke_cli(['gen2',
-    #                               '-o', result_file,
-    #                               request_file])
-    #     self.assertIsNotNone(result)
-    #     result_json = self.read_result_json()
-    #     self.assertEqual(
-    #         {
-    #             'data_id': result_levels,
-    #             'status': 'ok'
-    #         },
-    #         result_json)
-    #     self.assertTrue(os.path.isdir(result_levels))
+
+    def test_copy_levels_gen(self):
+        request_file = os.path.join(os.path.dirname(__file__),
+                                    'gen2-requests', 'copy-levels.yml')
+        result = self.invoke_cli(['gen2',
+                                  '-o', result_file,
+                                  request_file])
+        self.assertIsNotNone(result)
+        result_json = self.read_result_json()
+        self.assertEqual(
+            {
+                'data_id': result_levels,
+                'status': 'ok'
+            },
+            result_json)
+        self.assertTrue(os.path.isdir(result_levels))
