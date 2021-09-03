@@ -13,7 +13,6 @@ from xcube.constants import FORMAT_NAME_LEVELS
 from xcube.constants import FORMAT_NAME_NETCDF4
 from xcube.constants import FORMAT_NAME_SCRIPT
 from xcube.constants import FORMAT_NAME_ZARR
-from xcube.core.chunk import chunk_dataset
 from xcube.core.dsio import guess_dataset_format
 from xcube.core.dsio import is_s3_url
 from xcube.core.dsio import parse_s3_fs_and_root
@@ -21,6 +20,7 @@ from xcube.core.dsio import write_cube
 from xcube.core.geom import get_dataset_bounds
 from xcube.core.gridmapping import GridMapping
 from xcube.core.normalize import decode_cube
+from xcube.core.schema import rechunk_cube
 from xcube.core.verify import assert_cube
 from xcube.util.assertions import assert_instance
 from xcube.util.perf import measure_time
@@ -487,13 +487,9 @@ class BaseMultiLevelDataset(LazyMultiLevelDataset):
         # Tile each level according to grid mapping
         tile_size = self.grid_mapping.tile_size
         if tile_size is not None:
-            tile_width, tile_height = tile_size
-            x_dim_name, y_dim_name = self.grid_mapping.xy_dim_names
-            level_dataset = chunk_dataset(level_dataset, {
-                x_dim_name: tile_width,
-                y_dim_name: tile_height
-            })
-
+            level_dataset, _ = rechunk_cube(level_dataset,
+                                            self.grid_mapping,
+                                            tile_size=tile_size)
         return level_dataset
 
 

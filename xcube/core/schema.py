@@ -24,6 +24,8 @@ from typing import Tuple, Sequence, Dict, Optional, Mapping, Union, Hashable
 import numpy as np
 import xarray as xr
 
+from xcube.core.gridmapping import GridMapping
+
 
 class CubeSchema:
     """
@@ -385,3 +387,105 @@ def get_dataset_chunks(dataset: xr.Dataset) -> Dict[Hashable, int]:
         dim_sizes[d] = best_max_c
 
     return dim_sizes
+
+
+def rechunk_cube(cube: xr.Dataset,
+                 gm: GridMapping,
+                 chunks: Optional[Dict[str, int]] = None,
+                 tile_size: Optional[Tuple[int, int]] = None) \
+        -> Tuple[xr.Dataset, GridMapping]:
+    """
+    Re-chunk data variables of *cube* so they all share the same chunk
+    sizes for their dimensions.
+
+    This functions rechunks *cube* for maximum compatibility with
+    the Zarr format. Therefore it removes the "chunks" encoding
+    from all variables.
+
+    :param cube: A data cube
+    :param gm: The cube's grid mapping
+    :param chunks: Optional mapping of dimension names to chunk sizes
+    :param tile_size: Optional tile sizes, i.e. chunk size of
+        spatial dimensions, given as (width, height)
+    :return: A potentially rechunked *cube* and adjusted grid mapping.
+    """
+
+    # get initial, common cube chunk sizes from given cube
+    cube_chunks = get_dataset_chunks(cube)
+
+    # Given chunks will overwrite initial values
+    if chunks:
+        for dim_name, size in chunks.items():
+            cube_chunks[dim_name] = size
+
+    # Given tile size will overwrite spatial dims
+    x_dim_name, y_dim_name = gm.xy_dim_names
+    if tile_size is not None:
+        cube_chunks[x_dim_name] = tile_size[0]
+        cube_chunks[y_dim_name] = tile_size[1]
+
+    # Given grid mapping's tile size will overwrite
+    # spatial dims only if missing still
+    if gm.tile_size is not None:
+        if x_dim_name not in cube_chunks:
+            cube_chunks[x_dim_name] = tile_size[0]
+        if y_dim_name not in cube_chunks:
+            cube_chunks[y_dim_name] = tile_size[1]
+
+    # If there is no chunking required, return identities
+    if not cube_chunks:
+        return cube, gm
+
+    chunked_cube = xr.Dataset(attrs=cube.attrs)
+
+    # Coordinate variables are always
+    # chunked automatically
+    chunked_cube = chunked_cube.assign_coords(
+        coords={
+            var_name: var.chunk({
+                dim_name: 'auto'
+                for dim_name in var.dims
+            })
+            for var_name, var in cube.coords.items()
+        }
+    )
+
+    # Data variables are chunked according to cube_chunks,
+    # or if not specified, by the dimension size.
+    chunked_cube = chunked_cube.assign(
+        variables={
+            var_name: var.chunk({
+                dim_name: cube_chunks.get(dim_name, cube.dims[dim_name])
+                for dim_name in var.dims
+            })
+            for var_name, var in cube.data_vars.items()
+        }
+    )
+
+    # Update chunks encoding for Zarr
+    for var_name, var in chunked_cube.variables.items():
+        if 'chunks' in var.encoding:
+            del var.encoding['chunks']
+        # if var.chunks is not None:
+        #     # sizes[0] is the first of
+        #     # e.g. sizes = (512, 512, 71)
+        #     var.encoding.update(chunks=[
+        #         sizes[0] for sizes in var.chunks
+        #     ])
+        # elif 'chunks' in var.encoding:
+        #     del var.encoding['chunks']
+        # print(f"--> {var_name}: encoding={var.encoding.get('chunks')!r}, chunks={var.chunks!r}")
+
+    # Test whether tile size has changed after re-chunking.
+    # If so, we will change the grid mapping too.
+    tile_width = cube_chunks.get(x_dim_name)
+    tile_height = cube_chunks.get(y_dim_name)
+    assert tile_width is not None
+    assert tile_height is not None
+    tile_size = (tile_width, tile_height)
+    if tile_size != gm.tile_size:
+        # Note, changing grid mapping tile size may
+        # rechunk (2D) coordinates in chunked_cube too
+        gm = gm.derive(tile_size=tile_size)
+
+    return chunked_cube, gm
