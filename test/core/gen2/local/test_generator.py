@@ -9,7 +9,9 @@ import yaml
 from xcube.core.dsio import rimraf
 from xcube.core.gen2.generator import CubeGenerator
 from xcube.core.gen2.local.generator import LocalCubeGenerator
-from xcube.core.gen2.response import CubeInfo, CubeInfoResult, CubeReference
+from xcube.core.gen2.response import CubeInfo
+from xcube.core.gen2.response import CubeInfoResult
+from xcube.core.gen2.response import CubeReference
 from xcube.core.new import new_cube
 from xcube.core.store import DatasetDescriptor
 from xcube.core.store import MutableDataStore

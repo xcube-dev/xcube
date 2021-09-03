@@ -25,9 +25,9 @@ from xcube.core.store import DatasetDescriptor
 from xcube.util.assertions import assert_in
 from xcube.util.assertions import assert_instance
 from xcube.util.jsonschema import JsonArraySchema
+from xcube.util.jsonschema import JsonObject
 from xcube.util.jsonschema import JsonObjectSchema
 from xcube.util.jsonschema import JsonStringSchema
-from .config import JsonObject
 
 STATUS_IDS = ['ok', 'error', 'warning']
 

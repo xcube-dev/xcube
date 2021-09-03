@@ -4,7 +4,8 @@ from typing import List
 import requests_mock
 
 from test.util.test_progress import TestProgressObserver
-from xcube.core.gen2 import CostEstimation, CubeGenerator
+from xcube.core.gen2 import CostEstimation
+from xcube.core.gen2 import CubeGenerator
 from xcube.core.gen2 import CubeInfoWithCosts
 from xcube.core.gen2 import ServiceConfig
 from xcube.core.gen2.remote.generator import RemoteCubeGenerator

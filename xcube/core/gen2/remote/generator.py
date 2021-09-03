@@ -29,14 +29,17 @@ import requests
 from xcube.util.assertions import assert_instance
 from xcube.util.progress import observe_progress
 from .config import ServiceConfig
-from .response import CubeGeneratorState, CubeInfoWithCostsResult
+from .response import CubeGeneratorState
 from .response import CubeGeneratorToken
 from .response import CubeInfoWithCosts
+from .response import CubeInfoWithCostsResult
 from ..error import CubeGeneratorError
 from ..generator import CubeGenerator
 from ..request import CubeGeneratorRequest
 from ..request import CubeGeneratorRequestLike
-from ..response import CubeInfo, CubeGeneratorResult, CubeReference
+from ..response import CubeGeneratorResult
+from ..response import CubeInfo
+from ..response import CubeReference
 
 _BASE_HEADERS = {
     "Accept": "application/json",

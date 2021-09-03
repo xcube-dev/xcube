@@ -27,7 +27,8 @@ from xcube.util.jsonschema import JsonNumberSchema
 from xcube.util.jsonschema import JsonObject
 from xcube.util.jsonschema import JsonObjectSchema
 from xcube.util.jsonschema import JsonStringSchema
-from ..response import CubeInfo, CubeInfoResult
+from ..response import CubeInfo
+from ..response import CubeInfoResult
 
 
 class CubeGeneratorToken(JsonObject):
