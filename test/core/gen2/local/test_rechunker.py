@@ -33,14 +33,16 @@ class CubeRechunkerTest(unittest.TestCase):
         for k, v in cube2.coords.items():
             if v.chunks is not None:
                 self.assertIsInstance(v.chunks, tuple, msg=f'{k!r}={v!r}')
-                self.assertIn('chunks', v.encoding)
-                self.assertEqual([v.sizes[d] for d in v.dims],
-                                 v.encoding['chunks'])
+                self.assertNotIn('chunks', v.encoding)
+                # self.assertIn('chunks', v.encoding)
+                # self.assertEqual([v.sizes[d] for d in v.dims],
+                #                  v.encoding['chunks'])
         for k, v in cube2.data_vars.items():
             self.assertIsInstance(v.chunks, tuple, msg=f'{k!r}={v!r}')
             self.assertEqual(((2, 2, 1), (100, 80), (200, 160)), v.chunks)
-            self.assertIn('chunks', v.encoding)
-            self.assertEqual([2, 100, 200], v.encoding['chunks'])
+            self.assertNotIn('chunks', v.encoding)
+            # self.assertIn('chunks', v.encoding)
+            # self.assertEqual([2, 100, 200], v.encoding['chunks'])
 
     def test_chunks_are_larger_than_sizes(self):
         cube1 = new_cube(variables=dict(chl=0.6, tsm=0.9, flags=16))
@@ -64,11 +66,8 @@ class CubeRechunkerTest(unittest.TestCase):
         for k, v in cube2.coords.items():
             if v.chunks is not None:
                 self.assertIsInstance(v.chunks, tuple, msg=f'{k!r}={v!r}')
-                self.assertIn('chunks', v.encoding)
-                self.assertEqual([v.sizes[d] for d in v.dims],
-                                 v.encoding['chunks'])
+                self.assertNotIn('chunks', v.encoding)
         for k, v in cube2.data_vars.items():
             self.assertIsInstance(v.chunks, tuple, msg=f'{k!r}={v!r}')
             self.assertEqual(((5,), (180,), (360,)), v.chunks)
-            self.assertIn('chunks', v.encoding)
-            self.assertEqual([5, 180, 360], v.encoding['chunks'])
+            self.assertNotIn('chunks', v.encoding)

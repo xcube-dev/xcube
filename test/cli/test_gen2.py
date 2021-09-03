@@ -113,6 +113,7 @@ class Gen2CliTest(CliTest):
         result = self.invoke_cli(['gen2',
                                   '-o', result_file,
                                   request_file])
+        print(result.output)
         self.assertIsNotNone(result)
         result_json = self.read_result_json()
         self.assertEqual(

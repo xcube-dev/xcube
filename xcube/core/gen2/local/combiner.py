@@ -23,6 +23,7 @@ from typing import Sequence
 
 import xarray as xr
 
+from xcube.util.progress import observe_progress
 from .transformer import TransformedCube
 from ..config import CubeConfig
 
@@ -38,6 +39,8 @@ class CubesCombiner:
         if len(t_cubes) == 1:
             return cube, gm, self._cube_config
 
-        cube = xr.merge([t_cube[0] for t_cube in t_cubes])
+        with observe_progress('merging cubes', 1) as observer:
+            cube = xr.merge([t_cube[0] for t_cube in t_cubes])
+            observer.worked(1)
 
         return cube, gm, self._cube_config

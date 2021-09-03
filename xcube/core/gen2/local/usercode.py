@@ -25,6 +25,7 @@ import jsonschema
 import xarray as xr
 
 from xcube.core.byoa import CodeConfig
+from xcube.core.gridmapping import GridMapping
 from xcube.util.jsonschema import JsonObjectSchema
 from .transformer import CubeTransformer
 from .transformer import TransformedCube
@@ -33,7 +34,6 @@ from ..error import CubeGeneratorError
 from ..processor import DatasetProcessor
 from ..processor import METHOD_NAME_DATASET_PROCESSOR
 from ..processor import METHOD_NAME_PARAMS_SCHEMA_GETTER
-from ...gridmapping import GridMapping
 
 
 class CubeUserCodeExecutor(CubeTransformer):
