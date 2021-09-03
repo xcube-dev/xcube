@@ -36,12 +36,13 @@ class Gen2CliTest(CliTest):
                                   request_file])
         self.assertIsNotNone(result)
         result_json = self.read_result_json()
-        self.assertEqual(
-            {
-                'data_id': result_zarr,
-                'status': 'ok'
-            },
-            result_json)
+        self.assertEqual('ok', result_json.get('status'))
+        self.assertIsInstance(result_json.get('message'), str)
+        self.assertIn('Cube generated successfully after ',
+                      result_json.get('message'))
+        result = result_json.get('result')
+        self.assertIsInstance(result, dict)
+        self.assertEqual(result_zarr, result.get('data_id'))
         self.assertTrue(os.path.isdir(result_zarr))
 
     def test_copy_zarr_info(self):
@@ -53,6 +54,11 @@ class Gen2CliTest(CliTest):
                                   request_file])
         self.assertIsNotNone(result)
         result_json = self.read_result_json()
+
+        self.assertEqual('ok', result_json.get('status'))
+        result = result_json.get('result')
+        self.assertIsInstance(result, dict)
+
         self.assertEqual(
             {
                 'dataset_descriptor': {
@@ -101,7 +107,7 @@ class Gen2CliTest(CliTest):
                     'tile_size': [2000, 1000]
                 }
             },
-            result_json)
+            result)
         self.assertFalse(os.path.isdir(result_zarr))
 
     # TODO (forman): zarr writing fails because of invalid chunking

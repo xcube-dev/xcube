@@ -44,7 +44,8 @@ from ..progress import ConsoleProgressObserver
 from ..request import CubeGeneratorRequest
 from ..request import CubeGeneratorRequestLike
 from ..response import CubeGeneratorResult
-from ..response import CubeInfo
+from ..response import CubeInfoResult
+from ..response import CubeReference
 
 
 class LocalCubeGenerator(CubeGenerator):
@@ -177,24 +178,32 @@ class LocalCubeGenerator(CubeGenerator):
                 data_id, cube = cube_writer.write_cube(cube, gm)
                 self._generated_data_id = data_id
                 self._generated_cube = cube
-                status = 'ok'
-                message = None
             else:
-                data_id = request.output_config.data_id
-                status = 'warning'
-                message = 'An empty cube has been generated,' \
-                          ' hence it has not been written at all.'
+                self._generated_data_id = None
+                self._generated_cube = None
 
-        if self._verbosity:
-            print('Cube "{}" generated within {:.2f} seconds'
-                  .format(str(data_id), progress.state.total_time))
+        total_time = progress.state.total_time
 
-        return CubeGeneratorResult(data_id=data_id,
-                                   status=status,
-                                   message=message)
+        if self._generated_data_id is not None:
+            return CubeGeneratorResult(
+                status='ok',
+                result=CubeReference(data_id=data_id),
+                message=f'Cube generated successfully'
+                        f' after {total_time:.2f} seconds'
+            )
+        else:
+            return CubeGeneratorResult(
+                status='warning',
+                message=f'An empty cube has been generated'
+                        f' after {total_time:.2f} seconds.'
+                        f' No data has been written at all.'
+            )
 
-    def get_cube_info(self, request: CubeGeneratorRequestLike) -> CubeInfo:
+    def get_cube_info(self, request: CubeGeneratorRequestLike) \
+            -> CubeInfoResult:
         request = CubeGeneratorRequest.normalize(request)
         informant = CubeInformant(request=request.for_local(),
                                   store_pool=self._store_pool)
-        return informant.generate()
+        cube_info = informant.generate()
+
+        return CubeInfoResult(result=cube_info, status='ok')
