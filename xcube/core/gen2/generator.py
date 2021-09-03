@@ -29,7 +29,7 @@ from xcube.util.assertions import assert_true
 from .remote.config import ServiceConfigLike
 from .request import CubeGeneratorRequestLike
 from .response import CubeGeneratorResult
-from .response import CubeInfo
+from .response import CubeInfoResult
 
 
 class CubeGenerator(ABC):
@@ -114,7 +114,8 @@ class CubeGenerator(ABC):
                                       verbosity=verbosity)
 
     @abstractmethod
-    def get_cube_info(self, request: CubeGeneratorRequestLike) -> CubeInfo:
+    def get_cube_info(self, request: CubeGeneratorRequestLike) \
+            -> CubeInfoResult:
         """
         Get data cube information for given *request*.
 
@@ -127,7 +128,8 @@ class CubeGenerator(ABC):
           parsed into a ``CubeGeneratorRequest``.
 
         :param request: Cube generator request.
-        :return: a cube information object
+        :return: a cube information result
+            of type :class:CubeInfoResult
         :raises CubeGeneratorError: if cube info generation failed
         :raises DataStoreError: if data store access failed
         """
@@ -151,7 +153,8 @@ class CubeGenerator(ABC):
         store configured in ``output_config`` of the cube generator request.
 
         :param request: Cube generator request.
-        :return: the cube reference
+        :return: the cube generation result
+            of type :class:CubeGeneratorResult
         :raises CubeGeneratorError: if cube generation failed
         :raises DataStoreError: if data store access failed
         """

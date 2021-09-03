@@ -29,14 +29,14 @@ import requests
 from xcube.util.assertions import assert_instance
 from xcube.util.progress import observe_progress
 from .config import ServiceConfig
-from .response import CubeGeneratorState
+from .response import CubeGeneratorState, CubeInfoWithCostsResult
 from .response import CubeGeneratorToken
 from .response import CubeInfoWithCosts
 from ..error import CubeGeneratorError
 from ..generator import CubeGenerator
 from ..request import CubeGeneratorRequest
 from ..request import CubeGeneratorRequestLike
-from ..response import CubeInfo, CubeGeneratorResult
+from ..response import CubeInfo, CubeGeneratorResult, CubeReference
 
 _BASE_HEADERS = {
     "Accept": "application/json",
@@ -106,16 +106,20 @@ class RemoteCubeGenerator(CubeGenerator):
         return self._access_token
 
     def get_cube_info(self, request: CubeGeneratorRequestLike) \
-            -> CubeInfoWithCosts:
+            -> CubeInfoWithCostsResult:
         request = CubeGeneratorRequest.normalize(request).for_service()
         request_data = request.to_dict()
         response = requests.post(self.endpoint_op('cubegens/info'),
                                  json=request_data,
                                  headers=self.auth_headers)
         response_type = CubeInfoWithCosts if self._access_token else CubeInfo
-        return self._parse_response(response,
-                                    response_type=response_type,
-                                    request_data=request_data)
+        cube_info = self._parse_response(response,
+                                         response_type=response_type,
+                                         request_data=request_data)
+        # TODO (forman): gen2 API change:
+        #   get result from state and merge
+        return CubeInfoWithCostsResult(result=cube_info,
+                                       status='ok')
 
     def generate_cube(self, request: CubeGeneratorRequestLike) \
             -> CubeGeneratorResult:
@@ -124,8 +128,9 @@ class RemoteCubeGenerator(CubeGenerator):
 
         state = self._get_cube_generator_state(response)
         if state.status.failed:
-            return CubeGeneratorResult(data_id=request.output_config.data_id,
-                                       status='error',
+            # TODO (forman): gen2 API change:
+            #   get result from state and merge
+            return CubeGeneratorResult(status='error',
                                        output=state.output)
 
         cubegen_id = state.cubegen_id
@@ -142,10 +147,19 @@ class RemoteCubeGenerator(CubeGenerator):
                 )
                 state = self._get_cube_generator_state(response)
                 if state.status.succeeded or state.status.failed:
-                    status = 'ok' if state.status.succeeded else 'error'
-                    return CubeGeneratorResult(data_id=data_id,
-                                               status=status,
-                                               output=state.output)
+                    # TODO (forman): gen2 API change:
+                    #   get result from state and merge
+                    if state.status.succeeded:
+                        return CubeGeneratorResult(
+                            status='ok',
+                            result=CubeReference(data_id=data_id),
+                            output=state.output
+                        )
+                    else:
+                        return CubeGeneratorResult(
+                            status='error',
+                            output=state.output
+                        )
 
                 if state.progress is not None and len(state.progress) > 0:
                     progress_state = state.progress[0].state
