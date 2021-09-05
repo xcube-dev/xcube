@@ -22,6 +22,7 @@ class Gen2CliTest(CliTest):
         self.assertTrue(os.path.exists(result_file))
         with open(result_file) as fp:
             result_json = json.load(fp)
+        self.assertIsInstance(result_json, dict)
         return result_json
 
     def test_help(self):
@@ -122,10 +123,6 @@ class Gen2CliTest(CliTest):
         print(result.output)
         self.assertIsNotNone(result)
         result_json = self.read_result_json()
-        self.assertEqual(
-            {
-                'data_id': result_levels,
-                'status': 'ok'
-            },
-            result_json)
+        self.assertEqual('ok', result_json.get('status'))
+        self.assertEqual({'data_id': 'out.levels'}, result_json.get('result'))
         self.assertTrue(os.path.isdir(result_levels))
