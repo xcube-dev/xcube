@@ -101,6 +101,11 @@
 * Fixed an issue where `xcube serve` provided wrong layer source options for 
   [OpenLayers XYZ](https://openlayers.org/en/latest/apidoc/module-ol_source_XYZ-XYZ.html) 
   when latitude coordinates where increasing with the coordinate index. (#251)
+* Updated plugin version in docker image to:
+  * XCUBE_SH_VERSION=0.9.0.dev0
+  * XCUBE_CCI_VERSION=0.9.0.dev0
+  * XCUBE_CDS_VERSION=0.9.0
+  
   
 ## Changes in 0.8.2 (in development)
 
