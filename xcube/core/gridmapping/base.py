@@ -34,6 +34,8 @@ from xcube.util.assertions import assert_instance
 from xcube.util.assertions import assert_true
 from xcube.util.dask import get_block_iterators
 from xcube.util.dask import get_chunk_sizes
+from xcube.util.tilegrid2 import ImageTileGrid
+from xcube.util.tilegrid2 import TileGrid2
 from .helpers import AffineTransformMatrix
 from .helpers import Number
 from .helpers import _assert_valid_xy_coords
@@ -768,3 +770,14 @@ class GridMapping(abc.ABC):
             f'* size: {self.size}',
             f'* tile_size: {self.tile_size}',
         ])
+
+    @property
+    def tile_grid(self) -> TileGrid2:
+        assert_true(self.x_res == self.y_res,
+                    message='spatial resolutions must be'
+                            ' same in both directions')
+        return ImageTileGrid(self.size,
+                             self.tile_size or (512, 512),
+                             self.crs,
+                             self.x_res,
+                             (self.xy_bbox[0], self.xy_bbox[1]))

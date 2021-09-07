@@ -3,8 +3,9 @@ from unittest import TestCase
 
 import pyproj
 
-from xcube.util.tilegrid2 import GeographicTileGrid, tile_grid_to_ol_xyz_source_options
+from xcube.util.tilegrid2 import GeographicTileGrid
 from xcube.util.tilegrid2 import ImageTileGrid
+from xcube.util.tilegrid2 import tile_grid_to_ol_xyz_source_options
 
 
 class Crs84TileGridTest(TestCase):

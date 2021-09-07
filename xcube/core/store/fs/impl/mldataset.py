@@ -27,10 +27,10 @@ import xarray as xr
 from xcube.core.mldataset import BaseMultiLevelDataset
 from xcube.core.mldataset import LazyMultiLevelDataset
 from xcube.core.mldataset import MultiLevelDataset
-from xcube.core.mldataset import get_dataset_tile_grid
 from xcube.util.assertions import assert_instance
 from xcube.util.jsonschema import JsonBooleanSchema
 from xcube.util.jsonschema import JsonObjectSchema
+from xcube.util.tilegrid2 import TileGrid2
 from .dataset import DatasetZarrFsDataAccessor
 from ...datatype import DATASET_TYPE
 from ...datatype import DataType
@@ -137,14 +137,19 @@ class FsMultiLevelDataset(LazyMultiLevelDataset):
                                  f' dataset {level_path!r}:'
                                  f' {e}') from e
 
-    def _get_tile_grid_lazily(self):
+    def _get_tile_grid_lazily(self) -> TileGrid2:
         """
         Retrieve, i.e. read or compute, the tile grid used by the multi-level dataset.
 
         :return: the dataset for the level at *index*.
         """
-        return get_dataset_tile_grid(self.get_dataset(0),
-                                     num_levels=self._num_levels)
+        tile_grid = self.grid_mapping.tile_grid
+        if tile_grid.num_levels != self._num_levels:
+            raise DataStoreError(f'Detected inconsistent'
+                                 f' number of detail levels,'
+                                 f' expected {tile_grid.num_levels},'
+                                 f' found {self._num_levels}.')
+        return tile_grid
 
     @classmethod
     def _get_num_levels(cls,

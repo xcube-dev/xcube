@@ -28,6 +28,12 @@ class TileGrid2(ABC):
         """The maximum level of detail."""
         return None
 
+    @property
+    def num_levels(self) -> Optional[int]:
+        """The number of detail levels."""
+        return self.max_level + 1 \
+            if self.max_level is not None else None
+
     @abstractmethod
     def get_image_size(self, level: int) -> Tuple[int, int]:
         """Get the image size at given *level* of detail."""

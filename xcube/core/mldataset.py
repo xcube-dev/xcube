@@ -25,6 +25,7 @@ from xcube.core.verify import assert_cube
 from xcube.util.assertions import assert_instance
 from xcube.util.perf import measure_time
 from xcube.util.tilegrid import TileGrid
+from xcube.util.tilegrid2 import ImageTileGrid, TileGrid2
 
 COMPUTE_DATASET = 'compute_dataset'
 
@@ -58,7 +59,7 @@ class MultiLevelDataset(metaclass=ABCMeta):
 
     @property
     @abstractmethod
-    def tile_grid(self) -> TileGrid:
+    def tile_grid(self) -> TileGrid2:
         """
         :return: the tile grid.
         """
@@ -68,7 +69,7 @@ class MultiLevelDataset(metaclass=ABCMeta):
         """
         :return: the number of pyramid levels.
         """
-        return self.tile_grid.num_levels
+        return self.tile_grid.max_level + 1
 
     @property
     def base_dataset(self) -> xr.Dataset:
@@ -122,7 +123,7 @@ class LazyMultiLevelDataset(MultiLevelDataset, metaclass=ABCMeta):
 
     def __init__(self,
                  grid_mapping: GridMapping = None,
-                 tile_grid: TileGrid = None,
+                 tile_grid: TileGrid2 = None,
                  ds_id: str = None,
                  parameters: Mapping[str, Any] = None):
         self._grid_mapping = grid_mapping
@@ -147,7 +148,7 @@ class LazyMultiLevelDataset(MultiLevelDataset, metaclass=ABCMeta):
         return self._grid_mapping
 
     @property
-    def tile_grid(self) -> TileGrid:
+    def tile_grid(self) -> TileGrid2:
         if self._tile_grid is None:
             with self._lock:
                 self._tile_grid = self._get_tile_grid_lazily()
@@ -199,15 +200,22 @@ class LazyMultiLevelDataset(MultiLevelDataset, metaclass=ABCMeta):
 
         :return: the dataset for the level at *index*.
         """
-        return GridMapping.for_dataset(self.get_dataset(0))
+        return GridMapping.from_dataset(self.get_dataset(0))
 
-    def _get_tile_grid_lazily(self) -> TileGrid:
+    def _get_tile_grid_lazily(self) -> TileGrid2:
         """
-        Retrieve, i.e. read or compute, the tile grid used by the multi-level dataset.
+        Retrieve, i.e. read or compute, the tile grid used by
+        the multi-level dataset.
 
         :return: the dataset for the level at *index*.
         """
-        return get_dataset_tile_grid(self.get_dataset(0))
+        gm = self.grid_mapping
+        assert gm.x_res == gm.y_res  # TODO (forman): must ensure this before
+        return ImageTileGrid(gm.size,
+                             gm.tile_size or (512, 512),
+                             gm.crs,
+                             gm.x_res,
+                             (gm.xy_bbox[0], gm.xy_bbox[1]))
 
     def close(self):
         with self._lock:
@@ -333,13 +341,19 @@ class FileStorageMultiLevelDataset(LazyMultiLevelDataset):
         with measure_time(tag=f"opened local dataset {level_path} for level {index}"):
             return assert_cube(xr.open_zarr(level_path, **parameters), name=level_path)
 
-    def _get_tile_grid_lazily(self):
+    def _get_tile_grid_lazily(self) -> TileGrid2:
         """
         Retrieve, i.e. read or compute, the tile grid used by the multi-level dataset.
 
         :return: the dataset for the level at *index*.
         """
-        return get_dataset_tile_grid(self.get_dataset(0), num_levels=self._num_levels)
+        tile_grid = self.grid_mapping.tile_grid
+        if tile_grid.num_levels != self._num_levels:
+            raise ValueError(f'Detected inconsistent'
+                             f' number of detail levels,'
+                             f' expected {tile_grid.num_levels},'
+                             f' found {self._num_levels}.')
+        return tile_grid
 
 
 class ObjectStorageMultiLevelDataset(LazyMultiLevelDataset):
@@ -432,13 +446,19 @@ class ObjectStorageMultiLevelDataset(LazyMultiLevelDataset):
             consolidated = self._s3_file_system.exists(f'{level_path}/.zmetadata')
             return assert_cube(xr.open_zarr(store, consolidated=consolidated, **parameters), name=level_path)
 
-    def _get_tile_grid_lazily(self):
+    def _get_tile_grid_lazily(self) -> TileGrid2:
         """
         Retrieve, i.e. read or compute, the tile grid used by the multi-level dataset.
 
         :return: the dataset for the level at *index*.
         """
-        return get_dataset_tile_grid(self.get_dataset(0), num_levels=self._num_levels)
+        tile_grid = self.grid_mapping.tile_grid
+        if tile_grid.num_levels != self._num_levels:
+            raise ValueError(f'Detected inconsistent'
+                             f' number of detail levels,'
+                             f' expected {tile_grid.num_levels},'
+                             f' found {self._num_levels}.')
+        return tile_grid
 
 
 class BaseMultiLevelDataset(LazyMultiLevelDataset):
@@ -451,7 +471,7 @@ class BaseMultiLevelDataset(LazyMultiLevelDataset):
 
     def __init__(self,
                  base_dataset: xr.Dataset,
-                 tile_grid: TileGrid = None,
+                 tile_grid: TileGrid2 = None,
                  ds_id: str = None):
         assert_instance(base_dataset, xr.Dataset, name='base_dataset')
         self._base_cube, grid_mapping, _ = decode_cube(
@@ -554,7 +574,7 @@ class ComputedMultiLevelDataset(LazyMultiLevelDataset):
         self._input_ml_dataset_getter = input_ml_dataset_getter
         self._exception_type = exception_type
 
-    def _get_tile_grid_lazily(self) -> TileGrid:
+    def _get_tile_grid_lazily(self) -> TileGrid2:
         return self._input_ml_dataset_getter(self._input_ml_dataset_ids[0]).tile_grid
 
     def _get_dataset_lazily(self, index: int, parameters: Dict[str, Any]) -> xr.Dataset:
