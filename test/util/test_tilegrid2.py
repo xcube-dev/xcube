@@ -1,119 +1,92 @@
-from abc import abstractmethod, ABC
-from typing import Tuple, Union
+import unittest
 from unittest import TestCase
 
-from xcube.util.assertions import assert_true
+import pyproj
+
+from xcube.util.tilegrid2 import GeographicTileGrid, tile_grid_to_ol_xyz_source_options
+from xcube.util.tilegrid2 import ImageTileGrid
 
 
-class TileGrid2(ABC):
-    @abstractmethod
-    def get_tile_size(self) -> Tuple[int, int]:
-        """Get the tile size in pixels."""
-
-    @abstractmethod
-    def get_num_tiles(self, level: int) -> Tuple[int, int]:
-        """Get the number of tiles at *level*"""
-
-    @abstractmethod
-    def get_resolution(self, level: int) -> float:
-        """Get the spatial resolution at *level*."""
-
-    @abstractmethod
-    def get_rectangle(self, level: int) -> Tuple[float, float, float, float]:
-        """Get the spatial resolution at *level*."""
-
-
-class GlobalCrs84TileGrid(TileGrid2):
-    def __init__(self,
-                 tile_size: Union[int, Tuple[int, int]] = 256):
-        if not tile_size:
-            tile_size = 256
-        elif not isinstance(tile_size, int):
-            tile_with, tile_height = tile_size
-            assert_true(tile_with == tile_height,
-                        message='tile_with, tile_height must be equal')
-            tile_size = tile_with
-        assert_true(tile_size >= 2, message='tile_size must be >= 2')
-        self._tile_size: int = tile_size
-        self._res_0 = 180.0 / tile_size
-        self._rectangle = -180, -90, 180, 90
-
-    def get_tile_size(self) -> Tuple[int, int]:
-        ts = self._tile_size
-        return ts, ts
-
-    def get_num_tiles(self, level: int) -> Tuple[int, int]:
-        factor = 1 << level
-        return 2 * factor, factor
-
-    def get_resolution(self, level: int) -> float:
-        factor = 1 << level
-        return self._res_0 / factor
-
-    def get_rectangle(self, level: int) -> Tuple[float, float, float, float]:
-        return self._rectangle
-
-
-class ArbitraryTileGrid(TileGrid2):
-    def __init__(self,
-                 image_size: Tuple[int, int],
-                 tile_size: Tuple[int, int],
-                 xy_min: Tuple[float, float],
-                 xy_res: float):
-        image_width, image_height = image_size
-        assert_true(image_width >= 2 and image_height >= 2,
-                    message='image_width and image_height must be >= 2')
-        self._image_width = int(image_width)
-        self._image_height = int(image_height)
-
-        tile_width, tile_height = tile_size
-        assert_true(tile_width >= 2 and tile_height >= 2,
-                    message='tile_width and tile_height must be >= 2')
-        tile_width = min(image_width, tile_width)
-        tile_height = min(image_height, tile_height)
-        self._tile_width = int(tile_width)
-        self._tile_height = int(tile_height)
-
-        x_min, y_min = xy_min
-        self._xy_min = x_min, y_min
-        assert_true(xy_res > 0,
-                    message='xy_res must be > 0')
-
-        self._xy_res = xy_res
-
-        num_levels = 1
-        image_width_0 = image_width
-        image_height_0 = image_height
-        while True:
-            image_width_0 //= 2
-            image_height_0 //= 2
-            if image_width_0 <= tile_width or image_height_0 <= tile_height:
-                break
-            num_levels += 1
-        num_level_0_tiles_x = (image_width_0 + tile_width - 1) // tile_width
-        num_level_0_tiles_y = (image_height_0 + tile_height - 1) // tile_height
-
-    def get_tile_size(self) -> Tuple[int, int]:
-        return self._tile_width, self._tile_height
-
-    def get_num_tiles(self, level: int) -> Tuple[int, int]:
-        image_with, image_height = self._image_width, self._image_height
-        tile_width, tile_height = self._tile_width, self._tile_height
-        factor = 1 << level
-        image_width_level = (image_with + 1) // factor
-        image_height_level = (image_height + 1) // factor
-        num_tiles_x = (image_width_level + tile_width - 1) // tile_width
-        num_tiles_y = (image_height_level + tile_height - 1) // tile_height
-        return num_tiles_x, num_tiles_y
-
-    def get_resolution(self, level: int) -> float:
-        factor = 1 << level
-        return self._res_0 / factor
-
-    def get_rectangle(self, level: int) -> Tuple[float, float, float, float]:
-        return self._rectangle
-
-
-class TilingGrid2Test(TestCase):
+class Crs84TileGridTest(TestCase):
     def test_it(self):
-        pass
+        tg = GeographicTileGrid()
+        self.assertEqual((256, 256), tg.tile_size)
+        self.assertEqual(None, tg.min_level)
+        self.assertEqual(None, tg.max_level)
+        self.assertEqual(pyproj.CRS.from_string('CRS84'), tg.crs)
+        self.assertEqual((-180, -90, 180, 90), tg.extent)
+        self.assertEqual((-180, -90), tg.origin)
+        self.assertEqual((512, 256), tg.get_image_size(0))
+        self.assertEqual((1024, 512), tg.get_image_size(1))
+        self.assertEqual((512 * 2 ** 15, 256 * 2 ** 15), tg.get_image_size(15))
+        self.assertEqual((2, 1), tg.get_num_tiles(0))
+        self.assertEqual((4, 2), tg.get_num_tiles(1))
+        self.assertEqual((2 ** 16, 2 ** 15), tg.get_num_tiles(15))
+        self.assertEqual(180 / 256, tg.get_resolution(0))
+        self.assertEqual(180 / 512, tg.get_resolution(1))
+        self.assertEqual(180 / (256 * 2 ** 15), tg.get_resolution(15))
+
+
+class ImageTileGridTest(TestCase):
+    def test_it(self):
+        tg = ImageTileGrid(image_size=(4000, 2000),
+                           tile_size=(512, 512),
+                           crs=pyproj.CRS.from_string('WGS84'),
+                           image_res=0.05,
+                           image_origin=(0, 0))
+        self.assertEqual((512, 512), tg.tile_size)
+        self.assertEqual(None, tg.min_level)
+        self.assertEqual(2, tg.max_level)
+        self.assertEqual(pyproj.CRS.from_string('WGS84'), tg.crs)
+        self.assertEqual((0, 0, 200.0, 100.0), tg.extent)
+        self.assertEqual((0, 0), tg.origin)
+        self.assertEqual((1000, 500), tg.get_image_size(0))
+        self.assertEqual((2000, 1000), tg.get_image_size(1))
+        self.assertEqual((4000, 2000), tg.get_image_size(2))
+        self.assertEqual((2, 1), tg.get_num_tiles(0))
+        self.assertEqual((4, 2), tg.get_num_tiles(1))
+        self.assertEqual((8, 4), tg.get_num_tiles(2))
+        self.assertEqual(0.2, tg.get_resolution(0))
+        self.assertEqual(0.1, tg.get_resolution(1))
+        self.assertEqual(0.05, tg.get_resolution(2))
+
+
+class OpenLayersOptionsTest(unittest.TestCase):
+    def test_with_max_level(self):
+        tile_grid = ImageTileGrid((7200, 3600),
+                                  (512, 512),
+                                  'EPSG:4326',
+                                  180 / 3600,
+                                  (-180, -90))
+        self.assertEqual(
+            {
+                'url': 'https://xcube.server/tile/{x}/{y}/{z}.png',
+                'projection': 'EPSG:4326',
+                'tileGrid': {
+                    'tileSize': [512, 512],
+                    'sizes': [[2, 1], [4, 2], [8, 4], [16, 8]],
+                    'resolutions': [0.4, 0.2, 0.1, 0.05],
+                    'extent': [-180, -90, 180.0, 90.0],
+                    'origin': [-180, -90],
+                },
+            },
+            tile_grid_to_ol_xyz_source_options(
+                tile_grid,
+                'https://xcube.server/tile/{x}/{y}/{z}.png'
+            )
+        )
+
+    def test_with_wo_max_level(self):
+        tile_grid = GeographicTileGrid()
+        self.assertEqual(
+            {
+                'url': 'https://xcube.server/tile/{x}/{y}/{z}.png',
+                'projection': 'CRS84',
+                'tileSize': [256, 256],
+                'maxResolution': 0.703125,
+            },
+            tile_grid_to_ol_xyz_source_options(
+                tile_grid,
+                'https://xcube.server/tile/{x}/{y}/{z}.png'
+            )
+        )
