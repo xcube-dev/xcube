@@ -23,14 +23,8 @@ import os
 
 from tornado.web import Application, StaticFileHandler
 
+import xcube.webapi.handlers
 from xcube.webapi.context import normalize_prefix
-from xcube.webapi.handlers import GetNE2TileHandler, GetDatasetVarTileHandler, InfoHandler, GetNE2TileGridHandler, \
-    GetDatasetVarTileGridHandler, GetWMTSCapabilitiesXmlHandler, GetColorBarsJsonHandler, GetColorBarsHtmlHandler, \
-    GetDatasetsHandler, FindPlacesHandler, FindDatasetPlacesHandler, \
-    GetDatasetCoordsHandler, GetTimeSeriesHandler, GetTsLegacyInfoHandler, GetTsLegacyForPointHandler, WMTSKvpHandler, \
-    GetTsLegacyForGeometryHandler, GetTsLegacyForFeaturesHandler, GetTsLegacyForGeometriesHandler, \
-    GetPlaceGroupsHandler, GetDatasetVarLegendHandler, GetDatasetHandler, GetWMTSTileHandler, GetS3BucketObjectHandler, \
-    ListS3BucketHandler, GetDatasetPlaceGroupsHandler, GetDatasetPlaceGroupHandler
 from xcube.webapi.service import url_pattern
 
 __author__ = "Norman Fomferra (Brockmann Consult GmbH)"
@@ -47,80 +41,73 @@ def new_application(route_prefix: str = None, base_dir: str = '.'):
          StaticFileHandler, {'path': os.path.join(base_dir, 'images')}),
 
         (route_prefix + url_pattern('/'),
-         InfoHandler),
+         xcube.webapi.handlers.InfoHandler),
 
         (route_prefix + url_pattern('/wmts/1.0.0/WMTSCapabilities.xml'),
-         GetWMTSCapabilitiesXmlHandler),
+         xcube.webapi.handlers.GetWMTSCapabilitiesXmlHandler),
         (route_prefix + url_pattern('/wmts/1.0.0/tile/{{ds_id}}/{{var_name}}/{{z}}/{{y}}/{{x}}.png'),
-         GetWMTSTileHandler),
+         xcube.webapi.handlers.GetWMTSTileHandler),
         (route_prefix + url_pattern('/wmts/kvp'),
-         WMTSKvpHandler),
+         xcube.webapi.handlers.WMTSKvpHandler),
 
         (route_prefix + url_pattern('/datasets'),
-         GetDatasetsHandler),
+         xcube.webapi.handlers.GetDatasetsHandler),
         (route_prefix + url_pattern('/datasets/{{ds_id}}'),
-         GetDatasetHandler),
+         xcube.webapi.handlers.GetDatasetHandler),
         (route_prefix + url_pattern('/datasets/{{ds_id}}/places'),
-         GetDatasetPlaceGroupsHandler),
+         xcube.webapi.handlers.GetDatasetPlaceGroupsHandler),
         (route_prefix + url_pattern('/datasets/{{ds_id}}/places/{{place_group_id}}'),
-         GetDatasetPlaceGroupHandler),
+         xcube.webapi.handlers.GetDatasetPlaceGroupHandler),
         (route_prefix + url_pattern('/datasets/{{ds_id}}/coords/{{dim_name}}'),
-         GetDatasetCoordsHandler),
+         xcube.webapi.handlers.GetDatasetCoordsHandler),
         (route_prefix + url_pattern('/datasets/{{ds_id}}/vars/{{var_name}}/legend.png'),
-         GetDatasetVarLegendHandler),
+         xcube.webapi.handlers.GetDatasetVarLegendHandler),
         (route_prefix + url_pattern('/datasets/{{ds_id}}/vars/{{var_name}}/tiles/{{z}}/{{x}}/{{y}}.png'),
-         GetDatasetVarTileHandler),
+         xcube.webapi.handlers.GetDatasetVarTileHandler),
         (route_prefix + url_pattern('/datasets/{{ds_id}}/vars/{{var_name}}/tilegrid'),
-         GetDatasetVarTileGridHandler),
+         xcube.webapi.handlers.GetDatasetVarTileGridHandler),
 
         # AWS S3 compatible data access as ZARR
 
         (route_prefix + url_pattern('/s3bucket/{{ds_id}}/(?P<path>.*)'),
-         GetS3BucketObjectHandler),
+         xcube.webapi.handlers.GetS3BucketObjectHandler),
         (route_prefix + url_pattern('/s3bucket/{{ds_id}}'),
-         GetS3BucketObjectHandler),
+         xcube.webapi.handlers.GetS3BucketObjectHandler),
         (route_prefix + url_pattern('/s3bucket'),
-         ListS3BucketHandler),
-
-        # Natural Earth 2 tiles for testing
-
-        (route_prefix + url_pattern('/ne2/tilegrid'),
-         GetNE2TileGridHandler),
-        (route_prefix + url_pattern('/ne2/tiles/{{z}}/{{x}}/{{y}}.jpg'),
-         GetNE2TileHandler),
+         xcube.webapi.handlers.ListS3BucketHandler),
 
         # Color Bars API
 
         (route_prefix + url_pattern('/colorbars'),
-         GetColorBarsJsonHandler),
+         xcube.webapi.handlers.GetColorBarsJsonHandler),
         (route_prefix + url_pattern('/colorbars.html'),
-         GetColorBarsHtmlHandler),
+         xcube.webapi.handlers.GetColorBarsHtmlHandler),
 
         # Places API (PRELIMINARY & UNSTABLE - will be revised soon)
 
         (route_prefix + url_pattern('/places'),
-         GetPlaceGroupsHandler),
+         xcube.webapi.handlers.GetPlaceGroupsHandler),
         (route_prefix + url_pattern('/places/{{place_group_id}}'),
-         FindPlacesHandler),
+         xcube.webapi.handlers.FindPlacesHandler),
         (route_prefix + url_pattern('/places/{{place_group_id}}/{{ds_id}}'),
-         FindDatasetPlacesHandler),
+         xcube.webapi.handlers.FindDatasetPlacesHandler),
 
         # Time-Series API
 
         (route_prefix + url_pattern('/timeseries/{{ds_id}}/{{var_name}}'),
-         GetTimeSeriesHandler),
+         xcube.webapi.handlers.GetTimeSeriesHandler),
 
         # Legacy time-series API (for VITO's DCS4COP viewer only)
 
         (route_prefix + url_pattern('/ts'),
-         GetTsLegacyInfoHandler),
+         xcube.webapi.handlers.GetTsLegacyInfoHandler),
         (route_prefix + url_pattern('/ts/{{ds_id}}/{{var_name}}/point'),
-         GetTsLegacyForPointHandler),
+         xcube.webapi.handlers.GetTsLegacyForPointHandler),
         (route_prefix + url_pattern('/ts/{{ds_id}}/{{var_name}}/geometry'),
-         GetTsLegacyForGeometryHandler),
+         xcube.webapi.handlers.GetTsLegacyForGeometryHandler),
         (route_prefix + url_pattern('/ts/{{ds_id}}/{{var_name}}/geometries'),
-         GetTsLegacyForGeometriesHandler),
+         xcube.webapi.handlers.GetTsLegacyForGeometriesHandler),
         (route_prefix + url_pattern('/ts/{{ds_id}}/{{var_name}}/features'),
-         GetTsLegacyForFeaturesHandler),
+         xcube.webapi.handlers.GetTsLegacyForFeaturesHandler),
     ])
     return application

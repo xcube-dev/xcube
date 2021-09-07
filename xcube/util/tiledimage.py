@@ -28,11 +28,10 @@ import dask.array as da
 import numpy as np
 from PIL import Image
 
-from xcube.constants import GLOBAL_GEO_EXTENT, LOG
+from xcube.constants import LOG
 from xcube.util.cache import Cache
 from xcube.util.cmaps import get_cmap
 from xcube.util.perf import measure_time_cm
-from xcube.util.tilegrid import TileGrid, GeoExtent
 
 try:
     import cmocean.cm as ocm
@@ -465,11 +464,6 @@ class DirectRgbaImage(OpImage):
         else:
             return image
 
-    def create_pyramid(self, **kwargs) -> 'ImagePyramid':
-        if self._encode:
-            raise TypeError("can't create pyramid from encoded hi-res tiles")
-        return ImagePyramid.create_from_image(self, create_pil_downsampling_image, **kwargs)
-
 
 class ColorMappedRgbaImage(DecoratorImage):
     """
@@ -525,12 +519,6 @@ class ColorMappedRgbaImage(DecoratorImage):
                 return encoded_image
         else:
             return image
-
-    def create_pyramid(self, **kwargs) -> 'ImagePyramid':
-        if self._encode:
-            raise TypeError("can't create pyramid from encoded hi-res tiles")
-        return ImagePyramid.create_from_image(self, create_pil_downsampling_image, **kwargs)
-
 
 
 class DownsamplingImage(OpImage):
@@ -789,124 +777,6 @@ class ArrayImage(OpImage):
         tile = self._array[y:y + h, x:x + w]
         # ensure that our tile size is w x h
         return trim_tile(tile, self.tile_size)
-
-
-class ImagePyramid:
-    """
-    A stack of tiled images (see TileImage) that form a quadtree image pyramid with increasing levels of detail.
-    Level 0 represents the lowest resolution.
-    The level of detail (image resolution) increases by a factor of two between any two, subsequent levels.
-    The tile sizes for each level are the same.
-    """
-
-    @classmethod
-    def create_from_image(cls,
-                          source_image: TiledImage,
-                          level_transformer: LevelTransformer,
-                          geo_extent: GeoExtent = None,
-                          **kwargs) -> 'ImagePyramid':
-
-        """
-        Create an image pyramid build from a single, max-resolution source image of type TiledImage.
-        The given source image will be returned for highest resolution level in the pyramid.
-        Other level images are created from the given level_image_factory function.
-
-        :param source_image: the high-resolution source image, see TiledImage interface
-        :param level_transformer: transforms level z+1 into level z. Called like:
-               level_images[z_index] = level_transformer(source_image, level_images[z_index+1], z_index, **kwargs)
-        :param geo_extent: the geographical extent.
-        :param kwargs: keyword arguments passed to the level_image_factory function
-        :return: a new ImagePyramid instance
-        """
-        if geo_extent is None:
-            geo_extent = GLOBAL_GEO_EXTENT
-        tile_grid = TileGrid.create(source_image.size[0], source_image.size[1],
-                                    source_image.tile_size[0], source_image.tile_size[1],
-                                    geo_extent)
-        level_images = [None] * tile_grid.num_levels
-        z_index_max = tile_grid.num_levels - 1
-        level_images[z_index_max] = source_image
-        level_image = source_image
-        for i in range(1, tile_grid.num_levels):
-            z_index = z_index_max - i
-            image_id = '%s/%d' % (source_image.id, z_index)
-            level_images[z_index] = level_image = level_transformer(source_image, level_image, i,
-                                                                    image_id=image_id, **kwargs)
-        return ImagePyramid(tile_grid, level_images)
-
-    @classmethod
-    def create_from_array(cls,
-                          array: np.ndarray,
-                          tile_grid: TileGrid,
-                          level_image_id_factory: LevelImageIdFactory = None,
-                          **kwargs) -> 'ImagePyramid':
-
-        """
-        Create an image pyramid build from a numpy-like array using nearest neighbor resampling.
-        This is a fast pyramid exploiting the array's underlying slicing capabilities.
-        For example, if array is a H5Py dataset object, the created pyramid will take advantage of
-        the HDF-5 libraries's slicing.
-
-        :param array: numpy-like array that supports stepping in it's subscript operator, e.g.
-                      array[..., y::step, x:step]
-        :param tile_grid: the tile grid
-        :param level_image_id_factory: a factory function for unique image identifiers
-        :param kwargs: keyword arguments passed to FastNdarrayDownsamplingImage constructor
-        :return: a new ImagePyramid instance
-        """
-        tile_size = tile_grid.tile_size
-        num_levels = tile_grid.num_levels
-        level_images = [None] * num_levels
-        z_index_max = num_levels - 1
-        for i in range(0, num_levels):
-            z_index = z_index_max - i
-            image_id = level_image_id_factory(z_index) if level_image_id_factory else None
-            level_images[z_index] = FastNdarrayDownsamplingImage(array,
-                                                                 tile_size,
-                                                                 i,
-                                                                 image_id=image_id, **kwargs)
-        return ImagePyramid(tile_grid, level_images)
-
-    def __init__(self,
-                 tile_grid: TileGrid,
-                 level_images: TiledImageCollection):
-        if tile_grid.num_levels != len(level_images):
-            raise ValueError('level_images do not match tile_grid')
-        self._tile_grid = tile_grid
-        self._level_images = list(level_images)
-
-    @property
-    def tile_grid(self) -> TileGrid:
-        return self._tile_grid
-
-    @property
-    def num_level_zero_tiles(self) -> Size2D:
-        return self._tile_grid.num_level_zero_tiles_x, self._tile_grid.num_level_zero_tiles_y
-
-    @property
-    def tile_size(self) -> Size2D:
-        return self._tile_grid.tile_width, self._tile_grid.tile_height
-
-    @property
-    def num_levels(self) -> int:
-        return self._tile_grid.num_levels
-
-    def get_level_image(self, z_index: int) -> TiledImage:
-        return self._level_images[z_index]
-
-    def get_tile(self, tile_x: int, tile_y: int, z_index: int):
-        level_image = self._level_images[z_index]
-        return level_image.get_tile(tile_x, tile_y)
-
-    def dispose(self) -> None:
-        for level_image in self._level_images:
-            level_image.dispose()
-
-    def apply(self, level_mapper: LevelMapper, *args, **kwargs):
-        level_images = self._level_images
-        return ImagePyramid(self._tile_grid,
-                            [level_mapper(level_images[level], level, *args, **kwargs)
-                             for level in range(len(level_images))])
 
 
 # noinspection PyUnusedLocal

@@ -63,12 +63,11 @@ class CatalogueControllerTest(unittest.TestCase):
                           'normRanges': [(0.0, 24.0), (0.0, 100.0), (0.0, 6.0)],
                           'tileSourceOptions': {
                               'url': 'http://test/datasets/demo-rgb/vars/rgb/tiles/{z}/{x}/{y}.png',
-                              'maxZoom': 2,
-                              'minZoom': 0,
                               'projection': 'EPSG:4326',
                               'tileGrid': {'extent': [0, 50, 5, 52.5],
                                            'origin': [0, 52.5],
                                            'resolutions': [0.01, 0.005, 0.0025],
+                                           'sizes': [[2, 1], [4, 2], [8, 4]],
                                            'tileSize': [250, 250]}
                           }},
                          dataset.get("rgbSchema"))

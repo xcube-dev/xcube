@@ -1,7 +1,7 @@
+import math
 import os
 import threading
 import uuid
-import warnings
 from abc import abstractmethod, ABCMeta
 from typing import Sequence, Any, Dict, Callable, Mapping, Optional
 
@@ -17,7 +17,6 @@ from xcube.core.dsio import guess_dataset_format
 from xcube.core.dsio import is_s3_url
 from xcube.core.dsio import parse_s3_fs_and_root
 from xcube.core.dsio import write_cube
-from xcube.core.geom import get_dataset_bounds
 from xcube.core.gridmapping import GridMapping
 from xcube.core.normalize import decode_cube
 from xcube.core.schema import rechunk_cube
@@ -25,7 +24,7 @@ from xcube.core.verify import assert_cube
 from xcube.util.assertions import assert_instance
 from xcube.util.perf import measure_time
 from xcube.util.tilegrid import TileGrid
-from xcube.util.tilegrid2 import ImageTileGrid, TileGrid2
+from xcube.util.tilegrid import ImageTileGrid, TileGrid
 
 COMPUTE_DATASET = 'compute_dataset'
 
@@ -59,7 +58,7 @@ class MultiLevelDataset(metaclass=ABCMeta):
 
     @property
     @abstractmethod
-    def tile_grid(self) -> TileGrid2:
+    def tile_grid(self) -> TileGrid:
         """
         :return: the tile grid.
         """
@@ -123,7 +122,7 @@ class LazyMultiLevelDataset(MultiLevelDataset, metaclass=ABCMeta):
 
     def __init__(self,
                  grid_mapping: GridMapping = None,
-                 tile_grid: TileGrid2 = None,
+                 tile_grid: TileGrid = None,
                  ds_id: str = None,
                  parameters: Mapping[str, Any] = None):
         self._grid_mapping = grid_mapping
@@ -148,7 +147,7 @@ class LazyMultiLevelDataset(MultiLevelDataset, metaclass=ABCMeta):
         return self._grid_mapping
 
     @property
-    def tile_grid(self) -> TileGrid2:
+    def tile_grid(self) -> TileGrid:
         if self._tile_grid is None:
             with self._lock:
                 self._tile_grid = self._get_tile_grid_lazily()
@@ -202,20 +201,14 @@ class LazyMultiLevelDataset(MultiLevelDataset, metaclass=ABCMeta):
         """
         return GridMapping.from_dataset(self.get_dataset(0))
 
-    def _get_tile_grid_lazily(self) -> TileGrid2:
+    def _get_tile_grid_lazily(self) -> TileGrid:
         """
         Retrieve, i.e. read or compute, the tile grid used by
         the multi-level dataset.
 
         :return: the dataset for the level at *index*.
         """
-        gm = self.grid_mapping
-        assert gm.x_res == gm.y_res  # TODO (forman): must ensure this before
-        return ImageTileGrid(gm.size,
-                             gm.tile_size or (512, 512),
-                             gm.crs,
-                             gm.x_res,
-                             (gm.xy_bbox[0], gm.xy_bbox[1]))
+        return self.grid_mapping.tile_grid
 
     def close(self):
         with self._lock:
@@ -341,7 +334,7 @@ class FileStorageMultiLevelDataset(LazyMultiLevelDataset):
         with measure_time(tag=f"opened local dataset {level_path} for level {index}"):
             return assert_cube(xr.open_zarr(level_path, **parameters), name=level_path)
 
-    def _get_tile_grid_lazily(self) -> TileGrid2:
+    def _get_tile_grid_lazily(self) -> TileGrid:
         """
         Retrieve, i.e. read or compute, the tile grid used by the multi-level dataset.
 
@@ -446,7 +439,7 @@ class ObjectStorageMultiLevelDataset(LazyMultiLevelDataset):
             consolidated = self._s3_file_system.exists(f'{level_path}/.zmetadata')
             return assert_cube(xr.open_zarr(store, consolidated=consolidated, **parameters), name=level_path)
 
-    def _get_tile_grid_lazily(self) -> TileGrid2:
+    def _get_tile_grid_lazily(self) -> TileGrid:
         """
         Retrieve, i.e. read or compute, the tile grid used by the multi-level dataset.
 
@@ -471,7 +464,7 @@ class BaseMultiLevelDataset(LazyMultiLevelDataset):
 
     def __init__(self,
                  base_dataset: xr.Dataset,
-                 tile_grid: TileGrid2 = None,
+                 tile_grid: TileGrid = None,
                  ds_id: str = None):
         assert_instance(base_dataset, xr.Dataset, name='base_dataset')
         self._base_cube, grid_mapping, _ = decode_cube(
@@ -574,7 +567,7 @@ class ComputedMultiLevelDataset(LazyMultiLevelDataset):
         self._input_ml_dataset_getter = input_ml_dataset_getter
         self._exception_type = exception_type
 
-    def _get_tile_grid_lazily(self) -> TileGrid2:
+    def _get_tile_grid_lazily(self) -> TileGrid:
         return self._input_ml_dataset_getter(self._input_ml_dataset_ids[0]).tile_grid
 
     def _get_dataset_lazily(self, index: int, parameters: Dict[str, Any]) -> xr.Dataset:
@@ -591,97 +584,6 @@ class ComputedMultiLevelDataset(LazyMultiLevelDataset):
                                        f"from function {self._callable_name!r}: "
                                        f"expected an xarray.Dataset but got {type(computed_value)}")
         return assert_cube(computed_value, name=self.ds_id)
-
-
-def get_dataset_tile_grid(dataset: xr.Dataset, num_levels: int = None) -> TileGrid:
-    """
-    Compute the tile grid for the given *dataset* and an optional number of resolution
-    levels *num_levels*, if given.
-
-    :param dataset: The dataset.
-    :param num_levels: The number of resolution levels.
-    :return: A TileGrid object
-    """
-    geo_extent = get_dataset_bounds(dataset)
-    inv_y = float(dataset.lat[0]) < float(dataset.lat[-1])
-    width, height, tile_width, tile_height = _get_cube_spatial_sizes(dataset)
-    if num_levels is not None and tile_width is not None and tile_height is not None:
-        width_0 = width
-        height_0 = height
-        for i in range(num_levels - 1):
-            width_0 = (width_0 + 1) // 2
-            height_0 = (height_0 + 1) // 2
-        num_level_zero_tiles_x = (width_0 + tile_width - 1) // tile_width
-        num_level_zero_tiles_y = (height_0 + tile_height - 1) // tile_height
-        tile_grid = TileGrid(num_levels,
-                             num_level_zero_tiles_x, num_level_zero_tiles_y,
-                             tile_width, tile_height,
-                             geo_extent, inv_y)
-    else:
-        try:
-            tile_grid = TileGrid.create(width, height,
-                                        tile_width, tile_height,
-                                        geo_extent, inv_y)
-        except ValueError:
-            num_levels = 1
-            num_level_zero_tiles_x = 1
-            num_level_zero_tiles_y = 1
-            tile_grid = TileGrid(num_levels,
-                                 num_level_zero_tiles_x, num_level_zero_tiles_y,
-                                 width, height, geo_extent, inv_y)
-
-    if tile_width is not None and tile_width != tile_grid.tile_width:
-        warnings.warn(f'FIXME: wanted tile_width={tile_width} as of chunking, but will use {tile_grid.tile_width}. '
-                      f'This is inefficient.')
-    if tile_height is not None and tile_height != tile_grid.tile_height:
-        warnings.warn(f'FIXME: wanted tile_height={tile_width} as of chunking, but will use {tile_grid.tile_height}. '
-                      f'This is inefficient.')
-
-    return tile_grid
-
-
-def _get_cube_spatial_sizes(dataset: xr.Dataset):
-    first_var_name = None
-    spatial_shape = None
-    spatial_chunks = None
-    for var_name in dataset.data_vars:
-        var = dataset[var_name]
-
-        if var.ndim < 2 or var.dims[-2:] != ("lat", "lon"):
-            continue
-
-        if first_var_name is None:
-            first_var_name = var_name
-
-        if spatial_shape is None:
-            spatial_shape = var.shape[-2:]
-        elif spatial_shape != var.shape[-2:]:
-            raise ValueError(f"variables in dataset have different spatial shapes:"
-                             f" variable {first_var_name!r} has {spatial_shape}"
-                             f" while {var_name!r} has {var.shape}")
-
-        if var.chunks is not None:
-            if spatial_chunks is None:
-                spatial_chunks = var.chunks[-2:]
-            elif spatial_chunks != var.chunks[-2:]:
-                raise ValueError(f"variables in dataset have different spatial chunks:"
-                                 f" variable {first_var_name!r} has {spatial_chunks}"
-                                 f" while {var_name!r} has {var.chunks}")
-
-    if spatial_shape is None:
-        raise ValueError("no variables with spatial dimensions found")
-
-    width, height = spatial_shape[-1], spatial_shape[-2]
-    tile_width, tile_height = None, None
-
-    if spatial_chunks is not None:
-        def to_int(v):
-            return v if isinstance(v, int) else v[0]
-
-        spatial_chunks = tuple(map(to_int, spatial_chunks))
-        tile_width, tile_height = spatial_chunks[-1], spatial_chunks[-2]
-
-    return width, height, tile_width, tile_height
 
 
 def guess_ml_dataset_format(path: str) -> str:

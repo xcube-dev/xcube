@@ -2,11 +2,8 @@ from unittest import TestCase
 
 import numpy as np
 
-from xcube.constants import GLOBAL_GEO_EXTENT
-from xcube.util.tiledimage import ImagePyramid, OpImage, create_ndarray_downsampling_image, \
-    TransformArrayImage, FastNdarrayDownsamplingImage, trim_tile
-from xcube.util.tiledimage import downsample_ndarray, aggregate_ndarray_mean, aggregate_ndarray_first
-from xcube.util.tilegrid import TileGrid
+from xcube.util.tiledimage import OpImage, TransformArrayImage, FastNdarrayDownsamplingImage, trim_tile
+from xcube.util.tiledimage import downsample_ndarray, aggregate_ndarray_first
 
 
 class MyTiledImage(OpImage):
@@ -123,144 +120,6 @@ class TrimTileTest(TestCase):
         np.testing.assert_equal(b, np.array([[0., 1., 2., np.nan],
                                              [3., 4., 5., np.nan],
                                              [np.nan, np.nan, np.nan, np.nan]]))
-
-
-class ImagePyramidTest(TestCase):
-    def test_create_from_image(self):
-        width = 8640
-        height = 4320
-
-        pyramid = ImagePyramid.create_from_image(MyTiledImage((width, height), (270, 270)),
-                                                 create_ndarray_downsampling_image,
-                                                 aggregator=aggregate_ndarray_mean)
-
-        self.assertEqual((270, 270), pyramid.tile_size)
-        self.assertEqual((2, 1), pyramid.num_level_zero_tiles)
-        self.assertEqual(5, pyramid.num_levels)
-
-        level_image_0 = pyramid.get_level_image(0)
-        self.assertEqual((540, 270), level_image_0.size)
-        self.assertEqual((270, 270), level_image_0.tile_size)
-        self.assertEqual((2, 1), level_image_0.num_tiles)
-
-        level_image_1 = pyramid.get_level_image(1)
-        self.assertEqual((1080, 540), level_image_1.size)
-        self.assertEqual((270, 270), level_image_1.tile_size)
-        self.assertEqual((4, 2), level_image_1.num_tiles)
-
-        level_image_2 = pyramid.get_level_image(2)
-        self.assertEqual((2160, 1080), level_image_2.size)
-        self.assertEqual((270, 270), level_image_2.tile_size)
-        self.assertEqual((8, 4), level_image_2.num_tiles)
-
-        level_image_3 = pyramid.get_level_image(3)
-        self.assertEqual((4320, 2160), level_image_3.size)
-        self.assertEqual((270, 270), level_image_3.tile_size)
-        self.assertEqual((16, 8), level_image_3.num_tiles)
-
-        level_image_4 = pyramid.get_level_image(4)
-        self.assertEqual((8640, 4320), level_image_4.size)
-        self.assertEqual((270, 270), level_image_4.tile_size)
-        self.assertEqual((32, 16), level_image_4.num_tiles)
-
-        tile_4_0_0 = level_image_4.get_tile(0, 0)
-        self.assertEqual((270, 270), tile_4_0_0.shape)
-        self.assertEqual(0, tile_4_0_0[0, 0])
-        self.assertEqual(0, tile_4_0_0[269, 269])
-
-        tile_4_31_15 = level_image_4.get_tile(31, 15)
-        self.assertEqual((270, 270), tile_4_31_15.shape)
-        self.assertAlmostEqual(0.93772423, tile_4_31_15[0, 0])
-        self.assertAlmostEqual(0.93772423, tile_4_31_15[269, 269])
-
-        tile_3_0_0 = level_image_3.get_tile(0, 0)
-        self.assertEqual((270, 270), tile_3_0_0.shape)
-        self.assertAlmostEqual(0, tile_3_0_0[0, 0])
-        self.assertAlmostEqual(0.06250723, tile_3_0_0[269, 269])
-
-        tile_3_15_7 = level_image_3.get_tile(15, 7)
-        self.assertEqual((270, 270), tile_3_0_0.shape)
-        self.assertAlmostEqual(0.87521702, tile_3_15_7[0, 0])
-        self.assertAlmostEqual(0.93772423, tile_3_15_7[269, 269])
-
-        tile_0_0_0 = level_image_0.get_tile(0, 0)
-        self.assertEqual((270, 270), tile_0_0_0.shape)
-        self.assertAlmostEqual(0, tile_0_0_0[0, 0])
-        self.assertAlmostEqual(0.93760848, tile_0_0_0[269, 269])
-
-        tile_0_1_0 = level_image_0.get_tile(1, 0)
-        self.assertEqual((270, 270), tile_0_1_0.shape)
-        self.assertAlmostEqual(0.00011574, tile_0_1_0[0, 0])
-        self.assertAlmostEqual(0.93772423, tile_0_1_0[269, 269])
-
-    def test_create_from_array(self):
-        width = 8640
-        height = 4320
-
-        # Typical NetCDF shape: time, lat, lon
-        array = np.zeros((1, height, width))
-
-        tiling_scheme = TileGrid.create(width, height, 270, 270, geo_extent=GLOBAL_GEO_EXTENT)
-        pyramid = ImagePyramid.create_from_array(array, tiling_scheme)
-
-        self.assertEqual((270, 270), pyramid.tile_size)
-        self.assertEqual((2, 1), pyramid.num_level_zero_tiles)
-        self.assertEqual(5, pyramid.num_levels)
-
-        level_image_0 = pyramid.get_level_image(0)
-        self.assertEqual((540, 270), level_image_0.size)
-        self.assertEqual((270, 270), level_image_0.tile_size)
-        self.assertEqual((2, 1), level_image_0.num_tiles)
-
-        level_image_1 = pyramid.get_level_image(1)
-        self.assertEqual((1080, 540), level_image_1.size)
-        self.assertEqual((270, 270), level_image_1.tile_size)
-        self.assertEqual((4, 2), level_image_1.num_tiles)
-
-        level_image_2 = pyramid.get_level_image(2)
-        self.assertEqual((2160, 1080), level_image_2.size)
-        self.assertEqual((270, 270), level_image_2.tile_size)
-        self.assertEqual((8, 4), level_image_2.num_tiles)
-
-        level_image_3 = pyramid.get_level_image(3)
-        self.assertEqual((4320, 2160), level_image_3.size)
-        self.assertEqual((270, 270), level_image_3.tile_size)
-        self.assertEqual((16, 8), level_image_3.num_tiles)
-
-        level_image_4 = pyramid.get_level_image(4)
-        self.assertEqual((8640, 4320), level_image_4.size)
-        self.assertEqual((270, 270), level_image_4.tile_size)
-        self.assertEqual((32, 16), level_image_4.num_tiles)
-
-        tile_4_0_0 = level_image_4.get_tile(0, 0)
-        self.assertEqual((1, 270, 270), tile_4_0_0.shape)
-        self.assertEqual(0, tile_4_0_0[..., 0, 0])
-        self.assertEqual(0, tile_4_0_0[..., 269, 269])
-
-        tile_4_31_15 = level_image_4.get_tile(31, 15)
-        self.assertEqual((1, 270, 270), tile_4_31_15.shape)
-        self.assertAlmostEqual(0, tile_4_31_15[..., 0, 0])
-        self.assertAlmostEqual(0, tile_4_31_15[..., 269, 269])
-
-        tile_3_0_0 = level_image_3.get_tile(0, 0)
-        self.assertEqual((1, 270, 270), tile_3_0_0.shape)
-        self.assertAlmostEqual(0, tile_3_0_0[..., 0, 0])
-        self.assertAlmostEqual(0, tile_3_0_0[..., 269, 269])
-
-        tile_3_15_7 = level_image_3.get_tile(15, 7)
-        self.assertEqual((1, 270, 270), tile_3_0_0.shape)
-        self.assertAlmostEqual(0, tile_3_15_7[..., 0, 0])
-        self.assertAlmostEqual(0, tile_3_15_7[..., 269, 269])
-
-        tile_0_0_0 = level_image_0.get_tile(0, 0)
-        self.assertEqual((1, 270, 270), tile_0_0_0.shape)
-        self.assertAlmostEqual(0, tile_0_0_0[..., 0, 0])
-        self.assertAlmostEqual(0, tile_0_0_0[..., 269, 269])
-
-        tile_0_1_0 = level_image_0.get_tile(1, 0)
-        self.assertEqual((1, 270, 270), tile_0_1_0.shape)
-        self.assertAlmostEqual(0, tile_0_1_0[..., 0, 0])
-        self.assertAlmostEqual(0, tile_0_1_0[..., 269, 269])
 
 
 class ArrayResampleTest(TestCase):

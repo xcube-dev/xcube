@@ -30,7 +30,7 @@ from xcube.core.mldataset import MultiLevelDataset
 from xcube.util.assertions import assert_instance
 from xcube.util.jsonschema import JsonBooleanSchema
 from xcube.util.jsonschema import JsonObjectSchema
-from xcube.util.tilegrid2 import TileGrid2
+from xcube.util.tilegrid import TileGrid
 from .dataset import DatasetZarrFsDataAccessor
 from ...datatype import DATASET_TYPE
 from ...datatype import DataType
@@ -137,7 +137,7 @@ class FsMultiLevelDataset(LazyMultiLevelDataset):
                                  f' dataset {level_path!r}:'
                                  f' {e}') from e
 
-    def _get_tile_grid_lazily(self) -> TileGrid2:
+    def _get_tile_grid_lazily(self) -> TileGrid:
         """
         Retrieve, i.e. read or compute, the tile grid used by the multi-level dataset.
 
