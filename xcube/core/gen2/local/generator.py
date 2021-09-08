@@ -103,15 +103,15 @@ class LocalCubeGenerator(CubeGenerator):
         cube_resampler_xy = CubeResamplerXY()
         cube_resampler_t = CubeResamplerT()
         cube_combiner = CubesCombiner(request.cube_config)
-        cube_rechunker_1 = CubeRechunker()
+        cube_rechunker = CubeRechunker()
 
         code_config = request.code_config
         if code_config is not None:
             code_executor = CubeUserCodeExecutor(code_config)
-            cube_rechunker_2 = CubeRechunker()
+            cube_post_rechunker = CubeRechunker()
         else:
             code_executor = CubeIdentity()
-            cube_rechunker_2 = CubeIdentity()
+            cube_post_rechunker = CubeIdentity()
 
         cube_writer = CubeWriter(request.output_config,
                                  store_pool=self._store_pool)
@@ -123,17 +123,18 @@ class LocalCubeGenerator(CubeGenerator):
         resampler_xy_work = 20
         subsetter_work = 1
         combiner_work = num_inputs
-        rechunker_1_work = 1
+        rechunker_work = 1
         executor_work = 1
-        rechunker_2_work = 1
+        post_rechunker_work = 1
         writer_work = 100  # this is where dask processing takes place
         total_work = (opener_work
                       + subsetter_work
                       + resampler_t_work
                       + resampler_xy_work) * num_inputs \
-                     + rechunker_1_work \
+                     + combiner_work \
+                     + rechunker_work \
                      + executor_work \
-                     + rechunker_2_work \
+                     + post_rechunker_work \
                      + writer_work
 
         t_cubes = []
@@ -160,17 +161,17 @@ class LocalCubeGenerator(CubeGenerator):
             progress.will_work(combiner_work)
             t_cube = cube_combiner.combine_cubes(t_cubes)
 
-            progress.will_work(rechunker_1_work)
-            t_cube = transform_cube(t_cube, cube_rechunker_1,
+            progress.will_work(rechunker_work)
+            t_cube = transform_cube(t_cube, cube_rechunker,
                                     'rechunking')
 
             progress.will_work(executor_work)
             t_cube = transform_cube(t_cube, code_executor,
                                     'executing user code')
 
-            progress.will_work(rechunker_2_work)
-            t_cube = transform_cube(t_cube, cube_rechunker_2,
-                                    'rechunking second time')
+            progress.will_work(post_rechunker_work)
+            t_cube = transform_cube(t_cube, cube_post_rechunker,
+                                    'post-rechunking')
 
             progress.will_work(writer_work)
             cube, gm, _ = t_cube
