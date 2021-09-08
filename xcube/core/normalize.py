@@ -669,20 +669,10 @@ def adjust_spatial_attrs(ds: xr.Dataset, allow_point: bool = False) -> xr.Datase
         if not copied:
             ds = ds.copy()
 
+        ds.attrs['geospatial_bounds_crs'] = 'CRS84'
         ds.attrs['geospatial_bounds'] = f'POLYGON(({lon_min} {lat_min}, {lon_min} {lat_max}, ' \
                                         f'{lon_max} {lat_max}, {lon_max} {lat_min}, ' \
                                         f'{lon_min} {lat_min}))'
-
-        # Determination of the following attributes from introspection in a general
-        # way is ambiguous, hence it is safer to drop them than to risk preserving
-        # out of date attributes.
-        drop = ['geospatial_bounds_crs', 'geospatial_bounds_vertical_crs',
-                'geospatial_vertical_min', 'geospatial_vertical_max',
-                'geospatial_vertical_positive', 'geospatial_vertical_units',
-                'geospatial_vertical_resolution']
-
-        for key in drop:
-            ds.attrs.pop(key, None)
 
     return ds
 
