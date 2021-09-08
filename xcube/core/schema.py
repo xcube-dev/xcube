@@ -428,9 +428,9 @@ def rechunk_cube(cube: xr.Dataset,
     # spatial dims only if missing still
     if gm.tile_size is not None:
         if x_dim_name not in cube_chunks:
-            cube_chunks[x_dim_name] = tile_size[0]
+            cube_chunks[x_dim_name] = gm.tile_size[0]
         if y_dim_name not in cube_chunks:
-            cube_chunks[y_dim_name] = tile_size[1]
+            cube_chunks[y_dim_name] = gm.tile_size[1]
 
     # If there is no chunking required, return identities
     if not cube_chunks:
