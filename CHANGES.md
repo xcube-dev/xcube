@@ -105,6 +105,8 @@
   * XCUBE_SH_VERSION=0.9.0.dev0
   * XCUBE_CCI_VERSION=0.9.0.dev0
   * XCUBE_CDS_VERSION=0.9.0
+* Function `xcube.core.normalize.adjust_spatial_attrs()` no longer removes
+  existing global attributes of the form `geospatial_vertical_<property>`.
   
   
 ## Changes in 0.8.2 (in development)
