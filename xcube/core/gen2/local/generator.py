@@ -105,47 +105,56 @@ class LocalCubeGenerator(CubeGenerator):
         cube_combiner = CubesCombiner(request.cube_config)
         cube_rechunker = CubeRechunker()
 
-        if request.code_config is not None:
-            code_executor = CubeUserCodeExecutor(request.code_config)
+        code_config = request.code_config
+        if code_config is not None:
+            code_executor = CubeUserCodeExecutor(code_config)
+            cube_post_rechunker = CubeRechunker()
         else:
             code_executor = CubeIdentity()
+            cube_post_rechunker = CubeIdentity()
 
         cube_writer = CubeWriter(request.output_config,
                                  store_pool=self._store_pool)
 
         num_inputs = len(request.input_configs)
         # Estimated workload:
-        opener_work = 5
-        resampler_t_work = 10
+        opener_work = 10
+        resampler_t_work = 1
         resampler_xy_work = 20
         subsetter_work = 1
-        combiner_work = 1
+        combiner_work = num_inputs
         rechunker_work = 1
         executor_work = 1
-        writer_work = 80
+        post_rechunker_work = 1
+        writer_work = 100  # this is where dask processing takes place
         total_work = (opener_work
                       + subsetter_work
                       + resampler_t_work
                       + resampler_xy_work) * num_inputs \
+                     + combiner_work \
                      + rechunker_work \
                      + executor_work \
+                     + post_rechunker_work \
                      + writer_work
 
         t_cubes = []
-        with observe_progress('Processing input dataset(s)',
+        with observe_progress('Generating cube',
                               total_work) as progress:
             for input_config in request.input_configs:
                 progress.will_work(opener_work)
                 t_cube = cubes_opener.open_cube(input_config)
 
                 progress.will_work(subsetter_work)
-                t_cube = transform_cube(t_cube, cube_subsetter)
+                t_cube = transform_cube(t_cube, cube_subsetter,
+                                        'subsetting')
 
                 progress.will_work(resampler_t_work)
-                t_cube = transform_cube(t_cube, cube_resampler_t)
+                t_cube = transform_cube(t_cube, cube_resampler_t,
+                                        'resampling in time')
 
                 progress.will_work(resampler_xy_work)
-                t_cube = transform_cube(t_cube, cube_resampler_xy)
+                t_cube = transform_cube(t_cube, cube_resampler_xy,
+                                        'resampling in space')
 
                 t_cubes.append(t_cube)
 
@@ -153,10 +162,16 @@ class LocalCubeGenerator(CubeGenerator):
             t_cube = cube_combiner.combine_cubes(t_cubes)
 
             progress.will_work(rechunker_work)
-            t_cube = transform_cube(t_cube, cube_rechunker)
+            t_cube = transform_cube(t_cube, cube_rechunker,
+                                    'rechunking')
 
             progress.will_work(executor_work)
-            t_cube = transform_cube(t_cube, code_executor)
+            t_cube = transform_cube(t_cube, code_executor,
+                                    'executing user code')
+
+            progress.will_work(post_rechunker_work)
+            t_cube = transform_cube(t_cube, cube_post_rechunker,
+                                    'post-rechunking')
 
             progress.will_work(writer_work)
             cube, gm, _ = t_cube
