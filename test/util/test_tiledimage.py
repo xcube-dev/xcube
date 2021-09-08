@@ -2,8 +2,7 @@ from unittest import TestCase
 
 import numpy as np
 
-from xcube.util.tiledimage import OpImage, TransformArrayImage, FastNdarrayDownsamplingImage, trim_tile
-from xcube.util.tiledimage import downsample_ndarray, aggregate_ndarray_first
+from xcube.util.tiledimage import OpImage, TransformArrayImage, trim_tile, ArrayImage
 
 
 class MyTiledImage(OpImage):
@@ -18,11 +17,10 @@ class MyTiledImage(OpImage):
         return np.full((th, tw), fill_value, np.float32)
 
 
-class NdarrayImageTest(TestCase):
+class TransformArrayImageTest(TestCase):
     def test_default(self):
-        a = np.arange(0, 24, dtype=np.int32)
-        a.shape = 4, 6
-        source_image = FastNdarrayDownsamplingImage(a, (2, 2), 0)
+        a = np.arange(0, 24, dtype=np.int32).reshape((4, 6))
+        source_image = ArrayImage(a, (2, 2))
         target_image = TransformArrayImage(source_image)
 
         self.assertEqual(target_image.size, (6, 4))
@@ -44,9 +42,8 @@ class NdarrayImageTest(TestCase):
                                                                 [22, 23]])
 
     def test_flip_y(self):
-        a = np.arange(0, 24, dtype=np.int32)
-        a.shape = 4, 6
-        source_image = FastNdarrayDownsamplingImage(a, (2, 2), 0)
+        a = np.arange(0, 24, dtype=np.int32).reshape((4, 6))
+        source_image = ArrayImage(a, (2, 2))
         target_image = TransformArrayImage(source_image, flip_y=True)
 
         self.assertEqual(target_image.size, (6, 4))
@@ -67,34 +64,9 @@ class NdarrayImageTest(TestCase):
         self.assertEqual(target_image.get_tile(2, 1).tolist(), [[10, 11],
                                                                 [4, 5]])
 
-    def test_level_2(self):
-        a = np.arange(0, 16 * 24, dtype=np.int32)
-        a.shape = 16, 24
-        source_image = FastNdarrayDownsamplingImage(a, (2, 2), 2)
-        target_image = TransformArrayImage(source_image)
-
-        self.assertEqual(target_image.size, (6, 4))
-        self.assertEqual(target_image.tile_size, (2, 2))
-        self.assertEqual(target_image.num_tiles, (3, 2))
-
-        self.assertEqual(target_image.get_tile(0, 0).tolist(), [[0, 4],
-                                                                [96, 100]])
-        self.assertEqual(target_image.get_tile(1, 0).tolist(), [[8, 12],
-                                                                [104, 108]])
-        self.assertEqual(target_image.get_tile(2, 0).tolist(), [[16, 20],
-                                                                [112, 116]])
-
-        self.assertEqual(target_image.get_tile(0, 1).tolist(), [[192, 196],
-                                                                [288, 292]])
-        self.assertEqual(target_image.get_tile(1, 1).tolist(), [[200, 204],
-                                                                [296, 300]])
-        self.assertEqual(target_image.get_tile(2, 1).tolist(), [[208, 212],
-                                                                [304, 308]])
-
     def test_force_2d(self):
-        a = np.arange(0, 48, dtype=np.int32)
-        a.shape = 2, 4, 6
-        source_image = FastNdarrayDownsamplingImage(a, (2, 2), 0)
+        a = np.arange(0, 48, dtype=np.int32).reshape((2, 4, 6))
+        source_image = ArrayImage(a[0], (2, 2))
         target_image = TransformArrayImage(source_image, force_2d=True)
 
         self.assertEqual(target_image.size, (6, 4))
@@ -103,6 +75,7 @@ class NdarrayImageTest(TestCase):
 
 
 class TrimTileTest(TestCase):
+    # noinspection PyMethodMayBeStatic
     def test_trim_tile(self):
         a = np.arange(0, 6, dtype=np.float32)
         a.shape = 2, 3
@@ -120,38 +93,3 @@ class TrimTileTest(TestCase):
         np.testing.assert_equal(b, np.array([[0., 1., 2., np.nan],
                                              [3., 4., 5., np.nan],
                                              [np.nan, np.nan, np.nan, np.nan]]))
-
-
-class ArrayResampleTest(TestCase):
-    def test_numpy_reduce(self):
-        nan = np.nan
-        a = np.zeros((8, 6))
-        a[0::2, 0::2] = 1.1
-        a[0::2, 1::2] = 2.2
-        a[1::2, 0::2] = 3.3
-        a[1::2, 1::2] = 4.4
-        a[6, 4] = np.nan
-
-        self.assertEqual(a.shape, (8, 6))
-        np.testing.assert_equal(a, np.array([[1.1, 2.2, 1.1, 2.2, 1.1, 2.2],
-                                             [3.3, 4.4, 3.3, 4.4, 3.3, 4.4],
-                                             [1.1, 2.2, 1.1, 2.2, 1.1, 2.2],
-                                             [3.3, 4.4, 3.3, 4.4, 3.3, 4.4],
-                                             [1.1, 2.2, 1.1, 2.2, 1.1, 2.2],
-                                             [3.3, 4.4, 3.3, 4.4, 3.3, 4.4],
-                                             [1.1, 2.2, 1.1, 2.2, nan, 2.2],
-                                             [3.3, 4.4, 3.3, 4.4, 3.3, 4.4]]))
-
-        b = downsample_ndarray(a)
-        self.assertEqual(b.shape, (4, 3))
-        np.testing.assert_equal(b, np.array([[2.75, 2.75, 2.75],
-                                             [2.75, 2.75, 2.75],
-                                             [2.75, 2.75, 2.75],
-                                             [2.75, 2.75, nan]]))
-
-        b = downsample_ndarray(a, aggregator=aggregate_ndarray_first)
-        self.assertEqual(b.shape, (4, 3))
-        np.testing.assert_equal(b, np.array([[1.1, 1.1, 1.1],
-                                             [1.1, 1.1, 1.1],
-                                             [1.1, 1.1, 1.1],
-                                             [1.1, 1.1, nan]]))

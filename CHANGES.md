@@ -105,7 +105,22 @@
   * XCUBE_SH_VERSION=0.9.0.dev0
   * XCUBE_CCI_VERSION=0.9.0.dev0
   * XCUBE_CDS_VERSION=0.9.0
+* Numerous classes and functions became unused in the xcube 0.9 
+  code base and have been removed, also because we believe there is 
+  quite rare outside use, if at all. 
   
+  Removed from `xcube.util.tiledimage`:
+  * class `DownsamplingImage`
+  * class `PilDownsamplingImage`
+  * class `NdarrayDownsamplingImage`
+  * function `create_pil_downsampling_image()`
+  * function `create_ndarray_downsampling_image()`
+  * function `downsample_ndarray()`
+  * functions `aggregate_ndarray_xxx()`
+  
+  Removed from `xcube.util.tilegrid`:
+  * functions `pow2_2d_subdivision()`
+  * functions `pow2_1d_subdivision()`
   
 ## Changes in 0.8.2 (in development)
 
