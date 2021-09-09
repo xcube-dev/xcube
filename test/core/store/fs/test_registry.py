@@ -2,6 +2,7 @@ import unittest
 from abc import ABC, abstractmethod
 from typing import Type, Union
 
+import fsspec
 import xarray as xr
 
 from test.s3test import MOTO_SERVER_ENDPOINT_URL
@@ -16,7 +17,7 @@ from xcube.core.store import MutableDataStore
 from xcube.core.store.fs.registry import new_fs_data_store
 from xcube.core.store.fs.store import FsDataStore
 from xcube.util.temp import new_temp_dir
-
+import fsspec
 
 # noinspection PyUnresolvedReferences,PyPep8Naming
 class FsDataStoresTestMixin(ABC):
@@ -124,8 +125,10 @@ class FileFsDataStoresTest(FsDataStoresTestMixin, unittest.TestCase):
 class MemoryFsDataStoresTest(FsDataStoresTestMixin, unittest.TestCase):
 
     def create_data_store(self) -> FsDataStore:
-        return new_fs_data_store('memory',
-                                 root='xcube-test')
+        fs: fsspec.AbstractFileSystem = fsspec.filesystem('memory')
+        for f in fs.find(''):
+            fs.delete(f)
+        return new_fs_data_store('memory', root='xcube-test')
 
 
 class S3FsDataStoresTest(FsDataStoresTestMixin, S3Test):

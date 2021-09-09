@@ -198,16 +198,35 @@ class BaseFsDataStore(DefaultSearchMixin, MutableDataStore):
         data_type = DataType.normalize(data_type)
         # TODO: do not ignore names in include_attrs
         return_tuples = include_attrs is not None
+        for item in self._scan_dir('',
+                                   data_type,
+                                   return_tuples,
+                                   0):
+            yield item
 
-        potential_data_ids = sorted(list(map(
-            self._convert_fs_path_into_data_id,
-            self.fs.find(self.root,
-                         maxdepth=self._max_depth,
-                         withdirs=True)
-        )))
-        for data_id in potential_data_ids:
-            if self._is_data_specified(data_id, data_type):
-                yield (data_id, {}) if return_tuples else data_id
+    def _scan_dir(self,
+                  dir_path: str,
+                  data_type: DataType,
+                  return_tuples: bool,
+                  current_depth: int):
+        root = self.root + ('/' + dir_path if dir_path else '')
+        # noinspection PyArgumentEqualDefault
+        if self.fs.isdir(root):
+            for file_info in self.fs.ls(root, detail=True):
+                file_path: str = file_info['name']
+                if file_path.startswith(self.root):
+                    file_path = file_path[len(self.root) + 1:]
+                elif file_path.startswith('/' + self.root):
+                    file_path = file_path[len(self.root) + 2:]
+                if self._is_data_specified(file_path, data_type):
+                    yield (file_path, {}) if return_tuples else file_path
+                elif file_info.get('type') == 'directory' \
+                        and current_depth < self._max_depth:
+                    for item in self._scan_dir(file_path,
+                                               data_type,
+                                               return_tuples,
+                                               current_depth + 1):
+                        yield item
 
     def has_data(self, data_id: str, data_type: DataTypeLike = None) -> bool:
         assert_given(data_id, 'data_id')
