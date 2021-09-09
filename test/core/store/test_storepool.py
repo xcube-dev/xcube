@@ -326,6 +326,34 @@ class DataStorePoolTest(unittest.TestCase):
         self.assertIsInstance(pool, DataStorePool)
         self.assertEqual(["local-1", "local-2", "ram-1", "ram-2"], pool.store_instance_ids)
         for instance_id in pool.store_instance_ids:
-            self.assertTrue(pool.has_store_config(instance_id))
+            self.assertTrue(pool.has_store_instance(instance_id))
             self.assertIsInstance(pool.get_store_config(instance_id), DataStoreConfig)
             self.assertIsInstance(pool.get_store(instance_id), DataStore)
+
+    def test_get_store_instance_id(self):
+        store_params_1 = {
+            "root": "./bibo"
+        }
+        ds_config_1 = DataStoreConfig(store_id='file',
+                                      store_params=store_params_1)
+        ds_configs = {'dir-1': ds_config_1}
+        pool = DataStorePool(ds_configs)
+
+        store_params_2 = {
+            "root": "./babo"
+        }
+        ds_config_2 = DataStoreConfig(store_id='file',
+                                      store_params=store_params_2)
+        ds_config_3 = DataStoreConfig(store_id='file',
+                                      store_params=store_params_1,
+                                      title='A third configuration')
+
+        self.assertEqual('dir-1', pool.get_store_instance_id(ds_config_1))
+        self.assertEqual('dir-1', pool.get_store_instance_id(ds_config_1,
+                                                             strict_check=True))
+
+        self.assertIsNone(pool.get_store_instance_id(ds_config_2))
+
+        self.assertEqual('dir-1', pool.get_store_instance_id(ds_config_3))
+        self.assertIsNone(pool.get_store_instance_id(ds_config_3,
+                                                     strict_check=True))

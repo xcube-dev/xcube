@@ -211,3 +211,255 @@ class NormalizePrefixTest(unittest.TestCase):
                          normalize_prefix('/${name}'))
         self.assertEqual(f'/xcube/v{version}',
                          normalize_prefix('/${name}/v${version}'))
+
+
+class MaybeAssignStoreInstanceIdsTest(unittest.TestCase):
+
+    def test_same_store_found(self):
+        ctx = new_test_service_context()
+        dataset_configs = [
+            {
+                'Identifier': 'z_0',
+                'FileSystem': 'local',
+                'Path': '/one/path/abc.zarr'
+            },
+            {
+                'Identifier': 'z_1',
+                'FileSystem': 'local',
+                'Path': '/one/path/def.zarr'
+            },
+            {
+                'Identifier': 'z_4',
+                'FileSystem': 'obs',
+                'Path': '/one/path/mno.zarr'
+            },
+            {
+                'Identifier': 'z_2',
+                'FileSystem': 'local',
+                'Path': '/another/path/ghi.zarr'
+            },
+            {
+                'Identifier': 'z_3',
+                'FileSystem': 'local',
+                'Path': '/one/more/path/jkl.zarr'
+            },
+            {
+                'Identifier': 'z_5',
+                'FileSystem': 'obs',
+                'Path': '/one/path/pqr.zarr'
+            },
+            {
+                'Identifier': 'z_6',
+                'FileSystem': 'local',
+                'Path': '/one/path/stu.zarr'
+            },
+            {
+                'Identifier': 'z_7',
+                'FileSystem': 'local',
+                'Path': '/one/more/path/vwx.zarr'
+            },
+        ]
+        ctx.config['Datasets'] = dataset_configs
+        adjusted_dataset_configs = ctx.get_dataset_configs()
+
+        expected_dataset_configs = [
+            {
+                'Identifier': 'z_3',
+                'FileSystem': 'local',
+                'Path': 'more/path/jkl.zarr',
+                'StoreInstanceId': 'local_1'
+            },
+            {
+                'Identifier': 'z_3',
+                'FileSystem': 'local',
+                'Path': 'more/path/jkl.zarr',
+                'StoreInstanceId': 'local_1'
+            },
+            {
+                'Identifier': 'z_7',
+                'FileSystem': 'local',
+                'Path': 'more/path/vwx.zarr',
+                'StoreInstanceId': 'local_1'
+            },
+            {
+                'Identifier': 'z_0',
+                'FileSystem': 'local',
+                'Path': 'path/abc.zarr',
+                'StoreInstanceId': 'local_1'
+            },
+            {
+                'Identifier': 'z_1',
+                'FileSystem': 'local',
+                'Path': 'path/def.zarr',
+                'StoreInstanceId': 'local_1'
+            },
+            {
+                'Identifier': 'z_6',
+                'FileSystem': 'local',
+                'Path': 'path/stu.zarr',
+                'StoreInstanceId': 'local_1'
+            },
+            {
+                'Identifier': 'z_2',
+                'FileSystem': 'local',
+                'Path': 'path/ghi.zarr',
+                'StoreInstanceId': 'local_2'
+            },
+            {
+                'Identifier': 'z_4',
+                'FileSystem': 'obs',
+                'Path': 'path/mno.zarr',
+                'StoreInstanceId': 'obs_1'
+            },
+            {
+                'Identifier': 'z_5',
+                'FileSystem': 'obs',
+                'Path': 'path/pqr.zarr',
+                'StoreInstanceId': 'obs_1'
+            },
+        ]
+        self.assertEqual(expected_dataset_configs, adjusted_dataset_configs)
+
+
+class MaybeAssignStoreInstanceIdTest(unittest.TestCase):
+
+    def test_with_instance_id(self):
+        ctx = new_test_service_context()
+        dataset_config = {'Identifier': 'zero',
+                          'Title': 'Test 0',
+                          'FileSystem': 'local',
+                          'StoreInstanceId': 'some_id'}
+        dataset_config_copy = dataset_config.copy()
+
+        ctx.maybe_assign_store_instance_id(dataset_config)
+
+        self.assertEqual(dataset_config_copy, dataset_config)
+
+    def test_local(self):
+        ctx = new_test_service_context()
+        dataset_config = {'Identifier': 'one',
+                          'Title': 'Test 1',
+                          'FileSystem': 'local',
+                          'Path': 'cube-1-250-250.zarr'}
+
+        ctx.maybe_assign_store_instance_id(dataset_config)
+
+        self.assertEqual(['Identifier', 'Title', 'FileSystem', 'Path',
+                         'StoreInstanceId'],
+                         list(dataset_config.keys()))
+        self.assertEqual('local_1~cube-1-250-250.zarr',
+                         dataset_config['Identifier'])
+        self.assertEqual('Test 1', dataset_config['Title'])
+        self.assertEqual('local', dataset_config['FileSystem'])
+        self.assertEqual('cube-1-250-250.zarr', dataset_config['Path'])
+        self.assertEqual('local_1', dataset_config['StoreInstanceId'])
+
+    def test_s3(self):
+        ctx = new_test_service_context()
+        dataset_config = {'Identifier': 'two',
+                          'Title': 'Test 2',
+                          'FileSystem': 'obs',
+                          'Endpoint': 'https://s3.eu-central-1.amazonaws.com',
+                          'Path': 'xcube-examples/OLCI-SNS-RAW-CUBE-2.zarr',
+                          'Region': 'eu-central-1'}
+
+        ctx.maybe_assign_store_instance_id(dataset_config)
+
+        self.assertEqual(['Identifier', 'Title', 'FileSystem', 'Endpoint',
+                          'Path', 'Region', 'StoreInstanceId'],
+                         list(dataset_config.keys()))
+        self.assertEqual('obs_1~OLCI-SNS-RAW-CUBE-2.zarr',
+                         dataset_config['Identifier'])
+        self.assertEqual('Test 2', dataset_config['Title'])
+        self.assertEqual('obs', dataset_config['FileSystem'])
+        self.assertEqual('https://s3.eu-central-1.amazonaws.com',
+                         dataset_config['Endpoint'])
+        self.assertEqual('xcube-examples/OLCI-SNS-RAW-CUBE-2.zarr',
+                         dataset_config['Path'])
+        self.assertEqual('eu-central-1', dataset_config['Region'])
+        self.assertEqual('obs_1', dataset_config['StoreInstanceId'])
+
+    def test_memory(self):
+        ctx = new_test_service_context()
+        dataset_config = {'Identifier': 'three',
+                          'Title': 'Test 3',
+                          'FileSystem': 'memory'}
+        dataset_config_copy = dataset_config.copy()
+
+        ctx.maybe_assign_store_instance_id(dataset_config)
+
+        self.assertEqual(dataset_config_copy, dataset_config)
+
+    def test_missing_path(self):
+        ctx = new_test_service_context()
+        dataset_config = {'Identifier': 'four',
+                          'Title': 'Test 4',
+                          'FileSystem': 'local'}
+
+        ctx.maybe_assign_store_instance_id(dataset_config)
+
+        self.assertEqual(['Identifier', 'Title', 'FileSystem',
+                         'StoreInstanceId'],
+                         list(dataset_config.keys()))
+        self.assertEqual('local_1~four', dataset_config['Identifier'])
+        self.assertEqual('Test 4', dataset_config['Title'])
+        self.assertEqual('local', dataset_config['FileSystem'])
+        self.assertEqual('local_1', dataset_config['StoreInstanceId'])
+
+    def test_missing_file_system(self):
+        ctx = new_test_service_context()
+        dataset_config = {'Identifier': 'five',
+                          'Title': 'Test 5',
+                          'Path': 'cube-1-250-250.zarr'}
+
+        ctx.maybe_assign_store_instance_id(dataset_config)
+
+        self.assertEqual(['Identifier', 'Title', 'Path', 'StoreInstanceId'],
+                         list(dataset_config.keys()))
+        self.assertEqual('local_1~cube-1-250-250.zarr',
+                         dataset_config['Identifier'])
+        self.assertEqual('Test 5', dataset_config['Title'])
+        self.assertEqual('cube-1-250-250.zarr', dataset_config['Path'])
+        self.assertEqual('local_1', dataset_config['StoreInstanceId'])
+
+    def test_local_store_already_existing(self):
+        ctx = new_test_service_context()
+        dataset_config_1 = {'Identifier': 'six',
+                            'Title': 'Test 6',
+                            'FileSystem': 'local',
+                            'Path': 'cube-1-250-250.zarr'}
+        dataset_config_2 = {'Identifier': 'six_a',
+                            'Title': 'Test 6 a',
+                            'FileSystem': 'local',
+                            'Path': 'cube-5-100-200.zarr'}
+
+        ctx.maybe_assign_store_instance_id(dataset_config_1)
+        ctx.maybe_assign_store_instance_id(dataset_config_2)
+
+        self.assertEqual(dataset_config_1['StoreInstanceId'],
+                         dataset_config_2['StoreInstanceId'])
+
+    def test_s3_store_already_existing(self):
+        ctx = new_test_service_context()
+        dataset_config_1 = {'Identifier': 'seven',
+                            'Title': 'Test 7',
+                            'FileSystem': 'obs',
+                            'Endpoint': 'https://s3.eu-central-1.amazonaws.com',
+                            'Path': 'xcube-examples/OLCI-SNS-RAW-CUBE-2.zarr',
+                            'Region': 'eu-central-1'}
+
+        dataset_config_2 = {'Identifier': 'seven_a',
+                            'Title': 'Test 7 a',
+                            'FileSystem': 'obs',
+                            'Endpoint': 'https://s3.eu-central-1.amazonaws.com',
+                            'Path': 'xcube-examples/OLCI-SNS-RAW-CUBE-3.zarr',
+                            'Region': 'eu-central-1'}
+
+        ctx.maybe_assign_store_instance_id(dataset_config_1)
+
+        ctx.maybe_assign_store_instance_id(dataset_config_2)
+
+        self.assertEqual(dataset_config_1['StoreInstanceId'],
+                         dataset_config_2['StoreInstanceId'])
+
+

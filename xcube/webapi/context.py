@@ -69,6 +69,10 @@ COMPUTE_VARIABLES = 'compute_variables'
 
 # We use tilde, because it is not a reserved URI characters
 STORE_DS_ID_SEPARATOR = '~'
+FS_TYPE_TO_STORE = {
+    'local': 'file',
+    'obs': 's3'
+}
 
 ALL_PLACES = "all"
 
@@ -269,7 +273,158 @@ class ServiceContext:
                 dataset_configs += \
                     self.get_dataset_configs_from_stores()
                 self._dataset_configs = dataset_configs
+                # for dataset_config in self._dataset_configs:
+                #     self.maybe_assign_store_instance_id(dataset_config)
+                self._maybe_assign_store_instance_ids()
         return self._dataset_configs
+
+    def _maybe_assign_store_instance_ids(self):
+        # dataset_configs = [dc for dc in self._dataset_configs
+        #                    if 'StoreInstanceId' not in dc
+        #                    and dc.get('FileSystem', 'local') != 'memory']
+        unassignable_dataset_configs = [dc for dc in self._dataset_configs
+                                        if 'StoreInstanceId' in dc
+                                        or dc.get('FileSystem', 'local')
+                                        == 'memory']
+        local_dataset_configs = [dc for dc in self._dataset_configs
+                                 if 'StoreInstanceId' not in dc
+                                 and dc.get('FileSystem', 'local') == 'local']
+        obs_dataset_configs = [dc for dc in self._dataset_configs
+                               if 'StoreInstanceId' not in dc
+                               and dc.get('FileSystem', 'local') == 'obs']
+
+        def _get_path_root(path: str):
+            path = os.path.normpath(path)
+            while path.startswith(os.sep):
+                path = path[1:]
+            split_path = path.split(os.sep)
+            if len(split_path) > 1:
+                return f'{os.sep}{split_path[0]}'
+            return '.'
+
+        # roots = set([_get_path_root(dc['Path'])
+        #              for dc in local_dataset_configs])
+
+        for ldc in local_dataset_configs:
+            root = _get_path_root(ldc['Path'])
+            path = os.path.normpath(ldc['Path'])
+            root_pos = path.find(root)
+            if root_pos == -1:
+                raise RuntimeError('internal error')
+            ds_id = path[root_pos + len(root):]
+
+
+
+        # list.sort(local_dataset_configs,
+        #           key=lambda item: item['Path'])
+
+        # prefix_candidate = \
+        #     os.path.commonprefix([dc['Path'] for dc in local_dataset_configs])
+        # prefix_candidate = os.path.normpath(prefix_candidate)
+        # while prefix_candidate.startswith(os.sep):
+        #     prefix_candidate = prefix_candidate[1:]
+        # if prefix_candidate.split(os.sep):
+        #     root = prefix_candidate.split(os.sep)
+
+
+
+
+        # if 'StoreInstanceId' in dataset_config:
+        #     return
+        data_store_pool = self.get_data_store_pool()
+        if not data_store_pool:
+            data_store_pool = self._data_store_pool = DataStorePool()
+        pass
+        # fs_type = dataset_config.get('FileSystem', 'local')
+        # if fs_type == 'local' or fs_type == 'obs':
+        #     store_params = dict()
+        #     new_id_ending = dataset_config['Identifier']
+        #     if 'Path' in dataset_config:
+        #         root_path = os.path.dirname(dataset_config.get('Path'))
+        #         if root_path == '':
+        #             root_path = '.'
+        #         store_params['root'] = root_path
+        #         new_id_ending = os.path.basename(dataset_config.get('Path'))
+        #     if fs_type == 'obs':
+        #         if 'Anonymous' in dataset_config:
+        #             store_params['anon'] = dataset_config['Anonymous']
+        #         client_kwargs = dict(
+        #         )
+        #         if 'Endpoint' in dataset_config:
+        #             client_kwargs['endpoint_url'] = dataset_config['Endpoint']
+        #         if 'Region' in dataset_config:
+        #             client_kwargs['region_name'] = dataset_config['Region']
+        #         store_params['client_kwargs'] = client_kwargs
+        #     data_store_config = DataStoreConfig(
+        #         store_id=FS_TYPE_TO_STORE[fs_type],
+        #         store_params=store_params)
+        #     store_instance_id = data_store_pool.get_store_instance_id(
+        #         store_config=data_store_config)
+        #     if not store_instance_id:
+        #         counter = 1
+        #         while data_store_pool.has_store_instance(
+        #                 f'{fs_type}_{counter}'):
+        #             counter += 1
+        #         store_instance_id = f'{fs_type}_{counter}'
+        #         data_store_pool.add_store_config(store_instance_id,
+        #                                          data_store_config)
+        #         if 'DataStores' not in self._config:
+        #             self._config['DataStores'] = []
+        #         self._config['DataStores'].append(dict(
+        #             store_instance_id=data_store_config))
+        #     dataset_config['StoreInstanceId'] = store_instance_id
+        #     dataset_config['Identifier'] = f'{store_instance_id}' \
+        #                                    f'{STORE_DS_ID_SEPARATOR}' \
+        #                                    f'{new_id_ending}'
+
+    def maybe_assign_store_instance_id(self,
+                                       dataset_config: DatasetConfigDict):
+        if 'StoreInstanceId' in dataset_config:
+            return
+        data_store_pool = self.get_data_store_pool()
+        if not data_store_pool:
+            data_store_pool = self._data_store_pool = DataStorePool()
+        fs_type = dataset_config.get('FileSystem', 'local')
+        if fs_type == 'local' or fs_type == 'obs':
+            store_params = dict()
+            new_id_ending = dataset_config['Identifier']
+            if 'Path' in dataset_config:
+                root_path = os.path.dirname(dataset_config.get('Path'))
+                if root_path == '':
+                    root_path = '.'
+                store_params['root'] = root_path
+                new_id_ending = os.path.basename(dataset_config.get('Path'))
+            if fs_type == 'obs':
+                if 'Anonymous' in dataset_config:
+                    store_params['anon'] = dataset_config['Anonymous']
+                client_kwargs = dict(
+                )
+                if 'Endpoint' in dataset_config:
+                    client_kwargs['endpoint_url'] = dataset_config['Endpoint']
+                if 'Region' in dataset_config:
+                    client_kwargs['region_name'] = dataset_config['Region']
+                store_params['client_kwargs'] = client_kwargs
+            data_store_config = DataStoreConfig(
+                store_id=FS_TYPE_TO_STORE[fs_type],
+                store_params=store_params)
+            store_instance_id = data_store_pool.get_store_instance_id(
+                store_config=data_store_config)
+            if not store_instance_id:
+                counter = 1
+                while data_store_pool.has_store_instance(
+                        f'{fs_type}_{counter}'):
+                    counter += 1
+                store_instance_id = f'{fs_type}_{counter}'
+                data_store_pool.add_store_config(store_instance_id,
+                                                 data_store_config)
+                if 'DataStores' not in self._config:
+                    self._config['DataStores'] = []
+                self._config['DataStores'].append(dict(
+                    store_instance_id=data_store_config))
+            dataset_config['StoreInstanceId'] = store_instance_id
+            dataset_config['Identifier'] = f'{store_instance_id}' \
+                                           f'{STORE_DS_ID_SEPARATOR}' \
+                                           f'{new_id_ending}'
 
     def get_dataset_configs_from_stores(self) \
             -> List[DatasetConfigDict]:
@@ -295,7 +450,7 @@ class ServiceContext:
                 if store_dataset_configs:
                     for store_dataset_config in store_dataset_configs:
                         dataset_id_pattern = store_dataset_config.get(
-                            'Identifier', '*'
+                            'Path', '*'
                         )
                         if fnmatch.fnmatch(store_dataset_id,
                                            dataset_id_pattern):
@@ -308,6 +463,7 @@ class ServiceContext:
                         StoreInstanceId=store_instance_id,
                         **dataset_config_base
                     )
+                    dataset_config['Path'] = store_dataset_id
                     dataset_config['Identifier'] = \
                         f'{store_instance_id}{STORE_DS_ID_SEPARATOR}' \
                         f'{store_dataset_id}'
@@ -470,6 +626,7 @@ class ServiceContext:
             data_store_pool = self.get_data_store_pool()
             data_store = data_store_pool.get_store(store_instance_id)
             _, data_id = ds_id.split(STORE_DS_ID_SEPARATOR, maxsplit=1)
+            data_id = dataset_config.get('Path')
             open_params = dataset_config.get('StoreOpenParams') or {}
             # Inject chunk_cache_capacity into open parameters
             chunk_cache_capacity = self.get_dataset_chunk_cache_capacity(
@@ -491,19 +648,22 @@ class ServiceContext:
                                          force_geographic=True)
                 ml_dataset = BaseMultiLevelDataset(cube, ds_id=ds_id)
         else:
-            fs_type = dataset_config.get('FileSystem', 'local')
-            if self._ml_dataset_openers \
-                    and fs_type in self._ml_dataset_openers:
-                ml_dataset_opener = self._ml_dataset_openers[fs_type]
-            elif fs_type in _MULTI_LEVEL_DATASET_OPENERS:
-                ml_dataset_opener = _MULTI_LEVEL_DATASET_OPENERS[fs_type]
-            else:
+            fs_type = dataset_config.get('FileSystem')
+            # fs_type = dataset_config.get('FileSystem', 'local')
+            # if self._ml_dataset_openers \
+            #         and fs_type in self._ml_dataset_openers:
+            #     ml_dataset_opener = self._ml_dataset_openers[fs_type]
+            # elif fs_type in _MULTI_LEVEL_DATASET_OPENERS:
+            #     ml_dataset_opener = _MULTI_LEVEL_DATASET_OPENERS[fs_type]
+            # else:
+            if fs_type != 'memory':
                 raise ServiceConfigError(f"Invalid FileSystem {fs_type!r}"
                                          f" in dataset configuration"
                                          f" {ds_id!r}")
             with self.measure_time(tag=f"opened dataset {ds_id!r}"
                                        f" from {fs_type!r}"):
-                ml_dataset = ml_dataset_opener(self, dataset_config)
+                ml_dataset = _open_ml_dataset_from_python_code(self,
+                                                               dataset_config)
         augmentation = dataset_config.get('Augmentation')
         if augmentation:
             script_path = self.get_config_path(
@@ -821,6 +981,11 @@ def normalize_prefix(prefix: Optional[str]) -> str:
         prefix = prefix[0:-1]
 
     return prefix
+
+
+def assign_store_instance_id_if_possible(dataset_config: DatasetConfigDict):
+    pass
+    # for dataset_config in dataset_configs:
 
 
 # noinspection PyUnusedLocal

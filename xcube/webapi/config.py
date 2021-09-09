@@ -91,6 +91,7 @@ class DatasetConfig(_ConfigObject):
             factory=DatasetConfig,
             required=[
                 'Identifier',
+                'Path'
             ],
             properties=dict(
                 Identifier=IdentifierSchema,
@@ -181,7 +182,7 @@ class DataStoreDatasetConfig(_ConfigObject):
         return JsonObjectSchema(
             factory=DataStoreDatasetConfig,
             required=[
-                'Identifier'
+                'Path'
             ],
             properties=dict(
                 Identifier=IdentifierSchema,
