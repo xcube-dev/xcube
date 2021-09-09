@@ -21,7 +21,7 @@
 
 import itertools
 import json
-from collections import MutableMapping, Mapping
+from collections.abc import MutableMapping, Mapping
 from logging import Logger
 from typing import Iterator, Dict, Tuple, Iterable, \
     KeysView, Callable, Any, Sequence, Optional

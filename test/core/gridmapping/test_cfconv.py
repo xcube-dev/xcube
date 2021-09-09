@@ -7,8 +7,8 @@ import pyproj
 import xarray as xr
 
 from xcube.core.gridmapping.cfconv import GridCoords
-from xcube.core.gridmapping.cfconv import GridMapping
-from xcube.core.gridmapping.cfconv import get_dataset_grid_mappings
+from xcube.core.gridmapping.cfconv import GridMappingProxy
+from xcube.core.gridmapping.cfconv import get_dataset_grid_mapping_proxies
 
 CRS_WGS84 = pyproj.crs.CRS(4326)
 CRS_CRS84 = pyproj.crs.CRS.from_string("urn:ogc:def:crs:OGC:1.3:CRS84")
@@ -24,11 +24,11 @@ class GetDatasetGridMappingsTest(unittest.TestCase):
     def test_no_crs_lon_lat_common_names(self):
         dataset = xr.Dataset(coords=dict(lon=xr.DataArray(np.linspace(10, 12, 11), dims='lon'),
                                          lat=xr.DataArray(np.linspace(50, 52, 11), dims='lat')))
-        grid_mappings = get_dataset_grid_mappings(dataset)
+        grid_mappings = get_dataset_grid_mapping_proxies(dataset)
         self.assertEqual(1, len(grid_mappings))
         self.assertIn(None, grid_mappings)
         grid_mapping = grid_mappings.get(None)
-        self.assertIsInstance(grid_mapping, GridMapping)
+        self.assertIsInstance(grid_mapping, GridMappingProxy)
         self.assertEqual(CRS_WGS84, grid_mapping.crs)
         self.assertEqual('latitude_longitude', grid_mapping.name)
         self.assertIsInstance(grid_mapping.coords, GridCoords)
@@ -42,11 +42,11 @@ class GetDatasetGridMappingsTest(unittest.TestCase):
                                                               attrs=dict(standard_name='longitude')),
                                          weird_y=xr.DataArray(np.linspace(50, 52, 11), dims='j',
                                                               attrs=dict(standard_name='latitude'))))
-        grid_mappings = get_dataset_grid_mappings(dataset)
+        grid_mappings = get_dataset_grid_mapping_proxies(dataset)
         self.assertEqual(1, len(grid_mappings))
         self.assertIn(None, grid_mappings)
         grid_mapping = grid_mappings.get(None)
-        self.assertIsInstance(grid_mapping, GridMapping)
+        self.assertIsInstance(grid_mapping, GridMappingProxy)
         self.assertEqual(CRS_WGS84, grid_mapping.crs)
         self.assertEqual('latitude_longitude', grid_mapping.name)
         self.assertIsInstance(grid_mapping.coords, GridCoords)
@@ -59,11 +59,11 @@ class GetDatasetGridMappingsTest(unittest.TestCase):
         dataset = xr.Dataset(dict(crs=xr.DataArray(0, attrs=CRS_UTM_33N.to_cf())),
                              coords=dict(x=xr.DataArray(np.linspace(1000, 12000, 11), dims='x'),
                                          y=xr.DataArray(np.linspace(5000, 52000, 11), dims='y')))
-        grid_mappings = get_dataset_grid_mappings(dataset)
+        grid_mappings = get_dataset_grid_mapping_proxies(dataset)
         self.assertEqual(1, len(grid_mappings))
         self.assertIn('crs', grid_mappings)
         grid_mapping = grid_mappings.get('crs')
-        self.assertIsInstance(grid_mapping, GridMapping)
+        self.assertIsInstance(grid_mapping, GridMappingProxy)
         self.assertEqual(CRS_UTM_33N, grid_mapping.crs)
         self.assertEqual('transverse_mercator', grid_mapping.name)
         self.assertIsInstance(grid_mapping.coords, GridCoords)
@@ -78,11 +78,11 @@ class GetDatasetGridMappingsTest(unittest.TestCase):
                                                           attrs=dict(standard_name='projection_x_coordinate')),
                                          myy=xr.DataArray(np.linspace(5000, 52000, 11), dims='y',
                                                           attrs=dict(standard_name='projection_y_coordinate'))))
-        grid_mappings = get_dataset_grid_mappings(dataset)
+        grid_mappings = get_dataset_grid_mapping_proxies(dataset)
         self.assertEqual(1, len(grid_mappings))
         self.assertIn('crs', grid_mappings)
         grid_mapping = grid_mappings.get('crs')
-        self.assertIsInstance(grid_mapping, GridMapping)
+        self.assertIsInstance(grid_mapping, GridMappingProxy)
         self.assertEqual(CRS_UTM_33N, grid_mapping.crs)
         self.assertEqual('transverse_mercator', grid_mapping.name)
         self.assertIsInstance(grid_mapping.coords, GridCoords)
@@ -95,11 +95,11 @@ class GetDatasetGridMappingsTest(unittest.TestCase):
         dataset = xr.Dataset(dict(rotated_pole=xr.DataArray(0, attrs=CRS_ROTATED_POLE.to_cf())),
                              coords=dict(rlon=xr.DataArray(np.linspace(-180, 180, 11), dims='rlon'),
                                          rlat=xr.DataArray(np.linspace(0, 90, 11), dims='rlat')))
-        grid_mappings = get_dataset_grid_mappings(dataset)
+        grid_mappings = get_dataset_grid_mapping_proxies(dataset)
         self.assertEqual(1, len(grid_mappings))
         self.assertIn('rotated_pole', grid_mappings)
         grid_mapping = grid_mappings.get('rotated_pole')
-        self.assertIsInstance(grid_mapping, GridMapping)
+        self.assertIsInstance(grid_mapping, GridMappingProxy)
         self.assertEqual('Geographic 2D CRS', grid_mapping.crs.type_name)
         self.assertIsInstance(grid_mapping.coords, GridCoords)
         self.assertIsInstance(grid_mapping.coords.x, xr.DataArray)
@@ -113,11 +113,11 @@ class GetDatasetGridMappingsTest(unittest.TestCase):
                                                         attrs=dict(standard_name='grid_longitude')),
                                          v=xr.DataArray(np.linspace(0, 90, 11), dims='v',
                                                         attrs=dict(standard_name='grid_latitude'))))
-        grid_mappings = get_dataset_grid_mappings(dataset)
+        grid_mappings = get_dataset_grid_mapping_proxies(dataset)
         self.assertEqual(1, len(grid_mappings))
         self.assertIn('rotated_pole', grid_mappings)
         grid_mapping = grid_mappings.get('rotated_pole')
-        self.assertIsInstance(grid_mapping, GridMapping)
+        self.assertIsInstance(grid_mapping, GridMappingProxy)
         self.assertEqual('Geographic 2D CRS', grid_mapping.crs.type_name)
         self.assertIsInstance(grid_mapping.coords, GridCoords)
         self.assertIsInstance(grid_mapping.coords.x, xr.DataArray)

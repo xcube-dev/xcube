@@ -3,6 +3,8 @@ import unittest
 import xarray as xr
 
 from test.sampledata import new_test_dataset
+from xcube.core.gridmapping import GridMapping
+from xcube.core.new import new_cube
 from xcube.core.xarray import DatasetAccessor
 
 
@@ -15,6 +17,37 @@ class XCubeDatasetAccessorTest(unittest.TestCase):
         self.assertTrue(hasattr(xr.Dataset, "xcube"))
         ds = xr.Dataset()
         self.assertTrue(hasattr(ds, "xcube"))
+
+    def test_non_empty_cube_subset(self):
+        dataset = new_cube(variables=dict(a=9, b=0.2))
+        cube = dataset.xcube.cube
+        self.assertIsInstance(cube, xr.Dataset)
+        self.assertEqual(set(dataset.data_vars), set(cube.data_vars))
+        gm = dataset.xcube.gm
+        self.assertIsInstance(gm, GridMapping)
+
+    def test_no_cube_subset(self):
+        dataset = xr.Dataset(dict(a=9, b=0.2))
+        cube = dataset.xcube.cube
+        self.assertIsInstance(cube, xr.Dataset)
+        self.assertEqual(set(), set(cube.data_vars))
+        self.assertIs(None, dataset.xcube.gm)
+        self.assertIs(dataset, dataset.xcube.non_cube)
+
+    ########################################################################
+    # Testing old API from here on.
+    #
+    # Let's quickly agree, if we should deprecate all this stuff. I guess,
+    # no one uses it.
+    #
+    # We should only add props and methods to this accessor
+    # that require a certain state to be hold.
+    # Such state could be props that are expensive to recompute,
+    # such as grid mappings.
+    #
+    # It causes too much overhead and maintenance work
+    # if we continue putting any xcube function here.
+    ########################################################################
 
     def test_new(self):
         self.assertIsInstance(xr.Dataset.xcube.new(), xr.Dataset)

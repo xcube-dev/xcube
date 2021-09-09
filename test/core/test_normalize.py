@@ -14,8 +14,10 @@ from numpy.testing import assert_array_almost_equal
 
 from xcube.core.gridmapping import GridMapping
 from xcube.core.new import new_cube
-from xcube.core.normalize import adjust_spatial_attrs, DatasetIsNotACubeError
-from xcube.core.normalize import get_dataset_cube_subset
+from xcube.core.normalize import DatasetIsNotACubeError
+from xcube.core.normalize import adjust_spatial_attrs
+from xcube.core.normalize import decode_cube
+from xcube.core.normalize import encode_cube
 from xcube.core.normalize import normalize_coord_vars
 from xcube.core.normalize import normalize_dataset
 from xcube.core.normalize import normalize_missing_time
@@ -29,13 +31,15 @@ def assertDatasetEqual(expected, actual):
     assert expected.equals(actual), (expected, actual)
 
 
-class CubeSubsetTest(TestCase):
+class DecodeCubeTest(TestCase):
     def test_cube_stays_cube(self):
         dataset = new_cube(variables=dict(a=1, b=2, c=3))
-        cube, grid_mapping = get_dataset_cube_subset(dataset)
+        cube, grid_mapping, rest = decode_cube(dataset)
         self.assertIs(dataset, cube)
         self.assertIsInstance(grid_mapping, GridMapping)
         self.assertTrue(grid_mapping.crs.is_geographic)
+        self.assertIsInstance(rest, xr.Dataset)
+        self.assertEqual(set(), set(rest.data_vars))
 
     def test_no_cube_vars_are_dropped(self):
         dataset = new_cube(variables=dict(a=1, b=2, c=3))
@@ -44,26 +48,40 @@ class CubeSubsetTest(TestCase):
             crs=xr.DataArray(0, attrs=pyproj.CRS.from_string('CRS84').to_cf()),
         )
         self.assertEqual({'a', 'b', 'c', 'd', 'crs'}, set(dataset.data_vars))
-        cube, grid_mapping = get_dataset_cube_subset(dataset)
+        cube, grid_mapping, rest = decode_cube(dataset)
         self.assertIsInstance(cube, xr.Dataset)
         self.assertIsInstance(grid_mapping, GridMapping)
         self.assertEqual({'a', 'b', 'c'}, set(cube.data_vars))
         self.assertEqual(pyproj.CRS.from_string('CRS84'), grid_mapping.crs)
+        self.assertIsInstance(rest, xr.Dataset)
+        self.assertEqual({'d', 'crs'}, set(rest.data_vars))
+
+    def test_encode_is_inverse(self):
+        dataset = new_cube(variables=dict(a=1, b=2, c=3),
+                           x_name='x', y_name='y')
+        dataset = dataset.assign(
+            d=xr.DataArray([8, 9, 10], dims='level'),
+            crs=xr.DataArray(0, attrs=pyproj.CRS.from_string('CRS84').to_cf()),
+        )
+        cube, grid_mapping, rest = decode_cube(dataset)
+        dataset2 = encode_cube(cube, grid_mapping, rest)
+        self.assertEqual(set(dataset.data_vars), set(dataset2.data_vars))
+        self.assertIn('crs', dataset2.data_vars)
 
     def test_no_cube_vars_found(self):
         dataset = new_cube()
         self.assertEqual(set(), set(dataset.data_vars))
         with self.assertRaises(DatasetIsNotACubeError) as cm:
-            get_dataset_cube_subset(dataset)
-        self.assertEqual("No variables found"
-                         " with dimensions"
-                         " ('time', [...] 'lat', 'lon')",
+            decode_cube(dataset, force_non_empty=True)
+        self.assertEqual("No variables found with dimensions"
+                         " ('time', [...] 'lat', 'lon')"
+                         " or dimension sizes too small",
                          f'{cm.exception}')
 
     def test_no_grid_mapping(self):
         dataset = xr.Dataset(dict(a=[1, 2, 3], b=0.5))
         with self.assertRaises(DatasetIsNotACubeError) as cm:
-            get_dataset_cube_subset(dataset)
+            decode_cube(dataset)
         self.assertEqual("Failed to detect grid mapping:"
                          " cannot find any grid mapping in dataset",
                          f'{cm.exception}')
@@ -72,10 +90,36 @@ class CubeSubsetTest(TestCase):
         dataset = new_cube(x_name='x', y_name='y',
                            variables=dict(a=0.5), crs='epsg:25832')
         with self.assertRaises(DatasetIsNotACubeError) as cm:
-            get_dataset_cube_subset(dataset)
+            decode_cube(dataset, force_geographic=True)
         self.assertEqual("Grid mapping must use geographic CRS,"
                          " but was 'ETRS89 / UTM zone 32N'",
                          f'{cm.exception}')
+
+
+class EncodeCubeTest(TestCase):
+    def test_geographical_crs(self):
+        cube = new_cube(variables=dict(a=1, b=2, c=3))
+        gm = GridMapping.from_dataset(cube)
+
+        dataset = encode_cube(cube, gm)
+        self.assertIs(cube, dataset)
+
+        dataset = encode_cube(cube, gm,
+                              xr.Dataset(dict(d=True)))
+        self.assertIsInstance(dataset, xr.Dataset)
+        self.assertEqual({'a', 'b', 'c', 'd'}, set(dataset.data_vars))
+
+    def test_non_geographical_crs(self):
+        cube = new_cube(x_name='x',
+                        y_name='y',
+                        crs='epsg:25832',
+                        variables=dict(a=1, b=2, c=3))
+        gm = GridMapping.from_dataset(cube)
+        dataset = encode_cube(cube,
+                              gm,
+                              xr.Dataset(dict(d=True)))
+        self.assertIsInstance(dataset, xr.Dataset)
+        self.assertEqual({'a', 'b', 'c', 'd', 'crs'}, set(dataset.data_vars))
 
 
 class TestNormalize(TestCase):

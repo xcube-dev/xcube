@@ -121,11 +121,9 @@ class RemoteCubeGeneratorTest(unittest.TestCase):
 
         observer = TestProgressObserver()
         with new_progress_observers(observer):
-            with self.assertRaises(CubeGeneratorError) as cm:
-                self.generator.generate_cube(self.REQUEST)
-            self.assertEqual('Cube generation failed', f'{cm.exception}')
-            self.assertEqual(['1.that', '2.was', '3.bad'],
-                             cm.exception.remote_output)
+            cube_result = self.generator.generate_cube(self.REQUEST)
+            self.assertEqual('error', cube_result.status)
+            self.assertEqual(['1.that', '2.was', '3.bad'], cube_result.output)
 
         print(observer.calls)
         self.assertEqual(

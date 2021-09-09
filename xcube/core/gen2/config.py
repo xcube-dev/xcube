@@ -21,7 +21,7 @@
 
 import collections
 import numbers
-from typing import Optional, Any, Sequence, Mapping, Tuple, Union
+from typing import Optional, Any, Sequence, Mapping, Tuple, Union, Iterable
 
 import pyproj
 
@@ -201,6 +201,23 @@ class CubeConfig(JsonObject):
                 assert_instance(chunk_dim, str, 'chunk dimension')
                 assert_instance(chunk_size, (int, type(None)), 'chunk size')
             self.chunks = dict(chunks)
+
+    def drop_props(self, name: Union[str, Iterable[str]]):
+        """
+        Drop one or more named properties from this configuration.
+        :param name: the name of the property to be dropped.
+        :param names: more names of properties to be dropped.
+        :return: a new cube configuration.
+        """
+        if not name:
+            return self
+        name_set = {name} if isinstance(name, str) else set(name)
+        for k in name_set:
+            assert_true(hasattr(self, k),
+                        message=f'{k} is not a property of {CubeConfig!r}')
+        return self.from_dict({k: v
+                               for k, v in self.to_dict().items()
+                               if k not in name_set})
 
     @classmethod
     def get_schema(cls):

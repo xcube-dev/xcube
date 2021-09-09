@@ -14,9 +14,27 @@
   well as image pyramids (type`xcube.core.multilevel.MultiLevelDataset`) 
   using a Zarr-based multi-level format. (#446)
 
+* Several changes became necessary on the xcube Generator
+  package `xcube.core.gen2` and CLI `xcube gen2`. 
+  They are mostly not backward compatible:
+  - The only supported way to instantiate cube generators is the
+    `CubeGenerator.new()` factory method. 
+  - `CubeGenerator.generate_cube()` and `CubeGenerator.get_cube_info()`
+    both now receive the request object that has formerly been passed 
+    to the generator constructors.
+  - The `CubeGenerator.generate_cube()` method now returns a 
+    `CubeGeneratorResult` object rather than a simple string 
+    (the written `data_id`).  
+  - Empty cubes are no longer written, a warning status is 
+    generated instead.
+  - The xcube gen2 CLI `xcube gen2` has a new option `--output RESULT` 
+    to write the result to a JSON file. If it is omitted, 
+    the CLI will dump the result as JSON to stdout.
+
 * Numerous breaking changes have been applied to this version
-  in order to address generic resampling (#391) and support other
-  CRS than WGS-84 (#112): 
+  in order to address generic resampling (#391), to support other
+  CRS than WGS-84 (#112), and to move from the struct data cube 
+  specification to a more relaxed cube convention (#488): 
   * The following components have been removed entirely 
     - module `xcube.core.imgeom` with class `ImageGeom` 
     - module `xcube.core.geocoding` with class `GeoCoding`
@@ -32,7 +50,7 @@
       `source_gm: GridMapping` and `target_gm: GridMapping` instead of 
       `geo_coding: GeoCoding` and `output_geom: ImageGeom`. 
   * xcube no longer depends on GDAL (at least not directly).
-
+    
 * Added a new feature to xcube called "BYOA" - Bring your own Algorithm.
   It is a generic utility that allows for execution of user-supplied 
   Python code in both local and remote contexts. (#467)
@@ -45,6 +63,22 @@
   1. Generator API `xcube.core.gen2.LocalCubeGenerator` and
     `xcube.core.gen2.service.RemoteCubeGenerator`;
   2. Generator CLI `xcube gen2`.
+  
+* A dataset's cube subset and its grid mapping can now be accessed through
+  the `xcube` property of `xarray.Dataset` instances. This feature requires 
+  importing the `xcube.core.xarray`package. Let `dataset` be an 
+  instance of `xarray.Dataset`, then
+  - `dataset.xcube.cube` is a `xarray.Dataset` that contains all cube 
+     variables of `dataset`, namely the ones with dimensions 
+     `("time", [...,], y_dim_name, x_dim_name)`, where `y_dim_name`, 
+    `x_dim_name` are determined by the dataset's grid mapping.
+     May be empty, if `dataset` has no cube variables.
+  - `dataset.xcube.gm` is a `xcube.core.gridmapping.GridMapping` that 
+     describes the CF-compliant grid mapping of `dataset`. 
+     May be `None`, if `dataset` does not define a grid mapping.
+  - `dataset.xcube.non_cube` is a `xarray.Dataset` that contains all
+     variables of `dataset` that are not in `dataset.xcube.cube`.
+     May be same as `dataset`, if `dataset.xcube.cube` is empty.
   
 * Added a new utility module `xcube.util.temp` that allows for creating 
   temporary files and directories that will be deleted when the current 

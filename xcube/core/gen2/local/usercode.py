@@ -26,14 +26,17 @@ import xarray as xr
 
 from xcube.core.byoa import CodeConfig
 from xcube.util.jsonschema import JsonObjectSchema
-from .processor import CubeProcessor
+from .transformer import CubeTransformer
+from .transformer import TransformedCube
+from ..config import CubeConfig
 from ..error import CubeGeneratorError
 from ..processor import DatasetProcessor
 from ..processor import METHOD_NAME_DATASET_PROCESSOR
 from ..processor import METHOD_NAME_PARAMS_SCHEMA_GETTER
+from ...gridmapping import GridMapping
 
 
-class CubeUserCodeExecutor(CubeProcessor):
+class CubeUserCodeExecutor(CubeTransformer):
     """Execute user code."""
 
     def __init__(self, code_config: CodeConfig):
@@ -49,8 +52,11 @@ class CubeUserCodeExecutor(CubeProcessor):
         self._callable = user_code_callable
         self._callable_params = user_code_callable_params
 
-    def process_cube(self, cube: xr.Dataset) -> xr.Dataset:
-        return self._callable(cube, **self._callable_params)
+    def transform_cube(self,
+                       cube: xr.Dataset,
+                       gm: GridMapping,
+                       cube_config: CubeConfig) -> TransformedCube:
+        return self._callable(cube, **self._callable_params), gm, cube_config
 
     @classmethod
     def _get_callable_from_class(

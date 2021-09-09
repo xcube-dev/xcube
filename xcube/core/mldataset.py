@@ -17,8 +17,8 @@ from xcube.core.dsio import guess_dataset_format
 from xcube.core.dsio import is_s3_url
 from xcube.core.dsio import parse_s3_fs_and_root
 from xcube.core.dsio import write_cube
-from xcube.core.normalize import get_dataset_cube_subset
 from xcube.core.geom import get_dataset_bounds
+from xcube.core.normalize import decode_cube
 from xcube.core.verify import assert_cube
 from xcube.util.perf import measure_time
 from xcube.util.tilegrid import TileGrid
@@ -116,7 +116,7 @@ class LazyMultiLevelDataset(MultiLevelDataset, metaclass=ABCMeta):
                  parameters: Mapping[str, Any] = None):
         self._tile_grid = tile_grid
         self._ds_id = ds_id
-        self._level_datasets = {}
+        self._level_datasets: Dict[int, xr.Dataset] = {}
         self._parameters = parameters or {}
         self._lock = threading.RLock()
 
@@ -144,9 +144,25 @@ class LazyMultiLevelDataset(MultiLevelDataset, metaclass=ABCMeta):
         if index not in self._level_datasets:
             with self._lock:
                 # noinspection PyTypeChecker
-                self._level_datasets[index] = self._get_dataset_lazily(index, self._parameters)
+                level_dataset = self._get_dataset_lazily(index,
+                                                         self._parameters)
+                self.set_dataset(index, level_dataset)
         # noinspection PyTypeChecker
         return self._level_datasets[index]
+
+    def set_dataset(self, index: int, level_dataset: xr.Dataset):
+        """
+        Set the dataset for the level at given *index*.
+
+        Callers need to ensure that the given *level_dataset*
+        has the correct spatial dimension sizes for the
+        given level at *index*.
+
+        :param index: the level index
+        :param level_dataset: the dataset for the level at *index*.
+        """
+        with self._lock:
+            self._level_datasets[index] = level_dataset
 
     @abstractmethod
     def _get_dataset_lazily(self, index: int, parameters: Dict[str, Any]) -> xr.Dataset:
@@ -411,7 +427,7 @@ class BaseMultiLevelDataset(LazyMultiLevelDataset):
         if base_dataset is None:
             raise ValueError("base_dataset must be given")
         self._base_dataset = base_dataset
-        self._base_cube, self._grid_mapping = get_dataset_cube_subset(
+        self._base_cube, self._grid_mapping, _ = decode_cube(
             base_dataset
         )
 
@@ -435,7 +451,7 @@ class BaseMultiLevelDataset(LazyMultiLevelDataset):
                 var = var[..., ::step, ::step]
                 data_vars[var_name] = var
             level_dataset = xr.Dataset(data_vars,
-                                       attrs= self._base_dataset.attrs)
+                                       attrs=self._base_dataset.attrs)
         return level_dataset
 
 

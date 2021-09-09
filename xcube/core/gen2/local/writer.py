@@ -18,14 +18,19 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+import warnings
+from typing import Tuple
 
 import xarray as xr
 
+from xcube.core.gridmapping import GridMapping
+from xcube.core.normalize import encode_cube
 from xcube.core.store import DataStorePool
 from xcube.core.store import get_data_store_instance
 from xcube.core.store import new_data_writer
 from xcube.util.progress import observe_dask_progress
-from ..config import OutputConfig
+from .helpers import is_empty_cube
+from ..config import OutputConfig, CubeConfig
 
 
 class CubeWriter:
@@ -35,8 +40,11 @@ class CubeWriter:
         self._output_config = output_config
         self._store_pool = store_pool
 
-    def write_cube(self, cube: xr.Dataset) -> str:
+    def write_cube(self,
+                   cube: xr.Dataset,
+                   gm: GridMapping) -> Tuple[str, xr.Dataset]:
         output_config = self._output_config
+        dataset = encode_cube(cube, grid_mapping=gm)
         with observe_dask_progress('Writing output', 100):
             write_params = output_config.write_params or {}
             store_params = output_config.store_params or {}
@@ -55,9 +63,9 @@ class CubeWriter:
                 writer = new_data_writer(output_config.writer_id)
                 write_params.update(**store_params, **write_params)
             data_id = writer.write_data(
-                cube,
+                dataset,
                 data_id=output_config.data_id,
                 replace=output_config.replace or False,
                 **write_params
             )
-            return data_id
+        return data_id, dataset
