@@ -10,6 +10,8 @@ from xcube.core.dsio import rimraf
 from xcube.core.gen2.generator import CubeGenerator
 from xcube.core.gen2.local.generator import LocalCubeGenerator
 from xcube.core.gen2.response import CubeInfo
+from xcube.core.gen2.response import CubeInfoResult
+from xcube.core.gen2.response import CubeReference
 from xcube.core.new import new_cube
 from xcube.core.store import DatasetDescriptor
 from xcube.core.store import MutableDataStore
@@ -68,8 +70,9 @@ class LocalCubeGeneratorTest(unittest.TestCase):
         m.put(CALLBACK_MOCK_URL, json={})
         result = LocalCubeGenerator(verbosity=1).generate_cube(self.REQUEST)
         self.assertEqual('ok', result.status)
-        self.assertEqual('CHL.zarr', result.data_id)
-        self.assertIsInstance(self.data_store.open_data(result.data_id),
+        self.assertIsInstance(result.result, CubeReference)
+        self.assertEqual('CHL.zarr', result.result.data_id)
+        self.assertIsInstance(self.data_store.open_data(result.result.data_id),
                               xr.Dataset)
 
     @requests_mock.Mocker()
@@ -77,8 +80,9 @@ class LocalCubeGeneratorTest(unittest.TestCase):
         m.put(CALLBACK_MOCK_URL, json={})
         result = CubeGenerator.new(verbosity=1).generate_cube('_request.json')
         self.assertEqual('ok', result.status)
-        self.assertEqual('CHL.zarr', result.data_id)
-        self.assertIsInstance(self.data_store.open_data(result.data_id),
+        self.assertIsInstance(result.result, CubeReference)
+        self.assertEqual('CHL.zarr', result.result.data_id)
+        self.assertIsInstance(self.data_store.open_data(result.result.data_id),
                               xr.Dataset)
 
     @requests_mock.Mocker()
@@ -86,8 +90,9 @@ class LocalCubeGeneratorTest(unittest.TestCase):
         m.put(CALLBACK_MOCK_URL, json={})
         result = CubeGenerator.new(verbosity=1).generate_cube('_request.yaml')
         self.assertEqual('ok', result.status)
-        self.assertEqual('CHL.zarr', result.data_id)
-        self.assertIsInstance(self.data_store.open_data(result.data_id),
+        self.assertIsInstance(result.result, CubeReference)
+        self.assertEqual('CHL.zarr', result.result.data_id)
+        self.assertIsInstance(self.data_store.open_data(result.result.data_id),
                               xr.Dataset)
 
     @requests_mock.Mocker()
@@ -98,18 +103,21 @@ class LocalCubeGeneratorTest(unittest.TestCase):
 
         result = LocalCubeGenerator().generate_cube(request)
         self.assertEqual('warning', result.status)
-        self.assertEqual('CHL.zarr', result.data_id)
-        self.assertEqual('An empty cube has been generated,'
-                         ' hence it has not been written at all.',
-                         result.message)
+        self.assertEqual(None, result.result)
+        self.assertIsInstance(result.message, str)
+        self.assertIn('An empty cube has been generated', result.message)
 
     @requests_mock.Mocker()
     def test_get_cube_info_from_dict(self, m):
         m.put(CALLBACK_MOCK_URL, json={})
         cube_info = LocalCubeGenerator(verbosity=1).get_cube_info(self.REQUEST)
-        self.assertIsInstance(cube_info, CubeInfo)
-        self.assertIsInstance(cube_info.dataset_descriptor, DatasetDescriptor)
-        self.assertIsInstance(cube_info.size_estimation, dict)
+        self.assertIsInstance(cube_info, CubeInfoResult)
+        self.assertIsInstance(cube_info.result,
+                              CubeInfo)
+        self.assertIsInstance(cube_info.result.dataset_descriptor,
+                              DatasetDescriptor)
+        self.assertIsInstance(cube_info.result.size_estimation,
+                              dict)
         # JSON-serialisation smoke test
         cube_info_dict = cube_info.to_dict()
         json.dumps(cube_info_dict, indent=2)

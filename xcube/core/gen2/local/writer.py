@@ -18,7 +18,6 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-import warnings
 from typing import Tuple
 
 import xarray as xr
@@ -29,8 +28,7 @@ from xcube.core.store import DataStorePool
 from xcube.core.store import get_data_store_instance
 from xcube.core.store import new_data_writer
 from xcube.util.progress import observe_dask_progress
-from .helpers import is_empty_cube
-from ..config import OutputConfig, CubeConfig
+from ..config import OutputConfig
 
 
 class CubeWriter:
@@ -45,7 +43,7 @@ class CubeWriter:
                    gm: GridMapping) -> Tuple[str, xr.Dataset]:
         output_config = self._output_config
         dataset = encode_cube(cube, grid_mapping=gm)
-        with observe_dask_progress('Writing output', 100):
+        with observe_dask_progress('writing cube', 100):
             write_params = output_config.write_params or {}
             store_params = output_config.store_params or {}
             if output_config.store_id:

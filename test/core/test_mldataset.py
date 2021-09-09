@@ -65,19 +65,24 @@ class BaseMultiLevelDatasetTest(unittest.TestCase):
         self.assertIsInstance(ml_ds.ds_id, str)
 
         self.assertEqual(3, ml_ds.num_levels)
-        self.assertEqual(TileGrid(3, 2, 1, 180, 180, (-180, -90, 180, 90), inv_y=False),
+        self.assertEqual(TileGrid(3, 2, 1, 180, 180, (-180, -90, 180, 90),
+                                  inv_y=False),
                          ml_ds.tile_grid)
 
         ds0 = ml_ds.get_dataset(0)
-        self.assertIs(ds, ds0)
+        self.assertIsNot(ds, ds0)
+        self.assertEqual({'time': 14, 'lat': 720, 'lon': 1440, 'bnds': 2},
+                         ds0.dims)
 
         ds1 = ml_ds.get_dataset(1)
         self.assertIsNot(ds, ds1)
-        self.assertEqual({'time': 14, 'lat': 360, 'lon': 720}, ds1.dims)
+        self.assertEqual({'time': 14, 'lat': 360, 'lon': 720},
+                         ds1.dims)
 
         ds2 = ml_ds.get_dataset(2)
         self.assertIsNot(ds, ds2)
-        self.assertEqual({'time': 14, 'lat': 180, 'lon': 360}, ds2.dims)
+        self.assertEqual({'time': 14, 'lat': 180, 'lon': 360},
+                         ds2.dims)
 
         self.assertEqual([ds0, ds1, ds2], ml_ds.datasets)
 
@@ -149,7 +154,7 @@ def _get_test_dataset(var_names=('noise',)):
                   lat_bnds=(("lat", "bnds"), lat_bnds),
                   lon_bnds=(("lon", "bnds"), lon_bnds))
 
-    return xr.Dataset(coords=coords, data_vars=data_vars)
+    return xr.Dataset(coords=coords, data_vars=data_vars).chunk(dict(lat=180, lon=180))
 
 
 class ObjectStorageMultiLevelDatasetTest(S3Test):

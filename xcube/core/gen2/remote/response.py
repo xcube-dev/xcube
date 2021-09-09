@@ -28,6 +28,7 @@ from xcube.util.jsonschema import JsonObject
 from xcube.util.jsonschema import JsonObjectSchema
 from xcube.util.jsonschema import JsonStringSchema
 from ..response import CubeInfo
+from ..response import CubeInfoResult
 
 
 class CubeGeneratorToken(JsonObject):
@@ -129,6 +130,7 @@ class CubeGeneratorProgressState(JsonObject):
 
 class CubeGeneratorProgress(JsonObject):
     """Current progress of the remote generator."""
+
     def __init__(self,
                  sender: str,
                  state: CubeGeneratorProgressState):
@@ -232,3 +234,10 @@ class CubeInfoWithCosts(CubeInfo):
         schema.required.add('cost_estimation')
         schema.factory = cls
         return schema
+
+
+class CubeInfoWithCostsResult(CubeInfoResult):
+
+    @classmethod
+    def get_result_schema(cls) -> JsonObjectSchema:
+        return CubeInfoWithCosts.get_schema()

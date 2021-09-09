@@ -39,13 +39,21 @@ class DatasetGridMappingTest(unittest.TestCase):
                                           crs='epsg:25832')
         gm1 = GridMapping.from_dataset(dataset)
         self.assertEqual(pyproj.CRS.from_string('epsg:25832'), gm1.crs)
-        dataset = dataset.drop('crs')
+        dataset = dataset.drop_vars('crs')
         gm2 = GridMapping.from_dataset(dataset)
         self.assertEqual(GEO_CRS, gm2.crs)
         gm3 = GridMapping.from_dataset(dataset, crs=gm1.crs)
         self.assertEqual(gm1.crs, gm3.crs)
         self.assertEqual(('x', 'y'), gm3.xy_var_names)
         self.assertEqual(('x', 'y'), gm3.xy_dim_names)
+
+    def test_from_regular_cube_no_chunks_and_chunks(self):
+        dataset = xcube.core.new.new_cube(variables=dict(rad=0.5))
+        gm1 = GridMapping.from_dataset(dataset)
+        self.assertEqual((360, 180), gm1.tile_size)
+        dataset = dataset.chunk(dict(lon=10, lat=20))
+        gm2 = GridMapping.from_dataset(dataset)
+        self.assertEqual((10, 20), gm2.tile_size)
 
     def test_from_non_regular_cube(self):
         lon = np.array([[8, 9.3, 10.6, 11.9],

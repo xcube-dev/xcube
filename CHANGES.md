@@ -86,6 +86,8 @@
 
 ### Other
 
+* The xcube cube generator (API `xcube.core.gen2`, CLI `xcube gen2`) 
+  will now write consolidated Zarrs by default. (#500)
 * xcube now issues a warning, if a data cube is opened from object 
   storage, and credentials have neither been passed nor can be found, 
   and the object storage has been opened with the default `anon=False`. (#412)
@@ -101,6 +103,7 @@
 * Fixed an issue where `xcube serve` provided wrong layer source options for 
   [OpenLayers XYZ](https://openlayers.org/en/latest/apidoc/module-ol_source_XYZ-XYZ.html) 
   when latitude coordinates where increasing with the coordinate index. (#251)
+  
   
 ## Changes in 0.8.2 (in development)
 

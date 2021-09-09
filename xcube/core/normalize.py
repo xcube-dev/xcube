@@ -232,7 +232,9 @@ def decode_cube(dataset: xr.Dataset,
         # Pure cube!
         return dataset, grid_mapping, xr.Dataset()
 
-    return (dataset.drop_vars(dropped_vars),
+    cube = dataset.drop_vars(dropped_vars).assign_attrs(dataset.attrs)
+
+    return (cube,
             grid_mapping,
             dataset.drop_vars(cube_vars))
 

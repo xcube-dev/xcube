@@ -18,32 +18,22 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-import math
-from typing import Sequence, Tuple, Any, Dict
 
-import pyproj
-import xarray as xr
-
-from xcube.core.gridmapping import GridMapping
 from xcube.core.normalize import DatasetIsNotACubeError
 from xcube.core.normalize import decode_cube
-from xcube.core.select import select_spatial_subset
-from xcube.core.select import select_temporal_subset
-from xcube.core.select import select_variables_subset
 from xcube.core.store import DATASET_TYPE
 from xcube.core.store import DataStorePool
 from xcube.core.store import get_data_store_instance
 from xcube.core.store import new_data_opener
 from xcube.util.assertions import assert_instance
-from xcube.util.assertions import assert_true
 from xcube.util.progress import observe_progress
+from .transformer import TransformedCube
 from ..config import CubeConfig
 from ..config import InputConfig
 from ..error import CubeGeneratorError
-from .transformer import TransformedCube
 
 # Names of cube configuration parameters that
-# are non-common open parameters.
+# are not shared with open parameters.
 _STEADY_CUBE_CONFIG_NAMES = {
     'chunks',
     'tile_size'
@@ -67,44 +57,51 @@ class DatasetsOpener:
         opener_id = input_config.opener_id
         store_params = input_config.store_params or {}
         open_params = input_config.open_params or {}
-        if input_config.store_id:
-            store_instance = get_data_store_instance(
-                input_config.store_id,
-                store_params=store_params,
-                store_pool=self._store_pool
-            )
-            store = store_instance.store
-            if opener_id is None:
-                opener_id = self._get_opener_id(
-                    input_config, store
+
+        with observe_progress('reading cube', 3) as observer:
+
+            if input_config.store_id:
+                store_instance = get_data_store_instance(
+                    input_config.store_id,
+                    store_params=store_params,
+                    store_pool=self._store_pool
                 )
-            opener = store
-            open_params = dict(open_params)
-            open_params['opener_id'] = opener_id
-        else:
-            opener = new_data_opener(opener_id)
-            open_params = dict(open_params)
-            open_params.update(store_params)
+                store = store_instance.store
+                if opener_id is None:
+                    opener_id = self._get_opener_id(
+                        input_config, store
+                    )
+                opener = store
+                open_params = dict(open_params)
+                open_params['opener_id'] = opener_id
+            else:
+                opener = new_data_opener(opener_id)
+                open_params = dict(open_params)
+                open_params.update(store_params)
 
-        open_params_schema = opener.get_open_data_params_schema(
-            input_config.data_id
-        )
+            open_params_schema = opener.get_open_data_params_schema(
+                input_config.data_id
+            )
 
-        dataset_open_params = {
-            k: v for k, v in cube_params.items()
-            if k in open_params_schema.properties
-        }
+            dataset_open_params = {
+                k: v for k, v in cube_params.items()
+                if k in open_params_schema.properties
+            }
 
-        dataset = opener.open_data(input_config.data_id,
-                                   **open_params,
-                                   **dataset_open_params)
+            observer.worked(1)
 
-        # Turn dataset into cube and grid_mapping
-        try:
-            cube, gm, _ = decode_cube(dataset,
-                                      normalize=True)
-        except DatasetIsNotACubeError as e:
-            raise CubeGeneratorError(f'{e}') from e
+            dataset = opener.open_data(input_config.data_id,
+                                       **open_params,
+                                       **dataset_open_params)
+            observer.worked(1)
+
+            # Turn dataset into cube and grid_mapping
+            try:
+                cube, gm, _ = decode_cube(dataset,
+                                          normalize=True)
+            except DatasetIsNotACubeError as e:
+                raise CubeGeneratorError(f'{e}') from e
+            observer.worked(1)
 
         if dataset_open_params:
             drop_names = [k for k in dataset_open_params.keys()

@@ -4,11 +4,12 @@ from typing import List
 import requests_mock
 
 from test.util.test_progress import TestProgressObserver
-from xcube.core.gen2 import CostEstimation, CubeGenerator
-from xcube.core.gen2 import CubeGeneratorError
+from xcube.core.gen2 import CostEstimation
+from xcube.core.gen2 import CubeGenerator
 from xcube.core.gen2 import CubeInfoWithCosts
 from xcube.core.gen2 import ServiceConfig
 from xcube.core.gen2.remote.generator import RemoteCubeGenerator
+from xcube.core.gen2.remote.response import CubeInfoWithCostsResult
 from xcube.core.store import DatasetDescriptor
 from xcube.util.progress import new_progress_observers
 
@@ -190,7 +191,9 @@ class RemoteCubeGeneratorTest(unittest.TestCase):
                    }
                })
 
-        cube_info = self.generator.get_cube_info(self.REQUEST)
+        result = self.generator.get_cube_info(self.REQUEST)
+        self.assertIsInstance(result, CubeInfoWithCostsResult)
+        cube_info = result.result
         self.assertIsInstance(cube_info, CubeInfoWithCosts)
         self.assertIsInstance(cube_info.dataset_descriptor, DatasetDescriptor)
         self.assertIsInstance(cube_info.size_estimation, dict)

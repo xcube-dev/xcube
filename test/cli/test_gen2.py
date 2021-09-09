@@ -22,6 +22,7 @@ class Gen2CliTest(CliTest):
         self.assertTrue(os.path.exists(result_file))
         with open(result_file) as fp:
             result_json = json.load(fp)
+        self.assertIsInstance(result_json, dict)
         return result_json
 
     def test_help(self):
@@ -36,12 +37,13 @@ class Gen2CliTest(CliTest):
                                   request_file])
         self.assertIsNotNone(result)
         result_json = self.read_result_json()
-        self.assertEqual(
-            {
-                'data_id': result_zarr,
-                'status': 'ok'
-            },
-            result_json)
+        self.assertEqual('ok', result_json.get('status'))
+        self.assertIsInstance(result_json.get('message'), str)
+        self.assertIn('Cube generated successfully after ',
+                      result_json.get('message'))
+        result = result_json.get('result')
+        self.assertIsInstance(result, dict)
+        self.assertEqual(result_zarr, result.get('data_id'))
         self.assertTrue(os.path.isdir(result_zarr))
 
     def test_copy_zarr_info(self):
@@ -53,6 +55,11 @@ class Gen2CliTest(CliTest):
                                   request_file])
         self.assertIsNotNone(result)
         result_json = self.read_result_json()
+
+        self.assertEqual('ok', result_json.get('status'))
+        result = result_json.get('result')
+        self.assertIsInstance(result, dict)
+
         self.assertEqual(
             {
                 'dataset_descriptor': {
@@ -101,24 +108,21 @@ class Gen2CliTest(CliTest):
                     'tile_size': [2000, 1000]
                 }
             },
-            result_json)
+            result)
         self.assertFalse(os.path.isdir(result_zarr))
 
     # TODO (forman): zarr writing fails because of invalid chunking
     #   Make this test work in a subsequent PR.
-    #
-    # def test_copy_levels_gen(self):
-    #     request_file = os.path.join(os.path.dirname(__file__),
-    #                                 'gen2-requests', 'copy-levels.yml')
-    #     result = self.invoke_cli(['gen2',
-    #                               '-o', result_file,
-    #                               request_file])
-    #     self.assertIsNotNone(result)
-    #     result_json = self.read_result_json()
-    #     self.assertEqual(
-    #         {
-    #             'data_id': result_levels,
-    #             'status': 'ok'
-    #         },
-    #         result_json)
-    #     self.assertTrue(os.path.isdir(result_levels))
+
+    def test_copy_levels_gen(self):
+        request_file = os.path.join(os.path.dirname(__file__),
+                                    'gen2-requests', 'copy-levels.yml')
+        result = self.invoke_cli(['gen2',
+                                  '-o', result_file,
+                                  request_file])
+        print(result.output)
+        self.assertIsNotNone(result)
+        result_json = self.read_result_json()
+        self.assertEqual('ok', result_json.get('status'))
+        self.assertEqual({'data_id': 'out.levels'}, result_json.get('result'))
+        self.assertTrue(os.path.isdir(result_levels))

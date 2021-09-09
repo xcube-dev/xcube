@@ -73,7 +73,7 @@ def new_grid_mapping_from_dataset(
         new_grid_mapping_from_coords(x_coords=gmp.coords.x,
                                      y_coords=gmp.coords.y,
                                      crs=gmp.crs,
-                                     tile_size=tile_size,
+                                     tile_size=tile_size or gmp.tile_size,
                                      tolerance=tolerance)
         for gmp in grid_mapping_proxies
     ]

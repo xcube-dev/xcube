@@ -19,11 +19,10 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-from typing import Union, Tuple, Optional
-
 import xarray as xr
 
 from xcube.core.gridmapping import GridMapping
+from xcube.core.schema import rechunk_cube
 from .transformer import CubeTransformer
 from .transformer import TransformedCube
 from ..config import CubeConfig
@@ -36,50 +35,7 @@ class CubeRechunker(CubeTransformer):
                        cube: xr.Dataset,
                        gm: GridMapping,
                        cube_config: CubeConfig) -> TransformedCube:
-
-        dim_chunks = cube_config.chunks
-        if dim_chunks is None:
-            return cube, gm, cube_config
-
-        chunked_cube = xr.Dataset(attrs=cube.attrs)
-
-        # Coordinate variables SHOULD NOT BE chunked
-        chunked_cube = chunked_cube.assign_coords(
-            coords={var_name: var.chunk({d: None for d in var.dims})
-                    for var_name, var in cube.coords.items()}
-        )
-
-        # Data variables SHALL BE chunked according
-        # to dim sizes in dim_chunks
-        chunked_cube = chunked_cube.assign(
-            variables={
-                var_name: var.chunk({
-                    var.dims[axis]: dim_chunks.get(
-                        var.dims[axis],
-                        _default_chunk_size(var.chunks, axis)
-                    )
-                    for axis in range(var.ndim)
-                })
-                for var_name, var in cube.data_vars.items()
-            }
-        )
-
-        # Update chunks encoding for Zarr
-        for var in chunked_cube.variables.values():
-            if var.chunks is not None:
-                var.encoding.update(chunks=[sizes[0]
-                                            for sizes in var.chunks])
-
-        return chunked_cube, gm, cube_config
-
-
-def _default_chunk_size(chunks: Optional[Tuple[Tuple[int, ...], ...]],
-                        axis: int) -> Union[str, int]:
-    if chunks is not None:
-        sizes = chunks[axis]
-        num_blocks = len(sizes)
-        if num_blocks > 1:
-            return max(*sizes)
-        if num_blocks == 1:
-            return sizes[0]
-    return 'auto'
+        cube, gm = rechunk_cube(cube, gm,
+                                chunks=cube_config.chunks,
+                                tile_size=cube_config.tile_size)
+        return cube, gm, cube_config

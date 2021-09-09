@@ -18,8 +18,11 @@ from xcube.core.dsio import is_s3_url
 from xcube.core.dsio import parse_s3_fs_and_root
 from xcube.core.dsio import write_cube
 from xcube.core.geom import get_dataset_bounds
+from xcube.core.gridmapping import GridMapping
 from xcube.core.normalize import decode_cube
+from xcube.core.schema import rechunk_cube
 from xcube.core.verify import assert_cube
+from xcube.util.assertions import assert_instance
 from xcube.util.perf import measure_time
 from xcube.util.tilegrid import TileGrid
 
@@ -44,6 +47,13 @@ class MultiLevelDataset(metaclass=ABCMeta):
     def ds_id(self) -> str:
         """
         :return: the dataset identifier.
+        """
+
+    @property
+    @abstractmethod
+    def grid_mapping(self) -> GridMapping:
+        """
+        :return: the CF-conformal grid mapping
         """
 
     @property
@@ -111,9 +121,11 @@ class LazyMultiLevelDataset(MultiLevelDataset, metaclass=ABCMeta):
     """
 
     def __init__(self,
+                 grid_mapping: GridMapping = None,
                  tile_grid: TileGrid = None,
                  ds_id: str = None,
                  parameters: Mapping[str, Any] = None):
+        self._grid_mapping = grid_mapping
         self._tile_grid = tile_grid
         self._ds_id = ds_id
         self._level_datasets: Dict[int, xr.Dataset] = {}
@@ -126,6 +138,13 @@ class LazyMultiLevelDataset(MultiLevelDataset, metaclass=ABCMeta):
             with self._lock:
                 self._ds_id = str(uuid.uuid4())
         return self._ds_id
+
+    @property
+    def grid_mapping(self) -> GridMapping:
+        if self._grid_mapping is None:
+            with self._lock:
+                self._grid_mapping = self._get_grid_mapping_lazily()
+        return self._grid_mapping
 
     @property
     def tile_grid(self) -> TileGrid:
@@ -173,6 +192,14 @@ class LazyMultiLevelDataset(MultiLevelDataset, metaclass=ABCMeta):
         :param parameters: *parameters* keyword argument that was passed to constructor.
         :return: the dataset for the level at *index*.
         """
+
+    def _get_grid_mapping_lazily(self) -> GridMapping:
+        """
+        Retrieve, i.e. read or compute, the tile grid used by the multi-level dataset.
+
+        :return: the dataset for the level at *index*.
+        """
+        return GridMapping.for_dataset(self.get_dataset(0))
 
     def _get_tile_grid_lazily(self) -> TileGrid:
         """
@@ -422,14 +449,18 @@ class BaseMultiLevelDataset(LazyMultiLevelDataset):
     :param ds_id: Optional dataset identifier.
     """
 
-    def __init__(self, base_dataset: xr.Dataset, tile_grid: TileGrid = None, ds_id: str = None):
-        super().__init__(tile_grid=tile_grid, ds_id=ds_id)
-        if base_dataset is None:
-            raise ValueError("base_dataset must be given")
-        self._base_dataset = base_dataset
-        self._base_cube, self._grid_mapping, _ = decode_cube(
-            base_dataset
+    def __init__(self,
+                 base_dataset: xr.Dataset,
+                 tile_grid: TileGrid = None,
+                 ds_id: str = None):
+        assert_instance(base_dataset, xr.Dataset, name='base_dataset')
+        self._base_cube, grid_mapping, _ = decode_cube(
+            base_dataset,
+            force_non_empty=True
         )
+        super().__init__(grid_mapping=grid_mapping,
+                         tile_grid=tile_grid,
+                         ds_id=ds_id)
 
     def _get_dataset_lazily(self, index: int, parameters: Dict[str, Any]) -> xr.Dataset:
         """
@@ -441,7 +472,7 @@ class BaseMultiLevelDataset(LazyMultiLevelDataset):
         :return: the dataset for the level at *index*.
         """
         if index == 0:
-            level_dataset = self._base_dataset
+            level_dataset = self._base_cube
         else:
             base_dataset = self._base_cube
             step = 2 ** index
@@ -451,11 +482,19 @@ class BaseMultiLevelDataset(LazyMultiLevelDataset):
                 var = var[..., ::step, ::step]
                 data_vars[var_name] = var
             level_dataset = xr.Dataset(data_vars,
-                                       attrs=self._base_dataset.attrs)
+                                       attrs=self._base_cube.attrs)
+
+        # Tile each level according to grid mapping
+        tile_size = self.grid_mapping.tile_size
+        if tile_size is not None:
+            level_dataset, _ = rechunk_cube(level_dataset,
+                                            self.grid_mapping,
+                                            tile_size=tile_size)
         return level_dataset
 
 
 # TODO (forman): rename to ScriptedMultiLevelDataset
+# TODO (forman): use new xcube.core.byoa package here
 
 class ComputedMultiLevelDataset(LazyMultiLevelDataset):
     """
