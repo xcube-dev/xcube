@@ -53,7 +53,7 @@ other documents and in the code itself:
   there is a `formal definition on
   SwaggerHub <https://app.swaggerhub.com/apis/bcdev/xcube-generator_api/>`__, and
   `one of the example
-  Notebooks <https://github.com/dcs4cop/xcube/tree/master/examples/notebooks/generators/5_rest_api.ipynb>`__
+  notebooks <https://github.com/dcs4cop/xcube/tree/master/examples/notebooks/generators/5_rest_api.ipynb>`__
   demonstrates its usage with the Python `requests` library.
 
 The generation process
