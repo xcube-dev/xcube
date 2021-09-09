@@ -26,28 +26,35 @@ This document aims to provide a brief overview of the generation process
 and the available configuration options. More details are available in
 other documents and in the code itself:
 
--  Probably the most thorough documentation is available in the `Jupyter
-   demo
-   notebooks <https://github.com/dcs4cop/xcube/tree/master/examples/notebooks/generators>`__
-   in the xcube repository. These can be run in any `JupyterLab
-   environment <https://jupyterlab.readthedocs.io/en/latest/>`__
-   containing an xcube installation. They combine explanation with
-   interactive worked examples to demonstrate practical usage of the
-   generator in typical use cases.
+* Probably the most thorough documentation is available in the `Jupyter
+  demo
+  notebooks <https://github.com/dcs4cop/xcube/tree/master/examples/notebooks/generators>`__
+  in the xcube repository. These can be run in any `JupyterLab
+  environment <https://jupyterlab.readthedocs.io/en/latest/>`__
+  containing an xcube installation. They combine explanation with
+  interactive worked examples to demonstrate practical usage of the
+  generator in typical use cases.
 
--  For the Python API in particular, the `xcube API
-   documentation <https://xcube.readthedocs.io/en/latest/api.html#>`__
-   is generated from the docstrings included in the code itself and
-   serves as a detailed low-level reference for individual Python
-   classes and methods. The docstrings can also be read from a Python
-   environment (e.g. using the ``?`` postfix in IPython or JupyterLab)
-   or, of course, by browsing the source code itself.
+* For the Python API in particular, the `xcube API
+  documentation <https://xcube.readthedocs.io/en/latest/api.html#>`__
+  is generated from the docstrings included in the code itself and
+  serves as a detailed low-level reference for individual Python
+  classes and methods. The docstrings can also be read from a Python
+  environment (e.g. using the ``?`` postfix in IPython or JupyterLab)
+  or, of course, by browsing the source code itself.
 
--  For the YAML/JSON configuration syntax used with the command-line
-   interface, there are several examples available in the
-   `examples/gen2/configs
-   subdirectory <https://github.com/dcs4cop/xcube/tree/master/examples/gen2/configs>`__
-   of the xcube repository.
+* For the YAML/JSON configuration syntax used with the command-line
+  interface, there are several examples available in the
+  `examples/gen2/configs
+  subdirectory <https://github.com/dcs4cop/xcube/tree/master/examples/gen2/configs>`__
+  of the xcube repository.
+
+* For the REST API underlying the Python and command-line interfaces,
+  there is a `formal definition on
+  SwaggerHub <https://app.swaggerhub.com/apis/bcdev/xcube-generator_api/>`__, and
+  `one of the example
+  Notebooks <https://github.com/dcs4cop/xcube/tree/master/examples/notebooks/generators/5_rest_api.ipynb>`__
+  demonstrates its usage with the Python `requests` library.
 
 The generation process
 ----------------------
