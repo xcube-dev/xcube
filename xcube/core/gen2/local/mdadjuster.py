@@ -18,13 +18,16 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+
 from typing import Dict, Any
 
+import pandas as pd
 import pyproj
 import xarray as xr
 
 from xcube.core.gridmapping import CRS_CRS84
 from xcube.core.gridmapping import GridMapping
+from xcube.version import version
 from .transformer import CubeTransformer
 from .transformer import TransformedCube
 from ..config import CubeConfig
@@ -37,8 +40,27 @@ class CubeMetadataAdjuster(CubeTransformer):
                        cube: xr.Dataset,
                        gm: GridMapping,
                        cube_config: CubeConfig) -> TransformedCube:
+        history = cube.attrs.get('history')
+        if isinstance(history, str):
+            history = [history]
+        elif isinstance(history, (list, tuple)):
+            history = list(history)
+        else:
+            history = []
+        history.append(
+            dict(
+                program=f'xcube gen2, version {version}',
+                cube_config=cube_config.to_dict(),
+            )
+        )
         cube = cube.assign_attrs(get_geospatial_attrs(gm))
-        # TODO: adjust temporal metadata too
+        cube.attrs.update(
+            Conventions='CF-1.7',
+            history=history,
+            date_created=pd.Timestamp.now().isoformat(),
+            # TODO: adjust temporal metadata too
+            **get_geospatial_attrs(gm)
+        )
         if cube_config.metadata:
             cube.attrs.update(cube_config.metadata)
         if cube_config.variable_metadata:

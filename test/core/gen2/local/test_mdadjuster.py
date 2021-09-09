@@ -39,8 +39,14 @@ class CubeMetadataAdjusterTest(unittest.TestCase):
         self.assertIsInstance(gm, GridMapping)
         self.assertIsInstance(cc, CubeConfig)
 
+        date_created = cube2.attrs.pop('date_created', None)
+        self.assertIsInstance(date_created, str)
+        history = cube2.attrs.pop('history', None)
+        self.assertIsInstance(history, list)
+
         self.assertEqual(
             {
+                'Conventions': 'CF-1.7',
                 'title': 'S2L2A subset',
                 'geospatial_bounds_crs': 'CRS84',
                 'geospatial_bounds': 'POLYGON((53 11, 53 12,'
