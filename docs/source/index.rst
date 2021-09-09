@@ -4,9 +4,11 @@
 xcube - An xarray-based EO data cube toolkit
 ============================================
 
-.. warning:: This documentation is a work in progress and currently less than a draft.
+.. warning:: This documentation is a work in progress and currently less than a
+draft.
 
-xcube has been developed to generate, manipulate, analyse, and publish data cubes from EO data.
+xcube has been developed to generate, manipulate, analyse, and publish data
+cubes from EO data.
 
 .. toctree::
    :caption: Getting Started
@@ -24,6 +26,7 @@ xcube has been developed to generate, manipulate, analyse, and publish data cube
    api
    webapi
    viewer
+   generator
 
 .. toctree::
    :caption: Other Resources
