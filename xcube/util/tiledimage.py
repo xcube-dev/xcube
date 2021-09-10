@@ -22,13 +22,15 @@
 import io
 import uuid
 from abc import ABCMeta, abstractmethod
-from typing import Tuple, Sequence, Union, Any, Callable, Optional
+from typing import Tuple, Union, Any, Sequence
 
 import dask.array as da
 import numpy as np
 from PIL import Image
 
 from xcube.constants import LOG
+from xcube.util.assertions import assert_instance
+from xcube.util.assertions import assert_true
 from xcube.util.cache import Cache
 from xcube.util.cmaps import get_cmap
 from xcube.util.perf import measure_time_cm
@@ -44,21 +46,11 @@ DEFAULT_COLOR_MAP_NAME = 'viridis'
 DEFAULT_COLOR_MAP_VALUE_RANGE = 0.0, 1.0
 DEFAULT_COLOR_MAP_NUM_COLORS = 256
 
-X = int
-Y = int
-Width = int
-Height = int
-Size2D = Tuple[Width, Height]
-Rectangle2D = Tuple[X, Y, Width, Height]
-Number = Union[int, float]
+Size2D = Tuple[int, int]
+Rectangle2D = Tuple[int, int, int, int]
 NDArrayLike = Union[da.Array, np.ndarray]
 Tile = Any
-TileQuad = Tuple[Tile, Tile, Tile, Tile]
-TiledImageCollection = Sequence['TiledImage']
-LevelTransformer = Callable[['TiledImage', 'TiledImage', int, Optional[Any]], 'TiledImage']
-LevelMapper = Callable[['TiledImage', int, Optional[Any]], 'TiledImage']
-TileAggregator = Callable[[Tile, Tile, Tile, Tile], Tile]
-LevelImageIdFactory = Callable[[int], str]
+NormRange = Tuple[Union[int, float], Union[int, float]]
 
 
 class TiledImage(metaclass=ABCMeta):
@@ -143,6 +135,7 @@ class AbstractTiledImage(TiledImage, metaclass=ABCMeta):
     :param image_id: optional unique image identifier
     """
 
+    # noinspection PyShadowingBuiltins
     def __init__(self,
                  size: Size2D,
                  tile_size: Size2D,
@@ -208,6 +201,7 @@ class OpImage(AbstractTiledImage, metaclass=ABCMeta):
     :param trace_perf: whether to trace runtime performance information
     """
 
+    # noinspection PyShadowingBuiltins
     def __init__(self,
                  size: Size2D,
                  tile_size: Size2D,
@@ -299,6 +293,7 @@ class DecoratorImage(OpImage, metaclass=ABCMeta):
     :param trace_perf: whether to log runtime performance information
     """
 
+    # noinspection PyShadowingBuiltins
     def __init__(self,
                  source_image: TiledImage,
                  image_id: str = None,
@@ -360,7 +355,7 @@ class TransformArrayImage(DecoratorImage):
                  image_id: str = None,
                  flip_y: bool = False,
                  force_2d: bool = False,
-                 norm_range: Tuple[Number, Number] = None,
+                 norm_range: NormRange = None,
                  tile_cache: Cache = None,
                  trace_perf: bool = False):
         super().__init__(source_image, image_id=image_id, tile_cache=tile_cache, trace_perf=trace_perf)
@@ -413,13 +408,18 @@ class DirectRgbaImage(OpImage):
     :param trace_perf: whether to log runtime performance information
     """
 
+    # noinspection PyShadowingBuiltins
     def __init__(self,
-                 source_images: Tuple[TiledImage, TiledImage, TiledImage],
+                 source_images: Sequence[TiledImage],
                  image_id: str = None,
                  encode: bool = False,
                  format: str = None,
                  tile_cache: Cache = None,
                  trace_perf: bool = False):
+        assert_instance(source_images, (list, tuple),
+                        name='source_images')
+        assert_true(len(source_images) == 3,
+                    message='source_images must have length 3')
         proto_source_image = source_images[0]
         super().__init__(size=proto_source_image.size,
                          tile_size=proto_source_image.tile_size,
@@ -429,7 +429,7 @@ class DirectRgbaImage(OpImage):
                          mode='RGBA',
                          tile_cache=tile_cache,
                          trace_perf=trace_perf)
-        self._source_images = source_images
+        self._source_images = tuple(source_images)
         self._encode = encode
 
     def compute_tile(self, tile_x: int, tile_y: int, rectangle: Rectangle2D) -> Tile:
@@ -479,6 +479,7 @@ class ColorMappedRgbaImage(DecoratorImage):
     :param trace_perf: whether to log runtime performance information
     """
 
+    # noinspection PyShadowingBuiltins
     def __init__(self,
                  source_image: TiledImage,
                  image_id: str = None,
@@ -550,7 +551,6 @@ class ArrayImage(OpImage):
                          tile_size=tile_size,
                          num_tiles=num_tiles,
                          mode=str(array.dtype),
-                         format=None,
                          image_id=image_id,
                          tile_cache=tile_cache,
                          trace_perf=trace_perf)
