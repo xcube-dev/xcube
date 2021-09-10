@@ -65,18 +65,19 @@ def get_datasets(ctx: ServiceContext,
 
         dataset_dict = dict(id=ds_id)
 
+        dataset_dict['title'] = ds_id
         if 'Title' in dataset_config:
             ds_title = dataset_config['Title']
             if ds_title and isinstance(ds_title, str):
                 dataset_dict['title'] = ds_title
-            else:
-                dataset_dict['title'] = ds_id
 
         if 'BoundingBox' in dataset_config:
             ds_bbox = dataset_config['BoundingBox']
             if ds_bbox \
                     and len(ds_bbox) == 4 \
-                    and all(map(lambda c: isinstance(c, float) or isinstance(c, int), ds_bbox)):
+                    and all(map(lambda c: isinstance(c, float)
+                                          or isinstance(c, int),
+                                ds_bbox)):
                 dataset_dict['bbox'] = ds_bbox
 
         dataset_dicts.append(dataset_dict)

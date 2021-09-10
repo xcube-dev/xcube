@@ -18,7 +18,7 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-
+from numbers import Number
 from typing import Any, Mapping, MutableMapping, Sequence, Hashable, Type, Dict, Optional, Tuple, Union
 
 import numpy as np
@@ -108,10 +108,10 @@ def get_ml_dataset_tile(
                 f'Created tiled image {image_id!r} of size {image.size}.\n'
                 f'Took {measured_time.duration:.2f} seconds. Tile grid:\n'
                 f'  num_levels: {tile_grid.num_levels}\n'
-                f'  num_level_zero_tiles: {tile_grid.num_tiles(0)}\n'
+                f'  num_level_zero_tiles: {tile_grid.get_num_tiles(0)}\n'
                 f'  tile_size: {tile_grid.tile_size}\n'
-                f'  geo_extent: {tile_grid.geo_extent}\n'
-                f'  inv_y: {tile_grid.inv_y}'
+                f'  extent: {tile_grid.extent}\n'
+                f'  is_j_axis_up: {tile_grid.is_j_axis_up}'
             )
 
     if trace_perf:
@@ -127,11 +127,11 @@ def get_ml_dataset_tile(
     return tile
 
 
-def new_rgb_image(ml_dataset,
-                  image_id,
-                  var_names,
-                  norm_ranges,
-                  z,
+def new_rgb_image(ml_dataset: MultiLevelDataset,
+                  image_id: str,
+                  var_names: Tuple[str, ...],
+                  norm_ranges: Tuple[Number, Number],
+                  z: int,
                   labels,
                   labels_are_indices,
                   tile_cache,
@@ -154,7 +154,7 @@ def new_rgb_image(ml_dataset,
                            trace_perf=trace_perf)
         image = TransformArrayImage(image,
                                     image_id=f'tai-{image_id}',
-                                    flip_y=tile_grid.inv_y,
+                                    flip_y=tile_grid.is_j_axis_up,
                                     norm_range=norm_ranges[i],
                                     trace_perf=trace_perf)
         images.append(image)
@@ -167,17 +167,17 @@ def new_rgb_image(ml_dataset,
                            trace_perf=trace_perf)
 
 
-def new_color_mapped_image(ml_dataset,
-                           image_id,
-                           var_name,
-                           cmap_name,
-                           cmap_range,
-                           z,
-                           labels,
-                           labels_are_indices,
+def new_color_mapped_image(ml_dataset: MultiLevelDataset,
+                           image_id: str,
+                           var_name: str,
+                           cmap_name: str,
+                           cmap_range: Tuple[float, float],
+                           z: int,
+                           labels: Dict[str, Any],
+                           labels_are_indices: bool,
                            tile_cache,
                            trace_perf,
-                           exception_type):
+                           exception_type: Type[Exception]):
     array, valid_range, var = \
         _get_var_2d_array_and_mask_info(
             ml_dataset, var_name, z, labels,
@@ -195,7 +195,7 @@ def new_color_mapped_image(ml_dataset,
                        trace_perf=trace_perf)
     image = TransformArrayImage(image,
                                 image_id=f'tai-{image_id}',
-                                flip_y=tile_grid.inv_y,
+                                flip_y=tile_grid.is_j_axis_up,
                                 norm_range=cmap_range,
                                 trace_perf=trace_perf)
     if cmap_name is None and cmap_range is None:
@@ -211,12 +211,12 @@ def new_color_mapped_image(ml_dataset,
                                 trace_perf=trace_perf)
 
 
-def _get_var_2d_array_and_mask_info(ml_dataset,
-                                    var_name,
-                                    z,
-                                    labels,
-                                    labels_are_indices,
-                                    exception_type):
+def _get_var_2d_array_and_mask_info(ml_dataset: MultiLevelDataset,
+                                    var_name: str,
+                                    z: int,
+                                    labels: Dict[str, Any],
+                                    labels_are_indices: bool,
+                                    exception_type: Type[Exception]):
     dataset = ml_dataset.get_dataset(ml_dataset.num_levels - 1 - z)
     var = dataset[var_name]
     valid_range = get_var_valid_range(var)

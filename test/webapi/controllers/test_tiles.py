@@ -1,8 +1,7 @@
 import unittest
 
 from test.webapi.helpers import new_test_service_context, RequestParamsMock
-from xcube.webapi.context import ServiceContext
-from xcube.webapi.controllers.tiles import get_dataset_tile, get_ne2_tile, get_dataset_tile_grid, get_ne2_tile_grid, \
+from xcube.webapi.controllers.tiles import get_dataset_tile, get_dataset_tile_grid, \
     get_legend
 from xcube.webapi.errors import ServiceBadRequestError, ServiceResourceNotFoundError
 
@@ -79,11 +78,6 @@ class TilesControllerTest(unittest.TestCase):
         self.assertEqual("No variable in dataset 'demo' specified for RGB",
                          cm.exception.reason)
 
-    def test_get_ne2_tile(self):
-        ctx = new_test_service_context()
-        tile = get_ne2_tile(ctx, '0', '0', '0', RequestParamsMock())
-        self.assertIsInstance(tile, bytes)
-
     def test_get_dataset_tile_grid(self):
         self.maxDiff = None
 
@@ -91,29 +85,18 @@ class TilesControllerTest(unittest.TestCase):
         tile_grid = get_dataset_tile_grid(ctx, 'demo', 'conc_chl', 'ol4', 'http://bibo')
         self.assertEqual(
             {
-                'maxZoom': 2,
-                'minZoom': 0,
                 'projection': 'EPSG:4326',
                 'tileGrid': {'extent': [0, 50, 5, 52.5],
                              'origin': [0, 52.5],
                              'resolutions': [0.01, 0.005, 0.0025],
+                             'sizes': [[2, 1], [4, 2], [8, 4]],
                              'tileSize': [250, 250]},
                 'url': 'http://bibo/datasets/demo/vars/conc_chl/tiles/{z}/{x}/{y}.png'
             },
             tile_grid)
 
-        tile_grid = get_dataset_tile_grid(ctx, 'demo', 'conc_chl', 'cesium', 'http://bibo')
-        self.assertEqual({
-            'url': self.base_url + '/datasets/demo/vars/conc_chl/tiles/{z}/{x}/{y}.png',
-            'rectangle': dict(west=0.0, south=50.0, east=5.0, north=52.5),
-            'minimumLevel': 0,
-            'maximumLevel': 2,
-            'tileWidth': 250,
-            'tileHeight': 250,
-            'tilingScheme': {'rectangle': dict(west=0.0, south=50.0, east=5.0, north=52.5),
-                             'numberOfLevelZeroTilesX': 2,
-                             'numberOfLevelZeroTilesY': 1},
-        }, tile_grid)
+        with self.assertRaises(NotImplementedError):
+            get_dataset_tile_grid(ctx, 'demo', 'conc_chl', 'cesium', 'http://bibo')
 
         with self.assertRaises(ServiceBadRequestError) as cm:
             get_dataset_tile_grid(ctx, 'demo', 'conc_chl', 'ol2.json', 'http://bibo')
@@ -128,12 +111,11 @@ class TilesControllerTest(unittest.TestCase):
         tile_grid = get_dataset_tile_grid(ctx, 'demo', 'conc_chl', 'ol4', 'http://bibo')
         self.assertEqual(
             {
-                'maxZoom': 2,
-                'minZoom': 0,
                 'projection': 'EPSG:4326',
                 'tileGrid': {'extent': [0, 50, 5, 52.5],
                              'origin': [0, 52.5],
                              'resolutions': [0.01, 0.005, 0.0025],
+                             'sizes': [[2, 1], [4, 2], [8, 4]],
                              'tileSize': [250, 250]},
                 'url': 'http://bibo/api/v1/datasets/demo/vars/conc_chl/tiles/{z}/{x}/{y}.png'
             },
@@ -155,25 +137,6 @@ class TilesControllerTest(unittest.TestCase):
         with self.assertRaises(ServiceBadRequestError) as cm:
             get_legend(ctx, 'demo', 'conc_chl', RequestParamsMock(width='sun-shine'))
         self.assertEqual("""Parameter "width" must be an integer, but was 'sun-shine'""", cm.exception.reason)
-
-    def test_get_ne2_tile_grid(self):
-        ctx = ServiceContext()
-        tile_grid = get_ne2_tile_grid(ctx, 'ol4', 'http://bibo')
-        self.assertEqual({
-            'url': self.base_url + '/ne2/tiles/{z}/{x}/{y}.jpg',
-            'projection': 'EPSG:4326',
-            'minZoom': 0,
-            'maxZoom': 2,
-            'tileGrid': {'extent': [-180.0, -90.0, 180.0, 90.0],
-                         'origin': [-180.0, 90.0],
-                         'resolutions': [0.703125, 0.3515625, 0.17578125],
-                         'tileSize': [256, 256]},
-        }, tile_grid)
-
-        with self.assertRaises(ServiceBadRequestError) as cm:
-            get_ne2_tile_grid(ctx, 'cesium', 'http://bibo')
-        self.assertEqual(400, cm.exception.status_code)
-        self.assertEqual("Unknown tile client 'cesium'", cm.exception.reason)
 
     @property
     def base_url(self):
