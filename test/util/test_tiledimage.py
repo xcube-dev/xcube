@@ -1,8 +1,14 @@
 from unittest import TestCase
 
 import numpy as np
+import PIL.Image
 
-from xcube.util.tiledimage import OpImage, TransformArrayImage, trim_tile, ArrayImage
+from xcube.util.tiledimage import ArrayImage
+from xcube.util.tiledimage import ColorMappedRgbaImage
+from xcube.util.tiledimage import DirectRgbaImage
+from xcube.util.tiledimage import OpImage
+from xcube.util.tiledimage import TransformArrayImage
+from xcube.util.tiledimage import trim_tile
 
 
 class MyTiledImage(OpImage):
@@ -15,6 +21,36 @@ class MyTiledImage(OpImage):
         x, y, tw, th = rectangle
         fill_value = float(x + y * w) / float(w * h)
         return np.full((th, tw), fill_value, np.float32)
+
+
+class ColorMappedRgbaImageTest(TestCase):
+    def test_default(self):
+        a = np.linspace(0, 255, 24, dtype=np.int32).reshape((4, 6))
+        source_image = ArrayImage(a, (2, 2))
+        cm_rgb_image = ColorMappedRgbaImage(source_image, format='PNG')
+        self.assertEqual(cm_rgb_image.size, (6, 4))
+        self.assertEqual(cm_rgb_image.tile_size, (2, 2))
+        self.assertEqual(cm_rgb_image.num_tiles, (3, 2))
+        tile = cm_rgb_image.get_tile(0, 0)
+        self.assertIsInstance(tile, PIL.Image.Image)
+
+
+class DirectRgbaImageTest(TestCase):
+    def test_default(self):
+        a = np.linspace(0, 255, 24, dtype=np.int32).reshape((4, 6))
+        b = np.linspace(255, 0, 24, dtype=np.int32).reshape((4, 6))
+        c = np.linspace(50, 200, 24, dtype=np.int32).reshape((4, 6))
+        source_images = [
+            ArrayImage(a, (2, 2)),
+            ArrayImage(b, (2, 2)),
+            ArrayImage(c, (2, 2)),
+        ]
+        cm_rgb_image = DirectRgbaImage(source_images, format='PNG')
+        self.assertEqual(cm_rgb_image.size, (6, 4))
+        self.assertEqual(cm_rgb_image.tile_size, (2, 2))
+        self.assertEqual(cm_rgb_image.num_tiles, (3, 2))
+        tile = cm_rgb_image.get_tile(0, 0)
+        self.assertIsInstance(tile, PIL.Image.Image)
 
 
 class TransformArrayImageTest(TestCase):
