@@ -32,22 +32,22 @@ class FsDataStoresTestMixin(ABC):
     @classmethod
     def prepare_fs(cls, fs: fsspec.AbstractFileSystem, root: str):
         if fs.isdir(root):
-            print(f'{fs.protocol}: deleting {root}')
+            # print(f'{fs.protocol}: deleting {root}')
             fs.delete(root, recursive=True)
 
-        print(f'{fs.protocol}: making root {root}')
+        # print(f'{fs.protocol}: making root {root}')
         fs.mkdirs(root)
 
         # Write a text file into each subdirectory so
         # we also test that store.get_data_ids() scans
         # recursively.
         dir_path = root
-        for d in DATA_PATH.split('/'):
-            dir_path += '/' + d
-            print(f'{fs.protocol}: making {dir_path}')
+        for subdir_name in DATA_PATH.split('/'):
+            dir_path += '/' + subdir_name
+            # print(f'{fs.protocol}: making {dir_path}')
             fs.mkdir(dir_path)
             file_path = dir_path + '/README.md'
-            print(f'{fs.protocol}: writing {file_path}')
+            # print(f'{fs.protocol}: writing {file_path}')
             with fs.open(file_path, 'w') as fp:
                 fp.write('\n')
 

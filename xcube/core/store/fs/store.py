@@ -200,29 +200,6 @@ class BaseFsDataStore(DefaultSearchMixin, MutableDataStore):
         return_tuples = include_attrs is not None
         yield from self._generate_data_ids('', data_type, return_tuples, 0)
 
-    def _generate_data_ids(self,
-                           dir_path: str,
-                           data_type: DataType,
-                           return_tuples: bool,
-                           current_depth: int):
-        root = self.root + ('/' + dir_path if dir_path else '')
-        # noinspection PyArgumentEqualDefault
-        for file_info in self.fs.ls(root, detail=True):
-            file_path: str = file_info['name']
-            if file_path.startswith(self.root):
-                file_path = file_path[len(self.root) + 1:]
-            elif file_path.startswith('/' + self.root):
-                file_path = file_path[len(self.root) + 2:]
-            if self._is_data_specified(file_path, data_type):
-                yield (file_path, {}) if return_tuples else file_path
-            elif file_info.get('type') == 'directory' \
-                    and (self._max_depth is None
-                         or current_depth < self._max_depth):
-                yield from self._generate_data_ids(file_path,
-                                                   data_type,
-                                                   return_tuples,
-                                                   current_depth + 1)
-
     def has_data(self, data_id: str, data_type: DataTypeLike = None) -> bool:
         assert_given(data_id, 'data_id')
         if self._is_data_specified(data_id, data_type):
@@ -596,6 +573,29 @@ class BaseFsDataStore(DefaultSearchMixin, MutableDataStore):
             if dot_pos < sep_pos:
                 return ''
         return data_path[dot_pos:]
+
+    def _generate_data_ids(self,
+                           dir_path: str,
+                           data_type: DataType,
+                           return_tuples: bool,
+                           current_depth: int):
+        root = self.root + ('/' + dir_path if dir_path else '')
+        # noinspection PyArgumentEqualDefault
+        for file_info in self.fs.ls(root, detail=True):
+            file_path: str = file_info['name']
+            if file_path.startswith(self.root):
+                file_path = file_path[len(self.root) + 1:]
+            elif file_path.startswith('/' + self.root):
+                file_path = file_path[len(self.root) + 2:]
+            if self._is_data_specified(file_path, data_type):
+                yield (file_path, {}) if return_tuples else file_path
+            elif file_info.get('type') == 'directory' \
+                    and (self._max_depth is None
+                         or current_depth < self._max_depth):
+                yield from self._generate_data_ids(file_path,
+                                                   data_type,
+                                                   return_tuples,
+                                                   current_depth + 1)
 
 
 class FsDataStore(BaseFsDataStore, FsAccessor):
