@@ -53,8 +53,7 @@ class CubeMetadataAdjuster(CubeTransformer):
                 cube_config=cube_config.to_dict(),
             )
         )
-        cube = cube.assign_attrs(get_geospatial_attrs(gm))
-        cube.attrs.update(
+        cube = cube.assign_attrs(
             Conventions='CF-1.7',
             history=history,
             date_created=pd.Timestamp.now().isoformat(),
