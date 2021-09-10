@@ -1,0 +1,3 @@
+endpoint_url: "${EDC_ENDPOINT_URL}"
+client_id: "${EDC_CLIENT_ID}"
+client_secret: "${EDC_CLIENT_SECRET}"
