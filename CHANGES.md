@@ -111,6 +111,8 @@
   * class `DownsamplingImage`
   * class `PilDownsamplingImage`
   * class `NdarrayDownsamplingImage`
+  * class `FastNdarrayDownsamplingImage`
+  * class `ImagePyramid`
   * function `create_pil_downsampling_image()`
   * function `create_ndarray_downsampling_image()`
   * function `downsample_ndarray()`
