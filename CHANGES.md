@@ -103,7 +103,24 @@
 * Fixed an issue where `xcube serve` provided wrong layer source options for 
   [OpenLayers XYZ](https://openlayers.org/en/latest/apidoc/module-ol_source_XYZ-XYZ.html) 
   when latitude coordinates where increasing with the coordinate index. (#251)
+* Numerous classes and functions became obsolete in the xcube 0.9 
+  code base and have been removed, also because we believe there is 
+  quite rare outside use, if at all. 
   
+  Removed from `xcube.util.tiledimage`:
+  * class `DownsamplingImage`
+  * class `PilDownsamplingImage`
+  * class `NdarrayDownsamplingImage`
+  * class `FastNdarrayDownsamplingImage`
+  * class `ImagePyramid`
+  * function `create_pil_downsampling_image()`
+  * function `create_ndarray_downsampling_image()`
+  * function `downsample_ndarray()`
+  * functions `aggregate_ndarray_xxx()`
+  
+  Removed from `xcube.util.tilegrid`:
+  * functions `pow2_2d_subdivision()`
+  * functions `pow2_1d_subdivision()`
   
 ## Changes in 0.8.2 (in development)
 
