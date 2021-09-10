@@ -56,7 +56,6 @@ from xcube.util.cache import parse_mem_size
 from xcube.util.cmaps import get_cmap
 from xcube.util.perf import measure_time_cm
 from xcube.util.tilegrid import TileGrid
-from xcube.util.tilegrid import TileGrid
 from xcube.version import version
 from xcube.webapi.defaults import DEFAULT_TRACE_PERF
 from xcube.webapi.errors import ServiceBadRequestError
