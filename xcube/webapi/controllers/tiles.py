@@ -184,6 +184,10 @@ def get_tile_source_options(tile_grid: TileGrid, url: str, client: str = 'ol'):
         # return _tile_grid_to_leaflet_source_options(tile_grid, url)
         raise NotImplementedError()
 
+# TODO (forman): re-implement the source options for Leaflet and Cesium.
+#   Use code as starting point from here. Put new functions
+#   into xcube.util.tilegrid.
+
 # def _tile_grid_to_ol_xyz_source_options(tile_grid: TileGrid2, url: str):
 #     """
 #     Convert TileGrid into options to be used with ol.source.XYZ(options) of OpenLayers 4.x.
