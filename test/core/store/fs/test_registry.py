@@ -1,3 +1,4 @@
+import os.path
 import unittest
 from abc import ABC, abstractmethod
 from typing import Type, Union
@@ -17,13 +18,38 @@ from xcube.core.store import MutableDataStore
 from xcube.core.store.fs.registry import new_fs_data_store
 from xcube.core.store.fs.store import FsDataStore
 from xcube.util.temp import new_temp_dir
-import fsspec
+
+ROOT_DIR = 'xcube'
+DATA_PATH = 'testing/data'
+
 
 # noinspection PyUnresolvedReferences,PyPep8Naming
 class FsDataStoresTestMixin(ABC):
     @abstractmethod
     def create_data_store(self) -> FsDataStore:
         pass
+
+    @classmethod
+    def prepare_fs(cls, fs: fsspec.AbstractFileSystem, root: str):
+        if fs.isdir(root):
+            print(f'{fs.protocol}: deleting {root}')
+            fs.delete(root, recursive=True)
+
+        print(f'{fs.protocol}: making root {root}')
+        fs.mkdirs(root)
+
+        # Write a text file into each subdirectory so
+        # we also test that store.get_data_ids() scans
+        # recursively.
+        dir_path = root
+        for d in DATA_PATH.split('/'):
+            dir_path += '/' + d
+            print(f'{fs.protocol}: making {dir_path}')
+            fs.mkdir(dir_path)
+            file_path = dir_path + '/README.md'
+            print(f'{fs.protocol}: writing {file_path}')
+            with fs.open(file_path, 'w') as fp:
+                fp.write('\n')
 
     def test_mldataset_levels(self):
         data_store = self.create_data_store()
@@ -78,7 +104,7 @@ class FsDataStoresTestMixin(ABC):
         :param expected_descriptor_type: The expected data descriptor type.
         """
 
-        data_id = f'ds{filename_ext}'
+        data_id = f'{DATA_PATH}/ds{filename_ext}'
 
         self.assertIsInstance(data_store, MutableDataStore)
 
@@ -118,28 +144,31 @@ class FsDataStoresTestMixin(ABC):
 class FileFsDataStoresTest(FsDataStoresTestMixin, unittest.TestCase):
 
     def create_data_store(self) -> FsDataStore:
-        return new_fs_data_store('file',
-                                 root=new_temp_dir(prefix='xcube-test'))
+        root = os.path.join(new_temp_dir(prefix='xcube'), ROOT_DIR)
+        self.prepare_fs(fsspec.filesystem('file'), root)
+        return new_fs_data_store('file', root=root, max_depth=3)
 
 
 class MemoryFsDataStoresTest(FsDataStoresTestMixin, unittest.TestCase):
 
     def create_data_store(self) -> FsDataStore:
-        fs: fsspec.AbstractFileSystem = fsspec.filesystem('memory')
-        for f in fs.find(''):
-            fs.delete(f)
-        return new_fs_data_store('memory', root='xcube-test')
+        root = ROOT_DIR
+        self.prepare_fs(fsspec.filesystem('memory'), root)
+        return new_fs_data_store('memory', root=root, max_depth=3)
 
 
 class S3FsDataStoresTest(FsDataStoresTestMixin, S3Test):
 
     def create_data_store(self) -> FsDataStore:
+        root = ROOT_DIR
         fs_params = dict(
             anon=False,
             client_kwargs=dict(
                 endpoint_url=MOTO_SERVER_ENDPOINT_URL,
             )
         )
+        self.prepare_fs(fsspec.filesystem('s3', **fs_params), root)
         return new_fs_data_store('s3',
-                                 root='xcube-test',
+                                 root=root,
+                                 max_depth=3,
                                  fs_params=fs_params)
