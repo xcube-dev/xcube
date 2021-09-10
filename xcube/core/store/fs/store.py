@@ -198,7 +198,7 @@ class BaseFsDataStore(DefaultSearchMixin, MutableDataStore):
         data_type = DataType.normalize(data_type)
         # TODO: do not ignore names in include_attrs
         return_tuples = include_attrs is not None
-        yield from self._generate_data_ids('', data_type, return_tuples, 0)
+        yield from self._generate_data_ids('', data_type, return_tuples, 1)
 
     def has_data(self, data_id: str, data_type: DataTypeLike = None) -> bool:
         assert_given(data_id, 'data_id')
