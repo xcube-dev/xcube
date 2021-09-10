@@ -105,7 +105,7 @@
   * XCUBE_SH_VERSION=0.9.0.dev0
   * XCUBE_CCI_VERSION=0.9.0.dev0
   * XCUBE_CDS_VERSION=0.9.0
-* Numerous classes and functions became unused in the xcube 0.9 
+* Numerous classes and functions became obsolete in the xcube 0.9 
   code base and have been removed, also because we believe there is 
   quite rare outside use, if at all. 
   
