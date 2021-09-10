@@ -292,31 +292,75 @@ class ServiceContext:
         obs_dataset_configs = [dc for dc in self._dataset_configs
                                if 'StoreInstanceId' not in dc
                                and dc.get('FileSystem', 'local') == 'obs']
+        ldcs_with_configs = [(dc, self._get_other_store_params_than_root(dc))
+                             for dc in local_dataset_configs]
+        odcs_with_configs = [(dc, self._get_other_store_params_than_root(dc))
+                             for dc in obs_dataset_configs]
+        different_params = set(odcs_with_configs[1])
+        odc_sub_lists = []
+        for param in different_params:
+            odc_sub_lists.append([dc for dc in odcs_with_configs
+                                 if param == dc[1]])
 
-        def _get_path_root(path: str):
-            path = os.path.normpath(path)
-            while path.startswith(os.sep):
-                path = path[1:]
-            split_path = path.split(os.sep)
-            if len(split_path) > 1:
-                return f'{os.sep}{split_path[0]}'
-            return '.'
+
+        # def _get_path_root(path: str):
+        #     path = os.path.normpath(path)
+        #     while path.startswith(os.sep):
+        #         path = path[1:]
+        #     split_path = path.split(os.sep)
+        #     if len(split_path) > 1:
+        #         return f'{os.sep}{split_path[0]}'
+        #     return '.'
 
         # roots = set([_get_path_root(dc['Path'])
         #              for dc in local_dataset_configs])
 
-        for ldc in local_dataset_configs:
-            root = _get_path_root(ldc['Path'])
-            path = os.path.normpath(ldc['Path'])
-            root_pos = path.find(root)
-            if root_pos == -1:
-                raise RuntimeError('internal error')
-            ds_id = path[root_pos + len(root):]
+        # for ldc in local_dataset_configs:
+        #     root = _get_path_root(ldc['Path'])
+        #     path = os.path.normpath(ldc['Path'])
+        #     root_pos = path.find(root)
+        #     if root_pos == -1:
+        #         raise RuntimeError('internal error')
+        #     ds_id = path[root_pos + len(root):]
+
+        for dataset_configs in [local_dataset_configs, obs_dataset_configs]:
+            paths = [dc['Path'] for dc in dataset_configs]
+            list.sort(paths)
+            # roots = []
+            def _get_common_prefixes(p):
+                prefix = os.path.commonprefix(p)
+                if prefix != '' or len(p) == 1:
+                    return [prefix]
+                else:
+                    return _get_common_prefixes(p[:len(p/2)]) + \
+                           _get_common_prefixes(p[len(p/2):])
+            roots = _get_common_prefixes(paths)
+            if len(roots) < 1:
+                actual_roots = roots
+            else:
+                roots = list(set(roots))
+                actual_roots = []
+                root_candidate = roots[0]
+                for root in roots[1:]:
+                    common_root = os.path.commonprefix([root_candidate, root])
+                    if common_root != '':
+                        root_candidate = common_root
+                    else:
+                        actual_roots.append(root_candidate)
+                        root_candidate = root
+            for root in actual_roots:
+                while not root.endswith("/") and not root.endswith("\\") and \
+                    not root.endswith('.'):
+                    root = root[:-1]
 
 
 
-        # list.sort(local_dataset_configs,
-        #           key=lambda item: item['Path'])
+
+
+            # list.sort(dataset_config['Path'] for dataset_config
+            #           , key=lambda item: item['Path'])
+
+
 
         # prefix_candidate = \
         #     os.path.commonprefix([dc['Path'] for dc in local_dataset_configs])
@@ -334,7 +378,7 @@ class ServiceContext:
         data_store_pool = self.get_data_store_pool()
         if not data_store_pool:
             data_store_pool = self._data_store_pool = DataStorePool()
-        pass
+        # pass
         # fs_type = dataset_config.get('FileSystem', 'local')
         # if fs_type == 'local' or fs_type == 'obs':
         #     store_params = dict()
@@ -376,6 +420,23 @@ class ServiceContext:
         #     dataset_config['Identifier'] = f'{store_instance_id}' \
         #                                    f'{STORE_DS_ID_SEPARATOR}' \
         #                                    f'{new_id_ending}'
+
+    def _get_other_store_params_than_root(self,
+                                          dataset_config: DatasetConfigDict) \
+            -> Dict:
+        if dataset_config.get('FileSystem', 'local') != 'obs':
+            return {}
+        store_params = dict()
+        if 'Anonymous' in dataset_config:
+            store_params['anon'] = dataset_config['Anonymous']
+        client_kwargs = dict(
+        )
+        if 'Endpoint' in dataset_config:
+            client_kwargs['endpoint_url'] = dataset_config['Endpoint']
+        if 'Region' in dataset_config:
+            client_kwargs['region_name'] = dataset_config['Region']
+        store_params['client_kwargs'] = client_kwargs
+        return store_params
 
     def maybe_assign_store_instance_id(self,
                                        dataset_config: DatasetConfigDict):

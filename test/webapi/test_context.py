@@ -302,19 +302,19 @@ class MaybeAssignStoreInstanceIdsTest(unittest.TestCase):
             {
                 'Identifier': 'z_2',
                 'FileSystem': 'local',
-                'Path': 'path/ghi.zarr',
+                'Path': 'ghi.zarr',
                 'StoreInstanceId': 'local_2'
             },
             {
                 'Identifier': 'z_4',
                 'FileSystem': 'obs',
-                'Path': 'path/mno.zarr',
+                'Path': 'mno.zarr',
                 'StoreInstanceId': 'obs_1'
             },
             {
                 'Identifier': 'z_5',
                 'FileSystem': 'obs',
-                'Path': 'path/pqr.zarr',
+                'Path': 'pqr.zarr',
                 'StoreInstanceId': 'obs_1'
             },
         ]
