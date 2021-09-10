@@ -59,26 +59,35 @@ class LocalCubeGenerator(CubeGenerator):
     :param store_pool: An optional pool of pre-configured data stores
         referenced from *gen_config* input/output configurations.
     :param verbosity: Level of verbosity, 0 means off.
+    :param raise_on_error: Whether to raise a CubeGeneratorError
+        exception on generator failures. If False, the default,
+        the returned result will have the "status" field set to "error"
+        while other fields such as "message", "traceback", "output"
+        provide more failure details.
     """
 
     def __init__(self,
                  store_pool: DataStorePool = None,
+                 raise_on_error: bool = False,
                  verbosity: int = 0):
         if store_pool is not None:
             assert_instance(store_pool, DataStorePool, 'store_pool')
 
         self._store_pool = store_pool if store_pool is not None \
             else DataStorePool()
+        self._raise_on_error = raise_on_error
         self._verbosity = verbosity
         self._generated_data_id: Optional[str] = None
         self._generated_cube: Optional[xr.Dataset] = None
 
     @property
     def generated_data_id(self) -> Optional[str]:
+        """Return the data identifier of the recently generated data cube."""
         return self._generated_data_id
 
     @property
     def generated_cube(self) -> Optional[xr.Dataset]:
+        """Return the recently generated data cube."""
         return self._generated_cube
 
     def generate_cube(self, request: CubeGeneratorRequestLike) \

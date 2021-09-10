@@ -45,6 +45,7 @@ class CubeGenerator(ABC):
             service_config: Optional[ServiceConfigLike] = None,
             stores_config: Optional[DataStorePoolLike] = None,
             verbosity: int = 0,
+            raise_on_error: bool = False,
             **kwargs) -> 'CubeGenerator':
         """
         Create a new cube generator from given configurations.
@@ -86,6 +87,11 @@ class CubeGenerator(ABC):
 
         :param service_config: Service configuration.
         :param stores_config: Data stores configuration.
+        :param raise_on_error: Whether to raise a CubeGeneratorError
+            exception on generator failures. If False, the default,
+            the returned result will have the "status" field set to "error"
+            while other fields such as "message", "traceback", "output"
+            provide more failure details.
         :param verbosity: Level of verbosity, 0 means off.
         :param kwargs: Extra arguments passed to the generator constructors.
         """
@@ -101,6 +107,7 @@ class CubeGenerator(ABC):
             service_config = ServiceConfig.normalize(service_config) \
                 if service_config is not None else None
             return RemoteCubeGenerator(service_config=service_config,
+                                       raise_on_error=raise_on_error,
                                        verbosity=verbosity,
                                        **kwargs)
         else:
@@ -111,6 +118,7 @@ class CubeGenerator(ABC):
             store_pool = DataStorePool.normalize(stores_config) \
                 if stores_config is not None else None
             return LocalCubeGenerator(store_pool=store_pool,
+                                      raise_on_error=raise_on_error,
                                       verbosity=verbosity)
 
     @abstractmethod

@@ -22,7 +22,7 @@
 import json
 import os.path
 import time
-from typing import Type, TypeVar, Dict, Any, Optional
+from typing import Type, TypeVar, Dict, Any, Optional, List
 
 import requests
 
@@ -59,17 +59,24 @@ class RemoteCubeGenerator(CubeGenerator):
 
     :param service_config: An remote configuration object.
     :param verbosity: Level of verbosity, 0 means off.
+    :param raise_on_error: Whether to raise a CubeGeneratorError
+        exception on generator failures. If False, the default,
+        the returned result will have the "status" field set to "error"
+        while other fields such as "message", "traceback", "output"
+        provide more failure details.
     """
 
     def __init__(self,
                  service_config: ServiceConfig,
                  progress_period: float = 1.0,
+                 raise_on_error: bool = False,
                  verbosity: int = 0):
         assert_instance(service_config, ServiceConfig, 'service_config')
         assert_instance(progress_period, (int, float), 'progress_period')
         self._service_config: ServiceConfig = service_config
         self._access_token: Optional[str] = service_config.access_token
         self._progress_period: float = progress_period
+        self._raise_on_error: bool = raise_on_error
         self._verbosity: int = verbosity
 
     def endpoint_op(self, op_path: str) -> str:
@@ -264,3 +271,21 @@ class RemoteCubeGenerator(CubeGenerator):
         print(response_line)
         print('-' * len(response_line))
         print(json.dumps(response_data, indent=2))
+
+    def _return_or_raise(self,
+                         remote_result: Optional[Dict[str, Any]] = None,
+                         message: Optional[str] = None,
+                         output: Optional[List[str]] = None,
+                         traceback: Optional[List[str]] = None):
+        if remote_result:
+            message = remote_result.get('message', message)
+            output = remote_result.get('output', output)
+            traceback = remote_result.get('traceback', traceback)
+        if self._raise_on_error:
+            raise CubeGeneratorError(message,
+                                     remote_output=output,
+                                     remote_traceback=traceback)
+        return CubeGeneratorResult(status='error',
+                                   message=message,
+                                   output=output,
+                                   traceback=traceback)
