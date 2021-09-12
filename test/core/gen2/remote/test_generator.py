@@ -1,5 +1,5 @@
 import unittest
-from typing import List
+from typing import List, Any, Dict
 
 import requests_mock
 
@@ -14,7 +14,10 @@ from xcube.core.store import DatasetDescriptor
 from xcube.util.progress import new_progress_observers
 
 
-def result(worked, total_work, failed=False, output: List[str] = None):
+def make_result(worked, total_work,
+                failed=False,
+                output: List[str] = None,
+                result: Dict[str, Any] = None):
     json = {
         "cubegen_id": "93",
         "status": {
@@ -33,7 +36,9 @@ def result(worked, total_work, failed=False, output: List[str] = None):
             },
         ],
     }
-    if output:
+    if result is not None:
+        json.update(result=result)
+    if output is not None:
         json.update(output=output)
     return dict(json=json)
 
@@ -74,15 +79,20 @@ class RemoteCubeGeneratorTest(unittest.TestCase):
 
         m.put(f'{self.ENDPOINT_URL}cubegens',
               response_list=[
-                  result(0, 4),
+                  make_result(0, 4),
               ])
 
         m.get(f'{self.ENDPOINT_URL}cubegens/93',
               response_list=[
-                  result(1, 4),
-                  result(2, 4),
-                  result(3, 4),
-                  result(4, 4),
+                  make_result(1, 4),
+                  make_result(2, 4),
+                  make_result(3, 4),
+                  make_result(4, 4, result={
+                      "status": "ok",
+                      "result": {
+                          "data_id": "bibo.zarr"
+                      }
+                  }),
               ])
 
         observer = TestProgressObserver()
@@ -109,15 +119,15 @@ class RemoteCubeGeneratorTest(unittest.TestCase):
 
         m.put(f'{self.ENDPOINT_URL}cubegens',
               response_list=[
-                  result(0, 4),
+                  make_result(0, 4),
               ])
 
         m.get(f'{self.ENDPOINT_URL}cubegens/93',
               response_list=[
-                  result(1, 4),
-                  result(2, 4,
-                         failed=True,
-                         output=['1.that', '2.was', '3.bad']),
+                  make_result(1, 4),
+                  make_result(2, 4,
+                              failed=True,
+                              output=['1.that', '2.was', '3.bad']),
               ])
 
         observer = TestProgressObserver()
@@ -145,49 +155,52 @@ class RemoteCubeGeneratorTest(unittest.TestCase):
 
         m.post(f'{self.ENDPOINT_URL}cubegens/info',
                json={
-                   "dataset_descriptor": {
-                       "data_id": "CHL",
-                       "data_type": "dataset",
-                       "crs": "WGS84",
-                       "bbox": [12.2, 52.1, 13.9, 54.8],
-                       "time_range": ["2018-01-01", "2010-01-06"],
-                       "time_period": "4D",
-                       "data_vars": {
-                           "B01": {
-                               "name": "B01",
-                               "dtype": "float32",
-                               "dims": ["time", "lat", "lon"],
+                   "status": "ok",
+                   "result": {
+                       "dataset_descriptor": {
+                           "data_id": "CHL",
+                           "data_type": "dataset",
+                           "crs": "WGS84",
+                           "bbox": [12.2, 52.1, 13.9, 54.8],
+                           "time_range": ["2018-01-01", "2010-01-06"],
+                           "time_period": "4D",
+                           "data_vars": {
+                               "B01": {
+                                   "name": "B01",
+                                   "dtype": "float32",
+                                   "dims": ["time", "lat", "lon"],
+                               },
+                               "B02": {
+                                   "name": "B02",
+                                   "dtype": "float32",
+                                   "dims": [
+                                       "time",
+                                       "lat",
+                                       "lon"
+                                   ],
+                               },
+                               "B03": {
+                                   "name": "B03",
+                                   "dtype": "float32",
+                                   "dims": ["time", "lat", "lon"],
+                               }
                            },
-                           "B02": {
-                               "name": "B02",
-                               "dtype": "float32",
-                               "dims": [
-                                   "time",
-                                   "lat",
-                                   "lon"
-                               ],
-                           },
-                           "B03": {
-                               "name": "B03",
-                               "dtype": "float32",
-                               "dims": ["time", "lat", "lon"],
-                           }
+                           "spatial_res": 0.05,
+                           "dims": {"time": 0, "lat": 54, "lon": 34}
                        },
-                       "spatial_res": 0.05,
-                       "dims": {"time": 0, "lat": 54, "lon": 34}
-                   },
-                   "size_estimation": {
-                       "image_size": [34, 54],
-                       "tile_size": [34, 54],
-                       "num_variables": 3,
-                       "num_tiles": [1, 1],
-                       "num_requests": 0,
-                       "num_bytes": 0
-                   },
-                   "cost_estimation": {
-                       'required': 3782,
-                       'available': 234979,
-                       'limit': 10000
+                       "size_estimation": {
+                           "image_size": [34, 54],
+                           "tile_size": [34, 54],
+                           "num_variables": 3,
+                           "num_tiles": [1, 1],
+                           "num_requests": 0,
+                           "num_bytes": 0
+                       },
+                       "cost_estimation": {
+                           'required': 3782,
+                           'available': 234979,
+                           'limit': 10000
+                       }
                    }
                })
 

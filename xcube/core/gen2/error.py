@@ -21,20 +21,20 @@
 
 from typing import Optional, List
 
-import requests
-
 
 class CubeGeneratorError(ValueError):
-    def __init__(self, *args,
-                 remote_traceback: str = None,
+    def __init__(self,
+                 *args,
+                 remote_traceback: List[str] = None,
                  remote_output: List[str] = None,
                  **kwargs):
+        # noinspection PyArgumentList
         super().__init__(*args, **kwargs)
         self._remote_traceback = remote_traceback
         self._remote_output = remote_output
 
     @property
-    def remote_traceback(self) -> Optional[str]:
+    def remote_traceback(self) -> Optional[List[str]]:
         """Traceback of an error occurred in a remote process."""
         return self._remote_traceback
 
@@ -42,21 +42,3 @@ class CubeGeneratorError(ValueError):
     def remote_output(self) -> Optional[List[str]]:
         """Terminal output of a remote process."""
         return self._remote_output
-
-    @classmethod
-    def maybe_raise_for_response(cls, response: requests.Response):
-        try:
-            response.raise_for_status()
-        except requests.HTTPError as e:
-            detail = None
-            traceback = None
-            # noinspection PyBroadException
-            try:
-                json = response.json()
-                if isinstance(json, dict):
-                    detail = json.get('detail')
-                    traceback = json.get('traceback')
-            except Exception:
-                pass
-            raise CubeGeneratorError(f'{e}: {detail}' if detail else f'{e}',
-                                     remote_traceback=traceback) from e

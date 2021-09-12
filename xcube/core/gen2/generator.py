@@ -20,16 +20,20 @@
 # SOFTWARE.
 
 from abc import ABC, abstractmethod
-from typing import Optional
+from typing import Optional, TypeVar, Type
 
 from xcube.core.store import DataStorePool
 from xcube.core.store import DataStorePoolLike
 from xcube.util.assertions import assert_instance
 from xcube.util.assertions import assert_true
+from .error import CubeGeneratorError
 from .remote.config import ServiceConfigLike
 from .request import CubeGeneratorRequestLike
 from .response import CubeGeneratorResult
 from .response import CubeInfoResult
+from .response import GenericCubeGeneratorResult
+
+R = TypeVar('R', bound=GenericCubeGeneratorResult)
 
 
 class CubeGenerator(ABC):
@@ -44,8 +48,8 @@ class CubeGenerator(ABC):
     def new(cls,
             service_config: Optional[ServiceConfigLike] = None,
             stores_config: Optional[DataStorePoolLike] = None,
-            verbosity: int = 0,
             raise_on_error: bool = False,
+            verbosity: int = 0,
             **kwargs) -> 'CubeGenerator':
         """
         Create a new cube generator from given configurations.
@@ -121,7 +125,12 @@ class CubeGenerator(ABC):
                                       raise_on_error=raise_on_error,
                                       verbosity=verbosity)
 
-    @abstractmethod
+    def __init__(self,
+                 raise_on_error: bool = False,
+                 verbosity: int = 0):
+        self._raise_on_error = raise_on_error
+        self._verbosity = verbosity
+
     def get_cube_info(self, request: CubeGeneratorRequestLike) \
             -> CubeInfoResult:
         """
@@ -141,8 +150,19 @@ class CubeGenerator(ABC):
         :raises CubeGeneratorError: if cube info generation failed
         :raises DataStoreError: if data store access failed
         """
+        try:
+            result = self._get_cube_info(request)
+        except CubeGeneratorError as e:
+            if self._raise_on_error:
+                raise e
+            return self._new_cube_generator_error_result(
+                CubeInfoResult, e
+            )
+        if result.status == 'error':
+            if self._raise_on_error:
+                raise self._new_generator_error_from_result(result)
+        return result
 
-    @abstractmethod
     def generate_cube(self, request: CubeGeneratorRequestLike) \
             -> CubeGeneratorResult:
         """
@@ -166,3 +186,47 @@ class CubeGenerator(ABC):
         :raises CubeGeneratorError: if cube generation failed
         :raises DataStoreError: if data store access failed
         """
+        try:
+            result = self._generate_cube(request)
+        except CubeGeneratorError as e:
+            if self._raise_on_error:
+                raise e
+            return self._new_cube_generator_error_result(
+                CubeGeneratorResult, e
+            )
+        if result.status == 'error':
+            if self._raise_on_error:
+                raise self._new_generator_error_from_result(result)
+        return result
+
+    @abstractmethod
+    def _get_cube_info(self, request: CubeGeneratorRequestLike) \
+            -> CubeInfoResult:
+        """
+        The implementation of the :meth:`get_cube_info` method
+        """
+
+    @abstractmethod
+    def _generate_cube(self, request: CubeGeneratorRequestLike) \
+            -> CubeGeneratorResult:
+        """
+        The implementation of the :meth:`generate_cube` method
+        """
+
+    @classmethod
+    def _new_cube_generator_error_result(
+            cls,
+            result_type: Type[R],
+            e: CubeGeneratorError
+    ) -> R:
+        return result_type(status='error',
+                           message=f'{e}',
+                           output=e.remote_output,
+                           traceback=e.remote_traceback)
+
+    @classmethod
+    def _new_generator_error_from_result(cls,
+                                         result: GenericCubeGeneratorResult):
+        return CubeGeneratorError(result.message,
+                                  remote_output=result.output,
+                                  remote_traceback=result.traceback)

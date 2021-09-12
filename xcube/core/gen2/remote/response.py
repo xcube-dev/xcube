@@ -27,8 +27,9 @@ from xcube.util.jsonschema import JsonNumberSchema
 from xcube.util.jsonschema import JsonObject
 from xcube.util.jsonschema import JsonObjectSchema
 from xcube.util.jsonschema import JsonStringSchema
+from ..response import CubeGeneratorResult
 from ..response import CubeInfo
-from ..response import CubeInfoResult
+from ..response import make_cube_generator_result_class
 
 
 class CubeGeneratorToken(JsonObject):
@@ -162,14 +163,16 @@ class CubeGeneratorState(JsonObject):
     def __init__(self,
                  cubegen_id: str,
                  status: CubeGeneratorJobStatus,
-                 output: List[str] = None,
-                 progress: List[CubeGeneratorProgress] = None,
+                 result: Optional[CubeGeneratorResult] = None,
+                 output: Optional[List[str]] = None,
+                 progress: Optional[List[CubeGeneratorProgress]] = None,
                  **additional_properties):
-        self.cubegen_id: str = cubegen_id
-        self.status: CubeGeneratorJobStatus = status
-        self.output: Optional[List[str]] = output
-        self.progress: Optional[List[CubeGeneratorProgress]] = progress
-        self.additional_properties: Dict[str, Any] = additional_properties
+        self.cubegen_id = cubegen_id
+        self.status = status
+        self.result = result
+        self.output = output
+        self.progress = progress
+        self.additional_properties = additional_properties
 
     @classmethod
     def get_schema(cls) -> JsonObjectSchema:
@@ -177,6 +180,7 @@ class CubeGeneratorState(JsonObject):
             properties=dict(
                 cubegen_id=JsonStringSchema(min_length=1),
                 status=CubeGeneratorJobStatus.get_schema(),
+                result=CubeGeneratorResult.get_schema(),
                 output=JsonArraySchema(
                     items=JsonStringSchema(),
                     nullable=True
@@ -236,8 +240,4 @@ class CubeInfoWithCosts(CubeInfo):
         return schema
 
 
-class CubeInfoWithCostsResult(CubeInfoResult):
-
-    @classmethod
-    def get_result_schema(cls) -> JsonObjectSchema:
-        return CubeInfoWithCosts.get_schema()
+CubeInfoWithCostsResult = make_cube_generator_result_class(CubeInfoWithCosts)

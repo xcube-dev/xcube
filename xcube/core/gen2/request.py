@@ -77,7 +77,8 @@ class CubeGeneratorRequest(JsonObject):
             for i in range(len(input_configs)):
                 assert_instance(input_configs[i], InputConfig,
                                 f'input_configs[{i}]')
-        assert_instance(cube_config, CubeConfig, 'cube_config')
+        if cube_config is not None:
+            assert_instance(cube_config, CubeConfig, 'cube_config')
         if code_config is not None:
             assert_instance(code_config, CodeConfig, 'code_config')
         assert_instance(output_config, OutputConfig, 'output_config')
@@ -124,7 +125,7 @@ class CubeGeneratorRequest(JsonObject):
                 output_config=OutputConfig.get_schema(),
                 callback_config=CallbackConfig.get_schema()
             ),
-            required=['cube_config', 'output_config'],
+            required=['output_config'],
             factory=cls,
         )
 
@@ -167,11 +168,13 @@ class CubeGeneratorRequest(JsonObject):
                 d.update(input_configs=[ic.to_dict()
                                         for ic in self.input_configs])
 
-        d.update(cube_config=self.cube_config.to_dict(),
-                 output_config=self.output_config.to_dict())
+        if self.cube_config is not None:
+            d.update(cube_config=self.cube_config.to_dict())
 
         if self.code_config is not None:
             d.update(code_config=self.code_config.to_dict())
+
+        d.update(output_config=self.output_config.to_dict())
 
         if self.callback_config is not None:
             d.update(callback_config=self.callback_config.to_dict())

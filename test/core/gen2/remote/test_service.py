@@ -6,7 +6,6 @@ import unittest
 import requests
 
 from xcube.core.gen2 import CubeGeneratorError
-from xcube.core.gen2 import CubeGeneratorRequest
 from xcube.core.gen2 import ServiceConfig
 from xcube.core.gen2.remote.generator import RemoteCubeGenerator
 
@@ -14,7 +13,7 @@ PARENT_DIR = os.path.dirname(__file__)
 SERVER_URL = 'http://127.0.0.1:5000'
 
 
-class ByoaTest(unittest.TestCase):
+class ServerByoaTest(unittest.TestCase):
     """
     This test demonstrates the BYOA feature within the
     Generator remote.
@@ -30,6 +29,8 @@ class ByoaTest(unittest.TestCase):
     3. write a dataset "OUTPUT.zarr" in store "@test"
     """
 
+    server_running = False
+
     @classmethod
     def setUpClass(cls):
         try:
@@ -44,10 +45,10 @@ class ByoaTest(unittest.TestCase):
             print(f'You can start the test server using:')
             print(f'$ {sys.executable} {server_path}')
 
-    def test_service_inline_code(self):
+    def test_service_byoa_inline_code(self):
         self._test_service_byoa(inline_code=True)
 
-    def test_service_code_package(self):
+    def test_service_byoa_code_package(self):
         self._test_service_byoa(inline_code=False)
 
     def _test_service_byoa(self, inline_code: bool):
@@ -120,28 +121,127 @@ class ByoaTest(unittest.TestCase):
         }
 
         service = RemoteCubeGenerator(
-            CubeGeneratorRequest.from_dict(request_dict),
-            ServiceConfig(endpoint_url=SERVER_URL)
+            service_config=ServiceConfig(endpoint_url=SERVER_URL)
         )
 
         try:
-            cube_info = service.get_cube_info()
-            print('Cube Info:\n', json.dumps(cube_info.to_dict(), indent=2),
+            result = service.get_cube_info(request_dict)
+            result_json = result.to_dict()
+            print('Cube info result:\n',
+                  json.dumps(result_json, indent=2),
                   flush=True)
+            self.assertEqual(
+                {
+                    'status': 'ok',
+                    'status_code': 200,
+                    'result': {
+                        'dataset_descriptor': {
+                            'bbox': [-180.0, -90.0, -144.0, -72.0],
+                            'crs': 'WGS84',
+                            'data_id': 'OUTPUT.zarr',
+                            'data_type': 'dataset',
+                            'data_vars': {
+                                'A': {'dims': ['time',
+                                               'lat',
+                                               'lon'],
+                                      'dtype': 'float32',
+                                      'name': 'A'},
+                                'B': {'dims': ['time',
+                                               'lat',
+                                               'lon'],
+                                      'dtype': 'float32',
+                                      'name': 'B'}
+                            },
+                            'dims': {'lat': 18, 'lon': 36, 'time': 6},
+                            'spatial_res': 1.0,
+                            'time_period': '1D',
+                            'time_range': ['2010-01-01', '2010-01-06']
+                        },
+                        'size_estimation': {
+                            'image_size': [36, 18],
+                            'num_bytes': 31104,
+                            'num_requests': 12,
+                            'num_tiles': [1, 1],
+                            'num_variables': 2,
+                            'tile_size': [36, 18]
+                        }
+                    },
+                },
+                result_json
+            )
         except CubeGeneratorError as e:
             print('Remote output:\n', e.remote_output, flush=True)
             print('Remote traceback:\n', e.remote_traceback, flush=True)
             self.fail(f'CubeGeneratorError: get_cube_info() failed')
 
         try:
-            cube_id = service.generate_cube()
-            print('Cube ID:', cube_id,
+            result = service.generate_cube(request_dict)
+            result_json = result.to_dict()
+            print('Cube generator result:',
+                  json.dumps(result_json, indent=2),
                   flush=True)
+            self.assertEqual('ok',
+                             result_json.get('status'))
+            self.assertEqual(201,
+                             result_json.get('status_code'))
+            self.assertEqual({'data_id': 'OUTPUT.zarr'},
+                             result_json.get('result'))
         except CubeGeneratorError as e:
             print('Remote output:\n', e.remote_output, flush=True)
             print('Remote traceback:\n', e.remote_traceback, flush=True)
             self.fail(f'CubeGeneratorError: generate_cube() failed')
 
-        self.assertEqual('OUTPUT.zarr', cube_id)
-        # TODO: verify OUTPUT.zarr contains variable "X" with expected values
-        #   Current problem: we have no clue where it is :)
+    def test_service_simple_copy(self):
+        generator = RemoteCubeGenerator(
+            service_config=ServiceConfig(endpoint_url=SERVER_URL)
+        )
+
+        request_dict = {
+            "input_configs": [
+                {
+                    'store_id': '@test',
+                    "data_id": "DATASET-1.zarr"
+                }
+            ],
+            "output_config": {
+                "store_id": "@test",
+                "data_id": "OUTPUT.zarr",
+                "replace": True,
+            }
+        }
+
+        result = generator.generate_cube(request_dict)
+
+        result_dict = result.to_dict()
+        self.assertEqual('ok', result_dict.get('status'))
+        self.assertEqual(201, result_dict.get('status_code'))
+        self.assertEqual({'data_id': 'OUTPUT.zarr'}, result_dict.get('result'))
+
+    def test_service_invalid_request(self):
+        generator = RemoteCubeGenerator(
+            service_config=ServiceConfig(endpoint_url=SERVER_URL)
+        )
+
+        request_dict = {
+            "input_configs": [
+                {
+                    'store_id': '@test',
+                    "data_id": "DATASET-8.zarr"
+                }
+            ],
+            "output_config": {
+                "store_id": "@test",
+                "data_id": "OUTPUT.zarr",
+                "replace": True,
+            }
+        }
+
+        result = generator.generate_cube(request_dict)
+
+        result_dict = result.to_dict()
+        self.assertEqual('error', result_dict.get('status'))
+        self.assertEqual(200, result_dict.get('status_code'))
+        self.assertEqual(None, result_dict.get('result'))
+        self.assertEqual(None, result_dict.get('message'))
+        self.assertEqual(None, result_dict.get('output'))
+        self.assertEqual(None, result_dict.get('traceback'))
