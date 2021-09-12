@@ -240,7 +240,7 @@ class ServerByoaTest(unittest.TestCase):
 
         result_dict = result.to_dict()
         self.assertEqual('error', result_dict.get('status'))
-        self.assertEqual(200, result_dict.get('status_code'))
+        self.assertEqual(400, result_dict.get('status_code'))
         self.assertEqual(None, result_dict.get('result'))
         self.assertEqual(None, result_dict.get('message'))
         self.assertEqual(None, result_dict.get('output'))
