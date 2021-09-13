@@ -280,11 +280,9 @@ class GetS3BucketObjectHandler(ServiceRequestHandler):
         if path and '..' in path.split('/'):
             raise ServiceBadRequestError(f'AWS S3 data access: received illegal key {key!r}')
 
-        local_path = dataset_config.get('Path')
-        if os.path.isabs(local_path):
-            local_path = os.path.join(local_path, path)
-        else:
-            local_path = os.path.join(self.service_context.base_dir, local_path, path)
+        bucket_mapping = self.service_context.get_s3_bucket_mapping()
+        local_path = bucket_mapping.get(ds_id)
+        local_path = os.path.join(local_path, path)
 
         local_path = os.path.normpath(local_path)
 

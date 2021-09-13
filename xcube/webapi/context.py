@@ -336,8 +336,12 @@ class ServiceContext:
                 while not root.endswith("/") and not root.endswith("\\") and \
                         len(root) > 0:
                     root = root[:-1]
+                abs_root = root
+                if file_system == 'local' and not os.path.isabs(abs_root):
+                    abs_root = os.path.join(self._base_dir, abs_root)
+                    abs_root = os.path.normpath(abs_root)
                 store_params_for_root = store_params.copy()
-                store_params_for_root['root'] = root
+                store_params_for_root['root'] = abs_root
                 data_store_config = DataStoreConfig(
                     store_id=FS_TYPE_TO_STORE.get(file_system),
                     store_params=store_params_for_root)
@@ -476,9 +480,18 @@ class ServiceContext:
             ds_id = dataset_config.get('Identifier')
             file_system = dataset_config.get('FileSystem', 'local')
             if file_system == 'local':
-                local_path = self.get_config_path(dataset_config,
-                                                  f'dataset configuration'
-                                                  f' {ds_id!r}')
+                store_instance_id = dataset_config.get('StoreInstanceId')
+                if store_instance_id:
+                    data_store_pool = self.get_data_store_pool()
+                    store_root = data_store_pool.get_store_config(
+                        store_instance_id). \
+                        store_params.get('root')
+                    data_id = dataset_config.get('Path')
+                    local_path = os.path.join(store_root, data_id)
+                else:
+                    local_path = self.get_config_path(dataset_config,
+                                                      f'dataset configuration'
+                                                      f' {ds_id!r}')
                 local_path = os.path.normpath(local_path)
                 if os.path.isdir(local_path):
                     s3_bucket_mapping[ds_id] = local_path
