@@ -10,9 +10,8 @@ from xcube.core.dsio import rimraf
 from xcube.core.gen2.local.generator import LocalCubeGenerator
 from xcube.core.gen2.response import CubeGeneratorResult
 from xcube.core.gen2.response import CubeInfo
+from xcube.core.gen2.response import CubeInfoResult
 from xcube.core.gen2.response import CubeReference
-from xcube.core.gen2.response import GenericCubeGeneratorResult
-from xcube.core.gridmapping import GridMapping
 from xcube.core.new import new_cube
 from xcube.core.store import DatasetDescriptor
 from xcube.core.store import MutableDataStore
@@ -90,10 +89,13 @@ class LocalCubeGeneratorTest(unittest.TestCase):
     def assertGeneratedCubeOk(self, request):
         generator = LocalCubeGenerator(verbosity=1)
         result = generator.generate_cube(request)
+        self.assertIsInstance(result, CubeGeneratorResult)
         self.assertEqual('ok', result.status)
-        self.assertIsInstance(result.result, CubeReference)
-        self.assertEqual('CHL.zarr', result.result.data_id)
-        dataset = self.data_store.open_data(result.result.data_id)
+        self.assertEqual(201, result.status_code)
+        cube_reference = result.result
+        self.assertIsInstance(cube_reference, CubeReference)
+        self.assertEqual('CHL.zarr', cube_reference.data_id)
+        dataset = self.data_store.open_data(cube_reference.data_id)
         self.assertIsInstance(dataset, xr.Dataset)
         self.assertIn('B01', dataset)
         self.assertIn('B02', dataset)
@@ -112,6 +114,7 @@ class LocalCubeGeneratorTest(unittest.TestCase):
         generator = LocalCubeGenerator()
         result = generator.generate_cube(request)
         self.assertEqual('warning', result.status)
+        self.assertEqual(422, result.status_code)
         self.assertEqual(None, result.result)
         self.assertIsInstance(result.message, str)
         self.assertIn('An empty cube has been generated', result.message)
@@ -122,16 +125,16 @@ class LocalCubeGeneratorTest(unittest.TestCase):
     @requests_mock.Mocker()
     def test_get_cube_info_from_dict(self, m):
         m.put(CALLBACK_MOCK_URL, json={})
-        cube_info = LocalCubeGenerator(verbosity=1).get_cube_info(self.REQUEST)
-        self.assertIsInstance(cube_info, CubeInfoResult)
-        self.assertIsInstance(cube_info.result,
-                              CubeInfo)
-        self.assertIsInstance(cube_info.result.dataset_descriptor,
-                              DatasetDescriptor)
-        self.assertIsInstance(cube_info.result.size_estimation,
-                              dict)
+        result = LocalCubeGenerator(verbosity=1).get_cube_info(self.REQUEST)
+        self.assertIsInstance(result, CubeInfoResult)
+        self.assertEqual('ok', result.status)
+        self.assertEqual(200, result.status_code)
+        cube_info = result.result
+        self.assertIsInstance(cube_info, CubeInfo)
+        self.assertIsInstance(cube_info.dataset_descriptor, DatasetDescriptor)
+        self.assertIsInstance(cube_info.size_estimation, dict)
         # JSON-serialisation smoke test
-        cube_info_dict = cube_info.to_dict()
+        cube_info_dict = result.to_dict()
         json.dumps(cube_info_dict, indent=2)
 
 # class CubeGeneratorS3Input(S3Test):

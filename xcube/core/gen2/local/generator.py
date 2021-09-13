@@ -112,7 +112,7 @@ class LocalCubeGenerator(CubeGenerator):
         try:
             return self.__generate_cube(request)
         finally:
-            if observer:
+            if observer is not None:
                 observer.deactivate()
 
     def __generate_cube(self, request: CubeGeneratorRequest) \
@@ -223,6 +223,7 @@ class LocalCubeGenerator(CubeGenerator):
         if self._generated_data_id is not None:
             return CubeGeneratorResult(
                 status='ok',
+                status_code=201,
                 result=CubeReference(data_id=data_id),
                 message=f'Cube generated successfully'
                         f' after {total_time:.2f} seconds'
@@ -230,6 +231,7 @@ class LocalCubeGenerator(CubeGenerator):
         else:
             return CubeGeneratorResult(
                 status='warning',
+                status_code=422,
                 message=f'An empty cube has been generated'
                         f' after {total_time:.2f} seconds.'
                         f' No data has been written at all.'
@@ -241,5 +243,6 @@ class LocalCubeGenerator(CubeGenerator):
         informant = CubeInformant(request=request.for_local(),
                                   store_pool=self._store_pool)
         cube_info = informant.generate()
-
-        return CubeInfoResult(result=cube_info, status='ok')
+        return CubeInfoResult(result=cube_info,
+                              status='ok',
+                              status_code=200)
