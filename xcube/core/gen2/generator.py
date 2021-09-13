@@ -19,6 +19,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+import traceback
 from abc import ABC, abstractmethod
 from typing import Optional, TypeVar, Type
 
@@ -228,11 +229,14 @@ class CubeGenerator(ABC):
             result_type: Type[R],
             e: CubeGeneratorError
     ) -> R:
+        tb = e.remote_traceback
+        if tb is None and e.__traceback__ is not None:
+            tb = traceback.format_tb(e.__traceback__)
         return result_type(status='error',
                            message=f'{e}',
                            status_code=e.status_code,
                            output=e.remote_output,
-                           traceback=e.remote_traceback)
+                           traceback=tb)
 
     @classmethod
     def _new_generator_error_from_result(cls,
