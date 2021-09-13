@@ -40,7 +40,7 @@ _STEADY_CUBE_CONFIG_NAMES = {
 }
 
 
-class DatasetsOpener:
+class CubeOpener:
 
     def __init__(self,
                  cube_config: CubeConfig,
