@@ -1,7 +1,7 @@
 Datasets:
   - Identifier: demo-rgb
     Title: xcube-server Demonstration L2C Cube with augmentation
-    Path: ../../../../examples/serve/demo/cube-1-250-250.zarr
+    Path: examples/serve/demo/cube-1-250-250.zarr
     Style: standard
 
 

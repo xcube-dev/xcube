@@ -70,9 +70,9 @@ class ServiceContextTest(unittest.TestCase):
 
         ctx.config = dict(Datasets=[
             dict(Identifier='demo',
-                 Path="../../../../examples/serve/demo/cube.nc"),
+                 Path="examples/serve/demo/cube.nc"),
             dict(Identifier='demo2',
-                 Path="../../../../examples/serve/demo/cube.nc"),
+                 Path="examples/serve/demo/cube.nc"),
         ])
         self.assertNotIn('demo', ctx.dataset_cache)
         self.assertNotIn('demo2', ctx.dataset_cache)
