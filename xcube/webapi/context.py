@@ -948,7 +948,5 @@ def _open_ml_dataset_from_python_code(ctx: ServiceContext,
 
 
 _MULTI_LEVEL_DATASET_OPENERS = {
-    "obs": _open_ml_dataset_from_object_storage,
-    "local": _open_ml_dataset_from_local_fs,
     "memory": _open_ml_dataset_from_python_code,
 }
