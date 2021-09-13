@@ -9,6 +9,7 @@ import yaml
 from xcube.core.dsio import rimraf
 from xcube.core.gen2.generator import CubeGenerator
 from xcube.core.gen2.local.generator import LocalCubeGenerator
+from xcube.core.gen2.response import CubeGeneratorResult
 from xcube.core.gen2.response import CubeInfo
 from xcube.core.gen2.response import CubeInfoResult
 from xcube.core.gen2.response import CubeReference
@@ -33,7 +34,13 @@ class LocalCubeGeneratorTest(unittest.TestCase):
             spatial_res=0.05,
             time_range=['2010-01-01', None],
             time_period='4D',
-            chunks=dict(time=None, lat=90, lon=90)
+            chunks=dict(time=None, lat=90, lon=90),
+            metadata=dict(title='A S2L2A subset'),
+            variable_metadata=dict(
+                B01=dict(long_name='Band 1'),
+                B02=dict(long_name='Band 2'),
+                B03=dict(long_name='Band 3'),
+            ),
         ),
         output_config=dict(
             store_id='memory',
@@ -69,31 +76,33 @@ class LocalCubeGeneratorTest(unittest.TestCase):
     def test_generate_cube_from_dict(self, m):
         m.put(CALLBACK_MOCK_URL, json={})
         result = LocalCubeGenerator(verbosity=1).generate_cube(self.REQUEST)
-        self.assertEqual('ok', result.status)
-        self.assertIsInstance(result.result, CubeReference)
-        self.assertEqual('CHL.zarr', result.result.data_id)
-        self.assertIsInstance(self.data_store.open_data(result.result.data_id),
-                              xr.Dataset)
+        self.assertGeneratedCubeOk(result)
 
     @requests_mock.Mocker()
     def test_generate_cube_from_json(self, m):
         m.put(CALLBACK_MOCK_URL, json={})
         result = CubeGenerator.new(verbosity=1).generate_cube('_request.json')
-        self.assertEqual('ok', result.status)
-        self.assertIsInstance(result.result, CubeReference)
-        self.assertEqual('CHL.zarr', result.result.data_id)
-        self.assertIsInstance(self.data_store.open_data(result.result.data_id),
-                              xr.Dataset)
+        self.assertGeneratedCubeOk(result)
 
     @requests_mock.Mocker()
     def test_generate_cube_from_yaml(self, m):
         m.put(CALLBACK_MOCK_URL, json={})
         result = CubeGenerator.new(verbosity=1).generate_cube('_request.yaml')
+        self.assertGeneratedCubeOk(result)
+
+    def assertGeneratedCubeOk(self, result: CubeGeneratorResult):
         self.assertEqual('ok', result.status)
         self.assertIsInstance(result.result, CubeReference)
         self.assertEqual('CHL.zarr', result.result.data_id)
-        self.assertIsInstance(self.data_store.open_data(result.result.data_id),
-                              xr.Dataset)
+        dataset = self.data_store.open_data(result.result.data_id)
+        self.assertIsInstance(dataset, xr.Dataset)
+        self.assertIn('B01', dataset)
+        self.assertIn('B02', dataset)
+        self.assertIn('B03', dataset)
+        self.assertEqual('A S2L2A subset', dataset.attrs.get('title'))
+        self.assertEqual('Band 1', dataset.B01.attrs.get('long_name'))
+        self.assertEqual('Band 2', dataset.B02.attrs.get('long_name'))
+        self.assertEqual('Band 3', dataset.B03.attrs.get('long_name'))
 
     @requests_mock.Mocker()
     def test_generate_cube_from_yaml_empty(self, m):
