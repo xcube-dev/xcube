@@ -628,7 +628,12 @@ def _get_time_coverage_from_ds(ds: xr.Dataset) -> (pd.Timestamp, pd.Timestamp):
     return get_timestamps_from_string(filename)
 
 
-def adjust_spatial_attrs(ds: xr.Dataset, allow_point: bool = False) -> xr.Dataset:
+# TODO (forman): replace adjust_spatial_attrs function
+#   by another on that uses a dataset's grid mapping,
+#   see code in xcube/core/gen2/local/mladjuster.py
+
+def adjust_spatial_attrs(ds: xr.Dataset, allow_point: bool = False) \
+        -> xr.Dataset:
     """
     Adjust the global spatial attributes of the dataset by doing some
     introspection of the dataset and adjusting the appropriate attributes
@@ -649,7 +654,9 @@ def adjust_spatial_attrs(ds: xr.Dataset, allow_point: bool = False) -> xr.Datase
     copied = False
 
     for dim in ('lon', 'lat'):
-        geo_spatial_attrs = get_geo_spatial_attrs_from_var(ds, dim, allow_point=allow_point)
+        geo_spatial_attrs = get_geo_spatial_attrs_from_var(
+            ds, dim, allow_point=allow_point
+        )
         if geo_spatial_attrs:
             # Copy any new attributes into the shallow Dataset copy
             for key in geo_spatial_attrs:
@@ -663,15 +670,22 @@ def adjust_spatial_attrs(ds: xr.Dataset, allow_point: bool = False) -> xr.Datase
     lat_min = ds.attrs.get('geospatial_lat_min')
     lon_max = ds.attrs.get('geospatial_lon_max')
     lat_max = ds.attrs.get('geospatial_lat_max')
+    # TODO (forman): add geospatial_lon/lat_resolution
 
-    if lon_min is not None and lat_min is not None and lon_max is not None and lat_max is not None:
+    if lon_min is not None \
+            and lat_min is not None \
+            and lon_max is not None \
+            and lat_max is not None:
 
         if not copied:
             ds = ds.copy()
 
         ds.attrs['geospatial_bounds_crs'] = 'CRS84'
-        ds.attrs['geospatial_bounds'] = f'POLYGON(({lon_min} {lat_min}, {lon_min} {lat_max}, ' \
-                                        f'{lon_max} {lat_max}, {lon_max} {lat_min}, ' \
+        ds.attrs['geospatial_bounds'] = f'POLYGON((' \
+                                        f'{lon_min} {lat_min}, ' \
+                                        f'{lon_min} {lat_max}, ' \
+                                        f'{lon_max} {lat_max}, ' \
+                                        f'{lon_max} {lat_min}, ' \
                                         f'{lon_min} {lat_min}))'
 
     return ds

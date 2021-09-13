@@ -103,6 +103,8 @@
 * Fixed an issue where `xcube serve` provided wrong layer source options for 
   [OpenLayers XYZ](https://openlayers.org/en/latest/apidoc/module-ol_source_XYZ-XYZ.html) 
   when latitude coordinates where increasing with the coordinate index. (#251)
+* Function `xcube.core.normalize.adjust_spatial_attrs()` no longer removes
+  existing global attributes of the form `geospatial_vertical_<property>`.
 * Numerous classes and functions became obsolete in the xcube 0.9 
   code base and have been removed, also because we believe there is 
   quite rare outside use, if at all. 

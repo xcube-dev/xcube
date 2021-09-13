@@ -108,8 +108,15 @@ class FsAccessor:
         fs_params = params.pop(FS_PARAMS_PARAM_NAME, None)
         if fs_params is not None:
             assert_instance(fs_params, dict, name=FS_PARAMS_PARAM_NAME)
+
+        # Note, by default, filesystem data stores are writable and hence
+        # SHALL NOT cache any directory listings!
+        use_listings_cache = bool(fs_params.pop('use_listings_cache', False)
+                                  if fs_params else False)
+
         try:
             return fsspec.filesystem(fs_protocol,
+                                     use_listings_cache=use_listings_cache,
                                      **(fs_params or {})), params
         except (ValueError, ImportError):
             raise DataStoreError(f"Cannot instantiate"
