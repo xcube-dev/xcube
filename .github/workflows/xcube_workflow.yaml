@@ -79,3 +79,82 @@ jobs:
           registry: quay.io
           username: ${{ secrets.QUAY_DOCKER_REPO_USERNAME }}
           password: ${{ secrets.QUAY_DOCKER_REPO_PASSWORD }}
+  update-version:
+    env:
+      PUSH: 0
+      APP_NAME: xcube
+    runs-on: ubuntu-latest
+    needs: build-docker-image
+    name: update-tag
+    steps:
+      - name: git-checkout
+        uses: actions/checkout@v2
+      - uses: actions/checkout@v2
+        with:
+          repository: bc-org/k8s-configs
+          token: ${{ secrets.XCUBE_GITHUB_K8S_CONFIGS_PAT }}
+          path: k8s
+      - name: get-release-tag
+        id: release
+        run: echo ::set-output name=tag::${GITHUB_REF#refs/*/}
+      - name: deployment-phase
+        id: deployment-phase
+        uses: bc-org/gha-determine-phase@v0.1
+        with:
+          event_name: ${{ github.event_name }}
+          tag: ${{ steps.release.outputs.tag }}
+      - name: get-hash
+        id: get-hash
+        run: |
+          HASH=$(skopeo inspect docker://quay.io/bcdev/${{ env.APP_NAME }}:${{ steps.release.outputs.tag }} | jq '.Digest')
+          if [[ "$HASH" == *"sha256"* ]]; then
+            echo ::set-output name=hash::$HASH
+          else
+            echo "No hash present. Using none as hash. This will use the version tag instead for deployment."
+            echo ::set-output name=hash::none
+          fi
+      - name: info
+        run: |
+          echo "Event: ${{ github.event_name }}"
+          echo "Deployment Stage: ${{ steps.deployment-phase.outputs.phase }}"
+
+          echo "Release Tag: ${{ steps.release.outputs.tag }}"
+          echo "Deployment Release Tag: ${{ steps.deployment-phase.outputs.tag }}"
+          echo "Deployment Digest: ${{ steps.get-hash.outputs.hash }}"
+      - name: set-version-tag-xcube-gen
+        uses: bc-org/update-application-version-tags@main
+        with:
+          app: ${{ env.APP_NAME }}
+          phase: ${{ steps.deployment-phase.outputs.phase }}
+          delimiter: ' '
+          tag: ${{ steps.deployment-phase.outputs.tag }}
+          hash: ${{ steps.get-hash.outputs.hash }}
+          working-directory: "./k8s/xcube-gen/helm"
+      - name: set-version-tag-cate
+        uses: bc-org/update-application-version-tags@main
+        with:
+          app: ${{ env.APP_NAME }}
+          phase: ${{ steps.deployment-phase.outputs.phase }}
+          delimiter: ' '
+          tag: ${{ steps.deployment-phase.outputs.tag }}
+          hash: ${{ steps.get-hash.outputs.hash }}
+          working-directory: "./k8s/cate/helm"
+      - name: cat-result
+        working-directory: "./k8s/${{ env.APP_NAME }}/helm"
+        run: |
+          head values-dev.yaml
+          head values-stage.yaml
+          head values-prod.yaml
+      - name: Pushes to another repository
+        # Don't run if run locally and should be ignored
+        if: ${{ steps.deployment-phase.outputs.phase != 'ignore' && !env.ACT }}
+        uses: cpina/github-action-push-to-another-repository@main
+        env:
+          API_TOKEN_GITHUB: ${{ secrets.XCUBE_GITHUB_K8S_CONFIGS_PAT }}
+        with:
+          source-directory: 'k8s'
+          destination-github-username: 'bc-org'
+          destination-repository-name: 'k8s-configs'
+          user-email: bcdev@brockmann-consult.de
+          target-branch: main
+          commit-message: ${{ github.event.release }}. Set version to ${{ steps.release.outputs.tag }}
