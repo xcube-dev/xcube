@@ -34,6 +34,7 @@ from .response import CubeGeneratorProgress
 from .response import CubeGeneratorState
 from .response import CubeGeneratorToken
 from .response import CubeInfoWithCostsResult
+from ..error import CubeGeneratorError
 from ..generator import CubeGenerator
 from ..request import CubeGeneratorRequest
 from ..request import CubeGeneratorRequestLike
@@ -131,6 +132,7 @@ class RemoteCubeGenerator(CubeGenerator):
     def _generate_cube(self, request: CubeGeneratorRequestLike) \
             -> CubeGeneratorResult:
         request = CubeGeneratorRequest.normalize(request).for_service()
+
         response = self._submit_gen_request(request)
         cubegen_id, result, _ = \
             self._get_cube_generator_result(response)
@@ -211,25 +213,22 @@ class RemoteCubeGenerator(CubeGenerator):
         state = self._get_cube_generator_state(response, request_data)
         result = None
         if state.status.succeeded:
-            if isinstance(state.result, CubeGeneratorResult):
-                result = state.result.derive(status_code=response.status_code,
-                                             output=state.output)
+            result = state.result
+            if isinstance(result, CubeGeneratorResult):
+                status_code = result.status_code or response.status_code
+                result = result.derive(status_code=status_code,
+                                       output=state.output)
             else:
-                raise self._new_unexpected_response_error(
-                    response,
-                    msg='missing result'
-                )
+                result = self._new_invalid_result(state)
         elif state.status.failed:
-            if isinstance(state.result, CubeGeneratorResult):
-                result = state.result.derive(status='error',
-                                             status_code=response.status_code,
-                                             output=state.output)
+            result = state.result
+            if isinstance(result, CubeGeneratorResult):
+                status_code = result.status_code or response.status_code
+                result = result.derive(status='error',
+                                       status_code=status_code,
+                                       output=state.output)
             else:
-                result = CubeGeneratorResult(
-                    status='error',
-                    status_code=response.status_code,
-                    output=state.output
-                )
+                result = self._new_invalid_result(state)
         return state.cubegen_id, result, state.progress
 
     def _get_cube_generator_state(
@@ -245,18 +244,12 @@ class RemoteCubeGenerator(CubeGenerator):
                         response: requests.Response,
                         response_type: Type[R],
                         request_data: Dict[str, Any] = None) -> R:
+
         # noinspection PyBroadException
         try:
             response_data = response.json()
         except BaseException as e:
-            raise self._new_unexpected_response_error(
-                response, msg=e
-            ) from e
-
-        if not isinstance(response_data, dict):
-            raise self._new_unexpected_response_error(
-                response, msg='no result or unexpected result type'
-            )
+            raise self._new_response_error(response, msg=e) from e
 
         if self._verbosity >= 3:
             self.__dump_json(response.request.method,
@@ -264,28 +257,66 @@ class RemoteCubeGenerator(CubeGenerator):
                              request_data,
                              response_data)
 
+        if response_data is None:
+            raise self._new_response_error(
+                response, msg='no response'
+            )
+
+        if not isinstance(response_data, dict):
+            raise self._new_response_error(
+                response, msg='response must be a dictionary'
+            )
+
         # noinspection PyBroadException
         try:
             result = response_type.from_dict(response_data)
         except BaseException as e:
-            raise self._new_unexpected_response_error(
-                response, msg=e
+            raise self._new_response_error(
+                response,
+                msg=f'failed parsing response: {e}'
             ) from e
 
-        if isinstance(result, GenericCubeGeneratorResult):
+        if isinstance(result, GenericCubeGeneratorResult) \
+                and result.status_code is None:
             result = result.derive(status_code=response.status_code)
 
         return result
 
     @classmethod
+    def _new_response_error(
+            cls,
+            response: requests.Response,
+            msg: Union[str, BaseException]
+    ) -> CubeGeneratorError:
+        try:
+            response.raise_for_status()
+        except requests.HTTPError as http_error:
+            return CubeGeneratorError(
+                f'{msg}: {http_error}',
+                status_code=response.status_code
+            )
+        return cls._new_unexpected_response_error(response, msg=msg)
+
+    @classmethod
     def _new_unexpected_response_error(
             cls,
             response: requests.Response,
-            msg: Union[None, str, BaseException] = None
-    ) -> RuntimeError:
-        return RuntimeError(f'Internal error: unexpected response'
-                            f' from API call {response.url},'
-                            f' status code {response.status_code}: {msg}')
+            msg: Union[str, BaseException]
+    ) -> CubeGeneratorError:
+        return CubeGeneratorError(f'Client error: unexpected response'
+                                  f' from API call {response.url},'
+                                  f' status code {response.status_code}:'
+                                  f' {msg}',
+                                  status_code=422)
+
+    @classmethod
+    def _new_invalid_result(cls, state: CubeGeneratorState):
+        return CubeGeneratorResult(
+            status='error',
+            status_code=422,
+            message='missing cube generator result',
+            output=state.output,
+        )
 
     @classmethod
     def __dump_json(cls, method, url, request_data, response_data):

@@ -30,7 +30,7 @@ Job = Tuple[
     subprocess.Popen,  # process
     str,  # result_path
     str,  # start_time
-    Dict[str, Any],  # updated result object
+    Dict[str, Any],  # updated state object
 ]
 
 STORES_CONFIG_PATH: str = ''
@@ -134,10 +134,10 @@ def _get_generate_cube_result(
     if process is not None:
         job_id = str(process.pid)
         start_time = datetime.datetime.utcnow().isoformat()
-        result = {}
-        JOBS[job_id] = process, result_path, start_time, result
+        state = {}
+        JOBS[job_id] = process, result_path, start_time, state
     elif job_id in JOBS:
-        process, result_path, start_time, result = JOBS[job_id]
+        process, result_path, start_time, state = JOBS[job_id]
     else:
         raise werkzeug.exceptions.BadRequest(
             f'invalid job ID: {job_id}'
@@ -150,13 +150,15 @@ def _get_generate_cube_result(
     result_obj = None
     if return_code is None:
         active = 1
-    elif return_code == 0:
-        succeeded = 1
-        with open(result_path) as fp:
-            result_obj = json.load(fp)
     else:
-        failed = 1
-    result.update({
+        if os.path.exists(result_path):
+            with open(result_path) as fp:
+                result_obj = json.load(fp)
+        if return_code == 0:
+            succeeded = 1
+        else:
+            failed = 1
+    state.update({
         'cubegen_id': job_id,
         'status': {
             'active': active,
@@ -165,16 +167,17 @@ def _get_generate_cube_result(
             'start_time': start_time,
         },
     })
+
     if output:
-        result.update(output=output)
+        state.update(output=output)
 
     if result_obj is not None:
         status_code = _get_set_status_code(result_obj, success_code=201)
-        result.update(result=result_obj)
+        state.update(result=result_obj)
     else:
         status_code = 200 if succeeded else 400
 
-    return result, status_code
+    return state, status_code
 
 
 def _get_set_status_code(result_json: Dict[str, Any],

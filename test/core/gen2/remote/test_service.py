@@ -251,6 +251,46 @@ class ServiceTest(unittest.TestCase):
         self.assertEqual(201, result_dict.get('status_code'))
         self.assertEqual({'data_id': 'OUTPUT.zarr'}, result_dict.get('result'))
 
+    def test_service_empty_cube(self):
+        """
+        This test asserts the service fails with a warning.
+        """
+        if not self.server_running:
+            return
+
+        generator = RemoteCubeGenerator(
+            service_config=ServiceConfig(endpoint_url=SERVER_URL)
+        )
+
+        request_dict = {
+            "input_configs": [
+                {
+                    'store_id': '@test',
+                    "data_id": "DATASET-1.zarr"
+                }
+            ],
+            "cube_config": {
+                "time_range": ["1981-01-01", "1981-02-01"],
+            },
+            "output_config": {
+                "store_id": "@test",
+                "data_id": "OUTPUT.zarr",
+                "replace": True,
+            }
+        }
+
+        result = generator.generate_cube(request_dict)
+
+        result_dict = result.to_dict()
+        self.assertEqual('warning', result_dict.get('status'))
+        self.assertEqual(422, result_dict.get('status_code'))
+        self.assertEqual(None, result_dict.get('result'))
+        self.assertIn('An empty cube has been generated ',
+                      result_dict.get('message', ''))
+        self.assertIn('No data has been written at all.',
+                      result_dict.get('message', ''))
+        self.assertEqual(None, result_dict.get('output'))
+
     def test_service_invalid_request(self):
         """
         This test asserts the service fails with a 400 status code.
@@ -282,6 +322,7 @@ class ServiceTest(unittest.TestCase):
         self.assertEqual('error', result_dict.get('status'))
         self.assertEqual(400, result_dict.get('status_code'))
         self.assertEqual(None, result_dict.get('result'))
-        self.assertEqual(None, result_dict.get('message'))
+        self.assertEqual('Data resource "DATASET-8.zarr"'
+                         ' does not exist in store',
+                         result_dict.get('message'))
         self.assertEqual(None, result_dict.get('output'))
-        self.assertEqual(None, result_dict.get('traceback'))
