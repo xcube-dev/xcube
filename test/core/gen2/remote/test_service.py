@@ -13,13 +13,14 @@ PARENT_DIR = os.path.dirname(__file__)
 SERVER_URL = 'http://127.0.0.1:5000'
 
 
-class ServerByoaTest(unittest.TestCase):
+class ServiceTest(unittest.TestCase):
     """
-    This test demonstrates the BYOA feature within the
-    Generator remote.
+    This test uses a real cube generator service
+    and asserts that the RemoteCubeGenerator works as expected.
+
     It requires you to first start "test/core/gen2/remote/server.py"
-    which is a working processing remote compatible with the
-    actual xcube Generator REST API.
+    which is a working processing cube generator server compatible
+    with the expected xcube Generator REST API.
 
     This test sets up a generator request with a use-code configuration
     that will cause the generator to
@@ -46,9 +47,31 @@ class ServerByoaTest(unittest.TestCase):
             print(f'$ {sys.executable} {server_path}')
 
     def test_service_byoa_inline_code(self):
+        """
+        This test sets up a generator request with an
+        inline user-code configuration
+        that will cause the generator to
+
+        1. open a dataset "DATASET-1.zarr" in store "@test"
+        2. invoke function "process_dataset()" in module "processor" from
+           "test/core/byoa/test_data/user_code.zip".
+        3. write a dataset "OUTPUT.zarr" in store "@test"
+
+        """
         self._test_service_byoa(inline_code=True)
 
     def test_service_byoa_code_package(self):
+        """
+        This test sets up a generator request with an
+        packaged user-code configuration
+        that will cause the generator to
+
+        1. open a dataset "DATASET-1.zarr" in store "@test"
+        2. invoke function "process_dataset()" in module "processor" from
+           "test/core/byoa/test_data/user_code.zip".
+        3. write a dataset "OUTPUT.zarr" in store "@test"
+
+        """
         self._test_service_byoa(inline_code=False)
 
     def _test_service_byoa(self, inline_code: bool):
@@ -170,6 +193,7 @@ class ServerByoaTest(unittest.TestCase):
                 result_json
             )
         except CubeGeneratorError as e:
+            print('Status code:\n', e.status_code, flush=True)
             print('Remote output:\n', e.remote_output, flush=True)
             print('Remote traceback:\n', e.remote_traceback, flush=True)
             self.fail(f'CubeGeneratorError: get_cube_info() failed')
@@ -187,11 +211,21 @@ class ServerByoaTest(unittest.TestCase):
             self.assertEqual({'data_id': 'OUTPUT.zarr'},
                              result_json.get('result'))
         except CubeGeneratorError as e:
+            print('Status code:\n', e.status_code, flush=True)
             print('Remote output:\n', e.remote_output, flush=True)
             print('Remote traceback:\n', e.remote_traceback, flush=True)
             self.fail(f'CubeGeneratorError: generate_cube() failed')
 
     def test_service_simple_copy(self):
+        """
+        This test sets up a generator request that
+
+        1. opens a dataset "DATASET-1.zarr" in store "@test"
+        2. writes this dataset "OUTPUT.zarr" in store "@test"
+        """
+        if not self.server_running:
+            return
+
         generator = RemoteCubeGenerator(
             service_config=ServiceConfig(endpoint_url=SERVER_URL)
         )
@@ -218,6 +252,12 @@ class ServerByoaTest(unittest.TestCase):
         self.assertEqual({'data_id': 'OUTPUT.zarr'}, result_dict.get('result'))
 
     def test_service_invalid_request(self):
+        """
+        This test asserts the service fails with a 400 status code.
+        """
+        if not self.server_running:
+            return
+
         generator = RemoteCubeGenerator(
             service_config=ServiceConfig(endpoint_url=SERVER_URL)
         )

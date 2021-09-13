@@ -34,7 +34,6 @@ from .response import CubeGeneratorProgress
 from .response import CubeGeneratorState
 from .response import CubeGeneratorToken
 from .response import CubeInfoWithCostsResult
-from ..error import CubeGeneratorError
 from ..generator import CubeGenerator
 from ..request import CubeGeneratorRequest
 from ..request import CubeGeneratorRequestLike
@@ -310,21 +309,3 @@ class RemoteCubeGenerator(CubeGenerator):
         print(response_line)
         print('-' * len(response_line))
         print(json.dumps(response_data, indent=2))
-
-    def _return_or_raise(self,
-                         remote_result: Optional[Dict[str, Any]] = None,
-                         message: Optional[str] = None,
-                         output: Optional[List[str]] = None,
-                         traceback: Optional[List[str]] = None):
-        if remote_result:
-            message = remote_result.get('message', message)
-            output = remote_result.get('output', output)
-            traceback = remote_result.get('traceback', traceback)
-        if self._raise_on_error:
-            raise CubeGeneratorError(message,
-                                     remote_output=output,
-                                     remote_traceback=traceback)
-        return CubeGeneratorResult(status='error',
-                                   message=message,
-                                   output=output,
-                                   traceback=traceback)

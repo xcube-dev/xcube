@@ -26,8 +26,6 @@ from xcube.core.gen2.request import CubeGeneratorRequest
 from xcube.util.temp import new_temp_dir
 from xcube.util.temp import new_temp_file
 
-app = flask.Flask('test.core.gen2.remote.server')
-
 Job = Tuple[
     subprocess.Popen,  # process
     str,  # result_path
@@ -38,50 +36,48 @@ Job = Tuple[
 STORES_CONFIG_PATH: str = ''
 JOBS: Dict[str, Job] = {}
 
+app = flask.Flask('test.core.gen2.remote.server')
+
+
+@click.command()
+@click.option('--host', '-h', help='Host address.', default="127.0.0.1")
+@click.option('--port', '-p', help='Port number.', default=5000, type=int)
+def server(host, port):
+    """Test server that emulates the xcube generator service."""
+    _init_local_store()
+    app.run(host=host, port=port, debug=True)
+
 
 @app.route('/status')
 def status():
     return {'status': 'ok'}
 
 
+@app.route('/cubegens/info', methods=['POST'])
+def get_cube_info():
+    """Get information about cube to be generated"""
+    return _get_cube_info_result()
+
+
 @app.route('/cubegens', methods=['PUT'])
 def generate_cube():
+    """Normal /cubegens where body = generator request JSON"""
     return _generate_cube()
 
 
 @app.route('/cubegens/code', methods=['PUT'])
 def generate_cube_from_code():
+    """Special variant of /cubegens that uses a multipart request"""
     return _generate_cube()
 
 
 @app.route('/cubegens/<job_id>', methods=['GET'])
 def get_cube_generator_status(job_id: str):
-    return _process_to_generator_result(None, None, job_id)
+    """Get status info for cube generator job <job_id>"""
+    return _get_generate_cube_result(None, None, job_id)
 
 
-@app.route('/cubegens/info', methods=['POST'])
-def get_cube_info():
-    return _get_cube_info()
-
-
-def _generate_cube():
-    request_path = _new_request_file(flask.request)
-    result_path = _new_result_file()
-    args = ['xcube', 'gen2',
-            '-vv',
-            '--stores', STORES_CONFIG_PATH,
-            '--output', result_path,
-            request_path]
-    try:
-        process = subprocess.Popen(args, stderr=subprocess.STDOUT)
-    except subprocess.CalledProcessError as e:
-        raise werkzeug.exceptions.InternalServerError(
-            f'failed to invoke generator process: {args!r}'
-        ) from e
-    return _process_to_generator_result(process, result_path, None)
-
-
-def _get_cube_info():
+def _get_cube_info_result():
     request_path = _new_request_file(flask.request)
     result_path = _new_result_file()
     args = ['xcube', 'gen2',
@@ -110,6 +106,75 @@ def _get_cube_info():
     else:
         status_code = 200
     return result_json, status_code
+
+
+def _generate_cube():
+    request_path = _new_request_file(flask.request)
+    result_path = _new_result_file()
+    args = ['xcube', 'gen2',
+            '-vv',
+            '--stores', STORES_CONFIG_PATH,
+            '--output', result_path,
+            request_path]
+    try:
+        process = subprocess.Popen(args, stderr=subprocess.STDOUT)
+    except subprocess.CalledProcessError as e:
+        raise werkzeug.exceptions.InternalServerError(
+            f'failed to invoke generator process: {args!r}'
+        ) from e
+    return _get_generate_cube_result(process, result_path, None)
+
+
+def _get_generate_cube_result(
+        process: Optional[subprocess.Popen],
+        result_path: Optional[str],
+        job_id: Optional[str]
+) -> Tuple[Dict[str, Any], int]:
+    global JOBS
+    if process is not None:
+        job_id = str(process.pid)
+        start_time = datetime.datetime.utcnow().isoformat()
+        result = {}
+        JOBS[job_id] = process, result_path, start_time, result
+    elif job_id in JOBS:
+        process, result_path, start_time, result = JOBS[job_id]
+    else:
+        raise werkzeug.exceptions.BadRequest(
+            f'invalid job ID: {job_id}'
+        )
+    output = process.stdout.readlines() \
+        if process.stdout is not None else None
+    # print(type(output), output)
+    return_code = process.poll()
+    active, succeeded, failed = None, None, None
+    result_obj = None
+    if return_code is None:
+        active = 1
+    elif return_code == 0:
+        succeeded = 1
+        with open(result_path) as fp:
+            result_obj = json.load(fp)
+    else:
+        failed = 1
+    result.update({
+        'cubegen_id': job_id,
+        'status': {
+            'active': active,
+            'succeeded': succeeded,
+            'failed': failed,
+            'start_time': start_time,
+        },
+    })
+    if output:
+        result.update(output=output)
+
+    if result_obj is not None:
+        status_code = _get_set_status_code(result_obj, success_code=201)
+        result.update(result=result_obj)
+    else:
+        status_code = 200 if succeeded else 400
+
+    return result, status_code
 
 
 def _get_set_status_code(result_json: Dict[str, Any],
@@ -214,67 +279,6 @@ def _init_local_store():
             stream)
     print(f' * Store base directory: {local_base_dir}')
     print(f' * Store configuration: {STORES_CONFIG_PATH}')
-
-
-def _process_to_generator_result(
-        process: Optional[subprocess.Popen],
-        result_path: Optional[str],
-        job_id: Optional[str]
-) -> Tuple[Dict[str, Any], int]:
-    global JOBS
-    if process is not None:
-        job_id = str(process.pid)
-        start_time = datetime.datetime.utcnow().isoformat()
-        result = {}
-        JOBS[job_id] = process, result_path, start_time, result
-    elif job_id in JOBS:
-        process, result_path, start_time, result = JOBS[job_id]
-    else:
-        raise werkzeug.exceptions.BadRequest(
-            f'invalid job ID: {job_id}'
-        )
-    output = process.stdout.readlines() \
-        if process.stdout is not None else None
-    # print(type(output), output)
-    return_code = process.poll()
-    active, succeeded, failed = None, None, None
-    result_obj = None
-    if return_code is None:
-        active = 1
-    elif return_code == 0:
-        succeeded = 1
-        with open(result_path) as fp:
-            result_obj = json.load(fp)
-    else:
-        failed = 1
-    result.update({
-        'cubegen_id': job_id,
-        'status': {
-            'active': active,
-            'succeeded': succeeded,
-            'failed': failed,
-            'start_time': start_time,
-        },
-    })
-    if output:
-        result.update(output=output)
-
-    if result_obj is not None:
-        status_code = _get_set_status_code(result_obj, success_code=201)
-        result.update(result=result_obj)
-    else:
-        status_code = 200 if succeeded else 400
-
-    return result, status_code
-
-
-@click.command()
-@click.option('--host', '-h', help='Host address.', default="127.0.0.1")
-@click.option('--port', '-p', help='Port number.', default=5000, type=int)
-def server(host, port):
-    """Test server for xcube generator."""
-    _init_local_store()
-    app.run(host=host, port=port, debug=True)
 
 
 if __name__ == '__main__':

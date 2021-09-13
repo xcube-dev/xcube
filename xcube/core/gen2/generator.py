@@ -27,6 +27,7 @@ from xcube.core.store import DataStorePoolLike
 from xcube.util.assertions import assert_instance
 from xcube.util.assertions import assert_true
 from .error import CubeGeneratorError
+from .progress import ConsoleProgressObserver
 from .remote.config import ServiceConfigLike
 from .request import CubeGeneratorRequestLike
 from .response import CubeGeneratorResult
@@ -186,6 +187,10 @@ class CubeGenerator(ABC):
         :raises CubeGeneratorError: if cube generation failed
         :raises DataStoreError: if data store access failed
         """
+
+        if self._verbosity:
+            ConsoleProgressObserver().activate()
+
         try:
             result = self._generate_cube(request)
         except CubeGeneratorError as e:
@@ -194,6 +199,10 @@ class CubeGenerator(ABC):
             return self._new_cube_generator_error_result(
                 CubeGeneratorResult, e
             )
+        finally:
+            if self._verbosity:
+                ConsoleProgressObserver().deactivate()
+
         if result.status == 'error':
             if self._raise_on_error:
                 raise self._new_generator_error_from_result(result)
@@ -221,6 +230,7 @@ class CubeGenerator(ABC):
     ) -> R:
         return result_type(status='error',
                            message=f'{e}',
+                           status_code=e.status_code,
                            output=e.remote_output,
                            traceback=e.remote_traceback)
 
@@ -228,5 +238,6 @@ class CubeGenerator(ABC):
     def _new_generator_error_from_result(cls,
                                          result: GenericCubeGeneratorResult):
         return CubeGeneratorError(result.message,
+                                  status_code=result.status_code,
                                   remote_output=result.output,
                                   remote_traceback=result.traceback)

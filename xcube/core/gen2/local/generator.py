@@ -42,7 +42,6 @@ from .writer import CubeWriter
 from .. import CubeConfig
 from ..generator import CubeGenerator
 from ..progress import ApiProgressCallbackObserver
-from ..progress import ConsoleProgressObserver
 from ..request import CubeGeneratorRequest
 from ..request import CubeGeneratorRequestLike
 from ..response import CubeGeneratorResult
@@ -100,18 +99,23 @@ class LocalCubeGenerator(CubeGenerator):
 
     def _generate_cube(self, request: CubeGeneratorRequestLike) \
             -> CubeGeneratorResult:
+
         request = CubeGeneratorRequest.normalize(request)
         request = request.for_local()
 
-        # noinspection PyUnusedLocal
-        def _no_op_callable(ds, **kwargs):
-            return ds
-
+        observer = None
         if request.callback_config:
-            ApiProgressCallbackObserver(request.callback_config).activate()
+            observer = ApiProgressCallbackObserver(request.callback_config)
+            observer.activate()
 
-        if self._verbosity:
-            ConsoleProgressObserver().activate()
+        try:
+            return self.__generate_cube(request)
+        finally:
+            if observer:
+                observer.deactivate()
+
+    def __generate_cube(self, request: CubeGeneratorRequest) \
+            -> CubeGeneratorResult:
 
         cube_config = request.cube_config \
             if request.cube_config is not None else CubeConfig()
