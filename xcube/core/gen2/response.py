@@ -60,6 +60,7 @@ class AbstractResult(JsonObject, ABC):
                 result=cls.get_result_schema(),
                 message=JsonStringSchema(),
                 output=JsonArraySchema(items=JsonStringSchema()),
+                traceback=JsonArraySchema(items=JsonStringSchema()),
             ),
             required=['status'],
             additional_properties=True,
