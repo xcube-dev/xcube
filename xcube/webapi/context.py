@@ -35,13 +35,10 @@ import pandas as pd
 import pyproj
 import xarray as xr
 
-from xcube.constants import FORMAT_NAME_ZARR
 from xcube.constants import LOG
 from xcube.core.mldataset import BaseMultiLevelDataset
 from xcube.core.mldataset import MultiLevelDataset
 from xcube.core.mldataset import augment_ml_dataset
-from xcube.core.mldataset import open_ml_dataset_from_local_fs
-from xcube.core.mldataset import open_ml_dataset_from_object_storage
 from xcube.core.mldataset import open_ml_dataset_from_python_code
 from xcube.core.normalize import decode_cube
 from xcube.core.store import DATASET_TYPE
@@ -69,7 +66,7 @@ COMPUTE_VARIABLES = 'compute_variables'
 
 # We use tilde, because it is not a reserved URI characters
 STORE_DS_ID_SEPARATOR = '~'
-FS_TYPE_TO_STORE = {
+FS_TYPE_TO_STORE_ID = {
     'local': 'file',
     'obs': 's3'
 }
@@ -301,20 +298,11 @@ class ServiceContext:
         if not data_store_pool:
             data_store_pool = self._data_store_pool = DataStorePool()
 
-        def _is_not_empty(prefix):
-            return prefix != '' and prefix != '/' and prefix != '\\'
-
-        def _get_common_prefixes(p):
-            prefix = os.path.commonprefix(p)
-            if _is_not_empty(prefix) or len(p) == 1:
-                return [prefix]
-            else:
-                return _get_common_prefixes(p[:int(len(p)/2)]) + \
-                       _get_common_prefixes(p[int(len(p)/2):])
-
         for file_system, store_params, config_list in config_lists:
+            # Retrieve paths per configuration
             paths = [dc['Path'] for dc in config_list]
             list.sort(paths)
+            # Determine common prefixes of paths (and call them roots)
             prefixes = _get_common_prefixes(paths)
             if len(prefixes) < 1:
                 roots = prefixes
@@ -333,21 +321,26 @@ class ServiceContext:
                         root_candidate = root
                 roots.append(root_candidate)
             for root in roots:
+                # ensure root does not end with full or partial directory
+                # or file name
                 while not root.endswith("/") and not root.endswith("\\") and \
                         len(root) > 0:
                     root = root[:-1]
                 abs_root = root
+                # For local file systems: Determine absolute root from base dir
                 if file_system == 'local' and not os.path.isabs(abs_root):
                     abs_root = os.path.join(self._base_dir, abs_root)
                     abs_root = os.path.normpath(abs_root)
                 store_params_for_root = store_params.copy()
                 store_params_for_root['root'] = abs_root
+                # See if there already is a store with this configuration
                 data_store_config = DataStoreConfig(
-                    store_id=FS_TYPE_TO_STORE.get(file_system),
+                    store_id=FS_TYPE_TO_STORE_ID.get(file_system),
                     store_params=store_params_for_root)
                 store_instance_id = data_store_pool.\
                     get_store_instance_id(data_store_config)
                 if not store_instance_id:
+                    # Create new store with new unique store instance id
                     counter = 1
                     while data_store_pool.has_store_instance(
                             f'{file_system}_{counter}'):
@@ -355,6 +348,7 @@ class ServiceContext:
                     store_instance_id = f'{file_system}_{counter}'
                     data_store_pool.add_store_config(store_instance_id,
                                                      data_store_config)
+
                 for config in config_list:
                     if config['Path'].startswith(root):
                         config['StoreInstanceId'] = store_instance_id
@@ -958,6 +952,22 @@ def _open_ml_dataset_from_python_code(ctx: ServiceContext,
                                             input_parameters=input_parameters,
                                             ds_id=ds_id,
                                             exception_type=ServiceConfigError)
+
+
+def _is_not_empty(prefix):
+    return prefix != '' and prefix != '/' and prefix != '\\'
+
+
+def _get_common_prefixes(p):
+    # Recursively examine a list of paths for common prefixes:
+    # If no common prefix is found, split the list in half and
+    # examine each half separately
+    prefix = os.path.commonprefix(p)
+    if _is_not_empty(prefix) or len(p) == 1:
+        return [prefix]
+    else:
+        return _get_common_prefixes(p[:int(len(p) / 2)]) + \
+               _get_common_prefixes(p[int(len(p) / 2):])
 
 
 _MULTI_LEVEL_DATASET_OPENERS = {

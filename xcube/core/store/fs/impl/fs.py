@@ -96,7 +96,7 @@ class S3FsAccessor(FsAccessor):
                     default=True,
                 ),
                 requester_pays=JsonBooleanSchema(
-                    description='If "RequesterPays" buckets are supporteendd.',
+                    description='If "RequesterPays" buckets are supported.',
                     default=False,
                 ),
                 s3_additional_kwargs=JsonObjectSchema(

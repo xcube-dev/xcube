@@ -315,40 +315,6 @@ class DataStorePool:
         self._assert_valid_instance_id(store_instance_id)
         return self._instances[store_instance_id]
 
-    # def get_store(self,
-    #               store_instance_id: str = None,
-    #               store_config: DataStoreConfig = None
-    #               ) -> DataStore:
-    #     if store_instance_id is not None:
-    #         if store_config is not None:
-    #             raise ValueError('Not both parameters "store_instance_id "'
-    #                              'and "store_config" can be given')
-    #         self._assert_valid_instance_id(store_instance_id)
-    #         return self._instances[store_instance_id].store
-    #     elif store_config is not None:
-    #         store_instance_id = self.get_store_instance_id(store_config)
-    #         return self._instances[store_instance_id].store
-    #     else:
-    #         raise ValueError('Either parameter "store_instance_id" or '
-    #                          '"store_config" must be given.')
-    #
-    # def get_store_instance(self,
-    #                        store_instance_id: str = None,
-    #                        store_config: DataStoreConfig = None
-    #                        ) -> DataStoreInstance:
-    #     if store_instance_id is not None:
-    #         if store_config is not None:
-    #             raise ValueError('Not both parameters "store_instance_id "'
-    #                              'and "store_config" can be given')
-    #         self._assert_valid_instance_id(store_instance_id)
-    #         return self._instances[store_instance_id]
-    #     elif store_config is not None:
-    #         store_instance_id = self.get_store_instance_id(store_config)
-    #         return self._instances[store_instance_id]
-    #     else:
-    #         raise ValueError('Either parameter "store_instance_id" or '
-    #                          '"store_config" must be given.')
-
     def close_all_stores(self):
         for instance in self._instances.values():
             instance.close()
