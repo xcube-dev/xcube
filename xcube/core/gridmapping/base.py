@@ -34,6 +34,8 @@ from xcube.util.assertions import assert_instance
 from xcube.util.assertions import assert_true
 from xcube.util.dask import get_block_iterators
 from xcube.util.dask import get_chunk_sizes
+from xcube.util.tilegrid import ImageTileGrid
+from xcube.util.tilegrid import TileGrid
 from .helpers import AffineTransformMatrix
 from .helpers import Number
 from .helpers import _assert_valid_xy_coords
@@ -48,7 +50,7 @@ from .helpers import scale_xy_res_and_size
 CRS_WGS84 = pyproj.crs.CRS(4326)
 
 # WGS84, axis order: lon, lat
-CRS_CRS84 = pyproj.crs.CRS.from_string("urn:ogc:def:crs:OGC:1.3:CRS84")
+CRS_CRS84 = pyproj.crs.CRS.from_string("CRS84")
 
 # Default tolerance for all operations that
 # accept a key-word argument "tolerance":
@@ -768,3 +770,15 @@ class GridMapping(abc.ABC):
             f'* size: {self.size}',
             f'* tile_size: {self.tile_size}',
         ])
+
+    @property
+    def tile_grid(self) -> TileGrid:
+        assert_true(math.isclose(self.x_res, self.y_res),
+                    message='spatial resolutions must be'
+                            ' same in both directions')
+        return ImageTileGrid(image_size=self.size,
+                             tile_size=self.tile_size or (512, 512),
+                             crs=self.crs,
+                             xy_res=self.x_res,
+                             xy_min=(self.x_min, self.y_min),
+                             is_j_axis_up=self.is_j_axis_up)

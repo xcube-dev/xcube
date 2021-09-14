@@ -173,7 +173,7 @@ class HandlersTest(AsyncHTTPTestCase):
     def test_fetch_datasets_details(self):
         response = self.fetch(self.prefix + '/datasets?details=1')
         self.assertResponseOK(response)
-        response = self.fetch(self.prefix + '/datasets?details=1&tiles=cesium')
+        response = self.fetch(self.prefix + '/datasets?details=1&tiles=ol')
         self.assertResponseOK(response)
         response = self.fetch(self.prefix + '/datasets?details=1&point=2.8,51.0')
         self.assertResponseOK(response)
@@ -186,8 +186,6 @@ class HandlersTest(AsyncHTTPTestCase):
         response = self.fetch(self.prefix + '/datasets/demo')
         self.assertResponseOK(response)
         response = self.fetch(self.prefix + '/datasets/demo?tiles=ol4')
-        self.assertResponseOK(response)
-        response = self.fetch(self.prefix + '/datasets/demo?tiles=cesium')
         self.assertResponseOK(response)
 
     def test_fetch_dataset_coords(self):
@@ -259,16 +257,7 @@ class HandlersTest(AsyncHTTPTestCase):
         self.assertResponseOK(response)
 
     def test_fetch_dataset_tile_grid_cesium_json(self):
-        response = self.fetch(self.prefix + '/datasets/demo/vars/conc_chl/tilegrid?tiles=cesium')
-        self.assertResponseOK(response)
-
-    def test_fetch_ne2_tile(self):
-        response = self.fetch(self.prefix + '/ne2/tiles/0/0/0.jpg')
-        self.assertResponseOK(response)
-
-    def test_fetch_ne2_tile_grid(self):
-        response = self.fetch(self.prefix + '/ne2/tilegrid?tiles=ol4')
-        self.assertResponseOK(response)
+        self.fetch(self.prefix + '/datasets/demo/vars/conc_chl/tilegrid?tiles=cesium')
 
     def test_fetch_color_bars_json(self):
         response = self.fetch(self.prefix + '/colorbars')
@@ -340,7 +329,6 @@ class HandlersTest(AsyncHTTPTestCase):
                                    '}')
         self.assertResponseOK(response)
 
-
     def test_fetch_timeseries_feature_collection(self):
         response = self.fetch(self.prefix + '/timeseries/demo/conc_chl', method="POST",
                               body='{"type": "FeatureCollection", "features": null}')
@@ -356,7 +344,6 @@ class HandlersTest(AsyncHTTPTestCase):
                                    '   "geometry": {"type": "Point", "coordinates": [1, 51]}}'
                                    ']}')
         self.assertResponseOK(response)
-
 
     def test_fetch_ts_legacy_info(self):
         response = self.fetch(self.prefix + '/ts')

@@ -55,7 +55,12 @@ class CubeConfigTest(unittest.TestCase):
                              bbox=[12.2, 52.1, 13.9, 54.8],
                              spatial_res=0.05,
                              time_range=['2018-01-01', None],
-                             time_period='4D')
+                             time_period='4D',
+                             metadata=dict(title='S2L2A subset'),
+                             variable_metadata=dict(
+                                 B03=dict(long_name='Band 3'),
+                                 B04=dict(long_name='Band 4'),
+                             ))
         cube_config = CubeConfig.from_dict(json_instance)
         self.assertIsInstance(cube_config, CubeConfig)
         self.assertEqual(('B03', 'B04'), cube_config.variable_names)
@@ -64,6 +69,15 @@ class CubeConfigTest(unittest.TestCase):
         self.assertEqual(0.05, cube_config.spatial_res)
         self.assertEqual(('2018-01-01', None), cube_config.time_range)
         self.assertEqual('4D', cube_config.time_period)
+        self.assertEqual(dict(title='S2L2A subset'),
+                         cube_config.metadata)
+        self.assertEqual(
+            dict(
+                B03=dict(long_name='Band 3'),
+                B04=dict(long_name='Band 4'),
+            ),
+            cube_config.variable_metadata
+        )
 
     def test_to_dict(self):
         expected_dict = dict(variable_names=['B03', 'B04'],
@@ -71,7 +85,12 @@ class CubeConfigTest(unittest.TestCase):
                              bbox=[12.2, 52.1, 13.9, 54.8],
                              spatial_res=0.05,
                              time_range=['2018-01-01', None],
-                             time_period='4D')
+                             time_period='4D',
+                             metadata=dict(title='S2L2A subset'),
+                             variable_metadata=dict(
+                                 B03=dict(long_name='Band 3'),
+                                 B04=dict(long_name='Band 4'),
+                             ))
         cube_config = CubeConfig.get_schema().from_instance(expected_dict)
         actual_dict = cube_config.to_dict()
         self.assertEqual(expected_dict, actual_dict)
@@ -114,7 +133,8 @@ class CallbackConfigTest(unittest.TestCase):
     def test_to_dict(self):
         with self.assertRaises(ValueError) as e:
             CallbackConfig()
-        self.assertEqual('Both, api_uri and access_token must be given', str(e.exception))
+        self.assertEqual('Both, api_uri and access_token must be given',
+                         str(e.exception))
 
         expected_dict = {
             "api_uri": 'https://bla.com',

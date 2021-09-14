@@ -86,6 +86,8 @@
 
 ### Other
 
+* The xcube cube generator (API `xcube.core.gen2`, CLI `xcube gen2`) 
+  will now write consolidated Zarrs by default. (#500)
 * xcube now issues a warning, if a data cube is opened from object 
   storage, and credentials have neither been passed nor can be found, 
   and the object storage has been opened with the default `anon=False`. (#412)
@@ -101,11 +103,26 @@
 * Fixed an issue where `xcube serve` provided wrong layer source options for 
   [OpenLayers XYZ](https://openlayers.org/en/latest/apidoc/module-ol_source_XYZ-XYZ.html) 
   when latitude coordinates where increasing with the coordinate index. (#251)
-* Updated plugin version in docker image to:
-  * XCUBE_SH_VERSION=0.9.0.dev0
-  * XCUBE_CCI_VERSION=0.9.0.dev0
-  * XCUBE_CDS_VERSION=0.9.0
+* Function `xcube.core.normalize.adjust_spatial_attrs()` no longer removes
+  existing global attributes of the form `geospatial_vertical_<property>`.
+* Numerous classes and functions became obsolete in the xcube 0.9 
+  code base and have been removed, also because we believe there is 
+  quite rare outside use, if at all. 
   
+  Removed from `xcube.util.tiledimage`:
+  * class `DownsamplingImage`
+  * class `PilDownsamplingImage`
+  * class `NdarrayDownsamplingImage`
+  * class `FastNdarrayDownsamplingImage`
+  * class `ImagePyramid`
+  * function `create_pil_downsampling_image()`
+  * function `create_ndarray_downsampling_image()`
+  * function `downsample_ndarray()`
+  * functions `aggregate_ndarray_xxx()`
+  
+  Removed from `xcube.util.tilegrid`:
+  * functions `pow2_2d_subdivision()`
+  * functions `pow2_1d_subdivision()`
   
 ## Changes in 0.8.2 (in development)
 

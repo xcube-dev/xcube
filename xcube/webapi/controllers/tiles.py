@@ -1,5 +1,4 @@
 import io
-import warnings
 from typing import Dict, Any
 
 import matplotlib
@@ -12,12 +11,12 @@ from xcube.core.tile import parse_non_spatial_labels
 from xcube.util.cmaps import get_cmap
 from xcube.util.cmaps import get_norm
 from xcube.util.tilegrid import TileGrid
+from xcube.util.tilegrid import tile_grid_to_ol_xyz_source_options
 from xcube.webapi.context import ServiceContext
 from xcube.webapi.defaults import DEFAULT_CMAP_HEIGHT
 from xcube.webapi.defaults import DEFAULT_CMAP_WIDTH
 from xcube.webapi.errors import ServiceBadRequestError
 from xcube.webapi.errors import ServiceResourceNotFoundError
-from xcube.webapi.ne2 import NaturalEarth2Image
 from xcube.webapi.reqparams import RequestParams
 
 
@@ -172,119 +171,103 @@ def get_dataset_tile_url(ctx: ServiceContext,
                                '{z}/{x}/{y}.png')
 
 
-# noinspection PyUnusedLocal
-def get_ne2_tile(ctx: ServiceContext, x: str, y: str, z: str, params: RequestParams):
-    x = params.to_int('x', x)
-    y = params.to_int('y', y)
-    z = params.to_int('z', z)
-    return NaturalEarth2Image.get_pyramid().get_tile(x, y, z)
-
-
-def get_ne2_tile_grid(ctx: ServiceContext, tile_client: str, base_url: str):
-    if tile_client == 'ol4':
-        return get_tile_source_options(NaturalEarth2Image.get_pyramid().tile_grid,
-                                       get_ne2_tile_url(ctx, base_url),
-                                       client=tile_client)
-    else:
-        raise ServiceBadRequestError(f'Unknown tile client {tile_client!r}')
-
-
-def get_ne2_tile_url(ctx: ServiceContext, base_url: str):
-    return ctx.get_service_url(base_url, 'ne2', 'tiles', '{z}/{x}/{y}.jpg')
-
-
 def get_tile_source_options(tile_grid: TileGrid, url: str, client: str = 'ol'):
     if client == 'ol' or client == 'ol4':
         # OpenLayers 4.x - 6.x
-        return _tile_grid_to_ol_xyz_source_options(tile_grid, url)
+        return tile_grid_to_ol_xyz_source_options(tile_grid, url)
     elif client == 'cesium':
         # Cesium 1.x
-        return _tile_grid_to_cesium_source_options(tile_grid, url)
+        # return _tile_grid_to_cesium_source_options(tile_grid, url)
+        raise NotImplementedError()
     else:  # client == 'leaflet':
         # Leaflet 1.x
-        return _tile_grid_to_leaflet_source_options(tile_grid, url)
+        # return _tile_grid_to_leaflet_source_options(tile_grid, url)
+        raise NotImplementedError()
 
+# TODO (forman): re-implement the source options for Leaflet and Cesium.
+#   Use code as starting point from here. Put new functions
+#   into xcube.util.tilegrid.
 
-def _tile_grid_to_ol_xyz_source_options(tile_grid: TileGrid, url: str):
-    """
-    Convert TileGrid into options to be used with ol.source.XYZ(options) of OpenLayers 4.x.
-
-    See
-
-    * https://openlayers.org/en/latest/apidoc/ol.source.XYZ.html
-    * https://openlayers.org/en/latest/examples/xyz.html
-
-    :param tile_grid: tile grid
-    :param url: source url
-    :return:
-    """
-    west, south, east, north = tile_grid.geo_extent
-
-    delta_x = east - west + (0 if east >= west else 360)
-    delta_y = north - south
-    width = tile_grid.width(0)
-    height = tile_grid.height(0)
-    res0_x = delta_x / width
-    res0_y = delta_y / height
-    res0 = max(res0_x, res0_y)
-    if abs(res0_y - res0_x) >= 1.e-5:
-        warnings.warn(f'spatial resolutions in x and y direction differ significantly:'
-                      f' {res0_x} and {res0_y} degrees, using maximum {res0}')
-
-    # https://openlayers.org/en/latest/examples/xyz.html
-    # https://openlayers.org/en/latest/apidoc/ol.source.XYZ.html
-    return dict(url=url,
-                projection='EPSG:4326',
-                minZoom=0,
-                maxZoom=tile_grid.num_levels - 1,
-                tileGrid=dict(extent=[west, south, east, north],
-                              origin=[west, north],
-                              tileSize=[tile_grid.tile_size[0], tile_grid.tile_size[1]],
-                              resolutions=[res0 / (2 ** i) for i in range(tile_grid.num_levels)]))
-
-
-def _tile_grid_to_cesium_source_options(tile_grid: TileGrid, url: str):
-    """
-    Convert TileGrid into options to be used with Cesium.UrlTemplateImageryProvider(options) of Cesium 1.45+.
-
-    See
-
-    * https://cesiumjs.org/Cesium/Build/Documentation/UrlTemplateImageryProvider.html
-
-    :param tile_grid: tile grid
-    :param url: source url
-    :return:
-    """
-    west, south, east, north = tile_grid.geo_extent
-    rectangle = dict(west=west, south=south, east=east, north=north)
-    return dict(url=url,
-                rectangle=rectangle,
-                minimumLevel=0,
-                maximumLevel=tile_grid.num_levels - 1,
-                tileWidth=tile_grid.tile_size[0],
-                tileHeight=tile_grid.tile_size[1],
-                tilingScheme=dict(rectangle=rectangle,
-                                  numberOfLevelZeroTilesX=tile_grid.num_level_zero_tiles_x,
-                                  numberOfLevelZeroTilesY=tile_grid.num_level_zero_tiles_y))
-
-
-def _tile_grid_to_leaflet_source_options(tile_grid: TileGrid, url: str):
-    """
-    Convert TileGrid into options to be used with L.tileLayer(options) of Leaflet 1.7+.
-
-    See
-
-    * https://cesiumjs.org/Cesium/Build/Documentation/UrlTemplateImageryProvider.html
-
-    :param tile_grid: tile grid
-    :param url: source url
-    :return:
-    """
-    west, south, east, north = tile_grid.geo_extent
-    tile_width = tile_grid.tile_size[0]
-    tile_height = tile_grid.tile_size[1]
-    return dict(url=url,
-                bounds=[west, south, east, north],
-                minNativeZoom=0,
-                maxNativeZoom=tile_grid.num_levels - 1,
-                tileSize=tile_width if tile_width == tile_height else [tile_width, tile_height])
+# def _tile_grid_to_ol_xyz_source_options(tile_grid: TileGrid2, url: str):
+#     """
+#     Convert TileGrid into options to be used with ol.source.XYZ(options) of OpenLayers 4.x.
+#
+#     See
+#
+#     * https://openlayers.org/en/latest/apidoc/ol.source.XYZ.html
+#     * https://openlayers.org/en/latest/examples/xyz.html
+#
+#     :param tile_grid: tile grid
+#     :param url: source url
+#     :return:
+#     """
+#     west, south, east, north = tile_grid.geo_extent
+#
+#     delta_x = east - west + (0 if east >= west else 360)
+#     delta_y = north - south
+#     width, height = tile_grid.width(0)
+#     height = tile_grid.height(0)
+#     res0_x = delta_x / width
+#     res0_y = delta_y / height
+#     res0 = max(res0_x, res0_y)
+#     if abs(res0_y - res0_x) >= 1.e-5:
+#         warnings.warn(f'spatial resolutions in x and y direction differ significantly:'
+#                       f' {res0_x} and {res0_y} degrees, using maximum {res0}')
+#
+#     # https://openlayers.org/en/latest/examples/xyz.html
+#     # https://openlayers.org/en/latest/apidoc/ol.source.XYZ.html
+#     return dict(url=url,
+#                 projection='EPSG:4326',
+#                 minZoom=0,
+#                 maxZoom=tile_grid.num_levels - 1,
+#                 tileGrid=dict(extent=[west, south, east, north],
+#                               origin=[west, north],
+#                               tileSize=[tile_grid.tile_size[0], tile_grid.tile_size[1]],
+#                               resolutions=[tile_grid for i in range(tile_grid.num_levels)]))
+#
+#
+# def _tile_grid_to_cesium_source_options(tile_grid: TileGrid, url: str):
+#     """
+#     Convert TileGrid into options to be used with Cesium.UrlTemplateImageryProvider(options) of Cesium 1.45+.
+#
+#     See
+#
+#     * https://cesiumjs.org/Cesium/Build/Documentation/UrlTemplateImageryProvider.html
+#
+#     :param tile_grid: tile grid
+#     :param url: source url
+#     :return:
+#     """
+#     west, south, east, north = tile_grid.geo_extent
+#     rectangle = dict(west=west, south=south, east=east, north=north)
+#     return dict(url=url,
+#                 rectangle=rectangle,
+#                 minimumLevel=0,
+#                 maximumLevel=tile_grid.num_levels - 1,
+#                 tileWidth=tile_grid.tile_size[0],
+#                 tileHeight=tile_grid.tile_size[1],
+#                 tilingScheme=dict(rectangle=rectangle,
+#                                   numberOfLevelZeroTilesX=tile_grid.num_level_zero_tiles_x,
+#                                   numberOfLevelZeroTilesY=tile_grid.num_level_zero_tiles_y))
+#
+#
+# def _tile_grid_to_leaflet_source_options(tile_grid: TileGrid, url: str):
+#     """
+#     Convert TileGrid into options to be used with L.tileLayer(options) of Leaflet 1.7+.
+#
+#     See
+#
+#     * https://cesiumjs.org/Cesium/Build/Documentation/UrlTemplateImageryProvider.html
+#
+#     :param tile_grid: tile grid
+#     :param url: source url
+#     :return:
+#     """
+#     west, south, east, north = tile_grid.geo_extent
+#     tile_width = tile_grid.tile_size[0]
+#     tile_height = tile_grid.tile_size[1]
+#     return dict(url=url,
+#                 bounds=[west, south, east, north],
+#                 minNativeZoom=0,
+#                 maxNativeZoom=tile_grid.num_levels - 1,
+#                 tileSize=tile_width if tile_width == tile_height else [tile_width, tile_height])

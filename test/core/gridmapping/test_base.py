@@ -10,6 +10,7 @@ from xcube.core.gridmapping.coords import Coords2DGridMapping
 # noinspection PyProtectedMember
 from xcube.core.gridmapping.helpers import _to_affine
 from xcube.core.gridmapping.regular import RegularGridMapping
+from xcube.util.tilegrid import TileGrid
 
 GEO_CRS = pyproj.crs.CRS(4326)
 NOT_A_GEO_CRS = pyproj.crs.CRS(5243)
@@ -357,3 +358,34 @@ class GridMappingTest(SourceDatasetMixin, unittest.TestCase):
                       [360, 0, 720, 180],
                       [0, 340, 20, 360],
                       [-1, -1, -1, -1]], dtype=np.int64))
+
+    def test_tile_grid(self):
+        gm = GridMapping.regular((7200, 3600),
+                                 (-180, -90),
+                                 360 / 7200,
+                                 'epsg:4326',
+                                 tile_size=(720, 360),
+                                 is_j_axis_up=True)
+        tile_grid = gm.tile_grid
+        self.assertIsInstance(tile_grid, TileGrid)
+        self.assertEqual([(1, 1),
+                          (2, 2),
+                          (3, 3),
+                          (5, 5),
+                          (10, 10)],
+                         [tile_grid.get_num_tiles(i)
+                          for i in range(tile_grid.num_levels)])
+        self.assertEqual([(450, 225),
+                          (900, 450),
+                          (1800, 900),
+                          (3600, 1800),
+                          (7200, 3600)],
+                         [tile_grid.get_image_size(i)
+                          for i in range(tile_grid.num_levels)])
+        self.assertEqual([0.8,
+                          0.4,
+                          0.2,
+                          0.1,
+                          0.05],
+                         [tile_grid.get_resolution(i)
+                          for i in range(tile_grid.num_levels)])
