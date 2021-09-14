@@ -36,7 +36,7 @@ DataStores:
         # client_kwargs:
         #  endpoint_url: https://s3.eu-central-1.amazonaws.com
     Datasets:
-      - Identifier: "*.zarr"
+      - Path: "*.zarr"
         Style: "default"
         # ChunkCacheSize: 1G
 
