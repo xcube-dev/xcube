@@ -87,6 +87,19 @@ class CubeGeneratorRequestTest(unittest.TestCase):
         request = CubeGeneratorRequest.from_dict(expected_dict)
         actual_dict = request.to_dict()
         self.assertEqual(expected_dict, actual_dict)
+        # JSON-serialisation smoke test
+        json.dumps(actual_dict, indent=2)
 
+        # No cube config is ok too
+        expected_dict = dict(
+            input_config=dict(store_id='memory',
+                              data_id='S2L2A'),
+            output_config=dict(store_id='memory',
+                               replace=False,
+                               data_id='CHL')
+        )
+        request = CubeGeneratorRequest.from_dict(expected_dict)
+        actual_dict = request.to_dict()
+        self.assertEqual(expected_dict, actual_dict)
         # JSON-serialisation smoke test
         json.dumps(actual_dict, indent=2)

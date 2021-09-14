@@ -22,31 +22,32 @@
 import json
 import os.path
 import time
-from typing import Type, TypeVar, Dict, Any, Optional
+from typing import Type, TypeVar, Dict, Any, Optional, List, Tuple, Union
 
 import requests
 
 from xcube.util.assertions import assert_instance
+from xcube.util.jsonschema import JsonObject
 from xcube.util.progress import observe_progress
 from .config import ServiceConfig
+from .response import CubeGeneratorProgress
 from .response import CubeGeneratorState
 from .response import CubeGeneratorToken
-from .response import CubeInfoWithCosts
 from .response import CubeInfoWithCostsResult
 from ..error import CubeGeneratorError
 from ..generator import CubeGenerator
 from ..request import CubeGeneratorRequest
 from ..request import CubeGeneratorRequestLike
 from ..response import CubeGeneratorResult
-from ..response import CubeInfo
-from ..response import CubeReference
+from ..response import CubeInfoResult
+from ..response import GenericCubeGeneratorResult
 
 _BASE_HEADERS = {
     "Accept": "application/json",
     # "Content-Type": "application/json",
 }
 
-R = TypeVar('R')
+R = TypeVar('R', bound=JsonObject)
 
 
 class RemoteCubeGenerator(CubeGenerator):
@@ -59,18 +60,25 @@ class RemoteCubeGenerator(CubeGenerator):
 
     :param service_config: An remote configuration object.
     :param verbosity: Level of verbosity, 0 means off.
+    :param raise_on_error: Whether to raise a CubeGeneratorError
+        exception on generator failures. If False, the default,
+        the returned result will have the "status" field set to "error"
+        while other fields such as "message", "traceback", "output"
+        provide more failure details.
     """
 
     def __init__(self,
                  service_config: ServiceConfig,
                  progress_period: float = 1.0,
+                 raise_on_error: bool = False,
                  verbosity: int = 0):
+        super().__init__(raise_on_error=raise_on_error,
+                         verbosity=verbosity)
         assert_instance(service_config, ServiceConfig, 'service_config')
         assert_instance(progress_period, (int, float), 'progress_period')
         self._service_config: ServiceConfig = service_config
         self._access_token: Optional[str] = service_config.access_token
         self._progress_period: float = progress_period
-        self._verbosity: int = verbosity
 
     def endpoint_op(self, op_path: str) -> str:
         return f'{self._service_config.endpoint_url}{op_path}'
@@ -108,36 +116,28 @@ class RemoteCubeGenerator(CubeGenerator):
             self._access_token = token_response.access_token
         return self._access_token
 
-    def get_cube_info(self, request: CubeGeneratorRequestLike) \
-            -> CubeInfoWithCostsResult:
+    def _get_cube_info(self, request: CubeGeneratorRequestLike) \
+            -> CubeInfoResult:
         request = CubeGeneratorRequest.normalize(request).for_service()
         request_data = request.to_dict()
         response = requests.post(self.endpoint_op('cubegens/info'),
                                  json=request_data,
                                  headers=self.auth_headers)
-        response_type = CubeInfoWithCosts if self._access_token else CubeInfo
-        cube_info = self._parse_response(response,
-                                         response_type=response_type,
-                                         request_data=request_data)
-        # TODO (forman): gen2 API change:
-        #   get result from state and merge
-        return CubeInfoWithCostsResult(result=cube_info,
-                                       status='ok')
+        response_type = CubeInfoWithCostsResult \
+            if self._access_token else CubeInfoResult
+        return self._parse_response(response,
+                                    response_type=response_type,
+                                    request_data=request_data)
 
-    def generate_cube(self, request: CubeGeneratorRequestLike) \
+    def _generate_cube(self, request: CubeGeneratorRequestLike) \
             -> CubeGeneratorResult:
         request = CubeGeneratorRequest.normalize(request).for_service()
+
         response = self._submit_gen_request(request)
-
-        state = self._get_cube_generator_state(response)
-        if state.status.failed:
-            # TODO (forman): gen2 API change:
-            #   get result from state and merge
-            return CubeGeneratorResult(status='error',
-                                       output=state.output)
-
-        cubegen_id = state.cubegen_id
-        data_id = self._get_data_id(request, cubegen_id + '.zarr')
+        cubegen_id, result, _ = \
+            self._get_cube_generator_result(response)
+        if result is not None:
+            return result
 
         last_worked = 0
         with observe_progress('Generating cube', 100) as cm:
@@ -148,24 +148,13 @@ class RemoteCubeGenerator(CubeGenerator):
                     self.endpoint_op(f'cubegens/{cubegen_id}'),
                     headers=self.auth_headers
                 )
-                state = self._get_cube_generator_state(response)
-                if state.status.succeeded or state.status.failed:
-                    # TODO (forman): gen2 API change:
-                    #   get result from state and merge
-                    if state.status.succeeded:
-                        return CubeGeneratorResult(
-                            status='ok',
-                            result=CubeReference(data_id=data_id),
-                            output=state.output
-                        )
-                    else:
-                        return CubeGeneratorResult(
-                            status='error',
-                            output=state.output
-                        )
+                _, result, progress = \
+                    self._get_cube_generator_result(response)
+                if result is not None:
+                    return result
 
-                if state.progress is not None and len(state.progress) > 0:
-                    progress_state = state.progress[0].state
+                if progress is not None and len(progress) > 0:
+                    progress_state = progress[0].state
                     total_work = progress_state.total_work
                     progress = progress_state.progress or 0
                     worked = progress * total_work
@@ -210,37 +199,124 @@ class RemoteCubeGenerator(CubeGenerator):
             )
 
     @staticmethod
-    def _get_data_id(request: CubeGeneratorRequest, default: str) -> str:
+    def _get_data_id(request: CubeGeneratorRequest, default: str) -> CubeGeneratorResult:
         data_id = request.output_config.data_id
         return data_id if data_id else default
 
-    def _get_cube_generator_state(self,
-                                  response: requests.Response,
-                                  request_data: Dict[str, Any] = None) \
-            -> CubeGeneratorState:
-        state = self._parse_response(response,
-                                     CubeGeneratorState,
-                                     request_data=request_data)
-        return state
+    def _get_cube_generator_result(
+            self,
+            response: requests.Response,
+            request_data: Dict[str, Any] = None
+    ) -> Tuple[str,
+               Optional[CubeGeneratorResult],
+               Optional[List[CubeGeneratorProgress]]]:
+        state = self._get_cube_generator_state(response, request_data)
+        result = None
+        if state.job_status.succeeded:
+            result = state.job_result
+            if isinstance(result, CubeGeneratorResult):
+                status_code = result.status_code or response.status_code
+                result = result.derive(status_code=status_code,
+                                       output=state.output)
+            else:
+                result = self._new_invalid_result(state)
+        elif state.job_status.failed:
+            result = state.job_result
+            if isinstance(result, CubeGeneratorResult):
+                status_code = result.status_code or response.status_code
+                result = result.derive(status='error',
+                                       status_code=status_code,
+                                       output=state.output)
+            else:
+                result = self._new_invalid_result(state)
+        return state.job_id, result, state.progress
+
+    def _get_cube_generator_state(
+            self,
+            response: requests.Response,
+            request_data: Dict[str, Any] = None
+    ) -> CubeGeneratorState:
+        return self._parse_response(response,
+                                    CubeGeneratorState,
+                                    request_data=request_data)
 
     def _parse_response(self,
                         response: requests.Response,
                         response_type: Type[R],
                         request_data: Dict[str, Any] = None) -> R:
-        CubeGeneratorError.maybe_raise_for_response(response)
-        response_data = response.json()
+
+        # noinspection PyBroadException
+        try:
+            response_data = response.json()
+        except BaseException as e:
+            raise self._new_response_error(response, msg=e) from e
+
         if self._verbosity >= 3:
             self.__dump_json(response.request.method,
                              response.url,
                              request_data,
                              response_data)
 
+        if response_data is None:
+            raise self._new_response_error(
+                response, msg='no response'
+            )
+
+        if not isinstance(response_data, dict):
+            raise self._new_response_error(
+                response, msg='response must be a dictionary'
+            )
+
         # noinspection PyBroadException
         try:
-            return response_type.from_dict(response_data)
-        except Exception as e:
-            raise RuntimeError(f'internal error: unexpected response'
-                               f' from API call {response.url}: {e}') from e
+            result = response_type.from_dict(response_data)
+        except BaseException as e:
+            raise self._new_response_error(
+                response,
+                msg=f'failed parsing response: {e}'
+            ) from e
+
+        if isinstance(result, GenericCubeGeneratorResult) \
+                and result.status_code is None:
+            result = result.derive(status_code=response.status_code)
+
+        return result
+
+    @classmethod
+    def _new_response_error(
+            cls,
+            response: requests.Response,
+            msg: Union[str, BaseException]
+    ) -> CubeGeneratorError:
+        try:
+            response.raise_for_status()
+        except requests.HTTPError as http_error:
+            return CubeGeneratorError(
+                f'{msg}: {http_error}',
+                status_code=response.status_code
+            )
+        return cls._new_unexpected_response_error(response, msg=msg)
+
+    @classmethod
+    def _new_unexpected_response_error(
+            cls,
+            response: requests.Response,
+            msg: Union[str, BaseException]
+    ) -> CubeGeneratorError:
+        return CubeGeneratorError(f'Client error: unexpected response'
+                                  f' from API call {response.url},'
+                                  f' status code {response.status_code}:'
+                                  f' {msg}',
+                                  status_code=422)
+
+    @classmethod
+    def _new_invalid_result(cls, state: CubeGeneratorState):
+        return CubeGeneratorResult(
+            status='error',
+            status_code=422,
+            message='missing cube generator result',
+            output=state.output,
+        )
 
     @classmethod
     def __dump_json(cls, method, url, request_data, response_data):

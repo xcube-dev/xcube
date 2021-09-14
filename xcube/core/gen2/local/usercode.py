@@ -87,12 +87,16 @@ class CubeUserCodeExecutor(CubeTransformer):
                 raise CubeGeneratorError(
                     f'Parameter schema returned by'
                     f' user code class {process_class!r}'
-                    f' must be an instance of {JsonObjectSchema!r}')
+                    f' must be an instance of {JsonObjectSchema!r}',
+                    status_code=400
+                )
             try:
                 process_params_schema.validate_instance(process_params)
             except jsonschema.ValidationError as e:
-                raise CubeGeneratorError(f'Invalid processing parameters:'
-                                         f' {e}') from e
+                raise CubeGeneratorError(
+                    f'Invalid processing parameters: {e}',
+                    status_code=400
+                ) from e
         return process_callable
 
     @classmethod
@@ -106,13 +110,15 @@ class CubeUserCodeExecutor(CubeTransformer):
                 return None
             raise CubeGeneratorError(
                 f'Missing method {method_name!r}'
-                f' in user code class {type(user_code_object)!r}'
+                f' in user code class {type(user_code_object)!r}',
+                status_code=400
             )
         user_code_callable = getattr(user_code_object, method_name)
         if not callable(user_code_callable):
             raise CubeGeneratorError(
                 f'Attribute {METHOD_NAME_DATASET_PROCESSOR!r}'
                 f' of user code class {type(user_code_object)!r}'
-                f' must be callable'
+                f' must be callable',
+                status_code=400
             )
         return user_code_callable
