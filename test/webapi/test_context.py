@@ -266,49 +266,49 @@ class MaybeAssignStoreInstanceIdsTest(unittest.TestCase):
             {
                 'Identifier': 'z_0',
                 'FileSystem': 'local',
-                'Path': '/one/path/abc.zarr',
+                'Path': 'path/abc.zarr',
                 'StoreInstanceId': 'local_2'
             },
             {
                 'Identifier': 'z_1',
                 'FileSystem': 'local',
-                'Path': '/one/path/def.zarr',
+                'Path': 'path/def.zarr',
                 'StoreInstanceId': 'local_2'
             },
             {
                 'Identifier': 'z_4',
                 'FileSystem': 'obs',
-                'Path': '/one/path/mno.zarr',
+                'Path': 'mno.zarr',
                 'StoreInstanceId': 'obs_1'
             },
             {
                 'Identifier': 'z_2',
                 'FileSystem': 'local',
-                'Path': '/another/path/ghi.zarr',
+                'Path': 'ghi.zarr',
                 'StoreInstanceId': 'local_1'
             },
             {
                 'Identifier': 'z_3',
                 'FileSystem': 'local',
-                'Path': '/one/more/path/jkl.zarr',
+                'Path': 'more/path/jkl.zarr',
                 'StoreInstanceId': 'local_2'
             },
             {
                 'Identifier': 'z_5',
                 'FileSystem': 'obs',
-                'Path': '/one/path/pqr.zarr',
+                'Path': 'pqr.zarr',
                 'StoreInstanceId': 'obs_1'
             },
             {
                 'Identifier': 'z_6',
                 'FileSystem': 'local',
-                'Path': '/one/path/stu.zarr',
+                'Path': 'path/stu.zarr',
                 'StoreInstanceId': 'local_2'
             },
             {
                 'Identifier': 'z_7',
                 'FileSystem': 'local',
-                'Path': '/one/more/path/vwx.zarr',
+                'Path': 'more/path/vwx.zarr',
                 'StoreInstanceId': 'local_2'
             },
         ]
@@ -344,8 +344,7 @@ class MaybeAssignStoreInstanceIdsTest(unittest.TestCase):
                          dataset_config['Identifier'])
         self.assertEqual('Test 1', dataset_config['Title'])
         self.assertEqual('local', dataset_config['FileSystem'])
-        self.assertTrue(dataset_config["Path"].endswith(
-            '/xcube/test/webapi/res/test/cube-1-250-250.zarr'))
+        self.assertEqual('cube-1-250-250.zarr', dataset_config["Path"])
         self.assertEqual('local_1', dataset_config['StoreInstanceId'])
 
     def test_s3(self):
@@ -368,8 +367,7 @@ class MaybeAssignStoreInstanceIdsTest(unittest.TestCase):
         self.assertEqual('obs', dataset_config['FileSystem'])
         self.assertEqual('https://s3.eu-central-1.amazonaws.com',
                          dataset_config['Endpoint'])
-        self.assertEqual('xcube-examples/OLCI-SNS-RAW-CUBE-2.zarr',
-                         dataset_config['Path'])
+        self.assertEqual('OLCI-SNS-RAW-CUBE-2.zarr', dataset_config['Path'])
         self.assertEqual('eu-central-1', dataset_config['Region'])
         self.assertEqual('obs_1', dataset_config['StoreInstanceId'])
 
@@ -398,8 +396,7 @@ class MaybeAssignStoreInstanceIdsTest(unittest.TestCase):
                          list(dataset_config.keys()))
         self.assertEqual('five', dataset_config['Identifier'])
         self.assertEqual('Test 5', dataset_config['Title'])
-        self.assertTrue(dataset_config["Path"].endswith(
-            '/xcube/test/webapi/res/test/cube-1-250-250.zarr'))
+        self.assertEqual('cube-1-250-250.zarr', dataset_config['Path'])
         self.assertEqual('local_1', dataset_config['StoreInstanceId'])
 
     def test_local_store_already_existing(self):
