@@ -86,6 +86,7 @@ class GenericCubeGeneratorResult(Generic[R], JsonObject):
                 result=cls.get_result_schema(),
                 message=JsonStringSchema(),
                 output=JsonArraySchema(items=JsonStringSchema()),
+                traceback=JsonArraySchema(items=JsonStringSchema()),
             ),
             required=['status'],
             additional_properties=True,
