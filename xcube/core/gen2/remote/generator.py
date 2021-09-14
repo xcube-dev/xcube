@@ -212,16 +212,16 @@ class RemoteCubeGenerator(CubeGenerator):
                Optional[List[CubeGeneratorProgress]]]:
         state = self._get_cube_generator_state(response, request_data)
         result = None
-        if state.status.succeeded:
-            result = state.result
+        if state.job_status.succeeded:
+            result = state.job_result
             if isinstance(result, CubeGeneratorResult):
                 status_code = result.status_code or response.status_code
                 result = result.derive(status_code=status_code,
                                        output=state.output)
             else:
                 result = self._new_invalid_result(state)
-        elif state.status.failed:
-            result = state.result
+        elif state.job_status.failed:
+            result = state.job_result
             if isinstance(result, CubeGeneratorResult):
                 status_code = result.status_code or response.status_code
                 result = result.derive(status='error',
@@ -229,7 +229,7 @@ class RemoteCubeGenerator(CubeGenerator):
                                        output=state.output)
             else:
                 result = self._new_invalid_result(state)
-        return state.cubegen_id, result, state.progress
+        return state.job_id, result, state.progress
 
     def _get_cube_generator_state(
             self,

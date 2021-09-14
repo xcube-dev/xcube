@@ -17,10 +17,10 @@ from xcube.util.progress import new_progress_observers
 def make_result(worked, total_work,
                 failed=False,
                 output: List[str] = None,
-                result: Dict[str, Any] = None):
+                job_result: Dict[str, Any] = None):
     json = {
-        "cubegen_id": "93",
-        "status": {
+        "job_id": "93",
+        "job_status": {
             "failed": 1 if failed else None,
             "succeeded": 1 if worked == total_work else None,
             "active": 1 if worked != total_work else None,
@@ -36,10 +36,10 @@ def make_result(worked, total_work,
             },
         ],
     }
-    if result is not None:
-        json.update(result=result)
+    if job_result is not None:
+        json.update({"job_result": job_result})
     if output is not None:
-        json.update(output=output)
+        json.update({"output": output})
     return dict(json=json)
 
 
@@ -87,7 +87,7 @@ class RemoteCubeGeneratorTest(unittest.TestCase):
                   make_result(1, 4),
                   make_result(2, 4),
                   make_result(3, 4),
-                  make_result(4, 4, result={
+                  make_result(4, 4, job_result={
                       "status": "ok",
                       "result": {
                           "data_id": "bibo.zarr"

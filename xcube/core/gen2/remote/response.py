@@ -161,15 +161,15 @@ class CubeGeneratorState(JsonObject):
     """Current state of the remote generator."""
 
     def __init__(self,
-                 cubegen_id: str,
-                 status: CubeGeneratorJobStatus,
-                 result: Optional[CubeGeneratorResult] = None,
+                 job_id: str,
+                 job_status: CubeGeneratorJobStatus,
+                 job_result: Optional[CubeGeneratorResult] = None,
                  output: Optional[List[str]] = None,
                  progress: Optional[List[CubeGeneratorProgress]] = None,
                  **additional_properties):
-        self.cubegen_id = cubegen_id
-        self.status = status
-        self.result = result
+        self.job_id = job_id
+        self.job_status = job_status
+        self.job_result = job_result
         self.output = output
         self.progress = progress
         self.additional_properties = additional_properties
@@ -178,9 +178,9 @@ class CubeGeneratorState(JsonObject):
     def get_schema(cls) -> JsonObjectSchema:
         return JsonObjectSchema(
             properties=dict(
-                cubegen_id=JsonStringSchema(min_length=1),
-                status=CubeGeneratorJobStatus.get_schema(),
-                result=CubeGeneratorResult.get_schema(),
+                job_id=JsonStringSchema(min_length=1),
+                job_status=CubeGeneratorJobStatus.get_schema(),
+                job_result=CubeGeneratorResult.get_schema(),
                 output=JsonArraySchema(
                     items=JsonStringSchema(),
                     nullable=True
@@ -190,7 +190,7 @@ class CubeGeneratorState(JsonObject):
                     nullable=True
                 )
             ),
-            required=['cubegen_id', 'status'],
+            required=['job_id', 'job_status'],
             additional_properties=True,
             factory=cls
         )

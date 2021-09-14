@@ -85,14 +85,17 @@ def _get_cube_info_result():
             '--stores', STORES_CONFIG_PATH,
             '--output', result_path,
             request_path]
+
     try:
         output = subprocess.check_output(args)
     except subprocess.CalledProcessError as e:
         raise werkzeug.exceptions.InternalServerError(
             f'failed to invoke generator process: {args!r}'
         ) from e
+
     with open(result_path) as fp:
         result_json = json.load(fp)
+
     if isinstance(output, bytes):
         text = output.decode('utf-8')
         ansi_suffix = '\x1b[0m'
@@ -101,10 +104,9 @@ def _get_cube_info_result():
             text = text[0:-len(ansi_suffix)]
         if text:
             result_json.update(output=text.split('\n'))
-    if result_json is not None:
-        status_code = _get_set_status_code(result_json)
-    else:
-        status_code = 200
+
+    status_code = _get_set_status_code(result_json)
+
     return result_json, status_code
 
 
@@ -116,12 +118,14 @@ def _generate_cube():
             '--stores', STORES_CONFIG_PATH,
             '--output', result_path,
             request_path]
+
     try:
         process = subprocess.Popen(args, stderr=subprocess.STDOUT)
     except subprocess.CalledProcessError as e:
         raise werkzeug.exceptions.InternalServerError(
             f'failed to invoke generator process: {args!r}'
         ) from e
+
     return _get_generate_cube_result(process, result_path, None)
 
 
@@ -131,6 +135,7 @@ def _get_generate_cube_result(
         job_id: Optional[str]
 ) -> Tuple[Dict[str, Any], int]:
     global JOBS
+
     if process is not None:
         job_id = str(process.pid)
         start_time = datetime.datetime.utcnow().isoformat()
@@ -142,25 +147,29 @@ def _get_generate_cube_result(
         raise werkzeug.exceptions.BadRequest(
             f'invalid job ID: {job_id}'
         )
+
     output = process.stdout.readlines() \
         if process.stdout is not None else None
     # print(type(output), output)
+
     return_code = process.poll()
+
     active, succeeded, failed = None, None, None
-    result_obj = None
+    job_result = None
     if return_code is None:
         active = 1
     else:
         if os.path.exists(result_path):
             with open(result_path) as fp:
-                result_obj = json.load(fp)
+                job_result = json.load(fp)
         if return_code == 0:
             succeeded = 1
         else:
             failed = 1
+
     state.update({
-        'cubegen_id': job_id,
-        'status': {
+        'job_id': job_id,
+        'job_status': {
             'active': active,
             'succeeded': succeeded,
             'failed': failed,
@@ -168,12 +177,12 @@ def _get_generate_cube_result(
         },
     })
 
-    if output:
+    if output is not None:
         state.update(output=output)
 
-    if result_obj is not None:
-        status_code = _get_set_status_code(result_obj, success_code=201)
-        state.update(result=result_obj)
+    if job_result is not None:
+        status_code = _get_set_status_code(job_result, success_code=201)
+        state.update(job_result=job_result)
     else:
         status_code = 200 if succeeded else 400
 
