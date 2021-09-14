@@ -22,25 +22,25 @@
 from xcube.util.jsonschema import JsonBooleanSchema
 from xcube.util.jsonschema import JsonObjectSchema
 from xcube.util.jsonschema import JsonStringSchema
-from ..accessor import COMMON_FS_PARAMS_SCHEMA_PROPERTIES
+from ..accessor import COMMON_STORAGE_OPTIONS_SCHEMA_PROPERTIES
 from ..accessor import FsAccessor
 
 
 class FileFsAccessor(FsAccessor):
 
     @classmethod
-    def get_fs_protocol(cls) -> str:
+    def get_protocol(cls) -> str:
         return 'file'
 
     @classmethod
-    def get_fs_params_schema(cls) -> JsonObjectSchema:
+    def get_storage_options_schema(cls) -> JsonObjectSchema:
         return JsonObjectSchema(
             properties=dict(
                 auto_mkdirs=JsonBooleanSchema(
                     description='Whether, when opening a file, the directory'
                                 ' containing it should be created (if it'
                                 ' doesn\'t already exist).'),
-                **COMMON_FS_PARAMS_SCHEMA_PROPERTIES
+                **COMMON_STORAGE_OPTIONS_SCHEMA_PROPERTIES
             ),
             additional_properties=True,
         )
@@ -49,18 +49,18 @@ class FileFsAccessor(FsAccessor):
 class MemoryFsAccessor(FsAccessor):
 
     @classmethod
-    def get_fs_protocol(cls) -> str:
+    def get_protocol(cls) -> str:
         return 'memory'
 
 
 class S3FsAccessor(FsAccessor):
 
     @classmethod
-    def get_fs_protocol(cls) -> str:
+    def get_protocol(cls) -> str:
         return 's3'
 
     @classmethod
-    def get_fs_params_schema(cls) -> JsonObjectSchema:
+    def get_storage_options_schema(cls) -> JsonObjectSchema:
         # We may use here AWS S3 defaults as described in
         #   https://boto3.amazonaws.com/v1/documentation/api/
         #   latest/guide/configuration.html
@@ -132,7 +132,7 @@ class S3FsAccessor(FsAccessor):
                     ),
                     additional_properties=True,
                 ),
-                **COMMON_FS_PARAMS_SCHEMA_PROPERTIES,
+                **COMMON_STORAGE_OPTIONS_SCHEMA_PROPERTIES,
             ),
             additional_properties=True,
         )

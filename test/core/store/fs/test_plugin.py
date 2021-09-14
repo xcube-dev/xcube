@@ -105,12 +105,12 @@ class FsDataStoreAndAccessorsPluginTest(unittest.TestCase):
         # print(params_schema.to_dict())
         self.assertIsInstance(params_schema, JsonObjectSchema)
         self.assertIsInstance(params_schema.properties, dict)
-        self.assertIn('fs_params', params_schema.properties)
-        self.assertIsInstance(params_schema.properties['fs_params'],
+        self.assertIn('storage_options', params_schema.properties)
+        self.assertIsInstance(params_schema.properties['storage_options'],
                               JsonObjectSchema)
 
     def assertParamsSchemaExcludesFsParams(self, params_schema):
         # print(params_schema.to_dict())
         self.assertIsInstance(params_schema, JsonObjectSchema)
         self.assertIsInstance(params_schema.properties, dict)
-        self.assertNotIn('fs_params', params_schema.properties)
+        self.assertNotIn('storage_options', params_schema.properties)

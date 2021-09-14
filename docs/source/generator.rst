@@ -162,7 +162,8 @@ might look as follows:
      description: An S3 bucket for output data sets
      store_id: s3
      store_params:
-       fs_params:
+       root: cube-outputs
+       storage_options:
          key: qwerty12345
          secret: 7ff889c0aea254d5e00440858289b85c
          client_kwargs:

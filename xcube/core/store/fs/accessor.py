@@ -35,7 +35,7 @@ from ..accessor import DataWriter
 from ..datatype import DataType
 from ..error import DataStoreError
 
-COMMON_FS_PARAMS_SCHEMA_PROPERTIES = dict(
+COMMON_STORAGE_OPTIONS_SCHEMA_PROPERTIES = dict(
     # passed to ``DirCache``, if the implementation supports
     # directory listing caching. Pass use_listings_cache=False
     # to disable such caching.
@@ -49,8 +49,8 @@ COMMON_FS_PARAMS_SCHEMA_PROPERTIES = dict(
     asynchronous=JsonBooleanSchema(),
 )
 
-FS_PROTOCOL_PARAM_NAME = 'fs_protocol'
-FS_PARAMS_PARAM_NAME = 'fs_params'
+PROTOCOL_PARAM_NAME = 'protocol'
+STORAGE_OPTIONS_PARAM_NAME = 'storage_options'
 FS_PARAM_NAME = 'fs'
 
 
@@ -60,15 +60,15 @@ class FsAccessor:
     """
 
     @classmethod
-    def get_fs_protocol(cls) -> str:
+    def get_protocol(cls) -> str:
         """Get the filesystem protocol."""
         return 'abstract'
 
     @classmethod
-    def get_fs_params_schema(cls) -> JsonObjectSchema:
+    def get_storage_options_schema(cls) -> JsonObjectSchema:
         """Get the JSON schema of the filesystem parameters."""
         return JsonObjectSchema(
-            properties=COMMON_FS_PARAMS_SCHEMA_PROPERTIES,
+            properties=COMMON_STORAGE_OPTIONS_SCHEMA_PROPERTIES,
             additional_properties=True,
         )
 
@@ -97,55 +97,57 @@ class FsAccessor:
             assert_instance(fs, fsspec.AbstractFileSystem, name=FS_PARAM_NAME)
             return fs, params
 
-        fs_protocol = cls.get_fs_protocol()
-        if fs_protocol == 'abstract':
-            fs_protocol = params.pop(FS_PROTOCOL_PARAM_NAME, None)
-            if fs_protocol is None:
+        protocol = cls.get_protocol()
+        if protocol == 'abstract':
+            protocol = params.pop(PROTOCOL_PARAM_NAME, None)
+            if protocol is None:
                 raise DataStoreError(f"Cannot determine filesystem,"
                                      f" try using parameter"
-                                     f" {FS_PROTOCOL_PARAM_NAME!r}")
+                                     f" {PROTOCOL_PARAM_NAME!r}")
 
-        fs_params = params.pop(FS_PARAMS_PARAM_NAME, None)
-        if fs_params is not None:
-            assert_instance(fs_params, dict, name=FS_PARAMS_PARAM_NAME)
+        storage_options = params.pop(STORAGE_OPTIONS_PARAM_NAME, None)
+        if storage_options is not None:
+            assert_instance(storage_options, dict,
+                            name=STORAGE_OPTIONS_PARAM_NAME)
 
         # Note, by default, filesystem data stores are writable and hence
         # SHALL NOT cache any directory listings!
-        use_listings_cache = bool(fs_params.pop('use_listings_cache', False)
-                                  if fs_params else False)
+        use_listings_cache = \
+            bool(storage_options.pop('use_listings_cache', False)
+                 if storage_options else False)
 
         try:
-            return fsspec.filesystem(fs_protocol,
+            return fsspec.filesystem(protocol,
                                      use_listings_cache=use_listings_cache,
-                                     **(fs_params or {})), params
+                                     **(storage_options or {})), params
         except (ValueError, ImportError):
             raise DataStoreError(f"Cannot instantiate"
-                                 f" filesystem {fs_protocol!r}")
+                                 f" filesystem {protocol!r}")
 
     @classmethod
-    def add_fs_params_to_params_schema(
+    def add_storage_options_to_params_schema(
             cls, params_schema: JsonObjectSchema
     ) -> JsonObjectSchema:
         """
         Utility method to be used by subclasses to add the schema
-        for the parameter "fs_param" to given *param_schema*.
+        for the parameter "storage_options" to given *param_schema*.
         """
         params_schema = copy.deepcopy(params_schema)
-        params_schema.properties[FS_PARAMS_PARAM_NAME] = \
-            cls.get_fs_params_schema()
+        params_schema.properties[STORAGE_OPTIONS_PARAM_NAME] = \
+            cls.get_storage_options_schema()
         return params_schema
 
     @classmethod
-    def remove_fs_params_from_params_schema(
+    def remove_storage_options_from_params_schema(
             cls, params_schema: JsonObjectSchema
     ) -> JsonObjectSchema:
         """
         Utility method to be used by subclasses to remove the schema
-        for the parameter "fs_param" from given *param_schema*.
+        for the parameter "storage_options" from given *param_schema*.
         """
-        if FS_PARAMS_PARAM_NAME in params_schema.properties:
+        if STORAGE_OPTIONS_PARAM_NAME in params_schema.properties:
             params_schema = copy.deepcopy(params_schema)
-            del params_schema.properties[FS_PARAMS_PARAM_NAME]
+            del params_schema.properties[STORAGE_OPTIONS_PARAM_NAME]
         return params_schema
 
 
@@ -179,7 +181,7 @@ class FsDataAccessor(DataOpener,
             properties=dict(
                 recursive=JsonBooleanSchema(),
                 maxdepth=JsonIntegerSchema(),
-                fs_params=self.get_fs_params_schema(),
+                storage_options=self.get_storage_options_schema(),
             ),
             additional_properties=False,
         )

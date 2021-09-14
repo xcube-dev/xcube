@@ -136,7 +136,7 @@ ZARR_WRITE_DATA_PARAMS_SCHEMA = JsonObjectSchema(
 
 class DatasetFsDataAccessor(FsDataAccessor, ABC):
     """
-    Opener/writer extension name: "dataset:<format>:<fs_protocol>"
+    Opener/writer extension name: "dataset:<format>:<protocol>"
     """
 
     @classmethod
@@ -146,7 +146,7 @@ class DatasetFsDataAccessor(FsDataAccessor, ABC):
 
 class DatasetZarrFsDataAccessor(DatasetFsDataAccessor, ABC):
     """
-    Opener/writer extension name: "dataset:zarr:<fs_protocol>"
+    Opener/writer extension name: "dataset:zarr:<protocol>"
     """
 
     @classmethod
@@ -156,7 +156,7 @@ class DatasetZarrFsDataAccessor(DatasetFsDataAccessor, ABC):
     # noinspection PyUnusedLocal,PyMethodMayBeStatic
     def get_open_data_params_schema(self, data_id: str = None) \
             -> JsonObjectSchema:
-        return self.add_fs_params_to_params_schema(
+        return self.add_storage_options_to_params_schema(
             ZARR_OPEN_DATA_PARAMS_SCHEMA
         )
 
@@ -183,7 +183,7 @@ class DatasetZarrFsDataAccessor(DatasetFsDataAccessor, ABC):
 
     # noinspection PyMethodMayBeStatic
     def get_write_data_params_schema(self) -> JsonObjectSchema:
-        return self.add_fs_params_to_params_schema(
+        return self.add_storage_options_to_params_schema(
             ZARR_WRITE_DATA_PARAMS_SCHEMA
         )
 
@@ -235,7 +235,7 @@ NETCDF_WRITE_DATA_PARAMS_SCHEMA = JsonObjectSchema(
 
 class DatasetNetcdfFsDataAccessor(DatasetFsDataAccessor, ABC):
     """
-    Opener/writer extension name: "dataset:netcdf:<fs_protocol>"
+    Opener/writer extension name: "dataset:netcdf:<protocol>"
     """
 
     @classmethod
@@ -244,7 +244,7 @@ class DatasetNetcdfFsDataAccessor(DatasetFsDataAccessor, ABC):
 
     def get_open_data_params_schema(self, data_id: str = None) \
             -> JsonObjectSchema:
-        return self.add_fs_params_to_params_schema(
+        return self.add_storage_options_to_params_schema(
             NETCDF_OPEN_DATA_PARAMS_SCHEMA
         )
 
@@ -269,7 +269,7 @@ class DatasetNetcdfFsDataAccessor(DatasetFsDataAccessor, ABC):
         return xr.open_dataset(file_path, engine=engine, **open_params)
 
     def get_write_data_params_schema(self) -> JsonObjectSchema:
-        return self.add_fs_params_to_params_schema(
+        return self.add_storage_options_to_params_schema(
             NETCDF_WRITE_DATA_PARAMS_SCHEMA
         )
 

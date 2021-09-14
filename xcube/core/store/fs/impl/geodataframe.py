@@ -36,7 +36,7 @@ from ...datatype import GEO_DATA_FRAME_TYPE
 
 class GeoDataFrameFsDataAccessor(FsDataAccessor, ABC):
     """
-    Extension name: "geodataframe:<format_id>:<fs_protocol>"
+    Extension name: "geodataframe:<format_id>:<protocol>"
     """
 
     @classmethod
@@ -52,7 +52,7 @@ class GeoDataFrameFsDataAccessor(FsDataAccessor, ABC):
             -> JsonObjectSchema:
         return JsonObjectSchema(
             properties=dict(
-                fs_params=self.get_fs_params_schema(),
+                storage_options=self.get_storage_options_schema(),
                 # TODO: add more, see https://geopandas.org/io.html
             ),
         )
@@ -74,7 +74,7 @@ class GeoDataFrameFsDataAccessor(FsDataAccessor, ABC):
     def get_write_data_params_schema(self) -> JsonObjectSchema:
         return JsonObjectSchema(
             properties=dict(
-                fs_params=self.get_fs_params_schema(),
+                storage_options=self.get_storage_options_schema(),
                 # TODO: add more, see https://geopandas.org/io.html
             ),
         )
@@ -96,7 +96,7 @@ class GeoDataFrameFsDataAccessor(FsDataAccessor, ABC):
 
 class GeoDataFrameShapefileFsDataAccessor(GeoDataFrameFsDataAccessor, ABC):
     """
-    Extension name: "geodataframe:shapefile:<fs_protocol>"
+    Extension name: "geodataframe:shapefile:<protocol>"
     """
 
     @classmethod
@@ -110,7 +110,7 @@ class GeoDataFrameShapefileFsDataAccessor(GeoDataFrameFsDataAccessor, ABC):
 
 class GeoDataFrameGeoJsonFsDataAccessor(GeoDataFrameFsDataAccessor, ABC):
     """
-    Extension name: "geodataframe:geojson:<fs_protocol>"
+    Extension name: "geodataframe:geojson:<protocol>"
     """
 
     @classmethod

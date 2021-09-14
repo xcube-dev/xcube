@@ -39,7 +39,7 @@ from xcube.util.jsonschema import JsonBooleanSchema
 from xcube.util.jsonschema import JsonIntegerSchema
 from xcube.util.jsonschema import JsonObjectSchema
 from xcube.util.jsonschema import JsonStringSchema
-from .accessor import FS_PARAMS_PARAM_NAME
+from .accessor import STORAGE_OPTIONS_PARAM_NAME
 from .accessor import FsAccessor
 from .helpers import is_local_fs
 from .helpers import normalize_path
@@ -119,7 +119,7 @@ class BaseFsDataStore(DefaultSearchMixin, MutableDataStore):
         self._lock = RLock()
 
     @property
-    def fs_protocol(self) -> str:
+    def protocol(self) -> str:
         """
         Get the filesystem protocol.
         Should be overridden by clients, because the default
@@ -225,7 +225,7 @@ class BaseFsDataStore(DefaultSearchMixin, MutableDataStore):
             -> Tuple[str, ...]:
         data_type = DataType.normalize(data_type)
         format_id = None
-        storage_id = self.fs_protocol
+        storage_id = self.protocol
         if data_id:
             accessor_id_parts = self._guess_accessor_id_parts(
                 data_id, require=False
@@ -269,7 +269,7 @@ class BaseFsDataStore(DefaultSearchMixin, MutableDataStore):
         return tuple(ext.name for ext in find_data_writer_extensions(
             predicate=get_data_accessor_predicate(
                 data_type=data_type,
-                storage_id=self.fs_protocol
+                storage_id=self.protocol
             )
         ))
 
@@ -312,7 +312,8 @@ class BaseFsDataStore(DefaultSearchMixin, MutableDataStore):
         if self.read_only:
             raise DataStoreError('Data store is read-only.')
         writer = self._find_writer(data_id=data_id)
-        delete_params_schema = self._get_delete_data_params_schema(writer, data_id)
+        delete_params_schema = self._get_delete_data_params_schema(writer,
+                                                                   data_id)
         assert_valid_params(delete_params,
                             name='delete_params',
                             schema=delete_params_schema)
@@ -336,18 +337,18 @@ class BaseFsDataStore(DefaultSearchMixin, MutableDataStore):
     def _get_open_data_params_schema(opener: DataOpener,
                                      data_id: str):
         schema = opener.get_open_data_params_schema(data_id=data_id)
-        return FsAccessor.remove_fs_params_from_params_schema(schema)
+        return FsAccessor.remove_storage_options_from_params_schema(schema)
 
     @staticmethod
     def _get_write_data_params_schema(writer: DataWriter):
         schema = writer.get_write_data_params_schema()
-        return FsAccessor.remove_fs_params_from_params_schema(schema)
+        return FsAccessor.remove_storage_options_from_params_schema(schema)
 
     @staticmethod
     def _get_delete_data_params_schema(writer: DataWriter,
                                        data_id: str):
         schema = writer.get_delete_data_params_schema(data_id)
-        return FsAccessor.remove_fs_params_from_params_schema(schema)
+        return FsAccessor.remove_storage_options_from_params_schema(schema)
 
     def _guess_writer_id(self, data, data_id: str = None):
         data_type = None
@@ -371,7 +372,7 @@ class BaseFsDataStore(DefaultSearchMixin, MutableDataStore):
         predicate = get_data_accessor_predicate(
             data_type=data_type,
             format_id=format_id,
-            storage_id=self.fs_protocol
+            storage_id=self.protocol
         )
         extensions = find_data_writer_extensions(predicate=predicate)
         if not extensions:
@@ -522,7 +523,7 @@ class BaseFsDataStore(DefaultSearchMixin, MutableDataStore):
         else:
             data_type_alias = _DEFAULT_DATA_TYPE
             format_id = _DEFAULT_FORMAT_ID
-            storage_id = self.fs_protocol
+            storage_id = self.protocol
         predicate = get_data_accessor_predicate(
             data_type=data_type_alias,
             format_id=format_id,
@@ -558,7 +559,7 @@ class BaseFsDataStore(DefaultSearchMixin, MutableDataStore):
                 raise DataStoreError(f'Cannot determine data type for '
                                      f' data resource {data_id!r}')
             return None
-        return data_type_alias, format_name, self.fs_protocol
+        return data_type_alias, format_name, self.protocol
 
     def _get_filename_ext(self, data_path: str) -> str:
         dot_pos = data_path.rfind('.')
@@ -604,7 +605,7 @@ class FsDataStore(BaseFsDataStore, FsAccessor):
     also implements a :class:FsAccessor which serves
     the filesystem.
 
-    :param fs_params: Parameters specific to the underlying filesystem.
+    :param storage_options: Parameters specific to the underlying filesystem.
         Used to instantiate the filesystem.
     :param root: Root or base directory.
         Defaults to "".
@@ -615,33 +616,35 @@ class FsDataStore(BaseFsDataStore, FsAccessor):
     """
 
     def __init__(self,
-                 fs_params: Dict[str, Any] = None,
                  root: str = '',
                  max_depth: Optional[int] = 1,
-                 read_only: bool = False):
-        self._fs_params = fs_params or {}
+                 read_only: bool = False,
+                 storage_options: Dict[str, Any] = None):
+        self._storage_options = storage_options or {}
         super().__init__(root=root,
                          max_depth=max_depth,
                          read_only=read_only)
 
     @property
-    def fs_protocol(self) -> str:
+    def protocol(self) -> str:
         # Base class returns self.fs.protocol which
         # instantiates the filesystem.
         # Avoid this, as we know the protocol up front.
-        return self.get_fs_protocol()
+        return self.get_protocol()
 
     @property
-    def fs_params(self) -> Dict[str, Any]:
-        return self._fs_params
+    def storage_options(self) -> Dict[str, Any]:
+        return self._storage_options
 
     def _load_fs(self) -> fsspec.AbstractFileSystem:
         # Note, this is invoked only once per store instance.
-        fs, _ = self.load_fs({FS_PARAMS_PARAM_NAME: self._fs_params})
+        fs, _ = self.load_fs(
+            {STORAGE_OPTIONS_PARAM_NAME: self._storage_options}
+        )
         return fs
 
     @classmethod
     def get_data_store_params_schema(cls) -> JsonObjectSchema:
-        return cls.add_fs_params_to_params_schema(
+        return cls.add_storage_options_to_params_schema(
             super().get_data_store_params_schema()
         )
