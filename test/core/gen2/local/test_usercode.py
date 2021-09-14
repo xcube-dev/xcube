@@ -94,6 +94,7 @@ class CubeUserCodeExecutorTest(unittest.TestCase):
                                  callable_params=self.bad_params)
         with self.assertRaises(CubeGeneratorError) as ctx:
             CubeUserCodeExecutor(code_config)
+        self.assertEqual(400, ctx.exception.status_code)
         self.assertEqual("Invalid processing parameters:"
                          " 0 is less than the minimum of 1\n"
                          "\n"
@@ -110,6 +111,7 @@ class CubeUserCodeExecutorTest(unittest.TestCase):
                                  callable_params=self.good_params)
         with self.assertRaises(CubeGeneratorError) as ctx:
             CubeUserCodeExecutor(code_config)
+        self.assertEqual(400, ctx.exception.status_code)
         self.assertEqual(f"Parameter schema returned by"
                          f" user code class"
                          f" {BadSchemaProcessor!r}"
@@ -122,6 +124,7 @@ class CubeUserCodeExecutorTest(unittest.TestCase):
                                  callable_params=self.good_params)
         with self.assertRaises(CubeGeneratorError) as ctx:
             CubeUserCodeExecutor(code_config)
+        self.assertEqual(400, ctx.exception.status_code)
         self.assertEqual(f"Missing method 'process_dataset'"
                          f" in user code class"
                          f" {NoProcessProcessor!r}",
@@ -132,6 +135,7 @@ class CubeUserCodeExecutorTest(unittest.TestCase):
                                  callable_params=self.good_params)
         with self.assertRaises(CubeGeneratorError) as ctx:
             CubeUserCodeExecutor(code_config)
+        self.assertEqual(400, ctx.exception.status_code)
         self.assertEqual(f"Attribute 'process_dataset'"
                          f" of user code class"
                          f" {BadProcessProcessor!r}"

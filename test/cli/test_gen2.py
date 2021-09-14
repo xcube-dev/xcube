@@ -111,9 +111,6 @@ class Gen2CliTest(CliTest):
             result)
         self.assertFalse(os.path.isdir(result_zarr))
 
-    # TODO (forman): zarr writing fails because of invalid chunking
-    #   Make this test work in a subsequent PR.
-
     def test_copy_levels_gen(self):
         request_file = os.path.join(os.path.dirname(__file__),
                                     'gen2-requests', 'copy-levels.yml')

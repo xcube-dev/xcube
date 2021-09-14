@@ -74,7 +74,8 @@ class DatasetsDescriber:
         except DataStoreError:
             raise CubeGeneratorError(f'Data store '
                                      f'"{input_config.store_id}" '
-                                     f'does not support datasets')
+                                     f'does not support datasets',
+                                     status_code=400)
         if not isinstance(descriptor, DatasetDescriptor):
             raise RuntimeError(f'internal error: data store '
                                f'"{input_config.store_id}": '

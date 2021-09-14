@@ -23,6 +23,7 @@ from typing import Optional
 
 import xarray as xr
 
+from xcube.core.gridmapping import GridMapping
 from xcube.core.store import DataStorePool
 from xcube.util.assertions import assert_instance
 from xcube.util.progress import observe_progress
@@ -39,9 +40,9 @@ from .transformer import CubeIdentity
 from .transformer import transform_cube
 from .usercode import CubeUserCodeExecutor
 from .writer import CubeWriter
+from .. import CubeConfig
 from ..generator import CubeGenerator
 from ..progress import ApiProgressCallbackObserver
-from ..progress import ConsoleProgressObserver
 from ..request import CubeGeneratorRequest
 from ..request import CubeGeneratorRequestLike
 from ..response import CubeGeneratorResult
@@ -60,50 +61,73 @@ class LocalCubeGenerator(CubeGenerator):
     :param store_pool: An optional pool of pre-configured data stores
         referenced from *gen_config* input/output configurations.
     :param verbosity: Level of verbosity, 0 means off.
+    :param raise_on_error: Whether to raise a CubeGeneratorError
+        exception on generator failures. If False, the default,
+        the returned result will have the "status" field set to "error"
+        while other fields such as "message", "traceback", "output"
+        provide more failure details.
     """
 
     def __init__(self,
                  store_pool: DataStorePool = None,
+                 raise_on_error: bool = False,
                  verbosity: int = 0):
+        super().__init__(raise_on_error=raise_on_error,
+                         verbosity=verbosity)
         if store_pool is not None:
             assert_instance(store_pool, DataStorePool, 'store_pool')
 
         self._store_pool = store_pool if store_pool is not None \
             else DataStorePool()
-        self._verbosity = verbosity
         self._generated_data_id: Optional[str] = None
         self._generated_cube: Optional[xr.Dataset] = None
+        self._generated_gm: Optional[GridMapping] = None
 
     @property
     def generated_data_id(self) -> Optional[str]:
+        """Return the data identifier of the recently generated data cube."""
         return self._generated_data_id
 
     @property
     def generated_cube(self) -> Optional[xr.Dataset]:
+        """Return the recently generated data cube."""
         return self._generated_cube
 
-    def generate_cube(self, request: CubeGeneratorRequestLike) \
+    @property
+    def generated_gm(self) -> Optional[GridMapping]:
+        """Return the recently generated data cube."""
+        return self._generated_gm
+
+    def _generate_cube(self, request: CubeGeneratorRequestLike) \
             -> CubeGeneratorResult:
+
         request = CubeGeneratorRequest.normalize(request)
         request = request.for_local()
 
-        # noinspection PyUnusedLocal
-        def _no_op_callable(ds, **kwargs):
-            return ds
-
+        observer = None
         if request.callback_config:
-            ApiProgressCallbackObserver(request.callback_config).activate()
+            observer = ApiProgressCallbackObserver(request.callback_config)
+            observer.activate()
 
-        if self._verbosity:
-            ConsoleProgressObserver().activate()
+        try:
+            return self.__generate_cube(request)
+        finally:
+            if observer is not None:
+                observer.deactivate()
 
-        opener = CubeOpener(request.cube_config,
+    def __generate_cube(self, request: CubeGeneratorRequest) \
+            -> CubeGeneratorResult:
+
+        cube_config = request.cube_config \
+            if request.cube_config is not None else CubeConfig()
+
+        opener = CubeOpener(cube_config,
                             store_pool=self._store_pool)
 
         subsetter = CubeSubsetter()
         resampler_xy = CubeResamplerXY()
         resampler_t = CubeResamplerT()
-        combiner = CubesCombiner(request.cube_config)
+        combiner = CubesCombiner(cube_config)
         rechunker = CubeRechunker()
 
         code_config = request.code_config
@@ -188,15 +212,18 @@ class LocalCubeGenerator(CubeGenerator):
                 data_id, cube = cube_writer.write_cube(cube, gm)
                 self._generated_data_id = data_id
                 self._generated_cube = cube
+                self._generated_gm = gm
             else:
                 self._generated_data_id = None
                 self._generated_cube = None
+                self._generated_gm = None
 
         total_time = progress.state.total_time
 
         if self._generated_data_id is not None:
             return CubeGeneratorResult(
                 status='ok',
+                status_code=201,
                 result=CubeReference(data_id=data_id),
                 message=f'Cube generated successfully'
                         f' after {total_time:.2f} seconds'
@@ -204,16 +231,18 @@ class LocalCubeGenerator(CubeGenerator):
         else:
             return CubeGeneratorResult(
                 status='warning',
+                status_code=422,
                 message=f'An empty cube has been generated'
                         f' after {total_time:.2f} seconds.'
                         f' No data has been written at all.'
             )
 
-    def get_cube_info(self, request: CubeGeneratorRequestLike) \
+    def _get_cube_info(self, request: CubeGeneratorRequestLike) \
             -> CubeInfoResult:
         request = CubeGeneratorRequest.normalize(request)
         informant = CubeInformant(request=request.for_local(),
                                   store_pool=self._store_pool)
         cube_info = informant.generate()
-
-        return CubeInfoResult(result=cube_info, status='ok')
+        return CubeInfoResult(result=cube_info,
+                              status='ok',
+                              status_code=200)

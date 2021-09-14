@@ -53,8 +53,10 @@ class CubeInformant:
     def input_dataset_descriptors(self) -> Sequence[DatasetDescriptor]:
         """Get dataset descriptors for inputs, lazily."""
         if self._dataset_descriptors is None:
-            dataset_describer = DatasetsDescriber(self._request.input_configs,
-                                                  store_pool=self._store_pool)
+            dataset_describer = DatasetsDescriber(
+                self._request.input_configs,
+                store_pool=self._store_pool
+            )
             dataset_descriptors = dataset_describer.describe_datasets()
             if len(dataset_descriptors) > 1:
                 warnings.warn('Only the first input will be recognised.')
@@ -72,7 +74,8 @@ class CubeInformant:
         return cube_config
 
     def generate(self) -> CubeInfo:
-        cube_config, resolved_crs, resolved_time_range = self._compute_effective_cube_config()
+        cube_config, resolved_crs, resolved_time_range = \
+            self._compute_effective_cube_config()
 
         x_min, y_min, x_max, y_max = cube_config.bbox
         spatial_res = cube_config.spatial_res
@@ -89,10 +92,14 @@ class CubeInformant:
 
         tile_size = cube_config.tile_size
         if tile_size is None and cube_config.chunks is not None:
-            # TODO: this is just an assumption, with new Resampling module, use GridMapping
-            #   to identify the actual names for the spatial tile dimensions.
-            tile_size_x = cube_config.chunks.get('lon', cube_config.chunks.get('x'))
-            tile_size_y = cube_config.chunks.get('lat', cube_config.chunks.get('y'))
+            # TODO: this is just an assumption, with new
+            #   Resampling module, use GridMapping
+            #   to identify the actual names for the
+            #   spatial tile dimensions.
+            tile_size_x = cube_config.chunks.get('lon',
+                                                 cube_config.chunks.get('x'))
+            tile_size_y = cube_config.chunks.get('lat',
+                                                 cube_config.chunks.get('y'))
             if tile_size_x and tile_size_y:
                 tile_size = tile_size_x, tile_size_y
 
@@ -113,48 +120,64 @@ class CubeInformant:
 
         num_times = len(resolved_time_range)
         num_variables = len(variable_names)
-        num_requests = num_variables * num_times * num_tiles_x * num_tiles_y
+        num_requests = num_variables \
+                       * num_times \
+                       * num_tiles_x * num_tiles_y
         # TODO: get original data types from dataset descriptors
         num_bytes_per_pixel = 4
-        num_bytes = num_variables * num_times * (height * width * num_bytes_per_pixel)
+        num_bytes = num_variables \
+                    * num_times \
+                    * (height * width * num_bytes_per_pixel)
 
-        x_name, y_name = ('lon', 'lat') if resolved_crs.is_geographic else ('x', 'y')
+        x_name, y_name = ('lon', 'lat') \
+            if resolved_crs.is_geographic else ('x', 'y')
 
         data_id = self._request.output_config.data_id or 'unnamed'
         # TODO: get original variable descriptors from input dataset descriptors
-        data_vars = {name: VariableDescriptor(name, dtype='float32', dims=('time', y_name, x_name))
+        data_vars = {name: VariableDescriptor(name,
+                                              dtype='float32',
+                                              dims=('time', y_name, x_name))
                      for name in variable_names}
         dims = {'time': num_times, y_name: height, x_name: width}
-        dataset_descriptor = DatasetDescriptor(data_id,
-                                               crs=cube_config.crs,
-                                               bbox=cube_config.bbox,
-                                               spatial_res=cube_config.spatial_res,
-                                               time_range=cube_config.time_range,
-                                               time_period=cube_config.time_period,
-                                               dims=dims,
-                                               data_vars=data_vars)
-        size_estimation = dict(image_size=[width, height],
-                               tile_size=[tile_width, tile_height],
-                               num_variables=num_variables,
-                               num_tiles=[num_tiles_x, num_tiles_y],
-                               num_requests=num_requests,
-                               num_bytes=num_bytes)
+        dataset_descriptor = DatasetDescriptor(
+            data_id,
+            crs=cube_config.crs,
+            bbox=cube_config.bbox,
+            spatial_res=cube_config.spatial_res,
+            time_range=cube_config.time_range,
+            time_period=cube_config.time_period,
+            dims=dims,
+            data_vars=data_vars
+        )
+        size_estimation = dict(
+            image_size=[width, height],
+            tile_size=[tile_width, tile_height],
+            num_variables=num_variables,
+            num_tiles=[num_tiles_x, num_tiles_y],
+            num_requests=num_requests,
+            num_bytes=num_bytes
+        )
 
         return CubeInfo(dataset_descriptor=dataset_descriptor,
                         size_estimation=size_estimation)
 
-    def _compute_effective_cube_config(self) -> Tuple[CubeConfig, pyproj.crs.CRS, Sequence[pd.Timestamp]]:
+    def _compute_effective_cube_config(self) \
+            -> Tuple[CubeConfig, pyproj.crs.CRS, Sequence[pd.Timestamp]]:
         """
         Compute the effective cube configuration.
 
-        This method reflects the behaviour of the LocalCubeGenerator that would
-        normalize, tailor, and optionally resample a dataset based on
-        the dataset descriptor and the cube configuration parameters, in the case
-        that a store is not able to do so.
+        This method reflects the behaviour of the LocalCubeGenerator
+        that would normalize, tailor, and optionally resample a dataset
+        based on the dataset descriptor and the cube configuration parameters,
+        in the case that a store is not able to do so.
 
         :return: effective cube configuration.
         """
-        cube_config = self._request.cube_config
+
+        request = self._request
+
+        cube_config = request.cube_config \
+            if request.cube_config is not None else CubeConfig()
 
         crs = cube_config.crs
         if crs is None:
@@ -192,7 +215,8 @@ class CubeInformant:
             try:
                 tile_width, tile_height = tile_size
             except (TypeError, ValueError):
-                raise ValueError('tile_size must be a tuple (tile_width, tile_height)')
+                raise ValueError('tile_size must be a'
+                                 ' tuple (tile_width, tile_height)')
             tile_size = tile_width, tile_height
 
         time_range = cube_config.time_range
@@ -200,10 +224,12 @@ class CubeInformant:
             time_range = None, None
         start_ts, end_ts = _parse_time_range(time_range)
         if start_ts is None or end_ts is None:
-            default_time_range = self.first_input_dataset_descriptor.time_range
+            default_time_range = \
+                self.first_input_dataset_descriptor.time_range
             if default_time_range is None:
                 default_time_range = None, None
-            default_start_ts, default_end_ts = _parse_time_range(default_time_range)
+            default_start_ts, default_end_ts = \
+                _parse_time_range(default_time_range)
             if start_ts is None:
                 start_ts = default_start_ts
                 if start_ts is None:
@@ -211,8 +237,10 @@ class CubeInformant:
             if end_ts is None:
                 end_ts = default_end_ts
                 if end_ts is None:
-                    end_ts = pd.Timestamp(datetime.date.today()) + pd.Timedelta('1D')
-        time_range = start_ts.strftime("%Y-%m-%d"), end_ts.strftime("%Y-%m-%d")
+                    end_ts = pd.Timestamp(datetime.date.today()) \
+                             + pd.Timedelta('1D')
+        time_range = (start_ts.strftime("%Y-%m-%d"),
+                      end_ts.strftime("%Y-%m-%d"))
 
         time_period = cube_config.time_period
         if time_period is None:
@@ -222,28 +250,35 @@ class CubeInformant:
         assert_instance(time_period, str, 'time_period')
 
         try:
-            resolved_time_range = pd.date_range(start=start_ts, end=end_ts, freq=time_period)
+            resolved_time_range = pd.date_range(start=start_ts,
+                                                end=end_ts,
+                                                freq=time_period)
         except ValueError as e:
             raise ValueError(f'invalid time_range or time_period: {e}') from e
 
         variable_names = cube_config.variable_names
         if variable_names is None:
-            variable_names = list(self.first_input_dataset_descriptor.data_vars.keys())
+            variable_names = list(
+                self.first_input_dataset_descriptor.data_vars.keys()
+            )
 
-        return CubeConfig(variable_names=variable_names,
-                          crs=crs,
-                          bbox=bbox,
-                          spatial_res=spatial_res,
-                          tile_size=tile_size,
-                          time_range=time_range,
-                          time_period=time_period), resolved_crs, resolved_time_range
+        return CubeConfig(
+            variable_names=variable_names,
+            crs=crs,
+            bbox=bbox,
+            spatial_res=spatial_res,
+            tile_size=tile_size,
+            time_range=time_range,
+            time_period=time_period
+        ), resolved_crs, resolved_time_range
 
 
 def _idiv(x: int, y: int) -> int:
     return (x + y - 1) // y
 
 
-def _parse_time_range(time_range: Any) -> Tuple[Optional[pd.Timestamp], Optional[pd.Timestamp]]:
+def _parse_time_range(time_range: Any) \
+        -> Tuple[Optional[pd.Timestamp], Optional[pd.Timestamp]]:
     try:
         start_date, end_date = time_range
     except (TypeError, ValueError):

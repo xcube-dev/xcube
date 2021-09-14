@@ -7,7 +7,6 @@ import xarray as xr
 import yaml
 
 from xcube.core.dsio import rimraf
-from xcube.core.gen2.generator import CubeGenerator
 from xcube.core.gen2.local.generator import LocalCubeGenerator
 from xcube.core.gen2.response import CubeGeneratorResult
 from xcube.core.gen2.response import CubeInfo
@@ -75,26 +74,28 @@ class LocalCubeGeneratorTest(unittest.TestCase):
     @requests_mock.Mocker()
     def test_generate_cube_from_dict(self, m):
         m.put(CALLBACK_MOCK_URL, json={})
-        result = LocalCubeGenerator(verbosity=1).generate_cube(self.REQUEST)
-        self.assertGeneratedCubeOk(result)
+        self.assertGeneratedCubeOk(self.REQUEST)
 
     @requests_mock.Mocker()
     def test_generate_cube_from_json(self, m):
         m.put(CALLBACK_MOCK_URL, json={})
-        result = CubeGenerator.new(verbosity=1).generate_cube('_request.json')
-        self.assertGeneratedCubeOk(result)
+        self.assertGeneratedCubeOk('_request.json')
 
     @requests_mock.Mocker()
     def test_generate_cube_from_yaml(self, m):
         m.put(CALLBACK_MOCK_URL, json={})
-        result = CubeGenerator.new(verbosity=1).generate_cube('_request.yaml')
-        self.assertGeneratedCubeOk(result)
+        self.assertGeneratedCubeOk('_request.yaml')
 
-    def assertGeneratedCubeOk(self, result: CubeGeneratorResult):
+    def assertGeneratedCubeOk(self, request):
+        generator = LocalCubeGenerator(verbosity=1)
+        result = generator.generate_cube(request)
+        self.assertIsInstance(result, CubeGeneratorResult)
         self.assertEqual('ok', result.status)
-        self.assertIsInstance(result.result, CubeReference)
-        self.assertEqual('CHL.zarr', result.result.data_id)
-        dataset = self.data_store.open_data(result.result.data_id)
+        self.assertEqual(201, result.status_code)
+        cube_reference = result.result
+        self.assertIsInstance(cube_reference, CubeReference)
+        self.assertEqual('CHL.zarr', cube_reference.data_id)
+        dataset = self.data_store.open_data(cube_reference.data_id)
         self.assertIsInstance(dataset, xr.Dataset)
         self.assertIn('B01', dataset)
         self.assertIn('B02', dataset)
@@ -110,25 +111,30 @@ class LocalCubeGeneratorTest(unittest.TestCase):
         request = self.REQUEST.copy()
         request['cube_config']['time_range'] = ['2019-01-01', '2020-01-01']
 
-        result = LocalCubeGenerator().generate_cube(request)
+        generator = LocalCubeGenerator()
+        result = generator.generate_cube(request)
         self.assertEqual('warning', result.status)
+        self.assertEqual(422, result.status_code)
         self.assertEqual(None, result.result)
         self.assertIsInstance(result.message, str)
         self.assertIn('An empty cube has been generated', result.message)
+        self.assertEqual(None, generator.generated_data_id)
+        self.assertEqual(None, generator.generated_cube, xr.Dataset)
+        self.assertEqual(None, generator.generated_gm)
 
     @requests_mock.Mocker()
     def test_get_cube_info_from_dict(self, m):
         m.put(CALLBACK_MOCK_URL, json={})
-        cube_info = LocalCubeGenerator(verbosity=1).get_cube_info(self.REQUEST)
-        self.assertIsInstance(cube_info, CubeInfoResult)
-        self.assertIsInstance(cube_info.result,
-                              CubeInfo)
-        self.assertIsInstance(cube_info.result.dataset_descriptor,
-                              DatasetDescriptor)
-        self.assertIsInstance(cube_info.result.size_estimation,
-                              dict)
+        result = LocalCubeGenerator(verbosity=1).get_cube_info(self.REQUEST)
+        self.assertIsInstance(result, CubeInfoResult)
+        self.assertEqual('ok', result.status)
+        self.assertEqual(200, result.status_code)
+        cube_info = result.result
+        self.assertIsInstance(cube_info, CubeInfo)
+        self.assertIsInstance(cube_info.dataset_descriptor, DatasetDescriptor)
+        self.assertIsInstance(cube_info.size_estimation, dict)
         # JSON-serialisation smoke test
-        cube_info_dict = cube_info.to_dict()
+        cube_info_dict = result.to_dict()
         json.dumps(cube_info_dict, indent=2)
 
 # class CubeGeneratorS3Input(S3Test):

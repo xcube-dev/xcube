@@ -28,8 +28,8 @@ DataStores:
   - Identifier: edc
     StoreId: s3
     StoreParams:
+      # root: eurodatacube-scratch/2021-09-09/SERVICE-DEV
       root: eurodatacube-scratch/2021-09-13/SERVICE-DEV
-#      root: eurodatacube-scratch
       max_depth: 4
       fs_params:
         anon: true
