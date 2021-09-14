@@ -114,7 +114,7 @@ def store_info(store_id: str,
         if show_writers and isinstance(data_store, MutableDataStore):
             d['writer_ids'] = data_store.get_data_writer_ids()
         if show_data_ids:
-            d['data_ids'] = sorted(list(data_store.get_data_ids()))
+            d['data_ids'] = sorted(data_store.get_data_ids())
         if show_openers:
             print(json.dumps(d, indent=2))
     else:

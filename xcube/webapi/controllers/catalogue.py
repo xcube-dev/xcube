@@ -21,6 +21,7 @@
 
 import functools
 import json
+import math
 from typing import Dict, Tuple, List, Set
 
 import numpy as np
@@ -29,7 +30,9 @@ from xcube.constants import LOG
 from xcube.core.geom import get_dataset_bounds
 from xcube.core.normalize import DatasetIsNotACubeError
 from xcube.core.timecoord import timestamp_to_iso_string
+from xcube.util.assertions import assert_instance
 from xcube.util.cmaps import get_cmaps
+from xcube.util.tilegrid import TileGrid
 from xcube.webapi.auth import assert_scopes
 from xcube.webapi.auth import check_scopes
 from xcube.webapi.context import ServiceContext
@@ -59,8 +62,12 @@ def get_datasets(ctx: ServiceContext,
 
         if 'read:dataset:*' not in granted_scopes:
             required_scopes = ctx.get_required_dataset_scopes(dataset_config)
-            is_substitute = dataset_config.get('AccessControl', {}).get('IsSubstitute', False)
-            if not check_scopes(required_scopes, granted_scopes, is_substitute=is_substitute):
+            is_substitute = dataset_config \
+                .get('AccessControl', {}) \
+                .get('IsSubstitute', False)
+            if not check_scopes(required_scopes,
+                                granted_scopes,
+                                is_substitute=is_substitute):
                 continue
 
         dataset_dict = dict(id=ds_id)
@@ -82,6 +89,10 @@ def get_datasets(ctx: ServiceContext,
 
         dataset_dicts.append(dataset_dict)
 
+        # Important note:
+        # the "point" parameter is used by
+        # the CyanoAlert app only
+
         if details or point:
             filtered_dataset_dicts = []
             for dataset_dict in dataset_dicts:
@@ -98,11 +109,13 @@ def get_datasets(ctx: ServiceContext,
                                         granted_scopes=granted_scopes)
                         )
                     filtered_dataset_dicts.append(dataset_dict)
-                except DatasetIsNotACubeError as e:
-                    LOG.warn(f'skipping dataset: {e}')
+                except (DatasetIsNotACubeError, CubeIsNotDisplayable) as e:
+                    LOG.warn(f'skipping dataset {ds_id}: {e}')
             dataset_dicts = filtered_dataset_dicts
     if point:
-        is_point_in_dataset_bbox = functools.partial(_is_point_in_dataset_bbox, point)
+        is_point_in_dataset_bbox = functools.partial(
+            _is_point_in_dataset_bbox, point
+        )
         # noinspection PyTypeChecker
         dataset_dicts = list(filter(is_point_in_dataset_bbox, dataset_dicts))
 
@@ -123,7 +136,26 @@ def get_dataset(ctx: ServiceContext,
         required_scopes = ctx.get_required_dataset_scopes(dataset_config)
         assert_scopes(required_scopes, granted_scopes or set())
 
-    ds = ctx.get_dataset(ds_id)
+    ml_ds = ctx.get_ml_dataset(ds_id)
+    grid_mapping = ml_ds.grid_mapping
+    if not grid_mapping.crs.is_geographic:
+        raise CubeIsNotDisplayable(f'CRS is not geographic:'
+                                   f' {grid_mapping.crs.srs}')
+    if not math.isclose(grid_mapping.x_res,
+                        grid_mapping.y_res,
+                        abs_tol=0.01):
+        raise CubeIsNotDisplayable(f'spatial resolutions are'
+                                   f' different in x, y:'
+                                   f' {grid_mapping.x_res}'
+                                   f' and {grid_mapping.y_res}')
+    try:
+        # Make sure we have a valid tile grid
+        # noinspection PyStatementEffect
+        assert_instance(ml_ds.tile_grid, TileGrid)
+    except ValueError as e:
+        raise CubeIsNotDisplayable(f'could not create tile grid: {e}')
+
+    ds = ml_ds.get_dataset(0)
 
     ds_title = dataset_config.get('Title',
                                   ds.attrs.get('title',
@@ -138,11 +170,15 @@ def get_dataset(ctx: ServiceContext,
     for var_name in ds.data_vars:
         var = ds.data_vars[var_name]
         dims = var.dims
-        if len(dims) < 3 or dims[0] != 'time' or dims[-2] != 'lat' or dims[-1] != 'lon':
+        if len(dims) < 3 \
+                or dims[0] != 'time' \
+                or dims[-2] != 'lat' \
+                or dims[-1] != 'lon':
             continue
 
         if 'read:variable:*' not in granted_scopes:
-            required_scopes = ctx.get_required_variable_scopes(dataset_config, var_name)
+            required_scopes = ctx.get_required_variable_scopes(dataset_config,
+                                                               var_name)
             if not check_scopes(required_scopes, granted_scopes):
                 continue
 
@@ -152,18 +188,23 @@ def get_dataset(ctx: ServiceContext,
                              shape=list(var.shape),
                              dtype=str(var.dtype),
                              units=var.attrs.get('units', ''),
-                             title=var.attrs.get('title', var.attrs.get('long_name', var_name)))
+                             title=var.attrs.get('title',
+                                                 var.attrs.get('long_name',
+                                                               var_name)))
 
         if client is not None:
             tile_grid = ctx.get_tile_grid(ds_id)
-            tile_xyz_source_options = get_tile_source_options(tile_grid,
-                                                              get_dataset_tile_url(ctx, ds_id,
-                                                                                   var_name,
-                                                                                   base_url),
-                                                              client=client)
+            tile_xyz_source_options = get_tile_source_options(
+                tile_grid,
+                get_dataset_tile_url(ctx, ds_id,
+                                     var_name,
+                                     base_url),
+                client=client
+            )
             variable_dict["tileSourceOptions"] = tile_xyz_source_options
 
-        cmap_name, (cmap_vmin, cmap_vmax) = ctx.get_color_mapping(ds_id, var_name)
+        cmap_name, (cmap_vmin, cmap_vmax) = ctx.get_color_mapping(ds_id,
+                                                                  var_name)
         variable_dict["colorBarName"] = cmap_name
         variable_dict["colorBarMin"] = cmap_vmin
         variable_dict["colorBarMax"] = cmap_vmax
@@ -187,20 +228,32 @@ def get_dataset(ctx: ServiceContext,
         rgb_schema = {'varNames': rgb_var_names, 'normRanges': rgb_norm_ranges}
         if client is not None:
             tile_grid = ctx.get_tile_grid(ds_id)
-            tile_xyz_source_options = get_tile_source_options(tile_grid,
-                                                              get_dataset_tile_url(ctx, ds_id,
-                                                                                   'rgb',
-                                                                                   base_url),
-                                                              client=client)
+            tile_xyz_source_options = get_tile_source_options(
+                tile_grid,
+                get_dataset_tile_url(ctx, ds_id,
+                                     'rgb',
+                                     base_url),
+                client=client
+            )
             rgb_schema["tileSourceOptions"] = tile_xyz_source_options
         dataset_dict["rgbSchema"] = rgb_schema
 
-    dim_names = ds.data_vars[list(ds.data_vars)[0]].dims if len(ds.data_vars) > 0 else ds.dims.keys()
-    dataset_dict["dimensions"] = [get_dataset_coordinates(ctx, ds_id, dim_name) for dim_name in dim_names]
+    dim_names = ds.data_vars[list(ds.data_vars)[0]].dims \
+        if len(ds.data_vars) > 0 else ds.dims.keys()
+    dataset_dict["dimensions"] = [
+        get_dataset_coordinates(ctx, ds_id, dim_name)
+        for dim_name in dim_names
+    ]
 
-    dataset_dict["attrs"] = {key: ds.attrs[key] for key in sorted(list(ds.attrs.keys()))}
+    dataset_dict["attrs"] = {
+        key: ds.attrs[key]
+        for key in sorted(list(ds.attrs.keys()))
+    }
 
-    dataset_attributions = dataset_config.get('DatasetAttribution', ctx.config.get('DatasetAttribution'))
+    dataset_attributions = dataset_config.get(
+        'DatasetAttribution',
+        ctx.config.get('DatasetAttribution')
+    )
     if dataset_attributions is not None:
         if isinstance(dataset_attributions, str):
             dataset_attributions = [dataset_attributions]
@@ -208,7 +261,8 @@ def get_dataset(ctx: ServiceContext,
 
     place_groups = ctx.get_dataset_place_groups(ds_id, base_url)
     if place_groups:
-        dataset_dict["placeGroups"] = _filter_place_groups(place_groups, del_features=True)
+        dataset_dict["placeGroups"] = _filter_place_groups(place_groups,
+                                                           del_features=True)
 
     return dataset_dict
 
@@ -305,3 +359,7 @@ def _filter_place_groups(place_groups, del_features: bool = False) -> List[Dict]
             return _filter_place_group(place_group, del_features=False)
 
     return list(map(__filter_place_group, place_groups))
+
+
+class CubeIsNotDisplayable(ValueError):
+    pass
