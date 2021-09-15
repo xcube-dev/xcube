@@ -26,6 +26,7 @@ import xarray as xr
 from xcube.core.gridmapping import GridMapping
 from xcube.core.store import DataStorePool
 from xcube.util.assertions import assert_instance
+from xcube.util.dependencies import get_xcube_dependencies
 from xcube.util.progress import observe_progress
 from .combiner import CubesCombiner
 from .helpers import is_empty_cube
@@ -226,7 +227,8 @@ class LocalCubeGenerator(CubeGenerator):
                 status_code=201,
                 result=CubeReference(data_id=data_id),
                 message=f'Cube generated successfully'
-                        f' after {total_time:.2f} seconds'
+                        f' after {total_time:.2f} seconds',
+                dependencies=get_xcube_dependencies()
             )
         else:
             return CubeGeneratorResult(
@@ -234,7 +236,8 @@ class LocalCubeGenerator(CubeGenerator):
                 status_code=422,
                 message=f'An empty cube has been generated'
                         f' after {total_time:.2f} seconds.'
-                        f' No data has been written at all.'
+                        f' No data has been written at all.',
+                dependencies = get_xcube_dependencies()
             )
 
     def _get_cube_info(self, request: CubeGeneratorRequestLike) \
@@ -245,4 +248,5 @@ class LocalCubeGenerator(CubeGenerator):
         cube_info = informant.generate()
         return CubeInfoResult(result=cube_info,
                               status='ok',
-                              status_code=200)
+                              status_code=200,
+                              dependencies=get_xcube_dependencies())

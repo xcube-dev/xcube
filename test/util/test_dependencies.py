@@ -16,4 +16,4 @@ class GetDependenciesTest(unittest.TestCase):
         self.assertTrue('numpy' in dependencies)
         self.assertTrue('geopandas' in dependencies)
         self.assertTrue('xcube' in dependencies)
-        self.assertEqual(xcube_version, dependencies['xcube'])
+        self.assertEqual(xcube_version.version, dependencies['xcube'])

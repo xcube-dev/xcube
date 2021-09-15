@@ -27,6 +27,7 @@ from typing import Type, TypeVar, Dict, Any, Optional, List, Tuple, Union
 import requests
 
 from xcube.util.assertions import assert_instance
+from xcube.util.dependencies import get_xcube_dependencies
 from xcube.util.jsonschema import JsonObject
 from xcube.util.progress import observe_progress
 from .config import ServiceConfig
@@ -316,6 +317,7 @@ class RemoteCubeGenerator(CubeGenerator):
             status_code=422,
             message='missing cube generator result',
             output=state.output,
+            dependencies=get_xcube_dependencies()
         )
 
     @classmethod

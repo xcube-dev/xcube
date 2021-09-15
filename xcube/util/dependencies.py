@@ -19,6 +19,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+import os
 import sys
 import yaml
 from typing import Dict
@@ -34,14 +35,17 @@ def get_xcube_dependencies() -> Dict[str, str]:
     """
     # Idea stolen from xarray.print_versions
 
-    environment_file = '../../environment.yml'
+    environment_file = f'{os.path.dirname(os.path.abspath(__file__))}' \
+                       f'../../../environment.yml'
+    environment_file = os.path.abspath(environment_file)
     dependency_names = []
     with open(environment_file, 'r') as environment:
         env_dict = yaml.safe_load(environment)
         dependency_names = [dependency.split('=')[0].split('>')[0].strip()
                             for dependency in env_dict.get('dependencies', [])]
 
-    plugin_names = list(get_plugins().keys())
+    plugin_names = [f'{plugin}.version'
+                    for plugin in list(get_plugins().keys())]
 
     return get_dependencies(dependency_names, plugin_names)
 
@@ -56,7 +60,13 @@ def get_dependencies(dependency_names: List[str], plugin_names: List[str]) \
     # Idea stolen from xarray.print_versions
     import importlib
 
-    dependencies = [(plugin_name, lambda mod: mod.version)
+    def _maybe_add_dot_version(name: str):
+        if not name.endswith('.version'):
+            return f'{name}.version'
+        return name
+
+    dependencies = [(_maybe_add_dot_version(plugin_name),
+                     lambda mod: mod.version)
                     for plugin_name in plugin_names]
     dependencies += [(dependency_name, lambda mod: mod.__version__)
                      for dependency_name in dependency_names]
@@ -75,9 +85,10 @@ def get_dependencies(dependency_names: List[str], plugin_names: List[str]) \
         else:
             # noinspection PyBroadException
             try:
-                dependencies_dict[module_key] = module_version(module)
+                dependencies_dict[module_key.split('.version')[0]] \
+                    = module_version(module)
             except Exception as e:
                 print(e)
-                dependencies_dict[module_key] = "installed"
+                dependencies_dict[module_key.split('.version')[0]] = "installed"
 
     return dependencies_dict
