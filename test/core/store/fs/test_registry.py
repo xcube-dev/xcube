@@ -161,14 +161,14 @@ class S3FsDataStoresTest(FsDataStoresTestMixin, S3Test):
 
     def create_data_store(self) -> FsDataStore:
         root = ROOT_DIR
-        fs_params = dict(
+        storage_options = dict(
             anon=False,
             client_kwargs=dict(
                 endpoint_url=MOTO_SERVER_ENDPOINT_URL,
             )
         )
-        self.prepare_fs(fsspec.filesystem('s3', **fs_params), root)
+        self.prepare_fs(fsspec.filesystem('s3', **storage_options), root)
         return new_fs_data_store('s3',
                                  root=root,
                                  max_depth=3,
-                                 fs_params=fs_params)
+                                 storage_options=storage_options)

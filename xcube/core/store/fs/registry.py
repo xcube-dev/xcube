@@ -52,40 +52,40 @@ def register_fs_accessor_class(
     :param fs_accessor_class: a concrete class
         that extends :class:FsAccessor.
     """
-    fs_protocol = fs_accessor_class.get_fs_protocol()
-    _FS_ACCESSOR_CLASSES[fs_protocol] = fs_accessor_class
+    protocol = fs_accessor_class.get_protocol()
+    _FS_ACCESSOR_CLASSES[protocol] = fs_accessor_class
 
 
 for cls in (FileFsAccessor, S3FsAccessor, MemoryFsAccessor):
     register_fs_accessor_class(cls)
 
 
-def get_fs_accessor_class(fs_protocol: str) -> Type[FsAccessor]:
+def get_fs_accessor_class(protocol: str) -> Type[FsAccessor]:
     """
     Get the class for a filesystem accessor.
 
-    :param fs_protocol: The filesystem protocol,
+    :param protocol: The filesystem protocol,
         for example "file", "s3", "memory".
     :return: A class that derives from :class:FsAccessor
     """
-    fs_accessor_class = _FS_ACCESSOR_CLASSES.get(fs_protocol)
+    fs_accessor_class = _FS_ACCESSOR_CLASSES.get(protocol)
     if fs_accessor_class is None:
         try:
-            fsspec.get_filesystem_class(fs_protocol)
+            fsspec.get_filesystem_class(protocol)
         except ImportError as e:
             raise DataStoreError(
-                f'Filesystem for protocol {fs_protocol!r}'
+                f'Filesystem for protocol {protocol!r}'
                 f' is not installed or requires additional packages'
             ) from e
         except ValueError as e:
             raise DataStoreError(
-                f'Filesystem not found for protocol {fs_protocol!r}'
+                f'Filesystem not found for protocol {protocol!r}'
             ) from e
 
         class FsAccessorClass(FsAccessor):
             @classmethod
-            def get_fs_protocol(cls) -> str:
-                return fs_protocol
+            def get_protocol(cls) -> str:
+                return protocol
 
         fs_accessor_class = FsAccessorClass
     return fs_accessor_class
@@ -124,18 +124,18 @@ for cls in (DatasetZarrFsDataAccessor,
     register_fs_data_accessor_class(cls)
 
 
-def get_fs_data_accessor_class(fs_protocol: str,
+def get_fs_data_accessor_class(protocol: str,
                                data_type_alias: str,
                                format_id: str) -> Type[FsDataAccessor]:
     """
     Get the class for a filesystem data accessor.
 
+    :param protocol: The filesystem protocol,
+        for example "file", "s3", "memory".
     :param data_type_alias: The data type alias name,
         for example "dataset", "geodataframe".
     :param format_id: The format identifier,
         for example "zarr", "geojson".
-    :param fs_protocol: The filesystem protocol,
-        for example "file", "s3", "memory".
     :return: A class that derives from :class:FsAccessor
     """
     accessor_id = f'{data_type_alias}:{format_id}'
@@ -144,7 +144,7 @@ def get_fs_data_accessor_class(fs_protocol: str,
         raise DataStoreError(f'Combination of data type {data_type_alias!r}'
                              f' and format {format_id!r} is not supported')
 
-    fs_accessor_class = get_fs_accessor_class(fs_protocol)
+    fs_accessor_class = get_fs_accessor_class(protocol)
 
     class FsDataAccessorClass(fs_accessor_class, data_accessor_class):
         pass
@@ -157,15 +157,15 @@ def get_fs_data_accessor_class(fs_protocol: str,
 ############################################
 # FsDataStore
 
-def get_fs_data_store_class(fs_protocol: str) -> Type[FsDataStore]:
+def get_fs_data_store_class(protocol: str) -> Type[FsDataStore]:
     """
     Get the class for of a filesystem-based data store.
 
-    :param fs_protocol: The filesystem protocol,
+    :param protocol: The filesystem protocol,
         for example "file", "s3", "memory".
     :return: A class that derives from :class:FsDataStore
     """
-    fs_accessor_class = get_fs_accessor_class(fs_protocol)
+    fs_accessor_class = get_fs_accessor_class(protocol)
 
     class FsDataStoreClass(fs_accessor_class, FsDataStore):
         pass
@@ -175,34 +175,36 @@ def get_fs_data_store_class(fs_protocol: str) -> Type[FsDataStore]:
     return FsDataStoreClass
 
 
-def new_fs_data_store(fs_protocol: str,
-                      fs_params: Dict[str, Any] = None,
-                      root: str = '',
-                      max_depth: Optional[int] = 1,
-                      read_only: bool = False) -> FsDataStore:
+def new_fs_data_store(
+        protocol: str,
+        root: str = '',
+        max_depth: Optional[int] = 1,
+        read_only: bool = False,
+        storage_options: Dict[str, Any] = None
+) -> FsDataStore:
     """
     Create a new instance of a filesystem-based data store.
 
-    :param fs_protocol: The filesystem protocol,
+    :param protocol: The filesystem protocol,
         for example "file", "s3", "memory".
-    :param fs_params: Parameters specific to the underlying filesystem
-        identified by *fs_protocol*.
-        Used to instantiate the filesystem.
     :param root: Root or base directory.
         Defaults to "".
     :param max_depth: Maximum recursion depth. None means limitless.
         Defaults to 1.
     :param read_only: Whether this is a read-only store.
         Defaults to False.
+    :param storage_options: Options specific to the underlying filesystem
+        identified by *protocol*.
+        Used to instantiate the filesystem.
     :return: A new data store instance of type :class:FsDataStore.
     """
-    fs_data_store_class = get_fs_data_store_class(fs_protocol)
+    fs_data_store_class = get_fs_data_store_class(protocol)
     store_params_schema = fs_data_store_class.get_data_store_params_schema()
     store_params = {k: v
-                    for k, v in dict(fs_params=fs_params,
-                                     root=root,
+                    for k, v in dict(root=root,
                                      max_depth=max_depth,
-                                     read_only=read_only).items()
+                                     read_only=read_only,
+                                     storage_options=storage_options).items()
                     if v is not None}
     assert_valid_params(store_params,
                         name='store_params',

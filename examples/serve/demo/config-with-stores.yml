@@ -31,7 +31,7 @@ DataStores:
       # root: eurodatacube-scratch/2021-09-09/SERVICE-DEV
       root: eurodatacube-scratch/2021-09-13/SERVICE-DEV
       max_depth: 4
-      fs_params:
+      storage_options:
         anon: true
         # client_kwargs:
         #  endpoint_url: https://s3.eu-central-1.amazonaws.com

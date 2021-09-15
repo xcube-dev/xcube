@@ -40,8 +40,8 @@ from ...error import DataStoreError
 
 class MultiLevelDatasetLevelsFsDataAccessor(DatasetZarrFsDataAccessor):
     """
-    Opener/writer extension name: "mldataset:levels:<fs_protocol>"
-    and "dataset:levels:<fs_protocol>"
+    Opener/writer extension name: "mldataset:levels:<protocol>"
+    and "dataset:levels:<protocol>"
     """
 
     @classmethod
