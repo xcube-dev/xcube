@@ -116,6 +116,7 @@ class CubeReference(JsonObject):
             ),
             required=['data_id'],
             additional_properties=False,
+            factory=cls,
         )
 
 

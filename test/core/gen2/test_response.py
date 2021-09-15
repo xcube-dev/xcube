@@ -25,6 +25,8 @@ class CubeGeneratorResultTest(unittest.TestCase):
 
         result2 = CubeGeneratorResult.from_dict(result_dict)
         self.assertIsInstance(result2, CubeGeneratorResult)
+        self.assertIsInstance(result2.result, CubeReference)
+        self.assertEqual('bibo.zarr', result2.result.data_id)
 
 
 class CubeInfoResultTest(unittest.TestCase):
