@@ -399,6 +399,23 @@ class MaybeAssignStoreInstanceIdsTest(unittest.TestCase):
         self.assertEqual('cube-1-250-250.zarr', dataset_config['Path'])
         self.assertEqual('local_1', dataset_config['StoreInstanceId'])
 
+    def test_invalid_file_system(self):
+        ctx = new_test_service_context()
+        dataset_config = {'Identifier': 'five',
+                          'Title': 'Test 5a',
+                          'FileSystem': 'invalid',
+                          'Path': 'cube-1-250-250.zarr'}
+
+        ctx.config['Datasets'] = [dataset_config]
+        dataset_config = ctx.get_dataset_configs()[0]
+
+        self.assertEqual(['Identifier', 'Title', 'FileSystem', 'Path'],
+                         list(dataset_config.keys()))
+        self.assertEqual('five', dataset_config['Identifier'])
+        self.assertEqual('Test 5a', dataset_config['Title'])
+        self.assertEqual('invalid', dataset_config['FileSystem'])
+        self.assertEqual('cube-1-250-250.zarr', dataset_config['Path'])
+
     def test_local_store_already_existing(self):
         ctx = new_test_service_context()
         dataset_config_1 = {'Identifier': 'six',

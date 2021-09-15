@@ -264,9 +264,7 @@ class DataStorePool:
 
     def get_store_instance_id(self,
                               store_config: DataStoreConfig,
-                              strict_check: bool = False
-                              ) \
-            -> Optional[str]:
+                              strict_check: bool = False) -> Optional[str]:
         assert_instance(store_config, DataStoreConfig, 'store_config')
         for id, instance in self._instances.items():
             if strict_check:

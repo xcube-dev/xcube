@@ -66,7 +66,7 @@ COMPUTE_VARIABLES = 'compute_variables'
 
 # We use tilde, because it is not a reserved URI characters
 STORE_DS_ID_SEPARATOR = '~'
-FS_TYPE_TO_STORE_ID = {
+FS_TYPE_TO_PROTOCOL = {
     'local': 'file',
     'obs': 's3'
 }
@@ -277,7 +277,7 @@ class ServiceContext:
         assignable_dataset_configs = [dc for dc in self._dataset_configs
                                       if 'StoreInstanceId' not in dc
                                       and dc.get('FileSystem', 'local')
-                                      != 'memory']
+                                      in FS_TYPE_TO_PROTOCOL.keys()]
         # split into sublists according to file system and non-root store params
         config_lists = []
         for config in assignable_dataset_configs:
@@ -335,7 +335,7 @@ class ServiceContext:
                 store_params_for_root['root'] = abs_root
                 # See if there already is a store with this configuration
                 data_store_config = DataStoreConfig(
-                    store_id=FS_TYPE_TO_STORE_ID.get(file_system),
+                    store_id=FS_TYPE_TO_PROTOCOL.get(file_system),
                     store_params=store_params_for_root)
                 store_instance_id = data_store_pool.\
                     get_store_instance_id(data_store_config)
