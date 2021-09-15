@@ -40,7 +40,7 @@ _STEADY_CUBE_CONFIG_NAMES = {
 }
 
 
-class DatasetsOpener:
+class CubeOpener:
 
     def __init__(self,
                  cube_config: CubeConfig,
@@ -126,6 +126,7 @@ class DatasetsOpener:
                 break
         if not opener_ids:
             raise CubeGeneratorError(f'Data store {input_config.store_id!r}'
-                                     f' does not support datasets')
+                                     f' does not support datasets',
+                                     status_code=400)
         opener_id = opener_ids[0]
         return opener_id

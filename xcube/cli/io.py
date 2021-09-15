@@ -114,7 +114,7 @@ def store_info(store_id: str,
         if show_writers and isinstance(data_store, MutableDataStore):
             d['writer_ids'] = data_store.get_data_writer_ids()
         if show_data_ids:
-            d['data_ids'] = list(data_store.get_data_ids())
+            d['data_ids'] = sorted(data_store.get_data_ids())
         if show_openers:
             print(json.dumps(d, indent=2))
     else:
@@ -580,7 +580,7 @@ def _dump_store_writers(data_store: 'xcube.core.store.DataStore') -> int:
 # noinspection PyUnresolvedReferences
 def _dump_store_data_ids(data_store: 'xcube.core.store.DataStore') -> int:
     count = 0
-    for data_id, data_attrs in data_store.get_data_ids(include_attrs=['title']):
+    for data_id, data_attrs in sorted(data_store.get_data_ids(include_attrs=['title'])):
         print(f'  {data_id:>32s}  {data_attrs.get("title") or _NO_TITLE}')
         count += 1
     return count

@@ -60,6 +60,10 @@ class CubeWriter:
             else:
                 writer = new_data_writer(output_config.writer_id)
                 write_params.update(**store_params, **write_params)
+            if not dataset.attrs.get('title'):
+                # Set fallback title, so we can distinguish
+                # datasets from stores in xcube-viewer
+                dataset = dataset.assign_attrs(title=output_config.data_id)
             data_id = writer.write_data(
                 dataset,
                 data_id=output_config.data_id,
