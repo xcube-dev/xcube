@@ -149,10 +149,14 @@ def gen2(request_path: str,
                       message=f'{error}',
                       traceback=traceback.format_tb(error.__traceback__))
         if isinstance(error, CubeGeneratorError):
-            if error.remote_output:
+            if error.status_code is not None:
+                result.update(status_code=error.status_code)
+            if error.remote_output is not None:
                 result.update(remote_output=error.remote_output)
-            if error.remote_traceback:
+            if error.remote_traceback is not None:
                 result.update(remote_traceback=error.remote_traceback)
+        if 'status_code' not in result:
+            result['status_code'] = 500
 
     if output_file is not None:
         with open(output_file, 'w') as fp:
