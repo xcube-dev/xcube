@@ -45,7 +45,7 @@ from xcube.core.mldataset import guess_ml_dataset_format
 from xcube.util.cache import parse_mem_size
 from xcube.util.caseless import caseless_dict
 from xcube.util.config import load_configs
-from xcube.util.dependencies import get_xcube_dependencies
+from xcube.util.versions import get_xcube_versions
 from xcube.util.undefined import UNDEFINED
 from xcube.version import version
 from xcube.webapi.context import ServiceContext
@@ -304,7 +304,7 @@ class ServiceRequestHandler(RequestHandler):
                 'error': {
                     'code': status_code,
                     'message': self._reason,
-                    'dependencies': get_xcube_dependencies(),
+                    'versions': get_xcube_versions(),
                     'traceback': lines,
                 }
             }, indent=2))
@@ -313,7 +313,7 @@ class ServiceRequestHandler(RequestHandler):
                 'error': {
                     'code': status_code,
                     'message': self._reason,
-                    'dependencies': get_xcube_dependencies(),
+                    'versions': get_xcube_versions(),
                 }
             }, indent=2))
 

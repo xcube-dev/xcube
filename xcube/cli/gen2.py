@@ -23,7 +23,7 @@ import json
 import sys
 import traceback
 from typing import Sequence
-from xcube.util.dependencies import get_xcube_dependencies
+from xcube.util.versions import get_xcube_versions
 
 import click
 
@@ -148,7 +148,7 @@ def gen2(request_path: str,
 
         result = dict(status='error',
                       message=f'{error}',
-                      dependencies=get_xcube_dependencies(),
+                      versions=get_xcube_versions(),
                       traceback=traceback.format_tb(error.__traceback__))
         if isinstance(error, CubeGeneratorError):
             if error.remote_output:

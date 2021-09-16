@@ -1,19 +1,19 @@
 import unittest
-from xcube.util.dependencies import get_xcube_dependencies
+from xcube.util.versions import get_xcube_versions
 import xcube.version as xcube_version
 
 
 class GetDependenciesTest(unittest.TestCase):
 
-    def test_get_xcube_dependencies(self):
-        dependencies = get_xcube_dependencies()
-        self.assertIsNotNone(dependencies)
-        self.assertTrue('xarray' in dependencies)
-        self.assertTrue('dask' in dependencies)
-        self.assertTrue('zarr' in dependencies)
-        self.assertTrue('tornado' in dependencies)
-        self.assertTrue('pandas' in dependencies)
-        self.assertTrue('numpy' in dependencies)
-        self.assertTrue('geopandas' in dependencies)
-        self.assertTrue('xcube' in dependencies)
-        self.assertEqual(xcube_version.version, dependencies['xcube'])
+    def test_get_xcube_versionss(self):
+        versions = get_xcube_versions()
+        self.assertIsNotNone(versions)
+        self.assertTrue('xarray' in versions)
+        self.assertTrue('dask' in versions)
+        self.assertTrue('zarr' in versions)
+        self.assertTrue('tornado' in versions)
+        self.assertTrue('pandas' in versions)
+        self.assertTrue('numpy' in versions)
+        self.assertTrue('geopandas' in versions)
+        self.assertTrue('xcube' in versions)
+        self.assertEqual(xcube_version.version, versions['xcube'])
