@@ -26,6 +26,14 @@ from typing import Dict
 from typing import List
 from .plugin import get_plugins
 
+DEPENDENCY_NAMES = \
+    ['affine', 'click', 'cmocean', 'dask', 'dask - image', 'distributed',
+     'fiona', 'fsspec', 'gdal', 'geopandas', 'jdcal', 'jsonschema',
+     'matplotlib - base', 'netcdf4', 'numba', 'numpy', 'pandas', 'pillow',
+     'pyjwt', 'pyproj', 'pyyaml', 'rasterio', 'requests',
+     'requests - oauthlib', 's3fs', 'scipy', 'setuptools', 'shapely',
+     'tornado', 'urllib3', 'xarray', 'zarr']
+
 
 def get_xcube_dependencies() -> Dict[str, str]:
     """
@@ -35,14 +43,19 @@ def get_xcube_dependencies() -> Dict[str, str]:
     """
     # Idea stolen from xarray.print_versions
 
+    # try to parse dependencies from environment.yml. If it can't be found,
+    # use hard-coded list of dependencies
     environment_file = f'{os.path.dirname(os.path.abspath(__file__))}' \
                        f'../../../environment.yml'
     environment_file = os.path.abspath(environment_file)
-    dependency_names = []
-    with open(environment_file, 'r') as environment:
-        env_dict = yaml.safe_load(environment)
-        dependency_names = [dependency.split('=')[0].split('>')[0].strip()
-                            for dependency in env_dict.get('dependencies', [])]
+    if os.path.exists(environment_file):
+        with open(environment_file, 'r') as environment:
+            env_dict = yaml.safe_load(environment)
+            dependency_names = [dependency.split('=')[0].split('>')[0].strip()
+                                for dependency in
+                                env_dict.get('dependencies', [])]
+    else:
+        dependency_names = DEPENDENCY_NAMES
 
     plugin_names = [f'{plugin}.version'
                     for plugin in list(get_plugins().keys())]
