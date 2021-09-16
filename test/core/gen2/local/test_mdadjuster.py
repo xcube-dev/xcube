@@ -113,3 +113,18 @@ class CubeMetadataAdjusterTest(unittest.TestCase):
         self.assertAlmostEqual(0.001,
                                cube2.attrs.get('geospatial_lat_resolution'),
                                delta=0.0005)
+
+    def test_easter_egg(self):
+        cube = new_cube()
+        md_adjuster = CubeMetadataAdjuster()
+        with self.assertRaises(ValueError) as cm:
+            md_adjuster.transform_cube(
+                cube,
+                GridMapping.from_dataset(cube),
+                CubeConfig(metadata=dict(
+                    inverse_fine_structure_constant=136
+                ))
+            )
+        self.assertEqual(('inverse_fine_structure_constant must be 137'
+                          ' or running in wrong universe',),
+                         cm.exception.args)
