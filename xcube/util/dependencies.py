@@ -38,8 +38,11 @@ DEPENDENCY_NAMES = \
 def get_xcube_dependencies() -> Dict[str, str]:
     """
     Get a mapping from package names to package versions.
-    Lists all dependencies stated in the environment and
-    all plugin packages.
+    The mapping contains the versions of packages that are dependencies as well
+    as packages that are xcube-plugins. Also, the xcube version itself is
+    included.
+    :return: A mapping of the package names to package versions
+    The result computed from the evaluating the expression.
     """
     # Idea stolen from xarray.print_versions
 
@@ -67,8 +70,15 @@ def get_dependencies(dependency_names: List[str], plugin_names: List[str]) \
         -> Dict[str, str]:
     """
     Get a mapping from package names to package versions.
-    Lists all dependencies stated in the environment and
-    all plugin packages.
+    The input is divided into names of packages that are external dependencies
+     and into names of xcube plugins.
+
+    :param dependency_names: A list of names of packages of which the versions
+        shall be found
+    :param plugin_names: A list of names of xcube plugins of which the versions
+        shall be found
+    :return: A mapping of the package names to package versions
+    The result computed from the evaluating the expression.
     """
     # Idea stolen from xarray.print_versions
     import importlib

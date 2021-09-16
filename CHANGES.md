@@ -83,6 +83,8 @@
 * Added a new utility module `xcube.util.temp` that allows for creating 
   temporary files and directories that will be deleted when the current 
   process ends.
+* Added functions `get_dependencies` and `get_xcube_dependencies` to get 
+  mappings of package names to package versions. (#522)
 
 ### Other
 
