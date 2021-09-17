@@ -1,3 +1,4 @@
+import copy
 import json
 import unittest
 from typing import Dict, Any
@@ -108,7 +109,7 @@ class LocalCubeGeneratorTest(unittest.TestCase):
     @requests_mock.Mocker()
     def test_generate_cube_from_yaml_empty(self, m):
         m.put(CALLBACK_MOCK_URL, json={})
-        request = self.REQUEST.copy()
+        request = copy.deepcopy(self.REQUEST)
         request['cube_config']['time_range'] = ['2019-01-01', '2020-01-01']
 
         generator = LocalCubeGenerator()
