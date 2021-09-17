@@ -23,7 +23,6 @@ import json
 import sys
 import traceback
 from typing import Sequence
-from xcube.util.versions import XCUBE_VERSIONS
 
 import click
 
@@ -124,6 +123,7 @@ def gen2(request_path: str,
     from xcube.core.gen2 import CubeGenerator
     from xcube.core.gen2 import CubeGeneratorError
     from xcube.core.gen2 import CubeGeneratorRequest
+    from xcube.util.versions import get_xcube_versions
 
     verbosity = len(verbose) if verbose else 0
 
@@ -148,13 +148,15 @@ def gen2(request_path: str,
 
         result = dict(status='error',
                       message=f'{error}',
-                      versions=XCUBE_VERSIONS,
                       traceback=traceback.format_tb(error.__traceback__))
         if isinstance(error, CubeGeneratorError):
             if error.remote_output:
                 result.update(remote_output=error.remote_output)
             if error.remote_traceback:
                 result.update(remote_traceback=error.remote_traceback)
+
+    if result.get('status') == 'error':
+        result['versions'] = get_xcube_versions()
 
     if output_file is not None:
         with open(output_file, 'w') as fp:
