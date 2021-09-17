@@ -1,12 +1,12 @@
 import unittest
-from xcube.util.versions import get_xcube_versions
+from xcube.util.versions import XCUBE_VERSIONS
 import xcube.version as xcube_version
 
 
 class GetVersionsTest(unittest.TestCase):
 
-    def test_get_xcube_versions(self):
-        versions = get_xcube_versions()
+    def test_xcube_versions(self):
+        versions = XCUBE_VERSIONS
         self.assertIsNotNone(versions)
         self.assertTrue('xarray' in versions)
         self.assertTrue('dask' in versions)

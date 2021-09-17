@@ -35,7 +35,7 @@ DEPENDENCY_NAMES = \
      'tornado', 'urllib3', 'xarray', 'zarr']
 
 
-def get_xcube_versions() -> Dict[str, str]:
+def _get_xcube_versions() -> Dict[str, str]:
     """
     Get a mapping from package names to package versions.
     The mapping contains the versions of packages that are dependencies as well
@@ -115,3 +115,6 @@ def get_versions(dependency_names: List[str], plugin_names: List[str]) \
                 dependencies_dict[module_key.split('.version')[0]] = "installed"
 
     return dependencies_dict
+
+
+XCUBE_VERSIONS = _get_xcube_versions()
