@@ -53,7 +53,7 @@ class GenericCubeGeneratorResult(Generic[R], JsonObject):
         self.message = message if message else None
         self.output = list(output) if output else None
         self.traceback = list(traceback) if traceback else None
-        self.versions = versions if versions else None
+        self.versions = dict(versions) if versions else None
 
     def derive(self,
                /,
