@@ -142,6 +142,7 @@ class CubeConfig(JsonObject):
                  tile_size: Union[int, Tuple[int, int]] = None,
                  time_range: Tuple[str, Optional[str]] = None,
                  time_period: str = None,
+                 temporal_resampling: str = None,
                  chunks: Mapping[str, Optional[int]] = None,
                  metadata: Mapping[str, Any] = None,
                  variable_metadata: Mapping[str, Mapping[str, Any]] = None,):
@@ -195,6 +196,11 @@ class CubeConfig(JsonObject):
         if time_period is not None:
             assert_instance(time_period, str, 'time_period')
             self.time_period = time_period
+
+        self.temporal_resampling = None
+        if temporal_resampling is not None:
+            assert_instance(temporal_resampling, str, 'temporal_resampling')
+            self.temporal_resampling = temporal_resampling
 
         self.chunks = None
         if chunks is not None:
@@ -270,6 +276,15 @@ class CubeConfig(JsonObject):
                 time_period=JsonStringSchema(
                     nullable=True,
                     pattern=r'^([1-9][0-9]*)?[DWMY]$'
+                ),
+                temporal_resampling=JsonStringSchema(
+                    nullable=True,
+                    enum=[
+                        'first', 'last', 'max', 'min', 'mean', 'median',
+                        'percentile_<p>', 'linear', 'nearest', 'nearest-up',
+                        'zero', 'slinear', 'quadratic', 'cubic', 'previous',
+                        'next'
+                    ]
                 ),
                 chunks=JsonObjectSchema(
                     nullable=True,

@@ -39,7 +39,8 @@ def resample_in_time(dataset: xr.Dataset,
                      time_chunk_size=None,
                      var_names: Sequence[str] = None,
                      metadata: Dict[str, Any] = None,
-                     cube_asserted: bool = False) -> xr.Dataset:
+                     cube_asserted: bool = False,
+                     rename_variables: bool = True) -> xr.Dataset:
     """
     Resample a dataset in the time dimension.
 
@@ -49,7 +50,9 @@ def resample_in_time(dataset: xr.Dataset,
     ``'first'``, ``'last'``,
     ``'max'``, ``'min'``, ``'mean'``, ``'median'``,
     ``'percentile_<p>'``,
-    ``'std'``, ``'sum'``, ``'var'``.
+    ``'std'``, ``'sum'``, ``'var'``,
+    ``'interpolate'``
+    .
 
     In value ``'percentile_<p>'`` is a placeholder,
     where ``'<p>'`` must be replaced by an integer percentage
@@ -82,6 +85,8 @@ def resample_in_time(dataset: xr.Dataset,
     :param metadata: Output metadata.
     :param cube_asserted: If False, *cube* will be verified,
         otherwise it is expected to be a valid cube.
+    :param rename_variables: Whether the dataset's variables shall be renamed by
+        extending the resampling method to the original name.
     :return: A new xcube dataset resampled in time.
     """
     if not cube_asserted:
@@ -127,9 +132,10 @@ def resample_in_time(dataset: xr.Dataset,
                                           tolerance)
         resampled_cube = resampling_method(*method_args,
                                            **method_kwargs)
-        resampled_cube = resampled_cube.rename(
-            {var_name: f'{var_name}_{method_postfix}'
-             for var_name in resampled_cube.data_vars})
+        if rename_variables:
+            resampled_cube = resampled_cube.rename(
+                {var_name: f'{var_name}_{method_postfix}'
+                 for var_name in resampled_cube.data_vars})
         resampled_cubes.append(resampled_cube)
 
     if len(resampled_cubes) == 1:
@@ -160,10 +166,12 @@ def get_method_kwargs(method, frequency, interp_kind, tolerance):
         kwargs = {'kind': interp_kind or 'linear'}
     elif method in {'nearest', 'bfill', 'ffill', 'pad'}:
         kwargs = {'tolerance': tolerance or frequency}
-    elif method in {'first', 'last', 'sum',
+    elif method in {'last', 'sum',
                     'min', 'max',
                     'mean', 'median', 'std', 'var'}:
         kwargs = {'dim': 'time', 'keep_attrs': True, 'skipna': True}
+    elif method == 'first':
+        kwargs = {'keep_attrs': True, 'skipna': False}
     elif method == 'prod':
         kwargs = {'dim': 'time', 'skipna': True}
     elif method == 'count':

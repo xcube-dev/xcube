@@ -126,7 +126,7 @@ class LocalCubeGenerator(CubeGenerator):
 
         subsetter = CubeSubsetter()
         resampler_xy = CubeResamplerXY()
-        resampler_t = CubeResamplerT()
+        resampler_t = CubeResamplerT(cube_config)
         combiner = CubesCombiner(cube_config)
         rechunker = CubeRechunker()
 
