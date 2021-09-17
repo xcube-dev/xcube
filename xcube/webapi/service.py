@@ -45,6 +45,7 @@ from xcube.core.mldataset import guess_ml_dataset_format
 from xcube.util.cache import parse_mem_size
 from xcube.util.caseless import caseless_dict
 from xcube.util.config import load_configs
+from xcube.util.versions import XCUBE_VERSIONS
 from xcube.util.undefined import UNDEFINED
 from xcube.version import version
 from xcube.webapi.context import ServiceContext
@@ -303,6 +304,7 @@ class ServiceRequestHandler(RequestHandler):
                 'error': {
                     'code': status_code,
                     'message': self._reason,
+                    'versions': XCUBE_VERSIONS,
                     'traceback': lines,
                 }
             }, indent=2))
@@ -311,6 +313,7 @@ class ServiceRequestHandler(RequestHandler):
                 'error': {
                     'code': status_code,
                     'message': self._reason,
+                    'versions': XCUBE_VERSIONS,
                 }
             }, indent=2))
 
