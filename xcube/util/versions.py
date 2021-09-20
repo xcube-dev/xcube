@@ -19,51 +19,38 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-import os
 import sys
-import yaml
 from typing import Dict
 from typing import List
+
 from .plugin import get_plugins
 
-DEPENDENCY_NAMES = \
+DEFAULT_DEPENDENCY_NAMES = \
     ['affine', 'click', 'cmocean', 'dask', 'dask - image', 'distributed',
      'fiona', 'fsspec', 'gdal', 'geopandas', 'jdcal', 'jsonschema',
      'matplotlib - base', 'netcdf4', 'numba', 'numpy', 'pandas', 'pillow',
      'pyjwt', 'pyproj', 'pyyaml', 'rasterio', 'requests',
-     'requests - oauthlib', 's3fs', 'scipy', 'setuptools', 'shapely',
+     'requests-oauthlib', 's3fs', 'scipy', 'setuptools', 'shapely',
      'tornado', 'urllib3', 'xarray', 'zarr']
 
+_XCUBE_VERSIONS = None
 
-def _get_xcube_versions() -> Dict[str, str]:
+
+def get_xcube_versions() -> Dict[str, str]:
     """
-    Get a mapping from package names to package versions.
-    The mapping contains the versions of packages that are dependencies as well
-    as packages that are xcube-plugins. Also, the xcube version itself is
-    included.
+    Get a mapping from xcube package names to package versions.
+
     :return: A mapping of the package names to package versions
     The result computed from the evaluating the expression.
     """
-    # Idea stolen from xarray.print_versions
+    global _XCUBE_VERSIONS
+    if _XCUBE_VERSIONS is None:
+        plugin_names = [f'{plugin}.version'
+                        for plugin in list(get_plugins().keys())]
 
-    # try to parse dependencies from environment.yml. If it can't be found,
-    # use hard-coded list of dependencies
-    environment_file = f'{os.path.dirname(os.path.abspath(__file__))}' \
-                       f'../../../environment.yml'
-    environment_file = os.path.abspath(environment_file)
-    if os.path.exists(environment_file):
-        with open(environment_file, 'r') as environment:
-            env_dict = yaml.safe_load(environment)
-            dependency_names = [dependency.split('=')[0].split('>')[0].strip()
-                                for dependency in
-                                env_dict.get('dependencies', [])]
-    else:
-        dependency_names = DEPENDENCY_NAMES
-
-    plugin_names = [f'{plugin}.version'
-                    for plugin in list(get_plugins().keys())]
-
-    return get_versions(dependency_names, plugin_names)
+        _XCUBE_VERSIONS = get_versions(DEFAULT_DEPENDENCY_NAMES,
+                                       plugin_names)
+    return _XCUBE_VERSIONS
 
 
 def get_versions(dependency_names: List[str], plugin_names: List[str]) \
@@ -71,7 +58,7 @@ def get_versions(dependency_names: List[str], plugin_names: List[str]) \
     """
     Get a mapping from package names to package versions.
     The input is divided into names of packages that are external dependencies
-     and into names of xcube plugins.
+    and into names of xcube plugins.
 
     :param dependency_names: A list of names of packages of which the versions
         shall be found
@@ -80,7 +67,7 @@ def get_versions(dependency_names: List[str], plugin_names: List[str]) \
     :return: A mapping of the package names to package versions
     The result computed from the evaluating the expression.
     """
-    # Idea stolen from xarray.print_versions
+    # Idea borrowed from xarray.print_versions
     import importlib
 
     def _maybe_add_dot_version(name: str):
@@ -103,18 +90,15 @@ def get_versions(dependency_names: List[str], plugin_names: List[str]) \
                 module = sys.modules[module_name]
             else:
                 module = importlib.import_module(module_name)
-        except Exception:
+        except BaseException:
             pass
         else:
             # noinspection PyBroadException
             try:
                 dependencies_dict[module_key.split('.version')[0]] \
                     = module_version(module)
-            except Exception as e:
+            except BaseException as e:
                 print(e)
                 dependencies_dict[module_key.split('.version')[0]] = "installed"
 
     return dependencies_dict
-
-
-XCUBE_VERSIONS = _get_xcube_versions()

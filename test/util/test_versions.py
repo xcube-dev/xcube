@@ -1,19 +1,26 @@
 import unittest
-from xcube.util.versions import XCUBE_VERSIONS
+
 import xcube.version as xcube_version
+from xcube.util.versions import get_xcube_versions
 
 
 class GetVersionsTest(unittest.TestCase):
 
-    def test_xcube_versions(self):
-        versions = XCUBE_VERSIONS
-        self.assertIsNotNone(versions)
-        self.assertTrue('xarray' in versions)
-        self.assertTrue('dask' in versions)
-        self.assertTrue('zarr' in versions)
-        self.assertTrue('tornado' in versions)
-        self.assertTrue('pandas' in versions)
-        self.assertTrue('numpy' in versions)
-        self.assertTrue('geopandas' in versions)
-        self.assertTrue('xcube' in versions)
+    def test_it_contains_what_is_expected(self):
+        versions = get_xcube_versions()
+        self.assertIsInstance(versions, dict)
+        self.assertTrue(all(isinstance(k, str) for k in versions.keys()))
+        self.assertTrue(all(isinstance(v, str) for v in versions.values()))
+        self.assertIn('xarray', versions)
+        self.assertIn('dask', versions)
+        self.assertIn('zarr', versions)
+        self.assertIn('tornado', versions)
+        self.assertIn('pandas', versions)
+        self.assertIn('numpy', versions)
+        self.assertIn('geopandas', versions)
+        self.assertIn('xcube', versions)
         self.assertEqual(xcube_version.version, versions['xcube'])
+
+    def test_it_is_cached(self):
+        versions = get_xcube_versions()
+        self.assertIs(versions, get_xcube_versions())
