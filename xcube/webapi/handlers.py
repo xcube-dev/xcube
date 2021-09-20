@@ -29,6 +29,7 @@ from tornado.ioloop import IOLoop
 from xcube.constants import LOG
 from xcube.core.timecoord import timestamp_to_iso_string
 from xcube.util.perf import measure_time
+from xcube.util.versions import get_xcube_versions
 from xcube.version import version
 from xcube.webapi.auth import AuthMixin
 from xcube.webapi.controllers.catalogue import get_datasets, get_dataset_coordinates, get_color_bars, get_dataset, \
@@ -438,6 +439,7 @@ class InfoHandler(ServiceRequestHandler):
         self.write(json.dumps(dict(name=SERVER_NAME,
                                    description=SERVER_DESCRIPTION,
                                    version=version,
+                                   versions=get_xcube_versions(),
                                    configTime=config_time,
                                    serverTime=server_time,
                                    serverPID=os.getpid()),

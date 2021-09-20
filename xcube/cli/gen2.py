@@ -123,6 +123,7 @@ def gen2(request_path: str,
     from xcube.core.gen2 import CubeGenerator
     from xcube.core.gen2 import CubeGeneratorError
     from xcube.core.gen2 import CubeGeneratorRequest
+    from xcube.util.versions import get_xcube_versions
 
     verbosity = len(verbose) if verbose else 0
 
@@ -157,6 +158,9 @@ def gen2(request_path: str,
                 result.update(remote_traceback=error.remote_traceback)
         if 'status_code' not in result:
             result['status_code'] = 500
+
+    if result.get('status') == 'error':
+        result['versions'] = get_xcube_versions()
 
     if output_file is not None:
         with open(output_file, 'w') as fp:

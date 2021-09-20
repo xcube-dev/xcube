@@ -315,7 +315,7 @@ class RemoteCubeGenerator(CubeGenerator):
             status='error',
             status_code=422,
             message='missing cube generator result',
-            output=state.output,
+            output=state.output
         )
 
     @classmethod
