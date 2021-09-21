@@ -60,7 +60,7 @@ class ServiceConfigTest(unittest.TestCase):
                     },
                     "Datasets": [
                         {
-                            "Path": "*.zarr",
+                            "Identifier": "*.zarr",
                             "Style": "default"
                         }
                     ]
