@@ -48,6 +48,8 @@ class ServiceTest(unittest.TestCase):
 
     def test_service_byoa_inline_code(self):
         """
+        Assert the service can run BYOA with a inline code.
+
         This test sets up a generator request with an
         inline user-code configuration
         that will cause the generator to
@@ -62,6 +64,8 @@ class ServiceTest(unittest.TestCase):
 
     def test_service_byoa_code_package(self):
         """
+        Assert the service can run BYOA with a code package.
+
         This test sets up a generator request with an
         packaged user-code configuration
         that will cause the generator to
@@ -218,7 +222,7 @@ class ServiceTest(unittest.TestCase):
 
     def test_service_simple_copy(self):
         """
-        This test sets up a generator request that
+        Assert the service can copy.
 
         1. opens a dataset "DATASET-1.zarr" in store "@test"
         2. writes this dataset "OUTPUT.zarr" in store "@test"
@@ -253,7 +257,7 @@ class ServiceTest(unittest.TestCase):
 
     def test_service_empty_cube(self):
         """
-        This test asserts the service fails with a warning.
+        Assert the service returns an empty-cube warning.
         """
         if not self.server_running:
             return
@@ -293,7 +297,7 @@ class ServiceTest(unittest.TestCase):
 
     def test_service_invalid_request(self):
         """
-        This test asserts the service fails with a 400 status code.
+        Assert the service recognizes invalid requests.
         """
         if not self.server_running:
             return
@@ -326,3 +330,50 @@ class ServiceTest(unittest.TestCase):
                          ' does not exist in store',
                          result_dict.get('message'))
         self.assertEqual(None, result_dict.get('output'))
+
+    def test_service_internal_error(self):
+        """
+        Assert the service handles internal errors.
+        """
+
+        if not self.server_running:
+            return
+
+        generator = RemoteCubeGenerator(
+            service_config=ServiceConfig(endpoint_url=SERVER_URL)
+        )
+
+        request_dict = {
+            "input_configs": [
+                {
+                    'store_id': '@test',
+                    "data_id": "DATASET-1.zarr"
+                }
+            ],
+            "cube_config": {
+                "metadata": {
+                    # This raises a ValueError in "xcube gen2"
+                    'inverse_fine_structure_constant': 138
+                }
+            },
+            "output_config": {
+                "store_id": "@test",
+                "data_id": "OUTPUT.zarr",
+                "replace": True,
+            }
+        }
+
+        result = generator.generate_cube(request_dict)
+
+        result_dict = result.to_dict()
+        self.assertEqual('error', result_dict.get('status'))
+        self.assertEqual(400, result_dict.get('status_code'))
+        self.assertEqual(None, result_dict.get('result'))
+        self.assertEqual('inverse_fine_structure_constant must be 137'
+                         ' or running in wrong universe',
+                         result_dict.get('message'))
+        self.assertEqual(None, result_dict.get('output'))
+
+        # self.assertEqual(('inverse_fine_structure_constant must be 137'
+        #                   ' or running in wrong universe',),
+        #                  cm.exception.args)

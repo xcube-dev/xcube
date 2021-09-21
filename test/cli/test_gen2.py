@@ -38,6 +38,7 @@ class Gen2CliTest(CliTest):
         self.assertIsNotNone(result)
         result_json = self.read_result_json()
         self.assertEqual('ok', result_json.get('status'))
+        self.assertEqual(201, result_json.get('status_code'))
         self.assertIsInstance(result_json.get('message'), str)
         self.assertIn('Cube generated successfully after ',
                       result_json.get('message'))
@@ -57,6 +58,7 @@ class Gen2CliTest(CliTest):
         result_json = self.read_result_json()
 
         self.assertEqual('ok', result_json.get('status'))
+        self.assertEqual(200, result_json.get('status_code'))
         result = result_json.get('result')
         self.assertIsInstance(result, dict)
 
@@ -121,5 +123,22 @@ class Gen2CliTest(CliTest):
         self.assertIsNotNone(result)
         result_json = self.read_result_json()
         self.assertEqual('ok', result_json.get('status'))
+        self.assertEqual(201, result_json.get('status_code'))
         self.assertEqual({'data_id': 'out.levels'}, result_json.get('result'))
         self.assertTrue(os.path.isdir(result_levels))
+
+    def test_internal_error(self):
+        request_file = os.path.join(os.path.dirname(__file__),
+                                    'gen2-requests', 'internal-error.yml')
+        result = self.invoke_cli(['gen2',
+                                  '-o', result_file,
+                                  request_file])
+        print(result.output)
+        self.assertIsNotNone(result)
+        result_json = self.read_result_json()
+        self.assertEqual('error', result_json.get('status'))
+        self.assertEqual(500, result_json.get('status_code'))
+        self.assertEqual('inverse_fine_structure_constant must be 137'
+                         ' or running in wrong universe',
+                         result_json.get('message'))
+        self.assertNotIn('result', result_json)

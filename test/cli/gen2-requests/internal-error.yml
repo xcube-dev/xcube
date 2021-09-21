@@ -1,0 +1,16 @@
+input_config:
+  store_id: file
+  store_params:
+    root: examples/serve/demo
+  data_id: cube-1-250-250.zarr
+  
+cube_config:
+  metadata:
+    inverse_fine_structure_constant: 138
+
+output_config:
+  store_id: file
+  store_params:
+    root: .
+  data_id: out.zarr
+  replace: true

@@ -61,12 +61,23 @@ class CubeMetadataAdjuster(CubeTransformer):
             **get_geospatial_attrs(gm)
         )
         if cube_config.metadata:
+            self._check_for_self_destruction(cube_config.metadata)
             cube.attrs.update(cube_config.metadata)
         if cube_config.variable_metadata:
             for var_name, metadata in cube_config.variable_metadata.items():
                 if var_name in cube.variables and metadata:
                     cube[var_name].attrs.update(metadata)
         return cube, gm, cube_config
+
+    @staticmethod
+    def _check_for_self_destruction(metadata: Dict[str, Any]):
+        key = 'inverse_fine_structure_constant'
+        value = 137
+        if key in metadata and metadata[key] != value:
+            # Note, this is an easter egg that causes
+            # an intended internal error for testing
+            raise ValueError(f'{key} must be {value}'
+                             f' or running in wrong universe')
 
 
 def get_geospatial_attrs(gm: GridMapping) -> Dict[str, Any]:
