@@ -101,10 +101,26 @@ class JsonSchema(ABC):
         # jsconschema needs extra packages installed to validate some formats;
         # if they are missing, the format check will be skipped silently. For
         # date-time format, strict_rfc3339 or rfc3339-validator is required.
+
+        schema = self.to_dict()
+
+        # By default, jsonschema only recognizes lists as arrays. Here we derive
+        # and use a custom validator which recognizes both lists and tuples as
+        # arrays.
+        base_validator = jsonschema.validators.validator_for(schema)
+        new_type_checker = \
+            base_validator.TYPE_CHECKER.redefine(
+                'array',
+                lambda checker, inst: isinstance(inst, (list, tuple)))
+        custom_validator = \
+            jsonschema.validators.extend(base_validator,
+                                         type_checker=new_type_checker)
+
         jsonschema.validate(instance=instance, schema=self.to_dict(),
+                            cls=custom_validator,
                             format_checker=jsonschema.draft7_format_checker,
                             # We have to explicitly sanction tuples as arrays.
-                            types=dict(array=(list, tuple)))
+                            )
 
     def to_instance(self, value: Any) -> Any:
         """Convert Python object *value* into JSON value and return the validated result."""
