@@ -78,7 +78,16 @@ def get_versions(dependency_names: List[str], plugin_names: List[str]) \
     dependencies = [(_maybe_add_dot_version(plugin_name),
                      lambda mod: mod.version)
                     for plugin_name in plugin_names]
-    dependencies += [(dependency_name, lambda mod: mod.__version__)
+
+    def _find_module_version(mod):
+        if hasattr(mod, '__version__'):
+            return mod.__version__
+        elif hasattr(mod, 'version'):
+            return mod.version
+        else:
+            return 'unknown'
+
+    dependencies += [(dependency_name, _find_module_version)
                      for dependency_name in dependency_names]
 
     dependencies_dict = {}
