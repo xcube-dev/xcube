@@ -139,7 +139,7 @@
   * functions `pow2_2d_subdivision()`
   * functions `pow2_1d_subdivision()`
   
-## Changes in 0.8.2 
+## Changes in 0.8.2
 
 * Fixed the issue that xcube gen2 would not print tracebacks to stderr 
   when raising errors of type `CubeGeneratorError` (#448).
