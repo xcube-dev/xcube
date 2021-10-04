@@ -36,28 +36,46 @@ class ResampleInTimeTest(unittest.TestCase):
         self.assertIn('precipitation_min', resampled_cube)
         self.assertIn('precipitation_max', resampled_cube)
         self.assertEqual(('time',), resampled_cube.time.dims)
-        self.assertEqual(('time', 'lat', 'lon'), resampled_cube.temperature_min.dims)
-        self.assertEqual(('time', 'lat', 'lon'), resampled_cube.temperature_max.dims)
-        self.assertEqual(('time', 'lat', 'lon'), resampled_cube.precipitation_min.dims)
-        self.assertEqual(('time', 'lat', 'lon'), resampled_cube.precipitation_max.dims)
+        self.assertEqual(('time', 'lat', 'lon'),
+                         resampled_cube.temperature_min.dims)
+        self.assertEqual(('time', 'lat', 'lon'),
+                         resampled_cube.temperature_max.dims)
+        self.assertEqual(('time', 'lat', 'lon'),
+                         resampled_cube.precipitation_min.dims)
+        self.assertEqual(('time', 'lat', 'lon'),
+                         resampled_cube.precipitation_max.dims)
         self.assertEqual((6,), resampled_cube.time.shape)
         self.assertEqual((6, 180, 360), resampled_cube.temperature_min.shape)
         self.assertEqual((6, 180, 360), resampled_cube.temperature_max.shape)
         self.assertEqual((6, 180, 360), resampled_cube.precipitation_min.shape)
         self.assertEqual((6, 180, 360), resampled_cube.precipitation_max.shape)
-        np.testing.assert_equal(resampled_cube.time.values,
-                                np.array(
-                                    ['2017-06-25T00:00:00', '2017-07-09T00:00:00',
-                                     '2017-07-23T00:00:00', '2017-08-06T00:00:00',
-                                     '2017-08-20T00:00:00', '2017-09-03T00:00:00'], dtype=np.datetime64))
-        np.testing.assert_allclose(resampled_cube.temperature_min.values[..., 0, 0],
-                                   np.array([272.0, 272.4, 273.0, 273.8, 274.4, 274.9]))
-        np.testing.assert_allclose(resampled_cube.temperature_max.values[..., 0, 0],
-                                   np.array([272.3, 272.9, 273.7, 274.3, 274.8, 274.9]))
-        np.testing.assert_allclose(resampled_cube.precipitation_min.values[..., 0, 0],
-                                   np.array([119.4, 118.2, 116.6, 115.4, 114.4, 114.2]))
-        np.testing.assert_allclose(resampled_cube.precipitation_max.values[..., 0, 0],
-                                   np.array([120.0, 119.2, 118.0, 116.4, 115.2, 114.2]))
+        np.testing.assert_equal(
+            resampled_cube.time.values,
+            np.array(['2017-07-02T00:00:00', '2017-07-16T00:00:00',
+                      '2017-07-30T00:00:00', '2017-08-13T00:00:00',
+                      '2017-08-27T00:00:00', '2017-09-10T00:00:00'],
+                     dtype=np.datetime64))
+        np.testing.assert_equal(
+            resampled_cube.time_bnds.values,
+            np.array([['2017-06-25T00:00:00', '2017-07-09T00:00:00'],
+                      ['2017-07-09T00:00:00', '2017-07-23T00:00:00'],
+                      ['2017-07-23T00:00:00', '2017-08-06T00:00:00'],
+                      ['2017-08-06T00:00:00', '2017-08-20T00:00:00'],
+                      ['2017-08-20T00:00:00', '2017-09-03T00:00:00'],
+                      ['2017-09-03T00:00:00', '2017-09-17T00:00:00']],
+                     dtype=np.datetime64))
+        np.testing.assert_allclose(
+            resampled_cube.temperature_min.values[..., 0, 0],
+            np.array([272.0, 272.4, 273.0, 273.8, 274.4, 274.9]))
+        np.testing.assert_allclose(
+            resampled_cube.temperature_max.values[..., 0, 0],
+            np.array([272.3, 272.9, 273.7, 274.3, 274.8, 274.9]))
+        np.testing.assert_allclose(
+            resampled_cube.precipitation_min.values[..., 0, 0],
+            np.array([119.4, 118.2, 116.6, 115.4, 114.4, 114.2]))
+        np.testing.assert_allclose(
+            resampled_cube.precipitation_max.values[..., 0, 0],
+            np.array([120.0, 119.2, 118.0, 116.4, 115.2, 114.2]))
 
         schema = CubeSchema.new(resampled_cube)
         self.assertEqual(3, schema.ndim)
@@ -144,3 +162,17 @@ class ResampleInTimeTest(unittest.TestCase):
         self.assertEqual(3, schema.ndim)
         self.assertEqual(('time', 'lat', 'lon'), schema.dims)
         self.assertEqual((1, 180, 360), schema.shape)
+
+    def test_resample_in_time_resample_to_quarter(self):
+        resampled_cube = resample_in_time(self.input_cube, '1Q', ['min'])
+        self.assertIsNot(resampled_cube, self.input_cube)
+        self.assertIn('time', resampled_cube)
+        self.assertEqual(1, resampled_cube.time.size)
+        self.assertEqual(np.datetime64('2017-08-16'),
+                         resampled_cube.time[0].values)
+        self.assertIn('time_bnds', resampled_cube)
+        self.assertEqual((1, 2), resampled_cube.time_bnds.shape)
+        self.assertEqual(np.datetime64('2017-07-01'),
+                         resampled_cube.time_bnds[0, 0].values)
+        self.assertEqual(np.datetime64('2017-10-01'),
+                         resampled_cube.time_bnds[0, 1].values)

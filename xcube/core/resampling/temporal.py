@@ -22,6 +22,7 @@
 from typing import Dict, Any, Sequence, Union
 
 import numpy as np
+import re
 import xarray as xr
 
 from xcube.core.schema import CubeSchema
@@ -98,6 +99,11 @@ def resample_in_time(dataset: xr.Dataset,
                     / np.timedelta64(1, 'D')) + 1)
         frequency = f'{days}D'
 
+    # resample to start of period
+    if frequency.endswith('Y') or frequency.endswith('M') or \
+            frequency.endswith('Q'):
+        frequency = f'{frequency}S'
+
     if var_names:
         dataset = select_variables_subset(dataset, var_names)
 
@@ -142,10 +148,16 @@ def resample_in_time(dataset: xr.Dataset,
         resampled_cube = resampled_cubes[0]
     else:
         resampled_cube = xr.merge(resampled_cubes)
+    adjusted_times, time_bounds = _adjust_times_and_bounds(
+        resampled_cube.time.values, frequency)
+    update_vars = dict(
+        time=adjusted_times,
+        time_bnds=xr.DataArray(time_bounds, dims=['time', 'bnds'])
+    )
+    resampled_cube = resampled_cube.assign_coords(update_vars)
 
-    # TODO: add time_bnds to resampled_ds
-    time_coverage_start = '%s' % dataset.time[0]
-    time_coverage_end = '%s' % dataset.time[-1]
+    time_coverage_start = '%s' % time_bounds[0][0]
+    time_coverage_end = '%s' % time_bounds[-1][1]
 
     resampled_cube.attrs.update(metadata or {})
     # TODO: add other time_coverage_ attributes
@@ -153,12 +165,89 @@ def resample_in_time(dataset: xr.Dataset,
                                 time_coverage_end=time_coverage_end)
 
     schema = CubeSchema.new(dataset)
+    if schema.chunks is None:
+        return resampled_cube
+
     chunk_sizes = {schema.dims[i]: schema.chunks[i] for i in range(schema.ndim)}
 
     if isinstance(time_chunk_size, int) and time_chunk_size >= 0:
         chunk_sizes['time'] = time_chunk_size
 
     return resampled_cube.chunk(chunk_sizes)
+
+
+def _adjust_times_and_bounds(time_values, frequency):
+    import pandas as pd
+    time_unit = re.findall('[A-Z]+', frequency)[0]
+    time_value = int(frequency.split(time_unit)[0])
+    TIMEUNIT_INCREMENTORS = dict(
+        YS=(1, 0, 0),
+        QS=(0, 3, 0),
+        MS=(0, 1, 0),
+        W=(0, 0, 7)
+    )
+    if time_unit not in TIMEUNIT_INCREMENTORS:
+        if time_unit == 'D':
+            half_time_delta = np.timedelta64(12*time_value, 'h')
+        elif time_unit == 'H':
+            half_time_delta = np.timedelta64(30 * time_value, 'm')
+        else:
+            raise ValueError(f'Unsupported time unit "{time_unit}"')
+        time_values += half_time_delta
+        time_bounds_values = np.array([time_values - half_time_delta,
+                                       time_values + half_time_delta]).\
+            transpose()
+        return time_values, time_bounds_values
+    timestamps = [pd.Timestamp(tv) for tv in time_values]
+    last_ts = timestamps[-1]
+    replacement = dict(
+        year=last_ts.year +
+             (TIMEUNIT_INCREMENTORS[time_unit][0] * time_value),
+        month=last_ts.month +
+              (TIMEUNIT_INCREMENTORS[time_unit][1] * time_value),
+        day=last_ts.day +
+            (TIMEUNIT_INCREMENTORS[time_unit][2] * time_value)
+    )
+
+    def days_of_month(year: int, month: int):
+        if month in [1, 3, 5, 7, 8, 10, 12]:
+            return 31
+        if month in [4, 6, 9, 11]:
+            return 30
+        if year % 4 != 0:
+            return 28
+        if year % 400 == 0:
+            return 29
+        if year % 100 == 0:
+            return 28
+        return 28
+
+    while replacement['day'] > days_of_month(replacement['year'],
+                                             replacement['month'] % 12):
+        replacement['day'] -= days_of_month(replacement['year'],
+                                            replacement['month'] % 12)
+        replacement['month'] += 1
+        if replacement['month'] > 12:
+            replacement['month'] -= 12
+            replacement['year'] += 1
+
+    while replacement['month'] > 12:
+        replacement['month'] -= 12
+        replacement['year'] += 1
+
+    final_ts = pd.Timestamp(last_ts.replace(**replacement))
+
+    timestamps.append(final_ts)
+
+    new_timestamps = []
+    new_timestamp_bounds = []
+    for i, ts in enumerate(timestamps[:-1]):
+        import pandas as pd
+        next_ts = timestamps[i + 1]
+        delta = pd.Timedelta((next_ts - ts).delta / 2)
+        new_timestamps.append(np.datetime64(ts + delta))
+        new_timestamp_bounds.append([np.datetime64(ts), np.datetime64(next_ts)])
+    return new_timestamps, new_timestamp_bounds
 
 
 def get_method_kwargs(method, frequency, interp_kind, tolerance):
