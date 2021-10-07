@@ -1,11 +1,11 @@
 # Copyright (c) 2021 by the xcube development team and contributors
 #
-# Permission is hereby granted, free of charge, to any person obtaining a copy of
-# this software and associated documentation files (the "Software"), to deal in
-# the Software without restriction, including without limitation the rights to
-# use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
-# of the Software, and to permit persons to whom the Software is furnished to do
-# so, subject to the following conditions:
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
 #
 # The above copyright notice and this permission notice shall be included in all
 # copies or substantial portions of the Software.
@@ -59,7 +59,7 @@ class CubeResamplerT(CubeTransformer):
                     start_time = pd.to_datetime(self._time_range[0])
                     dataset_start_time = pd.Timestamp(cube.time[0].values)
                     time_delta = _normalize_time(dataset_start_time) \
-                                 - start_time
+                        - start_time
                     period_delta = pd.Timedelta(cube_config.time_period)
                     if time_delta > period_delta:
                         if time_unit == 'H':
@@ -116,7 +116,7 @@ def _get_temporal_subset_cf(resampled_cube, time_range):
         data_end_index = resampled_cube.time_bnds[:, 1].to_index().\
             get_loc(time_range[1], method='ffill')
         if isinstance(data_end_index, slice):
-            data_end_index = data_end_index.stop
+            data_end_index = data_end_index.stop + 1
     except KeyError:
         data_end_index = resampled_cube.time.size
     return resampled_cube.isel(time=slice(data_start_index, data_end_index))
