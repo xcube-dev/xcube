@@ -279,12 +279,11 @@ class CubeConfig(JsonObject):
                 ),
                 temporal_resampling=JsonStringSchema(
                     nullable=True,
-                    enum=[
-                        'first', 'last', 'max', 'min', 'mean', 'median',
-                        'percentile_<p>', 'linear', 'nearest', 'nearest-up',
-                        'zero', 'slinear', 'quadratic', 'cubic', 'previous',
-                        'next'
-                    ]
+                    enum=['count', 'first', 'last', 'max', 'min', 'mean', 'sum',
+                          'prod', 'median', 'std', 'var', 'percentile_<p>',
+                          'asfreq', 'ffill', 'bfill', 'pad', 'linear',
+                          'nearest', 'nearest-up', 'zero', 'slinear',
+                          'quadratic', 'cubic', 'previous', 'next']
                 ),
                 chunks=JsonObjectSchema(
                     nullable=True,
