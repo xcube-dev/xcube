@@ -18,11 +18,13 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+import cftime
 import pandas as pd
 import xarray as xr
 
 from xcube.core.gridmapping import GridMapping
 from xcube.core.resampling import resample_in_time
+from xcube.core.resampling.temporal import adjust_metadata_and_chunking
 from xcube.util.assertions import assert_instance
 from .transformer import CubeTransformer
 from .transformer import TransformedCube
@@ -69,23 +71,73 @@ class CubeResamplerT(CubeTransformer):
             if cube_config.temporal_resampling is not None:
                 to_drop.append('temporal_resampling')
                 if cube_config.temporal_resampling in \
-                        ['linear', 'nearest', 'nearest-up', 'zero', 'slinear',
+                        ['linear', 'nearest-up', 'zero', 'slinear',
                          'quadratic', 'cubic', 'previous', 'next']:
-                    time_resample_params['method'] = 'interp'
+                    time_resample_params['method'] = 'interpolate'
                     time_resample_params['interp_kind'] = \
                         cube_config.temporal_resampling
                 else:
                     time_resample_params['method'] = \
                         cube_config.temporal_resampling
+            # we set cub_asserted to true so the resampling can deal with
+            # cftime data
             resampled_cube = resample_in_time(
                 cube,
                 rename_variables=False,
+                cube_asserted=True,
                 **time_resample_params
             )
+        if self._time_range:
+            # cut possible overlapping time steps
+            is_cf_time = isinstance(resampled_cube.time_bnds[0].values[0],
+                                    cftime.datetime)
+            if is_cf_time:
+                resampled_cube = _get_temporal_subset_cf(resampled_cube,
+                                                         self._time_range)
+            else:
+                resampled_cube = _get_temporal_subset(resampled_cube,
+                                                      self._time_range)
+            adjust_metadata_and_chunking(resampled_cube, time_chunk_size=1)
 
         cube_config = cube_config.drop_props(to_drop)
 
         return resampled_cube, gm, cube_config
+
+
+def _get_temporal_subset_cf(resampled_cube, time_range):
+    try:
+        data_start_index = resampled_cube.time_bnds[:, 0].to_index().\
+            get_loc(time_range[0], method='bfill')
+        if isinstance(data_start_index, slice):
+            data_start_index = data_start_index.start
+    except KeyError:
+        data_start_index = 0
+    try:
+        data_end_index = resampled_cube.time_bnds[:, 1].to_index().\
+            get_loc(time_range[1], method='ffill')
+        if isinstance(data_end_index, slice):
+            data_end_index = data_end_index.stop
+    except KeyError:
+        data_end_index = resampled_cube.time.size
+    return resampled_cube.isel(time=slice(data_start_index, data_end_index))
+
+
+def _get_temporal_subset(resampled_cube, time_range):
+    try:
+        data_start_time = resampled_cube.time_bnds[:, 0]. \
+            sel(time=time_range[0], method='bfill')
+        if data_start_time.size < 1:
+            data_start_time = resampled_cube.time_bnds[0, 0]
+    except KeyError:
+        data_start_time = resampled_cube.time_bnds[0, 0]
+    try:
+        data_end_time = resampled_cube.time_bnds[:, 1]. \
+            sel(time=time_range[1], method='ffill')
+        if data_end_time.size < 1:
+            data_end_time = resampled_cube.time_bnds[-1, 1]
+    except KeyError:
+        data_end_time = resampled_cube.time_bnds[-1, 1]
+    return resampled_cube.sel(time=slice(data_start_time, data_end_time))
 
 
 def _normalize_time(time, normalize_hour=True):

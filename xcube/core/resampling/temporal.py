@@ -21,7 +21,9 @@
 
 from typing import Dict, Any, Sequence, Union
 
+import cftime
 import numpy as np
+import pandas as pd
 import re
 import xarray as xr
 
@@ -29,6 +31,17 @@ from xcube.core.schema import CubeSchema
 from xcube.core.select import select_variables_subset
 from xcube.core.verify import assert_cube
 
+UPSAMPLING_METHODS = ['asfreq', 'ffill', 'bfill', 'pad', 'nearest',
+                      'interpolate']
+DOWNSAMPLING_METHODS = ['count', 'first', 'last', 'min', 'max', 'sum', 'prod',
+                        'mean', 'median', 'std', 'var']
+RESAMPLING_METHODS = UPSAMPLING_METHODS + DOWNSAMPLING_METHODS
+TIMEUNIT_INCREMENTORS = dict(
+    YS=(1, 0, 0),
+    QS=(0, 3, 0),
+    MS=(0, 1, 0),
+    W=(0, 0, 7)
+)
 
 def resample_in_time(dataset: xr.Dataset,
                      frequency: str,
@@ -149,43 +162,55 @@ def resample_in_time(dataset: xr.Dataset,
     else:
         resampled_cube = xr.merge(resampled_cubes)
     adjusted_times, time_bounds = _adjust_times_and_bounds(
-        resampled_cube.time.values, frequency)
+        resampled_cube.time.values, frequency, method)
     update_vars = dict(
         time=adjusted_times,
         time_bnds=xr.DataArray(time_bounds, dims=['time', 'bnds'])
     )
     resampled_cube = resampled_cube.assign_coords(update_vars)
 
-    time_coverage_start = '%s' % time_bounds[0][0]
-    time_coverage_end = '%s' % time_bounds[-1][1]
+    return adjust_metadata_and_chunking(resampled_cube,
+                                        metadata=metadata,
+                                        time_chunk_size=time_chunk_size)
 
-    resampled_cube.attrs.update(metadata or {})
+
+def adjust_metadata_and_chunking(dataset, metadata=None, time_chunk_size=None):
+    time_coverage_start = '%s' % dataset.time_bnds[0][0]
+    time_coverage_end = '%s' % dataset.time_bnds[-1][1]
+
+    dataset.attrs.update(metadata or {})
     # TODO: add other time_coverage_ attributes
-    resampled_cube.attrs.update(time_coverage_start=time_coverage_start,
-                                time_coverage_end=time_coverage_end)
-
-    schema = CubeSchema.new(dataset)
+    dataset.attrs.update(time_coverage_start=time_coverage_start,
+                         time_coverage_end=time_coverage_end)
+    try:
+        schema = CubeSchema.new(dataset)
+    except ValueError:
+        return _adjust_chunk_sizes_without_schema(dataset, time_chunk_size)
     if schema.chunks is None:
-        return resampled_cube
+        return _adjust_chunk_sizes_without_schema(dataset, time_chunk_size)
 
     chunk_sizes = {schema.dims[i]: schema.chunks[i] for i in range(schema.ndim)}
 
     if isinstance(time_chunk_size, int) and time_chunk_size >= 0:
         chunk_sizes['time'] = time_chunk_size
 
-    return resampled_cube.chunk(chunk_sizes)
+    return dataset.chunk(chunk_sizes)
 
 
-def _adjust_times_and_bounds(time_values, frequency):
+def _adjust_chunk_sizes_without_schema(dataset, time_chunk_size = None):
+    chunk_sizes = dict(dataset.chunks)
+    if isinstance(time_chunk_size, int) and time_chunk_size >= 0:
+        chunk_sizes['time'] = time_chunk_size
+    else:
+        chunk_sizes['time'] = 1
+    return dataset.chunk(chunk_sizes)
+
+
+def _adjust_times_and_bounds(time_values, frequency, method):
     import pandas as pd
     time_unit = re.findall('[A-Z]+', frequency)[0]
     time_value = int(frequency.split(time_unit)[0])
-    TIMEUNIT_INCREMENTORS = dict(
-        YS=(1, 0, 0),
-        QS=(0, 3, 0),
-        MS=(0, 1, 0),
-        W=(0, 0, 7)
-    )
+
     if time_unit not in TIMEUNIT_INCREMENTORS:
         if time_unit == 'D':
             half_time_delta = np.timedelta64(12*time_value, 'h')
@@ -198,7 +223,52 @@ def _adjust_times_and_bounds(time_values, frequency):
                                        time_values + half_time_delta]).\
             transpose()
         return time_values, time_bounds_values
-    timestamps = [pd.Timestamp(tv) for tv in time_values]
+    is_cf_time = isinstance(time_values[0], cftime.datetime)
+    if is_cf_time:
+        timestamps = [pd.Timestamp(tv.isoformat()) for tv in time_values]
+        calendar = time_values[0].calendar
+    else:
+        timestamps = [pd.Timestamp(tv) for tv in time_values]
+        calendar = None
+
+    iteration_offset = 0
+    if method in UPSAMPLING_METHODS:
+        # we need a simulated preceding time stamp
+        timestamps.insert(0, _get_previous_timestamp(timestamps,
+                                                     time_unit,
+                                                     time_value))
+        iteration_offset = 1
+
+    timestamps.append(_get_next_timestamp(timestamps, time_unit, time_value))
+
+    new_timestamps = []
+    new_timestamp_bounds = []
+    for i, ts in enumerate(timestamps[iteration_offset:-1]):
+        next_ts = timestamps[i + iteration_offset + 1]
+        delta_to_next = pd.Timedelta((next_ts - ts).delta / 2)
+        if method in DOWNSAMPLING_METHODS:
+            new_timestamps.append(_convert(ts + delta_to_next, calendar))
+            new_timestamp_bounds.append([_convert(ts, calendar),
+                                         _convert(next_ts, calendar)])
+        else:
+            previous_ts = timestamps[i + iteration_offset - 1]
+            delta_to_previous = pd.Timedelta((ts - previous_ts).delta / 2)
+            new_timestamps.append(_convert(ts, calendar))
+            new_timestamp_bounds.append([_convert(ts - delta_to_previous,
+                                                  calendar),
+                                         _convert(ts + delta_to_next,
+                                                  calendar)])
+    return new_timestamps, new_timestamp_bounds
+
+
+def _convert(timestamp: pd.Timestamp, calendar: str):
+    if calendar is not None:
+        return cftime.DateFromJulianDay(timestamp.to_julian_date(),
+                                        calendar=calendar)
+    return np.datetime64(timestamp)
+
+
+def _get_next_timestamp(timestamps, time_unit, time_value) -> pd.Timestamp:
     last_ts = timestamps[-1]
     replacement = dict(
         year=last_ts.year +
@@ -208,23 +278,9 @@ def _adjust_times_and_bounds(time_values, frequency):
         day=last_ts.day +
             (TIMEUNIT_INCREMENTORS[time_unit][2] * time_value)
     )
-
-    def days_of_month(year: int, month: int):
-        if month in [1, 3, 5, 7, 8, 10, 12]:
-            return 31
-        if month in [4, 6, 9, 11]:
-            return 30
-        if year % 4 != 0:
-            return 28
-        if year % 400 == 0:
-            return 29
-        if year % 100 == 0:
-            return 28
-        return 28
-
-    while replacement['day'] > days_of_month(replacement['year'],
+    while replacement['day'] > _days_of_month(replacement['year'],
                                              replacement['month'] % 12):
-        replacement['day'] -= days_of_month(replacement['year'],
+        replacement['day'] -= _days_of_month(replacement['year'],
                                             replacement['month'] % 12)
         replacement['month'] += 1
         if replacement['month'] > 12:
@@ -235,19 +291,46 @@ def _adjust_times_and_bounds(time_values, frequency):
         replacement['month'] -= 12
         replacement['year'] += 1
 
-    final_ts = pd.Timestamp(last_ts.replace(**replacement))
+    return pd.Timestamp(last_ts.replace(**replacement))
 
-    timestamps.append(final_ts)
 
-    new_timestamps = []
-    new_timestamp_bounds = []
-    for i, ts in enumerate(timestamps[:-1]):
-        import pandas as pd
-        next_ts = timestamps[i + 1]
-        delta = pd.Timedelta((next_ts - ts).delta / 2)
-        new_timestamps.append(np.datetime64(ts + delta))
-        new_timestamp_bounds.append([np.datetime64(ts), np.datetime64(next_ts)])
-    return new_timestamps, new_timestamp_bounds
+def _get_previous_timestamp(timestamps, time_unit, time_value) -> pd.Timestamp:
+    first_ts = timestamps[0]
+    replacement = dict(
+        year=first_ts.year -
+             (TIMEUNIT_INCREMENTORS[time_unit][0] * time_value),
+        month=first_ts.month -
+              (TIMEUNIT_INCREMENTORS[time_unit][1] * time_value),
+        day=first_ts.day -
+            (TIMEUNIT_INCREMENTORS[time_unit][2] * time_value)
+    )
+    while replacement['day'] < 1:
+        replacement['month'] -= 1
+        if replacement['month'] < 1:
+            replacement['month'] += 12
+            replacement['year'] -= 1
+        replacement['day'] += _days_of_month(replacement['year'],
+                                            replacement['month'] % 12)
+
+    while replacement['month'] < 1:
+        replacement['month'] += 12
+        replacement['year'] -= 1
+
+    return pd.Timestamp(first_ts.replace(**replacement))
+
+
+def _days_of_month(year: int, month: int):
+    if month in [1, 3, 5, 7, 8, 10, 12]:
+        return 31
+    if month in [4, 6, 9, 11]:
+        return 30
+    if year % 4 != 0:
+        return 28
+    if year % 400 == 0:
+        return 29
+    if year % 100 == 0:
+        return 28
+    return 28
 
 
 def get_method_kwargs(method, frequency, interp_kind, tolerance):
