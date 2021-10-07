@@ -19,7 +19,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-from typing import Dict, Any, Sequence, Union
+from typing import Dict, Any, Sequence, Union, List
 
 import cftime
 import numpy as np
@@ -37,10 +37,14 @@ DOWNSAMPLING_METHODS = ['count', 'first', 'last', 'min', 'max', 'sum', 'prod',
                         'mean', 'median', 'std', 'var']
 RESAMPLING_METHODS = UPSAMPLING_METHODS + DOWNSAMPLING_METHODS
 TIMEUNIT_INCREMENTORS = dict(
-    YS=(1, 0, 0),
-    QS=(0, 3, 0),
-    MS=(0, 1, 0),
-    W=(0, 0, 7)
+    YS=[1, 0, 0, 0],
+    QS=[0, 3, 0, 0],
+    MS=[0, 1, 0, 0],
+    W=[0, 0, 7, 0]
+)
+HALF_TIMEUNIT_INCREMENTORS = dict(
+    YS=[0, 6, 0, 0],
+    W=[0, 0, 3, 12]
 )
 
 def resample_in_time(dataset: xr.Dataset,
@@ -219,9 +223,9 @@ def _adjust_times_and_bounds(time_values, frequency, method):
         else:
             raise ValueError(f'Unsupported time unit "{time_unit}"')
         time_values += half_time_delta
-        time_bounds_values = np.array([time_values - half_time_delta,
-                                       time_values + half_time_delta]).\
-            transpose()
+        time_bounds_values = \
+            np.array([time_values - half_time_delta,
+                      time_values + half_time_delta]).transpose()
         return time_values, time_bounds_values
     is_cf_time = isinstance(time_values[0], cftime.datetime)
     if is_cf_time:
@@ -231,32 +235,28 @@ def _adjust_times_and_bounds(time_values, frequency, method):
         timestamps = [pd.Timestamp(tv) for tv in time_values]
         calendar = None
 
-    iteration_offset = 0
-    if method in UPSAMPLING_METHODS:
-        # we need a simulated preceding time stamp
-        timestamps.insert(0, _get_previous_timestamp(timestamps,
-                                                     time_unit,
-                                                     time_value))
-        iteration_offset = 1
-
-    timestamps.append(_get_next_timestamp(timestamps, time_unit, time_value))
+    timestamps.append(_get_next_timestamp(timestamps[-1],
+                                          time_unit,
+                                          time_value,
+                                          False))
 
     new_timestamps = []
     new_timestamp_bounds = []
-    for i, ts in enumerate(timestamps[iteration_offset:-1]):
-        next_ts = timestamps[i + iteration_offset + 1]
-        delta_to_next = pd.Timedelta((next_ts - ts).delta / 2)
+    for i, ts in enumerate(timestamps[:-1]):
+        next_ts = timestamps[i + 1]
+        half_next_ts = _get_next_timestamp(ts, time_unit, time_value, True)
         if method in DOWNSAMPLING_METHODS:
-            new_timestamps.append(_convert(ts + delta_to_next, calendar))
+            half_next_ts = _get_next_timestamp(ts, time_unit, time_value, True)
+            new_timestamps.append(_convert(half_next_ts, calendar))
             new_timestamp_bounds.append([_convert(ts, calendar),
                                          _convert(next_ts, calendar)])
         else:
-            previous_ts = timestamps[i + iteration_offset - 1]
-            delta_to_previous = pd.Timedelta((ts - previous_ts).delta / 2)
+            half_previous_ts = \
+                _get_previous_timestamp(ts, time_unit, time_value, True)
             new_timestamps.append(_convert(ts, calendar))
-            new_timestamp_bounds.append([_convert(ts - delta_to_previous,
+            new_timestamp_bounds.append([_convert(half_previous_ts,
                                                   calendar),
-                                         _convert(ts + delta_to_next,
+                                         _convert(half_next_ts,
                                                   calendar)])
     return new_timestamps, new_timestamp_bounds
 
@@ -268,20 +268,22 @@ def _convert(timestamp: pd.Timestamp, calendar: str):
     return np.datetime64(timestamp)
 
 
-def _get_next_timestamp(timestamps, time_unit, time_value) -> pd.Timestamp:
-    last_ts = timestamps[-1]
+def _get_next_timestamp(timestamp, time_unit, time_value, half) \
+        -> pd.Timestamp:
+    incrementors = _get_incrementors(timestamp, time_unit, time_value, half)
     replacement = dict(
-        year=last_ts.year +
-             (TIMEUNIT_INCREMENTORS[time_unit][0] * time_value),
-        month=last_ts.month +
-              (TIMEUNIT_INCREMENTORS[time_unit][1] * time_value),
-        day=last_ts.day +
-            (TIMEUNIT_INCREMENTORS[time_unit][2] * time_value)
+        year=timestamp.year + incrementors[0],
+        month=timestamp.month + incrementors[1],
+        day=timestamp.day + incrementors[2],
+        hour=timestamp.hour + incrementors[3]
     )
+    while replacement['hour'] > 24:
+        replacement['hour'] -= 24
+        replacement['day'] += 1
     while replacement['day'] > _days_of_month(replacement['year'],
-                                             replacement['month'] % 12):
+                                             replacement['month']):
         replacement['day'] -= _days_of_month(replacement['year'],
-                                            replacement['month'] % 12)
+                                             replacement['month'])
         replacement['month'] += 1
         if replacement['month'] > 12:
             replacement['month'] -= 12
@@ -291,19 +293,23 @@ def _get_next_timestamp(timestamps, time_unit, time_value) -> pd.Timestamp:
         replacement['month'] -= 12
         replacement['year'] += 1
 
-    return pd.Timestamp(last_ts.replace(**replacement))
+    return pd.Timestamp(timestamp.replace(**replacement))
 
 
-def _get_previous_timestamp(timestamps, time_unit, time_value) -> pd.Timestamp:
-    first_ts = timestamps[0]
+def _get_previous_timestamp(timestamp, time_unit, time_value, half) \
+        -> pd.Timestamp:
+    incrementors = _get_incrementors(timestamp, time_unit, time_value, half)
     replacement = dict(
-        year=first_ts.year -
-             (TIMEUNIT_INCREMENTORS[time_unit][0] * time_value),
-        month=first_ts.month -
-              (TIMEUNIT_INCREMENTORS[time_unit][1] * time_value),
-        day=first_ts.day -
-            (TIMEUNIT_INCREMENTORS[time_unit][2] * time_value)
+        year=timestamp.year - incrementors[0],
+        month=timestamp.month - incrementors[1],
+        day=timestamp.day - incrementors[2],
+        hour=timestamp.hour - incrementors[3]
     )
+
+    while replacement['hour'] < 0:
+        replacement['hour'] += 24
+        replacement['day'] -= 1
+
     while replacement['day'] < 1:
         replacement['month'] -= 1
         if replacement['month'] < 1:
@@ -316,7 +322,37 @@ def _get_previous_timestamp(timestamps, time_unit, time_value) -> pd.Timestamp:
         replacement['month'] += 12
         replacement['year'] -= 1
 
-    return pd.Timestamp(first_ts.replace(**replacement))
+    return pd.Timestamp(timestamp.replace(**replacement))
+
+
+def _get_incrementors(timestamp, time_unit, time_value, half) -> List[int]:
+    if not half:
+        return _tune_incrementors(TIMEUNIT_INCREMENTORS[time_unit], time_value)
+    if time_value % 2 == 0:
+        time_value /= 2
+        return _tune_incrementors(TIMEUNIT_INCREMENTORS[time_unit],
+                                  int(time_value))
+    if time_unit in HALF_TIMEUNIT_INCREMENTORS:
+        return _tune_incrementors(HALF_TIMEUNIT_INCREMENTORS[time_unit],
+                                  time_value)
+    if time_unit == 'QS':
+        num_months = 3
+    else:
+        num_months = 1
+    import math
+    month = int(math.floor((num_months * time_value) / 2))
+    days = _days_of_month(timestamp.year, month)
+    if days % 2 == 0:
+        hours = 0
+    else:
+        hours = 12
+    days = int(math.floor(days / 2))
+    return [0, month, days, hours]
+
+
+def _tune_incrementors(incrementors, time_value):
+    incrementors = [i * time_value for i in incrementors]
+    return incrementors
 
 
 def _days_of_month(year: int, month: int):

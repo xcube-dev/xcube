@@ -50,7 +50,7 @@ class CubeResamplerTTest(unittest.TestCase):
         self.assertIsNotNone(resampled_cube)
         np.testing.assert_equal(
             resampled_cube.time.values,
-            np.array(['2011-01-01T00:00:00', '2012-12-31T12:00:00'],
+            np.array(['2011-01-01T00:00:00', '2013-01-01T00:00:00'],
                      dtype=np.datetime64))
         np.testing.assert_equal(
             resampled_cube.time_bnds.values,
@@ -76,7 +76,7 @@ class CubeResamplerTTest(unittest.TestCase):
         self.assertIsNotNone(resampled_cube)
         np.testing.assert_equal(
             resampled_cube.time.values,
-            np.array(['2010-08-31T12:00:00', '2010-10-31T12:00:00'],
+            np.array(['2010-09-01T00:00:00', '2010-11-01T00:00:00'],
                      dtype=np.datetime64))
         np.testing.assert_equal(
             resampled_cube.time_bnds.values,
@@ -136,9 +136,9 @@ class CubeResamplerTTest(unittest.TestCase):
                      dtype=np.datetime64))
         np.testing.assert_equal(
             resampled_cube.time_bnds.values,
-            np.array([['2011-10-01T12:00:00', '2011-12-01T12:00:00'],
-                      ['2011-12-01T12:00:00', '2012-01-31T00:00:00'],
-                      ['2012-01-31T00:00:00', '2012-03-31T12:00:00']],
+            np.array([['2011-10-01T00:00:00', '2011-12-01T00:00:00'],
+                      ['2011-12-01T00:00:00', '2012-02-01T00:00:00'],
+                      ['2012-02-01T00:00:00', '2012-04-01T00:00:00']],
                      dtype=np.datetime64))
         self.assertEquals((3, 5, 10), resampled_cube.B03.shape)
         self.assertAlmostEquals(0.33561644,
@@ -231,8 +231,7 @@ class CubeResamplerTTest(unittest.TestCase):
         self.assertIsNotNone(resampled_cube)
         np.testing.assert_equal(resampled_cube.time.values,
                           [cftime.DatetimeProlepticGregorian(2011, 1, 1),
-                           cftime.DatetimeProlepticGregorian(2012, 12, 31,
-                                                             hour=12)])
+                           cftime.DatetimeProlepticGregorian(2013, 1, 1)])
         np.testing.assert_equal(
             resampled_cube.time_bnds.values,
             [[cftime.DatetimeProlepticGregorian(2010, 1, 1),
@@ -263,12 +262,12 @@ class CubeResamplerTTest(unittest.TestCase):
              cftime.DatetimeProlepticGregorian(2012, 3, 1)])
         np.testing.assert_equal(
             resampled_cube.time_bnds.values,
-            [[cftime.DatetimeProlepticGregorian(2011, 10, 1, hour=12),
-              cftime.DatetimeProlepticGregorian(2011, 12, 1, hour=12)],
-             [cftime.DatetimeProlepticGregorian(2011, 12, 1, hour=12),
-              cftime.DatetimeProlepticGregorian(2012, 1, 31)],
-             [cftime.DatetimeProlepticGregorian(2012, 1, 31),
-              cftime.DatetimeProlepticGregorian(2012, 3, 31, hour=12)]])
+            [[cftime.DatetimeProlepticGregorian(2011, 10, 1),
+              cftime.DatetimeProlepticGregorian(2011, 12, 1)],
+             [cftime.DatetimeProlepticGregorian(2011, 12, 1),
+              cftime.DatetimeProlepticGregorian(2012, 2, 1)],
+             [cftime.DatetimeProlepticGregorian(2012, 2, 1),
+              cftime.DatetimeProlepticGregorian(2012, 4, 1)]])
         self.assertEquals((3, 5, 10), resampled_cube.B03.shape)
         self.assertAlmostEquals(0.33561644,
                                 resampled_cube.B03[0].values.min(), 8)
