@@ -83,6 +83,10 @@
 * Added a new utility module `xcube.util.temp` that allows for creating 
   temporary files and directories that will be deleted when the current 
   process ends.
+* Added function `xcube.util.versions.get_xcube_versions()`  
+  that outputs the versions of packages relevant for xcube.
+  Also added a new CLI `xcube versions` that outputs the result of the  
+  new function in JSON or YAML. (#522)
 
 ### Other
 

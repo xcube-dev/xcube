@@ -20,7 +20,7 @@
 # SOFTWARE.
 
 from abc import abstractmethod
-from typing import Dict, Any, Optional, Sequence, TypeVar, Generic, Type
+from typing import Dict, Any, Optional, List, Sequence, TypeVar, Generic, Type
 
 from xcube.core.store import DatasetDescriptor
 from xcube.util.assertions import assert_in
@@ -43,7 +43,8 @@ class GenericCubeGeneratorResult(Generic[R], JsonObject):
                  result: Optional[R] = None,
                  message: Optional[str] = None,
                  output: Optional[Sequence[str]] = None,
-                 traceback: Optional[Sequence[str]] = None):
+                 traceback: Optional[Sequence[str]] = None,
+                 versions: Optional[Dict[str, str]] = None):
         assert_instance(status, str, name='status')
         assert_in(status, STATUS_IDS, name='status')
         self.status = status
@@ -52,6 +53,7 @@ class GenericCubeGeneratorResult(Generic[R], JsonObject):
         self.message = message if message else None
         self.output = list(output) if output else None
         self.traceback = list(traceback) if traceback else None
+        self.versions = dict(versions) if versions else None
 
     def derive(self,
                /,
@@ -60,13 +62,15 @@ class GenericCubeGeneratorResult(Generic[R], JsonObject):
                result: Optional[R] = None,
                message: Optional[str] = None,
                output: Optional[Sequence[str]] = None,
-               traceback: Optional[Sequence[str]] = None) -> R:
+               traceback: Optional[Sequence[str]] = None,
+               versions: Optional[Dict[str, str]] = None) -> R:
         return self.__class__(status or self.status,
                               status_code=status_code or self.status_code,
                               result=result or self.result,
                               message=message or self.message,
                               output=output or self.output,
-                              traceback=traceback or self.traceback)
+                              traceback=traceback or self.traceback,
+                              versions=versions or self.versions)
 
     @classmethod
     @abstractmethod
@@ -87,6 +91,7 @@ class GenericCubeGeneratorResult(Generic[R], JsonObject):
                 message=JsonStringSchema(),
                 output=JsonArraySchema(items=JsonStringSchema()),
                 traceback=JsonArraySchema(items=JsonStringSchema()),
+                versions=JsonObjectSchema(additional_properties=True)
             ),
             required=['status'],
             additional_properties=True,

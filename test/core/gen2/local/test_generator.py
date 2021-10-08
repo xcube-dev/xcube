@@ -1,3 +1,4 @@
+import copy
 import json
 import unittest
 from typing import Dict, Any
@@ -108,7 +109,7 @@ class LocalCubeGeneratorTest(unittest.TestCase):
     @requests_mock.Mocker()
     def test_generate_cube_from_yaml_empty(self, m):
         m.put(CALLBACK_MOCK_URL, json={})
-        request = self.REQUEST.copy()
+        request = copy.deepcopy(self.REQUEST)
         request['cube_config']['time_range'] = ['2019-01-01', '2020-01-01']
 
         generator = LocalCubeGenerator()
@@ -121,6 +122,21 @@ class LocalCubeGeneratorTest(unittest.TestCase):
         self.assertEqual(None, generator.generated_data_id)
         self.assertEqual(None, generator.generated_cube, xr.Dataset)
         self.assertEqual(None, generator.generated_gm)
+
+    @requests_mock.Mocker()
+    def test_generate_cube_with_internal_error(self, m):
+        m.put(CALLBACK_MOCK_URL, json={})
+        request = self.REQUEST.copy()
+        request['cube_config']['metadata'] = {
+            'inverse_fine_structure_constant': 138
+        }
+
+        generator = LocalCubeGenerator()
+        with self.assertRaises(ValueError) as cm:
+            generator.generate_cube(request)
+        self.assertEqual(('inverse_fine_structure_constant must be 137'
+                          ' or running in wrong universe',),
+                         cm.exception.args)
 
     @requests_mock.Mocker()
     def test_get_cube_info_from_dict(self, m):
