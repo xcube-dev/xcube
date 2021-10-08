@@ -34,7 +34,7 @@ from xcube.core.verify import assert_cube
 UPSAMPLING_METHODS = ['asfreq', 'ffill', 'bfill', 'pad', 'nearest',
                       'interpolate']
 DOWNSAMPLING_METHODS = ['count', 'first', 'last', 'min', 'max', 'sum', 'prod',
-                        'mean', 'median', 'std', 'var']
+                        'mean', 'median', 'std', 'var', 'quantile']
 RESAMPLING_METHODS = UPSAMPLING_METHODS + DOWNSAMPLING_METHODS
 TIMEUNIT_INCREMENTS = dict(
     YS=[1, 0, 0, 0],
