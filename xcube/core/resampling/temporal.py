@@ -36,16 +36,15 @@ UPSAMPLING_METHODS = ['asfreq', 'ffill', 'bfill', 'pad', 'nearest',
 DOWNSAMPLING_METHODS = ['count', 'first', 'last', 'min', 'max', 'sum', 'prod',
                         'mean', 'median', 'std', 'var']
 RESAMPLING_METHODS = UPSAMPLING_METHODS + DOWNSAMPLING_METHODS
-TIMEUNIT_INCREMENTORS = dict(
+TIMEUNIT_INCREMENTS = dict(
     YS=[1, 0, 0, 0],
     QS=[0, 3, 0, 0],
-    MS=[0, 1, 0, 0],
-    W=[0, 0, 7, 0]
+    MS=[0, 1, 0, 0]
 )
-HALF_TIMEUNIT_INCREMENTORS = dict(
-    YS=[0, 6, 0, 0],
-    W=[0, 0, 3, 12]
+HALF_TIMEUNIT_INCREMENTS = dict(
+    YS=[0, 6, 0, 0]
 )
+
 
 def resample_in_time(dataset: xr.Dataset,
                      frequency: str,
@@ -201,7 +200,7 @@ def adjust_metadata_and_chunking(dataset, metadata=None, time_chunk_size=None):
     return dataset.chunk(chunk_sizes)
 
 
-def _adjust_chunk_sizes_without_schema(dataset, time_chunk_size = None):
+def _adjust_chunk_sizes_without_schema(dataset, time_chunk_size=None):
     chunk_sizes = dict(dataset.chunks)
     if isinstance(time_chunk_size, int) and time_chunk_size >= 0:
         chunk_sizes['time'] = time_chunk_size
@@ -211,22 +210,26 @@ def _adjust_chunk_sizes_without_schema(dataset, time_chunk_size = None):
 
 
 def _adjust_times_and_bounds(time_values, frequency, method):
-    import pandas as pd
     time_unit = re.findall('[A-Z]+', frequency)[0]
     time_value = int(frequency.split(time_unit)[0])
-
-    if time_unit not in TIMEUNIT_INCREMENTORS:
+    if time_unit not in TIMEUNIT_INCREMENTS:
         if time_unit == 'D':
-            half_time_delta = np.timedelta64(12*time_value, 'h')
+            half_time_delta = np.timedelta64(12 * time_value, 'h')
         elif time_unit == 'H':
             half_time_delta = np.timedelta64(30 * time_value, 'm')
+        elif time_unit == 'W':
+            half_time_delta = np.timedelta64(84 * time_value, 'h')
         else:
             raise ValueError(f'Unsupported time unit "{time_unit}"')
-        time_values += half_time_delta
+        if method in DOWNSAMPLING_METHODS:
+            time_values += half_time_delta
         time_bounds_values = \
             np.array([time_values - half_time_delta,
                       time_values + half_time_delta]).transpose()
         return time_values, time_bounds_values
+    # time units year, month and quarter cannot be converted to
+    # numpy timedelta objects, so we have to convert them to pandas timestamps
+    # and modify these
     is_cf_time = isinstance(time_values[0], cftime.datetime)
     if is_cf_time:
         timestamps = [pd.Timestamp(tv.isoformat()) for tv in time_values]
@@ -245,8 +248,9 @@ def _adjust_times_and_bounds(time_values, frequency, method):
     for i, ts in enumerate(timestamps[:-1]):
         next_ts = timestamps[i + 1]
         half_next_ts = _get_next_timestamp(ts, time_unit, time_value, True)
+        # depending on whether the data was sampled down or up,
+        # times need to be adjusted differently
         if method in DOWNSAMPLING_METHODS:
-            half_next_ts = _get_next_timestamp(ts, time_unit, time_value, True)
             new_timestamps.append(_convert(half_next_ts, calendar))
             new_timestamp_bounds.append([_convert(ts, calendar),
                                          _convert(next_ts, calendar)])
@@ -270,12 +274,16 @@ def _convert(timestamp: pd.Timestamp, calendar: str):
 
 def _get_next_timestamp(timestamp, time_unit, time_value, half) \
         -> pd.Timestamp:
-    incrementors = _get_incrementors(timestamp, time_unit, time_value, half)
+    # Retrieves the timestamp following the passed timestamp according to the
+    # given time unit and time value.
+    # If half is True, the timestamp halfway between the timestamp and the next
+    # timestamp (which is not necessarily halfway between the two) is returned
+    increments = _get_increments(timestamp, time_unit, time_value, half)
     replacement = dict(
-        year=timestamp.year + incrementors[0],
-        month=timestamp.month + incrementors[1],
-        day=timestamp.day + incrementors[2],
-        hour=timestamp.hour + incrementors[3]
+        year=timestamp.year + increments[0],
+        month=timestamp.month + increments[1],
+        day=timestamp.day + increments[2],
+        hour=timestamp.hour + increments[3]
     )
     while replacement['hour'] > 24:
         replacement['hour'] -= 24
@@ -298,12 +306,17 @@ def _get_next_timestamp(timestamp, time_unit, time_value, half) \
 
 def _get_previous_timestamp(timestamp, time_unit, time_value, half) \
         -> pd.Timestamp:
-    incrementors = _get_incrementors(timestamp, time_unit, time_value, half)
+    # Retrieves the timestamp preceding the passed timestamp according to the
+    # given time unit and time value.
+    # If half is True, the timestamp halfway between the timestamp and the
+    # previous timestamp (which is not necessarily halfway between the two)
+    # is returned
+    increments = _get_increments(timestamp, time_unit, time_value, half)
     replacement = dict(
-        year=timestamp.year - incrementors[0],
-        month=timestamp.month - incrementors[1],
-        day=timestamp.day - incrementors[2],
-        hour=timestamp.hour - incrementors[3]
+        year=timestamp.year - increments[0],
+        month=timestamp.month - increments[1],
+        day=timestamp.day - increments[2],
+        hour=timestamp.hour - increments[3]
     )
 
     while replacement['hour'] < 0:
@@ -325,16 +338,18 @@ def _get_previous_timestamp(timestamp, time_unit, time_value, half) \
     return pd.Timestamp(timestamp.replace(**replacement))
 
 
-def _get_incrementors(timestamp, time_unit, time_value, half) -> List[int]:
+def _get_increments(timestamp, time_unit, time_value, half) -> List[int]:
+    # Determines the increments for year, month, day, and hour to be applied
+    # to a timestamp
     if not half:
-        return _tune_incrementors(TIMEUNIT_INCREMENTORS[time_unit], time_value)
+        return _tune_increments(TIMEUNIT_INCREMENTS[time_unit], time_value)
     if time_value % 2 == 0:
         time_value /= 2
-        return _tune_incrementors(TIMEUNIT_INCREMENTORS[time_unit],
-                                  int(time_value))
-    if time_unit in HALF_TIMEUNIT_INCREMENTORS:
-        return _tune_incrementors(HALF_TIMEUNIT_INCREMENTORS[time_unit],
-                                  time_value)
+        return _tune_increments(TIMEUNIT_INCREMENTS[time_unit],
+                                int(time_value))
+    if time_unit in HALF_TIMEUNIT_INCREMENTS:
+        return _tune_increments(HALF_TIMEUNIT_INCREMENTS[time_unit],
+                                time_value)
     if time_unit == 'QS':
         num_months = 3
     else:
@@ -350,7 +365,7 @@ def _get_incrementors(timestamp, time_unit, time_value, half) -> List[int]:
     return [0, month, days, hours]
 
 
-def _tune_incrementors(incrementors, time_value):
+def _tune_increments(incrementors, time_value):
     incrementors = [i * time_value for i in incrementors]
     return incrementors
 
