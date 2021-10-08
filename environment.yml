@@ -34,7 +34,6 @@ dependencies:
   - scipy >=1.6.0
   - setuptools >=41.0
   - shapely >=1.6
-  - strict-rfc3339 >=0.7  # for python-jsonschema date-time format validation
   - tornado >=6.0
   - urllib3 >=1.26
   # TODO: a lot of tests fail with 0.19
@@ -47,3 +46,7 @@ dependencies:
   - pytest >=4.4
   - pytest-cov >=2.6
   - requests-mock >=1.8.0
+
+# TODO: add a pip dependency for the rfc3339-validator package
+# ( https://github.com/naimetti/rfc3339-validator ), which isn't
+# available in any conda channels.
