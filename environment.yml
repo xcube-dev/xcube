@@ -50,6 +50,3 @@ dependencies:
   - pip
   - pip:
     - rfc3339-validator
-# TODO: add a pip dependency for the rfc3339-validator package
-# ( https://github.com/naimetti/rfc3339-validator ), which isn't
-# available in any conda channels.
