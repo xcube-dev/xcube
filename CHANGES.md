@@ -1,4 +1,15 @@
-## Changes in 0.9.0 (in development)
+## Changes in 0.9.1 (in development)
+
+* Cube generator `xcube gen2` allows to use temporal resampling. To use it,
+  a user must set the parameter `time_period` (in a pandas-interpretable 
+  pattern, e.g., '4D') and the newly introduced parameter `temporal_resampling`.
+  To sample down to a broader temporal resolution, use any of `['count', 
+  'first', 'last', 'min', 'max', 'sum', 'prod', 'mean', 'median', 'std', 
+  'var', 'percentile_<p>']`, to sample up to a finer resolution, use any of 
+  `['asfreq', 'ffill', 'bfill', 'pad', 'nearest', 'nearest-up', 'zero', 
+  'slinear', 'quadratic', 'cubic', 'previous', 'next']`. (#523)
+
+## Changes in 0.9.0
 
 ### New features
 
