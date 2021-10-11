@@ -37,7 +37,8 @@ from xcube.util.undefined import UNDEFINED
 Factory = Callable[..., Any]
 Serializer = Callable[..., Any]
 
-_TYPES_ENUM = {'null', 'boolean', 'integer', 'number', 'string', 'array', 'object'}
+_TYPES_ENUM = {'null', 'boolean', 'integer', 'number', 'string', 'array',
+               'object'}
 _NUMERIC_TYPES_ENUM = {'integer', 'number'}
 
 
@@ -98,13 +99,35 @@ class JsonSchema(ABC):
 
     def validate_instance(self, instance: Any):
         """Validate JSON value *instance*."""
+        # As a base for our custom validator, we hard-code a validator
+        # version; JSON metaschema versions are not guaranteed to be backward
+        # compatible, so if we use jsonschema.validators.validator_for(
+        # schema), our schema may become invalid when the default validator
+        # changes. The metaschema version can also be pinned in the schema
+        # itself with an entry like this:
+        # '$schema': 'http://json-schema.org/draft-07/schema'
+        # However, this makes it more work to keep unit tests up to date, and
+        # it's fiddly to adapt the recursive to_dict code to make sure that
+        # the metaschema key *only* appears in the outermost dictionary.
+        base_validator = jsonschema.validators.Draft7Validator
+
+        # By default, jsonschema only recognizes lists as arrays. Here we derive
+        # and use a custom validator which recognizes both lists and tuples as
+        # arrays.
+        new_type_checker = \
+            base_validator.TYPE_CHECKER.redefine(
+                'array',
+                lambda checker, inst: isinstance(inst, (list, tuple)))
+        custom_validator = \
+            jsonschema.validators.extend(base_validator,
+                                         type_checker=new_type_checker)
+
         # jsconschema needs extra packages installed to validate some formats;
         # if they are missing, the format check will be skipped silently. For
         # date-time format, strict_rfc3339 or rfc3339-validator is required.
         jsonschema.validate(instance=instance, schema=self.to_dict(),
-                            format_checker=jsonschema.draft7_format_checker,
-                            # We have to explicitly sanction tuples as arrays.
-                            types=dict(array=(list, tuple)))
+                            cls=custom_validator,
+                            format_checker=jsonschema.draft7_format_checker)
 
     def to_instance(self, value: Any) -> Any:
         """Convert Python object *value* into JSON value and return the validated result."""
