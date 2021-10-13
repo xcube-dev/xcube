@@ -184,9 +184,10 @@ def mask_dataset_by_geometry(dataset: xr.Dataset,
         (but still may be clipped).
     :param no_clip: If True, the function will not clip the dataset before masking, this is, the
         returned dataset will have the same dimension size as the given *dataset*.
-    :param all_touched: If True, all pixels touched by geometries will be
-        burned in. If False, only pixels whose center is within the polygon
-        or that are selected by Bresenham’s line algorithm will be burned in.
+    :param all_touched: If True, all pixels intersected by geometry outlines
+        will be included in the mask. If False, only pixels whose center is
+        within the polygon or that are selected by Bresenham’s line algorithm
+        will be included in the mask. The default value is set to `False`.
     :param save_geometry_mask: If the value is a string, the effective geometry mask array is stored as
         a 2D data variable named by *save_geometry_mask*.
         If the value is True, the name "geometry_mask" is used.
