@@ -108,7 +108,7 @@ def new_grid_mapping_from_coords(
     tile_size = _normalize_int_pair(tile_size, default=None)
     is_lon_360 = None  # None means "not yet known"
     if crs.is_geographic:
-        is_lon_360 = bool(np.any(x_coords > 180))
+        is_lon_360 = bool(np.any(x_coords > 180))  # TODO: expensive stmt
 
     x_res = 0
     y_res = 0
@@ -180,7 +180,7 @@ def new_grid_mapping_from_coords(
 
         if not is_lon_360 and crs.is_geographic:
             is_anti_meridian_crossed = da.any(da.max(x_x_diff) > 180) \
-                                       or da.any(da.max(x_y_diff) > 180)
+                                       or da.any(da.max(x_y_diff) > 180)  # TODO: expensive stmt
             if is_anti_meridian_crossed:
                 x_coords = to_lon_360(x_coords)
                 x = da.asarray(x_coords)
@@ -190,7 +190,7 @@ def new_grid_mapping_from_coords(
 
         is_regular = False
 
-        if da.all(x_y_diff == 0) and da.all(y_x_diff == 0):
+        if da.all(x_y_diff == 0) and da.all(y_x_diff == 0):  # TODO: expensive stmt
             x_res = x_x_diff[0, 0]
             y_res = y_y_diff[0, 0]
             is_regular = \
@@ -221,8 +221,8 @@ def new_grid_mapping_from_coords(
             xy_area_index_min = da.nanargmin(xy_areas)
             xy_area_index_max = da.nanargmax(xy_areas)
             # Convert area to edge length
-            xy_res_min = math.sqrt(xy_areas[xy_area_index_min])
-            xy_res_max = math.sqrt(xy_areas[xy_area_index_max])
+            xy_res_min = math.sqrt(xy_areas[xy_area_index_min])  # TODO: expensive stmt
+            xy_res_max = math.sqrt(xy_areas[xy_area_index_max])  # TODO: expensive stmt
             # Empirically weight min more than max
             xy_res = 0.7 * xy_res_min + 0.3 * xy_res_max
             if crs.is_geographic:
@@ -244,7 +244,7 @@ def new_grid_mapping_from_coords(
             y_coords = y_coords.chunk((tile_height, tile_width))
 
         # Guess j axis direction
-        is_j_axis_up = np.all(y_coords[0, :] < y_coords[-1, :]) or None
+        is_j_axis_up = np.all(y_coords[0, :] < y_coords[-1, :]) or None  # TODO: expensive stmt
 
     assert_true(x_res > 0 and y_res > 0,
                 'internal error: x_res and y_res could not be determined',
@@ -252,10 +252,10 @@ def new_grid_mapping_from_coords(
 
     x_res, y_res = _to_int_or_float(x_res), _to_int_or_float(y_res)
     x_res_05, y_res_05 = x_res / 2, y_res / 2
-    x_min = _to_int_or_float(x_coords.min() - x_res_05)
-    y_min = _to_int_or_float(y_coords.min() - y_res_05)
-    x_max = _to_int_or_float(x_coords.max() + x_res_05)
-    y_max = _to_int_or_float(y_coords.max() + y_res_05)
+    x_min = _to_int_or_float(x_coords.min() - x_res_05)  # TODO: expensive stmt
+    y_min = _to_int_or_float(y_coords.min() - y_res_05)  # TODO: expensive stmt
+    x_max = _to_int_or_float(x_coords.max() + x_res_05)  # TODO: expensive stmt
+    y_max = _to_int_or_float(y_coords.max() + y_res_05)  # TODO: expensive stmt
 
     return cls(x_coords=x_coords,
                y_coords=y_coords,
