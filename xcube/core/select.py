@@ -89,6 +89,7 @@ def select_spatial_subset(dataset: xr.Dataset,
                           ij_border: int = 0,
                           xy_bbox: Tuple[float, float, float, float] = None,
                           xy_border: float = 0.,
+                          grid_mapping: GridMapping = None,
                           geo_coding: GridMapping = None,
                           xy_names: Tuple[str, str] = None) \
         -> Optional[xr.Dataset]:
@@ -107,7 +108,8 @@ def select_spatial_subset(dataset: xr.Dataset,
         in number of pixels
     :param xy_bbox: The bounding box in x,y coordinates.
     :param xy_border: Border in units of the x,y coordinates.
-    :param geo_coding: Optional dataset geo-coding.
+    :param grid_mapping: Optional dataset grid mapping.
+    :param geo_coding: Deprecated. Use *grid_mapping* instead.
     :param xy_names: Optional tuple of the x- and y-coordinate
         variables in *dataset*. Ignored if *geo_coding* is given.
     :return: Spatial dataset subset
@@ -118,10 +120,11 @@ def select_spatial_subset(dataset: xr.Dataset,
     if ij_bbox and xy_bbox:
         raise ValueError('Only one of ij_bbox and xy_bbox can be given')
 
-    if geo_coding is None:
-        geo_coding = GridMapping.from_dataset(dataset,
-                                              xy_var_names=xy_names)
-    x_name, y_name = geo_coding.xy_var_names
+    grid_mapping = geo_coding or grid_mapping
+    if grid_mapping is None:
+        grid_mapping = GridMapping.from_dataset(dataset,
+                                                xy_var_names=xy_names)
+    x_name, y_name = grid_mapping.xy_var_names
     x = dataset[x_name]
     y = dataset[y_name]
 
@@ -152,15 +155,15 @@ def select_spatial_subset(dataset: xr.Dataset,
             })
     else:
         if xy_bbox:
-            ij_bbox = geo_coding.ij_bbox_from_xy_bbox(xy_bbox,
-                                                      ij_border=ij_border,
-                                                      xy_border=xy_border)
+            ij_bbox = grid_mapping.ij_bbox_from_xy_bbox(xy_bbox,
+                                                        ij_border=ij_border,
+                                                        xy_border=xy_border)
             if ij_bbox[0] == -1:
                 return None
-        width, height = geo_coding.size
+        width, height = grid_mapping.size
         i_min, j_min, i_max, j_max = ij_bbox
         if i_min > 0 or j_min > 0 or i_max < width - 1 or j_max < height - 1:
-            x_dim, y_dim = geo_coding.xy_dim_names
+            x_dim, y_dim = grid_mapping.xy_dim_names
             i_slice = slice(i_min, i_max + 1)
             j_slice = slice(j_min, j_max + 1)
             return dataset.isel({x_dim: i_slice, y_dim: j_slice})

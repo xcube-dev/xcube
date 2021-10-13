@@ -206,6 +206,11 @@ class InputProcessor(ExtensionComponent, metaclass=ABCMeta):
         """
         return dataset
 
+    # Note, arg "geo_coding" should be called "source_gm",
+    # arg "output_geom" should be called "target_gm",
+    # but this package will be deprecated anyway.
+    # See #540
+
     @abstractmethod
     def process(self,
                 dataset: xr.Dataset,
