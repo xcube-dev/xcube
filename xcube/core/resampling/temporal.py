@@ -267,8 +267,8 @@ def _adjust_times_and_bounds(time_values, frequency, method):
 
 def _convert(timestamp: pd.Timestamp, calendar: str):
     if calendar is not None:
-        return cftime.DateFromJulianDay(timestamp.to_julian_date(),
-                                        calendar=calendar)
+        return cftime.datetime.fromordinal(timestamp.to_julian_date(),
+                                           calendar=calendar)
     return np.datetime64(timestamp)
 
 
