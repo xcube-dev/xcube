@@ -170,6 +170,7 @@ def mask_dataset_by_geometry(dataset: xr.Dataset,
                              geometry: GeometryLike,
                              excluded_vars: Sequence[str] = None,
                              no_clip: bool = False,
+                             all_touched: bool = False,
                              save_geometry_mask: Union[str, bool] = False,
                              save_geometry_wkt: Union[str, bool] = False) -> Optional[xr.Dataset]:
     """
@@ -183,6 +184,10 @@ def mask_dataset_by_geometry(dataset: xr.Dataset,
         (but still may be clipped).
     :param no_clip: If True, the function will not clip the dataset before masking, this is, the
         returned dataset will have the same dimension size as the given *dataset*.
+    :param all_touched: If True, all pixels intersected by geometry outlines
+        will be included in the mask. If False, only pixels whose center is
+        within the polygon or that are selected by Bresenham’s line algorithm
+        will be included in the mask. The default value is set to `False`.
     :param save_geometry_mask: If the value is a string, the effective geometry mask array is stored as
         a 2D data variable named by *save_geometry_mask*.
         If the value is True, the name "geometry_mask" is used.
@@ -211,7 +216,10 @@ def mask_dataset_by_geometry(dataset: xr.Dataset,
     height = y_var.size
     spatial_res = (ds_x_max - ds_x_min) / width
 
-    mask_data = get_geometry_mask(width, height, intersection_geometry, ds_x_min, ds_y_min, spatial_res)
+    mask_data = get_geometry_mask(width, height,
+                                  intersection_geometry,
+                                  ds_x_min, ds_y_min,
+                                  spatial_res, all_touched)
     mask = xr.DataArray(mask_data,
                         coords={y_var_name: y_var, x_var_name: x_var},
                         dims=(y_var.dims[0], x_var.dims[0]))
@@ -301,7 +309,8 @@ def _save_geometry_wkt(dataset, intersection_geometry, save_geometry):
 
 def get_geometry_mask(width: int, height: int,
                       geometry: GeometryLike,
-                      x_min: float, y_min: float, res: float) -> np.ndarray:
+                      x_min: float, y_min: float, res: float,
+                      all_touched: bool = True) -> np.ndarray:
     geometry = convert_geometry(geometry)
     # noinspection PyTypeChecker
     transform = affine.Affine(res, 0.0, x_min,
@@ -309,7 +318,7 @@ def get_geometry_mask(width: int, height: int,
     return rasterio.features.geometry_mask([geometry],
                                            out_shape=(height, width),
                                            transform=transform,
-                                           all_touched=True,
+                                           all_touched=all_touched,
                                            invert=True)
 
 
