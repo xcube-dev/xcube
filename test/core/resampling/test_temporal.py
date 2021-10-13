@@ -168,7 +168,7 @@ class ResampleInTimeTest(unittest.TestCase):
         self.assertIsNot(resampled_cube, self.input_cube)
         self.assertIn('time', resampled_cube)
         self.assertEqual(1, resampled_cube.time.size)
-        self.assertEqual(np.datetime64('2017-08-16'),
+        self.assertEqual(np.datetime64('2017-08-15T12:00:00'),
                          resampled_cube.time[0].values)
         self.assertIn('time_bnds', resampled_cube)
         self.assertEqual((1, 2), resampled_cube.time_bnds.shape)

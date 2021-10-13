@@ -361,7 +361,7 @@ def _get_increments(timestamp, time_unit, time_value, half) -> List[int]:
         hours = 0
     else:
         hours = 12
-    days = int(math.floor(days / 2))
+    days = int(math.floor(days / 2)) - 1
     return [0, month, days, hours]
 
 
