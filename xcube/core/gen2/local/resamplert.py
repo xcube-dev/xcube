@@ -1,11 +1,12 @@
+# The MIT License (MIT)
 # Copyright (c) 2021 by the xcube development team and contributors
 #
-# Permission is hereby granted, free of charge, to any person obtaining a copy
-# of this software and associated documentation files (the "Software"), to deal
-# in the Software without restriction, including without limitation the rights
-# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-# copies of the Software, and to permit persons to whom the Software is
-# furnished to do so, subject to the following conditions:
+# Permission is hereby granted, free of charge, to any person obtaining a copy of
+# this software and associated documentation files (the "Software"), to deal in
+# the Software without restriction, including without limitation the rights to
+# use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
+# of the Software, and to permit persons to whom the Software is furnished to do
+# so, subject to the following conditions:
 #
 # The above copyright notice and this permission notice shall be included in all
 # copies or substantial portions of the Software.
@@ -19,6 +20,7 @@
 # SOFTWARE.
 
 import cftime
+import numpy as np
 import pandas as pd
 import xarray as xr
 
@@ -30,6 +32,14 @@ from .transformer import CubeTransformer
 from .transformer import TransformedCube
 from ..config import CubeConfig
 from ..error import CubeGeneratorError
+
+MIN_MAX_DELTAS = dict(
+    H=(1, 1, 'H'),
+    D=(1, 1, 'D'),
+    W=(7, 7, 'D'),
+    M=(28, 31, 'D'),
+    Y=(365, 366, 'D')
+)
 
 
 class CubeResamplerT(CubeTransformer):
@@ -52,34 +62,66 @@ class CubeResamplerT(CubeTransformer):
             time_resample_params = dict()
             time_resample_params['frequency'] = cube_config.time_period
             time_resample_params['method'] = 'first'
-            if self._time_range:
-                import re
-                time_unit = re.findall('[A-Z]+', cube_config.time_period)[0]
-                if time_unit in ['H', 'D']:
-                    start_time = pd.to_datetime(self._time_range[0])
-                    dataset_start_time = pd.Timestamp(cube.time[0].values)
-                    time_delta = _normalize_time(dataset_start_time) \
-                        - start_time
-                    period_delta = pd.Timedelta(cube_config.time_period)
-                    if time_delta > period_delta:
-                        if time_unit == 'H':
-                            time_resample_params['base'] = \
-                                time_delta.hours / period_delta.hours
-                        elif time_unit == 'D':
-                            time_resample_params['base'] = \
-                                time_delta.days / period_delta.days
+            import re
+            time_unit = re.findall('[A-Z]+', cube_config.time_period)[0]
+            time_frequency = int(cube_config.time_period.split(time_unit)[0])
+            if self._time_range and time_unit in ['H', 'D']:
+                start_time = pd.to_datetime(self._time_range[0])
+                dataset_start_time = pd.Timestamp(cube.time[0].values)
+                time_delta = _normalize_time(dataset_start_time) \
+                    - start_time
+                period_delta = pd.Timedelta(cube_config.time_period)
+                if time_delta > period_delta:
+                    if time_unit == 'H':
+                        time_resample_params['base'] = \
+                            time_delta.hours / period_delta.hours
+                    elif time_unit == 'D':
+                        time_resample_params['base'] = \
+                            time_delta.days / period_delta.days
             if cube_config.temporal_resampling is not None:
                 to_drop.append('temporal_resampling')
-                if cube_config.temporal_resampling in \
-                        ['linear', 'nearest-up', 'zero', 'slinear',
-                         'quadratic', 'cubic', 'previous', 'next']:
-                    time_resample_params['method'] = 'interpolate'
-                    time_resample_params['interp_kind'] = \
-                        cube_config.temporal_resampling
+                min_data_delta, max_data_delta = \
+                    get_min_max_timedeltas_from_data(cube)
+                min_period_delta, max_period_delta = \
+                    get_min_max_timedeltas_for_time_period(time_frequency,
+                                                           time_unit)
+                if max_data_delta < min_period_delta:
+                    if 'downsampling' not in cube_config.temporal_resampling:
+                        raise ValueError('Data must be sampled down to a'
+                                         'coarser temporal resolution, '
+                                         'but no temporal downsampling '
+                                         'method is set')
+                    method = cube_config.temporal_resampling['downsampling'][0]
+                elif max_period_delta < min_data_delta:
+                    if 'upsampling' not in cube_config.temporal_resampling:
+                        raise ValueError('Data must be sampled up to a'
+                                         'finer temporal resolution, '
+                                         'but no temporal upsampling '
+                                         'method is set')
+                    method = cube_config.temporal_resampling['upsampling'][0]
                 else:
-                    time_resample_params['method'] = \
-                        cube_config.temporal_resampling
-            # we set cub_asserted to true so the resampling can deal with
+                    if 'downsampling' not in cube_config.temporal_resampling \
+                            and 'upsampling' not in \
+                            cube_config.temporal_resampling:
+                        raise ValueError('Please specify a method for temporal '
+                                         'resampling.')
+                    if 'downsampling' in cube_config.temporal_resampling and \
+                            'upsampling' in cube_config.temporal_resampling:
+                        raise ValueError('Cannot determine unambiguously '
+                                         'whether data needs to be sampled up '
+                                         'or down temporally. Please only '
+                                         'specify one method for temporal '
+                                         'resampling.')
+                    method = cube_config.temporal_resampling.get(
+                        'downsampling',
+                        cube_config.temporal_resampling.get('upsampling'))
+                if method in ['linear', 'nearest-up', 'zero', 'slinear',
+                              'quadratic', 'cubic', 'previous', 'next']:
+                    time_resample_params['method'] = 'interpolate'
+                    time_resample_params['interp_kind'] = method
+                else:
+                    time_resample_params['method'] = method
+            # we set cube_asserted to true so the resampling can deal with
             # cftime data
             resampled_cube = resample_in_time(
                 cube,
@@ -138,6 +180,20 @@ def _get_temporal_subset(resampled_cube, time_range):
     except KeyError:
         data_end_time = resampled_cube.time_bnds[-1, 1]
     return resampled_cube.sel(time=slice(data_start_time, data_end_time))
+
+
+def get_min_max_timedeltas_from_data(data: xr.Dataset):
+    time_diff = data['time'].diff(dim=data['time'].dims[0])\
+        .values.astype(np.float64)
+    return pd.Timedelta(min(time_diff)), pd.Timedelta(max(time_diff))
+
+
+def get_min_max_timedeltas_for_time_period(time_frequency: int, time_unit: str):
+    min_freq = MIN_MAX_DELTAS[time_unit][0] * time_frequency
+    max_freq = MIN_MAX_DELTAS[time_unit][1] * time_frequency
+    delta_unit = MIN_MAX_DELTAS[time_unit][2]
+    return pd.Timedelta(f'{min_freq}{delta_unit}'), \
+           pd.Timedelta(f'{max_freq}{delta_unit}')
 
 
 def _normalize_time(time, normalize_hour=True):

@@ -38,7 +38,7 @@ class CubeResamplerTTest(unittest.TestCase):
     def test_transform_cube_downsample_to_years(self):
         cube_config = CubeConfig(time_range=('2010-01-01', '2014-12-31'),
                                  time_period='2Y',
-                                 temporal_resampling='min')
+                                 temporal_resampling=dict(downsampling='min'))
         temporal_resampler = CubeResamplerT(cube_config)
 
         cube = self._get_cube(time_freq='M', time_periods=24)
