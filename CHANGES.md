@@ -1,5 +1,11 @@
 ## Changes in 0.9.1 (in development)
 
+### New features
+* Function `mask_dataset_by_geometry` has a new parameter `all_touched`:
+  If True, all pixels intersected by geometry outlines will be included in the mask. 
+  If False, only pixels whose center is within the polygon or that are selected by 
+  Bresenham’s line algorithm will be included in the mask. 
+  The default value is set to `False`. 
 * Cube generator `xcube gen2` allows to use temporal resampling. To use it,
   a user must set the parameter `time_period` (in a pandas-interpretable 
   pattern, e.g., '4D') and the newly introduced parameter `temporal_resampling`.
@@ -8,6 +14,8 @@
   'var', 'percentile_<p>']`, to sample up to a finer resolution, use any of 
   `['asfreq', 'ffill', 'bfill', 'pad', 'nearest', 'nearest-up', 'zero', 
   'slinear', 'quadratic', 'cubic', 'previous', 'next']`. (#523)
+
+### Other
 
 ## Changes in 0.9.0
 
@@ -139,7 +147,7 @@
   * functions `pow2_2d_subdivision()`
   * functions `pow2_1d_subdivision()`
   
-## Changes in 0.8.2 (in development)
+## Changes in 0.8.2
 
 * Fixed the issue that xcube gen2 would not print tracebacks to stderr 
   when raising errors of type `CubeGeneratorError` (#448).
