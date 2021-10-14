@@ -289,7 +289,7 @@ def _get_next_timestamp(timestamp, time_unit, time_value, half) \
         replacement['hour'] -= 24
         replacement['day'] += 1
     while replacement['day'] > _days_of_month(replacement['year'],
-                                             replacement['month']):
+                                              replacement['month']):
         replacement['day'] -= _days_of_month(replacement['year'],
                                              replacement['month'])
         replacement['month'] += 1
@@ -329,7 +329,7 @@ def _get_previous_timestamp(timestamp, time_unit, time_value, half) \
             replacement['month'] += 12
             replacement['year'] -= 1
         replacement['day'] += _days_of_month(replacement['year'],
-                                            replacement['month'] % 12)
+                                             replacement['month'] % 12)
 
     while replacement['month'] < 1:
         replacement['month'] += 12
