@@ -1,3 +1,4 @@
+import warnings
 from typing import Collection, Optional, Tuple
 from typing import Union
 
@@ -120,7 +121,12 @@ def select_spatial_subset(dataset: xr.Dataset,
     if ij_bbox and xy_bbox:
         raise ValueError('Only one of ij_bbox and xy_bbox can be given')
 
-    grid_mapping = geo_coding or grid_mapping
+    if geo_coding:
+        warnings.warn('keyword "geo_coding" has been deprecated,'
+                      ' use "grid_mapping" instead',
+                      DeprecationWarning)
+
+    grid_mapping = grid_mapping or geo_coding
     if grid_mapping is None:
         grid_mapping = GridMapping.from_dataset(dataset,
                                                 xy_var_names=xy_names)
