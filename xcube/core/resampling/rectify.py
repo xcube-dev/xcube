@@ -108,7 +108,7 @@ def rectify_dataset(source_ds: xr.Dataset,
             xy_bbox=target_gm.xy_bbox,
             ij_border=1,
             xy_border=0.5 * (target_gm.x_res + target_gm.y_res),
-            geo_coding=source_gm
+            grid_mapping=source_gm
         )
         if source_ds_subset is None:
             return None
