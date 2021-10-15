@@ -22,17 +22,18 @@
 import io
 import uuid
 from abc import ABCMeta, abstractmethod
-from typing import Tuple, Sequence, Union, Any, Callable, Optional
+from typing import Tuple, Union, Any, Sequence
 
 import dask.array as da
 import numpy as np
 from PIL import Image
 
-from xcube.constants import GLOBAL_GEO_EXTENT, LOG
+from xcube.constants import LOG
+from xcube.util.assertions import assert_instance
+from xcube.util.assertions import assert_true
 from xcube.util.cache import Cache
 from xcube.util.cmaps import get_cmap
 from xcube.util.perf import measure_time_cm
-from xcube.util.tilegrid import TileGrid, GeoExtent
 
 try:
     import cmocean.cm as ocm
@@ -45,21 +46,11 @@ DEFAULT_COLOR_MAP_NAME = 'viridis'
 DEFAULT_COLOR_MAP_VALUE_RANGE = 0.0, 1.0
 DEFAULT_COLOR_MAP_NUM_COLORS = 256
 
-X = int
-Y = int
-Width = int
-Height = int
-Size2D = Tuple[Width, Height]
-Rectangle2D = Tuple[X, Y, Width, Height]
-Number = Union[int, float]
+Size2D = Tuple[int, int]
+Rectangle2D = Tuple[int, int, int, int]
 NDArrayLike = Union[da.Array, np.ndarray]
 Tile = Any
-TileQuad = Tuple[Tile, Tile, Tile, Tile]
-TiledImageCollection = Sequence['TiledImage']
-LevelTransformer = Callable[['TiledImage', 'TiledImage', int, Optional[Any]], 'TiledImage']
-LevelMapper = Callable[['TiledImage', int, Optional[Any]], 'TiledImage']
-TileAggregator = Callable[[Tile, Tile, Tile, Tile], Tile]
-LevelImageIdFactory = Callable[[int], str]
+NormRange = Tuple[Union[int, float], Union[int, float]]
 
 
 class TiledImage(metaclass=ABCMeta):
@@ -144,6 +135,7 @@ class AbstractTiledImage(TiledImage, metaclass=ABCMeta):
     :param image_id: optional unique image identifier
     """
 
+    # noinspection PyShadowingBuiltins
     def __init__(self,
                  size: Size2D,
                  tile_size: Size2D,
@@ -209,6 +201,7 @@ class OpImage(AbstractTiledImage, metaclass=ABCMeta):
     :param trace_perf: whether to trace runtime performance information
     """
 
+    # noinspection PyShadowingBuiltins
     def __init__(self,
                  size: Size2D,
                  tile_size: Size2D,
@@ -300,6 +293,7 @@ class DecoratorImage(OpImage, metaclass=ABCMeta):
     :param trace_perf: whether to log runtime performance information
     """
 
+    # noinspection PyShadowingBuiltins
     def __init__(self,
                  source_image: TiledImage,
                  image_id: str = None,
@@ -352,8 +346,6 @@ class TransformArrayImage(DecoratorImage):
     :param source_image: The source image
     :param image_id: Optional unique image identifier
     :param flip_y: Whether to flip pixels in y-direction
-    :param force_masked: Whether to force creation of masked arrays
-    :param no_data_value: Optional no-data value for mask creation
     :param tile_cache: Optional tile cache
     :param trace_perf: Whether to log runtime performance information
     """
@@ -362,28 +354,14 @@ class TransformArrayImage(DecoratorImage):
                  source_image: TiledImage,
                  image_id: str = None,
                  flip_y: bool = False,
-                 force_masked: bool = True,
                  force_2d: bool = False,
-                 no_data_value: Number = None,
-                 valid_range: Tuple[Number, Number] = None,
-                 norm_range: Tuple[Number, Number] = None,
+                 norm_range: NormRange = None,
                  tile_cache: Cache = None,
                  trace_perf: bool = False):
         super().__init__(source_image, image_id=image_id, tile_cache=tile_cache, trace_perf=trace_perf)
-        self._force_masked = force_masked
         self._force_2d = force_2d
         self._flip_y = flip_y
-        self._no_data_value = no_data_value
-        self._valid_range = valid_range
         self._norm_range = norm_range
-
-    @property
-    def no_data_value(self) -> Optional[Number]:
-        return self._no_data_value
-
-    @property
-    def valid_range(self) -> Optional[Tuple[Number]]:
-        return self._valid_range
 
     def compute_tile(self, tile_x: int, tile_y: int, rectangle: Rectangle2D) -> Tile:
         if self._flip_y:
@@ -408,24 +386,6 @@ class TransformArrayImage(DecoratorImage):
                 # Flip tile using fancy indexing
                 tile = tile[..., ::-1, :]
 
-        if self._force_masked and not np.ma.is_masked(tile):
-            with measure_time(tile_tag + "mask"):
-                # TODO (forman): optimize: remove code block, assume xarray did the masking
-                # if tile is not masked
-                if self._no_data_value is not None:
-                    # and we have a fill value, return a masked tile
-                    tile = np.ma.masked_equal(tile, self._no_data_value)
-                elif self._valid_range is not None:
-                    valid_min, valid_max = self._valid_range
-                    # and we have a valid min or max, return a masked tile
-                    if valid_min is not None:
-                        tile = np.ma.masked_less(tile, valid_min)
-                    if valid_max is not None:
-                        tile = np.ma.masked_greater(tile, valid_max)
-                elif np.issubdtype(tile.dtype, np.floating) or np.issubdtype(tile.dtype, np.complexfloating):
-                    # and it is of float type, return a masked tile with a mask from invalids, i.e. NaN, -Inf, +Inf
-                    tile = np.ma.masked_invalid(tile)
-
         if self._norm_range is not None:
             norm_min, norm_max = self._norm_range
             with measure_time(tile_tag + "normalize_min_max"):
@@ -448,13 +408,18 @@ class DirectRgbaImage(OpImage):
     :param trace_perf: whether to log runtime performance information
     """
 
+    # noinspection PyShadowingBuiltins
     def __init__(self,
-                 source_images: Tuple[TiledImage, TiledImage, TiledImage],
+                 source_images: Sequence[TiledImage],
                  image_id: str = None,
                  encode: bool = False,
                  format: str = None,
                  tile_cache: Cache = None,
                  trace_perf: bool = False):
+        assert_instance(source_images, (list, tuple),
+                        name='source_images')
+        assert_true(len(source_images) == 3,
+                    message='source_images must have length 3')
         proto_source_image = source_images[0]
         super().__init__(size=proto_source_image.size,
                          tile_size=proto_source_image.tile_size,
@@ -464,7 +429,7 @@ class DirectRgbaImage(OpImage):
                          mode='RGBA',
                          tile_cache=tile_cache,
                          trace_perf=trace_perf)
-        self._source_images = source_images
+        self._source_images = tuple(source_images)
         self._encode = encode
 
     def compute_tile(self, tile_x: int, tile_y: int, rectangle: Rectangle2D) -> Tile:
@@ -499,11 +464,6 @@ class DirectRgbaImage(OpImage):
         else:
             return image
 
-    def create_pyramid(self, **kwargs) -> 'ImagePyramid':
-        if self._encode:
-            raise TypeError("can't create pyramid from encoded hi-res tiles")
-        return ImagePyramid.create_from_image(self, create_pil_downsampling_image, **kwargs)
-
 
 class ColorMappedRgbaImage(DecoratorImage):
     """
@@ -519,6 +479,7 @@ class ColorMappedRgbaImage(DecoratorImage):
     :param trace_perf: whether to log runtime performance information
     """
 
+    # noinspection PyShadowingBuiltins
     def __init__(self,
                  source_image: TiledImage,
                  image_id: str = None,
@@ -560,227 +521,6 @@ class ColorMappedRgbaImage(DecoratorImage):
         else:
             return image
 
-    def create_pyramid(self, **kwargs) -> 'ImagePyramid':
-        if self._encode:
-            raise TypeError("can't create pyramid from encoded hi-res tiles")
-        return ImagePyramid.create_from_image(self, create_pil_downsampling_image, **kwargs)
-
-
-
-class DownsamplingImage(OpImage):
-    """
-    Abstract base class for images that downsample a tiled source image.
-    Derived classes must implement the aggregate_and_stitch_source_tiles() method only.
-
-    :param source_image: a tiled source image (type TiledImage) whose source tiles must be PIL Images
-    :param image_id: optional, unique image identifier
-    :param tile_cache: an optional tile cache of type Cache
-    """
-
-    def __init__(self,
-                 source_image: TiledImage,
-                 image_id: str = None,
-                 tile_cache: Cache = None):
-        w, h = source_image.size
-        nx, ny = source_image.num_tiles
-        super().__init__((w // 2, h // 2),
-                         tile_size=source_image.tile_size,
-                         num_tiles=(nx // 2, ny // 2),
-                         image_id=image_id,
-                         mode=source_image.mode,
-                         format=source_image.format,
-                         tile_cache=tile_cache)
-        self._source_image = source_image
-
-    @property
-    def source_image(self) -> TiledImage:
-        return self._source_image
-
-    def compute_tile(self, tile_x: int, tile_y: int, rectangle: Rectangle2D) -> Tile:
-        source_tile_x = 2 * tile_x
-        source_tile_y = 2 * tile_y
-
-        source_image = self._source_image
-        source_tiles = (source_image.get_tile(source_tile_x, source_tile_y),
-                        source_image.get_tile(source_tile_x, source_tile_y + 1),
-                        source_image.get_tile(source_tile_x + 1, source_tile_y),
-                        source_image.get_tile(source_tile_x + 1, source_tile_y + 1))
-
-        target_width, target_height = self.tile_size
-        target_width_h, target_height_h = target_width // 2, target_height // 2
-
-        target_positions = ((0, 0),
-                            (0, target_height_h),
-                            (target_width_h, 0),
-                            (target_width_h, target_height_h))
-
-        return self.aggregate_and_stitch_source_tiles(source_tiles,
-                                                      (target_width, target_height),
-                                                      target_positions)
-
-    @abstractmethod
-    def aggregate_and_stitch_source_tiles(self, source_tiles: TileQuad, target_size: Size2D, target_positions) -> Tile:
-        pass
-
-
-class PilDownsamplingImage(DownsamplingImage):
-    """
-    A tile image which downsamples a tiled source image whose tiles are PIL images (see http://pillow.readthedocs.org).
-
-    :param source_image: a tiled source image (type TiledImage) whose source tiles must be PIL Images
-    :param image_id: optional unique image identifier
-    :param tile_cache: an optional tile cache
-    :param resampling: the PIL Image resampling filter, default is PIL.Image.ANTIALIAS.
-           See http://pillow.readthedocs.org/en/3.0.x/handbook/concepts.html#filters
-           See http://pillow.readthedocs.org/en/3.0.x/reference/Image.html#PIL.Image.Image.resize
-    """
-
-    def __init__(self,
-                 source_image: TiledImage,
-                 image_id: str = None,
-                 tile_cache: Cache = None,
-                 resampling: int = Image.ANTIALIAS):
-        super().__init__(source_image, image_id=image_id, tile_cache=tile_cache)
-        self._resampling = resampling
-
-    @property
-    def resampling(self):
-        return self._resampling
-
-    def aggregate_and_stitch_source_tiles(self, source_tiles: TileQuad, target_size: Size2D, target_positions) -> Tile:
-        target_shape = (target_size[0] // 2, target_size[1] // 2)
-        agg_tiles = [source_tile.resize(target_shape, self._resampling) for source_tile in source_tiles]
-        target_tile = Image.new(self._source_image.mode, target_size)
-        for i in range(len(agg_tiles)):
-            target_tile.paste(agg_tiles[i], target_positions[i])
-        return target_tile
-
-
-class NdarrayDownsamplingImage(DownsamplingImage):
-    """
-    A tiled image which downsamples a source image whose tiles are numpy ndarray-like arrays.
-
-    :param source_image: a tiled source image (type TiledImage) whose source tiles must be PIL Images
-    :param image_id: optional unique image identifier
-    :param tile_cache: an optional tile cache
-    :param aggregator: an aggregator function which will be called like so:
-            aggregator(downsampled_tile_00, downsampled_tile_01, downsampled_tile_10, downsampled_tile_11).
-            see xcube.webapi.im.utils.downsample_ndarray() function
-    """
-
-    def __init__(self,
-                 source_image: TiledImage,
-                 image_id: str = None,
-                 tile_cache: Cache = None,
-                 aggregator: Callable = None):
-        super().__init__(source_image, image_id=image_id, tile_cache=tile_cache)
-        self._aggregator = aggregator or aggregate_ndarray_first
-
-    def aggregate_and_stitch_source_tiles(self, source_tiles: TileQuad, target_size: Size2D, target_positions) -> Tile:
-        prototype_tile = source_tiles[0]
-        agg_tiles = [downsample_ndarray(source_tile, aggregator=self._aggregator) for source_tile in source_tiles]
-        target_shape = list(prototype_tile.shape)
-        target_shape[-1] = target_size[0]
-        target_shape[-2] = target_size[1]
-        if np.ma.is_masked(prototype_tile):
-            target_tile = np.ma.empty_like(prototype_tile)
-        else:
-            target_tile = np.empty_like(prototype_tile)
-        for i in range(len(agg_tiles)):
-            agg_x = target_positions[i][0]
-            agg_y = target_positions[i][1]
-            agg_tile = agg_tiles[i]
-            agg_h, agg_w = agg_tile.shape[-2], agg_tile.shape[-1]
-            target_tile[..., agg_y:agg_y + agg_h, agg_x:agg_x + agg_w] = agg_tile
-        return target_tile
-
-
-class FastNdarrayDownsamplingImage(OpImage):
-    """
-    A tiled image created from down-sampling a numpy ndarray-like array.
-
-    :param array: a numpy ndarray-like array
-    :param tile_size: the tile size
-    :param step_exp: used to compute the step size / image resolution reduction factor: ``step_size = 2 ** step_exp``
-    :param image_id: optional unique image identifier
-    :param tile_cache: an optional tile cache
-    """
-
-    def __init__(self,
-                 array,
-                 tile_size: Size2D,
-                 step_exp: int,
-                 image_id: str = None,
-                 tile_cache: Cache = None,
-                 trace_perf: bool = False):
-        step_size = 1 << step_exp
-        source_width, source_height = array.shape[-1], array.shape[-2]
-        width, height = source_width // step_size, source_height // step_size
-        tile_width, tile_height = tile_size
-        num_tiles = (width + tile_width - 1) // tile_width, (height + tile_height - 1) // tile_height
-        super().__init__((width, height),
-                         tile_size=tile_size,
-                         num_tiles=num_tiles,
-                         mode=str(array.dtype),
-                         format=None,
-                         image_id=image_id,
-                         tile_cache=tile_cache,
-                         trace_perf=trace_perf)
-        self._array = array
-        self._step_size = step_size
-        self._empty_tile = None
-
-    def compute_tile(self, tile_x: int, tile_y: int, rectangle: Rectangle2D) -> Tile:
-        measure_time = self.measure_time
-        tile_tag = self._get_tile_tag(tile_x, tile_y)
-
-        x, y, w, h = rectangle
-        s = self._step_size
-        x *= s
-        y *= s
-        w *= s
-        h *= s
-
-        # Note by forman: check why this is 10x slower than without it
-        #
-        # num_tiles_x, num_tiles_y = self.num_tiles
-        # if tile_x < 0 or tile_x > num_tiles_x - 1 or tile_y < 0 or tile_y > num_tiles_y - 1:
-        #     print("Empty: ", tile_y, tile_x)
-        #     if self._empty_tile is not None \
-        #             and self._empty_tile.shape[-2] == h \
-        #             and self._empty_tile.shape[-1] == w:
-        #         return self._empty_tile
-        #     shape = list(self._array.shape)
-        #     shape[-2] = h
-        #     shape[-1] = w
-        #     tile = np.empty(shape, dtype=self._array.dtype)
-        #     tile.fill(np.nan)
-        #     self._empty_tile = tile
-        #     return tile
-
-        # For performance, we first read the non-resampled tile data.
-        # We could use slices with 'zoom' as step size, but this is incredibly slow when using xarray with dask!
-        # 0.4 vs. 0.025 secs for 220x220 pixel tiles for chunked, compressed SST data.
-        # tile = self._array[..., y:y + h:s, x:x + w:s]
-        with measure_time(tile_tag + "subset array"):
-            tile = self._array[..., y:y + h, x:x + w]
-
-        # Let's see if it has the xarray.DataArray.load() method.
-        # Pre-loading of tile data makes it easier to find bottlenecks in the image processing chain.
-        if hasattr(tile, 'load'):
-            with measure_time(tile_tag + "load"):
-                tile.load()
-
-        # We do the resampling to lower resolution after loading the data, which is MUCH faster, see note above.
-        with measure_time(tile_tag + "down-sample"):
-            tile = tile[..., ::s, ::s]
-
-        # ensure that our tile size is w x h: resize and fill in background value.
-        with measure_time(tile_tag + "trim"):
-            tile = trim_tile(tile, self.tile_size)
-
-        return tile
-
 
 class ArrayImage(OpImage):
     """
@@ -811,7 +551,6 @@ class ArrayImage(OpImage):
                          tile_size=tile_size,
                          num_tiles=num_tiles,
                          mode=str(array.dtype),
-                         format=None,
                          image_id=image_id,
                          tile_cache=tile_cache,
                          trace_perf=trace_perf)
@@ -823,140 +562,6 @@ class ArrayImage(OpImage):
         tile = self._array[y:y + h, x:x + w]
         # ensure that our tile size is w x h
         return trim_tile(tile, self.tile_size)
-
-
-class ImagePyramid:
-    """
-    A stack of tiled images (see TileImage) that form a quadtree image pyramid with increasing levels of detail.
-    Level 0 represents the lowest resolution.
-    The level of detail (image resolution) increases by a factor of two between any two, subsequent levels.
-    The tile sizes for each level are the same.
-    """
-
-    @classmethod
-    def create_from_image(cls,
-                          source_image: TiledImage,
-                          level_transformer: LevelTransformer,
-                          geo_extent: GeoExtent = None,
-                          **kwargs) -> 'ImagePyramid':
-
-        """
-        Create an image pyramid build from a single, max-resolution source image of type TiledImage.
-        The given source image will be returned for highest resolution level in the pyramid.
-        Other level images are created from the given level_image_factory function.
-
-        :param source_image: the high-resolution source image, see TiledImage interface
-        :param level_transformer: transforms level z+1 into level z. Called like:
-               level_images[z_index] = level_transformer(source_image, level_images[z_index+1], z_index, **kwargs)
-        :param geo_extent: the geographical extent.
-        :param kwargs: keyword arguments passed to the level_image_factory function
-        :return: a new ImagePyramid instance
-        """
-        if geo_extent is None:
-            geo_extent = GLOBAL_GEO_EXTENT
-        tile_grid = TileGrid.create(source_image.size[0], source_image.size[1],
-                                    source_image.tile_size[0], source_image.tile_size[1],
-                                    geo_extent)
-        level_images = [None] * tile_grid.num_levels
-        z_index_max = tile_grid.num_levels - 1
-        level_images[z_index_max] = source_image
-        level_image = source_image
-        for i in range(1, tile_grid.num_levels):
-            z_index = z_index_max - i
-            image_id = '%s/%d' % (source_image.id, z_index)
-            level_images[z_index] = level_image = level_transformer(source_image, level_image, i,
-                                                                    image_id=image_id, **kwargs)
-        return ImagePyramid(tile_grid, level_images)
-
-    @classmethod
-    def create_from_array(cls,
-                          array: np.ndarray,
-                          tile_grid: TileGrid,
-                          level_image_id_factory: LevelImageIdFactory = None,
-                          **kwargs) -> 'ImagePyramid':
-
-        """
-        Create an image pyramid build from a numpy-like array using nearest neighbor resampling.
-        This is a fast pyramid exploiting the array's underlying slicing capabilities.
-        For example, if array is a H5Py dataset object, the created pyramid will take advantage of
-        the HDF-5 libraries's slicing.
-
-        :param array: numpy-like array that supports stepping in it's subscript operator, e.g.
-                      array[..., y::step, x:step]
-        :param tile_grid: the tile grid
-        :param level_image_id_factory: a factory function for unique image identifiers
-        :param kwargs: keyword arguments passed to FastNdarrayDownsamplingImage constructor
-        :return: a new ImagePyramid instance
-        """
-        tile_size = tile_grid.tile_size
-        num_levels = tile_grid.num_levels
-        level_images = [None] * num_levels
-        z_index_max = num_levels - 1
-        for i in range(0, num_levels):
-            z_index = z_index_max - i
-            image_id = level_image_id_factory(z_index) if level_image_id_factory else None
-            level_images[z_index] = FastNdarrayDownsamplingImage(array,
-                                                                 tile_size,
-                                                                 i,
-                                                                 image_id=image_id, **kwargs)
-        return ImagePyramid(tile_grid, level_images)
-
-    def __init__(self,
-                 tile_grid: TileGrid,
-                 level_images: TiledImageCollection):
-        if tile_grid.num_levels != len(level_images):
-            raise ValueError('level_images do not match tile_grid')
-        self._tile_grid = tile_grid
-        self._level_images = list(level_images)
-
-    @property
-    def tile_grid(self) -> TileGrid:
-        return self._tile_grid
-
-    @property
-    def num_level_zero_tiles(self) -> Size2D:
-        return self._tile_grid.num_level_zero_tiles_x, self._tile_grid.num_level_zero_tiles_y
-
-    @property
-    def tile_size(self) -> Size2D:
-        return self._tile_grid.tile_width, self._tile_grid.tile_height
-
-    @property
-    def num_levels(self) -> int:
-        return self._tile_grid.num_levels
-
-    def get_level_image(self, z_index: int) -> TiledImage:
-        return self._level_images[z_index]
-
-    def get_tile(self, tile_x: int, tile_y: int, z_index: int):
-        level_image = self._level_images[z_index]
-        return level_image.get_tile(tile_x, tile_y)
-
-    def dispose(self) -> None:
-        for level_image in self._level_images:
-            level_image.dispose()
-
-    def apply(self, level_mapper: LevelMapper, *args, **kwargs):
-        level_images = self._level_images
-        return ImagePyramid(self._tile_grid,
-                            [level_mapper(level_images[level], level, *args, **kwargs)
-                             for level in range(len(level_images))])
-
-
-# noinspection PyUnusedLocal
-def create_pil_downsampling_image(source_image: TiledImage,
-                                  higher_level_image: TiledImage,
-                                  step_exp: int,
-                                  **kwargs) -> TiledImage:
-    return PilDownsamplingImage(higher_level_image, **kwargs)
-
-
-# noinspection PyUnusedLocal
-def create_ndarray_downsampling_image(source_image: TiledImage,
-                                      higher_level_image: TiledImage,
-                                      step_exp: int,
-                                      **kwargs) -> TiledImage:
-    return NdarrayDownsamplingImage(higher_level_image, **kwargs)
 
 
 def trim_tile(tile: NDArrayLike, expected_tile_size: Size2D, fill_value: float = np.nan) -> NDArrayLike:
@@ -986,42 +591,3 @@ def trim_tile(tile: NDArrayLike, expected_tile_size: Size2D, fill_value: float =
         # crop
         tile = tile[0:expected_height, 0:expected_width]
     return tile
-
-
-# noinspection PyUnusedLocal
-def aggregate_ndarray_first(a1, a2, a3, a4):
-    return a1
-
-
-def aggregate_ndarray_min(a1, a2, a3, a4):
-    a = np.fmin(a1, a2)
-    a = np.fmin(a, a3, out=a)
-    a = np.fmin(a, a4, out=a)
-    return a
-
-
-def aggregate_ndarray_max(a1, a2, a3, a4):
-    a = np.fmax(a1, a2)
-    a = np.fmax(a, a3, out=a)
-    a = np.fmax(a, a4, out=a)
-    return a
-
-
-def aggregate_ndarray_sum(a1, a2, a3, a4):
-    return a1 + a2 + a3 + a4
-
-
-def aggregate_ndarray_mean(a1, a2, a3, a4):
-    return (a1 + a2 + a3 + a4) / 4.
-
-
-def downsample_ndarray(a, aggregator=aggregate_ndarray_mean):
-    if aggregator is aggregate_ndarray_first:
-        # Optimization
-        return a[..., 0::2, 0::2]
-    else:
-        a1 = a[..., 0::2, 0::2]
-        a2 = a[..., 0::2, 1::2]
-        a3 = a[..., 1::2, 0::2]
-        a4 = a[..., 1::2, 1::2]
-        return aggregator(a1, a2, a3, a4)

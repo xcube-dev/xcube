@@ -120,14 +120,15 @@ def tile(cube: str,
                                 srs='CRS:84'):
         num_levels = len(resolutions)
         z_and_upp = zip(range(num_levels), map(float, resolutions))
-        x1, y1, x2, y2 = tile_grid.geo_extent
+        x1, y1, x2, y2 = tile_grid.extent
+        tile_width, tile_height = tile_grid.tile_size
         xml = [f'<TileMap version="1.0.0" tilemapservice="http://tms.osgeo.org/1.0.0">',
                f'  <Title>{title}</Title>',
                f'  <Abstract>{abstract}</Abstract>',
                f'  <SRS>{srs}</SRS>',
                f'  <BoundingBox minx="{x1}" miny="{y1}" maxx="{x2}" maxy="{y2}"/>',
                f'  <Origin x="{x1}" y="{y1}"/>',
-               f'  <TileFormat width="{tile_grid.tile_width}" height="{tile_grid.tile_height}"'
+               f'  <TileFormat width="{tile_width}" height="{tile_height}"'
                f' mime-type="image/png" extension="png"/>',
                f'  <TileSets profile="local">'] + [
                   f'    <TileSet href="{z}" order="{z}" units-per-pixel="{upp}"/>' for z, upp in z_and_upp] + [
@@ -209,7 +210,7 @@ def tile(cube: str,
     else:
         if verbosity:
             print(f'Warning: using default tile sizes derived from CUBE')
-        tile_width, tile_height = tile_grid.tile_width, tile_grid.tile_height
+        tile_width, tile_height = tile_grid.tile_size
 
     indexers = None
     if labels:
@@ -235,9 +236,8 @@ def tile(cube: str,
     schema = CubeSchema.new(base_dataset)
     spatial_dims = schema.x_dim, schema.y_dim
 
-    x1, _, x2, _ = tile_grid.geo_extent
     num_levels = tile_grid.num_levels
-    resolutions = [fractions.Fraction(fractions.Fraction(x2 - x1), tile_grid.width(z))
+    resolutions = [tile_grid.get_resolution(z)
                    for z in range(num_levels)]
 
     if verbosity:
@@ -290,8 +290,7 @@ def tile(cube: str,
                 os.makedirs(tilemap_path, exist_ok=True)
                 write_tile_map_resource(tilemap_resource_path, resolutions, tile_grid, title=f'{var_name}')
             for z in range(num_levels):
-                num_tiles_x = tile_grid.num_tiles_x(z)
-                num_tiles_y = tile_grid.num_tiles_y(z)
+                num_tiles_x, num_tiles_y = tile_grid.get_num_tiles(z)
                 tile_z_path = os.path.join(tilemap_path, str(z))
                 if not dry_run and not os.path.exists(tile_z_path):
                     os.mkdir(tile_z_path)

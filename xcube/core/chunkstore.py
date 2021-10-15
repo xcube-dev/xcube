@@ -21,35 +21,49 @@
 
 import itertools
 import json
-from collections.abc import MutableMapping
-from typing import Iterator, Dict, Tuple, Iterable, KeysView, Callable, Any, Union, Sequence
+from collections.abc import MutableMapping, Mapping
+from logging import Logger
+from typing import Iterator, Dict, Tuple, Iterable, \
+    KeysView, Callable, Any, Sequence, Optional
+from typing import Union
 
 import numpy as np
 
+from xcube.constants import LOG
+from xcube.util.assertions import assert_instance
+
 __author__ = "Norman Fomferra (Brockmann Consult GmbH)"
+
+from xcube.util.perf import measure_time_cm
 
 GetChunk = Callable[['ChunkStore', str, Tuple[int, ...]], bytes]
 
 
 class ChunkStore(MutableMapping):
     """
-    A Zarr Store that generates datasets by allowing data variables to fetch or compute their chunks
-    by a user-defined function *get_chunk*. Implements the standard Python ``MutableMapping`` interface.
+    A Zarr Store that generates datasets by allowing data variables to
+    fetch or compute their chunks by a user-defined function *get_chunk*.
+    Implements the standard Python ``MutableMapping`` interface.
 
     This is how the *get_chunk* function is called:::
 
         data = get_chunk(chunk_store, var_name, chunk_indexes)
 
-    where ``chunk_store`` is this store, ``var_name`` is the name of the variable for which data
-    is fetched, and ``chunk_indexes`` is a tuple of zero-based, integer chunk indexes. The result must
-    be a Python *bytes* object.
+    where ``chunk_store`` is this store, ``var_name`` is the name of
+    the variable for which data is fetched, and ``chunk_indexes`` is
+    a tuple of zero-based, integer chunk indexes. The result must be
+    a Python *bytes* object.
 
-    :param dims: Dimension names of all data variables, e.g. ('time', 'lat', 'lon').
-    :param shape: Shape of all data variables according to *dims*, e.g. (512, 720, 1480).
-    :param chunks: Chunk sizes of all data variables according to *dims*, e.g. (128, 180, 180).
+    :param dims: Dimension names of all data variables,
+        e.g. ('time', 'lat', 'lon').
+    :param shape: Shape of all data variables according to *dims*,
+        e.g. (512, 720, 1480).
+    :param chunks: Chunk sizes of all data variables according to *dims*,
+        e.g. (128, 180, 180).
     :param attrs: Global dataset attributes.
     :param get_chunk: Default chunk fetching/computing function.
-    :param trace_store_calls: Whether to print calls into the ``MutableMapping`` interface.
+    :param trace_store_calls: Whether to print calls
+        into the ``MutableMapping`` interface.
     """
 
     def __init__(self,
@@ -132,7 +146,9 @@ class ChunkStore(MutableMapping):
 
         self._vfs[name] = _str_to_bytes('')
         self._vfs[name + '/.zarray'] = _dict_to_bytes(array_metadata)
-        self._vfs[name + '/.zattrs'] = _dict_to_bytes(dict(_ARRAY_DIMENSIONS=self._dims, **(attrs or dict())))
+        self._vfs[name + '/.zattrs'] = _dict_to_bytes(
+            dict(_ARRAY_DIMENSIONS=self._dims, **(attrs or dict()))
+        )
 
         nums = np.array(self._shape) // np.array(self._chunks)
         indexes = itertools.product(*tuple(map(range, map(int, nums))))
@@ -145,9 +161,9 @@ class ChunkStore(MutableMapping):
     def _class_name(self):
         return self.__module__ + '.' + self.__class__.__name__
 
-    ###############################################################################
+    ##########################################################################
     # Zarr Store (MutableMapping) implementation
-    ###############################################################################
+    ##########################################################################
 
     def keys(self) -> KeysView[str]:
         if self._trace_store_calls:
@@ -162,7 +178,8 @@ class ChunkStore(MutableMapping):
         else:
             prefix = key + '/'
             start = len(prefix)
-            return (k for k in self._vfs.keys() if k.startswith(prefix) and k.find('/', start) == -1)
+            return (k for k in self._vfs.keys()
+                    if k.startswith(prefix) and k.find('/', start) == -1)
 
     def getsize(self, key: str) -> int:
         if self._trace_store_calls:
@@ -210,3 +227,83 @@ def _dict_to_bytes(d: Dict):
 
 def _str_to_bytes(s: str):
     return bytes(s, encoding='utf-8')
+
+
+class LoggingStore(Mapping):
+    """
+    A Zarr Store that logs all method calls on another store *other*
+    including execution time.
+    """
+
+    @classmethod
+    def new(cls, other: Union[Mapping, MutableMapping],
+            logger: Logger = LOG,
+            name: Optional[str] = None):
+        if isinstance(other, MutableMapping):
+            return MutableLoggingStore(other, logger=logger, name=name)
+        return LoggingStore(other, logger=logger, name=name)
+
+    def __init__(self,
+                 other: Union[Mapping, MutableMapping],
+                 logger: Logger = LOG,
+                 name: Optional[str] = None):
+        assert_instance(other, Mapping)
+        self._other = other
+        self._measure_time = measure_time_cm(logger=logger)
+        self._name = name or 'chunk_store'
+        if hasattr(other, 'listdir'):
+            setattr(self, 'listdir', self.__listdir)
+        if hasattr(other, 'getsize'):
+            setattr(self, 'getsize', self.__getsize)
+
+    def __listdir(self, key: str) -> Iterable[str]:
+        with self._measure_time(f'{self._name}.listdir({key!r})'):
+            # noinspection PyUnresolvedReferences
+            return self._other.listdir(key)
+
+    def __getsize(self, key: str) -> int:
+        with self._measure_time(f'{self._name}.getsize({key!r})'):
+            # noinspection PyUnresolvedReferences
+            return self._other.getsize(key)
+
+    def keys(self) -> KeysView[str]:
+        with self._measure_time(f'{self._name}.keys()'):
+            # noinspection PyTypeChecker
+            return self._other.keys()
+
+    def __iter__(self) -> Iterator[str]:
+        with self._measure_time(f'{self._name}.__iter__()'):
+            return self._other.__iter__()
+
+    def __len__(self) -> int:
+        with self._measure_time(f'{self._name}.__len__()'):
+            return self._other.__len__()
+
+    def __contains__(self, key) -> bool:
+        with self._measure_time(f'{self._name}.__contains__({key!r})'):
+            return self._other.__contains__(key)
+
+    def __getitem__(self, key: str) -> bytes:
+        with self._measure_time(f'{self._name}.__getitem__({key!r})'):
+            return self._other.__getitem__(key)
+
+
+class MutableLoggingStore(LoggingStore, MutableMapping):
+    """
+    Mutable version of :class:LoggingStore.
+    """
+
+    def __init__(self,
+                 other: MutableMapping,
+                 logger: Logger = LOG,
+                 name: Optional[str] = None):
+        assert_instance(other, MutableMapping)
+        super().__init__(other, logger, name)
+
+    def __setitem__(self, key: str, value: bytes) -> None:
+        with self._measure_time(f'{self._name}.__setitem__({key!r}, <value>)'):
+            return self._other.__setitem__(key, value)
+
+    def __delitem__(self, key: str) -> None:
+        with self._measure_time(f'{self._name}.__delitem__({key!r})'):
+            return self._other.__delitem__(key)

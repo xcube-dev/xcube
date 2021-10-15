@@ -25,6 +25,9 @@ from typing import Dict, Any, Callable, Mapping, Sequence, Union, Tuple, Optiona
 
 # Make sure strict-rfc3339 package is installed. The package jsonschema uses it for validating
 # instances of the JsonDateSchema and JsonDatetimeSchema.
+from xcube.util.assertions import assert_true
+from xcube.util.assertions import assert_instance
+
 __import__('strict_rfc3339')
 import jsonschema
 
@@ -34,7 +37,8 @@ from xcube.util.undefined import UNDEFINED
 Factory = Callable[..., Any]
 Serializer = Callable[..., Any]
 
-_TYPES_ENUM = {'null', 'boolean', 'integer', 'number', 'string', 'array', 'object'}
+_TYPES_ENUM = {'null', 'boolean', 'integer', 'number', 'string', 'array',
+               'object'}
 _NUMERIC_TYPES_ENUM = {'integer', 'number'}
 
 
@@ -79,9 +83,9 @@ class JsonSchema(ABC):
                 d.update(type=self.type)
         elif self.nullable is True:
             d.update(type='null')
-        if self.default is not UNDEFINED:
+        if self.default != UNDEFINED:
             d.update(default=self.default)
-        if self.const is not UNDEFINED:
+        if self.const != UNDEFINED:
             d.update(const=self.const)
         if self.enum is not None:
             d.update(enum=self.enum)
@@ -95,13 +99,35 @@ class JsonSchema(ABC):
 
     def validate_instance(self, instance: Any):
         """Validate JSON value *instance*."""
+        # As a base for our custom validator, we hard-code a validator
+        # version; JSON metaschema versions are not guaranteed to be backward
+        # compatible, so if we use jsonschema.validators.validator_for(
+        # schema), our schema may become invalid when the default validator
+        # changes. The metaschema version can also be pinned in the schema
+        # itself with an entry like this:
+        # '$schema': 'http://json-schema.org/draft-07/schema'
+        # However, this makes it more work to keep unit tests up to date, and
+        # it's fiddly to adapt the recursive to_dict code to make sure that
+        # the metaschema key *only* appears in the outermost dictionary.
+        base_validator = jsonschema.validators.Draft7Validator
+
+        # By default, jsonschema only recognizes lists as arrays. Here we derive
+        # and use a custom validator which recognizes both lists and tuples as
+        # arrays.
+        new_type_checker = \
+            base_validator.TYPE_CHECKER.redefine(
+                'array',
+                lambda checker, inst: isinstance(inst, (list, tuple)))
+        custom_validator = \
+            jsonschema.validators.extend(base_validator,
+                                         type_checker=new_type_checker)
+
         # jsconschema needs extra packages installed to validate some formats;
         # if they are missing, the format check will be skipped silently. For
         # date-time format, strict_rfc3339 or rfc3339-validator is required.
         jsonschema.validate(instance=instance, schema=self.to_dict(),
-                            format_checker=jsonschema.draft7_format_checker,
-                            # We have to explicitly sanction tuples as arrays.
-                            types=dict(array=(list, tuple)))
+                            cls=custom_validator,
+                            format_checker=jsonschema.draft7_format_checker)
 
     def to_instance(self, value: Any) -> Any:
         """Convert Python object *value* into JSON value and return the validated result."""
@@ -478,10 +504,10 @@ class JsonObjectSchema(JsonSchema):
                 new_kwargs[k] = old_kwargs.pop(k)
             elif k in self.properties:
                 property_schema = self.properties[k]
-                if property_schema.const is not UNDEFINED:
+                if property_schema.const != UNDEFINED:
                     new_kwargs[k] = property_schema.const
-                elif property_schema.default is not UNDEFINED and k in self.required:
-                    if property_schema.default is not UNDEFINED:
+                elif property_schema.default != UNDEFINED and k in self.required:
+                    if property_schema.default != UNDEFINED:
                         new_kwargs[k] = property_schema.default
         return new_kwargs, old_kwargs
 
@@ -547,7 +573,7 @@ class JsonObjectSchema(JsonSchema):
                     property_value = getattr(mapping_or_obj, property_name)
                     property_ok = not callable(property_value)
                 property_ok = property_ok and (property_name in required_set or property_value is not None)
-                if property_ok and property_value is not UNDEFINED:
+                if property_ok and property_value != UNDEFINED:
                     mapping[property_name] = property_value
 
         # recursively convert mapping into converted_mapping according to schema
@@ -560,7 +586,7 @@ class JsonObjectSchema(JsonSchema):
                 converted_mapping[property_name] = converted_property_value
             else:
                 property_value = property_schema.default
-                if property_value is not UNDEFINED:
+                if property_value != UNDEFINED:
                     converted_property_value = getattr(property_schema, method_name)(property_value)
                     if property_name in required_set or converted_property_value is not None:
                         converted_mapping[property_name] = converted_property_value
@@ -568,13 +594,17 @@ class JsonObjectSchema(JsonSchema):
         # process additional properties
         if additional_properties:
             for property_name, property_value in mapping.items():
-                if property_name not in converted_mapping and property_value is not UNDEFINED:
+                if property_name not in converted_mapping and property_value != UNDEFINED:
                     if additional_properties_schema:
                         property_value = getattr(additional_properties_schema, method_name)(property_value)
                     converted_mapping[property_name] = property_value
 
         return converted_mapping
 
+    @classmethod
+    def inject_attrs(cls, obj: object, attrs: Dict[str, Any]):
+        for k, v in (attrs or {}).items():
+            setattr(obj, k, v)
 
 class JsonObject(ABC):
     """
@@ -604,6 +634,15 @@ class JsonObject(ABC):
     def to_dict(self) -> Dict[str, Any]:
         """Create JSON-serializable dictionary representation."""
         return self.get_schema().to_instance(self)
+
+    def _inject_attrs(self, attrs: Dict[str, Any]):
+        assert_instance(attrs, dict, name='attrs')
+        schema = self.get_schema()
+        assert_true(isinstance(schema, JsonObjectSchema),
+                    message='schema must be a JSON object schema')
+        all_attrs = {k: None for k in (schema.properties or {}).keys()}
+        all_attrs.update(attrs)
+        JsonObjectSchema.inject_attrs(self, all_attrs)
 
 
 register_json_formatter(JsonSchema)

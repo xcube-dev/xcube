@@ -1,15 +1,17 @@
 import unittest
+from typing import Type
 
 import jsonschema
 import numpy as np
 
+from xcube.core.mldataset import BaseMultiLevelDataset
 from xcube.core.new import new_cube
-from xcube.core.store.descriptor import DataDescriptor, _attrs_to_json
+from xcube.core.store.datatype import DataType
+from xcube.core.store.descriptor import DataDescriptor, _attrs_to_json, MultiLevelDatasetDescriptor
 from xcube.core.store.descriptor import DatasetDescriptor
 from xcube.core.store.descriptor import GeoDataFrameDescriptor
 from xcube.core.store.descriptor import VariableDescriptor
 from xcube.core.store.descriptor import new_data_descriptor
-from xcube.core.store.typespecifier import TypeSpecifier
 from xcube.util.jsonschema import JsonBooleanSchema
 from xcube.util.jsonschema import JsonObjectSchema
 
@@ -19,10 +21,27 @@ class NewDataDescriptorTest(unittest.TestCase):
     def test_new_dataset_descriptor(self):
         cube = new_cube(variables=dict(a=4.1, b=7.4))
         descriptor = new_data_descriptor('cube', cube)
-        self.assertIsNotNone(descriptor)
-        self.assertTrue(isinstance(descriptor, DatasetDescriptor))
+        self.assertExpectedDescriptor(descriptor,
+                                      DatasetDescriptor,
+                                      'dataset')
+
+    def test_new_ml_dataset_descriptor(self):
+        cube = new_cube(variables=dict(a=4.1, b=7.4))
+        ml_cube = BaseMultiLevelDataset(cube)
+        descriptor = new_data_descriptor('cube', ml_cube)
+        self.assertExpectedDescriptor(descriptor,
+                                      MultiLevelDatasetDescriptor,
+                                      'mldataset')
+
+    def assertExpectedDescriptor(self,
+                                 descriptor: DataDescriptor,
+                                 expected_type: Type[DataDescriptor],
+                                 expected_data_type_alias: str):
+        self.assertIsInstance(descriptor, DatasetDescriptor)
+        self.assertIsInstance(descriptor, expected_type)
+        self.assertIsInstance(descriptor.data_type, DataType)
+        self.assertEqual(expected_data_type_alias, descriptor.data_type.alias)
         self.assertEqual('cube', descriptor.data_id)
-        self.assertEqual('dataset[cube]', descriptor.type_specifier)
         self.assertEqual((-180.0, -90.0, 180.0, 90.0), descriptor.bbox)
         self.assertIsNone(descriptor.open_params_schema)
         self.assertEqual(('2010-01-01', '2010-01-06'), descriptor.time_range)
@@ -40,67 +59,65 @@ class DataDescriptorTest(unittest.TestCase):
             descriptor_dict = dict()
             DataDescriptor.from_dict(descriptor_dict)
 
-    def test_from_dict_no_type_specifier(self):
+    def test_from_dict_no_data_type(self):
         with self.assertRaises(jsonschema.exceptions.ValidationError):
             descriptor_dict = dict(data_id='id')
             DataDescriptor.from_dict(descriptor_dict)
 
-    def test_from_dict_random_type_specifier(self):
-        descriptor_dict = dict(data_id='xyz', type_specifier='tsr')
-        descriptor = DataDescriptor.from_dict(descriptor_dict)
-        self.assertIsNotNone(descriptor)
-        self.assertEqual('xyz', descriptor.data_id)
-        self.assertEqual('tsr', descriptor.type_specifier)
+    def test_from_dict_unknown_data_type(self):
+        descriptor_dict = dict(data_id='xyz', data_type='tsr')
+        with self.assertRaises(ValueError) as cm:
+            DataDescriptor.from_dict(descriptor_dict)
+        self.assertEqual("unknown data type 'tsr'", f'{cm.exception}')
 
-    def test_from_dict_dataset_type_specifier(self):
-        descriptor_dict = dict(data_id='xyz', type_specifier='dataset')
+    def test_from_dict_dataset_data_type(self):
+        descriptor_dict = dict(data_id='xyz', data_type='dataset')
         descriptor = DataDescriptor.from_dict(descriptor_dict)
         self.assertIsNotNone(descriptor)
         self.assertTrue(DatasetDescriptor, type(descriptor))
         self.assertEqual('xyz', descriptor.data_id)
-        self.assertEqual('dataset', descriptor.type_specifier)
+        self.assertEqual('dataset', descriptor.data_type.alias)
 
-    def test_from_dict_geodataframe_type_specifier(self):
-        descriptor_dict = dict(data_id='xyz', type_specifier='geodataframe')
+    def test_from_dict_geodataframe_data_type(self):
+        descriptor_dict = dict(data_id='xyz', data_type='geodataframe')
         descriptor = DataDescriptor.from_dict(descriptor_dict)
         self.assertIsNotNone(descriptor)
         self.assertTrue(GeoDataFrameDescriptor, type(descriptor))
         self.assertEqual('xyz', descriptor.data_id)
-        self.assertEqual('geodataframe', descriptor.type_specifier)
+        self.assertEqual('geodataframe', descriptor.data_type.alias)
 
     def test_from_dict_full(self):
         descriptor_dict = dict(
-            data_id='xyz',
-            type_specifier='tsr',
-            crs='EPSG:9346',
+            data_id='CHL.zarr',
+            data_type='dataset',
+            crs='EPSG:4326',
             bbox=(10., 20., 30., 40.),
             time_range=('2017-06-05', '2017-06-27'),
-            time_period='daily',
+            time_period='2D',
             open_params_schema=dict(
                 type="object",
                 properties=dict(
                     variable_names=dict(
                         type='array',
-                        items=dict(
-                            type='string')
+                        items=dict(type='string')
                     )
                 )
             )
         )
         descriptor = DataDescriptor.from_dict(descriptor_dict)
         self.assertIsNotNone(descriptor)
-        self.assertEqual('xyz', descriptor.data_id)
-        self.assertEqual('tsr', descriptor.type_specifier)
-        self.assertEqual('EPSG:9346', descriptor.crs)
+        self.assertEqual('CHL.zarr', descriptor.data_id)
+        self.assertEqual('dataset', descriptor.data_type.alias)
+        self.assertEqual('EPSG:4326', descriptor.crs)
         self.assertEqual((10., 20., 30., 40.), descriptor.bbox)
         self.assertEqual(('2017-06-05', '2017-06-27'), descriptor.time_range)
-        self.assertEqual('daily', descriptor.time_period)
-        self.assertEqual('object', descriptor.open_params_schema.get('type', None))
+        self.assertEqual('2D', descriptor.time_period)
+        self.assertEqual('object',
+                         descriptor.open_params_schema.get('type', None))
 
     def test_to_dict(self):
         descriptor = DatasetDescriptor(
             data_id='xyz',
-            type_specifier=TypeSpecifier('dataset', flags={'cube'}),
             crs='EPSG:9346',
             bbox=(10., 20., 30., 40.),
             spatial_res=20.,
@@ -118,7 +135,7 @@ class DataDescriptorTest(unittest.TestCase):
             {
                 'data_id': 'xyz',
                 'crs': 'EPSG:9346',
-                'type_specifier': 'dataset[cube]',
+                'data_type': 'dataset',
                 'bbox': [10.0, 20.0, 30.0, 40.0],
                 'spatial_res': 20.0,
                 'time_range': ['2017-06-05', '2017-06-27'],
@@ -147,31 +164,24 @@ class DatasetDescriptorTest(unittest.TestCase):
         with self.assertRaises(jsonschema.exceptions.ValidationError):
             DatasetDescriptor.from_dict(descriptor_dict)
 
-    def test_from_dict_wrong_type_specifier(self):
-        descriptor_dict = dict(data_id='xyz', type_specifier='tsr')
+    def test_from_dict_wrong_data_type(self):
+        descriptor_dict = dict(data_id='xyz', data_type='tsr')
         with self.assertRaises(ValueError) as cm:
             DatasetDescriptor.from_dict(descriptor_dict)
-        self.assertEqual('type_specifier must satisfy type specifier "dataset", but was "tsr"',
+        self.assertEqual("unknown data type 'tsr'",
                          f'{cm.exception}')
 
-    def test_from_dict_basic(self):
-        descriptor_dict = dict(data_id='xyz')
-        descriptor = DatasetDescriptor.from_dict(descriptor_dict)
-        self.assertIsNotNone(descriptor)
-        self.assertEqual('xyz', descriptor.data_id)
-        self.assertEqual('dataset', descriptor.type_specifier)
-
     def test_from_dict_derived_type(self):
-        descriptor_dict = dict(data_id='xyz', type_specifier='dataset[fegd]')
+        descriptor_dict = dict(data_id='xyz', data_type='dataset')
         descriptor = DatasetDescriptor.from_dict(descriptor_dict)
         self.assertIsNotNone(descriptor)
         self.assertEqual('xyz', descriptor.data_id)
-        self.assertEqual('dataset[fegd]', descriptor.type_specifier)
+        self.assertEqual('dataset', descriptor.data_type.alias)
 
     def test_from_dict_full(self):
         descriptor_dict = dict(
             data_id='xyz',
-            type_specifier='dataset',
+            data_type='dataset',
             crs='EPSG:9346',
             bbox=(10., 20., 30., 40.),
             spatial_res=20.,
@@ -221,7 +231,7 @@ class DatasetDescriptorTest(unittest.TestCase):
         descriptor = DatasetDescriptor.from_dict(descriptor_dict)
         self.assertIsNotNone(descriptor)
         self.assertEqual('xyz', descriptor.data_id)
-        self.assertEqual('dataset', descriptor.type_specifier)
+        self.assertEqual('dataset', descriptor.data_type.alias)
         self.assertEqual('EPSG:9346', descriptor.crs)
         self.assertEqual((10., 20., 30., 40.), descriptor.bbox)
         self.assertEqual(20., descriptor.spatial_res)
@@ -240,12 +250,13 @@ class DatasetDescriptorTest(unittest.TestCase):
     def test_from_dict_var_descriptors_as_dict(self):
         descriptor_dict = dict(
             data_id='xyz',
-            crs='EPSG:9346',
+            data_type='dataset',
+            crs='EPSG:4326',
             data_vars=dict(
-                xf=dict(
-                    name='xf',
-                    dtype='rj',
-                    dims=('dfjhrt', 'sg'),
+                A=dict(
+                    name='A',
+                    dtype='float32',
+                    dims=('time', 'lat', 'lon'),
                     chunks=(2, 3),
                     attrs=dict(
                         ssd=4,
@@ -256,11 +267,12 @@ class DatasetDescriptorTest(unittest.TestCase):
         )
         descriptor = DatasetDescriptor.from_dict(descriptor_dict)
         self.assertEqual('xyz', descriptor.data_id)
-        self.assertEqual('dataset', descriptor.type_specifier)
-        self.assertEqual('EPSG:9346', descriptor.crs)
+        self.assertEqual('dataset', descriptor.data_type.alias)
+        self.assertEqual('EPSG:4326', descriptor.crs)
         self.assertEqual(1, len(descriptor.data_vars))
-        self.assertTrue('xf' in descriptor.data_vars)
-        self.assertIs(VariableDescriptor, type(descriptor.data_vars.get('xf')))
+        self.assertTrue('A' in descriptor.data_vars)
+        self.assertIsInstance(descriptor.data_vars.get('A'),
+                              VariableDescriptor)
 
     def test_to_dict(self):
         coords = dict(
@@ -289,7 +301,6 @@ class DatasetDescriptorTest(unittest.TestCase):
         )
         descriptor = DatasetDescriptor(
             data_id='xyz',
-            type_specifier=TypeSpecifier('dataset', flags={'cube'}),
             crs='EPSG:9346',
             bbox=(10., 20., 30., 40.),
             spatial_res=20.,
@@ -310,7 +321,7 @@ class DatasetDescriptorTest(unittest.TestCase):
         self.assertEqual(
             dict(
                 data_id='xyz',
-                type_specifier='dataset[cube]',
+                data_type='dataset',
                 crs='EPSG:9346',
                 bbox=[10., 20., 30., 40.],
                 spatial_res=20.,

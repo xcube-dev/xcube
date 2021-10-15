@@ -1,0 +1,15 @@
+input_config:
+  store_id: file
+  store_params:
+    root: examples/serve/demo
+  data_id: cube-1-250-250.zarr
+  
+cube_config: {}
+
+output_config:
+  store_id: file
+  store_params:
+    root: .
+  data_id: out.levels
+  replace: true
+  

@@ -1,5 +1,5 @@
 # The MIT License (MIT)
-# Copyright (c) 2019 by the xcube development team and contributors
+# Copyright (c) 2021 by the xcube development team and contributors
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of
 # this software and associated documentation files (the "Software"), to deal in
@@ -50,12 +50,11 @@ def get_time_series_info(ctx: ServiceContext) -> Dict:
              dictionaries containing a variable's "name", "dates", and "bounds".
     """
     time_series_info = {'layers': []}
-    descriptors = ctx.get_dataset_descriptors()
-    for descriptor in descriptors:
-        if 'Identifier' in descriptor:
-            if descriptor.get('Hidden'):
+    for dataset_config in ctx.get_dataset_configs():
+        if 'Identifier' in dataset_config:
+            if dataset_config.get('Hidden'):
                 continue
-            dataset = ctx.get_dataset(descriptor['Identifier'])
+            dataset = ctx.get_dataset(dataset_config['Identifier'])
             if 'time' not in dataset.variables:
                 continue
             xmin, ymin, xmax, ymax = get_dataset_bounds(dataset)
@@ -65,7 +64,7 @@ def get_time_series_info(ctx: ServiceContext) -> Dict:
                 time_stamps.append(timestamp_to_iso_string(time))
             var_names = sorted(dataset.data_vars)
             for var_name in var_names:
-                ds_id = descriptor['Identifier']
+                ds_id = dataset_config['Identifier']
                 variable_dict = {'name': f'{ds_id}.{var_name}',
                                  'dates': time_stamps,
                                  'bounds': dict(xmin=xmin, ymin=ymin, xmax=xmax, ymax=ymax)}
@@ -268,7 +267,12 @@ def _get_time_series_for_point(dataset: xr.Dataset,
         uncert_var_name = next(iter(ancillary_var_names['standard_error']))
         var_names.append(uncert_var_name)
 
-    ts_ds = timeseries.get_time_series(dataset, point, var_names, start_date=start_date, end_date=end_date)
+    ts_ds = timeseries.get_time_series(dataset,
+                                       point,
+                                       var_names,
+                                       start_date=start_date,
+                                       end_date=end_date,
+                                       cube_asserted=True)
     if ts_ds is None:
         return {'results': []}
 
@@ -304,7 +308,8 @@ def _get_time_series_for_geometry(dataset: xr.Dataset,
                                        [var_name],
                                        agg_methods=agg_methods,
                                        start_date=start_date,
-                                       end_date=end_date)
+                                       end_date=end_date,
+                                       cube_asserted=True)
     if ts_ds is None:
         return {'results': []}
 

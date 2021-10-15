@@ -37,7 +37,9 @@ dependencies:
   - strict-rfc3339 >=0.7  # for python-jsonschema date-time format validation
   - tornado >=6.0
   - urllib3 >=1.26
-  - xarray >=0.18.2
+  # TODO: a lot of tests fail with 0.19
+  # Therefore pin to 0.18.2
+  - xarray =0.18.2
   - zarr >=2.8
   # Testing
   - flake8 >=3.7
@@ -45,3 +47,6 @@ dependencies:
   - pytest >=4.4
   - pytest-cov >=2.6
   - requests-mock >=1.8.0
+  - pip
+  - pip:
+    - rfc3339-validator

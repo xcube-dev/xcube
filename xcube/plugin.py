@@ -84,72 +84,86 @@ def _register_dataset_ios(ext_registry: extension.ExtensionRegistry):
     )
 
 
+_FS_STORAGE_ITEMS = (
+    ('file', 'local filesystem'),
+    ('s3', 'AWS S3 compatible object storage'),
+    ('memory', 'in-memory filesystem')
+)
+
+_FS_DATA_ACCESSOR_ITEMS = (
+    ('dataset', 'netcdf',
+     'xarray.Dataset in NetCDF format'),
+    ('dataset', 'zarr',
+     'xarray.Dataset in Zarr format'),
+    ('dataset', 'levels',
+     'xarray.Dataset in leveled Zarr format'),
+    ('mldataset', 'levels',
+     'xcube.core.mldataset.MultiLevelImage in leveled Zarr format'),
+    ('geodataframe', 'shapefile',
+     'gpd.GeoDataFrame in ESRI Shapefile format'),
+    ('geodataframe', 'geojson',
+     'gpd.GeoDataFrame in GeoJSON format'),
+)
+
+_FS_DATA_OPENER_ITEMS = _FS_DATA_ACCESSOR_ITEMS
+_FS_DATA_WRITER_ITEMS = _FS_DATA_ACCESSOR_ITEMS
+
+
 def _register_data_stores(ext_registry: extension.ExtensionRegistry):
     """
     Register xcube's standard data stores.
     """
-    ext_registry.add_extension(
-        loader=extension.import_component('xcube.core.store.stores.memory:MemoryDataStore'),
-        point=EXTENSION_POINT_DATA_STORES, name='memory',
-        description='Memory data store'
-    )
-    ext_registry.add_extension(
-        loader=extension.import_component('xcube.core.store.stores.directory:DirectoryDataStore'),
-        point=EXTENSION_POINT_DATA_STORES, name='directory',
-        description='Directory data store'
-    )
-    ext_registry.add_extension(
-        loader=extension.import_component('xcube.core.store.stores.s3:S3DataStore'),
-        point=EXTENSION_POINT_DATA_STORES, name='s3',
-        description='AWS S3 data store'
-    )
+    factory = 'xcube.core.store.fs.registry:get_fs_data_store_class'
+
+    for storage_id, storage_description in _FS_STORAGE_ITEMS:
+        loader = extension.import_component(factory, call_args=[storage_id])
+        ext_registry.add_extension(
+            point=EXTENSION_POINT_DATA_STORES,
+            loader=loader,
+            name=storage_id,
+            description=f'Data store that uses a {storage_description}'
+        )
 
 
 def _register_data_accessors(ext_registry: extension.ExtensionRegistry):
     """
     Register xcube's standard data accessors.
     """
+    factory = 'xcube.core.store.fs.registry:get_fs_data_accessor_class'
 
-    def _add_extension(class_name: str, ext_name, description):
-        loader = extension.import_component(class_name)
+    # noinspection PyShadowingNames
+    def _add_fs_data_accessor_ext(point: str,
+                                  ext_type: str,
+                                  protocol: str,
+                                  data_type: str,
+                                  format_id: str):
+        factory_args = (protocol, data_type, format_id)
+        loader = extension.import_component(factory,
+                                            call_args=factory_args)
         ext_registry.add_extension(
-            point=EXTENSION_POINT_DATA_OPENERS,
+            point=point,
             loader=loader,
-            name=ext_name,
-            description=description
-        )
-        ext_registry.add_extension(
-            point=EXTENSION_POINT_DATA_WRITERS,
-            loader=loader,
-            name=ext_name,
-            description=description
+            name=f'{data_type}:{format_id}:{protocol}',
+            description=f'Data {ext_type} for'
+                        f' a {data_accessor_description}'
+                        f' in {storage_description}'
         )
 
-    _add_extension(
-        'xcube.core.store.accessors.dataset:DatasetNetcdfPosixDataAccessor',
-        'dataset:netcdf:posix',
-        'xarray.Dataset in NetCDF format stored in local file system'
-    )
-    _add_extension(
-        'xcube.core.store.accessors.dataset:DatasetZarrPosixAccessor',
-        'dataset:zarr:posix',
-        'xarray.Dataset in Zarr format stored in local file system'
-    )
-    _add_extension(
-        'xcube.core.store.accessors.dataset:DatasetZarrS3Accessor',
-        'dataset:zarr:s3',
-        'xarray.Dataset in Zarr format stored in S3-like object storage'
-    )
-    _add_extension(
-        'xcube.core.store.accessors.gdf:GdfShapefilePosixAccessor',
-        'geodataframe:shapefile:posix',
-        'geopandas.GeoDataFrame in ESRI Shapefile format stored in local file system'
-    )
-    _add_extension(
-        'xcube.core.store.accessors.gdf:GdfShapefilePosixAccessor',
-        'geodataframe:geojson:posix',
-        'geopandas.GeoDataFrame in GeoJSON format stored stored in local file system'
-    )
+    for protocol, storage_description in _FS_STORAGE_ITEMS:
+        for data_type, format_id, data_accessor_description \
+                in _FS_DATA_OPENER_ITEMS:
+            _add_fs_data_accessor_ext(EXTENSION_POINT_DATA_OPENERS,
+                                      'opener',
+                                      protocol,
+                                      data_type,
+                                      format_id)
+        for data_type, format_id, data_accessor_description \
+                in _FS_DATA_WRITER_ITEMS:
+            _add_fs_data_accessor_ext(EXTENSION_POINT_DATA_WRITERS,
+                                      'writer',
+                                      protocol,
+                                      data_type,
+                                      format_id)
 
 
 def _register_cli_commands(ext_registry: extension.ExtensionRegistry):
@@ -177,6 +191,7 @@ def _register_cli_commands(ext_registry: extension.ExtensionRegistry):
         'tile',
         'vars2dim',
         'verify',
+        'versions',
 
         # Experimental + Hidden
         'io',

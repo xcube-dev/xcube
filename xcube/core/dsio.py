@@ -527,23 +527,24 @@ class CsvDatasetIO(DatasetIO):
         dataset.to_dataframe().to_csv(output_path, **kwargs)
 
 
-def rimraf(path):
+def rimraf(*paths: str):
     """
     The UNIX command `rm -rf` for xcube.
     Recursively remove directory or single file.
-    :param path:  directory or single file
+    :param paths: one or more directories or files
     """
-    if os.path.isdir(path):
-        try:
-            shutil.rmtree(path, ignore_errors=False)
-        except OSError:
-            warnings.warn(f"failed to remove file {path}")
-    elif os.path.isfile(path):
-        try:
-            os.remove(path)
-        except OSError:
-            warnings.warn(f'failed to remove file {path}')
-            pass
+    for path in paths:
+        if os.path.isdir(path):
+            try:
+                shutil.rmtree(path)
+            except OSError:
+                warnings.warn(f"failed to remove file {path}")
+        elif os.path.isfile(path):
+            try:
+                os.remove(path)
+            except OSError:
+                warnings.warn(f'failed to remove file {path}')
+                pass
 
 
 def get_path_or_s3_store(path_or_url: str,

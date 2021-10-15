@@ -110,7 +110,6 @@ def get_wmts_capabilities_xml(ctx: ServiceContext, base_url: str):
         f"    </ows:OperationsMetadata>\n"
     )
 
-    dataset_descriptors = ctx.get_dataset_descriptors()
     written_tile_grids = []
     indent = '    '
 
@@ -119,16 +118,19 @@ def get_wmts_capabilities_xml(ctx: ServiceContext, base_url: str):
     dimensions_xml_cache = dict()
 
     contents_xml_lines = [(0, '<Contents>')]
-    for dataset_descriptor in dataset_descriptors:
-        ds_name = dataset_descriptor['Identifier']
+    for dataset_config in ctx.get_dataset_configs():
+        ds_name = dataset_config['Identifier']
         ds = ctx.get_dataset(ds_name)
+        tile_grid = ctx.get_tile_grid(ds_name)
+        if not tile_grid.crs.is_geographic:
+            continue
+
         var_names = sorted(ds.data_vars)
         for var_name in var_names:
             var = ds[var_name]
             if len(var.shape) <= 2 or var.dims[-1] != 'lon' or var.dims[-2] != 'lat':
                 continue
 
-            tile_grid = ctx.get_tile_grid(ds_name)
             tile_grid_written = tile_grid in written_tile_grids
             if tile_grid_written:
                 tile_grid_index = written_tile_grids.index(tile_grid)
@@ -142,11 +144,9 @@ def get_wmts_capabilities_xml(ctx: ServiceContext, base_url: str):
 
             if tile_grid is not None:
                 tile_size_x, tile_size_y = tile_grid.tile_size
-                lon1, lat1, lon2, lat2 = tile_grid.geo_extent
+                lon1, lat1, lon2, lat2 = tile_grid.extent
                 if not tile_grid_written:
-                    tile_span_y = (lat2 - lat1) / tile_grid.num_level_zero_tiles_y
-                    pixel_span = tile_span_y / tile_size_y
-                    scale_denominator_0 = pixel_span * _WGS84_METERS_PER_DEGREE / _STD_PIXEL_SIZE_IN_METERS
+                    scale_factor = _WGS84_METERS_PER_DEGREE / _STD_PIXEL_SIZE_IN_METERS
 
                     contents_xml_lines.append((2, '<TileMatrixSet>'))
                     contents_xml_lines.append((3, f'<ows:Identifier>{tile_grid_id}</ows:Identifier>'))
@@ -158,9 +158,8 @@ def get_wmts_capabilities_xml(ctx: ServiceContext, base_url: str):
 
                     for level in range(tile_grid.num_levels):
                         factor = 2 ** level
-                        num_tiles_x = tile_grid.num_level_zero_tiles_x * factor
-                        num_tiles_y = tile_grid.num_level_zero_tiles_y * factor
-                        scale_denominator = scale_denominator_0 / factor
+                        num_tiles_x, num_tiles_y = tile_grid.get_num_tiles(level)
+                        scale_denominator = tile_grid.get_resolution(level) * scale_factor
                         contents_xml_lines.append((3, '<TileMatrix>'))
                         contents_xml_lines.append((4, f'<ows:Identifier>{level}</ows:Identifier>'))
                         contents_xml_lines.append((4, f'<ScaleDenominator>{scale_denominator}</ScaleDenominator>'))
@@ -245,10 +244,13 @@ def get_wmts_capabilities_xml(ctx: ServiceContext, base_url: str):
     contents_xml = '\n'.join(['%s%s' % (n * indent, xml) for n, xml in contents_xml_lines])
 
     themes_xml_lines = [(0, '<Themes>')]
-    for dataset_descriptor in dataset_descriptors:
-        ds_name = dataset_descriptor.get('Identifier')
+    for dataset_config in ctx.get_dataset_configs():
+        ds_name = dataset_config.get('Identifier')
         ds = ctx.get_dataset(ds_name)
-        ds_title = dataset_descriptor.get('Title', ds.attrs.get('title', f'{ds_name} xcube dataset'))
+        tile_grid = ctx.get_tile_grid(ds_name)
+        if not tile_grid.crs.is_geographic:
+            continue
+        ds_title = dataset_config.get('Title', ds.attrs.get('title', f'{ds_name} xcube dataset'))
         ds_abstract = ds.attrs.get('comment', '')
         themes_xml_lines.append((2, '<Theme>'))
         themes_xml_lines.append((3, f'<ows:Title>{ds_title}</ows:Title>'))

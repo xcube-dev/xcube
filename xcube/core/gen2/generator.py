@@ -19,187 +19,229 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+import traceback
 from abc import ABC, abstractmethod
-from typing import Optional, Any
+from typing import Optional, TypeVar, Type
 
 from xcube.core.store import DataStorePool
+from xcube.core.store import DataStorePoolLike
 from xcube.util.assertions import assert_instance
 from xcube.util.assertions import assert_true
-from xcube.util.progress import observe_progress
-from .combiner import CubesCombiner
-from .informant import CubeInformant
-from .opener import CubesOpener
-from .progress import ApiProgressCallbackObserver
+from .error import CubeGeneratorError
 from .progress import ConsoleProgressObserver
-from .request import CubeGeneratorRequest
-from .response import CubeInfo
-from .writer import CubeWriter
+from .remote.config import ServiceConfigLike
+from .request import CubeGeneratorRequestLike
+from .response import CubeGeneratorResult
+from .response import CubeInfoResult
+from .response import GenericCubeGeneratorResult
+
+R = TypeVar('R', bound=GenericCubeGeneratorResult)
 
 
 class CubeGenerator(ABC):
+    """
+    Abstract base class for cube generators.
+
+    Use the ``CubeGenerator.load()`` method to instantiate new
+    cube generators.
+    """
+
     @classmethod
-    def from_file(cls,
-                  gen_config_path: Optional[str],
-                  stores_config_path: str = None,
-                  service_config_path: str = None,
-                  verbosity: int = 0) -> 'CubeGenerator':
+    def new(cls,
+            service_config: Optional[ServiceConfigLike] = None,
+            stores_config: Optional[DataStorePoolLike] = None,
+            raise_on_error: bool = False,
+            verbosity: int = 0,
+            **kwargs) -> 'CubeGenerator':
         """
-        Create a cube generator from configuration files.
+        Create a new cube generator from given configurations.
 
-        *gen_config_path* is the cube generator configuration. It may be
-        provided as a JSON or YAML file (file extensions ".json" or ".yaml").
-        If the *gen_config_path* argument is omitted, it is expected that
-        the cube generator configuration is piped as a JSON string.
+        If *service_config* is given, it describes a remote xcube
+        generator remote, otherwise a local cube generator is configured
+        using optional *stores_config*.
 
-        *stores_config_path* is a path to a JSON file with data store
-        configurations. It is a mapping of names to
-        configured stores. Entries are dictionaries that have a mandatory
+        The *service_config* parameter can be passed in different ways:
+
+        * An instance of :class:ServiceConfig.
+        * A ``str``. Then it is interpreted as a path to a YAML or JSON file
+          and the remote configuration is loaded from this file.
+          The file content may include template variables that are
+          interpolated by environment variables,
+          e.g. "${XCUBE_GEN_CLIENT_SECRET}".
+        * A ``dict``. Then it is interpreted as a remote configuration
+          JSON object.
+
+        If *stores_config* is given, it describes a pool of data stores to be
+        used as input and output for the cube generator. *stores_config*
+        if a mapping of store instance identifiers to configured store
+        instances. A store instance is a dictionary that has a mandatory
         "store_id" property which is a name of a registered xcube data store.
-        The optional "store_params" property may define data store specific
-        parameters.
+        as well as an optional "store_params" property that may define data
+        store specific parameters.
 
-        *stores_config_path* and *service_config_path* cannot be given
-        at the same time.
+        Similar to *service_config*, the *stores_config* parameter
+        can be passed in different ways:
 
-        :param gen_config_path: Cube generation configuration. It may be
-            provided as a JSON or YAML file (file extensions
-            ".json" or ".yaml"). If None is passed, it is expected that
-            the cube generator configuration is piped as a JSON string.
-        :param stores_config_path: A path to a JSON or YAML file that
-            represents mapping of store names to configured data stores.
-        :param service_config_path: A path to a JSON or YAML file that
-            configures an xcube generator service.
+        * An instance of :class:DataStorePool.
+        * A ``str``. Then it is interpreted as a YAML or JSON file path
+          and the stores configuration is loaded from this file.
+        * A ``dict``. Then it is interpreted as a stores configuration
+          JSON object.
+
+        The *service_config* and *stores_config* parameters cannot
+        be given both.
+
+        :param service_config: Service configuration.
+        :param stores_config: Data stores configuration.
+        :param raise_on_error: Whether to raise a CubeGeneratorError
+            exception on generator failures. If False, the default,
+            the returned result will have the "status" field set to "error"
+            while other fields such as "message", "traceback", "output"
+            provide more failure details.
         :param verbosity: Level of verbosity, 0 means off.
+        :param kwargs: Extra arguments passed to the generator constructors.
         """
-        assert_instance(gen_config_path,
-                        (str, type(None)), 'gen_config_path')
-        assert_instance(stores_config_path,
-                        (str, type(None)), 'stores_config_path')
-        assert_instance(service_config_path,
-                        (str, type(None)), 'service_config_path')
-        assert_true(not (stores_config_path is not None and
-                         service_config_path is not None),
-                    'stores_config_path and service_config_path cannot be'
-                    ' given at the same time.')
-
-        request = CubeGeneratorRequest.from_file(gen_config_path,
-                                                 verbosity=verbosity)
-
-        if service_config_path is not None:
-            from .service import ServiceConfig
-            from .service import RemoteCubeGenerator
-            service_config = ServiceConfig.from_file(service_config_path) \
-                if service_config_path is not None else None
-            return RemoteCubeGenerator(request,
-                                       service_config=service_config,
-                                       verbosity=verbosity)
+        if service_config is not None:
+            from .remote.config import ServiceConfig
+            from .remote.generator import RemoteCubeGenerator
+            assert_true(stores_config is None,
+                        'service_config and stores_config cannot be'
+                        ' given at the same time.')
+            assert_instance(service_config,
+                            (str, dict, ServiceConfig, type(None)),
+                            'service_config')
+            service_config = ServiceConfig.normalize(service_config) \
+                if service_config is not None else None
+            return RemoteCubeGenerator(service_config=service_config,
+                                       raise_on_error=raise_on_error,
+                                       verbosity=verbosity,
+                                       **kwargs)
         else:
-            store_pool = DataStorePool.from_file(stores_config_path) \
-                if stores_config_path is not None else None
-            return LocalCubeGenerator(request,
-                                      store_pool=store_pool,
+            from .local.generator import LocalCubeGenerator
+            assert_instance(stores_config,
+                            (str, dict, DataStorePool, type(None)),
+                            'stores_config')
+            store_pool = DataStorePool.normalize(stores_config) \
+                if stores_config is not None else None
+            return LocalCubeGenerator(store_pool=store_pool,
+                                      raise_on_error=raise_on_error,
                                       verbosity=verbosity)
 
-    @abstractmethod
-    def get_cube_info(self) -> CubeInfo:
-        """
-        Get data cube information.
+    def __init__(self,
+                 raise_on_error: bool = False,
+                 verbosity: int = 0):
+        self._raise_on_error = raise_on_error
+        self._verbosity = verbosity
 
-        :return: a cube information object
+    def get_cube_info(self, request: CubeGeneratorRequestLike) \
+            -> CubeInfoResult:
+        """
+        Get data cube information for given *request*.
+
+        The *request* argument can be
+        * an instance of ``CubeGeneratorRequest``;
+        * a ``dict``. In this case it is interpreted as JSON object and
+          parsed into a ``CubeGeneratorRequest``;
+        * a ``str``. In this case it is interpreted as path to a
+          YAML or JSON file, which is loaded and
+          parsed into a ``CubeGeneratorRequest``.
+
+        :param request: Cube generator request.
+        :return: a cube information result
+            of type :class:CubeInfoResult
         :raises CubeGeneratorError: if cube info generation failed
         :raises DataStoreError: if data store access failed
         """
+        try:
+            result = self._get_cube_info(request)
+        except CubeGeneratorError as e:
+            if self._raise_on_error:
+                raise e
+            return self._new_cube_generator_error_result(
+                CubeInfoResult, e
+            )
+        if result.status == 'error':
+            if self._raise_on_error:
+                raise self._new_generator_error_from_result(result)
+        return result
 
-    @abstractmethod
-    def generate_cube(self) -> Any:
+    def generate_cube(self, request: CubeGeneratorRequestLike) \
+            -> CubeGeneratorResult:
         """
-        Generate the data cube.
+        Generate the data cube for given *request*.
+
+        The *request* argument can be
+        * an instance of ``CubeGeneratorRequest``;
+        * a ``dict``. In this case it is interpreted as JSON object and
+          parsed into a ``CubeGeneratorRequest``;
+        * a ``str``. In this case it is interpreted as path to a
+          YAML or JSON file, which is loaded and
+          parsed into a ``CubeGeneratorRequest``.
 
         Returns the cube reference which can be used as ``data_id`` in
         ``store.open_data(data_id)`` where *store*  refers to the
         store configured in ``output_config`` of the cube generator request.
 
-        :return: the cube reference
+        :param request: Cube generator request.
+        :return: the cube generation result
+            of type :class:CubeGeneratorResult
         :raises CubeGeneratorError: if cube generation failed
         :raises DataStoreError: if data store access failed
         """
 
-
-class LocalCubeGenerator(CubeGenerator):
-    """
-    Generator tool for data cubes.
-
-    Creates cube views from one or more cube stores, resamples them to a
-    common grid, optionally performs some cube transformation, and writes
-    the resulting cube to some target cube store.
-
-    :param request: Cube generation request.
-    :param store_pool: An optional pool of pre-configured data stores
-        referenced from *gen_config* input/output configurations.
-    :param verbosity: Level of verbosity, 0 means off.
-    """
-
-    def __init__(self,
-                 request: CubeGeneratorRequest,
-                 store_pool: DataStorePool = None,
-                 verbosity: int = False):
-        assert_instance(request, CubeGeneratorRequest, 'request')
-        if store_pool is not None:
-            assert_instance(store_pool, DataStorePool, 'store_pool')
-
-        self._request = request.for_local()
-        self._store_pool = store_pool if store_pool is not None \
-            else DataStorePool()
-        self._verbosity = verbosity
-
-    def generate_cube(self) -> Any:
-        request = self._request
-
-        # noinspection PyUnusedLocal
-        def _no_op_callable(ds, **kwargs):
-            return ds
-
-        code_config = request.code_config
-        if code_config is not None:
-            user_code_callable = code_config.get_callable()
-            user_code_callable_params = code_config.callable_params or {}
-        else:
-            user_code_callable = _no_op_callable
-            user_code_callable_params = {}
-
-        if request.callback_config:
-            ApiProgressCallbackObserver(request.callback_config).activate()
-
         if self._verbosity:
             ConsoleProgressObserver().activate()
 
-        cubes_opener = CubesOpener(request.input_configs,
-                                   request.cube_config,
-                                   store_pool=self._store_pool)
+        try:
+            result = self._generate_cube(request)
+        except CubeGeneratorError as e:
+            if self._raise_on_error:
+                raise e
+            return self._new_cube_generator_error_result(
+                CubeGeneratorResult, e
+            )
+        finally:
+            if self._verbosity:
+                ConsoleProgressObserver().deactivate()
 
-        cube_combiner = CubesCombiner(request.cube_config)
+        if result.status == 'error':
+            if self._raise_on_error:
+                raise self._new_generator_error_from_result(result)
+        return result
 
-        cube_writer = CubeWriter(request.output_config,
-                                 store_pool=self._store_pool)
+    @abstractmethod
+    def _get_cube_info(self, request: CubeGeneratorRequestLike) \
+            -> CubeInfoResult:
+        """
+        The implementation of the :meth:`get_cube_info` method
+        """
 
-        with observe_progress('Generating cube', 100) as cm:
-            cm.will_work(10)
-            cubes = cubes_opener.open_cubes()
+    @abstractmethod
+    def _generate_cube(self, request: CubeGeneratorRequestLike) \
+            -> CubeGeneratorResult:
+        """
+        The implementation of the :meth:`generate_cube` method
+        """
 
-            cm.will_work(10)
-            cube = cube_combiner.process_cubes(cubes)
-            cube = user_code_callable(cube, **user_code_callable_params)
+    @classmethod
+    def _new_cube_generator_error_result(
+            cls,
+            result_type: Type[R],
+            e: CubeGeneratorError
+    ) -> R:
+        tb = e.remote_traceback
+        if tb is None and e.__traceback__ is not None:
+            tb = traceback.format_tb(e.__traceback__)
+        return result_type(status='error',
+                           message=f'{e}',
+                           status_code=e.status_code,
+                           output=e.remote_output,
+                           traceback=tb)
 
-            cm.will_work(80)
-            data_id = cube_writer.write_cube(cube)
-
-        if self._verbosity:
-            print('Cube "{}" generated within {:.2f} seconds'
-                  .format(str(data_id), cm.state.total_time))
-
-        return data_id
-
-    def get_cube_info(self) -> CubeInfo:
-        informant = CubeInformant(request=self._request,
-                                  store_pool=self._store_pool)
-        return informant.generate()
+    @classmethod
+    def _new_generator_error_from_result(cls,
+                                         result: GenericCubeGeneratorResult):
+        return CubeGeneratorError(result.message,
+                                  status_code=result.status_code,
+                                  remote_output=result.output,
+                                  remote_traceback=result.traceback)

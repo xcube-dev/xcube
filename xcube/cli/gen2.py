@@ -19,7 +19,9 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+import json
 import sys
+import traceback
 from typing import Sequence
 
 import click
@@ -44,6 +46,11 @@ import click
               is_flag=True,
               help='Output information about the data cube to be generated.'
                    ' Does not generate the data cube.')
+@click.option('--output', '-o', 'output_file',
+              metavar='RESULT',
+              help='Write cube information or generation result into JSON'
+                   ' file RESULT.'
+                   ' If omitted, the JSON is dumped to stdout.')
 @click.option('--verbose', '-v',
               is_flag=True,
               multiple=True,
@@ -53,6 +60,7 @@ import click
 def gen2(request_path: str,
          stores_config_path: str = None,
          service_config_path: str = None,
+         output_file: str = None,
          info: bool = False,
          verbose: Sequence[bool] = None):
     """
@@ -101,48 +109,73 @@ def gen2(request_path: str,
         "client_secret": "lfaolb3klv904kj23lkdfsjkf430894341"
     }
 
+    Values in the file may also be interpolated from current
+    environment variables. In this case templates are used, for example:
+
+    \b
+    {
+        "endpoint_url": "https://xcube-gen.eurodatacube.com/api/v2/",
+        "client_id": "${XCUBE_GEN_CLIENT_ID}",
+        "client_secret": "${XCUBE_GEN_CLIENT_SECRET}"
+    }
+
     """
     from xcube.core.gen2 import CubeGenerator
     from xcube.core.gen2 import CubeGeneratorError
-    from xcube.core.gen2 import CubeInfo
-    from xcube.core.store import DataStoreError
+    from xcube.core.gen2 import CubeGeneratorRequest
+    from xcube.util.versions import get_xcube_versions
 
     verbosity = len(verbose) if verbose else 0
 
+    error = None
+
+    # noinspection PyBroadException
     try:
-        generator = CubeGenerator.from_file(
-            request_path,
-            stores_config_path=stores_config_path,
-            service_config_path=service_config_path,
+        request = CubeGeneratorRequest.from_file(request_path,
+                                                 verbosity=verbosity)
+        generator = CubeGenerator.new(
+            stores_config=stores_config_path,
+            service_config=service_config_path,
             verbosity=verbosity
         )
+
         if info:
-            def dump_cube_info(cube_info: CubeInfo):
-                import sys
-                import json
-                json.dump(cube_info.to_dict(), sys.stdout, indent=2)
-
-            dump_cube_info(generator.get_cube_info())
+            result = generator.get_cube_info(request).to_dict()
         else:
-            generator.generate_cube()
+            result = generator.generate_cube(request).to_dict()
+    except BaseException as e:
+        error = e
 
-    except CubeGeneratorError as e:
-        print_kwargs = dict(file=sys.stderr, flush=True)
-        if e.remote_output:
-            print(**print_kwargs)
-            print('Remote output:', **print_kwargs)
-            print('==============', **print_kwargs)
-            for line in e.remote_output:
-                print(line, file=sys.stderr, flush=True)
-        if e.remote_traceback:
-            print(**print_kwargs)
-            print('Remote traceback:', **print_kwargs)
-            print('=================', **print_kwargs)
-            print(e.remote_traceback, **print_kwargs)
-        raise click.ClickException(f'{e}') from e
+        result = dict(status='error',
+                      message=f'{error}',
+                      traceback=traceback.format_tb(error.__traceback__))
+        if isinstance(error, CubeGeneratorError):
+            if error.status_code is not None:
+                result.update(status_code=error.status_code)
+            if error.remote_output is not None:
+                result.update(remote_output=error.remote_output)
+            if error.remote_traceback is not None:
+                result.update(remote_traceback=error.remote_traceback)
+        if 'status_code' not in result:
+            result['status_code'] = 500
 
-    except DataStoreError as e:
-        raise click.ClickException(f'{e}') from e
+    if result.get('status') == 'error':
+        result['versions'] = get_xcube_versions()
+
+    if output_file is not None:
+        with open(output_file, 'w') as fp:
+            json.dump(result, fp, indent=2)
+        if verbosity:
+            print(f'Result written to {output_file}')
+    else:
+        json.dump(result, sys.stdout, indent=2)
+
+    if result.get('status') == 'error':
+        message = result.get('message',
+                             'Cube generation failed.'
+                             if error is None else f'{error}')
+        click_error = click.ClickException(message)
+        raise click_error from error
 
 
 if __name__ == '__main__':

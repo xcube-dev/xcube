@@ -22,15 +22,15 @@
 import json
 import os.path
 import sys
-from typing import Optional, Dict, Any, Sequence
+from typing import Optional, Dict, Any, Sequence, Union
 
 import jsonschema
 import yaml
 
 from xcube.core.byoa import CodeConfig
 from xcube.util.assertions import assert_false
-from xcube.util.assertions import assert_true
 from xcube.util.assertions import assert_instance
+from xcube.util.assertions import assert_true
 from xcube.util.jsonschema import JsonArraySchema
 from xcube.util.jsonschema import JsonObject
 from xcube.util.jsonschema import JsonObjectSchema
@@ -39,6 +39,8 @@ from .config import CubeConfig
 from .config import InputConfig
 from .config import OutputConfig
 from .error import CubeGeneratorError
+
+CubeGeneratorRequestLike = Union[str, Dict, 'CubeGeneratorRequest']
 
 
 class CubeGeneratorRequest(JsonObject):
@@ -64,9 +66,9 @@ class CubeGeneratorRequest(JsonObject):
                  output_config: OutputConfig = None,
                  callback_config: Optional[CallbackConfig] = None):
         assert_true(input_config or input_configs,
-                         'one of input_config and input_configs must be given')
+                    'one of input_config and input_configs must be given')
         assert_false(input_config and input_configs,
-                         'input_config and input_configs cannot be given both')
+                     'input_config and input_configs cannot be given both')
         if input_config is not None:
             assert_instance(input_config, InputConfig, 'input_config')
             input_configs = [input_config]
@@ -75,7 +77,8 @@ class CubeGeneratorRequest(JsonObject):
             for i in range(len(input_configs)):
                 assert_instance(input_configs[i], InputConfig,
                                 f'input_configs[{i}]')
-        assert_instance(cube_config, CubeConfig, 'cube_config')
+        if cube_config is not None:
+            assert_instance(cube_config, CubeConfig, 'cube_config')
         if code_config is not None:
             assert_instance(code_config, CodeConfig, 'code_config')
         assert_instance(output_config, OutputConfig, 'output_config')
@@ -122,9 +125,37 @@ class CubeGeneratorRequest(JsonObject):
                 output_config=OutputConfig.get_schema(),
                 callback_config=CallbackConfig.get_schema()
             ),
-            required=['cube_config', 'output_config'],
+            required=['output_config'],
             factory=cls,
         )
+
+    @classmethod
+    def normalize(cls, request: CubeGeneratorRequestLike) \
+            -> 'CubeGeneratorRequest':
+        """
+        Normalize given *request* to an instance of
+        :class:CubeGeneratorRequest.
+
+        If *request* is already a CubeGeneratorRequest it is returned as is.
+        If it is a ``str``, it is interpreted as a YAML or JSON file path
+        and the request is read from file using
+        ``CubeGeneratorRequest.from_file()``.
+        If it is a ``dict``, it is interpreted as a JSON object and the
+        request is parsed using ``CubeGeneratorRequest.from_dict()``.
+
+        :param request The request, or request file path,
+            or request JSON object.
+        :raise TypeError if *request* is not a ``CubeGeneratorRequest``,
+            ``str``, or ``dict``.
+        """
+        if isinstance(request, CubeGeneratorRequest):
+            return request
+        if isinstance(request, str):
+            return CubeGeneratorRequest.from_file(request)
+        if isinstance(request, dict):
+            return CubeGeneratorRequest.from_dict(request)
+        raise TypeError('request must be a str, dict, '
+                        'or a CubeGeneratorRequest instance')
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert into a JSON-serializable dictionary"""
@@ -134,13 +165,16 @@ class CubeGeneratorRequest(JsonObject):
             if len(self.input_configs) == 1:
                 d.update(input_config=self.input_configs[0].to_dict())
             else:
-                d.update(input_configs=[ic.to_dict() for ic in self.input_configs])
+                d.update(input_configs=[ic.to_dict()
+                                        for ic in self.input_configs])
 
-        d.update(cube_config=self.cube_config.to_dict(),
-                 output_config=self.output_config.to_dict())
+        if self.cube_config is not None:
+            d.update(cube_config=self.cube_config.to_dict())
 
         if self.code_config is not None:
             d.update(code_config=self.code_config.to_dict())
+
+        d.update(output_config=self.output_config.to_dict())
 
         if self.callback_config is not None:
             d.update(callback_config=self.callback_config.to_dict())
@@ -148,12 +182,13 @@ class CubeGeneratorRequest(JsonObject):
         return d
 
     @classmethod
-    def from_dict(cls, request_dict: Dict[str, Any]) -> 'CubeGeneratorRequest':
+    def from_dict(cls, request_dict: Dict[str, Any]) \
+            -> 'CubeGeneratorRequest':
         """Create new instance from a JSON-serializable dictionary"""
         try:
             return cls.get_schema().from_instance(request_dict)
         except jsonschema.exceptions.ValidationError as e:
-            raise CubeGeneratorError(f'{e}') from e
+            raise CubeGeneratorError(f'{e}', status_code=400) from e
 
     @classmethod
     def from_file(cls, request_file: Optional[str], verbosity: int = 0) \
@@ -162,20 +197,21 @@ class CubeGeneratorRequest(JsonObject):
         Create new instance from a JSON file, or YAML file,
         or JSON passed via stdin.
         """
-        gen_config_dict = cls._load_gen_config_file(request_file,
-                                                    verbosity=verbosity)
+        request_dict = cls._load_request_file(request_file,
+                                              verbosity=verbosity)
         if verbosity:
-            print(f'Cube generator configuration loaded '
+            print(f'Cube generator request loaded '
                   f'from {request_file or "TTY"}.')
-        return cls.from_dict(gen_config_dict)
+        return cls.from_dict(request_dict)
 
     @classmethod
-    def _load_gen_config_file(cls,
-                              gen_config_file: Optional[str],
-                              verbosity: int = 0) -> Dict:
+    def _load_request_file(cls,
+                           gen_config_file: Optional[str],
+                           verbosity: int = 0) -> Dict:
 
-        if gen_config_file is not None and not os.path.exists(gen_config_file):
-            raise CubeGeneratorError(f'Cube generator configuration '
+        if gen_config_file is not None \
+                and not os.path.exists(gen_config_file):
+            raise CubeGeneratorError(f'Cube generator request '
                                      f'"{gen_config_file}" not found.')
 
         try:
@@ -183,7 +219,7 @@ class CubeGeneratorRequest(JsonObject):
                 if not sys.stdin.isatty():
                     if verbosity:
                         print('Awaiting generator'
-                              ' configuration JSON from TTY...')
+                              ' request JSON from TTY...')
                     return json.load(sys.stdin)
             else:
                 with open(gen_config_file, 'r') as fp:
@@ -192,7 +228,7 @@ class CubeGeneratorRequest(JsonObject):
                     else:
                         return yaml.safe_load(fp)
         except BaseException as e:
-            raise CubeGeneratorError(f'Error loading generator configuration'
+            raise CubeGeneratorError(f'Error loading generator request'
                                      f' "{gen_config_file}": {e}') from e
 
-        raise CubeGeneratorError(f'Missing cube generator configuration.')
+        raise CubeGeneratorError(f'Missing cube generator request.')

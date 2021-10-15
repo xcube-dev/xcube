@@ -1,5 +1,5 @@
 # The MIT License (MIT)
-# Copyright (c) 2020 by the xcube development team and contributors
+# Copyright (c) 2021 by the xcube development team and contributors
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of
 # this software and associated documentation files (the "Software"), to deal in
@@ -28,6 +28,14 @@ from .accessor import find_data_writer_extensions
 from .accessor import get_data_accessor_predicate
 from .accessor import new_data_opener
 from .accessor import new_data_writer
+from .assertions import assert_valid_config
+from .assertions import assert_valid_params
+from .datatype import ANY_TYPE
+from .datatype import DATASET_TYPE
+from .datatype import DataType
+from .datatype import DataTypeLike
+from .datatype import GEO_DATA_FRAME_TYPE
+from .datatype import MULTI_LEVEL_DATASET_TYPE
 from .descriptor import DataDescriptor
 from .descriptor import DatasetDescriptor
 from .descriptor import GeoDataFrameDescriptor
@@ -39,16 +47,11 @@ from .search import DefaultSearchMixin
 from .store import DataStore
 from .store import MutableDataStore
 from .store import find_data_store_extensions
+from .store import get_data_store_class
 from .store import get_data_store_params_schema
 from .store import new_data_store
 from .storepool import DataStoreConfig
 from .storepool import DataStoreInstance
 from .storepool import DataStorePool
+from .storepool import DataStorePoolLike
 from .storepool import get_data_store_instance
-from .typespecifier import TYPE_SPECIFIER_ANY
-from .typespecifier import TYPE_SPECIFIER_CUBE
-from .typespecifier import TYPE_SPECIFIER_DATASET
-from .typespecifier import TYPE_SPECIFIER_GEODATAFRAME
-from .typespecifier import TYPE_SPECIFIER_MULTILEVEL_DATASET
-from .typespecifier import TypeSpecifier
-from .typespecifier import get_type_specifier

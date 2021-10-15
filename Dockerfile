@@ -1,14 +1,13 @@
 FROM quay.io/bcdev/xcube-python-base:0.8.1
 
 ARG INSTALL_PLUGINS=1
-ENV XCUBE_SH_VERSION=0.8.0
-ENV XCUBE_CCI_VERSION=0.8.1.dev3
-ENV XCUBE_CDS_VERSION=0.8.1
+ENV XCUBE_SH_VERSION=0.9.0
+ENV XCUBE_CCI_VERSION=0.9.0
+ENV XCUBE_CDS_VERSION=0.9.0
 
 # Metadata
 LABEL maintainer="helge.dzierzon@brockmann-consult.de"
 LABEL name=xcube
-LABEL version=0.9.0.dev0
 LABEL conda_env=xcube
 
 # Ensure usage of bash (ensures conda calls succeed)

@@ -78,7 +78,7 @@ def _normalize_int_pair(
     elif value is not None:
         x, y = value
         return int(x), int(y)
-    elif default is not UNDEFINED:
+    elif default != UNDEFINED:
         return default
     else:
         assert_given(name, 'name')
@@ -97,7 +97,7 @@ def _normalize_number_pair(
     elif value is not None:
         x, y = value
         return _to_int_or_float(x), _to_int_or_float(y)
-    elif default is not UNDEFINED:
+    elif default != UNDEFINED:
         return default
     else:
         assert_given(name, 'name')

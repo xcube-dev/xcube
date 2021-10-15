@@ -20,20 +20,20 @@
 # SOFTWARE.
 
 from abc import abstractmethod, ABC
-from typing import Any, List, Optional, Union
+from typing import Any, List, Optional
 
 import xarray as xr
 
 from xcube.constants import EXTENSION_POINT_DATA_OPENERS
 from xcube.constants import EXTENSION_POINT_DATA_WRITERS
-from xcube.core.store.typespecifier import TypeSpecifier
-from xcube.core.store.typespecifier import TYPE_SPECIFIER_ANY
 from xcube.util.assertions import assert_given
 from xcube.util.extension import Extension
 from xcube.util.extension import ExtensionPredicate
 from xcube.util.extension import ExtensionRegistry
 from xcube.util.jsonschema import JsonObjectSchema
 from xcube.util.plugin import get_extension_registry
+from .datatype import DataType
+from .datatype import DataTypeLike
 from .error import DataStoreError
 
 
@@ -47,17 +47,24 @@ def new_data_opener(opener_id: str,
     """
     Get an instance of the data opener identified by *opener_id*.
 
-    The optional, extra opener parameters *opener_params* may be used by data store
-    (``xcube.core.store.DataStore``) implementations so they can share their internal state with the opener.
+    The optional, extra opener parameters *opener_params* may
+    be used by data store (``xcube.core.store.DataStore``)
+    implementations so they can share their internal state with the opener.
 
     :param opener_id: The data opener identifier.
-    :param extension_registry: Optional extension registry. If not given, the global extension registry will be used.
+    :param extension_registry: Optional extension registry.
+        If not given, the global extension registry will be used.
     :param opener_params: Extra opener parameters.
     :return: A data opener instance.
     """
     assert_given(opener_id, 'opener_id')
     extension_registry = extension_registry or get_extension_registry()
-    return extension_registry.get_component(EXTENSION_POINT_DATA_OPENERS, opener_id)(**opener_params)
+    if not extension_registry.has_extension(EXTENSION_POINT_DATA_OPENERS,
+                                            opener_id):
+        raise DataStoreError(f'A data opener named'
+                             f' {opener_id!r} is not registered')
+    return extension_registry.get_component(EXTENSION_POINT_DATA_OPENERS,
+                                            opener_id)(**opener_params)
 
 
 def new_data_writer(writer_id: str,
@@ -66,69 +73,102 @@ def new_data_writer(writer_id: str,
     """
     Get an instance of the data writer identified by *writer_id*.
 
-    The optional, extra writer parameters *writer_params* may be used by data store
-    (``xcube.core.store.DataStore``) implementations so they can share their internal state with the writer.
+    The optional, extra writer parameters *writer_params* may be used by
+    data store (``xcube.core.store.DataStore``) implementations so they
+    can share their internal state with the writer.
 
     :param writer_id: The data writer identifier.
-    :param extension_registry: Optional extension registry. If not given, the global extension registry will be used.
+    :param extension_registry: Optional extension registry.
+        If not given, the global extension registry will be used.
     :param writer_params: Extra writer parameters.
     :return: A data writer instance.
     """
     assert_given(writer_id, 'writer_id')
     extension_registry = extension_registry or get_extension_registry()
-    return extension_registry.get_component(EXTENSION_POINT_DATA_WRITERS, writer_id)(**writer_params)
+    if not extension_registry.has_extension(EXTENSION_POINT_DATA_WRITERS,
+                                            writer_id):
+        raise DataStoreError(f'A data writer named'
+                             f' {writer_id!r} is not registered')
+    return extension_registry.get_component(EXTENSION_POINT_DATA_WRITERS,
+                                            writer_id)(**writer_params)
 
 
-def find_data_opener_extensions(predicate: ExtensionPredicate = None,
-                                extension_registry: Optional[ExtensionRegistry] = None) -> List[Extension]:
+def find_data_opener_extensions(
+        predicate: ExtensionPredicate = None,
+        extension_registry: Optional[ExtensionRegistry] = None
+) -> List[Extension]:
     """
-    Get registered data opener extensions using the optional filter function *predicate*.
+    Get registered data opener extensions using the optional
+    filter function *predicate*.
 
     :param predicate: An optional filter function.
-    :param extension_registry: Optional extension registry. If not given, the global extension registry will be used.
+    :param extension_registry: Optional extension registry.
+        If not given, the global extension registry will be used.
     :return: List of matching extensions.
     """
     extension_registry = extension_registry or get_extension_registry()
-    return extension_registry.find_extensions(EXTENSION_POINT_DATA_OPENERS, predicate=predicate)
+    return extension_registry.find_extensions(
+        EXTENSION_POINT_DATA_OPENERS,
+        predicate=predicate
+    )
 
 
-def find_data_writer_extensions(predicate: ExtensionPredicate = None,
-                                extension_registry: Optional[ExtensionRegistry] = None) -> List[Extension]:
+def find_data_writer_extensions(
+        predicate: ExtensionPredicate = None,
+        extension_registry: Optional[ExtensionRegistry] = None
+) -> List[Extension]:
     """
-    Get registered data writer extensions using the optional filter function *predicate*.
+    Get registered data writer extensions using the optional filter
+    function *predicate*.
 
     :param predicate: An optional filter function.
-    :param extension_registry: Optional extension registry. If not given, the global extension registry will be used.
+    :param extension_registry: Optional extension registry.
+        If not given, the global extension registry will be used.
     :return: List of matching extensions.
     """
     extension_registry = extension_registry or get_extension_registry()
-    return extension_registry.find_extensions(EXTENSION_POINT_DATA_WRITERS, predicate=predicate)
+    return extension_registry.find_extensions(
+        EXTENSION_POINT_DATA_WRITERS,
+        predicate=predicate
+    )
 
 
-def get_data_accessor_predicate(type_specifier: Union[str, TypeSpecifier] = None,
-                                format_id: str = None,
-                                storage_id: str = None) -> ExtensionPredicate:
+def get_data_accessor_predicate(
+        data_type: DataTypeLike = None,
+        format_id: str = None,
+        storage_id: str = None
+) -> ExtensionPredicate:
     """
     Get a predicate that checks if a data accessor extensions's name is
-    compliant with *type_specifier*, *format_id*, *storage_id*.
+    compliant with *data_type*, *format_id*, *storage_id*.
 
-    :param type_specifier: Optional data type specifier to be supported.
+    :param data_type: Optional data data type to be supported.
+        May be given as type alias name, as a type,
+        or as a DataType instance.
     :param format_id: Optional data format identifier to be supported.
     :param storage_id: Optional data storage identifier to be supported.
     :return: A filter function.
     :raise DataStoreError: If an error occurs.
     """
-    if any((type_specifier, format_id, storage_id)):
+    if any((data_type, format_id, storage_id)):
+        data_type = DataType.normalize(data_type) \
+            if data_type is not None else None
+
         def _predicate(extension: Extension) -> bool:
             extension_parts = extension.name.split(':', maxsplit=4)
-            if len(extension_parts) < 3:
-                raise DataStoreError(f'Illegal data opener/writer extension name "{extension.name}"')
-            extension_type = TypeSpecifier.parse(extension_parts[0])
-            type_ok = type_specifier is None or extension_type == TYPE_SPECIFIER_ANY or \
-                      extension_type == TypeSpecifier.normalize(type_specifier)
-            format_ok = format_id is None or extension_parts[1] == '*' or extension_parts[1] == format_id
-            storage_ok = storage_id is None or extension_parts[2] == '*' or extension_parts[2] == storage_id
-            return type_ok and format_ok and storage_ok
+            if storage_id is not None:
+                ext_storage_id = extension_parts[2]
+                if ext_storage_id != '*' and ext_storage_id != storage_id:
+                    return False
+            if format_id is not None:
+                ext_format_id = extension_parts[1]
+                if ext_format_id != '*' and ext_format_id != format_id:
+                    return False
+            if data_type is not None:
+                ext_data_type = DataType.normalize(extension_parts[0])
+                if not data_type.is_super_type_of(ext_data_type):
+                    return False
+            return True
     else:
         # noinspection PyUnusedLocal
         def _predicate(extension: Extension) -> bool:
@@ -144,22 +184,28 @@ def get_data_accessor_predicate(type_specifier: Union[str, TypeSpecifier] = None
 
 class DataOpener(ABC):
     """
-    An interface that specifies an operation to open data from an arbitrary source using arbitrary open parameters.
+    An interface that specifies a parameterized `open_data()` operation.
 
-    Possible open parameters are implementation-specific and are described by a JSON Schema.
+    Possible open parameters are implementation-specific and
+    are described by a JSON Schema.
 
-    Note this interface uses the term "opener" to underline the expected laziness of the operation. For example,
-    when a xarray.Dataset is returned from a Zarr directory, the actual data is represented by Dask arrays
-    and will be loaded only on-demand.
+    Note this interface uses the term "opener" to underline the expected
+    laziness of the operation. For example, when a xarray.Dataset is
+    returned from a Zarr directory, the actual data is represented by
+    Dask arrays and will be loaded only on-demand.
     """
 
     @abstractmethod
-    def get_open_data_params_schema(self, data_id: str = None) -> JsonObjectSchema:
+    def get_open_data_params_schema(self, data_id: str = None) \
+            -> JsonObjectSchema:
         """
-        Get the schema for the parameters passed as *open_params* to :meth:open_data(data_id, open_params).
-        If *data_id* is given, the returned schema will be tailored to the constraints implied by the
-        identified data resource. Some openers might not support this, therefore *data_id* is optional, and if
-        it is omitted, the returned schema will be less restrictive.
+        Get the schema for the parameters passed as *open_params* to
+        :meth:open_data(data_id, open_params).
+        If *data_id* is given, the returned schema will be tailored
+        to the constraints implied by the identified data resource.
+        Some openers might not support this, therefore *data_id*
+        is optional, and if it is omitted, the returned schema will be
+        less restrictive.
 
         :param data_id: An optional data resource identifier.
         :return: The schema for the parameters in *open_params*.
@@ -167,9 +213,10 @@ class DataOpener(ABC):
         """
 
     @abstractmethod
-    def open_data(self, data_id: str, **open_params) -> xr.Dataset:
+    def open_data(self, data_id: str, **open_params) -> Any:
         """
-        Open the data resource given by the data resource identifier *data_id* using the supplied *open_params*.
+        Open the data resource given by the data resource identifier
+        *data_id* using the supplied *open_params*.
 
         Raises if *data_id* does not exist.
 
@@ -182,25 +229,46 @@ class DataOpener(ABC):
 
 class DataDeleter(ABC):
     """
-    An interface that specifies an operation to delete data.
+    An interface that specifies a parameterized `delete_data()` operation.
+
+    Possible delete parameters are implementation-specific and
+    are described by a JSON Schema.
     """
 
     @abstractmethod
-    def delete_data(self, data_id: str):
+    def get_delete_data_params_schema(self, data_id: str = None) \
+            -> JsonObjectSchema:
+        """
+        Get the schema for the parameters passed as *delete_params*
+        to :meth:delete_data.
+        If *data_id* is given, the returned schema will be tailored to
+        the constraints implied by the identified data resource.
+        Some deleters might not support this, therefore *data_id*
+        is optional, and if it is omitted, the returned schema will
+        be less restrictive.
+
+        :param data_id: An optional data resource identifier.
+        :return: The schema for the parameters in *delete_params*.
+        :raise DataStoreError: If an error occurs.
+        """
+
+    @abstractmethod
+    def delete_data(self, data_id: str, **delete_params):
         """
         Delete a data resource. Raises if *data_id* does not exist.
 
         :param data_id: A data resource identifier known to exist.
+        :param delete_params: Deleter-specific parameters.
         :raise DataStoreError: If an error occurs.
         """
 
 
 class DataWriter(DataDeleter, ABC):
     """
-    An interface that specifies an operation to write data to some arbitrary target data
-    using arbitrary write parameters.
+    An interface that specifies a parameterized `write_data()` operation.
 
-    Possible write parameters are implementation-specific and are described by a JSON Schema.
+    Possible write parameters are implementation-specific and
+    are described by a JSON Schema.
     """
 
     @abstractmethod
@@ -222,7 +290,8 @@ class DataWriter(DataDeleter, ABC):
         """
         Write a data resource using the supplied *data_id* and *write_params*.
 
-        :param data: The data resource's in-memory representation to be written.
+        :param data: The data resource's in-memory representation
+            to be written.
         :param data_id: A unique data resource identifier.
         :param replace: Whether to replace an existing data resource.
         :param write_params: Writer-specific parameters.
@@ -237,33 +306,44 @@ class DataTimeSliceUpdater(DataWriter, ABC):
     """
 
     @abstractmethod
-    def append_data_time_slice(self, data_id: str, time_slice: xr.Dataset):
+    def append_data_time_slice(self,
+                               data_id: str,
+                               time_slice: xr.Dataset):
         """
         Append a time slice to the identified data resource.
 
         :param data_id: The data resource identifier.
-        :param time_slice: The time slice data to be inserted. Must be compatible with the data resource.
+        :param time_slice: The time slice data to be inserted.
+            Must be compatible with the data resource.
         :raise DataStoreError: If an error occurs.
         """
 
     @abstractmethod
-    def insert_data_time_slice(self, data_id: str, time_slice: Any, time_index: int):
+    def insert_data_time_slice(self,
+                               data_id: str,
+                               time_slice: Any,
+                               time_index: int):
         """
         Insert a time slice into the identified data resource at given index.
 
         :param data_id: The data resource identifier.
-        :param time_slice: The time slice data to be inserted. Must be compatible with the data resource.
+        :param time_slice: The time slice data to be inserted.
+            Must be compatible with the data resource.
         :param time_index: The time index.
         :raise DataStoreError: If an error occurs.
         """
 
     @abstractmethod
-    def replace_data_time_slice(self, data_id: str, time_slice: Any, time_index: int):
+    def replace_data_time_slice(self,
+                                data_id: str,
+                                time_slice: Any,
+                                time_index: int):
         """
         Replace a time slice in the identified data resource at given index.
 
         :param data_id: The data resource identifier.
-        :param time_slice: The time slice data to be inserted. Must be compatible with the data resource.
+        :param time_slice: The time slice data to be inserted.
+            Must be compatible with the data resource.
         :param time_index: The time index.
         :raise DataStoreError: If an error occurs.
         """

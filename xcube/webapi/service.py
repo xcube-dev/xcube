@@ -167,8 +167,9 @@ class Service:
         test_url = self.context.get_service_url(f"http://{address}:{port}", "datasets")
         LOG.info(f'service running, listening on {address}:{port}, try {test_url}')
         LOG.info(f'press CTRL+C to stop service')
-        if len(self.context.config.get('Datasets', {})) == 0:
-            LOG.warning('no datasets configured')
+        if not self.context.config.get('Datasets', []) \
+                and not self.context.config.get('DataStores', []):
+            LOG.warning('no datasets or data stores configured')
         tornado.ioloop.PeriodicCallback(self._try_shutdown, 100).start()
         IOLoop.current().start()
 
@@ -332,7 +333,7 @@ class ServiceRequestParams(RequestParams):
         :raise: ServiceBadRequestError
         """
         value = self.handler.get_query_argument(name, default=default)
-        if value is UNDEFINED:
+        if value == UNDEFINED:
             raise ServiceBadRequestError(f'Missing query parameter "{name}"')
         return value
 
@@ -426,25 +427,25 @@ def new_default_config(cube_paths: List[str],
         if aws_secret_access_key is None:
             raise ValueError(f'environment variable AWS_SECRET_ACCESS_KEY not set')
 
-    dataset_list = list()
+    dataset_configs = list()
     index = 0
     for cube_path in cube_paths:
-        dataset_descriptor = dict(Identifier=f"dataset_{index + 1}",
-                                  Format=guess_ml_dataset_format(cube_path),
-                                  Path=cube_path)
+        dataset_config = dict(Identifier=f"dataset_{index + 1}",
+                              Format=guess_ml_dataset_format(cube_path),
+                              Path=cube_path)
         if is_s3_url(cube_path):
-            dataset_descriptor.update(Title=cube_path.split('/')[-1],
-                                      FileSystem='obs')
+            dataset_config.update(Title=cube_path.split('/')[-1],
+                                  FileSystem='obs')
             if aws_access_key_id and aws_secret_access_key:
-                dataset_descriptor.update(AccessKeyId=aws_access_key_id,
-                                          SecretAccessKey=aws_secret_access_key)
+                dataset_config.update(AccessKeyId=aws_access_key_id,
+                                      SecretAccessKey=aws_secret_access_key)
         else:
-            dataset_descriptor.update(Title=os.path.split(cube_path)[-1],
-                                      FileSystem='local')
-        dataset_list.append(dataset_descriptor)
+            dataset_config.update(Title=os.path.split(cube_path)[-1],
+                                  FileSystem='local')
+        dataset_configs.append(dataset_config)
         index += 1
 
-    config = dict(Datasets=dataset_list)
+    config = dict(Datasets=dataset_configs)
     if styles:
         color_mappings = {}
         for var_name, style_data in styles.items():

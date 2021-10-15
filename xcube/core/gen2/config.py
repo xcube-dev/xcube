@@ -21,13 +21,13 @@
 
 import collections
 import numbers
-from typing import Optional, Any, Sequence, Mapping, Tuple, Union, Dict
+from typing import Optional, Any, Sequence, Mapping, Tuple, Union, Iterable
 
 import pyproj
 
-from xcube.util.assertions import assert_true
 from xcube.util.assertions import assert_given
 from xcube.util.assertions import assert_instance
+from xcube.util.assertions import assert_true
 from xcube.util.jsonschema import JsonArraySchema
 from xcube.util.jsonschema import JsonBooleanSchema
 from xcube.util.jsonschema import JsonDateSchema
@@ -142,7 +142,9 @@ class CubeConfig(JsonObject):
                  tile_size: Union[int, Tuple[int, int]] = None,
                  time_range: Tuple[str, Optional[str]] = None,
                  time_period: str = None,
-                 chunks: Mapping[str, Optional[int]] = None):
+                 chunks: Mapping[str, Optional[int]] = None,
+                 metadata: Mapping[str, Any] = None,
+                 variable_metadata: Mapping[str, Mapping[str, Any]] = None,):
 
         self.variable_names = None
         if variable_names is not None:
@@ -202,6 +204,39 @@ class CubeConfig(JsonObject):
                 assert_instance(chunk_size, (int, type(None)), 'chunk size')
             self.chunks = dict(chunks)
 
+        self.metadata = None
+        if metadata is not None:
+            assert_instance(metadata,
+                            collections.Mapping, 'metadata')
+            self.metadata = dict(metadata)
+
+        self.variable_metadata = None
+        if variable_metadata is not None:
+            assert_instance(variable_metadata,
+                            collections.Mapping, 'variable_metadata')
+            for var_name, metadata in variable_metadata.items():
+                assert_instance(var_name, str, 'chunk dimension')
+                assert_instance(metadata,
+                                collections.Mapping, 'variable metadata')
+            self.variable_metadata = dict(variable_metadata)
+
+    def drop_props(self, name: Union[str, Iterable[str]]):
+        """
+        Drop one or more named properties from this configuration.
+        :param name: the name of the property to be dropped.
+        :param names: more names of properties to be dropped.
+        :return: a new cube configuration.
+        """
+        if not name:
+            return self
+        name_set = {name} if isinstance(name, str) else set(name)
+        for k in name_set:
+            assert_true(hasattr(self, k),
+                        message=f'{k} is not a property of {CubeConfig!r}')
+        return self.from_dict({k: v
+                               for k, v in self.to_dict().items()
+                               if k not in name_set})
+
     @classmethod
     def get_schema(cls):
         return JsonObjectSchema(
@@ -240,6 +275,16 @@ class CubeConfig(JsonObject):
                     nullable=True,
                     additional_properties=JsonIntegerSchema(nullable=True,
                                                             minimum=1)
+                ),
+                metadata=JsonObjectSchema(
+                    nullable=True,
+                    additional_properties=True
+                ),
+                variable_metadata=JsonObjectSchema(
+                    nullable=True,
+                    additional_properties=JsonObjectSchema(
+                        additional_properties=True
+                    )
                 ),
             ),
             additional_properties=False,

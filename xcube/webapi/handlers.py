@@ -29,12 +29,13 @@ from tornado.ioloop import IOLoop
 from xcube.constants import LOG
 from xcube.core.timecoord import timestamp_to_iso_string
 from xcube.util.perf import measure_time
+from xcube.util.versions import get_xcube_versions
 from xcube.version import version
 from xcube.webapi.auth import AuthMixin
 from xcube.webapi.controllers.catalogue import get_datasets, get_dataset_coordinates, get_color_bars, get_dataset, \
     get_dataset_place_groups, get_dataset_place_group
 from xcube.webapi.controllers.places import find_places, find_dataset_places
-from xcube.webapi.controllers.tiles import get_dataset_tile, get_dataset_tile_grid, get_ne2_tile, get_ne2_tile_grid, \
+from xcube.webapi.controllers.tiles import get_dataset_tile, get_dataset_tile_grid, \
     get_legend
 from xcube.webapi.controllers.timeseries import get_time_series
 from xcube.webapi.controllers.ts_legacy import get_time_series_info, get_time_series_for_point, \
@@ -266,8 +267,8 @@ class GetS3BucketObjectHandler(ServiceRequestHandler):
                                             Key=key)))
 
     def _get_key_and_local_path(self, ds_id: str, path: str):
-        descriptor = self.service_context.get_dataset_descriptor(ds_id)
-        file_system = descriptor.get('FileSystem', 'local')
+        dataset_config = self.service_context.get_dataset_config(ds_id)
+        file_system = dataset_config.get('FileSystem', 'local')
         required_file_system = 'local'
         if file_system != required_file_system:
             raise ServiceBadRequestError(f'AWS S3 data access: currently, only datasets in'
@@ -280,7 +281,7 @@ class GetS3BucketObjectHandler(ServiceRequestHandler):
         if path and '..' in path.split('/'):
             raise ServiceBadRequestError(f'AWS S3 data access: received illegal key {key!r}')
 
-        local_path = descriptor.get('Path')
+        local_path = dataset_config.get('Path')
         if os.path.isabs(local_path):
             local_path = os.path.join(local_path, path)
         else:
@@ -341,29 +342,6 @@ class GetDatasetVarTileGridHandler(ServiceRequestHandler):
         response = get_dataset_tile_grid(self.service_context,
                                          ds_id, var_name,
                                          tile_client, self.base_url)
-        self.set_header('Content-Type', 'application/json')
-        self.write(json.dumps(response, indent=2))
-
-
-# noinspection PyAbstractClass
-class GetNE2TileHandler(ServiceRequestHandler):
-
-    async def get(self, z: str, x: str, y: str):
-        response = await IOLoop.current().run_in_executor(None,
-                                                          get_ne2_tile,
-                                                          self.service_context,
-                                                          x, y, z,
-                                                          self.params)
-        self.set_header('Content-Type', 'image/jpg')
-        await self.finish(response)
-
-
-# noinspection PyAbstractClass
-class GetNE2TileGridHandler(ServiceRequestHandler):
-
-    def get(self):
-        tile_client = self.params.get_query_argument('tiles', "ol4")
-        response = get_ne2_tile_grid(self.service_context, tile_client, self.base_url)
         self.set_header('Content-Type', 'application/json')
         self.write(json.dumps(response, indent=2))
 
@@ -461,6 +439,7 @@ class InfoHandler(ServiceRequestHandler):
         self.write(json.dumps(dict(name=SERVER_NAME,
                                    description=SERVER_DESCRIPTION,
                                    version=version,
+                                   versions=get_xcube_versions(),
                                    configTime=config_time,
                                    serverTime=server_time,
                                    serverPID=os.getpid()),

@@ -1,10 +1,51 @@
-## Changes in 0.9.0 (in development)
+## Changes in 0.9.1 (in development)
+
+### New features
+* Function `mask_dataset_by_geometry` has a new parameter `all_touched`:
+  If True, all pixels intersected by geometry outlines will be included in the mask. 
+  If False, only pixels whose center is within the polygon or that are selected by 
+  Bresenham’s line algorithm will be included in the mask. 
+  The default value is set to `False`. 
+
+### Other
+
+## Changes in 0.9.0
 
 ### New features
 
+* The implementations of the default data stores `s3`, `directory`, 
+  and `memory` have been replaced entirely by a new implementation
+  that utilize the [fsspec](https://filesystem-spec.readthedocs.io/) 
+  Python package. The preliminary filesystem-based data stores 
+  are now `s3`, `file`, and `memory`. All share a common implementations 
+  and tests. Others filesystem-based data stores can be added easily
+  and will follow soon, for example `hdfs`. 
+  All filesystem-based data stores now support xarray
+  datasets (type `xarray.Dataset`) in Zarr and NetCDF format as 
+  well as image pyramids (type`xcube.core.multilevel.MultiLevelDataset`) 
+  using a Zarr-based multi-level format. (#446)
+
+* Several changes became necessary on the xcube Generator
+  package `xcube.core.gen2` and CLI `xcube gen2`. 
+  They are mostly not backward compatible:
+  - The only supported way to instantiate cube generators is the
+    `CubeGenerator.new()` factory method. 
+  - `CubeGenerator.generate_cube()` and `CubeGenerator.get_cube_info()`
+    both now receive the request object that has formerly been passed 
+    to the generator constructors.
+  - The `CubeGenerator.generate_cube()` method now returns a 
+    `CubeGeneratorResult` object rather than a simple string 
+    (the written `data_id`).  
+  - Empty cubes are no longer written, a warning status is 
+    generated instead.
+  - The xcube gen2 CLI `xcube gen2` has a new option `--output RESULT` 
+    to write the result to a JSON file. If it is omitted, 
+    the CLI will dump the result as JSON to stdout.
+
 * Numerous breaking changes have been applied to this version
-  in order to address generic resampling (#391) and support other
-  CRS than WGS-84 (#112): 
+  in order to address generic resampling (#391), to support other
+  CRS than WGS-84 (#112), and to move from the struct data cube 
+  specification to a more relaxed cube convention (#488): 
   * The following components have been removed entirely 
     - module `xcube.core.imgeom` with class `ImageGeom` 
     - module `xcube.core.geocoding` with class `GeoCoding`
@@ -20,7 +61,7 @@
       `source_gm: GridMapping` and `target_gm: GridMapping` instead of 
       `geo_coding: GeoCoding` and `output_geom: ImageGeom`. 
   * xcube no longer depends on GDAL (at least not directly).
-
+    
 * Added a new feature to xcube called "BYOA" - Bring your own Algorithm.
   It is a generic utility that allows for execution of user-supplied 
   Python code in both local and remote contexts. (#467)
@@ -34,12 +75,34 @@
     `xcube.core.gen2.service.RemoteCubeGenerator`;
   2. Generator CLI `xcube gen2`.
   
+* A dataset's cube subset and its grid mapping can now be accessed through
+  the `xcube` property of `xarray.Dataset` instances. This feature requires 
+  importing the `xcube.core.xarray`package. Let `dataset` be an 
+  instance of `xarray.Dataset`, then
+  - `dataset.xcube.cube` is a `xarray.Dataset` that contains all cube 
+     variables of `dataset`, namely the ones with dimensions 
+     `("time", [...,], y_dim_name, x_dim_name)`, where `y_dim_name`, 
+    `x_dim_name` are determined by the dataset's grid mapping.
+     May be empty, if `dataset` has no cube variables.
+  - `dataset.xcube.gm` is a `xcube.core.gridmapping.GridMapping` that 
+     describes the CF-compliant grid mapping of `dataset`. 
+     May be `None`, if `dataset` does not define a grid mapping.
+  - `dataset.xcube.non_cube` is a `xarray.Dataset` that contains all
+     variables of `dataset` that are not in `dataset.xcube.cube`.
+     May be same as `dataset`, if `dataset.xcube.cube` is empty.
+  
 * Added a new utility module `xcube.util.temp` that allows for creating 
   temporary files and directories that will be deleted when the current 
   process ends.
+* Added function `xcube.util.versions.get_xcube_versions()`  
+  that outputs the versions of packages relevant for xcube.
+  Also added a new CLI `xcube versions` that outputs the result of the  
+  new function in JSON or YAML. (#522)
 
 ### Other
 
+* The xcube cube generator (API `xcube.core.gen2`, CLI `xcube gen2`) 
+  will now write consolidated Zarrs by default. (#500)
 * xcube now issues a warning, if a data cube is opened from object 
   storage, and credentials have neither been passed nor can be found, 
   and the object storage has been opened with the default `anon=False`. (#412)
@@ -52,8 +115,31 @@
   the master changed or equals the release tag. 
 * Removed warning `module 'xcube_xyz' looks like an xcube-plugin but 
   lacks a callable named 'init_plugin`.
+* Fixed an issue where `xcube serve` provided wrong layer source options for 
+  [OpenLayers XYZ](https://openlayers.org/en/latest/apidoc/module-ol_source_XYZ-XYZ.html) 
+  when latitude coordinates where increasing with the coordinate index. (#251)
+* Function `xcube.core.normalize.adjust_spatial_attrs()` no longer removes
+  existing global attributes of the form `geospatial_vertical_<property>`.
+* Numerous classes and functions became obsolete in the xcube 0.9 
+  code base and have been removed, also because we believe there is 
+  quite rare outside use, if at all. 
   
-## Changes in 0.8.2 (in development)
+  Removed from `xcube.util.tiledimage`:
+  * class `DownsamplingImage`
+  * class `PilDownsamplingImage`
+  * class `NdarrayDownsamplingImage`
+  * class `FastNdarrayDownsamplingImage`
+  * class `ImagePyramid`
+  * function `create_pil_downsampling_image()`
+  * function `create_ndarray_downsampling_image()`
+  * function `downsample_ndarray()`
+  * functions `aggregate_ndarray_xxx()`
+  
+  Removed from `xcube.util.tilegrid`:
+  * functions `pow2_2d_subdivision()`
+  * functions `pow2_1d_subdivision()`
+  
+## Changes in 0.8.2
 
 * Fixed the issue that xcube gen2 would not print tracebacks to stderr 
   when raising errors of type `CubeGeneratorError` (#448).

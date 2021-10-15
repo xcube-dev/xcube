@@ -111,7 +111,7 @@ def resample_dataset(
         if var.ndim >= 2 and var.dims[-2:] == yx_dims:
             var_config = var_configs.get(k, dict())
             if np.issubdtype(var.dtype, np.integer) \
-                    or np.issubdtype(var.dtype, np.bool):
+                    or np.issubdtype(var.dtype, bool):
                 spline_order = 0
                 aggregator = None
                 recover_nan = False

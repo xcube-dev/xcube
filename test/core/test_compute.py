@@ -109,7 +109,7 @@ class ComputeCubeTest(unittest.TestCase):
         self.assertIsInstance(output_dataset, xr.Dataset)
         self.assertIn('analysed_sst_max', output_dataset.data_vars)
         output_var = output_dataset.analysed_sst_max
-        self.assertEqual(0, len(calls))
+        self.assertEqual(0, len(calls))  # call from dask with 0-dim chunks
         self.assertEqual(('lat', 'lon'), output_var.dims)
         self.assertEqual((180, 360), output_var.shape)
         self.assertEqual(((90, 90), (90, 90, 90, 90)), output_var.chunks)

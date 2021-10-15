@@ -88,10 +88,20 @@ def store_info(store_id: str,
     extension = get_extension_registry().get_extension(EXTENSION_POINT_DATA_STORES, store_id)
     from xcube.core.store import get_data_store_params_schema
     from xcube.core.store import MutableDataStore
+    from xcube.core.store import DataStoreError
     params_schema = get_data_store_params_schema(store_id)
     description = extension.metadata.get('description')
     requires_store_instance = any((show_openers, show_writers, show_data_ids))
-    data_store = _new_data_store(store_id, store_params) if requires_store_instance else None
+    data_store = None
+    try:
+        if requires_store_instance:
+            data_store = _new_data_store(store_id, store_params)
+    except DataStoreError as e:
+        msg = f'Failed to instantiate data store {store_id!r}'
+        if store_params:
+            msg += f' with parameters {store_params!r}'
+        msg += f': {e}'
+        raise click.ClickException(msg) from e
     if use_json_format:
         d = dict()
         d['store_id'] = store_id
@@ -104,7 +114,7 @@ def store_info(store_id: str,
         if show_writers and isinstance(data_store, MutableDataStore):
             d['writer_ids'] = data_store.get_data_writer_ids()
         if show_data_ids:
-            d['data_ids'] = list(data_store.get_data_ids())
+            d['data_ids'] = sorted(data_store.get_data_ids())
         if show_openers:
             print(json.dumps(d, indent=2))
     else:
@@ -198,9 +208,9 @@ _SHORT_INCLUDE = ','.join(['store.store_instance_id',
                    f' Defaults to "{_DEFAULT_DUMP_OUTPUT}".')
 @click.option('-c', '--config', 'config_file_path', metavar='CONFIG',
               help='Store configuration filename. May use JSON or YAML format.')
-@click.option('-t', '--type', 'type_specifier', metavar='TYPE',
-              help='Type specifier. If given, only data resources that satisfy the '
-                   'type specifier are listed. E.g. "dataset" or "dataset[cube]"')
+@click.option('-t', '--type', 'data_type', metavar='TYPE',
+              help='Data type. If given, only data resources that satisfy the '
+                   'data type are listed. E.g. "dataset" or "geodataframe"')
 @click.option('-S', '--short', 'short_form', is_flag=True,
               help=f'Short form. Forces option "--includes={_SHORT_INCLUDE}".')
 @click.option('-I', '--includes', 'include_props', metavar='INCLUDE_LIST',
@@ -221,7 +231,7 @@ _SHORT_INCLUDE = ','.join(['store.store_instance_id',
               help=f'Use JSON output format (the default).')
 def dump(output_file_path: Optional[str],
          config_file_path: Optional[str],
-         type_specifier: Optional[str],
+         data_type: Optional[str],
          short_form: bool,
          include_props: str,
          exclude_props: str,
@@ -297,7 +307,7 @@ def dump(output_file_path: Optional[str],
                          if extension.name not in ('memory', 'directory', 's3')}
         store_pool = DataStorePool(store_configs)
 
-    dump_data = _get_store_data_var_tuples(store_pool, type_specifier, include_props, exclude_props)
+    dump_data = _get_store_data_var_tuples(store_pool, data_type, include_props, exclude_props)
 
     if output_format == 'csv':
         column_names = None
@@ -365,7 +375,7 @@ def dump(output_file_path: Optional[str],
         print(f'Dumped entries of {len(store_list)} store(s) to {output_file_path}.')
 
 
-def _get_store_data_var_tuples(store_pool, type_specifier, include_props, exclude_props):
+def _get_store_data_var_tuples(store_pool, data_type, include_props, exclude_props):
     import time
 
     for store_instance_id in store_pool.store_instance_ids:
@@ -377,7 +387,7 @@ def _get_store_data_var_tuples(store_pool, type_specifier, include_props, exclud
                           store_id=store_instance_id,
                           title=store_config.title,
                           description=store_config.description,
-                          type_specifier=type_specifier,
+                          data_type=data_type,
                           data=[])
         store_dict = _filter_dict(store_dict, 'store', include_props, exclude_props)
 
@@ -393,7 +403,7 @@ def _get_store_data_var_tuples(store_pool, type_specifier, include_props, exclud
                 continue
 
             try:
-                data_descriptors = store_instance.search_data(type_specifier=type_specifier)
+                data_descriptors = store_instance.search_data(data_type=data_type)
             except BaseException as error:
                 print(f'error: cannot search store "{store_instance_id}": {error}', file=sys.stderr)
                 continue
@@ -529,9 +539,9 @@ def _format_param_schema(param_schema: 'xcube.util.jsonschema.JsonSchema'):
         param_info.append(param_schema.description + ('' if param_schema.description.endswith('.') else '.'))
     if param_schema.enum:
         param_info.append(f'Must be one of {", ".join(map(json.dumps, param_schema.enum))}.')
-    if param_schema.const is not UNDEFINED:
+    if param_schema.const != UNDEFINED:
         param_info.append(f'Must be {json.dumps(param_schema.const)}.')
-    if param_schema.default is not UNDEFINED:
+    if param_schema.default != UNDEFINED:
         param_info.append(f'Defaults to {json.dumps(param_schema.default)}.')
     param_info_text = ' ' + " ".join(param_info) if param_info else ''
     return f'({param_schema.type}){param_info_text}'
@@ -570,7 +580,7 @@ def _dump_store_writers(data_store: 'xcube.core.store.DataStore') -> int:
 # noinspection PyUnresolvedReferences
 def _dump_store_data_ids(data_store: 'xcube.core.store.DataStore') -> int:
     count = 0
-    for data_id, data_attrs in data_store.get_data_ids(include_attrs=['title']):
+    for data_id, data_attrs in sorted(data_store.get_data_ids(include_attrs=['title'])):
         print(f'  {data_id:>32s}  {data_attrs.get("title") or _NO_TITLE}')
         count += 1
     return count
@@ -601,7 +611,6 @@ def _dump_data_resources(data_store: 'xcube.core.store.DataStore') -> int:
 def _new_data_store(store_id: str, store_params: List[str]) -> 'xcube.core.store.DataStore':
     from xcube.core.store import get_data_store_params_schema
     from xcube.core.store import new_data_store
-    params_schema = get_data_store_params_schema(store_id)
     store_params_dict = dict()
     if store_params:
         for p_assignment in store_params:
@@ -620,7 +629,4 @@ def _new_data_store(store_id: str, store_params: List[str]) -> 'xcube.core.store
                 # Passed name as flag
                 p_value = True
             store_params_dict[p_name] = p_value
-    elif params_schema.required:
-        raise click.ClickException(f'Data store "{store_id}" has required parameters, but none were given.\n'
-                                   f'{_format_required_params_schema(params_schema)}')
     return new_data_store(store_id, **store_params_dict)

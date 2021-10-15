@@ -31,27 +31,34 @@ class IOStoreTest(CliTest):
         self.assertEqual(0, result.exit_code)
 
     def test_info(self):
-        result = self.invoke_cli(['io', 'store', 'info', 'memory', '-POWj'])
+        result = self.invoke_cli(['io', 'store', 'info', 'memory',
+                                  '-POWj'])
         self.assertEqual(0, result.exit_code)
-        result = self.invoke_cli(['io', 'store', 'info', 'directory', '-POW', 'base_dir=.'])
+        result = self.invoke_cli(['io', 'store', 'info', 'file',
+                                  '-POW', 'root=.'])
         self.assertEqual(0, result.exit_code)
 
-        # param "base_dir" missing
-        result = self.invoke_cli(['io', 'store', 'info', 'directory', '-POW'])
+        # param "root" missing
+        result = self.invoke_cli(['io', 'store', 'info',
+                                  'file', '-POW', 'root=42'])
         self.assertEqual(1, result.exit_code)
-        self.assertEqual('Error: Data store "directory" has required parameters, but none were given.\n'
-                         'Required parameters:\n'
-                         '                  base_dir  (string)\n',
+        self.assertEqual("Error: Failed to instantiate data store 'file'"
+                         " with parameters ('root=42',):"
+                         " Invalid parameterization detected:"
+                         " 42 is not of type 'string'\n",
                          result.stdout)
 
     def test_data(self):
-        demo_dir = os.path.join(os.path.dirname(__file__), '..', '..', 'examples', 'serve', 'demo')
+        demo_dir = os.path.join(os.path.dirname(__file__),
+                                '..', '..',
+                                'examples', 'serve', 'demo')
 
-        result = self.invoke_cli(['io', 'store', 'info', 'directory', '-D', f'base_dir={demo_dir}'])
+        result = self.invoke_cli(['io', 'store', 'info',
+                                  'file', '-D', f'root={demo_dir}'])
         self.assertEqual(0, result.exit_code)
         self.assertEqual('\n'
                          'Data store description:\n'
-                         '  Directory data store\n'
+                         '  Data store that uses a local filesystem\n'
                          '\n'
                          'Data resources:\n'
                          '               cube-1-250-250.zarr  <no title>\n'
@@ -60,8 +67,12 @@ class IOStoreTest(CliTest):
                          '3 data resources found.\n',
                          result.stdout)
 
-        demo_dir = os.path.join(os.path.dirname(__file__), '..', '..', 'examples', 'serve', 'demo')
-        result = self.invoke_cli(['io', 'store', 'data', 'directory', 'cube-1-250-250.zarr', f'base_dir={demo_dir}'])
+        demo_dir = os.path.join(os.path.dirname(__file__),
+                                '..', '..',
+                                'examples', 'serve', 'demo')
+        result = self.invoke_cli(['io', 'store', 'data',
+                                  'file', 'cube-1-250-250.zarr',
+                                  f'root={demo_dir}'])
         self.assertEqual(0, result.exit_code)
         self.assertIn('cube-1-250-250.zarr', result.stdout)
 
@@ -83,7 +94,7 @@ class IOOpenerTest(CliTest):
         self.assertEqual(0, result.exit_code)
 
     def test_info(self):
-        result = self.invoke_cli(['io', 'opener', 'info', 'dataset:zarr:posix'])
+        result = self.invoke_cli(['io', 'opener', 'info', 'dataset:zarr:file'])
         self.assertEqual(0, result.exit_code)
 
 
@@ -104,16 +115,18 @@ class IOWriterTest(CliTest):
         self.assertEqual(0, result.exit_code)
 
     def test_info(self):
-        result = self.invoke_cli(['io', 'writer', 'info', 'dataset:zarr:posix'])
+        result = self.invoke_cli(['io', 'writer', 'info', 'dataset:zarr:file'])
         self.assertEqual(0, result.exit_code)
 
 
 class IODumpTest(CliTest):
     STORE_CONF = {
         "this_dir": {
-            "store_id": "directory",
+            "store_id": "file",
             "store_params": {
-                "base_dir": os.path.join(os.path.dirname(__file__), "..", "..", "examples", "serve", "demo")
+                "root": os.path.join(os.path.dirname(__file__),
+                                     "..", "..",
+                                     "examples", "serve", "demo")
             }
         }
     }
@@ -139,42 +152,60 @@ class IODumpTest(CliTest):
         rimraf('out.txt')
 
     def test_help_option(self):
-        result = self.invoke_cli(['io', 'dump', '--help'])
+        result = self.invoke_cli(['io', 'dump',
+                                  '--help'])
         self.assertEqual(0, result.exit_code)
 
     def test_yaml_config(self):
-        result = self.invoke_cli(['io', 'dump', '-c', 'store-conf.yml'])
+        result = self.invoke_cli(['io', 'dump',
+                                  '-c', 'store-conf.yml'])
         self.assertEqual(0, result.exit_code)
         self.assertTrue(os.path.exists('store-dump.json'))
 
     def test_yaml_config_short_format(self):
-        result = self.invoke_cli(['io', 'dump', '-c', 'store-conf.yml', '--short', '--json'])
+        result = self.invoke_cli(['io', 'dump',
+                                  '-c', 'store-conf.yml',
+                                  '--short', '--json'])
         self.assertEqual(0, result.exit_code)
         self.assertTrue(os.path.exists('store-dump.json'))
-        result = self.invoke_cli(['io', 'dump', '-c', 'store-conf.yml', '--short', '--yaml'])
+        result = self.invoke_cli(['io', 'dump',
+                                  '-c', 'store-conf.yml',
+                                  '--short', '--yaml'])
         self.assertEqual(0, result.exit_code)
         self.assertTrue(os.path.exists('store-dump.yml'))
-        result = self.invoke_cli(['io', 'dump', '-c', 'store-conf.yml', '--short', '--csv'])
+        result = self.invoke_cli(['io', 'dump',
+                                  '-c', 'store-conf.yml',
+                                  '--short', '--csv'])
         self.assertEqual(0, result.exit_code)
         self.assertTrue(os.path.exists('store-dump.csv'))
 
     def test_json_config_short(self):
-        result = self.invoke_cli(['io', 'dump', '-c', 'store-conf.yml', '--short'])
+        result = self.invoke_cli(['io', 'dump',
+                                  '-c', 'store-conf.yml',
+                                  '--short'])
         self.assertEqual(0, result.exit_code)
         self.assertTrue(os.path.exists('store-dump.json'))
 
     def test_json_config_output(self):
-        result = self.invoke_cli(['io', 'dump', '-c', 'store-conf.json', '-o', 'out.json'])
+        result = self.invoke_cli(['io', 'dump',
+                                  '-c', 'store-conf.json',
+                                  '-o', 'out.json'])
         self.assertEqual(0, result.exit_code)
         self.assertTrue(os.path.exists('out.json'))
-        result = self.invoke_cli(['io', 'dump', '-c', 'store-conf.json', '-o', 'out.yml'])
+        result = self.invoke_cli(['io', 'dump',
+                                  '-c', 'store-conf.json',
+                                  '-o', 'out.yml'])
         self.assertEqual(0, result.exit_code)
         self.assertTrue(os.path.exists('out.yml'))
-        result = self.invoke_cli(['io', 'dump', '-c', 'store-conf.json', '-o', 'out.txt'])
+        result = self.invoke_cli(['io', 'dump',
+                                  '-c', 'store-conf.json',
+                                  '-o', 'out.txt'])
         self.assertEqual(0, result.exit_code)
         self.assertTrue(os.path.exists('out.txt'))
 
     def test_json_config_type(self):
-        result = self.invoke_cli(['io', 'dump', '-c', 'store-conf.json', '-t', 'dataset[cube]'])
+        result = self.invoke_cli(['io', 'dump',
+                                  '-c', 'store-conf.json',
+                                  '-t', 'dataset'])
         self.assertEqual(0, result.exit_code)
         self.assertTrue(os.path.exists('store-dump.json'))
