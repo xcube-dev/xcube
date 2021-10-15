@@ -25,14 +25,11 @@ from typing import Optional, Any, Sequence, Mapping, Tuple, Union, Iterable
 
 import pyproj
 
-from xcube.core.resampling.temporal import UPSAMPLING_METHODS
-from xcube.core.resampling.temporal import DOWNSAMPLING_METHODS
 from xcube.util.assertions import assert_given
 from xcube.util.assertions import assert_instance
 from xcube.util.assertions import assert_true
 from xcube.util.jsonschema import JsonArraySchema
 from xcube.util.jsonschema import JsonBooleanSchema
-from xcube.util.jsonschema import JsonComplexSchema
 from xcube.util.jsonschema import JsonDateSchema
 from xcube.util.jsonschema import JsonIntegerSchema
 from xcube.util.jsonschema import JsonNumberSchema
@@ -40,6 +37,12 @@ from xcube.util.jsonschema import JsonObject
 from xcube.util.jsonschema import JsonObjectSchema
 from xcube.util.jsonschema import JsonStringSchema
 
+
+UPSAMPLING_METHODS = ['asfreq', 'ffill', 'bfill', 'pad', 'nearest', 'nearest-up',
+                      'linear', 'zero', 'slinear', 'quadratic', 'cubic', 'previous',
+                      'next']
+DOWNSAMPLING_METHODS = ['count', 'first', 'last', 'min', 'max', 'sum', 'prod', 'mean',
+                        'median', 'std', 'var', 'percentile_<p>']
 
 class InputConfig(JsonObject):
     def __init__(self,
@@ -145,8 +148,7 @@ class CubeConfig(JsonObject):
                  tile_size: Union[int, Tuple[int, int]] = None,
                  time_range: Tuple[str, Optional[str]] = None,
                  time_period: str = None,
-                 temporal_resampling:
-                    Mapping[str, Union[str, Tuple[str, Mapping[str, Any]]]]
+                 temporal_resampling: Mapping[str, Tuple[str, Mapping[str, Any]]]
                     = None,
                  chunks: Mapping[str, Optional[int]] = None,
                  metadata: Mapping[str, Any] = None,
@@ -210,13 +212,14 @@ class CubeConfig(JsonObject):
                 in temporal_resampling.items():
                 assert_instance(resampling_direction, str,
                                 'resampling type name')
-                assert_instance(resampling_method, (str, Tuple),
-                                'resampling method')
-                if isinstance(resampling_method, Tuple):
-                    assert_instance(resampling_method[0], str)
-                    assert_instance(resampling_method[1], collections.Mapping,
-                                    'resampling params')
-            self.temporal_resampling = dict(temporal_resampling)
+                assert_true(len(resampling_method) == 2,
+                            'Resampling method must consist of a method and a '
+                            'dictionary with additional parameters')
+                assert_instance(resampling_method[0], str)
+                assert_instance(resampling_method[1], collections.Mapping,
+                                'resampling params')
+                temporal_resampling[resampling_direction] = tuple(resampling_method)
+            self.temporal_resampling = temporal_resampling
 
         self.chunks = None
         if chunks is not None:
@@ -296,41 +299,25 @@ class CubeConfig(JsonObject):
                 temporal_resampling=JsonObjectSchema(
                     nullable=True,
                     properties=dict(
-                        upsampling=JsonComplexSchema(
-                            one_of=[
-                                JsonStringSchema(enum=UPSAMPLING_METHODS),
-                                JsonArraySchema(
-                                    nullable=True,
-                                    items=[
-                                        JsonStringSchema(
-                                            enum=UPSAMPLING_METHODS
-                                        ),
-                                        JsonObjectSchema(
-                                            additional_properties=
-                                                JsonObjectSchema(
-                                                additional_properties=True
-                                            )
-                                        )
-                                    ]
+                        upsampling=JsonArraySchema(
+                            nullable=True,
+                            items=[
+                                JsonStringSchema(
+                                    enum=UPSAMPLING_METHODS
+                                ),
+                                JsonObjectSchema(
+                                    additional_properties=True
                                 )
                             ]
                         ),
-                        downsampling=JsonComplexSchema(
-                            one_of=[
-                                JsonStringSchema(enum=DOWNSAMPLING_METHODS),
-                                JsonArraySchema(
-                                    nullable=True,
-                                    items=[
-                                        JsonStringSchema(
-                                            enum=DOWNSAMPLING_METHODS
-                                        ),
-                                        JsonObjectSchema(
-                                            additional_properties=
-                                            JsonObjectSchema(
-                                                additional_properties=True
-                                            )
-                                        )
-                                    ]
+                        downsampling=JsonArraySchema(
+                            nullable=True,
+                            items=[
+                                JsonStringSchema(
+                                    enum=DOWNSAMPLING_METHODS
+                                ),
+                                JsonObjectSchema(
+                                    additional_properties=True
                                 )
                             ]
                         )
