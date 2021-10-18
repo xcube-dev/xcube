@@ -35,6 +35,9 @@ UPSAMPLING_METHODS = ['asfreq', 'ffill', 'bfill', 'pad', 'nearest',
                       'interpolate']
 DOWNSAMPLING_METHODS = ['count', 'first', 'last', 'min', 'max', 'sum', 'prod',
                         'mean', 'median', 'std', 'var', 'percentile']
+SPLINE_INTERPOLATION_KINDS = ['zero', 'slinear', 'quadratic', 'cubic']
+OTHER_INTERPOLATION_KINDS = ['linear', 'nearest', 'previous', 'next']
+INTERPOLATION_KINDS = SPLINE_INTERPOLATION_KINDS + OTHER_INTERPOLATION_KINDS
 
 TIMEUNIT_INCREMENTS = dict(
     YS=[1, 0, 0, 0],

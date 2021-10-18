@@ -27,6 +27,7 @@ import xarray as xr
 from xcube.core.gridmapping import GridMapping
 from xcube.core.resampling import resample_in_time
 from xcube.core.resampling.temporal import adjust_metadata_and_chunking
+from xcube.core.resampling.temporal import INTERPOLATION_KINDS
 from xcube.util.assertions import assert_instance
 from .transformer import CubeTransformer
 from .transformer import TransformedCube
@@ -119,8 +120,27 @@ class CubeResamplerT(CubeTransformer):
                             cube_config.temporal_resampling.get('upsampling'))
                 if method == 'interpolate':
                     time_resample_params['method'] = method
+                    if 'kind' not in method_args:
+                        interpolation_kinds = \
+                            ', '.join(map(repr, INTERPOLATION_KINDS))
+                        raise ValueError(f"To use 'interpolation' as "
+                                         f"upsampling method, the "
+                                         f"interpolation kind must be set. "
+                                         f"Use any of the following: "
+                                         f"{interpolation_kinds}.")
+                    if method_args['kind'] not in INTERPOLATION_KINDS:
+                        interpolation_kinds = \
+                            ', '.join(map(repr, INTERPOLATION_KINDS))
+                        raise ValueError(f'Interpolation kind must be one of '
+                                         f'the following: '
+                                         f'{interpolation_kinds}. Was: '
+                                         f'"{method_args["kind"]}".')
                     time_resample_params['interp_kind'] = method_args['kind']
                 elif method == 'percentile':
+                    if 'threshold' not in method_args:
+                        raise ValueError(f"To use 'percentile' as "
+                                         f"downsampling method, a "
+                                         f"threshold must be set.")
                     method = f'percentile_{method_args["threshold"]}'
                     time_resample_params['method'] = method
                 else:
