@@ -107,7 +107,6 @@ def get_versions(dependency_names: List[str], plugin_names: List[str]) \
                 dependencies_dict[module_key.split('.version')[0]] \
                     = module_version(module)
             except BaseException as e:
-                print(e)
                 dependencies_dict[module_key.split('.version')[0]] = "installed"
 
     return dependencies_dict
