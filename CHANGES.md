@@ -11,9 +11,8 @@
   pattern, e.g., '4D') and the newly introduced parameter `temporal_resampling`.
   To sample down to a broader temporal resolution, use any of `['count', 
   'first', 'last', 'min', 'max', 'sum', 'prod', 'mean', 'median', 'std', 
-  'var', 'percentile_<p>']`, to sample up to a finer resolution, use any of 
-  `['asfreq', 'ffill', 'bfill', 'pad', 'nearest', 'nearest-up', 'zero', 
-  'slinear', 'quadratic', 'cubic', 'previous', 'next']`. (#523)
+  'var', 'percentile']`, to sample up to a finer resolution, use any of 
+  `['asfreq', 'ffill', 'bfill', 'pad', 'nearest', 'interpolate']`. (#523)
 
 ### Other
 
