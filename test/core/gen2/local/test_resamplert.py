@@ -33,7 +33,7 @@ class CubeResamplerTTest(unittest.TestCase):
             transform_cube(cube,
                            GridMapping.from_dataset(cube),
                            cube_config)
-        self.assertEquals(cube, resampled_cube)
+        self.assertEqual(cube, resampled_cube)
 
     def test_transform_cube_downsample_to_years(self):
         cube_config = CubeConfig(time_range=('2010-01-01', '2014-12-31'),
@@ -59,9 +59,9 @@ class CubeResamplerTTest(unittest.TestCase):
             np.array([['2010-01-01T00:00:00', '2012-01-01T00:00:00'],
                       ['2012-01-01T00:00:00', '2014-01-01T00:00:00']],
                      dtype=np.datetime64))
-        self.assertEquals((2, 5, 10), resampled_cube.B03.shape)
-        self.assertAlmostEquals(0.0, resampled_cube.B03[0].values.min(), 8)
-        self.assertAlmostEquals(16.0, resampled_cube.B03[1].values.min(), 8)
+        self.assertEqual((2, 5, 10), resampled_cube.B03.shape)
+        self.assertAlmostEqual(0.0, resampled_cube.B03[0].values.min(), 8)
+        self.assertAlmostEqual(16.0, resampled_cube.B03[1].values.min(), 8)
 
     def test_transform_cube_downsample_to_months(self):
         cube_config = CubeConfig(time_range=('2010-08-01', '2010-11-30'),
@@ -87,9 +87,9 @@ class CubeResamplerTTest(unittest.TestCase):
             np.array([['2010-08-01T00:00:00', '2010-10-01T00:00:00'],
                       ['2010-10-01T00:00:00', '2010-12-01T00:00:00']],
                      dtype=np.datetime64))
-        self.assertEquals((2, 5, 10), resampled_cube.B03.shape)
-        self.assertAlmostEquals(0.0, resampled_cube.B03[0].values.min(), 8)
-        self.assertAlmostEquals(8.0, resampled_cube.B03[1].values.min(), 8)
+        self.assertEqual((2, 5, 10), resampled_cube.B03.shape)
+        self.assertAlmostEqual(0.0, resampled_cube.B03[0].values.min(), 8)
+        self.assertAlmostEqual(8.0, resampled_cube.B03[1].values.min(), 8)
 
     def test_transform_cube_downsample_to_weeks(self):
         cube_config = CubeConfig(time_range=('2010-08-03', '2010-09-10'),
@@ -117,10 +117,10 @@ class CubeResamplerTTest(unittest.TestCase):
                       ['2010-08-15T00:00:00', '2010-08-29T00:00:00'],
                       ['2010-08-29T00:00:00', '2010-09-12T00:00:00']],
                      dtype=np.datetime64))
-        self.assertEquals((3, 5, 10), resampled_cube.B03.shape)
-        self.assertAlmostEquals(10.0, resampled_cube.B03[0].values.min(), 8)
-        self.assertAlmostEquals(24.0, resampled_cube.B03[1].values.min(), 8)
-        self.assertAlmostEquals(31.0, resampled_cube.B03[2].values.min(), 8)
+        self.assertEqual((3, 5, 10), resampled_cube.B03.shape)
+        self.assertAlmostEqual(10.0, resampled_cube.B03[0].values.min(), 8)
+        self.assertAlmostEqual(24.0, resampled_cube.B03[1].values.min(), 8)
+        self.assertAlmostEqual(31.0, resampled_cube.B03[2].values.min(), 8)
 
     def test_transform_cube_upsample_to_months(self):
         cube_config = CubeConfig(time_range=('2011-10-01', '2012-03-31'),
@@ -149,13 +149,13 @@ class CubeResamplerTTest(unittest.TestCase):
                       ['2011-12-01T00:00:00', '2012-02-01T00:00:00'],
                       ['2012-02-01T00:00:00', '2012-04-01T00:00:00']],
                      dtype=np.datetime64))
-        self.assertEquals((3, 5, 10), resampled_cube.B03.shape)
-        self.assertAlmostEquals(0.33561644,
-                                resampled_cube.B03[0].values.min(), 8)
-        self.assertAlmostEquals(0.50273973,
-                                resampled_cube.B03[1].values.min(), 8)
-        self.assertAlmostEquals(0.66712329,
-                                resampled_cube.B03[2].values.min(), 8)
+        self.assertEqual((3, 5, 10), resampled_cube.B03.shape)
+        self.assertAlmostEqual(0.33561644,
+                               resampled_cube.B03[0].values.min(), 8)
+        self.assertAlmostEqual(0.50273973,
+                               resampled_cube.B03[1].values.min(), 8)
+        self.assertAlmostEqual(0.66712329,
+                               resampled_cube.B03[2].values.min(), 8)
 
     def test_transform_cube_upsample_to_weeks(self):
         cube_config = CubeConfig(time_range=('2010-09-01', '2010-10-10'),
@@ -181,9 +181,9 @@ class CubeResamplerTTest(unittest.TestCase):
             np.array([['2010-08-29T00:00:00', '2010-09-26T00:00:00'],
                       ['2010-09-26T00:00:00', '2010-10-24T00:00:00']],
                      dtype=np.datetime64))
-        self.assertEquals((2, 5, 10), resampled_cube.B03.shape)
-        self.assertAlmostEquals(0.0, resampled_cube.B03[0].values.min(), 8)
-        self.assertAlmostEquals(1.0, resampled_cube.B03[1].values.min(), 8)
+        self.assertEqual((2, 5, 10), resampled_cube.B03.shape)
+        self.assertAlmostEqual(0.0, resampled_cube.B03[0].values.min(), 8)
+        self.assertAlmostEqual(1.0, resampled_cube.B03[1].values.min(), 8)
 
     def test_transform_cube_upsample_to_days(self):
         cube_config = CubeConfig(time_range=('2010-08-14', '2010-08-24'),
@@ -215,17 +215,17 @@ class CubeResamplerTTest(unittest.TestCase):
                       ['2010-08-20T00:00:00', '2010-08-22T00:00:00'],
                       ['2010-08-22T00:00:00', '2010-08-24T00:00:00']],
                      dtype=np.datetime64))
-        self.assertEquals((5, 5, 10), resampled_cube.B03.shape)
-        self.assertAlmostEquals(0.5,
-                                resampled_cube.B03[0].values.min(), 8)
-        self.assertAlmostEquals(0.78571429,
-                                resampled_cube.B03[1].values.min(), 8)
-        self.assertAlmostEquals(1.07142857,
-                                resampled_cube.B03[2].values.min(), 8)
-        self.assertAlmostEquals(1.35714286,
-                                resampled_cube.B03[3].values.min(), 8)
-        self.assertAlmostEquals(1.64285714,
-                                resampled_cube.B03[4].values.min(), 8)
+        self.assertEqual((5, 5, 10), resampled_cube.B03.shape)
+        self.assertAlmostEqual(0.5,
+                               resampled_cube.B03[0].values.min(), 8)
+        self.assertAlmostEqual(0.78571429,
+                               resampled_cube.B03[1].values.min(), 8)
+        self.assertAlmostEqual(1.07142857,
+                               resampled_cube.B03[2].values.min(), 8)
+        self.assertAlmostEqual(1.35714286,
+                               resampled_cube.B03[3].values.min(), 8)
+        self.assertAlmostEqual(1.64285714,
+                               resampled_cube.B03[4].values.min(), 8)
 
     def test_transform_cube_downsample_to_years_cftimes(self):
         cube_config = CubeConfig(time_range=('2010-01-01', '2014-12-31'),
@@ -251,9 +251,9 @@ class CubeResamplerTTest(unittest.TestCase):
              cftime.DatetimeProlepticGregorian(2012, 1, 1)],
              [cftime.DatetimeProlepticGregorian(2012, 1, 1),
               cftime.DatetimeProlepticGregorian(2014, 1, 1)]])
-        self.assertEquals((2, 5, 10), resampled_cube.B03.shape)
-        self.assertAlmostEquals(0.0, resampled_cube.B03[0].values.min(), 8)
-        self.assertAlmostEquals(16.0, resampled_cube.B03[1].values.min(), 8)
+        self.assertEqual((2, 5, 10), resampled_cube.B03.shape)
+        self.assertAlmostEqual(0.0, resampled_cube.B03[0].values.min(), 8)
+        self.assertAlmostEqual(16.0, resampled_cube.B03[1].values.min(), 8)
 
     def test_transform_cube_upsample_to_months_cftimes(self):
         cube_config = CubeConfig(time_range=('2011-10-01', '2012-03-31'),
@@ -284,10 +284,10 @@ class CubeResamplerTTest(unittest.TestCase):
               cftime.DatetimeProlepticGregorian(2012, 2, 1)],
              [cftime.DatetimeProlepticGregorian(2012, 2, 1),
               cftime.DatetimeProlepticGregorian(2012, 4, 1)]])
-        self.assertEquals((3, 5, 10), resampled_cube.B03.shape)
-        self.assertAlmostEquals(0.33561644,
-                                resampled_cube.B03[0].values.min(), 8)
-        self.assertAlmostEquals(0.50273973,
-                                resampled_cube.B03[1].values.min(), 8)
-        self.assertAlmostEquals(0.66712329,
-                                resampled_cube.B03[2].values.min(), 8)
+        self.assertEqual((3, 5, 10), resampled_cube.B03.shape)
+        self.assertAlmostEqual(0.33561644,
+                               resampled_cube.B03[0].values.min(), 8)
+        self.assertAlmostEqual(0.50273973,
+                               resampled_cube.B03[1].values.min(), 8)
+        self.assertAlmostEqual(0.66712329,
+                               resampled_cube.B03[2].values.min(), 8)
