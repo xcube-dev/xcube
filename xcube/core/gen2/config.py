@@ -25,6 +25,8 @@ from typing import Optional, Any, Sequence, Mapping, Tuple, Union, Iterable
 
 import pyproj
 
+from xcube.core.resampling.temporal import DOWNSAMPLING_METHODS
+from xcube.core.resampling.temporal import UPSAMPLING_METHODS
 from xcube.util.assertions import assert_given
 from xcube.util.assertions import assert_instance
 from xcube.util.assertions import assert_true
@@ -37,12 +39,6 @@ from xcube.util.jsonschema import JsonObject
 from xcube.util.jsonschema import JsonObjectSchema
 from xcube.util.jsonschema import JsonStringSchema
 
-
-UPSAMPLING_METHODS = ['asfreq', 'ffill', 'bfill', 'pad', 'nearest', 'nearest-up',
-                      'linear', 'zero', 'slinear', 'quadratic', 'cubic', 'previous',
-                      'next']
-DOWNSAMPLING_METHODS = ['count', 'first', 'last', 'min', 'max', 'sum', 'prod', 'mean',
-                        'median', 'std', 'var', 'percentile_<p>']
 
 class InputConfig(JsonObject):
     def __init__(self,

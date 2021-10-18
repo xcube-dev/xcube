@@ -50,7 +50,10 @@ class CubeGeneratorRequestTest(unittest.TestCase):
                              spatial_res=0.05,
                              time_range=['2018-01-01', None],
                              time_period='4D',
-                             temporal_resampling=dict(upsampling=('slinear', {}))),
+                             temporal_resampling=dict(
+                                 upsampling=('interpolate',
+                                             {'kind': 'slinear'}))
+                             ),
             output_config=dict(store_id='memory',
                                data_id='CHL')
         )
@@ -70,7 +73,7 @@ class CubeGeneratorRequestTest(unittest.TestCase):
         self.assertEqual(0.05, gen_config.cube_config.spatial_res)
         self.assertEqual(('2018-01-01', None), gen_config.cube_config.time_range)
         self.assertEqual('4D', gen_config.cube_config.time_period)
-        self.assertEqual(dict(upsampling=('slinear', {})),
+        self.assertEqual(dict(upsampling=('interpolate', {'kind': 'slinear'})),
                          gen_config.cube_config.temporal_resampling)
 
     def test_to_dict(self):
@@ -83,7 +86,9 @@ class CubeGeneratorRequestTest(unittest.TestCase):
                              spatial_res=0.05,
                              time_range=['2018-01-01', None],
                              time_period='4D',
-                             temporal_resampling=dict(upsampling=['slinear', {}])),
+                             temporal_resampling=dict(
+                                 downsampling=['percentile', {'threshold': 70}])
+                             ),
             output_config=dict(store_id='memory',
                                replace=False,
                                data_id='CHL')

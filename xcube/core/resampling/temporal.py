@@ -31,10 +31,11 @@ from xcube.core.schema import CubeSchema
 from xcube.core.select import select_variables_subset
 from xcube.core.verify import assert_cube
 
-UPSAMPLING_METHODS = ['asfreq', 'ffill', 'bfill', 'pad', 'nearest', 'interpolate']
+UPSAMPLING_METHODS = ['asfreq', 'ffill', 'bfill', 'pad', 'nearest',
+                      'interpolate']
 DOWNSAMPLING_METHODS = ['count', 'first', 'last', 'min', 'max', 'sum', 'prod',
-                        'mean', 'median', 'std', 'var', 'quantile']
-RESAMPLING_METHODS = UPSAMPLING_METHODS + DOWNSAMPLING_METHODS
+                        'mean', 'median', 'std', 'var', 'percentile']
+
 TIMEUNIT_INCREMENTS = dict(
     YS=[1, 0, 0, 0],
     QS=[0, 3, 0, 0],
@@ -220,7 +221,7 @@ def _adjust_times_and_bounds(time_values, frequency, method):
             half_time_delta = np.timedelta64(84 * time_value, 'h')
         else:
             raise ValueError(f'Unsupported time unit "{time_unit}"')
-        if method in DOWNSAMPLING_METHODS:
+        if method not in UPSAMPLING_METHODS:
             time_values += half_time_delta
         time_bounds_values = \
             np.array([time_values - half_time_delta,
@@ -249,7 +250,7 @@ def _adjust_times_and_bounds(time_values, frequency, method):
         half_next_ts = _get_next_timestamp(ts, time_unit, time_value, True)
         # depending on whether the data was sampled down or up,
         # times need to be adjusted differently
-        if method in DOWNSAMPLING_METHODS:
+        if method not in UPSAMPLING_METHODS:
             new_timestamps.append(_convert(half_next_ts, calendar))
             new_timestamp_bounds.append([_convert(ts, calendar),
                                          _convert(next_ts, calendar)])
