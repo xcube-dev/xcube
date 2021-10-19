@@ -19,7 +19,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-from typing import List, Optional, Mapping, Any
+from typing import List, Optional, Mapping, Any, Sequence
 
 import click
 
@@ -51,7 +51,7 @@ DEFAULT_STYLE_ID = 'default'
                    f' Defaults to {DEFAULT_STYLE_ID!r}.')
 @click.option('--output', '-o', 'output_path', metavar='OUTPUT', default=DEFAULT_OUTPUT_PATH,
               help=f'Output path. Defaults to {DEFAULT_OUTPUT_PATH!r}')
-@click.option('--verbose', '-v', is_flag=True, multiple=True,
+@click.option('--verbose', '-v', count=True,
               help=f'Use -vv to report all files generated, -v to report less.')
 @click.option('--dry-run', 'dry_run', is_flag=True,
               help=f'Generate all tiles but don\'t write any files.')
@@ -62,7 +62,7 @@ def tile(cube: str,
          config_path: Optional[str],
          style_id: Optional[str],
          output_path: Optional[str],
-         verbose: List[bool],
+         verbose: int,
          dry_run: bool):
     """
     Create RGBA tiles from CUBE.
@@ -187,7 +187,7 @@ def tile(cube: str,
 
     labels = parse_cli_kwargs(labels, metavar='LABELS')
 
-    verbosity = len(verbose)
+    verbosity = verbose
 
     config = {}
     if config_path:
