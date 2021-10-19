@@ -21,7 +21,7 @@
 
 import os
 import os.path
-from typing import Tuple, Callable, Sequence
+from typing import Callable
 
 import click
 
