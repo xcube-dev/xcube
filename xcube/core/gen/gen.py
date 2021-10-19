@@ -238,21 +238,21 @@ def _process_input(input_processor: InputProcessor,
 
     steps.append((step1, 'pre-processing input slice'))
 
-    geo_coding = None
+    grid_mapping = None
 
     # noinspection PyShadowingNames
     def step1a(input_slice):
-        nonlocal geo_coding
-        geo_coding = GridMapping.from_dataset(input_slice)
+        nonlocal grid_mapping
+        grid_mapping = GridMapping.from_dataset(input_slice)
         subset = select_spatial_subset(input_slice,
                                        xy_bbox=output_geom.xy_bbox,
                                        xy_border=output_geom.x_res,
                                        ij_border=1,
-                                       geo_coding=geo_coding)
+                                       grid_mapping=grid_mapping)
         if subset is None:
             monitor('no spatial overlap with input')
         elif subset is not input_slice:
-            geo_coding = GridMapping.from_dataset(subset)
+            grid_mapping = GridMapping.from_dataset(subset)
         return subset
 
     steps.append((step1a, 'spatial subsetting'))
@@ -276,7 +276,7 @@ def _process_input(input_processor: InputProcessor,
     def step4(input_slice):
         # noinspection PyTypeChecker
         return input_processor.process(input_slice,
-                                       geo_coding=geo_coding,
+                                       geo_coding=grid_mapping,
                                        output_geom=output_geom,
                                        output_resampling=output_resampling,
                                        include_non_spatial_vars=False)
