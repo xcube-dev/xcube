@@ -60,7 +60,7 @@ def gen2(request_path: str,
          service_config_path: str = None,
          output_file: str = None,
          info: bool = False,
-         verbose: int = 0):
+         verbosity: int = 0):
     """
     Generator tool for data cubes.
 
