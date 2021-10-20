@@ -48,7 +48,7 @@ def prune(dataset_path: str,
     (NaN-only) chunks in given DATASET,
     which must have Zarr format.
     """
-    max_verbosity = verbose if verbose else 0
+    max_verbosity = verbose
 
     def monitor(msg: str, verbosity: int = 1):
         if verbosity <= max_verbosity:
