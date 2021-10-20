@@ -50,7 +50,7 @@ import click
               help='Write cube information or generation result into JSON'
                    ' file RESULT.'
                    ' If omitted, the JSON is dumped to stdout.')
-@click.option('--verbose', '-v',
+@click.option('--verbose', '-v', 'verbosity',
               count=True,
               help='Control amount of information dumped to stdout.'
                    ' May be given multiple time to output more details,'
