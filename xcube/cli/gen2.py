@@ -123,8 +123,6 @@ def gen2(request_path: str,
     from xcube.core.gen2 import CubeGeneratorRequest
     from xcube.util.versions import get_xcube_versions
 
-    verbosity = verbose
-
     error = None
 
     # noinspection PyBroadException

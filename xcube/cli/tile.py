@@ -187,8 +187,6 @@ def tile(cube: str,
 
     labels = parse_cli_kwargs(labels, metavar='LABELS')
 
-    verbosity = verbose
-
     config = {}
     if config_path:
         if verbosity:
