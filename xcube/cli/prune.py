@@ -40,7 +40,7 @@ Monitor = Callable[[str, int], None]
               help='Just read and process input, '
                    'but don\'t produce any output.')
 def prune(dataset_path: str,
-          verbose: int,
+          verbosity: int,
           dry_run: bool):
     """
     Delete empty chunks.
