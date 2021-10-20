@@ -62,7 +62,7 @@ def tile(cube: str,
          config_path: Optional[str],
          style_id: Optional[str],
          output_path: Optional[str],
-         verbose: int,
+         verbosity: int,
          dry_run: bool):
     """
     Create RGBA tiles from CUBE.
