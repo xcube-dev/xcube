@@ -7,7 +7,7 @@ dependencies:
   - python >=3.8
   # Required
   - affine >=2.2
-  - click >=7.0
+  - click >=8.0
   - cmocean >=2.0
   - dask >=2021.6
   - dask-image >=0.6

@@ -21,7 +21,7 @@
 
 import os
 import os.path
-from typing import Tuple, Callable
+from typing import Callable
 
 import click
 
@@ -33,14 +33,14 @@ Monitor = Callable[[str, int], None]
 # noinspection PyShadowingBuiltins
 @click.command(name='prune')
 @click.argument('dataset_path', metavar='DATASET')
-@click.option('--verbose', '-v', is_flag=True, multiple=True,
+@click.option('--verbose', '-v', 'verbosity', count=True,
               help='Verbose mode. Multiple may be given, '
                    'for example "-vvv".')
 @click.option('--dry-run', is_flag=True,
               help='Just read and process input, '
                    'but don\'t produce any output.')
 def prune(dataset_path: str,
-          verbose: Tuple[bool, ...],
+          verbosity: int,
           dry_run: bool):
     """
     Delete empty chunks.
@@ -48,10 +48,9 @@ def prune(dataset_path: str,
     (NaN-only) chunks in given DATASET,
     which must have Zarr format.
     """
-    max_verbosity = sum(verbose)
 
-    def monitor(msg: str, verbosity: int = 1):
-        if verbosity <= max_verbosity:
+    def monitor(msg: str, monitor_verbosity: int = 1):
+        if monitor_verbosity <= verbosity:
             print(msg)
 
     _prune(input_path=dataset_path, dry_run=dry_run, monitor=monitor)
