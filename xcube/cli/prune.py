@@ -33,7 +33,7 @@ Monitor = Callable[[str, int], None]
 # noinspection PyShadowingBuiltins
 @click.command(name='prune')
 @click.argument('dataset_path', metavar='DATASET')
-@click.option('--verbose', '-v', count=True,
+@click.option('--verbose', '-v', 'verbosity', count=True,
               help='Verbose mode. Multiple may be given, '
                    'for example "-vvv".')
 @click.option('--dry-run', is_flag=True,
