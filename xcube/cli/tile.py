@@ -51,7 +51,7 @@ DEFAULT_STYLE_ID = 'default'
                    f' Defaults to {DEFAULT_STYLE_ID!r}.')
 @click.option('--output', '-o', 'output_path', metavar='OUTPUT', default=DEFAULT_OUTPUT_PATH,
               help=f'Output path. Defaults to {DEFAULT_OUTPUT_PATH!r}')
-@click.option('--verbose', '-v', count=True,
+@click.option('--verbose', '-v', 'verbosity', count=True,
               help=f'Use -vv to report all files generated, -v to report less.')
 @click.option('--dry-run', 'dry_run', is_flag=True,
               help=f'Generate all tiles but don\'t write any files.')
