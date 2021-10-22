@@ -20,6 +20,7 @@
 # SOFTWARE.
 
 import abc
+import dask
 import math
 from typing import Tuple, Union, Dict
 
@@ -269,6 +270,220 @@ def new_grid_mapping_from_coords(
                is_regular=is_regular,
                is_lon_360=is_lon_360,
                is_j_axis_up=is_j_axis_up)
+
+
+def new_grid_mapping_from_coords_optimized(
+        x_coords: xr.DataArray,
+        y_coords: xr.DataArray,
+        crs: Union[str, pyproj.crs.CRS],
+        *,
+        tile_size: Union[int, Tuple[int, int]] = None,
+        tolerance: float = 1e-5,
+) -> GridMapping:
+    crs = _normalize_crs(crs)
+    assert_instance(x_coords, xr.DataArray, name='x_coords')
+    assert_instance(y_coords, xr.DataArray, name='y_coords')
+    assert_true(x_coords.ndim in (1, 2),
+                'x_coords and y_coords must be either 1D or 2D arrays')
+    assert_instance(tolerance, float, name='tolerance')
+    assert_true(tolerance > 0.0,
+                'tolerance must be greater zero')
+
+    if x_coords.name and y_coords.name:
+        xy_var_names = str(x_coords.name), str(y_coords.name)
+    else:
+        xy_var_names = _default_xy_var_names(crs)
+
+    tile_size = _normalize_int_pair(tile_size, default=None)
+    is_lon_360 = None  # None means "not yet known"
+    if crs.is_geographic:
+        is_lon_360 = bool(np.any(x_coords > 180))  # TODO: expensive stmt
+
+    if x_coords.ndim == 1:
+        # We have 1D x,y coordinates
+        cls = Coords1DGridMapping
+        cls_params = dask.delayed(_get_cls_params_1d)\
+            (x_coords, y_coords, is_lon_360, crs, tile_size, tolerance)
+    else:
+        # We have 2D x,y coordinates
+        cls = Coords2DGridMapping
+        cls_params = dask.delayed(_get_cls_params_2d)\
+            (x_coords, y_coords, is_lon_360, crs, tile_size, tolerance)
+
+    gm_params = dask.delayed(_get_gm_params)(cls_params)
+    x_min, y_min, x_max, y_max, x_coords, y_coords, size, tile_size, x_res, \
+    y_res, x_dim, y_dim, is_regular, is_lon_360, is_j_axis_up = \
+        gm_params.compute()
+    bbox = (x_min, y_min, x_max, y_max)
+
+    return cls(x_coords=x_coords,
+               y_coords=y_coords,
+               crs=crs,
+               size=size,
+               tile_size=tile_size,
+               xy_bbox=bbox,
+               xy_res=(x_res, y_res),
+               xy_var_names=xy_var_names,
+               xy_dim_names=(str(x_dim), str(y_dim)),
+               is_regular=is_regular,
+               is_lon_360=is_lon_360,
+               is_j_axis_up=is_j_axis_up)
+
+
+def _get_cls_params_1d(x_coords, y_coords, is_lon_360, crs, tile_size,
+                       tolerance):
+    assert_true(x_coords.size >= 2 and y_coords.size >= 2,
+                'sizes of x_coords and y_coords 1D arrays must be >= 2')
+
+    size = x_coords.size, y_coords.size
+
+    x_dim, y_dim = x_coords.dims[0], y_coords.dims[0]
+
+    x_diff = _abs_no_zero(x_coords.diff(dim=x_dim).values)
+    y_diff = _abs_no_zero(y_coords.diff(dim=y_dim).values)
+
+    if not is_lon_360 and crs.is_geographic:
+        is_anti_meridian_crossed = np.any(np.nanmax(x_diff) > 180)
+        if is_anti_meridian_crossed:
+            x_coords = to_lon_360(x_coords)
+            x_diff = _abs_no_zero(x_coords.diff(dim=x_dim))
+            is_lon_360 = True
+
+    x_res, y_res = x_diff[0], y_diff[0]
+    x_diff_equal = np.allclose(x_diff, x_res, atol=tolerance)
+    y_diff_equal = np.allclose(y_diff, y_res, atol=tolerance)
+    is_regular = x_diff_equal and y_diff_equal
+    if is_regular:
+        x_res = round_to_fraction(x_res, 5, 0.25)
+        y_res = round_to_fraction(y_res, 5, 0.25)
+    else:
+        x_res = round_to_fraction(float(np.nanmedian(x_diff)), 2, 0.5)
+        y_res = round_to_fraction(float(np.nanmedian(y_diff)), 2, 0.5)
+
+    if tile_size is None \
+            and x_coords.chunks is not None \
+            and y_coords.chunks is not None:
+        tile_size = (max(0, *x_coords.chunks[0]),
+                     max(0, *y_coords.chunks[0]))
+
+    # Guess j axis direction
+    is_j_axis_up = bool(y_coords[0] < y_coords[-1])
+    return x_coords, y_coords, size, tile_size, x_res, y_res, x_dim, y_dim, \
+           is_regular, is_lon_360, is_j_axis_up
+
+
+def _get_cls_params_2d(x_coords, y_coords, is_lon_360, crs, tile_size,
+                       tolerance):
+    assert_true(x_coords.shape == y_coords.shape,
+                'shapes of x_coords and y_coords'
+                ' 2D arrays must be equal')
+    assert_true(x_coords.dims == y_coords.dims,
+                'dimensions of x_coords and y_coords'
+                ' 2D arrays must be equal')
+
+    x_res = 0
+    y_res = 0
+
+    y_dim, x_dim = x_coords.dims
+
+    height, width = x_coords.shape
+    size = width, height
+
+    x = da.asarray(x_coords)
+    y = da.asarray(y_coords)
+
+    x_x_diff = _abs_no_nan(da.diff(x, axis=1))
+    x_y_diff = _abs_no_nan(da.diff(x, axis=0))
+    y_x_diff = _abs_no_nan(da.diff(y, axis=1))
+    y_y_diff = _abs_no_nan(da.diff(y, axis=0))
+
+    if not is_lon_360 and crs.is_geographic:
+        is_anti_meridian_crossed = da.any(da.max(x_x_diff) > 180) \
+                                    or da.any(da.max(x_y_diff) > 180)  # TODO: expensive stmt
+        if is_anti_meridian_crossed:
+            x_coords = to_lon_360(x_coords)
+            x = da.asarray(x_coords)
+            x_x_diff = _abs_no_nan(da.diff(x, axis=1))
+            x_y_diff = _abs_no_nan(da.diff(x, axis=0))
+            is_lon_360 = True
+
+    is_regular = False
+
+    if da.all(x_y_diff == 0) and da.all(y_x_diff == 0):  # TODO: expensive stmt
+        x_res = x_x_diff[0, 0]
+        y_res = y_y_diff[0, 0]
+        is_regular = \
+                da.allclose(x_x_diff[0, :], x_res, atol=tolerance) \
+                and da.allclose(x_x_diff[-1, :], x_res, atol=tolerance) \
+                and da.allclose(y_y_diff[:, 0], y_res, atol=tolerance) \
+                and da.allclose(y_y_diff[:, -1], y_res, atol=tolerance)
+
+    if not is_regular:
+        # Let diff arrays have same shape as original by
+        # doubling last rows and columns.
+        x_x_diff_c = da.concatenate([x_x_diff, x_x_diff[:, -1:]], axis=1)
+        y_x_diff_c = da.concatenate([y_x_diff, y_x_diff[:, -1:]], axis=1)
+        x_y_diff_c = da.concatenate([x_y_diff, x_y_diff[-1:, :]], axis=0)
+        y_y_diff_c = da.concatenate([y_y_diff, y_y_diff[-1:, :]], axis=0)
+        # Find resolution via area
+        x_abs_diff = da.sqrt(da.square(x_x_diff_c) + da.square(x_y_diff_c))
+        y_abs_diff = da.sqrt(da.square(y_x_diff_c) + da.square(y_y_diff_c))
+        if crs.is_geographic:
+            # Convert degrees into meters
+            x_abs_diff_r = da.radians(x_abs_diff)
+            y_abs_diff_r = da.radians(y_abs_diff)
+            x_abs_diff = _ER * da.cos(x_abs_diff_r) * y_abs_diff_r
+            y_abs_diff = _ER * y_abs_diff_r
+        xy_areas = (x_abs_diff * y_abs_diff).flatten()
+        xy_areas = da.where(xy_areas > 0, xy_areas, np.nan)
+        # Get indices of min and max area
+        xy_area_index_min = da.nanargmin(xy_areas)
+        xy_area_index_max = da.nanargmax(xy_areas)
+        # Convert area to edge length
+        xy_res_min = math.sqrt(xy_areas[xy_area_index_min])  # TODO: expensive stmt
+        xy_res_max = math.sqrt(xy_areas[xy_area_index_max])  # TODO: expensive stmt
+        # Empirically weight min more than max
+        xy_res = 0.7 * xy_res_min + 0.3 * xy_res_max
+        if crs.is_geographic:
+            # Convert meters back into degrees
+            # print(f'xy_res in meters: {xy_res}')
+            xy_res = math.degrees(xy_res / _ER)
+            # print(f'xy_res in degrees: {xy_res}')
+        # Because this is an estimation, we can round to a nice number
+        xy_res = round_to_fraction(xy_res, digits=1, resolution=0.5)
+        x_res, y_res = float(xy_res), float(xy_res)
+
+    if tile_size is None and x_coords.chunks is not None:
+        j_chunks, i_chunks = x_coords.chunks
+        tile_size = max(0, *i_chunks), max(0, *j_chunks)
+
+    if tile_size is not None:
+        tile_width, tile_height = tile_size
+        x_coords = x_coords.chunk((tile_height, tile_width))
+        y_coords = y_coords.chunk((tile_height, tile_width))
+
+    # Guess j axis direction
+    is_j_axis_up = np.all(y_coords[0, :] < y_coords[-1, :]) or None  # TODO: expensive stmt
+    return x_coords, y_coords, size, tile_size, x_res, y_res, x_dim, y_dim, \
+           is_regular, is_lon_360, is_j_axis_up
+
+
+def _get_gm_params(cls_params):
+    x_coords, y_coords, size, tile_size, x_res, y_res, x_dim, y_dim, \
+        is_regular, is_lon_360, is_j_axis_up = cls_params
+
+    assert_true(x_res > 0 and y_res > 0,
+                'internal error: x_res and y_res could not be determined',
+                exception_type=RuntimeError)
+
+    x_res, y_res = _to_int_or_float(x_res), _to_int_or_float(y_res)
+    x_res_05, y_res_05 = x_res / 2, y_res / 2
+    x_min = _to_int_or_float(x_coords.min() - x_res_05)  # TODO: expensive stmt
+    y_min = _to_int_or_float(y_coords.min() - y_res_05)  # TODO: expensive stmt
+    x_max = _to_int_or_float(x_coords.max() + x_res_05)  # TODO: expensive stmt
+    y_max = _to_int_or_float(y_coords.max() + y_res_05)  # TODO: expensive stmt
+    return x_min, y_min, x_max, y_max, x_coords, y_coords, size, tile_size, \
+           x_res, y_res, x_dim, y_dim, is_regular, is_lon_360, is_j_axis_up
 
 
 def _abs_no_zero(array: Union[xr.DataArray, da.Array, np.ndarray]):
