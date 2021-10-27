@@ -1,11 +1,15 @@
 ## Changes in 0.9.1 (in development)
 
 ### New features
-* Function `mask_dataset_by_geometry` has a new parameter `all_touched`:
-  If True, all pixels intersected by geometry outlines will be included in the mask. 
-  If False, only pixels whose center is within the polygon or that are selected by 
-  Bresenham’s line algorithm will be included in the mask. 
-  The default value is set to `False`. 
+
+* The `xcube.core.maskset.MaskSet` class no longer allocates static numpy 
+  arrays for masks. Instead, it uses lazy dask arrays. (#556)
+
+* Function `xcube.core.geom.mask_dataset_by_geometry` has a new parameter 
+  `all_touched`: If `True`, all pixels intersected by geometry outlines will 
+  be included in the mask. If `False`, only pixels whose center is within the 
+  polygon or that are selected by Bresenham’s line algorithm will be included  
+  in the mask. The default value is set to `False`. 
 
 ### Other
 
