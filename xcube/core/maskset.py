@@ -21,6 +21,7 @@
 
 from typing import Dict, Any, Iterable
 
+import dask.array as da
 import numpy as np
 import xarray as xr
 
@@ -125,6 +126,9 @@ class MaskSet:
                 raise KeyError(item)
         return self.get_mask(name)
 
+    def __contains__(self, item):
+        return item in self._flags
+
     def get_mask(self, flag_name: str):
         if flag_name not in self._flags:
             raise ValueError('invalid flag name "%s"' % flag_name)
@@ -135,7 +139,15 @@ class MaskSet:
         flag_var = self._flag_var
         flag_mask, flag_value = self._flags[flag_name]
 
-        mask_var = xr.DataArray(np.ones(flag_var.shape, dtype=np.uint8),
+        if flag_var.chunks is not None:
+            ones_array = da.ones(flag_var.shape,
+                                 dtype=np.uint8,
+                                 chunks=flag_var.chunks)
+        else:
+            ones_array = np.ones(flag_var.shape,
+                                 dtype=np.uint8)
+
+        mask_var = xr.DataArray(ones_array,
                                 dims=flag_var.dims,
                                 name=flag_name,
                                 coords=flag_var.coords)
