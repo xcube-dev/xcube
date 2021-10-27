@@ -2,7 +2,7 @@
 
 ### New features
 
-* The `xcube.core.maskset.MaskSet` class no longer allocate static numpy 
+* The `xcube.core.maskset.MaskSet` class no longer allocates static numpy 
   arrays for masks. Instead, it uses lazy dask arrays. (#556)
 
 * Function `xcube.core.geom.mask_dataset_by_geometry` has a new parameter 
