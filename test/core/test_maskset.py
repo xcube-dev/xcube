@@ -172,3 +172,16 @@ class MaskSetTest(unittest.TestCase):
         html = mask_set._repr_html_()
         self.assertTrue(html.startswith('<html>'))
         self.assertTrue(html.endswith('</html>'))
+
+    def test_mask_set_with_missing_values_and_masks_attrs(self):
+        flag_var = create_c2rcc_flag_var().chunk(dict(x=2, y=2))
+        flag_var.attrs.pop('flag_masks', None)
+        flag_var.attrs.pop('flag_values', None)
+        with self.assertRaises(ValueError):
+            MaskSet(flag_var)
+
+    def test_mask_set_with_missing_meanings_attr(self):
+        flag_var = create_c2rcc_flag_var().chunk(dict(x=2, y=2))
+        flag_var.attrs.pop('flag_meanings', None)
+        with self.assertRaises(ValueError):
+            MaskSet(flag_var)
