@@ -1,6 +1,7 @@
 import unittest
 from fractions import Fraction
 
+from xcube.core.gridmapping.helpers import _to_int_or_float
 from xcube.core.gridmapping.helpers import round_to_fraction
 
 
@@ -140,3 +141,30 @@ class RoundToFractionTest(unittest.TestCase):
             actual_fraction = round_to_fraction(value, **kwargs)
             self.assertEqual(expected_fraction, actual_fraction)
             self.assertAlmostEqual(expected_float, float(actual_fraction))
+
+
+class ToIntOrFloatTest(unittest.TestCase):
+
+    def test_down_to_int(self):
+        result = _to_int_or_float(90.0001)
+        self.assertEqual(90, result)
+
+    def test_leave_as_bigger_float(self):
+        result = _to_int_or_float(90.001)
+        self.assertEqual(90.001, result)
+
+    def test_up_to_int(self):
+        result = _to_int_or_float(89.9999)
+        self.assertEqual(90, result)
+
+    def test_leave_as_smaller_float(self):
+        result = _to_int_or_float(89.999)
+        self.assertEqual(89.999, result)
+
+    def test_up_to_int_small_value(self):
+        result = _to_int_or_float(0.99999)
+        self.assertEqual(1, result)
+
+    def test_leave_as_smaller_float_small_value(self):
+        result = _to_int_or_float(0.9999)
+        self.assertEqual(0.9999, result)
