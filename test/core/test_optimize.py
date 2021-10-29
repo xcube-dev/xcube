@@ -17,7 +17,7 @@ OUTPUT_CUBE_PATH = 'test_opt.zarr'
 OUTPUT_CUBE_PATTERN = '{input}_opt.zarr'
 
 INPUT_CUBE_FILE_SET = {
-    '.zattrs', '.zgroup',
+    '.zattrs', '.zgroup',  '.zmetadata',
     'A/.zarray', 'A/.zattrs', 'A/0.0.0', 'A/1.0.0', 'A/2.0.0',
     'B/.zarray', 'B/.zattrs', 'B/0.0.0', 'B/1.0.0', 'B/2.0.0',
     'lat/.zarray', 'lat/.zattrs', 'lat/0',

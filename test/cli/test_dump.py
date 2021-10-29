@@ -15,7 +15,7 @@ class DumpTest(CliDataTest):
         # post-change behaviour.
         output_template = (
             "<xarray.Dataset>\n"
-            "Dimensions:        (bnds: 2, lat: 180, lon: 360, time: 5)\n"
+            "Dimensions:        (time: 5, lat: 180, lon: 360, bnds: 2)\n"
             "Coordinates:\n"
             "  * lon            (lon) float64 -179.5 -178.5 -177.5 ... 177.5 178.5 179.5\n"
             "  * lat            (lat) float64 -89.5 -88.5 -87.5 -86.5 ... 86.5 87.5 88.5 89.5\n"
@@ -45,6 +45,6 @@ class DumpTest(CliDataTest):
             output_template % '2:00:00',  # for xarray v0.15.1 and below
             output_template % '...'  # for xarray v0.16.0 and above
         ]
-
+        print(result.output)
         self.assertIn(result.output, possible_outputs)
         self.assertEqual(0, result.exit_code)
