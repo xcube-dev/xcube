@@ -95,13 +95,6 @@ def append_time_slice(store: Union[str, MutableMapping],
 
     time_slice.to_zarr(store, mode='a', append_dim='time', consolidated=True)
 
-    # Note by forman:
-    # Since xcube 0.9.1 and xarray 0.19+ we no longer unchunk datasets,
-    # because this leads to problems with cf-decoded "time" and "time_bnds"
-    # variables. This is because we unchunk using the zarr API rather than
-    # xarray, but zarr isn't ware of CF encodings.
-    # Maybe the root cause lies in the time_slice.to_zarr() call above.
-    #
     unchunk_dataset(store, coords_only=True)
 
 
