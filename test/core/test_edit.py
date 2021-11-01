@@ -98,13 +98,12 @@ class EditVariablePropsTest(unittest.TestCase):
         self.assertEqual(ds1.__len__(), ds2.__len__())
         self.assertIn('geospatial_lat_max', ds2.attrs.keys())
         self.assertIn('geospatial_lat_min', ds2.attrs.keys())
-        self.assertIn('geospatial_lat_resolution', ds2.attrs.keys())
         self.assertIn('geospatial_lat_units', ds2.attrs.keys())
         self.assertIn('geospatial_lon_max', ds2.attrs.keys())
         self.assertEqual(180.0, ds2.attrs.__getitem__('geospatial_lon_max'))
         self.assertEqual(-180.0, ds2.attrs.__getitem__('geospatial_lon_min'))
-        self.assertEqual('2010-01-04T00:00:00.000000000', ds2.attrs.__getitem__('time_coverage_end'))
-        self.assertEqual('2010-01-01T00:00:00.000000000', ds2.attrs.__getitem__('time_coverage_start'))
+        self.assertEqual('2010-01-04T00:00:00', ds2.attrs.__getitem__('time_coverage_end'))
+        self.assertEqual('2010-01-01T00:00:00', ds2.attrs.__getitem__('time_coverage_start'))
         self.assertEqual('degrees_east', ds2.attrs.__getitem__('geospatial_lon_units'))
 
     def test_edit_metadata_in_place(self):

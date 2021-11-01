@@ -4,11 +4,11 @@ import numpy as np
 import xarray as xr
 import zarr
 
-from xcube.core.new import new_cube
+from test.core.diagnosticstore import DiagnosticStore, logging_observer
 from xcube.core.chunk import chunk_dataset
 from xcube.core.dsio import rimraf
+from xcube.core.new import new_cube
 from xcube.core.timeslice import find_time_slice, append_time_slice, insert_time_slice, replace_time_slice
-from test.core.diagnosticstore import DiagnosticStore, logging_observer
 
 
 class TimeSliceTest(unittest.TestCase):
@@ -88,9 +88,31 @@ class TimeSliceTest(unittest.TestCase):
         np.testing.assert_equal(cube.time.values, expected)
 
     def test_insert_time_slice(self):
-        self.write_cube('2019-01-02', 10)
+        self.write_cube('2019-01-02T00:00:00', 10)
 
-        insert_time_slice(self.CUBE_PATH, 5, self.make_slice('2019-01-06T02:00'))
+        cube = xr.open_zarr(self.CUBE_PATH)
+        expected = np.array(
+            ['2019-01-02T12:00:00', '2019-01-03T12:00:00',
+             '2019-01-04T12:00:00', '2019-01-05T12:00:00',
+             '2019-01-06T12:00:00', '2019-01-07T12:00:00',
+             '2019-01-08T12:00:00', '2019-01-09T12:00:00',
+             '2019-01-10T12:00:00', '2019-01-11T12:00:00'],
+            dtype=cube.time.dtype)
+        np.testing.assert_equal(cube.time.values, expected)
+
+        insert_time_slice(self.CUBE_PATH, 5,
+                          self.make_slice('2019-01-06T02:00:00'))
+
+        cube = xr.open_zarr(self.CUBE_PATH)
+        expected = np.array(
+            ['2019-01-02T12:00:00', '2019-01-03T12:00:00',
+             '2019-01-04T12:00:00', '2019-01-05T12:00:00',
+             '2019-01-06T12:00:00', '2019-01-06T14:00:00', '2019-01-07T12:00:00',
+             '2019-01-08T12:00:00', '2019-01-09T12:00:00',
+             '2019-01-10T12:00:00', '2019-01-11T12:00:00'],
+            dtype=cube.time.dtype)
+        np.testing.assert_equal(cube.time.values, expected)
+
         insert_time_slice(self.CUBE_PATH, 10, self.make_slice('2019-01-10T02:00'))
         insert_time_slice(self.CUBE_PATH, 0, self.make_slice('2019-01-01T02:00'))
 
@@ -102,9 +124,11 @@ class TimeSliceTest(unittest.TestCase):
                              '2019-01-08T12:00', '2019-01-09T12:00',
                              '2019-01-10T12:00', '2019-01-10T14:00',
                              '2019-01-11T12:00'], dtype=cube.time.dtype)
-        self.assertEqual(13, cube.time.size)
+        actual = cube.time.values
+        print(actual)
+        self.assertEqual(len(expected), len(actual))
         self.assertEqual(None, cube.time.chunks)
-        np.testing.assert_equal(cube.time.values, expected)
+        np.testing.assert_equal(actual, expected)
 
     def test_replace_time_slice(self):
         self.write_cube('2019-01-02', 10)

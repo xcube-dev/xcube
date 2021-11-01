@@ -85,11 +85,11 @@ class AssertAndVerifyCubeTest(unittest.TestCase):
     def test_verify_cube_coord_equidistance_reverse_lat(self):
         ds = new_cube()
         ds['lat'] = np.flip(ds.lat)
-        ds['lat_bnds'] = (['lat', 'bnds'], np.flip(ds.lat_bnds))
+        ds['lat_bnds'] = xr.DataArray(np.flip(ds.lat_bnds.values),
+                                      dims=['lat', 'bnds'])
 
         ds['lon'] = np.roll(ds.lon, 90)
-        ds['lon_bnds'] = (['lon', 'bnds'], np.roll(ds.lon_bnds, 180))
+        ds['lon_bnds'] = xr.DataArray(np.roll(ds.lon_bnds.values, 180),
+                                      dims=['lon', 'bnds'])
 
         self.assertEqual([], verify_cube(ds))
-
-
