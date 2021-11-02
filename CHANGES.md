@@ -13,6 +13,9 @@
 
 ### Other
 
+* Updated Dockerfile: Removed the usage of a no-longer-maintained base image.
+  Ensured that the version tag 'latest' can be used with installation mode 'release' for xcube plugins.
+
 ## Changes in 0.9.0
 
 ### New features
