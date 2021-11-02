@@ -1,4 +1,4 @@
-## Changes in 0.9.1 (in development)
+## Changes in 0.9.1
 
 ### New features
 
@@ -13,8 +13,12 @@
 
 ### Other
 
-* Updated Dockerfile: Removed the usage of a no-longer-maintained base image.
-  Ensured that the version tag 'latest' can be used with installation mode 'release' for xcube plugins.
+* Updated `Dockerfile`: Removed the usage of a no-longer-maintained base image.
+  Ensured that the version tag 'latest' can be used with installation mode 
+  'release' for xcube plugins.
+
+* The `xcube` package now requires `xarray >= 0.19`, `zarr >= 2.8`, 
+  `pandas >= 1.3`.
 
 ## Changes in 0.9.0
 
