@@ -13,6 +13,9 @@
 
 ### Other
 
+* Dockerfile: Removed the usage of xcube python docker base image. 
+* Dockerfile: Ensured that the version tag 'latest' can be used with installation mode 'release' for xcube plugins
+
 ## Changes in 0.9.0
 
 ### New features
