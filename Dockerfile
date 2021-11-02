@@ -24,7 +24,7 @@ RUN apt-get -y update && apt-get -y upgrade vim jq curl
 SHELL ["/bin/bash", "-c"]
 RUN groupadd -g 1000 ${XCUBE_USER_NAME}
 RUN useradd -u 1000 -g 1000 -ms /bin/bash ${XCUBE_USER_NAME}
-RUN mkdir /workspace && chown ${XCUBE_USER_NAME}.${XCUBE_USER_NAME} /workspace
+RUN mkdir /workspace && chown ${XCUBE_USER_NAME}:${XCUBE_USER_NAME} /workspace
 RUN chown -R ${XCUBE_USER_NAME}:${XCUBE_USER_NAME} /opt/conda
 
 USER ${XCUBE_USER_NAME}
