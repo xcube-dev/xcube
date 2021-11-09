@@ -1,3 +1,5 @@
+* The gen tool now uses the input reader in metadata extraction for pre-sorting inputs. This is required to support other than NetCDF inputs, e.g. GeoTIFF.
+
 ## Changes in 0.9.1
 
 ### New features
