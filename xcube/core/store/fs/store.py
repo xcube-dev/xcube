@@ -581,6 +581,8 @@ class BaseFsDataStore(DefaultSearchMixin, MutableDataStore):
                            return_tuples: bool,
                            current_depth: int):
         root = self.root + ('/' + dir_path if dir_path else '')
+        if not self.fs.exists(root):
+            return
         # noinspection PyArgumentEqualDefault
         for file_info in self.fs.ls(root, detail=True):
             file_path: str = file_info['name']

@@ -1,3 +1,9 @@
+## Changes in 0.9.2 (in development)
+
+### Fixes
+
+* Be more robust with respect to non-existing data store root directories.   
+
 ## Changes in 0.9.1
 
 ### New features
