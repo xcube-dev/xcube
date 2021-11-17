@@ -1,4 +1,4 @@
-## Changes in 0.9.2
+## Changes in 0.9.2 (in development)
 
 ### Fixes
 
