@@ -1,8 +1,10 @@
-## Changes in 0.9.2 (in development)
+## Changes in 0.9.2
 
 ### Fixes
 
-* Be more robust with respect to non-existing data store root directories.   
+* A `xcube.core.store.fs.impl.FSDataStore` no longer raises exceptions when 
+  root directories in data store configurations do not exist. Instead, they 
+  are created when data is written.
 
 ## Changes in 0.9.1
 
