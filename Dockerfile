@@ -5,7 +5,7 @@ FROM continuumio/miniconda3:${MINICONDA_VERSION}
 ARG INSTALL_PLUGINS=1
 ARG XCUBE_USER_NAME=xcube
 ENV XCUBE_SH_VERSION=latest
-ENV XCUBE_CCI_VERSION=latest
+ENV XCUBE_CCI_VERSION=v0.9.3.dev0
 ENV XCUBE_CDS_VERSION=latest
 
 # Metadata
@@ -52,7 +52,7 @@ WORKDIR /tmp
 ADD scripts/install_xcube.sh ./
 
 RUN if [[ ${INSTALL_PLUGINS} == '1' ]]; then bash install_xcube.sh xcube-sh ${XCUBE_SH_VERSION} release; fi;
-RUN if [[ ${INSTALL_PLUGINS} == '1' ]]; then bash install_xcube.sh xcube-cci ${XCUBE_CCI_VERSION} release; fi;
+RUN if [[ ${INSTALL_PLUGINS} == '1' ]]; then bash install_xcube.sh xcube-cci ${XCUBE_CCI_VERSION} branch; fi;
 RUN if [[ ${INSTALL_PLUGINS} == '1' ]]; then bash install_xcube.sh xcube-cds ${XCUBE_CDS_VERSION} release; fi;
 
 # Export web server port
