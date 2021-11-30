@@ -1,4 +1,15 @@
-* The gen tool now uses the input reader in metadata extraction for pre-sorting inputs. This is required to support other than NetCDF inputs, e.g. GeoTIFF.
+## Changes in 0.9.3 (in development)
+
+* Changed the `xcube gen` tool to extract metadata for pre-sorting inputs
+  from other than NetCDF inputs, e.g. GeoTIFF.
+
+## Changes in 0.9.2
+
+### Fixes
+
+* A `xcube.core.store.fs.impl.FSDataStore` no longer raises exceptions when 
+  root directories in data store configurations do not exist. Instead, they 
+  are created when data is written.
 
 ## Changes in 0.9.1
 
