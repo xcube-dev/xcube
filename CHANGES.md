@@ -1,5 +1,7 @@
 ## Changes in 0.9.3 (in development)
 
+* Changed the `xcube gen` tool to extract metadata for pre-sorting inputs
+  from other than NetCDF inputs, e.g. GeoTIFF.
 
 ## Changes in 0.9.2
 
