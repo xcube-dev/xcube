@@ -36,9 +36,9 @@ def compute_array_from_func(func: Callable[..., np.ndarray],
     * ``dtype``: The array's numpy data type.
     * ``name``: The array's name. A string or ``None``.
     * ``block_id``: The block's unique ID. An integer number ranging from zero to number of blocks minus one.
-    * ``block_index``: The block's index. A tuple of ints.
-    * ``block_shape``: The block's shape. A tuple of ints.
-    * ``block_slices``: The block's shape. A tuple of int pair tuples.
+    * ``block_index``: The block's index as a tuple of ints.
+    * ``block_shape``: The block's shape as a tuple of ints.
+    * ``block_slices``: The block's shape as a tuple of int pair tuples.
 
     :param func: User function that is called for each block of the array using arguments specified by
         *ctx_arg_names*, *args*, and *kwargs*. It must return a numpy array of shape "block_shape" and type
