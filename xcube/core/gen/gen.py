@@ -134,15 +134,15 @@ def gen_cube(input_paths: Sequence[str] = None,
 
     input_paths = [input_file for f in input_paths for input_file in glob.glob(f, recursive=True)]
 
+    effective_input_reader_params = dict(input_processor.input_reader_params or {})
+    effective_input_reader_params.update(input_reader_params or {})
+
     if not no_sort_mode and len(input_paths) > 1:
-        input_paths = _get_sorted_input_paths(input_processor, input_paths)
+        input_paths = _get_sorted_input_paths(input_processor, input_reader, effective_input_reader_params, input_paths)
 
     if not dry_run:
         output_dir = os.path.abspath(os.path.dirname(output_path))
         os.makedirs(output_dir, exist_ok=True)
-
-    effective_input_reader_params = dict(input_processor.input_reader_params or {})
-    effective_input_reader_params.update(input_reader_params or {})
 
     effective_output_writer_params = output_writer_params or {}
 
@@ -407,11 +407,12 @@ def _update_cube(output_writer: DatasetIO,
     output_writer.update(output_path, global_attrs=cube_attrs)
 
 
-def _get_sorted_input_paths(input_processor, input_paths: Sequence[str]):
+def _get_sorted_input_paths(input_processor, input_reader: DatasetIO, input_reader_params: Dict[str, Any], input_paths: Sequence[str]):
     input_path_list = []
     time_list = []
     for input_file in input_paths:
-        with xr.open_dataset(input_file) as dataset:
+#        with xr.open_dataset(input_file) as dataset:
+        with input_reader.read(input_file, **input_reader_params) as dataset:
             t1, t2 = input_processor.get_time_range(dataset)
             time_list.append((t1 + t2) / 2)
             input_path_list.append(input_file)

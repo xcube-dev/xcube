@@ -1,4 +1,17 @@
-## Changes in 0.9.1 (in development)
+## Changes in 0.9.3 (in development)
+
+* Changed the `xcube gen` tool to extract metadata for pre-sorting inputs
+  from other than NetCDF inputs, e.g. GeoTIFF.
+
+## Changes in 0.9.2
+
+### Fixes
+
+* A `xcube.core.store.fs.impl.FSDataStore` no longer raises exceptions when 
+  root directories in data store configurations do not exist. Instead, they 
+  are created when data is written.
+
+## Changes in 0.9.1
 
 ### New features
 
@@ -12,6 +25,13 @@
   in the mask. The default value is set to `False`. 
 
 ### Other
+
+* Updated `Dockerfile`: Removed the usage of a no-longer-maintained base image.
+  Ensured that the version tag 'latest' can be used with installation mode 
+  'release' for xcube plugins.
+
+* The `xcube` package now requires `xarray >= 0.19`, `zarr >= 2.8`, 
+  `pandas >= 1.3`.
 
 ## Changes in 0.9.0
 
