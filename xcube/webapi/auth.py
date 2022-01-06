@@ -149,9 +149,9 @@ class AuthMixin:
             except jwt.InvalidTokenError:
                 raise ServiceAuthError("Invalid claims",
                                        log_message="Incorrect claims, please check the audience and issuer")
-            # except Exception:
-            #     raise ServiceAuthError("Invalid header",
-            #                            log_message="Unable to parse authentication token.")
+            except Exception:
+                raise ServiceAuthError("Invalid header",
+                                       log_message="Unable to parse authentication token.")
             return id_token
 
         raise ServiceAuthError("Invalid header",
