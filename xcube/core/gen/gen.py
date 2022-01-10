@@ -134,15 +134,15 @@ def gen_cube(input_paths: Sequence[str] = None,
 
     input_paths = [input_file for f in input_paths for input_file in glob.glob(f, recursive=True)]
 
+    effective_input_reader_params = dict(input_processor.input_reader_params or {})
+    effective_input_reader_params.update(input_reader_params or {})
+
     if not no_sort_mode and len(input_paths) > 1:
-        input_paths = _get_sorted_input_paths(input_processor, input_paths)
+        input_paths = _get_sorted_input_paths(input_processor, input_reader, effective_input_reader_params, input_paths)
 
     if not dry_run:
         output_dir = os.path.abspath(os.path.dirname(output_path))
         os.makedirs(output_dir, exist_ok=True)
-
-    effective_input_reader_params = dict(input_processor.input_reader_params or {})
-    effective_input_reader_params.update(input_reader_params or {})
 
     effective_output_writer_params = output_writer_params or {}
 
@@ -238,21 +238,21 @@ def _process_input(input_processor: InputProcessor,
 
     steps.append((step1, 'pre-processing input slice'))
 
-    geo_coding = None
+    grid_mapping = None
 
     # noinspection PyShadowingNames
     def step1a(input_slice):
-        nonlocal geo_coding
-        geo_coding = GridMapping.from_dataset(input_slice)
+        nonlocal grid_mapping
+        grid_mapping = GridMapping.from_dataset(input_slice)
         subset = select_spatial_subset(input_slice,
                                        xy_bbox=output_geom.xy_bbox,
                                        xy_border=output_geom.x_res,
                                        ij_border=1,
-                                       geo_coding=geo_coding)
+                                       grid_mapping=grid_mapping)
         if subset is None:
             monitor('no spatial overlap with input')
         elif subset is not input_slice:
-            geo_coding = GridMapping.from_dataset(subset)
+            grid_mapping = GridMapping.from_dataset(subset)
         return subset
 
     steps.append((step1a, 'spatial subsetting'))
@@ -276,7 +276,7 @@ def _process_input(input_processor: InputProcessor,
     def step4(input_slice):
         # noinspection PyTypeChecker
         return input_processor.process(input_slice,
-                                       geo_coding=geo_coding,
+                                       geo_coding=grid_mapping,
                                        output_geom=output_geom,
                                        output_resampling=output_resampling,
                                        include_non_spatial_vars=False)
@@ -313,7 +313,7 @@ def _process_input(input_processor: InputProcessor,
         def step8(input_slice):
             if not dry_run:
                 output_writer.append(input_slice, output_path, **output_writer_params)
-                _update_cube(output_writer, output_path, temporal_only=True, consolidate=True)
+                _update_cube(output_writer, output_path, temporal_only=True)
             return input_slice
 
         steps.append((step8, f'appending input slice to {output_path}'))
@@ -322,7 +322,7 @@ def _process_input(input_processor: InputProcessor,
         def step8(input_slice):
             if not dry_run:
                 output_writer.insert(input_slice, time_index, output_path)
-                _update_cube(output_writer, output_path, temporal_only=True, consolidate=True)
+                _update_cube(output_writer, output_path, temporal_only=True)
             return input_slice
 
         steps.append((step8, f'inserting input slice before index {time_index} in {output_path}'))
@@ -331,7 +331,7 @@ def _process_input(input_processor: InputProcessor,
         def step8(input_slice):
             if not dry_run:
                 output_writer.replace(input_slice, time_index, output_path)
-                _update_cube(output_writer, output_path, temporal_only=True, consolidate=True)
+                _update_cube(output_writer, output_path, temporal_only=True)
             return input_slice
 
         steps.append((step8, f'replacing input slice at index {time_index} in {output_path}'))
@@ -387,15 +387,17 @@ def _get_tile_size(output_writer_params):
     return tile_size
 
 
-def _update_cube(output_writer: DatasetIO, output_path: str, global_attrs: Dict = None, temporal_only: bool = False,
-                 consolidate: bool = True):
-    if consolidate and os.path.isfile(os.path.join(output_path, '.zgroup')):
-        optimize_dataset(input_path=output_path, in_place=True, unchunk_coords=True)
+def _update_cube(output_writer: DatasetIO,
+                 output_path: str,
+                 global_attrs: Dict = None,
+                 temporal_only: bool = False):
     cube = output_writer.read(output_path)
     if temporal_only:
-        cube = update_dataset_temporal_attrs(cube, update_existing=True, in_place=True)
+        cube = update_dataset_temporal_attrs(cube,
+                                             update_existing=True, in_place=True)
     else:
-        cube = update_dataset_attrs(cube, update_existing=True, in_place=True)
+        cube = update_dataset_attrs(cube,
+                                    update_existing=True, in_place=True)
     cube_attrs = dict(cube.attrs)
     cube.close()
 
@@ -405,11 +407,12 @@ def _update_cube(output_writer: DatasetIO, output_path: str, global_attrs: Dict 
     output_writer.update(output_path, global_attrs=cube_attrs)
 
 
-def _get_sorted_input_paths(input_processor, input_paths: Sequence[str]):
+def _get_sorted_input_paths(input_processor, input_reader: DatasetIO, input_reader_params: Dict[str, Any], input_paths: Sequence[str]):
     input_path_list = []
     time_list = []
     for input_file in input_paths:
-        with xr.open_dataset(input_file) as dataset:
+#        with xr.open_dataset(input_file) as dataset:
+        with input_reader.read(input_file, **input_reader_params) as dataset:
             t1, t2 = input_processor.get_time_range(dataset)
             time_list.append((t1 + t2) / 2)
             input_path_list.append(input_file)

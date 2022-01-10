@@ -269,10 +269,10 @@ class DataStorePoolTest(unittest.TestCase):
     def test_to_dict(self):
         self.assertEqual({}, DataStorePool().to_dict())
         self.assertEqual({'ram': {'store_id': 'memory'},
-                          'dir': {'store_id': 'directory',
+                          'dir': {'store_id': 'file',
                                   'store_params': {'base_dir': 'bibo'}}},
                          DataStorePool({'ram': DataStoreConfig(store_id='memory'),
-                                        'dir': DataStoreConfig(store_id='directory',
+                                        'dir': DataStoreConfig(store_id='file',
                                                                store_params=dict(base_dir="bibo"))
                                         }).to_dict())
 

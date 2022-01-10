@@ -1,5 +1,6 @@
 import os
 import os.path
+import warnings
 from io import StringIO
 
 import pandas as pd
@@ -45,6 +46,16 @@ REF_COLS = [
 
 class ExtractCliTest(CliDataTest):
 
+    @classmethod
+    def setUpClass(cls):
+        # We parse CSV-output from CLI using pandas in these tests.
+        # Warnings will cause the pandas parser to fail.
+        warnings.filterwarnings("ignore")
+
+    @classmethod
+    def tearDownClass(cls):
+        warnings.resetwarnings()
+
     def test_help_option(self):
         result = self.invoke_cli(['extract', '--help'])
         self.assertEqual(0, result.exit_code)
@@ -85,7 +96,13 @@ class ExtractCliTest(CliDataTest):
         result = self.invoke_cli(args)
         self.assertEqual(0, result.exit_code)
         self.assertNotEqual('', result.stdout)
-        df = pd.read_csv(StringIO(result.stdout), index_col='idx')
+        try:
+            df = pd.read_csv(StringIO(result.stdout),
+                             index_col='idx')
+        except pd.errors.ParserError as e:
+            print(f"Failed to parse result: {e}:")
+            print(result.stdout)
+            raise e
         self.assertEqual(expected_length, len(df))
         expected_columns = set(VAR_COLS)
         if '--coords' in options:

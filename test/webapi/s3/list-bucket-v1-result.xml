@@ -26,6 +26,13 @@
     <ETag>"c7a4dcb9d6a66348e2a4b41943878919"</ETag>
     <StorageClass>STANDARD</StorageClass>
   </Contents>
+  <Contents>
+    <Key>bibo.zarr/.zmetadata</Key>
+    <Size>6572</Size>
+    <LastModified>2019-06-24T20:43:40.862Z</LastModified>
+    <ETag>"5f82311295b3815f80c6814be9b83335"</ETag>
+    <StorageClass>STANDARD</StorageClass>
+  </Contents>
   <CommonPrefixes>
     <Prefix>bibo.zarr/lat/</Prefix>
   </CommonPrefixes>

@@ -1,11 +1,7 @@
-## Changes in 0.9.1 (in development)
+## Changes in 0.9.3 (in development)
 
-### New features
-* Function `mask_dataset_by_geometry` has a new parameter `all_touched`:
-  If True, all pixels intersected by geometry outlines will be included in the mask. 
-  If False, only pixels whose center is within the polygon or that are selected by 
-  Bresenham’s line algorithm will be included in the mask. 
-  The default value is set to `False`. 
+* Changed the `xcube gen` tool to extract metadata for pre-sorting inputs
+  from other than NetCDF inputs, e.g. GeoTIFF.
 * Cube generator `xcube gen2` allows to use temporal resampling. To use it,
   a user must set the parameter `time_period` (in a pandas-interpretable 
   pattern, e.g., '4D') and the newly introduced parameter `temporal_resampling`.
@@ -13,8 +9,36 @@
   'first', 'last', 'min', 'max', 'sum', 'prod', 'mean', 'median', 'std', 
   'var', 'percentile']`, to sample up to a finer resolution, use any of 
   `['asfreq', 'ffill', 'bfill', 'pad', 'nearest', 'interpolate']`. (#523)
+  
+## Changes in 0.9.2
+
+### Fixes
+
+* A `xcube.core.store.fs.impl.FSDataStore` no longer raises exceptions when 
+  root directories in data store configurations do not exist. Instead, they 
+  are created when data is written.
+
+## Changes in 0.9.1
+
+### New features
+
+* The `xcube.core.maskset.MaskSet` class no longer allocates static numpy 
+  arrays for masks. Instead, it uses lazy dask arrays. (#556)
+
+* Function `xcube.core.geom.mask_dataset_by_geometry` has a new parameter 
+  `all_touched`: If `True`, all pixels intersected by geometry outlines will 
+  be included in the mask. If `False`, only pixels whose center is within the 
+  polygon or that are selected by Bresenham’s line algorithm will be included  
+  in the mask. The default value is set to `False`. 
 
 ### Other
+
+* Updated `Dockerfile`: Removed the usage of a no-longer-maintained base image.
+  Ensured that the version tag 'latest' can be used with installation mode 
+  'release' for xcube plugins.
+
+* The `xcube` package now requires `xarray >= 0.19`, `zarr >= 2.8`, 
+  `pandas >= 1.3`.
 
 ## Changes in 0.9.0
 

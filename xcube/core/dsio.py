@@ -443,12 +443,14 @@ class ZarrDatasetIO(DatasetIO):
               s3_kwargs: Dict[str, Any] = None,
               s3_client_kwargs: Dict[str, Any] = None,
               **kwargs):
-        path_or_store, consolidated = get_path_or_s3_store(output_path,
-                                                           s3_kwargs=s3_kwargs,
-                                                           s3_client_kwargs=s3_client_kwargs,
-                                                           mode='w')
+        path_or_store, _ = get_path_or_s3_store(output_path,
+                                                s3_kwargs=s3_kwargs,
+                                                s3_client_kwargs=s3_client_kwargs,
+                                                mode='w')
         encoding = self._get_write_encodings(dataset, compressor, chunksizes, packing)
-        dataset.to_zarr(path_or_store, mode='w', encoding=encoding, **kwargs)
+        consolidated = kwargs.pop('consolidated', True)
+        dataset.to_zarr(path_or_store, mode='w', encoding=encoding,
+                        consolidated=consolidated, **kwargs)
 
     @classmethod
     def _get_write_encodings(cls, dataset, compressor, chunksizes, packing):
@@ -501,6 +503,7 @@ class ZarrDatasetIO(DatasetIO):
             import zarr
             ds = zarr.open_group(output_path, mode='r+', **kwargs)
             ds.attrs.update(global_attrs)
+            zarr.consolidate_metadata(output_path)
 
 
 # noinspection PyAbstractClass

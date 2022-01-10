@@ -15,7 +15,7 @@ class DumpDatasetTest(unittest.TestCase):
 
         text = dump_dataset(dataset)
         self.assertIn("<xarray.Dataset>", text)
-        self.assertIn("Dimensions:        (lat: 180, lon: 360, time: 5)\n", text)
+        self.assertIn("Dimensions:        (time: 5, lat: 180, lon: 360)\n", text)
         self.assertIn("Coordinates:\n", text)
         self.assertIn("  * lon            (lon) float64 ", text)
         self.assertIn("Data variables:\n", text)
@@ -26,7 +26,7 @@ class DumpDatasetTest(unittest.TestCase):
 
         text = dump_dataset(dataset, show_var_encoding=True)
         self.assertIn("<xarray.Dataset>", text)
-        self.assertIn("Dimensions:        (lat: 180, lon: 360, time: 5)\n", text)
+        self.assertIn("Dimensions:        (time: 5, lat: 180, lon: 360)\n", text)
         self.assertIn("Coordinates:\n", text)
         self.assertIn("  * lon            (lon) float64 ", text)
         self.assertIn("Data variables:\n", text)

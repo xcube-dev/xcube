@@ -1,0 +1,9 @@
+# This file specifies the credentials for the remote generator service used
+# in the example notebooks. The settings below read these credentials from
+# environment variables. To run the generator examples in the notebooks,
+# either set these environment variables before starting the notebook, or
+# edit this file to specify the credentials directly.
+
+endpoint_url: "${XCUBE_GEN_API_SERVER_URL}/api/v2"
+client_id: "${XCUBE_GEN_AUTH_CLIENT_ID}"
+client_secret: "${XCUBE_GEN_AUTH_CLIENT_SECRET}"

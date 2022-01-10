@@ -93,7 +93,8 @@ def append_time_slice(store: Union[str, MutableMapping],
         # from next time_slice.to_zarr(...) call.
         time_slice.attrs.pop('coordinates')
 
-    time_slice.to_zarr(store, mode='a', append_dim='time')
+    time_slice.to_zarr(store, mode='a', append_dim='time', consolidated=True)
+
     unchunk_dataset(store, coords_only=True)
 
 
