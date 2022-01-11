@@ -108,6 +108,7 @@ class JsonComplexSchemaTest(unittest.TestCase):
         with self.assertRaises(ValidationError) as cm:
             schema.from_instance(7)
 
+
 class JsonSimpleSchemaTest(unittest.TestCase):
 
     def test_base_props_validated(self):
