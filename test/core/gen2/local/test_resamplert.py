@@ -25,7 +25,7 @@ class CubeResamplerTTest(unittest.TestCase):
 
     def test_transform_cube_no_time_period(self):
         cube_config = CubeConfig(time_range=('2010-01-01', '2012-12-31'))
-        temporal_resampler = CubeResamplerT(cube_config)
+        temporal_resampler = CubeResamplerT()
 
         cube = self._get_cube(time_freq='M', time_periods=12)
 
@@ -41,7 +41,7 @@ class CubeResamplerTTest(unittest.TestCase):
                                  temporal_resampling=dict(
                                      downsampling=('min', {}))
                                  )
-        temporal_resampler = CubeResamplerT(cube_config)
+        temporal_resampler = CubeResamplerT()
 
         cube = self._get_cube(time_freq='M', time_periods=24)
 
@@ -69,7 +69,7 @@ class CubeResamplerTTest(unittest.TestCase):
                                  temporal_resampling=dict(
                                      downsampling=('min', {}))
                                  )
-        temporal_resampler = CubeResamplerT(cube_config)
+        temporal_resampler = CubeResamplerT()
 
         cube = self._get_cube(time_freq='W', time_periods=12)
 
@@ -97,7 +97,7 @@ class CubeResamplerTTest(unittest.TestCase):
                                  temporal_resampling=dict(
                                      downsampling=('max', {}))
                                  )
-        temporal_resampler = CubeResamplerT(cube_config)
+        temporal_resampler = CubeResamplerT()
 
         cube = self._get_cube(time_freq='D', time_periods=32)
 
@@ -129,7 +129,7 @@ class CubeResamplerTTest(unittest.TestCase):
                                      upsampling=('interpolate',
                                                  {'kind': 'linear'})
                                  ))
-        temporal_resampler = CubeResamplerT(cube_config)
+        temporal_resampler = CubeResamplerT()
 
         cube = self._get_cube(time_freq='Y', time_periods=2)
 
@@ -163,7 +163,7 @@ class CubeResamplerTTest(unittest.TestCase):
                                  temporal_resampling=dict(
                                      upsampling=('nearest', {}))
                                  )
-        temporal_resampler = CubeResamplerT(cube_config)
+        temporal_resampler = CubeResamplerT()
 
         cube = self._get_cube(time_freq='M', time_periods=4)
 
@@ -192,7 +192,7 @@ class CubeResamplerTTest(unittest.TestCase):
                                      upsampling=('interpolate',
                                                  {'kind': 'linear'})
                                  ))
-        temporal_resampler = CubeResamplerT(cube_config)
+        temporal_resampler = CubeResamplerT()
 
         cube = self._get_cube(time_freq='W', time_periods=3)
 
@@ -233,7 +233,7 @@ class CubeResamplerTTest(unittest.TestCase):
                                  temporal_resampling=dict(
                                      downsampling=('min', {}))
                                  )
-        temporal_resampler = CubeResamplerT(cube_config)
+        temporal_resampler = CubeResamplerT()
 
         cube = self._get_cube(time_freq='M', time_periods=24, use_cftime=True)
 
@@ -262,7 +262,7 @@ class CubeResamplerTTest(unittest.TestCase):
                                      upsampling=('interpolate',
                                                  {'kind': 'linear'})
                                  ))
-        temporal_resampler = CubeResamplerT(cube_config)
+        temporal_resampler = CubeResamplerT()
 
         cube = self._get_cube(time_freq='Y', time_periods=2, use_cftime=True)
 
