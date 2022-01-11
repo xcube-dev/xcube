@@ -87,8 +87,9 @@ class CubeGeneratorRequestTest(unittest.TestCase):
                              time_range=['2018-01-01', None],
                              time_period='4D',
                              temporal_resampling=dict(
-                                 downsampling=['percentile', {'threshold': 70}])
-                             ),
+                                downsampling=('percentile', {'threshold': 70}),
+                                upsampling='pad'
+                             )),
             output_config=dict(store_id='memory',
                                replace=False,
                                data_id='CHL')

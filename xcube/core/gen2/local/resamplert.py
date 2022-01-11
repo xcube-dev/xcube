@@ -92,16 +92,24 @@ class CubeResamplerT(CubeTransformer):
                                          'coarser temporal resolution, '
                                          'but no temporal downsampling '
                                          'method is set')
-                    method, method_args = \
-                        cube_config.temporal_resampling['downsampling']
+                    try:
+                        method, method_args = \
+                            cube_config.temporal_resampling['downsampling']
+                    except ValueError:
+                        method = cube_config.temporal_resampling['downsampling']
+                        method_args = {}
                 elif max_period_delta < min_data_delta:
                     if 'upsampling' not in cube_config.temporal_resampling:
                         raise ValueError('Data must be sampled up to a'
                                          'finer temporal resolution, '
                                          'but no temporal upsampling '
                                          'method is set')
-                    method, method_args = \
-                        cube_config.temporal_resampling['upsampling']
+                    try:
+                        method, method_args = \
+                            cube_config.temporal_resampling['upsampling']
+                    except ValueError:
+                        method = cube_config.temporal_resampling['upsampling']
+                        method_args = {}
                 else:
                     if 'downsampling' not in cube_config.temporal_resampling \
                             and 'upsampling' not in \
@@ -115,9 +123,16 @@ class CubeResamplerT(CubeTransformer):
                                          'or down temporally. Please only '
                                          'specify one method for temporal '
                                          'resampling.')
-                    method, method_args = cube_config.temporal_resampling.\
-                        get('downsampling',
+                    try:
+                        method, method_args = cube_config.temporal_resampling.\
+                            get('downsampling',
+                                cube_config.temporal_resampling.
+                                get('upsampling'))
+                    except ValueError:
+                        method = cube_config.temporal_resampling.get(
+                            'downsampling',
                             cube_config.temporal_resampling.get('upsampling'))
+                        method_args = {}
                 if method == 'interpolate':
                     time_resample_params['method'] = method
                     if 'kind' not in method_args:

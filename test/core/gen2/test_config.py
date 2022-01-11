@@ -92,7 +92,8 @@ class CubeConfigTest(unittest.TestCase):
                              time_range=['2018-01-01', None],
                              time_period='4D',
                              temporal_resampling=dict(
-                                 downsampling=['percentile', {'threshold': 75}]
+                                 downsampling=('percentile', {'threshold': 75}),
+                                 upsampling='pad'
                              ),
                              metadata=dict(title='S2L2A subset'),
                              variable_metadata=dict(
