@@ -1,5 +1,6 @@
 import unittest
 from collections import namedtuple
+from jsonschema import ValidationError
 from typing import Dict, Any
 
 from xcube.util.jsonschema import JsonArraySchema
@@ -47,6 +48,65 @@ class JsonComplexSchemaTest(unittest.TestCase):
             JsonComplexSchema(all_of=[JsonIntegerSchema(multiple_of=5),
                                       JsonIntegerSchema(multiple_of=3)]).to_dict())
 
+    def test_to_instance_one_of(self):
+        schema = JsonComplexSchema(one_of=[JsonIntegerSchema(multiple_of=5),
+                                           JsonIntegerSchema(multiple_of=3)])
+        self.assertEqual(5, schema.to_instance(5))
+        self.assertEqual(6, schema.to_instance(6))
+        with self.assertRaises(ValidationError) as cm:
+            schema.to_instance(7)
+        with self.assertRaises(ValidationError) as cm:
+            schema.to_instance(15)
+
+    def test_to_instance_any_of(self):
+        schema = JsonComplexSchema(any_of=[JsonIntegerSchema(multiple_of=5),
+                                           JsonIntegerSchema(multiple_of=3)])
+        self.assertEqual(5, schema.to_instance(5))
+        self.assertEqual(6, schema.to_instance(6))
+        self.assertEqual(15, schema.to_instance(15))
+        with self.assertRaises(ValidationError) as cm:
+            schema.to_instance(7)
+
+    def test_to_instance_all_of(self):
+        schema = JsonComplexSchema(all_of=[JsonIntegerSchema(multiple_of=5),
+                                           JsonIntegerSchema(multiple_of=3)])
+        self.assertEqual(15, schema.to_instance(15))
+        with self.assertRaises(ValidationError) as cm:
+            schema.to_instance(5)
+        with self.assertRaises(ValidationError) as cm:
+            schema.to_instance(6)
+        with self.assertRaises(ValidationError) as cm:
+            schema.to_instance(7)
+
+    def test_from_instance_one_of(self):
+        schema = JsonComplexSchema(one_of=[JsonIntegerSchema(multiple_of=5),
+                                           JsonIntegerSchema(multiple_of=3)])
+        self.assertEqual(5, schema.from_instance(5))
+        self.assertEqual(6, schema.from_instance(6))
+        with self.assertRaises(ValidationError) as cm:
+            schema.from_instance(7)
+        with self.assertRaises(ValidationError) as cm:
+            schema.from_instance(15)
+
+    def test_from_instance_any_of(self):
+        schema = JsonComplexSchema(any_of=[JsonIntegerSchema(multiple_of=5),
+                                           JsonIntegerSchema(multiple_of=3)])
+        self.assertEqual(5, schema.from_instance(5))
+        self.assertEqual(6, schema.from_instance(6))
+        self.assertEqual(15, schema.from_instance(15))
+        with self.assertRaises(ValidationError) as cm:
+            schema.from_instance(7)
+
+    def test_from_instance_all_of(self):
+        schema = JsonComplexSchema(all_of=[JsonIntegerSchema(multiple_of=5),
+                                           JsonIntegerSchema(multiple_of=3)])
+        self.assertEqual(15, schema.from_instance(15))
+        with self.assertRaises(ValidationError) as cm:
+            schema.from_instance(5)
+        with self.assertRaises(ValidationError) as cm:
+            schema.from_instance(6)
+        with self.assertRaises(ValidationError) as cm:
+            schema.from_instance(7)
 
 class JsonSimpleSchemaTest(unittest.TestCase):
 
