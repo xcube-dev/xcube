@@ -56,6 +56,9 @@ class CubeConfigTest(unittest.TestCase):
                              spatial_res=0.05,
                              time_range=['2018-01-01', None],
                              time_period='4D',
+                             temporal_resampling=dict(
+                                 upsampling=('interpolate', {'kind': 'slinear'})
+                             ),
                              metadata=dict(title='S2L2A subset'),
                              variable_metadata=dict(
                                  B03=dict(long_name='Band 3'),
@@ -69,6 +72,8 @@ class CubeConfigTest(unittest.TestCase):
         self.assertEqual(0.05, cube_config.spatial_res)
         self.assertEqual(('2018-01-01', None), cube_config.time_range)
         self.assertEqual('4D', cube_config.time_period)
+        self.assertEqual(dict(upsampling=('interpolate', {'kind': 'slinear'})),
+                         cube_config.temporal_resampling)
         self.assertEqual(dict(title='S2L2A subset'),
                          cube_config.metadata)
         self.assertEqual(
@@ -86,6 +91,10 @@ class CubeConfigTest(unittest.TestCase):
                              spatial_res=0.05,
                              time_range=['2018-01-01', None],
                              time_period='4D',
+                             temporal_resampling=dict(
+                                 downsampling=('percentile', {'threshold': 75}),
+                                 upsampling='pad'
+                             ),
                              metadata=dict(title='S2L2A subset'),
                              variable_metadata=dict(
                                  B03=dict(long_name='Band 3'),

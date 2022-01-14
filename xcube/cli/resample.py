@@ -130,7 +130,7 @@ def resample(cube,
         config['frequency'] = frequency
     if offset:
         config['offset'] = offset
-    if offset:
+    if base:
         config['base'] = base
     if kind:
         config['interp_kind'] = kind
