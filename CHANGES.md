@@ -4,11 +4,24 @@
   from other than NetCDF inputs, e.g. GeoTIFF.
 * Cube generator `xcube gen2` allows to use temporal resampling. To use it,
   a user must set the parameter `time_period` (in a pandas-interpretable 
-  pattern, e.g., '4D') and the newly introduced parameter `temporal_resampling`.
-  To sample down to a broader temporal resolution, use any of `['count', 
-  'first', 'last', 'min', 'max', 'sum', 'prod', 'mean', 'median', 'std', 
-  'var', 'percentile']`, to sample up to a finer resolution, use any of 
-  `['asfreq', 'ffill', 'bfill', 'pad', 'nearest', 'interpolate']`. (#523)
+  pattern, e.g., '4D') and the newly introduced parameter `temporal_resampling`,
+  to which a dictionary with entries for upsampling and/or downsampling can be
+  passed. Upsampling and downsampling can be used with or without parameters, 
+  depending on the selected method. To sample down to a broader temporal 
+  resolution, you need to specify a downsampling method (any of `['count', 
+  'first', 'last', 'min', 'max', 'sum', 'prod', 'mean', 'median', 'std', 'var', 
+  'percentile']`). If you also want to add parameters, you can pass a tuple 
+  consisting of the method name and a dictionary with parameters. Analogously,
+  you can sample up to a finer temporal resolution using any of `['asfreq', 
+  'ffill', 'bfill', 'pad', 'nearest', 'interpolate']`. 
+  Example:
+  ```python
+  temporal_resampling=dict(
+    downsampling=('percentile', {'threshold': 75}),
+    upsampling='pad'
+  ),
+  ```  
+(#523)
   
 ## Changes in 0.9.2
 
