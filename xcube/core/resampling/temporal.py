@@ -19,13 +19,18 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-from typing import Dict, Any, Sequence, Union, List
+from enum import Enum
+from typing import Dict, Any, Sequence, Union
 
 import cftime
+from datetime import timedelta
 import numpy as np
-import pandas as pd
-import re
 import xarray as xr
+from xarray.coding.cftime_offsets import Day
+from xarray.coding.cftime_offsets import Hour
+from xarray.coding.cftime_offsets import MonthBegin
+from xarray.coding.cftime_offsets import QuarterBegin
+from xarray.coding.cftime_offsets import YearBegin
 
 from xcube.core.schema import CubeSchema
 from xcube.core.select import select_variables_subset
@@ -39,14 +44,11 @@ SPLINE_INTERPOLATION_KINDS = ['zero', 'slinear', 'quadratic', 'cubic']
 OTHER_INTERPOLATION_KINDS = ['linear', 'nearest', 'previous', 'next']
 INTERPOLATION_KINDS = SPLINE_INTERPOLATION_KINDS + OTHER_INTERPOLATION_KINDS
 
-TIMEUNIT_INCREMENTS = dict(
-    YS=[1, 0, 0, 0],
-    QS=[0, 3, 0, 0],
-    MS=[0, 1, 0, 0]
-)
-HALF_TIMEUNIT_INCREMENTS = dict(
-    YS=[0, 6, 0, 0]
-)
+
+class Offset(Enum):
+    PREVIOUS = 'previous'
+    NONE = 'none'
+    NEXT = 'next'
 
 
 def resample_in_time(dataset: xr.Dataset,
@@ -118,9 +120,11 @@ def resample_in_time(dataset: xr.Dataset,
                     / np.timedelta64(1, 'D')) + 1)
         frequency = f'{days}D'
 
+    frequency_is_irregular = frequency.endswith('Y') or \
+                         frequency.endswith('M') or \
+                         frequency.endswith('Q')
     # resample to start of period
-    if frequency.endswith('Y') or frequency.endswith('M') or \
-            frequency.endswith('Q'):
+    if frequency_is_irregular:
         frequency = f'{frequency}S'
 
     if var_names:
@@ -167,17 +171,167 @@ def resample_in_time(dataset: xr.Dataset,
         resampled_cube = resampled_cubes[0]
     else:
         resampled_cube = xr.merge(resampled_cubes)
-    adjusted_times, time_bounds = _adjust_times_and_bounds(
-        resampled_cube.time.values, frequency, method)
-    update_vars = dict(
-        time=adjusted_times,
-        time_bnds=xr.DataArray(time_bounds, dims=['time', 'bnds'])
-    )
-    resampled_cube = resampled_cube.assign_coords(update_vars)
-
+    if method in UPSAMPLING_METHODS:
+        resampled_cube = _adjust_upsampled_cube(resampled_cube,
+                                                frequency,
+                                                base,
+                                                frequency_is_irregular)
+    else:
+        resampled_cube = _adjust_downsampled_cube(resampled_cube,
+                                                  frequency,
+                                                  base,
+                                                  frequency_is_irregular)
     return adjust_metadata_and_chunking(resampled_cube,
                                         metadata=metadata,
                                         time_chunk_size=time_chunk_size)
+
+
+def _adjust_upsampled_cube(resampled_cube, frequency, base, frequency_is_irregular):
+    # Times of upsampled cube are correct, we need to determine time bounds
+    # Get times with negative offset
+    times = resampled_cube.time.values
+    previous_times = _get_resampled_times(
+        resampled_cube, frequency, 'time', Offset.PREVIOUS, base
+    )
+    # Get centers between times and previous_times as start bounds
+    center_times = _get_centers_between_times(
+        previous_times,
+        times,
+        frequency_is_irregular,
+        resampled_cube
+    )
+    # we need to add this as intermediate data array so we can retrieve
+    # resampled times from it
+    resampled_cube = resampled_cube.assign_coords(
+        intermediate_time=center_times
+    )
+    stop_times = _get_resampled_times(
+        resampled_cube, frequency, 'intermediate_time', Offset.NEXT, base
+    )
+    resampled_cube = resampled_cube.drop_vars('intermediate_time')
+    resampled_cube = _add_time_bounds_to_resampled_cube(center_times,
+                                                        stop_times,
+                                                        resampled_cube)
+    return resampled_cube
+
+
+def _adjust_downsampled_cube(resampled_cube,
+                             frequency,
+                             base,
+                             frequency_is_irregular):
+    # times of resampled_cube are actually start bounding times.
+    # We need to determine times and end bounding times
+    start_times = resampled_cube.time.values
+    stop_times = _get_resampled_times(
+        resampled_cube, frequency, 'time', Offset.NEXT, base
+    )
+    resampled_cube = _add_time_bounds_to_resampled_cube(start_times,
+                                                        stop_times,
+                                                        resampled_cube)
+    # Get centers between start and stop bounding times
+    center_times = _get_centers_between_times(
+        start_times,
+        stop_times,
+        frequency_is_irregular,
+        resampled_cube
+    )
+    resampled_cube = resampled_cube.assign_coords(time=center_times)
+    return resampled_cube
+
+
+def _get_resampled_times(cube: xr.Dataset,
+                         frequency: str,
+                         name_of_time_dim: str,
+                         offset: Offset,
+                         base=None):
+    if offset == Offset.PREVIOUS:
+        offset = _invert_frequency(frequency,
+                                   cube[name_of_time_dim].values[0])
+    elif offset == Offset.NONE:
+        offset = None
+    elif offset == Offset.NEXT:
+        offset = frequency
+    args = dict(skipna=True,
+                closed='left',
+                label='left',
+                loffset=offset,
+                base=base)
+    args[name_of_time_dim] = frequency
+    return np.array(list(cube[name_of_time_dim].resample(**args).groups.keys()))
+
+
+def _add_time_bounds_to_resampled_cube(start_times, stop_times, resampled_cube):
+    time_bounds = xr.DataArray(
+        np.array([start_times, stop_times]).transpose(),
+        dims=['time', 'bnds']
+    )
+    return resampled_cube.assign_coords(
+        time_bnds=time_bounds
+    )
+
+
+def _get_centers_between_times(earlier_times,
+                               later_times,
+                               frequency_is_irregular,
+                               resampled_cube):
+    """
+    Determines the center between two time arrays.
+    In case the frequency is irregular and the centers are close to the
+    beginning of a month, the centers are snapped to it
+    """
+    time_deltas = later_times - earlier_times
+    center_times = later_times - time_deltas * 0.5
+    if frequency_is_irregular:
+        # In case of 'M', 'Q' or 'Y' frequencies, add a small time delta
+        # so we move a little closer to the later time
+        time_delta = _get_time_delta(earlier_times[0])
+        center_times_plus_delta = center_times + time_delta
+        resampled_cube = resampled_cube.assign_coords(
+            intermediate_time=center_times_plus_delta
+        )
+        # snap center times to beginnings of months when they are close
+        starts_of_month = _get_resampled_times(
+            resampled_cube, '1MS', 'intermediate_time', Offset.NONE
+        )
+        center_time_deltas = center_times_plus_delta - starts_of_month
+        snapped_times = np.where(center_time_deltas < time_delta * 2,
+                                 starts_of_month,
+                                 center_times)
+        resampled_cube.drop_vars('intermediate_time')
+        return snapped_times
+    return center_times
+
+
+def _get_time_delta(time_value):
+    if _is_cf(time_value):
+        return timedelta(hours=42)
+    return np.timedelta64(42, 'h')
+
+
+def _invert_frequency(frequency, time_value):
+    if not _is_cf(time_value):
+        return f'-{frequency}'
+    if frequency.endswith('H'):
+        frequency_value = frequency.split('H')[0]
+        return Hour(-int(frequency_value))
+    if frequency.endswith('D'):
+        frequency_value = frequency.split('D')[0]
+        return Day(-int(frequency_value))
+    if frequency.endswith('W'):
+        frequency_value = frequency.split('W')[0]
+        return Day(-int(frequency_value) * 7)
+    if frequency.endswith('MS'):
+        frequency_value = frequency.split('MS')[0]
+        return MonthBegin(-int(frequency_value))
+    if frequency.endswith('QS'):
+        frequency_value = frequency.split('QS')[0]
+        return QuarterBegin(-int(frequency_value))
+    frequency_value = frequency.split('YS')[0]
+    return YearBegin(-int(frequency_value))
+
+
+def _is_cf(time_value):
+    return isinstance(time_value, cftime.datetime)
 
 
 def adjust_metadata_and_chunking(dataset, metadata=None, time_chunk_size=None):
@@ -210,181 +364,6 @@ def _adjust_chunk_sizes_without_schema(dataset, time_chunk_size=None):
     else:
         chunk_sizes['time'] = 1
     return dataset.chunk(chunk_sizes)
-
-
-def _adjust_times_and_bounds(time_values, frequency, method):
-    time_unit = re.findall('[A-Z]+', frequency)[0]
-    time_value = int(frequency.split(time_unit)[0])
-    if time_unit not in TIMEUNIT_INCREMENTS:
-        if time_unit == 'D':
-            half_time_delta = np.timedelta64(12 * time_value, 'h')
-        elif time_unit == 'H':
-            half_time_delta = np.timedelta64(30 * time_value, 'm')
-        elif time_unit == 'W':
-            half_time_delta = np.timedelta64(84 * time_value, 'h')
-        else:
-            raise ValueError(f'Unsupported time unit "{time_unit}"')
-        if method not in UPSAMPLING_METHODS:
-            time_values += half_time_delta
-        time_bounds_values = \
-            np.array([time_values - half_time_delta,
-                      time_values + half_time_delta]).transpose()
-        return time_values, time_bounds_values
-    # time units year, month and quarter cannot be converted to
-    # numpy timedelta objects, so we have to convert them to pandas timestamps
-    # and modify these
-    is_cf_time = isinstance(time_values[0], cftime.datetime)
-    if is_cf_time:
-        timestamps = [pd.Timestamp(tv.isoformat()) for tv in time_values]
-        calendar = time_values[0].calendar
-    else:
-        timestamps = [pd.Timestamp(tv) for tv in time_values]
-        calendar = None
-
-    timestamps.append(_get_next_timestamp(timestamps[-1],
-                                          time_unit,
-                                          time_value,
-                                          False))
-
-    new_timestamps = []
-    new_timestamp_bounds = []
-    for i, ts in enumerate(timestamps[:-1]):
-        next_ts = timestamps[i + 1]
-        half_next_ts = _get_next_timestamp(ts, time_unit, time_value, True)
-        # depending on whether the data was sampled down or up,
-        # times need to be adjusted differently
-        if method not in UPSAMPLING_METHODS:
-            new_timestamps.append(_convert(half_next_ts, calendar))
-            new_timestamp_bounds.append([_convert(ts, calendar),
-                                         _convert(next_ts, calendar)])
-        else:
-            half_previous_ts = \
-                _get_previous_timestamp(ts, time_unit, time_value, True)
-            new_timestamps.append(_convert(ts, calendar))
-            new_timestamp_bounds.append([_convert(half_previous_ts,
-                                                  calendar),
-                                         _convert(half_next_ts,
-                                                  calendar)])
-    return new_timestamps, new_timestamp_bounds
-
-
-def _convert(timestamp: pd.Timestamp, calendar: str):
-    if calendar is not None:
-        return cftime.datetime.fromordinal(timestamp.to_julian_date(),
-                                           calendar=calendar)
-    return np.datetime64(timestamp)
-
-
-def _get_next_timestamp(timestamp, time_unit, time_value, half) \
-        -> pd.Timestamp:
-    # Retrieves the timestamp following the passed timestamp according to the
-    # given time unit and time value.
-    # If half is True, the timestamp halfway between the timestamp and the next
-    # timestamp (which is not necessarily halfway between the two) is returned
-    increments = _get_increments(timestamp, time_unit, time_value, half)
-    replacement = dict(
-        year=timestamp.year + increments[0],
-        month=timestamp.month + increments[1],
-        day=timestamp.day + increments[2],
-        hour=timestamp.hour + increments[3]
-    )
-    while replacement['hour'] > 24:
-        replacement['hour'] -= 24
-        replacement['day'] += 1
-    while replacement['day'] > _days_of_month(replacement['year'],
-                                              replacement['month']):
-        replacement['day'] -= _days_of_month(replacement['year'],
-                                             replacement['month'])
-        replacement['month'] += 1
-        if replacement['month'] > 12:
-            replacement['month'] -= 12
-            replacement['year'] += 1
-
-    while replacement['month'] > 12:
-        replacement['month'] -= 12
-        replacement['year'] += 1
-
-    return pd.Timestamp(timestamp.replace(**replacement))
-
-
-def _get_previous_timestamp(timestamp, time_unit, time_value, half) \
-        -> pd.Timestamp:
-    # Retrieves the timestamp preceding the passed timestamp according to the
-    # given time unit and time value.
-    # If half is True, the timestamp halfway between the timestamp and the
-    # previous timestamp (which is not necessarily halfway between the two)
-    # is returned
-    increments = _get_increments(timestamp, time_unit, time_value, half)
-    replacement = dict(
-        year=timestamp.year - increments[0],
-        month=timestamp.month - increments[1],
-        day=timestamp.day - increments[2],
-        hour=timestamp.hour - increments[3]
-    )
-
-    while replacement['hour'] < 0:
-        replacement['hour'] += 24
-        replacement['day'] -= 1
-
-    while replacement['day'] < 1:
-        replacement['month'] -= 1
-        if replacement['month'] < 1:
-            replacement['month'] += 12
-            replacement['year'] -= 1
-        replacement['day'] += _days_of_month(replacement['year'],
-                                             replacement['month'] % 12)
-
-    while replacement['month'] < 1:
-        replacement['month'] += 12
-        replacement['year'] -= 1
-
-    return pd.Timestamp(timestamp.replace(**replacement))
-
-
-def _get_increments(timestamp, time_unit, time_value, half) -> List[int]:
-    # Determines the increments for year, month, day, and hour to be applied
-    # to a timestamp
-    if not half:
-        return _tune_increments(TIMEUNIT_INCREMENTS[time_unit], time_value)
-    if time_value % 2 == 0:
-        time_value /= 2
-        return _tune_increments(TIMEUNIT_INCREMENTS[time_unit],
-                                int(time_value))
-    if time_unit in HALF_TIMEUNIT_INCREMENTS:
-        return _tune_increments(HALF_TIMEUNIT_INCREMENTS[time_unit],
-                                time_value)
-    if time_unit == 'QS':
-        num_months = 3
-    else:
-        num_months = 1
-    import math
-    month = int(math.floor((num_months * time_value) / 2))
-    days = _days_of_month(timestamp.year, month)
-    if days % 2 == 0:
-        hours = 0
-    else:
-        hours = 12
-    days = int(math.floor(days / 2)) - 1
-    return [0, month, days, hours]
-
-
-def _tune_increments(incrementors, time_value):
-    incrementors = [i * time_value for i in incrementors]
-    return incrementors
-
-
-def _days_of_month(year: int, month: int):
-    if month in [1, 3, 5, 7, 8, 10, 12]:
-        return 31
-    if month in [4, 6, 9, 11]:
-        return 30
-    if year % 4 != 0:
-        return 28
-    if year % 400 == 0:
-        return 29
-    if year % 100 == 0:
-        return 28
-    return 28
 
 
 def get_method_kwargs(method, frequency, interp_kind, tolerance):
