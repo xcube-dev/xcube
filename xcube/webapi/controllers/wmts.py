@@ -27,41 +27,45 @@ def get_wmts_capabilities_xml(ctx: ServiceContext, base_url: str):
         f"    </ows:ServiceIdentification>\n"
     )
 
-    service_provider = ctx.config['ServiceProvider']
-    service_contact = service_provider['ServiceContact']
-    contact_info = service_contact['ContactInfo']
-    phone = contact_info['Phone']
-    address = contact_info['Address']
+    service_provider = ctx.config.get('ServiceProvider')
+    if not service_provider:
+        service_provider_xml = None
+    else:
+        service_contact = service_provider['ServiceContact']
+        contact_info = service_contact['ContactInfo']
+        phone = contact_info['Phone']
+        address = contact_info['Address']
 
-    service_provider_xml = (
-        f"\n"
-        f"    <ows:ServiceProvider>\n"
-        f"        <ows:ProviderName>{service_provider['ProviderName']}</ows:ProviderName>\n"
-        f"        <ows:ProviderSite xlink:href=\"{service_provider['ProviderSite']}\"/>\n"
-        f"        <ows:ServiceContact>\n"
-        f"            <ows:IndividualName>{service_contact['IndividualName']}</ows:IndividualName>\n"
-        f"            <ows:PositionName>{service_contact['PositionName']}</ows:PositionName>\n"
-        f"            <ows:ContactInfo>\n"
-        f"                <ows:Phone>\n"
-        f"                    <ows:Voice>{phone['Voice']}</ows:Voice>\n"
-        f"                    <ows:Facsimile>{phone['Facsimile']}</ows:Facsimile>\n"
-        f"                </ows:Phone>\n"
-        f"                <ows:Address>\n"
-        f"                    <ows:DeliveryPoint>{address['DeliveryPoint']}</ows:DeliveryPoint>\n"
-        f"                    <ows:City>{address['City']}</ows:City>\n"
-        f"                    <ows:AdministrativeArea>{address['AdministrativeArea']}</ows:AdministrativeArea>\n"
-        f"                    <ows:PostalCode>{address['PostalCode']}</ows:PostalCode>\n"
-        f"                    <ows:Country>{address['Country']}</ows:Country>\n"
-        f"                    <ows:ElectronicMailAddress>{address['ElectronicMailAddress']}"
-        f"</ows:ElectronicMailAddress>\n"
-        f"                </ows:Address>\n"
-        f"            </ows:ContactInfo>\n"
-        f"        </ows:ServiceContact>\n"
-        f"    </ows:ServiceProvider>\n"
-    )
+        service_provider_xml = (
+            f"\n"
+            f"    <ows:ServiceProvider>\n"
+            f"        <ows:ProviderName>{service_provider['ProviderName']}</ows:ProviderName>\n"
+            f"        <ows:ProviderSite xlink:href=\"{service_provider['ProviderSite']}\"/>\n"
+            f"        <ows:ServiceContact>\n"
+            f"            <ows:IndividualName>{service_contact['IndividualName']}</ows:IndividualName>\n"
+            f"            <ows:PositionName>{service_contact['PositionName']}</ows:PositionName>\n"
+            f"            <ows:ContactInfo>\n"
+            f"                <ows:Phone>\n"
+            f"                    <ows:Voice>{phone['Voice']}</ows:Voice>\n"
+            f"                    <ows:Facsimile>{phone['Facsimile']}</ows:Facsimile>\n"
+            f"                </ows:Phone>\n"
+            f"                <ows:Address>\n"
+            f"                    <ows:DeliveryPoint>{address['DeliveryPoint']}</ows:DeliveryPoint>\n"
+            f"                    <ows:City>{address['City']}</ows:City>\n"
+            f"                    <ows:AdministrativeArea>{address['AdministrativeArea']}</ows:AdministrativeArea>\n"
+            f"                    <ows:PostalCode>{address['PostalCode']}</ows:PostalCode>\n"
+            f"                    <ows:Country>{address['Country']}</ows:Country>\n"
+            f"                    <ows:ElectronicMailAddress>{address['ElectronicMailAddress']}"
+            f"</ows:ElectronicMailAddress>\n"
+            f"                </ows:Address>\n"
+            f"            </ows:ContactInfo>\n"
+            f"        </ows:ServiceContact>\n"
+            f"    </ows:ServiceProvider>\n"
+        )
 
     wmts_kvp_url = ctx.get_service_url(base_url, 'wmts/kvp?')
-    wmts_rest_cap_url = ctx.get_service_url(base_url, 'wmts/1.0.0/WMTSCapabilities.xml')
+    wmts_rest_cap_url = ctx.get_service_url(base_url,
+                                            'wmts/1.0.0/WMTSCapabilities.xml')
     wmts_rest_tile_url = ctx.get_service_url(base_url, 'wmts/1.0.0/')
 
     operations_metadata_xml = (
@@ -259,18 +263,35 @@ def get_wmts_capabilities_xml(ctx: ServiceContext, base_url: str):
         var_names = sorted(ds.data_vars)
         for var_name in var_names:
             var = ds[var_name]
-            var_title = var.attrs.get('title', var.attrs.get('long_name', var_name))
+            var_title = var.attrs.get('title',
+                                      var.attrs.get('long_name', var_name))
             themes_xml_lines.append((3, '<Theme>'))
-            themes_xml_lines.append((4, f'<ows:Title>{var_title}</ows:Title>'))
-            themes_xml_lines.append((4, f'<ows:Identifier>{ds_name}.{var_name}</ows:Identifier>'))
-            themes_xml_lines.append((4, f'<LayerRef>{ds_name}.{var_name}</LayerRef>'))
+            themes_xml_lines.append(
+                (4, f'<ows:Title>{var_title}</ows:Title>'))
+            themes_xml_lines.append(
+                (4, f'<ows:Identifier>{ds_name}.{var_name}</ows:Identifier>'))
+            themes_xml_lines.append(
+                (4, f'<LayerRef>{ds_name}.{var_name}</LayerRef>'))
             themes_xml_lines.append((3, '</Theme>'))
         themes_xml_lines.append((2, '</Theme>'))
     themes_xml_lines.append((1, '</Themes>'))
-    themes_xml = '\n'.join(['%s%s' % (n * indent, xml) for n, xml in themes_xml_lines])
+    themes_xml = '\n'.join(
+        ['%s%s' % (n * indent, xml) for n, xml in themes_xml_lines])
 
-    get_capablities_rest_url = ctx.get_service_url(base_url, 'wmts/1.0.0/WMTSCapabilities.xml')
+    get_capablities_rest_url = ctx.get_service_url(base_url,
+                                                   'wmts/1.0.0/WMTSCapabilities.xml')
     service_metadata_url_xml = f'<ServiceMetadataURL xlink:href="{get_capablities_rest_url}"/>'
+
+    body_parts = [
+        service_identification_xml,
+        service_provider_xml,
+        operations_metadata_xml,
+        contents_xml,
+        themes_xml,
+        service_metadata_url_xml,
+    ]
+
+    body = ''.join(f"    {p}\n" for p in body_parts)
 
     return (
         f"<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
@@ -281,11 +302,6 @@ def get_wmts_capabilities_xml(ctx: ServiceContext, base_url: str):
         f"          xsi:schemaLocation=\"http://www.opengis.net/wmts/1.0"
         f" http://schemas.opengis.net/wmts/1.0.0/wmtsGetCapabilities_response.xsd\"\n"
         f"          version=\"1.0.0\">\n"
-        f"    {service_identification_xml}\n"
-        f"    {service_provider_xml}\n"
-        f"    {operations_metadata_xml}\n"
-        f"    {contents_xml}\n"
-        f"    {themes_xml}\n"
-        f"    {service_metadata_url_xml}\n"
+        f"{body}"
         f"</Capabilities>\n"
     )

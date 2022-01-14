@@ -3,6 +3,9 @@
 * Changed the `xcube gen` tool to extract metadata for pre-sorting inputs
   from other than NetCDF inputs, e.g. GeoTIFF.
 
+* It is no longer required to have a `ServiceProvider` entry in 
+  the configuration for the xcube server (`xcube serve` tool).
+
 ## Changes in 0.9.2
 
 ### Fixes

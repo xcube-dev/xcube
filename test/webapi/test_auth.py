@@ -79,6 +79,8 @@ class AuthMixinIdTokenTest(unittest.TestCase):
         auth_mixin.request = RequestMock(headers={})
         self.assertEqual(None, auth_mixin.get_id_token())
 
+    @unittest.skipUnless(XCUBE_TEST_CLIENT_ID and XCUBE_TEST_CLIENT_SECRET,
+                         'XCUBE_TEST_CLIENT_ID and XCUBE_TEST_CLIENT_SECRET must be set')
     def test_expired_access_token(self):
         auth_mixin = AuthMixin()
         auth_mixin.service_context = ServiceContextMock(config=dict(
