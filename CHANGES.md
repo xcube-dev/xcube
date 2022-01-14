@@ -1,5 +1,14 @@
 ## Changes in 0.9.3 (in development)
 
+* It is now possible to use environment variables in most  
+  xcube configuration files. Unix bash syntax is used, i.e. 
+  `${ENV_VAR_NAME}` or `$ENV_VAR_NAME`. (#580)
+  
+  Supported tools include
+  - `xcube gen --config CONFIG` 
+  - `xcube gen2 --stores STORES_CONFIG --service SERVICE_CONFIG` 
+  - `xcube serve -c CONFIG` 
+
 * Changed the `xcube gen` tool to extract metadata for pre-sorting inputs
   from other than NetCDF inputs, e.g. GeoTIFF.
 

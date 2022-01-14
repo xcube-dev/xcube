@@ -19,15 +19,10 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-import io
-import json
-import os
-import string
-from typing import Any, Union
 from typing import Dict
+from typing import Union
 
-import yaml
-
+from xcube.util.config import load_json_or_yaml_config
 from xcube.util.jsonschema import JsonObject
 from xcube.util.jsonschema import JsonObjectSchema
 from xcube.util.jsonschema import JsonStringSchema
@@ -85,7 +80,7 @@ class ServiceConfig(JsonObject):
 
     @classmethod
     def from_file(cls, service_config_file: str) -> 'ServiceConfig':
-        service_config = load_json_or_yaml_file(service_config_file)
+        service_config = load_json_or_yaml_config(service_config_file)
         cls.get_schema().validate_instance(service_config)
         return ServiceConfig(**service_config)
 
@@ -102,15 +97,3 @@ class ServiceConfig(JsonObject):
             required=[],
             factory=cls,
         )
-
-
-def load_json_or_yaml_file(config_file: str) -> Any:
-    with open(config_file, 'r') as fp:
-        file_content = fp.read()
-    template = string.Template(file_content)
-    file_content = template.safe_substitute(os.environ)
-    with io.StringIO(file_content) as fp:
-        if config_file.endswith('.json'):
-            return json.load(fp)
-        else:
-            return yaml.safe_load(fp)
