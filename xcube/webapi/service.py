@@ -34,10 +34,10 @@ from typing import Optional, Dict, List, Tuple, Mapping
 
 import tornado.escape
 import tornado.options
-import yaml
 from tornado.ioloop import IOLoop
 from tornado.log import enable_pretty_logging
-from tornado.web import RequestHandler, Application
+from tornado.web import Application
+from tornado.web import RequestHandler
 
 from xcube.constants import LOG
 from xcube.core.dsio import is_s3_url
@@ -45,11 +45,17 @@ from xcube.core.mldataset import guess_ml_dataset_format
 from xcube.util.cache import parse_mem_size
 from xcube.util.caseless import caseless_dict
 from xcube.util.config import load_configs
+from xcube.util.config import load_json_or_yaml_config
 from xcube.util.undefined import UNDEFINED
 from xcube.version import version
 from xcube.webapi.context import ServiceContext
-from xcube.webapi.defaults import DEFAULT_ADDRESS, DEFAULT_PORT, DEFAULT_UPDATE_PERIOD, DEFAULT_LOG_PREFIX, \
-    DEFAULT_TILE_CACHE_SIZE, DEFAULT_TRACE_PERF, DEFAULT_TILE_COMP_MODE
+from xcube.webapi.defaults import DEFAULT_ADDRESS
+from xcube.webapi.defaults import DEFAULT_LOG_PREFIX
+from xcube.webapi.defaults import DEFAULT_PORT
+from xcube.webapi.defaults import DEFAULT_TILE_CACHE_SIZE
+from xcube.webapi.defaults import DEFAULT_TILE_COMP_MODE
+from xcube.webapi.defaults import DEFAULT_TRACE_PERF
+from xcube.webapi.defaults import DEFAULT_UPDATE_PERIOD
 from xcube.webapi.errors import ServiceBadRequestError
 from xcube.webapi.reqparams import RequestParams
 
@@ -233,11 +239,10 @@ class Service:
         if self.context.config_mtime != stat.st_mtime:
             self.context.config_mtime = stat.st_mtime
             try:
-                with open(config_file, encoding='utf-8') as stream:
-                    self.context.config = yaml.safe_load(stream)
+                self.context.config = load_json_or_yaml_config(config_file)
                 self.config_error = None
                 LOG.info(f'configuration file {config_file!r} successfully loaded')
-            except (yaml.YAMLError, OSError) as e:
+            except ValueError as e:
                 if self.config_error is None:
                     LOG.error(f'configuration file {config_file!r}: {e}')
                     self.config_error = e
@@ -255,6 +260,7 @@ class ServiceRequestHandler(RequestHandler):
 
     @property
     def service_context(self) -> ServiceContext:
+        # noinspection PyUnresolvedReferences
         return self.application.service_context
 
     @property
@@ -271,7 +277,8 @@ class ServiceRequestHandler(RequestHandler):
         self.set_header('Access-Control-Allow-Methods',
                         'GET,PUT,DELETE,OPTIONS')
         self.set_header('Access-Control-Allow-Headers',
-                        'x-requested-with,access-control-allow-origin,authorization,content-type')
+                        'x-requested-with,access-control-allow-origin,'
+                        'authorization,content-type')
 
     # noinspection PyUnusedLocal
     def options(self, *args, **kwargs):

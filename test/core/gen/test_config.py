@@ -8,8 +8,8 @@ from xcube.core.gen.config import get_config_dict
 
 TEMP_PATH_FOR_YAML = './temp_test_data_for_xcube_tests'
 
-CONFIG_1_NAME = 'config_1.json'
-CONFIG_2_NAME = 'config_2.json'
+CONFIG_1_NAME = 'config_1.yaml'
+CONFIG_2_NAME = 'config_2.yaml'
 CONFIG_1_FILE_LIST = [(os.path.join(TEMP_PATH_FOR_YAML, CONFIG_1_NAME)),
                       (os.path.join(TEMP_PATH_FOR_YAML, CONFIG_2_NAME))]
 CONFIG_1_YAML = """
@@ -21,8 +21,8 @@ output_variables:
   - z*
 """
 
-CONFIG_3_NAME = 'config_3.json'
-CONFIG_4_NAME = 'config_4.json'
+CONFIG_3_NAME = 'config_3.yaml'
+CONFIG_4_NAME = 'config_4.yaml'
 CONFIG_2_FILE_LIST = [(os.path.join(TEMP_PATH_FOR_YAML, CONFIG_3_NAME)),
                       (os.path.join(TEMP_PATH_FOR_YAML, CONFIG_4_NAME))]
 CONFIG_2_YAML = """
