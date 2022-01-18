@@ -4,7 +4,7 @@ channels:
   - defaults
 dependencies:
   # Python
-  - python >=3.8
+  - python >=3.8,<3.10
   # Required
   - affine >=2.2
   - click >=8.0

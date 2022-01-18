@@ -2,7 +2,7 @@ import itertools
 import json
 import math
 import unittest
-from collections import MutableMapping
+from collections.abc import MutableMapping
 from typing import Dict, KeysView, Iterator, Sequence, Any
 
 import cftime
