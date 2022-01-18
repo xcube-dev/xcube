@@ -11,6 +11,9 @@
 
 * Changed the `xcube gen` tool to extract metadata for pre-sorting inputs
   from other than NetCDF inputs, e.g. GeoTIFF.
+  
+* Pinned Python version to < 3.10 to avoid ImportErrors caused by a third-party
+  library.
 
 ## Changes in 0.9.2
 
