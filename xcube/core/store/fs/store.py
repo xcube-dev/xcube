@@ -590,6 +590,8 @@ class BaseFsDataStore(DefaultSearchMixin, MutableDataStore):
                 file_path = file_path[len(self.root) + 1:]
             elif file_path.startswith('/' + self.root):
                 file_path = file_path[len(self.root) + 2:]
+            if not file_path:
+                continue
             if self._is_data_specified(file_path, data_type):
                 yield (file_path, {}) if return_tuples else file_path
             elif file_info.get('type') == 'directory' \
