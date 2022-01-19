@@ -773,7 +773,10 @@ class GridMapping(abc.ABC):
 
     @property
     def tile_grid(self) -> TileGrid:
-        assert_true(math.isclose(self.x_res, self.y_res),
+        # we allow up to 1% dev
+        assert_true(math.isclose(self.x_res,
+                                 self.y_res,
+                                 rel_tol=0.01),
                     message='spatial resolutions must be'
                             ' same in both directions')
         return ImageTileGrid(image_size=self.size,

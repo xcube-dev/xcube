@@ -110,7 +110,7 @@ def get_datasets(ctx: ServiceContext,
                         )
                     filtered_dataset_dicts.append(dataset_dict)
                 except (DatasetIsNotACubeError, CubeIsNotDisplayable) as e:
-                    LOG.warn(f'skipping dataset {ds_id}: {e}')
+                    LOG.warning(f'skipping dataset {ds_id}: {e}')
             dataset_dicts = filtered_dataset_dicts
     if point:
         is_point_in_dataset_bbox = functools.partial(
@@ -143,15 +143,15 @@ def get_dataset(ctx: ServiceContext,
                                    f' {grid_mapping.crs.srs}')
     if not math.isclose(grid_mapping.x_res,
                         grid_mapping.y_res,
-                        abs_tol=0.01):
+                        rel_tol=0.01):  # we allow up to 1% dev
         raise CubeIsNotDisplayable(f'spatial resolutions are'
                                    f' different in x, y:'
                                    f' {grid_mapping.x_res}'
                                    f' and {grid_mapping.y_res}')
     try:
         # Make sure we have a valid tile grid
-        # noinspection PyStatementEffect
-        assert_instance(ml_ds.tile_grid, TileGrid)
+        tile_grid = ml_ds.tile_grid
+        assert_instance(tile_grid, TileGrid)
     except ValueError as e:
         raise CubeIsNotDisplayable(f'could not create tile grid: {e}')
 
