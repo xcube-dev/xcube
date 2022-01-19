@@ -1,5 +1,7 @@
 ## Changes in 0.9.3 (in development)
 
+### New features
+
 * It is now possible to use environment variables in most  
   xcube configuration files. Unix bash syntax is used, i.e. 
   `${ENV_VAR_NAME}` or `$ENV_VAR_NAME`. (#580)
@@ -12,6 +14,13 @@
 * Changed the `xcube gen` tool to extract metadata for pre-sorting inputs
   from other than NetCDF inputs, e.g. GeoTIFF.
   
+### Fixes
+  
+* Fixed bug that would cause that requesting data ids on some s3 stores would
+  fail with a confusing ValueError.
+  
+### Other
+
 * Pinned Python version to < 3.10 to avoid ImportErrors caused by a third-party
   library.
 
