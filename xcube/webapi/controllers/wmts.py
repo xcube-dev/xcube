@@ -1,3 +1,26 @@
+# The MIT License (MIT)
+# Copyright (c) 2022 by the xcube development team and contributors
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy of
+# this software and associated documentation files (the "Software"), to deal in
+# the Software without restriction, including without limitation the rights to
+# use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
+# of the Software, and to permit persons to whom the Software is furnished to do
+# so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
+import urllib.parse
+
 import math
 
 from xcube.webapi.context import ServiceContext
@@ -175,7 +198,10 @@ def get_wmts_capabilities_xml(ctx: ServiceContext, base_url: str):
                 var_title = ds_name + "/" + var.attrs.get('title', var.attrs.get('long_name', var_name))
                 var_abstract = var.attrs.get('comment', '')
 
-                layer_tile_url = layer_base_url % (ds_name, var_name)
+                layer_tile_url = (layer_base_url
+                                  % tuple(map(urllib.parse.quote,
+                                              (ds_name, var_name))))
+
                 contents_xml_lines.append((2, '<Layer>'))
                 contents_xml_lines.append((3, f'<ows:Identifier>{ds_name}.{var_name}</ows:Identifier>'))
                 contents_xml_lines.append((3, f'<ows:Title>{var_title}</ows:Title>'))

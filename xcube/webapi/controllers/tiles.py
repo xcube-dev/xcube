@@ -1,6 +1,6 @@
 import io
 from typing import Dict, Any
-
+import urllib.parse
 import matplotlib
 import matplotlib.colorbar
 import matplotlib.colors
@@ -164,9 +164,9 @@ def get_dataset_tile_url(ctx: ServiceContext,
                          base_url: str):
     return ctx.get_service_url(base_url,
                                'datasets',
-                               ds_id,
+                               urllib.parse.quote(ds_id),
                                'vars',
-                               var_name,
+                               urllib.parse.quote(var_name),
                                'tiles',
                                '{z}/{x}/{y}.png')
 

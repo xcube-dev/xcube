@@ -15,6 +15,10 @@
   from other than NetCDF inputs, e.g. GeoTIFF.
   
 ### Fixes
+
+* `xcube serve` now also serves datasets that are located in 
+  subdirectories of filesystem-based data stores such as
+  "file", "s3", "memory". (#579)
   
 * Fixed bug that would cause that requesting data ids on some s3 stores would
   fail with a confusing ValueError.
