@@ -61,6 +61,16 @@ class ServiceContextTest(unittest.TestCase):
                 conc_chl_z = ctx.get_variable_for_z('demo-aug', var_name, z)
                 self.assertIsInstance(conc_chl_z, xr.DataArray)
 
+    def test_get_dataset_configs_from_stores(self):
+        ctx = new_test_service_context(config_file_name='config-datastores.yml')
+
+        dataset_configs_from_stores = ctx.get_dataset_configs_from_stores()
+        self.assertIsNotNone(dataset_configs_from_stores)
+        self.assertEqual(2, len(dataset_configs_from_stores))
+        ids = [config['Identifier'] for config in dataset_configs_from_stores]
+        self.assertIn('test~cube-1-250-250.zarr', ids)
+        self.assertIn('test~cube-5-100-200.zarr', ids)
+
     def test_config_and_dataset_cache(self):
         ctx = new_test_service_context()
         self.assertNotIn('demo', ctx.dataset_cache)

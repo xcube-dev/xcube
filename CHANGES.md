@@ -19,6 +19,10 @@
 * Fixed bug that would cause that requesting data ids on some s3 stores would
   fail with a confusing ValueError.
   
+* Fixed that only last dataset of a directory listing was published via 
+  `xcube serve` when using the `DataStores` configuration with 
+  filesystem-based datastores such as "s3" or "file". (#576)
+  
 ### Other
 
 * Pinned Python version to < 3.10 to avoid ImportErrors caused by a third-party
