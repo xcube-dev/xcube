@@ -21,7 +21,7 @@
   "file", "s3", "memory". (#579)
 
 * `xcube serve` no longer rejects datasets whose spatial
-  resolutions in x any differ less than 1%. (#590)
+  resolutions differ less than 1%. (#590)
   It also no longer rejects datasets with large dimension 
   sizes. (Formerly, an integer-overflow occurred in size 
   computation.) 
