@@ -300,6 +300,7 @@ class ServiceContext:
                         if fnmatch.fnmatch(store_dataset_id,
                                            dataset_id_pattern):
                             dataset_config_base = store_dataset_config
+                            break
                         else:
                             dataset_config_base = None
                 if dataset_config_base is not None:
