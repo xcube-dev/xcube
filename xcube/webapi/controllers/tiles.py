@@ -164,9 +164,9 @@ def get_dataset_tile_url(ctx: ServiceContext,
                          base_url: str):
     return ctx.get_service_url(base_url,
                                'datasets',
-                               urllib.parse.quote(ds_id),
+                               urllib.parse.quote_plus(ds_id),
                                'vars',
-                               urllib.parse.quote(var_name),
+                               urllib.parse.quote_plus(var_name),
                                'tiles',
                                '{z}/{x}/{y}.png')
 

@@ -199,7 +199,7 @@ def get_wmts_capabilities_xml(ctx: ServiceContext, base_url: str):
                 var_abstract = var.attrs.get('comment', '')
 
                 layer_tile_url = (layer_base_url
-                                  % tuple(map(urllib.parse.quote,
+                                  % tuple(map(urllib.parse.quote_plus,
                                               (ds_name, var_name))))
 
                 contents_xml_lines.append((2, '<Layer>'))
