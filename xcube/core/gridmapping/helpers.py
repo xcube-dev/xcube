@@ -48,9 +48,9 @@ def _to_int_or_float(x: Number) -> Number:
     """
     if isinstance(x, int):
         return x
-    xi = int(x)
     xf = float(x)
-    return xi if math.isclose(xi, xf, abs_tol=1e-10) else xf
+    xi = round(xf)
+    return xi if math.isclose(xi, xf, rel_tol=1e-5) else xf
 
 
 def _from_affine(matrix: affine.Affine) -> AffineTransformMatrix:

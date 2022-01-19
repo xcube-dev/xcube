@@ -1,13 +1,58 @@
-## Changes in 0.9.1 (in development)
+## Changes in 0.9.3 (in development)
 
 ### New features
-* Function `mask_dataset_by_geometry` has a new parameter `all_touched`:
-  If True, all pixels intersected by geometry outlines will be included in the mask. 
-  If False, only pixels whose center is within the polygon or that are selected by 
-  Bresenham’s line algorithm will be included in the mask. 
-  The default value is set to `False`. 
+
+* It is now possible to use environment variables in most  
+  xcube configuration files. Unix bash syntax is used, i.e. 
+  `${ENV_VAR_NAME}` or `$ENV_VAR_NAME`. (#580)
+  
+  Supported tools include
+  - `xcube gen --config CONFIG` 
+  - `xcube gen2 --stores STORES_CONFIG --service SERVICE_CONFIG` 
+  - `xcube serve -c CONFIG` 
+
+* Changed the `xcube gen` tool to extract metadata for pre-sorting inputs
+  from other than NetCDF inputs, e.g. GeoTIFF.
+  
+### Fixes
+  
+* Fixed bug that would cause that requesting data ids on some s3 stores would
+  fail with a confusing ValueError.
+  
+### Other
+
+* Pinned Python version to < 3.10 to avoid ImportErrors caused by a third-party
+  library.
+
+## Changes in 0.9.2
+
+### Fixes
+
+* A `xcube.core.store.fs.impl.FSDataStore` no longer raises exceptions when 
+  root directories in data store configurations do not exist. Instead, they 
+  are created when data is written.
+
+## Changes in 0.9.1
+
+### New features
+
+* The `xcube.core.maskset.MaskSet` class no longer allocates static numpy 
+  arrays for masks. Instead, it uses lazy dask arrays. (#556)
+
+* Function `xcube.core.geom.mask_dataset_by_geometry` has a new parameter 
+  `all_touched`: If `True`, all pixels intersected by geometry outlines will 
+  be included in the mask. If `False`, only pixels whose center is within the 
+  polygon or that are selected by Bresenham’s line algorithm will be included  
+  in the mask. The default value is set to `False`. 
 
 ### Other
+
+* Updated `Dockerfile`: Removed the usage of a no-longer-maintained base image.
+  Ensured that the version tag 'latest' can be used with installation mode 
+  'release' for xcube plugins.
+
+* The `xcube` package now requires `xarray >= 0.19`, `zarr >= 2.8`, 
+  `pandas >= 1.3`.
 
 ## Changes in 0.9.0
 

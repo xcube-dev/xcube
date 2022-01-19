@@ -22,7 +22,6 @@
 import json
 import sys
 import traceback
-from typing import Sequence
 
 import click
 
@@ -51,9 +50,8 @@ import click
               help='Write cube information or generation result into JSON'
                    ' file RESULT.'
                    ' If omitted, the JSON is dumped to stdout.')
-@click.option('--verbose', '-v',
-              is_flag=True,
-              multiple=True,
+@click.option('--verbose', '-v', 'verbosity',
+              count=True,
               help='Control amount of information dumped to stdout.'
                    ' May be given multiple time to output more details,'
                    ' e.g. "-vvv".')
@@ -62,7 +60,7 @@ def gen2(request_path: str,
          service_config_path: str = None,
          output_file: str = None,
          info: bool = False,
-         verbose: Sequence[bool] = None):
+         verbosity: int = 0):
     """
     Generator tool for data cubes.
 
@@ -124,8 +122,6 @@ def gen2(request_path: str,
     from xcube.core.gen2 import CubeGeneratorError
     from xcube.core.gen2 import CubeGeneratorRequest
     from xcube.util.versions import get_xcube_versions
-
-    verbosity = len(verbose) if verbose else 0
 
     error = None
 

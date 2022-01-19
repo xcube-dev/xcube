@@ -35,6 +35,7 @@ from .assertions import assert_valid_config
 from .error import DataStoreError
 from .store import DataStore
 from .store import new_data_store
+from ...util.config import load_json_or_yaml_config
 
 
 def get_data_store_instance(store_id: str,
@@ -348,11 +349,7 @@ class DataStorePool:
     @classmethod
     def from_file(cls, path: str) -> 'DataStorePool':
         _, ext = os.path.splitext(path)
-        with open(path) as fp:
-            if ext == '.json':
-                store_configs = json.load(fp)
-            else:
-                store_configs = yaml.safe_load(fp)
+        store_configs = load_json_or_yaml_config(path)
         return cls.from_dict(store_configs or {})
 
     @classmethod

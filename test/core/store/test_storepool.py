@@ -190,7 +190,9 @@ class DataStorePoolTest(unittest.TestCase):
         }
         with self.assertRaises(jsonschema.exceptions.ValidationError) as cm:
             DataStorePool.from_dict(store_configs)
-        self.assertTrue("'store_id' is a required property" in f'{cm.exception}', msg=f'{cm.exception}')
+        self.assertTrue(
+            "'store_id' is a required property" in f'{cm.exception}',
+            msg=f'{cm.exception}')
 
         store_configs = {
             "dir": {
@@ -199,47 +201,88 @@ class DataStorePoolTest(unittest.TestCase):
         }
         with self.assertRaises(jsonschema.exceptions.ValidationError) as cm:
             DataStorePool.from_dict(store_configs)
-        self.assertTrue("Failed validating 'type' in schema" in f'{cm.exception}', msg=f'{cm.exception}')
+        self.assertTrue(
+            "Failed validating 'type' in schema" in f'{cm.exception}',
+            msg=f'{cm.exception}')
 
     def test_from_json_file(self):
-        store_configs = {
-            "ram-1": {
-                "store_id": "memory"
-            },
-            "ram-2": {
-                "store_id": "memory"
-            }
-        }
-        path = 'test-store-configs.json'
+        self._assert_file_ok('json')
+
+    def test_from_yaml_file(self):
+        self._assert_file_ok('yaml')
+
+    def test_from_json_file_env(self):
+        self._assert_file_ok('json', use_env_vars=True)
+        self._assert_file_ok('json',
+                             root_1='/test_1',
+                             root_2='/test_2',
+                             use_env_vars=True)
+
+    def test_from_yaml_file_env(self):
+        self._assert_file_ok('yaml', use_env_vars=True)
+        self._assert_file_ok('yaml',
+                             root_1='/test_1',
+                             root_2='/test_2',
+                             use_env_vars=True)
+
+    def _assert_file_ok(self,
+                        format_name: str,
+                        root_1="/root1",
+                        root_2="/root2",
+                        use_env_vars=False):
+        if use_env_vars:
+            store_configs = self._get_test_config(
+                root_1='${_TEST_ROOT_1}',
+                root_2='${_TEST_ROOT_2}'
+            )
+            import os
+            os.environ['_TEST_ROOT_1'] = root_1
+            os.environ['_TEST_ROOT_2'] = root_2
+        else:
+            store_configs = self._get_test_config(
+                root_1=root_1,
+                root_2=root_2
+            )
+        path = 'test-store-configs.' + format_name
         with open(path, 'w') as fp:
-            json.dump(store_configs, fp, indent=2)
+            mod = yaml if format_name == 'yaml' else json
+            mod.dump(store_configs, fp, indent=2)
         try:
             pool = DataStorePool.from_file(path)
             self.assertIsInstance(pool, DataStorePool)
             self.assertEqual(['ram-1', 'ram-2'], pool.store_instance_ids)
+            config_1 = pool.get_store_config('ram-1')
+            self.assertIsInstance(config_1, DataStoreConfig)
+            self.assertEqual(
+                {'store_id': 'memory',
+                 'store_params': {'root': root_1}},
+                config_1.to_dict())
+            config_2 = pool.get_store_config('ram-2')
+            self.assertIsInstance(config_2, DataStoreConfig)
+            self.assertEqual(
+                {'store_id': 'memory',
+                 'store_params': {'root': root_2}},
+                config_2.to_dict())
         finally:
             import os
             os.remove(path)
 
-    def test_from_yaml_file(self):
-        store_configs = {
+    @staticmethod
+    def _get_test_config(root_1: str, root_2: str):
+        return {
             "ram-1": {
-                "store_id": "memory"
+                "store_id": "memory",
+                "store_params": {
+                    "root": root_1
+                },
             },
             "ram-2": {
-                "store_id": "memory"
+                "store_id": "memory",
+                "store_params": {
+                    "root": root_2
+                },
             }
         }
-        path = 'test-store-configs.yaml'
-        with open(path, 'w') as fp:
-            yaml.dump(store_configs, fp, indent=2)
-        try:
-            pool = DataStorePool.from_file(path)
-            self.assertIsInstance(pool, DataStorePool)
-            self.assertEqual(['ram-1', 'ram-2'], pool.store_instance_ids)
-        finally:
-            import os
-            os.remove(path)
 
     def test_get_store(self):
         store_configs = {
@@ -269,10 +312,10 @@ class DataStorePoolTest(unittest.TestCase):
     def test_to_dict(self):
         self.assertEqual({}, DataStorePool().to_dict())
         self.assertEqual({'ram': {'store_id': 'memory'},
-                          'dir': {'store_id': 'directory',
+                          'dir': {'store_id': 'file',
                                   'store_params': {'base_dir': 'bibo'}}},
                          DataStorePool({'ram': DataStoreConfig(store_id='memory'),
-                                        'dir': DataStoreConfig(store_id='directory',
+                                        'dir': DataStoreConfig(store_id='file',
                                                                store_params=dict(base_dir="bibo"))
                                         }).to_dict())
 

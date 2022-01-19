@@ -21,7 +21,11 @@
 
 import datetime
 import fnmatch
+import io
+import json
+import os
 import os.path
+import string
 from typing import Any, Dict, Optional, Iterable, Tuple, List
 
 import yaml
@@ -32,7 +36,9 @@ NameAnyDict = Dict[str, Any]
 NameDictPairList = List[Tuple[str, Optional[NameAnyDict]]]
 
 
-def to_resolved_name_dict_pairs(name_dict_pairs: NameDictPairList, container, keep=False) -> NameDictPairList:
+def to_resolved_name_dict_pairs(name_dict_pairs: NameDictPairList,
+                                container,
+                                keep=False) -> NameDictPairList:
     resolved_pairs = []
     for name, value in name_dict_pairs:
         if '*' in name or '?' in name or '[' in name:
@@ -44,7 +50,8 @@ def to_resolved_name_dict_pairs(name_dict_pairs: NameDictPairList, container, ke
     return resolved_pairs
 
 
-def to_name_dict_pairs(iterable: Iterable[Any], default_key=None) -> NameDictPairList:
+def to_name_dict_pairs(iterable: Iterable[Any], default_key=None) \
+        -> NameDictPairList:
     return [to_name_dict_pair(item, parent=iterable, default_key=default_key)
             for item in iterable]
 
@@ -137,7 +144,9 @@ def merge_config(first_dict: Dict, *more_dicts):
         output_dict = dict(first_dict)
         for d in more_dicts:
             for k, v in d.items():
-                if k in output_dict and isinstance(output_dict[k], dict) and isinstance(v, dict):
+                if k in output_dict \
+                        and isinstance(output_dict[k], dict) \
+                        and isinstance(v, dict):
                     v = merge_config(output_dict[k], v)
                 output_dict[k] = v
     return output_dict
@@ -148,15 +157,36 @@ def load_configs(*config_paths: str) -> Dict[str, Any]:
     for config_path in config_paths:
         if not os.path.isfile(config_path):
             raise ValueError(f'Cannot find configuration {config_path!r}')
-        with open(config_path) as fp:
-            try:
-                config_dict = yaml.safe_load(fp)
-            except yaml.YAMLError as e:
-                raise ValueError(f'YAML in {config_path!r} is invalid: {e}') from e
-            except OSError as e:
-                raise ValueError(f'Cannot load configuration from {config_path!r}: {e}') from e
-            if not isinstance(config_dict, dict):
-                raise ValueError(f'Invalid configuration format in {config_path!r}: dictionary expected')
-            config_dicts.append(config_dict)
+        config_dict = load_json_or_yaml_config(config_path)
+        config_dicts.append(config_dict)
     config = merge_config(*config_dicts)
     return config
+
+
+def load_json_or_yaml_config(config_path: str) -> Dict[str, Any]:
+    try:
+        config_dict = _load_json_or_yaml_config(config_path)
+    except yaml.YAMLError as e:
+        raise ValueError(
+            f'YAML in {config_path!r} is invalid: {e}') from e
+    except OSError as e:
+        raise ValueError(
+            f'Cannot load configuration from'
+            f' {config_path!r}: {e}') from e
+    if not isinstance(config_dict, dict):
+        raise ValueError(
+            f'Invalid configuration format in'
+            f' {config_path!r}: dictionary expected')
+    return config_dict
+
+
+def _load_json_or_yaml_config(config_file: str) -> Any:
+    with open(config_file, 'r') as fp:
+        file_content = fp.read()
+    template = string.Template(file_content)
+    file_content = template.safe_substitute(os.environ)
+    with io.StringIO(file_content) as fp:
+        if config_file.endswith('.json'):
+            return json.load(fp)
+        else:
+            return yaml.safe_load(fp)

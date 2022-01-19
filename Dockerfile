@@ -1,9 +1,12 @@
-FROM quay.io/bcdev/xcube-python-base:0.8.1
+ARG MINICONDA_VERSION=latest
+
+FROM continuumio/miniconda3:${MINICONDA_VERSION}
 
 ARG INSTALL_PLUGINS=1
-ENV XCUBE_SH_VERSION=0.9.0.dev0
-ENV XCUBE_CCI_VERSION=0.9.0.dev0
-ENV XCUBE_CDS_VERSION=0.9.0
+ARG XCUBE_USER_NAME=xcube
+ENV XCUBE_SH_VERSION=latest
+ENV XCUBE_CCI_VERSION=latest
+ENV XCUBE_CDS_VERSION=latest
 
 # Metadata
 LABEL maintainer="helge.dzierzon@brockmann-consult.de"
@@ -15,9 +18,18 @@ SHELL ["/bin/bash", "-c"]
 
 USER root
 # Update system for security checks
-RUN apt-get -y update && apt-get -y upgrade
+RUN apt-get -y update && apt-get -y upgrade vim jq curl
 
-USER xcube
+SHELL ["/bin/bash", "-c"]
+RUN groupadd -g 1000 ${XCUBE_USER_NAME}
+RUN useradd -u 1000 -g 1000 -ms /bin/bash ${XCUBE_USER_NAME}
+RUN mkdir /workspace && chown ${XCUBE_USER_NAME}:${XCUBE_USER_NAME} /workspace
+RUN chown -R ${XCUBE_USER_NAME}:${XCUBE_USER_NAME} /opt/conda
+
+USER ${XCUBE_USER_NAME}
+
+RUN source activate base && conda update -n base conda && conda init
+RUN source activate base && conda install -n base -c conda-forge mamba=0.7.0 pip=21.3.1
 
 # Setup conda environment
 # Copy yml config into image

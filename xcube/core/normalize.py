@@ -195,7 +195,7 @@ def decode_cube(dataset: xr.Dataset,
         except ValueError:
             pass
     try:
-        grid_mapping = GridMapping.from_dataset(dataset)
+        grid_mapping = GridMapping.from_dataset(dataset, tolerance=1e-4)
     except ValueError as e:
         raise DatasetIsNotACubeError(f'Failed to detect grid mapping:'
                                      f' {e}') from e

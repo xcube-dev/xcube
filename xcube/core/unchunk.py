@@ -84,3 +84,5 @@ def _unchunk_vars(dataset_path: str, var_names: List[str]):
             # therefore we must modify attrs explicitly:
             var_array = zarr.convenience.open_array(var_path, 'r+')
             var_array.attrs.update(attributes)
+
+    zarr.consolidate_metadata(dataset_path)

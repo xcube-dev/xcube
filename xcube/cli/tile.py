@@ -51,7 +51,7 @@ DEFAULT_STYLE_ID = 'default'
                    f' Defaults to {DEFAULT_STYLE_ID!r}.')
 @click.option('--output', '-o', 'output_path', metavar='OUTPUT', default=DEFAULT_OUTPUT_PATH,
               help=f'Output path. Defaults to {DEFAULT_OUTPUT_PATH!r}')
-@click.option('--verbose', '-v', is_flag=True, multiple=True,
+@click.option('--verbose', '-v', 'verbosity', count=True,
               help=f'Use -vv to report all files generated, -v to report less.')
 @click.option('--dry-run', 'dry_run', is_flag=True,
               help=f'Generate all tiles but don\'t write any files.')
@@ -62,7 +62,7 @@ def tile(cube: str,
          config_path: Optional[str],
          style_id: Optional[str],
          output_path: Optional[str],
-         verbose: List[bool],
+         verbosity: int,
          dry_run: bool):
     """
     Create RGBA tiles from CUBE.
@@ -186,8 +186,6 @@ def tile(cube: str,
                                    item_plural_name='tile sizes')
 
     labels = parse_cli_kwargs(labels, metavar='LABELS')
-
-    verbosity = len(verbose)
 
     config = {}
     if config_path:
