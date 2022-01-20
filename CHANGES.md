@@ -20,8 +20,8 @@
   subdirectories of filesystem-based data stores such as
   "file", "s3", "memory". (#579)
 
-* `xcube serve` no longer rejects datasets whose spatial
-  resolutions differ less than 1%. (#590)
+* xcube serve now accepts datasets whose spatial 
+  resolutions differ up to 1%. (#590)
   It also no longer rejects datasets with large dimension 
   sizes. (Formerly, an integer-overflow occurred in size 
   computation.) 
