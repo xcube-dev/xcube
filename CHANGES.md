@@ -19,6 +19,15 @@
 * `xcube serve` now also serves datasets that are located in 
   subdirectories of filesystem-based data stores such as
   "file", "s3", "memory". (#579)
+
+* xcube serve now accepts datasets whose spatial 
+  resolutions differ up to 1%. (#590)
+  It also no longer rejects datasets with large dimension 
+  sizes. (Formerly, an integer-overflow occurred in size 
+  computation.) 
+
+* `DatasetChunkCacheSize` is now optional in `xcube serve`
+  configuration. (Formerly, when omitted, the server crashed.)
   
 * Fixed bug that would cause that requesting data ids on some s3 stores would
   fail with a confusing ValueError.
