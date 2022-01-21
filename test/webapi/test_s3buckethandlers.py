@@ -31,13 +31,20 @@ class S3BucketHandlersTest(unittest.TestCase):
     def test_open_cube_from_xube_server_rel_path(self):
         ds = open_cube('s3bucket/local',
                        format_name='zarr',
+                       s3_kwargs={
+                           'anon': True
+                       },
                        s3_client_kwargs=dict(endpoint_url=SERVER_URL))
         self.assertCubeOk(ds)
 
     @unittest.skipUnless(XCUBE_SERVER_IS_RUNNING, SKIP_HELP)
     def test_open_cube_from_xube_server_abs_path(self):
         ds = open_cube('http://localhost:8080/s3bucket/local',
-                       format_name='zarr')
+                       format_name='zarr',
+                       s3_kwargs={
+                           'anon': True
+                       }
+                       )
         self.assertCubeOk(ds)
 
     def assertCubeOk(self, ds):
