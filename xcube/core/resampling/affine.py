@@ -243,25 +243,23 @@ def _transform_array(image: da.Array,
         # We can "recover" values that are neighbours to NaN values
         # that would otherwise become NaN too.
         mask = da.isnan(image)
-        # First check if there are NaN values ar all
-        if da.any(mask):
-            # Yes, then
-            # 1. replace NaN by zero
-            filled_im = da.where(mask, 0.0, image)
-            # 2. transform the zeo-filled image
-            scaled_im = ndinterp.affine_transform(filled_im,
-                                                  matrix,
-                                                  **at_kwargs,
-                                                  cval=0.0)
-            # 3. transform the inverted mask
-            scaled_norm = ndinterp.affine_transform(1.0 - mask,
-                                                    matrix,
-                                                    **at_kwargs,
-                                                    cval=0.0)
-            # 4. put back NaN where there was zero,
-            #    otherwise decode using scaled mask
-            return da.where(da.isclose(scaled_norm, 0.0),
-                            np.nan, scaled_im / scaled_norm)
+
+        # 1. replace NaN by zero
+        filled_im = da.where(mask, 0.0, image)
+        # 2. transform the zeo-filled image
+        scaled_im = ndinterp.affine_transform(filled_im,
+                                              matrix,
+                                              **at_kwargs,
+                                              cval=0.0)
+        # 3. transform the inverted mask
+        scaled_norm = ndinterp.affine_transform(1.0 - mask,
+                                                matrix,
+                                                **at_kwargs,
+                                                cval=0.0)
+        # 4. put back NaN where there was zero,
+        #    otherwise decode using scaled mask
+        return da.where(da.isclose(scaled_norm, 0.0),
+                        np.nan, scaled_im / scaled_norm)
 
     # No dealing with NaN required
     return ndinterp.affine_transform(image, matrix, **at_kwargs, cval=np.nan)
