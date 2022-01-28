@@ -1,6 +1,6 @@
 ## Changes in 0.9.3 (in development)
 
-### New features
+### Enhancements
 
 * It is now possible to use environment variables in most  
   xcube configuration files. Unix bash syntax is used, i.e. 
@@ -13,6 +13,9 @@
 
 * Changed the `xcube gen` tool to extract metadata for pre-sorting inputs
   from other than NetCDF inputs, e.g. GeoTIFF.
+
+* Optimized function `xcube.core.geom.rasterize_features()`.
+  It is now twice as fast while its memory usage dropped to the half. (#593)
   
 ### Fixes
 
