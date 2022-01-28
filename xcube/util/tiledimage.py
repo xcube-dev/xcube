@@ -338,14 +338,14 @@ class DecoratorImage(OpImage, metaclass=ABCMeta):
         """
 
 
-class TransformArrayImage(DecoratorImage):
+class NormalizeArrayImage(DecoratorImage):
     """
-    Performs basic (numpy) array tile transformations. Currently available: force_masked, flip_y.
+    Performs basic (numpy) array tile transformations.
+    Currently available: norm_range.
     Expects the source image to provide (numpy) arrays.
 
     :param source_image: The source image
     :param image_id: Optional unique image identifier
-    :param flip_y: Whether to flip pixels in y-direction
     :param tile_cache: Optional tile cache
     :param trace_perf: Whether to log runtime performance information
     """
@@ -353,23 +353,15 @@ class TransformArrayImage(DecoratorImage):
     def __init__(self,
                  source_image: TiledImage,
                  image_id: str = None,
-                 flip_y: bool = False,
                  force_2d: bool = False,
                  norm_range: NormRange = None,
                  tile_cache: Cache = None,
                  trace_perf: bool = False):
         super().__init__(source_image, image_id=image_id, tile_cache=tile_cache, trace_perf=trace_perf)
         self._force_2d = force_2d
-        self._flip_y = flip_y
         self._norm_range = norm_range
 
     def compute_tile(self, tile_x: int, tile_y: int, rectangle: Rectangle2D) -> Tile:
-        if self._flip_y:
-            num_tiles_y = self.num_tiles[1]
-            tile_size_y = self.tile_size[1]
-            tile_y = num_tiles_y - 1 - tile_y
-            x, y, w, h = rectangle
-            rectangle = x, tile_y * tile_size_y, w, h
         source_tile = self._source_image.get_tile(tile_x, tile_y)
         target_tile = None
         if source_tile is not None:
@@ -380,11 +372,6 @@ class TransformArrayImage(DecoratorImage):
     def compute_tile_from_source_tile(self, tile_x: int, tile_y: int, rectangle: Rectangle2D, tile: Tile) -> Tile:
         measure_time = self.measure_time
         tile_tag = self._get_tile_tag(tile_x, tile_y)
-
-        if self._flip_y:
-            with measure_time(tile_tag + "flip y"):
-                # Flip tile using fancy indexing
-                tile = tile[..., ::-1, :]
 
         if self._norm_range is not None:
             norm_min, norm_max = self._norm_range
@@ -522,13 +509,14 @@ class ColorMappedRgbaImage(DecoratorImage):
             return image
 
 
-class ArrayImage(OpImage):
+class SourceArrayImage(OpImage):
     """
-    A tiled image created an numpy ndarray-like data array.
+    A tiled image created from a numpy ndarray-like data array.
 
     :param array: a numpy-ndarray-like data array
     :param tile_size: the tile size
     :param image_id: optional unique image identifier
+    :param flip_y: Whether to flip pixels in y-direction
     :param tile_cache: an optional tile cache
     """
 
@@ -536,6 +524,7 @@ class ArrayImage(OpImage):
                  array: Union[NDArrayLike, Any],
                  tile_size: Size2D,
                  image_id: str = None,
+                 flip_y: bool = False,
                  tile_cache: Cache = None,
                  trace_perf: bool = False):
         if len(array.shape) != 2:
@@ -556,19 +545,44 @@ class ArrayImage(OpImage):
                          trace_perf=trace_perf)
         is_xarray_like = hasattr(array, 'data') and hasattr(array, 'dims') and hasattr(array, 'attrs')
         self._array = array.data if is_xarray_like else array
+        self._flip_y = flip_y
+        self._tile_offset_y = self.size[1] % self.tile_size[1]
 
-    def compute_tile(self, tile_x: int, tile_y: int, rectangle: Rectangle2D) -> NDArrayLike:
+    def compute_tile(self, tile_x: int, tile_y: int, rectangle: Rectangle2D) \
+            -> NDArrayLike:
+        measure_time = self.measure_time
+        tile_tag = self._get_tile_tag(tile_x, tile_y)
         x, y, w, h = rectangle
+
+        if self._flip_y:
+            num_tiles_y = self.num_tiles[1]
+            tile_size_y = self.tile_size[1]
+            tile_y = num_tiles_y - 1 - tile_y
+            if self._tile_offset_y > 0:
+                if tile_y == 0:
+                    y = 0
+                    h = self._tile_offset_y
+                else:
+                    y = self._tile_offset_y + (tile_y - 1) * tile_size_y
+            else:
+                y = tile_y * tile_size_y
+
         tile = self._array[y:y + h, x:x + w]
+        if self._flip_y:
+            with measure_time(tile_tag + "flip y"):
+                # Flip tile using fancy indexing
+                tile = tile[..., ::-1, :]
         # ensure that our tile size is w x h
         return trim_tile(tile, self.tile_size)
 
 
-def trim_tile(tile: NDArrayLike, expected_tile_size: Size2D, fill_value: float = np.nan) -> NDArrayLike:
+def trim_tile(tile: NDArrayLike,
+              expected_tile_size: Size2D,
+              fill_value: float = np.nan) -> NDArrayLike:
     """
     Trim a tile.
 
-    If to small, expand and pad with background value. If to large, crop.
+    If too small, expand and pad with background value. If too large, crop.
 
     :param tile: The tile
     :param expected_tile_size: expected tile size
