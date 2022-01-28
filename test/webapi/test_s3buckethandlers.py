@@ -43,8 +43,7 @@ class S3BucketHandlersTest(unittest.TestCase):
                        format_name='zarr',
                        s3_kwargs={
                            'anon': True
-                       }
-                       )
+                       })
         self.assertCubeOk(ds)
 
     def assertCubeOk(self, ds):
