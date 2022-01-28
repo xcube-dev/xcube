@@ -30,14 +30,14 @@ from xcube.core.mldataset import MultiLevelDataset
 from xcube.core.schema import get_dataset_xy_var_names
 from xcube.util.cache import Cache
 from xcube.util.perf import measure_time_cm
-from xcube.util.tiledimage import ArrayImage
+from xcube.util.tiledimage import SourceArrayImage
 from xcube.util.tiledimage import ColorMappedRgbaImage
 from xcube.util.tiledimage import DEFAULT_COLOR_MAP_NAME
 from xcube.util.tiledimage import DEFAULT_COLOR_MAP_VALUE_RANGE
 from xcube.util.tiledimage import DirectRgbaImage
 from xcube.util.tiledimage import Tile
 from xcube.util.tiledimage import TiledImage
-from xcube.util.tiledimage import TransformArrayImage
+from xcube.util.tiledimage import NormalizeArrayImage
 
 
 def get_ml_dataset_tile(
@@ -148,13 +148,13 @@ def new_rgb_image(ml_dataset: MultiLevelDataset,
                 exception_type
             )
 
-        image = ArrayImage(array,
-                           image_id=f'ai-{image_id}',
-                           tile_size=tile_grid.tile_size,
-                           trace_perf=trace_perf)
-        image = TransformArrayImage(image,
+        image = SourceArrayImage(array,
+                                 image_id=f'ai-{image_id}',
+                                 tile_size=tile_grid.tile_size,
+                                 flip_y=tile_grid.is_j_axis_up,
+                                 trace_perf=trace_perf)
+        image = NormalizeArrayImage(image,
                                     image_id=f'tai-{image_id}',
-                                    flip_y=tile_grid.is_j_axis_up,
                                     norm_range=norm_ranges[i],
                                     trace_perf=trace_perf)
         images.append(image)
@@ -189,13 +189,13 @@ def new_color_mapped_image(ml_dataset: MultiLevelDataset,
                                                 cmap_range,
                                                 valid_range)
     tile_grid = ml_dataset.tile_grid
-    image = ArrayImage(array,
-                       image_id=f'ai-{image_id}',
-                       tile_size=tile_grid.tile_size,
-                       trace_perf=trace_perf)
-    image = TransformArrayImage(image,
+    image = SourceArrayImage(array,
+                             image_id=f'ai-{image_id}',
+                             tile_size=tile_grid.tile_size,
+                             flip_y=tile_grid.is_j_axis_up,
+                             trace_perf=trace_perf)
+    image = NormalizeArrayImage(image,
                                 image_id=f'tai-{image_id}',
-                                flip_y=tile_grid.is_j_axis_up,
                                 norm_range=cmap_range,
                                 trace_perf=trace_perf)
     if cmap_name is None and cmap_range is None:
