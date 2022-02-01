@@ -35,13 +35,10 @@ import pandas as pd
 import pyproj
 import xarray as xr
 
-from xcube.constants import FORMAT_NAME_ZARR
 from xcube.constants import LOG
 from xcube.core.mldataset import BaseMultiLevelDataset
 from xcube.core.mldataset import MultiLevelDataset
 from xcube.core.mldataset import augment_ml_dataset
-from xcube.core.mldataset import open_ml_dataset_from_local_fs
-from xcube.core.mldataset import open_ml_dataset_from_object_storage
 from xcube.core.mldataset import open_ml_dataset_from_python_code
 from xcube.core.normalize import decode_cube
 from xcube.core.store import DATASET_TYPE
@@ -69,6 +66,10 @@ COMPUTE_VARIABLES = 'compute_variables'
 
 # We use tilde, because it is not a reserved URI characters
 STORE_DS_ID_SEPARATOR = '~'
+FS_TYPE_TO_PROTOCOL = {
+    'local': 'file',
+    'obs': 's3'
+}
 
 ALL_PLACES = "all"
 
@@ -269,7 +270,106 @@ class ServiceContext:
                 dataset_configs += \
                     self.get_dataset_configs_from_stores()
                 self._dataset_configs = dataset_configs
+                self._maybe_assign_store_instance_ids()
         return self._dataset_configs
+
+    def _maybe_assign_store_instance_ids(self):
+        assignable_dataset_configs = [dc for dc in self._dataset_configs
+                                      if 'StoreInstanceId' not in dc
+                                      and dc.get('FileSystem', 'local')
+                                      in FS_TYPE_TO_PROTOCOL.keys()]
+        # split into sublists according to file system and non-root store params
+        config_lists = []
+        for config in assignable_dataset_configs:
+            store_params = self._get_other_store_params_than_root(config)
+            file_system = config.get('FileSystem', 'local')
+            config.get('FileSystem', 'local')
+            appended = False
+            for config_list in config_lists:
+                if config_list[0] == file_system and \
+                        config_list[1] == store_params:
+                    config_list[2].append(config)
+                    appended = True
+                    break
+            if not appended:
+                config_lists.append((file_system, store_params, [config]))
+
+        data_store_pool = self.get_data_store_pool()
+        if not data_store_pool:
+            data_store_pool = self._data_store_pool = DataStorePool()
+
+        for file_system, store_params, config_list in config_lists:
+            # Retrieve paths per configuration
+            paths = [dc['Path'] for dc in config_list]
+            list.sort(paths)
+            # Determine common prefixes of paths (and call them roots)
+            prefixes = _get_common_prefixes(paths)
+            if len(prefixes) < 1:
+                roots = prefixes
+            else:
+                # perform further step to merge prefixes with same start
+                prefixes = list(set(prefixes))
+                prefixes.sort()
+                roots = []
+                root_candidate = prefixes[0]
+                for root in prefixes[1:]:
+                    common_root = os.path.commonprefix([root_candidate, root])
+                    if _is_not_empty(common_root):
+                        root_candidate = common_root
+                    else:
+                        roots.append(root_candidate)
+                        root_candidate = root
+                roots.append(root_candidate)
+            for root in roots:
+                # ensure root does not end with full or partial directory
+                # or file name
+                while not root.endswith("/") and not root.endswith("\\") and \
+                        len(root) > 0:
+                    root = root[:-1]
+                abs_root = root
+                # For local file systems: Determine absolute root from base dir
+                if file_system == 'local' and not os.path.isabs(abs_root):
+                    abs_root = os.path.join(self._base_dir, abs_root)
+                    abs_root = os.path.normpath(abs_root)
+                store_params_for_root = store_params.copy()
+                store_params_for_root['root'] = abs_root
+                # See if there already is a store with this configuration
+                data_store_config = DataStoreConfig(
+                    store_id=FS_TYPE_TO_PROTOCOL.get(file_system),
+                    store_params=store_params_for_root)
+                store_instance_id = data_store_pool.\
+                    get_store_instance_id(data_store_config)
+                if not store_instance_id:
+                    # Create new store with new unique store instance id
+                    counter = 1
+                    while data_store_pool.has_store_instance(
+                            f'{file_system}_{counter}'):
+                        counter += 1
+                    store_instance_id = f'{file_system}_{counter}'
+                    data_store_pool.add_store_config(store_instance_id,
+                                                     data_store_config)
+
+                for config in config_list:
+                    if config['Path'].startswith(root):
+                        config['StoreInstanceId'] = store_instance_id
+                        config['Path'] = config['Path'][len(root):]
+
+    def _get_other_store_params_than_root(self,
+                                          dataset_config: DatasetConfigDict) \
+            -> Dict:
+        if dataset_config.get('FileSystem', 'local') != 'obs':
+            return {}
+        store_params = dict()
+        if 'Anonymous' in dataset_config:
+            store_params['anon'] = dataset_config['Anonymous']
+        client_kwargs = dict(
+        )
+        if 'Endpoint' in dataset_config:
+            client_kwargs['endpoint_url'] = dataset_config['Endpoint']
+        if 'Region' in dataset_config:
+            client_kwargs['region_name'] = dataset_config['Region']
+        store_params['client_kwargs'] = client_kwargs
+        return store_params
 
     def get_dataset_configs_from_stores(self) \
             -> List[DatasetConfigDict]:
@@ -295,7 +395,7 @@ class ServiceContext:
                 if store_dataset_configs:
                     for store_dataset_config in store_dataset_configs:
                         dataset_id_pattern = store_dataset_config.get(
-                            'Identifier', '*'
+                            'Path', '*'
                         )
                         if fnmatch.fnmatch(store_dataset_id,
                                            dataset_id_pattern):
@@ -309,6 +409,7 @@ class ServiceContext:
                         StoreInstanceId=store_instance_id,
                         **dataset_config_base
                     )
+                    dataset_config['Path'] = store_dataset_id
                     dataset_config['Identifier'] = \
                         f'{store_instance_id}{STORE_DS_ID_SEPARATOR}' \
                         f'{store_dataset_id}'
@@ -342,22 +443,21 @@ class ServiceContext:
 
     def get_data_store_pool(self) -> Optional[DataStorePool]:
         data_store_configs = self._config.get('DataStores', [])
-        if not data_store_configs:
-            self._data_store_pool = None
-        elif self._data_store_pool is None:
-            if not isinstance(data_store_configs, list):
-                raise ServiceConfigError('DataStores must be a list')
-            store_configs: Dict[str, DataStoreConfig] = {}
-            for data_store_config_dict in data_store_configs:
-                store_instance_id = data_store_config_dict.get('Identifier')
-                store_id = data_store_config_dict.get('StoreId')
-                store_params = data_store_config_dict.get('StoreParams', {})
-                dataset_configs = data_store_config_dict.get('Datasets')
-                store_config = DataStoreConfig(store_id,
-                                               store_params=store_params,
-                                               user_data=dataset_configs)
-                store_configs[store_instance_id] = store_config
-            self._data_store_pool = DataStorePool(store_configs)
+        if not data_store_configs or self._data_store_pool:
+            return self._data_store_pool
+        if not isinstance(data_store_configs, list):
+            raise ServiceConfigError('DataStores must be a list')
+        store_configs: Dict[str, DataStoreConfig] = {}
+        for data_store_config_dict in data_store_configs:
+            store_instance_id = data_store_config_dict.get('Identifier')
+            store_id = data_store_config_dict.get('StoreId')
+            store_params = data_store_config_dict.get('StoreParams', {})
+            dataset_configs = data_store_config_dict.get('Datasets')
+            store_config = DataStoreConfig(store_id,
+                                           store_params=store_params,
+                                           user_data=dataset_configs)
+            store_configs[store_instance_id] = store_config
+        self._data_store_pool = DataStorePool(store_configs)
         return self._data_store_pool
 
     def get_dataset_config(self, ds_id: str) -> Dict[str, Any]:
@@ -375,9 +475,18 @@ class ServiceContext:
             ds_id = dataset_config.get('Identifier')
             file_system = dataset_config.get('FileSystem', 'local')
             if file_system == 'local':
-                local_path = self.get_config_path(dataset_config,
-                                                  f'dataset configuration'
-                                                  f' {ds_id!r}')
+                store_instance_id = dataset_config.get('StoreInstanceId')
+                if store_instance_id:
+                    data_store_pool = self.get_data_store_pool()
+                    store_root = data_store_pool.get_store_config(
+                        store_instance_id). \
+                        store_params.get('root')
+                    data_id = dataset_config.get('Path')
+                    local_path = os.path.join(store_root, data_id)
+                else:
+                    local_path = self.get_config_path(dataset_config,
+                                                      f'dataset configuration'
+                                                      f' {ds_id!r}')
                 local_path = os.path.normpath(local_path)
                 if os.path.isdir(local_path):
                     s3_bucket_mapping[ds_id] = local_path
@@ -470,15 +579,15 @@ class ServiceContext:
         if store_instance_id:
             data_store_pool = self.get_data_store_pool()
             data_store = data_store_pool.get_store(store_instance_id)
-            _, data_id = ds_id.split(STORE_DS_ID_SEPARATOR, maxsplit=1)
+            data_id = dataset_config.get('Path')
             open_params = dataset_config.get('StoreOpenParams') or {}
             # Inject chunk_cache_capacity into open parameters
             chunk_cache_capacity = self.get_dataset_chunk_cache_capacity(
                 dataset_config
             )
             if chunk_cache_capacity \
-                    and (ds_id.endswith('.zarr')
-                         or ds_id.endswith('.levels')) \
+                    and (data_id.endswith('.zarr')
+                         or data_id.endswith('.levels')) \
                     and 'cache_size' not in open_params:
                 open_params['cache_size'] = chunk_cache_capacity
             with self.measure_time(tag=f"opened dataset {ds_id!r}"
@@ -494,19 +603,15 @@ class ServiceContext:
                                          force_geographic=True)
                 ml_dataset = BaseMultiLevelDataset(cube, ds_id=ds_id)
         else:
-            fs_type = dataset_config.get('FileSystem', 'local')
-            if self._ml_dataset_openers \
-                    and fs_type in self._ml_dataset_openers:
-                ml_dataset_opener = self._ml_dataset_openers[fs_type]
-            elif fs_type in _MULTI_LEVEL_DATASET_OPENERS:
-                ml_dataset_opener = _MULTI_LEVEL_DATASET_OPENERS[fs_type]
-            else:
+            fs_type = dataset_config.get('FileSystem')
+            if fs_type != 'memory':
                 raise ServiceConfigError(f"Invalid FileSystem {fs_type!r}"
                                          f" in dataset configuration"
                                          f" {ds_id!r}")
             with self.measure_time(tag=f"opened dataset {ds_id!r}"
                                        f" from {fs_type!r}"):
-                ml_dataset = ml_dataset_opener(self, dataset_config)
+                ml_dataset = _open_ml_dataset_from_python_code(self,
+                                                               dataset_config)
         augmentation = dataset_config.get('Augmentation')
         if augmentation:
             script_path = self.get_config_path(
@@ -826,56 +931,6 @@ def normalize_prefix(prefix: Optional[str]) -> str:
     return prefix
 
 
-# noinspection PyUnusedLocal
-def _open_ml_dataset_from_object_storage(
-        ctx: ServiceContext,
-        dataset_config: DatasetConfigDict
-) -> MultiLevelDataset:
-    ds_id = dataset_config.get('Identifier')
-    path = ctx.get_config_path(dataset_config,
-                               f"dataset configuration {ds_id!r}",
-                               is_url=True)
-    data_format = dataset_config.get('Format', FORMAT_NAME_ZARR)
-
-    s3_kwargs = dict()
-    if 'Anonymous' in dataset_config:
-        s3_kwargs['anon'] = bool(dataset_config['Anonymous'])
-    if 'AccessKeyId' in dataset_config:
-        s3_kwargs['key'] = dataset_config['AccessKeyId']
-    if 'SecretAccessKey' in dataset_config:
-        s3_kwargs['secret'] = dataset_config['SecretAccessKey']
-
-    s3_client_kwargs = dict()
-    if 'Endpoint' in dataset_config:
-        s3_client_kwargs['endpoint_url'] = dataset_config['Endpoint']
-    if 'Region' in dataset_config:
-        s3_client_kwargs['region_name'] = dataset_config['Region']
-
-    chunk_cache_capacity = ctx.get_dataset_chunk_cache_capacity(dataset_config)
-    return open_ml_dataset_from_object_storage(path,
-                                               data_format=data_format,
-                                               ds_id=ds_id,
-                                               exception_type=ServiceConfigError,
-                                               s3_kwargs=s3_kwargs,
-                                               s3_client_kwargs=s3_client_kwargs,
-                                               chunk_cache_capacity=chunk_cache_capacity)
-
-
-def _open_ml_dataset_from_local_fs(ctx: ServiceContext,
-                                   dataset_config: DatasetConfigDict) -> MultiLevelDataset:
-    ds_id = dataset_config.get('Identifier')
-    path = ctx.get_config_path(dataset_config,
-                               f"dataset configuration {ds_id}")
-    data_format = dataset_config.get('Format')
-    chunk_cache_capacity = ctx.get_dataset_chunk_cache_capacity(dataset_config)
-    if chunk_cache_capacity:
-        warnings.warn('chunk cache size is not effective for datasets stored in local file systems')
-    return open_ml_dataset_from_local_fs(path,
-                                         data_format=data_format,
-                                         ds_id=ds_id,
-                                         exception_type=ServiceConfigError)
-
-
 def _open_ml_dataset_from_python_code(ctx: ServiceContext,
                                       dataset_config: DatasetConfigDict) -> MultiLevelDataset:
     ds_id = dataset_config.get('Identifier')
@@ -901,8 +956,22 @@ def _open_ml_dataset_from_python_code(ctx: ServiceContext,
                                             exception_type=ServiceConfigError)
 
 
+def _is_not_empty(prefix):
+    return prefix != '' and prefix != '/' and prefix != '\\'
+
+
+def _get_common_prefixes(p):
+    # Recursively examine a list of paths for common prefixes:
+    # If no common prefix is found, split the list in half and
+    # examine each half separately
+    prefix = os.path.commonprefix(p)
+    if _is_not_empty(prefix) or len(p) == 1:
+        return [prefix]
+    else:
+        return _get_common_prefixes(p[:int(len(p) / 2)]) + \
+               _get_common_prefixes(p[int(len(p) / 2):])
+
+
 _MULTI_LEVEL_DATASET_OPENERS = {
-    "obs": _open_ml_dataset_from_object_storage,
-    "local": _open_ml_dataset_from_local_fs,
     "memory": _open_ml_dataset_from_python_code,
 }
