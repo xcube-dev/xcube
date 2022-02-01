@@ -214,7 +214,7 @@ def decode_cube(dataset: xr.Dataset,
                 and var.dims[0] == time_name \
                 and var.dims[-2] == y_dim_name \
                 and var.dims[-1] == x_dim_name \
-                and np.product(var.shape) > 0 \
+                and np.all(var.shape) \
                 and var.shape[-2] > 1 \
                 and var.shape[-1] > 1:
             cube_vars.add(var_name)

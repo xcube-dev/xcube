@@ -1,6 +1,6 @@
 ## Changes in 0.9.3 (in development)
 
-### New features
+### Enhancements
 
 * It is now possible to use environment variables in most  
   xcube configuration files. Unix bash syntax is used, i.e. 
@@ -13,12 +13,24 @@
 
 * Changed the `xcube gen` tool to extract metadata for pre-sorting inputs
   from other than NetCDF inputs, e.g. GeoTIFF.
+
+* Optimized function `xcube.core.geom.rasterize_features()`.
+  It is now twice as fast while its memory usage dropped to the half. (#593)
   
 ### Fixes
 
 * `xcube serve` now also serves datasets that are located in 
   subdirectories of filesystem-based data stores such as
   "file", "s3", "memory". (#579)
+
+* xcube serve now accepts datasets whose spatial 
+  resolutions differ up to 1%. (#590)
+  It also no longer rejects datasets with large dimension 
+  sizes. (Formerly, an integer-overflow occurred in size 
+  computation.) 
+
+* `DatasetChunkCacheSize` is now optional in `xcube serve`
+  configuration. (Formerly, when omitted, the server crashed.)
   
 * Fixed bug that would cause that requesting data ids on some s3 stores would
   fail with a confusing ValueError.
