@@ -56,7 +56,7 @@ class ResamplingTest(unittest.TestCase):
         cube_config = CubeConfig(
             variable_names=["CHL"],
             tile_size=(512, 512),
-            spatial_res=0.025000000002,
+            spatial_res=0.025,
             bbox=med_sea_bbox,
             time_range=("2019-01-01", "2019-03-15"),
             time_period="1D",
