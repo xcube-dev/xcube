@@ -20,7 +20,9 @@ BoundingBoxSchema = JsonArraySchema(items=[
     NumberSchema,
     NumberSchema
 ])
-FileSystemSchema = JsonStringSchema(enum=['memory', 'obs', 'local'])
+FileSystemSchema = JsonStringSchema(
+    enum=['memory', 'obs', 'local', 's3', 'file']
+)
 
 
 class _ConfigObject(JsonObject, ABC):

@@ -44,6 +44,10 @@
 * Pinned Python version to < 3.10 to avoid ImportErrors caused by a third-party
   library.
 
+* Values `obs` and `local` for the `FileSystem` parameter in xcube configuration
+  files have been replaced by `s3` and `file`, but are kept temporarily for
+  the sake of backwards compatibility.
+
 ## Changes in 0.9.2
 
 ### Fixes

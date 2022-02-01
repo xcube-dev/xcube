@@ -294,7 +294,7 @@ class TsPerfTest(unittest.TestCase):
             config=dict(
                 Datasets=[
                     dict(Identifier='ts_test',
-                         FileSystem='local',
+                         FileSystem='file',
                          Path=TEST_CUBE,
                          Format='zarr')
                 ]

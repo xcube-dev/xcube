@@ -230,42 +230,42 @@ class MaybeAssignStoreInstanceIdsTest(unittest.TestCase):
         dataset_configs = [
             {
                 'Identifier': 'z_0',
-                'FileSystem': 'local',
+                'FileSystem': 'file',
                 'Path': '/one/path/abc.zarr'
             },
             {
                 'Identifier': 'z_1',
-                'FileSystem': 'local',
+                'FileSystem': 'file',
                 'Path': '/one/path/def.zarr'
             },
             {
                 'Identifier': 'z_4',
-                'FileSystem': 'obs',
+                'FileSystem': 's3',
                 'Path': '/one/path/mno.zarr'
             },
             {
                 'Identifier': 'z_2',
-                'FileSystem': 'local',
+                'FileSystem': 'file',
                 'Path': '/another/path/ghi.zarr'
             },
             {
                 'Identifier': 'z_3',
-                'FileSystem': 'local',
+                'FileSystem': 'file',
                 'Path': '/one/more/path/jkl.zarr'
             },
             {
                 'Identifier': 'z_5',
-                'FileSystem': 'obs',
+                'FileSystem': 's3',
                 'Path': '/one/path/pqr.zarr'
             },
             {
                 'Identifier': 'z_6',
-                'FileSystem': 'local',
+                'FileSystem': 'file',
                 'Path': '/one/path/stu.zarr'
             },
             {
                 'Identifier': 'z_7',
-                'FileSystem': 'local',
+                'FileSystem': 'file',
                 'Path': '/one/more/path/vwx.zarr'
             },
         ]
@@ -275,51 +275,51 @@ class MaybeAssignStoreInstanceIdsTest(unittest.TestCase):
         expected_dataset_configs = [
             {
                 'Identifier': 'z_0',
-                'FileSystem': 'local',
+                'FileSystem': 'file',
                 'Path': 'path/abc.zarr',
-                'StoreInstanceId': 'local_2'
+                'StoreInstanceId': 'file_2'
             },
             {
                 'Identifier': 'z_1',
-                'FileSystem': 'local',
+                'FileSystem': 'file',
                 'Path': 'path/def.zarr',
-                'StoreInstanceId': 'local_2'
+                'StoreInstanceId': 'file_2'
             },
             {
                 'Identifier': 'z_4',
-                'FileSystem': 'obs',
+                'FileSystem': 's3',
                 'Path': 'mno.zarr',
-                'StoreInstanceId': 'obs_1'
+                'StoreInstanceId': 's3_1'
             },
             {
                 'Identifier': 'z_2',
-                'FileSystem': 'local',
+                'FileSystem': 'file',
                 'Path': 'ghi.zarr',
-                'StoreInstanceId': 'local_1'
+                'StoreInstanceId': 'file_1'
             },
             {
                 'Identifier': 'z_3',
-                'FileSystem': 'local',
+                'FileSystem': 'file',
                 'Path': 'more/path/jkl.zarr',
-                'StoreInstanceId': 'local_2'
+                'StoreInstanceId': 'file_2'
             },
             {
                 'Identifier': 'z_5',
-                'FileSystem': 'obs',
+                'FileSystem': 's3',
                 'Path': 'pqr.zarr',
-                'StoreInstanceId': 'obs_1'
+                'StoreInstanceId': 's3_1'
             },
             {
                 'Identifier': 'z_6',
-                'FileSystem': 'local',
+                'FileSystem': 'file',
                 'Path': 'path/stu.zarr',
-                'StoreInstanceId': 'local_2'
+                'StoreInstanceId': 'file_2'
             },
             {
                 'Identifier': 'z_7',
-                'FileSystem': 'local',
+                'FileSystem': 'file',
                 'Path': 'more/path/vwx.zarr',
-                'StoreInstanceId': 'local_2'
+                'StoreInstanceId': 'file_2'
             },
         ]
         self.assertEqual(expected_dataset_configs, adjusted_dataset_configs)
@@ -328,7 +328,7 @@ class MaybeAssignStoreInstanceIdsTest(unittest.TestCase):
         ctx = new_test_service_context()
         dataset_config = {'Identifier': 'zero',
                           'Title': 'Test 0',
-                          'FileSystem': 'local',
+                          'FileSystem': 'file',
                           'StoreInstanceId': 'some_id'}
         dataset_config_copy = dataset_config.copy()
 
@@ -337,7 +337,30 @@ class MaybeAssignStoreInstanceIdsTest(unittest.TestCase):
 
         self.assertEqual(dataset_config_copy, dataset_config)
 
+    def test_file(self):
+        ctx = new_test_service_context()
+        dataset_config = {'Identifier': 'one',
+                          'Title': 'Test 1',
+                          'FileSystem': 'file',
+                          'Path': 'cube-1-250-250.zarr'}
+
+        ctx.config['Datasets'] = [dataset_config]
+        dataset_config = ctx.get_dataset_configs()[0]
+
+        self.assertEqual(['Identifier', 'Title', 'FileSystem', 'Path',
+                         'StoreInstanceId'],
+                         list(dataset_config.keys()))
+        self.assertEqual('one',
+                         dataset_config['Identifier'])
+        self.assertEqual('Test 1', dataset_config['Title'])
+        self.assertEqual('file', dataset_config['FileSystem'])
+        self.assertEqual('cube-1-250-250.zarr', dataset_config["Path"])
+        self.assertEqual('file_1', dataset_config['StoreInstanceId'])
+
     def test_local(self):
+        # this test tests backwards compatibility.
+        # TODO please remove when support for file systems 'local' and 'obs'
+        # has ended
         ctx = new_test_service_context()
         dataset_config = {'Identifier': 'one',
                           'Title': 'Test 1',
@@ -355,9 +378,36 @@ class MaybeAssignStoreInstanceIdsTest(unittest.TestCase):
         self.assertEqual('Test 1', dataset_config['Title'])
         self.assertEqual('local', dataset_config['FileSystem'])
         self.assertEqual('cube-1-250-250.zarr', dataset_config["Path"])
-        self.assertEqual('local_1', dataset_config['StoreInstanceId'])
+        self.assertEqual('file_1', dataset_config['StoreInstanceId'])
 
     def test_s3(self):
+        ctx = new_test_service_context()
+        dataset_config = {'Identifier': 'two',
+                          'Title': 'Test 2',
+                          'FileSystem': 's3',
+                          'Endpoint': 'https://s3.eu-central-1.amazonaws.com',
+                          'Path': 'xcube-examples/OLCI-SNS-RAW-CUBE-2.zarr',
+                          'Region': 'eu-central-1'}
+
+        ctx.config['Datasets'] = [dataset_config]
+        dataset_config = ctx.get_dataset_configs()[0]
+
+        self.assertEqual(['Identifier', 'Title', 'FileSystem', 'Endpoint',
+                          'Path', 'Region', 'StoreInstanceId'],
+                         list(dataset_config.keys()))
+        self.assertEqual('two', dataset_config['Identifier'])
+        self.assertEqual('Test 2', dataset_config['Title'])
+        self.assertEqual('s3', dataset_config['FileSystem'])
+        self.assertEqual('https://s3.eu-central-1.amazonaws.com',
+                         dataset_config['Endpoint'])
+        self.assertEqual('OLCI-SNS-RAW-CUBE-2.zarr', dataset_config['Path'])
+        self.assertEqual('eu-central-1', dataset_config['Region'])
+        self.assertEqual('s3_1', dataset_config['StoreInstanceId'])
+
+    def test_obs(self):
+        # this test tests backwards compatibility.
+        # TODO please remove when support for file systems 'local' and 'obs'
+        # has ended
         ctx = new_test_service_context()
         dataset_config = {'Identifier': 'two',
                           'Title': 'Test 2',
@@ -379,7 +429,7 @@ class MaybeAssignStoreInstanceIdsTest(unittest.TestCase):
                          dataset_config['Endpoint'])
         self.assertEqual('OLCI-SNS-RAW-CUBE-2.zarr', dataset_config['Path'])
         self.assertEqual('eu-central-1', dataset_config['Region'])
-        self.assertEqual('obs_1', dataset_config['StoreInstanceId'])
+        self.assertEqual('s3_1', dataset_config['StoreInstanceId'])
 
     def test_memory(self):
         ctx = new_test_service_context()
@@ -407,7 +457,7 @@ class MaybeAssignStoreInstanceIdsTest(unittest.TestCase):
         self.assertEqual('five', dataset_config['Identifier'])
         self.assertEqual('Test 5', dataset_config['Title'])
         self.assertEqual('cube-1-250-250.zarr', dataset_config['Path'])
-        self.assertEqual('local_1', dataset_config['StoreInstanceId'])
+        self.assertEqual('file_1', dataset_config['StoreInstanceId'])
 
     def test_invalid_file_system(self):
         ctx = new_test_service_context()
@@ -430,11 +480,11 @@ class MaybeAssignStoreInstanceIdsTest(unittest.TestCase):
         ctx = new_test_service_context()
         dataset_config_1 = {'Identifier': 'six',
                             'Title': 'Test 6',
-                            'FileSystem': 'local',
+                            'FileSystem': 'file',
                             'Path': 'cube-1-250-250.zarr'}
         dataset_config_2 = {'Identifier': 'six_a',
                             'Title': 'Test 6 a',
-                            'FileSystem': 'local',
+                            'FileSystem': 'file',
                             'Path': 'cube-5-100-200.zarr'}
 
         ctx.config['Datasets'] = [dataset_config_1, dataset_config_2]
@@ -447,14 +497,14 @@ class MaybeAssignStoreInstanceIdsTest(unittest.TestCase):
         ctx = new_test_service_context()
         dataset_config_1 = {'Identifier': 'seven',
                             'Title': 'Test 7',
-                            'FileSystem': 'obs',
+                            'FileSystem': 's3',
                             'Endpoint': 'https://s3.eu-central-1.amazonaws.com',
                             'Path': 'xcube-examples/OLCI-SNS-RAW-CUBE-2.zarr',
                             'Region': 'eu-central-1'}
 
         dataset_config_2 = {'Identifier': 'seven_a',
                             'Title': 'Test 7 a',
-                            'FileSystem': 'obs',
+                            'FileSystem': 's3',
                             'Endpoint': 'https://s3.eu-central-1.amazonaws.com',
                             'Path': 'xcube-examples/OLCI-SNS-RAW-CUBE-3.zarr',
                             'Region': 'eu-central-1'}

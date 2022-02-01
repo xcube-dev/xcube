@@ -442,13 +442,13 @@ def new_default_config(cube_paths: List[str],
                               Path=cube_path)
         if is_s3_url(cube_path):
             dataset_config.update(Title=cube_path.split('/')[-1],
-                                  FileSystem='obs')
+                                  FileSystem='s3')
             if aws_access_key_id and aws_secret_access_key:
                 dataset_config.update(AccessKeyId=aws_access_key_id,
                                       SecretAccessKey=aws_secret_access_key)
         else:
             dataset_config.update(Title=os.path.split(cube_path)[-1],
-                                  FileSystem='local')
+                                  FileSystem='file')
         dataset_configs.append(dataset_config)
         index += 1
 

@@ -6,7 +6,7 @@ DatasetChunkCacheSize: 100M
 
 DataStores:
 
-#  - Identifier: local
+#  - Identifier: file
 #    StoreId: file
 #    StoreParams:
 #      root: .
