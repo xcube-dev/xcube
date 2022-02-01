@@ -586,8 +586,8 @@ class ServiceContext:
                 dataset_config
             )
             if chunk_cache_capacity \
-                    and (ds_id.endswith('.zarr')
-                         or ds_id.endswith('.levels')) \
+                    and (data_id.endswith('.zarr')
+                         or data_id.endswith('.levels')) \
                     and 'cache_size' not in open_params:
                 open_params['cache_size'] = chunk_cache_capacity
             with self.measure_time(tag=f"opened dataset {ds_id!r}"
