@@ -264,6 +264,7 @@ class GridMappingTest(SourceDatasetMixin, unittest.TestCase):
     def test_transform(self):
         gm = TestGridMapping(**self.kwargs(xy_min=(20, 56),
                                            size=(400, 200),
+                                           tile_size=(400, 200),
                                            xy_res=(0.01, 0.01)))
         transformed_gm = gm.transform('EPSG:32633')
 
