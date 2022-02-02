@@ -242,12 +242,32 @@ def _get_var_2d_array(var: xr.DataArray,
         if labels_are_indices:
             array = var.isel(**labels)
         else:
-            array = var.sel(method='nearest', **labels)
+            labels_safe_time = _ensure_time_compatible(var, labels)
+            array = var.sel(method='nearest', **labels_safe_time)
     else:
         raise exception_type(f'Variable "{var.name}" of dataset "{ds_id}" '
                              'must be an N-D Dataset with N >= 2, '
                              f'but "{var.name}" is only {var.ndim}-D')
     return array
+
+
+def _ensure_time_compatible(var: xr.DataArray,
+                            labels: Dict[str, Any]) -> Dict[str, Any]:
+    """Ensure that labels['time'] is timezone-naive, if necessary.
+    If var has a 'time' dimension of type datetime64 and labels has a 'time'
+    key with a timezone-aware value, return a modified labels dictionary with
+    a timezone-naive time value. Otherwise return the original labels.
+    """
+    if 'time' in var.dims and \
+        hasattr(var['time'], 'dtype') and \
+        hasattr(var['time'].dtype, 'type') and \
+        var['time'].dtype.type is np.datetime64 and \
+        'time' in labels and \
+        pd.Timestamp(labels['time']).tzinfo is not None:
+        naive_time = pd.Timestamp(labels['time']).tz_convert(None)
+        return dict(labels, time=naive_time)
+    else:
+        return labels
 
 
 def get_var_cmap_params(var: xr.DataArray,
