@@ -1,10 +1,12 @@
 import unittest
 
 import numpy as np
+import pandas as pd
 import xarray as xr
 
 from xcube.core.tile import get_var_valid_range
 from xcube.core.tile import parse_non_spatial_labels
+from xcube.core.tile import _ensure_time_compatible
 
 
 class GetVarValidRangeTest(unittest.TestCase):
@@ -102,3 +104,38 @@ class ParseNonSpatialLabelsTest(unittest.TestCase):
                                      coords=self.coords)
         self.assertEqual("'jetzt' is not a valid value for dimension 'time'",
                          f'{cm.exception}')
+
+
+class EnsureTimeCompatibleTest(unittest.TestCase):
+    da_tznaive = xr.DataArray(
+        np.arange(1, 4),
+        coords=dict(time=np.arange('2000-01-01', '2000-01-04',
+                                   dtype=np.datetime64)),
+        dims=['time'])
+    da_tzaware = xr.DataArray(
+        np.arange(1, 4),
+        coords=dict(time=pd.date_range("2000-01-01", "2000-01-03", tz='UTC')),
+        dims=['time'])
+    labels_tznaive = dict(time='2000-01-02')
+    labels_tzaware = dict(time='2000-01-02T00:00:00Z')
+
+    def test_both_tznaive(self):
+        self.assertEqual(self.labels_tznaive,
+                         _ensure_time_compatible(self.da_tznaive,
+                                                 self.labels_tznaive))
+
+    def test_both_tzaware(self):
+        self.assertEqual(self.labels_tzaware,
+                         _ensure_time_compatible(self.da_tzaware,
+                                                 self.labels_tzaware))
+
+    def test_tznaive_array_tzaware_indexer(self):
+        self.assertTrue(
+            self._are_times_equal(
+                self.labels_tznaive,
+                _ensure_time_compatible(self.da_tznaive,
+                                        self.labels_tzaware)))
+
+    @staticmethod
+    def _are_times_equal(labels1, labels2):
+        return pd.Timestamp(labels1['time']) == pd.Timestamp(labels2['time'])
