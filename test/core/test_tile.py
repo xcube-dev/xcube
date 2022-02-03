@@ -105,6 +105,17 @@ class ParseNonSpatialLabelsTest(unittest.TestCase):
         self.assertEqual("'jetzt' is not a valid value for dimension 'time'",
                          f'{cm.exception}')
 
+    def test_ensure_timezone_naive(self):
+        da_tznaive = xr.DataArray(
+            np.zeros((3,3,3)),
+            coords=self.coords,
+            dims=self.dims)
+        labels = parse_non_spatial_labels(dict(time='2000-01-02T00:00:00Z'),
+                                          dims=da_tznaive.dims,
+                                          coords=da_tznaive.coords,
+                                          var=da_tznaive)
+        self.assertIsNone(pd.Timestamp(labels['time']).tzinfo)
+
 
 class EnsureTimeCompatibleTest(unittest.TestCase):
     da_tznaive = xr.DataArray(
@@ -131,11 +142,11 @@ class EnsureTimeCompatibleTest(unittest.TestCase):
 
     def test_tznaive_array_tzaware_indexer(self):
         self.assertTrue(
-            self._are_times_equal(
+            _are_times_equal(
                 self.labels_tznaive,
                 _ensure_time_compatible(self.da_tznaive,
                                         self.labels_tzaware)))
 
-    @staticmethod
-    def _are_times_equal(labels1, labels2):
-        return pd.Timestamp(labels1['time']) == pd.Timestamp(labels2['time'])
+
+def _are_times_equal(labels1, labels2):
+    return pd.Timestamp(labels1['time']) == pd.Timestamp(labels2['time'])

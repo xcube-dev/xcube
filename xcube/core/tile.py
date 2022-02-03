@@ -242,8 +242,7 @@ def _get_var_2d_array(var: xr.DataArray,
         if labels_are_indices:
             array = var.isel(**labels)
         else:
-            labels_safe_time = _ensure_time_compatible(var, labels)
-            array = var.sel(method='nearest', **labels_safe_time)
+            array = var.sel(method='nearest', **labels)
     else:
         raise exception_type(f'Variable "{var.name}" of dataset "{ds_id}" '
                              'must be an N-D Dataset with N >= 2, '
@@ -328,7 +327,8 @@ def parse_non_spatial_labels(
         dims: Sequence[Hashable],
         coords: Mapping[Hashable, xr.DataArray],
         allow_slices: bool = False,
-        exception_type: type = ValueError
+        exception_type: type = ValueError,
+        var: xr.DataArray = None
 ) -> Mapping[str, Any]:
     xy_var_names = get_dataset_xy_var_names(coords, must_exist=False)
     if xy_var_names is None:
@@ -384,4 +384,7 @@ def parse_non_spatial_labels(
             raise exception_type(f'{label_str!r} is not a valid'
                                  f' value for dimension {dim!r}') from e
 
-    return parsed_labels
+    if var is not None:
+        return _ensure_time_compatible(var, parsed_labels)
+    else:
+        return parsed_labels

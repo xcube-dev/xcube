@@ -79,7 +79,8 @@ def get_dataset_tile(ctx: ServiceContext,
                                       var.dims,
                                       var.coords,
                                       allow_slices=False,
-                                      exception_type=ServiceBadRequestError)
+                                      exception_type=ServiceBadRequestError,
+                                      var=var)
 
     return get_ml_dataset_tile(ml_dataset,
                                var_name,
