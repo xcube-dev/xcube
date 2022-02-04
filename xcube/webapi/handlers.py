@@ -268,12 +268,14 @@ class GetS3BucketObjectHandler(ServiceRequestHandler):
 
     def _get_key_and_local_path(self, ds_id: str, path: str):
         dataset_config = self.service_context.get_dataset_config(ds_id)
-        file_system = dataset_config.get('FileSystem', 'local')
-        required_file_system = 'local'
-        if file_system != required_file_system:
-            raise ServiceBadRequestError(f'AWS S3 data access: currently, only datasets in'
-                                         f' file system {required_file_system!r} are supported,'
-                                         f' but dataset {ds_id!r} uses file system {file_system!r}')
+        file_system = dataset_config.get('FileSystem', 'file')
+        required_file_systems = ['file', 'local']
+        if file_system not in required_file_systems:
+            required_file_system_string = " or ".join(required_file_systems)
+            raise ServiceBadRequestError(
+                f'AWS S3 data access: currently, only datasets in file systems '
+                f'{required_file_system_string!r} are supported, but dataset '
+                f'{ds_id!r} uses file system {file_system!r}')
 
         key = f'{ds_id}/{path}'
 

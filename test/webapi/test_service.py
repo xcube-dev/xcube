@@ -13,14 +13,14 @@ class DefaultConfigTest(unittest.TestCase):
         self.assertEqual({
             'Datasets': [
                 {
-                    'FileSystem': 'local',
+                    'FileSystem': 'file',
                     'Format': 'zarr',
                     'Identifier': 'dataset_1',
                     'Path': '/home/bibo/data/cube-1.zarr',
                     'Title': 'cube-1.zarr'
                 },
                 {
-                    'FileSystem': 'local',
+                    'FileSystem': 'file',
                     'Format': 'netcdf4',
                     'Identifier': 'dataset_2',
                     'Path': '/home/bibo/data/cube-2.nc',

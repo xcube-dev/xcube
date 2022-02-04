@@ -68,8 +68,12 @@ COMPUTE_VARIABLES = 'compute_variables'
 STORE_DS_ID_SEPARATOR = '~'
 FS_TYPE_TO_PROTOCOL = {
     'local': 'file',
-    'obs': 's3'
+    'obs': 's3',
+    'file': 'file',
+    's3': 's3',
+    'memory': 'memory'
 }
+NON_MEMORY_FILE_SYSTEMS = ['local', 'obs', 'file', 's3']
 
 ALL_PLACES = "all"
 
@@ -276,14 +280,13 @@ class ServiceContext:
     def _maybe_assign_store_instance_ids(self):
         assignable_dataset_configs = [dc for dc in self._dataset_configs
                                       if 'StoreInstanceId' not in dc
-                                      and dc.get('FileSystem', 'local')
-                                      in FS_TYPE_TO_PROTOCOL.keys()]
+                                      and dc.get('FileSystem', 'file')
+                                      in NON_MEMORY_FILE_SYSTEMS]
         # split into sublists according to file system and non-root store params
         config_lists = []
         for config in assignable_dataset_configs:
             store_params = self._get_other_store_params_than_root(config)
-            file_system = config.get('FileSystem', 'local')
-            config.get('FileSystem', 'local')
+            file_system = config.get('FileSystem', 'file')
             appended = False
             for config_list in config_lists:
                 if config_list[0] == file_system and \
@@ -328,14 +331,15 @@ class ServiceContext:
                     root = root[:-1]
                 abs_root = root
                 # For local file systems: Determine absolute root from base dir
-                if file_system == 'local' and not os.path.isabs(abs_root):
+                fs_protocol = FS_TYPE_TO_PROTOCOL.get(file_system, file_system)
+                if fs_protocol == 'file' and not os.path.isabs(abs_root):
                     abs_root = os.path.join(self._base_dir, abs_root)
                     abs_root = os.path.normpath(abs_root)
                 store_params_for_root = store_params.copy()
                 store_params_for_root['root'] = abs_root
                 # See if there already is a store with this configuration
                 data_store_config = DataStoreConfig(
-                    store_id=FS_TYPE_TO_PROTOCOL.get(file_system),
+                    store_id=fs_protocol,
                     store_params=store_params_for_root)
                 store_instance_id = data_store_pool.\
                     get_store_instance_id(data_store_config)
@@ -343,9 +347,9 @@ class ServiceContext:
                     # Create new store with new unique store instance id
                     counter = 1
                     while data_store_pool.has_store_instance(
-                            f'{file_system}_{counter}'):
+                            f'{fs_protocol}_{counter}'):
                         counter += 1
-                    store_instance_id = f'{file_system}_{counter}'
+                    store_instance_id = f'{fs_protocol}_{counter}'
                     data_store_pool.add_store_config(store_instance_id,
                                                      data_store_config)
 
@@ -357,7 +361,8 @@ class ServiceContext:
     def _get_other_store_params_than_root(self,
                                           dataset_config: DatasetConfigDict) \
             -> Dict:
-        if dataset_config.get('FileSystem', 'local') != 'obs':
+        if FS_TYPE_TO_PROTOCOL.get(dataset_config.get('FileSystem',
+                                                      'file')) != 's3':
             return {}
         store_params = dict()
         if 'Anonymous' in dataset_config:
@@ -473,8 +478,9 @@ class ServiceContext:
         s3_bucket_mapping = {}
         for dataset_config in self.get_dataset_configs():
             ds_id = dataset_config.get('Identifier')
-            file_system = dataset_config.get('FileSystem', 'local')
-            if file_system == 'local':
+            protocol = FS_TYPE_TO_PROTOCOL.get(dataset_config.get('FileSystem',
+                                                                  'file'))
+            if protocol == 'file':
                 store_instance_id = dataset_config.get('StoreInstanceId')
                 if store_instance_id:
                     data_store_pool = self.get_data_store_pool()
