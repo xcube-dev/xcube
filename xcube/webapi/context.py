@@ -308,7 +308,7 @@ class ServiceContext:
             # Determine common prefixes of paths (and call them roots)
             prefixes = _get_common_prefixes(paths)
             if len(prefixes) < 1:
-                roots = prefixes
+                roots = ['']
             else:
                 # perform further step to merge prefixes with same start
                 prefixes = list(set(prefixes))
@@ -328,6 +328,8 @@ class ServiceContext:
                 # or file name
                 while not root.endswith("/") and not root.endswith("\\") and \
                         len(root) > 0:
+                    root = root[:-1]
+                if root.endswith("/") or root.endswith("\\"):
                     root = root[:-1]
                 abs_root = root
                 # For local file systems: Determine absolute root from base dir
@@ -352,11 +354,14 @@ class ServiceContext:
                     store_instance_id = f'{fs_protocol}_{counter}'
                     data_store_pool.add_store_config(store_instance_id,
                                                      data_store_config)
-
                 for config in config_list:
                     if config['Path'].startswith(root):
                         config['StoreInstanceId'] = store_instance_id
-                        config['Path'] = config['Path'][len(root):]
+                        new_path = config['Path'][len(root):]
+                        while new_path.startswith("/") or \
+                                new_path.startswith("\\"):
+                            new_path = new_path[1:]
+                        config['Path'] = new_path
 
     def _get_other_store_params_than_root(self,
                                           dataset_config: DatasetConfigDict) \
