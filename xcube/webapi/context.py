@@ -364,16 +364,18 @@ class ServiceContext:
         if FS_TYPE_TO_PROTOCOL.get(dataset_config.get('FileSystem',
                                                       'file')) != 's3':
             return {}
-        store_params = dict()
+        store_params = dict(
+            storage_options=dict()
+        )
         if 'Anonymous' in dataset_config:
-            store_params['anon'] = dataset_config['Anonymous']
+            store_params['storage_options']['anon'] = dataset_config['Anonymous']
         client_kwargs = dict(
         )
         if 'Endpoint' in dataset_config:
             client_kwargs['endpoint_url'] = dataset_config['Endpoint']
         if 'Region' in dataset_config:
             client_kwargs['region_name'] = dataset_config['Region']
-        store_params['client_kwargs'] = client_kwargs
+        store_params['storage_options']['client_kwargs'] = client_kwargs
         return store_params
 
     def get_dataset_configs_from_stores(self) \
