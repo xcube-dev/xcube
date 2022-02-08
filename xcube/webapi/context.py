@@ -369,9 +369,7 @@ class ServiceContext:
         if FS_TYPE_TO_PROTOCOL.get(dataset_config.get('FileSystem',
                                                       'file')) != 's3':
             return {}
-        store_params = dict(
-            storage_options=dict()
-        )
+        storage_options=dict()
         if 'Anonymous' in dataset_config:
             store_params['storage_options']['anon'] = dataset_config['Anonymous']
         client_kwargs = dict(
