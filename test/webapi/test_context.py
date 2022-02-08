@@ -197,6 +197,27 @@ class ServiceContextTest(unittest.TestCase):
             ctx.get_global_place_group("bibo", "http://localhost:9090")
         self.assertEqual('HTTP 404: Place group "bibo" not found', f"{cm.exception}")
 
+    def test_get_other_store_params_than_root(self):
+        ctx = new_test_service_context()
+        dataset_config = {'Identifier': 'two',
+                          'Title': 'Test 2',
+                          'FileSystem': 's3',
+                          'Anonymous': False,
+                          'Endpoint': 'https://s3.eu-central-1.amazonaws.com',
+                          'Path': 'xcube-examples/OLCI-SNS-RAW-CUBE-2.zarr',
+                          'Region': 'eu-central-1'}
+        store_params = ctx._get_other_store_params_than_root(dataset_config)
+        expected_dict = \
+            {'storage_options':
+                 {'anon': False,
+                  'client_kwargs':
+                      {'endpoint_url': 'https://s3.eu-central-1.amazonaws.com',
+                       'region_name': 'eu-central-1'}
+                  }
+             }
+        self.assertIsNotNone(store_params)
+        self.assertEqual(expected_dict, store_params)
+
 
 class NormalizePrefixTest(unittest.TestCase):
     def test_empty(self):
