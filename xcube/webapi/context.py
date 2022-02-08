@@ -378,7 +378,8 @@ class ServiceContext:
             client_kwargs['endpoint_url'] = dataset_config['Endpoint']
         if 'Region' in dataset_config:
             client_kwargs['region_name'] = dataset_config['Region']
-        store_params['storage_options']['client_kwargs'] = client_kwargs
+        storage_options['client_kwargs'] = client_kwargs
+        store_params = dict(storage_options=storage_options)
         return store_params
 
     def get_dataset_configs_from_stores(self) \
