@@ -371,7 +371,7 @@ class ServiceContext:
             return {}
         storage_options=dict()
         if 'Anonymous' in dataset_config:
-            store_params['storage_options']['anon'] = dataset_config['Anonymous']
+            storage_options['anon'] = dataset_config['Anonymous']
         client_kwargs = dict(
         )
         if 'Endpoint' in dataset_config:
