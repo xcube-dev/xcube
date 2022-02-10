@@ -1,7 +1,7 @@
+import numpy as np
 import os.path
 import sys
 
-import numpy as np
 import xarray as xr
 
 from test.cli.helpers import CliTest
@@ -28,8 +28,14 @@ class PruneDataTest(CliTest):
                         variables=dict(precipitation=np.nan,
                                        temperature=np.nan)) \
             .chunk(dict(time=1, lat=90, lon=90))
-
-        write_cube(cube, self.TEST_CUBE, "zarr", cube_asserted=True)
+        fv_encoding = dict(
+            _FillValue=None
+        )
+        encoding = dict(
+            precipitation=fv_encoding,
+            temperature=fv_encoding
+        )
+        cube.to_zarr(self.TEST_CUBE, encoding=encoding)
 
     def tearDown(self) -> None:
         rimraf(self.TEST_CUBE)
