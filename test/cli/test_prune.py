@@ -28,14 +28,13 @@ class PruneDataTest(CliTest):
                         variables=dict(precipitation=np.nan,
                                        temperature=np.nan)) \
             .chunk(dict(time=1, lat=90, lon=90))
-        encoding = {
-            'precipitation': {
-                '_FillValue': None
-            },
-            'temperature': {
-                '_FillValue': None
-            }
-        }
+        fv_encoding = dict(
+            _FillValue=None
+        )
+        encoding = dict(
+            precipitation=fv_encoding,
+            temperature=fv_encoding
+        )
         cube.to_zarr(self.TEST_CUBE, encoding=encoding)
 
     def tearDown(self) -> None:
