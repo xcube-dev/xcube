@@ -1,3 +1,4 @@
+import numpy as np
 import os.path
 import sys
 
@@ -24,23 +25,18 @@ class PruneDataTest(CliTest):
     def setUp(self) -> None:
         rimraf(self.TEST_CUBE)
         cube = new_cube(time_periods=3,
-                        variables=dict(precipitation=1.0,
-                                       temperature=1.0)) \
+                        variables=dict(precipitation=np.nan,
+                                       temperature=np.nan)) \
             .chunk(dict(time=1, lat=90, lon=90))
-
-        write_cube(cube, self.TEST_CUBE, "zarr", cube_asserted=True)
-
-        # we need to manually edit the fill values, otherwise, as of zarr 2.11,
-        # empty chunks are not written
-        import json
-        with open(f'{self.TEST_CUBE}/.zmetadata') as metadata:
-            metadata_dict = json.load(metadata)
-            metadata_dict['metadata']['precipitation/.zarray']['fill_value'] \
-                = 1.0
-            metadata_dict['metadata']['temperature/.zarray']['fill_value'] \
-                = 1.0
-        with open(f'{self.TEST_CUBE}/.zmetadata', 'w') as metadata:
-            json.dump(metadata_dict, metadata)
+        encoding = {
+            'precipitation': {
+                '_FillValue': None
+            },
+            'temperature': {
+                '_FillValue': None
+            }
+        }
+        cube.to_zarr(self.TEST_CUBE, encoding=encoding)
 
     def tearDown(self) -> None:
         rimraf(self.TEST_CUBE)
