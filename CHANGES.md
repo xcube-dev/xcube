@@ -1,4 +1,15 @@
-## Changes in 0.9.3 (in development)
+## Changes in 0.10.0
+
+### Incompatible Changes 
+
+* The configuration `DataStores` for `xcube serve` changed in an
+  incompatible way with xcube 0.9.x: The value of former `Identifier` 
+  must now be assigned to `Path`, which is a mandatory parameter. 
+  `Path` may contain wildcard characters \*\*, \*, ?. 
+  `Identifier` is now optional, the default is 
+  `"${store_id}~${data_id}`. If given, it should only be used to 
+  uniquely identify single datasets within a data store
+  pointed to by `Path`. (#516) 
 
 ### Enhancements
 
@@ -41,12 +52,12 @@
   
 ### Other
 
-* Pinned Python version to < 3.10 to avoid ImportErrors caused by a third-party
-  library.
+* Pinned Python version to < 3.10 to avoid import errors caused by a 
+  third-party library.
 
-* Values `obs` and `local` for the `FileSystem` parameter in xcube configuration
-  files have been replaced by `s3` and `file`, but are kept temporarily for
-  the sake of backwards compatibility.
+* Values `obs` and `local` for the `FileSystem` parameter in xcube 
+  configuration files have been replaced by `s3` and `file`, but are kept 
+  temporarily for the sake of backwards compatibility.
 
 ## Changes in 0.9.2
 
