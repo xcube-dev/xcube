@@ -1,3 +1,15 @@
+## Changes in 0.10.1 (in development)
+
+### Enhancements
+
+### Fixes
+
+### Other Changes
+
+* For compatibility, now also `xcube.__version__` now contains the xcube 
+  version number.
+
+
 ## Changes in 0.10.0
 
 ### Incompatible Changes 
@@ -7,7 +19,7 @@
   must now be assigned to `Path`, which is a mandatory parameter. 
   `Path` may contain wildcard characters \*\*, \*, ?. 
   `Identifier` is now optional, the default is 
-  `"${store_id}~${data_id}`. If given, it should only be used to 
+  `"${store_id}~${data_id}"`. If given, it should only be used to 
   uniquely identify single datasets within a data store
   pointed to by `Path`. (#516) 
 
