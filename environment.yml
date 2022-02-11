@@ -36,7 +36,6 @@ dependencies:
   - scipy >=1.6.0
   - setuptools >=41.0
   - shapely >=1.6
-  - strict-rfc3339 >=0.7  # for python-jsonschema date-time format validation
   - tornado >=6.0
   - urllib3 >=1.26
   - xarray >=0.19
