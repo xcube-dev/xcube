@@ -21,14 +21,17 @@
 
 import collections.abc
 from abc import ABC, abstractmethod
-from typing import Dict, Any, Callable, Mapping, Sequence, Union, Tuple, Optional
+from typing import Dict, Any, Callable, Mapping, Sequence, Union, Tuple, \
+    Optional
 
-# Make sure strict-rfc3339 package is installed. The package jsonschema uses it for validating
-# instances of the JsonDateSchema and JsonDatetimeSchema.
-from xcube.util.assertions import assert_true
 from xcube.util.assertions import assert_instance
+from xcube.util.assertions import assert_true
 
-__import__('strict_rfc3339')
+# Make sure rfc3339-validator package is installed : jsonschema uses it for
+# validating instances of JsonDateSchema and JsonDatetimeSchema.
+# Use of __import__ avoids "unused package" warnings.
+__import__('rfc3339_validator')
+
 import jsonschema
 
 from xcube.util.ipython import register_json_formatter
