@@ -19,7 +19,7 @@ class GetVersionsTest(unittest.TestCase):
         self.assertIn('numpy', versions)
         self.assertIn('geopandas', versions)
         self.assertIn('xcube', versions)
-        self.assertEqual(xcube_version.version, versions['xcube'])
+        self.assertEqual(xcube_version, versions['xcube'])
 
     def test_it_is_cached(self):
         versions = get_xcube_versions()
