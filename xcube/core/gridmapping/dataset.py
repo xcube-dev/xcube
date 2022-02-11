@@ -20,6 +20,7 @@
 # SOFTWARE.
 
 from typing import Optional, Union, Tuple
+import warnings
 
 import pyproj
 import xarray as xr
@@ -53,13 +54,10 @@ def new_grid_mapping_from_dataset(
         prefer_crs = _normalize_crs(prefer_crs)
     else:
         prefer_crs = crs
-    if xy_var_names is not None:
-        x_var_name, y_var_name = xy_var_names
-        if x_var_name not in dataset or y_var_name not in dataset:
-            raise ValueError(f'coordinate variables "{x_var_name}" '
-                             f'or "{y_var_name}" not found in dataset')
-        # TODO: create new instance using named coordinate variables
-        raise NotImplementedError('xy_var_names not yet supported')
+    if xy_var_names:
+        warnings.warn('Argument "xy_var_names" is deprecated since '
+                      'xcube 0.10.1 and will be ignored.',
+                      category=DeprecationWarning)
 
     grid_mapping_proxies = get_dataset_grid_mapping_proxies(
         dataset,
