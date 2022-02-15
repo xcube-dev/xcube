@@ -2,7 +2,7 @@ Datasets:
 
   - Identifier: s2p
     Title: "S2+"
-    FileSystem: local
+    FileSystem: file
     Path: "D:\\Projects\\xcube\\xcube\\cli\\PROJ_WGS84_DCS4COP_S2A_0021_FLANDERS_20180802T105621Z_31UCS_V003.zarr"
     Format: zarr
     # Path: "D:\\Projects\\xcube\\xcube\\cli\\PROJ_WGS84_DCS4COP_S2A_0021_FLANDERS_20180802T105621Z_31UCS_V003.levels"
@@ -11,7 +11,7 @@ Datasets:
 
   - Identifier: Sweden_SE
     Title: Sverige
-    FileSystem: local
+    FileSystem: file
     Path: "C:\\Users\\Norman\\Brockmann Consult GmbH\\CyanoAlert Project Site - Data\\OLCI-SE-L2C-CUBE-v2-20180708_1_500_509.zarr"
     Format: zarr
     Style: default

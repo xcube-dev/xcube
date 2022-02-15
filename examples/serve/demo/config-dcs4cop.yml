@@ -1,7 +1,7 @@
 Datasets:
   - Identifier: s2p
     Title: "Sentinel 2 Plus SNS"
-    FileSystem: "local"
+    FileSystem: "file"
     Path: "D:\\EOData\\DCS4COP\\S2Plus-GUC.zarr"
     Format: zarr
     Style: default
@@ -11,7 +11,7 @@ Datasets:
     BoundingBox: [0.0, 50, 5.0, 52.5]
     Endpoint: "https://s3.eu-central-1.amazonaws.com/"
     Path: "xcube-examples/bc-olci-sns-l2c-2017_1x1024x1024.zarr"
-    FileSystem: "obs"
+    FileSystem: "s3"
     Region: "eu-central-1"
     Anonymous: true
     Style: default

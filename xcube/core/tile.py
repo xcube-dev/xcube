@@ -250,6 +250,29 @@ def _get_var_2d_array(var: xr.DataArray,
     return array
 
 
+def _ensure_time_compatible(var: xr.DataArray,
+                            labels: Dict[str, Any]) -> Dict[str, Any]:
+    """Ensure that labels['time'] is timezone-naive, if necessary.
+    If var has a 'time' dimension of type datetime64 and labels has a 'time'
+    key with a timezone-aware value, return a modified labels dictionary with
+    a timezone-naive time value. Otherwise return the original labels.
+    """
+    if _has_datetime64_time(var) and \
+       'time' in labels and pd.Timestamp(labels['time']).tzinfo is not None:
+        naive_time = pd.Timestamp(labels['time']).tz_convert(None)
+        return dict(labels, time=naive_time)
+    else:
+        return labels
+
+
+def _has_datetime64_time(var: xr.DataArray) -> bool:
+    """Report whether var has a time dimension with type datetime64"""
+    return 'time' in var.dims and \
+           hasattr(var['time'], 'dtype') and \
+           hasattr(var['time'].dtype, 'type') and \
+           var['time'].dtype.type is np.datetime64
+
+
 def get_var_cmap_params(var: xr.DataArray,
                         cmap_name: Optional[str],
                         cmap_range: Tuple[Optional[float], Optional[float]],
@@ -304,7 +327,8 @@ def parse_non_spatial_labels(
         dims: Sequence[Hashable],
         coords: Mapping[Hashable, xr.DataArray],
         allow_slices: bool = False,
-        exception_type: type = ValueError
+        exception_type: type = ValueError,
+        var: xr.DataArray = None
 ) -> Mapping[str, Any]:
     xy_var_names = get_dataset_xy_var_names(coords, must_exist=False)
     if xy_var_names is None:
@@ -360,4 +384,7 @@ def parse_non_spatial_labels(
             raise exception_type(f'{label_str!r} is not a valid'
                                  f' value for dimension {dim!r}') from e
 
-    return parsed_labels
+    if var is not None:
+        return _ensure_time_compatible(var, parsed_labels)
+    else:
+        return parsed_labels

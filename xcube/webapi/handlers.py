@@ -268,12 +268,14 @@ class GetS3BucketObjectHandler(ServiceRequestHandler):
 
     def _get_key_and_local_path(self, ds_id: str, path: str):
         dataset_config = self.service_context.get_dataset_config(ds_id)
-        file_system = dataset_config.get('FileSystem', 'local')
-        required_file_system = 'local'
-        if file_system != required_file_system:
-            raise ServiceBadRequestError(f'AWS S3 data access: currently, only datasets in'
-                                         f' file system {required_file_system!r} are supported,'
-                                         f' but dataset {ds_id!r} uses file system {file_system!r}')
+        file_system = dataset_config.get('FileSystem', 'file')
+        required_file_systems = ['file', 'local']
+        if file_system not in required_file_systems:
+            required_file_system_string = " or ".join(required_file_systems)
+            raise ServiceBadRequestError(
+                f'AWS S3 data access: currently, only datasets in file systems '
+                f'{required_file_system_string!r} are supported, but dataset '
+                f'{ds_id!r} uses file system {file_system!r}')
 
         key = f'{ds_id}/{path}'
 
@@ -281,11 +283,9 @@ class GetS3BucketObjectHandler(ServiceRequestHandler):
         if path and '..' in path.split('/'):
             raise ServiceBadRequestError(f'AWS S3 data access: received illegal key {key!r}')
 
-        local_path = dataset_config.get('Path')
-        if os.path.isabs(local_path):
-            local_path = os.path.join(local_path, path)
-        else:
-            local_path = os.path.join(self.service_context.base_dir, local_path, path)
+        bucket_mapping = self.service_context.get_s3_bucket_mapping()
+        local_path = bucket_mapping.get(ds_id)
+        local_path = os.path.join(local_path, path)
 
         local_path = os.path.normpath(local_path)
 

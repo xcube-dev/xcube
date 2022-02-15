@@ -263,7 +263,25 @@ class DataStorePool:
     def store_configs(self) -> List[DataStoreConfig]:
         return [v.store_config for k, v in self._instances.items()]
 
-    def has_store_config(self, store_instance_id: str) -> bool:
+    def get_store_instance_id(self,
+                              store_config: DataStoreConfig,
+                              strict_check: bool = False) -> Optional[str]:
+        assert_instance(store_config, DataStoreConfig, 'store_config')
+        for id, instance in self._instances.items():
+            if strict_check:
+                if instance.store_config == store_config:
+                    return id
+            else:
+                if instance.store_config.store_id == store_config.store_id and \
+                    instance.store_config.store_params == \
+                        store_config.store_params:
+                    return id
+        return None
+
+    def has_store_config(self, store_config: DataStoreConfig) -> bool:
+        return self.get_store_instance_id(store_config) is not None
+
+    def has_store_instance(self, store_instance_id: str) -> bool:
         assert_instance(store_instance_id, str, 'store_instance_id')
         return store_instance_id in self._instances
 

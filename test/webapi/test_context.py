@@ -197,6 +197,27 @@ class ServiceContextTest(unittest.TestCase):
             ctx.get_global_place_group("bibo", "http://localhost:9090")
         self.assertEqual('HTTP 404: Place group "bibo" not found', f"{cm.exception}")
 
+    def test_get_other_store_params_than_root(self):
+        ctx = new_test_service_context()
+        dataset_config = {'Identifier': 'two',
+                          'Title': 'Test 2',
+                          'FileSystem': 's3',
+                          'Anonymous': False,
+                          'Endpoint': 'https://s3.eu-central-1.amazonaws.com',
+                          'Path': 'xcube-examples/OLCI-SNS-RAW-CUBE-2.zarr',
+                          'Region': 'eu-central-1'}
+        store_params = ctx._get_other_store_params_than_root(dataset_config)
+        expected_dict = \
+            {'storage_options':
+                 {'anon': False,
+                  'client_kwargs':
+                      {'endpoint_url': 'https://s3.eu-central-1.amazonaws.com',
+                       'region_name': 'eu-central-1'}
+                  }
+             }
+        self.assertIsNotNone(store_params)
+        self.assertEqual(expected_dict, store_params)
+
 
 class NormalizePrefixTest(unittest.TestCase):
     def test_empty(self):
@@ -221,3 +242,296 @@ class NormalizePrefixTest(unittest.TestCase):
                          normalize_prefix('/${name}'))
         self.assertEqual(f'/xcube/v{version}',
                          normalize_prefix('/${name}/v${version}'))
+
+
+class MaybeAssignStoreInstanceIdsTest(unittest.TestCase):
+
+    def test_find_common_store(self):
+        ctx = new_test_service_context()
+        dataset_configs = [
+            {
+                'Identifier': 'z_0',
+                'FileSystem': 'file',
+                'Path': '/one/path/abc.zarr'
+            },
+            {
+                'Identifier': 'z_1',
+                'FileSystem': 'file',
+                'Path': '/one/path/def.zarr'
+            },
+            {
+                'Identifier': 'z_4',
+                'FileSystem': 's3',
+                'Path': '/one/path/mno.zarr'
+            },
+            {
+                'Identifier': 'z_2',
+                'FileSystem': 'file',
+                'Path': '/another/path/ghi.zarr'
+            },
+            {
+                'Identifier': 'z_3',
+                'FileSystem': 'file',
+                'Path': '/one/more/path/jkl.zarr'
+            },
+            {
+                'Identifier': 'z_5',
+                'FileSystem': 's3',
+                'Path': '/one/path/pqr.zarr'
+            },
+            {
+                'Identifier': 'z_6',
+                'FileSystem': 'file',
+                'Path': '/one/path/stu.zarr'
+            },
+            {
+                'Identifier': 'z_7',
+                'FileSystem': 'file',
+                'Path': '/one/more/path/vwx.zarr'
+            },
+        ]
+        ctx.config['Datasets'] = dataset_configs
+        adjusted_dataset_configs = ctx.get_dataset_configs()
+
+        expected_dataset_configs = [
+            {
+                'Identifier': 'z_0',
+                'FileSystem': 'file',
+                'Path': 'path/abc.zarr',
+                'StoreInstanceId': 'file_2'
+            },
+            {
+                'Identifier': 'z_1',
+                'FileSystem': 'file',
+                'Path': 'path/def.zarr',
+                'StoreInstanceId': 'file_2'
+            },
+            {
+                'Identifier': 'z_4',
+                'FileSystem': 's3',
+                'Path': 'mno.zarr',
+                'StoreInstanceId': 's3_1'
+            },
+            {
+                'Identifier': 'z_2',
+                'FileSystem': 'file',
+                'Path': 'ghi.zarr',
+                'StoreInstanceId': 'file_1'
+            },
+            {
+                'Identifier': 'z_3',
+                'FileSystem': 'file',
+                'Path': 'more/path/jkl.zarr',
+                'StoreInstanceId': 'file_2'
+            },
+            {
+                'Identifier': 'z_5',
+                'FileSystem': 's3',
+                'Path': 'pqr.zarr',
+                'StoreInstanceId': 's3_1'
+            },
+            {
+                'Identifier': 'z_6',
+                'FileSystem': 'file',
+                'Path': 'path/stu.zarr',
+                'StoreInstanceId': 'file_2'
+            },
+            {
+                'Identifier': 'z_7',
+                'FileSystem': 'file',
+                'Path': 'more/path/vwx.zarr',
+                'StoreInstanceId': 'file_2'
+            },
+        ]
+        self.assertEqual(expected_dataset_configs, adjusted_dataset_configs)
+
+    def test_with_instance_id(self):
+        ctx = new_test_service_context()
+        dataset_config = {'Identifier': 'zero',
+                          'Title': 'Test 0',
+                          'FileSystem': 'file',
+                          'StoreInstanceId': 'some_id'}
+        dataset_config_copy = dataset_config.copy()
+
+        ctx.config['Datasets'] = [dataset_config]
+        dataset_config = ctx.get_dataset_configs()[0]
+
+        self.assertEqual(dataset_config_copy, dataset_config)
+
+    def test_file(self):
+        ctx = new_test_service_context()
+        dataset_config = {'Identifier': 'one',
+                          'Title': 'Test 1',
+                          'FileSystem': 'file',
+                          'Path': 'cube-1-250-250.zarr'}
+
+        ctx.config['Datasets'] = [dataset_config]
+        dataset_config = ctx.get_dataset_configs()[0]
+
+        self.assertEqual(['Identifier', 'Title', 'FileSystem', 'Path',
+                         'StoreInstanceId'],
+                         list(dataset_config.keys()))
+        self.assertEqual('one',
+                         dataset_config['Identifier'])
+        self.assertEqual('Test 1', dataset_config['Title'])
+        self.assertEqual('file', dataset_config['FileSystem'])
+        self.assertEqual('cube-1-250-250.zarr', dataset_config["Path"])
+        self.assertEqual('file_1', dataset_config['StoreInstanceId'])
+
+    def test_local(self):
+        # this test tests backwards compatibility.
+        # TODO please remove when support for file systems 'local' and 'obs'
+        # has ended
+        ctx = new_test_service_context()
+        dataset_config = {'Identifier': 'one',
+                          'Title': 'Test 1',
+                          'FileSystem': 'local',
+                          'Path': 'cube-1-250-250.zarr'}
+
+        ctx.config['Datasets'] = [dataset_config]
+        dataset_config = ctx.get_dataset_configs()[0]
+
+        self.assertEqual(['Identifier', 'Title', 'FileSystem', 'Path',
+                         'StoreInstanceId'],
+                         list(dataset_config.keys()))
+        self.assertEqual('one',
+                         dataset_config['Identifier'])
+        self.assertEqual('Test 1', dataset_config['Title'])
+        self.assertEqual('local', dataset_config['FileSystem'])
+        self.assertEqual('cube-1-250-250.zarr', dataset_config["Path"])
+        self.assertEqual('file_1', dataset_config['StoreInstanceId'])
+
+    def test_s3(self):
+        ctx = new_test_service_context()
+        dataset_config = {'Identifier': 'two',
+                          'Title': 'Test 2',
+                          'FileSystem': 's3',
+                          'Endpoint': 'https://s3.eu-central-1.amazonaws.com',
+                          'Path': 'xcube-examples/OLCI-SNS-RAW-CUBE-2.zarr',
+                          'Region': 'eu-central-1'}
+
+        ctx.config['Datasets'] = [dataset_config]
+        dataset_config = ctx.get_dataset_configs()[0]
+
+        self.assertEqual(['Identifier', 'Title', 'FileSystem', 'Endpoint',
+                          'Path', 'Region', 'StoreInstanceId'],
+                         list(dataset_config.keys()))
+        self.assertEqual('two', dataset_config['Identifier'])
+        self.assertEqual('Test 2', dataset_config['Title'])
+        self.assertEqual('s3', dataset_config['FileSystem'])
+        self.assertEqual('https://s3.eu-central-1.amazonaws.com',
+                         dataset_config['Endpoint'])
+        self.assertEqual('OLCI-SNS-RAW-CUBE-2.zarr', dataset_config['Path'])
+        self.assertEqual('eu-central-1', dataset_config['Region'])
+        self.assertEqual('s3_1', dataset_config['StoreInstanceId'])
+
+    def test_obs(self):
+        # this test tests backwards compatibility.
+        # TODO please remove when support for file systems 'local' and 'obs'
+        # has ended
+        ctx = new_test_service_context()
+        dataset_config = {'Identifier': 'two',
+                          'Title': 'Test 2',
+                          'FileSystem': 'obs',
+                          'Endpoint': 'https://s3.eu-central-1.amazonaws.com',
+                          'Path': 'xcube-examples/OLCI-SNS-RAW-CUBE-2.zarr',
+                          'Region': 'eu-central-1'}
+
+        ctx.config['Datasets'] = [dataset_config]
+        dataset_config = ctx.get_dataset_configs()[0]
+
+        self.assertEqual(['Identifier', 'Title', 'FileSystem', 'Endpoint',
+                          'Path', 'Region', 'StoreInstanceId'],
+                         list(dataset_config.keys()))
+        self.assertEqual('two', dataset_config['Identifier'])
+        self.assertEqual('Test 2', dataset_config['Title'])
+        self.assertEqual('obs', dataset_config['FileSystem'])
+        self.assertEqual('https://s3.eu-central-1.amazonaws.com',
+                         dataset_config['Endpoint'])
+        self.assertEqual('OLCI-SNS-RAW-CUBE-2.zarr', dataset_config['Path'])
+        self.assertEqual('eu-central-1', dataset_config['Region'])
+        self.assertEqual('s3_1', dataset_config['StoreInstanceId'])
+
+    def test_memory(self):
+        ctx = new_test_service_context()
+        dataset_config = {'Identifier': 'three',
+                          'Title': 'Test 3',
+                          'FileSystem': 'memory'}
+        dataset_config_copy = dataset_config.copy()
+
+        ctx.config['Datasets'] = [dataset_config]
+        dataset_config = ctx.get_dataset_configs()[0]
+
+        self.assertEqual(dataset_config_copy, dataset_config)
+
+    def test_missing_file_system(self):
+        ctx = new_test_service_context()
+        dataset_config = {'Identifier': 'five',
+                          'Title': 'Test 5',
+                          'Path': 'cube-1-250-250.zarr'}
+
+        ctx.config['Datasets'] = [dataset_config]
+        dataset_config = ctx.get_dataset_configs()[0]
+
+        self.assertEqual(['Identifier', 'Title', 'Path', 'StoreInstanceId'],
+                         list(dataset_config.keys()))
+        self.assertEqual('five', dataset_config['Identifier'])
+        self.assertEqual('Test 5', dataset_config['Title'])
+        self.assertEqual('cube-1-250-250.zarr', dataset_config['Path'])
+        self.assertEqual('file_1', dataset_config['StoreInstanceId'])
+
+    def test_invalid_file_system(self):
+        ctx = new_test_service_context()
+        dataset_config = {'Identifier': 'five',
+                          'Title': 'Test 5a',
+                          'FileSystem': 'invalid',
+                          'Path': 'cube-1-250-250.zarr'}
+
+        ctx.config['Datasets'] = [dataset_config]
+        dataset_config = ctx.get_dataset_configs()[0]
+
+        self.assertEqual(['Identifier', 'Title', 'FileSystem', 'Path'],
+                         list(dataset_config.keys()))
+        self.assertEqual('five', dataset_config['Identifier'])
+        self.assertEqual('Test 5a', dataset_config['Title'])
+        self.assertEqual('invalid', dataset_config['FileSystem'])
+        self.assertEqual('cube-1-250-250.zarr', dataset_config['Path'])
+
+    def test_local_store_already_existing(self):
+        ctx = new_test_service_context()
+        dataset_config_1 = {'Identifier': 'six',
+                            'Title': 'Test 6',
+                            'FileSystem': 'file',
+                            'Path': 'cube-1-250-250.zarr'}
+        dataset_config_2 = {'Identifier': 'six_a',
+                            'Title': 'Test 6 a',
+                            'FileSystem': 'file',
+                            'Path': 'cube-5-100-200.zarr'}
+
+        ctx.config['Datasets'] = [dataset_config_1, dataset_config_2]
+        dataset_configs = ctx.get_dataset_configs()
+
+        self.assertEqual(dataset_configs[0]['StoreInstanceId'],
+                         dataset_configs[1]['StoreInstanceId'])
+
+    def test_s3_store_already_existing(self):
+        ctx = new_test_service_context()
+        dataset_config_1 = {'Identifier': 'seven',
+                            'Title': 'Test 7',
+                            'FileSystem': 's3',
+                            'Endpoint': 'https://s3.eu-central-1.amazonaws.com',
+                            'Path': 'xcube-examples/OLCI-SNS-RAW-CUBE-2.zarr',
+                            'Region': 'eu-central-1'}
+
+        dataset_config_2 = {'Identifier': 'seven_a',
+                            'Title': 'Test 7 a',
+                            'FileSystem': 's3',
+                            'Endpoint': 'https://s3.eu-central-1.amazonaws.com',
+                            'Path': 'xcube-examples/OLCI-SNS-RAW-CUBE-3.zarr',
+                            'Region': 'eu-central-1'}
+
+        ctx.config['Datasets'] = [dataset_config_1, dataset_config_2]
+        dataset_configs = ctx.get_dataset_configs()
+
+        self.assertEqual(dataset_configs[0]['StoreInstanceId'],
+                         dataset_configs[1]['StoreInstanceId'])

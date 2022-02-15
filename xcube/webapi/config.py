@@ -20,7 +20,9 @@ BoundingBoxSchema = JsonArraySchema(items=[
     NumberSchema,
     NumberSchema
 ])
-FileSystemSchema = JsonStringSchema(enum=['memory', 'obs', 'local'])
+FileSystemSchema = JsonStringSchema(
+    enum=['memory', 'obs', 'local', 's3', 'file']
+)
 
 
 class _ConfigObject(JsonObject, ABC):
@@ -91,6 +93,7 @@ class DatasetConfig(_ConfigObject):
             factory=DatasetConfig,
             required=[
                 'Identifier',
+                'Path'
             ],
             properties=dict(
                 Identifier=IdentifierSchema,
@@ -181,10 +184,11 @@ class DataStoreDatasetConfig(_ConfigObject):
         return JsonObjectSchema(
             factory=DataStoreDatasetConfig,
             required=[
-                'Identifier'
+                'Path'
             ],
             properties=dict(
                 Identifier=IdentifierSchema,
+                Path=PathSchema,
                 StoreInstanceId=IdentifierSchema,  # will be set by server
                 StoreOpenParams=JsonObjectSchema(additional_properties=True),
                 **_get_common_dataset_properties()

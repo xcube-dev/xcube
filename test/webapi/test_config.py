@@ -30,7 +30,7 @@ class ServiceConfigTest(unittest.TestCase):
                     "Identifier": "local",
                     "Title": "Local OLCI L2C cube for region SNS",
                     "BoundingBox": [0.0, 50, 5.0, 52.5],
-                    "FileSystem": "local",
+                    "FileSystem": "file",
                     "Path": "cube-1-250-250.zarr",
                     "Style": "default",
                     "TimeSeriesDataset": "local_ts",
@@ -60,7 +60,7 @@ class ServiceConfigTest(unittest.TestCase):
                     },
                     "Datasets": [
                         {
-                            "Identifier": "*.zarr",
+                            "Path": "*.zarr",
                             "Style": "default"
                         }
                     ]
