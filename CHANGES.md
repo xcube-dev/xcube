@@ -1,3 +1,11 @@
+## Changes in 0.10.2 (in development)
+
+### Enhancements
+
+### Fixes
+
+### Other
+
 ## Changes in 0.10.1
 
 ### Fixes
