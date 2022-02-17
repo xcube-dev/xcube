@@ -1,15 +1,13 @@
-## Changes in 0.10.1 (in development)
-
-### Enhancements
+## Changes in 0.10.1
 
 ### Fixes
 
 * Deprecated argument `xy_var_names` in function `GridMapping.from_dataset`,
-  thereby preventing a NotImplementedError.
+  thereby preventing a NotImplementedError. (#551) 
 
 ### Other Changes
 
-* For compatibility, now also `xcube.__version__` now contains the xcube 
+* For compatibility, now also `xcube.__version__` contains the xcube 
   version number.
 
 ## Changes in 0.10.0
