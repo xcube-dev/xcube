@@ -131,17 +131,6 @@ class DatasetGridMappingTest(unittest.TestCase):
         self.assertEqual('Geographic 2D CRS', gm.crs.type_name)
         self.assertEqual(False, gm.is_regular)
 
-    def test_xy_names(self):
-        dataset = create_s2plus_dataset()
-        with self.assertRaises(ValueError) as cm:
-            GridMapping.from_dataset(dataset, xy_var_names=('lons', 'lats'))
-        self.assertEqual('coordinate variables "lons" or "lats" not found in dataset', f'{cm.exception}')
-
-        dataset = create_s2plus_dataset()
-        with self.assertRaises(NotImplementedError) as cm:
-            GridMapping.from_dataset(dataset, xy_var_names=('lon', 'lat'))
-        self.assertEqual('xy_var_names not yet supported', f'{cm.exception}')
-
     def test_no_grid_mapping_found(self):
         with self.assertRaises(ValueError) as cm:
             GridMapping.from_dataset(xr.Dataset())

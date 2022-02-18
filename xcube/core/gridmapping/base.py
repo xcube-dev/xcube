@@ -648,6 +648,7 @@ class GridMapping(abc.ABC):
         :param crs: Optional spatial coordinate reference system.
         :param xy_var_names: Optional tuple of the x- and
             y-coordinate variables in *dataset*.
+            Deprecated since xcube 0.10.1.
         :param tile_size: Optional tile size
         :param prefer_is_regular: Whether to prefer a regular
             grid mapping if multiple found. Default is True.
