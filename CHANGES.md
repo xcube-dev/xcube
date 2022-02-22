@@ -2,7 +2,7 @@
 
 ### Enhancements
 
-* `xcube gen` returns more expressive error messages 
+* `xcube gen2` returns more expressive error messages 
 
 ### Fixes
 
