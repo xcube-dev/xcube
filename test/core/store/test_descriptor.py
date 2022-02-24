@@ -1,5 +1,5 @@
 import unittest
-from typing import Type
+from typing import Dict, Tuple, Type, Union
 
 import jsonschema
 import numpy as np
@@ -19,24 +19,39 @@ from xcube.util.jsonschema import JsonObjectSchema
 class NewDataDescriptorTest(unittest.TestCase):
 
     def test_new_dataset_descriptor(self):
-        cube = new_cube(variables=dict(a=4.1, b=7.4))
+        cube = new_cube(variables=dict(a=4.1, b=7.4),
+                        x_res=1.0,
+                        y_res=2.0,
+                        height=90)
         descriptor = new_data_descriptor('cube', cube)
-        self.assertExpectedDescriptor(descriptor,
-                                      DatasetDescriptor,
-                                      'dataset')
+        self.assertExpectedDescriptor(
+            descriptor,
+            DatasetDescriptor,
+            'dataset',
+            (1.0, 2.0),
+            {'time': 5, 'lat': 90, 'lon': 360, 'bnds': 2}
+        )
 
     def test_new_ml_dataset_descriptor(self):
         cube = new_cube(variables=dict(a=4.1, b=7.4))
         ml_cube = BaseMultiLevelDataset(cube)
         descriptor = new_data_descriptor('cube', ml_cube)
-        self.assertExpectedDescriptor(descriptor,
-                                      MultiLevelDatasetDescriptor,
-                                      'mldataset')
+        self.assertExpectedDescriptor(
+            descriptor,
+            MultiLevelDatasetDescriptor,
+            'mldataset',
+            1.0,
+            {'time': 5, 'lat': 180, 'lon': 360, 'bnds': 2}
+        )
 
     def assertExpectedDescriptor(self,
                                  descriptor: DataDescriptor,
                                  expected_type: Type[DataDescriptor],
-                                 expected_data_type_alias: str):
+                                 expected_data_type_alias: str,
+                                 expected_spatial_res:
+                                    Union[float, Tuple[float, float]],
+                                 expected_dims: Dict
+                                 ):
         self.assertIsInstance(descriptor, DatasetDescriptor)
         self.assertIsInstance(descriptor, expected_type)
         self.assertIsInstance(descriptor.data_type, DataType)
@@ -46,9 +61,9 @@ class NewDataDescriptorTest(unittest.TestCase):
         self.assertIsNone(descriptor.open_params_schema)
         self.assertEqual(('2010-01-01', '2010-01-06'), descriptor.time_range)
         self.assertEqual('1D', descriptor.time_period)
-        self.assertEqual(1.0, descriptor.spatial_res)
+        self.assertEqual(expected_spatial_res, descriptor.spatial_res)
         self.assertIsNotNone(descriptor.coords)
-        self.assertEqual({'time': 5, 'lat': 180, 'lon': 360, 'bnds': 2}, descriptor.dims)
+        self.assertEqual(expected_dims, descriptor.dims)
         self.assertIsNotNone(descriptor.data_vars)
 
 

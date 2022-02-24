@@ -30,6 +30,7 @@ from xcube.util.assertions import assert_instance
 from xcube.util.assertions import assert_true
 from xcube.util.jsonschema import JsonArraySchema
 from xcube.util.jsonschema import JsonBooleanSchema
+from xcube.util.jsonschema import JsonComplexSchema
 from xcube.util.jsonschema import JsonDateSchema
 from xcube.util.jsonschema import JsonIntegerSchema
 from xcube.util.jsonschema import JsonNumberSchema
@@ -138,7 +139,7 @@ class CubeConfig(JsonObject):
                  variable_names: Sequence[str] = None,
                  crs: str = None,
                  bbox: Tuple[float, float, float, float] = None,
-                 spatial_res: Union[float, Tuple[float]] = None,
+                 spatial_res: Union[float, Tuple[float, float]] = None,
                  tile_size: Union[int, Tuple[int, int]] = None,
                  time_range: Tuple[str, Optional[str]] = None,
                  time_period: str = None,
@@ -167,8 +168,19 @@ class CubeConfig(JsonObject):
 
         self.spatial_res = None
         if spatial_res is not None:
-            assert_instance(spatial_res, numbers.Number, 'spatial_res')
-            self.spatial_res = float(spatial_res)
+            assert_instance(spatial_res, (numbers.Number, tuple), 'spatial_res')
+            if isinstance(spatial_res, tuple):
+                assert_true(len(spatial_res) == 2,
+                            'spatial_res must hold exactly two values when '
+                            'given as tuple')
+                assert_instance(spatial_res[0], numbers.Number, 'spatial_res')
+                assert_true(spatial_res[0] > 0, 'spatial_res must be positive')
+                assert_instance(spatial_res[1], numbers.Number, 'spatial_res')
+                assert_true(spatial_res[1] > 0, 'spatial_res must be positive')
+                self.spatial_res = float(spatial_res[0]), float(spatial_res[1])
+            else:
+                assert_true(spatial_res > 0, 'spatial_res must be positive')
+                self.spatial_res = float(spatial_res)
 
         self.tile_size = None
         if tile_size is not None:
@@ -257,9 +269,17 @@ class CubeConfig(JsonObject):
                            JsonNumberSchema(),
                            JsonNumberSchema()]
                 ),
-                spatial_res=JsonNumberSchema(
-                    nullable=True,
-                    exclusive_minimum=0.0),
+                spatial_res=JsonComplexSchema(
+                    one_of=[
+                        JsonArraySchema(
+                            items=[
+                                JsonNumberSchema(exclusive_minimum=0.0),
+                                JsonNumberSchema(exclusive_minimum=0.0)
+                            ]
+                        ),
+                        JsonNumberSchema(exclusive_minimum=0.0)
+                    ]
+                ),
                 tile_size=JsonArraySchema(
                     nullable=True,
                     items=[

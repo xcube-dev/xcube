@@ -30,6 +30,7 @@ import pandas as pd
 import xarray as xr
 
 from xcube.core.geom import get_dataset_bounds
+from xcube.core.gridmapping import GridMapping
 from xcube.core.mldataset import MultiLevelDataset
 from xcube.core.timecoord import get_end_time_from_attrs
 from xcube.core.timecoord import get_start_time_from_attrs
@@ -39,6 +40,7 @@ from xcube.util.assertions import assert_given, assert_true
 from xcube.util.assertions import assert_not_none
 from xcube.util.ipython import register_json_formatter
 from xcube.util.jsonschema import JsonArraySchema
+from xcube.util.jsonschema import JsonComplexSchema
 from xcube.util.jsonschema import JsonDateSchema
 from xcube.util.jsonschema import JsonIntegerSchema
 from xcube.util.jsonschema import JsonNumberSchema
@@ -219,7 +221,7 @@ class DatasetDescriptor(DataDescriptor):
                  bbox: Tuple[float, float, float, float] = None,
                  time_range: Tuple[Optional[str], Optional[str]] = None,
                  time_period: str = None,
-                 spatial_res: float = None,
+                 spatial_res: Union[float, Tuple[float, float]] = None,
                  dims: Mapping[str, int] = None,
                  coords: Mapping[str, 'VariableDescriptor'] = None,
                  data_vars: Mapping[str, 'VariableDescriptor'] = None,
@@ -254,7 +256,17 @@ class DatasetDescriptor(DataDescriptor):
             dims=JsonObjectSchema(
                 additional_properties=JsonIntegerSchema(minimum=0)
             ),
-            spatial_res=JsonNumberSchema(exclusive_minimum=0.0),
+            spatial_res=JsonComplexSchema(
+                one_of=[
+                    JsonArraySchema(
+                        items=[
+                            JsonNumberSchema(exclusive_minimum=0.0),
+                            JsonNumberSchema(exclusive_minimum=0.0)
+                        ]
+                    ),
+                    JsonNumberSchema(exclusive_minimum=0.0)
+                ]
+            ),
             coords=JsonObjectSchema(
                 additional_properties=VariableDescriptor.get_schema()
             ),
@@ -439,19 +451,11 @@ def _determine_bbox(data: xr.Dataset) \
                     data.geospatial_lat_max, data.geospatial_lon_max)
 
 
-def _determine_spatial_res(data: xr.Dataset):
-    # TODO get rid of these hard-coded coord names as soon as
-    #   new resampling is available
-    lat_dimensions = ['lat', 'latitude', 'y']
-    for lat_dimension in lat_dimensions:
-        if lat_dimension in data:
-            lat_diff = data[lat_dimension].diff(
-                dim=data[lat_dimension].dims[0]
-            ).values
-            lat_res = lat_diff[0]
-            lat_regular = np.allclose(lat_res, lat_diff, 1e-8)
-            if lat_regular:
-                return float(abs(lat_res))
+def _determine_spatial_res(dataset: xr.Dataset):
+    gm = GridMapping.from_dataset(dataset)
+    if abs(gm.x_res - gm.y_res) < 1e-8:
+        return gm.x_res
+    return gm.xy_res
 
 
 def _determine_time_coverage(data: xr.Dataset):

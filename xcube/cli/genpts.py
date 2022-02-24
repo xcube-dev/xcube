@@ -59,8 +59,12 @@ def genpts(cube: str, output_path: str, num_points_max: int):
     for var_name in cube.data_vars:
         point_data[var_name] = []
 
-    spatial_res = ((cube.lon[-1] - cube.lon[0]) / (cube.lon.size - 1)).values
-    temporal_res = ((cube.time[-1] - cube.time[0]) // (cube.time.size - 1)).values
+    spatial_lon_res = ((cube.lon[-1] - cube.lon[0]) /
+                       (cube.lon.size - 1)).values
+    spatial_lat_res = ((cube.lat[-1] - cube.lat[0]) /
+                       (cube.lat.size - 1)).values
+    temporal_res = ((cube.time[-1] - cube.time[0]) //
+                    (cube.time.size - 1)).values
 
     while num_points < num_points_max:
         it = np.random.randint(0, cube.time.size)
@@ -70,9 +74,15 @@ def genpts(cube: str, output_path: str, num_points_max: int):
         point = cube.isel(time=it, lat=iy, lon=ix)
 
         if _all_data_vars_valid(point):
-            point_data['time'].append(point.time.values + 0.5 * temporal_res * np.random.logistic(scale=0.2))
-            point_data['lat'].append(point.lat.values + 0.5 * spatial_res * np.random.logistic(scale=0.2))
-            point_data['lon'].append(point.lon.values + 0.5 * spatial_res * np.random.logistic(scale=0.2))
+            point_data['time'].append(point.time.values + 0.5 *
+                                      temporal_res *
+                                      np.random.logistic(scale=0.2))
+            point_data['lat'].append(point.lat.values + 0.5 *
+                                     spatial_lat_res *
+                                     np.random.logistic(scale=0.2))
+            point_data['lon'].append(point.lon.values + 0.5 *
+                                     spatial_lon_res *
+                                     np.random.logistic(scale=0.2))
             for var_name, var in point.data_vars.items():
                 value = var.values
                 if np.issubdtype(value.dtype, np.floating):

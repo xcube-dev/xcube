@@ -68,7 +68,10 @@ def _compute_target_grid_mapping(cube_config: CubeConfig,
         return source_gm.to_regular(tile_size=cube_config.tile_size)
 
     if target_spatial_res is not None:
-        xy_res = (target_spatial_res, target_spatial_res)
+        if isinstance(target_spatial_res, tuple):
+            xy_res = target_spatial_res
+        else:
+            xy_res = (target_spatial_res, target_spatial_res)
     else:
         xy_res = source_gm.xy_res
     if target_bbox is not None:

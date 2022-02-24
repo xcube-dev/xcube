@@ -80,8 +80,12 @@ class CubeInformant:
         x_min, y_min, x_max, y_max = cube_config.bbox
         spatial_res = cube_config.spatial_res
 
-        width = round((x_max - x_min) / spatial_res)
-        height = round((y_max - y_min) / spatial_res)
+        if isinstance(spatial_res, tuple):
+            width = round((x_max - x_min) / spatial_res[0])
+            height = round((y_max - y_min) / spatial_res[1])
+        else:
+            width = round((x_max - x_min) / spatial_res)
+            height = round((y_max - y_min) / spatial_res)
         width = 2 if width < 2 else width
         height = 2 if height < 2 else height
 
@@ -207,8 +211,17 @@ class CubeInformant:
         spatial_res = cube_config.spatial_res
         if spatial_res is None:
             spatial_res = self.first_input_dataset_descriptor.spatial_res
-        assert_instance(spatial_res, numbers.Number, 'spatial_res')
-        assert_true(spatial_res > 0, 'spatial_res must be positive')
+        assert_instance(spatial_res, (numbers.Number, tuple), 'spatial_res')
+        if isinstance(spatial_res, tuple):
+            assert_true(len(spatial_res) == 2,
+                        'spatial_res must hold exactly two values when given '
+                        'as tuple')
+            assert_instance(spatial_res[0], numbers.Number, 'spatial_res')
+            assert_instance(spatial_res[1], numbers.Number, 'spatial_res')
+            assert_true(spatial_res[0] > 0, 'spatial_res must be positive')
+            assert_true(spatial_res[1] > 0, 'spatial_res must be positive')
+        else:
+            assert_true(spatial_res > 0, 'spatial_res must be positive')
 
         tile_size = cube_config.tile_size
         if tile_size is not None:

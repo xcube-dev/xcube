@@ -57,10 +57,16 @@ class CubeSubsetter(CubeTransformer):
                 # is required later, which will include the desired
                 # subsetting.
                 desired_res = cube_config.spatial_res
-                if desired_res is not None \
-                        and not (math.isclose(gm.x_res, desired_res)
-                                 and math.isclose(gm.y_res, desired_res)):
-                    can_do_spatial_subset = False
+                if desired_res is not None:
+                    if isinstance(desired_res, tuple):
+                        desired_x_res = desired_res[0]
+                        desired_y_res = desired_res[1]
+                    else:
+                        desired_x_res = desired_res
+                        desired_y_res = desired_res
+                    if not (math.isclose(gm.x_res, desired_x_res)
+                            and math.isclose(gm.y_res, desired_y_res)):
+                        can_do_spatial_subset = False
                 if can_do_spatial_subset:
                     # Finally, the desired CRS must be equal to the current
                     # one, or they must both be geographic.

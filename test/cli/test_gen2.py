@@ -68,7 +68,7 @@ class Gen2CliTest(CliTest):
                     'data_id': result_zarr,
                     'data_type': 'dataset',
                     'dims': {'lat': 1000, 'lon': 2000, 'time': 15},
-                    'spatial_res': 0.0024999999999977263,
+                    'spatial_res': 0.0025,
                     'time_period': '1D',
                     'time_range': ['2017-01-16', '2017-01-30'],
                     'bbox': [0.0, 50.0, 5.0, 52.5],
