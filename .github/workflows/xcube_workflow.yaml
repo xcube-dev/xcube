@@ -104,7 +104,7 @@ jobs:
       - name: get-hash
         id: get-hash
         run: |
-          HASH=$(skopeo inspect docker://${{ env.REG_NAME }}/${{ env.ORG_NAME }}/${{ env.APP_NAME }}:${{ steps.release.outputs.tag }} | jq '.Digest')
+          HASH=$(skopeo inspect docker://${{ env.IMG_REG_NAME }}/${{ env.ORG_NAME }}/${{ env.APP_NAME }}:${{ steps.release.outputs.tag }} | jq '.Digest')
           if [[ "$HASH" == *"sha256"* ]]; then
             echo ::set-output name=hash::$HASH
           else
