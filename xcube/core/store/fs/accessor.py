@@ -74,10 +74,10 @@ class FsAccessor:
         )
 
     @classmethod
-    def load_fs(
-            cls,
-            params: Dict[str, Any]
-    ) -> Tuple[fsspec.AbstractFileSystem, Optional[str], Dict[str, Any]]:
+    def load_fs(cls, params: Dict[str, Any]) \
+            -> Tuple[fsspec.AbstractFileSystem,
+                     Optional[str],
+                     Dict[str, Any]]:
         """
         Load a filesystem instance from *params*.
 

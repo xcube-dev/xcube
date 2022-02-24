@@ -1,5 +1,6 @@
 import os.path
 import unittest
+import warnings
 from abc import ABC, abstractmethod
 from typing import Any, Dict, Optional, Type, Union
 
@@ -157,7 +158,8 @@ class FsDataStoresTestMixin(ABC):
 
         try:
             data_store.delete_data(data_id)
-        except PermissionError:  # Typically, occurs on win32 due to fsspec
+        except PermissionError as e:  # May occur on win32 due to fsspec
+            warnings.warn(f'{e}')
             return
         with self.assertRaises(DataStoreError):
             data_store.get_data_types_for_data(data_id)
@@ -167,31 +169,31 @@ class FsDataStoresTestMixin(ABC):
 
 class FileFsDataStoresTest(FsDataStoresTestMixin, unittest.TestCase):
     def create_data_store(self) -> FsDataStore:
-        self.root = os.path.join(new_temp_dir(prefix='xcube'), ROOT_DIR)
-        self.prepare_fs(fsspec.filesystem('file'), self.root)
-        return new_fs_data_store('file', root=self.root, max_depth=3)
+        root = os.path.join(new_temp_dir(prefix='xcube'), ROOT_DIR)
+        self.prepare_fs(fsspec.filesystem('file'), root)
+        return new_fs_data_store('file', root=root, max_depth=3)
 
 
 class MemoryFsDataStoresTest(FsDataStoresTestMixin, unittest.TestCase):
 
     def create_data_store(self) -> FsDataStore:
-        self.root = ROOT_DIR
-        self.prepare_fs(fsspec.filesystem('memory'), self.root)
-        return new_fs_data_store('memory', root=self.root, max_depth=3)
+        root = ROOT_DIR
+        self.prepare_fs(fsspec.filesystem('memory'), root)
+        return new_fs_data_store('memory', root=root, max_depth=3)
 
 
 class S3FsDataStoresTest(FsDataStoresTestMixin, S3Test):
 
     def create_data_store(self) -> FsDataStore:
-        self.root = ROOT_DIR
+        root = ROOT_DIR
         storage_options = dict(
             anon=False,
             client_kwargs=dict(
                 endpoint_url=MOTO_SERVER_ENDPOINT_URL,
             )
         )
-        self.prepare_fs(fsspec.filesystem('s3', **storage_options), self.root)
+        self.prepare_fs(fsspec.filesystem('s3', **storage_options), root)
         return new_fs_data_store('s3',
-                                 root=self.root,
+                                 root=root,
                                  max_depth=3,
                                  storage_options=storage_options)
