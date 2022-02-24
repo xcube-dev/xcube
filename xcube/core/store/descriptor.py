@@ -202,7 +202,9 @@ class DatasetDescriptor(DataDescriptor):
         temporal extent
     :param time_period: The data's periodicity
         if it is evenly temporally resolved
-    :param spatial_res: The spatial extent of a pixel in crs units
+    :param spatial_res: The spatial extent of a pixel in crs units. May be
+        given as a single value or a tuple of two values
+        when x- and y-resolutions are different
     :param dims: A mapping of the dataset's dimensions to their sizes
     :param coords: mapping of the dataset's data coordinate names
         to instances of :class:VariableDescriptor
