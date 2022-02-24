@@ -20,7 +20,7 @@
 # SOFTWARE.
 
 from abc import ABC
-from typing import Tuple
+from typing import Tuple, Optional
 
 import xarray as xr
 import zarr
@@ -121,8 +121,10 @@ ZARR_WRITE_DATA_PARAMS_SCHEMA = JsonObjectSchema(
             additional_properties=True,
         ),
         consolidated=JsonBooleanSchema(
-            description='If True, apply Zarr’s consolidate_metadata()'
-                        ' function to the store after writing.'
+            description='If True (the default), consolidate all metadata'
+                        ' files ("**/.zarray", "**/.zattrs")'
+                        ' into a single top-level file ".zmetadata"',
+            default=True,
         ),
         append_dim=JsonStringSchema(
             description='If set, the dimension on which the'
@@ -160,9 +162,12 @@ class DatasetZarrFsDataAccessor(DatasetFsDataAccessor, ABC):
             ZARR_OPEN_DATA_PARAMS_SCHEMA
         )
 
-    def open_data(self, data_id: str, **open_params) -> xr.Dataset:
+    def open_data(self,
+                  data_id: str,
+                  root: Optional[str] = None,
+                  **open_params) -> xr.Dataset:
         assert_instance(data_id, str, name='data_id')
-        fs, open_params = self.load_fs(open_params)
+        fs, root, open_params = self.load_fs(open_params)
         zarr_store = fs.get_mapper(data_id)
         cache_size = open_params.pop('cache_size', None)
         if isinstance(cache_size, int) and cache_size > 0:
@@ -194,7 +199,7 @@ class DatasetZarrFsDataAccessor(DatasetFsDataAccessor, ABC):
                    **write_params):
         assert_instance(data, xr.Dataset, name='data')
         assert_instance(data_id, str, name='data_id')
-        fs, write_params = self.load_fs(write_params)
+        fs, root, write_params = self.load_fs(write_params)
         zarr_store = fs.get_mapper(data_id, create=True)
         log_access = write_params.pop('log_access', None)
         if log_access:
@@ -212,8 +217,9 @@ class DatasetZarrFsDataAccessor(DatasetFsDataAccessor, ABC):
 
     def delete_data(self,
                     data_id: str,
+                    root: Optional[str] = None,
                     **delete_params):
-        fs, delete_params = self.load_fs(delete_params)
+        fs, root, delete_params = self.load_fs(delete_params)
         delete_params.pop('recursive', None)
         fs.delete(data_id, recursive=True, **delete_params)
 
@@ -252,7 +258,7 @@ class DatasetNetcdfFsDataAccessor(DatasetFsDataAccessor, ABC):
                   data_id: str,
                   **open_params) -> xr.Dataset:
         assert_instance(data_id, str, name='data_id')
-        fs, open_params = self.load_fs(open_params)
+        fs, root, open_params = self.load_fs(open_params)
 
         # This doesn't yet work as expected with fsspec and netcdf:
         # engine = open_params.pop('engine', 'scipy')
@@ -280,7 +286,7 @@ class DatasetNetcdfFsDataAccessor(DatasetFsDataAccessor, ABC):
                    **write_params):
         assert_instance(data, xr.Dataset, name='data')
         assert_instance(data_id, str, name='data_id')
-        fs, write_params = self.load_fs(write_params)
+        fs, root, write_params = self.load_fs(write_params)
         if not replace and fs.exists(data_id):
             raise DataStoreError(f'Data resource {data_id} already exists')
 

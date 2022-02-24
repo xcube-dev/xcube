@@ -20,7 +20,7 @@
 # SOFTWARE.
 
 from abc import abstractmethod, ABC
-from typing import Tuple
+from typing import Tuple, Optional
 
 import geopandas as gpd
 import pandas as pd
@@ -60,7 +60,7 @@ class GeoDataFrameFsDataAccessor(FsDataAccessor, ABC):
     def open_data(self, data_id: str, **open_params) -> gpd.GeoDataFrame:
         # TODO: implement me correctly,
         #  this is not valid for shapefile AND geojson
-        fs, open_params = self.load_fs(open_params)
+        fs, root, open_params = self.load_fs(open_params)
         is_local = is_local_fs(fs)
         if is_local:
             file_path = data_id
@@ -79,11 +79,14 @@ class GeoDataFrameFsDataAccessor(FsDataAccessor, ABC):
             ),
         )
 
-    def write_data(self, data: gpd.GeoDataFrame, data_id: str, **write_params):
+    def write_data(self,
+                   data: gpd.GeoDataFrame,
+                   data_id: str,
+                   **write_params):
         # TODO: implement me correctly,
         #  this is not valid for shapefile AND geojson
         assert_instance(data, (gpd.GeoDataFrame, pd.DataFrame), 'data')
-        fs, write_params = self.load_fs(write_params)
+        fs, root, write_params = self.load_fs(write_params)
         is_local = is_local_fs(fs)
         if is_local:
             file_path = data_id

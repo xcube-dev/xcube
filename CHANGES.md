@@ -2,6 +2,12 @@
 
 ### Enhancements
 
+* Introduced parameter `base_dataset_id` for writing multi-level 
+  datasets with the "file", "s3", and "memory" data stores. 
+  If given, the base dataset will be linked only with the 
+  value of `base_dataset_id`, instead of being copied as-is.
+  This can save large amounts of storage space. (#617)
+
 ### Fixes
 
 ### Other
