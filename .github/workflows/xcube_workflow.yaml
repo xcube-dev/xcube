@@ -8,7 +8,7 @@ on:
 env:
   APP_NAME: xcube
   ORG_NAME: bcdev
-  REG_NAME: quay.io
+  IMG_REG_NAME: quay.io
 
 jobs:
   unittest:
