@@ -2,6 +2,11 @@
 
 ### Enhancements
 
+* improved support for datasets with different resolutions in x- and y-
+  direction. These may now be described by DatasetDescriptors. 
+  Also, it is possible to set different resolutions in a `CubeConfig` for 
+  `xcube gen2`.  
+
 ### Fixes
 
 ### Other
