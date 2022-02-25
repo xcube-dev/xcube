@@ -4,6 +4,8 @@
 
 ### Fixes
 
+* Images with ascending y-values are tiled correctly.
+
 ### Other
 
 ## Changes in 0.10.1
