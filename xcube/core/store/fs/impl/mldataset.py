@@ -71,7 +71,7 @@ class MultiLevelDatasetLevelsFsDataAccessor(DatasetZarrFsDataAccessor):
                    data: Union[xr.Dataset, MultiLevelDataset],
                    data_id: str,
                    replace=False,
-                   **write_params):
+                   **write_params) -> str:
         assert_instance(data, (xr.Dataset, MultiLevelDataset), name='data')
         assert_instance(data_id, str, name='data_id')
         if isinstance(data, MultiLevelDataset):
@@ -108,6 +108,7 @@ class MultiLevelDatasetLevelsFsDataAccessor(DatasetZarrFsDataAccessor):
                 level_dataset = xr.open_zarr(zarr_store,
                                              consolidated=consolidated)
                 ml_dataset.set_dataset(index, level_dataset)
+        return data_id
 
 
 class FsMultiLevelDataset(LazyMultiLevelDataset):
@@ -139,7 +140,8 @@ class FsMultiLevelDataset(LazyMultiLevelDataset):
 
     def _get_tile_grid_lazily(self) -> TileGrid:
         """
-        Retrieve, i.e. read or compute, the tile grid used by the multi-level dataset.
+        Retrieve, i.e. read or compute, the tile grid used
+        by the multi-level dataset.
 
         :return: the dataset for the level at *index*.
         """
