@@ -4,6 +4,9 @@
 
 ### Fixes
 
+* Fixed `FsDataAccessor.write_data()` implementations, 
+  which now always return the passed in `data_id`. (#623)
+
 ### Other
 
 ## Changes in 0.10.1
