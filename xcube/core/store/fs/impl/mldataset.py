@@ -102,11 +102,14 @@ class MultiLevelDatasetLevelsFsDataAccessor(DatasetZarrFsDataAccessor):
             level_dataset = ml_dataset.get_dataset(index)
 
             if base_dataset_id and index == 0:
+                # Write file "0.link" instead of copying
+                # level-0 dataset to "0.zarr"
                 link_path = f'{data_id}/{index}.link'
                 fs.mkdirs(data_id, exist_ok=replace)
                 with fs.open(link_path, mode='w') as fp:
                     fp.write(base_dataset_id)
             else:
+                # Write level "{index}.zarr"
                 level_path = f'{data_id}/{index}.zarr'
                 zarr_store = fs.get_mapper(level_path, create=True)
                 try:
@@ -145,13 +148,18 @@ class FsMultiLevelDataset(LazyMultiLevelDataset):
 
         link_path = f'{self.ds_id}/{index}.link'
         if self._fs.isfile(link_path):
+            # If file "{index}.link" exists, we have a link to
+            # a level Zarr and open this instead,
             with self._fs.open(link_path, 'r') as fp:
                 level_path = fp.read()
             if self._root:
+                # If we have a root and level_path is relative
+                # make it absolute using root
                 is_abs = os.path.isabs(level_path) or '://' in level_path
                 if not is_abs:
                     level_path = f'{self._root}/{level_path}'
         else:
+            # Nominal "{index}.zarr" must exist
             level_path = f'{self.ds_id}/{index}.zarr'
 
         consolidated = open_params.pop(
