@@ -55,6 +55,7 @@ class FsDataStoresTestMixin(ABC):
     def test_mldataset_levels(self):
         data_store = self.create_data_store()
         self.assertMultiLevelDatasetFormatSupported(data_store)
+        self.assertMultiLevelDatasetFormatWithLinkSupported(data_store)
 
     def test_dataset_zarr(self):
         data_store = self.create_data_store()
@@ -74,18 +75,46 @@ class FsDataStoresTestMixin(ABC):
                                     MultiLevelDataset,
                                     MultiLevelDatasetDescriptor)
 
-        # Test that links work
-        base_dataset = new_cube(variables=dict(A=8, B=9))
-        base_dataset_id = f'{DATA_PATH}/base-ds.zarr'
-        data_store.write_data(base_dataset, base_dataset_id)
+        # Test that use_saved_levels works
         self.assertDatasetSupported(data_store,
                                     '.levels',
                                     'mldataset',
                                     MultiLevelDataset,
                                     MultiLevelDatasetDescriptor,
                                     write_params=dict(
-                                        base_dataset_id=base_dataset_id
+                                        use_saved_levels=True,
                                     ))
+
+    def assertMultiLevelDatasetFormatWithLinkSupported(
+            self,
+            data_store: MutableDataStore
+    ):
+        base_dataset = self.new_cube_data()
+        base_dataset_id = f'{DATA_PATH}/base-ds.zarr'
+        data_store.write_data(base_dataset, base_dataset_id)
+
+        # Test that base_dataset_id works
+        self.assertDatasetSupported(data_store,
+                                    '.levels',
+                                    'mldataset',
+                                    MultiLevelDataset,
+                                    MultiLevelDatasetDescriptor,
+                                    write_params=dict(
+                                        base_dataset_id=base_dataset_id,
+                                    ))
+
+        # Test that base_dataset_id + use_saved_levels works
+        self.assertDatasetSupported(data_store,
+                                    '.levels',
+                                    'mldataset',
+                                    MultiLevelDataset,
+                                    MultiLevelDatasetDescriptor,
+                                    write_params=dict(
+                                        base_dataset_id=base_dataset_id,
+                                        use_saved_levels=True,
+                                    ))
+
+        data_store.delete_data(base_dataset_id)
 
     def assertDatasetFormatSupported(self,
                                      data_store: MutableDataStore,
@@ -139,7 +168,7 @@ class FsDataStoresTestMixin(ABC):
         self.assertEqual(False, data_store.has_data(data_id))
         self.assertNotIn(data_id, set(data_store.get_data_ids()))
 
-        data = new_cube(variables=dict(A=8, B=9))
+        data = self.new_cube_data()
         data_store.write_data(data, data_id, **write_params)
         self.assertEqual({expected_data_type_alias},
                          set(data_store.get_data_types_for_data(data_id)))
@@ -165,6 +194,11 @@ class FsDataStoresTestMixin(ABC):
             data_store.get_data_types_for_data(data_id)
         self.assertEqual(False, data_store.has_data(data_id))
         self.assertNotIn(data_id, set(data_store.get_data_ids()))
+
+    @staticmethod
+    def new_cube_data():
+        cube = new_cube(variables=dict(A=8.5, B=9.5))
+        return cube.chunk(dict(time=1, lat=90, lon=180))
 
 
 class FileFsDataStoresTest(FsDataStoresTestMixin, unittest.TestCase):
