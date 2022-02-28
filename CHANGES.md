@@ -4,6 +4,10 @@
 
 ### Fixes
 
+* Images with ascending y-values are tiled correctly. This fixes an issue where
+  some datasets seemed to be shifted in the y-(latitude-) direction and were
+  misplaced on maps. (#626)
+
 ### Other
 
 * Replace the dependency on the rfc3339-validator PyPI package with a
