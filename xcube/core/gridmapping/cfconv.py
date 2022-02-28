@@ -22,8 +22,11 @@
 import warnings
 from typing import Optional, Dict, Any, Hashable, Union, Set, List, Tuple
 
+import numpy as np
 import pyproj
 import xarray as xr
+import zarr
+import zarr.convenience
 
 from xcube.core.schema import get_dataset_chunks
 
@@ -285,3 +288,38 @@ def _find_dataset_tile_size(dataset: xr.Dataset,
     if tile_width is not None and tile_height is not None:
         return tile_width, tile_height
     return None
+
+
+def add_spatial_ref(group_store: zarr.convenience.StoreLike,
+                    crs: pyproj.CRS,
+                    crs_var_name: Optional[str] = 'spatial_ref',
+                    xy_dim_names: Optional[Tuple[str, str]] = None):
+    """
+    Helper function that allows adding a spatial reference to an
+    existing Zarr dataset.
+
+    :param group_store: The dataset's existing Zarr store or path.
+    :param crs: The coordinate reference system.
+    :param crs_var_name: The name of the variable that will hold the
+        spatial reference. Defaults to "spatial_ref".
+    :param xy_dim_names: The names of the x and y dimensions.
+        Defaults to ("x", "y").
+    """
+    spatial_attrs = crs.to_cf()
+    spatial_attrs['_ARRAY_DIMENSIONS'] = []  # Required by xarray
+    group = zarr.open(group_store, mode='r+')
+    spatial_ref = group.array(crs_var_name,
+                              0,
+                              shape=(),
+                              dtype=np.uint8,
+                              fill_value=0)
+    spatial_ref.attrs.update(**spatial_attrs)
+
+    yx_dim_names = list(reversed(xy_dim_names or ('x', 'y')))
+    for item_name, item in group.items():
+        if item_name != crs_var_name:
+            dims = item.attrs.get('_ARRAY_DIMENSIONS')
+            if dims and len(dims) >= 2 and dims[-2:] == yx_dim_names:
+                item.attrs['grid_mapping'] = crs_var_name
+
+    zarr.convenience.consolidate_metadata(group_store)
