@@ -4,7 +4,9 @@
 
 ### Fixes
 
-* Images with ascending y-values are tiled correctly.
+* Images with ascending y-values are tiled correctly. This fixes an issue where
+  some datasets seemed to be shifted in the y-(latitude-) direction and where
+  misplaced on maps. (#626)
 
 ### Other
 
