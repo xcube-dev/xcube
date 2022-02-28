@@ -164,7 +164,6 @@ class DatasetZarrFsDataAccessor(DatasetFsDataAccessor, ABC):
 
     def open_data(self,
                   data_id: str,
-                  root: Optional[str] = None,
                   **open_params) -> xr.Dataset:
         assert_instance(data_id, str, name='data_id')
         fs, root, open_params = self.load_fs(open_params)
@@ -217,7 +216,6 @@ class DatasetZarrFsDataAccessor(DatasetFsDataAccessor, ABC):
 
     def delete_data(self,
                     data_id: str,
-                    root: Optional[str] = None,
                     **delete_params):
         fs, root, delete_params = self.load_fs(delete_params)
         delete_params.pop('recursive', None)

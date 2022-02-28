@@ -214,7 +214,6 @@ class FsMultiLevelDataset(LazyMultiLevelDataset):
         levels = []
         for dir_name in (os.path.basename(dir_path['name'])
                          for dir_path in fs.listdir(data_id, detail=True)):
-            print("_get_levels:", dir_name)
             # No ext, i.e. dir_name = "<level>", is proposed by
             # https://github.com/zarr-developers/zarr-specs/issues/50.
             # xcube already selected dir_name = "<level>.zarr".
