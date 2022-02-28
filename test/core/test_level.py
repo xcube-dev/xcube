@@ -5,8 +5,10 @@ import unittest
 import numpy as np
 import xarray as xr
 
-from xcube.core.level import compute_levels, write_levels, read_levels
 from xcube.core.dsio import rimraf
+from xcube.core.level import compute_levels
+from xcube.core.level import read_levels
+from xcube.core.level import write_levels
 
 
 def get_path(filename):
@@ -25,12 +27,15 @@ class PyramidTest(unittest.TestCase):
         if chunks:
             a.encoding.update(chunks=chunks, chunksizes=chunks)
             b.encoding.update(chunks=chunks, chunksizes=chunks)
-            return xr.Dataset(dict(a=a, b=b)).chunk(chunks={dims[i]: chunks[i] for i in range(len(dims))})
+            return xr.Dataset(dict(a=a, b=b)) \
+                .chunk(chunks={dims[i]: chunks[i]
+                               for i in range(len(dims))})
         else:
             return xr.Dataset(dict(a=a, b=b))
 
     def test_compute_levels(self):
-        dataset = self.create_test_dataset(shape=(5, 200, 400), chunks=(1, 25, 25))
+        dataset = self.create_test_dataset(shape=(5, 200, 400),
+                                           chunks=(1, 25, 25))
         levels = compute_levels(dataset)
         self._assert_levels_ok(levels,
                                expected_num_levels=4,
@@ -48,7 +53,8 @@ class PyramidTest(unittest.TestCase):
                                ])
 
     def test_compute_levels_with_max_levels(self):
-        dataset = self.create_test_dataset(shape=(5, 200, 400), chunks=(1, 25, 25))
+        dataset = self.create_test_dataset(shape=(5, 200, 400),
+                                           chunks=(1, 25, 25))
         levels = compute_levels(dataset, num_levels_max=3)
         self._assert_levels_ok(levels,
                                expected_num_levels=3,
@@ -79,7 +85,11 @@ class PyramidTest(unittest.TestCase):
             ((1,) * 5, (25,) * 2, (25,) * 4),
             ((1,) * 5, (25,) * 1, (25,) * 2),
         ]
-        self._assert_io_ok(shape, tile_shape, expected_num_levels, expected_shapes, expected_chunks)
+        self._assert_io_ok(shape,
+                           tile_shape,
+                           expected_num_levels,
+                           expected_shapes,
+                           expected_chunks)
 
     def test_write_read_levels_with_odd_sizes(self):
         shape = (5, 203, 405)
@@ -91,13 +101,28 @@ class PyramidTest(unittest.TestCase):
             (5, 51, 102),
         ]
         expected_chunks = [
-            ((1,) * 5, (37, 37, 37, 37, 37, 18), (38, 38, 38, 38, 38, 38, 38, 38, 38, 38, 25)),
-            ((1,) * 5, (37, 37, 28), (38, 38, 38, 38, 38, 13)),
-            ((1,) * 5, (37, 14), (38, 38, 26)),
+            ((1,) * 5,
+             (37, 37, 37, 37, 37, 18),
+             (38, 38, 38, 38, 38, 38, 38, 38, 38, 38, 25)),
+            ((1,) * 5,
+             (37, 37, 28),
+             (38, 38, 38, 38, 38, 13)),
+            ((1,) * 5,
+             (37, 14),
+             (38, 38, 26)),
         ]
-        self._assert_io_ok(shape, tile_shape, expected_num_levels, expected_shapes, expected_chunks)
+        self._assert_io_ok(shape,
+                           tile_shape,
+                           expected_num_levels,
+                           expected_shapes,
+                           expected_chunks)
 
-    def _assert_io_ok(self, shape, tile_shape, expected_num_levels, expected_shapes, expected_chunks):
+    def _assert_io_ok(self,
+                      shape,
+                      tile_shape,
+                      expected_num_levels,
+                      expected_shapes,
+                      expected_chunks):
 
         input_path = get_path("pyramid-input.nc")
         output_path = get_path("pyramid-output")
@@ -118,7 +143,10 @@ class PyramidTest(unittest.TestCase):
 
             print(f"write time total: ", time.perf_counter() - t0)
 
-            self._assert_levels_ok(levels, expected_num_levels, expected_shapes, expected_chunks)
+            self._assert_levels_ok(levels,
+                                   expected_num_levels,
+                                   expected_shapes,
+                                   expected_chunks)
 
             t0 = time.perf_counter()
 
@@ -126,13 +154,20 @@ class PyramidTest(unittest.TestCase):
 
             print(f"read time total: ", time.perf_counter() - t0)
 
-            self._assert_levels_ok(levels, expected_num_levels, expected_shapes, expected_chunks)
+            self._assert_levels_ok(levels,
+                                   expected_num_levels,
+                                   expected_shapes,
+                                   expected_chunks)
 
         finally:
             rimraf(input_path)
             rimraf(output_path)
 
-    def _assert_levels_ok(self, levels, expected_num_levels, expected_shapes, expected_chunks):
+    def _assert_levels_ok(self,
+                          levels,
+                          expected_num_levels,
+                          expected_shapes,
+                          expected_chunks):
         self.assertIsInstance(levels, list)
         self.assertEqual(expected_num_levels, len(levels))
 
@@ -145,10 +180,14 @@ class PyramidTest(unittest.TestCase):
 
         for i in range(expected_num_levels):
             msg = f"at index {i}"
-            self.assertEqual(expected_shapes[i], levels[i]["a"].shape, msg=msg)
-            self.assertEqual(expected_shapes[i], levels[i]["b"].shape, msg=msg)
+            self.assertEqual(expected_shapes[i], levels[i]["a"].shape,
+                             msg=msg)
+            self.assertEqual(expected_shapes[i], levels[i]["b"].shape,
+                             msg=msg)
 
         for i in range(expected_num_levels):
             msg = f"at index {i}"
-            self.assertEqual(expected_chunks[i], levels[i]["a"].chunks, msg=msg)
-            self.assertEqual(expected_chunks[i], levels[i]["b"].chunks, msg=msg)
+            self.assertEqual(expected_chunks[i], levels[i]["a"].chunks,
+                             msg=msg)
+            self.assertEqual(expected_chunks[i], levels[i]["b"].chunks,
+                             msg=msg)
