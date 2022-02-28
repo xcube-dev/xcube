@@ -100,9 +100,7 @@ class CubeOpener:
 
             except DataStoreError as dse:
                 tb = traceback.format_tb(dse.__traceback__)
-                raise CubeGeneratorError(f'{dse}',
-                                         status_code=400,
-                                         remote_traceback=tb)
+                raise CubeGeneratorError(f'{dse}', status_code=400)
 
             # Turn dataset into cube and grid_mapping
             try:

@@ -80,10 +80,7 @@ class CubeInformant:
             cube_config, resolved_crs, resolved_time_range = \
                  self._compute_effective_cube_config()
         except (TypeError, ValueError) as e:
-            tb = traceback.format_tb(e.__traceback__)
-            raise CubeGeneratorError(f'{e}',
-                                     status_code=400,
-                                     remote_traceback=tb)
+            raise CubeGeneratorError(f'{e}', status_code=400)
 
         x_min, y_min, x_max, y_max = cube_config.bbox
         spatial_res = cube_config.spatial_res
