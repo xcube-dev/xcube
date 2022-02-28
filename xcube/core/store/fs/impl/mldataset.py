@@ -25,6 +25,7 @@ from typing import Dict, Any, List, Union, Tuple, Optional
 import fsspec
 import xarray as xr
 
+from xcube.core.gridmapping import GridMapping
 from xcube.core.mldataset import BaseMultiLevelDataset
 from xcube.core.mldataset import LazyMultiLevelDataset
 from xcube.core.mldataset import MultiLevelDataset
@@ -32,6 +33,7 @@ from xcube.util.assertions import assert_instance
 from xcube.util.jsonschema import JsonBooleanSchema
 from xcube.util.jsonschema import JsonObjectSchema
 from xcube.util.jsonschema import JsonStringSchema
+from xcube.util.jsonschema import JsonIntegerSchema
 from xcube.util.tilegrid import TileGrid
 from .dataset import DatasetZarrFsDataAccessor
 from ...datatype import DATASET_TYPE
@@ -75,6 +77,10 @@ class MultiLevelDatasetLevelsFsDataAccessor(DatasetZarrFsDataAccessor):
                         ' is created whose content is the given base dataset'
                         ' identifier.',
         )
+        schema.properties['tile_size'] = JsonIntegerSchema(
+            description='Tile size to be used for all levels of the'
+                        ' written multi-level dataset.',
+        )
         return schema
 
     def write_data(self,
@@ -87,7 +93,15 @@ class MultiLevelDatasetLevelsFsDataAccessor(DatasetZarrFsDataAccessor):
         if isinstance(data, MultiLevelDataset):
             ml_dataset = data
         else:
-            ml_dataset = BaseMultiLevelDataset(data)
+            base_dataset: xr.Dataset = data
+            tile_size = write_params.pop('tile_size', None)
+            if tile_size:
+                assert_instance(tile_size, int, name='tile_size')
+                gm = GridMapping.from_dataset(base_dataset)
+                x_name, y_name = gm.xy_dim_names
+                base_dataset = base_dataset.chunk({x_name: tile_size,
+                                                   y_name: tile_size})
+            ml_dataset = BaseMultiLevelDataset(base_dataset)
         fs, root, write_params = self.load_fs(write_params)
         consolidated = write_params.pop('consolidated', True)
         use_saved_levels = write_params.pop('use_saved_levels', False)
