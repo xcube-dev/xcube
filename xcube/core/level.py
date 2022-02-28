@@ -1,3 +1,24 @@
+# The MIT License (MIT)
+# Copyright (c) 2022 by the xcube development team and contributors
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy of
+# this software and associated documentation files (the "Software"), to deal in
+# the Software without restriction, including without limitation the rights to
+# use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
+# of the Software, and to permit persons to whom the Software is furnished to do
+# so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
 import os
 from typing import List, Callable, Sequence, Optional, Tuple
 
@@ -8,44 +29,66 @@ from xcube.core.dsio import open_dataset
 PyramidLevelCallback = Callable[[xr.Dataset, int, int], Optional[xr.Dataset]]
 
 
-def compute_levels(dataset: xr.Dataset,
-                   spatial_dims: Tuple[str, str] = None,
-                   spatial_shape: Tuple[int, int] = None,
-                   spatial_tile_shape: Tuple[int, int] = None,
-                   var_names: Sequence[str] = None,
-                   num_levels_max: int = None,
-                   post_process_level: PyramidLevelCallback = None,
-                   progress_monitor: PyramidLevelCallback = None) -> List[xr.Dataset]:
+def compute_levels(
+        dataset: xr.Dataset,
+        spatial_dims: Tuple[str, str] = None,
+        spatial_shape: Tuple[int, int] = None,
+        spatial_tile_shape: Tuple[int, int] = None,
+        var_names: Sequence[str] = None,
+        num_levels_max: int = None,
+        post_process_level: PyramidLevelCallback = None,
+        progress_monitor: PyramidLevelCallback = None
+) -> List[xr.Dataset]:
     """
-    Transform the given *dataset* into the levels of a multi-level pyramid with spatial resolution
-    decreasing by a factor of two in both spatial dimensions.
+    Transform the given *dataset* into the levels of a multi-level
+    pyramid with spatial resolution decreasing by a factor of two
+    in both spatial dimensions.
 
-    It is assumed that the spatial dimensions of each variable are the inner-most, that is, the last two elements
-    of a variable's shape provide the spatial dimension sizes.
+    It is assumed that the spatial dimensions of each variable are
+    the inner-most, that is, the last two elements of a variable's
+    shape provide the spatial dimension sizes.
 
-    :param dataset: The input dataset to be turned into a multi-level pyramid.
-    :param spatial_dims: If given, only variables are considered whose last to dimension elements match the given *spatial_dims*.
-    :param spatial_shape: If given, only variables are considered whose last to shape elements match the given *spatial_shape*.
-    :param spatial_tile_shape: If given, chunking will match the provided *spatial_tile_shape*.
-    :param var_names: Variables to consider. If None, all variables with at least two dimensions are considered.
-    :param num_levels_max: If given, the maximum number of pyramid levels.
-    :param post_process_level: If given, the function will be called for each level and must return a dataset.
-    :param progress_monitor: If given, the function will be called for each level.
-    :return: A list of dataset instances representing the multi-level pyramid.
+    :param dataset: The input dataset to be turned into
+        a multi-level pyramid.
+    :param spatial_dims: If given, only variables are considered
+        whose last to dimension elements match the given *spatial_dims*.
+    :param spatial_shape: If given, only variables are
+        considered whose last to shape elements match the
+        given *spatial_shape*.
+    :param spatial_tile_shape: If given, chunking will match the
+        provided *spatial_tile_shape*.
+    :param var_names: Variables to consider. If None, all variables
+        with at least two dimensions are considered.
+    :param num_levels_max: If given, the maximum number
+        of pyramid levels.
+    :param post_process_level: If given, the function will be
+        called for each level and must return a dataset.
+    :param progress_monitor: If given, the function will be
+        called for each level.
+    :return: A list of dataset instances representing
+        the multi-level pyramid.
     """
-    dropped_vars, spatial_shape, spatial_tile_shape = _filter_level_source_dataset(dataset, var_names, spatial_dims,
-                                                                                   spatial_shape, spatial_tile_shape)
+    dropped_vars, spatial_shape, spatial_tile_shape = \
+        _filter_level_source_dataset(dataset, var_names, spatial_dims,
+                                     spatial_shape, spatial_tile_shape)
     if dropped_vars:
-        dataset = dataset.drop(dropped_vars)
+        dataset = dataset.drop_vars(dropped_vars)
 
     if not tuple(dataset.data_vars):
-        raise ValueError("cannot compute pyramid levels because no suitable data variables were found")
+        raise ValueError(
+            "cannot compute pyramid levels because "
+            "no suitable data variables were found"
+        )
 
     if spatial_tile_shape is None:
-        spatial_tile_shape = min(spatial_shape[0], 512), min(spatial_shape[1], 512)
+        tile_w = min(spatial_shape[0], 512)
+        tile_h = min(spatial_shape[1], 512)
+        spatial_tile_shape = tile_w, tile_h
 
     # Count num_levels
-    level_shapes = _compute_level_shapes(spatial_shape, spatial_tile_shape, num_levels_max=num_levels_max)
+    level_shapes = _compute_level_shapes(spatial_shape,
+                                         spatial_tile_shape,
+                                         num_levels_max=num_levels_max)
     num_levels = len(level_shapes)
 
     # Compute levels
@@ -57,24 +100,34 @@ def compute_levels(dataset: xr.Dataset,
             downsampled_vars = {}
             for var_name in level_dataset.data_vars:
                 var = level_dataset.data_vars[var_name]
-                # For time being, we use the simplest and likely fastest downsampling I can think of
+                # For time being, we use the simplest and
+                # likely fastest downsampling I can think of
                 downsampled_var = var[..., ::2, ::2]
                 if downsampled_var.shape[-2:] != level_shapes[level]:
                     import warnings
-                    warnings.warn(f"unexpected spatial shape for down-sampled variable {var_name!r}:"
-                                  f" expected {level_shapes[level]}, but found {downsampled_var.shape[-2:]}")
+                    warnings.warn(
+                        f"unexpected spatial shape for down-sampled"
+                        f" variable {var_name!r}:"
+                        f" expected {level_shapes[level]},"
+                        f" but found {downsampled_var.shape[-2:]}"
+                    )
                 downsampled_vars[var_name] = downsampled_var
-            level_dataset = xr.Dataset(downsampled_vars, attrs=level_dataset.attrs)
+            level_dataset = xr.Dataset(downsampled_vars,
+                                       attrs=level_dataset.attrs)
 
-        level_dataset = _tile_level_dataset(level_dataset, spatial_tile_shape)
+        level_dataset = _tile_level_dataset(level_dataset,
+                                            spatial_tile_shape)
 
         # Apply post processor, if any
         if post_process_level is not None:
-            level_dataset = post_process_level(level_dataset, len(level_datasets), num_levels)
+            level_dataset = post_process_level(level_dataset,
+                                               len(level_datasets),
+                                               num_levels)
 
         # Inform progress monitor, if any
         if progress_monitor is not None:
-            progress_monitor(level_dataset, len(level_datasets), num_levels)
+            progress_monitor(level_dataset, len(level_datasets),
+                             num_levels)
 
         # Collect level dataset
         level_datasets.append(level_dataset)
@@ -89,31 +142,43 @@ def write_levels(output_path: str,
                  progress_monitor: PyramidLevelCallback = None,
                  **kwargs) -> List[xr.Dataset]:
     """
-    Transform the given dataset given by a *dataset* instance or *input_path* string
-    into the levels of a multi-level pyramid with spatial resolution
-    decreasing by a factor of two in both spatial dimensions and write them to *output_path*.
+    Transform the given dataset given by a *dataset* instance
+    or *input_path* string into the levels of a multi-level pyramid
+    with spatial resolution decreasing by a factor of two in both
+    spatial dimensions and write them to *output_path*.
 
     One of *dataset* and *input_path* must be given.
 
     :param output_path: Output path
     :param dataset: Dataset to be converted and written as levels.
-    :param input_path: Input path to a dataset to be transformed and written as levels.
-    :param link_input: Just link the dataset at level zero instead of writing it.
+    :param input_path: Input path to a dataset to be transformed
+        and written as levels.
+    :param link_input: Just link the dataset at level zero
+        instead of writing it.
     :param progress_monitor: An optional progress monitor.
-    :param kwargs: Keyword-arguments accepted by the ``compute_levels()`` function.
-    :return: A list of dataset instances representing the multi-level pyramid.
+    :param kwargs: Keyword-arguments accepted by the
+        ``compute_levels()`` function.
+    :return: A list of dataset instances representing
+        the multi-level pyramid.
     """
     if dataset is None and input_path is None:
-        raise ValueError("at least one of dataset or input_path must be given")
+        raise ValueError(
+            "at least one of dataset or input_path must be given"
+        )
 
     if link_input and input_path is None:
-        raise ValueError("input_path must be provided to link input")
+        raise ValueError(
+            "input_path must be provided to link input"
+        )
 
-    _post_process_level = kwargs.pop("post_process_level") if "post_process_level" in kwargs else None
+    _post_process_level = kwargs.pop("post_process_level") \
+        if "post_process_level" in kwargs else None
 
     def post_process_level(level_dataset, index, num_levels):
         if _post_process_level is not None:
-            level_dataset = _post_process_level(level_dataset, index, num_levels)
+            level_dataset = _post_process_level(level_dataset,
+                                                index,
+                                                num_levels)
 
         if index == 0 and link_input:
             with open(os.path.join(output_path, f"{index}.link"), "w") as fp:
@@ -135,18 +200,23 @@ def write_levels(output_path: str,
     if dataset is None:
         dataset = open_dataset(input_path)
 
-    return compute_levels(dataset, post_process_level=post_process_level, **kwargs)
+    return compute_levels(dataset,
+                          post_process_level=post_process_level,
+                          **kwargs)
 
 
-def read_levels(dir_path: str,
-                progress_monitor: PyramidLevelCallback = None) -> List[xr.Dataset]:
+def read_levels(
+        dir_path: str,
+        progress_monitor: PyramidLevelCallback = None
+) -> List[xr.Dataset]:
     """
     Read the of a multi-level pyramid with spatial resolution
     decreasing by a factor of two in both spatial dimensions.
 
     :param dir_path: The directory path.
     :param progress_monitor: An optional progress monitor.
-    :return: A list of dataset instances representing the multi-level pyramid.
+    :return: A list of dataset instances representing
+        the multi-level pyramid.
     """
     file_paths = os.listdir(dir_path)
     level_paths = {}
@@ -164,7 +234,8 @@ def read_levels(dir_path: str,
 
     if num_levels != len(level_paths):
         raise ValueError(f"Inconsistent pyramid directory:"
-                         f" expected {num_levels} but found {len(level_paths)} entries:"
+                         f" expected {num_levels} but found"
+                         f" {len(level_paths)} entries:"
                          f" {dir_path}")
 
     levels = []
@@ -199,15 +270,20 @@ def _tile_level_dataset(level_dataset, spatial_tile_shape):
     for var_name in level_dataset.data_vars:
         var = level_dataset.data_vars[var_name]
         height, width = var.shape[-2:]
-        zarr_chunks = (1,) * (var.ndim - 2) + (tile_height,) + (tile_width,)
-        dask_chunks = (1,) * (var.ndim - 2) + (_tile_chunk(height, tile_height),) + (_tile_chunk(width, tile_width),)
+        zarr_chunks = (1,) * (var.ndim - 2) + (
+            tile_height, tile_width
+        )
+        dask_chunks = (1,) * (var.ndim - 2) + (
+            _tile_chunk(height, tile_height), _tile_chunk(width, tile_width)
+        )
         dask_chunks = {var.dims[i]: dask_chunks[i] for i in range(var.ndim)}
         chunked_var = var.chunk(chunks=dask_chunks)
         chunked_var.encoding.update(chunks=zarr_chunks)
         chunked_vars[var_name] = chunked_var
 
     # Make coordinate variable chunks equal to their shape
-    # TODO (forman): find out if chunking the spatial coordinates according to tile size improves performance
+    # TODO (forman): find out if chunking the spatial coordinates
+    #  according to tile size improves performance
     for var_name in level_dataset.coords:
         var = level_dataset.coords[var_name]
         zarr_chunks = var.shape
@@ -219,7 +295,11 @@ def _tile_level_dataset(level_dataset, spatial_tile_shape):
     return level_dataset.assign(variables=chunked_vars)
 
 
-def _compute_level_shapes(spatial_shape, spatial_tile_shape, num_levels_max=None) -> List[Tuple[int, int]]:
+def _compute_level_shapes(
+        spatial_shape,
+        spatial_tile_shape,
+        num_levels_max=None
+) -> List[Tuple[int, int]]:
     height, width = spatial_shape
     tile_height, tile_width = spatial_tile_shape
     num_levels_max = num_levels_max or -1
@@ -227,7 +307,9 @@ def _compute_level_shapes(spatial_shape, spatial_tile_shape, num_levels_max=None
     while True:
         width = (width + 1) // 2
         height = (height + 1) // 2
-        if width < tile_width or height < tile_height or num_levels_max == len(level_shapes):
+        if width < tile_width \
+                or height < tile_height \
+                or num_levels_max == len(level_shapes):
             break
         level_shapes.append((height, width))
     return level_shapes
@@ -245,7 +327,8 @@ def _filter_level_source_dataset(dataset,
         var_names = set(dataset.data_vars)
         dropped_vars = []
 
-    # Collect data variables to be dropped, derive missing information from spatial data variables
+    # Collect data variables to be dropped,
+    # derive missing information from spatial data variables
     for var_name in var_names:
 
         if var_name not in dataset.data_vars:

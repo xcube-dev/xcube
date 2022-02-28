@@ -6,6 +6,11 @@
 
 ### Other
 
+* Replace the dependency on the rfc3339-validator PyPI package with a
+  dependency on its recently created conda-forge package.
+
+* Remove unneeded dependency on the no longer used strict-rfc3339 package.
+
 ## Changes in 0.10.1
 
 ### Fixes
