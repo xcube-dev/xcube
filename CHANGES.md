@@ -2,6 +2,11 @@
 
 ### Enhancements
 
+* Introduced helper function `add_spatial_ref()`
+  of package `xcube.core.gridmapping` that allows subsequently 
+  adding a missing spatial coordinate reference system to an existing  
+  Zarr dataset. (#629)
+
 * Introduced parameter `base_dataset_id` for writing multi-level 
   datasets with the "file", "s3", and "memory" data stores. 
   If given, the base dataset will be linked only with the 
