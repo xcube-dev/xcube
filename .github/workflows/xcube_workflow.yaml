@@ -5,6 +5,11 @@ on:
   release:
     types: [published]
 
+env:
+  APP_NAME: xcube
+  ORG_NAME: bcdev
+  IMG_REG_NAME: quay.io
+
 jobs:
   unittest:
     runs-on: ubuntu-latest
@@ -38,17 +43,14 @@ jobs:
           verbose: true # optional (default = false)
   build-docker-image:
     runs-on: ubuntu-latest
-    # Only run if unittests succeed
-    needs: unittest
     # Build the docker image and push to quay.io
     name: build-docker-image
-    env:
-      APP_NAME: xcube
-      ORG_NAME: bcdev
+    # Only run if unittests succeed
+    needs: unittest
     steps:
       - name: git-checkout
         uses: actions/checkout@v2
-      # Strip the release tag from refs
+      # Determine release tag from git ref
       - name: get-release-tag
         id: release
         run: echo ::set-output name=tag::${GITHUB_REF#refs/*/}
@@ -65,9 +67,9 @@ jobs:
         with:
           image: ${{ env.ORG_NAME }}/${{ env.APP_NAME }}
           tags: master, latest
-          registry: quay.io
-          username: ${{ secrets.QUAY_DOCKER_REPO_USERNAME }}
-          password: ${{ secrets.QUAY_DOCKER_REPO_PASSWORD }}
+          registry: ${{ env.IMG_REG_NAME }}
+          username: ${{ secrets.IMG_REG_USERNAME }}
+          password: ${{ secrets.IMG_REG_PASSWORD }}
       # Build and push docker release to quay.io when the event is a 'release'
       - uses: mr-smithers-excellent/docker-build-push@v5
         name: build-push-docker-image-release
@@ -75,16 +77,13 @@ jobs:
         with:
           image: ${{ env.ORG_NAME }}/${{ env.APP_NAME }}
           tags: ${{ steps.release.outputs.tag }}
-          registry: quay.io
-          username: ${{ secrets.QUAY_DOCKER_REPO_USERNAME }}
-          password: ${{ secrets.QUAY_DOCKER_REPO_PASSWORD }}
+          registry: ${{ env.IMG_REG_NAME }}
+          username: ${{ secrets.IMG_REG_USERNAME }}
+          password: ${{ secrets.IMG_REG_PASSWORD }}
   update-version:
-    env:
-      PUSH: 0
-      APP_NAME: xcube
     runs-on: ubuntu-latest
     needs: build-docker-image
-    name: update-tag
+    name: update-xcube-tag
     steps:
       - name: git-checkout
         uses: actions/checkout@v2
@@ -105,7 +104,7 @@ jobs:
       - name: get-hash
         id: get-hash
         run: |
-          HASH=$(skopeo inspect docker://quay.io/bcdev/${{ env.APP_NAME }}:${{ steps.release.outputs.tag }} | jq '.Digest')
+          HASH=$(skopeo inspect docker://${{ env.IMG_REG_NAME }}/${{ env.ORG_NAME }}/${{ env.APP_NAME }}:${{ steps.release.outputs.tag }} | jq '.Digest')
           if [[ "$HASH" == *"sha256"* ]]; then
             echo ::set-output name=hash::$HASH
           else
@@ -128,13 +127,34 @@ jobs:
           delimiter: ' '
           tag: ${{ steps.deployment-phase.outputs.tag }}
           hash: ${{ steps.get-hash.outputs.hash }}
-          working-directory: "./k8s/xcube-gen/helm"
+          working-directory: ./k8s/xcube-gen/helm
       - name: cat-result
-        working-directory: "./k8s/xcube-gen/helm"
+        working-directory: ./k8s/xcube-gen/helm
         run: |
           head values-dev.yaml
           head values-stage.yaml
           head values-prod.yaml
+            # Update the xcube viewer app version tag in k8s-configs/xcube-viewer-app
+      - name: set-version-tag-xcube-viewer-app
+        uses: bc-org/gha-update-application-version-tags@main
+        with:
+          app: xcube
+          phase: ${{ steps.deployment-phase.outputs.phase }}
+          delimiter: ' '
+          tag: ${{ steps.deployment-phase.outputs.tag }}
+          hash: ${{ steps.get-hash.outputs.hash }}
+          working-directory: ./k8s/xcube-viewer-app/xcube-api
+          prefix: values-*
+      # Check results
+      - name: cat-result
+        working-directory: ./k8s/xcube-viewer-app/xcube-api
+        run: |
+          echo "----------------DEV-------------------"
+          head values-*-dev.yaml
+          echo "----------------STAGE-----------------"
+          head values-*-stage.yaml
+          echo "----------------PROD------------------"
+          head values-*-prod.yaml
       - name: Pushes to another repository
         # Don't run if run locally and should be ignored
         if: ${{ steps.deployment-phase.outputs.phase != 'ignore' && !env.ACT }}
@@ -147,4 +167,4 @@ jobs:
           destination-repository-name: 'k8s-configs'
           user-email: bcdev@brockmann-consult.de
           target-branch: main
-          commit-message: ${{ github.event.release }}. Set version to ${{ steps.release.outputs.tag }}
+          commit-message: ${{ github.event.release }}. Set version to ${{ steps.release.outputs.tag }} and ${{ steps.release.outputs.hash }}
