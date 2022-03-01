@@ -21,7 +21,7 @@
 
 import copy
 from abc import ABC, abstractmethod
-from typing import Dict, Any, Tuple
+from typing import Dict, Any, Tuple, Optional
 
 import fsspec
 
@@ -52,6 +52,7 @@ COMMON_STORAGE_OPTIONS_SCHEMA_PROPERTIES = dict(
 PROTOCOL_PARAM_NAME = 'protocol'
 STORAGE_OPTIONS_PARAM_NAME = 'storage_options'
 FS_PARAM_NAME = 'fs'
+ROOT_PARAM_NAME = 'root'
 
 
 class FsAccessor:
@@ -74,7 +75,9 @@ class FsAccessor:
 
     @classmethod
     def load_fs(cls, params: Dict[str, Any]) \
-            -> Tuple[fsspec.AbstractFileSystem, Dict[str, Any]]:
+            -> Tuple[fsspec.AbstractFileSystem,
+                     Optional[str],
+                     Dict[str, Any]]:
         """
         Load a filesystem instance from *params*.
 
@@ -85,17 +88,21 @@ class FsAccessor:
 
         :param params: Parameters passed to a filesystem
             data store, opener, or writer call.
-        :return: A tuple comprising the filesystem
+        :return: A tuple comprising the filesystem, an optional root path,
             and the modified *params*.
         """
         params = dict(params)
 
-        # Filesystem data stores pass "fs" kwarg to
+        # Filesystem data-stores pass "fs" and "root" kwargs to
         # data opener and writer calls.
         fs = params.pop(FS_PARAM_NAME, None)
+        root = params.pop(ROOT_PARAM_NAME, None)
         if fs is not None:
             assert_instance(fs, fsspec.AbstractFileSystem, name=FS_PARAM_NAME)
-            return fs, params
+        if root is not None:
+            assert_instance(root, str, name=ROOT_PARAM_NAME)
+        if fs:
+            return fs, root, params
 
         protocol = cls.get_protocol()
         if protocol == 'abstract':
@@ -117,9 +124,13 @@ class FsAccessor:
                  if storage_options else False)
 
         try:
-            return fsspec.filesystem(protocol,
-                                     use_listings_cache=use_listings_cache,
-                                     **(storage_options or {})), params
+            return (
+                fsspec.filesystem(protocol,
+                                  use_listings_cache=use_listings_cache,
+                                  **(storage_options or {})),
+                root,
+                params
+            )
         except (ValueError, ImportError):
             raise DataStoreError(f"Cannot instantiate"
                                  f" filesystem {protocol!r}")
@@ -189,5 +200,5 @@ class FsDataAccessor(DataOpener,
     def delete_data(self,
                     data_id: str,
                     **delete_params):
-        fs, delete_params = self.load_fs(delete_params)
+        fs, _, delete_params = self.load_fs(delete_params)
         fs.delete(data_id, **delete_params)

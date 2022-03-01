@@ -2,7 +2,21 @@
 
 ### Enhancements
 
+* Introduced parameter `base_dataset_id` for writing multi-level 
+  datasets with the "file", "s3", and "memory" data stores. 
+  If given, the base dataset will be linked only with the 
+  value of `base_dataset_id`, instead of being copied as-is.
+  This can save large amounts of storage space. (#617)
+
 ### Fixes
+
+* Fixed `FsDataAccessor.write_data()` implementations, 
+  which now always return the passed in `data_id`. (#623)
+
+* Fixes an issue where some datasets seemed to be shifted in the 
+  y-(latitude-) direction and were misplaced on maps whose tiles 
+  are served by `xcube serve`. Images with ascending y-values are 
+  now tiled correctly. (#626)
 
 ### Other
 

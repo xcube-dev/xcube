@@ -34,13 +34,14 @@ from xcube.core.mldataset import MultiLevelDataset
 from xcube.util.assertions import assert_given
 from xcube.util.assertions import assert_in
 from xcube.util.assertions import assert_instance
+from xcube.util.assertions import assert_true
 from xcube.util.extension import Extension
 from xcube.util.jsonschema import JsonBooleanSchema
 from xcube.util.jsonschema import JsonIntegerSchema
 from xcube.util.jsonschema import JsonObjectSchema
 from xcube.util.jsonschema import JsonStringSchema
-from .accessor import STORAGE_OPTIONS_PARAM_NAME
 from .accessor import FsAccessor
+from .accessor import STORAGE_OPTIONS_PARAM_NAME
 from .helpers import is_local_fs
 from .helpers import normalize_path
 from ..accessor import DataOpener
@@ -261,7 +262,10 @@ class BaseFsDataStore(DefaultSearchMixin, MutableDataStore):
                             name='open_params',
                             schema=open_params_schema)
         fs_path = self._convert_data_id_into_fs_path(data_id)
-        return opener.open_data(fs_path, fs=self.fs, **open_params)
+        return opener.open_data(fs_path,
+                                fs=self.fs,
+                                root=self.root,
+                                **open_params)
 
     def get_data_writer_ids(self, data_type: str = None) \
             -> Tuple[str, ...]:
@@ -296,11 +300,23 @@ class BaseFsDataStore(DefaultSearchMixin, MutableDataStore):
         data_id = self._ensure_valid_data_id(writer_id, data_id=data_id)
         fs_path = self._convert_data_id_into_fs_path(data_id)
         self.fs.makedirs(self.root, exist_ok=True)
-        writer.write_data(data,
-                          fs_path,
-                          replace=replace,
-                          fs=self.fs,
-                          **write_params)
+        written_fs_path = writer.write_data(data,
+                                            fs_path,
+                                            replace=replace,
+                                            fs=self.fs,
+                                            root=self.root,
+                                            **write_params)
+        # Verify, accessors fulfill their write_data() contract
+        assert_true(fs_path == written_fs_path,
+                    message='FsDataAccessor implementations must '
+                            'return the data_id passed in.')
+        # Return original data_id (which is a relative path).
+        # Note: it would be cleaner to return written_fs_path
+        # here, but it is an absolute path.
+        # --> Possible solution: FsDataAccessor implementations
+        # should be responsible for resolving their data_id into a
+        # filesystem path by providing them both with fs and root
+        # arguments.
         return data_id
 
     def get_delete_data_params_schema(self, data_id: str = None) \
@@ -320,6 +336,7 @@ class BaseFsDataStore(DefaultSearchMixin, MutableDataStore):
         fs_path = self._convert_data_id_into_fs_path(data_id)
         writer.delete_data(fs_path,
                            fs=self.fs,
+                           root=self.root,
                            **delete_params)
 
     def register_data(self, data_id: str, data: Any):
@@ -642,7 +659,7 @@ class FsDataStore(BaseFsDataStore, FsAccessor):
 
     def _load_fs(self) -> fsspec.AbstractFileSystem:
         # Note, this is invoked only once per store instance.
-        fs, _ = self.load_fs(
+        fs, _, _ = self.load_fs(
             {STORAGE_OPTIONS_PARAM_NAME: self._storage_options}
         )
         return fs
