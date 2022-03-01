@@ -18,6 +18,7 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+
 import os.path
 from typing import Dict, Any, List, Union, Tuple, Optional
 
@@ -80,7 +81,7 @@ class MultiLevelDatasetLevelsFsDataAccessor(DatasetZarrFsDataAccessor):
                    data: Union[xr.Dataset, MultiLevelDataset],
                    data_id: str,
                    replace: bool = False,
-                   **write_params):
+                   **write_params) -> str:
         assert_instance(data, (xr.Dataset, MultiLevelDataset), name='data')
         assert_instance(data_id, str, name='data_id')
         if isinstance(data, MultiLevelDataset):
@@ -100,7 +101,6 @@ class MultiLevelDatasetLevelsFsDataAccessor(DatasetZarrFsDataAccessor):
 
         for index in range(ml_dataset.num_levels):
             level_dataset = ml_dataset.get_dataset(index)
-
             if base_dataset_id and index == 0:
                 # Write file "0.link" instead of copying
                 # level-0 dataset to "0.zarr"
@@ -127,6 +127,9 @@ class MultiLevelDatasetLevelsFsDataAccessor(DatasetZarrFsDataAccessor):
                     level_dataset = xr.open_zarr(zarr_store,
                                                  consolidated=consolidated)
                     ml_dataset.set_dataset(index, level_dataset)
+
+        return data_id
+
 
 
 class FsMultiLevelDataset(LazyMultiLevelDataset):

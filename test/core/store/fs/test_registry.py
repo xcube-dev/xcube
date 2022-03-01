@@ -169,7 +169,9 @@ class FsDataStoresTestMixin(ABC):
         self.assertNotIn(data_id, set(data_store.get_data_ids()))
 
         data = self.new_cube_data()
-        data_store.write_data(data, data_id, **write_params)
+        written_data_id = data_store.write_data(data, data_id, **write_params)
+        self.assertEqual(data_id, written_data_id)
+
         self.assertEqual({expected_data_type_alias},
                          set(data_store.get_data_types_for_data(data_id)))
         self.assertEqual(True, data_store.has_data(data_id))

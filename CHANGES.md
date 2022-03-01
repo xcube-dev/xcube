@@ -10,7 +10,20 @@
 
 ### Fixes
 
+* Fixed `FsDataAccessor.write_data()` implementations, 
+  which now always return the passed in `data_id`. (#623)
+
+* Fixes an issue where some datasets seemed to be shifted in the 
+  y-(latitude-) direction and were misplaced on maps whose tiles 
+  are served by `xcube serve`. Images with ascending y-values are 
+  now tiled correctly. (#626)
+
 ### Other
+
+* Replace the dependency on the rfc3339-validator PyPI package with a
+  dependency on its recently created conda-forge package.
+
+* Remove unneeded dependency on the no longer used strict-rfc3339 package.
 
 ## Changes in 0.10.1
 
