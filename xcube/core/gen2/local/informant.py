@@ -80,12 +80,12 @@ class CubeInformant:
         x_min, y_min, x_max, y_max = cube_config.bbox
         spatial_res = cube_config.spatial_res
 
-        if isinstance(spatial_res, tuple):
-            width = round((x_max - x_min) / spatial_res[0])
-            height = round((y_max - y_min) / spatial_res[1])
-        else:
-            width = round((x_max - x_min) / spatial_res)
-            height = round((y_max - y_min) / spatial_res)
+        try:
+            spatial_res_x, spatial_res_y = spatial_res
+        except TypeError:
+            spatial_res_x, spatial_res_y = spatial_res, spatial_res
+        width = round((x_max - x_min) / spatial_res_x)
+        height = round((y_max - y_min) / spatial_res_y)
         width = 2 if width < 2 else width
         height = 2 if height < 2 else height
 
