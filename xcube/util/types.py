@@ -35,7 +35,7 @@ def normalize_number_scalar_or_pair(
     if isinstance(value, (float, int)):
         x, y = value, value
         return t(x), t(y)
-    elif isinstance(value, tuple) and len(value) == 2:
+    elif len(value) == 2:
         x, y = value
         return t(x), t(y)
     else:

@@ -66,7 +66,7 @@ class CubeConfigTest(unittest.TestCase):
         self.assertEqual(('B03', 'B04'), cube_config.variable_names)
         self.assertEqual('WGS84', cube_config.crs)
         self.assertEqual((12.2, 52.1, 13.9, 54.8), cube_config.bbox)
-        self.assertEqual(0.05, cube_config.spatial_res)
+        self.assertEqual((0.05, 0.05), cube_config.spatial_res)
         self.assertEqual(('2018-01-01', None), cube_config.time_range)
         self.assertEqual('4D', cube_config.time_period)
         self.assertEqual(dict(title='S2L2A subset'),

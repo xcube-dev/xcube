@@ -86,7 +86,7 @@ class InformantTest(unittest.TestCase):
         self.assertEqual((-180.0, -90.0, 180.0, 90.0),
                          effective_cube_config.bbox)
         self.assertEqual('EPSG:6931', effective_cube_config.crs)
-        self.assertEqual(1.0, effective_cube_config.spatial_res)
+        self.assertEqual((1.0, 1.0), effective_cube_config.spatial_res)
         self.assertEqual('1D', effective_cube_config.time_period)
         self.assertEqual(('2010-01-01', '2010-12-31'),
                          effective_cube_config.time_range)

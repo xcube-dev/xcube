@@ -37,6 +37,7 @@ from xcube.util.jsonschema import JsonNumberSchema
 from xcube.util.jsonschema import JsonObject
 from xcube.util.jsonschema import JsonObjectSchema
 from xcube.util.jsonschema import JsonStringSchema
+from xcube.util.types import normalize_number_scalar_or_pair
 
 
 class InputConfig(JsonObject):
@@ -168,19 +169,10 @@ class CubeConfig(JsonObject):
 
         self.spatial_res = None
         if spatial_res is not None:
-            assert_instance(spatial_res, (numbers.Number, tuple), 'spatial_res')
-            if isinstance(spatial_res, tuple):
-                assert_true(len(spatial_res) == 2,
-                            'spatial_res must hold exactly two values when '
-                            'given as tuple')
-                assert_instance(spatial_res[0], numbers.Number, 'spatial_res')
-                assert_true(spatial_res[0] > 0, 'spatial_res must be positive')
-                assert_instance(spatial_res[1], numbers.Number, 'spatial_res')
-                assert_true(spatial_res[1] > 0, 'spatial_res must be positive')
-                self.spatial_res = float(spatial_res[0]), float(spatial_res[1])
-            else:
-                assert_true(spatial_res > 0, 'spatial_res must be positive')
-                self.spatial_res = float(spatial_res)
+            spatial_res = normalize_number_scalar_or_pair(spatial_res, float)
+            assert_true(spatial_res[0] > 0, 'spatial_res must be positive')
+            assert_true(spatial_res[1] > 0, 'spatial_res must be positive')
+            self.spatial_res = spatial_res
 
         self.tile_size = None
         if tile_size is not None:

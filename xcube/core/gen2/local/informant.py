@@ -31,7 +31,7 @@ from xcube.core.store import DataStorePool
 from xcube.core.store import DatasetDescriptor
 from xcube.core.store import VariableDescriptor
 from xcube.util.assertions import assert_instance
-from xcube.util.assertions import assert_true
+from xcube.util.types import normalize_number_scalar_or_pair
 from .describer import DatasetsDescriber
 from ..config import CubeConfig
 from ..request import CubeGeneratorRequest
@@ -211,17 +211,9 @@ class CubeInformant:
         spatial_res = cube_config.spatial_res
         if spatial_res is None:
             spatial_res = self.first_input_dataset_descriptor.spatial_res
-        assert_instance(spatial_res, (numbers.Number, tuple), 'spatial_res')
-        if isinstance(spatial_res, tuple):
-            assert_true(len(spatial_res) == 2,
-                        'spatial_res must hold exactly two values when given '
-                        'as tuple')
-            assert_instance(spatial_res[0], numbers.Number, 'spatial_res')
-            assert_instance(spatial_res[1], numbers.Number, 'spatial_res')
-            assert_true(spatial_res[0] > 0, 'spatial_res must be positive')
-            assert_true(spatial_res[1] > 0, 'spatial_res must be positive')
-        else:
-            assert_true(spatial_res > 0, 'spatial_res must be positive')
+        spatial_res = normalize_number_scalar_or_pair(spatial_res, float)
+        assert_instance(spatial_res[0], numbers.Number, 'spatial_res')
+        assert_instance(spatial_res[1], numbers.Number, 'spatial_res')
 
         tile_size = cube_config.tile_size
         if tile_size is not None:
