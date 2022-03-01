@@ -79,7 +79,10 @@ class GeoDataFrameFsDataAccessor(FsDataAccessor, ABC):
             ),
         )
 
-    def write_data(self, data: gpd.GeoDataFrame, data_id: str, **write_params):
+    def write_data(self,
+                   data: gpd.GeoDataFrame,
+                   data_id: str,
+                   **write_params) -> str:
         # TODO: implement me correctly,
         #  this is not valid for shapefile AND geojson
         assert_instance(data, (gpd.GeoDataFrame, pd.DataFrame), 'data')
@@ -92,6 +95,7 @@ class GeoDataFrameFsDataAccessor(FsDataAccessor, ABC):
         data.to_file(file_path, driver=self.get_driver_name(), **write_params)
         if not is_local:
             fs.put_file(file_path, data_id)
+        return data_id
 
 
 class GeoDataFrameShapefileFsDataAccessor(GeoDataFrameFsDataAccessor, ABC):

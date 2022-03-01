@@ -191,7 +191,7 @@ class DatasetZarrFsDataAccessor(DatasetFsDataAccessor, ABC):
                    data: xr.Dataset,
                    data_id: str,
                    replace=False,
-                   **write_params):
+                   **write_params) -> str:
         assert_instance(data, xr.Dataset, name='data')
         assert_instance(data_id, str, name='data_id')
         fs, write_params = self.load_fs(write_params)
@@ -209,6 +209,7 @@ class DatasetZarrFsDataAccessor(DatasetFsDataAccessor, ABC):
         except ValueError as e:
             raise DataStoreError(f'Failed to write'
                                  f' dataset {data_id!r}: {e}') from e
+        return data_id
 
     def delete_data(self,
                     data_id: str,
@@ -277,7 +278,7 @@ class DatasetNetcdfFsDataAccessor(DatasetFsDataAccessor, ABC):
                    data: xr.Dataset,
                    data_id: str,
                    replace=False,
-                   **write_params):
+                   **write_params) -> str:
         assert_instance(data, xr.Dataset, name='data')
         assert_instance(data_id, str, name='data_id')
         fs, write_params = self.load_fs(write_params)
@@ -298,3 +299,4 @@ class DatasetNetcdfFsDataAccessor(DatasetFsDataAccessor, ABC):
         data.to_netcdf(file_path, engine=engine, **write_params)
         if not is_local:
             fs.put_file(file_path, data_id)
+        return data_id

@@ -117,7 +117,8 @@ class FsDataStoresTestMixin(ABC):
         self.assertEqual([], list(data_store.get_data_ids()))
 
         data = new_cube(variables=dict(A=8, B=9))
-        data_store.write_data(data, data_id)
+        written_data_id = data_store.write_data(data, data_id)
+        self.assertEqual(data_id, written_data_id)
         self.assertEqual({expected_data_type_alias},
                          set(data_store.get_data_types_for_data(data_id)))
         self.assertEqual(True, data_store.has_data(data_id))

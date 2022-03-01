@@ -34,13 +34,14 @@ from xcube.core.mldataset import MultiLevelDataset
 from xcube.util.assertions import assert_given
 from xcube.util.assertions import assert_in
 from xcube.util.assertions import assert_instance
+from xcube.util.assertions import assert_true
 from xcube.util.extension import Extension
 from xcube.util.jsonschema import JsonBooleanSchema
 from xcube.util.jsonschema import JsonIntegerSchema
 from xcube.util.jsonschema import JsonObjectSchema
 from xcube.util.jsonschema import JsonStringSchema
-from .accessor import STORAGE_OPTIONS_PARAM_NAME
 from .accessor import FsAccessor
+from .accessor import STORAGE_OPTIONS_PARAM_NAME
 from .helpers import is_local_fs
 from .helpers import normalize_path
 from ..accessor import DataOpener
@@ -296,11 +297,22 @@ class BaseFsDataStore(DefaultSearchMixin, MutableDataStore):
         data_id = self._ensure_valid_data_id(writer_id, data_id=data_id)
         fs_path = self._convert_data_id_into_fs_path(data_id)
         self.fs.makedirs(self.root, exist_ok=True)
-        writer.write_data(data,
-                          fs_path,
-                          replace=replace,
-                          fs=self.fs,
-                          **write_params)
+        written_fs_path = writer.write_data(data,
+                                            fs_path,
+                                            replace=replace,
+                                            fs=self.fs,
+                                            **write_params)
+        # Verify, accessors fulfill their write_data() contract
+        assert_true(fs_path == written_fs_path,
+                    message='FsDataAccessor implementations must '
+                            'return the data_id passed in.')
+        # Return original data_id (which is a relative path).
+        # Note: it would be cleaner to return written_fs_path
+        # here, but it is an absolute path.
+        # --> Possible solution: FsDataAccessor implementations
+        # should be responsible for resolving their data_id into a
+        # filesystem path by providing them both with fs and root
+        # arguments.
         return data_id
 
     def get_delete_data_params_schema(self, data_id: str = None) \

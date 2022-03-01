@@ -4,9 +4,13 @@
 
 ### Fixes
 
-* Images with ascending y-values are tiled correctly. This fixes an issue where
-  some datasets seemed to be shifted in the y-(latitude-) direction and were
-  misplaced on maps. (#626)
+* Fixed `FsDataAccessor.write_data()` implementations, 
+  which now always return the passed in `data_id`. (#623)
+
+* Fixes an issue where some datasets seemed to be shifted in the 
+  y-(latitude-) direction and were misplaced on maps whose tiles 
+  are served by `xcube serve`. Images with ascending y-values are 
+  now tiled correctly. (#626)
 
 ### Other
 
