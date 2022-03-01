@@ -6,6 +6,11 @@
   if it encountered datasets it could not open. New behaviour 
   is to emit a warning and ignore such datasets. (#630)
 
+* Introduced helper function `add_spatial_ref()`
+  of package `xcube.core.gridmapping.cfconv` that allows 
+  adding a spatial coordinate reference system to an existing  
+  Zarr dataset. (#629)
+
 * Introduced parameter `base_dataset_id` for writing multi-level 
   datasets with the "file", "s3", and "memory" data stores. 
   If given, the base dataset will be linked only with the 
