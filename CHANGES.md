@@ -2,6 +2,10 @@
 
 ### Enhancements
 
+* `xcube serve` used to shut down with an error message 
+  if it encountered datasets it could not open. New behaviour 
+  is to emit a warning and ignore such datasets. (#630)
+
 * Introduced parameter `base_dataset_id` for writing multi-level 
   datasets with the "file", "s3", and "memory" data stores. 
   If given, the base dataset will be linked only with the 

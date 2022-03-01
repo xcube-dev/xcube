@@ -40,7 +40,7 @@ from xcube.webapi.controllers.places import GeoJsonFeatureCollection
 from xcube.webapi.controllers.tiles import get_dataset_tile_url
 from xcube.webapi.controllers.tiles import get_tile_source_options
 from xcube.webapi.errors import ServiceBadRequestError
-
+import zarr
 
 def get_datasets(ctx: ServiceContext,
                  details: bool = False,
@@ -136,7 +136,11 @@ def get_dataset(ctx: ServiceContext,
         required_scopes = ctx.get_required_dataset_scopes(dataset_config)
         assert_scopes(required_scopes, granted_scopes or set())
 
-    ml_ds = ctx.get_ml_dataset(ds_id)
+    try:
+        ml_ds = ctx.get_ml_dataset(ds_id)
+    except ValueError as e:
+        raise DatasetIsNotACubeError(f'could not open dataset: {e}') from e
+
     grid_mapping = ml_ds.grid_mapping
     if not grid_mapping.crs.is_geographic:
         raise CubeIsNotDisplayable(f'CRS is not geographic:'
