@@ -2,6 +2,10 @@
 
 ### Enhancements
 
+* `xcube serve` used to shut down with an error message 
+  if it encountered datasets it could not open. New behaviour 
+  is to emit a warning and ignore such datasets. (#630)
+
 * Introduced helper function `add_spatial_ref()`
   of package `xcube.core.gridmapping.cfconv` that allows 
   adding a spatial coordinate reference system to an existing  

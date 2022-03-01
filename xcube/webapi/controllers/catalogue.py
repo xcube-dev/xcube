@@ -29,6 +29,7 @@ import numpy as np
 from xcube.constants import LOG
 from xcube.core.geom import get_dataset_bounds
 from xcube.core.normalize import DatasetIsNotACubeError
+from xcube.core.store import DataStoreError
 from xcube.core.timecoord import timestamp_to_iso_string
 from xcube.util.assertions import assert_instance
 from xcube.util.cmaps import get_cmaps
@@ -136,7 +137,11 @@ def get_dataset(ctx: ServiceContext,
         required_scopes = ctx.get_required_dataset_scopes(dataset_config)
         assert_scopes(required_scopes, granted_scopes or set())
 
-    ml_ds = ctx.get_ml_dataset(ds_id)
+    try:
+        ml_ds = ctx.get_ml_dataset(ds_id)
+    except (ValueError, DataStoreError) as e:
+        raise DatasetIsNotACubeError(f'could not open dataset: {e}') from e
+
     grid_mapping = ml_ds.grid_mapping
     if not grid_mapping.crs.is_geographic:
         raise CubeIsNotDisplayable(f'CRS is not geographic:'
