@@ -29,6 +29,7 @@ import numpy as np
 from xcube.constants import LOG
 from xcube.core.geom import get_dataset_bounds
 from xcube.core.normalize import DatasetIsNotACubeError
+from xcube.core.store import DataStoreError
 from xcube.core.timecoord import timestamp_to_iso_string
 from xcube.util.assertions import assert_instance
 from xcube.util.cmaps import get_cmaps
@@ -40,7 +41,7 @@ from xcube.webapi.controllers.places import GeoJsonFeatureCollection
 from xcube.webapi.controllers.tiles import get_dataset_tile_url
 from xcube.webapi.controllers.tiles import get_tile_source_options
 from xcube.webapi.errors import ServiceBadRequestError
-import zarr
+
 
 def get_datasets(ctx: ServiceContext,
                  details: bool = False,
@@ -138,7 +139,7 @@ def get_dataset(ctx: ServiceContext,
 
     try:
         ml_ds = ctx.get_ml_dataset(ds_id)
-    except ValueError as e:
+    except (ValueError, DataStoreError) as e:
         raise DatasetIsNotACubeError(f'could not open dataset: {e}') from e
 
     grid_mapping = ml_ds.grid_mapping
