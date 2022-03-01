@@ -3,8 +3,8 @@
 ### Enhancements
 
 * Introduced helper function `add_spatial_ref()`
-  of package `xcube.core.gridmapping.cfconv` that allows subsequently 
-  adding a missing spatial coordinate reference system to an existing  
+  of package `xcube.core.gridmapping.cfconv` that allows 
+  adding a spatial coordinate reference system to an existing  
   Zarr dataset. (#629)
 
 * Introduced parameter `base_dataset_id` for writing multi-level 
