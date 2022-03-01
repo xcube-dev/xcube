@@ -2,13 +2,20 @@ import shutil
 import unittest
 from typing import Set
 
+import fsspec
 import numpy as np
 import pyproj
 import xarray as xr
 
+from test.s3test import MOTO_SERVER_ENDPOINT_URL
+from test.s3test import S3Test
+from xcube.core.gridmapping import GridMapping
 from xcube.core.gridmapping.cfconv import GridCoords
 from xcube.core.gridmapping.cfconv import GridMappingProxy
+from xcube.core.gridmapping.cfconv import add_spatial_ref
 from xcube.core.gridmapping.cfconv import get_dataset_grid_mapping_proxies
+from xcube.core.new import new_cube
+from xcube.core.store.fs.registry import new_fs_data_store
 
 CRS_WGS84 = pyproj.crs.CRS(4326)
 CRS_CRS84 = pyproj.crs.CRS.from_string("urn:ogc:def:crs:OGC:1.3:CRS84")
@@ -192,3 +199,98 @@ class XarrayDecodeCfTest(unittest.TestCase):
         self.assertEqual(('y', 'x'), lon.dims)
         self.assertEqual(('y', 'x'), lat.dims)
         return noise, crs, lon, lat
+
+
+class AddSpatialRefTest(S3Test):
+
+    def test_add_spatial_ref(self):
+        self.assert_add_spatial_ref_ok(None, None)
+        self.assert_add_spatial_ref_ok(None, ('cx', 'cy'))
+        self.assert_add_spatial_ref_ok('crs', None)
+        self.assert_add_spatial_ref_ok('crs', ('cx', 'cy'))
+
+    def assert_add_spatial_ref_ok(self, crs_var_name, xy_dim_names):
+
+        root = 'eurodatacube-test/xcube-eea'
+        data_id = 'test.zarr'
+        crs = pyproj.CRS.from_string("EPSG:3035")
+
+        if xy_dim_names:
+            x_name, y_name = xy_dim_names
+        else:
+            x_name, y_name = 'x', 'y'
+
+        cube = new_cube(x_name=x_name,
+                        y_name=y_name,
+                        x_start=0,
+                        y_start=0,
+                        x_res=10,
+                        y_res=10,
+                        x_units='metres',
+                        y_units='metres',
+                        drop_bounds=True,
+                        width=100,
+                        height=100,
+                        variables=dict(A=1.3, B=8.3))
+
+        storage_options = dict(
+            anon=False,
+            client_kwargs=dict(
+                endpoint_url=MOTO_SERVER_ENDPOINT_URL,
+            )
+        )
+
+        fs: fsspec.AbstractFileSystem = fsspec.filesystem('s3',
+                                                          **storage_options)
+        if fs.isdir(root):
+            fs.rm(root, recursive=True)
+        fs.mkdirs(root, exist_ok=True)
+
+        data_store = new_fs_data_store('s3',
+                                       root=root,
+                                       storage_options=storage_options)
+
+        data_store.write_data(cube, data_id=data_id)
+        cube = data_store.open_data(data_id)
+        self.assertEqual({'A', 'B', 'time', x_name, y_name},
+                         set(cube.variables))
+
+        with self.assertRaises(ValueError) as cm:
+            GridMapping.from_dataset(cube)
+        self.assertEqual(
+            ('cannot find any grid mapping in dataset',),
+            cm.exception.args
+        )
+
+        path = f"{root}/{data_id}"
+        group_store = fs.get_mapper(path, create=True)
+
+        expected_crs_var_name = crs_var_name or 'spatial_ref'
+
+        self.assertTrue(fs.exists(path))
+        self.assertFalse(fs.exists(f"{path}/{expected_crs_var_name}"))
+        self.assertFalse(fs.exists(f"{path}/{expected_crs_var_name}/.zarray"))
+        self.assertFalse(fs.exists(f"{path}/{expected_crs_var_name}/.zattrs"))
+
+        kwargs = {}
+        if crs_var_name is not None:
+            kwargs.update(crs_var_name=crs_var_name)
+        if xy_dim_names is not None:
+            kwargs.update(xy_dim_names=xy_dim_names)
+        add_spatial_ref(group_store, crs, **kwargs)
+
+        self.assertTrue(fs.exists(f"{path}/{expected_crs_var_name}"))
+        self.assertTrue(fs.exists(f"{path}/{expected_crs_var_name}/.zarray"))
+        self.assertTrue(fs.exists(f"{path}/{expected_crs_var_name}/.zattrs"))
+
+        cube = data_store.open_data(data_id)
+        self.assertEqual({'A', 'B', 'time',
+                          x_name, y_name, expected_crs_var_name},
+                         set(cube.variables))
+        self.assertEqual(expected_crs_var_name,
+                         cube.A.attrs.get('grid_mapping'))
+        self.assertEqual(expected_crs_var_name,
+                         cube.B.attrs.get('grid_mapping'))
+
+        gm = GridMapping.from_dataset(cube)
+        self.assertIn("LAEA Europe", gm.crs.srs)
