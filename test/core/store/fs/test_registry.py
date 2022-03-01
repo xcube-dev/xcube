@@ -1,7 +1,8 @@
 import os.path
 import unittest
+import warnings
 from abc import ABC, abstractmethod
-from typing import Type, Union
+from typing import Any, Dict, Optional, Type, Union
 
 import fsspec
 import xarray as xr
@@ -38,7 +39,7 @@ class FsDataStoresTestMixin(ABC):
         # print(f'{fs.protocol}: making root {root}')
         fs.mkdirs(root)
 
-        # Write a text file into each subdirectory so
+        # Write a text file into each subdirectory, so
         # we also test that store.get_data_ids() scans
         # recursively.
         dir_path = root
@@ -54,6 +55,7 @@ class FsDataStoresTestMixin(ABC):
     def test_mldataset_levels(self):
         data_store = self.create_data_store()
         self.assertMultiLevelDatasetFormatSupported(data_store)
+        self.assertMultiLevelDatasetFormatWithLinkSupported(data_store)
 
     def test_dataset_zarr(self):
         data_store = self.create_data_store()
@@ -73,6 +75,47 @@ class FsDataStoresTestMixin(ABC):
                                     MultiLevelDataset,
                                     MultiLevelDatasetDescriptor)
 
+        # Test that use_saved_levels works
+        self.assertDatasetSupported(data_store,
+                                    '.levels',
+                                    'mldataset',
+                                    MultiLevelDataset,
+                                    MultiLevelDatasetDescriptor,
+                                    write_params=dict(
+                                        use_saved_levels=True,
+                                    ))
+
+    def assertMultiLevelDatasetFormatWithLinkSupported(
+            self,
+            data_store: MutableDataStore
+    ):
+        base_dataset = self.new_cube_data()
+        base_dataset_id = f'{DATA_PATH}/base-ds.zarr'
+        data_store.write_data(base_dataset, base_dataset_id)
+
+        # Test that base_dataset_id works
+        self.assertDatasetSupported(data_store,
+                                    '.levels',
+                                    'mldataset',
+                                    MultiLevelDataset,
+                                    MultiLevelDatasetDescriptor,
+                                    write_params=dict(
+                                        base_dataset_id=base_dataset_id,
+                                    ))
+
+        # Test that base_dataset_id + use_saved_levels works
+        self.assertDatasetSupported(data_store,
+                                    '.levels',
+                                    'mldataset',
+                                    MultiLevelDataset,
+                                    MultiLevelDatasetDescriptor,
+                                    write_params=dict(
+                                        base_dataset_id=base_dataset_id,
+                                        use_saved_levels=True,
+                                    ))
+
+        data_store.delete_data(base_dataset_id)
+
     def assertDatasetFormatSupported(self,
                                      data_store: MutableDataStore,
                                      filename_ext: str):
@@ -89,8 +132,12 @@ class FsDataStoresTestMixin(ABC):
             expected_data_type_alias: str,
             expected_type: Union[Type[xr.Dataset],
                                  Type[MultiLevelDataset]],
-            expected_descriptor_type: Union[Type[DatasetDescriptor],
-                                            Type[MultiLevelDatasetDescriptor]]
+            expected_descriptor_type: Union[
+                Type[DatasetDescriptor],
+                Type[MultiLevelDatasetDescriptor]
+            ],
+            write_params: Optional[Dict[str, Any]] = None,
+            open_params: Optional[Dict[str, Any]] = None,
     ):
         """
         Call all DataStore operations to ensure data of type
@@ -102,9 +149,14 @@ class FsDataStoresTestMixin(ABC):
         :param expected_data_type_alias: The expected data type alias.
         :param expected_type: The expected data type.
         :param expected_descriptor_type: The expected data descriptor type.
+        :param write_params: Optional write parameters
+        :param open_params: Optional open parameters
         """
 
         data_id = f'{DATA_PATH}/ds{filename_ext}'
+
+        write_params = write_params or {}
+        open_params = open_params or {}
 
         self.assertIsInstance(data_store, MutableDataStore)
 
@@ -114,36 +166,44 @@ class FsDataStoresTestMixin(ABC):
         with self.assertRaises(DataStoreError):
             data_store.get_data_types_for_data(data_id)
         self.assertEqual(False, data_store.has_data(data_id))
-        self.assertEqual([], list(data_store.get_data_ids()))
+        self.assertNotIn(data_id, set(data_store.get_data_ids()))
 
-        data = new_cube(variables=dict(A=8, B=9))
-        written_data_id = data_store.write_data(data, data_id)
+        data = self.new_cube_data()
+        written_data_id = data_store.write_data(data, data_id, **write_params)
         self.assertEqual(data_id, written_data_id)
+
         self.assertEqual({expected_data_type_alias},
                          set(data_store.get_data_types_for_data(data_id)))
         self.assertEqual(True, data_store.has_data(data_id))
-        self.assertEqual([data_id], list(data_store.get_data_ids()))
+        self.assertIn(data_id, set(data_store.get_data_ids()))
 
-        data_descriptors = list(data_store.search_data())
+        data_descriptors = list(data_store.search_data(
+            data_type=expected_type)
+        )
         self.assertEqual(1, len(data_descriptors))
         self.assertIsInstance(data_descriptors[0], DataDescriptor)
         self.assertIsInstance(data_descriptors[0], expected_descriptor_type)
 
-        data = data_store.open_data(data_id)
+        data = data_store.open_data(data_id, **open_params)
         self.assertIsInstance(data, expected_type)
 
         try:
             data_store.delete_data(data_id)
-        except PermissionError:  # Typically occurs on win32 due to fsspec
+        except PermissionError as e:  # May occur on win32 due to fsspec
+            warnings.warn(f'{e}')
             return
         with self.assertRaises(DataStoreError):
             data_store.get_data_types_for_data(data_id)
         self.assertEqual(False, data_store.has_data(data_id))
-        self.assertEqual([], list(data_store.get_data_ids()))
+        self.assertNotIn(data_id, set(data_store.get_data_ids()))
+
+    @staticmethod
+    def new_cube_data():
+        cube = new_cube(variables=dict(A=8.5, B=9.5))
+        return cube.chunk(dict(time=1, lat=90, lon=180))
 
 
 class FileFsDataStoresTest(FsDataStoresTestMixin, unittest.TestCase):
-
     def create_data_store(self) -> FsDataStore:
         root = os.path.join(new_temp_dir(prefix='xcube'), ROOT_DIR)
         self.prepare_fs(fsspec.filesystem('file'), root)

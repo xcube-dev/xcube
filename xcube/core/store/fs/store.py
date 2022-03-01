@@ -262,7 +262,10 @@ class BaseFsDataStore(DefaultSearchMixin, MutableDataStore):
                             name='open_params',
                             schema=open_params_schema)
         fs_path = self._convert_data_id_into_fs_path(data_id)
-        return opener.open_data(fs_path, fs=self.fs, **open_params)
+        return opener.open_data(fs_path,
+                                fs=self.fs,
+                                root=self.root,
+                                **open_params)
 
     def get_data_writer_ids(self, data_type: str = None) \
             -> Tuple[str, ...]:
@@ -301,6 +304,7 @@ class BaseFsDataStore(DefaultSearchMixin, MutableDataStore):
                                             fs_path,
                                             replace=replace,
                                             fs=self.fs,
+                                            root=self.root,
                                             **write_params)
         # Verify, accessors fulfill their write_data() contract
         assert_true(fs_path == written_fs_path,
@@ -332,6 +336,7 @@ class BaseFsDataStore(DefaultSearchMixin, MutableDataStore):
         fs_path = self._convert_data_id_into_fs_path(data_id)
         writer.delete_data(fs_path,
                            fs=self.fs,
+                           root=self.root,
                            **delete_params)
 
     def register_data(self, data_id: str, data: Any):
@@ -654,7 +659,7 @@ class FsDataStore(BaseFsDataStore, FsAccessor):
 
     def _load_fs(self) -> fsspec.AbstractFileSystem:
         # Note, this is invoked only once per store instance.
-        fs, _ = self.load_fs(
+        fs, _, _ = self.load_fs(
             {STORAGE_OPTIONS_PARAM_NAME: self._storage_options}
         )
         return fs
