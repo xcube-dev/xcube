@@ -25,17 +25,22 @@ from xcube.util.assertions import assert_true
 
 T = TypeVar('T', int, float)
 
-Bbox = Tuple[T, T, T, T]
 ItemType = Union[Type[T], Tuple[Type[T], ...]]
 Pair = Tuple[T, T]
 ScalarOrPair = Union[T, Pair]
 
 
 def normalize_scalar_or_pair(
-        value: ScalarOrPair,
+        value: Optional[ScalarOrPair] = None,
+        *,
         item_type: Optional[ItemType[T]] = None,
+        default: Optional[ScalarOrPair] = None,
         name: Optional[str] = None
 ) -> Pair:
+    if value is None and default is not None:
+        # not returning default immediately so that default is checked for
+        # validity
+        value = default
     try:
         assert_true(len(value) <= 2,
                     message=f"{name or 'Value'} must be a scalar or pair of "
