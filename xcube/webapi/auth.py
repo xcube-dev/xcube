@@ -18,7 +18,7 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-
+import fnmatch
 import json
 from typing import Optional, Mapping, List, Dict, Any, Set
 
@@ -255,15 +255,23 @@ def check_scopes(required_scopes: Set[str],
 def _get_missing_scope(required_scopes: Set[str],
                        granted_scopes: Set[str],
                        is_substitute: bool = False) -> Optional[str]:
-    for required_scope in required_scopes:
-        if required_scope not in granted_scopes:
-            # If the required scope is not a granted scope, fail
-            return required_scope
-    # If there are granted scopes then the client is authorized,
-    # hence fail for substitute resources (e.g. demo resources)
-    # as there is usually a better (non-demo) resource that
-    # replaces it.
-    if granted_scopes and is_substitute:
-        return '<is_substitute>'
+    if required_scopes and granted_scopes:
+        for required_scope in required_scopes:
+            required_permission_given = False
+            for granted_scope in granted_scopes:
+                if required_scope == granted_scope \
+                        or fnmatch.fnmatch(required_scope, granted_scope):
+                    # If any granted scope matches, we can stop
+                    required_permission_given = True
+                    break
+            if not required_permission_given:
+                # The required scope is not a granted scope --> fail
+                return required_scope
+        # If there are granted scopes then the client is authorized,
+        # hence fail for substitute resources (e.g. demo resources)
+        # as there is usually a better (non-demo) resource that
+        # replaces it.
+        if is_substitute:
+            return '<is_substitute>'
     # All ok.
     return None

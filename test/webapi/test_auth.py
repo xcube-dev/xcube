@@ -5,7 +5,10 @@ import unittest
 import requests
 
 from xcube.webapi.auth import AuthMixin
-from xcube.webapi.errors import ServiceConfigError, ServiceAuthError
+from xcube.webapi.auth import assert_scopes
+from xcube.webapi.auth import check_scopes
+from xcube.webapi.errors import ServiceAuthError
+from xcube.webapi.errors import ServiceConfigError
 
 
 class ServiceContextMock:
@@ -77,7 +80,6 @@ class AuthMixinIdTokenTest(unittest.TestCase):
         access_token = token_data['access_token']
         return access_token
 
-
     def test_missing_auth_config(self):
         auth_mixin = AuthMixin()
         auth_mixin.service_context = ServiceContextMock(config={})
@@ -86,7 +88,7 @@ class AuthMixinIdTokenTest(unittest.TestCase):
         )
 
         with self.assertRaises(ServiceAuthError) as cm:
-            id_token = auth_mixin.get_id_token(require_auth=True)
+            auth_mixin.get_id_token(require_auth=True)
 
         self.assertEqual('HTTP 401: Invalid header (Received access token, '
                          'but this server doesn\'t support authentication.)',
@@ -251,3 +253,80 @@ class AuthMixinAuthConfigTest(unittest.TestCase):
         self.assertEqual('HTTP 500: Value for key "Algorithms"'
                          ' in section "Authentication" must not be empty',
                          f'{cm.exception}')
+
+
+class ScopesTest(unittest.TestCase):
+
+    def test_check_scopes_ok(self):
+        self.assertEqual(
+            True,
+            check_scopes({'read:dataset:test1.zarr'},
+                         set(),
+                         is_substitute=False)
+        )
+        self.assertEqual(
+            True,
+            check_scopes({'read:dataset:test1.zarr'},
+                         set(),
+                         is_substitute=True)
+        )
+        self.assertEqual(
+            True,
+            check_scopes({'read:dataset:test1.zarr'},
+                         {'read:dataset:test1.zarr'})
+        )
+        self.assertEqual(
+            True,
+            check_scopes({'read:dataset:test1.zarr'},
+                         {'read:dataset:test?.zarr'})
+        )
+        self.assertEqual(
+            True,
+            check_scopes({'read:dataset:test1.zarr'},
+                         {'read:dataset:test1.*'})
+        )
+
+    def test_check_scopes_fails(self):
+        self.assertEqual(
+            False,
+            check_scopes({'read:dataset:test1.zarr'},
+                         {'read:dataset:test1.zarr'},
+                         is_substitute=True)
+        )
+        self.assertEqual(
+            False,
+            check_scopes({'read:dataset:test2.zarr'},
+                         {'read:dataset:test1.zarr'})
+        )
+        self.assertEqual(
+            False,
+            check_scopes({'read:dataset:test2.zarr'},
+                         {'read:dataset:test1.zarr'},
+                         is_substitute=True)
+        )
+
+    def test_assert_scopes_ok(self):
+        assert_scopes({'read:dataset:test1.zarr'},
+                      set())
+        assert_scopes({'read:dataset:test1.zarr'},
+                      {'read:dataset:test1.zarr'})
+        assert_scopes({'read:dataset:test1.zarr'},
+                      {'read:dataset:*'})
+        assert_scopes({'read:dataset:test1.zarr'},
+                      {'read:dataset:test?.zarr'})
+        assert_scopes({'read:dataset:test1.zarr'},
+                      {'read:dataset:test1.*'})
+        assert_scopes({'read:dataset:test1.zarr'},
+                      {'read:dataset:test2.zarr',
+                       'read:dataset:test3.zarr',
+                       'read:dataset:test1.zarr'})
+
+    def test_assert_scopes_fails(self):
+        with self.assertRaises(ServiceAuthError) as cm:
+            assert_scopes({'read:dataset:test1.zarr'},
+                          {'read:dataset:test2.zarr'})
+        self.assertEquals(
+            'HTTP 401: Missing permission'
+            ' (Missing permission read:dataset:test1.zarr)',
+            f'{cm.exception}'
+        )

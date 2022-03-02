@@ -2,6 +2,13 @@
 
 ### Enhancements
 
+* For authorized clients, the xcube Web API provided by `xcube serve`
+  now allows granted scopes to contain wildcard characters `*`, `**`,
+  and `?`. This is useful to give access to groups of datasets, e.g.
+  the scope `read:dataset:*/S2-*.zarr` permits access to any Zarr 
+  dataset in a subdirectory of the configured data stores and 
+  whose name starts with "S2-". (#632)
+
 * `xcube serve` used to shut down with an error message 
   if it encountered datasets it could not open. New behaviour 
   is to emit a warning and ignore such datasets. (#630)
