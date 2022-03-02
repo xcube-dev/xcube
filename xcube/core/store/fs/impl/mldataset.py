@@ -20,6 +20,7 @@
 # SOFTWARE.
 
 import os.path
+import warnings
 from typing import Dict, Any, List, Union, Tuple, Optional
 
 import fsspec
@@ -90,11 +91,13 @@ class MultiLevelDatasetLevelsFsDataAccessor(DatasetZarrFsDataAccessor):
                    **write_params) -> str:
         assert_instance(data, (xr.Dataset, MultiLevelDataset), name='data')
         assert_instance(data_id, str, name='data_id')
+        tile_size = write_params.pop('tile_size', None)
         if isinstance(data, MultiLevelDataset):
             ml_dataset = data
+            if tile_size:
+                warnings.warn('tile_size is ignored for multi-level datasets')
         else:
             base_dataset: xr.Dataset = data
-            tile_size = write_params.pop('tile_size', None)
             if tile_size:
                 assert_instance(tile_size, int, name='tile_size')
                 gm = GridMapping.from_dataset(base_dataset)

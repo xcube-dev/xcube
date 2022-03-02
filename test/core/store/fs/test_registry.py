@@ -56,6 +56,7 @@ class FsDataStoresTestMixin(ABC):
         data_store = self.create_data_store()
         self.assertMultiLevelDatasetFormatSupported(data_store)
         self.assertMultiLevelDatasetFormatWithLinkSupported(data_store)
+        self.assertMultiLevelDatasetFormatWithTileSize(data_store)
 
     def test_dataset_zarr(self):
         data_store = self.create_data_store()
@@ -111,6 +112,37 @@ class FsDataStoresTestMixin(ABC):
                                     MultiLevelDatasetDescriptor,
                                     write_params=dict(
                                         base_dataset_id=base_dataset_id,
+                                        use_saved_levels=True,
+                                    ))
+
+        data_store.delete_data(base_dataset_id)
+
+    def assertMultiLevelDatasetFormatWithTileSize(
+            self,
+            data_store: MutableDataStore
+    ):
+        base_dataset = self.new_cube_data()
+        base_dataset_id = f'{DATA_PATH}/base-ds.zarr'
+        data_store.write_data(base_dataset, base_dataset_id)
+
+        # Test that base_dataset_id works
+        self.assertDatasetSupported(data_store,
+                                    '.levels',
+                                    'mldataset',
+                                    MultiLevelDataset,
+                                    MultiLevelDatasetDescriptor,
+                                    write_params=dict(
+                                        tile_size=90,
+                                    ))
+
+        # Test that base_dataset_id + use_saved_levels works
+        self.assertDatasetSupported(data_store,
+                                    '.levels',
+                                    'mldataset',
+                                    MultiLevelDataset,
+                                    MultiLevelDatasetDescriptor,
+                                    write_params=dict(
+                                        tile_size=90,
                                         use_saved_levels=True,
                                     ))
 
