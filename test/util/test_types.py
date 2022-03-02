@@ -21,49 +21,49 @@
 
 import unittest
 
-from xcube.util.types import normalize_number_scalar_or_pair
+from xcube.util.types import normalize_scalar_or_pair
 
 
 class NormalizeNumberScalarOrPairTest(unittest.TestCase):
 
     def test_scalar_float(self):
         self.assertEqual((1.1, 1.1),
-                         normalize_number_scalar_or_pair(1.1, float))
+                         normalize_scalar_or_pair(1.1, float))
         self.assertEqual((2.0, 2.0),
-                         normalize_number_scalar_or_pair(2.0, float))
+                         normalize_scalar_or_pair(2.0, float))
 
     def test_scalar_int(self):
         self.assertEqual((1, 1),
-                         normalize_number_scalar_or_pair(1.1, int))
+                         normalize_scalar_or_pair(1.1, int))
         self.assertEqual((1, 1),
-                         normalize_number_scalar_or_pair(1.9, int))
+                         normalize_scalar_or_pair(1.9, int))
         self.assertEqual((2, 2),
-                         normalize_number_scalar_or_pair(2.0, int))
+                         normalize_scalar_or_pair(2.0, int))
 
     def test_pair_float(self):
         self.assertEqual((1.1, 1.9),
-                         normalize_number_scalar_or_pair((1.1, 1.9), float))
+                         normalize_scalar_or_pair((1.1, 1.9), float))
         self.assertEqual((2.0, 1.9),
-                         normalize_number_scalar_or_pair((2.0, 1.9), float))
+                         normalize_scalar_or_pair((2.0, 1.9), float))
 
     def test_pair_int(self):
         self.assertEqual((1, 1),
-                         normalize_number_scalar_or_pair((1.1, 1.9), int))
+                         normalize_scalar_or_pair((1.1, 1.9), int))
         self.assertEqual((2, 1),
-                         normalize_number_scalar_or_pair((2.0, 1.9), int))
+                         normalize_scalar_or_pair((2.0, 1.9), int))
 
     def test_wrong_type(self):
         with self.assertRaises(ValueError) as ve:
-            normalize_number_scalar_or_pair('xyz', int)
+            normalize_scalar_or_pair('xyz', int)
         self.assertEqual(
-            'Value "xyz" must be a number or a segment of two numbers',
+            "Value must be a scalar or pair of <class 'int'>, was 'xyz'",
             f'{ve.exception}'
         )
 
     def test_wrong_length(self):
         with self.assertRaises(ValueError) as ve:
-            normalize_number_scalar_or_pair((0, 1, 2))
+            normalize_scalar_or_pair((0, 1, 2))
         self.assertEqual(
-            'Value "(0, 1, 2)" must be a number or a segment of two numbers',
+            "Value must be a scalar or pair of scalars, was '(0, 1, 2)'",
             f'{ve.exception}'
         )

@@ -19,25 +19,52 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-from typing import Tuple, Type, TypeVar, Union
+from typing import Optional, Tuple, Type, TypeVar, Union
+
+from xcube.util.assertions import assert_true
 
 T = TypeVar('T', int, float)
 
+Bbox = Tuple[T, T, T, T]
+ItemType = Union[Type[T], Tuple[Type[T], ...]]
 Pair = Tuple[T, T]
 ScalarOrPair = Union[T, Pair]
-Bbox = Tuple[T, T, T, T]
 
 
-def normalize_number_scalar_or_pair(
+def normalize_scalar_or_pair(
         value: ScalarOrPair,
-        t: Type[T] = float
+        item_type: Optional[ItemType[T]] = None,
+        name: Optional[str] = None
 ) -> Pair:
-    if isinstance(value, (float, int)):
-        x, y = value, value
-        return t(x), t(y)
-    elif len(value) == 2:
+    try:
+        assert_true(len(value) <= 2,
+                    message=f"{name or 'Value'} must be a scalar or pair of "
+                            f"{item_type or 'scalars'}, was '{value}'")
         x, y = value
-        return t(x), t(y)
-    else:
-        raise ValueError(f'Value "{value}" must be a number or a segment of '
-                         f'two numbers')
+    except TypeError:
+        x, y = value, value
+    if item_type is not None:
+        x = _maybe_convert(x, item_type)
+        y = _maybe_convert(y, item_type)
+        assert_true(isinstance(x, item_type) and isinstance(y, item_type),
+                    message=f"{name or 'Value'} must be a scalar or pair of "
+                            f"{item_type}, was '{value}'")
+    return x, y
+
+
+def _maybe_convert(value: T, item_type: ItemType[T]) -> T:
+    if not isinstance(value, item_type):
+        try:
+            for t in item_type:
+                try:
+                    value = t(value)
+                    break
+                except TypeError:
+                    continue
+        except TypeError:
+            try:
+                value = item_type(value)
+            except TypeError:
+                # leave value as is
+                value = value
+    return value

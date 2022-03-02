@@ -37,7 +37,7 @@ from xcube.util.jsonschema import JsonNumberSchema
 from xcube.util.jsonschema import JsonObject
 from xcube.util.jsonschema import JsonObjectSchema
 from xcube.util.jsonschema import JsonStringSchema
-from xcube.util.types import normalize_number_scalar_or_pair
+from xcube.util.types import normalize_scalar_or_pair
 
 
 class InputConfig(JsonObject):
@@ -169,7 +169,9 @@ class CubeConfig(JsonObject):
 
         self.spatial_res = None
         if spatial_res is not None:
-            spatial_res = normalize_number_scalar_or_pair(spatial_res, float)
+            spatial_res = normalize_scalar_or_pair(spatial_res,
+                                                   (int, float),
+                                                   'spatial_res')
             assert_true(spatial_res[0] > 0, 'spatial_res must be positive')
             assert_true(spatial_res[1] > 0, 'spatial_res must be positive')
             self.spatial_res = spatial_res

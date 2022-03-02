@@ -27,7 +27,7 @@ from xcube.core.gridmapping import GridMapping
 from xcube.core.select import select_spatial_subset
 from xcube.core.select import select_temporal_subset
 from xcube.core.select import select_variables_subset
-from xcube.util.types import normalize_number_scalar_or_pair
+from xcube.util.types import normalize_scalar_or_pair
 from .transformer import CubeTransformer
 from .transformer import TransformedCube
 from ..config import CubeConfig
@@ -60,7 +60,8 @@ class CubeSubsetter(CubeTransformer):
                 desired_res = cube_config.spatial_res
                 if desired_res is not None:
                     desired_x_res, desired_y_res = \
-                        normalize_number_scalar_or_pair(desired_res, float)
+                        normalize_scalar_or_pair(desired_res,
+                                                 (int, float))
                     if not (math.isclose(gm.x_res, desired_x_res)
                             and math.isclose(gm.y_res, desired_y_res)):
                         can_do_spatial_subset = False
