@@ -68,43 +68,6 @@ def _normalize_crs(crs: Union[str, pyproj.CRS]) -> pyproj.CRS:
     return pyproj.CRS.from_string(crs)
 
 
-def _normalize_int_pair(
-        value: Any,
-        name: str = None,
-        default: Optional[Tuple[int, int]] = UNDEFINED
-) -> Optional[Tuple[int, int]]:
-    if isinstance(value, int):
-        return value, value
-    elif value is not None:
-        x, y = value
-        return int(x), int(y)
-    elif default != UNDEFINED:
-        return default
-    else:
-        assert_given(name, 'name')
-        raise ValueError(f'{name} must be an int'
-                         f' or a sequence of two ints')
-
-
-def _normalize_number_pair(
-        value: Any,
-        name: str = None,
-        default: Optional[Tuple[Number, Number]] = UNDEFINED
-) -> Optional[Tuple[Number, Number]]:
-    if isinstance(value, (float, int)):
-        x, y = value, value
-        return _to_int_or_float(x), _to_int_or_float(y)
-    elif value is not None:
-        x, y = value
-        return _to_int_or_float(x), _to_int_or_float(y)
-    elif default != UNDEFINED:
-        return default
-    else:
-        assert_given(name, 'name')
-        raise ValueError(f'{name} must be a number'
-                         f' or a sequence of two numbers')
-
-
 def to_lon_360(lon_var: Union[np.ndarray, da.Array, xr.DataArray]):
     if isinstance(lon_var, xr.DataArray):
         return lon_var.where(lon_var >= 0.0, lon_var + 360.0)

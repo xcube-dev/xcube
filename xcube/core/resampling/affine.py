@@ -31,6 +31,7 @@ from dask_image import ndinterp
 from xcube.core.gridmapping import GridMapping
 from xcube.core.gridmapping.helpers import AffineTransformMatrix
 from xcube.util.assertions import assert_true
+from xcube.util.types import normalize_scalar_or_pair
 
 NDImage = Union[np.ndarray, da.Array]
 Aggregator = Callable[[NDImage], NDImage]
@@ -307,12 +308,10 @@ def _normalize_pair(pair: Optional[Sequence[float]],
                     default: float,
                     ndim: int,
                     name: str) -> Tuple[int, ...]:
-    if pair is None:
-        pair = [default, default]
-    elif isinstance(pair, (int, float)):
-        pair = [pair, pair]
-    elif len(pair) != 2:
-        raise ValueError(f'illegal image {name}')
+    pair = normalize_scalar_or_pair(tuple(pair),
+                                    item_type=float,
+                                    default=default,
+                                    name=name)
     return (ndim - 2) * (default,) + tuple(pair)
 
 

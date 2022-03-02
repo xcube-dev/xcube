@@ -61,7 +61,7 @@ class CubeSubsetter(CubeTransformer):
                 if desired_res is not None:
                     desired_x_res, desired_y_res = \
                         normalize_scalar_or_pair(desired_res,
-                                                 (int, float))
+                                                 item_type=(int, float))
                     if not (math.isclose(gm.x_res, desired_x_res)
                             and math.isclose(gm.y_res, desired_y_res)):
                         can_do_spatial_subset = False

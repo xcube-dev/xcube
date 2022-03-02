@@ -209,8 +209,8 @@ class CubeInformant:
         if spatial_res is None:
             spatial_res = self.first_input_dataset_descriptor.spatial_res
         spatial_res = normalize_scalar_or_pair(spatial_res,
-                                               (int, float),
-                                               'spatial_res')
+                                               item_type=(int, float),
+                                               name='spatial_res')
         assert_instance(spatial_res[0], numbers.Number, 'spatial_res')
         assert_instance(spatial_res[1], numbers.Number, 'spatial_res')
 

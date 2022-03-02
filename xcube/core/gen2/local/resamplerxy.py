@@ -70,8 +70,8 @@ def _compute_target_grid_mapping(cube_config: CubeConfig,
 
     if target_spatial_res is not None:
         xy_res = normalize_scalar_or_pair(target_spatial_res,
-                                          (int, float),
-                                          'spatial_res')
+                                          item_type=(int, float),
+                                          name='spatial_res')
     else:
         xy_res = source_gm.xy_res
     if target_bbox is not None:

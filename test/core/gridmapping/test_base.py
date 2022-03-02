@@ -97,11 +97,14 @@ class GridMappingTest(SourceDatasetMixin, unittest.TestCase):
 
         with self.assertRaises(ValueError) as cm:
             TestGridMapping(**self.kwargs(size=(360,)))
-        self.assertEqual('not enough values to unpack (expected 2, got 1)', f'{cm.exception}')
+        self.assertEqual('not enough values to unpack (expected 2, got 1)',
+                         f'{cm.exception}')
 
         with self.assertRaises(ValueError) as cm:
             TestGridMapping(**self.kwargs(size=None))
-        self.assertEqual('size must be an int or a sequence of two ints', f'{cm.exception}')
+        self.assertEqual("size must be a scalar or pair of <class 'int'>, "
+                         "was 'None'",
+                         f'{cm.exception}')
 
         with self.assertRaises(ValueError) as cm:
             TestGridMapping(**self.kwargs(tile_size=0))

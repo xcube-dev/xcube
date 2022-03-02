@@ -170,8 +170,8 @@ class CubeConfig(JsonObject):
         self.spatial_res = None
         if spatial_res is not None:
             spatial_res = normalize_scalar_or_pair(spatial_res,
-                                                   (int, float),
-                                                   'spatial_res')
+                                                   item_type=(int, float),
+                                                   name='spatial_res')
             assert_true(spatial_res[0] > 0, 'spatial_res must be positive')
             assert_true(spatial_res[1] > 0, 'spatial_res must be positive')
             self.spatial_res = spatial_res
