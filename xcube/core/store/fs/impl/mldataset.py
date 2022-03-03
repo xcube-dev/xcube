@@ -1,5 +1,5 @@
 # The MIT License (MIT)
-# Copyright (c) 2021 by the xcube development team and contributors
+# Copyright (c) 2022 by the xcube development team and contributors
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of
 # this software and associated documentation files (the "Software"), to deal in
@@ -19,7 +19,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-import os.path
+import pathlib
 import warnings
 from typing import Dict, Any, List, Union, Tuple, Optional
 
@@ -32,11 +32,13 @@ from xcube.core.mldataset import LazyMultiLevelDataset
 from xcube.core.mldataset import MultiLevelDataset
 from xcube.util.assertions import assert_instance
 from xcube.util.jsonschema import JsonBooleanSchema
+from xcube.util.jsonschema import JsonIntegerSchema
 from xcube.util.jsonschema import JsonObjectSchema
 from xcube.util.jsonschema import JsonStringSchema
-from xcube.util.jsonschema import JsonIntegerSchema
 from xcube.util.tilegrid import TileGrid
 from .dataset import DatasetZarrFsDataAccessor
+from ..helpers import get_fs_path_class
+from ..helpers import resolve_path
 from ...datatype import DATASET_TYPE
 from ...datatype import DataType
 from ...datatype import MULTI_LEVEL_DATASET_TYPE
@@ -116,19 +118,37 @@ class MultiLevelDatasetLevelsFsDataAccessor(DatasetZarrFsDataAccessor):
                 tile_grid=ml_dataset.tile_grid
             )
 
+        path_class = get_fs_path_class(fs)
+        data_path = path_class(data_id)
+        fs.mkdirs(str(data_path), exist_ok=replace)
+
         for index in range(ml_dataset.num_levels):
             level_dataset = ml_dataset.get_dataset(index)
             if base_dataset_id and index == 0:
                 # Write file "0.link" instead of copying
-                # level-0 dataset to "0.zarr"
-                link_path = f'{data_id}/{index}.link'
-                fs.mkdirs(data_id, exist_ok=replace)
-                with fs.open(link_path, mode='w') as fp:
-                    fp.write(base_dataset_id)
+                # level zero dataset to "0.zarr".
+
+                # Compute a relative base dataset path first
+                base_dataset_path = path_class(root, base_dataset_id)
+                data_parent_path = data_path.parent
+                try:
+                    base_dataset_path = base_dataset_path.relative_to(
+                        data_parent_path
+                    )
+                except ValueError as e:
+                    raise DataStoreError(
+                        f'invalid base_dataset_id: {base_dataset_id}'
+                    ) from e
+                base_dataset_path = '..' / base_dataset_path
+
+                # Then write relative base dataset path into link file
+                link_path = data_path / f'{index}.link'
+                with fs.open(str(link_path), mode='w') as fp:
+                    fp.write(f'{base_dataset_path}')
             else:
                 # Write level "{index}.zarr"
-                level_path = f'{data_id}/{index}.zarr'
-                zarr_store = fs.get_mapper(level_path, create=True)
+                level_path = data_path / f'{index}.zarr'
+                zarr_store = fs.get_mapper(str(level_path), create=True)
                 try:
                     level_dataset.to_zarr(
                         zarr_store,
@@ -148,7 +168,6 @@ class MultiLevelDatasetLevelsFsDataAccessor(DatasetZarrFsDataAccessor):
         return data_id
 
 
-
 class FsMultiLevelDataset(LazyMultiLevelDataset):
     def __init__(self,
                  fs: fsspec.AbstractFileSystem,
@@ -158,36 +177,44 @@ class FsMultiLevelDataset(LazyMultiLevelDataset):
         super().__init__(ds_id=data_id)
         self._fs = fs
         self._root = root
-        self._num_levels = self._get_num_levels(fs, data_id)
         self._open_params = open_params
+        self._path_class = get_fs_path_class(fs)
+        self._num_levels = None
+
+    @property
+    def num_levels(self) -> int:
+        if self._num_levels is None:
+            with self.lock:
+                self._num_levels = self._get_num_levels_lazily()
+        return self._num_levels
 
     def _get_dataset_lazily(self, index: int, parameters) \
             -> xr.Dataset:
 
         open_params = dict(self._open_params)
 
-        link_path = f'{self.ds_id}/{index}.link'
-        if self._fs.isfile(link_path):
+        fs = self._fs
+
+        ds_path = self._get_path(self.ds_id)
+        link_path = ds_path / f'{index}.link'
+        if fs.isfile(str(link_path)):
             # If file "{index}.link" exists, we have a link to
             # a level Zarr and open this instead,
-            with self._fs.open(link_path, 'r') as fp:
-                level_path = fp.read()
-            if self._root:
-                # If we have a root and level_path is relative
-                # make it absolute using root
-                is_abs = os.path.isabs(level_path) or '://' in level_path
-                if not is_abs:
-                    level_path = f'{self._root}/{level_path}'
+            with fs.open(str(link_path), 'r') as fp:
+                level_path = self._get_path(fp.read())
+            if not level_path.is_absolute() \
+                    and not level_path.is_relative_to(ds_path):
+                level_path = resolve_path(ds_path / level_path)
         else:
             # Nominal "{index}.zarr" must exist
-            level_path = f'{self.ds_id}/{index}.zarr'
+            level_path = ds_path / f'{index}.zarr'
 
         consolidated = open_params.pop(
             'consolidated',
-            self._fs.exists(f'{level_path}/.zmetadata')
+            fs.exists(str(level_path / '.zmetadata'))
         )
 
-        level_zarr_store = self._fs.get_mapper(level_path)
+        level_zarr_store = fs.get_mapper(str(level_path))
         try:
             return xr.open_zarr(level_zarr_store,
                                 consolidated=consolidated,
@@ -205,49 +232,42 @@ class FsMultiLevelDataset(LazyMultiLevelDataset):
         :return: the dataset for the level at *index*.
         """
         tile_grid = self.grid_mapping.tile_grid
-        if tile_grid.num_levels != self._num_levels:
+        if tile_grid.num_levels != self.num_levels:
             raise DataStoreError(f'Detected inconsistent'
                                  f' number of detail levels,'
                                  f' expected {tile_grid.num_levels},'
-                                 f' found {self._num_levels}.')
+                                 f' found {self.num_levels}.')
         return tile_grid
 
-    @classmethod
-    def _get_num_levels(cls,
-                        fs: fsspec.AbstractFileSystem,
-                        data_id: str) -> int:
-        levels = cls._get_levels(fs, data_id)
+    def _get_num_levels_lazily(self) -> int:
+        levels = self._get_levels()
         num_levels = len(levels)
         expected_levels = list(range(num_levels))
         for level in expected_levels:
             if level != levels[level]:
                 raise DataStoreError(f'Inconsistent'
-                                     f' multi-level dataset {data_id!r},'
+                                     f' multi-level dataset {self.ds_id!r},'
                                      f' expected levels {expected_levels!r}'
                                      f' found {levels!r}')
         return num_levels
 
-    @classmethod
-    def _get_levels(cls,
-                    fs: fsspec.AbstractFileSystem,
-                    data_id: str) -> List[int]:
+    def _get_levels(self) -> List[int]:
         levels = []
-        for dir_name in (os.path.basename(dir_path['name'])
-                         for dir_path in fs.listdir(data_id, detail=True)):
+        paths = [self._get_path(entry['name'])
+                 for entry in self._fs.listdir(self.ds_id, detail=True)]
+        for path in paths:
             # No ext, i.e. dir_name = "<level>", is proposed by
             # https://github.com/zarr-developers/zarr-specs/issues/50.
             # xcube already selected dir_name = "<level>.zarr".
-            basename, ext = os.path.splitext(dir_name)
-            if basename and ext in ('', '.zarr', '.link'):
+            basename = path.stem
+            if path.stem and path.suffix in ('', '.zarr', '.link'):
                 try:
                     level = int(basename)
                 except ValueError:
                     continue
                 levels.append(level)
-            try:
-                level = int(dir_name)
-            except ValueError:
-                continue
-            levels.append(level)
         levels = sorted(levels)
         return levels
+
+    def _get_path(self, *args) -> pathlib.PurePath:
+        return self._path_class(*args)

@@ -1,4 +1,4 @@
-import math
+import os
 import os
 import threading
 import uuid
@@ -24,7 +24,6 @@ from xcube.core.verify import assert_cube
 from xcube.util.assertions import assert_instance
 from xcube.util.perf import measure_time
 from xcube.util.tilegrid import TileGrid
-from xcube.util.tilegrid import ImageTileGrid, TileGrid
 
 COMPUTE_DATASET = 'compute_dataset'
 
@@ -152,6 +151,10 @@ class LazyMultiLevelDataset(MultiLevelDataset, metaclass=ABCMeta):
             with self._lock:
                 self._tile_grid = self._get_tile_grid_lazily()
         return self._tile_grid
+
+    @property
+    def lock(self) -> threading.RLock:
+        return self._lock
 
     def get_dataset(self, index: int) -> xr.Dataset:
         """
