@@ -99,7 +99,7 @@ class CubeOpener:
                 observer.worked(1)
 
             except DataStoreError as dse:
-                raise CubeGeneratorError(f'{dse}', status_code=400)
+                raise CubeGeneratorError(f'{dse}', status_code=400) from dse
 
             # Turn dataset into cube and grid_mapping
             try:

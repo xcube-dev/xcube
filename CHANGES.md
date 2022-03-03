@@ -8,7 +8,7 @@
   value of `base_dataset_id`, instead of being copied as-is.
   This can save large amounts of storage space. (#617)
 
-* `xcube gen2` returns more expressive error messages
+* `xcube gen2` returns more expressive error messages.
   
 ### Fixes
 

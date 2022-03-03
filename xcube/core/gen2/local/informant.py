@@ -80,7 +80,7 @@ class CubeInformant:
             cube_config, resolved_crs, resolved_time_range = \
                  self._compute_effective_cube_config()
         except (TypeError, ValueError) as e:
-            raise CubeGeneratorError(f'{e}', status_code=400)
+            raise CubeGeneratorError(f'{e}', status_code=400) from e
 
         x_min, y_min, x_max, y_max = cube_config.bbox
         spatial_res = cube_config.spatial_res
