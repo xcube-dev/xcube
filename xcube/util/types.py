@@ -23,7 +23,7 @@ from typing import Optional, Tuple, Type, TypeVar, Union
 
 from xcube.util.assertions import assert_true
 
-T = TypeVar('T', int, float)
+T = TypeVar('T')
 
 ItemType = Union[Type[T], Tuple[Type[T], ...]]
 Pair = Tuple[T, T]
