@@ -10,7 +10,7 @@ where an _image_ refers to a 2-D dataset with two spatial dimensions
 in some horizontal coordinate system.
 
 A multi-resolution dataset comprises a fixed number of
-_levels_, which are regular datasets at different spatial resolutions.
+_levels_, which are regular datasets covering the same spatial area at different resolutions.
 Level zero represents the original resolution `res(L=0)`, higher level 
 resolutions decrease by a factor of two: `res(L) = res(0) / 2^L`.
 
