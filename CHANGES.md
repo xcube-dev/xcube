@@ -18,11 +18,19 @@
   adding a spatial coordinate reference system to an existing  
   Zarr dataset. (#629)
 
-* Introduced parameter `base_dataset_id` for writing multi-level 
-  datasets with the "file", "s3", and "memory" data stores. 
-  If given, the base dataset will be linked only with the 
-  value of `base_dataset_id`, instead of being copied as-is.
-  This can save large amounts of storage space. (#617)
+* Support for multi-level datasets has been improved:
+  - Introduced parameter `base_dataset_id` for writing multi-level 
+    datasets with the "file", "s3", and "memory" data stores. 
+    If given, the base dataset will be linked only with the 
+    value of `base_dataset_id`, instead of being copied as-is.
+    This can save large amounts of storage space. (#617)
+  - Introduced parameter `tile_size` for writing multi-level 
+    datasets with the "file", "s3", and "memory" data stores. 
+    If given, it forces the spatial dimensions to use the specified 
+    chunking.
+  - Added a new example notebook 
+    [5_multi_level_datasets.ipynb](./examples/notebooks/datastores/5_multi_level_datasets.ipynb) 
+    that demonstrates the effect of the new parameters.
 
 ### Fixes
 
