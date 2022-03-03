@@ -36,13 +36,14 @@ from xcube.util.dask import get_block_iterators
 from xcube.util.dask import get_chunk_sizes
 from xcube.util.tilegrid import ImageTileGrid
 from xcube.util.tilegrid import TileGrid
-from xcube.util.types import normalize_scalar_or_pair
 from .helpers import AffineTransformMatrix
 from .helpers import Number
 from .helpers import _assert_valid_xy_coords
 from .helpers import _assert_valid_xy_names
 from .helpers import _from_affine
 from .helpers import _to_affine
+from .helpers import normalize_int_pair
+from .helpers import normalize_number_pair
 from .helpers import scale_xy_res_and_size
 
 # WGS84, axis order: lat, lon
@@ -93,15 +94,12 @@ class GridMapping(abc.ABC):
                  is_lon_360: Optional[bool],
                  is_j_axis_up: Optional[bool]):
 
-        width, height = normalize_scalar_or_pair(size,
-                                                 item_type=int,
-                                                 name='size')
+        width, height = normalize_int_pair(size, name='size')
         assert_true(width > 1 and height > 1,
                     'invalid size')
 
-        tile_width, tile_height = normalize_scalar_or_pair(
+        tile_width, tile_height = normalize_int_pair(
             tile_size,
-            item_type=int,
             default=(width, height)
         )
         assert_true(tile_width > 1 and tile_height > 1,
@@ -114,9 +112,7 @@ class GridMapping(abc.ABC):
         assert_instance(crs, pyproj.crs.CRS, name='crs')
 
         x_min, y_min, x_max, y_max = xy_bbox
-        x_res, y_res = normalize_scalar_or_pair(xy_res,
-                                                item_type=(float, int),
-                                                name='xy_res')
+        x_res, y_res = normalize_number_pair(xy_res, name='xy_res')
         assert_true(x_res > 0 and y_res > 0,
                     'invalid xy_res')
 
@@ -157,9 +153,8 @@ class GridMapping(abc.ABC):
             _assert_valid_xy_names(xy_dim_names, name='xy_dim_names')
             other._xy_dim_names = xy_dim_names
         if tile_size is not None:
-            tile_width, tile_height = normalize_scalar_or_pair(tile_size,
-                                                               item_type=int,
-                                                               name='tile_size')
+            tile_width, tile_height = normalize_int_pair(tile_size,
+                                                         name='tile_size')
             assert_true(tile_width > 1 and tile_height > 1, 'invalid tile_size')
             tile_size = tile_width, tile_height
             if other.tile_size != tile_size:
@@ -191,14 +186,13 @@ class GridMapping(abc.ABC):
         :return: A new, scaled grid mapping.
         """
         self._assert_regular()
-        x_scale, y_scale = normalize_scalar_or_pair(xy_scale)
+        x_scale, y_scale = normalize_number_pair(xy_scale)
         new_xy_res, new_size = scale_xy_res_and_size(self.xy_res,
                                                      self.size,
                                                      (x_scale, y_scale))
         if tile_size is not None:
-            tile_width, tile_height = normalize_scalar_or_pair(tile_size,
-                                                               item_type=int,
-                                                               name='tile_size')
+            tile_width, tile_height = normalize_int_pair(tile_size,
+                                                         name='tile_size')
         else:
             tile_width, tile_height = self.tile_size
         tile_width = min(new_size[0], tile_width)

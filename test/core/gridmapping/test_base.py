@@ -102,8 +102,7 @@ class GridMappingTest(SourceDatasetMixin, unittest.TestCase):
 
         with self.assertRaises(ValueError) as cm:
             TestGridMapping(**self.kwargs(size=None))
-        self.assertEqual("size must be a scalar or pair of <class 'int'>, "
-                         "was 'None'",
+        self.assertEqual("size must be an int or a sequence of two ints",
                          f'{cm.exception}')
 
         with self.assertRaises(ValueError) as cm:

@@ -173,7 +173,8 @@ def resample_ndimage(
         axes = {image.ndim - 2: divisor_y, image.ndim - 1: divisor_x}
         elongation = _normalize_scale((scale_y / divisor_y,
                                        scale_x / divisor_x), image.ndim)
-        larger_shape = resize_shape(shape, (divisor_y, divisor_x),
+        larger_shape = resize_shape(shape,
+                                    scale=(float(divisor_y), float(divisor_x)),
                                     divisor_x=divisor_x,
                                     divisor_y=divisor_y)
         # print('Downsampling: ', scale)
@@ -308,9 +309,10 @@ def _normalize_pair(pair: Optional[Sequence[float]],
                     default: float,
                     ndim: int,
                     name: str) -> Tuple[int, ...]:
+    if pair is None:
+        pair = default, default
     pair = normalize_scalar_or_pair(tuple(pair),
                                     item_type=float,
-                                    default=default,
                                     name=name)
     return (ndim - 2) * (default,) + tuple(pair)
 

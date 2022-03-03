@@ -34,13 +34,8 @@ def normalize_scalar_or_pair(
         value: ScalarOrPair[T],
         *,
         item_type: Optional[ItemType[T]] = None,
-        default: Optional[ScalarOrPair] = None,
         name: Optional[str] = None
 ) -> Pair:
-    if value is None and default is not None:
-        # not returning default immediately so that default is checked for
-        # validity
-        value = default
     try:
         assert_true(len(value) <= 2,
                     message=f"{name or 'Value'} must be a scalar or pair of "
@@ -49,27 +44,7 @@ def normalize_scalar_or_pair(
     except TypeError:
         x, y = value, value
     if item_type is not None:
-        x = _maybe_convert(x, item_type)
-        y = _maybe_convert(y, item_type)
         assert_true(isinstance(x, item_type) and isinstance(y, item_type),
                     message=f"{name or 'Value'} must be a scalar or pair of "
                             f"{item_type}, was '{value}'")
     return x, y
-
-
-def _maybe_convert(value: T, item_type: ItemType[T]) -> T:
-    if not isinstance(value, item_type):
-        try:
-            for t in item_type:
-                try:
-                    value = t(value)
-                    break
-                except TypeError:
-                    continue
-        except TypeError:
-            try:
-                value = item_type(value)
-            except TypeError:
-                # leave value as is
-                value = value
-    return value

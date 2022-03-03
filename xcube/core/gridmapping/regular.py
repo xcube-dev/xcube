@@ -26,12 +26,13 @@ import pyproj
 import xarray as xr
 
 from xcube.util.assertions import assert_true
-from xcube.util.types import normalize_scalar_or_pair
 from .base import GridMapping
 from .helpers import _default_xy_dim_names
 from .helpers import _default_xy_var_names
 from .helpers import _normalize_crs
 from .helpers import _to_int_or_float
+from .helpers import normalize_int_pair
+from .helpers import normalize_number_pair
 
 
 class RegularGridMapping(GridMapping):
@@ -72,18 +73,12 @@ def new_regular_grid_mapping(
         tile_size: Union[int, Tuple[int, int]] = None,
         is_j_axis_up: bool = False
 ) -> GridMapping:
-    width, height = normalize_scalar_or_pair(size,
-                                             item_type=int,
-                                             name='size')
+    width, height = normalize_int_pair(size, name='size')
     assert_true(width > 1 and height > 1, 'invalid size')
 
-    x_min, y_min = normalize_scalar_or_pair(xy_min,
-                                            item_type=(int, float),
-                                            name='xy_min')
+    x_min, y_min = normalize_number_pair(xy_min, name='xy_min')
 
-    x_res, y_res = normalize_scalar_or_pair(xy_res,
-                                            item_type=(int, float),
-                                            name='xy_res')
+    x_res, y_res = normalize_number_pair(xy_res, name='xy_res')
     assert_true(x_res > 0 and y_res > 0, 'invalid xy_res')
 
     crs = _normalize_crs(crs)
