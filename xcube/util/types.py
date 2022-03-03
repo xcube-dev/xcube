@@ -31,7 +31,7 @@ ScalarOrPair = Union[T, Pair]
 
 
 def normalize_scalar_or_pair(
-        value: Optional[ScalarOrPair] = None,
+        value: ScalarOrPair[T],
         *,
         item_type: Optional[ItemType[T]] = None,
         default: Optional[ScalarOrPair] = None,
