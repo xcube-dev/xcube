@@ -32,6 +32,8 @@
     [5_multi_level_datasets.ipynb](./examples/notebooks/datastores/5_multi_level_datasets.ipynb) 
     that demonstrates the effect of the new parameters.
 
+* `xcube gen2` returns more expressive error messages.
+  
 ### Fixes
 
 * Fixed `FsDataAccessor.write_data()` implementations, 

@@ -19,9 +19,12 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+import traceback
+
 from xcube.core.normalize import DatasetIsNotACubeError
 from xcube.core.normalize import decode_cube
 from xcube.core.store import DATASET_TYPE
+from xcube.core.store import DataStoreError
 from xcube.core.store import DataStorePool
 from xcube.core.store import get_data_store_instance
 from xcube.core.store import new_data_opener
@@ -59,41 +62,44 @@ class CubeOpener:
         open_params = input_config.open_params or {}
 
         with observe_progress('reading cube', 3) as observer:
-
-            if input_config.store_id:
-                store_instance = get_data_store_instance(
-                    input_config.store_id,
-                    store_params=store_params,
-                    store_pool=self._store_pool
-                )
-                store = store_instance.store
-                if opener_id is None:
-                    opener_id = self._get_opener_id(
-                        input_config, store
+            try:
+                if input_config.store_id:
+                    store_instance = get_data_store_instance(
+                        input_config.store_id,
+                        store_params=store_params,
+                        store_pool=self._store_pool
                     )
-                opener = store
-                open_params = dict(open_params)
-                open_params['opener_id'] = opener_id
-            else:
-                opener = new_data_opener(opener_id)
-                open_params = dict(open_params)
-                open_params.update(store_params)
+                    store = store_instance.store
+                    if opener_id is None:
+                        opener_id = self._get_opener_id(
+                            input_config, store
+                        )
+                    opener = store
+                    open_params = dict(open_params)
+                    open_params['opener_id'] = opener_id
+                else:
+                    opener = new_data_opener(opener_id)
+                    open_params = dict(open_params)
+                    open_params.update(store_params)
 
-            open_params_schema = opener.get_open_data_params_schema(
-                input_config.data_id
-            )
+                open_params_schema = opener.get_open_data_params_schema(
+                    input_config.data_id
+                )
 
-            dataset_open_params = {
-                k: v for k, v in cube_params.items()
-                if k in open_params_schema.properties
-            }
+                dataset_open_params = {
+                    k: v for k, v in cube_params.items()
+                    if k in open_params_schema.properties
+                }
 
-            observer.worked(1)
+                observer.worked(1)
 
-            dataset = opener.open_data(input_config.data_id,
-                                       **open_params,
-                                       **dataset_open_params)
-            observer.worked(1)
+                dataset = opener.open_data(input_config.data_id,
+                                           **open_params,
+                                           **dataset_open_params)
+                observer.worked(1)
+
+            except DataStoreError as dse:
+                raise CubeGeneratorError(f'{dse}', status_code=400) from dse
 
             # Turn dataset into cube and grid_mapping
             try:
