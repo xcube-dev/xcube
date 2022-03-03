@@ -28,7 +28,7 @@ datasets.
 The xcube Levels Format
 -----------------------
 
-The xcube Levels format is basically a single top-level directory 
+The xcube Levels format is basically a single top-level directory. 
 The filename extension of that directory should be `.levels` 
 by convention. The directory entries are Zarr datasets   
 
