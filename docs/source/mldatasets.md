@@ -56,7 +56,7 @@ to be used as level zero as a plain text string. It may be an absolute
 path or a path relative to the top-level dataset.
 
     - test_pyramid.levels/
-        - 0.link/    # --> link to actual level zero dataset
+        - 0.link    # --> link to actual level zero dataset
         - 1.zarr/
         - 2.zarr/
 
