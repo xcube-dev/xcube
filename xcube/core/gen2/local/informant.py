@@ -21,6 +21,7 @@
 
 import datetime
 import numbers
+import traceback
 import warnings
 from typing import Optional, Sequence, Any, Tuple
 
@@ -34,6 +35,7 @@ from xcube.util.assertions import assert_instance
 from xcube.util.assertions import assert_true
 from .describer import DatasetsDescriber
 from ..config import CubeConfig
+from ..error import CubeGeneratorError
 from ..request import CubeGeneratorRequest
 from ..response import CubeInfo
 
@@ -74,8 +76,11 @@ class CubeInformant:
         return cube_config
 
     def generate(self) -> CubeInfo:
-        cube_config, resolved_crs, resolved_time_range = \
-            self._compute_effective_cube_config()
+        try:
+            cube_config, resolved_crs, resolved_time_range = \
+                 self._compute_effective_cube_config()
+        except (TypeError, ValueError) as e:
+            raise CubeGeneratorError(f'{e}', status_code=400) from e
 
         x_min, y_min, x_max, y_max = cube_config.bbox
         spatial_res = cube_config.spatial_res

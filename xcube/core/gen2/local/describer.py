@@ -71,11 +71,9 @@ class DatasetsDescriber:
         try:
             descriptor = opener.describe_data(input_config.data_id,
                                               data_type=DATASET_TYPE)
-        except DataStoreError:
-            raise CubeGeneratorError(f'Data store '
-                                     f'"{input_config.store_id}" '
-                                     f'does not support datasets',
-                                     status_code=400)
+        except DataStoreError as dse:
+            raise CubeGeneratorError(f'{dse}',
+                                     status_code=400) from dse
         if not isinstance(descriptor, DatasetDescriptor):
             raise RuntimeError(f'internal error: data store '
                                f'"{input_config.store_id}": '

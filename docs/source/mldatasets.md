@@ -10,9 +10,10 @@ where an _image_ refers to a 2-D dataset with two spatial dimensions
 in some horizontal coordinate system.
 
 A multi-resolution dataset comprises a fixed number of
-_levels_, which are regular datasets covering the same spatial area at different resolutions.
-Level zero represents the original resolution `res(L=0)`, higher level 
-resolutions decrease by a factor of two: `res(L) = res(0) / 2^L`.
+_levels_, which are regular datasets covering the same spatial area at 
+different resolutions. Level zero represents the original resolution 
+`res(L=0)`, higher level resolutions decrease by a factor of two: 
+`res(L) = res(0) / 2^L`.
 
 
 Implementation in xcube
@@ -21,9 +22,9 @@ Implementation in xcube
 In xcube, multi-resolution datasets are represented by the abstract class
 `xcube.core.mldataset.MultiLevelDataset`. The xcube data store framework
 refers to this datatype using the alias `mldataset`. The corresponding
-default data format is the xcube `levels` format. Later xcube will also 
-support Cloud Optimized GeoTIFF (COG) as format for multi-resolution 
-datasets.
+default data format is the xcube _Levels_ format, named `levels`.
+It is planned to also support Cloud Optimized GeoTIFF (COG) as format 
+for multi-resolution datasets in xcube.
 
 The xcube Levels Format
 -----------------------
@@ -36,10 +37,7 @@ by convention. The directory entries are Zarr datasets
    their zero-based level index, `{level}.zarr`;
 2. that comply with the xcube dataset convention.
 
-<div style="color: red;">
-    TODO (forman): link to xcube dataset convention
-</div> 
-
+TODO (forman): link to xcube dataset convention
 
 The following is a multi-resolution dataset with three levels:
 
@@ -58,7 +56,7 @@ to be used as level zero as a plain text string. It may be an absolute
 path or a path relative to the top-level dataset.
 
     - test_pyramid.levels/
-        - 0.link/    # --> link to actual level zero dataset
+        - 0.link    # --> link to actual level zero dataset
         - 1.zarr/
         - 2.zarr/
 
@@ -73,14 +71,13 @@ To be discussed
 ---------------
 
 * Allow links for all levels?
-* Add top-level metadata such as `num_levels` and links for each 
-  level?
 * Make top-level directory a Zarr group (`.zgroup`)
-  and encode level metadata in `.zattrs` (e.g. `num_levels`)?
+  and encode level metadata (e.g. `num_levels` and level links) in `.zattrs`, or 
+  even better `.zlevels`?
 
 To do
 -----
 
 * Currently, the FS data stores treat relative link paths as relative
-  to the data store's `root`. 
+  to the data store's `root`. See https://github.com/dcs4cop/xcube/pull/637
 

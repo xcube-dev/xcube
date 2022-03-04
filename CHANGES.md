@@ -35,6 +35,8 @@
   - Specified [xcube Multi-Resolution Datasets](https://github.com/dcs4cop/xcube/blob/master/docs/source/mldatasets.md)
     definition and format.
 
+* `xcube gen2` returns more expressive error messages.
+  
 ### Fixes
 
 * Fixed `FsDataAccessor.write_data()` implementations, 
