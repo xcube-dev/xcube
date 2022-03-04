@@ -76,8 +76,9 @@ To be discussed
 * Add top-level metadata such as `num_levels` and links for each 
   level?
 * Make top-level directory a Zarr group (`.zgroup`)
-  and encode level metadata in `.zattrs` (e.g. `num_levels`)?
-* Link relative to link file?
+  and encode level metadata (e.g. `num_levels` and level links) in `.zattrs`, or 
+  even better `.zlevels`?
+* Link relative to link file instead of top-level directory? See #636 
 
 To do
 -----
