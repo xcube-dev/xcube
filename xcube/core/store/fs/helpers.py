@@ -18,6 +18,7 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+
 import pathlib
 from typing import Type, Iterator
 
@@ -26,11 +27,17 @@ from fsspec.implementations.local import LocalFileSystem
 
 
 def is_local_fs(fs: fsspec.AbstractFileSystem) -> bool:
+    """
+    Check whether *fs* is a local filesystem.
+    """
     return fs.protocol == 'file' or isinstance(fs, LocalFileSystem)
 
 
 def get_fs_path_class(fs: fsspec.AbstractFileSystem) \
         -> Type[pathlib.PurePath]:
+    """
+    Get the appropriate ``pathlib.PurePath`` class for the filesystem *fs*.
+    """
     if is_local_fs(fs):
         # Will return PurePosixPath or a PureWindowsPath object
         return pathlib.PurePath
@@ -40,6 +47,10 @@ def get_fs_path_class(fs: fsspec.AbstractFileSystem) \
 
 
 def resolve_path(path: pathlib.PurePath) -> pathlib.PurePath:
+    """
+    Resolve "." and ".." occurrences in *path* without I/O and
+    return a new path.
+    """
     reversed_parts = reversed(path.parts)
     reversed_norm_parts = list(_resolve_path_impl(reversed_parts))
     parts = reversed(reversed_norm_parts)
