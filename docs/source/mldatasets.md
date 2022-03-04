@@ -36,10 +36,7 @@ by convention. The directory entries are Zarr datasets
    their zero-based level index, `{level}.zarr`;
 2. that comply with the xcube dataset convention.
 
-<div style="color: red;">
-    TODO (forman): link to xcube dataset convention
-</div> 
-
+TODO (forman): link to xcube dataset convention
 
 The following is a multi-resolution dataset with three levels:
 
@@ -78,11 +75,12 @@ To be discussed
 * Make top-level directory a Zarr group (`.zgroup`)
   and encode level metadata (e.g. `num_levels` and level links) in `.zattrs`, or 
   even better `.zlevels`?
-* Link relative to link file instead of top-level directory? See #636 
+* Link relative to link file instead of top-level directory? See 
+  https://github.com/dcs4cop/xcube/issues/636
 
 To do
 -----
 
 * Currently, the FS data stores treat relative link paths as relative
-  to the data store's `root`. 
+  to the data store's `root`. See https://github.com/dcs4cop/xcube/pull/637
 
