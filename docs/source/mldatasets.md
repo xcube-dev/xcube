@@ -77,7 +77,6 @@ To be discussed
   level?
 * Make top-level directory a Zarr group (`.zgroup`)
   and encode level metadata in `.zattrs` (e.g. `num_levels`)?
-* Link relative to link file?
 
 To do
 -----
