@@ -10,9 +10,10 @@ where an _image_ refers to a 2-D dataset with two spatial dimensions
 in some horizontal coordinate system.
 
 A multi-resolution dataset comprises a fixed number of
-_levels_, which are regular datasets covering the same spatial area at different resolutions.
-Level zero represents the original resolution `res(L=0)`, higher level 
-resolutions decrease by a factor of two: `res(L) = res(0) / 2^L`.
+_levels_, which are regular datasets covering the same spatial area at 
+different resolutions. Level zero represents the original resolution 
+`res(L=0)`, higher level resolutions decrease by a factor of two: 
+`res(L) = res(0) / 2^L`.
 
 
 Implementation in xcube
@@ -21,9 +22,9 @@ Implementation in xcube
 In xcube, multi-resolution datasets are represented by the abstract class
 `xcube.core.mldataset.MultiLevelDataset`. The xcube data store framework
 refers to this datatype using the alias `mldataset`. The corresponding
-default data format is the xcube `levels` format. Later xcube will also 
-support Cloud Optimized GeoTIFF (COG) as format for multi-resolution 
-datasets.
+default data format is the xcube _Levels_ format, named `levels`.
+It is planned to also support Cloud Optimized GeoTIFF (COG) as format 
+for multi-resolution datasets in xcube.
 
 The xcube Levels Format
 -----------------------
