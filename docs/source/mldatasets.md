@@ -64,8 +64,10 @@ Related reads
 -------------
 
 * [WIP: Multiscale use-case](https://github.com/zarr-developers/zarr-specs/issues/23)
-  in zarr-developers / zarr-specs on GitHub
-
+  in zarr-developers / zarr-specs on GitHub.
+* [Multiscale convention](https://github.com/zarr-developers/zarr-specs/issues/125)
+  in zarr-developers / zarr-specs on GitHub.
+* [Package ndpyramid](https://github.com/carbonplan/ndpyramid)
 
 To be discussed
 ---------------
