@@ -64,8 +64,10 @@ Related reads
 -------------
 
 * [WIP: Multiscale use-case](https://github.com/zarr-developers/zarr-specs/issues/23)
-  in zarr-developers / zarr-specs on GitHub
-
+  in zarr-developers / zarr-specs on GitHub.
+* [Multiscale convention](https://github.com/zarr-developers/zarr-specs/issues/125)
+  in zarr-developers / zarr-specs on GitHub.
+* [Package ndpyramid](https://github.com/carbonplan/ndpyramid)
 
 To be discussed
 ---------------
@@ -74,6 +76,9 @@ To be discussed
 * Make top-level directory a Zarr group (`.zgroup`)
   and encode level metadata (e.g. `num_levels` and level links) in `.zattrs`, or 
   even better `.zlevels`?
+* Allow a Zarr levels sub-group of the level zero Zarr dataset.
+  It would contain all levels without level zero, hence avoiding the need to 
+  link level zeros. 
 
 To do
 -----
