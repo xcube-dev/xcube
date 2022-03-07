@@ -1,5 +1,5 @@
 # The MIT License (MIT)
-# Copyright (c) 2021 by the xcube development team and contributors
+# Copyright (c) 2022 by the xcube development team and contributors
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of
 # this software and associated documentation files (the "Software"), to deal in
@@ -19,13 +19,55 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+import pathlib
+from typing import Type, Iterator
+
 import fsspec
 from fsspec.implementations.local import LocalFileSystem
 
 
 def is_local_fs(fs: fsspec.AbstractFileSystem) -> bool:
+    """
+    Check whether *fs* is a local filesystem.
+    """
     return fs.protocol == 'file' or isinstance(fs, LocalFileSystem)
 
 
-def normalize_path(path: str) -> str:
-    return path.replace('\\', '/') if '\\' in path else path
+def get_fs_path_class(fs: fsspec.AbstractFileSystem) \
+        -> Type[pathlib.PurePath]:
+    """
+    Get the appropriate ``pathlib.PurePath`` class for the filesystem *fs*.
+    """
+    if is_local_fs(fs):
+        # Will return PurePosixPath or a PureWindowsPath object
+        return pathlib.PurePath
+    # PurePosixPath for non-local filesystems such as S3,
+    # so we force use of forward slashes as separators
+    return pathlib.PurePosixPath
+
+
+def resolve_path(path: pathlib.PurePath) -> pathlib.PurePath:
+    """
+    Resolve "." and ".." occurrences in *path* without I/O and
+    return a new path.
+    """
+    reversed_parts = reversed(path.parts)
+    reversed_norm_parts = list(_resolve_path_impl(reversed_parts))
+    parts = reversed(reversed_norm_parts)
+    return type(path)(*parts)
+
+
+def _resolve_path_impl(reversed_parts: Iterator[str]):
+    skips = False
+    for part in reversed_parts:
+        if part == '.':
+            continue
+        elif part == '..':
+            skips += 1
+            continue
+        if skips == 0:
+            yield part
+        elif skips > 0:
+            skips -= 1
+    if skips != 0:
+        raise ValueError('cannot resolve path, misplaced ".."')

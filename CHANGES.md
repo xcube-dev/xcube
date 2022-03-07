@@ -29,8 +29,11 @@
     If given, it forces the spatial dimensions to use the specified 
     chunking.
   - Added a new example notebook 
-    [5_multi_level_datasets.ipynb](./examples/notebooks/datastores/5_multi_level_datasets.ipynb) 
-    that demonstrates the effect of the new parameters.
+    [5_multi_level_datasets.ipynb](https://github.com/dcs4cop/xcube/blob/master/examples/notebooks/datastores/5_multi_level_datasets.ipynb) 
+    that demonstrates writing and opening multi-level datasets with the 
+    xcube filesystem data stores.
+  - Specified [xcube Multi-Resolution Datasets](https://github.com/dcs4cop/xcube/blob/master/docs/source/mldatasets.md)
+    definition and format.
 
 * `xcube gen2` returns more expressive error messages.
   

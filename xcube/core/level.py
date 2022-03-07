@@ -244,6 +244,13 @@ def read_levels(
         if ext == ".link":
             with open(file_path, "r") as fp:
                 link_file_path = fp.read()
+            if not os.path.isabs(link_file_path):
+                parent_dir_path = os.path.abspath(
+                    os.path.dirname(dir_path) or '.'
+                )
+                link_file_path = os.path.join(
+                    parent_dir_path, link_file_path
+                )
             dataset = xr.open_zarr(link_file_path)
         else:
             dataset = xr.open_zarr(file_path)

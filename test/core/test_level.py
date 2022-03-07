@@ -87,6 +87,13 @@ class PyramidTest(unittest.TestCase):
         ]
         self._assert_io_ok(shape,
                            tile_shape,
+                           False,
+                           expected_num_levels,
+                           expected_shapes,
+                           expected_chunks)
+        self._assert_io_ok(shape,
+                           tile_shape,
+                           True,
                            expected_num_levels,
                            expected_shapes,
                            expected_chunks)
@@ -113,6 +120,13 @@ class PyramidTest(unittest.TestCase):
         ]
         self._assert_io_ok(shape,
                            tile_shape,
+                           False,
+                           expected_num_levels,
+                           expected_shapes,
+                           expected_chunks)
+        self._assert_io_ok(shape,
+                           tile_shape,
+                           True,
                            expected_num_levels,
                            expected_shapes,
                            expected_chunks)
@@ -120,26 +134,29 @@ class PyramidTest(unittest.TestCase):
     def _assert_io_ok(self,
                       shape,
                       tile_shape,
+                      link_input: bool,
                       expected_num_levels,
                       expected_shapes,
                       expected_chunks):
 
-        input_path = get_path("pyramid-input.nc")
+        input_path = get_path("pyramid-input.zarr")
         output_path = get_path("pyramid-output")
 
         rimraf(input_path)
         rimraf(output_path)
 
         try:
-            dataset = self.create_test_dataset(shape, chunks=None)
-            dataset.to_netcdf(input_path)
+            dataset = self.create_test_dataset(shape,
+                                               chunks=(1, *tile_shape))
+            dataset.to_zarr(input_path)
 
             t0 = time.perf_counter()
 
             levels = write_levels(output_path,
                                   dataset=dataset,
                                   spatial_tile_shape=tile_shape,
-                                  input_path=input_path)
+                                  input_path=input_path,
+                                  link_input=link_input)
 
             print(f"write time total: ", time.perf_counter() - t0)
 

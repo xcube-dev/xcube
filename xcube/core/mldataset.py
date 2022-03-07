@@ -1,4 +1,24 @@
-import math
+# The MIT License (MIT)
+# Copyright (c) 2022 by the xcube development team and contributors
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy of
+# this software and associated documentation files (the "Software"), to deal in
+# the Software without restriction, including without limitation the rights to
+# use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
+# of the Software, and to permit persons to whom the Software is furnished to do
+# so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
 import os
 import threading
 import uuid
@@ -24,7 +44,6 @@ from xcube.core.verify import assert_cube
 from xcube.util.assertions import assert_instance
 from xcube.util.perf import measure_time
 from xcube.util.tilegrid import TileGrid
-from xcube.util.tilegrid import ImageTileGrid, TileGrid
 
 COMPUTE_DATASET = 'compute_dataset'
 
@@ -152,6 +171,14 @@ class LazyMultiLevelDataset(MultiLevelDataset, metaclass=ABCMeta):
             with self._lock:
                 self._tile_grid = self._get_tile_grid_lazily()
         return self._tile_grid
+
+    @property
+    def lock(self) -> threading.RLock:
+        """
+        Get the reentrant lock used by this object to synchronize
+        lazy instantiation of properties.
+        """
+        return self._lock
 
     def get_dataset(self, index: int) -> xr.Dataset:
         """

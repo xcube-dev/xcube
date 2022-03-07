@@ -1,5 +1,5 @@
 # The MIT License (MIT)
-# Copyright (c) 2020 by the xcube development team and contributors
+# Copyright (c) 2022 by the xcube development team and contributors
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of
 # this software and associated documentation files (the "Software"), to deal in
@@ -20,6 +20,7 @@
 # SOFTWARE.
 
 import os.path
+import pathlib
 import uuid
 import warnings
 from threading import RLock
@@ -43,7 +44,6 @@ from xcube.util.jsonschema import JsonStringSchema
 from .accessor import FsAccessor
 from .accessor import STORAGE_OPTIONS_PARAM_NAME
 from .helpers import is_local_fs
-from .helpers import normalize_path
 from ..accessor import DataOpener
 from ..accessor import DataWriter
 from ..accessor import find_data_opener_extensions
@@ -158,7 +158,7 @@ class BaseFsDataStore(DefaultSearchMixin, MutableDataStore):
                 root = self._raw_root
                 if is_local:
                     root = os.path.abspath(root)
-                self._root = normalize_path(root)
+                self._root = pathlib.Path(root).as_posix()
         return self._root
 
     @property
@@ -467,21 +467,6 @@ class BaseFsDataStore(DefaultSearchMixin, MutableDataStore):
         root = self.root
         fs_path = f'{root}/{data_id}' if root else data_id
         return fs_path
-
-    def _convert_fs_path_into_data_id(self, fs_path: str) -> str:
-        assert_given(fs_path, 'fs_path')
-        fs_path = normalize_path(fs_path)
-        root = self.root
-        if root:
-            root_pos = fs_path.find(root)
-            if root_pos == -1:
-                raise RuntimeError('internal error')
-            data_id = fs_path[root_pos + len(root):]
-        else:
-            data_id = fs_path
-        while data_id.startswith('/'):
-            data_id = data_id[1:]
-        return data_id
 
     def _assert_valid_data_type(self,
                                 data_type: DataType):
