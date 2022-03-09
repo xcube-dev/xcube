@@ -2,6 +2,15 @@
 
 ### Enhancements
 
+* In previous versions, xcube did not consider that datasets may have different
+  resolutions in x- and y-direction. These could, e.g., not be described with a 
+  `DatasetDescriptor`. In particular, there were problems during the use of 
+  `xcube gen2` when datasets were resampled, although a simple subsetting 
+  would have been enough.
+  This version fixes these problems. Different resolutions in x- and y-
+  direction may now be described by DatasetDescriptors and be stated in a 
+  `CubeConfig` for `xcube gen2`. (#615) 
+
 ### Fixes
 
 ### Other

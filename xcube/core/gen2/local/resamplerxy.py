@@ -24,6 +24,7 @@ import xarray as xr
 
 from xcube.core.gridmapping import GridMapping
 from xcube.core.resampling import resample_in_space
+from xcube.util.types import normalize_scalar_or_pair
 from .transformer import CubeTransformer
 from .transformer import TransformedCube
 from ..config import CubeConfig
@@ -68,7 +69,9 @@ def _compute_target_grid_mapping(cube_config: CubeConfig,
         return source_gm.to_regular(tile_size=cube_config.tile_size)
 
     if target_spatial_res is not None:
-        xy_res = (target_spatial_res, target_spatial_res)
+        xy_res = normalize_scalar_or_pair(target_spatial_res,
+                                          item_type=(int, float),
+                                          name='spatial_res')
     else:
         xy_res = source_gm.xy_res
     if target_bbox is not None:

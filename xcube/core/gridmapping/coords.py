@@ -35,9 +35,9 @@ from .base import GridMapping
 from .helpers import _assert_valid_xy_names
 from .helpers import _default_xy_var_names
 from .helpers import _normalize_crs
-from .helpers import _normalize_int_pair
 from .helpers import _to_int_or_float
 from .helpers import from_lon_360
+from .helpers import normalize_int_pair
 from .helpers import round_to_fraction
 from .helpers import to_lon_360
 
@@ -105,7 +105,10 @@ def new_grid_mapping_from_coords(
     else:
         xy_var_names = _default_xy_var_names(crs)
 
-    tile_size = _normalize_int_pair(tile_size, default=None)
+    try:
+        tile_size = normalize_int_pair(tile_size)
+    except ValueError:
+        tile_size = None
     is_lon_360 = None  # None means "not yet known"
     if crs.is_geographic:
         is_lon_360 = bool(np.any(x_coords > 180))

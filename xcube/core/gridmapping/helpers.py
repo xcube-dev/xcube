@@ -68,7 +68,7 @@ def _normalize_crs(crs: Union[str, pyproj.CRS]) -> pyproj.CRS:
     return pyproj.CRS.from_string(crs)
 
 
-def _normalize_int_pair(
+def normalize_int_pair(
         value: Any,
         name: str = None,
         default: Optional[Tuple[int, int]] = UNDEFINED
@@ -86,7 +86,7 @@ def _normalize_int_pair(
                          f' or a sequence of two ints')
 
 
-def _normalize_number_pair(
+def normalize_number_pair(
         value: Any,
         name: str = None,
         default: Optional[Tuple[Number, Number]] = UNDEFINED

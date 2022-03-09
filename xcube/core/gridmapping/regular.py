@@ -30,9 +30,9 @@ from .base import GridMapping
 from .helpers import _default_xy_dim_names
 from .helpers import _default_xy_var_names
 from .helpers import _normalize_crs
-from .helpers import _normalize_int_pair
-from .helpers import _normalize_number_pair
 from .helpers import _to_int_or_float
+from .helpers import normalize_int_pair
+from .helpers import normalize_number_pair
 
 
 class RegularGridMapping(GridMapping):
@@ -73,12 +73,12 @@ def new_regular_grid_mapping(
         tile_size: Union[int, Tuple[int, int]] = None,
         is_j_axis_up: bool = False
 ) -> GridMapping:
-    width, height = _normalize_int_pair(size, name='size')
+    width, height = normalize_int_pair(size, name='size')
     assert_true(width > 1 and height > 1, 'invalid size')
 
-    x_min, y_min = _normalize_number_pair(xy_min, name='xy_min')
+    x_min, y_min = normalize_number_pair(xy_min, name='xy_min')
 
-    x_res, y_res = _normalize_number_pair(xy_res, name='xy_res')
+    x_res, y_res = normalize_number_pair(xy_res, name='xy_res')
     assert_true(x_res > 0 and y_res > 0, 'invalid xy_res')
 
     crs = _normalize_crs(crs)

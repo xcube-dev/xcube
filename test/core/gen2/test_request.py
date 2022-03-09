@@ -15,7 +15,7 @@ class CubeGeneratorRequestTest(unittest.TestCase):
             cube_config=dict(variable_names=['B01', 'B02'],
                              crs='WGS84',
                              bbox=[12.2, 52.1, 13.9, 54.8],
-                             spatial_res=0.05,
+                             spatial_res=(0.05, 0.05),
                              time_range=['2018-01-01', None],
                              time_period='4D'),
             output_config=dict(store_id='memory',
@@ -66,7 +66,7 @@ class CubeGeneratorRequestTest(unittest.TestCase):
         self.assertEqual(('B01', 'B02'), gen_config.cube_config.variable_names)
         self.assertEqual('WGS84', gen_config.cube_config.crs)
         self.assertEqual((12.2, 52.1, 13.9, 54.8), gen_config.cube_config.bbox)
-        self.assertEqual(0.05, gen_config.cube_config.spatial_res)
+        self.assertEqual((0.05, 0.05), gen_config.cube_config.spatial_res)
         self.assertEqual(('2018-01-01', None), gen_config.cube_config.time_range)
         self.assertEqual('4D', gen_config.cube_config.time_period)
 
@@ -77,7 +77,7 @@ class CubeGeneratorRequestTest(unittest.TestCase):
             cube_config=dict(variable_names=['B01', 'B02'],
                              crs='WGS84',
                              bbox=[12.2, 52.1, 13.9, 54.8],
-                             spatial_res=0.05,
+                             spatial_res=(0.05, 0.05),
                              time_range=['2018-01-01', None],
                              time_period='4D'),
             output_config=dict(store_id='memory',

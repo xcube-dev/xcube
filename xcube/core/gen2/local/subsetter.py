@@ -27,6 +27,7 @@ from xcube.core.gridmapping import GridMapping
 from xcube.core.select import select_spatial_subset
 from xcube.core.select import select_temporal_subset
 from xcube.core.select import select_variables_subset
+from xcube.util.types import normalize_scalar_or_pair
 from .transformer import CubeTransformer
 from .transformer import TransformedCube
 from ..config import CubeConfig
@@ -57,10 +58,13 @@ class CubeSubsetter(CubeTransformer):
                 # is required later, which will include the desired
                 # subsetting.
                 desired_res = cube_config.spatial_res
-                if desired_res is not None \
-                        and not (math.isclose(gm.x_res, desired_res)
-                                 and math.isclose(gm.y_res, desired_res)):
-                    can_do_spatial_subset = False
+                if desired_res is not None:
+                    desired_x_res, desired_y_res = \
+                        normalize_scalar_or_pair(desired_res,
+                                                 item_type=(int, float))
+                    if not (math.isclose(gm.x_res, desired_x_res)
+                            and math.isclose(gm.y_res, desired_y_res)):
+                        can_do_spatial_subset = False
                 if can_do_spatial_subset:
                     # Finally, the desired CRS must be equal to the current
                     # one, or they must both be geographic.
