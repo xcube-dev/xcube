@@ -1,4 +1,5 @@
 import os.path
+import shutil
 import unittest
 import warnings
 from abc import ABC, abstractmethod
@@ -45,6 +46,7 @@ def new_cube_data():
                                    var_b=var_b,
                                    var_c=var_c))
 
+    # Set var_b encodings
     cube.var_b.encoding['dtype'] = np.int16
     cube.var_b.encoding['_FillValue'] = -9999
     cube.var_b.encoding['scale_factor'] = 0.001
@@ -54,16 +56,23 @@ def new_cube_data():
 
 
 class NewCubeDataTestMixin(unittest.TestCase):
-    def test_new_cube_data_encoding(self):
-        data = new_cube_data()
-        path = f'{DATA_PATH}/data.zarr'
-        data.to_zarr(path, mode="w")
+    path = f'{DATA_PATH}/data.zarr'
 
-        data_1 = xr.open_zarr(path)
+    @classmethod
+    def setUpClass(cls) -> None:
+        data = new_cube_data()
+        data.to_zarr(cls.path, mode="w")
+
+    @classmethod
+    def tearDownClass(cls) -> None:
+        shutil.rmtree(cls.path)
+
+    def test_open_unpacked(self):
+        """open data un-packed (the default)"""
+        data_1 = xr.open_zarr(self.path, mask_and_scale=True)
         self.assertEqual(np.float64, data_1.var_a.dtype)
         self.assertEqual(np.float32, data_1.var_b.dtype)
         self.assertEqual(np.uint8, data_1.var_c.dtype)
-
         self.assertTrue(np.isnan(data_1.var_a[0, 0, 0]))
         self.assertEqual(8.5, data_1.var_a[1, 0, 0].values)
         self.assertTrue(np.isnan(data_1.var_b[0, 0, 0]))
@@ -71,19 +80,16 @@ class NewCubeDataTestMixin(unittest.TestCase):
         self.assertEqual(255, data_1.var_c[0, 0, 0].values)
         self.assertEqual(255, data_1.var_c[1, 0, 0].values)
 
-        data_2 = xr.open_zarr(path, mask_and_scale=False)
+    def test_open_packed(self):
+        """open data packed, ignoring related encodings"""
+        data_2 = xr.open_zarr(self.path, mask_and_scale=False)
         self.assertEqual(np.float64, data_2.var_a.dtype)
         self.assertEqual(np.int16, data_2.var_b.dtype)
         self.assertEqual(np.uint8, data_2.var_c.dtype)
-
-        scale_factor = 0.001
-        add_offset = -10
-
         self.assertTrue(np.isnan(data_2.var_a[0, 0, 0]))
         self.assertEqual(8.5, data_2.var_a[1, 0, 0].values)
         self.assertEqual(-9999, data_2.var_b[0, 0, 0].values)
-        self.assertEqual((9.5 - add_offset) / scale_factor,
-                         data_2.var_b[1, 0, 0].values)
+        self.assertEqual((9.5 - (-10)) / 0.001, data_2.var_b[1, 0, 0].values)
         self.assertEqual(255, data_2.var_c[0, 0, 0].values)
         self.assertEqual(255, data_2.var_c[1, 0, 0].values)
 
@@ -198,16 +204,23 @@ class FsDataStoresTestMixin(ABC):
             ml_dataset: xcube.core.mldataset.MultiLevelDataset
     ):
         self.assertEqual(2, ml_dataset.num_levels)
+        # assert encoding
         for level in range(ml_dataset.num_levels):
             dataset = ml_dataset.get_dataset(level)
             self.assertEqual({'var_a', 'var_b', 'var_c'},
                              set(dataset.data_vars))
+            # assert dtype is as expected
+            self.assertEqual(np.float64, dataset.var_a.dtype)
+            self.assertEqual(np.float32, dataset.var_b.dtype)
+            self.assertEqual(np.uint8, dataset.var_c.dtype)
+            # assert dtype encoding is as expected
             self.assertEqual(np.float64,
                              dataset.var_a.encoding.get('dtype'))
             self.assertEqual(np.int16,
                              dataset.var_b.encoding.get('dtype'))
             self.assertEqual(np.uint8,
                              dataset.var_c.encoding.get('dtype'))
+            # assert _FillValue encoding is as expected
             self.assertTrue(np.isnan(
                 dataset.var_a.encoding.get('_FillValue')
             ))
