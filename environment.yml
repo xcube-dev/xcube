@@ -13,6 +13,7 @@ dependencies:
   - dask-image >=0.6
   - distributed >=2021.6
   - fiona >=1.8
+  - fontconfig <2.13.96  # temporary workaround for Mac CI bug; see Issue #640
   - fsspec >=2021.6
   - gdal >=3.0
   - geopandas >=0.8
