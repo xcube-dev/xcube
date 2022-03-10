@@ -49,10 +49,14 @@
 
 ### Other
 
-* Replace the dependency on the rfc3339-validator PyPI package with a
+* Added packages `python-blosc` and `lz4` to the xcube Python environment 
+  for better support of Dask `distributed` and the Dask service 
+  [Coiled](https://coiled.io/).
+
+* Replace the dependency on the `rfc3339-validator` PyPI package with a
   dependency on its recently created conda-forge package.
 
-* Remove unneeded dependency on the no longer used strict-rfc3339 package.
+* Remove unneeded dependency on the no longer used `strict-rfc3339` package.
 
 ## Changes in 0.10.1
 
