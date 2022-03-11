@@ -2,6 +2,10 @@
 
 ### Enhancements
 
+* Server config
+  - New: Authentication.IsRequired
+  - 
+  
 * For authorized clients, the xcube Web API provided by `xcube serve`
   now allows granted scopes to contain wildcard characters `*`, `**`,
   and `?`. This is useful to give access to groups of datasets, e.g.
@@ -38,6 +42,10 @@
 * `xcube gen2` returns more expressive error messages.
   
 ### Fixes
+
+* Fixed problem where xcube Server instances that required 
+  user authentication published datasets and variables for 
+  unauthorised users.
 
 * Fixed `FsDataAccessor.write_data()` implementations, 
   which now always return the passed in `data_id`. (#623)
