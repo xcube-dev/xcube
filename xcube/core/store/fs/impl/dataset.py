@@ -69,7 +69,7 @@ ZARR_OPEN_DATA_PARAMS_SCHEMA = JsonObjectSchema(
         mask_and_scale=JsonBooleanSchema(
             description='If True, replace array values equal'
                         ' to attribute "_FillValue" with NaN. '
-                        ' Use "scaling_factor" and "add_offset"'
+                        ' Use "scale_factor" and "add_offset"'
                         ' attributes to compute actual values.',
             default=True,
         ),
