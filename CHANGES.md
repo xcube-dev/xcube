@@ -2,9 +2,9 @@
 
 ### Enhancements
 
-* Server config
-  - New: Authentication.IsRequired
-  - 
+* Added new setting `Authentication.IsRequired` to the `xcube serve` 
+  configuration. If set to `true`, xcube Server will reject unauthorized 
+  dataset requests by returning HTTP code 401.
   
 * For authorized clients, the xcube Web API provided by `xcube serve`
   now allows granted scopes to contain wildcard characters `*`, `**`,

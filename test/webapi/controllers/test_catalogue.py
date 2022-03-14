@@ -120,14 +120,26 @@ class CatalogueControllerTest(unittest.TestCase):
         dataset = get_dataset(ctx, 'local~cube-1-250-250.zarr')
         self.assertIn('variables', dataset)
         var_dict = {v['name']: v for v in dataset['variables']}
-        self.assertEqual({'c2rcc_flags', 'conc_tsm', 'kd489',
-                          'conc_chl', 'quality_flags'},
+        self.assertEqual({'c2rcc_flags',
+                          'conc_tsm',
+                          'kd489',
+                          'conc_chl',
+                          'quality_flags'},
                          set(var_dict.keys()))
 
         dataset = get_dataset(ctx, 'local_base_1w')
         self.assertIn('variables', dataset)
         var_dict = {v['name']: v for v in dataset['variables']}
-        self.assertEqual(set(),
+        self.assertEqual({'c2rcc_flags',
+                          'c2rcc_flags_stdev',
+                          'conc_chl',
+                          'conc_chl_stdev',
+                          'conc_tsm',
+                          'conc_tsm_stdev',
+                          'kd489',
+                          'kd489_stdev',
+                          'quality_flags',
+                          'quality_flags_stdev'},
                          set(var_dict.keys()))
 
         with self.assertRaises(ServiceAuthError) as cm:
@@ -135,7 +147,7 @@ class CatalogueControllerTest(unittest.TestCase):
         self.assertEqual(
             'HTTP 401: Missing permission'
             ' (Missing permission'
-            ' read:dataset:local_base_1w)',
+            ' read:dataset:remote_base_1w)',
             f'{cm.exception}'
         )
 
