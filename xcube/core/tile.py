@@ -29,6 +29,7 @@ from xcube.constants import LOG
 from xcube.core.mldataset import MultiLevelDataset
 from xcube.core.schema import get_dataset_xy_var_names
 from xcube.util.cache import Cache
+from xcube.util.labels import ensure_time_compatible
 from xcube.util.perf import measure_time_cm
 from xcube.util.tiledimage import SourceArrayImage
 from xcube.util.tiledimage import ColorMappedRgbaImage
@@ -250,29 +251,6 @@ def _get_var_2d_array(var: xr.DataArray,
     return array
 
 
-def _ensure_time_compatible(var: xr.DataArray,
-                            labels: Dict[str, Any]) -> Dict[str, Any]:
-    """Ensure that labels['time'] is timezone-naive, if necessary.
-    If var has a 'time' dimension of type datetime64 and labels has a 'time'
-    key with a timezone-aware value, return a modified labels dictionary with
-    a timezone-naive time value. Otherwise return the original labels.
-    """
-    if _has_datetime64_time(var) and \
-       'time' in labels and pd.Timestamp(labels['time']).tzinfo is not None:
-        naive_time = pd.Timestamp(labels['time']).tz_convert(None)
-        return dict(labels, time=naive_time)
-    else:
-        return labels
-
-
-def _has_datetime64_time(var: xr.DataArray) -> bool:
-    """Report whether var has a time dimension with type datetime64"""
-    return 'time' in var.dims and \
-           hasattr(var['time'], 'dtype') and \
-           hasattr(var['time'].dtype, 'type') and \
-           var['time'].dtype.type is np.datetime64
-
-
 def get_var_cmap_params(var: xr.DataArray,
                         cmap_name: Optional[str],
                         cmap_range: Tuple[Optional[float], Optional[float]],
@@ -385,6 +363,6 @@ def parse_non_spatial_labels(
                                  f' value for dimension {dim!r}') from e
 
     if var is not None:
-        return _ensure_time_compatible(var, parsed_labels)
+        return ensure_time_compatible(var, parsed_labels)
     else:
         return parsed_labels

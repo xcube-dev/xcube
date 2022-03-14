@@ -6,7 +6,6 @@ import xarray as xr
 
 from xcube.core.tile import get_var_valid_range
 from xcube.core.tile import parse_non_spatial_labels
-from xcube.core.tile import _ensure_time_compatible
 
 
 class GetVarValidRangeTest(unittest.TestCase):
@@ -107,7 +106,7 @@ class ParseNonSpatialLabelsTest(unittest.TestCase):
 
     def test_ensure_timezone_naive(self):
         da_tznaive = xr.DataArray(
-            np.zeros((3,3,3)),
+            np.zeros((3, 3, 3)),
             coords=self.coords,
             dims=self.dims)
         labels = parse_non_spatial_labels(dict(time='2000-01-02T00:00:00Z'),
@@ -115,38 +114,3 @@ class ParseNonSpatialLabelsTest(unittest.TestCase):
                                           coords=da_tznaive.coords,
                                           var=da_tznaive)
         self.assertIsNone(pd.Timestamp(labels['time']).tzinfo)
-
-
-class EnsureTimeCompatibleTest(unittest.TestCase):
-    da_tznaive = xr.DataArray(
-        np.arange(1, 4),
-        coords=dict(time=np.arange('2000-01-01', '2000-01-04',
-                                   dtype=np.datetime64)),
-        dims=['time'])
-    da_tzaware = xr.DataArray(
-        np.arange(1, 4),
-        coords=dict(time=pd.date_range("2000-01-01", "2000-01-03", tz='UTC')),
-        dims=['time'])
-    labels_tznaive = dict(time='2000-01-02')
-    labels_tzaware = dict(time='2000-01-02T00:00:00Z')
-
-    def test_both_tznaive(self):
-        self.assertEqual(self.labels_tznaive,
-                         _ensure_time_compatible(self.da_tznaive,
-                                                 self.labels_tznaive))
-
-    def test_both_tzaware(self):
-        self.assertEqual(self.labels_tzaware,
-                         _ensure_time_compatible(self.da_tzaware,
-                                                 self.labels_tzaware))
-
-    def test_tznaive_array_tzaware_indexer(self):
-        self.assertTrue(
-            _are_times_equal(
-                self.labels_tznaive,
-                _ensure_time_compatible(self.da_tznaive,
-                                        self.labels_tzaware)))
-
-
-def _are_times_equal(labels1, labels2):
-    return pd.Timestamp(labels1['time']) == pd.Timestamp(labels2['time'])
