@@ -24,6 +24,7 @@ import glob
 import io
 import os
 import pstats
+import pyproj
 import time
 import traceback
 import warnings
@@ -36,7 +37,7 @@ from xcube.core.evaluate import evaluate_dataset
 from xcube.core.gen.defaults import DEFAULT_OUTPUT_PATH, DEFAULT_OUTPUT_RESAMPLING, DEFAULT_OUTPUT_SIZE
 from xcube.core.gen.iproc import InputProcessor, find_input_processor_class
 from xcube.core.gridmapping import GridMapping
-from xcube.core.gridmapping import CRS_WGS84
+from xcube.core.gridmapping import DEFAULT_CRS
 from xcube.core.optimize import optimize_dataset
 from xcube.core.select import select_spatial_subset, select_variables_subset
 from xcube.core.timecoord import add_time_coords, from_time_in_days_since_1970
@@ -50,6 +51,7 @@ def gen_cube(input_paths: Sequence[str] = None,
              input_processor_params: Dict = None,
              input_reader_name: str = None,
              input_reader_params: Dict[str, Any] = None,
+             output_crs: str = DEFAULT_CRS,
              output_region: Tuple[float, float, float, float] = None,
              output_size: Tuple[int, int] = DEFAULT_OUTPUT_SIZE,
              output_resampling: str = DEFAULT_OUTPUT_RESAMPLING,
@@ -70,12 +72,18 @@ def gen_cube(input_paths: Sequence[str] = None,
     :param no_sort_mode:
     :param input_paths: The input paths.
     :param input_processor_name: Name of a registered input processor
-        (xcube.core.gen.inputprocessor.InputProcessor) to be used to transform the inputs.
-    :param input_processor_params: Parameters to be passed to the input processor.
-    :param input_reader_name: Name of a registered input reader (xcube.core.util.dsio.DatasetIO).
+        (xcube.core.gen.inputprocessor.InputProcessor) to be used to transform
+        the inputs.
+    :param input_processor_params: Parameters to be passed to the
+        input processor.
+    :param input_reader_name: Name of a registered input reader
+        (xcube.core.util.dsio.DatasetIO).
     :param input_reader_params: Parameters passed to the input reader.
-    :param output_region: Output region as tuple of floats: (lon_min, lat_min, lon_max, lat_max).
-    :param output_size: The spatial dimensions of the output as tuple of ints: (width, height).
+    :param output_crs: Output crs, given as either WLT string or EPSG code
+    :param output_region: Output region as tuple of floats:
+        (x_min, y_min, x_max, y_max).
+    :param output_size: The spatial dimensions of the output as tuple of ints:
+        (width, height).
     :param output_resampling: The resampling method for the output.
     :param output_path: The output directory.
     :param output_writer_name: Name of an output writer
@@ -85,7 +93,8 @@ def gen_cube(input_paths: Sequence[str] = None,
     :param output_variables: Output variables.
     :param processed_variables: Processed variables computed on-the-fly.
     :param profile_mode: Whether profiling should be enabled.
-    :param append_mode: Deprecated. The function will always either insert, replace, or append new time slices.
+    :param append_mode: Deprecated. The function will always either insert,
+        replace, or append new time slices.
     :param dry_run: Doesn't write any data. For testing.
     :param monitor: A progress monitor.
     :return: True for success.
@@ -161,6 +170,7 @@ def gen_cube(input_paths: Sequence[str] = None,
                                 effective_output_writer_params,
                                 input_file,
                                 output_size,
+                                output_crs,
                                 output_region,
                                 output_resampling,
                                 output_path,
@@ -187,6 +197,7 @@ def _process_input(input_processor: InputProcessor,
                    output_writer_params: Dict[str, Any],
                    input_file: str,
                    output_size: Tuple[int, int],
+                   output_crs: str,
                    output_region: Tuple[float, float, float, float],
                    output_resampling: str,
                    output_path: str,
@@ -219,6 +230,8 @@ def _process_input(input_processor: InputProcessor,
     time_index, update_mode = find_time_slice(output_path,
                                               from_time_in_days_since_1970((time_range[0] + time_range[1]) / 2))
 
+    crs = pyproj.crs.CRS.from_string(output_crs)
+
     width, height = output_size
     x_min, y_min, x_max, y_max = output_region
     xy_res = max((x_max - x_min) / width, (y_max - y_min) / height)
@@ -227,7 +240,7 @@ def _process_input(input_processor: InputProcessor,
     output_geom = GridMapping.regular(size=output_size,
                                       xy_min=(x_min, y_min),
                                       xy_res=xy_res,
-                                      crs=CRS_WGS84,
+                                      crs=crs,
                                       tile_size=tile_size)
 
     steps = []

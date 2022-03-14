@@ -29,6 +29,7 @@ def get_config_dict(config_files: Sequence[str] = None,
                     output_path: str = None,
                     output_writer_name: str = None,
                     output_size: str = None,
+                    output_crs: str = None,
                     output_region: str = None,
                     output_variables: str = None,
                     output_resampling: str = None,
@@ -68,6 +69,9 @@ def get_config_dict(config_files: Sequence[str] = None,
     if output_writer_name is not None and 'output_writer_name' not in config:
         config['output_writer_name'] = output_writer_name
 
+    if output_crs is not None and 'output_crs' not in config:
+        config['output_crs'] = output_crs
+
     if output_resampling is not None and 'output_resampling' not in config:
         config['output_resampling'] = output_resampling
 
@@ -87,8 +91,10 @@ def get_config_dict(config_files: Sequence[str] = None,
         except ValueError:
             output_region = None
         if output_region is None or len(output_region) != 4:
-            raise ValueError(f'output_region must have the form <lon_min>,<lat_min>,<lon_max>,<lat_max>,'
-                             f' where all four numbers must be floating point numbers in degrees')
+            raise ValueError(f'output_region must have the form '
+                             f'<x_min>,<y_min>,<x_max>,<y_max>, '
+                             f'where all four numbers must be floating point '
+                             f'numbers in the units of the output CRS')
         config['output_region'] = output_region
 
     if output_variables is not None:

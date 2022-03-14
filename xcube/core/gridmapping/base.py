@@ -46,6 +46,8 @@ from .helpers import _normalize_number_pair
 from .helpers import _to_affine
 from .helpers import scale_xy_res_and_size
 
+DEFAULT_CRS = 'EPSG:4326'
+
 # WGS84, axis order: lat, lon
 CRS_WGS84 = pyproj.crs.CRS(4326)
 
