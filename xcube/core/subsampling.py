@@ -91,7 +91,6 @@ def get_dataset_subsampling_slices(
     for var_name, var in dataset.data_vars.items():
         var_index = slices_dict.get(var.dims)
         if var_index is None:
-            var_index = None
             for index, dim_name in enumerate(var.dims):
                 if dim_name == x_dim_name or dim_name == y_dim_name:
                     if var_index is None:
