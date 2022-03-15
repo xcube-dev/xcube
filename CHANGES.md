@@ -48,7 +48,8 @@
 ### Fixes
 
 * Fixed problem where the dataset levels of multi-level datasets were 
-  written without spatial coordinate reference system. (#646)
+  written without spatial coordinate reference system. In fact, 
+  only spatial variables were written. (#646)
 
 * Fixed problem where xcube Server instances that required 
   user authentication published datasets and variables for 
