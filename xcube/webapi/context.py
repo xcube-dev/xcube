@@ -187,8 +187,30 @@ class ServiceContext:
         return measure_time_cm(disabled=not self.trace_perf, logger=LOG)
 
     @property
+    def can_authenticate(self) -> bool:
+        """
+        Test whether the user can authenticate.
+        Even if authentication service is configured, user authentication
+        may still be optional. In this case the server will publish
+        the resources configured to be free for everyone.
+        """
+        return bool(self.authentication.get('Domain'))
+
+    @property
+    def must_authenticate(self) -> bool:
+        """
+        Test whether the user must authenticate.
+        """
+        return self.can_authenticate \
+               and self.authentication.get('IsRequired', False)
+
+    @property
+    def authentication(self) -> Dict[str, Any]:
+        return self._config.get('Authentication', {})
+
+    @property
     def access_control(self) -> Dict[str, Any]:
-        return dict(self._config.get('AccessControl', {}))
+        return self._config.get('AccessControl', {})
 
     @property
     def required_scopes(self) -> List[str]:
@@ -210,17 +232,26 @@ class ServiceContext:
                              base_scope: str,
                              value_name: str,
                              value: str) -> Set[str]:
+        required_global_scopes = set(self.required_scopes)
+        required_dataset_scopes = set(
+            dataset_config.get('AccessControl', {}).get('RequiredScopes', [])
+        )
+        if not required_global_scopes and not required_dataset_scopes:
+            return required_global_scopes
+        required_dataset_scopes = required_global_scopes \
+            .union(required_dataset_scopes)
         base_scope_prefix = base_scope + ':'
+        required_dataset_scopes = {
+            scope
+            for scope in required_dataset_scopes
+            if scope == base_scope or scope.startswith(base_scope_prefix)
+        }
         pattern_scope = base_scope_prefix + '{' + value_name + '}'
-        dataset_access_control = dataset_config.get('AccessControl', {})
-        dataset_required_scopes = dataset_access_control.get('RequiredScopes', [])
-        dataset_required_scopes = set(self.required_scopes + dataset_required_scopes)
-        dataset_required_scopes = {scope for scope in dataset_required_scopes
-                                   if scope == base_scope or scope.startswith(base_scope_prefix)}
-        if pattern_scope in dataset_required_scopes:
-            dataset_required_scopes.remove(pattern_scope)
-            dataset_required_scopes.add(base_scope_prefix + value)
-        return dataset_required_scopes
+        if pattern_scope in required_dataset_scopes:
+            # Replace "{base_scope}:{value_name}" by "{base_scope}:{value}"
+            required_dataset_scopes.remove(pattern_scope)
+            required_dataset_scopes.add(base_scope_prefix + value)
+        return required_dataset_scopes
 
     def get_service_url(self, base_url, *path: str):
         # noinspection PyTypeChecker

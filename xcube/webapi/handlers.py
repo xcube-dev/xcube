@@ -145,16 +145,19 @@ class GetDatasetsHandler(ServiceRequestHandler, AuthMixin):
 class GetDatasetHandler(ServiceRequestHandler, AuthMixin):
 
     def get(self, ds_id: str):
+        with measure_time('get granted scopes'):
+            granted_scopes = self.granted_scopes
         tile_client = self.params.get_query_argument('tiles', None)
         response = get_dataset(self.service_context,
                                ds_id,
                                client=tile_client,
                                base_url=self.base_url,
-                               granted_scopes=self.granted_scopes)
+                               granted_scopes=granted_scopes)
         self.set_header('Content-Type', 'application/json')
         self.write(json.dumps(response, indent=2))
 
 
+# noinspection PyAbstractClass
 class GetDatasetPlaceGroupsHandler(ServiceRequestHandler):
 
     def get(self, ds_id: str):
@@ -163,6 +166,7 @@ class GetDatasetPlaceGroupsHandler(ServiceRequestHandler):
         self.write(json.dumps(response))
 
 
+# noinspection PyAbstractClass
 class GetDatasetPlaceGroupHandler(ServiceRequestHandler):
 
     def get(self, ds_id: str, place_group_id: str):
@@ -171,6 +175,7 @@ class GetDatasetPlaceGroupHandler(ServiceRequestHandler):
         self.write(json.dumps(response))
 
 
+# noinspection PyAbstractClass
 class GetDatasetCoordsHandler(ServiceRequestHandler):
 
     def get(self, ds_id: str, dim_name: str):

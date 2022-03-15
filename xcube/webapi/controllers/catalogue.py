@@ -22,7 +22,7 @@
 import functools
 import json
 import math
-from typing import Dict, Tuple, List, Set
+from typing import Dict, Tuple, List, Set, Optional, Any, Callable
 
 import numpy as np
 
@@ -34,6 +34,8 @@ from xcube.core.timecoord import timestamp_to_iso_string
 from xcube.util.assertions import assert_instance
 from xcube.util.cmaps import get_cmaps
 from xcube.util.tilegrid import TileGrid
+from xcube.webapi.auth import READ_ALL_DATASETS_SCOPE
+from xcube.webapi.auth import READ_ALL_VARIABLES_SCOPE
 from xcube.webapi.auth import assert_scopes
 from xcube.webapi.auth import check_scopes
 from xcube.webapi.context import ServiceContext
@@ -45,11 +47,16 @@ from xcube.webapi.errors import ServiceBadRequestError
 
 def get_datasets(ctx: ServiceContext,
                  details: bool = False,
-                 client: str = None,
-                 point: Tuple[float, float] = None,
-                 base_url: str = None,
-                 granted_scopes: Set[str] = None) -> Dict:
-    granted_scopes = granted_scopes or set()
+                 client: Optional[str] = None,
+                 point: Optional[Tuple[float, float]] = None,
+                 base_url: Optional[str] = None,
+                 granted_scopes: Optional[Set[str]] = None) -> Dict:
+    can_authenticate = ctx.can_authenticate
+    # If True, we can shorten scope checking
+    if granted_scopes is None:
+        can_read_all_datasets = False
+    else:
+        can_read_all_datasets = READ_ALL_DATASETS_SCOPE in granted_scopes
 
     dataset_configs = list(ctx.get_dataset_configs())
 
@@ -61,15 +68,13 @@ def get_datasets(ctx: ServiceContext,
         if dataset_config.get('Hidden'):
             continue
 
-        if 'read:dataset:*' not in granted_scopes:
-            required_scopes = ctx.get_required_dataset_scopes(dataset_config)
-            is_substitute = dataset_config \
-                .get('AccessControl', {}) \
-                .get('IsSubstitute', False)
-            if not check_scopes(required_scopes,
-                                granted_scopes,
-                                is_substitute=is_substitute):
-                continue
+        if can_authenticate \
+                and not can_read_all_datasets \
+                and not _allow_dataset(ctx,
+                                       dataset_config,
+                                       granted_scopes,
+                                       check_scopes):
+            continue
 
         dataset_dict = dict(id=ds_id)
 
@@ -125,17 +130,23 @@ def get_datasets(ctx: ServiceContext,
 
 def get_dataset(ctx: ServiceContext,
                 ds_id: str,
-                client=None,
-                base_url: str = None,
-                granted_scopes: Set[str] = None) -> Dict:
-    granted_scopes = granted_scopes or set()
+                client: Optional[str] = None,
+                base_url: Optional[str] = None,
+                granted_scopes: Optional[Set[str]] = None) -> Dict:
+    can_authenticate = ctx.can_authenticate
+    # If True, we can shorten scope checking
+    if granted_scopes is None:
+        can_read_all_datasets = False
+        can_read_all_variables = False
+    else:
+        can_read_all_datasets = READ_ALL_DATASETS_SCOPE in granted_scopes
+        can_read_all_variables = READ_ALL_VARIABLES_SCOPE in granted_scopes
 
     dataset_config = ctx.get_dataset_config(ds_id)
     ds_id = dataset_config['Identifier']
 
-    if 'read:dataset:*' not in granted_scopes:
-        required_scopes = ctx.get_required_dataset_scopes(dataset_config)
-        assert_scopes(required_scopes, granted_scopes or set())
+    if can_authenticate and not can_read_all_datasets:
+        _allow_dataset(ctx, dataset_config, granted_scopes, assert_scopes)
 
     try:
         ml_ds = ctx.get_ml_dataset(ds_id)
@@ -172,8 +183,8 @@ def get_dataset(ctx: ServiceContext,
         dataset_dict["bbox"] = list(get_dataset_bounds(ds))
 
     variable_dicts = []
-    for var_name in ds.data_vars:
-        var = ds.data_vars[var_name]
+    for var_name, var in ds.data_vars.items():
+        var_name = str(var_name)
         dims = var.dims
         if len(dims) < 3 \
                 or dims[0] != 'time' \
@@ -181,11 +192,13 @@ def get_dataset(ctx: ServiceContext,
                 or dims[-1] != 'lon':
             continue
 
-        if 'read:variable:*' not in granted_scopes:
-            required_scopes = ctx.get_required_variable_scopes(dataset_config,
-                                                               var_name)
-            if not check_scopes(required_scopes, granted_scopes):
-                continue
+        if can_authenticate \
+                and not can_read_all_variables \
+                and not _allow_variable(ctx,
+                                        dataset_config,
+                                        var_name,
+                                        granted_scopes):
+            continue
 
         variable_dict = dict(id=f'{ds_id}.{var_name}',
                              name=var_name,
@@ -246,13 +259,13 @@ def get_dataset(ctx: ServiceContext,
     dim_names = ds.data_vars[list(ds.data_vars)[0]].dims \
         if len(ds.data_vars) > 0 else ds.dims.keys()
     dataset_dict["dimensions"] = [
-        get_dataset_coordinates(ctx, ds_id, dim_name)
+        get_dataset_coordinates(ctx, ds_id, str(dim_name))
         for dim_name in dim_names
     ]
 
     dataset_dict["attrs"] = {
         key: ds.attrs[key]
-        for key in sorted(list(ds.attrs.keys()))
+        for key in sorted(list(map(str, ds.attrs.keys())))
     }
 
     dataset_attributions = dataset_config.get(
@@ -272,16 +285,56 @@ def get_dataset(ctx: ServiceContext,
     return dataset_dict
 
 
-def get_dataset_place_groups(ctx: ServiceContext, ds_id: str, base_url: str) -> List[GeoJsonFeatureCollection]:
+def _allow_dataset(
+        ctx: ServiceContext,
+        dataset_config: Dict[str, Any],
+        granted_scopes: Optional[Set[str]],
+        function: Callable[[Set, Optional[Set], bool], Any]
+) -> Any:
+    required_scopes = ctx.get_required_dataset_scopes(
+        dataset_config
+    )
+    # noinspection PyArgumentList
+    return function(required_scopes,
+                    granted_scopes,
+                    is_substitute=_is_substitute(dataset_config))
+
+
+def _allow_variable(
+        ctx: ServiceContext,
+        dataset_config: Dict[str, Any],
+        var_name: str,
+        granted_scopes: Optional[Set[str]]
+) -> bool:
+    required_scopes = ctx.get_required_variable_scopes(
+        dataset_config, var_name
+    )
+    # noinspection PyArgumentList
+    return check_scopes(required_scopes,
+                        granted_scopes,
+                        is_substitute=_is_substitute(dataset_config))
+
+
+def _is_substitute(dataset_config: Dict[str, Any]) -> bool:
+    return dataset_config \
+        .get('AccessControl', {}) \
+        .get('IsSubstitute', False)
+
+
+def get_dataset_place_groups(ctx: ServiceContext, ds_id: str,
+                             base_url: str) -> List[GeoJsonFeatureCollection]:
     # Do not load or return features, just place group (metadata).
-    place_groups = ctx.get_dataset_place_groups(ds_id, base_url, load_features=False)
+    place_groups = ctx.get_dataset_place_groups(ds_id, base_url,
+                                                load_features=False)
     return _filter_place_groups(place_groups, del_features=True)
 
 
-def get_dataset_place_group(ctx: ServiceContext, ds_id: str, place_group_id: str,
+def get_dataset_place_group(ctx: ServiceContext, ds_id: str,
+                            place_group_id: str,
                             base_url: str) -> GeoJsonFeatureCollection:
     # Load and return features for specific place group.
-    place_group = ctx.get_dataset_place_group(ds_id, place_group_id, base_url, load_features=True)
+    place_group = ctx.get_dataset_place_group(ds_id, place_group_id, base_url,
+                                              load_features=True)
     return _filter_place_group(place_group, del_features=False)
 
 
