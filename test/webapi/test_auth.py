@@ -99,10 +99,10 @@ class AuthMixinIdTokenTest(unittest.TestCase):
         auth_mixin.request = RequestMock(headers={})
         self.assertEqual(None, auth_mixin.get_id_token())
 
-    # @unittest.skipUnless(
-    #     XCUBE_TEST_CLIENT_ID and XCUBE_TEST_CLIENT_SECRET,
-    #     'XCUBE_TEST_CLIENT_ID and XCUBE_TEST_CLIENT_SECRET must be set'
-    # )
+    @unittest.skipUnless(
+        XCUBE_TEST_CLIENT_ID and XCUBE_TEST_CLIENT_SECRET,
+        'XCUBE_TEST_CLIENT_ID and XCUBE_TEST_CLIENT_SECRET must be set'
+    )
     def test_expired_access_token(self):
         auth_mixin = AuthMixin()
         auth_mixin.service_context = ServiceContextMock(config=dict(
@@ -261,13 +261,7 @@ class ScopesTest(unittest.TestCase):
         self.assertEqual(
             True,
             check_scopes({'read:dataset:test1.zarr'},
-                         set(),
-                         is_substitute=False)
-        )
-        self.assertEqual(
-            True,
-            check_scopes({'read:dataset:test1.zarr'},
-                         set(),
+                         None,
                          is_substitute=True)
         )
         self.assertEqual(
@@ -290,6 +284,18 @@ class ScopesTest(unittest.TestCase):
         self.assertEqual(
             False,
             check_scopes({'read:dataset:test1.zarr'},
+                         None,
+                         is_substitute=False)
+        )
+        self.assertEqual(
+            False,
+            check_scopes({'read:dataset:test1.zarr'},
+                         set(),
+                         is_substitute=True)
+        )
+        self.assertEqual(
+            False,
+            check_scopes({'read:dataset:test1.zarr'},
                          {'read:dataset:test1.zarr'},
                          is_substitute=True)
         )
@@ -307,8 +313,6 @@ class ScopesTest(unittest.TestCase):
 
     def test_assert_scopes_ok(self):
         assert_scopes({'read:dataset:test1.zarr'},
-                      set())
-        assert_scopes({'read:dataset:test1.zarr'},
                       {'read:dataset:test1.zarr'})
         assert_scopes({'read:dataset:test1.zarr'},
                       {'read:dataset:*'})
@@ -322,6 +326,24 @@ class ScopesTest(unittest.TestCase):
                        'read:dataset:test1.zarr'})
 
     def test_assert_scopes_fails(self):
+        with self.assertRaises(ServiceAuthError) as cm:
+            assert_scopes({'read:dataset:test1.zarr'},
+                          None)
+        self.assertEquals(
+            'HTTP 401: Missing permission'
+            ' (Missing permission read:dataset:test1.zarr)',
+            f'{cm.exception}'
+        )
+
+        with self.assertRaises(ServiceAuthError) as cm:
+            assert_scopes({'read:dataset:test1.zarr'},
+                          set())
+        self.assertEquals(
+            'HTTP 401: Missing permission'
+            ' (Missing permission read:dataset:test1.zarr)',
+            f'{cm.exception}'
+        )
+
         with self.assertRaises(ServiceAuthError) as cm:
             assert_scopes({'read:dataset:test1.zarr'},
                           {'read:dataset:test2.zarr'})
