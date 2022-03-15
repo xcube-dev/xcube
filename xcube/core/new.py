@@ -51,7 +51,8 @@ def new_cube(title='Test Cube',
              use_cftime=False,
              drop_bounds=False,
              variables=None,
-             crs=None):
+             crs=None,
+             crs_name=None):
     """
     Create a new empty cube. Useful for creating cubes templates with
     predefined coordinate variables and metadata. The function is also
@@ -99,6 +100,8 @@ def new_cube(title='Test Cube',
         None by default.
     :param crs: pyproj-compatible CRS string or instance
         of pyproj.CRS or None
+    :param crs_name: Name of the variable that will
+        hold the CRS information. Ignored, if *crs* is not given.
     :return: A cube instance
     """
     y_dtype = y_dtype if y_dtype is not None else y_dtype
@@ -254,6 +257,9 @@ def new_cube(title='Test Cube',
         crs = pyproj.CRS.from_string(crs)
 
     if isinstance(crs, pyproj.CRS):
-        data_vars['crs'] = xr.DataArray(0, attrs=crs.to_cf())
+        crs_name = crs_name or 'crs'
+        for v in data_vars.values():
+            v.attrs['grid_mapping'] = crs_name
+        data_vars[crs_name] = xr.DataArray(0, attrs=crs.to_cf())
 
     return xr.Dataset(data_vars=data_vars, coords=coords, attrs=attrs)

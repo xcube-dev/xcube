@@ -38,8 +38,8 @@ from xcube.core.dsio import is_s3_url
 from xcube.core.dsio import parse_s3_fs_and_root
 from xcube.core.dsio import write_cube
 from xcube.core.gridmapping import GridMapping
-from xcube.core.normalize import decode_cube
 from xcube.core.schema import rechunk_cube
+from xcube.core.subsampling import subsample_dataset
 from xcube.core.verify import assert_cube
 from xcube.util.assertions import assert_instance
 from xcube.util.perf import measure_time
@@ -494,35 +494,32 @@ class BaseMultiLevelDataset(LazyMultiLevelDataset):
                  tile_grid: TileGrid = None,
                  ds_id: str = None):
         assert_instance(base_dataset, xr.Dataset, name='base_dataset')
-        self._base_cube, grid_mapping, _ = decode_cube(
-            base_dataset,
-            force_non_empty=True
-        )
+        grid_mapping = GridMapping.from_dataset(base_dataset, tolerance=1e-4)
+        self._base_dataset = base_dataset
         super().__init__(grid_mapping=grid_mapping,
                          tile_grid=tile_grid,
                          ds_id=ds_id)
 
-    def _get_dataset_lazily(self, index: int, parameters: Dict[str, Any]) -> xr.Dataset:
+    def _get_dataset_lazily(self,
+                            index: int,
+                            parameters: Dict[str, Any]) -> xr.Dataset:
         """
-        Compute the dataset at level *index*: If *index* is zero, return the base image passed to constructor,
-        otherwise down-sample the dataset for the level at given *index*.
+        Compute the dataset at level *index*: If *index* is zero, return
+        the base image passed to constructor, otherwise down-sample the
+        dataset for the level at given *index*.
 
         :param index: the level index
         :param parameters: currently unused
         :return: the dataset for the level at *index*.
         """
         if index == 0:
-            level_dataset = self._base_cube
+            level_dataset = self._base_dataset
         else:
-            base_dataset = self._base_cube
-            step = 2 ** index
-            data_vars = {}
-            for var_name in base_dataset.data_vars:
-                var = base_dataset[var_name]
-                var = var[..., ::step, ::step]
-                data_vars[var_name] = var
-            level_dataset = xr.Dataset(data_vars,
-                                       attrs=self._base_cube.attrs)
+            level_dataset = subsample_dataset(
+                self._base_dataset,
+                2 ** index,
+                xy_dim_names=self.grid_mapping.xy_dim_names
+            )
 
         # Tile each level according to grid mapping
         tile_size = self.grid_mapping.tile_size

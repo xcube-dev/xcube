@@ -41,6 +41,10 @@ def new_cube_data():
 
     cube = new_cube(width=width,
                     height=height,
+                    x_name='x',
+                    y_name='y',
+                    crs='CRS84',
+                    crs_name='spatial_ref',
                     time_periods=time_periods,
                     variables=dict(var_a=var_a,
                                    var_b=var_b,
@@ -52,7 +56,7 @@ def new_cube_data():
     cube.var_b.encoding['scale_factor'] = 0.001
     cube.var_b.encoding['add_offset'] = -10
 
-    return cube.chunk(dict(time=1, lat=90, lon=180))
+    return cube.chunk(dict(time=1, y=90, x=180))
 
 
 class NewCubeDataTestMixin(unittest.TestCase):
@@ -124,33 +128,36 @@ class FsDataStoresTestMixin(ABC):
 
     def test_mldataset_levels(self):
         data_store = self.create_data_store()
-        self.assertMultiLevelDatasetFormatSupported(data_store)
-        self.assertMultiLevelDatasetFormatWithLinkSupported(data_store)
-        self.assertMultiLevelDatasetFormatWithTileSize(data_store)
+        self._assert_multi_level_dataset_format_supported(data_store)
+        self._assert_multi_level_dataset_format_with_link_supported(
+            data_store)
+        self._assert_multi_level_dataset_format_with_tile_size(data_store)
 
     def test_dataset_zarr(self):
         data_store = self.create_data_store()
-        self.assertDatasetFormatSupported(data_store, '.zarr')
+        self._assert_dataset_format_supported(data_store, '.zarr')
 
     def test_dataset_netcdf(self):
         data_store = self.create_data_store()
-        self.assertDatasetFormatSupported(data_store, '.nc')
+        self._assert_dataset_format_supported(data_store, '.nc')
 
     # TODO: add assertGeoDataFrameSupport
 
-    def assertMultiLevelDatasetFormatSupported(self,
-                                               data_store: MutableDataStore):
-        self.assertDatasetSupported(
+    def _assert_multi_level_dataset_format_supported(
+            self,
+            data_store: MutableDataStore
+    ):
+        self._assert_dataset_supported(
             data_store,
             '.levels',
             'mldataset',
             MultiLevelDataset,
             MultiLevelDatasetDescriptor,
-            assert_data_ok=self.assertMultiLevelDatasetDataOk
+            assert_data_ok=self._assert_multi_level_dataset_data_ok
         )
 
         # Test that use_saved_levels works
-        self.assertDatasetSupported(
+        self._assert_dataset_supported(
             data_store,
             '.levels',
             'mldataset',
@@ -159,10 +166,10 @@ class FsDataStoresTestMixin(ABC):
             write_params=dict(
                 use_saved_levels=True,
             ),
-            assert_data_ok=self.assertMultiLevelDatasetDataOk
+            assert_data_ok=self._assert_multi_level_dataset_data_ok
         )
 
-    def assertMultiLevelDatasetFormatWithLinkSupported(
+    def _assert_multi_level_dataset_format_with_link_supported(
             self,
             data_store: MutableDataStore
     ):
@@ -171,7 +178,7 @@ class FsDataStoresTestMixin(ABC):
         data_store.write_data(base_dataset, base_dataset_id)
 
         # Test that base_dataset_id works
-        self.assertDatasetSupported(
+        self._assert_dataset_supported(
             data_store,
             '.levels',
             'mldataset',
@@ -180,11 +187,11 @@ class FsDataStoresTestMixin(ABC):
             write_params=dict(
                 base_dataset_id=base_dataset_id,
             ),
-            assert_data_ok=self.assertMultiLevelDatasetDataOk
+            assert_data_ok=self._assert_multi_level_dataset_data_ok
         )
 
         # Test that base_dataset_id + use_saved_levels works
-        self.assertDatasetSupported(
+        self._assert_dataset_supported(
             data_store,
             '.levels',
             'mldataset',
@@ -194,12 +201,12 @@ class FsDataStoresTestMixin(ABC):
                 base_dataset_id=base_dataset_id,
                 use_saved_levels=True,
             ),
-            assert_data_ok=self.assertMultiLevelDatasetDataOk
+            assert_data_ok=self._assert_multi_level_dataset_data_ok
         )
 
         data_store.delete_data(base_dataset_id)
 
-    def assertMultiLevelDatasetDataOk(
+    def _assert_multi_level_dataset_data_ok(
             self,
             ml_dataset: xcube.core.mldataset.MultiLevelDataset
     ):
@@ -207,7 +214,10 @@ class FsDataStoresTestMixin(ABC):
         # assert encoding
         for level in range(ml_dataset.num_levels):
             dataset = ml_dataset.get_dataset(level)
-            self.assertEqual({'var_a', 'var_b', 'var_c'},
+            self.assertEqual({'var_a',
+                              'var_b',
+                              'var_c',
+                              'spatial_ref'},
                              set(dataset.data_vars))
             # assert dtype is as expected
             self.assertEqual(np.float64, dataset.var_a.dtype)
@@ -229,7 +239,7 @@ class FsDataStoresTestMixin(ABC):
             self.assertEqual(None,
                              dataset.var_c.encoding.get('_FillValue'))
 
-    def assertMultiLevelDatasetFormatWithTileSize(
+    def _assert_multi_level_dataset_format_with_tile_size(
             self,
             data_store: MutableDataStore
     ):
@@ -238,38 +248,38 @@ class FsDataStoresTestMixin(ABC):
         data_store.write_data(base_dataset, base_dataset_id)
 
         # Test that base_dataset_id works
-        self.assertDatasetSupported(data_store,
-                                    '.levels',
-                                    'mldataset',
-                                    MultiLevelDataset,
-                                    MultiLevelDatasetDescriptor,
-                                    write_params=dict(
-                                        tile_size=90,
-                                    ))
+        self._assert_dataset_supported(data_store,
+                                       '.levels',
+                                       'mldataset',
+                                       MultiLevelDataset,
+                                       MultiLevelDatasetDescriptor,
+                                       write_params=dict(
+                                           tile_size=90,
+                                       ))
 
         # Test that base_dataset_id + use_saved_levels works
-        self.assertDatasetSupported(data_store,
-                                    '.levels',
-                                    'mldataset',
-                                    MultiLevelDataset,
-                                    MultiLevelDatasetDescriptor,
-                                    write_params=dict(
-                                        tile_size=90,
-                                        use_saved_levels=True,
-                                    ))
+        self._assert_dataset_supported(data_store,
+                                       '.levels',
+                                       'mldataset',
+                                       MultiLevelDataset,
+                                       MultiLevelDatasetDescriptor,
+                                       write_params=dict(
+                                           tile_size=90,
+                                           use_saved_levels=True,
+                                       ))
 
         data_store.delete_data(base_dataset_id)
 
-    def assertDatasetFormatSupported(self,
-                                     data_store: MutableDataStore,
-                                     filename_ext: str):
-        self.assertDatasetSupported(data_store,
-                                    filename_ext,
-                                    'dataset',
-                                    xr.Dataset,
-                                    DatasetDescriptor)
+    def _assert_dataset_format_supported(self,
+                                         data_store: MutableDataStore,
+                                         filename_ext: str):
+        self._assert_dataset_supported(data_store,
+                                       filename_ext,
+                                       'dataset',
+                                       xr.Dataset,
+                                       DatasetDescriptor)
 
-    def assertDatasetSupported(
+    def _assert_dataset_supported(
             self,
             data_store: MutableDataStore,
             filename_ext: str,
