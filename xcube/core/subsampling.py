@@ -19,15 +19,6 @@
 #  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 #  DEALINGS IN THE SOFTWARE.
 
-#
-#  Permission is hereby granted, free of charge, to any person obtaining a
-#  copy of this software and associated documentation files (the "Software"),
-#  to deal in the Software without restriction, including without limitation
-#  the rights to use, copy, modify, merge, publish, distribute, sublicense,
-#  and/or sell copies of the Software, and to permit persons to whom the
-#  Software is furnished to do so, subject to the following conditions:
-#
-#
 from typing import Dict, Tuple, Hashable, Optional
 
 import xarray as xr
@@ -66,7 +57,7 @@ def subsample_dataset(
     )
 
 
-_EMPTY_SLICE = slice(None, None, None)
+_FULL_SLICE = slice(None, None, None)
 
 
 def get_dataset_subsampling_slices(
@@ -91,14 +82,13 @@ def get_dataset_subsampling_slices(
     for var_name, var in dataset.data_vars.items():
         var_index = slices_dict.get(var.dims)
         if var_index is None:
-            var_index = None
             for index, dim_name in enumerate(var.dims):
                 if dim_name == x_dim_name or dim_name == y_dim_name:
                     if var_index is None:
-                        var_index = index * [_EMPTY_SLICE]
+                        var_index = index * [_FULL_SLICE]
                     var_index.append(slice(None, None, step))
                 elif var_index is not None:
-                    var_index.append(_EMPTY_SLICE)
+                    var_index.append(_FULL_SLICE)
             if var_index is not None:
                 var_index = tuple(var_index)
                 slices_dict[var.dims] = tuple(var_index)
