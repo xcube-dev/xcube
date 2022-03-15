@@ -52,7 +52,6 @@ def get_datasets(ctx: ServiceContext,
                  base_url: Optional[str] = None,
                  granted_scopes: Optional[Set[str]] = None) -> Dict:
     can_authenticate = ctx.can_authenticate
-    granted_scopes = granted_scopes
     # If True, we can shorten scope checking
     if granted_scopes is None:
         can_read_all_datasets = False
