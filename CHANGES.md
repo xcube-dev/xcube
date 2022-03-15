@@ -2,6 +2,10 @@
 
 ### Enhancements
 
+* Added new module `xcube.core.subsampling` for function
+  `subsample_dataset(dataset, step)` that is now used by default 
+  to generate the datasets level of multi-level datasets.
+
 * Added new setting `Authentication.IsRequired` to the `xcube serve` 
   configuration. If set to `true`, xcube Server will reject unauthorized 
   dataset requests by returning HTTP code 401.
@@ -42,6 +46,9 @@
 * `xcube gen2` returns more expressive error messages.
   
 ### Fixes
+
+* Fixed problem where the dataset levels of multi-level datasets were 
+  written without spatial coordinate reference system. (#646)
 
 * Fixed problem where xcube Server instances that required 
   user authentication published datasets and variables for 
