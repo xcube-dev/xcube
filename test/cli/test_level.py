@@ -165,7 +165,7 @@ class LevelDataTest(CliDataTest):
                                   TEST_NC_FILE])
         self._assert_result_not_ok(
             result,
-            "NUM_LEVELS must be a positive integer\n"
+            "NUM_LEVELS_MAX must be a positive integer\n"
         )
 
     def test_with_existing_output(self):

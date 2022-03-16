@@ -120,10 +120,11 @@ class MultiLevelDatasetLevelsFsDataAccessor(DatasetZarrFsDataAccessor):
             if tile_size is not None:
                 try:
                     tile_w, tile_h = tile_size
-                except ValueError:
+                    assert_instance(tile_w, int, name='tile_size[0]')
+                    assert_instance(tile_h, int, name='tile_size[1]')
+                except TypeError:
+                    assert_instance(tile_size, int, name='tile_size')
                     tile_w, tile_h = tile_size, tile_size
-                assert_instance(tile_w, int, name='tile_size[0]')
-                assert_instance(tile_h, int, name='tile_size[1]')
                 gm = GridMapping.from_dataset(base_dataset)
                 x_name, y_name = gm.xy_dim_names
                 base_dataset = base_dataset.chunk({x_name: tile_w,
