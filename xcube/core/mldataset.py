@@ -147,10 +147,16 @@ class LazyMultiLevelDataset(MultiLevelDataset, metaclass=ABCMeta):
     """
 
     def __init__(self,
-                 grid_mapping: GridMapping = None,
-                 tile_grid: TileGrid = None,
-                 ds_id: str = None,
-                 parameters: Mapping[str, Any] = None):
+                 grid_mapping: Optional[GridMapping] = None,
+                 tile_grid: Optional[TileGrid] = None,
+                 ds_id: Optional[str] = None,
+                 parameters: Optional[Mapping[str, Any]] = None):
+        if grid_mapping is not None:
+            assert_instance(grid_mapping, GridMapping, name='grid_mapping')
+        if tile_grid is not None:
+            assert_instance(tile_grid, TileGrid, name='tile_grid')
+        if ds_id is not None:
+            assert_instance(ds_id, str, name='ds_id')
         self._grid_mapping = grid_mapping
         self._tile_grid = tile_grid
         self._ds_id = ds_id
@@ -500,10 +506,13 @@ class BaseMultiLevelDataset(LazyMultiLevelDataset):
 
     def __init__(self,
                  base_dataset: xr.Dataset,
-                 tile_grid: TileGrid = None,
-                 ds_id: str = None):
+                 grid_mapping: Optional[GridMapping] = None,
+                 tile_grid: Optional[TileGrid] = None,
+                 ds_id: Optional[str] = None):
         assert_instance(base_dataset, xr.Dataset, name='base_dataset')
-        grid_mapping = GridMapping.from_dataset(base_dataset, tolerance=1e-4)
+        if grid_mapping is None:
+            grid_mapping = GridMapping.from_dataset(base_dataset,
+                                                    tolerance=1e-4)
         self._base_dataset = base_dataset
         super().__init__(grid_mapping=grid_mapping,
                          tile_grid=tile_grid,
