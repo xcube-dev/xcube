@@ -43,6 +43,7 @@ from .descriptor import MultiLevelDatasetDescriptor
 from .descriptor import VariableDescriptor
 from .descriptor import new_data_descriptor
 from .error import DataStoreError
+from .fs.registry import new_fs_data_store
 from .search import DefaultSearchMixin
 from .store import DataStore
 from .store import MutableDataStore

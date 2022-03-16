@@ -31,10 +31,13 @@ from xcube.core.mldataset import BaseMultiLevelDataset
 from xcube.core.mldataset import LazyMultiLevelDataset
 from xcube.core.mldataset import MultiLevelDataset
 from xcube.util.assertions import assert_instance
+from xcube.util.jsonschema import JsonArraySchema
 from xcube.util.jsonschema import JsonBooleanSchema
+from xcube.util.jsonschema import JsonComplexSchema
 from xcube.util.jsonschema import JsonIntegerSchema
 from xcube.util.jsonschema import JsonObjectSchema
 from xcube.util.jsonschema import JsonStringSchema
+from xcube.util.jsonschema import JsonNullSchema
 from xcube.util.tilegrid import TileGrid
 from .dataset import DatasetZarrFsDataAccessor
 from ..helpers import get_fs_path_class
@@ -79,10 +82,24 @@ class MultiLevelDatasetLevelsFsDataAccessor(DatasetZarrFsDataAccessor):
                         ' at level 0. Instead a file "{data_id}/0.link"'
                         ' is created whose content is the given base dataset'
                         ' identifier.',
+            nullable=True,
         )
-        schema.properties['tile_size'] = JsonIntegerSchema(
+        schema.properties['tile_size'] = JsonComplexSchema(
+            one_of=[
+                JsonIntegerSchema(minimum=1),
+                JsonArraySchema(items=[
+                    JsonIntegerSchema(minimum=1),
+                    JsonIntegerSchema(minimum=1)
+                ]),
+                JsonNullSchema(),
+            ],
             description='Tile size to be used for all levels of the'
                         ' written multi-level dataset.',
+        )
+        schema.properties['num_levels'] = JsonIntegerSchema(
+            description='Maximum number of levels to be written.',
+            minimum=1,
+            nullable=True,
         )
         return schema
 
@@ -100,17 +117,23 @@ class MultiLevelDatasetLevelsFsDataAccessor(DatasetZarrFsDataAccessor):
                 warnings.warn('tile_size is ignored for multi-level datasets')
         else:
             base_dataset: xr.Dataset = data
-            if tile_size:
-                assert_instance(tile_size, int, name='tile_size')
+            if tile_size is not None:
+                try:
+                    tile_w, tile_h = tile_size
+                except ValueError:
+                    tile_w, tile_h = tile_size, tile_size
+                assert_instance(tile_w, int, name='tile_size[0]')
+                assert_instance(tile_h, int, name='tile_size[1]')
                 gm = GridMapping.from_dataset(base_dataset)
                 x_name, y_name = gm.xy_dim_names
-                base_dataset = base_dataset.chunk({x_name: tile_size,
-                                                   y_name: tile_size})
+                base_dataset = base_dataset.chunk({x_name: tile_w,
+                                                   y_name: tile_h})
             ml_dataset = BaseMultiLevelDataset(base_dataset)
         fs, root, write_params = self.load_fs(write_params)
         consolidated = write_params.pop('consolidated', True)
         use_saved_levels = write_params.pop('use_saved_levels', False)
         base_dataset_id = write_params.pop('base_dataset_id', None)
+        num_levels = write_params.pop('num_levels', None)
 
         if use_saved_levels:
             ml_dataset = BaseMultiLevelDataset(
@@ -122,7 +145,12 @@ class MultiLevelDatasetLevelsFsDataAccessor(DatasetZarrFsDataAccessor):
         data_path = path_class(data_id)
         fs.mkdirs(str(data_path), exist_ok=replace)
 
-        for index in range(ml_dataset.num_levels):
+        if num_levels is None or num_levels <= 0:
+            num_levels_max = ml_dataset.num_levels
+        else:
+            num_levels_max = min(num_levels, ml_dataset.num_levels)
+
+        for index in range(num_levels_max):
             level_dataset = ml_dataset.get_dataset(index)
             if base_dataset_id and index == 0:
                 # Write file "0.link" instead of copying

@@ -32,12 +32,12 @@ PyramidLevelCallback = Callable[[xr.Dataset, int, int], Optional[xr.Dataset]]
 _DEPRECATED_SINCE = '0.10.2'
 _DEPRECATED_READ = (
     'No longer in use. To read multi-level datasets, use:\n'
-    '>>> data_store = new_data_store("s3", ...)\n'
-    '>>> ml_dataset = data_store.read_data(path + ".levels")'
+    '>>> data_store = new_data_store("file")\n'
+    '>>> ml_dataset = data_store.open_data(path + ".levels")'
 )
 _DEPRECATED_WRITE = (
     'No longer in use. To write multi-level datasets, use:\n'
-    '>>> data_store = new_data_store("s3", ...)\n'
+    '>>> data_store = new_data_store("file")\n'
     '>>> data_store.write_data(dataset, path + ".levels")'
 )
 

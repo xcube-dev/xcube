@@ -27,15 +27,16 @@
   Zarr dataset. (#629)
 
 * Support for multi-level datasets has been improved:
-  - Introduced parameter `base_dataset_id` for writing multi-level 
-    datasets with the "file", "s3", and "memory" data stores. 
-    If given, the base dataset will be linked only with the 
-    value of `base_dataset_id`, instead of being copied as-is.
-    This can save large amounts of storage space. (#617)
-  - Introduced parameter `tile_size` for writing multi-level 
-    datasets with the "file", "s3", and "memory" data stores. 
-    If given, it forces the spatial dimensions to use the specified 
-    chunking.
+  - Introduced new parameters for writing multi-level datasets with the 
+    "file", "s3", and "memory" data stores. They are 
+    + `base_dataset_id`: If given, the base dataset will be linked only 
+      with the value of `base_dataset_id`, instead of being copied as-is.
+      This can save large amounts of storage space. (#617)
+    + `tile_size`: If given, it forces the spatial dimensions to be 
+       chunked accordingly. `tile_size` can be a positive integer 
+       or a pair of positive integers.
+    + `num_levels`: If given, restricts the number of resolution levels 
+       to the given value. Must be a positive integer to be effective.
   - Added a new example notebook 
     [5_multi_level_datasets.ipynb](https://github.com/dcs4cop/xcube/blob/master/examples/notebooks/datastores/5_multi_level_datasets.ipynb) 
     that demonstrates writing and opening multi-level datasets with the 
@@ -64,6 +65,26 @@
   now tiled correctly. (#626)
 
 ### Other
+
+* The `xcube level` CLI tool has been rewritten from scratch to make use 
+  of xcube filesystem data stores. (#617)
+
+* Deprecated numerous classes and functions around multi-level datasets.
+  The non-deprecated functions and classes of `xcube.core.mldataset` should 
+  be used instead along with the xcube filesystem data stores for 
+  multi-level dataset i/o. (#516)
+  - Deprecated all functions of the `xcube.core.level` module
+    + `compute_levels()`
+    + `read_levels()`
+    + `write_levels()`
+  - Deprecated numerous classes and functions of the `xcube.core.mldataset`
+    module
+    + `FileStorageMultiLevelDataset`
+    + `ObjectStorageMultiLevelDataset`
+    + `open_ml_dataset()`
+    + `open_ml_dataset_from_object_storage()`
+    + `open_ml_dataset_from_local_fs()`
+    + `write_levels()`
 
 * Added packages `python-blosc` and `lz4` to the xcube Python environment 
   for better support of Dask `distributed` and the Dask service 
