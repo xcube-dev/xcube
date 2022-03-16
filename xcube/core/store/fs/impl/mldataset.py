@@ -39,6 +39,7 @@ from xcube.util.jsonschema import JsonObjectSchema
 from xcube.util.jsonschema import JsonStringSchema
 from xcube.util.jsonschema import JsonNullSchema
 from xcube.util.tilegrid import TileGrid
+from xcube.util.types import normalize_scalar_or_pair
 from .dataset import DatasetZarrFsDataAccessor
 from ..helpers import get_fs_path_class
 from ..helpers import resolve_path
@@ -118,13 +119,9 @@ class MultiLevelDatasetLevelsFsDataAccessor(DatasetZarrFsDataAccessor):
         else:
             base_dataset: xr.Dataset = data
             if tile_size is not None:
-                try:
-                    tile_w, tile_h = tile_size
-                    assert_instance(tile_w, int, name='tile_size[0]')
-                    assert_instance(tile_h, int, name='tile_size[1]')
-                except TypeError:
-                    assert_instance(tile_size, int, name='tile_size')
-                    tile_w, tile_h = tile_size, tile_size
+                tile_w, tile_h = normalize_scalar_or_pair(
+                    tile_size, item_type=int, name='tile_size'
+                )
                 gm = GridMapping.from_dataset(base_dataset)
                 x_name, y_name = gm.xy_dim_names
                 base_dataset = base_dataset.chunk({x_name: tile_w,
