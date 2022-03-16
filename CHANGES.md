@@ -28,10 +28,10 @@
 
 * Support for multi-level datasets has been improved:
   - Introduced new parameters for writing multi-level datasets with the 
-    "file", "s3", and "memory" data stores. They are 
+    "file", "s3", and "memory" data stores (#617). They are 
     + `base_dataset_id`: If given, the base dataset will be linked only 
       with the value of `base_dataset_id`, instead of being copied as-is.
-      This can save large amounts of storage space. (#617)
+      This can save large amounts of storage space. 
     + `tile_size`: If given, it forces the spatial dimensions to be 
        chunked accordingly. `tile_size` can be a positive integer 
        or a pair of positive integers.
