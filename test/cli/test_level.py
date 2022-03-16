@@ -1,11 +1,11 @@
 import os.path
-from typing import List, Tuple
+from typing import List, Tuple, Optional, Dict
 
 from test.cli.helpers import CliDataTest
 from test.cli.helpers import CliTest
 from test.cli.helpers import TEST_NC_FILE, TEST_ZARR_DIR
-from xcube.core.level import read_levels
-from xcube.core.verify import assert_cube
+from xcube.core.mldataset import MultiLevelDataset
+from xcube.core.store import new_fs_data_store
 
 
 class LevelTest(CliTest):
@@ -21,15 +21,16 @@ class LevelDataTest(CliDataTest):
     def outputs(self) -> List[str]:
         return [LevelDataTest.TEST_OUTPUT, 'my.levels']
 
+    def chunks(self) -> Optional[Dict[str, int]]:
+        return dict(time=1, lat=90, lon=180)
+
     def test_all_defaults(self):
         result = self.invoke_cli(['level', TEST_ZARR_DIR])
         self._assert_result_ok(
             result, [((1, 1, 1, 1, 1), (90, 90), (180, 180)),
                      ((1, 1, 1, 1, 1), (90,), (180,))],
             LevelDataTest.TEST_OUTPUT,
-            'Level 1 of 2 written after .*\n'
-            'Level 2 of 2 written after .*\n'
-            '2 level\(s\) written into test.levels after .*\n'
+            'Multi-level dataset written to /test.levels after .*\n'
         )
 
     def test_with_output(self):
@@ -38,9 +39,7 @@ class LevelDataTest(CliDataTest):
         self._assert_result_ok(
             result, [((1, 1, 1, 1, 1), (90, 90), (180, 180)),
                      ((1, 1, 1, 1, 1), (90,), (180,))], 'my.levels',
-            'Level 1 of 2 written after .*\n'
-            'Level 2 of 2 written after .*\n'
-            '2 level\(s\) written into my.levels after .*\n'
+            'Multi-level dataset written to my.levels after .*\n'
         )
 
     def test_with_tile_size_and_num_levels(self):
@@ -51,10 +50,7 @@ class LevelDataTest(CliDataTest):
                      ((1, 1, 1, 1, 1), (45, 45), (90, 90)),
                      ((1, 1, 1, 1, 1), (45,), (90,))],
             LevelDataTest.TEST_OUTPUT,
-            'Level 1 of 3 written after .*\n'
-            'Level 2 of 3 written after .*\n'
-            'Level 3 of 3 written after .*\n'
-            '3 level\(s\) written into test.levels after .*\n'
+            'Multi-level dataset written to /test.levels after .*\n'
         )
 
     def _assert_result_ok(self,
@@ -65,10 +61,12 @@ class LevelDataTest(CliDataTest):
         self.assertEqual(0, result.exit_code)
         self.assertRegex(result.stdout, message_regex)
         self.assertTrue(os.path.isdir(output_path))
-        level_datasets = read_levels(output_path)
-        level = 0
-        for level_dataset in level_datasets:
-            assert_cube(level_dataset)
+        data_store = new_fs_data_store("file")
+        ml_dataset = data_store.open_data(output_path)
+        self.assertIsInstance(ml_dataset, MultiLevelDataset)
+        self.assertEqual(len(level_chunks), ml_dataset.num_levels)
+        for level in range(ml_dataset.num_levels):
+            level_dataset = ml_dataset.get_dataset(level)
             self.assertEqual({'precipitation',
                               'soil_moisture',
                               'temperature'},
@@ -78,7 +76,6 @@ class LevelDataTest(CliDataTest):
                 self.assertEqual(var_chunks,
                                  var.chunks,
                                  f'{var_name} at level {level}')
-            level += 1
 
     def _assert_result_not_ok(self, result, message_regex: str):
         self.assertEqual(1, result.exit_code)
@@ -172,8 +169,10 @@ class LevelDataTest(CliDataTest):
         )
 
     def test_with_existing_output(self):
-        result = self.invoke_cli(['level', TEST_ZARR_DIR,
-                                  '--output', 'my.levels'])
+        # Product output
+        self.invoke_cli(['level', TEST_ZARR_DIR,
+                         '--output', 'my.levels'])
+        # Product output once mor
         result = self.invoke_cli(['level', TEST_ZARR_DIR,
                                   '--output', 'my.levels'])
         self._assert_result_not_ok(
