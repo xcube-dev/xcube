@@ -118,15 +118,17 @@ class MultiLevelDatasetLevelsFsDataAccessor(DatasetZarrFsDataAccessor):
                 warnings.warn('tile_size is ignored for multi-level datasets')
         else:
             base_dataset: xr.Dataset = data
+            grid_mapping = None
             if tile_size is not None:
                 tile_w, tile_h = normalize_scalar_or_pair(
                     tile_size, item_type=int, name='tile_size'
                 )
-                gm = GridMapping.from_dataset(base_dataset)
-                x_name, y_name = gm.xy_dim_names
+                grid_mapping = GridMapping.from_dataset(base_dataset)
+                x_name, y_name = grid_mapping.xy_dim_names
                 base_dataset = base_dataset.chunk({x_name: tile_w,
                                                    y_name: tile_h})
-            ml_dataset = BaseMultiLevelDataset(base_dataset)
+            ml_dataset = BaseMultiLevelDataset(base_dataset,
+                                               grid_mapping=grid_mapping)
         fs, root, write_params = self.load_fs(write_params)
         consolidated = write_params.pop('consolidated', True)
         use_saved_levels = write_params.pop('use_saved_levels', False)
@@ -136,6 +138,7 @@ class MultiLevelDatasetLevelsFsDataAccessor(DatasetZarrFsDataAccessor):
         if use_saved_levels:
             ml_dataset = BaseMultiLevelDataset(
                 ml_dataset.get_dataset(0),
+                grid_mapping=ml_dataset.grid_mapping,
                 tile_grid=ml_dataset.tile_grid
             )
 
