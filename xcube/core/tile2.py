@@ -22,7 +22,8 @@
 import io
 import logging
 import math
-from typing import Optional, Tuple, Dict, Any, Hashable
+import warnings
+from typing import Optional, Tuple, Dict, Any, Hashable, Union
 
 import PIL
 import matplotlib.colors
@@ -33,25 +34,32 @@ from .mldataset import MultiLevelDataset
 from ..util.assertions import assert_in
 from ..util.logtime import log_time
 from ..util.projcache import ProjCache
+from ..util.tilegrid2 import DEFAULT_TILE_SIZE
 from ..util.tilegrid2 import TileGrid2
+from ..util.tilegrid2 import WEB_MERCATOR_CRS_NAME
 
 DEFAULT_VALUE_RANGE = 0, 1
 DEFAULT_CMAP_NAME = 'bone'
+DEFAULT_CRS_NAME = WEB_MERCATOR_CRS_NAME
+DEFAULT_TILE_ENLARGEMENT = 1
+DEFAULT_FORMAT = 'png'
 
 
-def compute_rgba_tile(ml_dataset: MultiLevelDataset,
-                      variable_name: str,
-                      tile_x: int,
-                      tile_y: int,
-                      tile_z: int,
-                      crs_name: str,
-                      tile_size: int,
-                      cmap_name: str,
-                      value_range: Tuple[float, float],
-                      non_spatial_labels: Optional[Dict[str, str]],
-                      tile_enlargement: int,
-                      logger: Optional[logging.Logger] = None,
-                      format: str = 'png') -> bytes:
+def compute_rgba_tile(
+        ml_dataset: MultiLevelDataset,
+        variable_name: str,
+        tile_x: int,
+        tile_y: int,
+        tile_z: int,
+        crs_name: str = DEFAULT_CRS_NAME,
+        tile_size: int = DEFAULT_TILE_SIZE,
+        cmap_name: str = DEFAULT_CMAP_NAME,
+        value_range: Tuple[float, float] = DEFAULT_VALUE_RANGE,
+        non_spatial_labels: Optional[Dict[str, Any]] = None,
+        format: str = DEFAULT_FORMAT,
+        tile_enlargement: int = DEFAULT_TILE_ENLARGEMENT,
+        logger: Optional[logging.Logger] = None
+) -> Union[bytes, np.ndarray]:
     """Compute an RGBA image tile from variable *variable_name* in
     given multi-resolution dataset *mr_dataset*.
 
@@ -312,7 +320,7 @@ TransparentRgbaTilePool.INSTANCE = TransparentRgbaTilePool()
 
 def _get_non_spatial_labels(dataset: xr.Dataset,
                             variable: xr.DataArray,
-                            labels: Optional[Dict[str, str]],
+                            labels: Optional[Dict[str, Any]],
                             logger: logging.Logger) -> Dict[Hashable, Any]:
     new_labels = {}
     non_spatial_dims = variable.dims[0:-2]
@@ -333,15 +341,20 @@ def _get_non_spatial_labels(dataset: xr.Dataset,
             try:
                 label = np.array(label).astype(coord_var.dtype)
             except (TypeError, ValueError) as e:
-                logger.warning(f'illegal label {label!r}'
-                               f' for dimension {dim!r},'
-                               f' using first label instead'
-                               f' (error: {e})')
+                msg = (f'illegal label {label!r} for dimension {dim!r},'
+                       f' using first label instead (error: {e})')
+                if logger:
+                    logger.warning(msg)
+                else:
+                    warnings.warn(msg)
                 label = coord_var[0].values
         else:
-            logger.warning(f'missing label'
-                           f' for dimension {dim!r},'
-                           f' using first label instead')
+            msg = (f'missing label for dimension {dim!r},'
+                   f' using first label instead')
+            if logger:
+                logger.warning(msg)
+            else:
+                warnings.warn(msg)
             label = coord_var[0].values
 
         new_labels[dim] = label
