@@ -23,7 +23,7 @@ import os
 import threading
 import uuid
 from abc import abstractmethod, ABCMeta
-from typing import Sequence, Any, Dict, Callable, Mapping, Optional
+from typing import Sequence, Any, Dict, Callable, Mapping, Optional, Tuple
 
 import s3fs
 import xarray as xr
@@ -82,6 +82,7 @@ class MultiLevelDataset(metaclass=ABCMeta):
         :return: the CF-conformal grid mapping
         """
 
+    @deprecated(version='0.10.x', reason='do not use, wrong relationship')
     @property
     @abstractmethod
     def tile_grid(self) -> TileGrid:
@@ -95,6 +96,16 @@ class MultiLevelDataset(metaclass=ABCMeta):
         :return: the number of pyramid levels.
         """
         return self.tile_grid.max_level + 1
+
+    @property
+    def resolutions(self) -> Sequence[Tuple[float, float]]:
+        """
+        :return: the x,y resolutions for each level given in the spatial units
+            of the dataset's CRS (i.e. ``self.grid_mapping.crs``).
+        """
+        x_res_0, y_res_0 = self.grid_mapping.xy_res
+        return [(x_res_0 * (2 ** level), y_res_0 * (2 ** level))
+                for level in range(self.num_levels)]
 
     @property
     def base_dataset(self) -> xr.Dataset:
@@ -178,6 +189,7 @@ class LazyMultiLevelDataset(MultiLevelDataset, metaclass=ABCMeta):
                 self._grid_mapping = self._get_grid_mapping_lazily()
         return self._grid_mapping
 
+    @deprecated(version='0.10.x', reason='do not use, wrong relationship')
     @property
     def tile_grid(self) -> TileGrid:
         if self._tile_grid is None:
