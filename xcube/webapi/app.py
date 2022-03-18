@@ -66,6 +66,8 @@ def new_application(route_prefix: str = None, base_dir: str = '.'):
          xcube.webapi.handlers.GetDatasetVarTileHandler),
         (route_prefix + url_pattern('/datasets/{{ds_id}}/vars/{{var_name}}/tilegrid'),
          xcube.webapi.handlers.GetDatasetVarTileGridHandler),
+        (route_prefix + url_pattern('/datasets/{{ds_id}}/vars/{{var_name}}/tiles2/{{z}}/{{y}}/{{x}}'),
+         xcube.webapi.handlers.GetDatasetVarTile2Handler),
 
         # AWS S3 compatible data access as ZARR
 

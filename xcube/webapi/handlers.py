@@ -37,6 +37,7 @@ from xcube.webapi.controllers.catalogue import get_datasets, get_dataset_coordin
 from xcube.webapi.controllers.places import find_places, find_dataset_places
 from xcube.webapi.controllers.tiles import get_dataset_tile, get_dataset_tile_grid, \
     get_legend
+from xcube.webapi.controllers.tiles2 import get_dataset_tile2
 from xcube.webapi.controllers.timeseries import get_time_series
 from xcube.webapi.controllers.ts_legacy import get_time_series_info, get_time_series_for_point, \
     get_time_series_for_geometry, \
@@ -318,6 +319,20 @@ class GetDatasetVarTileHandler(ServiceRequestHandler):
     async def get(self, ds_id: str, var_name: str, z: str, x: str, y: str):
         tile = await IOLoop.current().run_in_executor(None,
                                                       get_dataset_tile,
+                                                      self.service_context,
+                                                      ds_id, var_name,
+                                                      x, y, z,
+                                                      self.params)
+        self.set_header('Content-Type', 'image/png')
+        await self.finish(tile)
+
+
+# noinspection PyAbstractClass,PyBroadException
+class GetDatasetVarTile2Handler(ServiceRequestHandler):
+
+    async def get(self, ds_id: str, var_name: str, z: str, x: str, y: str):
+        tile = await IOLoop.current().run_in_executor(None,
+                                                      get_dataset_tile2,
                                                       self.service_context,
                                                       ds_id, var_name,
                                                       x, y, z,
