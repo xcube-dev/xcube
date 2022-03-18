@@ -29,6 +29,7 @@ import warnings
 from typing import Any, Dict, List, Optional, Tuple, Callable, Collection, Set
 from typing import Sequence
 
+from deprecated import deprecated
 import fiona
 import numpy as np
 import pandas as pd
@@ -535,6 +536,8 @@ class ServiceContext:
                     s3_bucket_mapping[ds_id] = local_path
         return s3_bucket_mapping
 
+    @deprecated(version='0.10.x',
+                reason='do not use, wrong relationship')
     def get_tile_grid(self, ds_id: str) -> TileGrid:
         ml_dataset, _ = self._get_dataset_entry(ds_id)
         return ml_dataset.tile_grid

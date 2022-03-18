@@ -18,28 +18,32 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+
 from numbers import Number
-from typing import Any, Mapping, MutableMapping, Sequence, Hashable, Type, Dict, Optional, Tuple, Union
+from typing import Any, Mapping, MutableMapping, Sequence, Hashable, Type, \
+    Dict, Optional, Tuple, Union
 
 import numpy as np
 import pandas as pd
 import xarray as xr
+from deprecated import deprecated
 
 from xcube.constants import LOG
 from xcube.core.mldataset import MultiLevelDataset
 from xcube.core.schema import get_dataset_xy_var_names
 from xcube.util.cache import Cache
 from xcube.util.perf import measure_time_cm
-from xcube.util.tiledimage import SourceArrayImage
 from xcube.util.tiledimage import ColorMappedRgbaImage
 from xcube.util.tiledimage import DEFAULT_COLOR_MAP_NAME
 from xcube.util.tiledimage import DEFAULT_COLOR_MAP_VALUE_RANGE
 from xcube.util.tiledimage import DirectRgbaImage
+from xcube.util.tiledimage import NormalizeArrayImage
+from xcube.util.tiledimage import SourceArrayImage
 from xcube.util.tiledimage import Tile
 from xcube.util.tiledimage import TiledImage
-from xcube.util.tiledimage import NormalizeArrayImage
 
 
+@deprecated(version='0.10.x', reason='use xcube-core.tile2 instead')
 def get_ml_dataset_tile(
         ml_dataset: MultiLevelDataset,
         var_name: str,
@@ -127,6 +131,7 @@ def get_ml_dataset_tile(
     return tile
 
 
+@deprecated(version='0.10.x', reason='use xcube-core.tile2 instead')
 def new_rgb_image(ml_dataset: MultiLevelDataset,
                   image_id: str,
                   var_names: Tuple[str, ...],
@@ -167,6 +172,7 @@ def new_rgb_image(ml_dataset: MultiLevelDataset,
                            trace_perf=trace_perf)
 
 
+@deprecated(version='0.10.x', reason='use xcube-core.tile2 instead')
 def new_color_mapped_image(ml_dataset: MultiLevelDataset,
                            image_id: str,
                            var_name: str,

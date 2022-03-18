@@ -27,6 +27,7 @@ from typing import Tuple, Union, Any, Sequence
 import dask.array as da
 import numpy as np
 from PIL import Image
+from deprecated import deprecated
 
 from xcube.constants import LOG
 from xcube.util.assertions import assert_instance
@@ -53,6 +54,7 @@ Tile = Any
 NormRange = Tuple[Union[int, float], Union[int, float]]
 
 
+@deprecated(version='0.10.x', reason='no longer in use, no replacement')
 class TiledImage(metaclass=ABCMeta):
     """
     The interface for tiled images.
@@ -121,6 +123,7 @@ class TiledImage(metaclass=ABCMeta):
         """
 
 
+@deprecated(version='0.10.x', reason='no longer in use, no replacement')
 class AbstractTiledImage(TiledImage, metaclass=ABCMeta):
     """
     An abstract base class for tiled images.
@@ -186,6 +189,7 @@ class AbstractTiledImage(TiledImage, metaclass=ABCMeta):
         return '%s/%d/%d' % (self.id, tile_x, tile_y)
 
 
+@deprecated(version='0.10.x', reason='no longer in use, no replacement')
 class OpImage(AbstractTiledImage, metaclass=ABCMeta):
     """
     An abstract base class for images that compute their tiles.
@@ -279,6 +283,7 @@ class OpImage(AbstractTiledImage, metaclass=ABCMeta):
         return "tile " + tile_id + ": "
 
 
+@deprecated(version='0.10.x', reason='no longer in use, no replacement')
 class DecoratorImage(OpImage, metaclass=ABCMeta):
     """
     Abstract tiled image class allowing behavior to be added to a given tiled source image.
@@ -338,6 +343,7 @@ class DecoratorImage(OpImage, metaclass=ABCMeta):
         """
 
 
+@deprecated(version='0.10.x', reason='no longer in use, no replacement')
 class NormalizeArrayImage(DecoratorImage):
     """
     Performs basic (numpy) array tile transformations.
@@ -383,6 +389,7 @@ class NormalizeArrayImage(DecoratorImage):
         return tile
 
 
+@deprecated(version='0.10.x', reason='no longer in use, no replacement')
 class DirectRgbaImage(OpImage):
     """
     Creates an RGBA image from a three source images that provide tiles as normalized, numpy-like 2D arrays.
@@ -452,6 +459,7 @@ class DirectRgbaImage(OpImage):
             return image
 
 
+@deprecated(version='0.10.x', reason='no longer in use, no replacement')
 class ColorMappedRgbaImage(DecoratorImage):
     """
     Creates a color-mapped image from a source image that provide tiles as numpy-like image arrays.
@@ -509,6 +517,7 @@ class ColorMappedRgbaImage(DecoratorImage):
             return image
 
 
+@deprecated(version='0.10.x', reason='no longer in use, no replacement')
 class SourceArrayImage(OpImage):
     """
     A tiled image created from a numpy ndarray-like data array.
@@ -576,6 +585,7 @@ class SourceArrayImage(OpImage):
         return trim_tile(tile, self.tile_size)
 
 
+@deprecated(version='0.10.x', reason='no longer in use, no replacement')
 def trim_tile(tile: NDArrayLike,
               expected_tile_size: Size2D,
               fill_value: float = np.nan) -> NDArrayLike:
