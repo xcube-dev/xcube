@@ -82,9 +82,9 @@ class MultiLevelDataset(metaclass=ABCMeta):
         :return: the CF-conformal grid mapping
         """
 
-    @deprecated(version='0.10.x', reason='do not use, wrong relationship')
     @property
     @abstractmethod
+    @deprecated(version='0.10.x', reason='do not use, wrong relationship')
     def tile_grid(self) -> TileGrid:
         """
         :return: the tile grid.
@@ -189,8 +189,8 @@ class LazyMultiLevelDataset(MultiLevelDataset, metaclass=ABCMeta):
                 self._grid_mapping = self._get_grid_mapping_lazily()
         return self._grid_mapping
 
-    @deprecated(version='0.10.x', reason='do not use, wrong relationship')
     @property
+    @deprecated(version='0.10.x', reason='do not use, wrong relationship')
     def tile_grid(self) -> TileGrid:
         if self._tile_grid is None:
             with self._lock:
