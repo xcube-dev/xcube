@@ -328,6 +328,10 @@ class GridMapping(abc.ABC):
         return self._crs
 
     @property
+    def spatial_unit_name(self) -> str:
+        return self._crs.axis_info[0].unit_name
+
+    @property
     def is_lon_360(self) -> Optional[bool]:
         """
         Check whether *x_max* is greater than 180 degrees.
