@@ -45,7 +45,7 @@ DEFAULT_TILE_ENLARGEMENT = 1
 DEFAULT_FORMAT = 'png'
 
 
-def compute_rgba_tile(
+def compute_color_mapped_rgba_tile(
         ml_dataset: MultiLevelDataset,
         variable_name: str,
         tile_x: int,
@@ -93,12 +93,13 @@ def compute_rgba_tile(
     :param value_range:
     :param non_spatial_labels:
     :param tile_enlargement:
-    :param format:
+    :param format: either 'png', 'image/png' or 'numpy'
     :param logger:
-    :return: PNG bytes
+    :return: PNG bytes or unit8 numpy array, depending on *format*
     :raise TileNotFoundException
     :raise TileRequestException
     """
+    format = _normalize_format(format)
     assert_in(format, ('png', 'numpy'), name='format')
 
     with log_time(logger, 'preparing 2D subset'):
@@ -206,7 +207,7 @@ def compute_rgba_tile(
         # non-existing or too small image. It will also prevent
         # determining the current resolution.
         if 0 in var_subset.shape or 1 in var_subset.shape:
-            return TransparentRgbaTilePool.INSTANCE.get(tile_size)
+            return TransparentRgbaTilePool.INSTANCE.get(tile_size, format)
 
     with log_time(logger,
                   'transforming dataset coordinates into indices'):
@@ -300,19 +301,21 @@ class TileRequestException(TileException):
 
 
 class TransparentRgbaTilePool:
-    """A cache for fully-transparent RGBA tiles of a given size."""
+    """A cache for fully-transparent RGBA tiles of a given size and format."""
 
     INSTANCE: 'TransparentRgbaTilePool'
 
     def __init__(self):
-        self._transparent_tiles: Dict[int, bytes] = dict()
+        self._transparent_tiles: Dict[str, Union[bytes, np.ndarray]] = dict()
 
-    def get(self, tile_size: int) -> bytes:
-        if tile_size not in self._transparent_tiles:
-            data = encode_rgba_as_png(np.zeros((tile_size, tile_size, 4),
-                                               dtype=np.uint8))
-            self._transparent_tiles[tile_size] = data
-        return self._transparent_tiles[tile_size]
+    def get(self, tile_size: int, format: str) -> Union[bytes, np.ndarray]:
+        key = f'{format}-{tile_size}'
+        if key not in self._transparent_tiles:
+            data = np.zeros((tile_size, tile_size, 4), dtype=np.uint8)
+            if format == 'png':
+                data = encode_rgba_as_png(data)
+            self._transparent_tiles[key] = data
+        return self._transparent_tiles[key]
 
 
 TransparentRgbaTilePool.INSTANCE = TransparentRgbaTilePool()
@@ -360,3 +363,9 @@ def _get_non_spatial_labels(dataset: xr.Dataset,
         new_labels[dim] = label
 
     return new_labels
+
+
+def _normalize_format(format: str) -> str:
+    if format in ('png', 'PNG', 'image/png'):
+        return 'png'
+    return format
