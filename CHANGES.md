@@ -1,3 +1,28 @@
+## Changes in 0.11.0 (in development)
+
+* `xcube serve` can now serve datasets with arbitrary spatial 
+  coordinate reference systems. Before xcube 0.11, datasets where forced
+  to have a geographical CRS such as EPSG:4326 or CRS84.
+
+* `xcube serve` can now provide image tiles for two popular tile grids:
+  1. global web mercator grid , with 1 x 1 tiles at level 
+     zero (OSM grid, "Google projection")
+  2. global geographic grid, with 2 x 1 tiles at level zero 
+  
+  The general form of the xcube tile URL is
+       
+      /datasets/{ds_id}/vars/{var_name}/tile2/{z}/{y}/{x}
+    
+  The following query parameters can be used
+    
+  - `crs`: set to `EPSG:3857` to use the web mercator grid (the default),
+    or `EPSG:4326` to use the geographic grid. 
+  - `cbar`: color bar name such as `viridis` or `plasma`, 
+     see color bar names of matplotlib. Defaults to `bone`.
+  - `vmin`: minimum value to be used for color mapping. Defaults to `0`.
+  - `vmax`: maximum value to be used for color mapping. Defaults to `1`.
+  - `retina`: if set to `1`, tile size will be 512 instead of 256.
+
 ## Changes in 0.10.3 (in development)
 
 
