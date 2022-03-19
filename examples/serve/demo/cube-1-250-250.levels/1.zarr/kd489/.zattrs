@@ -1,0 +1,10 @@
+{
+    "_ARRAY_DIMENSIONS": [
+        "time",
+        "lat",
+        "lon"
+    ],
+    "long_name": "Irradiance attenuation coefficient at 489 nm",
+    "units": "m^-1",
+    "valid_pixel_expression": "c2rcc_flags.Valid_PE"
+}
