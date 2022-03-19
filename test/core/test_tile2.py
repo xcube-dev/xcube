@@ -5,14 +5,14 @@ import pyproj
 import xarray as xr
 
 from xcube.core.mldataset import BaseMultiLevelDataset
-from xcube.core.tile2 import compute_rgba_tile
+from xcube.core.tile2 import compute_color_mapped_rgba_tile
 from xcube.util.tilegrid2 import GEOGRAPHIC_CRS_NAME
 from xcube.util.tilegrid2 import WEB_MERCATOR_CRS_NAME
 
 
 class Tile2Test(unittest.TestCase):
 
-    def test_compute_rgba_tile(self):
+    def test_compute_color_mapped_rgba_tile(self):
         crs_name = WEB_MERCATOR_CRS_NAME
 
         crs = pyproj.CRS.from_string(crs_name)
@@ -72,15 +72,17 @@ class Tile2Test(unittest.TestCase):
         args = [
             ml_ds,
             'var_a',
-            0, 0, 0,
-            crs_name,
-            10,
-            "gray",
-            (0, 10),
-            {'time': '0'},
-            0
+            0, 0, 0
         ]
-        tile = compute_rgba_tile(*args, format='numpy')
+        kwargs = dict(
+            crs_name=crs_name,
+            tile_size=10,
+            cmap_name="gray",
+            value_range=(0, 10),
+            non_spatial_labels={'time': 0},
+            tile_enlargement=0
+        )
+        tile = compute_color_mapped_rgba_tile(*args, **kwargs, format='numpy')
         self.assertIsInstance(tile, np.ndarray)
         self.assertEqual(np.uint8, tile.dtype)
         self.assertEqual((10, 10, 4), tile.shape)
@@ -123,5 +125,5 @@ class Tile2Test(unittest.TestCase):
             )
         )
 
-        tile = compute_rgba_tile(*args, format='png')
+        tile = compute_color_mapped_rgba_tile(*args, format='png')
         self.assertIsInstance(tile, bytes)
