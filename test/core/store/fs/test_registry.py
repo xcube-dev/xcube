@@ -12,6 +12,7 @@ import xarray as xr
 import xcube.core.mldataset
 from test.s3test import MOTO_SERVER_ENDPOINT_URL
 from test.s3test import S3Test
+from xcube.core.gridmapping import GridMapping
 from xcube.core.mldataset import MultiLevelDataset
 from xcube.core.new import new_cube
 from xcube.core.store import DataDescriptor
@@ -22,6 +23,7 @@ from xcube.core.store import MutableDataStore
 from xcube.core.store.fs.registry import new_fs_data_store
 from xcube.core.store.fs.store import FsDataStore
 from xcube.util.temp import new_temp_dir
+from xcube.util.tilegrid import TileGrid
 
 ROOT_DIR = 'xcube'
 DATA_PATH = 'testing/data'
@@ -211,6 +213,10 @@ class FsDataStoresTestMixin(ABC):
             ml_dataset: xcube.core.mldataset.MultiLevelDataset
     ):
         self.assertEqual(2, ml_dataset.num_levels)
+        self.assertIsInstance(ml_dataset.tile_grid, TileGrid)
+        self.assertIsInstance(ml_dataset.grid_mapping, GridMapping)
+        self.assertIsInstance(ml_dataset.base_dataset, xr.Dataset)
+        self.assertIsInstance(ml_dataset.ds_id, str)
         # assert encoding
         for level in range(ml_dataset.num_levels):
             dataset = ml_dataset.get_dataset(level)
@@ -253,6 +259,9 @@ class FsDataStoresTestMixin(ABC):
                                        'mldataset',
                                        MultiLevelDataset,
                                        MultiLevelDatasetDescriptor,
+                                       open_params=dict(
+                                           cache_size=2 ** 20,
+                                       ),
                                        write_params=dict(
                                            tile_size=90,
                                        ))
@@ -263,6 +272,9 @@ class FsDataStoresTestMixin(ABC):
                                        'mldataset',
                                        MultiLevelDataset,
                                        MultiLevelDatasetDescriptor,
+                                       open_params=dict(
+                                           cache_size=2 ** 20,
+                                       ),
                                        write_params=dict(
                                            tile_size=90,
                                            use_saved_levels=True,
