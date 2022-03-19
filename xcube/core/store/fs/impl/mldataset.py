@@ -19,12 +19,15 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+import math
 import pathlib
 import warnings
 from typing import Dict, Any, List, Union, Tuple, Optional
 
 import fsspec
+import numpy as np
 import xarray as xr
+import zarr
 
 from xcube.core.gridmapping import GridMapping
 from xcube.core.mldataset import BaseMultiLevelDataset
@@ -35,9 +38,9 @@ from xcube.util.jsonschema import JsonArraySchema
 from xcube.util.jsonschema import JsonBooleanSchema
 from xcube.util.jsonschema import JsonComplexSchema
 from xcube.util.jsonschema import JsonIntegerSchema
+from xcube.util.jsonschema import JsonNullSchema
 from xcube.util.jsonschema import JsonObjectSchema
 from xcube.util.jsonschema import JsonStringSchema
-from xcube.util.jsonschema import JsonNullSchema
 from xcube.util.tilegrid import TileGrid
 from xcube.util.types import normalize_scalar_or_pair
 from .dataset import DatasetZarrFsDataAccessor
@@ -198,6 +201,9 @@ class MultiLevelDatasetLevelsFsDataAccessor(DatasetZarrFsDataAccessor):
         return data_id
 
 
+_MIN_CACHE_SIZE = 1024 * 1024  # 1 MiB
+
+
 class FsMultiLevelDataset(LazyMultiLevelDataset):
     def __init__(self,
                  fs: fsspec.AbstractFileSystem,
@@ -207,9 +213,11 @@ class FsMultiLevelDataset(LazyMultiLevelDataset):
         super().__init__(ds_id=data_id)
         self._fs = fs
         self._root = root
+        self._path = data_id
         self._open_params = open_params
         self._path_class = get_fs_path_class(fs)
         self._num_levels = None
+        self._size_weights: Optional[np.ndarray] = None
 
     @property
     def num_levels(self) -> int:
@@ -218,14 +226,25 @@ class FsMultiLevelDataset(LazyMultiLevelDataset):
                 self._num_levels = self._get_num_levels_lazily()
         return self._num_levels
 
+    @property
+    def size_weights(self) -> np.ndarray:
+        if self._size_weights is None:
+            with self.lock:
+                self._size_weights = self.compute_size_weights(
+                    self.num_levels
+                )
+        return self._size_weights
+
     def _get_dataset_lazily(self, index: int, parameters) \
             -> xr.Dataset:
 
         open_params = dict(self._open_params)
 
+        cache_size = open_params.pop('cache_size', None)
+
         fs = self._fs
 
-        ds_path = self._get_path(self.ds_id)
+        ds_path = self._get_path(self._path)
         link_path = ds_path / f'{index}.link'
         if fs.isfile(str(link_path)):
             # If file "{index}.link" exists, we have a link to
@@ -245,6 +264,15 @@ class FsMultiLevelDataset(LazyMultiLevelDataset):
         )
 
         level_zarr_store = fs.get_mapper(str(level_path))
+
+        if isinstance(cache_size, int) and cache_size >= _MIN_CACHE_SIZE:
+            # compute cache size for level weighted by
+            # size in pixels for each level
+            cache_size = math.ceil(self.size_weights[index] * cache_size)
+            if cache_size >= _MIN_CACHE_SIZE:
+                level_zarr_store = zarr.LRUStoreCache(level_zarr_store,
+                                                      max_size=cache_size)
+
         try:
             return xr.open_zarr(level_zarr_store,
                                 consolidated=consolidated,
@@ -253,6 +281,11 @@ class FsMultiLevelDataset(LazyMultiLevelDataset):
             raise DataStoreError(f'Failed to open'
                                  f' dataset {level_path!r}:'
                                  f' {e}') from e
+
+    @staticmethod
+    def compute_size_weights(num_levels: int) -> np.ndarray:
+        weights = (2 ** np.arange(0, num_levels, dtype=np.float64)) ** 2
+        return weights[::-1] / np.sum(weights)
 
     def _get_tile_grid_lazily(self) -> TileGrid:
         """
@@ -284,7 +317,7 @@ class FsMultiLevelDataset(LazyMultiLevelDataset):
     def _get_levels(self) -> List[int]:
         levels = []
         paths = [self._get_path(entry['name'])
-                 for entry in self._fs.listdir(self.ds_id, detail=True)]
+                 for entry in self._fs.listdir(self._path, detail=True)]
         for path in paths:
             # No ext, i.e. dir_name = "<level>", is proposed by
             # https://github.com/zarr-developers/zarr-specs/issues/50.

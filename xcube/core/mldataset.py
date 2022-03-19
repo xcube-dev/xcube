@@ -75,6 +75,13 @@ class MultiLevelDataset(metaclass=ABCMeta):
         :return: the dataset identifier.
         """
 
+    @ds_id.setter
+    @abstractmethod
+    def ds_id(self, ds_id: str):
+        """
+        Set the dataset identifier.
+        """
+
     @property
     @abstractmethod
     def grid_mapping(self) -> GridMapping:
@@ -181,6 +188,11 @@ class LazyMultiLevelDataset(MultiLevelDataset, metaclass=ABCMeta):
             with self._lock:
                 self._ds_id = str(uuid.uuid4())
         return self._ds_id
+
+    @ds_id.setter
+    def ds_id(self, ds_id: str):
+        assert_instance(ds_id, str, name='ds_id')
+        self._ds_id = ds_id
 
     @property
     def grid_mapping(self) -> GridMapping:

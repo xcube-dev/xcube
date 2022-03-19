@@ -655,7 +655,8 @@ class ServiceContext:
                                        f" {store_instance_id!r}"):
                 dataset = data_store.open_data(data_id, **open_params)
             if isinstance(dataset, MultiLevelDataset):
-                ml_dataset = dataset
+                ml_dataset: MultiLevelDataset = dataset
+                ml_dataset.ds_id = ds_id
             else:
                 cube, _, _ = decode_cube(dataset,
                                          normalize=True,
