@@ -1,0 +1,10 @@
+{
+    "_ARRAY_DIMENSIONS": [
+        "time",
+        "lat",
+        "lon"
+    ],
+    "long_name": "Total suspended matter dry weight concentration",
+    "units": "g m^-3",
+    "valid_pixel_expression": "c2rcc_flags.Valid_PE"
+}

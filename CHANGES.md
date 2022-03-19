@@ -25,6 +25,10 @@
 
 ## Changes in 0.10.3 (in development)
 
+### Fixes
+
+* Fixed a problem where the `DataStores` configuration of `xcube serve` 
+  did not recognize multi-level datasets. (#653)
 
 ## Changes in 0.10.2
 
