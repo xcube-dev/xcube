@@ -215,13 +215,20 @@ def get_dataset(ctx: ServiceContext,
             tile_grid = ctx.get_tile_grid(ds_id)
             tile_xyz_source_options = get_tile_source_options(
                 tile_grid,
-                get_dataset_tile_url2(ctx, ds_id,
-                                      var_name,
-                                      base_url),
+                get_dataset_tile_url(ctx, ds_id,
+                                     var_name,
+                                     base_url),
                 client=client
             )
             print(tile_xyz_source_options)
             variable_dict["tileSourceOptions"] = tile_xyz_source_options
+
+        variable_dict["tileUrl"] = get_dataset_tile_url2(
+            ctx,
+            ds_id,
+            var_name,
+            base_url
+        )
 
         cmap_name, (cmap_vmin, cmap_vmax) = ctx.get_color_mapping(ds_id,
                                                                   var_name)

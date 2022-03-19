@@ -330,7 +330,7 @@ class GetDatasetVarTileHandler(ServiceRequestHandler):
 # noinspection PyAbstractClass,PyBroadException
 class GetDatasetVarTile2Handler(ServiceRequestHandler):
 
-    async def get(self, ds_id: str, var_name: str, z: str, x: str, y: str):
+    async def get(self, ds_id: str, var_name: str, z: str, y: str, x: str):
         tile = await IOLoop.current().run_in_executor(None,
                                                       get_dataset_tile2,
                                                       self.service_context,
