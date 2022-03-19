@@ -3,10 +3,13 @@ import logging
 from xcube.core.tile2 import DEFAULT_CMAP_NAME
 from xcube.core.tile2 import DEFAULT_CRS_NAME
 from xcube.core.tile2 import DEFAULT_FORMAT
-from xcube.core.tile2 import compute_rgba_tile
+from xcube.core.tile2 import TileNotFoundException
+from xcube.core.tile2 import TileRequestException
+from xcube.core.tile2 import compute_color_mapped_rgba_tile
 from xcube.util.tilegrid2 import DEFAULT_TILE_SIZE
 from xcube.webapi.context import ServiceContext
 from xcube.webapi.errors import ServiceBadRequestError
+from xcube.webapi.errors import ServiceResourceNotFoundError
 from xcube.webapi.reqparams import RequestParams
 
 _LOGGER = logging.getLogger()
@@ -90,15 +93,20 @@ def get_dataset_tile2(ctx: ServiceContext,
                 f'Variable {var_name!r} not found in dataset {ds_id!r}'
             )
 
-    return compute_rgba_tile(
-        ml_dataset,
-        var_name,
-        x, y, z,
-        crs_name=crs_name,
-        tile_size=(2 if retina else 1) * DEFAULT_TILE_SIZE,
-        cmap_name=cmap_name,
-        value_range=cmap_range,
-        non_spatial_labels=args,
-        format=format,
-        logger=_LOGGER if log_tiles else None,
-    )
+    try:
+        return compute_color_mapped_rgba_tile(
+            ml_dataset,
+            var_name,
+            x, y, z,
+            crs_name=crs_name,
+            tile_size=(2 if retina else 1) * DEFAULT_TILE_SIZE,
+            cmap_name=cmap_name,
+            value_range=cmap_range,
+            non_spatial_labels=args,
+            format=format,
+            logger=_LOGGER if log_tiles else None,
+        )
+    except TileNotFoundException as e:
+        raise ServiceResourceNotFoundError(f'{e}') from e
+    except TileRequestException as e:
+        raise ServiceBadRequestError(f'{e}') from e
