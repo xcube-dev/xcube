@@ -30,19 +30,18 @@ import warnings
 from typing import Any, Dict, List, Optional, Tuple, Callable, Collection, Set
 from typing import Sequence
 
-from deprecated import deprecated
 import fiona
 import numpy as np
 import pandas as pd
 import pyproj
 import xarray as xr
+from deprecated import deprecated
 
 from xcube.constants import LOG
 from xcube.core.mldataset import BaseMultiLevelDataset
 from xcube.core.mldataset import MultiLevelDataset
 from xcube.core.mldataset import augment_ml_dataset
 from xcube.core.mldataset import open_ml_dataset_from_python_code
-from xcube.core.normalize import decode_cube
 from xcube.core.store import DATASET_TYPE
 from xcube.core.store import DataStoreConfig
 from xcube.core.store import DataStorePool
@@ -656,13 +655,9 @@ class ServiceContext:
                 dataset = data_store.open_data(data_id, **open_params)
             if isinstance(dataset, MultiLevelDataset):
                 ml_dataset: MultiLevelDataset = dataset
-                ml_dataset.ds_id = ds_id
             else:
-                cube, _, _ = decode_cube(dataset,
-                                         normalize=True,
-                                         force_non_empty=True,
-                                         force_geographic=True)
-                ml_dataset = BaseMultiLevelDataset(cube, ds_id=ds_id)
+                ml_dataset = BaseMultiLevelDataset(dataset)
+            ml_dataset.ds_id = ds_id
         else:
             fs_type = dataset_config.get('FileSystem')
             if fs_type != 'memory':

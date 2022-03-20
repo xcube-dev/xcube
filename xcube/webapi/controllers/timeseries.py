@@ -34,6 +34,7 @@ import xarray as xr
 from xcube.constants import LOG
 from xcube.core import timeseries
 from xcube.core.ancvar import find_ancillary_var_names
+from xcube.core.gridmapping import GridMapping
 from xcube.util.geojson import GeoJSON
 from xcube.util.perf import measure_time
 from xcube.webapi.context import ServiceContext
@@ -47,14 +48,17 @@ GeoJsonFeature = GeoJsonObj
 GeoJsonGeometry = GeoJsonObj
 
 
-def get_time_series(ctx: ServiceContext,
-                    ds_name: str, var_name: str,
-                    geo_json: GeoJsonObj,
-                    agg_methods: Union[str, Sequence[str]] = None,
-                    start_date: np.datetime64 = None,
-                    end_date: np.datetime64 = None,
-                    max_valids: int = None,
-                    incl_ancillary_vars: bool = False) -> Union[TimeSeries, TimeSeriesCollection]:
+def get_time_series(
+        ctx: ServiceContext,
+        ds_name: str,
+        var_name: str,
+        geo_json: GeoJsonObj,
+        agg_methods: Union[str, Sequence[str]] = None,
+        start_date: Optional[np.datetime64] = None,
+        end_date: Optional[np.datetime64] = None,
+        max_valids: Optional[int] = None,
+        incl_ancillary_vars: bool = False
+) -> Union[TimeSeries, TimeSeriesCollection]:
     """
     Get the time-series for a given GeoJSON object *geo_json*.
 
@@ -73,9 +77,9 @@ def get_time_series(ctx: ServiceContext,
     :param ds_name: The dataset identifier.
     :param var_name: The variable name.
     :param geo_json: The GeoJSON object that is a or has a geometry or collection of geometryies.
+    :param agg_methods: Spatial aggregation methods for geometries that cover a spatial area.
     :param start_date: An optional start date.
     :param end_date: An optional end date.
-    :param agg_methods: Spatial aggregation methods for geometries that cover a spatial area.
     :param max_valids: Optional number of valid points.
            If it is None (default), also missing values are returned as NaN;
            if it is -1 only valid values are returned;
@@ -83,118 +87,157 @@ def get_time_series(ctx: ServiceContext,
     :param incl_ancillary_vars: For point geometries, include values of ancillary variables, if any.
     :return: Time-series data structure.
     """
-    agg_methods = timeseries.normalize_agg_methods(agg_methods, exception_type=ServiceBadRequestError)
+    agg_methods = timeseries.normalize_agg_methods(
+        agg_methods, exception_type=ServiceBadRequestError
+    )
 
+    ml_dataset = ctx.get_ml_dataset(ds_name)
     dataset = ctx.get_time_series_dataset(ds_name, var_name=var_name)
     geo_json_geometries, is_collection = _to_geo_json_geometries(geo_json)
     geometries = _to_shapely_geometries(geo_json_geometries)
 
     with measure_time() as time_result:
-        results = _get_time_series_for_geometries(dataset,
-                                                  var_name,
-                                                  geometries,
-                                                  start_date=start_date,
-                                                  end_date=end_date,
-                                                  agg_methods=agg_methods,
-                                                  max_valids=max_valids,
-                                                  incl_ancillary_vars=incl_ancillary_vars)
+        results = _get_time_series_for_geometries(
+            dataset,
+            var_name,
+            geometries,
+            start_date=start_date,
+            end_date=end_date,
+            agg_methods=agg_methods,
+            grid_mapping=ml_dataset.grid_mapping,
+            max_valids=max_valids,
+            incl_ancillary_vars=incl_ancillary_vars
+        )
 
     if ctx.trace_perf:
-        LOG.info(f'get_time_series: dataset id {ds_name}, variable {var_name}, '
-                 f'{len(results)} x {len(results[0])} values, took {time_result.duration} seconds')
+        LOG.info(f'get_time_series: dataset id {ds_name},'
+                 f' variable {var_name}, '
+                 f'{len(results)} x {len(results[0])} values,'
+                 f' took {time_result.duration} seconds')
 
     return results[0] if not is_collection and len(results) == 1 else results
 
 
-def _get_time_series_for_geometries(dataset: xr.Dataset,
-                                    var_name: str,
-                                    geometries: List[shapely.geometry.base.BaseGeometry],
-                                    agg_methods: Set[str],
-                                    start_date: np.datetime64 = None,
-                                    end_date: np.datetime64 = None,
-                                    max_valids=None,
-                                    incl_ancillary_vars=False) -> TimeSeriesCollection:
+def _get_time_series_for_geometries(
+        dataset: xr.Dataset,
+        var_name: str,
+        geometries: List[shapely.geometry.base.BaseGeometry],
+        agg_methods: Set[str],
+        grid_mapping: Optional[GridMapping] = None,
+        start_date: Optional[np.datetime64] = None,
+        end_date: Optional[np.datetime64] = None,
+        max_valids: Optional[int] = None,
+        incl_ancillary_vars: bool = False
+) -> TimeSeriesCollection:
     time_series_collection = []
     for geometry in geometries:
-        time_series = _get_time_series_for_geometry(dataset,
-                                                    var_name,
-                                                    geometry,
-                                                    agg_methods,
-                                                    start_date=start_date,
-                                                    end_date=end_date,
-                                                    max_valids=max_valids,
-                                                    incl_ancillary_vars=incl_ancillary_vars)
+        time_series = _get_time_series_for_geometry(
+            dataset,
+            var_name,
+            geometry,
+            agg_methods,
+            grid_mapping=grid_mapping,
+            start_date=start_date,
+            end_date=end_date,
+            max_valids=max_valids,
+            incl_ancillary_vars=incl_ancillary_vars
+        )
         time_series_collection.append(time_series)
     return time_series_collection
 
 
-def _get_time_series_for_geometry(dataset: xr.Dataset,
-                                  var_name: str,
-                                  geometry: shapely.geometry.base.BaseGeometry,
-                                  agg_methods: Set[str],
-                                  start_date: np.datetime64 = None,
-                                  end_date: np.datetime64 = None,
-                                  max_valids: int = None,
-                                  incl_ancillary_vars=False) -> TimeSeries:
+def _get_time_series_for_geometry(
+        dataset: xr.Dataset,
+        var_name: str,
+        geometry: shapely.geometry.base.BaseGeometry,
+        agg_methods: Set[str],
+        grid_mapping: Optional[GridMapping] = None,
+        start_date: Optional[np.datetime64] = None,
+        end_date: Optional[np.datetime64] = None,
+        max_valids: Optional[int] = None,
+        incl_ancillary_vars: bool = False
+) -> TimeSeries:
     if isinstance(geometry, shapely.geometry.Point):
-        return _get_time_series_for_point(dataset, var_name,
-                                          geometry,
-                                          agg_methods,
-                                          start_date=start_date,
-                                          end_date=end_date,
-                                          max_valids=max_valids,
-                                          incl_ancillary_vars=incl_ancillary_vars)
+        return _get_time_series_for_point(
+            dataset,
+            var_name,
+            geometry,
+            agg_methods,
+            grid_mapping=grid_mapping,
+            start_date=start_date,
+            end_date=end_date,
+            max_valids=max_valids,
+            incl_ancillary_vars=incl_ancillary_vars
+        )
 
-    time_series_ds = timeseries.get_time_series(dataset,
-                                                geometry,
-                                                [var_name],
-                                                agg_methods=agg_methods,
-                                                start_date=start_date,
-                                                end_date=end_date,
-                                                cube_asserted=True)
+    time_series_ds = timeseries.get_time_series(
+        dataset,
+        grid_mapping=grid_mapping,
+        geometry=geometry,
+        var_names=[var_name],
+        agg_methods=agg_methods,
+        start_date=start_date,
+        end_date=end_date,
+        cube_asserted=True
+    )
     if time_series_ds is None:
         return []
 
-    var_names = {agg_method: f'{var_name}_{agg_method}' for agg_method in agg_methods}
+    var_names = {agg_method: f'{var_name}_{agg_method}' for agg_method in
+                 agg_methods}
 
     return _collect_timeseries_result(time_series_ds,
                                       var_names,
                                       max_valids=max_valids)
 
 
-def _get_time_series_for_point(dataset: xr.Dataset,
-                               var_name: str,
-                               point: shapely.geometry.Point,
-                               agg_methods: Set[str],
-                               start_date: np.datetime64 = None,
-                               end_date: np.datetime64 = None,
-                               max_valids: int = None,
-                               incl_ancillary_vars=False) -> TimeSeries:
+def _get_time_series_for_point(
+        dataset: xr.Dataset,
+        var_name: str,
+        point: shapely.geometry.Point,
+        agg_methods: Set[str],
+        grid_mapping: Optional[GridMapping] = None,
+        start_date: Optional[np.datetime64] = None,
+        end_date: Optional[np.datetime64] = None,
+        max_valids: Optional[int] = None,
+        incl_ancillary_vars: bool = False
+) -> TimeSeries:
     var_key = None
     if timeseries.AGG_MEAN in agg_methods:
         var_key = timeseries.AGG_MEAN
     elif timeseries.AGG_MEDIAN in agg_methods:
         var_key = timeseries.AGG_MEDIAN
-    elif timeseries.AGG_MIN in agg_methods or timeseries.AGG_MAX in agg_methods:
+    elif timeseries.AGG_MIN in agg_methods \
+            or timeseries.AGG_MAX in agg_methods:
         var_key = timeseries.AGG_MIN
     if not var_key:
-        raise RuntimeError('Aggregation methods must include one of "mean", "median", "min", "max"')
+        raise RuntimeError(
+            'Aggregation methods must include one of'
+            ' "mean", "median", "min", "max"'
+        )
 
     roles_to_anc_var_names = dict()
     if incl_ancillary_vars:
-        roles_to_anc_var_name_sets = find_ancillary_var_names(dataset, var_name, same_shape=True, same_dims=True)
+        roles_to_anc_var_name_sets = find_ancillary_var_names(dataset,
+                                                              var_name,
+                                                              same_shape=True,
+                                                              same_dims=True)
         for role, roles_to_anc_var_name_sets in roles_to_anc_var_name_sets.items():
             if role:
-                roles_to_anc_var_names[role] = roles_to_anc_var_name_sets.pop()
+                roles_to_anc_var_names[
+                    role] = roles_to_anc_var_name_sets.pop()
 
     var_names = [var_name] + list(set(roles_to_anc_var_names.values()))
 
-    time_series_ds = timeseries.get_time_series(dataset,
-                                                point,
-                                                var_names,
-                                                start_date=start_date,
-                                                end_date=end_date,
-                                                cube_asserted=True)
+    time_series_ds = timeseries.get_time_series(
+        dataset,
+        grid_mapping=grid_mapping,
+        geometry=point,
+        var_names=var_names,
+        start_date=start_date,
+        end_date=end_date,
+        cube_asserted=True
+    )
     if time_series_ds is None:
         return []
 

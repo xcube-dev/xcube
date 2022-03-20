@@ -21,19 +21,17 @@
 
 import functools
 import json
-import math
 from typing import Dict, Tuple, List, Set, Optional, Any, Callable
 
 import numpy as np
+import pyproj
 
 from xcube.constants import LOG
 from xcube.core.geom import get_dataset_bounds
 from xcube.core.normalize import DatasetIsNotACubeError
 from xcube.core.store import DataStoreError
 from xcube.core.timecoord import timestamp_to_iso_string
-from xcube.util.assertions import assert_instance
 from xcube.util.cmaps import get_cmaps
-from xcube.util.tilegrid import TileGrid
 from xcube.webapi.auth import READ_ALL_DATASETS_SCOPE
 from xcube.webapi.auth import READ_ALL_VARIABLES_SCOPE
 from xcube.webapi.auth import assert_scopes
@@ -154,25 +152,28 @@ def get_dataset(ctx: ServiceContext,
     except (ValueError, DataStoreError) as e:
         raise DatasetIsNotACubeError(f'could not open dataset: {e}') from e
 
-    grid_mapping = ml_ds.grid_mapping
-    if not grid_mapping.crs.is_geographic:
-        raise CubeIsNotDisplayable(f'CRS is not geographic:'
-                                   f' {grid_mapping.crs.srs}')
-    if not math.isclose(grid_mapping.x_res,
-                        grid_mapping.y_res,
-                        rel_tol=0.01):  # we allow up to 1% dev
-        raise CubeIsNotDisplayable(f'spatial resolutions are'
-                                   f' different in x, y:'
-                                   f' {grid_mapping.x_res}'
-                                   f' and {grid_mapping.y_res}')
-    try:
-        # Make sure we have a valid tile grid
-        tile_grid = ml_ds.tile_grid
-        assert_instance(tile_grid, TileGrid)
-    except ValueError as e:
-        raise CubeIsNotDisplayable(f'could not create tile grid: {e}')
+    # grid_mapping = ml_ds.grid_mapping
+    # if not grid_mapping.crs.is_geographic:
+    #     raise CubeIsNotDisplayable(f'CRS is not geographic:'
+    #                                f' {grid_mapping.crs.srs}')
+    # if not math.isclose(grid_mapping.x_res,
+    #                     grid_mapping.y_res,
+    #                     rel_tol=0.01):  # we allow up to 1% dev
+    #     raise CubeIsNotDisplayable(f'spatial resolutions are'
+    #                                f' different in x, y:'
+    #                                f' {grid_mapping.x_res}'
+    #                                f' and {grid_mapping.y_res}')
+
+    # try:
+    #     # Make sure we have a valid tile grid
+    #     tile_grid = ml_ds.tile_grid
+    #     assert_instance(tile_grid, TileGrid)
+    # except ValueError as e:
+    #     raise CubeIsNotDisplayable(f'could not create tile grid: {e}')
 
     ds = ml_ds.get_dataset(0)
+
+    x_name, y_name = ml_ds.grid_mapping.xy_dim_names
 
     ds_title = dataset_config.get('Title',
                                   ds.attrs.get('title',
@@ -181,7 +182,13 @@ def get_dataset(ctx: ServiceContext,
     dataset_dict = dict(id=ds_id, title=ds_title)
 
     if "bbox" not in dataset_dict:
-        dataset_dict["bbox"] = list(get_dataset_bounds(ds))
+        x1, y1, x2, y2 = get_dataset_bounds(ds)
+        crs = ml_ds.grid_mapping.crs
+        if not crs.is_geographic:
+            geo_crs = pyproj.CRS.from_string('CRS84')
+            t = pyproj.Transformer.from_crs(crs, geo_crs, always_xy=True)
+            (x1, x2), (y1, y2) = t.transform((x1, x2), (y1, y2))
+        dataset_dict["bbox"] = [x1, y1, x2, y2]
 
     variable_dicts = []
     for var_name, var in ds.data_vars.items():
@@ -189,8 +196,8 @@ def get_dataset(ctx: ServiceContext,
         dims = var.dims
         if len(dims) < 3 \
                 or dims[0] != 'time' \
-                or dims[-2] != 'lat' \
-                or dims[-1] != 'lon':
+                or dims[-2] != y_name \
+                or dims[-1] != x_name:
             continue
 
         if can_authenticate \
@@ -263,6 +270,12 @@ def get_dataset(ctx: ServiceContext,
                 client=client
             )
             rgb_schema["tileSourceOptions"] = tile_xyz_source_options
+        rgb_schema["tileUrl"] = get_dataset_tile_url2(
+            ctx,
+            ds_id,
+            'rgb',
+            base_url
+        )
         dataset_dict["rgbSchema"] = rgb_schema
 
     dim_names = ds.data_vars[list(ds.data_vars)[0]].dims \

@@ -274,8 +274,8 @@ def _get_time_series_for_point(dataset: xr.Dataset,
         var_names.append(uncert_var_name)
 
     ts_ds = timeseries.get_time_series(dataset,
-                                       point,
-                                       var_names,
+                                       geometry=point,
+                                       var_names=var_names,
                                        start_date=start_date,
                                        end_date=end_date,
                                        cube_asserted=True)
@@ -310,8 +310,8 @@ def _get_time_series_for_geometry(dataset: xr.Dataset,
         agg_methods.add('count')
 
     ts_ds = timeseries.get_time_series(dataset,
-                                       geometry,
-                                       [var_name],
+                                       geometry=geometry,
+                                       var_names=[var_name],
                                        agg_methods=agg_methods,
                                        start_date=start_date,
                                        end_date=end_date,
