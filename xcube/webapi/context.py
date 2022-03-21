@@ -21,6 +21,7 @@
 
 import fnmatch
 import glob
+import itertools
 import json
 import os
 import os.path
@@ -45,6 +46,7 @@ from xcube.core.store import DATASET_TYPE
 from xcube.core.store import DataStoreConfig
 from xcube.core.store import DataStorePool
 from xcube.core.store import DatasetDescriptor
+from xcube.core.store import MULTI_LEVEL_DATASET_TYPE
 from xcube.core.tile import get_var_cmap_params
 from xcube.core.tile import get_var_valid_range
 from xcube.util.cache import Cache
@@ -427,8 +429,20 @@ class ServiceContext:
                 store_instance_id
             )
             data_store = data_store_pool.get_store(store_instance_id)
-            store_dataset_ids = data_store.get_data_ids(
-                data_type=DATASET_TYPE
+            # Note by forman: This iterator chaining is inefficient.
+            # Preferably, we should offer
+            #
+            # store_dataset_ids = data_store.get_data_ids(
+            #     data_type=(DATASET_TYPE, MULTI_LEVEL_DATASET_TYPE)
+            # )
+            #
+            store_dataset_ids = itertools.chain(
+                data_store.get_data_ids(
+                    data_type=DATASET_TYPE
+                ),
+                data_store.get_data_ids(
+                    data_type=MULTI_LEVEL_DATASET_TYPE
+                )
             )
             for store_dataset_id in store_dataset_ids:
                 dataset_config_base = {}
@@ -638,7 +652,8 @@ class ServiceContext:
                                        f" {store_instance_id!r}"):
                 dataset = data_store.open_data(data_id, **open_params)
             if isinstance(dataset, MultiLevelDataset):
-                ml_dataset = dataset
+                ml_dataset: MultiLevelDataset = dataset
+                ml_dataset.ds_id = ds_id
             else:
                 cube, _, _ = decode_cube(dataset,
                                          normalize=True,
