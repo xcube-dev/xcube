@@ -108,8 +108,10 @@ class MultiLevelDatasetLevelsFsDataAccessor(DatasetZarrFsDataAccessor):
         )
         schema.properties['agg_methods'] = JsonComplexSchema(
             one_of=[
-                JsonStringSchema(enum=[AGG_METHODS]),
-                JsonArraySchema(items=JsonStringSchema(enum=[AGG_METHODS])),
+                JsonStringSchema(enum=AGG_METHODS),
+                JsonObjectSchema(
+                    additional_properties=JsonStringSchema(enum=AGG_METHODS)
+                ),
                 JsonNullSchema(),
             ],
             description='Aggregation method for the pyramid levels.'
