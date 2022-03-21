@@ -106,7 +106,7 @@ class LevelDataTest(CliDataTest):
     def test_level_with_zarr_agg_method(self):
         result = self.invoke_cli(["level",
                                   "-t", "45",
-                                  "-a", "auto",
+                                  "-A", "auto",
                                   "-o", LevelDataTest.TEST_OUTPUT,
                                   TEST_ZARR_DIR,
                                   ])
@@ -119,7 +119,7 @@ class LevelDataTest(CliDataTest):
         result = self.invoke_cli([
             "level",
             "-t", "45",
-            "-a", "precipitation=mean,temperature=max,soil_moisture=median",
+            "-A", "precipitation=mean,temperature=max,soil_*=median",
             "-o", LevelDataTest.TEST_OUTPUT,
             TEST_ZARR_DIR,
         ])

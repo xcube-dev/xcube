@@ -26,6 +26,7 @@ import click
 DEFAULT_TILE_SIZE = 512
 DEFAULT_AGG_METHOD = 'first'
 
+
 # noinspection PyShadowingBuiltins
 @click.command(name="level")
 @click.argument('input')
@@ -50,7 +51,7 @@ DEFAULT_AGG_METHOD = 'first'
               help=f'Maximum number of levels to generate.'
                    f' If not given, the number of levels will'
                    f' be derived from spatial dimension and tile sizes.')
-@click.option('--agg-method', '-a', metavar='AGG_METHOD',
+@click.option('--agg-method', '-A', metavar='AGG_METHOD',
               default=DEFAULT_AGG_METHOD,
               help=f'Aggregation method. One of'
                    f' "first", "min", "max", "mean", "median" or "auto.'
@@ -109,7 +110,11 @@ def level(input: str,
 
     try:
         if '=' in agg_method:
-            agg_methods = eval(f'dict({agg_method})', None, None)
+            agg_methods = {
+                p[0].strip(): (p[1].strip() if len(p) == 2 else None)
+                for p in (c.split('=', maxsplit=2)
+                          for c in agg_method.split(','))
+            }
         else:
             agg_methods = agg_method
         assert_valid_agg_methods(agg_methods)
