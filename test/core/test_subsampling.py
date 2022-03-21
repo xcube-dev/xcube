@@ -25,6 +25,7 @@ import numpy as np
 import xarray as xr
 
 from xcube.core.new import new_cube
+from xcube.core.subsampling import find_agg_method
 from xcube.core.subsampling import get_dataset_subsampling_slices
 from xcube.core.subsampling import subsample_dataset
 
@@ -32,49 +33,182 @@ from xcube.core.subsampling import subsample_dataset
 class SubsampleDatasetTest(unittest.TestCase):
 
     def setUp(self) -> None:
-        test_data = np.array([[1, 2, 3, 4, 5, 6],
-                              [2, 3, 4, 5, 6, 7],
-                              [3, 4, 5, 6, 7, 8],
-                              [4, 5, 6, 7, 8, 9]])
-        test_data = np.stack([test_data, test_data + 10])
+        test_data_1 = np.array([[1, 2, 3, 4, 5, 6],
+                                [2, 3, 4, 5, 6, 7],
+                                [3, 4, 5, 6, 7, 8],
+                                [4, 5, 6, 7, 8, 9]], dtype=np.int16)
+        test_data_1 = np.stack([test_data_1, test_data_1 + 10])
+        test_data_2 = 0.1 * test_data_1
         self.dataset = new_cube(width=6,
                                 height=4,
                                 x_name='x',
                                 y_name='y',
+                                x_start=0.,
+                                y_start=0.,
+                                x_res=1.,
+                                y_res=1.,
                                 time_periods=2,
                                 crs='CRS84',
                                 crs_name='spatial_ref',
-                                variables=dict(test_var=test_data))
+                                variables=dict(var_1=test_data_1,
+                                               var_2=test_data_2))
 
     def test_get_dataset_subsampling_slices(self):
         slices = get_dataset_subsampling_slices(self.dataset,
                                                 step=2)
         self.assertEqual(
-            {'test_var': (slice(None, None, None),
+            {
+                'var_1': (slice(None, None, None),
+                          slice(None, None, 2),
+                          slice(None, None, 2)),
+                'var_2': (slice(None, None, None),
                           slice(None, None, 2),
                           slice(None, None, 2))
-             },
-            slices)
+            },
+            slices
+        )
 
-    def test_subsample_dataset(self):
+    def test_subsample_dataset_none(self):
         subsampled_dataset = subsample_dataset(self.dataset,
-                                               step=2)
-        self.assertIsInstance(subsampled_dataset, xr.Dataset)
-        self.assertIn('spatial_ref',
-                      subsampled_dataset)
-        self.assertIn('grid_mapping_name',
-                      subsampled_dataset.spatial_ref.attrs)
-        self.assertIn('test_var',
-                      subsampled_dataset)
-        self.assertIn('grid_mapping',
-                      subsampled_dataset.test_var.attrs)
-        np.testing.assert_array_equal(
-            subsampled_dataset.test_var.values,
+                                               step=2,
+                                               agg_methods=None)
+        self.assert_subsampling_ok(
+            subsampled_dataset,
             np.array([
                 [[1, 3, 5],
                  [3, 5, 7]],
 
                 [[11, 13, 15],
                  [13, 15, 17]]
-            ])
+            ], dtype=np.int16),
+            np.array([
+                [[0.2, 0.4, 0.6],
+                 [0.4, 0.6, 0.8]],
+
+                [[1.2, 1.4, 1.6],
+                 [1.4, 1.6, 1.8]]
+            ], dtype=np.float64)
         )
+
+    def test_subsample_dataset_first(self):
+        subsampled_dataset = subsample_dataset(self.dataset,
+                                               step=2,
+                                               agg_methods='first')
+        self.assert_subsampling_ok(
+            subsampled_dataset,
+            np.array([
+                [[1, 3, 5],
+                 [3, 5, 7]],
+
+                [[11, 13, 15],
+                 [13, 15, 17]]
+            ], dtype=np.int16),
+            np.array([
+                [[0.1, 0.3, 0.5],
+                 [0.3, 0.5, 0.7]],
+
+                [[1.1, 1.3, 1.5],
+                 [1.3, 1.5, 1.7]]
+            ], dtype=np.float64)
+        )
+
+    def test_subsample_dataset_mean(self):
+        subsampled_dataset = subsample_dataset(self.dataset,
+                                               step=2,
+                                               agg_methods='mean')
+        print(repr(subsampled_dataset.var_1.values))
+        print(repr(subsampled_dataset.var_2.values))
+        self.assert_subsampling_ok(
+            subsampled_dataset,
+            np.array([
+                [[2, 4, 6],
+                 [4, 6, 8]],
+
+                [[12, 14, 16],
+                 [14, 16, 18]]
+            ], dtype=np.int16),
+            np.array([
+                [[0.2, 0.4, 0.6],
+                 [0.4, 0.6, 0.8]],
+
+                [[1.2, 1.4, 1.6],
+                 [1.4, 1.6, 1.8]]
+            ], dtype=np.float64)
+        )
+
+    def test_subsample_dataset_max(self):
+        subsampled_dataset = subsample_dataset(self.dataset,
+                                               step=2,
+                                               agg_methods='max')
+        self.assert_subsampling_ok(
+            subsampled_dataset,
+            np.array([
+                [[3, 5, 7],
+                 [5, 7, 9]],
+
+                [[13, 15, 17],
+                 [15, 17, 19]]
+            ], dtype=np.int16),
+            np.array([
+                [[0.3, 0.5, 0.7],
+                 [0.5, 0.7, 0.9]],
+
+                [[1.3, 1.5, 1.7],
+                 [1.5, 1.7, 1.9]]
+            ], dtype=np.float64)
+        )
+
+    def assert_subsampling_ok(self,
+                              subsampled_dataset: xr.Dataset,
+                              expected_var_1: np.ndarray,
+                              expected_var_2: np.ndarray):
+        self.assertIsInstance(subsampled_dataset, xr.Dataset)
+        self.assertIn('spatial_ref',
+                      subsampled_dataset)
+        self.assertIn('grid_mapping_name',
+                      subsampled_dataset.spatial_ref.attrs)
+
+        self.assertIn('var_1',
+                      subsampled_dataset)
+        self.assertIn('var_2',
+                      subsampled_dataset)
+
+        self.assertIn('grid_mapping',
+                      subsampled_dataset.var_1.attrs)
+        self.assertIn('grid_mapping',
+                      subsampled_dataset.var_2.attrs)
+
+        self.assertEqual(expected_var_1.dtype,
+                         subsampled_dataset.var_1.dtype)
+        self.assertEqual(expected_var_2.dtype,
+                         subsampled_dataset.var_2.dtype)
+
+        np.testing.assert_array_equal(
+            subsampled_dataset.var_1.values,
+            expected_var_1
+        )
+        np.testing.assert_array_almost_equal(
+            subsampled_dataset.var_2.values,
+            expected_var_2
+        )
+
+    # noinspection PyTypeChecker
+    def test_find_agg_method(self):
+        for m in ('first', 'min', 'max', 'mean', 'median'):
+            self.assertEqual(m, find_agg_method(m, 'var_1', np.uint8))
+            self.assertEqual(m, find_agg_method(m, 'var_2', np.float32))
+
+        for m in ({'*': 'max'}, {'var_*': 'max'}):
+            self.assertEqual('max',
+                             find_agg_method(m, 'var_1', np.uint8))
+            self.assertEqual('max',
+                             find_agg_method(m, 'var_2', np.float32))
+
+        for m in (None, 'auto'):
+            self.assertEqual('first', find_agg_method(m, 'var_1', np.uint8))
+            self.assertEqual('mean', find_agg_method(m, 'var_2', np.float32))
+
+        for m in ({'*': None}, {'*': 'auto'},
+                  {'var_*': None}, {'var_*': 'auto'}):
+            self.assertEqual('first', find_agg_method(m, 'var_1', np.uint8))
+            self.assertEqual('mean', find_agg_method(m, 'var_2', np.float32))

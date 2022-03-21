@@ -40,6 +40,7 @@ from xcube.core.dsio import parse_s3_fs_and_root
 from xcube.core.dsio import write_cube
 from xcube.core.gridmapping import GridMapping
 from xcube.core.schema import rechunk_cube
+from xcube.core.subsampling import assert_valid_agg_methods
 from xcube.core.subsampling import subsample_dataset
 from xcube.core.verify import assert_cube
 from xcube.util.assertions import assert_instance
@@ -510,21 +511,35 @@ class ObjectStorageMultiLevelDataset(LazyMultiLevelDataset):
 
 class BaseMultiLevelDataset(LazyMultiLevelDataset):
     """
-    A multi-level dataset whose level datasets are a created by down-sampling a base dataset.
+    A multi-level dataset whose level datasets are a
+    created by down-sampling a base dataset.
 
     :param base_dataset: The base dataset for the level at index zero.
+    :param grid_mapping: Optional grid mapping for *base_dataset*.
+    :param tile_grid: Optional tile grid.
     :param ds_id: Optional dataset identifier.
+    :param agg_methods: Optional aggregation methods.
+        May be given as string or as mapping from variable name pattern
+        to aggregation method. Valid aggregation methods are
+        None, "first", "min", "max", "mean", "median".
+        If None, the default, "first" is used for integer variables
+        and "mean" for floating point variables.
     """
 
     def __init__(self,
                  base_dataset: xr.Dataset,
                  grid_mapping: Optional[GridMapping] = None,
                  tile_grid: Optional[TileGrid] = None,
+                 agg_methods: Optional[str, Dict[str, str]] = 'first',
                  ds_id: Optional[str] = None):
         assert_instance(base_dataset, xr.Dataset, name='base_dataset')
         if grid_mapping is None:
             grid_mapping = GridMapping.from_dataset(base_dataset,
                                                     tolerance=1e-4)
+
+        assert_valid_agg_methods(agg_methods)
+        self._agg_methods = agg_methods
+
         self._base_dataset = base_dataset
         super().__init__(grid_mapping=grid_mapping,
                          tile_grid=tile_grid,
@@ -548,7 +563,8 @@ class BaseMultiLevelDataset(LazyMultiLevelDataset):
             level_dataset = subsample_dataset(
                 self._base_dataset,
                 2 ** index,
-                xy_dim_names=self.grid_mapping.xy_dim_names
+                xy_dim_names=self.grid_mapping.xy_dim_names,
+                agg_methods=self._agg_methods
             )
 
         # Tile each level according to grid mapping

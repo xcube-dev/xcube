@@ -103,6 +103,31 @@ class LevelDataTest(CliDataTest):
         self.assertEqual({'0.zarr', '1.zarr', '2.zarr'},
                          set(os.listdir(LevelDataTest.TEST_OUTPUT)))
 
+    def test_level_with_zarr_agg_method(self):
+        result = self.invoke_cli(["level",
+                                  "-t", "45",
+                                  "-a", "auto",
+                                  "-o", LevelDataTest.TEST_OUTPUT,
+                                  TEST_ZARR_DIR,
+                                  ])
+        self.assertEqual(0, result.exit_code)
+        self.assertTrue(os.path.isdir(LevelDataTest.TEST_OUTPUT))
+        self.assertEqual({'0.zarr', '1.zarr', '2.zarr'},
+                         set(os.listdir(LevelDataTest.TEST_OUTPUT)))
+
+    def test_level_with_zarr_agg_methods(self):
+        result = self.invoke_cli([
+            "level",
+            "-t", "45",
+            "-a", "precipitation=mean,temperature=max,soil_moisture=median",
+            "-o", LevelDataTest.TEST_OUTPUT,
+            TEST_ZARR_DIR,
+        ])
+        self.assertEqual(0, result.exit_code)
+        self.assertTrue(os.path.isdir(LevelDataTest.TEST_OUTPUT))
+        self.assertEqual({'0.zarr', '1.zarr', '2.zarr'},
+                         set(os.listdir(LevelDataTest.TEST_OUTPUT)))
+
     def test_level_with_zarr_link(self):
         result = self.invoke_cli(["level",
                                   "--link",

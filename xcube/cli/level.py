@@ -1,5 +1,5 @@
 # The MIT License (MIT)
-# Copyright (c) 2019 by the xcube development team and contributors
+# Copyright (c) 2022 by the xcube development team and contributors
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of
 # this software and associated documentation files (the "Software"), to deal in
@@ -24,7 +24,7 @@ from typing import Optional, Tuple
 import click
 
 DEFAULT_TILE_SIZE = 512
-
+DEFAULT_AGG_METHOD = 'first'
 
 # noinspection PyShadowingBuiltins
 @click.command(name="level")
@@ -40,16 +40,24 @@ DEFAULT_TILE_SIZE = 512
                    ' for imaging purposes.')
 @click.option('--tile-size', '-t', metavar='TILE_SIZE',
               help=f'Tile size, given as single integer number or'
-                   f' as <tile-width>,<tile-height>. '
-                   f'If omitted, the tile size will be derived'
+                   f' as <tile-width>,<tile-height>.'
+                   f' If omitted, the tile size will be derived'
                    f' from the INPUT\'s'
                    f' internal spatial chunk sizes.'
                    f' If the INPUT is not chunked,'
                    f' tile size will be {DEFAULT_TILE_SIZE}.')
 @click.option('--num-levels-max', '-n', metavar='NUM_LEVELS_MAX', type=int,
-              help=f'Maximum number of levels to generate. '
-                   f'If not given, the number of levels will'
+              help=f'Maximum number of levels to generate.'
+                   f' If not given, the number of levels will'
                    f' be derived from spatial dimension and tile sizes.')
+@click.option('--agg-method', '-a', metavar='AGG_METHOD',
+              default=DEFAULT_AGG_METHOD,
+              help=f'Aggregation method. One of'
+                   f' "first", "min", "max", "mean", "median" or "auto.'
+                   f' You can also assign a method to individual variables'
+                   f' using the notation'
+                   f' "<var1>=<method1>,<var2>=<method2>,..."'
+                   f' Defaults to "{DEFAULT_AGG_METHOD}".')
 @click.option('--replace', '-r', is_flag=True, flag_value=True,
               help=f'Whether to replace an existing dataset at OUTPUT.')
 @click.option('--anon', '-a', is_flag=True, flag_value=True,
@@ -60,6 +68,7 @@ def level(input: str,
           link: bool,
           tile_size: Optional[str],
           num_levels_max: int,
+          agg_method: str,
           replace: bool,
           anon: bool):
     """
@@ -78,6 +87,7 @@ def level(input: str,
     from xcube.cli.common import parse_cli_sequence
     from xcube.cli.common import assert_positive_int_item
     from xcube.core.store import new_fs_data_store
+    from xcube.core.subsampling import assert_valid_agg_methods
 
     input_path = input
     output_path = output
@@ -96,6 +106,15 @@ def level(input: str,
         raise click.ClickException(
             f"NUM_LEVELS_MAX must be a positive integer"
         )
+
+    try:
+        if '=' in agg_method:
+            agg_methods = eval(f'dict({agg_method})', None, None)
+        else:
+            agg_methods = agg_method
+        assert_valid_agg_methods(agg_methods)
+    except (TypeError, ValueError, SyntaxError) as e:
+        raise click.ClickException('invalid AGG_METHOD') from e
 
     input_protocol, input_path = _split_protocol_and_path(input_path)
 
@@ -130,6 +149,7 @@ def level(input: str,
             tile_size=tile_size,
             num_levels=num_levels_max,
             base_dataset_id=input_path if link_input else None,
+            agg_methods=agg_methods
         )
     except FileExistsError as e:
         raise click.ClickException(
