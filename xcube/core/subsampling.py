@@ -25,6 +25,7 @@ from typing import Dict, Tuple, Hashable, Optional, Mapping, Union
 
 import numpy as np
 import xarray as xr
+from deprecated import deprecated
 
 from xcube.util.assertions import assert_instance, assert_in, assert_true
 
@@ -172,6 +173,7 @@ def find_agg_method(agg_methods: AggMethods,
 _FULL_SLICE = slice(None, None, None)
 
 
+@deprecated(version='0.10.2', reason='no longer in use')
 def get_dataset_subsampling_slices(
         dataset: xr.Dataset,
         step: int,
