@@ -40,6 +40,7 @@ from xcube.core.dsio import parse_s3_fs_and_root
 from xcube.core.dsio import write_cube
 from xcube.core.gridmapping import GridMapping
 from xcube.core.schema import rechunk_cube
+from xcube.core.subsampling import AggMethods
 from xcube.core.subsampling import assert_valid_agg_methods
 from xcube.core.subsampling import subsample_dataset
 from xcube.core.verify import assert_cube
@@ -530,7 +531,7 @@ class BaseMultiLevelDataset(LazyMultiLevelDataset):
                  base_dataset: xr.Dataset,
                  grid_mapping: Optional[GridMapping] = None,
                  tile_grid: Optional[TileGrid] = None,
-                 agg_methods: Optional[str, Dict[str, str]] = 'first',
+                 agg_methods: AggMethods = 'first',
                  ds_id: Optional[str] = None):
         assert_instance(base_dataset, xr.Dataset, name='base_dataset')
         if grid_mapping is None:
