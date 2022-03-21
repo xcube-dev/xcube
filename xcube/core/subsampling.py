@@ -84,7 +84,9 @@ def subsample_dataset(
                     dim[x_name] = step
                 if y_name in var.dims:
                     dim[y_name] = step
-                var_coarsen = var.coarsen(dim=dim, boundary='trim')
+                var_coarsen = var.coarsen(dim=dim,
+                                          boundary='pad',
+                                          coord_func='min')
                 new_var: xr.DataArray = getattr(var_coarsen, agg_method)()
                 if new_var.dtype != var.dtype:
                     # We don't want, e.g. "mean", to turn data

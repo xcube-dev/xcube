@@ -36,15 +36,16 @@ class SubsampleDatasetTest(unittest.TestCase):
         test_data_1 = np.array([[1, 2, 3, 4, 5, 6],
                                 [2, 3, 4, 5, 6, 7],
                                 [3, 4, 5, 6, 7, 8],
-                                [4, 5, 6, 7, 8, 9]], dtype=np.int16)
+                                [4, 5, 6, 7, 8, 9],
+                                [1, 2, 3, 4, 5, 6]], dtype=np.int16)
         test_data_1 = np.stack([test_data_1, test_data_1 + 10])
         test_data_2 = 0.1 * test_data_1
-        self.dataset = new_cube(width=6,
-                                height=4,
+        self.dataset = new_cube(width=6,  # even
+                                height=5,  # odd
                                 x_name='x',
                                 y_name='y',
-                                x_start=0.,
-                                y_start=0.,
+                                x_start=0.5,
+                                y_start=1.5,
                                 x_res=1.,
                                 y_res=1.,
                                 time_periods=2,
@@ -76,18 +77,24 @@ class SubsampleDatasetTest(unittest.TestCase):
             subsampled_dataset,
             np.array([
                 [[1, 3, 5],
-                 [3, 5, 7]],
+                 [3, 5, 7],
+                 [1, 3, 5]],
 
                 [[11, 13, 15],
-                 [13, 15, 17]]
+                 [13, 15, 17],
+                 [11, 13, 15]]
             ], dtype=np.int16),
             np.array([
                 [[0.2, 0.4, 0.6],
-                 [0.4, 0.6, 0.8]],
+                 [0.4, 0.6, 0.8],
+                 [0.15, 0.35, 0.55]],
 
                 [[1.2, 1.4, 1.6],
-                 [1.4, 1.6, 1.8]]
-            ], dtype=np.float64)
+                 [1.4, 1.6, 1.8],
+                 [1.15, 1.35, 1.55]]
+            ], dtype=np.float64),
+            np.array([1., 3., 5.]),
+            np.array([2., 4., 6.]),
         )
 
     def test_subsample_dataset_first(self):
@@ -98,18 +105,24 @@ class SubsampleDatasetTest(unittest.TestCase):
             subsampled_dataset,
             np.array([
                 [[1, 3, 5],
-                 [3, 5, 7]],
+                 [3, 5, 7],
+                 [1, 3, 5]],
 
                 [[11, 13, 15],
-                 [13, 15, 17]]
+                 [13, 15, 17],
+                 [11, 13, 15]]
             ], dtype=np.int16),
             np.array([
                 [[0.1, 0.3, 0.5],
-                 [0.3, 0.5, 0.7]],
+                 [0.3, 0.5, 0.7],
+                 [0.1, 0.3, 0.5]],
 
                 [[1.1, 1.3, 1.5],
-                 [1.3, 1.5, 1.7]]
-            ], dtype=np.float64)
+                 [1.3, 1.5, 1.7],
+                 [1.1, 1.3, 1.5]]
+            ], dtype=np.float64),
+            np.array([1., 3., 5.]),
+            np.array([2., 4., 6.]),
         )
 
     def test_subsample_dataset_mean(self):
@@ -122,18 +135,24 @@ class SubsampleDatasetTest(unittest.TestCase):
             subsampled_dataset,
             np.array([
                 [[2, 4, 6],
-                 [4, 6, 8]],
+                 [4, 6, 8],
+                 [1, 3, 5]],
 
                 [[12, 14, 16],
-                 [14, 16, 18]]
+                 [14, 16, 18],
+                 [11, 13, 15]]
             ], dtype=np.int16),
             np.array([
                 [[0.2, 0.4, 0.6],
-                 [0.4, 0.6, 0.8]],
+                 [0.4, 0.6, 0.8],
+                 [0.15, 0.35, 0.55]],
 
                 [[1.2, 1.4, 1.6],
-                 [1.4, 1.6, 1.8]]
-            ], dtype=np.float64)
+                 [1.4, 1.6, 1.8],
+                 [1.15, 1.35, 1.55]]
+            ], dtype=np.float64),
+            np.array([1., 3., 5.]),
+            np.array([2., 4., 6.]),
         )
 
     def test_subsample_dataset_max(self):
@@ -144,34 +163,59 @@ class SubsampleDatasetTest(unittest.TestCase):
             subsampled_dataset,
             np.array([
                 [[3, 5, 7],
-                 [5, 7, 9]],
+                 [5, 7, 9],
+                 [2, 4, 6]],
 
                 [[13, 15, 17],
-                 [15, 17, 19]]
+                 [15, 17, 19],
+                 [12, 14, 16]]
             ], dtype=np.int16),
             np.array([
                 [[0.3, 0.5, 0.7],
-                 [0.5, 0.7, 0.9]],
+                 [0.5, 0.7, 0.9],
+                 [0.2, 0.4, 0.6]],
 
                 [[1.3, 1.5, 1.7],
-                 [1.5, 1.7, 1.9]]
-            ], dtype=np.float64)
+                 [1.5, 1.7, 1.9],
+                 [1.2, 1.4, 1.6]]
+            ], dtype=np.float64),
+            np.array([1., 3., 5.]),
+            np.array([2., 4., 6.]),
         )
 
     def assert_subsampling_ok(self,
                               subsampled_dataset: xr.Dataset,
                               expected_var_1: np.ndarray,
-                              expected_var_2: np.ndarray):
+                              expected_var_2: np.ndarray,
+                              expected_x: np.ndarray,
+                              expected_y: np.ndarray):
         self.assertIsInstance(subsampled_dataset, xr.Dataset)
         self.assertIn('spatial_ref',
                       subsampled_dataset)
         self.assertIn('grid_mapping_name',
                       subsampled_dataset.spatial_ref.attrs)
 
+        self.assertIn('x',
+                      subsampled_dataset.coords)
+        self.assertIn('y',
+                      subsampled_dataset.coords)
+
+        print(repr(subsampled_dataset.x.values))
+        print(repr(subsampled_dataset.y.values))
+
+        np.testing.assert_array_equal(
+            subsampled_dataset.x.values,
+            expected_x
+        )
+        np.testing.assert_array_almost_equal(
+            subsampled_dataset.y.values,
+            expected_y
+        )
+
         self.assertIn('var_1',
-                      subsampled_dataset)
+                      subsampled_dataset.data_vars)
         self.assertIn('var_2',
-                      subsampled_dataset)
+                      subsampled_dataset.data_vars)
 
         self.assertIn('grid_mapping',
                       subsampled_dataset.var_1.attrs)
@@ -182,6 +226,9 @@ class SubsampleDatasetTest(unittest.TestCase):
                          subsampled_dataset.var_1.dtype)
         self.assertEqual(expected_var_2.dtype,
                          subsampled_dataset.var_2.dtype)
+
+        # print(repr(subsampled_dataset.var_1.values))
+        # print(repr(subsampled_dataset.var_2.values))
 
         np.testing.assert_array_equal(
             subsampled_dataset.var_1.values,
