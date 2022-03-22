@@ -49,6 +49,7 @@ from xcube.core.store import DatasetDescriptor
 from xcube.core.store import MULTI_LEVEL_DATASET_TYPE
 from xcube.core.tile import get_var_cmap_params
 from xcube.core.tile import get_var_valid_range
+from xcube.util.assertions import assert_instance
 from xcube.util.cache import Cache
 from xcube.util.cache import MemoryCacheStore
 from xcube.util.cache import parse_mem_size
@@ -255,7 +256,8 @@ class ServiceContext:
             required_dataset_scopes.add(base_scope_prefix + value)
         return required_dataset_scopes
 
-    def get_service_url(self, base_url, *path: str):
+    def get_service_url(self, base_url: Optional[str], *path: str):
+        base_url = base_url or ''
         # noinspection PyTypeChecker
         path_comp = '/'.join(path)
         if self._prefix:

@@ -91,7 +91,7 @@ class TilesControllerTest(unittest.TestCase):
                              'resolutions': [0.01, 0.005, 0.0025],
                              'sizes': [[2, 1], [4, 2], [8, 4]],
                              'tileSize': [250, 250]},
-                'url': 'http://bibo/datasets/demo/vars/conc_chl/tiles/{z}/{x}/{y}.png'
+                'url': 'http://bibo/datasets/demo/vars/conc_chl/tiles2/{z}/{y}/{x}'
             },
             tile_grid)
 
@@ -112,12 +112,12 @@ class TilesControllerTest(unittest.TestCase):
         self.assertEqual(
             {
                 'projection': 'EPSG:4326',
-                'tileGrid': {'extent': [0, 50, 5, 52.5],
+                'tileGrid': {'extent': [0, 50, 5.0, 52.5],
                              'origin': [0, 52.5],
                              'resolutions': [0.01, 0.005, 0.0025],
                              'sizes': [[2, 1], [4, 2], [8, 4]],
                              'tileSize': [250, 250]},
-                'url': 'http://bibo/api/v1/datasets/demo/vars/conc_chl/tiles/{z}/{x}/{y}.png'
+                'url': 'http://bibo/api/v1/datasets/demo/vars/conc_chl/tiles2/{z}/{y}/{x}'
             },
             tile_grid)
 
