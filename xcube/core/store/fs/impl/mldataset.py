@@ -140,7 +140,7 @@ class MultiLevelDatasetLevelsFsDataAccessor(DatasetZarrFsDataAccessor):
                 )
             if agg_methods:
                 warnings.warn(
-                    'agg_method is ignored for multi-level datasets'
+                    'agg_methods is ignored for multi-level datasets'
                 )
         else:
             base_dataset: xr.Dataset = data
