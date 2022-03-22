@@ -12,7 +12,7 @@
     that may contain wildcard characters '*' and '?'. The special aggregation
     method `"auto"` can be used to select `"first"` for integer variables 
     and `"mean"` for floating point variables. 
-  - The `xcube level` CLI tool now has a new option `--agg-method` (or `-A`)
+  - The `xcube level` CLI tool now has a new option `--agg-methods` (or `-A`)
     for the same purpose.
 
 ### Fixes
