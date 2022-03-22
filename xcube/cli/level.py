@@ -69,7 +69,7 @@ def level(input: str,
           link: bool,
           tile_size: Optional[str],
           num_levels_max: int,
-          agg_method: str,
+          agg_methods: str,
           replace: bool,
           anon: bool):
     """
