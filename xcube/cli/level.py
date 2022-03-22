@@ -51,10 +51,10 @@ DEFAULT_AGG_METHOD = 'first'
               help=f'Maximum number of levels to generate.'
                    f' If not given, the number of levels will'
                    f' be derived from spatial dimension and tile sizes.')
-@click.option('--agg-methods', '-A', metavar='AGG_METHOD',
+@click.option('--agg-methods', '-A', metavar='AGG_METHODS',
               default=DEFAULT_AGG_METHOD,
               help=f'Aggregation method. One of'
-                   f' "first", "min", "max", "mean", "median" or "auto.'
+                   f' "first", "min", "max", "mean", "median", or "auto.'
                    f' You can also assign a method to individual variables'
                    f' using the notation'
                    f' "<var1>=<method1>,<var2>=<method2>,..."'
@@ -109,17 +109,15 @@ def level(input: str,
         )
 
     try:
-        if '=' in agg_method:
+        if '=' in agg_methods:
             agg_methods = {
                 p[0].strip(): (p[1].strip() if len(p) == 2 else None)
                 for p in (c.split('=', maxsplit=2)
-                          for c in agg_method.split(','))
+                          for c in agg_methods.split(','))
             }
-        else:
-            agg_methods = agg_method
         assert_valid_agg_methods(agg_methods)
     except (TypeError, ValueError, SyntaxError) as e:
-        raise click.ClickException('invalid AGG_METHOD') from e
+        raise click.ClickException('invalid AGG_METHODS') from e
 
     input_protocol, input_path = _split_protocol_and_path(input_path)
 
