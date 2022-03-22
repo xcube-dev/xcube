@@ -512,7 +512,7 @@ class ObjectStorageMultiLevelDataset(LazyMultiLevelDataset):
 
 class BaseMultiLevelDataset(LazyMultiLevelDataset):
     """
-    A multi-level dataset whose level datasets are a
+    A multi-level dataset whose level datasets are
     created by down-sampling a base dataset.
 
     :param base_dataset: The base dataset for the level at index zero.
