@@ -551,7 +551,7 @@ class ServiceContext:
                     s3_bucket_mapping[ds_id] = local_path
         return s3_bucket_mapping
 
-    @deprecated(version='0.10.x',
+    @deprecated(version='0.11.0',
                 reason='do not use, wrong relationship')
     def get_tile_grid(self, ds_id: str) -> TileGrid:
         ml_dataset, _ = self._get_dataset_entry(ds_id)

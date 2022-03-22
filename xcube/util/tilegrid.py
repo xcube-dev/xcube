@@ -30,7 +30,7 @@ from xcube.util.assertions import assert_instance
 from xcube.util.assertions import assert_true
 
 
-@deprecated(version='0.10.x',
+@deprecated(version='0.11.0',
             reason='use xcube.util.tilegrid2.TileGrid2 instead')
 class TileGrid(ABC):
     """
@@ -99,7 +99,7 @@ class TileGrid(ABC):
         """Get the spatial resolution at given *level* of detail."""
 
 
-@deprecated(version='0.10.x',
+@deprecated(version='0.11.0',
             reason='use xcube.util.tilegrid2.TileGrid2 instead')
 class BaseTileGrid(TileGrid):
     """
@@ -210,7 +210,7 @@ GEOGRAPHIC_CRS = pyproj.CRS.from_string('CRS84')
 WEB_MERCATOR_CRS = pyproj.CRS.from_string('EPSG:3857')
 
 
-@deprecated(version='0.10.x',
+@deprecated(version='0.11.0',
             reason='use xcube.util.tilegrid2.TileGrid2 instead')
 class GeographicTileGrid(BaseTileGrid):
     """
@@ -244,7 +244,7 @@ class GeographicTileGrid(BaseTileGrid):
         )
 
 
-@deprecated(version='0.10.x',
+@deprecated(version='0.11.0',
             reason='use xcube.util.tilegrid2.TileGrid2 instead')
 class ImageTileGrid(BaseTileGrid):
     """
@@ -331,7 +331,7 @@ class ImageTileGrid(BaseTileGrid):
         return self._image_width // factor, self._image_height // factor
 
 
-@deprecated(version='0.10.x',
+@deprecated(version='0.11.0',
             reason='should no longer be used')
 def tile_grid_to_ol_xyz_source_options(tile_grid: TileGrid, url: str) \
         -> Optional[Dict[str, Any]]:

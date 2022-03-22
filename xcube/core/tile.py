@@ -43,7 +43,7 @@ from xcube.util.tiledimage import Tile
 from xcube.util.tiledimage import TiledImage
 
 
-@deprecated(version='0.10.x', reason='use xcube-core.tile2 instead')
+@deprecated(version='0.11.0', reason='use xcube-core.tile2 instead')
 def get_ml_dataset_tile(
         ml_dataset: MultiLevelDataset,
         var_name: str,
@@ -131,7 +131,7 @@ def get_ml_dataset_tile(
     return tile
 
 
-@deprecated(version='0.10.x', reason='use xcube-core.tile2 instead')
+@deprecated(version='0.11.0', reason='use xcube-core.tile2 instead')
 def new_rgb_image(ml_dataset: MultiLevelDataset,
                   image_id: str,
                   var_names: Tuple[str, ...],
@@ -172,7 +172,7 @@ def new_rgb_image(ml_dataset: MultiLevelDataset,
                            trace_perf=trace_perf)
 
 
-@deprecated(version='0.10.x', reason='use xcube-core.tile2 instead')
+@deprecated(version='0.11.0', reason='use xcube-core.tile2 instead')
 def new_color_mapped_image(ml_dataset: MultiLevelDataset,
                            image_id: str,
                            var_name: str,

@@ -48,7 +48,6 @@ from xcube.util.assertions import assert_instance
 from xcube.util.perf import measure_time
 from xcube.util.tilegrid import TileGrid
 
-_DEPRECATED_VERSION = '0.10.2'
 _DEPRECATED_OPEN_ML_DATASET = ('Use xcube data store framework'
                                ' to open multi-level datasets.')
 _DEPRECATED_WRITE_ML_DATASET = ('Use xcube data store framework'
@@ -93,7 +92,7 @@ class MultiLevelDataset(metaclass=ABCMeta):
 
     @property
     @abstractmethod
-    @deprecated(version='0.10.x', reason='do not use, wrong relationship')
+    @deprecated(version='0.11.0', reason='do not use, wrong relationship')
     def tile_grid(self) -> TileGrid:
         """
         :return: the tile grid.
@@ -204,7 +203,7 @@ class LazyMultiLevelDataset(MultiLevelDataset, metaclass=ABCMeta):
         return self._grid_mapping
 
     @property
-    @deprecated(version='0.10.x', reason='do not use, wrong relationship')
+    @deprecated(version='0.11.0', reason='do not use, wrong relationship')
     def tile_grid(self) -> TileGrid:
         if self._tile_grid is None:
             with self._lock:
@@ -339,7 +338,7 @@ class IdentityMultiLevelDataset(MappedMultiLevelDataset):
         super().__init__(ml_dataset, lambda ds: ds, ds_id=ds_id)
 
 
-@deprecated(version=_DEPRECATED_VERSION, reason=_DEPRECATED_OPEN_ML_DATASET)
+@deprecated(version='0.10.2', reason=_DEPRECATED_OPEN_ML_DATASET)
 class FileStorageMultiLevelDataset(LazyMultiLevelDataset):
     """
     A stored multi-level dataset whose level datasets are lazily read from storage location.
@@ -382,7 +381,8 @@ class FileStorageMultiLevelDataset(LazyMultiLevelDataset):
     def num_levels(self) -> int:
         return self._num_levels
 
-    def _get_dataset_lazily(self, index: int, parameters: Dict[str, Any]) -> xr.Dataset:
+    def _get_dataset_lazily(self, index: int,
+                            parameters: Dict[str, Any]) -> xr.Dataset:
         """
         Read the dataset for the level at given *index*.
 
@@ -398,8 +398,10 @@ class FileStorageMultiLevelDataset(LazyMultiLevelDataset):
                 if not os.path.isabs(level_path):
                     base_dir = os.path.dirname(self._dir_path)
                     level_path = os.path.join(base_dir, level_path)
-        with measure_time(tag=f"opened local dataset {level_path} for level {index}"):
-            return assert_cube(xr.open_zarr(level_path, **parameters), name=level_path)
+        with measure_time(
+                tag=f"opened local dataset {level_path} for level {index}"):
+            return assert_cube(xr.open_zarr(level_path, **parameters),
+                               name=level_path)
 
     def _get_tile_grid_lazily(self) -> TileGrid:
         """
@@ -416,7 +418,7 @@ class FileStorageMultiLevelDataset(LazyMultiLevelDataset):
         return tile_grid
 
 
-@deprecated(version=_DEPRECATED_VERSION, reason=_DEPRECATED_OPEN_ML_DATASET)
+@deprecated(version='0.10.2', reason=_DEPRECATED_OPEN_ML_DATASET)
 class ObjectStorageMultiLevelDataset(LazyMultiLevelDataset):
     """
     A multi-level dataset whose level datasets are lazily read from object storage locations.
@@ -450,7 +452,8 @@ class ObjectStorageMultiLevelDataset(LazyMultiLevelDataset):
         # Consistency check
         for level in range(num_levels):
             if level not in level_paths:
-                raise exception_type(f"Invalid multi-level dataset {ds_id!r}: missing level {level} in {dir_path}")
+                raise exception_type(
+                    f"Invalid multi-level dataset {ds_id!r}: missing level {level} in {dir_path}")
 
         super().__init__(ds_id=ds_id, parameters=zarr_kwargs)
         self._s3_file_system = s3_file_system
@@ -467,8 +470,9 @@ class ObjectStorageMultiLevelDataset(LazyMultiLevelDataset):
                 weight *= weight
                 weigth_sum += weight
                 weights.append(weight)
-            self._chunk_cache_capacities = [round(chunk_cache_capacity * weight / weigth_sum)
-                                            for weight in weights]
+            self._chunk_cache_capacities = [
+                round(chunk_cache_capacity * weight / weigth_sum)
+                for weight in weights]
 
     @property
     def num_levels(self) -> int:
@@ -481,9 +485,11 @@ class ObjectStorageMultiLevelDataset(LazyMultiLevelDataset):
         :param index: The level index.
         :return: The chunk cache capacity for given level or None.
         """
-        return self._chunk_cache_capacities[index] if self._chunk_cache_capacities else None
+        return self._chunk_cache_capacities[
+            index] if self._chunk_cache_capacities else None
 
-    def _get_dataset_lazily(self, index: int, parameters: Dict[str, Any]) -> xr.Dataset:
+    def _get_dataset_lazily(self, index: int,
+                            parameters: Dict[str, Any]) -> xr.Dataset:
         """
         Read the dataset for the level at given *index*.
 
@@ -499,13 +505,18 @@ class ObjectStorageMultiLevelDataset(LazyMultiLevelDataset):
                 if not os.path.isabs(level_path):
                     base_dir = os.path.dirname(self._dir_path)
                     level_path = os.path.join(base_dir, level_path)
-        store = s3fs.S3Map(root=level_path, s3=self._s3_file_system, check=False)
+        store = s3fs.S3Map(root=level_path, s3=self._s3_file_system,
+                           check=False)
         max_size = self.get_chunk_cache_capacity(index)
         if max_size:
             store = zarr.LRUStoreCache(store, max_size=max_size)
-        with measure_time(tag=f"opened remote dataset {level_path} for level {index}"):
-            consolidated = self._s3_file_system.exists(f'{level_path}/.zmetadata')
-            return assert_cube(xr.open_zarr(store, consolidated=consolidated, **parameters), name=level_path)
+        with measure_time(
+                tag=f"opened remote dataset {level_path} for level {index}"):
+            consolidated = self._s3_file_system.exists(
+                f'{level_path}/.zmetadata')
+            return assert_cube(
+                xr.open_zarr(store, consolidated=consolidated, **parameters),
+                name=level_path)
 
     def _get_tile_grid_lazily(self) -> TileGrid:
         """
@@ -684,7 +695,7 @@ def guess_ml_dataset_format(path: str) -> str:
 
 
 # Note: only used by the "xcube tile" CLI impl.
-@deprecated(version=_DEPRECATED_VERSION, reason=_DEPRECATED_OPEN_ML_DATASET)
+@deprecated(version='0.10.2', reason=_DEPRECATED_OPEN_ML_DATASET)
 def open_ml_dataset(path: str,
                     ds_id: str = None,
                     exception_type: type = ValueError,
@@ -701,22 +712,29 @@ def open_ml_dataset(path: str,
     if not path:
         raise ValueError('path must be given')
     if is_s3_url(path):
-        return open_ml_dataset_from_object_storage(path, ds_id=ds_id, exception_type=exception_type, **kwargs)
+        return open_ml_dataset_from_object_storage(path, ds_id=ds_id,
+                                                   exception_type=exception_type,
+                                                   **kwargs)
     elif path.endswith('.py'):
-        return open_ml_dataset_from_python_code(path, ds_id=ds_id, exception_type=exception_type, **kwargs)
+        return open_ml_dataset_from_python_code(path, ds_id=ds_id,
+                                                exception_type=exception_type,
+                                                **kwargs)
     else:
-        return open_ml_dataset_from_local_fs(path, ds_id=ds_id, exception_type=exception_type, **kwargs)
+        return open_ml_dataset_from_local_fs(path, ds_id=ds_id,
+                                             exception_type=exception_type,
+                                             **kwargs)
 
 
 # Note: only used by open_ml_dataset()
 # noinspection PyUnusedLocal
-@deprecated(version=_DEPRECATED_VERSION, reason=_DEPRECATED_OPEN_ML_DATASET)
+@deprecated(version='0.10.2', reason=_DEPRECATED_OPEN_ML_DATASET)
 def open_ml_dataset_from_object_storage(path: str,
                                         data_format: str = None,
                                         ds_id: str = None,
                                         exception_type: type = ValueError,
                                         s3_kwargs: Mapping[str, Any] = None,
-                                        s3_client_kwargs: Mapping[str, Any] = None,
+                                        s3_client_kwargs: Mapping[
+                                            str, Any] = None,
                                         chunk_cache_capacity: int = None,
                                         **kwargs) -> MultiLevelDataset:
     data_format = data_format or guess_ml_dataset_format(path)
@@ -732,7 +750,8 @@ def open_ml_dataset_from_object_storage(path: str,
             store = zarr.LRUStoreCache(store, max_size=chunk_cache_capacity)
         with measure_time(tag=f"opened remote zarr dataset {path}"):
             consolidated = s3.exists(f'{root}/.zmetadata')
-            ds = assert_cube(xr.open_zarr(store, consolidated=consolidated, **kwargs))
+            ds = assert_cube(
+                xr.open_zarr(store, consolidated=consolidated, **kwargs))
         return BaseMultiLevelDataset(ds, ds_id=ds_id)
     elif data_format == FORMAT_NAME_LEVELS:
         with measure_time(tag=f"opened remote levels dataset {path}"):
@@ -748,7 +767,7 @@ def open_ml_dataset_from_object_storage(path: str,
 
 
 # Note: only used by open_ml_dataset()
-@deprecated(version=_DEPRECATED_VERSION, reason=_DEPRECATED_OPEN_ML_DATASET)
+@deprecated(version='0.10.2', reason=_DEPRECATED_OPEN_ML_DATASET)
 def open_ml_dataset_from_local_fs(path: str,
                                   data_format: str = None,
                                   ds_id: str = None,
@@ -766,9 +785,11 @@ def open_ml_dataset_from_local_fs(path: str,
             return BaseMultiLevelDataset(ds, ds_id=ds_id)
     elif data_format == FORMAT_NAME_LEVELS:
         with measure_time(tag=f"opened local levels dataset {path}"):
-            return FileStorageMultiLevelDataset(path, ds_id=ds_id, zarr_kwargs=kwargs)
+            return FileStorageMultiLevelDataset(path, ds_id=ds_id,
+                                                zarr_kwargs=kwargs)
 
-    raise exception_type(f'Unrecognized multi-level dataset format {data_format!r} for path {path!r}')
+    raise exception_type(
+        f'Unrecognized multi-level dataset format {data_format!r} for path {path!r}')
 
 
 def open_ml_dataset_from_python_code(script_path: str,
@@ -812,7 +833,7 @@ def augment_ml_dataset(ml_dataset: MultiLevelDataset,
 
 
 # Note: only used by unit-tests
-@deprecated(version=_DEPRECATED_VERSION, reason=_DEPRECATED_WRITE_ML_DATASET)
+@deprecated(version='0.10.2', reason=_DEPRECATED_WRITE_ML_DATASET)
 def write_levels(ml_dataset: MultiLevelDataset,
                  levels_path: str,
                  s3_kwargs: Dict[str, Any] = None,

@@ -42,7 +42,7 @@ from xcube.webapi.context import ServiceContext
 from xcube.webapi.errors import ServiceBadRequestError
 
 
-@deprecated(version='0.10.x', reason='outdated API')
+@deprecated(version='0.11.0', reason='outdated API')
 def get_time_series_info(ctx: ServiceContext) -> Dict:
     """
     Get time-series meta-information for variables.
@@ -74,7 +74,7 @@ def get_time_series_info(ctx: ServiceContext) -> Dict:
     return time_series_info
 
 
-@deprecated(version='0.10.x', reason='outdated API')
+@deprecated(version='0.11.0', reason='outdated API')
 def get_time_series_for_point(ctx: ServiceContext,
                               ds_name: str, var_name: str,
                               lon: float, lat: float,
@@ -111,7 +111,7 @@ def get_time_series_for_point(ctx: ServiceContext,
     return result
 
 
-@deprecated(version='0.10.x', reason='outdated API')
+@deprecated(version='0.11.0', reason='outdated API')
 def get_time_series_for_geometry(ctx: ServiceContext,
                                  ds_name: str, var_name: str,
                                  geometry: Dict,
@@ -158,7 +158,7 @@ def get_time_series_for_geometry(ctx: ServiceContext,
     return result
 
 
-@deprecated(version='0.10.x', reason='outdated API')
+@deprecated(version='0.11.0', reason='outdated API')
 def get_time_series_for_geometry_collection(ctx: ServiceContext,
                                             ds_name: str, var_name: str,
                                             geometry_collection: Dict,
@@ -208,7 +208,7 @@ def get_time_series_for_geometry_collection(ctx: ServiceContext,
     return result
 
 
-@deprecated(version='0.10.x', reason='outdated API')
+@deprecated(version='0.11.0', reason='outdated API')
 def get_time_series_for_feature_collection(ctx: ServiceContext,
                                            ds_name: str, var_name: str,
                                            feature_collection: Dict,
