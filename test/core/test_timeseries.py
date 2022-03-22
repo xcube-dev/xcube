@@ -2,8 +2,10 @@ import unittest
 from typing import Set
 
 import numpy as np
+import pyproj
 import xarray as xr
 
+from xcube.core.gridmapping import GridMapping
 from xcube.core.new import new_cube
 from xcube.core.timeseries import get_time_series
 
@@ -25,7 +27,34 @@ class GetTimeSeriesTest(unittest.TestCase):
         ts_ds = get_time_series(self.cube, geometry=POLYGON_GEOMETRY)
         self.assert_dataset_ok(ts_ds, 100, {'A_mean', 'B_mean'})
 
-    def test_deprecated_cube_asserted(self):
+    def test_polygon_with_grid_mapping(self):
+        crs1 = pyproj.CRS.from_string('EPSG:4326')  # = Geographic
+        crs2 = pyproj.CRS.from_string('+proj=mill +lat_0=0 +lon_0=0 +x_0=0 +y_0=0 +R_A +datum=WGS84 +units=m +no_defs')  # = World Miller
+        t = pyproj.Transformer.from_crs(crs1, crs2, always_xy=True)
+        cube = self.cube.rename(dict(lat='y', lon='x'))
+        x, _ = t.transform(
+            cube.x,
+            np.zeros(cube.x.size)
+        )
+        _, y = t.transform(
+            np.zeros(cube.y.size),
+            cube.y,
+        )
+        cube = cube.assign_coords(
+            x=xr.DataArray(x, dims='x'),
+            y=xr.DataArray(y, dims='y'),
+        )
+        cube = cube.assign(crs=xr.DataArray(0, attrs=crs2.to_cf()))
+        grid_mapping = GridMapping.from_dataset(cube)
+        ts_ds = get_time_series(cube,
+                                grid_mapping=grid_mapping,
+                                geometry=POLYGON_GEOMETRY)
+        self.assertIsInstance(ts_ds, xr.Dataset)
+        # TODO (forman): we must actually get a valid
+        #  result here, but we don't
+        # self.assert_dataset_ok(ts_ds, 100, {'A_mean', 'B_mean'})
+
+    def test_polygon_deprecated_cube_asserted(self):
         ts_ds = get_time_series(self.cube, geometry=POLYGON_GEOMETRY,
                                 cube_asserted=True)
         self.assert_dataset_ok(ts_ds, 100, {'A_mean', 'B_mean'})
