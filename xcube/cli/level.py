@@ -53,9 +53,9 @@ DEFAULT_AGG_METHOD = 'first'
                    f' be derived from spatial dimension and tile sizes.')
 @click.option('--agg-methods', '-A', metavar='AGG_METHODS',
               default=DEFAULT_AGG_METHOD,
-              help=f'Aggregation method. One of'
-                   f' "first", "min", "max", "mean", "median", or "auto.'
-                   f' You can also assign a method to individual variables'
+              help=f'Aggregation method(s) to be used for data variables.'
+                   f' Either one of "first", "min", "max", "mean", "median",'
+                   f' "auto" or list of assignments to individual variables'
                    f' using the notation'
                    f' "<var1>=<method1>,<var2>=<method2>,..."'
                    f' Defaults to "{DEFAULT_AGG_METHOD}".')
