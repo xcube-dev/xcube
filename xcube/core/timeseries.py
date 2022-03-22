@@ -69,10 +69,8 @@ def get_time_series(
         start_date: Optional[Date] = None,
         end_date: Optional[Date] = None,
         agg_methods: Union[str, Sequence[str], AbstractSet[str]] = AGG_MEAN,
-        include_count: bool = False,
-        include_stdev: bool = False,
         use_groupby: bool = False,
-        cube_asserted: bool = False
+        cube_asserted: Optional[bool] = None
 ) -> Optional[xr.Dataset]:
     """
     Get a time series dataset from a data *cube*.
@@ -108,15 +106,14 @@ def get_time_series(
         sequence of strings. Possible values are
         'mean', 'median', 'min', 'max', 'std', 'count'. Defaults to 'mean'.
         Ignored if geometry is a point.
-    :param include_count: Deprecated. Whether to include the number of valid
-        observations for each time step. Ignored if geometry is a point.
-    :param include_stdev: Deprecated. Whether to include standard deviation
-        for each time step. Ignored if geometry is a point.
     :param use_groupby: Use group-by operation. May increase or decrease
         runtime performance and/or memory consumption.
-    :param cube_asserted: Deprecated and ignored since xcube 0.10.x.
+    :param cube_asserted: Deprecated and ignored since xcube 0.11.0.
         No replacement.
     """
+    if cube_asserted is not None:
+        warnings.warn('cube_asserted has been deprecated'
+                      ' and will be removed in soon.', DeprecationWarning)
     assert_instance(cube, xr.Dataset)
     if grid_mapping is not None:
         assert_instance(grid_mapping, GridMapping)
@@ -148,14 +145,6 @@ def get_time_series(
         return dataset.assign_attrs(max_number_of_observations=1)
 
     agg_methods = normalize_agg_methods(agg_methods)
-    if include_count:
-        warnings.warn("keyword argument 'include_count' has been deprecated,"
-                      f" use 'agg_methods=[{AGG_COUNT!r}, ...]' instead")
-        agg_methods.add(AGG_COUNT)
-    if include_stdev:
-        warnings.warn("keyword argument 'include_stdev' has been deprecated,"
-                      f" use 'agg_methods=[{AGG_STD!r}, ...]' instead")
-        agg_methods.add(AGG_STD)
 
     if geometry is not None:
         dataset = mask_dataset_by_geometry(dataset, geometry,

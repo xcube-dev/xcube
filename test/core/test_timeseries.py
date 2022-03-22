@@ -25,6 +25,11 @@ class GetTimeSeriesTest(unittest.TestCase):
         ts_ds = get_time_series(self.cube, geometry=POLYGON_GEOMETRY)
         self.assert_dataset_ok(ts_ds, 100, {'A_mean', 'B_mean'})
 
+    def test_deprecated_cube_asserted(self):
+        ts_ds = get_time_series(self.cube, geometry=POLYGON_GEOMETRY,
+                                cube_asserted=True)
+        self.assert_dataset_ok(ts_ds, 100, {'A_mean', 'B_mean'})
+
     def test_polygon_agg_median_mean_std(self):
         ts_ds = get_time_series(self.cube,
                                 geometry=POLYGON_GEOMETRY,
@@ -59,16 +64,6 @@ class GetTimeSeriesTest(unittest.TestCase):
                                 var_names=['B'],
                                 agg_methods=['mean', 'std'])
         self.assert_dataset_ok(ts_ds, 100, {'B_mean', 'B_std'})
-
-    def test_polygon_deprecated_incl_count_stdev(self):
-        ts_ds = get_time_series(self.cube,
-                                geometry=POLYGON_GEOMETRY,
-                                include_count=True,
-                                include_stdev=True)
-        self.assert_dataset_ok(
-            ts_ds, 100,
-            {'A_mean', 'A_count', 'A_std', 'B_mean', 'B_count', 'B_std'}
-        )
 
     def test_no_vars(self):
         ts_ds = get_time_series(self.cube,
