@@ -175,7 +175,7 @@ def find_agg_method(agg_methods: AggMethods,
 _FULL_SLICE = slice(None, None, None)
 
 
-@deprecated(version='0.10.2', reason='no longer in use')
+@deprecated(version='0.10.3', reason='no longer in use')
 def get_dataset_subsampling_slices(
         dataset: xr.Dataset,
         step: int,
