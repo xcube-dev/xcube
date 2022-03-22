@@ -51,7 +51,7 @@ DEFAULT_AGG_METHOD = 'first'
               help=f'Maximum number of levels to generate.'
                    f' If not given, the number of levels will'
                    f' be derived from spatial dimension and tile sizes.')
-@click.option('--agg-method', '-A', metavar='AGG_METHOD',
+@click.option('--agg-methods', '-A', metavar='AGG_METHOD',
               default=DEFAULT_AGG_METHOD,
               help=f'Aggregation method. One of'
                    f' "first", "min", "max", "mean", "median" or "auto.'
