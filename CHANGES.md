@@ -1,5 +1,20 @@
 ## Changes in 0.10.3 (in development)
 
+### Enhancements
+
+* Support for multi-level datasets aka ND image pyramids has been 
+  further improved (#655):
+  - Introduced new parameter `agg_methods` for writing multi-level datasets 
+    with the "file", "s3", and "memory" data stores. 
+    The value of `agg_methods` is either a string `"first"`,
+    `"min"`, `"max"`, `"mean"`, `"median"` or a dictionary that maps
+    a variable name to an aggregation method. Variable names can be patterns
+    that may contain wildcard characters '*' and '?'. The special aggregation
+    method `"auto"` can be used to select `"first"` for integer variables 
+    and `"mean"` for floating point variables. 
+  - The `xcube level` CLI tool now has a new option `--agg-methods` (or `-A`)
+    for the same purpose.
+
 ### Fixes
 
 * Fixed a problem where the `DataStores` configuration of `xcube serve` 
