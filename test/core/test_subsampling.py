@@ -129,8 +129,6 @@ class SubsampleDatasetTest(unittest.TestCase):
         subsampled_dataset = subsample_dataset(self.dataset,
                                                step=2,
                                                agg_methods='mean')
-        print(repr(subsampled_dataset.var_1.values))
-        print(repr(subsampled_dataset.var_2.values))
         self.assert_subsampling_ok(
             subsampled_dataset,
             np.array([
@@ -200,9 +198,6 @@ class SubsampleDatasetTest(unittest.TestCase):
         self.assertIn('y',
                       subsampled_dataset.coords)
 
-        print(repr(subsampled_dataset.x.values))
-        print(repr(subsampled_dataset.y.values))
-
         np.testing.assert_array_equal(
             subsampled_dataset.x.values,
             expected_x
@@ -226,9 +221,6 @@ class SubsampleDatasetTest(unittest.TestCase):
                          subsampled_dataset.var_1.dtype)
         self.assertEqual(expected_var_2.dtype,
                          subsampled_dataset.var_2.dtype)
-
-        # print(repr(subsampled_dataset.var_1.values))
-        # print(repr(subsampled_dataset.var_2.values))
 
         np.testing.assert_array_equal(
             subsampled_dataset.var_1.values,
