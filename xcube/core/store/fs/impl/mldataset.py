@@ -33,6 +33,7 @@ from xcube.core.gridmapping import GridMapping
 from xcube.core.mldataset import BaseMultiLevelDataset
 from xcube.core.mldataset import LazyMultiLevelDataset
 from xcube.core.mldataset import MultiLevelDataset
+from xcube.core.subsampling import AGG_METHODS
 from xcube.util.assertions import assert_instance
 from xcube.util.jsonschema import JsonArraySchema
 from xcube.util.jsonschema import JsonBooleanSchema
@@ -105,6 +106,21 @@ class MultiLevelDatasetLevelsFsDataAccessor(DatasetZarrFsDataAccessor):
             minimum=1,
             nullable=True,
         )
+        schema.properties['agg_methods'] = JsonComplexSchema(
+            one_of=[
+                JsonStringSchema(enum=AGG_METHODS),
+                JsonObjectSchema(
+                    additional_properties=JsonStringSchema(enum=AGG_METHODS)
+                ),
+                JsonNullSchema(),
+            ],
+            description='Aggregation method for the pyramid levels.'
+                        ' If not explicitly set, "first" is used for integer '
+                        ' variables and "mean" for floating point variables.'
+                        ' If given as object, it is a mapping from variable '
+                        ' name pattern to aggregation method. The pattern'
+                        ' may include wildcard characters * and ?.'
+        )
         return schema
 
     def write_data(self,
@@ -115,10 +131,17 @@ class MultiLevelDatasetLevelsFsDataAccessor(DatasetZarrFsDataAccessor):
         assert_instance(data, (xr.Dataset, MultiLevelDataset), name='data')
         assert_instance(data_id, str, name='data_id')
         tile_size = write_params.pop('tile_size', None)
+        agg_methods = write_params.pop('agg_methods', None)
         if isinstance(data, MultiLevelDataset):
             ml_dataset = data
             if tile_size:
-                warnings.warn('tile_size is ignored for multi-level datasets')
+                warnings.warn(
+                    'tile_size is ignored for multi-level datasets'
+                )
+            if agg_methods:
+                warnings.warn(
+                    'agg_methods is ignored for multi-level datasets'
+                )
         else:
             base_dataset: xr.Dataset = data
             grid_mapping = None
@@ -132,7 +155,8 @@ class MultiLevelDatasetLevelsFsDataAccessor(DatasetZarrFsDataAccessor):
                                                    y_name: tile_size[1]})
                 grid_mapping = grid_mapping.derive(tile_size=tile_size)
             ml_dataset = BaseMultiLevelDataset(base_dataset,
-                                               grid_mapping=grid_mapping)
+                                               grid_mapping=grid_mapping,
+                                               agg_methods=agg_methods)
         fs, root, write_params = self.load_fs(write_params)
         consolidated = write_params.pop('consolidated', True)
         use_saved_levels = write_params.pop('use_saved_levels', False)
@@ -143,7 +167,8 @@ class MultiLevelDatasetLevelsFsDataAccessor(DatasetZarrFsDataAccessor):
             ml_dataset = BaseMultiLevelDataset(
                 ml_dataset.get_dataset(0),
                 grid_mapping=ml_dataset.grid_mapping,
-                tile_grid=ml_dataset.tile_grid
+                tile_grid=ml_dataset.tile_grid,
+                agg_methods=agg_methods
             )
 
         path_class = get_fs_path_class(fs)
