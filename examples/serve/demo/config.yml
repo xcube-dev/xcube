@@ -105,16 +105,16 @@ Datasets:
       RequiredScopes:
         - read:datasets
 
-#DataStores:
-#  - Identifier: "xcube-eea"
-#    StoreId: "s3"
-#    StoreParams:
-#      root: "eurodatacube-test/xcube-eea"
-#      storage_options:
-#        anon: false
-#    Datasets:
-#      - Path: "hr_mr_tprod-iberia-10m-2017-2020.levels"
-#        ChunkCacheSize: 1G
+DataStores:
+  - Identifier: "xcube-eea"
+    StoreId: "s3"
+    StoreParams:
+      root: "eurodatacube-test/xcube-eea"
+      storage_options:
+        anon: false
+    Datasets:
+      - Path: "hr_mr_tprod-iberia-10m-2017-2020.levels"
+        ChunkCacheSize: 1G
 
 PlaceGroups:
   - Identifier: inside-cube

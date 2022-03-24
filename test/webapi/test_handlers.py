@@ -155,7 +155,7 @@ class HandlersTest(AsyncHTTPTestCase):
         self.assertBadRequestResponse(response, 'Value for "layer" parameter must be "<dataset>.<variable>"')
 
     def test_fetch_wmts_capabilities(self):
-        response = self.fetch(self.prefix + '/wmts/1.0.0/WMTSCapabilities.xml')
+        response = self.fetch(self.prefix + '/wmts/1.0.0/WMTSCapabilities-OSM.xml')
         self.assertResponseOK(response)
 
     def test_fetch_wmts_tile(self):

@@ -6,7 +6,7 @@ import xarray as xr
 
 from xcube.core.mldataset import BaseMultiLevelDataset
 from xcube.core.tile2 import compute_color_mapped_rgba_tile
-from xcube.util.tilegrid2 import GEOGRAPHIC_CRS_NAME
+from xcube.util.tilegrid2 import CRS84_CRS_NAME
 from xcube.util.tilegrid2 import WEB_MERCATOR_CRS_NAME
 
 
@@ -16,7 +16,7 @@ class Tile2Test(unittest.TestCase):
         crs_name = WEB_MERCATOR_CRS_NAME
 
         crs = pyproj.CRS.from_string(crs_name)
-        geo_crs = pyproj.CRS.from_string(GEOGRAPHIC_CRS_NAME)
+        geo_crs = pyproj.CRS.from_string(CRS84_CRS_NAME)
         transformer = pyproj.Transformer.from_crs(
             geo_crs, crs, always_xy=True
         )

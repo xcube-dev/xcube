@@ -1,4 +1,7 @@
 import logging
+from typing import Union, Optional
+
+import pyproj
 
 from xcube.core.tile2 import DEFAULT_CMAP_NAME
 from xcube.core.tile2 import DEFAULT_CRS_NAME
@@ -18,6 +21,7 @@ _LOGGER = logging.getLogger()
 def get_dataset_tile2(ctx: ServiceContext,
                       ds_id: str,
                       var_name: str,
+                      crs_name: Optional[str],
                       x: str, y: str, z: str,
                       params: RequestParams):
     x = RequestParams.to_int('x', x)
@@ -28,7 +32,7 @@ def get_dataset_tile2(ctx: ServiceContext,
 
     log_tiles = args.pop('debug', None) == '1' or ctx.trace_perf
     format = args.pop('format', DEFAULT_FORMAT)
-    crs_name = args.pop('crs', DEFAULT_CRS_NAME)
+    crs_name = args.pop('crs', crs_name or DEFAULT_CRS_NAME)
     retina = args.pop('retina', None) == '1'
     cmap_name = args.pop('cbar', DEFAULT_CMAP_NAME)
     cmap_name = args.pop('cmap', cmap_name)

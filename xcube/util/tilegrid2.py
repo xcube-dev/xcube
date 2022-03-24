@@ -26,9 +26,10 @@ from typing import Optional, Tuple, Sequence, Iterator
 import pyproj
 
 WEB_MERCATOR_CRS_NAME = 'EPSG:3857'
+CRS84_CRS_NAME = 'CRS84'
 GEOGRAPHIC_CRS_NAME = 'EPSG:4326'
-GEOGRAPHIC_CRS_NAMES = GEOGRAPHIC_CRS_NAME, 'WGS84', 'CRS84'
-DEFAULT_CRS_NAME = WEB_MERCATOR_CRS_NAME
+GEOGRAPHIC_CRS_NAMES = 'EPSG:4326', 'WGS84', 'CRS84'
+DEFAULT_CRS_NAME = CRS84_CRS_NAME
 DEFAULT_TILE_SIZE = 256
 DEFAULT_TILE_ENLARGEMENT = 2
 EARTH_EQUATORIAL_RADIUS_WGS84 = 6378137.
@@ -36,20 +37,29 @@ EARTH_CIRCUMFERENCE_WGS84 = 2 * math.pi * EARTH_EQUATORIAL_RADIUS_WGS84
 
 
 class TileGrid2:
+    """
+    A tile grid represents a schema for subdividing
+    the world into 2D image tiles.
+
+    :param num_level_zero_tiles: The number of tiles
+        in x and y direction at lowest resolution level (zero).
+    :param crs_name: Name of the spatial coordinate reference system.
+    :param map_height: The height of the world map in units of the
+        spatial coordinate reference system.
+    :param tile_size: The tile size to be used for
+        both x and y directions. Defaults to 256.
+    """
+
     def __init__(self,
                  num_level_zero_tiles: Tuple[int, int],
                  crs_name: str,
                  map_height: float,
-                 tile_size: int = DEFAULT_TILE_SIZE,
-                 map_levels: Optional[Tuple[int]] = None,
-                 map_resolutions: Optional[Tuple[float]] = None):
+                 tile_size: int = DEFAULT_TILE_SIZE):
         self.num_level_zero_tiles = num_level_zero_tiles
-        self.tile_size = tile_size
         self.crs_name = crs_name
-        self.map_height = map_height
-        self.map_levels = map_levels
-        self.map_resolutions = map_resolutions
         self._crs = None
+        self.map_height = map_height
+        self.tile_size = tile_size
 
     @property
     def crs(self) -> pyproj.CRS:
@@ -74,7 +84,7 @@ class TileGrid2:
     @classmethod
     def new_geographic(cls):
         return TileGrid2(num_level_zero_tiles=(2, 1),
-                         crs_name=GEOGRAPHIC_CRS_NAME,
+                         crs_name=CRS84_CRS_NAME,
                          map_height=180.)
 
     @classmethod
@@ -92,9 +102,7 @@ class TileGrid2:
         d = dict(num_level_zero_tiles=self.num_level_zero_tiles,
                  crs_name=self.crs_name,
                  map_height=self.map_height,
-                 tile_size=self.tile_size,
-                 map_levels=self.map_levels,
-                 map_resolutions=self.map_resolutions)
+                 tile_size=self.tile_size)
         return {k: v for k, v in d.items() if v is not None}
 
     def resolutions(self, unit_name: Optional[str] = None) -> Iterator[float]:
