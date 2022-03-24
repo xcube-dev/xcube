@@ -61,6 +61,8 @@ OGC_WEB_MERCATOR_WKSS_URN = 'urn:ogc:def:wkss:OGC:1.0:GoogleMapsCompatible'
 _STD_PIXEL_SIZE_IN_METERS = 0.28e-3
 _CRS84 = pyproj.CRS.from_string('CRS84')
 
+# '/tile/%s/%s/%s/' is the pattern for
+# '/tile/{ds_name}/{var_name}/{tms_id}/'
 _TILE_URL_TEMPLATE = WMTS_URL_PREFIX \
                      + '/tile/%s/%s/%s/' \
                        '{TileMatrix}/' \
@@ -71,6 +73,21 @@ _TILE_URL_TEMPLATE = WMTS_URL_PREFIX \
 def get_wmts_capabilities_xml(ctx: ServiceContext,
                               base_url: str,
                               tms_id: str = WMTS_CRS84_TMS_ID) -> str:
+    """
+    Get WMTSCapabilities.xml according to
+    https://www.ogc.org/standards/wmts, WMTS 1.0.0.
+
+    We create WMTSCapabilities.xml for individual tile matrix sets.
+    If we'd include it into one, we would have to double all layers
+    and make them available for the supported tile matrix sets
+    "WorldCRS84Quad" and "WorldWebMercatorQuad".
+
+    :param ctx: server context
+    :param base_url: the request base URL
+    :param tms_id: time matrix set identifier,
+        must be one of "WorldCRS84Quad" or "WorldWebMercatorQuad"
+    :return: XML plain text in UTF-8 encoding
+    """
     element = get_capabilities_element(ctx, base_url, tms_id)
     document = Document(element)
     return document.to_xml(indent=4)
