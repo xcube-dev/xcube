@@ -21,6 +21,7 @@
 
 import fnmatch
 import glob
+import itertools
 import json
 import os
 import os.path
@@ -45,6 +46,7 @@ from xcube.core.store import DATASET_TYPE
 from xcube.core.store import DataStoreConfig
 from xcube.core.store import DataStorePool
 from xcube.core.store import DatasetDescriptor
+from xcube.core.store import MULTI_LEVEL_DATASET_TYPE
 from xcube.core.tile import get_var_cmap_params
 from xcube.core.tile import get_var_valid_range
 from xcube.util.cache import Cache
@@ -187,8 +189,30 @@ class ServiceContext:
         return measure_time_cm(disabled=not self.trace_perf, logger=LOG)
 
     @property
+    def can_authenticate(self) -> bool:
+        """
+        Test whether the user can authenticate.
+        Even if authentication service is configured, user authentication
+        may still be optional. In this case the server will publish
+        the resources configured to be free for everyone.
+        """
+        return bool(self.authentication.get('Domain'))
+
+    @property
+    def must_authenticate(self) -> bool:
+        """
+        Test whether the user must authenticate.
+        """
+        return self.can_authenticate \
+               and self.authentication.get('IsRequired', False)
+
+    @property
+    def authentication(self) -> Dict[str, Any]:
+        return self._config.get('Authentication', {})
+
+    @property
     def access_control(self) -> Dict[str, Any]:
-        return dict(self._config.get('AccessControl', {}))
+        return self._config.get('AccessControl', {})
 
     @property
     def required_scopes(self) -> List[str]:
@@ -210,17 +234,26 @@ class ServiceContext:
                              base_scope: str,
                              value_name: str,
                              value: str) -> Set[str]:
+        required_global_scopes = set(self.required_scopes)
+        required_dataset_scopes = set(
+            dataset_config.get('AccessControl', {}).get('RequiredScopes', [])
+        )
+        if not required_global_scopes and not required_dataset_scopes:
+            return required_global_scopes
+        required_dataset_scopes = required_global_scopes \
+            .union(required_dataset_scopes)
         base_scope_prefix = base_scope + ':'
+        required_dataset_scopes = {
+            scope
+            for scope in required_dataset_scopes
+            if scope == base_scope or scope.startswith(base_scope_prefix)
+        }
         pattern_scope = base_scope_prefix + '{' + value_name + '}'
-        dataset_access_control = dataset_config.get('AccessControl', {})
-        dataset_required_scopes = dataset_access_control.get('RequiredScopes', [])
-        dataset_required_scopes = set(self.required_scopes + dataset_required_scopes)
-        dataset_required_scopes = {scope for scope in dataset_required_scopes
-                                   if scope == base_scope or scope.startswith(base_scope_prefix)}
-        if pattern_scope in dataset_required_scopes:
-            dataset_required_scopes.remove(pattern_scope)
-            dataset_required_scopes.add(base_scope_prefix + value)
-        return dataset_required_scopes
+        if pattern_scope in required_dataset_scopes:
+            # Replace "{base_scope}:{value_name}" by "{base_scope}:{value}"
+            required_dataset_scopes.remove(pattern_scope)
+            required_dataset_scopes.add(base_scope_prefix + value)
+        return required_dataset_scopes
 
     def get_service_url(self, base_url, *path: str):
         # noinspection PyTypeChecker
@@ -396,8 +429,20 @@ class ServiceContext:
                 store_instance_id
             )
             data_store = data_store_pool.get_store(store_instance_id)
-            store_dataset_ids = data_store.get_data_ids(
-                data_type=DATASET_TYPE
+            # Note by forman: This iterator chaining is inefficient.
+            # Preferably, we should offer
+            #
+            # store_dataset_ids = data_store.get_data_ids(
+            #     data_type=(DATASET_TYPE, MULTI_LEVEL_DATASET_TYPE)
+            # )
+            #
+            store_dataset_ids = itertools.chain(
+                data_store.get_data_ids(
+                    data_type=DATASET_TYPE
+                ),
+                data_store.get_data_ids(
+                    data_type=MULTI_LEVEL_DATASET_TYPE
+                )
             )
             for store_dataset_id in store_dataset_ids:
                 dataset_config_base = {}
@@ -607,7 +652,8 @@ class ServiceContext:
                                        f" {store_instance_id!r}"):
                 dataset = data_store.open_data(data_id, **open_params)
             if isinstance(dataset, MultiLevelDataset):
-                ml_dataset = dataset
+                ml_dataset: MultiLevelDataset = dataset
+                ml_dataset.ds_id = ds_id
             else:
                 cube, _, _ = decode_cube(dataset,
                                          normalize=True,

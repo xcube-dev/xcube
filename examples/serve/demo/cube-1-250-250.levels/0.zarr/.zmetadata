@@ -1,0 +1,471 @@
+{
+    "metadata": {
+        ".zattrs": {
+            "Conventions": "CF-1.7",
+            "coordinates": "lat_bnds time_bnds lon_bnds"
+        },
+        ".zgroup": {
+            "zarr_format": 2
+        },
+        "c2rcc_flags/.zarray": {
+            "chunks": [
+                1,
+                250,
+                250
+            ],
+            "compressor": {
+                "blocksize": 0,
+                "clevel": 5,
+                "cname": "lz4",
+                "id": "blosc",
+                "shuffle": 1
+            },
+            "dtype": "<f8",
+            "fill_value": "NaN",
+            "filters": null,
+            "order": "C",
+            "shape": [
+                5,
+                1000,
+                2000
+            ],
+            "zarr_format": 2
+        },
+        "c2rcc_flags/.zattrs": {
+            "_ARRAY_DIMENSIONS": [
+                "time",
+                "lat",
+                "lon"
+            ],
+            "flag_coding_name": "c2rcc_flags",
+            "flag_descriptions": "The input spectrum to the atmospheric correction neural net was out of the scope of the training range and the inversion is likely to be wrong\tThe input spectrum to the atmospheric correction neural net out of training range\tOne of the inputs to the IOP retrieval neural net is out of training range\tHigh downwelling transmission is indicating cloudy conditions\tOne of the IOPs is out of range\tApig output of the IOP retrieval neural net is at its maximum. This means that the true value is this value or higher.\tAdet output of the IOP retrieval neural net is at its maximum. This means that the true value is this value or higher.\tAgelb output of the IOP retrieval neural net is at its maximum. This means that the true value is this value or higher.\tBpart output of the IOP retrieval neural net is at its maximum. This means that the true value is this value or higher.\tBwit output of the IOP retrieval neural net is at its maximum. This means that the true value is this value or higher.\tApig output of the IOP retrieval neural net is at its minimum. This means that the true value is this value or lower.\tAdet output of the IOP retrieval neural net is at its minimum. This means that the true value is this value or lower.\tAgelb output of the IOP retrieval neural net is at its minimum. This means that the true value is this value or lower.\tBpart output of the IOP retrieval neural net is at its minimum. This means that the true value is this value or lower.\tBwit output of the IOP retrieval neural net is at its minimum. This means that the true value is this value or lower.\tThe Rhow input spectrum to IOP neural net is probably not within the training range of the neural net, and the inversion is likely to be wrong.\tKd489 is out of range\tKdmin is out of range\tKdmin is at max\tKdmin is at max\tThe operators valid pixel expression has resolved to true",
+            "flag_masks": [
+                1,
+                2,
+                4,
+                8,
+                16,
+                32,
+                64,
+                128,
+                256,
+                512,
+                1024,
+                2048,
+                4096,
+                8192,
+                16384,
+                32768,
+                65536,
+                131072,
+                262144,
+                524288,
+                -2147483648
+            ],
+            "flag_meanings": "Rtosa_OOS Rtosa_OOR Rhow_OOR Cloud_risk Iop_OOR Apig_at_max Adet_at_max Agelb_at_max Bpart_at_max Bwit_at_max Apig_at_min Adet_at_min Agelb_at_min Bpart_at_min Bwit_at_min Rhow_OOS Kd489_OOR Kdmin_OOR Kd489_at_max Kdmin_at_max Valid_PE",
+            "long_name": "C2RCC quality flags"
+        },
+        "conc_chl/.zarray": {
+            "chunks": [
+                1,
+                250,
+                250
+            ],
+            "compressor": {
+                "blocksize": 0,
+                "clevel": 5,
+                "cname": "lz4",
+                "id": "blosc",
+                "shuffle": 1
+            },
+            "dtype": "<f8",
+            "fill_value": "NaN",
+            "filters": null,
+            "order": "C",
+            "shape": [
+                5,
+                1000,
+                2000
+            ],
+            "zarr_format": 2
+        },
+        "conc_chl/.zattrs": {
+            "_ARRAY_DIMENSIONS": [
+                "time",
+                "lat",
+                "lon"
+            ],
+            "color_table_blue_values": [
+                128,
+                255,
+                255,
+                255,
+                255,
+                0,
+                0,
+                0,
+                0,
+                0
+            ],
+            "color_table_green_values": [
+                0,
+                0,
+                102,
+                204,
+                255,
+                128,
+                255,
+                95,
+                0,
+                0
+            ],
+            "color_table_red_values": [
+                0,
+                0,
+                51,
+                0,
+                0,
+                0,
+                255,
+                255,
+                215,
+                150
+            ],
+            "color_table_sample_values": [
+                0.0,
+                0.5,
+                1.0,
+                2.0,
+                3.0,
+                4.5,
+                13.0,
+                25.0,
+                30.0,
+                40.0
+            ],
+            "long_name": "Chlorophylll concentration",
+            "units": "mg m^-3",
+            "valid_pixel_expression": "c2rcc_flags.Valid_PE"
+        },
+        "conc_tsm/.zarray": {
+            "chunks": [
+                1,
+                250,
+                250
+            ],
+            "compressor": {
+                "blocksize": 0,
+                "clevel": 5,
+                "cname": "lz4",
+                "id": "blosc",
+                "shuffle": 1
+            },
+            "dtype": "<f8",
+            "fill_value": "NaN",
+            "filters": null,
+            "order": "C",
+            "shape": [
+                5,
+                1000,
+                2000
+            ],
+            "zarr_format": 2
+        },
+        "conc_tsm/.zattrs": {
+            "_ARRAY_DIMENSIONS": [
+                "time",
+                "lat",
+                "lon"
+            ],
+            "long_name": "Total suspended matter dry weight concentration",
+            "units": "g m^-3",
+            "valid_pixel_expression": "c2rcc_flags.Valid_PE"
+        },
+        "kd489/.zarray": {
+            "chunks": [
+                1,
+                250,
+                250
+            ],
+            "compressor": {
+                "blocksize": 0,
+                "clevel": 5,
+                "cname": "lz4",
+                "id": "blosc",
+                "shuffle": 1
+            },
+            "dtype": "<f8",
+            "fill_value": "NaN",
+            "filters": null,
+            "order": "C",
+            "shape": [
+                5,
+                1000,
+                2000
+            ],
+            "zarr_format": 2
+        },
+        "kd489/.zattrs": {
+            "_ARRAY_DIMENSIONS": [
+                "time",
+                "lat",
+                "lon"
+            ],
+            "long_name": "Irradiance attenuation coefficient at 489 nm",
+            "units": "m^-1",
+            "valid_pixel_expression": "c2rcc_flags.Valid_PE"
+        },
+        "lat/.zarray": {
+            "chunks": [
+                1000
+            ],
+            "compressor": {
+                "blocksize": 0,
+                "clevel": 5,
+                "cname": "lz4",
+                "id": "blosc",
+                "shuffle": 1
+            },
+            "dtype": "<f8",
+            "fill_value": "NaN",
+            "filters": null,
+            "order": "C",
+            "shape": [
+                1000
+            ],
+            "zarr_format": 2
+        },
+        "lat/.zattrs": {
+            "_ARRAY_DIMENSIONS": [
+                "lat"
+            ],
+            "bounds": "lat_bnds",
+            "long_name": "latitude",
+            "standard_name": "latitude",
+            "units": "degrees_north"
+        },
+        "lat_bnds/.zarray": {
+            "chunks": [
+                1000,
+                2
+            ],
+            "compressor": {
+                "blocksize": 0,
+                "clevel": 5,
+                "cname": "lz4",
+                "id": "blosc",
+                "shuffle": 1
+            },
+            "dtype": "<f8",
+            "fill_value": "NaN",
+            "filters": null,
+            "order": "C",
+            "shape": [
+                1000,
+                2
+            ],
+            "zarr_format": 2
+        },
+        "lat_bnds/.zattrs": {
+            "_ARRAY_DIMENSIONS": [
+                "lat",
+                "bnds"
+            ],
+            "long_name": "latitude",
+            "standard_name": "latitude",
+            "units": "degrees_north"
+        },
+        "lon/.zarray": {
+            "chunks": [
+                2000
+            ],
+            "compressor": {
+                "blocksize": 0,
+                "clevel": 5,
+                "cname": "lz4",
+                "id": "blosc",
+                "shuffle": 1
+            },
+            "dtype": "<f8",
+            "fill_value": "NaN",
+            "filters": null,
+            "order": "C",
+            "shape": [
+                2000
+            ],
+            "zarr_format": 2
+        },
+        "lon/.zattrs": {
+            "_ARRAY_DIMENSIONS": [
+                "lon"
+            ],
+            "bounds": "lon_bnds",
+            "long_name": "longitude",
+            "standard_name": "longitude",
+            "units": "degrees_east"
+        },
+        "lon_bnds/.zarray": {
+            "chunks": [
+                2000,
+                2
+            ],
+            "compressor": {
+                "blocksize": 0,
+                "clevel": 5,
+                "cname": "lz4",
+                "id": "blosc",
+                "shuffle": 1
+            },
+            "dtype": "<f8",
+            "fill_value": "NaN",
+            "filters": null,
+            "order": "C",
+            "shape": [
+                2000,
+                2
+            ],
+            "zarr_format": 2
+        },
+        "lon_bnds/.zattrs": {
+            "_ARRAY_DIMENSIONS": [
+                "lon",
+                "bnds"
+            ],
+            "long_name": "longitude",
+            "standard_name": "longitude",
+            "units": "degrees_east"
+        },
+        "quality_flags/.zarray": {
+            "chunks": [
+                1,
+                250,
+                250
+            ],
+            "compressor": {
+                "blocksize": 0,
+                "clevel": 5,
+                "cname": "lz4",
+                "id": "blosc",
+                "shuffle": 1
+            },
+            "dtype": "<f8",
+            "fill_value": "NaN",
+            "filters": null,
+            "order": "C",
+            "shape": [
+                5,
+                1000,
+                2000
+            ],
+            "zarr_format": 2
+        },
+        "quality_flags/.zattrs": {
+            "_ARRAY_DIMENSIONS": [
+                "time",
+                "lat",
+                "lon"
+            ],
+            "flag_coding_name": "quality_flags",
+            "flag_descriptions": "",
+            "flag_masks": [
+                -2147483648,
+                1073741824,
+                536870912,
+                268435456,
+                134217728,
+                67108864,
+                33554432,
+                16777216,
+                8388608,
+                4194304,
+                2097152,
+                1048576,
+                524288,
+                262144,
+                131072,
+                65536,
+                32768,
+                16384,
+                8192,
+                4096,
+                2048,
+                1024,
+                512,
+                256,
+                128,
+                64,
+                32,
+                16,
+                8,
+                4,
+                2,
+                1
+            ],
+            "flag_meanings": "land coastline fresh_inland_water tidal_region bright straylight_risk invalid cosmetic duplicated sun_glint_risk dubious saturated_Oa01 saturated_Oa02 saturated_Oa03 saturated_Oa04 saturated_Oa05 saturated_Oa06 saturated_Oa07 saturated_Oa08 saturated_Oa09 saturated_Oa10 saturated_Oa11 saturated_Oa12 saturated_Oa13 saturated_Oa14 saturated_Oa15 saturated_Oa16 saturated_Oa17 saturated_Oa18 saturated_Oa19 saturated_Oa20 saturated_Oa21",
+            "long_name": "Classification and quality flags"
+        },
+        "time/.zarray": {
+            "chunks": [
+                5
+            ],
+            "compressor": {
+                "blocksize": 0,
+                "clevel": 5,
+                "cname": "lz4",
+                "id": "blosc",
+                "shuffle": 1
+            },
+            "dtype": "<f8",
+            "fill_value": "NaN",
+            "filters": null,
+            "order": "C",
+            "shape": [
+                5
+            ],
+            "zarr_format": 2
+        },
+        "time/.zattrs": {
+            "_ARRAY_DIMENSIONS": [
+                "time"
+            ],
+            "bounds": "time_bnds",
+            "calendar": "gregorian",
+            "long_name": "time",
+            "standard_name": "time",
+            "units": "days since 1970-01-01"
+        },
+        "time_bnds/.zarray": {
+            "chunks": [
+                5,
+                2
+            ],
+            "compressor": {
+                "blocksize": 0,
+                "clevel": 5,
+                "cname": "lz4",
+                "id": "blosc",
+                "shuffle": 1
+            },
+            "dtype": "<f8",
+            "fill_value": "NaN",
+            "filters": null,
+            "order": "C",
+            "shape": [
+                5,
+                2
+            ],
+            "zarr_format": 2
+        },
+        "time_bnds/.zattrs": {
+            "_ARRAY_DIMENSIONS": [
+                "time",
+                "bnds"
+            ],
+            "calendar": "gregorian",
+            "long_name": "time",
+            "standard_name": "time",
+            "units": "days since 1970-01-01"
+        }
+    },
+    "zarr_consolidated_format": 1
+}

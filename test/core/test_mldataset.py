@@ -68,7 +68,7 @@ class CombinedMultiLevelDatasetTest(unittest.TestCase):
 
 
 class BaseMultiLevelDatasetTest(unittest.TestCase):
-    def test_it(self):
+    def test_ok(self):
         ds = _get_test_dataset()
 
         ml_ds = BaseMultiLevelDataset(ds)
@@ -98,6 +98,15 @@ class BaseMultiLevelDatasetTest(unittest.TestCase):
         self.assertEqual([ds0, ds1, ds2], ml_ds.datasets)
 
         ml_ds.close()
+
+    def test_fail(self):
+        ds = _get_test_dataset()
+        with self.assertRaises(TypeError):
+            BaseMultiLevelDataset('test.levels')
+        with self.assertRaises(TypeError):
+            BaseMultiLevelDataset(ds, tile_grid=512)
+        with self.assertRaises(TypeError):
+            BaseMultiLevelDataset(ds, grid_mapping='crs84')
 
 
 class ComputedMultiLevelDatasetTest(unittest.TestCase):

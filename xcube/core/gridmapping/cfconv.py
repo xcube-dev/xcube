@@ -80,13 +80,29 @@ def get_dataset_grid_mapping_proxies(
     :param emit_warnings:
     :return:
     """
-    # Find any grid mapping variables
+    grid_mapping_proxies: Dict[Union[Hashable, None],
+                               GridMappingProxy] = dict()
+
+    # Find any grid mapping variables by CF 'grid_mapping' attribute
     #
-    grid_mapping_proxies = dict()
     for var_name, var in dataset.variables.items():
-        gmp = _parse_crs_from_attrs(var.attrs)
-        if gmp is not None:
-            grid_mapping_proxies[var_name] = gmp
+        grid_mapping_var_name = var.attrs.get('grid_mapping')
+        if grid_mapping_var_name \
+                and grid_mapping_var_name not in grid_mapping_proxies \
+                and grid_mapping_var_name in dataset:
+            grid_mapping_var = dataset[grid_mapping_var_name]
+            gmp = _parse_crs_from_attrs(grid_mapping_var.attrs)
+            grid_mapping_proxies[grid_mapping_var_name] = gmp
+
+    # If no grid mapping variables found,
+    # try if CRS is encoded in some variable's attributes
+    #
+    if not grid_mapping_proxies:
+        for var_name, var in dataset.variables.items():
+            gmp = _parse_crs_from_attrs(var.attrs)
+            if gmp is not None:
+                grid_mapping_proxies[var_name] = gmp
+                break
 
     # If no grid mapping variables found,
     # try if CRS is encoded in dataset attributes

@@ -28,6 +28,7 @@ from typing import Sequence, Any, Dict, Callable, Mapping, Optional
 import s3fs
 import xarray as xr
 import zarr
+from deprecated import deprecated
 
 from xcube.constants import FORMAT_NAME_LEVELS
 from xcube.constants import FORMAT_NAME_NETCDF4
@@ -38,12 +39,20 @@ from xcube.core.dsio import is_s3_url
 from xcube.core.dsio import parse_s3_fs_and_root
 from xcube.core.dsio import write_cube
 from xcube.core.gridmapping import GridMapping
-from xcube.core.normalize import decode_cube
 from xcube.core.schema import rechunk_cube
+from xcube.core.subsampling import AggMethods
+from xcube.core.subsampling import assert_valid_agg_methods
+from xcube.core.subsampling import subsample_dataset
 from xcube.core.verify import assert_cube
 from xcube.util.assertions import assert_instance
 from xcube.util.perf import measure_time
 from xcube.util.tilegrid import TileGrid
+
+_DEPRECATED_VERSION = '0.10.2'
+_DEPRECATED_OPEN_ML_DATASET = ('Use xcube data store framework'
+                               ' to open multi-level datasets.')
+_DEPRECATED_WRITE_ML_DATASET = ('Use xcube data store framework'
+                                ' to write multi-level datasets.')
 
 COMPUTE_DATASET = 'compute_dataset'
 
@@ -66,6 +75,13 @@ class MultiLevelDataset(metaclass=ABCMeta):
     def ds_id(self) -> str:
         """
         :return: the dataset identifier.
+        """
+
+    @ds_id.setter
+    @abstractmethod
+    def ds_id(self, ds_id: str):
+        """
+        Set the dataset identifier.
         """
 
     @property
@@ -140,10 +156,16 @@ class LazyMultiLevelDataset(MultiLevelDataset, metaclass=ABCMeta):
     """
 
     def __init__(self,
-                 grid_mapping: GridMapping = None,
-                 tile_grid: TileGrid = None,
-                 ds_id: str = None,
-                 parameters: Mapping[str, Any] = None):
+                 grid_mapping: Optional[GridMapping] = None,
+                 tile_grid: Optional[TileGrid] = None,
+                 ds_id: Optional[str] = None,
+                 parameters: Optional[Mapping[str, Any]] = None):
+        if grid_mapping is not None:
+            assert_instance(grid_mapping, GridMapping, name='grid_mapping')
+        if tile_grid is not None:
+            assert_instance(tile_grid, TileGrid, name='tile_grid')
+        if ds_id is not None:
+            assert_instance(ds_id, str, name='ds_id')
         self._grid_mapping = grid_mapping
         self._tile_grid = tile_grid
         self._ds_id = ds_id
@@ -157,6 +179,11 @@ class LazyMultiLevelDataset(MultiLevelDataset, metaclass=ABCMeta):
             with self._lock:
                 self._ds_id = str(uuid.uuid4())
         return self._ds_id
+
+    @ds_id.setter
+    def ds_id(self, ds_id: str):
+        assert_instance(ds_id, str, name='ds_id')
+        self._ds_id = ds_id
 
     @property
     def grid_mapping(self) -> GridMapping:
@@ -300,6 +327,7 @@ class IdentityMultiLevelDataset(MappedMultiLevelDataset):
         super().__init__(ml_dataset, lambda ds: ds, ds_id=ds_id)
 
 
+@deprecated(version=_DEPRECATED_VERSION, reason=_DEPRECATED_OPEN_ML_DATASET)
 class FileStorageMultiLevelDataset(LazyMultiLevelDataset):
     """
     A stored multi-level dataset whose level datasets are lazily read from storage location.
@@ -376,6 +404,7 @@ class FileStorageMultiLevelDataset(LazyMultiLevelDataset):
         return tile_grid
 
 
+@deprecated(version=_DEPRECATED_VERSION, reason=_DEPRECATED_OPEN_ML_DATASET)
 class ObjectStorageMultiLevelDataset(LazyMultiLevelDataset):
     """
     A multi-level dataset whose level datasets are lazily read from object storage locations.
@@ -483,46 +512,61 @@ class ObjectStorageMultiLevelDataset(LazyMultiLevelDataset):
 
 class BaseMultiLevelDataset(LazyMultiLevelDataset):
     """
-    A multi-level dataset whose level datasets are a created by down-sampling a base dataset.
+    A multi-level dataset whose level datasets are
+    created by down-sampling a base dataset.
 
     :param base_dataset: The base dataset for the level at index zero.
+    :param grid_mapping: Optional grid mapping for *base_dataset*.
+    :param tile_grid: Optional tile grid.
     :param ds_id: Optional dataset identifier.
+    :param agg_methods: Optional aggregation methods.
+        May be given as string or as mapping from variable name pattern
+        to aggregation method. Valid aggregation methods are
+        None, "first", "min", "max", "mean", "median".
+        If None, the default, "first" is used for integer variables
+        and "mean" for floating point variables.
     """
 
     def __init__(self,
                  base_dataset: xr.Dataset,
-                 tile_grid: TileGrid = None,
-                 ds_id: str = None):
+                 grid_mapping: Optional[GridMapping] = None,
+                 tile_grid: Optional[TileGrid] = None,
+                 agg_methods: AggMethods = 'first',
+                 ds_id: Optional[str] = None):
         assert_instance(base_dataset, xr.Dataset, name='base_dataset')
-        self._base_cube, grid_mapping, _ = decode_cube(
-            base_dataset,
-            force_non_empty=True
-        )
+        if grid_mapping is None:
+            grid_mapping = GridMapping.from_dataset(base_dataset,
+                                                    tolerance=1e-4)
+
+        assert_valid_agg_methods(agg_methods)
+        self._agg_methods = agg_methods
+
+        self._base_dataset = base_dataset
         super().__init__(grid_mapping=grid_mapping,
                          tile_grid=tile_grid,
                          ds_id=ds_id)
 
-    def _get_dataset_lazily(self, index: int, parameters: Dict[str, Any]) -> xr.Dataset:
+    def _get_dataset_lazily(self,
+                            index: int,
+                            parameters: Dict[str, Any]) -> xr.Dataset:
         """
-        Compute the dataset at level *index*: If *index* is zero, return the base image passed to constructor,
-        otherwise down-sample the dataset for the level at given *index*.
+        Compute the dataset at level *index*: If *index* is zero, return
+        the base image passed to constructor, otherwise down-sample the
+        dataset for the level at given *index*.
 
         :param index: the level index
         :param parameters: currently unused
         :return: the dataset for the level at *index*.
         """
         if index == 0:
-            level_dataset = self._base_cube
+            level_dataset = self._base_dataset
         else:
-            base_dataset = self._base_cube
-            step = 2 ** index
-            data_vars = {}
-            for var_name in base_dataset.data_vars:
-                var = base_dataset[var_name]
-                var = var[..., ::step, ::step]
-                data_vars[var_name] = var
-            level_dataset = xr.Dataset(data_vars,
-                                       attrs=self._base_cube.attrs)
+            level_dataset = subsample_dataset(
+                self._base_dataset,
+                2 ** index,
+                xy_dim_names=self.grid_mapping.xy_dim_names,
+                agg_methods=self._agg_methods
+            )
 
         # Tile each level according to grid mapping
         tile_size = self.grid_mapping.tile_size
@@ -627,6 +671,8 @@ def guess_ml_dataset_format(path: str) -> str:
     return guess_dataset_format(path)
 
 
+# Note: only used by the "xcube tile" CLI impl.
+@deprecated(version=_DEPRECATED_VERSION, reason=_DEPRECATED_OPEN_ML_DATASET)
 def open_ml_dataset(path: str,
                     ds_id: str = None,
                     exception_type: type = ValueError,
@@ -650,7 +696,9 @@ def open_ml_dataset(path: str,
         return open_ml_dataset_from_local_fs(path, ds_id=ds_id, exception_type=exception_type, **kwargs)
 
 
+# Note: only used by open_ml_dataset()
 # noinspection PyUnusedLocal
+@deprecated(version=_DEPRECATED_VERSION, reason=_DEPRECATED_OPEN_ML_DATASET)
 def open_ml_dataset_from_object_storage(path: str,
                                         data_format: str = None,
                                         ds_id: str = None,
@@ -683,9 +731,12 @@ def open_ml_dataset_from_object_storage(path: str,
                                                   chunk_cache_capacity=chunk_cache_capacity,
                                                   exception_type=exception_type)
 
-    raise exception_type(f'Unrecognized multi-level dataset format {data_format!r} for path {path!r}')
+    raise exception_type(
+        f'Unrecognized multi-level dataset format {data_format!r} for path {path!r}')
 
 
+# Note: only used by open_ml_dataset()
+@deprecated(version=_DEPRECATED_VERSION, reason=_DEPRECATED_OPEN_ML_DATASET)
 def open_ml_dataset_from_local_fs(path: str,
                                   data_format: str = None,
                                   ds_id: str = None,
@@ -748,10 +799,15 @@ def augment_ml_dataset(ml_dataset: MultiLevelDataset,
         return CombinedMultiLevelDataset([ml_dataset, aug_ds], ds_id=orig_id)
 
 
+# Note: only used by unit-tests
+@deprecated(version=_DEPRECATED_VERSION, reason=_DEPRECATED_WRITE_ML_DATASET)
 def write_levels(ml_dataset: MultiLevelDataset,
                  levels_path: str,
                  s3_kwargs: Dict[str, Any] = None,
                  s3_client_kwargs: Dict[str, Any] = None):
+    """
+    Deprecated. Used only in xcube tests.
+    """
     tile_w, tile_h = ml_dataset.tile_grid.tile_size
     chunks = dict(time=1, lat=tile_h, lon=tile_w)
     for level in range(ml_dataset.num_levels):

@@ -66,10 +66,11 @@ class ServiceContextTest(unittest.TestCase):
 
         dataset_configs_from_stores = ctx.get_dataset_configs_from_stores()
         self.assertIsNotNone(dataset_configs_from_stores)
-        self.assertEqual(2, len(dataset_configs_from_stores))
+        self.assertEqual(3, len(dataset_configs_from_stores))
         ids = [config['Identifier'] for config in dataset_configs_from_stores]
         self.assertIn('test~cube-1-250-250.zarr', ids)
         self.assertIn('test~cube-5-100-200.zarr', ids)
+        self.assertIn('test~cube-1-250-250.levels', ids)
 
     def test_config_and_dataset_cache(self):
         ctx = new_test_service_context()

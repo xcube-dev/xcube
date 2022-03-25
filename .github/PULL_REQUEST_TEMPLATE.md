@@ -8,5 +8,3 @@ Checklist:
 * [ ] Changes documented in `CHANGES.md`
 * [ ] AppVeyor CI passes
 * [ ] Test coverage remains or increases (target 100%)
-
-Remember to close associated issues after merge!

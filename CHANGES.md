@@ -1,7 +1,40 @@
-## Changes in 0.10.2 (in development)
+## Changes in 0.10.3 (in development)
 
 ### Enhancements
 
+* Support for multi-level datasets aka ND image pyramids has been 
+  further improved (#655):
+  - Introduced new parameter `agg_methods` for writing multi-level datasets 
+    with the "file", "s3", and "memory" data stores. 
+    The value of `agg_methods` is either a string `"first"`,
+    `"min"`, `"max"`, `"mean"`, `"median"` or a dictionary that maps
+    a variable name to an aggregation method. Variable names can be patterns
+    that may contain wildcard characters '*' and '?'. The special aggregation
+    method `"auto"` can be used to select `"first"` for integer variables 
+    and `"mean"` for floating point variables. 
+  - The `xcube level` CLI tool now has a new option `--agg-methods` (or `-A`)
+    for the same purpose.
+
+### Fixes
+
+* Fixed a problem where the `DataStores` configuration of `xcube serve` 
+  did not recognize multi-level datasets. (#653)
+
+* Opening of multi-level datasets with filesystem data stores now 
+  recognizes the `cache_size` open parameter.
+
+## Changes in 0.10.2
+
+### Enhancements
+
+* Added new module `xcube.core.subsampling` for function
+  `subsample_dataset(dataset, step)` that is now used by default 
+  to generate the datasets level of multi-level datasets.
+
+* Added new setting `Authentication.IsRequired` to the `xcube serve` 
+  configuration. If set to `true`, xcube Server will reject unauthorized 
+  dataset requests by returning HTTP code 401.
+  
 * For authorized clients, the xcube Web API provided by `xcube serve`
   now allows granted scopes to contain wildcard characters `*`, `**`,
   and `?`. This is useful to give access to groups of datasets, e.g.
@@ -19,15 +52,16 @@
   Zarr dataset. (#629)
 
 * Support for multi-level datasets has been improved:
-  - Introduced parameter `base_dataset_id` for writing multi-level 
-    datasets with the "file", "s3", and "memory" data stores. 
-    If given, the base dataset will be linked only with the 
-    value of `base_dataset_id`, instead of being copied as-is.
-    This can save large amounts of storage space. (#617)
-  - Introduced parameter `tile_size` for writing multi-level 
-    datasets with the "file", "s3", and "memory" data stores. 
-    If given, it forces the spatial dimensions to use the specified 
-    chunking.
+  - Introduced new parameters for writing multi-level datasets with the 
+    "file", "s3", and "memory" data stores (#617). They are 
+    + `base_dataset_id`: If given, the base dataset will be linked only 
+      with the value of `base_dataset_id`, instead of being copied as-is.
+      This can save large amounts of storage space. 
+    + `tile_size`: If given, it forces the spatial dimensions to be 
+       chunked accordingly. `tile_size` can be a positive integer 
+       or a pair of positive integers.
+    + `num_levels`: If given, restricts the number of resolution levels 
+       to the given value. Must be a positive integer to be effective.
   - Added a new example notebook 
     [5_multi_level_datasets.ipynb](https://github.com/dcs4cop/xcube/blob/master/examples/notebooks/datastores/5_multi_level_datasets.ipynb) 
     that demonstrates writing and opening multi-level datasets with the 
@@ -39,6 +73,14 @@
   
 ### Fixes
 
+* Fixed problem where the dataset levels of multi-level datasets were 
+  written without spatial coordinate reference system. In fact, 
+  only spatial variables were written. (#646)
+
+* Fixed problem where xcube Server instances that required 
+  user authentication published datasets and variables for 
+  unauthorised users.
+
 * Fixed `FsDataAccessor.write_data()` implementations, 
   which now always return the passed in `data_id`. (#623)
 
@@ -48,6 +90,26 @@
   now tiled correctly. (#626)
 
 ### Other
+
+* The `xcube level` CLI tool has been rewritten from scratch to make use 
+  of xcube filesystem data stores. (#617)
+
+* Deprecated numerous classes and functions around multi-level datasets.
+  The non-deprecated functions and classes of `xcube.core.mldataset` should 
+  be used instead along with the xcube filesystem data stores for 
+  multi-level dataset i/o. (#516)
+  - Deprecated all functions of the `xcube.core.level` module
+    + `compute_levels()`
+    + `read_levels()`
+    + `write_levels()`
+  - Deprecated numerous classes and functions of the `xcube.core.mldataset`
+    module
+    + `FileStorageMultiLevelDataset`
+    + `ObjectStorageMultiLevelDataset`
+    + `open_ml_dataset()`
+    + `open_ml_dataset_from_object_storage()`
+    + `open_ml_dataset_from_local_fs()`
+    + `write_levels()`
 
 * Added packages `python-blosc` and `lz4` to the xcube Python environment 
   for better support of Dask `distributed` and the Dask service 

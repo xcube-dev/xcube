@@ -11,6 +11,7 @@ dependencies:
   - cmocean >=2.0
   - dask >=2021.6
   - dask-image >=0.6
+  - deprecated >=1.2
   - distributed >=2021.6
   - fiona >=1.8
   - fontconfig <2.13.96  # temporary workaround for Mac CI bug; see Issue #640

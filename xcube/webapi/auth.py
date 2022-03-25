@@ -18,6 +18,7 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+
 import fnmatch
 import json
 from typing import Optional, Mapping, List, Dict, Any, Set
@@ -28,12 +29,20 @@ from jwt.algorithms import RSAAlgorithm
 
 from xcube.webapi.errors import ServiceAuthError, ServiceConfigError
 
+READ_ALL_DATASETS_SCOPE = 'read:dataset:*'
+READ_ALL_VARIABLES_SCOPE = 'read:variable:*'
+
 
 class AuthConfig:
-    def __init__(self, domain: str, audience: str, algorithms: List[str]):
+    def __init__(self,
+                 domain: str,
+                 audience: str,
+                 algorithms: List[str],
+                 is_required: bool = False):
         self._domain = domain
         self._audience = audience
         self._algorithms = algorithms
+        self._is_required = is_required
 
     @property
     def domain(self) -> str:
@@ -54,6 +63,10 @@ class AuthConfig:
     @property
     def algorithms(self) -> List[str]:
         return self._algorithms
+
+    @property
+    def is_required(self) -> bool:
+        return self._is_required
 
     @classmethod
     def from_config(cls, config: Dict[str, Any]) -> Optional['AuthConfig']:
@@ -76,10 +89,19 @@ class AuthConfig:
                 'Value for key "Algorithms" in section'
                 ' "Authentication" must not be empty'
             )
-        return AuthConfig(domain, audience, algorithms)
+        is_required = authentication.get('IsRequired', False)
+        return AuthConfig(domain,
+                          audience,
+                          algorithms,
+                          is_required=is_required)
 
 
 class AuthMixin:
+    """
+    To be mixed with a class that provides a property
+    'service_context' of type ServiceContext and
+    'request' of type tornado.Request.
+    """
 
     @property
     def auth_config(self) -> Optional[AuthConfig]:
@@ -87,11 +109,12 @@ class AuthMixin:
         return AuthConfig.from_config(self.service_context.config)
 
     @property
-    def granted_scopes(self) -> Set[str]:
-        id_token = self.get_id_token(require_auth=False)
-        if not id_token:
-            return set()
-        return set(id_token.get('permissions', []))
+    def granted_scopes(self) -> Optional[Set[str]]:
+        # noinspection PyUnresolvedReferences
+        id_token = self.get_id_token(
+            require_auth=self.service_context.must_authenticate
+        )
+        return id_token.get('permissions') if id_token else None
 
     def get_access_token(self, require_auth: bool = False) -> Optional[str]:
         """Obtains the access token from the Authorization Header
@@ -211,16 +234,22 @@ class AuthMixin:
 
 
 def assert_scopes(required_scopes: Set[str],
-                  granted_scopes: Set[str]):
+                  granted_scopes: Optional[Set[str]],
+                  is_substitute: bool = False):
     """
     Assert scopes.
     Raise ServiceAuthError if one of *required_scopes* is
     not in *granted_scopes*.
 
     :param required_scopes: The list of required scopes
-    :param granted_scopes: The set of granted scopes
+    :param granted_scopes: The set of granted scopes.
+        If user is not authenticated, its value is None.
+    :param is_substitute: True, if the resource to be checked
+        is a substitute.
     """
-    missing_scope = _get_missing_scope(required_scopes, granted_scopes)
+    missing_scope = _get_missing_scope(required_scopes,
+                                       granted_scopes,
+                                       is_substitute=is_substitute)
     if missing_scope is not None:
         raise ServiceAuthError(
             'Missing permission',
@@ -229,7 +258,7 @@ def assert_scopes(required_scopes: Set[str],
 
 
 def check_scopes(required_scopes: Set[str],
-                 granted_scopes: Set[str],
+                 granted_scopes: Optional[Set[str]],
                  is_substitute: bool = False) -> bool:
     """
     Check scopes.
@@ -242,7 +271,8 @@ def check_scopes(required_scopes: Set[str],
     Else succeed.
 
     :param required_scopes: The list of required scopes
-    :param granted_scopes: The set of granted scopes
+    :param granted_scopes: The set of granted scopes.
+        If user is not authenticated, its value is None.
     :param is_substitute: True, if the resource to be checked
         is a substitute.
     :return: True, if scopes are ok.
@@ -253,9 +283,21 @@ def check_scopes(required_scopes: Set[str],
 
 
 def _get_missing_scope(required_scopes: Set[str],
-                       granted_scopes: Set[str],
+                       granted_scopes: Optional[Set[str]],
                        is_substitute: bool = False) -> Optional[str]:
-    if required_scopes and granted_scopes:
+    """
+    Return the first required scope that is
+    fulfilled by any granted scope
+
+    :param required_scopes: The list of required scopes
+    :param granted_scopes: The set of granted scopes.
+        If user is not authenticated, its value is None.
+    :param is_substitute: True, if the resource to be checked
+        is a substitute.
+    :return: The missing scope.
+    """
+    is_authenticated = granted_scopes is not None
+    if is_authenticated:
         for required_scope in required_scopes:
             required_permission_given = False
             for granted_scope in granted_scopes:
@@ -267,11 +309,20 @@ def _get_missing_scope(required_scopes: Set[str],
             if not required_permission_given:
                 # The required scope is not a granted scope --> fail
                 return required_scope
-        # If there are granted scopes then the client is authorized,
-        # hence fail for substitute resources (e.g. demo resources)
-        # as there is usually a better (non-demo) resource that
-        # replaces it.
+
+        # If we end here, required_scopes are either empty or satisfied
         if is_substitute:
-            return '<is_substitute>'
+            # All required scopes are satisfied, now fail for
+            # substitute resources (e.g. demo resources) as there
+            # is usually a better (non-demo) resource that replaces it.
+            # Return missing scope (dummy, not used) --> fail
+            return READ_ALL_DATASETS_SCOPE
+
+    elif required_scopes:
+        # We require scopes but have no granted scopes
+        if not is_substitute:
+            # ...and resource is not a substitute --> fail
+            return next(iter(required_scopes))
+
     # All ok.
     return None

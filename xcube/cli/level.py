@@ -1,5 +1,5 @@
 # The MIT License (MIT)
-# Copyright (c) 2019 by the xcube development team and contributors
+# Copyright (c) 2022 by the xcube development team and contributors
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of
 # this software and associated documentation files (the "Software"), to deal in
@@ -19,16 +19,21 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+from typing import Optional, Tuple
+
 import click
 
 DEFAULT_TILE_SIZE = 512
+DEFAULT_AGG_METHOD = 'first'
 
 
 # noinspection PyShadowingBuiltins
 @click.command(name="level")
 @click.argument('input')
 @click.option('--output', '-o', metavar='OUTPUT',
-              help='Output path. If omitted, "INPUT.levels" will be used.')
+              help='Output path. If omitted, "INPUT.levels" will be used.'
+                   ' You can also use S3 object storage URLs of the form'
+                   ' "s3://<bucket>/<path>" or "https://<endpoint>"')
 @click.option('--link', '-L', is_flag=True, flag_value=True,
               help='Link the INPUT instead of converting it to a level'
                    ' zero dataset. Use with care, as the INPUT\'s internal'
@@ -36,50 +41,59 @@ DEFAULT_TILE_SIZE = 512
                    ' for imaging purposes.')
 @click.option('--tile-size', '-t', metavar='TILE_SIZE',
               help=f'Tile size, given as single integer number or'
-                   f' as <tile-width>,<tile-height>. '
-                   f'If omitted, the tile size will be derived'
+                   f' as <tile-width>,<tile-height>.'
+                   f' If omitted, the tile size will be derived'
                    f' from the INPUT\'s'
                    f' internal spatial chunk sizes.'
                    f' If the INPUT is not chunked,'
                    f' tile size will be {DEFAULT_TILE_SIZE}.')
 @click.option('--num-levels-max', '-n', metavar='NUM_LEVELS_MAX', type=int,
-              help=f'Maximum number of levels to generate. '
-                   f'If not given, the number of levels will'
+              help=f'Maximum number of levels to generate.'
+                   f' If not given, the number of levels will'
                    f' be derived from spatial dimension and tile sizes.')
-def level(input, output, link, tile_size, num_levels_max):
+@click.option('--agg-methods', '-A', metavar='AGG_METHODS',
+              default=DEFAULT_AGG_METHOD,
+              help=f'Aggregation method(s) to be used for data variables.'
+                   f' Either one of "first", "min", "max", "mean", "median",'
+                   f' "auto" or list of assignments to individual variables'
+                   f' using the notation'
+                   f' "<var1>=<method1>,<var2>=<method2>,..."'
+                   f' Defaults to "{DEFAULT_AGG_METHOD}".')
+@click.option('--replace', '-r', is_flag=True, flag_value=True,
+              help=f'Whether to replace an existing dataset at OUTPUT.')
+@click.option('--anon', '-a', is_flag=True, flag_value=True,
+              help=f'For S3 inputs or outputs, whether the access'
+                   f' is anonymous. By default, credentials are required.')
+def level(input: str,
+          output: Optional[str],
+          link: bool,
+          tile_size: Optional[str],
+          num_levels_max: int,
+          agg_methods: str,
+          replace: bool,
+          anon: bool):
     """
     Generate multi-resolution levels.
+
     Transform the given dataset by INPUT into the levels of a
     multi-level pyramid with spatial resolution decreasing by a
     factor of two in both spatial dimensions and write the
     result to directory OUTPUT.
+
+    INPUT may be an S3 object storage URL of the form
+    "s3://<bucket>/<path>" or "https://<endpoint>".
     """
     import time
     import os
     from xcube.cli.common import parse_cli_sequence
     from xcube.cli.common import assert_positive_int_item
-    from xcube.core.level import write_levels
+    from xcube.core.store import new_fs_data_store
+    from xcube.core.subsampling import assert_valid_agg_methods
 
     input_path = input
     output_path = output
     link_input = link
 
-    if num_levels_max is not None and num_levels_max < 1:
-        raise click.ClickException(
-            f"NUM_LEVELS_MAX must be a positive integer"
-        )
-
-    if not output_path:
-        dir_path = os.path.dirname(input_path)
-        basename, ext = os.path.splitext(os.path.basename(input_path))
-        output_path = os.path.join(dir_path, basename + ".levels")
-
-    if os.path.exists(output_path):
-        raise click.ClickException(
-            f"output {output_path!r} already exists"
-        )
-
-    spatial_tile_shape = None
     if tile_size is not None:
         tile_size = parse_cli_sequence(
             tile_size,
@@ -88,22 +102,72 @@ def level(input, output, link, tile_size, num_levels_max):
             item_parser=int,
             item_validator=assert_positive_int_item
         )
-        spatial_tile_shape = tile_size[1], tile_size[0]
 
-    start_time = t0 = time.perf_counter()
+    if num_levels_max is not None and num_levels_max < 1:
+        raise click.ClickException(
+            f"NUM_LEVELS_MAX must be a positive integer"
+        )
 
-    # noinspection PyUnusedLocal
-    def progress_monitor(dataset, index, num_levels):
-        nonlocal t0
-        print(f"Level {index + 1} of {num_levels} written"
-              f" after {time.perf_counter() - t0} seconds")
-        t0 = time.perf_counter()
+    try:
+        if '=' in agg_methods:
+            agg_methods = {
+                p[0].strip(): (p[1].strip() if len(p) == 2 else None)
+                for p in (c.split('=', maxsplit=2)
+                          for c in agg_methods.split(','))
+            }
+        assert_valid_agg_methods(agg_methods)
+    except (TypeError, ValueError, SyntaxError) as e:
+        raise click.ClickException('invalid AGG_METHODS') from e
 
-    levels = write_levels(output_path,
-                          input_path=input_path,
-                          link_input=link_input,
-                          progress_monitor=progress_monitor,
-                          spatial_tile_shape=spatial_tile_shape,
-                          num_levels_max=num_levels_max)
-    print(f"{len(levels)} level(s) written into {output_path}"
-          f" after {time.perf_counter() - start_time} seconds")
+    input_protocol, input_path = _split_protocol_and_path(input_path)
+
+    if not output_path:
+        dir_path = os.path.dirname(input_path).replace("\\", "/")
+        basename, ext = os.path.splitext(os.path.basename(input_path))
+        output_protocol = input_protocol
+        output_path = f'{dir_path}/{basename + ".levels"}'
+    else:
+        output_protocol, output_path = _split_protocol_and_path(output_path)
+
+    if link_input and input_protocol != output_protocol:
+        raise click.ClickException('Links can be used only'
+                                   ' if input and output are in'
+                                   ' the same filesystem')
+
+    start_time = time.time()
+
+    input_store = new_fs_data_store(input_protocol,
+                                    storage_options=dict(anon=anon)
+                                    if input_protocol == 's3' else None)
+    input_dataset = input_store.open_data(input_path)
+
+    output_store = new_fs_data_store(output_protocol,
+                                     storage_options=dict(anon=anon)
+                                     if output_protocol == 's3' else None)
+    try:
+        output_store.write_data(
+            input_dataset,
+            output_path,
+            replace=replace,
+            tile_size=tile_size,
+            num_levels=num_levels_max,
+            base_dataset_id=input_path if link_input else None,
+            agg_methods=agg_methods
+        )
+    except FileExistsError as e:
+        raise click.ClickException(
+            f"output {output_path!r} already exists"
+        ) from e
+
+    print(f"Multi-level dataset written to {output_path}"
+          f" after {time.time() - start_time} seconds")
+
+
+def _split_protocol_and_path(path) -> Tuple[str, str]:
+    if '://' in path:
+        protocol, path = path.split('://', 2)
+        if protocol == 'https':
+            protocol = 's3'
+    else:
+        protocol = 'file'
+    return protocol, path

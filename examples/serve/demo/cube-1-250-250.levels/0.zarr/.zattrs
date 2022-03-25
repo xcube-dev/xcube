@@ -1,0 +1,4 @@
+{
+    "Conventions": "CF-1.7",
+    "coordinates": "lat_bnds time_bnds lon_bnds"
+}
