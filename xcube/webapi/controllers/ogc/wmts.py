@@ -36,7 +36,7 @@ import pyproj
 import xarray as xr
 
 from xcube.core.gridmapping import GridMapping
-from xcube.util.tilegrid2 import CRS84_CRS_NAME
+from xcube.util.tilegrid2 import GEOGRAPHIC_CRS_NAME
 from xcube.util.tilegrid2 import EARTH_CIRCUMFERENCE_WGS84
 from xcube.util.tilegrid2 import TileGrid2
 from xcube.util.tilegrid2 import WEB_MERCATOR_CRS_NAME
@@ -607,7 +607,7 @@ def get_crs84_bbox(grid_mapping: GridMapping) \
 
 def get_crs_name_from_tms_id(tms_id: str) -> str:
     if tms_id == WMTS_CRS84_TMS_ID:
-        return CRS84_CRS_NAME
+        return GEOGRAPHIC_CRS_NAME
     if tms_id == WMTS_WEB_MERCATOR_TMS_ID:
         return WEB_MERCATOR_CRS_NAME
     raise ValueError(

@@ -5,18 +5,18 @@ import pyproj
 import xarray as xr
 
 from xcube.core.mldataset import BaseMultiLevelDataset
-from xcube.core.tile2 import compute_color_mapped_rgba_tile
-from xcube.util.tilegrid2 import CRS84_CRS_NAME
+from xcube.core.mldataset import MultiLevelDataset
+from xcube.core.tile2 import compute_rgba_tile
+from xcube.util.tilegrid2 import GEOGRAPHIC_CRS_NAME
 from xcube.util.tilegrid2 import WEB_MERCATOR_CRS_NAME
 
 
 class Tile2Test(unittest.TestCase):
 
-    def test_compute_color_mapped_rgba_tile(self):
-        crs_name = WEB_MERCATOR_CRS_NAME
-
+    @staticmethod
+    def _get_ml_dataset(crs_name: str) -> MultiLevelDataset:
         crs = pyproj.CRS.from_string(crs_name)
-        geo_crs = pyproj.CRS.from_string(CRS84_CRS_NAME)
+        geo_crs = pyproj.CRS.from_string(GEOGRAPHIC_CRS_NAME)
         transformer = pyproj.Transformer.from_crs(
             geo_crs, crs, always_xy=True
         )
@@ -25,7 +25,7 @@ class Tile2Test(unittest.TestCase):
             (-85.051129, 85.051129)
         )
 
-        a_data = np.array(
+        data = np.array(
             [[
                 [5, 1, 1, 1, 1, 2, 2, 2, 2, 6],
                 [1, 5, 1, 1, 1, 2, 2, 2, 6, 2],
@@ -40,10 +40,10 @@ class Tile2Test(unittest.TestCase):
             ]],
             dtype=np.float32
         )
-        a_data = np.where(a_data != 6, a_data, np.nan)
+        a_data = np.where(data != 6, data + 0, np.nan)
+        b_data = np.where(data != 5, data + 1, np.nan)
+        c_data = np.where(data != 4, data + 2, np.nan)
         h, w = a_data.shape[-2:]
-        print(x1, x2)
-        print(y1, y2)
         res = (x2 - x1) / w
         x1 += 0.5 * res
         x2 -= 0.5 * res
@@ -51,6 +51,8 @@ class Tile2Test(unittest.TestCase):
         y2 -= 0.5 * res
 
         var_a = xr.DataArray(a_data, dims=['time', 'y', 'x'])
+        var_b = xr.DataArray(b_data, dims=['time', 'y', 'x'])
+        var_c = xr.DataArray(c_data, dims=['time', 'y', 'x'])
         spatial_ref = xr.DataArray(
             0, attrs=pyproj.CRS.from_string(crs_name).to_cf()
         )
@@ -58,6 +60,8 @@ class Tile2Test(unittest.TestCase):
         ds = xr.Dataset(
             data_vars=dict(
                 var_a=var_a,
+                var_b=var_b,
+                var_c=var_c,
                 spatial_ref=spatial_ref
             ),
             coords=dict(
@@ -67,8 +71,11 @@ class Tile2Test(unittest.TestCase):
             )
         )
         # ds = ds.chunk(dict(x=4, y=3))
-        ml_ds = BaseMultiLevelDataset(ds)
+        return BaseMultiLevelDataset(ds)
 
+    def test_compute_rgba_tile_with_color_mapping(self):
+        crs_name = WEB_MERCATOR_CRS_NAME
+        ml_ds = self._get_ml_dataset(crs_name)
         args = [
             ml_ds,
             'var_a',
@@ -78,11 +85,11 @@ class Tile2Test(unittest.TestCase):
             crs_name=crs_name,
             tile_size=10,
             cmap_name="gray",
-            value_range=(0, 10),
+            value_ranges=(0, 10),
             non_spatial_labels={'time': 0},
             tile_enlargement=0
         )
-        tile = compute_color_mapped_rgba_tile(*args, **kwargs, format='numpy')
+        tile = compute_rgba_tile(*args, **kwargs, format='numpy')
         self.assertIsInstance(tile, np.ndarray)
         self.assertEqual(np.uint8, tile.dtype)
         self.assertEqual((10, 10, 4), tile.shape)
@@ -125,5 +132,96 @@ class Tile2Test(unittest.TestCase):
             )
         )
 
-        tile = compute_color_mapped_rgba_tile(*args, format='png')
+        tile = compute_rgba_tile(*args, **kwargs, format='png')
+        self.assertIsInstance(tile, bytes)
+
+    def test_compute_rgba_tile_with_components(self):
+        crs_name = WEB_MERCATOR_CRS_NAME
+        ml_ds = self._get_ml_dataset(crs_name)
+        args = [
+            ml_ds,
+            ('var_a', 'var_b', 'var_c'),
+            0, 0, 0
+        ]
+        kwargs = dict(
+            crs_name=crs_name,
+            tile_size=10,
+            value_ranges=(0, 10),
+            non_spatial_labels={'time': 0},
+            tile_enlargement=0
+        )
+        tile = compute_rgba_tile(*args, **kwargs, format='numpy')
+        self.assertIsInstance(tile, np.ndarray)
+        self.assertEqual(np.uint8, tile.dtype)
+        self.assertEqual((10, 10, 4), tile.shape)
+        r = tile[:, :, 0]
+        g = tile[:, :, 1]
+        b = tile[:, :, 2]
+        a = tile[:, :, 3]
+        np.testing.assert_equal(
+            r,
+            np.array(
+                [[0, 0, 76, 76, 76, 76, 102, 102, 102, 128],
+                 [76, 76, 0, 76, 76, 76, 102, 102, 128, 102],
+                 [76, 76, 76, 0, 76, 76, 102, 128, 102, 102],
+                 [76, 76, 76, 76, 0, 0, 128, 102, 102, 102],
+                 [25, 25, 25, 25, 128, 128, 0, 51, 51, 51],
+                 [25, 25, 25, 25, 128, 128, 0, 51, 51, 51],
+                 [25, 25, 25, 128, 25, 25, 51, 0, 51, 51],
+                 [25, 25, 128, 25, 25, 25, 51, 51, 0, 51],
+                 [128, 128, 25, 25, 25, 25, 51, 51, 51, 0],
+                 [128, 128, 25, 25, 25, 25, 51, 51, 51, 0]],
+                dtype=np.uint8
+            )
+        )
+        np.testing.assert_equal(
+            g,
+            np.array(
+                [[179, 179, 102, 102, 102, 102, 128, 128, 128, 0],
+                 [102, 102, 179, 102, 102, 102, 128, 128, 0, 128],
+                 [102, 102, 102, 179, 102, 102, 128, 0, 128, 128],
+                 [102, 102, 102, 102, 179, 179, 0, 128, 128, 128],
+                 [51, 51, 51, 51, 0, 0, 179, 76, 76, 76],
+                 [51, 51, 51, 51, 0, 0, 179, 76, 76, 76],
+                 [51, 51, 51, 0, 51, 51, 76, 179, 76, 76],
+                 [51, 51, 0, 51, 51, 51, 76, 76, 179, 76],
+                 [0, 0, 51, 51, 51, 51, 76, 76, 76, 179],
+                 [0, 0, 51, 51, 51, 51, 76, 76, 76, 179]],
+                dtype=np.uint8
+            )
+        )
+        np.testing.assert_equal(
+            b,
+            np.array(
+                [[204, 204, 128, 128, 128, 128, 0, 0, 0, 179],
+                 [128, 128, 204, 128, 128, 128, 0, 0, 179, 0],
+                 [128, 128, 128, 204, 128, 128, 0, 179, 0, 0],
+                 [128, 128, 128, 128, 204, 204, 179, 0, 0, 0],
+                 [76, 76, 76, 76, 179, 179, 204, 102, 102, 102],
+                 [76, 76, 76, 76, 179, 179, 204, 102, 102, 102],
+                 [76, 76, 76, 179, 76, 76, 102, 204, 102, 102],
+                 [76, 76, 179, 76, 76, 76, 102, 102, 204, 102],
+                 [179, 179, 76, 76, 76, 76, 102, 102, 102, 204],
+                 [179, 179, 76, 76, 76, 76, 102, 102, 102, 204]],
+                dtype=np.uint8
+            )
+        )
+        np.testing.assert_equal(
+            a,
+            np.array(
+                [[0, 0, 255, 255, 255, 255, 0, 0, 0, 0],
+                 [255, 255, 0, 255, 255, 255, 0, 0, 0, 0],
+                 [255, 255, 255, 0, 255, 255, 0, 0, 0, 0],
+                 [255, 255, 255, 255, 0, 0, 0, 0, 0, 0],
+                 [255, 255, 255, 255, 0, 0, 0, 255, 255, 255],
+                 [255, 255, 255, 255, 0, 0, 0, 255, 255, 255],
+                 [255, 255, 255, 0, 255, 255, 255, 0, 255, 255],
+                 [255, 255, 0, 255, 255, 255, 255, 255, 0, 255],
+                 [0, 0, 255, 255, 255, 255, 255, 255, 255, 0],
+                 [0, 0, 255, 255, 255, 255, 255, 255, 255, 0]],
+                dtype=np.uint8
+            )
+        )
+
+        tile = compute_rgba_tile(*args, **kwargs, format='png')
         self.assertIsInstance(tile, bytes)

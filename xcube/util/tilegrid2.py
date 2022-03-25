@@ -26,12 +26,10 @@ from typing import Optional, Tuple, Sequence, Iterator
 import pyproj
 
 WEB_MERCATOR_CRS_NAME = 'EPSG:3857'
-CRS84_CRS_NAME = 'CRS84'
-GEOGRAPHIC_CRS_NAME = 'EPSG:4326'
-GEOGRAPHIC_CRS_NAMES = 'EPSG:4326', 'WGS84', 'CRS84'
-DEFAULT_CRS_NAME = CRS84_CRS_NAME
+GEOGRAPHIC_CRS_NAME = 'CRS84'
+GEOGRAPHIC_CRS_NAMES = ('CRS84', 'EPSG:4326', 'WGS84')
+DEFAULT_CRS_NAME = GEOGRAPHIC_CRS_NAME
 DEFAULT_TILE_SIZE = 256
-DEFAULT_TILE_ENLARGEMENT = 2
 EARTH_EQUATORIAL_RADIUS_WGS84 = 6378137.
 EARTH_CIRCUMFERENCE_WGS84 = 2 * math.pi * EARTH_EQUATORIAL_RADIUS_WGS84
 
@@ -84,7 +82,7 @@ class TileGrid2:
     @classmethod
     def new_geographic(cls):
         return TileGrid2(num_level_zero_tiles=(2, 1),
-                         crs_name=CRS84_CRS_NAME,
+                         crs_name=GEOGRAPHIC_CRS_NAME,
                          map_height=180.)
 
     @classmethod

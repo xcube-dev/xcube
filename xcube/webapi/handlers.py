@@ -99,7 +99,7 @@ def _assert_valid_tms_id(tms_id: str):
     if tms_id not in _VALID_WMTS_TMS_IDS:
         raise ServiceBadRequestError(
             f'Value for "tilematrixset" parameter'
-            f' must be one of "{_VALID_WMTS_TMS_IDS!r}"'
+            f' must be one of {_VALID_WMTS_TMS_IDS!r}'
         )
 
 
@@ -402,6 +402,33 @@ class GetS3BucketObjectHandler(ServiceRequestHandler):
 
 # noinspection PyAbstractClass,PyBroadException
 class GetWMTSTileHandler(ServiceRequestHandler):
+
+    async def get(self,
+                  ds_id: str,
+                  var_name: str,
+                  z: str, y: str, x: str):
+        self.set_caseless_query_arguments()
+        tms_id = self.params.get_query_argument(
+            'tilematrixset', WMTS_CRS84_TMS_ID
+        )
+        _assert_valid_tms_id(tms_id)
+        crs_name = get_crs_name_from_tms_id(tms_id)
+        tile = await IOLoop.current().run_in_executor(
+            None,
+            get_dataset_tile2,
+            self.service_context,
+            ds_id,
+            var_name,
+            crs_name,
+            x, y, z,
+            self.params
+        )
+        self.set_header('Content-Type', 'image/png')
+        await self.finish(tile)
+
+
+# noinspection PyAbstractClass,PyBroadException
+class GetWMTSTileTmsHandler(ServiceRequestHandler):
 
     async def get(self,
                   ds_id: str,

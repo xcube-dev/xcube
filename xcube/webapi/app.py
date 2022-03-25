@@ -47,8 +47,10 @@ def new_application(route_prefix: str = None, base_dir: str = '.'):
          xcube.webapi.handlers.GetWMTSCapabilitiesXmlHandler),
         (route_prefix + url_pattern('/wmts/1.0.0/{{tms_id}}/WMTSCapabilities.xml'),
          xcube.webapi.handlers.GetWMTSCapabilitiesXmlTmsHandler),
-        (route_prefix + url_pattern('/wmts/1.0.0/tile/{{ds_id}}/{{var_name}}/{{tms_id}}/{{z}}/{{y}}/{{x}}.png'),
+        (route_prefix + url_pattern('/wmts/1.0.0/tile/{{ds_id}}/{{var_name}}/{{z}}/{{y}}/{{x}}.png'),
          xcube.webapi.handlers.GetWMTSTileHandler),
+        (route_prefix + url_pattern('/wmts/1.0.0/tile/{{ds_id}}/{{var_name}}/{{tms_id}}/{{z}}/{{y}}/{{x}}.png'),
+         xcube.webapi.handlers.GetWMTSTileTmsHandler),
         (route_prefix + url_pattern('/wmts/kvp'),
          xcube.webapi.handlers.WMTSKvpHandler),
 

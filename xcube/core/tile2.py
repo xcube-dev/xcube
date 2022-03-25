@@ -23,7 +23,7 @@ import io
 import logging
 import math
 import warnings
-from typing import Optional, Tuple, Dict, Any, Hashable, Union
+from typing import Optional, Tuple, Dict, Any, Hashable, Union, Sequence
 
 import PIL
 import matplotlib.colors
@@ -31,37 +31,51 @@ import numpy as np
 import xarray as xr
 
 from .mldataset import MultiLevelDataset
-from ..util.assertions import assert_in
+from ..util.assertions import assert_in, assert_true, assert_instance
 from ..util.logtime import log_time
 from ..util.projcache import ProjCache
+from ..util.tilegrid2 import DEFAULT_CRS_NAME
 from ..util.tilegrid2 import DEFAULT_TILE_SIZE
 from ..util.tilegrid2 import TileGrid2
-from ..util.tilegrid2 import WEB_MERCATOR_CRS_NAME
 
-DEFAULT_VALUE_RANGE = 0, 1
+DEFAULT_VALUE_RANGE = (0., 1.)
 DEFAULT_CMAP_NAME = 'bone'
-DEFAULT_CRS_NAME = WEB_MERCATOR_CRS_NAME
-DEFAULT_TILE_ENLARGEMENT = 1
 DEFAULT_FORMAT = 'png'
+DEFAULT_TILE_ENLARGEMENT = 1
+
+_ALMOST_256 = 256 - 1e-10
+
+ValueRange = Tuple[float, float]
 
 
-def compute_color_mapped_rgba_tile(
+def compute_rgba_tile(
         ml_dataset: MultiLevelDataset,
-        variable_name: str,
+        variable_names: Union[str, Sequence[str]],
         tile_x: int,
         tile_y: int,
         tile_z: int,
         crs_name: str = DEFAULT_CRS_NAME,
         tile_size: int = DEFAULT_TILE_SIZE,
-        cmap_name: str = DEFAULT_CMAP_NAME,
-        value_range: Tuple[float, float] = DEFAULT_VALUE_RANGE,
+        cmap_name: str = None,
+        value_ranges: Optional[Union[ValueRange,
+                                     Sequence[ValueRange]]] = None,
         non_spatial_labels: Optional[Dict[str, Any]] = None,
         format: str = DEFAULT_FORMAT,
         tile_enlargement: int = DEFAULT_TILE_ENLARGEMENT,
         logger: Optional[logging.Logger] = None
 ) -> Union[bytes, np.ndarray]:
-    """Compute an RGBA image tile from variable *variable_name* in
+    """Compute an RGBA image tile from *variable_names* in
     given multi-resolution dataset *mr_dataset*.
+
+    If length of *variable_names* is three, we create a direct component
+    RGBA image where the three variables correspond to the three R, G, B
+    channels and A is computed from NaN values in the three variables.
+    *value_ranges* must have exactly three elements too.
+
+    If length of *variable_names* is one, we create a color mapped
+    RGBA image using *cmap_name* where R, G, B is computed from a color bar
+    and A is computed from NaN values in the variable.
+    *value_ranges* must have exactly one element.
 
     The algorithm is as follows:
 
@@ -82,28 +96,52 @@ def compute_color_mapped_rgba_tile(
     10. turn that array into an RGBA image.
     11. encode RGBA image into PNG bytes.
 
-    :param ml_dataset:
-    :param variable_name:
-    :param tile_x:
-    :param tile_y:
-    :param tile_z:
-    :param crs_name:
-    :param tile_size:
-    :param cmap_name:
-    :param value_range:
-    :param non_spatial_labels:
-    :param tile_enlargement:
-    :param format: either 'png', 'image/png' or 'numpy'
-    :param logger:
+    :param ml_dataset: Multi-level dataset
+    :param variable_names: Single variable name
+        or a sequence of three names.
+    :param tile_x: Tile X coordinate
+    :param tile_y: Tile Y coordinate
+    :param tile_z:  Tile Z coordinate
+    :param crs_name: Spatial tile coordinate reference system.
+        Must be a geographical CRS, such as "EPSG:4326", or
+        web mercator, i.e. "EPSG:3857". Defaults to "CRS84".
+    :param tile_size: The tile size in pixels. Defaults to 256.
+    :param cmap_name: Color map name. Only used if a single
+        variable name is given. Defaults to "bone".
+    :param value_ranges: A single value range, or value ranges
+        for each variable name.
+    :param non_spatial_labels: Labels for the non-spatial dimensions
+        in the given variables.
+    :param tile_enlargement: Enlargement in pixels applied to
+        the computed source tile read from the data.
+        Can be used to increase the accuracy of the borders of target
+        tiles at high zoom levels. Defaults to 1.
+    :param format: Either 'png', 'image/png' or 'numpy'.
+    :param logger: Optional logger. If given, detailed performance
+        metrics are logged.
     :return: PNG bytes or unit8 numpy array, depending on *format*
     :raise TileNotFoundException
     :raise TileRequestException
     """
+    if isinstance(variable_names, str):
+        variable_names = (variable_names,)
+    num_components = len(variable_names)
+    assert_true(num_components in (1, 3),
+                message='number of names in'
+                        ' variable_names must be 1 or 3')
+    if not value_ranges:
+        value_ranges = num_components * (DEFAULT_VALUE_RANGE,)
+    else:
+        assert_instance(value_ranges, (list, tuple), name='value_ranges')
+    if isinstance(value_ranges[0], (int, float)):
+        value_ranges = num_components * (value_ranges,)
+    assert_true(num_components == len(value_ranges),
+                message='value_ranges must have'
+                        ' same length as variable_names')
     format = _normalize_format(format)
     assert_in(format, ('png', 'numpy'), name='format')
 
     with log_time(logger, 'preparing 2D subset'):
-
         tile_grid = TileGrid2.new(crs_name, tile_size=tile_size)
 
         ds_level = tile_grid.get_dataset_level(
@@ -113,28 +151,24 @@ def compute_color_mapped_rgba_tile(
         )
         dataset = ml_dataset.get_dataset(ds_level)
 
-        if variable_name not in dataset:
-            raise TileNotFoundException.new(
-                f'variable {variable_name!r}'
-                f' not found in {ml_dataset.ds_id!r}',
-                logger=logger
-            )
-        variable = dataset[variable_name]
+        variables = [
+            _get_variable(ml_dataset.ds_id,
+                          dataset,
+                          variable_name,
+                          non_spatial_labels,
+                          logger)
+            for variable_name in variable_names
+        ]
 
-    non_spatial_labels = _get_non_spatial_labels(dataset,
-                                                 variable,
-                                                 non_spatial_labels,
-                                                 logger)
-    if non_spatial_labels:
-        variable = variable.sel(**non_spatial_labels, method='nearest')
-
-    ds_x_name, ds_y_name = ml_dataset.grid_mapping.xy_dim_names
-
-    ds_y_coords = variable[ds_y_name]
-    ds_y_points_up = True if ds_y_coords[0] < ds_y_coords[-1] else False
+    variable_0 = variables[0]
 
     with log_time(logger,
                   'transforming tile map to dataset coordinates'):
+        ds_x_name, ds_y_name = ml_dataset.grid_mapping.xy_dim_names
+
+        ds_y_coords = variable_0[ds_y_name]
+        ds_y_points_up = bool(ds_y_coords[0] < ds_y_coords[-1])
+
         tile_bbox = tile_grid.get_tile_bbox(tile_x, tile_y, tile_z)
         if tile_bbox is None:
             raise TileRequestException.new(
@@ -201,18 +235,22 @@ def compute_color_mapped_rgba_tile(
             ds_y_slice = slice(ds_y_min - dy, ds_y_max + dy)
         else:
             ds_y_slice = slice(ds_y_max + dy, ds_y_min - dy)
-        var_subset = variable.sel({ds_x_name: ds_x_slice,
-                                   ds_y_name: ds_y_slice})
-        # A zero or a one in the tile's shape will produce a
-        # non-existing or too small image. It will also prevent
-        # determining the current resolution.
-        if 0 in var_subset.shape or 1 in var_subset.shape:
-            return TransparentRgbaTilePool.INSTANCE.get(tile_size, format)
+
+        var_subsets = [variable.sel({ds_x_name: ds_x_slice,
+                                     ds_y_name: ds_y_slice})
+                       for variable in variables]
+        for var_subset in var_subsets:
+            # A zero or a one in the tile's shape will produce a
+            # non-existing or too small image. It will also prevent
+            # determining the current resolution.
+            if 0 in var_subset.shape or 1 in var_subset.shape:
+                return TransparentRgbaTilePool.INSTANCE.get(tile_size, format)
 
     with log_time(logger,
                   'transforming dataset coordinates into indices'):
-        ds_x_coords = var_subset[ds_x_name]
-        ds_y_coords = var_subset[ds_y_name]
+        var_subset_0 = var_subsets[0]
+        ds_x_coords = var_subset_0[ds_x_name]
+        ds_y_coords = var_subset_0[ds_y_name]
 
         ds_x1 = float(ds_x_coords[0])
         ds_x2 = float(ds_x_coords[-1])
@@ -238,48 +276,77 @@ def compute_color_mapped_rgba_tile(
         ds_x_indices = np.where(ds_mask, ds_x_indices, 0)
         ds_y_indices = np.where(ds_mask, ds_y_indices, 0)
 
-    with log_time(logger, 'loading 2D data for spatial subset'):
-        # Note, we need to load the values here into a numpy array,
-        # because 2D indexing by [ds_y_indices, ds_x_indices]
-        # does not (yet) work with dask arrays.
-        var_tile = var_subset.values
-        # Remove any axes above the 2nd. This is safe,
-        # they will be of size one, if any.
-        var_tile = var_tile.reshape(var_tile.shape[-2:])
+    var_tiles = []
+    for var_subset, value_range in zip(var_subsets, value_ranges):
+        with log_time(logger, 'loading 2D data for spatial subset'):
+            # Note, we need to load the values here into a numpy array,
+            # because 2D indexing by [ds_y_indices, ds_x_indices]
+            # does not (yet) work with dask arrays.
+            var_tile = var_subset.values
+            # Remove any axes above the 2nd. This is safe,
+            # they will be of size one, if any.
+            var_tile = var_tile.reshape(var_tile.shape[-2:])
 
-    with log_time(logger, 'looking up dataset indices'):
-        # This does the actual projection trick.
-        # Lookup indices ds_y_indices, ds_x_indices to create
-        # the actual tile.
-        var_tile = var_tile[ds_y_indices, ds_x_indices]
-        var_tile = np.where(ds_mask, var_tile, np.nan)
+        with log_time(logger, 'looking up dataset indices'):
+            # This does the actual projection trick.
+            # Lookup indices ds_y_indices, ds_x_indices to create
+            # the actual tile.
+            var_tile = var_tile[ds_y_indices, ds_x_indices]
+            var_tile = np.where(ds_mask, var_tile, np.nan)
+
+        with log_time(logger, 'normalizing data tile'):
+            var_tile = var_tile[::-1, :]
+            value_min, value_max = value_range
+            if value_max < value_min:
+                value_min, value_max = value_max, value_min
+            if math.isclose(value_min, value_max):
+                value_max = value_min + 1
+            norm = matplotlib.colors.Normalize(value_min, value_max)
+            var_tile_norm = norm(var_tile)
+
+        var_tiles.append(var_tile_norm)
 
     with log_time(logger, 'encoding tile as RGBA image'):
-        var_tile = var_tile[::-1, :]
-        value_min, value_max = value_range
-        if value_max < value_min:
-            value_min, value_max = value_max, value_min
-        if math.isclose(value_min, value_max):
-            value_max = value_min + 1
-        norm = matplotlib.colors.Normalize(value_min, value_max)
-        cm = matplotlib.cm.get_cmap(cmap_name)
-        var_tile_norm = norm(var_tile)
-        var_tile_rgba = cm(var_tile_norm)
-        var_tile_rgba = (255 * var_tile_rgba).astype(np.uint8)
+        if len(var_tiles) == 1:
+            var_tile_norm = var_tiles[0]
+            cm = matplotlib.cm.get_cmap(cmap_name or DEFAULT_CMAP_NAME)
+            var_tile_rgba = cm(var_tile_norm)
+            var_tile_rgba = (255 * var_tile_rgba).astype(np.uint8)
+        else:
+            r, g, b = var_tiles
+            var_tile_rgba = np.zeros((tile_size, tile_size, 4),
+                                     dtype=np.uint8)
+            var_tile_rgba[..., 0] = _ALMOST_256 * r
+            var_tile_rgba[..., 1] = _ALMOST_256 * g
+            var_tile_rgba[..., 2] = _ALMOST_256 * b
+            var_tile_rgba[..., 3] = np.where(np.isfinite(r + g + b), 255, 0)
 
     if format == 'png':
         with log_time(logger, 'encoding RGBA image as PNG bytes'):
-            return encode_rgba_as_png(var_tile_rgba)
+            return _encode_rgba_as_png(var_tile_rgba)
     else:
         return var_tile_rgba
 
 
-def encode_rgba_as_png(rgba_array: np.ndarray) -> bytes:
-    # noinspection PyUnresolvedReferences
-    image = PIL.Image.fromarray(rgba_array)
-    stream = io.BytesIO()
-    image.save(stream, format='PNG')
-    return bytes(stream.getvalue())
+def _get_variable(ds_name,
+                  dataset,
+                  variable_name,
+                  non_spatial_labels,
+                  logger):
+    if variable_name not in dataset:
+        raise TileNotFoundException.new(
+            f'variable {variable_name!r}'
+            f' not found in {ds_name!r}',
+            logger=logger
+        )
+    variable = dataset[variable_name]
+    non_spatial_labels = _get_non_spatial_labels(dataset,
+                                                 variable,
+                                                 non_spatial_labels,
+                                                 logger)
+    if non_spatial_labels:
+        variable = variable.sel(**non_spatial_labels, method='nearest')
+    return variable
 
 
 class TileException(Exception):
@@ -313,7 +380,7 @@ class TransparentRgbaTilePool:
         if key not in self._transparent_tiles:
             data = np.zeros((tile_size, tile_size, 4), dtype=np.uint8)
             if format == 'png':
-                data = encode_rgba_as_png(data)
+                data = _encode_rgba_as_png(data)
             self._transparent_tiles[key] = data
         return self._transparent_tiles[key]
 
@@ -369,3 +436,11 @@ def _normalize_format(format: str) -> str:
     if format in ('png', 'PNG', 'image/png'):
         return 'png'
     return format
+
+
+def _encode_rgba_as_png(rgba_array: np.ndarray) -> bytes:
+    # noinspection PyUnresolvedReferences
+    image = PIL.Image.fromarray(rgba_array)
+    stream = io.BytesIO()
+    image.save(stream, format='PNG')
+    return bytes(stream.getvalue())

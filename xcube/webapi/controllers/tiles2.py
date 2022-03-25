@@ -1,14 +1,11 @@
 import logging
-from typing import Union, Optional
+from typing import Optional
 
-import pyproj
-
-from xcube.core.tile2 import DEFAULT_CMAP_NAME
 from xcube.core.tile2 import DEFAULT_CRS_NAME
 from xcube.core.tile2 import DEFAULT_FORMAT
 from xcube.core.tile2 import TileNotFoundException
 from xcube.core.tile2 import TileRequestException
-from xcube.core.tile2 import compute_color_mapped_rgba_tile
+from xcube.core.tile2 import compute_rgba_tile
 from xcube.util.tilegrid2 import DEFAULT_TILE_SIZE
 from xcube.webapi.context import ServiceContext
 from xcube.webapi.errors import ServiceBadRequestError
@@ -30,82 +27,57 @@ def get_dataset_tile2(ctx: ServiceContext,
 
     args = dict(params.get_query_arguments())
 
-    log_tiles = args.pop('debug', None) == '1' or ctx.trace_perf
-    format = args.pop('format', DEFAULT_FORMAT)
     crs_name = args.pop('crs', crs_name or DEFAULT_CRS_NAME)
     retina = args.pop('retina', None) == '1'
-    cmap_name = args.pop('cbar', DEFAULT_CMAP_NAME)
-    cmap_name = args.pop('cmap', cmap_name)
-    cmap_vmin = float(args.pop('vmin', 0.0))
-    cmap_vmax = float(args.pop('vmax', 1.0))
+    cmap_name = args.pop('cmap', args.pop('cbar', None))
+    value_min = float(args.pop('vmin', 0.0))
+    value_max = float(args.pop('vmax', 1.0))
+    format = args.pop('format', DEFAULT_FORMAT)
+    log_tiles = args.pop('debug', None) == '1' or ctx.trace_perf
+
+    if format not in ('png' or 'image/png'):
+        raise ServiceBadRequestError(
+            f'Illegal format {format!r}'
+        )
 
     ml_dataset = ctx.get_ml_dataset(ds_id)
     if var_name == 'rgb':
-        norm_vmin = cmap_vmin
-        norm_vmax = cmap_vmax
-        var_names, norm_ranges = ctx.get_rgb_color_mapping(
-            ds_id, norm_range=(norm_vmin, norm_vmax)
+        var_names, value_ranges = ctx.get_rgb_color_mapping(
+            ds_id, norm_range=(value_min, value_max)
         )
         components = 'r', 'g', 'b'
         for i, c in enumerate(components):
             var_names[i] = args.pop(c, var_names[i])
-            norm_ranges[i] = (
+            value_ranges[i] = (
                 float(args.pop(
-                    f'{c}vmin', norm_ranges[i][0]
+                    f'{c}vmin', value_ranges[i][0]
                 )),
                 float(args.pop(
-                    f'{c}vmax', norm_ranges[i][1]
+                    f'{c}vmax', value_ranges[i][1]
                 ))
             )
-        cmap_name = tuple(var_names)
-        cmap_range = tuple(norm_ranges)
-        for name in var_names:
-            if name and name not in ml_dataset.base_dataset:
-                raise ServiceBadRequestError(
-                    f'Variable {name!r} not found in dataset {ds_id!r}'
-                )
-        var = None
-        for name in var_names:
-            if name and name in ml_dataset.base_dataset:
-                var = ml_dataset.base_dataset[name]
-                break
-        if var is None:
-            raise ServiceBadRequestError(
-                f'No variable in dataset {ds_id!r} specified for RGB'
-            )
     else:
-        if format == 'png' or format == 'image/png':
-            if cmap_name is None or cmap_vmin is None or cmap_vmax is None:
-                default_cmap_name, (default_cmap_vmin, default_cmap_vmax) = \
-                    ctx.get_color_mapping(ds_id, var_name)
-                if cmap_name is None:
-                    cmap_name = default_cmap_name
-                if cmap_vmin is None:
-                    cmap_vmin = default_cmap_vmin
-                if cmap_vmax is None:
-                    cmap_vmax = default_cmap_vmax
-            cmap_range = cmap_vmin, cmap_vmax
-        elif format == 'raw' or format == 'image/raw':
-            cmap_name = None
-            cmap_range = None
-        else:
-            raise ServiceBadRequestError(
-                f'Illegal format {format!r}'
-            )
-        if var_name not in ml_dataset.base_dataset:
-            raise ServiceBadRequestError(
-                f'Variable {var_name!r} not found in dataset {ds_id!r}'
-            )
+        if cmap_name is None or value_min is None or value_max is None:
+            default_cmap_name, (default_value_min, default_value_min) = \
+                ctx.get_color_mapping(ds_id, var_name)
+            if cmap_name is None:
+                cmap_name = default_cmap_name
+            if value_min is None:
+                value_min = default_value_min
+            if value_max is None:
+                value_max = default_value_min
+        var_names = (var_name,)
+        value_ranges = ((value_min, value_max),)
 
     try:
-        return compute_color_mapped_rgba_tile(
+        return compute_rgba_tile(
             ml_dataset,
-            var_name,
+            var_names,
             x, y, z,
             crs_name=crs_name,
             tile_size=(2 if retina else 1) * DEFAULT_TILE_SIZE,
             cmap_name=cmap_name,
-            value_range=cmap_range,
+            value_ranges=value_ranges,
             non_spatial_labels=args,
             format=format,
             logger=_LOGGER if log_tiles else None,

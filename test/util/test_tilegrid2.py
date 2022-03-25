@@ -35,8 +35,6 @@ class TileGridTest(unittest.TestCase):
         self.assertEqual('EPSG:3857', tile_grid.crs_name)
         self.assertEqual(256, tile_grid.tile_size)
         self.assertEqual(EARTH_CIRCUMFERENCE_WGS84, tile_grid.map_height)
-        self.assertEqual(None, tile_grid.map_levels)
-        self.assertEqual(None, tile_grid.map_resolutions)
 
     def test_web_mercator_bbox(self):
         tile_grid = TileGrid2.new_web_mercator()
@@ -59,11 +57,9 @@ class TileGridTest(unittest.TestCase):
         tile_grid = TileGrid2.new_geographic()
 
         self.assertEqual((2, 1), tile_grid.num_level_zero_tiles)
-        self.assertEqual('EPSG:4326', tile_grid.crs_name)
+        self.assertEqual('CRS84', tile_grid.crs_name)
         self.assertEqual(256, tile_grid.tile_size)
         self.assertEqual(180, tile_grid.map_height)
-        self.assertEqual(None, tile_grid.map_levels)
-        self.assertEqual(None, tile_grid.map_resolutions)
 
     def test_geographic_bbox(self):
         tile_grid = TileGrid2.new_geographic()
