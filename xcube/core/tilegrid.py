@@ -34,7 +34,7 @@ EARTH_EQUATORIAL_RADIUS_WGS84 = 6378137.
 EARTH_CIRCUMFERENCE_WGS84 = 2 * math.pi * EARTH_EQUATORIAL_RADIUS_WGS84
 
 
-class TileGrid2:
+class TileGrid:
     """
     A tile grid represents a schema for subdividing
     the world into 2D image tiles.
@@ -70,31 +70,31 @@ class TileGrid2:
         return self.crs.axis_info[0].unit_name
 
     @classmethod
-    def new(cls, crs_name: str = DEFAULT_CRS_NAME, **kwargs) -> 'TileGrid2':
+    def new(cls, crs_name: str = DEFAULT_CRS_NAME, **kwargs) -> 'TileGrid':
         if crs_name == WEB_MERCATOR_CRS_NAME:
-            grid = TileGrid2.new_web_mercator()
+            grid = TileGrid.new_web_mercator()
         elif crs_name in GEOGRAPHIC_CRS_NAMES:
-            grid = TileGrid2.new_geographic()
+            grid = TileGrid.new_geographic()
         else:
             raise ValueError(f'unsupported spatial CRS {crs_name!r}')
         return grid.derive(**kwargs)
 
     @classmethod
     def new_geographic(cls):
-        return TileGrid2(num_level_zero_tiles=(2, 1),
-                         crs_name=GEOGRAPHIC_CRS_NAME,
-                         map_height=180.)
+        return TileGrid(num_level_zero_tiles=(2, 1),
+                        crs_name=GEOGRAPHIC_CRS_NAME,
+                        map_height=180.)
 
     @classmethod
     def new_web_mercator(cls):
-        return TileGrid2(num_level_zero_tiles=(1, 1),
-                         crs_name=WEB_MERCATOR_CRS_NAME,
-                         map_height=EARTH_CIRCUMFERENCE_WGS84)
+        return TileGrid(num_level_zero_tiles=(1, 1),
+                        crs_name=WEB_MERCATOR_CRS_NAME,
+                        map_height=EARTH_CIRCUMFERENCE_WGS84)
 
     def derive(self, **kwargs):
         args = self.to_dict()
         args.update({k: v for k, v in kwargs.items() if v is not None})
-        return TileGrid2(**args)
+        return TileGrid(**args)
 
     def to_dict(self):
         d = dict(num_level_zero_tiles=self.num_level_zero_tiles,

@@ -1,13 +1,15 @@
 ## Changes in 0.11.0 (in development)
 
+### Enhancements
+
 * `xcube serve` can now serve datasets with arbitrary spatial 
   coordinate reference systems. Before xcube 0.11, datasets where forced
-  to have a geographical CRS such as EPSG:4326 or CRS84.
+  to have a geographical CRS such as EPSG:4326 or CRS84. 
 
 * `xcube serve` can now provide image tiles for two popular tile grids:
-  1. global web mercator grid , with 1 x 1 tiles at level 
-     zero (OSM grid, "Google projection")
-  2. global geographic grid, with 2 x 1 tiles at level zero 
+  1. global geographic grid, with 2 x 1 tiles at level zero (the default);
+  2. global web mercator grid , with 1 x 1 tiles at level 
+     zero ("Google projection", OSM tile grid).
   
   The general form of the xcube tile URL is
        
@@ -15,13 +17,49 @@
     
   The following query parameters can be used
     
-  - `crs`: set to `EPSG:3857` to use the web mercator grid (the default),
-    or `EPSG:4326` to use the geographic grid. 
+  - `crs`: set to `CRS84` to use the geographical grid (the default),
+    or `EPSG:3857` to use the web mercator grid. 
   - `cbar`: color bar name such as `viridis` or `plasma`, 
      see color bar names of matplotlib. Defaults to `bone`.
   - `vmin`: minimum value to be used for color mapping. Defaults to `0`.
   - `vmax`: maximum value to be used for color mapping. Defaults to `1`.
   - `retina`: if set to `1`, tile size will be 512 instead of 256.
+
+* The WMTS provided by `xcube serve` has been reimplemented from scratch.
+  It now provides two common tile matrix sets:
+  1. `WorldCRS84Quad` global geographic grid, with 2 x 1 tiles at level zero; 
+  2. `WorldWebMercatorQuad` global web mercator grid, with 1 x 1 tiles 
+     at level zero. 
+  
+  New RESTful endpoints have been added to reflect this:
+
+      /wmts/1.0.0/{TileMatrixSet}/WMTSCapabilities.xml
+      /wmts/1.0.0/tile/{Dataset}/{Variable}/{TileMatrixSet}/{TileMatrix}/{TileRow}/{TileCol}.png
+  
+  The existing RESTful endpoints now use tile matrix set `WorldCRS84Quad` by default:
+
+      /wmts/1.0.0/WMTSCapabilities.xml
+      /wmts/1.0.0/tile/{Dataset}/{Variable}/{TileMatrix}/{TileRow}/{TileCol}.png
+
+  The key-value pair (KVP) endpoint `/wmts/kvp` now recognises the
+  `TileMatrixSet` key for the two values described above.
+
+### Other changes
+
+* All components of the `xcube.util.tiledimage` module have been 
+  deprecated and are no longer used in xcube.  
+
+* TODO: All components of the `xcube.util.tilegrid` module have been 
+  deprecated and are no longer used in xcube. Entirely new implementations 
+  are provided in `xcube.core.tilegrid` which are used instead. 
+
+* TODO: All components of the `xcube.core.tile` module have been 
+  deprecated and are no longer used in xcube. Entirely new implementations 
+  are provided in `xcube.core.tile2` which are used instead. 
+  In version xcube 0.12 these will renamed to `xcube.core.tile`.  
+  
+
+
 
 ## Changes in 0.10.3 (in development)
 

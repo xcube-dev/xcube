@@ -7,8 +7,8 @@ import xarray as xr
 from xcube.core.mldataset import BaseMultiLevelDataset
 from xcube.core.mldataset import MultiLevelDataset
 from xcube.core.tile2 import compute_rgba_tile
-from xcube.util.tilegrid2 import GEOGRAPHIC_CRS_NAME
-from xcube.util.tilegrid2 import WEB_MERCATOR_CRS_NAME
+from xcube.core.tilegrid import GEOGRAPHIC_CRS_NAME
+from xcube.core.tilegrid import WEB_MERCATOR_CRS_NAME
 
 
 class Tile2Test(unittest.TestCase):

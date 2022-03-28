@@ -22,14 +22,14 @@
 
 import unittest
 
-from xcube.util.tilegrid2 import EARTH_CIRCUMFERENCE_WGS84
-from xcube.util.tilegrid2 import TileGrid2
+from xcube.core.tilegrid import EARTH_CIRCUMFERENCE_WGS84
+from xcube.core.tilegrid import TileGrid
 
 
 class TileGridTest(unittest.TestCase):
 
     def test_web_mercator(self):
-        tile_grid = TileGrid2.new_web_mercator()
+        tile_grid = TileGrid.new_web_mercator()
 
         self.assertEqual((1, 1), tile_grid.num_level_zero_tiles)
         self.assertEqual('EPSG:3857', tile_grid.crs_name)
@@ -37,7 +37,7 @@ class TileGridTest(unittest.TestCase):
         self.assertEqual(EARTH_CIRCUMFERENCE_WGS84, tile_grid.map_height)
 
     def test_web_mercator_bbox(self):
-        tile_grid = TileGrid2.new_web_mercator()
+        tile_grid = TileGrid.new_web_mercator()
 
         half = EARTH_CIRCUMFERENCE_WGS84 / 2
 
@@ -54,7 +54,7 @@ class TileGridTest(unittest.TestCase):
                          tile_grid.get_tile_bbox(1, 1, 1))
 
     def test_geographic(self):
-        tile_grid = TileGrid2.new_geographic()
+        tile_grid = TileGrid.new_geographic()
 
         self.assertEqual((2, 1), tile_grid.num_level_zero_tiles)
         self.assertEqual('CRS84', tile_grid.crs_name)
@@ -62,7 +62,7 @@ class TileGridTest(unittest.TestCase):
         self.assertEqual(180, tile_grid.map_height)
 
     def test_geographic_bbox(self):
-        tile_grid = TileGrid2.new_geographic()
+        tile_grid = TileGrid.new_geographic()
 
         self.assertEqual((-180, -90, 0, 90), tile_grid.get_tile_bbox(0, 0, 0))
         self.assertEqual((0, -90, 180, 90), tile_grid.get_tile_bbox(1, 0, 0))
@@ -78,7 +78,7 @@ class TileGridTest(unittest.TestCase):
         self.assertEqual((90, -90, 180, 0), tile_grid.get_tile_bbox(3, 1, 1))
 
     def test_geographic_dataset_level(self):
-        tile_grid = TileGrid2.new_web_mercator()
+        tile_grid = TileGrid.new_web_mercator()
 
         for level, res in enumerate(tile_grid.resolutions('meter')):
             print(level, res)

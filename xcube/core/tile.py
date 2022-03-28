@@ -41,6 +41,8 @@ from xcube.util.tiledimage import NormalizeArrayImage
 from xcube.util.tiledimage import SourceArrayImage
 from xcube.util.tiledimage import Tile
 from xcube.util.tiledimage import TiledImage
+# noinspection PyUnresolvedReferences
+from .tile2 import compute_rgba_tile
 
 
 @deprecated(version='0.11.0', reason='use xcube-core.tile2 instead')

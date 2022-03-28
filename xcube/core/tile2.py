@@ -31,12 +31,12 @@ import numpy as np
 import xarray as xr
 
 from .mldataset import MultiLevelDataset
+from .tilegrid import DEFAULT_CRS_NAME
+from .tilegrid import DEFAULT_TILE_SIZE
+from .tilegrid import TileGrid
 from ..util.assertions import assert_in, assert_true, assert_instance
 from ..util.logtime import log_time
 from ..util.projcache import ProjCache
-from ..util.tilegrid2 import DEFAULT_CRS_NAME
-from ..util.tilegrid2 import DEFAULT_TILE_SIZE
-from ..util.tilegrid2 import TileGrid2
 
 DEFAULT_VALUE_RANGE = (0., 1.)
 DEFAULT_CMAP_NAME = 'bone'
@@ -142,7 +142,7 @@ def compute_rgba_tile(
     assert_in(format, ('png', 'numpy'), name='format')
 
     with log_time(logger, 'preparing 2D subset'):
-        tile_grid = TileGrid2.new(crs_name, tile_size=tile_size)
+        tile_grid = TileGrid.new(crs_name, tile_size=tile_size)
 
         ds_level = tile_grid.get_dataset_level(
             tile_z,
