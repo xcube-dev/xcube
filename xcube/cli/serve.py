@@ -23,8 +23,12 @@ from typing import List
 
 import click
 
-from xcube.webapi.defaults import DEFAULT_PORT, DEFAULT_ADDRESS, DEFAULT_UPDATE_PERIOD, \
-    DEFAULT_TILE_CACHE_SIZE, DEFAULT_TILE_COMP_MODE
+from xcube.constants import LOG
+from xcube.webapi.defaults import (DEFAULT_PORT,
+                                   DEFAULT_ADDRESS,
+                                   DEFAULT_UPDATE_PERIOD,
+                                   DEFAULT_TILE_CACHE_SIZE,
+                                   DEFAULT_TILE_COMP_MODE)
 
 __author__ = "Norman Fomferra (Brockmann Consult GmbH)"
 
@@ -133,7 +137,7 @@ def serve(cube: List[str],
 
     from xcube.version import version
     from xcube.webapi.defaults import SERVER_NAME, SERVER_DESCRIPTION
-    print(f'{SERVER_NAME}: {SERVER_DESCRIPTION}, version {version}')
+    LOG.info(f'{SERVER_NAME}: {SERVER_DESCRIPTION}, version {version}')
 
     if show:
         _run_viewer()

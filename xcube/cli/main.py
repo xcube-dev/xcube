@@ -19,15 +19,27 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+import logging
 import sys
 
 import click
 
-from xcube.cli.common import cli_option_scheduler, cli_option_traceback
-from xcube.cli.common import handle_cli_exception, new_cli_ctx_obj
+from xcube.cli.common import (cli_option_scheduler,
+                              cli_option_traceback,
+                              handle_cli_exception,
+                              new_cli_ctx_obj)
 from xcube.constants import EXTENSION_POINT_CLI_COMMANDS
 from xcube.util.plugin import get_extension_registry
 from xcube.version import version
+
+LOG_LEVELS = [
+    'CRITICAL',
+    'ERROR',
+    'WARNING',
+    'INFO',
+    'DEBUG'
+]
+DEFAULT_LOG_LEVEL = 'WARNING'
 
 
 # noinspection PyShadowingBuiltins,PyUnusedLocal
@@ -35,14 +47,28 @@ from xcube.version import version
 @click.version_option(version)
 @cli_option_traceback
 @cli_option_scheduler
+@click.option('--loglevel',
+              metavar='LEVEL',
+              type=click.Choice(LOG_LEVELS),
+              default=DEFAULT_LOG_LEVEL,
+              help=f'Log level.'
+                   f' Must be one of {", ".join(LOG_LEVELS)}.'
+                   f' Defaults to {DEFAULT_LOG_LEVEL}.')
 @click.option('--warnings', '-w',
               is_flag=True,
               help='Show any warnings produced during operation '
                    '(warnings are hidden by default)')
-def cli(traceback=False, scheduler=None, warnings=None):
+def cli(traceback=False, scheduler=None, loglevel=None, warnings=None):
     """
     xcube Toolkit
     """
+
+    logging.basicConfig(
+        format='[%(levelname).1s %(asctime)s %(name)s] %(message)s',
+        stream=sys.stderr,
+        level=loglevel or DEFAULT_LOG_LEVEL,
+        force=True
+    )
 
     # In normal operation, it's not necessary to explicitly set the default
     # filter when --warnings is omitted, but it can be needed during
@@ -55,7 +81,9 @@ def cli(traceback=False, scheduler=None, warnings=None):
 
 
 # Add registered CLI commands
-for command in get_extension_registry().find_components(EXTENSION_POINT_CLI_COMMANDS):
+for command in get_extension_registry().find_components(
+        EXTENSION_POINT_CLI_COMMANDS
+):
     cli.add_command(command)
 
 
@@ -65,7 +93,9 @@ def main(args=None):
     try:
         exit_code = cli.main(args=args, obj=ctx_obj, standalone_mode=False)
     except Exception as e:
-        exit_code = handle_cli_exception(e, traceback_mode=ctx_obj.get("traceback", False))
+        exit_code = handle_cli_exception(
+            e, traceback_mode=ctx_obj.get("traceback", False)
+        )
     sys.exit(exit_code)
 
 
