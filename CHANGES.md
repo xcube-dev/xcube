@@ -15,6 +15,10 @@
   - The `xcube level` CLI tool now has a new option `--agg-methods` (or `-A`)
     for the same purpose.
 
+* All xcube CLI tools now consistently provide logging output. It can be 
+  controlled using the `--loglevel LEVEL` with level being one of 
+  `CRITICAL`, `ERROR`, `WARNING`, `INFO`, `DEBUG`. Default is `WARNING`.
+
 ### Fixes
 
 * Fixed a problem where the `DataStores` configuration of `xcube serve` 
