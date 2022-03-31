@@ -2,6 +2,8 @@ from typing import Dict, Any, Optional, Union, Sequence, Type, Tuple
 
 import click
 
+from xcube.constants import LOG
+
 
 def new_cli_ctx_obj():
     return {
@@ -185,6 +187,7 @@ def handle_cli_exception(e: BaseException, exit_code: int = None, traceback_mode
     else:
         print(f'Internal error: {e}', file=sys.stderr)
         exit_code = exit_code or 3
+    LOG.error('Exit with code %d', exit_code, exc_info=not traceback_mode)
     if traceback_mode:
         import traceback
         traceback.print_exc(file=sys.stderr)

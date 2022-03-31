@@ -28,18 +28,14 @@ from xcube.cli.common import (cli_option_scheduler,
                               cli_option_traceback,
                               handle_cli_exception,
                               new_cli_ctx_obj)
+from xcube.constants import DEFAULT_LOG_FORMAT
+from xcube.constants import DEFAULT_LOG_LEVEL
 from xcube.constants import EXTENSION_POINT_CLI_COMMANDS
+from xcube.constants import LOG_LEVELS
+from xcube.constants import OFF_LOG_LEVEL
+from xcube.constants import OFF_LOG_LEVEL_NAME
 from xcube.util.plugin import get_extension_registry
 from xcube.version import version
-
-LOG_LEVELS = [
-    'CRITICAL',
-    'ERROR',
-    'WARNING',
-    'INFO',
-    'DEBUG'
-]
-DEFAULT_LOG_LEVEL = 'WARNING'
 
 
 # noinspection PyShadowingBuiltins,PyUnusedLocal
@@ -63,10 +59,14 @@ def cli(traceback=False, scheduler=None, loglevel=None, warnings=None):
     xcube Toolkit
     """
 
+    # Configure logging for all xcube CLI tools (#659)
+    loglevel = loglevel or DEFAULT_LOG_LEVEL
+    if loglevel == OFF_LOG_LEVEL_NAME:
+        loglevel = OFF_LOG_LEVEL
     logging.basicConfig(
-        format='[%(levelname).1s %(asctime)s %(name)s] %(message)s',
+        format=DEFAULT_LOG_FORMAT,
         stream=sys.stderr,
-        level=loglevel or DEFAULT_LOG_LEVEL,
+        level=loglevel,
         force=True
     )
 

@@ -139,7 +139,7 @@ class Service:
             h.close()
         for h in list(logging.root.handlers):
             tornado_logger.addHandler(h)
-        tornado_logger.setLevel(logging.INFO)
+        tornado_logger.setLevel(logging.root.level)
 
         config = None
         if cube_paths:
