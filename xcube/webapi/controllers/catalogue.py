@@ -95,30 +95,31 @@ def get_datasets(ctx: ServiceContext,
         LOG.info(f'collected dataset {ds_id}')
         dataset_dicts.append(dataset_dict)
 
-        # Important note:
-        # the "point" parameter is used by
-        # the CyanoAlert app only
+    # Important note:
+    # the "point" parameter is used by
+    # the CyanoAlert app only
 
-        if details or point:
-            filtered_dataset_dicts = []
-            for dataset_dict in dataset_dicts:
-                ds_id = dataset_dict["id"]
-                try:
-                    if point:
-                        ds = ctx.get_dataset(ds_id)
-                        if "bbox" not in dataset_dict:
-                            dataset_dict["bbox"] = list(get_dataset_bounds(ds))
-                    if details:
-                        LOG.info(f'loading details for dataset {ds_id}')
-                        dataset_dict.update(
-                            get_dataset(ctx, ds_id, client,
-                                        base_url,
-                                        granted_scopes=granted_scopes)
-                        )
-                    filtered_dataset_dicts.append(dataset_dict)
-                except (DatasetIsNotACubeError, CubeIsNotDisplayable) as e:
-                    LOG.warning(f'skipping dataset {ds_id}: {e}')
-            dataset_dicts = filtered_dataset_dicts
+    if details or point:
+        filtered_dataset_dicts = []
+        for dataset_dict in dataset_dicts:
+            ds_id = dataset_dict["id"]
+            try:
+                if point:
+                    ds = ctx.get_dataset(ds_id)
+                    if "bbox" not in dataset_dict:
+                        dataset_dict["bbox"] = list(get_dataset_bounds(ds))
+                if details:
+                    LOG.info(f'loading details for dataset {ds_id}')
+                    dataset_dict.update(
+                        get_dataset(ctx, ds_id, client,
+                                    base_url,
+                                    granted_scopes=granted_scopes)
+                    )
+                filtered_dataset_dicts.append(dataset_dict)
+            except (DatasetIsNotACubeError, CubeIsNotDisplayable) as e:
+                LOG.warning(f'skipping dataset {ds_id}: {e}')
+        dataset_dicts = filtered_dataset_dicts
+
     if point:
         is_point_in_dataset_bbox = functools.partial(
             _is_point_in_dataset_bbox, point
