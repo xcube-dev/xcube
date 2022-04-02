@@ -45,6 +45,10 @@
   `TileMatrixSet` key for the two values described above.
 
 ### Other changes
+* The `xcube tile` has been deprecated in its current form and is no
+  longer supported since xcube 0.11. A new tool is planned that can work
+  concurrently on dask clusters and also supports common tile grids such as
+  global geographic and web mercator.
 
 * All components of the `xcube.util.tiledimage` module have been 
   deprecated and are no longer used in xcube.  

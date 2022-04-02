@@ -61,11 +61,11 @@ from xcube.webapi.controllers.places import (
     find_dataset_places
 )
 from xcube.webapi.controllers.tiles import (
+    compute_ml_dataset_tile,
     get_dataset_tile,
     get_dataset_tile_grid,
     get_legend
 )
-from xcube.webapi.controllers.tiles2 import get_dataset_tile2
 from xcube.webapi.controllers.timeseries import get_time_series
 from xcube.webapi.controllers.ts_legacy import (
     get_time_series_info,
@@ -174,7 +174,7 @@ class WMTSKvpHandler(ServiceRequestHandler):
             z = self.params.get_query_argument_int("tilematrix")
             tile = await IOLoop.current().run_in_executor(
                 None,
-                get_dataset_tile2,
+                compute_ml_dataset_tile,
                 self.service_context,
                 ds_id,
                 var_name,
@@ -415,7 +415,7 @@ class GetWMTSTileHandler(ServiceRequestHandler):
         crs_name = get_crs_name_from_tms_id(tms_id)
         tile = await IOLoop.current().run_in_executor(
             None,
-            get_dataset_tile2,
+            compute_ml_dataset_tile,
             self.service_context,
             ds_id,
             var_name,
@@ -439,7 +439,7 @@ class GetWMTSTileTmsHandler(ServiceRequestHandler):
         crs_name = get_crs_name_from_tms_id(tms_id)
         tile = await IOLoop.current().run_in_executor(
             None,
-            get_dataset_tile2,
+            compute_ml_dataset_tile,
             self.service_context,
             ds_id,
             var_name,
@@ -470,7 +470,7 @@ class GetDatasetVarTile2Handler(ServiceRequestHandler):
 
     async def get(self, ds_id: str, var_name: str, z: str, y: str, x: str):
         tile = await IOLoop.current().run_in_executor(None,
-                                                      get_dataset_tile2,
+                                                      compute_ml_dataset_tile,
                                                       self.service_context,
                                                       ds_id,
                                                       var_name,

@@ -5,6 +5,12 @@
 ``xcube tile``
 ==============
 
+IMPORTANT NOTE:
+    The xcube tile tool in its current form is deprecated and no
+    longer supported since xcube 0.11. A new tool is planned that can work
+    concurrently on dask clusters and also supports common tile grids such as
+    global geographic and web mercator.
+
 Synopsis
 ========
 
@@ -24,8 +30,8 @@ An optional configuration file given by the `-c` option uses `YAML format`_.
 
       Create RGBA tiles from CUBE.
 
-      Color bars and value ranges for variables can be specified in a CONFIG
-      file. Here the color mappings are defined for a style named "ocean_color":
+      Color bars and value ranges for variables can be specified in a CONFIG file.
+      Here the color mappings are defined for a style named "ocean_color":
 
       Styles:
         - Identifier: ocean_color
@@ -40,8 +46,8 @@ An optional configuration file given by the `-c` option uses `YAML format`_.
               ColorBar: "jet"
               ValueRange: [0., 6.]
 
-      This is the same styles syntax as the configuration file for "xcube
-      serve", hence its configuration can be reused.
+      This is the same styles syntax as the configuration file for "xcube serve",
+      hence its configuration can be reused.
 
     Options:
       --variables, --vars VARIABLES  Variables to be included in output. Comma-
@@ -66,6 +72,7 @@ An optional configuration file given by the `-c` option uses `YAML format`_.
                                      report less.
       --dry-run                      Generate all tiles but don't write any files.
       --help                         Show this message and exit.
+
 
 
 

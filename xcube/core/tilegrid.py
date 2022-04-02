@@ -21,7 +21,7 @@
 
 
 import math
-from typing import Optional, Tuple, Sequence, Iterator
+from typing import Optional, Tuple, Sequence, Iterator, List
 
 import pyproj
 
@@ -203,6 +203,25 @@ def get_unit_factor(unit_name_from: str, unit_name_to: str) -> float:
     if from_degree and to_meter:
         return EARTH_CIRCUMFERENCE_WGS84 / 360
     return 1.
+
+
+def subdivide_size(size: Tuple[int, int],
+                   tile_size: Tuple[int, int]) -> List[Tuple[int, int]]:
+    x_size, y_size = size
+    tile_size_x, tile_size_y = tile_size
+    sizes = [(x_size, y_size)]
+    while True:
+        if x_size <= tile_size_x or y_size <= tile_size_y:
+            break
+        x_size = (x_size + 1) // 2
+        y_size = (y_size + 1) // 2
+        sizes.append((x_size, y_size))
+    return sizes
+
+
+def get_num_levels(size: Tuple[int, int],
+                   tile_size: Tuple[int, int]) -> int:
+    return len(subdivide_size(size, tile_size))
 
 
 def _is_meter_unit(unit_name: str) -> bool:

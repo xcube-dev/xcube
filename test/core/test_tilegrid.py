@@ -24,6 +24,9 @@ import unittest
 
 from xcube.core.tilegrid import EARTH_CIRCUMFERENCE_WGS84
 from xcube.core.tilegrid import TileGrid
+from xcube.core.tilegrid import get_num_levels
+from xcube.core.tilegrid import get_unit_factor
+from xcube.core.tilegrid import subdivide_size
 
 
 class TileGridTest(unittest.TestCase):
@@ -107,3 +110,38 @@ class TileGridTest(unittest.TestCase):
         self.assertEqual(0, tile_grid.get_dataset_level(17, *args))
         self.assertEqual(0, tile_grid.get_dataset_level(18, *args))
         self.assertEqual(0, tile_grid.get_dataset_level(19, *args))
+
+
+class TileGridHelpersTest(unittest.TestCase):
+
+    def test_subdivide_size(self):
+        self.assertEqual(
+            [(2048, 1024), (1024, 512), (512, 256)],
+            subdivide_size((2048, 1024), (256, 256))
+        )
+        self.assertEqual(
+            [(360, 180)],
+            subdivide_size((360, 180), (256, 256))
+        )
+        self.assertEqual(
+            [(7200, 3600), (3600, 1800), (1800, 900), (900, 450), (450, 225)],
+            subdivide_size((7200, 3600), (256, 256))
+        )
+
+    def test_get_num_levels(self):
+        self.assertEqual(3, get_num_levels((2048, 1024), (256, 256)))
+        self.assertEqual(1, get_num_levels((360, 180), (256, 256)))
+        self.assertEqual(5, get_num_levels((7200, 3600), (256, 256)))
+
+    def test_get_unit_factor(self):
+        self.assertAlmostEqual(1, get_unit_factor('m', 'm'))
+        self.assertAlmostEqual(1, get_unit_factor('meters', 'm'))
+        self.assertAlmostEqual(1, get_unit_factor('deg', 'degree'))
+        self.assertAlmostEqual(111319.49079327358,
+                               get_unit_factor('deg', 'm'))
+        self.assertAlmostEqual(8.983152841195214e-06,
+                               get_unit_factor('m', 'degree'))
+        with self.assertRaises(ValueError):
+            get_unit_factor('cm', 'm')
+        with self.assertRaises(ValueError):
+            get_unit_factor('m', 'mdeg')

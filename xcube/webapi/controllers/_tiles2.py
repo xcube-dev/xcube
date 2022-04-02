@@ -1,11 +1,11 @@
 import logging
 from typing import Optional
 
-from xcube.core.tile2 import DEFAULT_CRS_NAME
-from xcube.core.tile2 import DEFAULT_FORMAT
-from xcube.core.tile2 import TileNotFoundException
-from xcube.core.tile2 import TileRequestException
-from xcube.core.tile2 import compute_rgba_tile
+from xcube.core.tile import DEFAULT_CRS_NAME
+from xcube.core.tile import DEFAULT_FORMAT
+from xcube.core.tile import TileNotFoundException
+from xcube.core.tile import TileRequestException
+from xcube.core.tile import compute_rgba_tile
 from xcube.core.tilegrid import DEFAULT_TILE_SIZE
 from xcube.webapi.context import ServiceContext
 from xcube.webapi.errors import ServiceBadRequestError
@@ -15,12 +15,12 @@ from xcube.webapi.reqparams import RequestParams
 _LOGGER = logging.getLogger()
 
 
-def get_dataset_tile2(ctx: ServiceContext,
-                      ds_id: str,
-                      var_name: str,
-                      crs_name: Optional[str],
-                      x: str, y: str, z: str,
-                      params: RequestParams):
+def compute_ml_dataset_tile(ctx: ServiceContext,
+                            ds_id: str,
+                            var_name: str,
+                            crs_name: Optional[str],
+                            x: str, y: str, z: str,
+                            params: RequestParams):
     x = RequestParams.to_int('x', x)
     y = RequestParams.to_int('y', y)
     z = RequestParams.to_int('z', z)

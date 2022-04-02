@@ -92,6 +92,7 @@ def get_datasets(ctx: ServiceContext,
                                 ds_bbox)):
                 dataset_dict['bbox'] = ds_bbox
 
+        LOG.info(f'collected dataset {ds_id}')
         dataset_dicts.append(dataset_dict)
 
         # Important note:
@@ -108,6 +109,7 @@ def get_datasets(ctx: ServiceContext,
                         if "bbox" not in dataset_dict:
                             dataset_dict["bbox"] = list(get_dataset_bounds(ds))
                     if details:
+                        LOG.info(f'loading details for dataset {ds_id}')
                         dataset_dict.update(
                             get_dataset(ctx, ds_id, client,
                                         base_url,
@@ -191,11 +193,12 @@ def get_dataset(ctx: ServiceContext,
         dataset_dict["bbox"] = [x1, y1, x2, y2]
 
     variable_dicts = []
+    dim_names = set()
     for var_name, var in ds.data_vars.items():
         var_name = str(var_name)
         dims = var.dims
         if len(dims) < 3 \
-                or dims[0] != 'time' \
+                or dims[-3] != 'time' \
                 or dims[-2] != y_name \
                 or dims[-1] != x_name:
             continue
@@ -254,6 +257,8 @@ def get_dataset(ctx: ServiceContext,
         }
 
         variable_dicts.append(variable_dict)
+        for dim_name in var.dims:
+            dim_names.add(dim_name)
 
     dataset_dict["variables"] = variable_dicts
 
@@ -278,8 +283,6 @@ def get_dataset(ctx: ServiceContext,
         )
         dataset_dict["rgbSchema"] = rgb_schema
 
-    dim_names = ds.data_vars[list(ds.data_vars)[0]].dims \
-        if len(ds.data_vars) > 0 else ds.dims.keys()
     dataset_dict["dimensions"] = [
         get_dataset_coordinates(ctx, ds_id, str(dim_name))
         for dim_name in dim_names

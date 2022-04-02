@@ -19,6 +19,8 @@ from xcube.webapi.defaults import DEFAULT_CMAP_WIDTH
 from xcube.webapi.errors import ServiceBadRequestError
 from xcube.webapi.errors import ServiceResourceNotFoundError
 from xcube.webapi.reqparams import RequestParams
+# noinspection PyUnresolvedReferences
+from ._tiles2 import compute_ml_dataset_tile
 
 
 def get_dataset_tile(ctx: ServiceContext,
