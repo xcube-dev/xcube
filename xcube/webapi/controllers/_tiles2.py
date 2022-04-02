@@ -33,7 +33,7 @@ def compute_ml_dataset_tile(ctx: ServiceContext,
     value_min = float(args.pop('vmin', 0.0))
     value_max = float(args.pop('vmax', 1.0))
     format = args.pop('format', DEFAULT_FORMAT)
-    log_tiles = args.pop('debug', None) == '1' or ctx.trace_perf
+    trace_perf = args.pop('debug', None) == '1' or ctx.trace_perf
 
     if format not in ('png' or 'image/png'):
         raise ServiceBadRequestError(
@@ -80,7 +80,7 @@ def compute_ml_dataset_tile(ctx: ServiceContext,
             value_ranges=value_ranges,
             non_spatial_labels=args,
             format=format,
-            logger=_LOGGER if log_tiles else None,
+            trace_perf=trace_perf
         )
     except TileNotFoundException as e:
         raise ServiceResourceNotFoundError(f'{e}') from e

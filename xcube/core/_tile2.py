@@ -37,6 +37,8 @@ from .tilegrid import TileGrid
 from ..util.assertions import assert_in, assert_true, assert_instance
 from ..util.logtime import log_time
 from ..util.projcache import ProjCache
+from ..constants import LOG
+
 
 DEFAULT_VALUE_RANGE = (0., 1.)
 DEFAULT_CMAP_NAME = 'bone'
@@ -62,7 +64,7 @@ def compute_rgba_tile(
         non_spatial_labels: Optional[Dict[str, Any]] = None,
         format: str = DEFAULT_FORMAT,
         tile_enlargement: int = DEFAULT_TILE_ENLARGEMENT,
-        logger: Optional[logging.Logger] = None
+        trace_perf: bool = False
 ) -> Union[bytes, np.ndarray]:
     """Compute an RGBA image tile from *variable_names* in
     given multi-resolution dataset *mr_dataset*.
@@ -117,8 +119,8 @@ def compute_rgba_tile(
         Can be used to increase the accuracy of the borders of target
         tiles at high zoom levels. Defaults to 1.
     :param format: Either 'png', 'image/png' or 'numpy'.
-    :param logger: Optional logger. If given, detailed performance
-        metrics are logged.
+    :param trace_perf: If set, detailed performance
+        metrics are logged using the level of the "xcube" logger.
     :return: PNG bytes or unit8 numpy array, depending on *format*
     :raise TileNotFoundException
     :raise TileRequestException
@@ -140,6 +142,8 @@ def compute_rgba_tile(
                         ' same length as variable_names')
     format = _normalize_format(format)
     assert_in(format, ('png', 'numpy'), name='format')
+
+    logger = LOG if trace_perf else None
 
     with log_time(logger, 'preparing 2D subset'):
         tile_grid = TileGrid.new(crs_name, tile_size=tile_size)
@@ -228,13 +232,22 @@ def compute_rgba_tile(
                 logger=logger
             )
 
-        dx = (tile_enlargement / tile_size) * (ds_x_max - ds_x_min)
-        dy = (tile_enlargement / tile_size) * (ds_y_max - ds_y_min)
-        ds_x_slice = slice(ds_x_min - dx, ds_x_max + dx)
+        num_extra_pixels = tile_enlargement
+        # num_extra_pixels = tile_enlargement + tile_z
+        # num_extra_pixels = tile_z
+        # num_extra_pixels = 2 ** tile_z
+        # num_extra_pixels = 0
+        # LOG.info('x=%d, y=%d, z=%d, num_extra_pixels=%d',
+        #          tile_x, tile_y, tile_z, num_extra_pixels)
+        res_x = (ds_x_max - ds_x_min) / tile_size
+        res_y = (ds_y_max - ds_y_min) / tile_size
+        extra_dx = num_extra_pixels * res_x
+        extra_dy = num_extra_pixels * res_y
+        ds_x_slice = slice(ds_x_min - extra_dx, ds_x_max + extra_dx)
         if ds_y_points_up:
-            ds_y_slice = slice(ds_y_min - dy, ds_y_max + dy)
+            ds_y_slice = slice(ds_y_min - extra_dy, ds_y_max + extra_dy)
         else:
-            ds_y_slice = slice(ds_y_max + dy, ds_y_min - dy)
+            ds_y_slice = slice(ds_y_max + extra_dy, ds_y_min - extra_dy)
 
         var_subsets = [variable.sel({ds_x_name: ds_x_slice,
                                      ds_y_name: ds_y_slice})

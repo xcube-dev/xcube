@@ -23,7 +23,8 @@ from typing import List
 
 import click
 
-from xcube.webapi.defaults import DEFAULT_PORT, DEFAULT_ADDRESS, DEFAULT_UPDATE_PERIOD, \
+from xcube.webapi.defaults import DEFAULT_PORT, DEFAULT_ADDRESS, \
+    DEFAULT_UPDATE_PERIOD, \
     DEFAULT_TILE_CACHE_SIZE, DEFAULT_TILE_COMP_MODE
 
 __author__ = "Norman Fomferra (Brockmann Consult GmbH)"
@@ -83,7 +84,8 @@ BASE_ENV_VAR = 'XCUBE_SERVE_BASE_DIR'
 @click.option('--verbose', '-v', is_flag=True,
               help="Delegate logging to the console (stderr).")
 @click.option('--traceperf', 'trace_perf', is_flag=True,
-              help="Print performance diagnostics (stdout).")
+              help="Log performance diagnostics"
+                   " using log level DEBUG (stdout).")
 @click.option('--aws-prof', 'aws_prof', metavar='PROFILE',
               help="To publish remote CUBEs, use AWS credentials from section "
                    "[PROFILE] found in ~/.aws/credentials.")
