@@ -45,7 +45,7 @@ from xcube.core.subsampling import assert_valid_agg_methods
 from xcube.core.subsampling import subsample_dataset
 from xcube.core.tilegrid import get_num_levels
 from xcube.core.verify import assert_cube
-from xcube.util.assertions import assert_instance
+from xcube.util.assertions import assert_instance, assert_true
 from xcube.util.perf import measure_time
 from xcube.util.tilegrid import TileGrid
 
@@ -629,6 +629,12 @@ class BaseMultiLevelDataset(LazyMultiLevelDataset):
         :param parameters: currently unused
         :return: the dataset for the level at *index*.
         """
+        assert_instance(index, int, name='index')
+        if index < 0:
+            index = self.num_levels + index
+        assert_true(0 <= index < self.num_levels,
+                    message='index out of range')
+
         if index == 0:
             level_dataset = self._base_dataset
         else:
