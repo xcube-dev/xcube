@@ -66,18 +66,28 @@ def ensure_time_compatible(var: xr.DataArray,
 def _ensure_timestamp_compatible(var: xr.DataArray, timeval: Any):
     timestamp = pd.Timestamp(timeval)
     timeval_is_naive = timestamp.tzinfo is None
-    if _has_datetime64_time(var) and not timeval_is_naive:
-        # pandas treats datetime64s as timezone-naive, so we naivefy the label
-        naive_time = timestamp.tz_convert(None)
-        return naive_time
-    else:
-        return timeval
+    array_is_naive = _is_array_tz_naive(var)
+
+    if array_is_naive and not timeval_is_naive:
+        return timestamp.tz_convert(None)
+
+    if not array_is_naive and timeval_is_naive:
+        return timestamp.tz_localize('UTC')
+
+    return timeval
+
+
+def _is_array_tz_naive(var: xr.DataArray):
+    # TODO: also check for non-datetime64 tz-naive arrays!
+
+    # pandas treats datetime64s as timezone-naive
+    return _has_datetime64_time(var)
 
 
 def _has_datetime64_time(var: xr.DataArray) -> bool:
     """Report whether var has a time dimension with type datetime64
 
-    Assumes a 'time' key is present in var.dims."""
+    Assumes that a 'time' key is present in var.dims."""
     return hasattr(var['time'], 'dtype') \
         and hasattr(var['time'].dtype, 'type') \
         and var['time'].dtype.type is np.datetime64
