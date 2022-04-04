@@ -37,24 +37,31 @@ class TileGridTest(unittest.TestCase):
         self.assertEqual((1, 1), tile_grid.num_level_zero_tiles)
         self.assertEqual('EPSG:3857', tile_grid.crs_name)
         self.assertEqual(256, tile_grid.tile_size)
+        self.assertEqual(EARTH_CIRCUMFERENCE_WGS84, tile_grid.map_width)
         self.assertEqual(EARTH_CIRCUMFERENCE_WGS84, tile_grid.map_height)
+        self.assertEqual(None, tile_grid.min_level)
+        self.assertEqual(None, tile_grid.max_level)
+        self.assertEqual(None, tile_grid.num_levels)
+        half = EARTH_CIRCUMFERENCE_WGS84 / 2
+        self.assertEqual((-half, -half, half, half), tile_grid.map_extent)
+        self.assertEqual((-half, half), tile_grid.map_origin)
 
-    def test_web_mercator_bbox(self):
+    def test_web_mercator_tile_extent(self):
         tile_grid = TileGrid.new_web_mercator()
 
         half = EARTH_CIRCUMFERENCE_WGS84 / 2
 
         self.assertEqual((-half, -half, half, half),
-                         tile_grid.get_tile_bbox(0, 0, 0))
+                         tile_grid.get_tile_extent(0, 0, 0))
 
         self.assertEqual((-half, 0.0, 0.0, half),
-                         tile_grid.get_tile_bbox(0, 0, 1))
+                         tile_grid.get_tile_extent(0, 0, 1))
         self.assertEqual((0.0, 0.0, half, half),
-                         tile_grid.get_tile_bbox(1, 0, 1))
+                         tile_grid.get_tile_extent(1, 0, 1))
         self.assertEqual((-half, -half, 0.0, 0.0),
-                         tile_grid.get_tile_bbox(0, 1, 1))
+                         tile_grid.get_tile_extent(0, 1, 1))
         self.assertEqual((0.0, -half, half, 0.0),
-                         tile_grid.get_tile_bbox(1, 1, 1))
+                         tile_grid.get_tile_extent(1, 1, 1))
 
     def test_geographic(self):
         tile_grid = TileGrid.new_geographic()
@@ -62,31 +69,97 @@ class TileGridTest(unittest.TestCase):
         self.assertEqual((2, 1), tile_grid.num_level_zero_tiles)
         self.assertEqual('CRS84', tile_grid.crs_name)
         self.assertEqual(256, tile_grid.tile_size)
+        self.assertEqual(360, tile_grid.map_width)
         self.assertEqual(180, tile_grid.map_height)
+        self.assertEqual(None, tile_grid.min_level)
+        self.assertEqual(None, tile_grid.max_level)
+        self.assertEqual(None, tile_grid.num_levels)
+        self.assertEqual((-180, -90, 180, 90), tile_grid.map_extent)
+        self.assertEqual((-180, 90), tile_grid.map_origin)
 
-    def test_geographic_bbox(self):
+    def test_derive(self):
+        tile_grid = TileGrid.new_geographic()
+        derived_tile_grid = tile_grid.derive(min_level=3, max_level=9)
+        self.assertIsInstance(derived_tile_grid, TileGrid)
+        self.assertIsNot(tile_grid, derived_tile_grid)
+        self.assertEqual(3, derived_tile_grid.min_level)
+        self.assertEqual(9, derived_tile_grid.max_level)
+        self.assertEqual(10, derived_tile_grid.num_levels)
+
+    def test_geographic_resolutions(self):
         tile_grid = TileGrid.new_geographic()
 
-        self.assertEqual((-180, -90, 0, 90), tile_grid.get_tile_bbox(0, 0, 0))
-        self.assertEqual((0, -90, 180, 90), tile_grid.get_tile_bbox(1, 0, 0))
+        with self.assertRaises(ValueError) as cm:
+            tile_grid.get_resolutions()
+        self.assertEqual('max_value must be given', f'{cm.exception}')
 
-        self.assertEqual((-180, 0, -90, 90), tile_grid.get_tile_bbox(0, 0, 1))
-        self.assertEqual((-90, 0, 0, 90), tile_grid.get_tile_bbox(1, 0, 1))
-        self.assertEqual((0, 0, 90, 90), tile_grid.get_tile_bbox(2, 0, 1))
-        self.assertEqual((90, 0, 180, 90), tile_grid.get_tile_bbox(3, 0, 1))
+        resolutions = tile_grid.get_resolutions(max_level=6)
+        self.assertEqual([0.703125,
+                          0.3515625,
+                          0.17578125,
+                          0.087890625,
+                          0.0439453125,
+                          0.02197265625,
+                          0.010986328125],
+                         resolutions)
+
+        resolutions = tile_grid.get_resolutions(min_level=4, max_level=6)
+        self.assertEqual([0.0439453125,
+                          0.02197265625,
+                          0.010986328125],
+                         resolutions)
+
+        resolutions = tile_grid.derive(max_level=6). \
+            get_resolutions()
+        self.assertEqual([0.703125,
+                          0.3515625,
+                          0.17578125,
+                          0.087890625,
+                          0.0439453125,
+                          0.02197265625,
+                          0.010986328125],
+                         resolutions)
+
+        resolutions = tile_grid.derive(min_level=4, max_level=6). \
+            get_resolutions()
+        self.assertEqual([0.0439453125,
+                          0.02197265625,
+                          0.010986328125],
+                         resolutions)
+
+    def test_geographic_tile_extent(self):
+        tile_grid = TileGrid.new_geographic()
+
+        self.assertEqual((-180, -90, 0, 90),
+                         tile_grid.get_tile_extent(0, 0, 0))
+        self.assertEqual((0, -90, 180, 90),
+                         tile_grid.get_tile_extent(1, 0, 0))
+
+        self.assertEqual((-180, 0, -90, 90),
+                         tile_grid.get_tile_extent(0, 0, 1))
+        self.assertEqual((-90, 0, 0, 90),
+                         tile_grid.get_tile_extent(1, 0, 1))
+        self.assertEqual((0, 0, 90, 90),
+                         tile_grid.get_tile_extent(2, 0, 1))
+        self.assertEqual((90, 0, 180, 90),
+                         tile_grid.get_tile_extent(3, 0, 1))
         self.assertEqual((-180, -90, -90, 0),
-                         tile_grid.get_tile_bbox(0, 1, 1))
-        self.assertEqual((-90, -90, 0, 0), tile_grid.get_tile_bbox(1, 1, 1))
-        self.assertEqual((0, -90, 90, 0), tile_grid.get_tile_bbox(2, 1, 1))
-        self.assertEqual((90, -90, 180, 0), tile_grid.get_tile_bbox(3, 1, 1))
+                         tile_grid.get_tile_extent(0, 1, 1))
+        self.assertEqual((-90, -90, 0, 0),
+                         tile_grid.get_tile_extent(1, 1, 1))
+        self.assertEqual((0, -90, 90, 0),
+                         tile_grid.get_tile_extent(2, 1, 1))
+        self.assertEqual((90, -90, 180, 0),
+                         tile_grid.get_tile_extent(3, 1, 1))
 
-    def test_geographic_dataset_level(self):
+    def test_web_mercator_dataset_level(self):
         tile_grid = TileGrid.new_web_mercator()
 
-        for level, res in enumerate(tile_grid.resolutions('meter')):
-            print(level, res)
-            if level > 16:
-                break
+        # # This useful for debugging failing tests
+        # for level, res in enumerate(tile_grid.resolutions('meter')):
+        #     print(level, res)
+        #     if level > 16:
+        #         break
 
         args = [10, 20, 40, 80, 160], 'meter'
 

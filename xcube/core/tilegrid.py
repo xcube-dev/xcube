@@ -21,7 +21,7 @@
 
 
 import math
-from typing import Optional, Tuple, Sequence, Iterator, List
+from typing import Optional, Tuple, Sequence, List
 
 import pyproj
 
@@ -52,22 +52,94 @@ class TileGrid:
                  num_level_zero_tiles: Tuple[int, int],
                  crs_name: str,
                  map_height: float,
-                 tile_size: int = DEFAULT_TILE_SIZE):
-        self.num_level_zero_tiles = num_level_zero_tiles
-        self.crs_name = crs_name
+                 tile_size: int = DEFAULT_TILE_SIZE,
+                 min_level: Optional[int] = None,
+                 max_level: Optional[int] = None):
+        self._num_level_zero_tiles = num_level_zero_tiles
+        self._crs_name = crs_name
         self._crs = None
-        self.map_height = map_height
-        self.tile_size = tile_size
+        self._map_height = map_height
+        self._tile_size = tile_size
+        self._min_level = min_level
+        self._max_level = max_level
+
+    @property
+    def num_level_zero_tiles(self) -> Tuple[int, int]:
+        """The number of level zero tiles in x and y directions."""
+        return self._num_level_zero_tiles
+
+    @property
+    def crs_name(self) -> str:
+        """The name of the spatial coordinate reference system."""
+        return self._crs_name
 
     @property
     def crs(self) -> pyproj.CRS:
+        """The spatial coordinate reference system."""
         if self._crs is None:
             self._crs = pyproj.CRS.from_string(self.crs_name)
         return self._crs
 
     @property
     def map_unit_name(self) -> str:
+        """The name of the map's spatial units."""
         return self.crs.axis_info[0].unit_name
+
+    @property
+    def map_width(self) -> float:
+        """
+        The height of the map in units
+        of the map's spatial coordinate reference system.
+        """
+        num_tiles_x0, num_tiles_y0 = self.num_level_zero_tiles
+        return self.map_height * num_tiles_x0 / num_tiles_y0
+
+    @property
+    def map_height(self) -> float:
+        """
+        The height of the map in units
+        of the map's spatial coordinate reference system.
+        """
+        return self._map_height
+
+    @property
+    def map_extent(self) -> Tuple[float, float, float, float]:
+        """
+        The extent of the map in units
+        of the map's spatial coordinate reference system.
+        """
+        map_width_05 = self.map_width / 2
+        map_height_05 = self.map_height / 2
+        return -map_width_05, -map_height_05, map_width_05, map_height_05
+
+    @property
+    def map_origin(self) -> Tuple[float, float]:
+        """
+        The origin of the map (upper, left pixel of the upper left tile)
+        in units of the map's spatial coordinate reference system.
+        """
+        map_extent = self.map_extent
+        return map_extent[0], map_extent[3]
+
+    @property
+    def tile_size(self) -> int:
+        """The tile size in pixels."""
+        return self._tile_size
+
+    @property
+    def min_level(self) -> Optional[int]:
+        """The minimum level of detail."""
+        return self._min_level
+
+    @property
+    def max_level(self) -> Optional[int]:
+        """The maximum level of detail."""
+        return self._max_level
+
+    @property
+    def num_levels(self) -> Optional[int]:
+        """The number of detail levels."""
+        return self.max_level + 1 if self.max_level is not None else None
 
     @classmethod
     def new(cls, crs_name: str = DEFAULT_CRS_NAME, **kwargs) -> 'TileGrid':
@@ -100,17 +172,28 @@ class TileGrid:
         d = dict(num_level_zero_tiles=self.num_level_zero_tiles,
                  crs_name=self.crs_name,
                  map_height=self.map_height,
-                 tile_size=self.tile_size)
+                 tile_size=self.tile_size,
+                 min_level=self.min_level,
+                 max_level=self.max_level)
         return {k: v for k, v in d.items() if v is not None}
 
-    def resolutions(self, unit_name: Optional[str] = None) -> Iterator[float]:
+    def get_resolutions(self,
+                        min_level: Optional[int] = None,
+                        max_level: Optional[int] = None,
+                        unit_name: Optional[str] = None) -> List[float]:
         unit_factor = get_unit_factor(self.map_unit_name,
                                       unit_name or self.map_unit_name)
         res_l0 = unit_factor * self.map_height / self.tile_size
-        factor = 1
-        while True:
-            yield res_l0 / factor
-            factor *= 2
+
+        min_level = min_level if min_level is not None else self.min_level
+        if min_level is None:
+            min_level = 0
+        max_level = max_level if max_level is not None else self.max_level
+        if max_level is None:
+            raise ValueError('max_value must be given')
+
+        return [res_l0 / 2 ** level
+                for level in range(min_level, max_level + 1)]
 
     def get_dataset_level(self,
                           level: int,
@@ -149,10 +232,10 @@ class TileGrid:
 
         raise RuntimeError('should not come here')
 
-    def get_tile_bbox(self,
-                      tile_x: int,
-                      tile_y: int,
-                      tile_z: int) \
+    def get_tile_extent(self,
+                        tile_x: int,
+                        tile_y: int,
+                        tile_z: int) \
             -> Optional[Tuple[float, float, float, float]]:
         if tile_z < 0:
             return None
@@ -169,7 +252,7 @@ class TileGrid:
         if tile_y < 0 or tile_y >= num_tiles_y:
             return None
 
-        map_width = self.map_height * num_tiles_x0 / num_tiles_y0
+        map_width = self.map_width
         map_height = self.map_height
 
         map_x0 = -map_width / 2

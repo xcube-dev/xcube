@@ -155,8 +155,7 @@ def get_capabilities_element(ctx: ServiceContext,
             ds_theme_element.add(var_theme_element)
 
     contents_element.add(
-        # TODO (forman): compute num_levels_min and num_levels_max
-        #   from datasets
+        # TODO (forman): compute min_level and max_level from datasets
         get_tile_matrix_set_element(tms_id, num_levels=20),
     )
 
@@ -392,7 +391,9 @@ def _get_tile_matrix_set_element(
     tile_grid = TileGrid.new(get_crs_name_from_tms_id(tms_id))
     tile_size = tile_grid.tile_size
     num_x_tiles_0, num_y_tiles_0 = tile_grid.num_level_zero_tiles
-    for level, res in zip(range(num_levels), tile_grid.resolutions()):
+    resolutions = tile_grid.get_resolutions(min_level=0,
+                                            max_level=num_levels - 1)
+    for level, res in enumerate(resolutions):
         factor = 2 ** level
         num_x_tiles = factor * num_x_tiles_0
         num_y_tiles = factor * num_y_tiles_0
@@ -585,6 +586,8 @@ def get_service_metadata_url_element(
                    attrs={'xlink:href': get_caps_rest_url})
 
 
+# TODO: move get_crs84_bbox() into GridMapping so we can adjust
+#   global dataset attributes with result
 def get_crs84_bbox(grid_mapping: GridMapping) \
         -> Tuple[float, float, float, float]:
     if grid_mapping.crs.is_geographic:

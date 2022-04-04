@@ -173,7 +173,7 @@ def compute_rgba_tile(
         ds_y_coords = variable_0[ds_y_name]
         ds_y_points_up = bool(ds_y_coords[0] < ds_y_coords[-1])
 
-        tile_bbox = tile_grid.get_tile_bbox(tile_x, tile_y, tile_z)
+        tile_bbox = tile_grid.get_tile_extent(tile_x, tile_y, tile_z)
         if tile_bbox is None:
             raise TileRequestException.new(
                 'tile indices out of tile grid bounds',
