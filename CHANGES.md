@@ -2,10 +2,10 @@
 
 ### Enhancements
 
-* The xcube package now consistently make use of logging.
-  We distinguish general logging and xcube logging.
-  General logging refers to the log messages of any Python module while
-  xcube logging only refers to log messages emitted by xcube modules.
+* The xcube package now consistently makes use of logging.
+  We distinguish general logging and specific xcube logging.
+  General logging refers to the log messages emitted by any Python module 
+  while xcube logging only refers to log messages emitted by xcube modules.
 
   * The output of general logging from xcube CLI tools can now be 
     configured with two new CLI options: 
