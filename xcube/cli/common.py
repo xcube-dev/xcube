@@ -1,8 +1,16 @@
+import logging
+import sys
 from typing import Dict, Any, Optional, Union, Sequence, Type, Tuple
 
 import click
 
-from xcube.constants import LOG
+from xcube.constants import (GENERAL_LOG_FORMAT,
+                             XCUBE_LOG_FORMAT,
+                             LOG,
+                             LOG_LEVEL_OFF_NAME,
+                             LOG_LEVEL_OFF,
+                             LOG_LEVEL_DETAIL,
+                             LOG_LEVEL_TRACE)
 
 
 def new_cli_ctx_obj():
@@ -13,13 +21,12 @@ def new_cli_ctx_obj():
 
 
 def cli_option_traceback(func):
-    """Decorator for adding a pre-defined, reusable CLI option `--traceback`."""
+    """Decorator for adding a reusable CLI option `--traceback`."""
 
     # noinspection PyUnusedLocal
     def _callback(ctx: click.Context, param: click.Option, value: bool):
         ctx_obj = ctx.ensure_object(dict)
-        if ctx_obj is not None:
-            ctx_obj["traceback"] = value
+        ctx_obj["traceback"] = value
         return value
 
     return click.option(
@@ -30,11 +37,57 @@ def cli_option_traceback(func):
         callback=_callback)(func)
 
 
+def cli_option_quiet(func):
+    """
+    Decorator for adding a reusable CLI option `--quiet`/'-q'.
+    """
+
+    # noinspection PyUnusedLocal
+    def _callback(ctx: click.Context, param: click.Option, value: bool):
+        ctx_obj = ctx.ensure_object(dict)
+        ctx_obj["quiet"] = value
+        return value
+
+    return click.option(
+        '--quiet', '-q',
+        is_flag=True,
+        help="Disable output of log messages to the console.",
+        callback=_callback
+    )(func)
+
+
+def cli_option_verbosity(func):
+    """
+    Decorator for adding a reusable CLI option `--verbose`/'-v' that
+    can be used multiple times.
+    The related kwarg is named `verbosity` and is of type int (= count).
+    """
+
+    # noinspection PyUnusedLocal
+    def _callback(ctx: click.Context, param: click.Option, value: int):
+        ctx_obj = ctx.ensure_object(dict)
+        ctx_obj["verbose"] = value
+        ctx_obj["verbosity"] = value
+        return value
+
+    return click.option(
+        '--verbose', '-v', 'verbosity',
+        count=True,
+        help="Enable output of log messages to the console."
+             " May be given multiple times (-vv, -vvv) to control the level"
+             " of log messages, i.e.,"
+             " -v refers to level INFO, -vv to DETAIL, -vvv to DEBUG,"
+             " -vvvv to TRACE.",
+        callback=_callback
+    )(func)
+
+
 def cli_option_scheduler(func):
     """Decorator for adding a pre-defined, reusable CLI option `--scheduler`."""
 
     # noinspection PyUnusedLocal
-    def _callback(ctx: click.Context, param: click.Option, value: Optional[str]):
+    def _callback(ctx: click.Context, param: click.Option,
+                  value: Optional[str]):
         if not value:
             return
 
@@ -51,8 +104,7 @@ def cli_option_scheduler(func):
             import distributed
             scheduler_client = distributed.Client(address, **kwargs)
             ctx_obj = ctx.ensure_object(dict)
-            if ctx_obj is not None:
-                ctx_obj["scheduler"] = scheduler_client
+            ctx_obj["scheduler"] = scheduler_client
             return scheduler_client
         except ValueError as e:
             raise click.BadParameter(f'Failed to create Dask scheduler client: {e}') from e
@@ -172,23 +224,104 @@ def assert_positive_int_item(item: int):
         raise ValueError('all items must be positive integer numbers')
 
 
-
-def handle_cli_exception(e: BaseException, exit_code: int = None, traceback_mode: bool = False) -> int:
-    import sys
+def handle_cli_exception(e: BaseException,
+                         exit_code: int = None,
+                         traceback_mode: bool = False) -> int:
+    exc_info = traceback_mode and e
     if isinstance(e, click.Abort):
-        print(f'Aborted!')
+        LOG.error('Aborted.', exc_info=exc_info)
         exit_code = exit_code or 1
     elif isinstance(e, click.ClickException):
-        e.show(file=sys.stderr)
+        LOG.error('%s', e, exc_info=exc_info)
         exit_code = exit_code or e.exit_code
     elif isinstance(e, OSError):
-        print(f'OS error: {e}', file=sys.stderr)
+        LOG.error('OS error: %s', e, exc_info=exc_info)
         exit_code = exit_code or 2
     else:
-        print(f'Internal error: {e}', file=sys.stderr)
+        LOG.error(f'Internal error: %s', e, exc_info=exc_info)
         exit_code = exit_code or 3
-    LOG.error('Exit with code %d', exit_code, exc_info=not traceback_mode)
-    if traceback_mode:
-        import traceback
-        traceback.print_exc(file=sys.stderr)
+    LOG.debug('Exit with code %d', exit_code)
     return exit_code
+
+
+def configure_warnings(enable_warnings: bool):
+    # In normal operation, it's not necessary to explicitly set the default
+    # filter when --warnings is omitted, but it can be needed during
+    # unit testing if a previous test has caused the filter to be changed.
+    import warnings
+    warnings.simplefilter('default' if enable_warnings else 'ignore',
+                          category=DeprecationWarning)
+    warnings.simplefilter('default' if enable_warnings else 'ignore',
+                          category=RuntimeWarning)
+
+
+_general_handler: Union[logging.NullHandler,
+                        logging.FileHandler,
+                        logging.StreamHandler] = logging.NullHandler()
+
+
+def configure_logging(log_file: Optional[str],
+                      log_level: Optional[str],
+                      logger: logging.Logger = logging.getLogger()):
+    remove_log_handlers(logger)
+    if log_level == LOG_LEVEL_OFF_NAME:
+        logger.setLevel(LOG_LEVEL_OFF)
+    else:
+        logger.setLevel(log_level)
+        formatter = logging.Formatter(GENERAL_LOG_FORMAT)
+        if log_file:
+            handler = logging.FileHandler(log_file, 'a', encoding='utf8')
+        else:
+            handler = logging.StreamHandler(sys.stderr)
+        handler.setFormatter(formatter)
+        logger.addHandler(handler)
+        global _general_handler
+        _general_handler = handler
+
+
+def configure_cli_output(quiet: Optional[bool] = None,
+                         verbosity: Optional[Union[bool, int]] = None,
+                         logger: logging.Logger = LOG):
+    remove_log_handlers(logger)
+
+    if quiet:
+        level = LOG_LEVEL_OFF
+    elif not verbosity:
+        level = logging.WARNING
+    elif verbosity == 1:
+        level = logging.INFO
+    elif verbosity == 2:
+        level = LOG_LEVEL_DETAIL
+    elif verbosity == 3:
+        level = logging.DEBUG
+    else:
+        level = LOG_LEVEL_TRACE
+
+    logger.setLevel(level)
+
+    if not isinstance(_general_handler, logging.StreamHandler):
+        # Only if we do not already redirect output of general logging
+        # to stderr, install a new handler with a simple message format
+        # for the console.
+        handler = logging.StreamHandler(sys.stderr)
+        handler.setFormatter(ConsoleMessageFormatter())
+        logger.addHandler(handler)
+
+
+def remove_log_handlers(logger: logging.Logger):
+    for h in list(logger.handlers):
+        logger.removeHandler(h)
+        h.close()
+
+
+class ConsoleMessageFormatter(logging.Formatter):
+    def __init__(self):
+        super().__init__(XCUBE_LOG_FORMAT)
+
+    def format(self, record: logging.LogRecord) -> str:
+        if logging.DEBUG < record.levelno < logging.WARNING:
+            # Just return plain message and skip formatting level
+            msg = str(record.msg)
+            return msg % record.args if record.args else msg
+        else:
+            return super().format(record)

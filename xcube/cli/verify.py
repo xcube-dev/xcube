@@ -22,7 +22,7 @@
 import sys
 
 import click
-
+from xcube.constants import LOG
 
 # noinspection PyShadowingBuiltins
 @click.command(name='verify')
@@ -53,7 +53,7 @@ def _verify(input_path: str = None, monitor=None):
     from xcube.core.dsio import open_dataset
     from xcube.core.verify import verify_cube
 
-    monitor(f'Opening cube from {input_path!r}...')
+    LOG.info(f'Opening cube from {input_path!r}...')
     with open_dataset(input_path) as cube:
         report = verify_cube(cube)
 

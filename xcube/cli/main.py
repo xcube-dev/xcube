@@ -19,7 +19,6 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-import logging
 import sys
 
 import click
@@ -27,13 +26,13 @@ import click
 from xcube.cli.common import (cli_option_scheduler,
                               cli_option_traceback,
                               handle_cli_exception,
-                              new_cli_ctx_obj)
-from xcube.constants import DEFAULT_LOG_FORMAT
-from xcube.constants import DEFAULT_LOG_LEVEL
-from xcube.constants import EXTENSION_POINT_CLI_COMMANDS
-from xcube.constants import LOG_LEVELS
-from xcube.constants import OFF_LOG_LEVEL
-from xcube.constants import OFF_LOG_LEVEL_NAME
+                              new_cli_ctx_obj,
+                              configure_logging,
+                              configure_warnings)
+from xcube.constants import (EXTENSION_POINT_CLI_COMMANDS,
+                             LOG_LEVELS,
+                             LOG_LEVEL_OFF_NAME,
+                             DEFAULT_GENERAL_LOG_LEVEL)
 from xcube.util.plugin import get_extension_registry
 from xcube.version import version
 
@@ -43,48 +42,54 @@ from xcube.version import version
 @click.version_option(version)
 @cli_option_traceback
 @cli_option_scheduler
-@click.option('--loglevel',
-              metavar='LEVEL',
+@click.option('--loglevel', 'log_level',
+              metavar='LOG_LEVEL',
               type=click.Choice(LOG_LEVELS),
-              default=DEFAULT_LOG_LEVEL,
+              default=LOG_LEVEL_OFF_NAME,
               help=f'Log level.'
                    f' Must be one of {", ".join(LOG_LEVELS)}.'
-                   f' Defaults to {DEFAULT_LOG_LEVEL}.')
+                   f' Defaults to {DEFAULT_GENERAL_LOG_LEVEL}.'
+                   f' If {LOG_LEVEL_OFF_NAME}, only progress messages'
+                   f' are displayed.'
+                   f' If not {LOG_LEVEL_OFF_NAME}, all log messages will be'
+                   f' written either to stderr or LOG_FILE, if given.')
+@click.option('--logfile', 'log_file',
+              metavar='LOG_FILE',
+              help=f'Log file path.'
+                   f' If given, any log messages will redirected into'
+                   f' LOG_FILE. Effective only if LOG_LEVEL'
+                   f' is not {LOG_LEVEL_OFF_NAME}.')
 @click.option('--warnings', '-w',
               is_flag=True,
-              help='Show any warnings produced during operation '
-                   '(warnings are hidden by default)')
-def cli(traceback=False, scheduler=None, loglevel=None, warnings=None):
+              help='Show any warnings emitted during operation'
+                   ' (warnings are hidden by default).')
+def cli(traceback=False,
+        scheduler=None,
+        log_level=None,
+        log_file=None,
+        warnings=None):
     """
     xcube Toolkit
     """
-
-    # Configure logging for all xcube CLI tools (#659)
-    loglevel = loglevel or DEFAULT_LOG_LEVEL
-    if loglevel == OFF_LOG_LEVEL_NAME:
-        loglevel = OFF_LOG_LEVEL
-    logging.basicConfig(
-        format=DEFAULT_LOG_FORMAT,
-        stream=sys.stderr,
-        level=loglevel,
-        force=True
-    )
-
-    # In normal operation, it's not necessary to explicitly set the default
-    # filter when --warnings is omitted, but it can be needed during
-    # unit testing if a previous test has caused the filter to be changed.
-    import warnings as _warnings
-    _warnings.simplefilter('default' if warnings else 'ignore',
-                           category=DeprecationWarning)
-    _warnings.simplefilter('default' if warnings else 'ignore',
-                           category=RuntimeWarning)
+    configure_logging(log_file=log_file, log_level=log_level)
+    configure_warnings(warnings)
 
 
-# Add registered CLI commands
-for command in get_extension_registry().find_components(
-        EXTENSION_POINT_CLI_COMMANDS
-):
-    cli.add_command(command)
+_cli_commands_registered = False
+
+
+def _register_cli_commands():
+    global _cli_commands_registered
+    if _cli_commands_registered:
+        return
+    _cli_commands_registered = True
+    # Add registered CLI commands
+    registry = get_extension_registry()
+    for command in registry.find_components(EXTENSION_POINT_CLI_COMMANDS):
+        cli.add_command(command)
+
+
+_register_cli_commands()
 
 
 def main(args=None):

@@ -46,7 +46,7 @@ class IOStoreTest(CliTest):
                          " with parameters ('root=42',):"
                          " Invalid parameterization detected:"
                          " 42 is not of type 'string'\n",
-                         result.stdout)
+                         result.stderr)
 
     def test_data(self):
         demo_dir = os.path.join(os.path.dirname(__file__),

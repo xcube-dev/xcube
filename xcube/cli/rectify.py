@@ -25,8 +25,13 @@ from typing import Sequence, Optional, Tuple
 
 import click
 
-from xcube.cli.common import parse_cli_sequence, assert_positive_int_item
-from xcube.constants import FORMAT_NAME_ZARR, FORMAT_NAME_NETCDF4, FORMAT_NAME_MEM
+from xcube.cli.common import (parse_cli_sequence,
+                              assert_positive_int_item,
+                              cli_option_quiet,
+                              cli_option_verbosity, configure_cli_output)
+from xcube.constants import FORMAT_NAME_ZARR, FORMAT_NAME_NETCDF4, \
+    FORMAT_NAME_MEM
+from xcube.constants import LOG
 
 OUTPUT_FORMAT_NAMES = [FORMAT_NAME_ZARR, FORMAT_NAME_NETCDF4, FORMAT_NAME_MEM]
 
@@ -72,6 +77,8 @@ DEFAULT_CRS = 'EPSG:4326'
 @click.option('--delta', '-d', type=float, default=DEFAULT_DELTA,
               help='Relative maximum delta for detection whether a '
                    'target pixel center is within a source pixel\'s boundary.')
+@cli_option_quiet
+@cli_option_verbosity
 @click.option('--dry-run', default=DEFAULT_DRY_RUN, is_flag=True,
               help='Just read and process INPUT, but don\'t produce any outputs.')
 def rectify(dataset: str,
@@ -85,10 +92,13 @@ def rectify(dataset: str,
             output_res: float = None,
             output_crs: str = None,
             delta: float = DEFAULT_DELTA,
+            quiet: bool = False,
+            verbosity: int = 0,
             dry_run: bool = DEFAULT_DRY_RUN):
     """
     Rectify a dataset to WGS-84 using its per-pixel geo-locations.
     """
+    configure_cli_output(quiet=quiet, verbosity=verbosity)
 
     input_path = dataset
 
@@ -99,7 +109,8 @@ def rectify(dataset: str,
                                          metavar='VARIABLES',
                                          item_plural_name='names')
                       for var_name_specifier in var_names]
-    var_name_flat_list = functools.reduce(operator.iconcat, var_name_lists, [])
+    var_name_flat_list = functools.reduce(operator.iconcat, var_name_lists,
+                                          [])
 
     output_size = parse_cli_sequence(output_size,
                                      metavar='SIZE', num_items=2, item_plural_name='sizes',
@@ -124,7 +135,7 @@ def rectify(dataset: str,
              output_crs,
              delta,
              dry_run=dry_run,
-             monitor=print)
+             monitor=LOG.info)
 
     return 0
 

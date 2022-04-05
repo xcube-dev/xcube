@@ -22,8 +22,14 @@
 import json
 import sys
 import traceback
+from typing import Dict, Any
 
 import click
+
+from xcube.cli.common import (cli_option_quiet,
+                              cli_option_verbosity,
+                              configure_cli_output)
+from xcube.constants import LOG
 
 
 @click.command(name="gen2", hidden=True)
@@ -50,16 +56,14 @@ import click
               help='Write cube information or generation result into JSON'
                    ' file RESULT.'
                    ' If omitted, the JSON is dumped to stdout.')
-@click.option('--verbose', '-v', 'verbosity',
-              count=True,
-              help='Control amount of information dumped to stdout.'
-                   ' May be given multiple time to output more details,'
-                   ' e.g. "-vvv".')
+@cli_option_quiet
+@cli_option_verbosity
 def gen2(request_path: str,
          stores_config_path: str = None,
          service_config_path: str = None,
          output_file: str = None,
          info: bool = False,
+         quiet: bool = False,
          verbosity: int = 0):
     """
     Generator tool for data cubes.
@@ -123,7 +127,11 @@ def gen2(request_path: str,
     from xcube.core.gen2 import CubeGeneratorRequest
     from xcube.util.versions import get_xcube_versions
 
+    configure_cli_output(quiet=quiet, verbosity=verbosity)
+
     error = None
+
+    result: Dict[str, Any]
 
     # noinspection PyBroadException
     try:
@@ -161,8 +169,7 @@ def gen2(request_path: str,
     if output_file is not None:
         with open(output_file, 'w') as fp:
             json.dump(result, fp, indent=2)
-        if verbosity:
-            print(f'Result written to {output_file}')
+        LOG.info(f'Result written to {output_file}')
     else:
         json.dump(result, sys.stdout, indent=2)
 

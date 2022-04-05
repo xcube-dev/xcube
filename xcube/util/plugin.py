@@ -22,6 +22,7 @@
 import abc
 import importlib
 import pkgutil
+import sys
 import time
 import traceback
 import warnings
@@ -135,7 +136,7 @@ def load_plugins(entry_points=None, ext_registry=None):
 def _handle_error(entry_point, e):
     # We use warning and not raise to allow loading xcube despite a broken plugin. Raise would stop xcube.
     warnings.warn(f'Unexpected exception while loading xcube plugin {entry_point.name!r}: {e}')
-    traceback.print_exc()
+    traceback.print_exc(file=sys.stderr)
 
 
 class _ModuleEntryPoint:

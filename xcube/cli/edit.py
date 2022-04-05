@@ -21,6 +21,8 @@
 
 import click
 
+from xcube.constants import LOG
+
 DEFAULT_OUTPUT_PATH = '{input}-edited.zarr'
 
 
@@ -54,4 +56,4 @@ def edit(cube,
                   metadata_path=metadata,
                   update_coords=coords,
                   in_place=in_place,
-                  monitor=print)
+                  monitor=LOG.info)

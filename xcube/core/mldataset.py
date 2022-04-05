@@ -30,7 +30,7 @@ import xarray as xr
 import zarr
 from deprecated import deprecated
 
-from xcube.constants import FORMAT_NAME_LEVELS
+from xcube.constants import FORMAT_NAME_LEVELS, LOG
 from xcube.constants import FORMAT_NAME_NETCDF4
 from xcube.constants import FORMAT_NAME_SCRIPT
 from xcube.constants import FORMAT_NAME_ZARR
@@ -813,10 +813,10 @@ def write_levels(ml_dataset: MultiLevelDataset,
     for level in range(ml_dataset.num_levels):
         level_dataset = ml_dataset.get_dataset(level)
         level_dataset = level_dataset.chunk(chunks)
-        print(f'writing level {level + 1}...')
+        LOG.info(f'writing level {level + 1}...')
         write_cube(level_dataset,
                    f'{levels_path}/{level}.zarr',
                    'zarr',
                    s3_kwargs=s3_kwargs,
                    s3_client_kwargs=s3_client_kwargs)
-        print(f'written level {level + 1}')
+        LOG.info(f'written level {level + 1}')

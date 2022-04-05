@@ -2,6 +2,46 @@
 
 ### Enhancements
 
+* The xcube package now consistently make use of logging.
+  We distinguish general logging and xcube logging.
+  General logging refers to the log messages of any Python module while
+  xcube logging only refers to log messages emitted by xcube modules.
+
+  * The output of general logging from xcube CLI tools can now be 
+    configured with two new CLI options: 
+    
+    - `--loglevel LEVEL`: Can be one of `CRITICAL`, `ERROR`,
+      `WARNING`, `INFO`, `DETAIL`, `DEBUG`, `TRACE`, or `OFF` (the default).
+    - `--logfile PATH`: Effective only if log level is not `OFF`.
+      If given, log messages will be written into the file
+      given by PATH. If omitted, log messages will be redirected 
+      to standard error (`sys.stderr`).
+
+    The output of general logging from xcube CLI is disabled by default.
+    If enabled, the log message format includes the level, date-time,
+    logger name, and message.
+
+  * All xcube modules use the logger named `xcube` 
+    (i.e. `LOG = logging.getLogger("xcube")`) to emit 
+    messages regarding progress, debugging, errors. Packages that extend
+    the xcube package should use a dot suffix for their logger names, e.g.
+    `xcube.cci` for the xcube plugin package `xcube-cci`.
+  
+  * All xcube CLI tools will output log messages, if any, 
+    on standard error (`sys.stderr`). 
+    Only the actual result, if any, 
+    is written to standard out (`sys.stdout`).
+
+  * Some xcube CLI tools have a `--quiet`/`-q` option to disable output
+    of log messages on the console and a `--verbose`/`-v` option to enable 
+    it and control the log level. For this purpose the option `-v` 
+    can be given multiple times and even be combined: `-v` = `INFO`, 
+    `-vv` = `DETAIL`, `-vvv` = `DEBUG`, `-vvvv` = `TRACE`.
+    The `quiet` and `verbose` settings only affect the logger named `xcube`
+    and its children. 
+    If enabled, a simple message format will be used, unless the general 
+    logging is redirected to stdout.
+
 * Support for multi-level datasets aka ND image pyramids has been 
   further improved (#655):
   - Introduced new parameter `agg_methods` for writing multi-level datasets 
@@ -14,10 +54,6 @@
     and `"mean"` for floating point variables. 
   - The `xcube level` CLI tool now has a new option `--agg-methods` (or `-A`)
     for the same purpose.
-
-* All xcube CLI tools now consistently provide logging output. It can be 
-  controlled using the `--loglevel LEVEL` with level being one of 
-  `CRITICAL`, `ERROR`, `WARNING`, `INFO`, `DEBUG`. Default is `WARNING`.
 
 ### Fixes
 

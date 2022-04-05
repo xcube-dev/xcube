@@ -31,6 +31,8 @@ from typing import Optional
 
 __author__ = "Norman Fomferra (Brockmann Consult GmbH)"
 
+from xcube.constants import LOG
+
 _DEBUG_CACHE = False
 
 
@@ -412,7 +414,7 @@ class Cache:
 
 
 def _debug_print(msg):
-    print("Cache:", msg)
+    LOG.debug("Cache:", msg)
 
 
 def _compute_object_size(obj):

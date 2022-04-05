@@ -25,7 +25,12 @@ from typing import Callable
 
 import click
 
-from xcube.constants import FORMAT_NAME_ZARR
+from xcube.cli.common import (cli_option_quiet,
+                              cli_option_verbosity,
+                              configure_cli_output)
+from xcube.constants import (FORMAT_NAME_ZARR,
+                             LOG,
+                             LOG_LEVEL_DETAIL)
 
 Monitor = Callable[[str, int], None]
 
@@ -33,13 +38,13 @@ Monitor = Callable[[str, int], None]
 # noinspection PyShadowingBuiltins
 @click.command(name='prune')
 @click.argument('dataset_path', metavar='DATASET')
-@click.option('--verbose', '-v', 'verbosity', count=True,
-              help='Verbose mode. Multiple may be given, '
-                   'for example "-vvv".')
+@cli_option_quiet
+@cli_option_verbosity
 @click.option('--dry-run', is_flag=True,
               help='Just read and process input, '
                    'but don\'t produce any output.')
 def prune(dataset_path: str,
+          quiet: bool,
           verbosity: int,
           dry_run: bool):
     """
@@ -48,10 +53,17 @@ def prune(dataset_path: str,
     (NaN-only) chunks in given DATASET,
     which must have Zarr format.
     """
+    configure_cli_output(quiet=quiet, verbosity=verbosity)
 
     def monitor(msg: str, monitor_verbosity: int = 1):
-        if monitor_verbosity <= verbosity:
-            print(msg)
+        if monitor_verbosity == 0:
+            LOG.error(msg)
+        elif monitor_verbosity == 1:
+            LOG.info(msg)
+        elif monitor_verbosity == 2:
+            LOG.log(LOG_LEVEL_DETAIL, msg)
+        elif monitor_verbosity == 3:
+            LOG.debug(msg)
 
     _prune(input_path=dataset_path, dry_run=dry_run, monitor=monitor)
     return 0
@@ -125,9 +137,9 @@ def _delete_block_file(input_path: str,
             os.remove(block_path)
             return True
         except OSError as e:
-            monitor(f'Error: failed to delete '
+            monitor(f'Failed to delete '
                     f'block file {block_path}: {e}', 0)
     else:
-        monitor(f'Error: could find neither '
+        monitor(f'Could find neither '
                 f'block file {block_path_1} nor {block_path_2}', 0)
     return False

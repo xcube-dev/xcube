@@ -23,10 +23,12 @@ from typing import List, Sequence
 
 import click
 
-from xcube.constants import EXTENSION_POINT_DATASET_IOS
+from xcube.constants import (EXTENSION_POINT_DATASET_IOS,
+                             LOG)
 from xcube.constants import EXTENSION_POINT_INPUT_PROCESSORS
 from xcube.constants import RESAMPLING_METHOD_NAMES
-from xcube.core.gen.defaults import DEFAULT_OUTPUT_PATH, DEFAULT_OUTPUT_RESAMPLING
+from xcube.core.gen.defaults import DEFAULT_OUTPUT_PATH, \
+    DEFAULT_OUTPUT_RESAMPLING
 from xcube.util.extension import Extension
 
 resampling_methods = sorted(RESAMPLING_METHOD_NAMES)
@@ -123,11 +125,8 @@ def gen(input: Sequence[str],
         no_sort_mode=no_sort,
     )
 
-    def flushing_monitor(*args, **kwargs):
-        print(*args, flush=True, **kwargs)
-
     gen_cube(dry_run=dry_run,
-             monitor=flushing_monitor,
+             monitor=LOG.info,
              **config)
 
     return 0

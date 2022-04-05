@@ -87,20 +87,35 @@ RESAMPLING_METHOD_NAMES = {
     'Q3',
 }
 
-OFF_LOG_LEVEL = logging.CRITICAL + 1
-OFF_LOG_LEVEL_NAME = 'OFF'
+LOG_LEVEL_OFF_NAME = 'OFF'
+LOG_LEVEL_OFF = logging.CRITICAL + 5
+
+LOG_LEVEL_DETAIL_NAME = 'DETAIL'
+LOG_LEVEL_DETAIL = logging.DEBUG + 5
+
+LOG_LEVEL_TRACE_NAME = 'TRACE'
+LOG_LEVEL_TRACE = logging.DEBUG - 5
+
+logging.addLevelName(LOG_LEVEL_DETAIL, LOG_LEVEL_DETAIL_NAME)
+logging.addLevelName(LOG_LEVEL_TRACE, LOG_LEVEL_TRACE_NAME)
 
 LOG_LEVELS = [
-    OFF_LOG_LEVEL_NAME,
+    LOG_LEVEL_OFF_NAME,
     'CRITICAL',
     'ERROR',
     'WARNING',
     'INFO',
-    'DEBUG'
+    LOG_LEVEL_DETAIL_NAME,
+    'DEBUG',
+    LOG_LEVEL_TRACE_NAME
 ]
 
-DEFAULT_LOG_LEVEL = OFF_LOG_LEVEL_NAME
-DEFAULT_LOG_FORMAT = '[%(levelname).1s %(asctime)s %(name)s] %(message)s'
+DEFAULT_GENERAL_LOG_LEVEL = LOG_LEVEL_OFF
+DEFAULT_XCUBE_LOG_LEVEL = logging.WARNING
 
-# xcube's standard logger
+GENERAL_LOG_FORMAT = '[%(levelname).1s %(asctime)s %(name)s] %(message)s'
+XCUBE_LOG_FORMAT = '%(levelname)s: %(message)s'
+
+# xcube logger
 LOG = logging.getLogger('xcube')
+LOG.setLevel(DEFAULT_XCUBE_LOG_LEVEL)
