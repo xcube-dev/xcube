@@ -157,6 +157,7 @@ def ensure_cmaps_loaded():
                 if cmap_category == 'Ocean' and ocm is None:
                     continue
                 cbar_list = []
+                # TODO: fix hack for SNAP color palettes, see #661
                 if cmap_category == 'Custom SNAP Colormaps':
                     cmap_names = _check_if_exists(SNAP_CPD_LIST)
                 for cmap_name in cmap_names:
