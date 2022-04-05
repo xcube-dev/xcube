@@ -1,7 +1,48 @@
 import re
 import unittest
 
-from xcube.webapi.service import url_pattern, new_default_config
+from xcube.webapi.service import Service
+from xcube.webapi.service import new_default_config
+from xcube.webapi.service import url_pattern
+
+
+class ApplicationMock:
+    def listen(self, port: int, address: str = "", **kwargs):
+        pass
+
+
+class ServiceTest(unittest.TestCase):
+
+    def test_service_ok(self):
+        application = ApplicationMock()
+        # noinspection PyTypeChecker
+        service = Service(application)
+        self.assertIs(application, service.application)
+        self.assertTrue(hasattr(service.application, 'service_context'))
+        self.assertTrue(hasattr(service.application, 'time_of_last_activity'))
+
+    def test_service_deprecated(self):
+        application = ApplicationMock()
+        # noinspection PyTypeChecker
+        service = Service(application,
+                          log_to_stderr=True,
+                          log_file_prefix='log-')
+        self.assertIs(application, service.application)
+
+    def test_service_kwarg_validation(self):
+        application = ApplicationMock()
+
+        for k, v in dict(cube_paths=['test.zarr'],
+                         styles=dict(a=2),
+                         aws_prof='test',
+                         aws_env=True).items():
+            with self.assertRaises(ValueError) as cm:
+                # noinspection PyTypeChecker
+                Service(application,
+                        config_file='server-conf.yaml',
+                        **{k: v})
+            self.assertEqual(f'config_file and {k} cannot be given both',
+                             f'{cm.exception}')
 
 
 class DefaultConfigTest(unittest.TestCase):
