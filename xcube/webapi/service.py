@@ -61,6 +61,7 @@ from xcube.webapi.reqparams import RequestParams
 
 __author__ = "Norman Fomferra (Brockmann Consult GmbH)"
 
+# TODO: fix hack for SNAP color palettes, see #661
 SNAP_CPD_LIST = list()
 
 
@@ -116,6 +117,7 @@ class Service:
         if config_file and aws_env:
             raise ValueError("config_file and aws_env cannot be given both")
 
+        # TODO: fix hack for SNAP color palettes, see #661
         global SNAP_CPD_LIST
         if config_file:
             SNAP_CPD_LIST = _get_custom_color_list(config_file)
@@ -470,7 +472,7 @@ def new_default_config(cube_paths: List[str],
     return config
 
 
-# TODO (forman): fix this hack
+# TODO: fix hack for SNAP color palettes, see #661
 def _get_custom_color_list(config_file):
     # global: too bad :(
     global SNAP_CPD_LIST
