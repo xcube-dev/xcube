@@ -215,7 +215,7 @@ def tile(cube: str,
         tile_width, tile_height = tile_size
     else:
         if verbosity:
-            LOG.warning(f'using default tile sizes derived from CUBE')
+            LOG.warning(f'Using default tile sizes derived from CUBE')
         tile_width, tile_height = tile_grid.tile_size
 
     indexers = None

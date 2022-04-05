@@ -116,7 +116,7 @@ def get_datasets(ctx: ServiceContext,
                         )
                     filtered_dataset_dicts.append(dataset_dict)
                 except (DatasetIsNotACubeError, CubeIsNotDisplayable) as e:
-                    LOG.warning(f'skipping dataset {ds_id}: {e}')
+                    LOG.warning(f'Skipping dataset {ds_id}: {e}')
             dataset_dicts = filtered_dataset_dicts
     if point:
         is_point_in_dataset_bbox = functools.partial(

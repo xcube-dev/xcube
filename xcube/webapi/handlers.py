@@ -126,7 +126,7 @@ class GetWMTSCapabilitiesXmlHandler(ServiceRequestHandler):
 class GetDatasetsHandler(ServiceRequestHandler, AuthMixin):
 
     def get(self):
-        with measure_time('get granted scopes'):
+        with measure_time('Get granted scopes'):
             granted_scopes = self.granted_scopes
         details = bool(int(self.params.get_query_argument('details', '0')))
         tile_client = self.params.get_query_argument('tiles', None)
@@ -145,7 +145,7 @@ class GetDatasetsHandler(ServiceRequestHandler, AuthMixin):
 class GetDatasetHandler(ServiceRequestHandler, AuthMixin):
 
     def get(self, ds_id: str):
-        with measure_time('get granted scopes'):
+        with measure_time('Get granted scopes'):
             granted_scopes = self.granted_scopes
         tile_client = self.params.get_query_argument('tiles', None)
         response = get_dataset(self.service_context,

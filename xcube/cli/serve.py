@@ -196,11 +196,11 @@ def _run_viewer():
                                f"must be a directory: " + viewer_dir)
 
     def _run():
-        LOG.info("starting web server...")
+        LOG.info("Starting web server...")
         with subprocess.Popen(['python', '-m', 'http.server', '--directory', viewer_dir],
                               stdout=subprocess.PIPE,
                               stderr=subprocess.PIPE):
-            LOG.info("opening viewer...")
+            LOG.info("Opening viewer...")
             webbrowser.open("http://localhost:8000/index.html")
 
     threading.Thread(target=_run, name="xcube-viewer-runner").start()

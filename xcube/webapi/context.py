@@ -424,7 +424,7 @@ class ServiceContext:
 
         all_dataset_configs: List[DatasetConfigDict] = []
         for store_instance_id in data_store_pool.store_instance_ids:
-            LOG.info(f'scanning store {store_instance_id!r}')
+            LOG.info(f'Scanning store {store_instance_id!r}')
             data_store_config = data_store_pool.get_store_config(
                 store_instance_id
             )
@@ -460,7 +460,7 @@ class ServiceContext:
                         else:
                             dataset_config_base = None
                 if dataset_config_base is not None:
-                    LOG.debug(f'selected dataset {store_dataset_id!r}')
+                    LOG.debug(f'Selected dataset {store_dataset_id!r}')
                     dataset_config = dict(
                         StoreInstanceId=store_instance_id,
                         **dataset_config_base
@@ -475,7 +475,7 @@ class ServiceContext:
         debug_file = 'all_dataset_configs.json'
         with open(debug_file, 'w') as stream:
             json.dump(all_dataset_configs, stream)
-            LOG.debug(f'wrote file {debug_file!r}')
+            LOG.debug(f'Wrote file {debug_file!r}')
 
         return all_dataset_configs
 
@@ -490,9 +490,9 @@ class ServiceContext:
         if dataset_metadata.crs is not None:
             crs = pyproj.CRS.from_string(dataset_metadata.crs)
             if not crs.is_geographic:
-                LOG.warn(f'ignoring dataset {dataset_id!r} from'
-                         f' store instance {store_instance_id!r}'
-                         f' because it uses a non-geographic CRS')
+                LOG.warning(f'Ignoring dataset {dataset_id!r} from'
+                            f' store instance {store_instance_id!r}'
+                            f' because it uses a non-geographic CRS')
                 return None
         # noinspection PyTypeChecker
         return dataset_metadata
@@ -647,7 +647,7 @@ class ServiceContext:
                          or data_id.endswith('.levels')) \
                     and 'cache_size' not in open_params:
                 open_params['cache_size'] = chunk_cache_capacity
-            with self.measure_time(tag=f"opened dataset {ds_id!r}"
+            with self.measure_time(tag=f"Opened dataset {ds_id!r}"
                                        f" from data store"
                                        f" {store_instance_id!r}"):
                 dataset = data_store.open_data(data_id, **open_params)
@@ -666,7 +666,7 @@ class ServiceContext:
                 raise ServiceConfigError(f"Invalid FileSystem {fs_type!r}"
                                          f" in dataset configuration"
                                          f" {ds_id!r}")
-            with self.measure_time(tag=f"opened dataset {ds_id!r}"
+            with self.measure_time(tag=f"Opened dataset {ds_id!r}"
                                        f" from {fs_type!r}"):
                 ml_dataset = _open_ml_dataset_from_python_code(self,
                                                                dataset_config)

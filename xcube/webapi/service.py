@@ -114,16 +114,16 @@ class Service:
             raise ValueError("config_file and styles cannot be given both")
         if config_file and aws_prof:
             raise ValueError(
-                "config_file and aws_profile cannot be given both")
+                "config_file and aws_prof cannot be given both")
         if config_file and aws_env:
             raise ValueError("config_file and aws_env cannot be given both")
         if log_to_stderr is not None:
             warnings.warn('log_to_stderr has been deprecated.'
-                          ' xcube now always logs to stderr.',
+                          ' Configure "root" or "xcube" loggers instead.',
                           DeprecationWarning)
         if log_file_prefix is not None:
             warnings.warn('log_file_prefix has been deprecated.'
-                          ' xcube now always logs to stderr.',
+                          ' Configure "root" or "xcube" loggers instead.',
                           DeprecationWarning)
 
         global SNAP_CPD_LIST
@@ -132,7 +132,9 @@ class Service:
 
         tile_cache_capacity = parse_mem_size(tile_cache_size)
 
-        # Configure Tornado logger to use (xcube) root handlers
+        # Configure Tornado logger to use configured root handlers.
+        # For some reason, Tornado's log records will not arrive at
+        # the root logger.
         tornado_logger = logging.getLogger('tornado')
         for h in list(tornado_logger.handlers):
             tornado_logger.removeHandler(h)
@@ -183,11 +185,11 @@ class Service:
         address = self.service_info['address']
         port = self.service_info['port']
         test_url = self.context.get_service_url(f"http://{address}:{port}", "datasets")
-        LOG.info(f'service running, listening on {address}:{port}, try {test_url}')
-        LOG.info(f'press CTRL+C to stop service')
+        LOG.info(f'Service running, listening on {address}:{port}, try {test_url}')
+        LOG.info(f'Press CTRL+C to stop service')
         if not self.context.config.get('Datasets', []) \
                 and not self.context.config.get('DataStores', []):
-            LOG.warning('no datasets or data stores configured')
+            LOG.warning('No datasets or data stores configured')
         tornado.ioloop.PeriodicCallback(self._try_shutdown, 100).start()
         IOLoop.current().start()
 
@@ -202,7 +204,7 @@ class Service:
 
     def _on_shutdown(self):
 
-        LOG.info('stopping service...')
+        LOG.info('Stopping service...')
 
         # noinspection PyUnresolvedReferences,PyBroadException
         try:
@@ -215,7 +217,7 @@ class Service:
             self.server = None
 
         IOLoop.current().stop()
-        LOG.info('service stopped.')
+        LOG.info('Service stopped.')
 
     def _try_shutdown(self):
         if self._shutdown_requested:
@@ -223,7 +225,7 @@ class Service:
 
     # noinspection PyUnusedLocal
     def _sig_handler(self, sig, frame):
-        LOG.warning(f'caught signal {sig}')
+        LOG.warning(f'Caught signal {sig}')
         self._shutdown_requested = True
 
     def _maybe_install_update_check(self):
@@ -244,7 +246,7 @@ class Service:
             stat = os.stat(config_file)
         except OSError as e:
             if self.config_error is None:
-                LOG.error(f'configuration file {config_file!r}: {e}')
+                LOG.error(f'Configuration file {config_file!r}: {e}')
                 self.config_error = e
             return
 
@@ -253,10 +255,10 @@ class Service:
             try:
                 self.context.config = load_json_or_yaml_config(config_file)
                 self.config_error = None
-                LOG.info(f'configuration file {config_file!r} successfully loaded')
+                LOG.info(f'Configuration file {config_file!r} successfully loaded')
             except ValueError as e:
                 if self.config_error is None:
-                    LOG.error(f'configuration file {config_file!r}: {e}')
+                    LOG.error(f'Configuration file {config_file!r}: {e}')
                     self.config_error = e
 
 
