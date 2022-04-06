@@ -299,7 +299,8 @@ def configure_cli_output(quiet: Optional[bool] = None,
 
     logger.setLevel(level)
 
-    if not isinstance(_general_handler, logging.StreamHandler):
+    if isinstance(_general_handler,
+                  (logging.FileHandler, logging.NullHandler)):
         # Only if we do not already redirect output of general logging
         # to stderr, install a new handler with a simple message format
         # for the console.
