@@ -6,9 +6,15 @@ from xcube.webapi.service import new_default_config
 from xcube.webapi.service import url_pattern
 
 
-class ApplicationMock:
-    def listen(self, port: int, address: str = "", **kwargs):
+class ServerMock:
+    def stop(self):
         pass
+
+
+class ApplicationMock:
+    # noinspection PyMethodMayBeStatic,PyUnusedLocal
+    def listen(self, port: int, address: str = "", **kwargs):
+        return ServerMock()
 
 
 class ServiceTest(unittest.TestCase):
@@ -43,6 +49,32 @@ class ServiceTest(unittest.TestCase):
                         **{k: v})
             self.assertEqual(f'config_file and {k} cannot be given both',
                              f'{cm.exception}')
+
+    def test_start_and_stop(self):
+        application = ApplicationMock()
+        # noinspection PyTypeChecker
+        service = Service(application)
+
+        import threading
+
+        # Test service.start()
+        thread = threading.Thread(target=service.start)
+        thread.start()
+        thread.join(timeout=0.1)
+
+        self.assertIsInstance(service.server, ServerMock)
+
+        # Test stop.stop()
+        thread = threading.Thread(target=service.stop)
+        thread.start()
+        thread.join(timeout=0.1)
+
+        # Test stop._on_shutdown()
+        thread = threading.Thread(target=service._on_shutdown)
+        thread.start()
+        thread.join(timeout=0.1)
+
+        self.assertIsNone(service.server)
 
 
 class DefaultConfigTest(unittest.TestCase):
