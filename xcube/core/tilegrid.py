@@ -18,8 +18,7 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
-
-
+import itertools
 import math
 from typing import Optional, Tuple, Sequence, List
 
@@ -195,12 +194,39 @@ class TileGrid:
         return [res_l0 / 2 ** level
                 for level in range(min_level, max_level + 1)]
 
-    def get_dataset_level(self,
-                          level: int,
-                          ds_resolutions: Sequence[float],
-                          ds_resolutions_unit_name: Optional[str] = None) \
-            -> int:
+    def get_level_range_for_dataset(
+            self,
+            ds_resolutions: Sequence[float],
+            ds_resolutions_unit_name: Optional[str] = None
+    ) -> Tuple[int, int]:
+        last_ds_level = -1
+        min_level = None
+        max_level = None
+        for level in itertools.count(0):
+            ds_level = self.get_dataset_level(level,
+                                              ds_resolutions,
+                                              ds_resolutions_unit_name)
+            if last_ds_level is not None:
+                if ds_level < last_ds_level:
+                    if min_level is None:
+                        min_level = level - 1
+                    max_level = level
+                if ds_level == last_ds_level and max_level is not None:
+                    break
 
+            last_ds_level = ds_level
+
+        if min_level is None:
+            min_level = 0
+
+        return min_level, max_level
+
+    def get_dataset_level(
+            self,
+            level: int,
+            ds_resolutions: Sequence[float],
+            ds_resolutions_unit_name: Optional[str] = None
+    ) -> int:
         map_unit_name = self.map_unit_name
         unit_factor = get_unit_factor(map_unit_name,
                                       ds_resolutions_unit_name

@@ -152,14 +152,14 @@ class TileGridTest(unittest.TestCase):
         self.assertEqual((90, -90, 180, 0),
                          tile_grid.get_tile_extent(3, 1, 1))
 
-    def test_web_mercator_dataset_level(self):
+    def test_web_mercator_get_dataset_level(self):
         tile_grid = TileGrid.new_web_mercator()
 
         # # This useful for debugging failing tests
-        # for level, res in enumerate(tile_grid.resolutions('meter')):
-        #     print(level, res)
-        #     if level > 16:
-        #         break
+        resolutions = tile_grid.get_resolutions(unit_name='meter',
+                                                max_level=20)
+        for level, res in enumerate(resolutions):
+            print(level, res)
 
         args = [10, 20, 40, 80, 160], 'meter'
 
@@ -183,6 +183,58 @@ class TileGridTest(unittest.TestCase):
         self.assertEqual(0, tile_grid.get_dataset_level(17, *args))
         self.assertEqual(0, tile_grid.get_dataset_level(18, *args))
         self.assertEqual(0, tile_grid.get_dataset_level(19, *args))
+
+    def test_web_mercator_get_level_range_for_dataset(self):
+        tile_grid = TileGrid.new_web_mercator()
+
+        self.assertEqual(
+            (10, 14),
+            tile_grid.get_level_range_for_dataset(
+                [10, 20, 40, 80, 160],
+                'meter'
+            )
+        )
+
+    def test_geographic_get_dataset_level(self):
+        tile_grid = TileGrid.new_geographic()
+
+        # # This useful for debugging failing tests
+        resolutions = tile_grid.get_resolutions(unit_name='degree',
+                                                max_level=6)
+        for level, res in enumerate(resolutions):
+            print(level, res)
+
+        num_ds_levels = 6
+        ds_resolutions = [
+            180 / 256 / 2 ** i for i in reversed(range(num_ds_levels))
+        ]
+
+        args = ds_resolutions, 'degree'
+
+        self.assertEqual(5, tile_grid.get_dataset_level(0, *args))
+        self.assertEqual(4, tile_grid.get_dataset_level(1, *args))
+        self.assertEqual(3, tile_grid.get_dataset_level(2, *args))
+        self.assertEqual(2, tile_grid.get_dataset_level(3, *args))
+        self.assertEqual(1, tile_grid.get_dataset_level(4, *args))
+        self.assertEqual(0, tile_grid.get_dataset_level(5, *args))
+        self.assertEqual(0, tile_grid.get_dataset_level(6, *args))
+        self.assertEqual(0, tile_grid.get_dataset_level(7, *args))
+
+    def test_geographic_get_level_range_for_dataset(self):
+        tile_grid = TileGrid.new_geographic()
+
+        num_ds_levels = 10
+        ds_resolutions = [
+            180 / 256 / 2 ** i for i in reversed(range(num_ds_levels))
+        ]
+
+        self.assertEqual(
+            (0, num_ds_levels - 1),
+            tile_grid.get_level_range_for_dataset(
+                ds_resolutions,
+                'degrees'
+            )
+        )
 
 
 class TileGridHelpersTest(unittest.TestCase):

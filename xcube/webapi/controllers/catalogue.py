@@ -21,6 +21,7 @@
 
 import functools
 import json
+import math
 from typing import Dict, Tuple, List, Set, Optional, Any, Callable
 
 import numpy as np
@@ -30,6 +31,7 @@ from xcube.constants import LOG
 from xcube.core.geom import get_dataset_bounds
 from xcube.core.normalize import DatasetIsNotACubeError
 from xcube.core.store import DataStoreError
+from xcube.core.tilegrid import TileGrid
 from xcube.core.timecoord import timestamp_to_iso_string
 from xcube.util.cmaps import get_cmaps
 from xcube.webapi.auth import READ_ALL_DATASETS_SCOPE
@@ -42,6 +44,8 @@ from xcube.webapi.controllers.tiles import get_dataset_tile_url
 from xcube.webapi.controllers.tiles import get_dataset_tile_url2
 from xcube.webapi.controllers.tiles import get_tile_source_options
 from xcube.webapi.errors import ServiceBadRequestError
+
+_GEO_TILE_GRID = TileGrid.new_geographic()
 
 
 def get_datasets(ctx: ServiceContext,
@@ -234,12 +238,22 @@ def get_dataset(ctx: ServiceContext,
             print(tile_xyz_source_options)
             variable_dict["tileSourceOptions"] = tile_xyz_source_options
 
-        variable_dict["tileUrl"] = get_dataset_tile_url2(
-            ctx,
-            ds_id,
-            var_name,
-            base_url
-        )
+        tile_url = get_dataset_tile_url2(ctx, ds_id, var_name, base_url)
+        variable_dict["tileUrl"] = tile_url
+        LOG.debug('Tile URL for variable %s: %s',
+                  var_name, tile_url)
+
+        try:
+            tile_level_range = _GEO_TILE_GRID.get_level_range_for_dataset(
+                [math.sqrt(rx * ry) for rx, ry in ml_ds.resolutions],
+                ml_ds.grid_mapping.spatial_unit_name
+            )
+            variable_dict["tileLevelMin"] = tile_level_range[0]
+            variable_dict["tileLevelMax"] = tile_level_range[1]
+            LOG.debug('Tile level range for variable %s: %d to %d',
+                      var_name, *tile_level_range)
+        except ValueError:
+            LOG.error('Failed to compute min/max tile grid level', exc_info=1)
 
         cmap_name, (cmap_vmin, cmap_vmax) = ctx.get_color_mapping(ds_id,
                                                                   var_name)

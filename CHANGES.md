@@ -8,7 +8,7 @@
 
 * `xcube serve` can now provide image tiles for two popular tile grids:
   1. global geographic grid, with 2 x 1 tiles at level zero (the default);
-  2. global web mercator grid , with 1 x 1 tiles at level 
+  2. global web mercator grid, with 1 x 1 tiles at level 
      zero ("Google projection", OSM tile grid).
   
   The general form of the xcube tile URL is
@@ -45,6 +45,7 @@
   `TileMatrixSet` key for the two values described above.
 
 ### Other changes
+
 * The `xcube tile` has been deprecated in its current form and is no
   longer supported since xcube 0.11. A new tool is planned that can work
   concurrently on dask clusters and also supports common tile grids such as
