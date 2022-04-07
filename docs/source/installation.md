@@ -99,10 +99,20 @@ Alternatively, to install xcube directly from the repository:
 To start a demo using docker use the following commands
 
     $ docker build -t [your name] .
-    $ docker run -d -p [host port]:8000 [your name]
+    $ docker run -d -p [host port]:8080 [your name]
     
-Example:
+Example 1:
 
-    $  docker build -t xcube:0.1.0dev6 .
-    $  docker run -d -p 8001:8000 xcube:0.1.0dev6
+    $  docker build -t xcube:0.10.0 .
+    $  docker run -d -p 8001:8080 xcube:0.10.0
     $  docker ps
+
+This will have started a service in the background which can be accessed 
+through port 8001, as the startup of a service is configured as default
+behaviour.
+Alternatively, you might access the `xcube` cli like this: 
+
+Example 2:
+
+    $  docker build -t xcube:0.10.0 .
+    $  docker run xcube:0.10.0 "xcube --help"
