@@ -48,9 +48,10 @@ from xcube.version import version
               help=f'Log level.'
                    f' Must be one of {", ".join(LOG_LEVELS)}.'
                    f' Defaults to {LOG_LEVEL_OFF_NAME}.'
-                   f' If LOG_LEVEL is not {LOG_LEVEL_OFF_NAME},'
-                   f' any log messages will be written either'
-                   f' to the console (stderr) or LOG_FILE, if provided.')
+                   f' If the level is not {LOG_LEVEL_OFF_NAME},'
+                   f' any log messages up to the given level will be'
+                   f' written either to the console (stderr)'
+                   f' or LOG_FILE, if provided.')
 @click.option('--logfile', 'log_file',
               metavar='LOG_FILE',
               help=f'Log file path.'
