@@ -19,12 +19,20 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+import warnings
 from typing import List
 
 import click
 
-from xcube.webapi.defaults import DEFAULT_PORT, DEFAULT_ADDRESS, DEFAULT_UPDATE_PERIOD, \
-    DEFAULT_TILE_CACHE_SIZE, DEFAULT_TILE_COMP_MODE
+from xcube.constants import LOG
+from xcube.cli.common import (cli_option_quiet,
+                              cli_option_verbosity,
+                              configure_cli_output)
+from xcube.webapi.defaults import (DEFAULT_PORT,
+                                   DEFAULT_ADDRESS,
+                                   DEFAULT_UPDATE_PERIOD,
+                                   DEFAULT_TILE_CACHE_SIZE,
+                                   DEFAULT_TILE_COMP_MODE)
 
 __author__ = "Norman Fomferra (Brockmann Consult GmbH)"
 
@@ -80,8 +88,8 @@ BASE_ENV_VAR = 'XCUBE_SERVE_BASE_DIR'
               help=f"Run viewer app. Requires setting the environment variable {VIEWER_ENV_VAR} "
                    f"to a valid xcube-viewer deployment or build directory. "
                    f"Refer to https://github.com/dcs4cop/xcube-viewer for more information.")
-@click.option('--verbose', '-v', is_flag=True,
-              help="Delegate logging to the console (stderr).")
+@cli_option_quiet
+@cli_option_verbosity
 @click.option('--traceperf', 'trace_perf', is_flag=True,
               help="Print performance diagnostics (stdout).")
 @click.option('--aws-prof', 'aws_prof', metavar='PROFILE',
@@ -102,7 +110,8 @@ def serve(cube: List[str],
           tile_cache_size: str,
           tile_comp_mode: int,
           show: bool,
-          verbose: bool,
+          quiet: bool,
+          verbosity: int,
           trace_perf: bool,
           aws_prof: str,
           aws_env: bool):
@@ -112,6 +121,8 @@ def serve(cube: List[str],
     Serves data cubes by a RESTful API and a OGC WMTS 1.0 RESTful and KVP interface.
     The RESTful API documentation can be found at https://app.swaggerhub.com/apis/bcdev/xcube-server.
     """
+
+    configure_cli_output(quiet=quiet, verbosity=verbosity)
 
     from xcube.cli.common import parse_cli_kwargs
     import os.path
@@ -123,17 +134,21 @@ def serve(cube: List[str],
     if styles:
         styles = parse_cli_kwargs(styles, "STYLES")
     if (aws_prof or aws_env) and not cube:
-        raise click.ClickException("AWS credentials are only valid in combination with given CUBE argument(s).")
+        raise click.ClickException(
+            "AWS credentials are only valid in combination with given CUBE argument(s).")
     if config_file and not os.path.isfile(config_file):
-        raise click.ClickException(f"Configuration file not found: {config_file}")
+        raise click.ClickException(
+            f"Configuration file not found: {config_file}")
 
-    base_dir = base_dir or os.environ.get(BASE_ENV_VAR, config_file and os.path.dirname(config_file)) or '.'
+    base_dir = base_dir or os.environ.get(BASE_ENV_VAR,
+                                          config_file and os.path.dirname(
+                                              config_file)) or '.'
     if not os.path.isdir(base_dir):
         raise click.ClickException(f"Base directory not found: {base_dir}")
 
     from xcube.version import version
     from xcube.webapi.defaults import SERVER_NAME, SERVER_DESCRIPTION
-    print(f'{SERVER_NAME}: {SERVER_DESCRIPTION}, version {version}')
+    LOG.info(f'{SERVER_NAME}: {SERVER_DESCRIPTION}, version {version}')
 
     if show:
         _run_viewer()
@@ -153,7 +168,6 @@ def serve(cube: List[str],
                       tile_cache_size=tile_cache_size,
                       tile_comp_mode=tile_comp_mode,
                       update_period=update_period,
-                      log_to_stderr=verbose,
                       trace_perf=trace_perf,
                       aws_prof=aws_prof,
                       aws_env=aws_env)
@@ -182,11 +196,11 @@ def _run_viewer():
                                f"must be a directory: " + viewer_dir)
 
     def _run():
-        print("starting web server...")
+        LOG.info("Starting web server...")
         with subprocess.Popen(['python', '-m', 'http.server', '--directory', viewer_dir],
                               stdout=subprocess.PIPE,
                               stderr=subprocess.PIPE):
-            print("opening viewer...")
+            LOG.info("Opening viewer...")
             webbrowser.open("http://localhost:8000/index.html")
 
     threading.Thread(target=_run, name="xcube-viewer-runner").start()

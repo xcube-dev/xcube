@@ -25,7 +25,7 @@ from typing import List, Sequence, Optional, Dict, AbstractSet, Set, Any
 
 import click
 
-from xcube.constants import EXTENSION_POINT_DATA_OPENERS
+from xcube.constants import EXTENSION_POINT_DATA_OPENERS, LOG
 from xcube.constants import EXTENSION_POINT_DATA_STORES
 from xcube.constants import EXTENSION_POINT_DATA_WRITERS
 from xcube.util.plugin import get_extension_registry
@@ -340,9 +340,11 @@ def dump(output_file_path: Optional[str],
                 for row in rows:
                     fp.write(sep.join(map(format_cell_value,
                                           tuple(row.get(k)
-                                                for k in column_names))) + '\n')
+                                                for k in
+                                                column_names))) + '\n')
 
-        print(f'Dumped {len(rows)} store entry/ies to {output_file_path}.')
+        LOG.info(f'Dumped {len(rows)} store entry/ies'
+                 f' to {output_file_path}.')
 
     else:
         last_store_dict = None
@@ -372,7 +374,8 @@ def dump(output_file_path: Optional[str],
             else:
                 yaml.dump(dict(stores=store_list), fp, indent=2)
 
-        print(f'Dumped entries of {len(store_list)} store(s) to {output_file_path}.')
+        LOG.info(f'Dumped entries of {len(store_list)} store(s)'
+                 f' to {output_file_path}.')
 
 
 def _get_store_data_var_tuples(store_pool, data_type, include_props, exclude_props):
@@ -399,13 +402,15 @@ def _get_store_data_var_tuples(store_pool, data_type, include_props, exclude_pro
             try:
                 store_instance = store_pool.get_store(store_instance_id)
             except BaseException as error:
-                print(f'error: cannot open store "{store_instance_id}": {error}', file=sys.stderr)
+                LOG.error(f'Cannot open store'
+                          f' "{store_instance_id}": {error}')
                 continue
 
             try:
                 data_descriptors = store_instance.search_data(data_type=data_type)
             except BaseException as error:
-                print(f'error: cannot search store "{store_instance_id}": {error}', file=sys.stderr)
+                LOG.error(f'Cannot search store'
+                          f' "{store_instance_id}": {error}')
                 continue
 
             for data_descriptor in data_descriptors:

@@ -23,7 +23,10 @@ from typing import List, Optional, Mapping, Any
 
 import click
 
-__author__ = "Norman Fomferra (Brockmann Consult GmbH)"
+from xcube.cli.common import (cli_option_quiet,
+                              cli_option_verbosity,
+                              configure_cli_output)
+from xcube.constants import LOG
 
 DEFAULT_OUTPUT_PATH = 'out.tiles'
 DEFAULT_CONFIG_PATH = 'config.yml'
@@ -46,13 +49,15 @@ DEFAULT_STYLE_ID = 'default'
                    f'display the default tile sizes for CUBE.')
 @click.option('--config', '-c', 'config_path', metavar='CONFIG',
               help=f'Configuration file in YAML format.')
-@click.option('--style', '-s', 'style_id', metavar='STYLE', default=DEFAULT_STYLE_ID,
+@click.option('--style', '-s', 'style_id', metavar='STYLE',
+              default=DEFAULT_STYLE_ID,
               help=f'Name of a style identifier in CONFIG file. Only used if CONFIG is given.'
                    f' Defaults to {DEFAULT_STYLE_ID!r}.')
-@click.option('--output', '-o', 'output_path', metavar='OUTPUT', default=DEFAULT_OUTPUT_PATH,
+@click.option('--output', '-o', 'output_path', metavar='OUTPUT',
+              default=DEFAULT_OUTPUT_PATH,
               help=f'Output path. Defaults to {DEFAULT_OUTPUT_PATH!r}')
-@click.option('--verbose', '-v', 'verbosity', count=True,
-              help=f'Use -vv to report all files generated, -v to report less.')
+@cli_option_quiet
+@cli_option_verbosity
 @click.option('--dry-run', 'dry_run', is_flag=True,
               help=f'Generate all tiles but don\'t write any files.')
 def tile(cube: str,
@@ -62,6 +67,7 @@ def tile(cube: str,
          config_path: Optional[str],
          style_id: Optional[str],
          output_path: Optional[str],
+         quiet: bool,
          verbosity: int,
          dry_run: bool):
     """
@@ -110,6 +116,8 @@ def tile(cube: str,
     from xcube.cli.common import assert_positive_int_item
     from xcube.util.tilegrid import TileGrid
     from xcube.util.tiledimage import DEFAULT_COLOR_MAP_NUM_COLORS
+
+    configure_cli_output(quiet=quiet, verbosity=verbosity)
 
     # noinspection PyShadowingNames
     def write_tile_map_resource(path: str,
@@ -190,12 +198,12 @@ def tile(cube: str,
     config = {}
     if config_path:
         if verbosity:
-            print(f'Opening {config_path}...')
+            LOG.info(f'Opening {config_path}...')
         with open(config_path, 'r') as fp:
             config = yaml.safe_load(fp)
 
     if verbosity:
-        print(f'Opening {cube}...')
+        LOG.info(f'Opening {cube}...')
 
     ml_dataset = open_ml_dataset(cube, chunks='auto')
     tile_grid = ml_dataset.tile_grid
@@ -207,7 +215,7 @@ def tile(cube: str,
         tile_width, tile_height = tile_size
     else:
         if verbosity:
-            print(f'Warning: using default tile sizes derived from CUBE')
+            LOG.warning(f'Using default tile sizes derived from CUBE')
         tile_width, tile_height = tile_grid.tile_size
 
     indexers = None
@@ -239,10 +247,11 @@ def tile(cube: str,
                    for z in range(num_levels)]
 
     if verbosity:
-        print(f'Writing tile sets...')
-        print(f'  Zoom levels: {num_levels}')
-        print(f'  Resolutions: {", ".join(map(str, resolutions))} units/pixel')
-        print(f'  Tile size:   {tile_width} x {tile_height} pixels')
+        LOG.info(f'Writing tile sets...')
+        LOG.info(f'  Zoom levels: {num_levels}')
+        LOG.info(f'  Resolutions: {", ".join(map(str, resolutions))}'
+                 f' units/pixel')
+        LOG.info(f'  Tile size:   {tile_width} x {tile_height} pixels')
 
     image_cache = {}
 
@@ -272,7 +281,7 @@ def tile(cube: str,
                         coordinates={name: _convert_coord_var(coord_var)
                                      for name, coord_var in var.coords.items() if coord_var.ndim == 1})
         if verbosity:
-            print(f'Writing {metadata_path}')
+            LOG.info(f'Writing {metadata_path}')
         if not dry_run:
             os.makedirs(var_path, exist_ok=True)
             with open(metadata_path, 'w') as fp:
@@ -283,7 +292,7 @@ def tile(cube: str,
             tilemap_path = os.path.join(var_path, *[str(l) for l in label_index])
             tilemap_resource_path = os.path.join(tilemap_path, 'tilemapresource.xml')
             if verbosity > 1:
-                print(f'Writing {tilemap_resource_path}')
+                LOG.info(f'Writing {tilemap_resource_path}')
             if not dry_run:
                 os.makedirs(tilemap_path, exist_ok=True)
                 write_tile_map_resource(tilemap_resource_path, resolutions, tile_grid, title=f'{var_name}')
@@ -309,9 +318,9 @@ def tile(cube: str,
                                                          exception_type=click.ClickException)
                         tile_path = os.path.join(tile_zx_path, f'{num_tiles_y - 1 - y}.png')
                         if verbosity > 2:
-                            print(f'Writing tile {tile_path}')
+                            LOG.info(f'Writing tile {tile_path}')
                         if not dry_run:
                             with open(tile_path, 'wb') as fp:
                                 fp.write(tile_bytes)
 
-    print(f'Done writing tile sets.')
+    LOG.info(f'Done writing tile sets.')

@@ -22,12 +22,14 @@
 import asyncio
 import configparser
 import json
+import logging
 import os
 import os.path
 import signal
 import sys
 import time
 import traceback
+import warnings
 from datetime import datetime
 from json import JSONDecodeError
 from typing import Optional, Dict, List, Tuple, Mapping
@@ -35,7 +37,6 @@ from typing import Optional, Dict, List, Tuple, Mapping
 import tornado.escape
 import tornado.options
 from tornado.ioloop import IOLoop
-from tornado.log import enable_pretty_logging
 from tornado.web import Application
 from tornado.web import RequestHandler
 
@@ -50,7 +51,6 @@ from xcube.util.undefined import UNDEFINED
 from xcube.version import version
 from xcube.webapi.context import ServiceContext
 from xcube.webapi.defaults import DEFAULT_ADDRESS
-from xcube.webapi.defaults import DEFAULT_LOG_PREFIX
 from xcube.webapi.defaults import DEFAULT_PORT
 from xcube.webapi.defaults import DEFAULT_TILE_CACHE_SIZE
 from xcube.webapi.defaults import DEFAULT_TILE_COMP_MODE
@@ -83,8 +83,8 @@ class Service:
                  tile_comp_mode: int = DEFAULT_TILE_COMP_MODE,
                  update_period: Optional[float] = DEFAULT_UPDATE_PERIOD,
                  trace_perf: bool = DEFAULT_TRACE_PERF,
-                 log_file_prefix: str = DEFAULT_LOG_PREFIX,
-                 log_to_stderr: bool = False,
+                 log_file_prefix: str = None,
+                 log_to_stderr: bool = None,
                  aws_prof: str = None,
                  aws_env: bool = False) -> None:
 
@@ -109,35 +109,49 @@ class Service:
         :return: service information dictionary
         """
         if config_file and cube_paths:
-            raise ValueError("config_file and cube_paths cannot be given both")
+            raise ValueError(
+                "config_file and cube_paths cannot be given both")
         if config_file and styles:
             raise ValueError("config_file and styles cannot be given both")
         if config_file and aws_prof:
-            raise ValueError("config_file and aws_profile cannot be given both")
+            raise ValueError(
+                "config_file and aws_prof cannot be given both")
         if config_file and aws_env:
             raise ValueError("config_file and aws_env cannot be given both")
+        if log_to_stderr is not None:
+            warnings.warn('log_to_stderr has been deprecated.'
+                          ' Configure "root" or "xcube" loggers instead.',
+                          DeprecationWarning)
+        if log_file_prefix is not None:
+            warnings.warn('log_file_prefix has been deprecated.'
+                          ' Configure "root" or "xcube" loggers instead.',
+                          DeprecationWarning)
 
         # TODO: fix hack for SNAP color palettes, see #661
         global SNAP_CPD_LIST
         if config_file:
             SNAP_CPD_LIST = _get_custom_color_list(config_file)
 
-        log_dir = os.path.dirname(log_file_prefix)
-        if log_dir and not os.path.isdir(log_dir):
-            os.makedirs(log_dir, exist_ok=True)
-
-        options = tornado.options.options
-        options.log_file_prefix = log_file_prefix or DEFAULT_LOG_PREFIX
-        options.log_to_stderr = log_to_stderr
-        enable_pretty_logging()
-
         tile_cache_capacity = parse_mem_size(tile_cache_size)
+
+        # Configure Tornado logger to use configured root handlers.
+        # For some reason, Tornado's log records will not arrive at
+        # the root logger.
+        tornado_logger = logging.getLogger('tornado')
+        for h in list(tornado_logger.handlers):
+            tornado_logger.removeHandler(h)
+            h.close()
+        for h in list(logging.root.handlers):
+            tornado_logger.addHandler(h)
+        tornado_logger.setLevel(logging.root.level)
 
         config = None
         if cube_paths:
-            config = new_default_config(cube_paths, styles, aws_prof=aws_prof, aws_env=aws_env)
+            config = new_default_config(cube_paths, styles, aws_prof=aws_prof,
+                                        aws_env=aws_env)
 
-        self.config_file = os.path.abspath(config_file) if config_file else None
+        self.config_file = os.path.abspath(
+            config_file) if config_file else None
         self.update_period = update_period
         self.update_timer = None
         self.config_error = None
@@ -173,11 +187,11 @@ class Service:
         address = self.service_info['address']
         port = self.service_info['port']
         test_url = self.context.get_service_url(f"http://{address}:{port}", "datasets")
-        LOG.info(f'service running, listening on {address}:{port}, try {test_url}')
-        LOG.info(f'press CTRL+C to stop service')
+        LOG.info(f'Service running, listening on {address}:{port}, try {test_url}')
+        LOG.info(f'Press CTRL+C to stop service')
         if not self.context.config.get('Datasets', []) \
                 and not self.context.config.get('DataStores', []):
-            LOG.warning('no datasets or data stores configured')
+            LOG.warning('No datasets or data stores configured')
         tornado.ioloop.PeriodicCallback(self._try_shutdown, 100).start()
         IOLoop.current().start()
 
@@ -192,7 +206,7 @@ class Service:
 
     def _on_shutdown(self):
 
-        LOG.info('stopping service...')
+        LOG.info('Stopping service...')
 
         # noinspection PyUnresolvedReferences,PyBroadException
         try:
@@ -205,7 +219,7 @@ class Service:
             self.server = None
 
         IOLoop.current().stop()
-        LOG.info('service stopped.')
+        LOG.info('Service stopped.')
 
     def _try_shutdown(self):
         if self._shutdown_requested:
@@ -213,7 +227,7 @@ class Service:
 
     # noinspection PyUnusedLocal
     def _sig_handler(self, sig, frame):
-        LOG.warning(f'caught signal {sig}')
+        LOG.warning(f'Caught signal {sig}')
         self._shutdown_requested = True
 
     def _maybe_install_update_check(self):
@@ -234,7 +248,7 @@ class Service:
             stat = os.stat(config_file)
         except OSError as e:
             if self.config_error is None:
-                LOG.error(f'configuration file {config_file!r}: {e}')
+                LOG.error(f'Configuration file {config_file!r}: {e}')
                 self.config_error = e
             return
 
@@ -243,10 +257,10 @@ class Service:
             try:
                 self.context.config = load_json_or_yaml_config(config_file)
                 self.config_error = None
-                LOG.info(f'configuration file {config_file!r} successfully loaded')
+                LOG.info(f'Configuration file {config_file!r} successfully loaded')
             except ValueError as e:
                 if self.config_error is None:
-                    LOG.error(f'configuration file {config_file!r}: {e}')
+                    LOG.error(f'Configuration file {config_file!r}: {e}')
                     self.config_error = e
 
 
