@@ -31,8 +31,7 @@ from xcube.cli.common import (cli_option_scheduler,
                               configure_warnings)
 from xcube.constants import (EXTENSION_POINT_CLI_COMMANDS,
                              LOG_LEVELS,
-                             LOG_LEVEL_OFF_NAME,
-                             DEFAULT_GENERAL_LOG_LEVEL)
+                             LOG_LEVEL_OFF_NAME)
 from xcube.util.plugin import get_extension_registry
 from xcube.version import version
 
@@ -48,16 +47,18 @@ from xcube.version import version
               default=LOG_LEVEL_OFF_NAME,
               help=f'Log level.'
                    f' Must be one of {", ".join(LOG_LEVELS)}.'
-                   f' Defaults to {DEFAULT_GENERAL_LOG_LEVEL}.'
-                   f' If {LOG_LEVEL_OFF_NAME}, only progress messages'
-                   f' are displayed.'
-                   f' If not {LOG_LEVEL_OFF_NAME}, all log messages will be'
-                   f' written either to stderr or LOG_FILE, if given.')
+                   f' Defaults to {LOG_LEVEL_OFF_NAME}.'
+                   f' If LOG_LEVEL is not {LOG_LEVEL_OFF_NAME},'
+                   f' any log messages will be written either'
+                   f' to the console (stderr) or LOG_FILE, if provided.')
 @click.option('--logfile', 'log_file',
               metavar='LOG_FILE',
               help=f'Log file path.'
                    f' If given, any log messages will redirected into'
-                   f' LOG_FILE. Effective only if LOG_LEVEL'
+                   f' LOG_FILE. Disables console output'
+                   f' unless otherwise enabled, e.g.,'
+                   f' using the --verbose flag.'
+                   f' Effective only if LOG_LEVEL'
                    f' is not {LOG_LEVEL_OFF_NAME}.')
 @click.option('--warnings', '-w',
               is_flag=True,

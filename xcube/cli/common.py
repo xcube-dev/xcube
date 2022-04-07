@@ -51,7 +51,8 @@ def cli_option_quiet(func):
     return click.option(
         '--quiet', '-q',
         is_flag=True,
-        help="Disable output of log messages to the console.",
+        help="Disable output of log messages to the console entirely."
+             " Note, this will also suppress error and warning messages.",
         callback=_callback
     )(func)
 
@@ -74,10 +75,12 @@ def cli_option_verbosity(func):
         '--verbose', '-v', 'verbosity',
         count=True,
         help="Enable output of log messages to the console."
-             " May be given multiple times (-vv, -vvv) to control the level"
+             " Has no effect if --quiet/-q is used."
+             " May be given multiple times to control the level"
              " of log messages, i.e.,"
              " -v refers to level INFO, -vv to DETAIL, -vvv to DEBUG,"
-             " -vvvv to TRACE.",
+             " -vvvv to TRACE."
+             " If omitted, the log level of the console is WARNING.",
         callback=_callback
     )(func)
 
