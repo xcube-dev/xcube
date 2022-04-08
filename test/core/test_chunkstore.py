@@ -12,11 +12,17 @@ from xcube.core.chunkstore import MutableLoggingStore
 
 
 class ChunkStoreTest(unittest.TestCase):
-
     def test_chunk_store(self):
+        self._test_chunk_store(trace_store_calls=False)
+
+    def test_chunk_store_with_tracing(self):
+        self._test_chunk_store(trace_store_calls=True)
+
+    def _test_chunk_store(self, trace_store_calls: bool):
         index_var = gen_index_var(dims=('time', 'lat', 'lon'),
                                   shape=(4, 8, 16),
-                                  chunks=(2, 4, 8))
+                                  chunks=(2, 4, 8),
+                                  trace_store_calls=trace_store_calls)
         self.assertIsNotNone(index_var)
         self.assertEqual((4, 8, 16), index_var.shape)
         self.assertEqual(((2, 2), (4, 4), (8, 8)), index_var.chunks)
@@ -58,9 +64,10 @@ class ChunkStoreTest(unittest.TestCase):
         }, visited_indexes)
 
 
-def gen_index_var(dims, shape, chunks):
+def gen_index_var(dims, shape, chunks, trace_store_calls: bool = False):
     # noinspection PyUnusedLocal
-    def get_chunk(cube_store: ChunkStore, name: str, index: Tuple[int, ...]) -> bytes:
+    def get_chunk(cube_store: ChunkStore, name: str,
+                  index: Tuple[int, ...]) -> bytes:
         data = np.zeros(cube_store.chunks, dtype=np.uint64)
         data_view = data.ravel()
         if data_view.base is not data:
@@ -74,7 +81,8 @@ def gen_index_var(dims, shape, chunks):
             data_view[2 * i + 1] = j2
         return data.tobytes()
 
-    store = ChunkStore(dims, shape, chunks)
+    store = ChunkStore(dims, shape, chunks,
+                       trace_store_calls=trace_store_calls)
     store.add_lazy_array('__index_var__', '<u8', get_chunk=get_chunk)
 
     ds = xr.open_zarr(store)

@@ -30,7 +30,7 @@ import xarray as xr
 import zarr
 from deprecated import deprecated
 
-from xcube.constants import FORMAT_NAME_LEVELS
+from xcube.constants import FORMAT_NAME_LEVELS, LOG
 from xcube.constants import FORMAT_NAME_NETCDF4
 from xcube.constants import FORMAT_NAME_SCRIPT
 from xcube.constants import FORMAT_NAME_ZARR
@@ -434,7 +434,7 @@ class FileStorageMultiLevelDataset(LazyMultiLevelDataset):
                     base_dir = os.path.dirname(self._dir_path)
                     level_path = os.path.join(base_dir, level_path)
         with measure_time(
-                tag=f"opened local dataset {level_path} for level {index}"):
+                tag=f"Opened local dataset {level_path} for level {index}"):
             return assert_cube(xr.open_zarr(level_path, **parameters),
                                name=level_path)
 
@@ -550,7 +550,7 @@ class ObjectStorageMultiLevelDataset(LazyMultiLevelDataset):
         if max_size:
             store = zarr.LRUStoreCache(store, max_size=max_size)
         with measure_time(
-                tag=f"opened remote dataset {level_path} for level {index}"):
+                tag=f"Opened remote dataset {level_path} for level {index}"):
             consolidated = self._s3_file_system.exists(
                 f'{level_path}/.zmetadata')
             return assert_cube(
@@ -727,7 +727,7 @@ class ComputedMultiLevelDataset(LazyMultiLevelDataset):
         input_datasets = [self._input_ml_dataset_getter(ds_id).get_dataset(index)
                           for ds_id in self._input_ml_dataset_ids]
         try:
-            with measure_time(tag=f"computed in-memory dataset {self.ds_id!r} at level {index}"):
+            with measure_time(tag=f"Computed in-memory dataset {self.ds_id!r} at level {index}"):
                 computed_value = self._callable_obj(*input_datasets, **parameters)
         except Exception as e:
             raise self._exception_type(f"Failed to compute in-memory dataset {self.ds_id!r} at level {index} "
@@ -807,13 +807,13 @@ def open_ml_dataset_from_object_storage(path: str,
         store = s3fs.S3Map(root=root, s3=s3, check=False)
         if chunk_cache_capacity:
             store = zarr.LRUStoreCache(store, max_size=chunk_cache_capacity)
-        with measure_time(tag=f"opened remote zarr dataset {path}"):
+        with measure_time(tag=f"Opened remote zarr dataset {path}"):
             consolidated = s3.exists(f'{root}/.zmetadata')
             ds = assert_cube(
                 xr.open_zarr(store, consolidated=consolidated, **kwargs))
         return BaseMultiLevelDataset(ds, ds_id=ds_id)
     elif data_format == FORMAT_NAME_LEVELS:
-        with measure_time(tag=f"opened remote levels dataset {path}"):
+        with measure_time(tag=f"Opened remote levels dataset {path}"):
             return ObjectStorageMultiLevelDataset(s3,
                                                   root,
                                                   zarr_kwargs=kwargs,
@@ -835,15 +835,15 @@ def open_ml_dataset_from_local_fs(path: str,
     data_format = data_format or guess_ml_dataset_format(path)
 
     if data_format == FORMAT_NAME_NETCDF4:
-        with measure_time(tag=f"opened local NetCDF dataset {path}"):
+        with measure_time(tag=f"Opened local NetCDF dataset {path}"):
             ds = assert_cube(xr.open_dataset(path, **kwargs))
             return BaseMultiLevelDataset(ds, ds_id=ds_id)
     elif data_format == FORMAT_NAME_ZARR:
-        with measure_time(tag=f"opened local zarr dataset {path}"):
+        with measure_time(tag=f"Opened local zarr dataset {path}"):
             ds = assert_cube(xr.open_zarr(path, **kwargs))
             return BaseMultiLevelDataset(ds, ds_id=ds_id)
     elif data_format == FORMAT_NAME_LEVELS:
-        with measure_time(tag=f"opened local levels dataset {path}"):
+        with measure_time(tag=f"Opened local levels dataset {path}"):
             return FileStorageMultiLevelDataset(path, ds_id=ds_id,
                                                 zarr_kwargs=kwargs)
 
@@ -858,7 +858,7 @@ def open_ml_dataset_from_python_code(script_path: str,
                                      input_parameters: Mapping[str, Any] = None,
                                      ds_id: str = None,
                                      exception_type: type = ValueError) -> MultiLevelDataset:
-    with measure_time(tag=f"opened memory dataset {script_path}"):
+    with measure_time(tag=f"Opened memory dataset {script_path}"):
         return ComputedMultiLevelDataset(script_path,
                                          callable_name,
                                          input_ml_dataset_ids,
@@ -875,7 +875,7 @@ def augment_ml_dataset(ml_dataset: MultiLevelDataset,
                        input_ml_dataset_setter: Callable[[MultiLevelDataset], None],
                        input_parameters: Mapping[str, Any] = None,
                        exception_type: type = ValueError):
-    with measure_time(tag=f"added augmentation from {script_path}"):
+    with measure_time(tag=f"Added augmentation from {script_path}"):
         orig_id = ml_dataset.ds_id
         aug_id = uuid.uuid4()
         aug_inp_id = f'aug-input-{aug_id}'
@@ -905,10 +905,10 @@ def write_levels(ml_dataset: MultiLevelDataset,
     for level in range(ml_dataset.num_levels):
         level_dataset = ml_dataset.get_dataset(level)
         level_dataset = level_dataset.chunk(chunks)
-        print(f'writing level {level + 1}...')
+        LOG.info(f'writing level {level + 1}...')
         write_cube(level_dataset,
                    f'{levels_path}/{level}.zarr',
                    'zarr',
                    s3_kwargs=s3_kwargs,
                    s3_client_kwargs=s3_client_kwargs)
-        print(f'written level {level + 1}')
+        LOG.info(f'written level {level + 1}')

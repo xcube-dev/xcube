@@ -19,6 +19,7 @@ class RectifyTest(CliDataTest):
         # been fixed, these options can be omitted.
 
         result = self.invoke_cli(['rectify',
+                                  '--verbose',
                                   '--size', '508,253',
                                   '--point', '-179.5,-89.5',
                                   '--res', '0.7071067811865475',
@@ -29,7 +30,7 @@ class RectifyTest(CliDataTest):
                          'Rectifying...\n'
                          'Writing rectified dataset to \'out.zarr\'...\n'
                          'Done.\n',
-                         result.stdout)
+                         result.stderr)
         self.assertTrue(os.path.isdir('out.zarr'))
         ds = xr.open_zarr('out.zarr')
         assert_cube(ds)
@@ -48,6 +49,7 @@ class RectifyTest(CliDataTest):
         # been fixed, these options can be omitted.
 
         result = self.invoke_cli(['rectify',
+                                  '--verbose',
                                   '--size', '508,253',
                                   '--point', '-179.5,-89.5',
                                   '--res', '0.7071067811865475',
@@ -60,7 +62,7 @@ class RectifyTest(CliDataTest):
                          'Rectifying...\n'
                          'Writing rectified dataset to \'out.zarr\'...\n'
                          'Done.\n',
-                         result.stdout)
+                         result.stderr)
         self.assertTrue(os.path.isdir('out.zarr'))
         ds = xr.open_zarr('out.zarr')
         assert_cube(ds)

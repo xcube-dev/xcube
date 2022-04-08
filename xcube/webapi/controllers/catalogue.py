@@ -96,7 +96,7 @@ def get_datasets(ctx: ServiceContext,
                                 ds_bbox)):
                 dataset_dict['bbox'] = ds_bbox
 
-        LOG.info(f'collected dataset {ds_id}')
+        LOG.info(f'Collected dataset {ds_id}')
         dataset_dicts.append(dataset_dict)
 
     # Important note:
@@ -113,7 +113,7 @@ def get_datasets(ctx: ServiceContext,
                     if "bbox" not in dataset_dict:
                         dataset_dict["bbox"] = list(get_dataset_bounds(ds))
                 if details:
-                    LOG.info(f'loading details for dataset {ds_id}')
+                    LOG.info(f'Loading details for dataset {ds_id}')
                     dataset_dict.update(
                         get_dataset(ctx, ds_id, client,
                                     base_url,
@@ -121,7 +121,7 @@ def get_datasets(ctx: ServiceContext,
                     )
                 filtered_dataset_dicts.append(dataset_dict)
             except (DatasetIsNotACubeError, CubeIsNotDisplayable) as e:
-                LOG.warning(f'skipping dataset {ds_id}: {e}')
+                LOG.warning(f'Skipping dataset {ds_id}: {e}')
         dataset_dicts = filtered_dataset_dicts
 
     if point:
@@ -158,25 +158,6 @@ def get_dataset(ctx: ServiceContext,
         ml_ds = ctx.get_ml_dataset(ds_id)
     except (ValueError, DataStoreError) as e:
         raise DatasetIsNotACubeError(f'could not open dataset: {e}') from e
-
-    # grid_mapping = ml_ds.grid_mapping
-    # if not grid_mapping.crs.is_geographic:
-    #     raise CubeIsNotDisplayable(f'CRS is not geographic:'
-    #                                f' {grid_mapping.crs.srs}')
-    # if not math.isclose(grid_mapping.x_res,
-    #                     grid_mapping.y_res,
-    #                     rel_tol=0.01):  # we allow up to 1% dev
-    #     raise CubeIsNotDisplayable(f'spatial resolutions are'
-    #                                f' different in x, y:'
-    #                                f' {grid_mapping.x_res}'
-    #                                f' and {grid_mapping.y_res}')
-
-    # try:
-    #     # Make sure we have a valid tile grid
-    #     tile_grid = ml_ds.tile_grid
-    #     assert_instance(tile_grid, TileGrid)
-    # except ValueError as e:
-    #     raise CubeIsNotDisplayable(f'could not create tile grid: {e}')
 
     ds = ml_ds.get_dataset(0)
 
@@ -235,7 +216,6 @@ def get_dataset(ctx: ServiceContext,
                                      base_url),
                 client=client
             )
-            print(tile_xyz_source_options)
             variable_dict["tileSourceOptions"] = tile_xyz_source_options
 
         tile_url = get_dataset_tile_url2(ctx, ds_id, var_name, base_url)

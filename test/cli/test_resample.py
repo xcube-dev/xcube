@@ -19,13 +19,13 @@ class ResampleDataTest(CliDataTest):
         return ['out.zarr', 'resampled.zarr']
 
     def test_all_defaults(self):
-        result = self.invoke_cli(['resample', TEST_ZARR_DIR])
+        result = self.invoke_cli(['resample', '-v', TEST_ZARR_DIR])
         self.assertEqual(0, result.exit_code)
         self.assertEqual("Opening cube from 'test.zarr'...\n"
                          "Resampling...\n"
                          "Writing resampled cube to 'out.zarr'...\n"
                          "Done.\n",
-                         result.stdout)
+                         result.stderr)
         self.assertTrue(os.path.isdir('out.zarr'))
         ds = xr.open_zarr('out.zarr')
         assert_cube(ds)

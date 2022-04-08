@@ -58,7 +58,7 @@ class ChunkTest(CliDataTest):
                                   "--chunks", "time=1,lat!gnnn,lon=40"])
         self.assertEqual("Error: Invalid value for CHUNKS:"
                          " 'time=1,lat!gnnn,lon=40'\n",
-                         result.output)
+                         result.stderr)
         self.assertEqual(1, result.exit_code)
 
     def test_chunk_size_not_an_int(self):
@@ -69,7 +69,7 @@ class ChunkTest(CliDataTest):
         self.assertEqual("Error: Invalid value for CHUNKS,"
                          " chunk sizes must be positive integers:"
                          " time=1,lat=20.3,lon=40\n",
-                         result.output)
+                         result.stderr)
         self.assertEqual(1, result.exit_code)
 
     def test_chunk_size_not_a_dim(self):
@@ -80,5 +80,5 @@ class ChunkTest(CliDataTest):
         self.assertEqual("Error: Invalid value for CHUNKS,"
                          " 'lati' is not the name of any dimension:"
                          " time=1,lati=20,lon=40\n",
-                         result.output)
+                         result.stderr)
         self.assertEqual(1, result.exit_code)

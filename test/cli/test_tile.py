@@ -186,4 +186,4 @@ class LevelDataTest(CliDataTest):
 
     def _assert_result_not_ok(self, result, message_regex: str):
         self.assertEqual(1, result.exit_code)
-        self.assertRegex(result.stdout, message_regex)
+        self.assertRegex(result.stderr, message_regex)
