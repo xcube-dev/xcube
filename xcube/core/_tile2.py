@@ -34,11 +34,12 @@ from .mldataset import MultiLevelDataset
 from .tilegrid import DEFAULT_CRS_NAME
 from .tilegrid import DEFAULT_TILE_SIZE
 from .tilegrid import TileGrid
-from ..util.assertions import assert_in, assert_true, assert_instance
+from ..constants import LOG
+from ..util.assertions import assert_in
+from ..util.assertions import assert_instance
+from ..util.assertions import assert_true
 from ..util.logtime import log_time
 from ..util.projcache import ProjCache
-from ..constants import LOG
-
 
 DEFAULT_VALUE_RANGE = (0., 1.)
 DEFAULT_CMAP_NAME = 'bone'
@@ -233,12 +234,6 @@ def compute_rgba_tile(
             )
 
         num_extra_pixels = tile_enlargement
-        # num_extra_pixels = tile_enlargement + tile_z
-        # num_extra_pixels = tile_z
-        # num_extra_pixels = 2 ** tile_z
-        # num_extra_pixels = 0
-        # LOG.info('x=%d, y=%d, z=%d, num_extra_pixels=%d',
-        #          tile_x, tile_y, tile_z, num_extra_pixels)
         res_x = (ds_x_max - ds_x_min) / tile_size
         res_y = (ds_y_max - ds_y_min) / tile_size
         extra_dx = num_extra_pixels * res_x

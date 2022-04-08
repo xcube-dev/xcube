@@ -30,10 +30,11 @@ import xarray as xr
 import zarr
 from deprecated import deprecated
 
-from xcube.constants import FORMAT_NAME_LEVELS, LOG
+from xcube.constants import FORMAT_NAME_LEVELS
 from xcube.constants import FORMAT_NAME_NETCDF4
 from xcube.constants import FORMAT_NAME_SCRIPT
 from xcube.constants import FORMAT_NAME_ZARR
+from xcube.constants import LOG
 from xcube.core.dsio import guess_dataset_format
 from xcube.core.dsio import is_s3_url
 from xcube.core.dsio import parse_s3_fs_and_root
@@ -45,7 +46,8 @@ from xcube.core.subsampling import assert_valid_agg_methods
 from xcube.core.subsampling import subsample_dataset
 from xcube.core.tilegrid import get_num_levels
 from xcube.core.verify import assert_cube
-from xcube.util.assertions import assert_instance, assert_true
+from xcube.util.assertions import assert_instance
+from xcube.util.assertions import assert_true
 from xcube.util.perf import measure_time
 from xcube.util.tilegrid import TileGrid
 
@@ -500,14 +502,14 @@ class ObjectStorageMultiLevelDataset(LazyMultiLevelDataset):
         self._chunk_cache_capacities = None
         if chunk_cache_capacity:
             weights = []
-            weigth_sum = 0
+            weight_sum = 0
             for level in range(num_levels):
                 weight = 2 ** (num_levels - 1 - level)
                 weight *= weight
-                weigth_sum += weight
+                weight_sum += weight
                 weights.append(weight)
             self._chunk_cache_capacities = [
-                round(chunk_cache_capacity * weight / weigth_sum)
+                round(chunk_cache_capacity * weight / weight_sum)
                 for weight in weights]
 
     @property
