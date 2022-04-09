@@ -225,7 +225,7 @@ def get_dataset(ctx: ServiceContext,
 
         try:
             tile_level_range = _GEO_TILE_GRID.get_level_range_for_dataset(
-                [math.sqrt(rx * ry) for rx, ry in ml_ds.resolutions],
+                ml_ds.avg_resolutions,
                 ml_ds.grid_mapping.spatial_unit_name
             )
             variable_dict["tileLevelMin"] = tile_level_range[0]

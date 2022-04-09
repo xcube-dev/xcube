@@ -19,11 +19,14 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 
-import itertools
 import math
 from typing import Optional, Tuple, Sequence, List
 
+import numpy as np
 import pyproj
+
+from xcube.util.assertions import assert_given
+from xcube.util.assertions import assert_instance
 
 WEB_MERCATOR_CRS_NAME = 'EPSG:3857'
 GEOGRAPHIC_CRS_NAME = 'CRS84'
@@ -67,6 +70,11 @@ class TileGrid:
     def num_level_zero_tiles(self) -> Tuple[int, int]:
         """The number of level zero tiles in x and y directions."""
         return self._num_level_zero_tiles
+
+    @property
+    def level_zero_resolution(self) -> float:
+        """The resolution at level zero in map units."""
+        return self._map_height / self._tile_size
 
     @property
     def crs_name(self) -> str:
@@ -183,7 +191,7 @@ class TileGrid:
                         unit_name: Optional[str] = None) -> List[float]:
         unit_factor = get_unit_factor(self.map_unit_name,
                                       unit_name or self.map_unit_name)
-        res_l0 = unit_factor * self.map_height / self.tile_size
+        res_l0 = unit_factor * self.level_zero_resolution
 
         min_level = min_level if min_level is not None else self.min_level
         if min_level is None:
@@ -198,42 +206,40 @@ class TileGrid:
     def get_level_range_for_dataset(
             self,
             ds_resolutions: Sequence[float],
-            ds_resolutions_unit_name: Optional[str] = None
+            ds_spatial_unit_name: str
     ) -> Tuple[int, int]:
-        last_ds_level = -1
-        min_level = None
-        max_level = None
-        for level in itertools.count(0):
-            ds_level = self.get_dataset_level(level,
-                                              ds_resolutions,
-                                              ds_resolutions_unit_name)
-            if last_ds_level is not None:
-                if ds_level < last_ds_level:
-                    if min_level is None:
-                        min_level = level - 1
-                    max_level = level
-                if ds_level == last_ds_level and max_level is not None:
-                    break
+        assert_given(ds_resolutions,
+                     name='ds_resolutions')
+        assert_instance(ds_spatial_unit_name, str,
+                        name='ds_spatial_unit_name')
 
-            last_ds_level = ds_level
+        map_res_0 = self.level_zero_resolution
+        f_ds_to_map = get_unit_factor(ds_spatial_unit_name,
+                                      self.map_unit_name)
 
-        if min_level is None:
-            min_level = 0
+        if not isinstance(ds_resolutions, np.ndarray):
+            ds_resolutions = np.array(ds_resolutions)
 
-        return min_level, max_level
+        map_resolutions = f_ds_to_map * ds_resolutions
+
+        map_levels = np.ceil(np.log2(map_res_0 / map_resolutions))
+
+        min_level = np.min(map_levels)
+        max_level = np.max(map_levels)
+
+        return int(min_level), int(max_level)
 
     def get_dataset_level(
             self,
             level: int,
             ds_resolutions: Sequence[float],
-            ds_resolutions_unit_name: Optional[str] = None
+            ds_spatial_unit_name: Optional[str] = None
     ) -> int:
-        map_unit_name = self.map_unit_name
-        unit_factor = get_unit_factor(map_unit_name,
-                                      ds_resolutions_unit_name
-                                      or map_unit_name)
-
-        map_pix_size_l0 = unit_factor * self.map_height / self.tile_size
+        f_map_to_ds = get_unit_factor(self.map_unit_name,
+                                      ds_spatial_unit_name)
+        # Map tile pixel size in dataset units for tile at level 0
+        map_pix_size_l0 = f_map_to_ds * self.level_zero_resolution
+        # Map tile pixel size in dataset units for tile at level
         map_pix_size = map_pix_size_l0 / (1 << level)
 
         num_ds_levels = len(ds_resolutions)
@@ -298,6 +304,10 @@ class TileGrid:
 
 
 def get_unit_factor(unit_name_from: str, unit_name_to: str) -> float:
+    """
+    Get the factor to convert from one unit into another
+    with units given by *unit_name_from* and *unit_name_to*.
+    """
     from_meter = _is_meter_unit(unit_name_from)
     from_degree = _is_degree_unit(unit_name_from)
     if not from_meter and not from_degree:

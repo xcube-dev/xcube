@@ -228,6 +228,7 @@ class TileGridTest(unittest.TestCase):
             180 / 256 / 2 ** i for i in reversed(range(num_ds_levels))
         ]
 
+        # Test up to num_ds_levels
         self.assertEqual(
             (0, num_ds_levels - 1),
             tile_grid.get_level_range_for_dataset(
@@ -235,6 +236,22 @@ class TileGridTest(unittest.TestCase):
                 'degrees'
             )
         )
+
+        # Test single level 5
+        self.assertEqual(
+            (5, 5),
+            tile_grid.get_level_range_for_dataset(
+                [180 / 256 / 2 ** 5],
+                'degrees'
+            )
+        )
+
+        # Test empty
+        with self.assertRaises(ValueError):
+            tile_grid.get_level_range_for_dataset(
+                [],
+                'degrees'
+            )
 
 
 class TileGridHelpersTest(unittest.TestCase):

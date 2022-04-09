@@ -19,6 +19,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+import math
 import os
 import threading
 import uuid
@@ -111,11 +112,24 @@ class MultiLevelDataset(metaclass=ABCMeta):
     @property
     def resolutions(self) -> Sequence[Tuple[float, float]]:
         """
-        :return: the x,y resolutions for each level given in the spatial units
-            of the dataset's CRS (i.e. ``self.grid_mapping.crs``).
+        :return: the x,y resolutions for each level given in the
+            spatial units of the dataset's CRS
+            (i.e. ``self.grid_mapping.crs``).
         """
         x_res_0, y_res_0 = self.grid_mapping.xy_res
-        return [(x_res_0 * (2 ** level), y_res_0 * (2 ** level))
+        return [(x_res_0 * (1 << level), y_res_0 * (1 << level))
+                for level in range(self.num_levels)]
+
+    @property
+    def avg_resolutions(self) -> Sequence[float]:
+        """
+        :return: the average x,y resolutions for each level given in the
+            spatial units of the dataset's CRS
+            (i.e. ``self.grid_mapping.crs``).
+        """
+        x_res_0, y_res_0 = self.grid_mapping.xy_res
+        xy_res_0 = math.sqrt(x_res_0 * y_res_0)
+        return [xy_res_0 * (1 << level)
                 for level in range(self.num_levels)]
 
     @property

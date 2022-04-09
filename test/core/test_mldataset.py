@@ -77,6 +77,8 @@ class BaseMultiLevelDatasetTest(unittest.TestCase):
         self.assertEqual(3, ml_ds.num_levels)
         self.assertEqual([(0.25, 0.25), (0.5, 0.5), (1.0, 1.0)],
                          ml_ds.resolutions)
+        self.assertEqual([0.25, 0.5, 1.0],
+                         ml_ds.avg_resolutions)
 
         tile_grid = ml_ds.tile_grid
         self.assertIsInstance(tile_grid, ImageTileGrid)

@@ -151,7 +151,7 @@ def compute_rgba_tile(
 
         ds_level = tile_grid.get_dataset_level(
             tile_z,
-            [xy_res[1] for xy_res in ml_dataset.resolutions],
+            ml_dataset.avg_resolutions,
             ml_dataset.grid_mapping.spatial_unit_name
         )
         dataset = ml_dataset.get_dataset(ds_level)
