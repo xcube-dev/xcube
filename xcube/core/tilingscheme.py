@@ -37,10 +37,10 @@ EARTH_EQUATORIAL_RADIUS_WGS84 = 6378137.
 EARTH_CIRCUMFERENCE_WGS84 = 2 * math.pi * EARTH_EQUATORIAL_RADIUS_WGS84
 
 
-class TileGrid:
+class TilingScheme:
     """
-    A tile grid represents a schema for subdividing
-    the world into 2D image tiles.
+    A scheme for subdividing the world into a tiled, multi-resolution
+    image pyramid.
 
     :param num_level_zero_tiles: The number of tiles
         in x and y direction at lowest resolution level (zero).
@@ -49,6 +49,8 @@ class TileGrid:
         spatial coordinate reference system.
     :param tile_size: The tile size to be used for
         both x and y directions. Defaults to 256.
+    :param min_level: Optional minimum resolution level.
+    :param max_level: Optional maximum resolution level.
     """
 
     def __init__(self,
@@ -150,31 +152,31 @@ class TileGrid:
         return self.max_level + 1 if self.max_level is not None else None
 
     @classmethod
-    def new(cls, crs_name: str = DEFAULT_CRS_NAME, **kwargs) -> 'TileGrid':
+    def new(cls, crs_name: str = DEFAULT_CRS_NAME, **kwargs) -> 'TilingScheme':
         if crs_name == WEB_MERCATOR_CRS_NAME:
-            grid = TileGrid.new_web_mercator()
+            tiling_scheme = TilingScheme.new_web_mercator()
         elif crs_name in GEOGRAPHIC_CRS_NAMES:
-            grid = TileGrid.new_geographic()
+            tiling_scheme = TilingScheme.new_geographic()
         else:
             raise ValueError(f'unsupported spatial CRS {crs_name!r}')
-        return grid.derive(**kwargs)
+        return tiling_scheme.derive(**kwargs)
 
     @classmethod
     def new_geographic(cls):
-        return TileGrid(num_level_zero_tiles=(2, 1),
-                        crs_name=GEOGRAPHIC_CRS_NAME,
-                        map_height=180.)
+        return TilingScheme(num_level_zero_tiles=(2, 1),
+                            crs_name=GEOGRAPHIC_CRS_NAME,
+                            map_height=180.)
 
     @classmethod
     def new_web_mercator(cls):
-        return TileGrid(num_level_zero_tiles=(1, 1),
-                        crs_name=WEB_MERCATOR_CRS_NAME,
-                        map_height=EARTH_CIRCUMFERENCE_WGS84)
+        return TilingScheme(num_level_zero_tiles=(1, 1),
+                            crs_name=WEB_MERCATOR_CRS_NAME,
+                            map_height=EARTH_CIRCUMFERENCE_WGS84)
 
     def derive(self, **kwargs):
         args = self.to_dict()
         args.update({k: v for k, v in kwargs.items() if v is not None})
-        return TileGrid(**args)
+        return TilingScheme(**args)
 
     def to_dict(self):
         d = dict(num_level_zero_tiles=self.num_level_zero_tiles,
@@ -200,7 +202,7 @@ class TileGrid:
         if max_level is None:
             raise ValueError('max_value must be given')
 
-        return [res_l0 / 2 ** level
+        return [res_l0 / (1 << level)
                 for level in range(min_level, max_level + 1)]
 
     def get_level_range_for_dataset(

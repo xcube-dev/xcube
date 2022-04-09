@@ -31,7 +31,7 @@ from xcube.constants import LOG
 from xcube.core.geom import get_dataset_bounds
 from xcube.core.normalize import DatasetIsNotACubeError
 from xcube.core.store import DataStoreError
-from xcube.core.tilegrid import TileGrid
+from xcube.core.tilingscheme import TilingScheme
 from xcube.core.timecoord import timestamp_to_iso_string
 from xcube.util.cmaps import get_cmaps
 from xcube.webapi.auth import READ_ALL_DATASETS_SCOPE
@@ -45,7 +45,7 @@ from xcube.webapi.controllers.tiles import get_dataset_tile_url2
 from xcube.webapi.controllers.tiles import get_tile_source_options
 from xcube.webapi.errors import ServiceBadRequestError
 
-_GEO_TILE_GRID = TileGrid.new_geographic()
+_GEO_TILING_SCHEME = TilingScheme.new_geographic()
 
 
 def get_datasets(ctx: ServiceContext,
@@ -224,7 +224,7 @@ def get_dataset(ctx: ServiceContext,
                   var_name, tile_url)
 
         try:
-            tile_level_range = _GEO_TILE_GRID.get_level_range_for_dataset(
+            tile_level_range = _GEO_TILING_SCHEME.get_level_range_for_dataset(
                 ml_ds.avg_resolutions,
                 ml_ds.grid_mapping.spatial_unit_name
             )

@@ -31,9 +31,9 @@ import numpy as np
 import xarray as xr
 
 from .mldataset import MultiLevelDataset
-from .tilegrid import DEFAULT_CRS_NAME
-from .tilegrid import DEFAULT_TILE_SIZE
-from .tilegrid import TileGrid
+from .tilingscheme import DEFAULT_CRS_NAME
+from .tilingscheme import DEFAULT_TILE_SIZE
+from .tilingscheme import TilingScheme
 from ..constants import LOG
 from ..util.assertions import assert_in
 from ..util.assertions import assert_instance
@@ -147,9 +147,9 @@ def compute_rgba_tile(
     logger = LOG if trace_perf else None
 
     with log_time(logger, 'preparing 2D subset'):
-        tile_grid = TileGrid.new(crs_name, tile_size=tile_size)
+        tiling_scheme = TilingScheme.new(crs_name, tile_size=tile_size)
 
-        ds_level = tile_grid.get_dataset_level(
+        ds_level = tiling_scheme.get_dataset_level(
             tile_z,
             ml_dataset.avg_resolutions,
             ml_dataset.grid_mapping.spatial_unit_name
@@ -174,7 +174,7 @@ def compute_rgba_tile(
         ds_y_coords = variable_0[ds_y_name]
         ds_y_points_up = bool(ds_y_coords[0] < ds_y_coords[-1])
 
-        tile_bbox = tile_grid.get_tile_extent(tile_x, tile_y, tile_z)
+        tile_bbox = tiling_scheme.get_tile_extent(tile_x, tile_y, tile_z)
         if tile_bbox is None:
             raise TileRequestException.new(
                 'tile indices out of tile grid bounds',
@@ -194,7 +194,7 @@ def compute_rgba_tile(
         tile_y_2d = np.tile(tile_y_1d, (tile_size, 1)).transpose()
 
         t_map_to_ds = ProjCache.INSTANCE.get_transformer(
-            tile_grid.crs,
+            tiling_scheme.crs,
             ml_dataset.grid_mapping.crs
         )
 

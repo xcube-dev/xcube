@@ -36,10 +36,10 @@ import pyproj
 import xarray as xr
 
 from xcube.core.gridmapping import GridMapping
-from xcube.core.tilegrid import EARTH_CIRCUMFERENCE_WGS84
-from xcube.core.tilegrid import GEOGRAPHIC_CRS_NAME
-from xcube.core.tilegrid import TileGrid
-from xcube.core.tilegrid import WEB_MERCATOR_CRS_NAME
+from xcube.core.tilingscheme import EARTH_CIRCUMFERENCE_WGS84
+from xcube.core.tilingscheme import GEOGRAPHIC_CRS_NAME
+from xcube.core.tilingscheme import TilingScheme
+from xcube.core.tilingscheme import WEB_MERCATOR_CRS_NAME
 from xcube.webapi.context import ServiceContext
 from ._xml import Document
 from ._xml import Element
@@ -388,11 +388,11 @@ def _get_tile_matrix_set_element(
 
     scale_factor = meters_per_pixel / _STD_PIXEL_SIZE_IN_METERS
 
-    tile_grid = TileGrid.new(get_crs_name_from_tms_id(tms_id))
-    tile_size = tile_grid.tile_size
-    num_x_tiles_0, num_y_tiles_0 = tile_grid.num_level_zero_tiles
-    resolutions = tile_grid.get_resolutions(min_level=0,
-                                            max_level=num_levels - 1)
+    tiling_scheme = TilingScheme.new(get_crs_name_from_tms_id(tms_id))
+    tile_size = tiling_scheme.tile_size
+    num_x_tiles_0, num_y_tiles_0 = tiling_scheme.num_level_zero_tiles
+    resolutions = tiling_scheme.get_resolutions(min_level=0,
+                                                max_level=num_levels - 1)
     for level, res in enumerate(resolutions):
         factor = 2 ** level
         num_x_tiles = factor * num_x_tiles_0

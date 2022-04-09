@@ -27,7 +27,7 @@ from xcube.core.tile import DEFAULT_FORMAT
 from xcube.core.tile import TileNotFoundException
 from xcube.core.tile import TileRequestException
 from xcube.core.tile import compute_rgba_tile
-from xcube.core.tilegrid import DEFAULT_TILE_SIZE
+from xcube.core.tilingscheme import DEFAULT_TILE_SIZE
 from xcube.webapi.context import ServiceContext
 from xcube.webapi.errors import ServiceBadRequestError
 from xcube.webapi.errors import ServiceResourceNotFoundError
