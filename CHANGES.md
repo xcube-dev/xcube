@@ -11,12 +11,12 @@
   2. global web mercator grid, with 1 x 1 tiles at level 
      zero ("Google projection", OSM tile grid).
   
-  The general form of the xcube tile URL is
+  The general form of the xcube tile URL is currently
        
       /datasets/{ds_id}/vars/{var_name}/tile2/{z}/{y}/{x}
     
   The following query parameters can be used
-    
+
   - `crs`: set to `CRS84` to use the geographical grid (the default),
     or `EPSG:3857` to use the web mercator grid. 
   - `cbar`: color bar name such as `viridis` or `plasma`, 
