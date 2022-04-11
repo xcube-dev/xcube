@@ -107,22 +107,23 @@
 
 ### Other changes
 
-* The `xcube tile` has been deprecated in its current form and is no
+* The `xcube tile` CLI tool has been deprecated in its current form and is no
   longer supported since xcube 0.11. A new tool is planned that can work
   concurrently on dask clusters and also supports common tile grids such as
   global geographic and web mercator.
 
-* All components of the `xcube.util.tiledimage` module have been 
-  deprecated and are no longer used in xcube.  
+* The `xcube.util.tiledimage` module has been deprecated and is no longer 
+  used in xcube. It has no replacement.
 
-* TODO: All components of the `xcube.util.tilegrid` module have been 
-  deprecated and are no longer used in xcube. Entirely new implementations 
-  are provided in `xcube.core.tilegrid` which are used instead. 
+* The `xcube.util.tilegrid` module has been deprecated and is no longer 
+  used in xcube. 
+  A new implementation is provided by `xcube.core.tilingscheme` 
+  which is used instead. 
 
-* TODO: All components of the `xcube.core.tile` module have been 
-  deprecated and are no longer used in xcube. Entirely new implementations 
-  are provided in `xcube.core.tile2` which are used instead. 
-  In version xcube 0.12 these will renamed to `xcube.core.tile`.  
+* All existing functions of the `xcube.core.tile` module have been 
+  deprecated and are no longer used in xcube. A newly exported function
+  is `xcube.core.tile.compute_rgba_tile()` which is used in place of
+  other tile generating functions.
   
 
 ## Changes in 0.10.2
