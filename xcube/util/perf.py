@@ -95,7 +95,8 @@ class measure_time(AbstractContextManager):
         if self.message:
             self.logger.info(
                 self.message + ": took %.2fms",
-                (*self.args, self.duration * 1000),
+                *self.args,
+                self.duration * 1000,
                 **self.kwargs
             )
 
