@@ -15,6 +15,7 @@ from xcube.core.mldataset import ComputedMultiLevelDataset
 from xcube.core.mldataset import ObjectStorageMultiLevelDataset
 from xcube.core.mldataset import open_ml_dataset_from_object_storage
 from xcube.core.mldataset import write_levels
+from xcube.core.tilingscheme import TilingScheme
 from xcube.util.tilegrid import ImageTileGrid
 
 
@@ -119,6 +120,14 @@ class BaseMultiLevelDatasetTest(unittest.TestCase):
         with self.assertRaises(TypeError):
             # noinspection PyTypeChecker
             BaseMultiLevelDataset(ds, grid_mapping='crs84')
+
+    def test_derive_tiling_scheme(self):
+        ds = _get_test_dataset()
+        ml_ds = BaseMultiLevelDataset(ds)
+        tiling_scheme = ml_ds.derive_tiling_scheme(TilingScheme.GEOGRAPHIC)
+        self.assertEqual('CRS84', tiling_scheme.crs_name)
+        self.assertEqual(0, tiling_scheme.min_level)
+        self.assertEqual(2, tiling_scheme.max_level)
 
 
 class ComputedMultiLevelDatasetTest(unittest.TestCase):

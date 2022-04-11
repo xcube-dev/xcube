@@ -147,9 +147,10 @@ def compute_rgba_tile(
     logger = LOG if trace_perf else None
 
     with log_time(logger, 'preparing 2D subset'):
-        tiling_scheme = TilingScheme.new(crs_name, tile_size=tile_size)
+        tiling_scheme = TilingScheme.for_crs(crs_name)\
+            .derive(tile_size=tile_size)
 
-        ds_level = tiling_scheme.get_dataset_level(
+        ds_level = tiling_scheme.get_resolutions_level(
             tile_z,
             ml_dataset.avg_resolutions,
             ml_dataset.grid_mapping.spatial_unit_name

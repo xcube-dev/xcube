@@ -21,7 +21,6 @@
 
 import functools
 import json
-import math
 from typing import Dict, Tuple, List, Set, Optional, Any, Callable
 
 import numpy as np
@@ -44,8 +43,6 @@ from xcube.webapi.controllers.tiles import get_dataset_tile_url
 from xcube.webapi.controllers.tiles import get_dataset_tile_url2
 from xcube.webapi.controllers.tiles import get_tile_source_options
 from xcube.webapi.errors import ServiceBadRequestError
-
-_GEO_TILING_SCHEME = TilingScheme.new_geographic()
 
 
 def get_datasets(ctx: ServiceContext,
@@ -208,6 +205,8 @@ def get_dataset(ctx: ServiceContext,
                                                                var_name)))
 
         if client is not None:
+            # In xcube 0.12+, remove this deprecated code.
+            # We no longer support tileSourceOptions
             tile_grid = ctx.get_tile_grid(ds_id)
             tile_xyz_source_options = get_tile_source_options(
                 tile_grid,
@@ -223,17 +222,13 @@ def get_dataset(ctx: ServiceContext,
         LOG.debug('Tile URL for variable %s: %s',
                   var_name, tile_url)
 
-        try:
-            tile_level_range = _GEO_TILING_SCHEME.get_level_range_for_dataset(
-                ml_ds.avg_resolutions,
-                ml_ds.grid_mapping.spatial_unit_name
-            )
-            variable_dict["tileLevelMin"] = tile_level_range[0]
-            variable_dict["tileLevelMax"] = tile_level_range[1]
-            LOG.debug('Tile level range for variable %s: %d to %d',
-                      var_name, *tile_level_range)
-        except ValueError:
-            LOG.error('Failed to compute min/max tile grid level', exc_info=1)
+        tiling_scheme = ml_ds.derive_tiling_scheme(TilingScheme.GEOGRAPHIC)
+        variable_dict["tileLevelMin"] = tiling_scheme.min_level
+        variable_dict["tileLevelMax"] = tiling_scheme.max_level
+        LOG.debug('Tile level range for variable %s: %d to %d',
+                  var_name,
+                  tiling_scheme.min_level,
+                  tiling_scheme.max_level)
 
         cmap_name, (cmap_vmin, cmap_vmax) = ctx.get_color_mapping(ds_id,
                                                                   var_name)

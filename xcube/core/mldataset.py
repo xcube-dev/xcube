@@ -45,7 +45,7 @@ from xcube.core.schema import rechunk_cube
 from xcube.core.subsampling import AggMethods
 from xcube.core.subsampling import assert_valid_agg_methods
 from xcube.core.subsampling import subsample_dataset
-from xcube.core.tilingscheme import get_num_levels
+from xcube.core.tilingscheme import get_num_levels, TilingScheme
 from xcube.core.verify import assert_cube
 from xcube.util.assertions import assert_instance
 from xcube.util.assertions import assert_true
@@ -166,7 +166,20 @@ class MultiLevelDataset(metaclass=ABCMeta):
               tile_grid: TileGrid = None,
               ds_id: str = None) -> 'MultiLevelDataset':
         """ Apply function to all level datasets and return a new multi-level dataset."""
-        return MappedMultiLevelDataset(self, function, tile_grid=tile_grid, ds_id=ds_id, mapper_params=kwargs)
+        return MappedMultiLevelDataset(self, function, tile_grid=tile_grid,
+                                       ds_id=ds_id, mapper_params=kwargs)
+
+    def derive_tiling_scheme(self, tiling_scheme: TilingScheme):
+        """
+        Derive a new tiling scheme for the given one with defined
+        minimum and maximum level indices.
+        """
+        min_level, max_level = tiling_scheme.get_levels_for_resolutions(
+            self.avg_resolutions,
+            self.grid_mapping.spatial_unit_name
+        )
+        return tiling_scheme.derive(min_level=min_level,
+                                    max_level=max_level)
 
 
 class LazyMultiLevelDataset(MultiLevelDataset, metaclass=ABCMeta):

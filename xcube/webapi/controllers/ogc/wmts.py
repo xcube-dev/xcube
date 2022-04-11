@@ -36,6 +36,7 @@ import pyproj
 import xarray as xr
 
 from xcube.core.gridmapping import GridMapping
+from xcube.core.mldataset import MultiLevelDataset
 from xcube.core.tilingscheme import EARTH_CIRCUMFERENCE_WGS84
 from xcube.core.tilingscheme import GEOGRAPHIC_CRS_NAME
 from xcube.core.tilingscheme import TilingScheme
@@ -106,6 +107,10 @@ def get_capabilities_element(ctx: ServiceContext,
     contents_element = Element('Contents')
     themes_element = Element('Themes')
 
+    common_tiling_scheme = TilingScheme.for_crs(
+        get_crs_name_from_tms_id(tms_id)
+    )
+
     for dataset_config in ctx.get_dataset_configs():
         ds_name = dataset_config['Identifier']
 
@@ -154,9 +159,24 @@ def get_capabilities_element(ctx: ServiceContext,
             contents_element.add(var_layer_element)
             ds_theme_element.add(var_theme_element)
 
+        # Here we compute min/max level for all datasets
+        # which is actually not right. Otherwise, we had to create a new
+        # TMS for every dataset (or even variable).
+        tiling_scheme = ml_dataset.derive_tiling_scheme(common_tiling_scheme)
+        if common_tiling_scheme.min_level is None:
+            min_level = tiling_scheme.min_level
+            max_level = tiling_scheme.max_level
+        else:
+            min_level = min(common_tiling_scheme.min_level,
+                            tiling_scheme.min_level)
+            max_level = max(common_tiling_scheme.max_level,
+                            tiling_scheme.max_level)
+        common_tiling_scheme = common_tiling_scheme.derive(
+            min_level=min_level, max_level=max_level
+        )
+
     contents_element.add(
-        # TODO (forman): compute min_level and max_level from datasets
-        get_tile_matrix_set_element(tms_id, num_levels=20),
+        get_tile_matrix_set_element(common_tiling_scheme),
     )
 
     service_identification_element = get_service_identification_element()
@@ -331,14 +351,24 @@ def get_var_layer_and_theme_element(
     return layer_element, var_theme_element
 
 
-def get_tile_matrix_set_element(tms_id: str, num_levels: int) -> Element:
+def get_dataset_tiling_scheme(ml_dataset: MultiLevelDataset, tms_id: str) \
+        -> TilingScheme:
     if tms_id == WMTS_CRS84_TMS_ID:
-        return get_tile_matrix_set_crs84_element(num_levels)
+        tiling_scheme = TilingScheme.GEOGRAPHIC
     else:
-        return get_tile_matrix_set_web_mercator_element(num_levels)
+        tiling_scheme = TilingScheme.WEB_MERCATOR
+    return ml_dataset.derive_tiling_scheme(tiling_scheme)
 
 
-def get_tile_matrix_set_crs84_element(num_levels: int) -> Element:
+def get_tile_matrix_set_element(tiling_scheme: TilingScheme) -> Element:
+    if tiling_scheme.crs_name == tiling_scheme.GEOGRAPHIC.crs_name:
+        return get_tile_matrix_set_crs84_element(tiling_scheme)
+    else:
+        return get_tile_matrix_set_web_mercator_element(tiling_scheme)
+
+
+def get_tile_matrix_set_crs84_element(tiling_scheme: TilingScheme) \
+        -> Element:
     return _get_tile_matrix_set_element(
         WMTS_CRS84_TMS_ID,
         WMTS_CRS84_TMS_TITLE,
@@ -347,11 +377,13 @@ def get_tile_matrix_set_crs84_element(num_levels: int) -> Element:
         (-180, -90,
          +180, +90),
         EARTH_CIRCUMFERENCE_WGS84 / 360.0,
-        num_levels
+        tiling_scheme.min_level,
+        tiling_scheme.max_level,
     )
 
 
-def get_tile_matrix_set_web_mercator_element(num_levels: int) -> Element:
+def get_tile_matrix_set_web_mercator_element(tiling_scheme: TilingScheme) \
+        -> Element:
     return _get_tile_matrix_set_element(
         WMTS_WEB_MERCATOR_TMS_ID,
         WMTS_WEB_MERCATOR_TMS_TITLE,
@@ -360,7 +392,8 @@ def get_tile_matrix_set_web_mercator_element(num_levels: int) -> Element:
         (-20037508.3427892, -20037508.3427892,
          +20037508.3427892, +20037508.3427892),
         1.0,
-        num_levels
+        tiling_scheme.min_level,
+        tiling_scheme.max_level,
     )
 
 
@@ -371,7 +404,8 @@ def _get_tile_matrix_set_element(
         wkss_urn: str,
         bbox: Tuple[float, float, float, float],
         meters_per_pixel: float,
-        num_levels: int
+        min_level: int,
+        max_level: int,
 ) -> Element:
     element = Element('TileMatrixSet', elements=[
         Element('ows:Identifier', text=tms_id),
@@ -388,12 +422,14 @@ def _get_tile_matrix_set_element(
 
     scale_factor = meters_per_pixel / _STD_PIXEL_SIZE_IN_METERS
 
-    tiling_scheme = TilingScheme.new(get_crs_name_from_tms_id(tms_id))
+    tiling_scheme = TilingScheme.for_crs(get_crs_name_from_tms_id(tms_id))
     tile_size = tiling_scheme.tile_size
     num_x_tiles_0, num_y_tiles_0 = tiling_scheme.num_level_zero_tiles
-    resolutions = tiling_scheme.get_resolutions(min_level=0,
-                                                max_level=num_levels - 1)
-    for level, res in enumerate(resolutions):
+    resolutions = tiling_scheme.get_resolutions(
+        min_level=min_level,
+        max_level=max_level
+    )
+    for level, res in zip(range(min_level, max_level + 1), resolutions):
         factor = 2 ** level
         num_x_tiles = factor * num_x_tiles_0
         num_y_tiles = factor * num_y_tiles_0

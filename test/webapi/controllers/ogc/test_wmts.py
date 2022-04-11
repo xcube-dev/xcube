@@ -27,6 +27,7 @@ import pyproj
 from test.webapi.helpers import get_res_test_dir
 from test.webapi.helpers import new_test_service_context
 from xcube.core.gridmapping import GridMapping
+from xcube.core.tilingscheme import TilingScheme
 from xcube.webapi.context import ServiceContext
 from xcube.webapi.controllers.ogc.wmts import (
     get_operations_metadata_element,
@@ -52,6 +53,7 @@ class WmtsControllerTest(unittest.TestCase):
         actual_xml = get_wmts_capabilities_xml(ctx,
                                                'http://bibo',
                                                WMTS_CRS84_TMS_ID)
+        # Do not delete, useful for debugging
         print(80 * '=')
         print(actual_xml)
         print(80 * '=')
@@ -66,9 +68,10 @@ class WmtsControllerTest(unittest.TestCase):
         actual_xml = get_wmts_capabilities_xml(ctx,
                                                'http://bibo',
                                                WMTS_WEB_MERCATOR_TMS_ID)
-        # print(80 * '=')
-        # print(actual_xml)
-        # print(80 * '=')
+        # Do not delete, useful for debugging
+        print(80 * '=')
+        print(actual_xml)
+        print(80 * '=')
         self.assertEqual(expected_xml, actual_xml)
 
 
@@ -168,7 +171,11 @@ class WmtsControllerXmlGenTest(unittest.TestCase):
         )
 
     def test_get_tile_matrix_set_crs84_element(self):
-        element = get_tile_matrix_set_crs84_element(num_levels=3)
+        tiling_scheme = TilingScheme.GEOGRAPHIC.derive(
+            min_level=0,
+            max_level=2
+        )
+        element = get_tile_matrix_set_crs84_element(tiling_scheme)
         self.assertEqual(
             '<TileMatrixSet>\n'
             '  <ows:Identifier>WorldCRS84Quad</ows:Identifier>\n'
@@ -213,7 +220,11 @@ class WmtsControllerXmlGenTest(unittest.TestCase):
         )
 
     def test_get_tile_matrix_set_web_mercator_element(self):
-        element = get_tile_matrix_set_web_mercator_element(num_levels=3)
+        tiling_scheme = TilingScheme.WEB_MERCATOR.derive(
+            min_level=0,
+            max_level=2
+        )
+        element = get_tile_matrix_set_web_mercator_element(tiling_scheme)
         self.assertEqual(
             ('<TileMatrixSet>\n'
              '  <ows:Identifier>WorldWebMercatorQuad</ows:Identifier>\n'
