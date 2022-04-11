@@ -44,31 +44,18 @@
   The key-value pair (KVP) endpoint `/wmts/kvp` now recognises the
   `TileMatrixSet` key for the two values described above.
 
-### Other changes
-
-* The `xcube tile` has been deprecated in its current form and is no
-  longer supported since xcube 0.11. A new tool is planned that can work
-  concurrently on dask clusters and also supports common tile grids such as
-  global geographic and web mercator.
-
-* All components of the `xcube.util.tiledimage` module have been 
-  deprecated and are no longer used in xcube.  
-
-* TODO: All components of the `xcube.util.tilegrid` module have been 
-  deprecated and are no longer used in xcube. Entirely new implementations 
-  are provided in `xcube.core.tilegrid` which are used instead. 
-
-* TODO: All components of the `xcube.core.tile` module have been 
-  deprecated and are no longer used in xcube. Entirely new implementations 
-  are provided in `xcube.core.tile2` which are used instead. 
-  In version xcube 0.12 these will renamed to `xcube.core.tile`.  
-  
-
-
-
-## Changes in 0.10.3 (in development)
-
-### Enhancements
+* Support for multi-level datasets aka ND image pyramids has been 
+  further improved (#655):
+  - Introduced new parameter `agg_methods` for writing multi-level datasets 
+    with the "file", "s3", and "memory" data stores. 
+    The value of `agg_methods` is either a string `"first"`,
+    `"min"`, `"max"`, `"mean"`, `"median"` or a dictionary that maps
+    a variable name to an aggregation method. Variable names can be patterns
+    that may contain wildcard characters '*' and '?'. The special aggregation
+    method `"auto"` can be used to select `"first"` for integer variables 
+    and `"mean"` for floating point variables. 
+  - The `xcube level` CLI tool now has a new option `--agg-methods` (or `-A`)
+    for the same purpose.
 
 * The xcube package now consistently makes use of logging.
   We distinguish general logging and specific xcube logging.
@@ -110,19 +97,6 @@
     If enabled, a simple message format will be used, unless the general 
     logging is redirected to stdout.
 
-* Support for multi-level datasets aka ND image pyramids has been 
-  further improved (#655):
-  - Introduced new parameter `agg_methods` for writing multi-level datasets 
-    with the "file", "s3", and "memory" data stores. 
-    The value of `agg_methods` is either a string `"first"`,
-    `"min"`, `"max"`, `"mean"`, `"median"` or a dictionary that maps
-    a variable name to an aggregation method. Variable names can be patterns
-    that may contain wildcard characters '*' and '?'. The special aggregation
-    method `"auto"` can be used to select `"first"` for integer variables 
-    and `"mean"` for floating point variables. 
-  - The `xcube level` CLI tool now has a new option `--agg-methods` (or `-A`)
-    for the same purpose.
-
 ### Fixes
 
 * Fixed a problem where the `DataStores` configuration of `xcube serve` 
@@ -130,6 +104,26 @@
 
 * Opening of multi-level datasets with filesystem data stores now 
   recognizes the `cache_size` open parameter.
+
+### Other changes
+
+* The `xcube tile` has been deprecated in its current form and is no
+  longer supported since xcube 0.11. A new tool is planned that can work
+  concurrently on dask clusters and also supports common tile grids such as
+  global geographic and web mercator.
+
+* All components of the `xcube.util.tiledimage` module have been 
+  deprecated and are no longer used in xcube.  
+
+* TODO: All components of the `xcube.util.tilegrid` module have been 
+  deprecated and are no longer used in xcube. Entirely new implementations 
+  are provided in `xcube.core.tilegrid` which are used instead. 
+
+* TODO: All components of the `xcube.core.tile` module have been 
+  deprecated and are no longer used in xcube. Entirely new implementations 
+  are provided in `xcube.core.tile2` which are used instead. 
+  In version xcube 0.12 these will renamed to `xcube.core.tile`.  
+  
 
 ## Changes in 0.10.2
 
