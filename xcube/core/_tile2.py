@@ -38,7 +38,7 @@ from ..constants import LOG
 from ..util.assertions import assert_in
 from ..util.assertions import assert_instance
 from ..util.assertions import assert_true
-from ..util.logtime import log_time
+from ..util.perf import measure_time_cm
 from ..util.projcache import ProjCache
 
 DEFAULT_VALUE_RANGE = (0., 1.)
@@ -146,8 +146,10 @@ def compute_rgba_tile(
 
     logger = LOG if trace_perf else None
 
-    with log_time(logger, 'preparing 2D subset'):
-        tiling_scheme = TilingScheme.for_crs(crs_name)\
+    measure_time = measure_time_cm(disabled=not trace_perf, logger=LOG)
+
+    with measure_time('Preparing 2D subset'):
+        tiling_scheme = TilingScheme.for_crs(crs_name) \
             .derive(tile_size=tile_size)
 
         ds_level = tiling_scheme.get_resolutions_level(
@@ -168,8 +170,7 @@ def compute_rgba_tile(
 
     variable_0 = variables[0]
 
-    with log_time(logger,
-                  'transforming tile map to dataset coordinates'):
+    with measure_time('Transforming tile map to dataset coordinates'):
         ds_x_name, ds_y_name = ml_dataset.grid_mapping.xy_dim_names
 
         ds_y_coords = variable_0[ds_y_name]
@@ -202,7 +203,7 @@ def compute_rgba_tile(
         tile_ds_x_2d, tile_ds_y_2d = t_map_to_ds.transform(tile_x_2d,
                                                            tile_y_2d)
 
-    with log_time(logger, 'getting spatial subset'):
+    with measure_time('Getting spatial subset'):
 
         # Get min/max of the 1D arrays surrounding the 2D array
         # North
@@ -255,8 +256,7 @@ def compute_rgba_tile(
             if 0 in var_subset.shape or 1 in var_subset.shape:
                 return TransparentRgbaTilePool.INSTANCE.get(tile_size, format)
 
-    with log_time(logger,
-                  'transforming dataset coordinates into indices'):
+    with measure_time('Transforming dataset coordinates into indices'):
         var_subset_0 = var_subsets[0]
         ds_x_coords = var_subset_0[ds_x_name]
         ds_y_coords = var_subset_0[ds_y_name]
@@ -278,7 +278,7 @@ def compute_rgba_tile(
         ds_x_indices = ds_x_indices.astype(dtype=np.int64)
         ds_y_indices = ds_y_indices.astype(dtype=np.int64)
 
-    with log_time(logger, 'masking dataset indices'):
+    with measure_time('Masking dataset indices'):
         ds_mask = (ds_x_indices >= 0) & (ds_x_indices < ds_size_x) \
                   & (ds_y_indices >= 0) & (ds_y_indices < ds_size_y)
 
@@ -287,7 +287,7 @@ def compute_rgba_tile(
 
     var_tiles = []
     for var_subset, value_range in zip(var_subsets, value_ranges):
-        with log_time(logger, 'loading 2D data for spatial subset'):
+        with measure_time('Loading 2D data for spatial subset'):
             # Note, we need to load the values here into a numpy array,
             # because 2D indexing by [ds_y_indices, ds_x_indices]
             # does not (yet) work with dask arrays.
@@ -296,14 +296,14 @@ def compute_rgba_tile(
             # they will be of size one, if any.
             var_tile = var_tile.reshape(var_tile.shape[-2:])
 
-        with log_time(logger, 'looking up dataset indices'):
+        with measure_time('Looking up dataset indices'):
             # This does the actual projection trick.
             # Lookup indices ds_y_indices, ds_x_indices to create
             # the actual tile.
             var_tile = var_tile[ds_y_indices, ds_x_indices]
             var_tile = np.where(ds_mask, var_tile, np.nan)
 
-        with log_time(logger, 'normalizing data tile'):
+        with measure_time('Normalizing data tile'):
             var_tile = var_tile[::-1, :]
             value_min, value_max = value_range
             if value_max < value_min:
@@ -315,7 +315,7 @@ def compute_rgba_tile(
 
         var_tiles.append(var_tile_norm)
 
-    with log_time(logger, 'encoding tile as RGBA image'):
+    with measure_time('Encoding tile as RGBA image'):
         if len(var_tiles) == 1:
             var_tile_norm = var_tiles[0]
             cm = matplotlib.cm.get_cmap(cmap_name or DEFAULT_CMAP_NAME)
@@ -331,7 +331,7 @@ def compute_rgba_tile(
             var_tile_rgba[..., 3] = np.where(np.isfinite(r + g + b), 255, 0)
 
     if format == 'png':
-        with log_time(logger, 'encoding RGBA image as PNG bytes'):
+        with measure_time('Encoding RGBA image as PNG bytes'):
             return _encode_rgba_as_png(var_tile_rgba)
     else:
         return var_tile_rgba

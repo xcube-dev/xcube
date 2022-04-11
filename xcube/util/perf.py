@@ -22,7 +22,9 @@
 import functools
 import logging
 import time
+import warnings
 from contextlib import AbstractContextManager
+from typing import Optional
 
 from xcube.constants import LOG
 
@@ -54,37 +56,57 @@ def measure_time_cm(logger=None, disabled=False):
 
 
 class measure_time(AbstractContextManager):
-    def __init__(self, tag: str = None, logger=None):
-        self._tag = tag
-        if isinstance(logger, str):
-            self._logger = logging.getLogger(logger)
-        elif logger is None:
-            self._logger = LOG
+    def __init__(self,
+                 *args,
+                 tag: Optional[str] = None,
+                 logger: Optional[logging.Logger] = None,
+                 **kwargs):
+        self.message = tag
+        self.args = args
+        self.kwargs = kwargs
+        if tag is not None:
+            warnings.warn('The keyword "tag" has been deprecated,'
+                          ' use first argument "message" instead',
+                          DeprecationWarning)
+        elif args:
+            self.message = args[0]
+            self.args = args[1:]
         else:
-            self._logger = logger
-        self._start_time = None
+            warnings.warn('Calling measure_time() without "message"'
+                          ' argument is deprecated.',
+                          DeprecationWarning)
+            self.message = None
+            self.args = None
+        if isinstance(logger, str):
+            self.logger = logging.getLogger(logger)
+        elif logger is None:
+            self.logger = LOG
+        else:
+            self.logger = logger
+        self.start_time = None
         self.duration = None
 
-    @property
-    def logger(self):
-        return self._logger
-
     def __enter__(self):
-        self._start_time = time.perf_counter()
+        self.start_time = time.perf_counter()
         return self
 
     def __exit__(self, *exc):
-        self.duration = time.perf_counter() - self._start_time
-        if self._tag:
-            self._logger.info(self._tag + ": took " + "%.2fms" % (self.duration * 1000))
+        self.duration = time.perf_counter() - self.start_time
+        if self.message:
+            self.logger.info(
+                self.message + ": took %.2fms",
+                (*self.args, self.duration * 1000),
+                **self.kwargs
+            )
 
 
 class _do_not_measure_time_cm(AbstractContextManager):
 
     # noinspection PyUnusedLocal
-    def __init__(self, tag: str = None, logger=None):
+    def __init__(self, *args, **kwargs):
         self.duration = None
         self.logger = None
+        self.message = None
 
     def __enter__(self):
         return self
