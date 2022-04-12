@@ -19,21 +19,20 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 
-import logging
 from typing import Optional
 
+from xcube.constants import LOG
 from xcube.core.tile import DEFAULT_CRS_NAME
 from xcube.core.tile import DEFAULT_FORMAT
 from xcube.core.tile import TileNotFoundException
 from xcube.core.tile import TileRequestException
 from xcube.core.tile import compute_rgba_tile
 from xcube.core.tilingscheme import DEFAULT_TILE_SIZE
+from xcube.util.perf import measure_time_cm
 from xcube.webapi.context import ServiceContext
 from xcube.webapi.errors import ServiceBadRequestError
 from xcube.webapi.errors import ServiceResourceNotFoundError
 from xcube.webapi.reqparams import RequestParams
-
-_LOGGER = logging.getLogger()
 
 
 def compute_ml_dataset_tile(ctx: ServiceContext,
@@ -42,6 +41,25 @@ def compute_ml_dataset_tile(ctx: ServiceContext,
                             crs_name: Optional[str],
                             x: str, y: str, z: str,
                             params: RequestParams):
+    trace_perf = params.get_query_arguments().get(
+        'debug', '1' if ctx.trace_perf else '0'
+    ) == '1'
+    measure_time = measure_time_cm(logger=LOG, disabled=not trace_perf)
+    with measure_time('Computing RGBA tile'):
+        return _compute_ml_dataset_tile(ctx,
+                                        ds_id,
+                                        var_name,
+                                        crs_name,
+                                        x, y, z,
+                                        params)
+
+
+def _compute_ml_dataset_tile(ctx: ServiceContext,
+                             ds_id: str,
+                             var_name: str,
+                             crs_name: Optional[str],
+                             x: str, y: str, z: str,
+                             params: RequestParams):
     x = RequestParams.to_int('x', x)
     y = RequestParams.to_int('y', y)
     z = RequestParams.to_int('z', z)

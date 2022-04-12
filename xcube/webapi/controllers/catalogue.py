@@ -177,6 +177,13 @@ def get_dataset(ctx: ServiceContext,
 
     variable_dicts = []
     dim_names = set()
+
+    tiling_scheme = ml_ds.derive_tiling_scheme(TilingScheme.GEOGRAPHIC)
+    LOG.debug('Tile level range for dataset %s: %d to %d',
+              ds_id,
+              tiling_scheme.min_level,
+              tiling_scheme.max_level)
+
     for var_name, var in ds.data_vars.items():
         var_name = str(var_name)
         dims = var.dims
@@ -205,8 +212,9 @@ def get_dataset(ctx: ServiceContext,
                                                                var_name)))
 
         if client is not None:
-            # In xcube 0.12+, remove this deprecated code.
-            # We no longer support tileSourceOptions
+            # TODO (forman): deprecation!
+            #   In xcube 0.11+, remove this deprecated code.
+            #   We no longer support tileSourceOptions.
             tile_grid = ctx.get_tile_grid(ds_id)
             tile_xyz_source_options = get_tile_source_options(
                 tile_grid,
@@ -222,13 +230,8 @@ def get_dataset(ctx: ServiceContext,
         LOG.debug('Tile URL for variable %s: %s',
                   var_name, tile_url)
 
-        tiling_scheme = ml_ds.derive_tiling_scheme(TilingScheme.GEOGRAPHIC)
         variable_dict["tileLevelMin"] = tiling_scheme.min_level
         variable_dict["tileLevelMax"] = tiling_scheme.max_level
-        LOG.debug('Tile level range for variable %s: %d to %d',
-                  var_name,
-                  tiling_scheme.min_level,
-                  tiling_scheme.max_level)
 
         cmap_name, (cmap_vmin, cmap_vmax) = ctx.get_color_mapping(ds_id,
                                                                   var_name)
@@ -254,8 +257,18 @@ def get_dataset(ctx: ServiceContext,
 
     rgb_var_names, rgb_norm_ranges = ctx.get_rgb_color_mapping(ds_id)
     if any(rgb_var_names):
-        rgb_schema = {'varNames': rgb_var_names, 'normRanges': rgb_norm_ranges}
+        rgb_tile_url = get_dataset_tile_url2(ctx, ds_id, 'rgb', base_url)
+        rgb_schema = {
+            'varNames': rgb_var_names,
+            'normRanges': rgb_norm_ranges,
+            'tileUrl': rgb_tile_url,
+            'tileLevelMin': tiling_scheme.min_level,
+            'tileLevelMax': tiling_scheme.max_level,
+        }
         if client is not None:
+            # TODO (forman): deprecation!
+            #   In xcube 0.11+, remove this deprecated code.
+            #   We no longer support tileSourceOptions.
             tile_grid = ctx.get_tile_grid(ds_id)
             tile_xyz_source_options = get_tile_source_options(
                 tile_grid,
@@ -265,12 +278,6 @@ def get_dataset(ctx: ServiceContext,
                 client=client
             )
             rgb_schema["tileSourceOptions"] = tile_xyz_source_options
-        rgb_schema["tileUrl"] = get_dataset_tile_url2(
-            ctx,
-            ds_id,
-            'rgb',
-            base_url
-        )
         dataset_dict["rgbSchema"] = rgb_schema
 
     dataset_dict["dimensions"] = [
