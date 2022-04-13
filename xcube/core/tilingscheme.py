@@ -401,7 +401,8 @@ def get_unit_factor(unit_name_from: str, unit_name_to: str) -> float:
     to_meter = _is_meter_unit(unit_name_to)
     to_degree = _is_degree_unit(unit_name_to)
     if not to_meter and not to_degree:
-        raise ValueError(f'unsupported units {unit_name_to!r}')
+        raise ValueError(f'unsupported units {unit_name_from!r}.'
+                         f' Unit must be either meters or degrees.')
 
     if from_meter and to_degree:
         return 360 / EARTH_CIRCUMFERENCE_WGS84
