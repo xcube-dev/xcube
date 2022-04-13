@@ -35,13 +35,13 @@ import numpy as np
 import pandas as pd
 import pyproj
 import xarray as xr
+from deprecated import deprecated
 
 from xcube.constants import LOG
 from xcube.core.mldataset import BaseMultiLevelDataset
 from xcube.core.mldataset import MultiLevelDataset
 from xcube.core.mldataset import augment_ml_dataset
 from xcube.core.mldataset import open_ml_dataset_from_python_code
-from xcube.core.normalize import decode_cube
 from xcube.core.store import DATASET_TYPE
 from xcube.core.store import DataStoreConfig
 from xcube.core.store import DataStorePool
@@ -49,6 +49,7 @@ from xcube.core.store import DatasetDescriptor
 from xcube.core.store import MULTI_LEVEL_DATASET_TYPE
 from xcube.core.tile import get_var_cmap_params
 from xcube.core.tile import get_var_valid_range
+from xcube.util.assertions import assert_instance
 from xcube.util.cache import Cache
 from xcube.util.cache import MemoryCacheStore
 from xcube.util.cache import parse_mem_size
@@ -255,7 +256,8 @@ class ServiceContext:
             required_dataset_scopes.add(base_scope_prefix + value)
         return required_dataset_scopes
 
-    def get_service_url(self, base_url, *path: str):
+    def get_service_url(self, base_url: Optional[str], *path: str):
+        base_url = base_url or ''
         # noinspection PyTypeChecker
         path_comp = '/'.join(path)
         if self._prefix:
@@ -549,6 +551,8 @@ class ServiceContext:
                     s3_bucket_mapping[ds_id] = local_path
         return s3_bucket_mapping
 
+    @deprecated(version='0.11.0',
+                reason='do not use, wrong relationship')
     def get_tile_grid(self, ds_id: str) -> TileGrid:
         ml_dataset, _ = self._get_dataset_entry(ds_id)
         return ml_dataset.tile_grid
@@ -653,13 +657,9 @@ class ServiceContext:
                 dataset = data_store.open_data(data_id, **open_params)
             if isinstance(dataset, MultiLevelDataset):
                 ml_dataset: MultiLevelDataset = dataset
-                ml_dataset.ds_id = ds_id
             else:
-                cube, _, _ = decode_cube(dataset,
-                                         normalize=True,
-                                         force_non_empty=True,
-                                         force_geographic=True)
-                ml_dataset = BaseMultiLevelDataset(cube, ds_id=ds_id)
+                ml_dataset = BaseMultiLevelDataset(dataset)
+            ml_dataset.ds_id = ds_id
         else:
             fs_type = dataset_config.get('FileSystem')
             if fs_type != 'memory':

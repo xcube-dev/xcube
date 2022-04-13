@@ -1,6 +1,61 @@
-## Changes in 0.10.3 (in development)
+## Changes in 0.11.0 (in development)
 
 ### Enhancements
+
+* `xcube serve` can now serve datasets with arbitrary spatial 
+  coordinate reference systems. Before xcube 0.11, datasets where forced
+  to have a geographical CRS such as EPSG:4326 or CRS84. 
+
+* `xcube serve` can now provide image tiles for two popular tile grids:
+  1. global geographic grid, with 2 x 1 tiles at level zero (the default);
+  2. global web mercator grid, with 1 x 1 tiles at level 
+     zero ("Google projection", OSM tile grid).
+  
+  The general form of the xcube tile URL is currently
+       
+      /datasets/{ds_id}/vars/{var_name}/tile2/{z}/{y}/{x}
+    
+  The following query parameters can be used
+
+  - `crs`: set to `CRS84` to use the geographical grid (the default),
+    or `EPSG:3857` to use the web mercator grid. 
+  - `cbar`: color bar name such as `viridis` or `plasma`, 
+     see color bar names of matplotlib. Defaults to `bone`.
+  - `vmin`: minimum value to be used for color mapping. Defaults to `0`.
+  - `vmax`: maximum value to be used for color mapping. Defaults to `1`.
+  - `retina`: if set to `1`, tile size will be 512 instead of 256.
+
+* The WMTS provided by `xcube serve` has been reimplemented from scratch.
+  It now provides two common tile matrix sets:
+  1. `WorldCRS84Quad` global geographic grid, with 2 x 1 tiles at level zero; 
+  2. `WorldWebMercatorQuad` global web mercator grid, with 1 x 1 tiles 
+     at level zero. 
+  
+  New RESTful endpoints have been added to reflect this:
+
+      /wmts/1.0.0/{TileMatrixSet}/WMTSCapabilities.xml
+      /wmts/1.0.0/tile/{Dataset}/{Variable}/{TileMatrixSet}/{TileMatrix}/{TileRow}/{TileCol}.png
+  
+  The existing RESTful endpoints now use tile matrix set `WorldCRS84Quad` by default:
+
+      /wmts/1.0.0/WMTSCapabilities.xml
+      /wmts/1.0.0/tile/{Dataset}/{Variable}/{TileMatrix}/{TileRow}/{TileCol}.png
+
+  The key-value pair (KVP) endpoint `/wmts/kvp` now recognises the
+  `TileMatrixSet` key for the two values described above.
+
+* Support for multi-level datasets aka ND image pyramids has been 
+  further improved (#655):
+  - Introduced new parameter `agg_methods` for writing multi-level datasets 
+    with the "file", "s3", and "memory" data stores. 
+    The value of `agg_methods` is either a string `"first"`,
+    `"min"`, `"max"`, `"mean"`, `"median"` or a dictionary that maps
+    a variable name to an aggregation method. Variable names can be patterns
+    that may contain wildcard characters '*' and '?'. The special aggregation
+    method `"auto"` can be used to select `"first"` for integer variables 
+    and `"mean"` for floating point variables. 
+  - The `xcube level` CLI tool now has a new option `--agg-methods` (or `-A`)
+    for the same purpose.
 
 * The xcube package now consistently makes use of logging.
   We distinguish general logging and specific xcube logging.
@@ -42,19 +97,6 @@
     If enabled, a simple message format will be used, unless the general 
     logging is redirected to stdout.
 
-* Support for multi-level datasets aka ND image pyramids has been 
-  further improved (#655):
-  - Introduced new parameter `agg_methods` for writing multi-level datasets 
-    with the "file", "s3", and "memory" data stores. 
-    The value of `agg_methods` is either a string `"first"`,
-    `"min"`, `"max"`, `"mean"`, `"median"` or a dictionary that maps
-    a variable name to an aggregation method. Variable names can be patterns
-    that may contain wildcard characters '*' and '?'. The special aggregation
-    method `"auto"` can be used to select `"first"` for integer variables 
-    and `"mean"` for floating point variables. 
-  - The `xcube level` CLI tool now has a new option `--agg-methods` (or `-A`)
-    for the same purpose.
-
 ### Fixes
 
 * Fixed a problem where the `DataStores` configuration of `xcube serve` 
@@ -62,6 +104,26 @@
 
 * Opening of multi-level datasets with filesystem data stores now 
   recognizes the `cache_size` open parameter.
+
+### Other changes
+
+* The `xcube tile` CLI tool has been deprecated. A new tool is planned that can work
+  concurrently on dask clusters and also supports common tile grids such as
+  global geographic and web mercator.
+
+* The `xcube.util.tiledimage` module has been deprecated and is no longer 
+  used in xcube. It has no replacement.
+
+* The `xcube.util.tilegrid` module has been deprecated and is no longer 
+  used in xcube. 
+  A new implementation is provided by `xcube.core.tilingscheme` 
+  which is used instead. 
+
+* All existing functions of the `xcube.core.tile` module have been 
+  deprecated and are no longer used in xcube. A newly exported function
+  is `xcube.core.tile.compute_rgba_tile()` which is used in place of
+  other tile generating functions.
+  
 
 ## Changes in 0.10.2
 

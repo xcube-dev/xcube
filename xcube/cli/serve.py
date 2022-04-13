@@ -91,7 +91,8 @@ BASE_ENV_VAR = 'XCUBE_SERVE_BASE_DIR'
 @cli_option_quiet
 @cli_option_verbosity
 @click.option('--traceperf', 'trace_perf', is_flag=True,
-              help="Print performance diagnostics (stdout).")
+              help="Log extra performance diagnostics"
+                   " using log level DEBUG.")
 @click.option('--aws-prof', 'aws_prof', metavar='PROFILE',
               help="To publish remote CUBEs, use AWS credentials from section "
                    "[PROFILE] found in ~/.aws/credentials.")

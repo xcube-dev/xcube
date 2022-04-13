@@ -19,6 +19,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+import warnings
 from typing import List, Optional, Mapping, Any
 
 import click
@@ -71,6 +72,11 @@ def tile(cube: str,
          verbosity: int,
          dry_run: bool):
     """
+    IMPORTANT NOTE: The xcube tile tool in its current form is deprecated
+    and no longer supported since xcube 0.11. A new tool is planned
+    that can work concurrently on dask clusters and also supports
+    common tile grids such as global geographic and web mercator.
+
     Create RGBA tiles from CUBE.
 
     Color bars and value ranges for variables can be specified in a CONFIG file.
@@ -116,6 +122,9 @@ def tile(cube: str,
     from xcube.cli.common import assert_positive_int_item
     from xcube.util.tilegrid import TileGrid
     from xcube.util.tiledimage import DEFAULT_COLOR_MAP_NUM_COLORS
+
+    warnings.warn('As of xcube 0.11, the tile tool is no longer supported.',
+                  DeprecationWarning)
 
     configure_cli_output(quiet=quiet, verbosity=verbosity)
 

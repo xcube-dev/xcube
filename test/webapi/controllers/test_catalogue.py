@@ -243,29 +243,43 @@ class CatalogueControllerTest(unittest.TestCase):
         datasets = self._assert_datasets(response, expected_count=1)
         dataset = datasets[0]
         self.assertIsInstance(dataset, dict)
-        self.assertEqual({'varNames': ['conc_chl', 'conc_tsm', 'kd489'],
-                          'normRanges': [(0.0, 24.0), (0.0, 100.0),
-                                         (0.0, 6.0)]},
-                         dataset.get("rgbSchema"))
+        self.assertEqual(
+            {
+                'varNames': ['conc_chl', 'conc_tsm', 'kd489'],
+                'normRanges': [(0.0, 24.0), (0.0, 100.0),
+                               (0.0, 6.0)],
+                'tileUrl': 'http://test/datasets/demo-rgb/vars/rgb/tiles2/{z}/{y}/{x}',
+                'tileLevelMin': 7,
+                'tileLevelMax': 9,
+            },
+            dataset.get("rgbSchema")
+        )
         response = get_datasets(ctx, details=True, client='ol4',
                                 base_url="http://test")
         datasets = self._assert_datasets(response, expected_count=1)
         dataset = datasets[0]
         self.assertIsInstance(dataset, dict)
-        self.assertEqual({'varNames': ['conc_chl', 'conc_tsm', 'kd489'],
-                          'normRanges': [(0.0, 24.0), (0.0, 100.0),
-                                         (0.0, 6.0)],
-                          'tileSourceOptions': {
-                              'url': 'http://test/datasets/demo-rgb/vars/rgb/tiles/{z}/{x}/{y}.png',
-                              'projection': 'EPSG:4326',
-                              'tileGrid': {'extent': [0, 50, 5, 52.5],
-                                           'origin': [0, 52.5],
-                                           'resolutions': [0.01, 0.005,
-                                                           0.0025],
-                                           'sizes': [[2, 1], [4, 2], [8, 4]],
-                                           'tileSize': [250, 250]}
-                          }},
-                         dataset.get("rgbSchema"))
+        self.assertEqual(
+            {
+                'varNames': ['conc_chl', 'conc_tsm', 'kd489'],
+                'normRanges': [(0.0, 24.0), (0.0, 100.0),
+                               (0.0, 6.0)],
+                'tileUrl': 'http://test/datasets/demo-rgb/vars/rgb/tiles2/{z}/{y}/{x}',
+                'tileLevelMin': 7,
+                'tileLevelMax': 9,
+                'tileSourceOptions': {
+                    'url': 'http://test/datasets/demo-rgb/vars/rgb/tiles/{z}/{x}/{y}.png',
+                    'projection': 'EPSG:4326',
+                    'tileGrid': {'extent': [0, 50, 5, 52.5],
+                                 'origin': [0, 52.5],
+                                 'resolutions': [0.01, 0.005,
+                                                 0.0025],
+                                 'sizes': [[2, 1], [4, 2], [8, 4]],
+                                 'tileSize': [250, 250]}
+                }
+            },
+            dataset.get("rgbSchema")
+        )
 
     def test_dataset_with_point(self):
         ctx = new_test_service_context()

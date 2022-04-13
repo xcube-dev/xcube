@@ -21,19 +21,18 @@
 
 import functools
 import json
-import math
 from typing import Dict, Tuple, List, Set, Optional, Any, Callable
 
 import numpy as np
+import pyproj
 
 from xcube.constants import LOG
 from xcube.core.geom import get_dataset_bounds
 from xcube.core.normalize import DatasetIsNotACubeError
 from xcube.core.store import DataStoreError
+from xcube.core.tilingscheme import TilingScheme
 from xcube.core.timecoord import timestamp_to_iso_string
-from xcube.util.assertions import assert_instance
 from xcube.util.cmaps import get_cmaps
-from xcube.util.tilegrid import TileGrid
 from xcube.webapi.auth import READ_ALL_DATASETS_SCOPE
 from xcube.webapi.auth import READ_ALL_VARIABLES_SCOPE
 from xcube.webapi.auth import assert_scopes
@@ -41,6 +40,7 @@ from xcube.webapi.auth import check_scopes
 from xcube.webapi.context import ServiceContext
 from xcube.webapi.controllers.places import GeoJsonFeatureCollection
 from xcube.webapi.controllers.tiles import get_dataset_tile_url
+from xcube.webapi.controllers.tiles import get_dataset_tile_url2
 from xcube.webapi.controllers.tiles import get_tile_source_options
 from xcube.webapi.errors import ServiceBadRequestError
 
@@ -93,31 +93,34 @@ def get_datasets(ctx: ServiceContext,
                                 ds_bbox)):
                 dataset_dict['bbox'] = ds_bbox
 
+        LOG.info(f'Collected dataset {ds_id}')
         dataset_dicts.append(dataset_dict)
 
-        # Important note:
-        # the "point" parameter is used by
-        # the CyanoAlert app only
+    # Important note:
+    # the "point" parameter is used by
+    # the CyanoAlert app only
 
-        if details or point:
-            filtered_dataset_dicts = []
-            for dataset_dict in dataset_dicts:
-                ds_id = dataset_dict["id"]
-                try:
-                    if point:
-                        ds = ctx.get_dataset(ds_id)
-                        if "bbox" not in dataset_dict:
-                            dataset_dict["bbox"] = list(get_dataset_bounds(ds))
-                    if details:
-                        dataset_dict.update(
-                            get_dataset(ctx, ds_id, client,
-                                        base_url,
-                                        granted_scopes=granted_scopes)
-                        )
-                    filtered_dataset_dicts.append(dataset_dict)
-                except (DatasetIsNotACubeError, CubeIsNotDisplayable) as e:
-                    LOG.warning(f'Skipping dataset {ds_id}: {e}')
-            dataset_dicts = filtered_dataset_dicts
+    if details or point:
+        filtered_dataset_dicts = []
+        for dataset_dict in dataset_dicts:
+            ds_id = dataset_dict["id"]
+            try:
+                if point:
+                    ds = ctx.get_dataset(ds_id)
+                    if "bbox" not in dataset_dict:
+                        dataset_dict["bbox"] = list(get_dataset_bounds(ds))
+                if details:
+                    LOG.info(f'Loading details for dataset {ds_id}')
+                    dataset_dict.update(
+                        get_dataset(ctx, ds_id, client,
+                                    base_url,
+                                    granted_scopes=granted_scopes)
+                    )
+                filtered_dataset_dicts.append(dataset_dict)
+            except (DatasetIsNotACubeError, CubeIsNotDisplayable) as e:
+                LOG.warning(f'Skipping dataset {ds_id}: {e}')
+        dataset_dicts = filtered_dataset_dicts
+
     if point:
         is_point_in_dataset_bbox = functools.partial(
             _is_point_in_dataset_bbox, point
@@ -153,25 +156,9 @@ def get_dataset(ctx: ServiceContext,
     except (ValueError, DataStoreError) as e:
         raise DatasetIsNotACubeError(f'could not open dataset: {e}') from e
 
-    grid_mapping = ml_ds.grid_mapping
-    if not grid_mapping.crs.is_geographic:
-        raise CubeIsNotDisplayable(f'CRS is not geographic:'
-                                   f' {grid_mapping.crs.srs}')
-    if not math.isclose(grid_mapping.x_res,
-                        grid_mapping.y_res,
-                        rel_tol=0.01):  # we allow up to 1% dev
-        raise CubeIsNotDisplayable(f'spatial resolutions are'
-                                   f' different in x, y:'
-                                   f' {grid_mapping.x_res}'
-                                   f' and {grid_mapping.y_res}')
-    try:
-        # Make sure we have a valid tile grid
-        tile_grid = ml_ds.tile_grid
-        assert_instance(tile_grid, TileGrid)
-    except ValueError as e:
-        raise CubeIsNotDisplayable(f'could not create tile grid: {e}')
-
     ds = ml_ds.get_dataset(0)
+
+    x_name, y_name = ml_ds.grid_mapping.xy_dim_names
 
     ds_title = dataset_config.get('Title',
                                   ds.attrs.get('title',
@@ -180,16 +167,30 @@ def get_dataset(ctx: ServiceContext,
     dataset_dict = dict(id=ds_id, title=ds_title)
 
     if "bbox" not in dataset_dict:
-        dataset_dict["bbox"] = list(get_dataset_bounds(ds))
+        x1, y1, x2, y2 = get_dataset_bounds(ds)
+        crs = ml_ds.grid_mapping.crs
+        if not crs.is_geographic:
+            geo_crs = pyproj.CRS.from_string('CRS84')
+            t = pyproj.Transformer.from_crs(crs, geo_crs, always_xy=True)
+            (x1, x2), (y1, y2) = t.transform((x1, x2), (y1, y2))
+        dataset_dict["bbox"] = [x1, y1, x2, y2]
 
     variable_dicts = []
+    dim_names = set()
+
+    tiling_scheme = ml_ds.derive_tiling_scheme(TilingScheme.GEOGRAPHIC)
+    LOG.debug('Tile level range for dataset %s: %d to %d',
+              ds_id,
+              tiling_scheme.min_level,
+              tiling_scheme.max_level)
+
     for var_name, var in ds.data_vars.items():
         var_name = str(var_name)
         dims = var.dims
         if len(dims) < 3 \
-                or dims[0] != 'time' \
-                or dims[-2] != 'lat' \
-                or dims[-1] != 'lon':
+                or dims[-3] != 'time' \
+                or dims[-2] != y_name \
+                or dims[-1] != x_name:
             continue
 
         if can_authenticate \
@@ -211,6 +212,9 @@ def get_dataset(ctx: ServiceContext,
                                                                var_name)))
 
         if client is not None:
+            # TODO (forman): deprecation!
+            #   In xcube 0.11+, remove this deprecated code.
+            #   We no longer support tileSourceOptions.
             tile_grid = ctx.get_tile_grid(ds_id)
             tile_xyz_source_options = get_tile_source_options(
                 tile_grid,
@@ -220,6 +224,14 @@ def get_dataset(ctx: ServiceContext,
                 client=client
             )
             variable_dict["tileSourceOptions"] = tile_xyz_source_options
+
+        tile_url = get_dataset_tile_url2(ctx, ds_id, var_name, base_url)
+        variable_dict["tileUrl"] = tile_url
+        LOG.debug('Tile URL for variable %s: %s',
+                  var_name, tile_url)
+
+        variable_dict["tileLevelMin"] = tiling_scheme.min_level
+        variable_dict["tileLevelMax"] = tiling_scheme.max_level
 
         cmap_name, (cmap_vmin, cmap_vmax) = ctx.get_color_mapping(ds_id,
                                                                   var_name)
@@ -238,13 +250,25 @@ def get_dataset(ctx: ServiceContext,
         }
 
         variable_dicts.append(variable_dict)
+        for dim_name in var.dims:
+            dim_names.add(dim_name)
 
     dataset_dict["variables"] = variable_dicts
 
     rgb_var_names, rgb_norm_ranges = ctx.get_rgb_color_mapping(ds_id)
     if any(rgb_var_names):
-        rgb_schema = {'varNames': rgb_var_names, 'normRanges': rgb_norm_ranges}
+        rgb_tile_url = get_dataset_tile_url2(ctx, ds_id, 'rgb', base_url)
+        rgb_schema = {
+            'varNames': rgb_var_names,
+            'normRanges': rgb_norm_ranges,
+            'tileUrl': rgb_tile_url,
+            'tileLevelMin': tiling_scheme.min_level,
+            'tileLevelMax': tiling_scheme.max_level,
+        }
         if client is not None:
+            # TODO (forman): deprecation!
+            #   In xcube 0.11+, remove this deprecated code.
+            #   We no longer support tileSourceOptions.
             tile_grid = ctx.get_tile_grid(ds_id)
             tile_xyz_source_options = get_tile_source_options(
                 tile_grid,
@@ -256,8 +280,6 @@ def get_dataset(ctx: ServiceContext,
             rgb_schema["tileSourceOptions"] = tile_xyz_source_options
         dataset_dict["rgbSchema"] = rgb_schema
 
-    dim_names = ds.data_vars[list(ds.data_vars)[0]].dims \
-        if len(ds.data_vars) > 0 else ds.dims.keys()
     dataset_dict["dimensions"] = [
         get_dataset_coordinates(ctx, ds_id, str(dim_name))
         for dim_name in dim_names
