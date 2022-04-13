@@ -395,7 +395,8 @@ def get_unit_factor(unit_name_from: str, unit_name_to: str) -> float:
     from_meter = _is_meter_unit(unit_name_from)
     from_degree = _is_degree_unit(unit_name_from)
     if not from_meter and not from_degree:
-        raise ValueError(f'unsupported units {unit_name_from!r}')
+        raise ValueError(f'unsupported units {unit_name_from!r}.'
+                         f' Unit must be either meters or degrees.')
 
     to_meter = _is_meter_unit(unit_name_to)
     to_degree = _is_degree_unit(unit_name_to)
