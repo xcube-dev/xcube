@@ -107,8 +107,7 @@
 
 ### Other changes
 
-* The `xcube tile` CLI tool has been deprecated in its current form and is no
-  longer supported since xcube 0.11. A new tool is planned that can work
+* The `xcube tile` CLI tool has been deprecated. A new tool is planned that can work
   concurrently on dask clusters and also supports common tile grids such as
   global geographic and web mercator.
 
