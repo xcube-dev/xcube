@@ -31,7 +31,7 @@ from xcube.util.assertions import assert_true
 
 
 @deprecated(version='0.11.0',
-            reason='use xcube.util.tilegrid2.TileGrid2 instead')
+            reason='use xcube.core.tilingscheme.TilingScheme instead')
 class TileGrid(ABC):
     """
     This interface defines a tile grid as used by the
@@ -100,7 +100,7 @@ class TileGrid(ABC):
 
 
 @deprecated(version='0.11.0',
-            reason='use xcube.util.tilegrid2.TileGrid2 instead')
+            reason='use xcube.core.tilingscheme.TilingScheme instead')
 class BaseTileGrid(TileGrid):
     """
     The default implementation of the :class:`TileGrid2`
@@ -211,7 +211,7 @@ WEB_MERCATOR_CRS = pyproj.CRS.from_string('EPSG:3857')
 
 
 @deprecated(version='0.11.0',
-            reason='use xcube.util.tilegrid2.TileGrid2 instead')
+            reason='use xcube.core.tilingscheme.TilingScheme instead')
 class GeographicTileGrid(BaseTileGrid):
     """
     A global CRS-84 tile grid with 2 horizontal tiles and 1 vertical tile
@@ -245,7 +245,7 @@ class GeographicTileGrid(BaseTileGrid):
 
 
 @deprecated(version='0.11.0',
-            reason='use xcube.util.tilegrid2.TileGrid2 instead')
+            reason='use xcube.core.tilingscheme.TilingScheme instead')
 class ImageTileGrid(BaseTileGrid):
     """
     A tile grid that is created from a base image of size *image_size*.
