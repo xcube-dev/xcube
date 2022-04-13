@@ -113,7 +113,7 @@ def get_time_series(
     """
     if cube_asserted is not None:
         warnings.warn('cube_asserted has been deprecated'
-                      ' and will be removed in soon.', DeprecationWarning)
+                      ' and will be removed soon.', DeprecationWarning)
     assert_instance(cube, xr.Dataset)
     if grid_mapping is not None:
         assert_instance(grid_mapping, GridMapping)
