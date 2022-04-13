@@ -249,6 +249,8 @@ class CatalogueControllerTest(unittest.TestCase):
                 'normRanges': [(0.0, 24.0), (0.0, 100.0),
                                (0.0, 6.0)],
                 'tileUrl': 'http://test/datasets/demo-rgb/vars/rgb/tiles2/{z}/{y}/{x}',
+                'tileLevelMin': 7,
+                'tileLevelMax': 9,
             },
             dataset.get("rgbSchema")
         )
@@ -263,6 +265,8 @@ class CatalogueControllerTest(unittest.TestCase):
                 'normRanges': [(0.0, 24.0), (0.0, 100.0),
                                (0.0, 6.0)],
                 'tileUrl': 'http://test/datasets/demo-rgb/vars/rgb/tiles2/{z}/{y}/{x}',
+                'tileLevelMin': 7,
+                'tileLevelMax': 9,
                 'tileSourceOptions': {
                     'url': 'http://test/datasets/demo-rgb/vars/rgb/tiles/{z}/{x}/{y}.png',
                     'projection': 'EPSG:4326',

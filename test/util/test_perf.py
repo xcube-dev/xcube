@@ -10,7 +10,7 @@ class MockLogger:
 
     # noinspection PyUnusedLocal
     def info(self, msg: str, *args, **kwargs):
-        if len(args):
+        if len(args) == 1:
             args = args[0]
         self.output.append(msg % args)
 
