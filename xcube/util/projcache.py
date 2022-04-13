@@ -30,7 +30,7 @@ CrsLike = Union[str, pyproj.CRS]
 class ProjCache:
     """
     A cache for pyproj objects
-    that make take considerable time to construct.
+    that may take considerable time to construct.
     """
     INSTANCE: 'ProjCache'
 
