@@ -334,7 +334,7 @@ class TilingScheme:
                         tile_z: int) \
             -> Optional[Tuple[float, float, float, float]]:
         """
-        Get the extent is units of the CRS for the given tile coordinates.
+        Get the extent in units of the CRS for the given tile coordinates.
 
         :param tile_x: The tile's column index
         :param tile_y: The tile's row index
