@@ -435,6 +435,6 @@ def _is_meter_unit(unit_name: str) -> bool:
 
 
 def _is_degree_unit(unit_name: str) -> bool:
-    return unit_name.lower() in ('deg',
+    return unit_name.lower() in ('°', 'deg',
                                  'degree', 'degrees',
                                  'decimal_degree', 'decimal_degrees')
