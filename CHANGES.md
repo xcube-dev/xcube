@@ -1,4 +1,4 @@
-## Changes in 0.11.0 (in development)
+## Changes in 0.11.0
 
 ### Enhancements
 
@@ -11,7 +11,7 @@
   2. global web mercator grid, with 1 x 1 tiles at level 
      zero ("Google projection", OSM tile grid).
   
-  The general form of the xcube tile URL is currently
+  The general form of the new xcube tile URL is (currently)
        
       /datasets/{ds_id}/vars/{var_name}/tile2/{z}/{y}/{x}
     
