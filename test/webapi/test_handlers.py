@@ -63,13 +63,15 @@ class HandlersTest(AsyncHTTPTestCase):
 
         response = self.fetch(self.prefix + '/wmts/kvp'
                                             '?VERSION=1.0.0&REQUEST=GetCapabilities')
-        self.assertBadRequestResponse(response, 'Missing query parameter "service"')
+        self.assertBadRequestResponse(response,
+                                      'Missing query parameter "service"')
 
         response = self.fetch(self.prefix + '/wmts/kvp'
                                             '?SERVICE=WMS'
                                             'VERSION=1.0.0'
                                             '&REQUEST=GetCapabilities')
-        self.assertBadRequestResponse(response, 'Value for "service" parameter must be "WMTS"')
+        self.assertBadRequestResponse(response,
+                                      'Value for "service" parameter must be "WMTS"')
 
     def test_fetch_wmts_kvp_tile(self):
         response = self.fetch(self.prefix + '/wmts/kvp'
@@ -79,7 +81,7 @@ class HandlersTest(AsyncHTTPTestCase):
                                             '&Format=image/png'
                                             '&Style=Default'
                                             '&Layer=demo.conc_chl'
-                                            '&TileMatrixSet=TileGrid_2000_1000'
+                                            '&TileMatrixSet=WorldCRS84Quad'
                                             '&TileMatrix=0'
                                             '&TileRow=0'
                                             '&TileCol=0')
@@ -93,7 +95,7 @@ class HandlersTest(AsyncHTTPTestCase):
                                             '&Format=image/png'
                                             '&Style=Default'
                                             '&Layer=demo.conc_chl'
-                                            '&TileMatrixSet=TileGrid_2000_1000'
+                                            '&TileMatrixSet=WorldWebMercatorQuad'
                                             '&TileMatrix=0'
                                             '&TileRow=0'
                                             '&TileCol=0'
@@ -108,7 +110,7 @@ class HandlersTest(AsyncHTTPTestCase):
                                             '&Format=image/png'
                                             '&Style=Default'
                                             '&Layer=demo.conc_chl'
-                                            '&TileMatrixSet=TileGrid_2000_1000'
+                                            '&TileMatrixSet=WorldWebMercatorQuad'
                                             '&TileMatrix=0'
                                             '&TileRow=0'
                                             '&TileCol=0'
@@ -122,7 +124,7 @@ class HandlersTest(AsyncHTTPTestCase):
                                             '&Format=image/jpg'
                                             '&Style=Default'
                                             '&Layer=demo.conc_chl'
-                                            '&TileMatrixSet=TileGrid_2000_1000'
+                                            '&TileMatrixSet=WorldCRS84Quad'
                                             '&TileMatrix=0'
                                             '&TileRow=0'
                                             '&TileCol=0')
@@ -135,7 +137,7 @@ class HandlersTest(AsyncHTTPTestCase):
                                             '&Format=image/png'
                                             '&Style=Default'
                                             '&Layer=demo.conc_chl'
-                                            '&TileMatrixSet=TileGrid_2000_1000'
+                                            '&TileMatrixSet=WorldCRS84Quad'
                                             '&TileMatrix=0'
                                             '&TileRow=0'
                                             '&TileCol=0')
@@ -148,22 +150,78 @@ class HandlersTest(AsyncHTTPTestCase):
                                             '&Format=image/png'
                                             '&Style=Default'
                                             '&Layer=conc_chl'
+                                            '&TileMatrixSet=WorldCRS84Quad'
+                                            '&TileMatrix=0'
+                                            '&TileRow=0'
+                                            '&TileCol=0')
+        self.assertBadRequestResponse(response,
+                                      'Value for "layer" parameter must be "<dataset>.<variable>"')
+
+        response = self.fetch(self.prefix + '/wmts/kvp'
+                                            '?Service=WMTS'
+                                            '&Version=1.0.0'
+                                            '&Request=GetTile'
+                                            '&Format=image/png'
+                                            '&Style=Default'
+                                            '&Layer=demo.conc_chl'
                                             '&TileMatrixSet=TileGrid_2000_1000'
                                             '&TileMatrix=0'
                                             '&TileRow=0'
                                             '&TileCol=0')
-        self.assertBadRequestResponse(response, 'Value for "layer" parameter must be "<dataset>.<variable>"')
+        self.assertBadRequestResponse(
+            response,
+            'Value for "tilematrixset" parameter must'
+            ' be one of (\'WorldCRS84Quad\', \'WorldWebMercatorQuad\')'
+        )
 
     def test_fetch_wmts_capabilities(self):
-        response = self.fetch(self.prefix + '/wmts/1.0.0/WMTSCapabilities.xml')
+        response = self.fetch(
+            self.prefix + '/wmts/1.0.0/WMTSCapabilities.xml')
         self.assertResponseOK(response)
 
     def test_fetch_wmts_tile(self):
-        response = self.fetch(self.prefix + '/wmts/1.0.0/tile/demo/conc_chl/0/0/0.png')
+        response = self.fetch(
+            self.prefix
+            + '/wmts/1.0.0/tile/demo/conc_chl/0/0/0.png'
+        )
+        self.assertResponseOK(response)
+
+    def test_fetch_wmts_tile_geo(self):
+        response = self.fetch(
+            self.prefix
+            + '/wmts/1.0.0/tile/demo/conc_chl/WorldCRS84Quad/0/0/0.png'
+        )
+        self.assertResponseOK(response)
+
+    def test_fetch_wmts_tile_mercator(self):
+        response = self.fetch(
+            self.prefix
+            + '/wmts/1.0.0/tile/demo/conc_chl/WorldWebMercatorQuad/0/0/0.png'
+        )
         self.assertResponseOK(response)
 
     def test_fetch_wmts_tile_with_params(self):
-        response = self.fetch(self.prefix + '/wmts/1.0.0/tile/demo/conc_chl/0/0/0.png?time=current&cbar=jet')
+        response = self.fetch(
+            self.prefix
+            + '/wmts/1.0.0/tile/demo/conc_chl/0/0/0.png'
+              '?time=current&cbar=jet'
+        )
+        self.assertResponseOK(response)
+
+    def test_fetch_wmts_tile_with_params_geo(self):
+        response = self.fetch(
+            self.prefix
+            + '/wmts/1.0.0/tile/demo/conc_chl/0/0/0.png'
+              '?time=current&cbar=jet&TileMatrixSet=WorldCRS84Quad'
+        )
+        self.assertResponseOK(response)
+
+    def test_fetch_wmts_tile_with_params_mercator(self):
+        response = self.fetch(
+            self.prefix
+            + '/wmts/1.0.0/tile/demo/conc_chl/0/0/0.png'
+              '?time=current&cbar=jet&TileMatrixSet=WorldWebMercatorQuad'
+        )
         self.assertResponseOK(response)
 
     def test_fetch_datasets(self):

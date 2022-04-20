@@ -1,6 +1,7 @@
 import io
-from typing import Dict, Any
 import urllib.parse
+from typing import Dict, Any
+
 import matplotlib
 import matplotlib.colorbar
 import matplotlib.colors
@@ -18,6 +19,8 @@ from xcube.webapi.defaults import DEFAULT_CMAP_WIDTH
 from xcube.webapi.errors import ServiceBadRequestError
 from xcube.webapi.errors import ServiceResourceNotFoundError
 from xcube.webapi.reqparams import RequestParams
+# noinspection PyUnresolvedReferences
+from ._tiles2 import compute_ml_dataset_tile
 
 
 def get_dataset_tile(ctx: ServiceContext,
@@ -152,9 +155,13 @@ def get_dataset_tile_grid(ctx: ServiceContext,
                           base_url: str) -> Dict[str, Any]:
     tile_grid = ctx.get_tile_grid(ds_id)
     if tile_client in ['ol', 'ol4', 'cesium', 'leaflet']:
-        return get_tile_source_options(tile_grid,
-                                       get_dataset_tile_url(ctx, ds_id, var_name, base_url),
-                                       client=tile_client)
+        return get_tile_source_options(
+            tile_grid,
+            get_dataset_tile_url2(
+                ctx, ds_id, var_name, base_url
+            ),
+            client=tile_client
+        )
     else:
         raise ServiceBadRequestError(f'Unknown tile client "{tile_client}"')
 
@@ -172,7 +179,21 @@ def get_dataset_tile_url(ctx: ServiceContext,
                                '{z}/{x}/{y}.png')
 
 
-def get_tile_source_options(tile_grid: TileGrid, url: str, client: str = 'ol'):
+def get_dataset_tile_url2(ctx: ServiceContext,
+                          ds_id: str,
+                          var_name: str,
+                          base_url: str):
+    return ctx.get_service_url(base_url,
+                               'datasets',
+                               urllib.parse.quote_plus(ds_id),
+                               'vars',
+                               urllib.parse.quote_plus(var_name),
+                               'tiles2',
+                               '{z}/{y}/{x}')
+
+
+def get_tile_source_options(tile_grid: TileGrid, url: str,
+                            client: str = 'ol'):
     if client == 'ol' or client == 'ol4':
         # OpenLayers 4.x - 6.x
         return tile_grid_to_ol_xyz_source_options(tile_grid, url)

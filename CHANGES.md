@@ -1,6 +1,48 @@
-## Changes in 0.10.3 (in development)
+## Changes in 0.11.0
 
 ### Enhancements
+
+* `xcube serve` can now serve datasets with arbitrary spatial 
+  coordinate reference systems. Before xcube 0.11, datasets where forced
+  to have a geographical CRS such as EPSG:4326 or CRS84. 
+
+* `xcube serve` can now provide image tiles for two popular tile grids:
+  1. global geographic grid, with 2 x 1 tiles at level zero (the default);
+  2. global web mercator grid, with 1 x 1 tiles at level 
+     zero ("Google projection", OSM tile grid).
+  
+  The general form of the new xcube tile URL is (currently)
+       
+      /datasets/{ds_id}/vars/{var_name}/tile2/{z}/{y}/{x}
+    
+  The following query parameters can be used
+
+  - `crs`: set to `CRS84` to use the geographical grid (the default),
+    or `EPSG:3857` to use the web mercator grid. 
+  - `cbar`: color bar name such as `viridis` or `plasma`, 
+     see color bar names of matplotlib. Defaults to `bone`.
+  - `vmin`: minimum value to be used for color mapping. Defaults to `0`.
+  - `vmax`: maximum value to be used for color mapping. Defaults to `1`.
+  - `retina`: if set to `1`, tile size will be 512 instead of 256.
+
+* The WMTS provided by `xcube serve` has been reimplemented from scratch.
+  It now provides two common tile matrix sets:
+  1. `WorldCRS84Quad` global geographic grid, with 2 x 1 tiles at level zero; 
+  2. `WorldWebMercatorQuad` global web mercator grid, with 1 x 1 tiles 
+     at level zero. 
+  
+  New RESTful endpoints have been added to reflect this:
+
+      /wmts/1.0.0/{TileMatrixSet}/WMTSCapabilities.xml
+      /wmts/1.0.0/tile/{Dataset}/{Variable}/{TileMatrixSet}/{TileMatrix}/{TileRow}/{TileCol}.png
+  
+  The existing RESTful endpoints now use tile matrix set `WorldCRS84Quad` by default:
+
+      /wmts/1.0.0/WMTSCapabilities.xml
+      /wmts/1.0.0/tile/{Dataset}/{Variable}/{TileMatrix}/{TileRow}/{TileCol}.png
+
+  The key-value pair (KVP) endpoint `/wmts/kvp` now recognises the
+  `TileMatrixSet` key for the two values described above.
 
 * Support for multi-level datasets aka ND image pyramids has been 
   further improved (#655):
@@ -15,6 +57,46 @@
   - The `xcube level` CLI tool now has a new option `--agg-methods` (or `-A`)
     for the same purpose.
 
+* The xcube package now consistently makes use of logging.
+  We distinguish general logging and specific xcube logging.
+  General logging refers to the log messages emitted by any Python module 
+  while xcube logging only refers to log messages emitted by xcube modules.
+
+  * The output of general logging from xcube CLI tools can now be 
+    configured with two new CLI options: 
+    
+    - `--loglevel LEVEL`: Can be one of `CRITICAL`, `ERROR`,
+      `WARNING`, `INFO`, `DETAIL`, `DEBUG`, `TRACE`, or `OFF` (the default).
+    - `--logfile PATH`: Effective only if log level is not `OFF`.
+      If given, log messages will be written into the file
+      given by PATH. If omitted, log messages will be redirected 
+      to standard error (`sys.stderr`).
+
+    The output of general logging from xcube CLI is disabled by default.
+    If enabled, the log message format includes the level, date-time,
+    logger name, and message.
+
+  * All xcube modules use the logger named `xcube` 
+    (i.e. `LOG = logging.getLogger("xcube")`) to emit 
+    messages regarding progress, debugging, errors. Packages that extend
+    the xcube package should use a dot suffix for their logger names, e.g.
+    `xcube.cci` for the xcube plugin package `xcube-cci`.
+  
+  * All xcube CLI tools will output log messages, if any, 
+    on standard error (`sys.stderr`). 
+    Only the actual result, if any, 
+    is written to standard out (`sys.stdout`).
+
+  * Some xcube CLI tools have a `--quiet`/`-q` option to disable output
+    of log messages on the console and a `--verbose`/`-v` option to enable 
+    it and control the log level. For this purpose the option `-v` 
+    can be given multiple times and even be combined: `-v` = `INFO`, 
+    `-vv` = `DETAIL`, `-vvv` = `DEBUG`, `-vvvv` = `TRACE`.
+    The `quiet` and `verbose` settings only affect the logger named `xcube`
+    and its children. 
+    If enabled, a simple message format will be used, unless the general 
+    logging is redirected to stdout.
+
 ### Fixes
 
 * Fixed a problem where the `DataStores` configuration of `xcube serve` 
@@ -22,6 +104,26 @@
 
 * Opening of multi-level datasets with filesystem data stores now 
   recognizes the `cache_size` open parameter.
+
+### Other changes
+
+* The `xcube tile` CLI tool has been deprecated. A new tool is planned that can work
+  concurrently on dask clusters and also supports common tile grids such as
+  global geographic and web mercator.
+
+* The `xcube.util.tiledimage` module has been deprecated and is no longer 
+  used in xcube. It has no replacement.
+
+* The `xcube.util.tilegrid` module has been deprecated and is no longer 
+  used in xcube. 
+  A new implementation is provided by `xcube.core.tilingscheme` 
+  which is used instead. 
+
+* All existing functions of the `xcube.core.tile` module have been 
+  deprecated and are no longer used in xcube. A newly exported function
+  is `xcube.core.tile.compute_rgba_tile()` which is used in place of
+  other tile generating functions.
+  
 
 ## Changes in 0.10.2
 

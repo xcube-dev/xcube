@@ -20,14 +20,13 @@
 # SOFTWARE.
 
 SERVER_NAME = 'xcube Server'
-SERVER_DESCRIPTION = f'WMTS, catalogue, data access, tile, feature, time-series services for' \
-                     ' xarray-enabled data cubes'
+SERVER_DESCRIPTION = f'WMTS, catalogue, data access, tile, feature,' \
+                     f' time-series services for xarray-enabled data cubes'
 
 DEFAULT_ADDRESS = 'localhost'
 DEFAULT_PORT = 8080
 DEFAULT_TILE_CACHE_SIZE = "512M"
 DEFAULT_UPDATE_PERIOD = 2.
-DEFAULT_LOG_PREFIX = 'xcube-serve.log'
 DEFAULT_TILE_COMP_MODE = 0
 DEFAULT_TRACE_PERF = False
 

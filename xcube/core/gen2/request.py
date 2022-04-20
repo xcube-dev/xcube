@@ -39,6 +39,7 @@ from .config import CubeConfig
 from .config import InputConfig
 from .config import OutputConfig
 from .error import CubeGeneratorError
+from ...constants import LOG
 
 CubeGeneratorRequestLike = Union[str, Dict, 'CubeGeneratorRequest']
 
@@ -200,8 +201,8 @@ class CubeGeneratorRequest(JsonObject):
         request_dict = cls._load_request_file(request_file,
                                               verbosity=verbosity)
         if verbosity:
-            print(f'Cube generator request loaded '
-                  f'from {request_file or "TTY"}.')
+            LOG.info(f'Cube generator request loaded '
+                     f'from {request_file or "TTY"}.')
         return cls.from_dict(request_dict)
 
     @classmethod
@@ -218,8 +219,8 @@ class CubeGeneratorRequest(JsonObject):
             if gen_config_file is None:
                 if not sys.stdin.isatty():
                     if verbosity:
-                        print('Awaiting generator'
-                              ' request JSON from TTY...')
+                        LOG.info('Awaiting generator'
+                                 ' request JSON from TTY...')
                     return json.load(sys.stdin)
             else:
                 with open(gen_config_file, 'r') as fp:

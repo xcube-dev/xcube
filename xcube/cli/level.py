@@ -23,6 +23,11 @@ from typing import Optional, Tuple
 
 import click
 
+from xcube.cli.common import (configure_cli_output,
+                              cli_option_quiet,
+                              cli_option_verbosity)
+from xcube.constants import LOG
+
 DEFAULT_TILE_SIZE = 512
 DEFAULT_AGG_METHOD = 'first'
 
@@ -64,6 +69,8 @@ DEFAULT_AGG_METHOD = 'first'
 @click.option('--anon', '-a', is_flag=True, flag_value=True,
               help=f'For S3 inputs or outputs, whether the access'
                    f' is anonymous. By default, credentials are required.')
+@cli_option_quiet
+@cli_option_verbosity
 def level(input: str,
           output: Optional[str],
           link: bool,
@@ -71,7 +78,9 @@ def level(input: str,
           num_levels_max: int,
           agg_methods: str,
           replace: bool,
-          anon: bool):
+          anon: bool,
+          quiet: bool,
+          verbosity: int):
     """
     Generate multi-resolution levels.
 
@@ -89,6 +98,8 @@ def level(input: str,
     from xcube.cli.common import assert_positive_int_item
     from xcube.core.store import new_fs_data_store
     from xcube.core.subsampling import assert_valid_agg_methods
+
+    configure_cli_output(quiet=quiet, verbosity=verbosity)
 
     input_path = input
     output_path = output
@@ -159,8 +170,8 @@ def level(input: str,
             f"output {output_path!r} already exists"
         ) from e
 
-    print(f"Multi-level dataset written to {output_path}"
-          f" after {time.time() - start_time} seconds")
+    LOG.info(f"Multi-level dataset written to {output_path}"
+             f" after {time.time() - start_time} seconds")
 
 
 def _split_protocol_and_path(path) -> Tuple[str, str]:

@@ -76,6 +76,7 @@ class GridMappingTest(SourceDatasetMixin, unittest.TestCase):
         self.assertEqual(0.5, gm.x_res)
         self.assertEqual(0.5, gm.y_res)
         self.assertEqual(GEO_CRS, gm.crs)
+        self.assertEqual('degree', gm.spatial_unit_name)
         self.assertEqual(True, gm.is_regular)
         self.assertEqual(False, gm.is_lon_360)
         self.assertEqual(False, gm.is_j_axis_up)

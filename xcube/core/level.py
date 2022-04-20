@@ -29,7 +29,6 @@ from xcube.core.dsio import open_dataset
 
 PyramidLevelCallback = Callable[[xr.Dataset, int, int], Optional[xr.Dataset]]
 
-_DEPRECATED_SINCE = '0.10.2'
 _DEPRECATED_READ = (
     'No longer in use. To read multi-level datasets, use:\n'
     '>>> data_store = new_data_store("file")\n'
@@ -42,7 +41,7 @@ _DEPRECATED_WRITE = (
 )
 
 
-@deprecated(version=_DEPRECATED_SINCE, reason=_DEPRECATED_WRITE)
+@deprecated(version='0.10.2', reason=_DEPRECATED_WRITE)
 def compute_levels(
         dataset: xr.Dataset,
         spatial_dims: Tuple[str, str] = None,
@@ -149,7 +148,7 @@ def compute_levels(
     return level_datasets
 
 
-@deprecated(version=_DEPRECATED_SINCE, reason=_DEPRECATED_WRITE)
+@deprecated(version='0.10.2', reason=_DEPRECATED_WRITE)
 def write_levels(output_path: str,
                  dataset: xr.Dataset = None,
                  input_path: str = None,
@@ -220,7 +219,7 @@ def write_levels(output_path: str,
                           **kwargs)
 
 
-@deprecated(version=_DEPRECATED_SINCE, reason=_DEPRECATED_READ)
+@deprecated(version='0.10.2', reason=_DEPRECATED_READ)
 def read_levels(
         dir_path: str,
         progress_monitor: PyramidLevelCallback = None

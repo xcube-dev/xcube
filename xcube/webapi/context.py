@@ -35,13 +35,13 @@ import numpy as np
 import pandas as pd
 import pyproj
 import xarray as xr
+from deprecated import deprecated
 
 from xcube.constants import LOG
 from xcube.core.mldataset import BaseMultiLevelDataset
 from xcube.core.mldataset import MultiLevelDataset
 from xcube.core.mldataset import augment_ml_dataset
 from xcube.core.mldataset import open_ml_dataset_from_python_code
-from xcube.core.normalize import decode_cube
 from xcube.core.store import DATASET_TYPE
 from xcube.core.store import DataStoreConfig
 from xcube.core.store import DataStorePool
@@ -49,6 +49,7 @@ from xcube.core.store import DatasetDescriptor
 from xcube.core.store import MULTI_LEVEL_DATASET_TYPE
 from xcube.core.tile import get_var_cmap_params
 from xcube.core.tile import get_var_valid_range
+from xcube.util.assertions import assert_instance
 from xcube.util.cache import Cache
 from xcube.util.cache import MemoryCacheStore
 from xcube.util.cache import parse_mem_size
@@ -255,7 +256,8 @@ class ServiceContext:
             required_dataset_scopes.add(base_scope_prefix + value)
         return required_dataset_scopes
 
-    def get_service_url(self, base_url, *path: str):
+    def get_service_url(self, base_url: Optional[str], *path: str):
+        base_url = base_url or ''
         # noinspection PyTypeChecker
         path_comp = '/'.join(path)
         if self._prefix:
@@ -424,7 +426,7 @@ class ServiceContext:
 
         all_dataset_configs: List[DatasetConfigDict] = []
         for store_instance_id in data_store_pool.store_instance_ids:
-            LOG.info(f'scanning store {store_instance_id!r}')
+            LOG.info(f'Scanning store {store_instance_id!r}')
             data_store_config = data_store_pool.get_store_config(
                 store_instance_id
             )
@@ -460,7 +462,7 @@ class ServiceContext:
                         else:
                             dataset_config_base = None
                 if dataset_config_base is not None:
-                    LOG.debug(f'selected dataset {store_dataset_id!r}')
+                    LOG.debug(f'Selected dataset {store_dataset_id!r}')
                     dataset_config = dict(
                         StoreInstanceId=store_instance_id,
                         **dataset_config_base
@@ -475,7 +477,7 @@ class ServiceContext:
         debug_file = 'all_dataset_configs.json'
         with open(debug_file, 'w') as stream:
             json.dump(all_dataset_configs, stream)
-            LOG.debug(f'wrote file {debug_file!r}')
+            LOG.debug(f'Wrote file {debug_file!r}')
 
         return all_dataset_configs
 
@@ -490,9 +492,9 @@ class ServiceContext:
         if dataset_metadata.crs is not None:
             crs = pyproj.CRS.from_string(dataset_metadata.crs)
             if not crs.is_geographic:
-                LOG.warn(f'ignoring dataset {dataset_id!r} from'
-                         f' store instance {store_instance_id!r}'
-                         f' because it uses a non-geographic CRS')
+                LOG.warning(f'Ignoring dataset {dataset_id!r} from'
+                            f' store instance {store_instance_id!r}'
+                            f' because it uses a non-geographic CRS')
                 return None
         # noinspection PyTypeChecker
         return dataset_metadata
@@ -549,6 +551,8 @@ class ServiceContext:
                     s3_bucket_mapping[ds_id] = local_path
         return s3_bucket_mapping
 
+    @deprecated(version='0.11.0',
+                reason='do not use, wrong relationship')
     def get_tile_grid(self, ds_id: str) -> TileGrid:
         ml_dataset, _ = self._get_dataset_entry(ds_id)
         return ml_dataset.tile_grid
@@ -647,26 +651,22 @@ class ServiceContext:
                          or data_id.endswith('.levels')) \
                     and 'cache_size' not in open_params:
                 open_params['cache_size'] = chunk_cache_capacity
-            with self.measure_time(tag=f"opened dataset {ds_id!r}"
+            with self.measure_time(tag=f"Opened dataset {ds_id!r}"
                                        f" from data store"
                                        f" {store_instance_id!r}"):
                 dataset = data_store.open_data(data_id, **open_params)
             if isinstance(dataset, MultiLevelDataset):
                 ml_dataset: MultiLevelDataset = dataset
-                ml_dataset.ds_id = ds_id
             else:
-                cube, _, _ = decode_cube(dataset,
-                                         normalize=True,
-                                         force_non_empty=True,
-                                         force_geographic=True)
-                ml_dataset = BaseMultiLevelDataset(cube, ds_id=ds_id)
+                ml_dataset = BaseMultiLevelDataset(dataset)
+            ml_dataset.ds_id = ds_id
         else:
             fs_type = dataset_config.get('FileSystem')
             if fs_type != 'memory':
                 raise ServiceConfigError(f"Invalid FileSystem {fs_type!r}"
                                          f" in dataset configuration"
                                          f" {ds_id!r}")
-            with self.measure_time(tag=f"opened dataset {ds_id!r}"
+            with self.measure_time(tag=f"Opened dataset {ds_id!r}"
                                        f" from {fs_type!r}"):
                 ml_dataset = _open_ml_dataset_from_python_code(self,
                                                                dataset_config)

@@ -241,15 +241,7 @@ class FsMultiLevelDataset(LazyMultiLevelDataset):
         self._path = data_id
         self._open_params = open_params
         self._path_class = get_fs_path_class(fs)
-        self._num_levels = None
         self._size_weights: Optional[np.ndarray] = None
-
-    @property
-    def num_levels(self) -> int:
-        if self._num_levels is None:
-            with self.lock:
-                self._num_levels = self._get_num_levels_lazily()
-        return self._num_levels
 
     @property
     def size_weights(self) -> np.ndarray:

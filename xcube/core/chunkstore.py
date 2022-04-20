@@ -29,12 +29,13 @@ from typing import Union
 
 import numpy as np
 
-from xcube.constants import LOG
 from xcube.util.assertions import assert_instance
 
 __author__ = "Norman Fomferra (Brockmann Consult GmbH)"
 
 from xcube.util.perf import measure_time_cm
+from xcube.constants import LOG_LEVEL_TRACE
+from xcube.constants import LOG
 
 GetChunk = Callable[['ChunkStore', str, Tuple[int, ...]], bytes]
 
@@ -62,7 +63,7 @@ class ChunkStore(MutableMapping):
         e.g. (128, 180, 180).
     :param attrs: Global dataset attributes.
     :param get_chunk: Default chunk fetching/computing function.
-    :param trace_store_calls: Whether to print calls
+    :param trace_store_calls: Whether to log calls
         into the ``MutableMapping`` interface.
     """
 
@@ -167,12 +168,12 @@ class ChunkStore(MutableMapping):
 
     def keys(self) -> KeysView[str]:
         if self._trace_store_calls:
-            print(f'{self._class_name}.keys()')
+            _trace(f'{self._class_name}.keys()')
         return self._vfs.keys()
 
     def listdir(self, key: str) -> Iterable[str]:
         if self._trace_store_calls:
-            print(f'{self._class_name}.listdir(key={key!r})')
+            _trace(f'{self._class_name}.listdir(key={key!r})')
         if key == '':
             return (k for k in self._vfs.keys() if '/' not in k)
         else:
@@ -183,27 +184,27 @@ class ChunkStore(MutableMapping):
 
     def getsize(self, key: str) -> int:
         if self._trace_store_calls:
-            print(f'{self._class_name}.getsize(key={key!r})')
+            _trace(f'{self._class_name}.getsize(key={key!r})')
         return len(self._vfs[key])
 
     def __iter__(self) -> Iterator[str]:
         if self._trace_store_calls:
-            print(f'{self._class_name}.__iter__()')
+            _trace(f'{self._class_name}.__iter__()')
         return iter(self._vfs.keys())
 
     def __len__(self) -> int:
         if self._trace_store_calls:
-            print(f'{self._class_name}.__len__()')
+            _trace(f'{self._class_name}.__len__()')
         return len(self._vfs.keys())
 
     def __contains__(self, key) -> bool:
         if self._trace_store_calls:
-            print(f'{self._class_name}.__contains__(key={key!r})')
+            _trace(f'{self._class_name}.__contains__(key={key!r})')
         return key in self._vfs
 
     def __getitem__(self, key: str) -> bytes:
         if self._trace_store_calls:
-            print(f'{self._class_name}.__getitem__(key={key!r})')
+            _trace(f'{self._class_name}.__getitem__(key={key!r})')
         value = self._vfs[key]
         if isinstance(value, tuple):
             name, index, get_chunk = value
@@ -212,13 +213,18 @@ class ChunkStore(MutableMapping):
 
     def __setitem__(self, key: str, value: bytes) -> None:
         if self._trace_store_calls:
-            print(f'{self._class_name}.__setitem__(key={key!r}, value={value!r})')
+            _trace(
+                f'{self._class_name}.__setitem__(key={key!r}, value={value!r})')
         raise TypeError(f'{self._class_name} is read-only')
 
     def __delitem__(self, key: str) -> None:
         if self._trace_store_calls:
-            print(f'{self._class_name}.__delitem__(key={key!r})')
+            _trace(f'{self._class_name}.__delitem__(key={key!r})')
         raise TypeError(f'{self._class_name} is read-only')
+
+
+def _trace(msg: str):
+    LOG.log(LOG_LEVEL_TRACE, msg)
 
 
 def _dict_to_bytes(d: Dict):

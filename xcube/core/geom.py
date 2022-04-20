@@ -267,8 +267,9 @@ def mask_dataset_by_geometry(
     """
     geometry = convert_geometry(geometry)
     xy_var_names = get_dataset_xy_var_names(dataset, must_exist=True)
+    dataset_bounds = get_dataset_bounds(dataset, xy_var_names=xy_var_names)
     intersection_geometry = intersect_geometries(
-        get_dataset_bounds(dataset, xy_var_names=xy_var_names),
+        dataset_bounds,
         geometry
     )
     if intersection_geometry is None:

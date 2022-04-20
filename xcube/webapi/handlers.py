@@ -1,23 +1,31 @@
-# The MIT License (MIT)
-# Copyright (c) 2020 by the xcube development team and contributors
+#  The MIT License (MIT)
+#  Copyright (c) 2022 by the xcube development team and contributors
 #
-# Permission is hereby granted, free of charge, to any person obtaining a copy of
-# this software and associated documentation files (the "Software"), to deal in
-# the Software without restriction, including without limitation the rights to
-# use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
-# of the Software, and to permit persons to whom the Software is furnished to do
-# so, subject to the following conditions:
+#  Permission is hereby granted, free of charge, to any person obtaining a
+#  copy of this software and associated documentation files (the "Software"),
+#  to deal in the Software without restriction, including without limitation
+#  the rights to use, copy, modify, merge, publish, distribute, sublicense,
+#  and/or sell copies of the Software, and to permit persons to whom the
+#  Software is furnished to do so, subject to the following conditions:
 #
-# The above copyright notice and this permission notice shall be included in all
-# copies or substantial portions of the Software.
+#  The above copyright notice and this permission notice shall be included in
+#  all copies or substantial portions of the Software.
 #
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-# SOFTWARE.
+#  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+#  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+#  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+#  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+#  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+#  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+#  DEALINGS IN THE SOFTWARE.
+
+#
+# Permission is hereby granted, free of charge, to any person obtaining a
+# copy of this software and associated documentation files (the "Software"),
+# to deal in the Software without restriction, including without limitation
+# the rights to use, copy, modify, merge, publish, distribute, sublicense,
+# and/or sell copies of the Software, and to permit persons to whom the
+# Software is furnished to do so, subject to the following conditions:
 
 import datetime
 import json
@@ -32,92 +40,187 @@ from xcube.util.perf import measure_time
 from xcube.util.versions import get_xcube_versions
 from xcube.version import version
 from xcube.webapi.auth import AuthMixin
-from xcube.webapi.controllers.catalogue import get_datasets, get_dataset_coordinates, get_color_bars, get_dataset, \
-    get_dataset_place_groups, get_dataset_place_group
-from xcube.webapi.controllers.places import find_places, find_dataset_places
-from xcube.webapi.controllers.tiles import get_dataset_tile, get_dataset_tile_grid, \
+from xcube.webapi.controllers.catalogue import (
+    get_datasets,
+    get_dataset_coordinates,
+    get_color_bars,
+    get_dataset,
+    get_dataset_place_groups,
+    get_dataset_place_group
+)
+from xcube.webapi.controllers.ogc.wmts import (
+    get_wmts_capabilities_xml,
+    get_crs_name_from_tms_id,
+    WMTS_CRS84_TMS_ID,
+    WMTS_TILE_FORMAT,
+    WMTS_VERSION,
+    WMTS_WEB_MERCATOR_TMS_ID
+)
+from xcube.webapi.controllers.places import (
+    find_places,
+    find_dataset_places
+)
+from xcube.webapi.controllers.tiles import (
+    compute_ml_dataset_tile,
+    get_dataset_tile,
+    get_dataset_tile_grid,
     get_legend
+)
 from xcube.webapi.controllers.timeseries import get_time_series
-from xcube.webapi.controllers.ts_legacy import get_time_series_info, get_time_series_for_point, \
-    get_time_series_for_geometry, \
-    get_time_series_for_geometry_collection, get_time_series_for_feature_collection
-from xcube.webapi.controllers.wmts import get_wmts_capabilities_xml
-from xcube.webapi.defaults import SERVER_NAME, SERVER_DESCRIPTION
+from xcube.webapi.controllers.ts_legacy import (
+    get_time_series_info,
+    get_time_series_for_point,
+    get_time_series_for_geometry,
+    get_time_series_for_geometry_collection,
+    get_time_series_for_feature_collection
+)
+from xcube.webapi.defaults import (
+    SERVER_NAME,
+    SERVER_DESCRIPTION
+)
 from xcube.webapi.errors import ServiceBadRequestError
-from xcube.webapi.s3util import dict_to_xml, list_s3_bucket_v1, list_bucket_result_to_xml, list_s3_bucket_v2, \
-    mtime_to_str, str_to_etag
+from xcube.webapi.s3util import (
+    dict_to_xml,
+    list_s3_bucket_v1,
+    list_bucket_result_to_xml,
+    list_s3_bucket_v2,
+    mtime_to_str,
+    str_to_etag)
 from xcube.webapi.service import ServiceRequestHandler
 
 __author__ = "Norman Fomferra (Brockmann Consult GmbH)"
 
-_WMTS_VERSION = "1.0.0"
-_WMTS_TILE_FORMAT = "image/png"
-
 _LOG_S3BUCKET_HANDLER = False
+
+_VALID_WMTS_TMS_IDS = (WMTS_CRS84_TMS_ID, WMTS_WEB_MERCATOR_TMS_ID)
+
+
+def _assert_valid_tms_id(tms_id: str):
+    if tms_id not in _VALID_WMTS_TMS_IDS:
+        raise ServiceBadRequestError(
+            f'Value for "tilematrixset" parameter'
+            f' must be one of {_VALID_WMTS_TMS_IDS!r}'
+        )
 
 
 # noinspection PyAbstractClass
 class WMTSKvpHandler(ServiceRequestHandler):
 
     async def get(self):
-        # According to WMTS 1.0 spec, query parameters must be case-insensitive.
+        # According to WMTS 1.0 spec, query parameters
+        # must be case-insensitive.
         self.set_caseless_query_arguments()
 
         service = self.params.get_query_argument('service')
         if service != "WMTS":
-            raise ServiceBadRequestError('Value for "service" parameter must be "WMTS"')
+            raise ServiceBadRequestError(
+                'Value for "service" parameter must be "WMTS"'
+            )
         request = self.params.get_query_argument('request')
         if request == "GetCapabilities":
-            wmts_version = self.params.get_query_argument("version", _WMTS_VERSION)
-            if wmts_version != _WMTS_VERSION:
-                raise ServiceBadRequestError(f'Value for "version" parameter must be "{_WMTS_VERSION}"')
-            capabilities = await IOLoop.current().run_in_executor(None,
-                                                                  get_wmts_capabilities_xml,
-                                                                  self.service_context,
-                                                                  self.base_url)
+            wmts_version = self.params.get_query_argument(
+                "version", WMTS_VERSION
+            )
+            if wmts_version != WMTS_VERSION:
+                raise ServiceBadRequestError(
+                    f'Value for "version" parameter must be "{WMTS_VERSION}"'
+                )
+            tms_id = self.params.get_query_argument(
+                "tilematrixset", WMTS_CRS84_TMS_ID
+            )
+            _assert_valid_tms_id(tms_id)
+            capabilities = await IOLoop.current().run_in_executor(
+                None,
+                get_wmts_capabilities_xml,
+                self.service_context,
+                self.base_url,
+                tms_id
+            )
             self.set_header("Content-Type", "application/xml")
             await self.finish(capabilities)
 
         elif request == "GetTile":
-            wmts_version = self.params.get_query_argument("version", _WMTS_VERSION)
-            if wmts_version != _WMTS_VERSION:
-                raise ServiceBadRequestError(f'Value for "version" parameter must be "{_WMTS_VERSION}"')
+            wmts_version = self.params.get_query_argument("version",
+                                                          WMTS_VERSION)
+            if wmts_version != WMTS_VERSION:
+                raise ServiceBadRequestError(
+                    f'Value for "version" parameter must be "{WMTS_VERSION}"'
+                )
             layer = self.params.get_query_argument("layer")
             try:
                 ds_id, var_name = layer.split(".")
             except ValueError as e:
-                raise ServiceBadRequestError('Value for "layer" parameter must be "<dataset>.<variable>"') from e
-            # The following parameters are mandatory s prescribed by WMTS spec, but we don't need them
-            # tileMatrixSet = self.params.get_query_argument_int('tilematrixset')
+                raise ServiceBadRequestError(
+                    'Value for "layer" parameter must be'
+                    ' "<dataset>.<variable>"'
+                ) from e
+            # For time being, we ignore "style"
             # style = self.params.get_query_argument("style"
-            mime_type = self.params.get_query_argument("format", _WMTS_TILE_FORMAT).lower()
-            if mime_type not in (_WMTS_TILE_FORMAT, "png"):
-                raise ServiceBadRequestError(f'Value for "format" parameter must be "{_WMTS_TILE_FORMAT}"')
+            mime_type = self.params.get_query_argument(
+                "format", WMTS_TILE_FORMAT
+            ).lower()
+            if mime_type not in (WMTS_TILE_FORMAT, "png"):
+                raise ServiceBadRequestError(
+                    f'Value for "format" parameter'
+                    f' must be "{WMTS_TILE_FORMAT}"'
+                )
+            tms_id = self.params.get_query_argument(
+                'tilematrixset', WMTS_CRS84_TMS_ID
+            )
+            _assert_valid_tms_id(tms_id)
+            crs_name = get_crs_name_from_tms_id(tms_id)
             x = self.params.get_query_argument_int("tilecol")
             y = self.params.get_query_argument_int("tilerow")
             z = self.params.get_query_argument_int("tilematrix")
-            tile = await IOLoop.current().run_in_executor(None,
-                                                          get_dataset_tile,
-                                                          self.service_context,
-                                                          ds_id, var_name,
-                                                          x, y, z,
-                                                          self.params)
+            tile = await IOLoop.current().run_in_executor(
+                None,
+                compute_ml_dataset_tile,
+                self.service_context,
+                ds_id,
+                var_name,
+                crs_name,
+                x, y, z,
+                self.params
+            )
             self.set_header("Content-Type", "image/png")
             await self.finish(tile)
         elif request == "GetFeatureInfo":
-            raise ServiceBadRequestError('Request type "GetFeatureInfo" not yet implemented')
+            raise ServiceBadRequestError(
+                'Request type "GetFeatureInfo" not yet implemented'
+            )
         else:
-            raise ServiceBadRequestError(f'Invalid request type "{request}"')
+            raise ServiceBadRequestError(
+                f'Invalid request type "{request}"'
+            )
 
 
 # noinspection PyAbstractClass
 class GetWMTSCapabilitiesXmlHandler(ServiceRequestHandler):
 
     async def get(self):
-        capabilities = await IOLoop.current().run_in_executor(None,
-                                                              get_wmts_capabilities_xml,
-                                                              self.service_context,
-                                                              self.base_url)
+        capabilities = await IOLoop.current().run_in_executor(
+            None,
+            get_wmts_capabilities_xml,
+            self.service_context,
+            self.base_url,
+            WMTS_CRS84_TMS_ID
+        )
+        self.set_header('Content-Type', 'application/xml')
+        await self.finish(capabilities)
+
+
+# noinspection PyAbstractClass
+class GetWMTSCapabilitiesXmlTmsHandler(ServiceRequestHandler):
+
+    async def get(self, tms_id: str):
+        _assert_valid_tms_id(tms_id)
+        capabilities = await IOLoop.current().run_in_executor(
+            None,
+            get_wmts_capabilities_xml,
+            self.service_context,
+            self.base_url,
+            tms_id
+        )
         self.set_header('Content-Type', 'application/xml')
         await self.finish(capabilities)
 
@@ -126,7 +229,7 @@ class GetWMTSCapabilitiesXmlHandler(ServiceRequestHandler):
 class GetDatasetsHandler(ServiceRequestHandler, AuthMixin):
 
     def get(self):
-        with measure_time('get granted scopes'):
+        with measure_time('Get granted scopes'):
             granted_scopes = self.granted_scopes
         details = bool(int(self.params.get_query_argument('details', '0')))
         tile_client = self.params.get_query_argument('tiles', None)
@@ -145,7 +248,7 @@ class GetDatasetsHandler(ServiceRequestHandler, AuthMixin):
 class GetDatasetHandler(ServiceRequestHandler, AuthMixin):
 
     def get(self, ds_id: str):
-        with measure_time('get granted scopes'):
+        with measure_time('Get granted scopes'):
             granted_scopes = self.granted_scopes
         tile_client = self.params.get_query_argument('tiles', None)
         response = get_dataset(self.service_context,
@@ -300,14 +403,50 @@ class GetS3BucketObjectHandler(ServiceRequestHandler):
 # noinspection PyAbstractClass,PyBroadException
 class GetWMTSTileHandler(ServiceRequestHandler):
 
-    async def get(self, ds_id: str, var_name: str, z: str, y: str, x: str):
+    async def get(self,
+                  ds_id: str,
+                  var_name: str,
+                  z: str, y: str, x: str):
         self.set_caseless_query_arguments()
-        tile = await IOLoop.current().run_in_executor(None,
-                                                      get_dataset_tile,
-                                                      self.service_context,
-                                                      ds_id, var_name,
-                                                      x, y, z,
-                                                      self.params)
+        tms_id = self.params.get_query_argument(
+            'tilematrixset', WMTS_CRS84_TMS_ID
+        )
+        _assert_valid_tms_id(tms_id)
+        crs_name = get_crs_name_from_tms_id(tms_id)
+        tile = await IOLoop.current().run_in_executor(
+            None,
+            compute_ml_dataset_tile,
+            self.service_context,
+            ds_id,
+            var_name,
+            crs_name,
+            x, y, z,
+            self.params
+        )
+        self.set_header('Content-Type', 'image/png')
+        await self.finish(tile)
+
+
+# noinspection PyAbstractClass,PyBroadException
+class GetWMTSTileTmsHandler(ServiceRequestHandler):
+
+    async def get(self,
+                  ds_id: str,
+                  var_name: str,
+                  tms_id: str,
+                  z: str, y: str, x: str):
+        self.set_caseless_query_arguments()
+        crs_name = get_crs_name_from_tms_id(tms_id)
+        tile = await IOLoop.current().run_in_executor(
+            None,
+            compute_ml_dataset_tile,
+            self.service_context,
+            ds_id,
+            var_name,
+            crs_name,
+            x, y, z,
+            self.params
+        )
         self.set_header('Content-Type', 'image/png')
         await self.finish(tile)
 
@@ -320,6 +459,22 @@ class GetDatasetVarTileHandler(ServiceRequestHandler):
                                                       get_dataset_tile,
                                                       self.service_context,
                                                       ds_id, var_name,
+                                                      x, y, z,
+                                                      self.params)
+        self.set_header('Content-Type', 'image/png')
+        await self.finish(tile)
+
+
+# noinspection PyAbstractClass,PyBroadException
+class GetDatasetVarTile2Handler(ServiceRequestHandler):
+
+    async def get(self, ds_id: str, var_name: str, z: str, y: str, x: str):
+        tile = await IOLoop.current().run_in_executor(None,
+                                                      compute_ml_dataset_tile,
+                                                      self.service_context,
+                                                      ds_id,
+                                                      var_name,
+                                                      None,
                                                       x, y, z,
                                                       self.params)
         self.set_header('Content-Type', 'image/png')

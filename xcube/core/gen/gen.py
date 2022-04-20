@@ -24,6 +24,7 @@ import glob
 import io
 import os
 import pstats
+import sys
 import time
 import traceback
 import warnings
@@ -203,7 +204,7 @@ def _process_input(input_processor: InputProcessor,
         monitor(f'Dataset read:\n{input_dataset}')
     except Exception as e:
         monitor(f'Error: cannot read input: {e}: skipping...')
-        traceback.print_exc()
+        traceback.print_exc(file=sys.stderr)
         return False
 
     time_range = input_processor.get_time_range(input_dataset)
@@ -360,7 +361,7 @@ def _process_input(input_processor: InputProcessor,
         monitor(f'{num_steps} steps took {total_t2 - total_t1} seconds to complete')
     except RuntimeError as e:
         monitor(f'Error: something went wrong during processing, skipping input slice: {e}')
-        traceback.print_exc()
+        traceback.print_exc(file=sys.stderr)
         status = False
     finally:
         input_dataset.close()

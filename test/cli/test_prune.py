@@ -55,7 +55,7 @@ class PruneDataTest(CliTest):
                 "Deleted 24 block file(s) for variable 'temperature'.\n"
                 "Done, 48 block file(s) deleted total.\n"
             ),
-            result.stdout)
+            result.stderr)
         expected_file_names = sorted([
             '.zarray',
             '.zattrs',
@@ -94,7 +94,7 @@ class PruneDataTest(CliTest):
                 "Deleted 24 block file(s) for variable 'temperature'.\n"
                 "Done, 48 block file(s) deleted total.\n"
             ),
-            result.stdout)
+            result.stderr)
         expected_file_names = sorted(['.zarray', '.zattrs'])
         self.assertEqual(expected_file_names,
                          sorted(os.listdir('test.zarr/precipitation')))
@@ -125,7 +125,7 @@ class PruneDataTest(CliTest):
                                  'precipitation', '0.3.76')
         dir_path = os.path.join(self.TEST_CUBE,
                                 'precipitation', '0', '3', '76')
-        self.assertEqual(f"Error: could find neither block file "
+        self.assertEqual(f"Could find neither block file "
                          f"{file_path} nor "
                          f"{dir_path}", actual_message)
 
@@ -163,5 +163,5 @@ class PruneDataTest(CliTest):
                 self.assertIsNotNone(actual_message)
                 # noinspection PyUnresolvedReferences
                 self.assertTrue(actual_message.startswith(
-                    f'Error: failed to delete block file {block_file}: '
+                    f'Failed to delete block file {block_file}: '
                 ))
