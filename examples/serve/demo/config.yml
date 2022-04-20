@@ -1,6 +1,6 @@
 Authentication:
-  Domain: xcube-dev.eu.auth0.com
-  Audience: https://xcube-dev/api/
+  Domain: kc.brockmann-consult.de/auth/realms/AVL
+  Audience: avl-xc-viewer
 
 DatasetAttribution:
   - "© by Brockmann Consult GmbH 2020, contains modified Copernicus Data 2019, processed by ESA"

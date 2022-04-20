@@ -184,8 +184,17 @@ class AuthMixin:
                             " Use an RS256 signed JWT Access Token"
             )
 
+        jwks_uri = auth_config.well_known_jwks
+
+        openid_config_uri = f'{auth_config.issuer}.well-known/openid-configuration'
+        response = requests.get(openid_config_uri)
+        if response.ok:
+            openid_config = json.loads(response.content)
+            if openid_config and 'jwks_uri' in openid_config:
+                jwks_uri = openid_config['jwks_uri']
+
         # TODO: read jwks from cache
-        response = requests.get(auth_config.well_known_jwks)
+        response = requests.get(jwks_uri)
         jwks = json.loads(response.content)
 
         rsa_key = {}
