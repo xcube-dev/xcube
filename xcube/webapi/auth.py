@@ -50,7 +50,11 @@ class AuthConfig:
 
     @property
     def issuer(self) -> str:
-        return f"https://{self.domain}/"
+        return f"https://{self.domain}"
+
+    @property
+    def well_known_oid_config(self) -> str:
+        return f"https://{self.domain}/.well-known/openid-configuration"
 
     @property
     def well_known_jwks(self) -> str:
@@ -186,7 +190,7 @@ class AuthMixin:
 
         jwks_uri = auth_config.well_known_jwks
 
-        openid_config_uri = f'{auth_config.issuer}.well-known/openid-configuration'
+        openid_config_uri = auth_config.well_known_oid_config
         response = requests.get(openid_config_uri)
         if response.ok:
             openid_config = json.loads(response.content)
@@ -225,12 +229,11 @@ class AuthMixin:
                     "Token expired",
                     log_message="Token is expired"
                 )
-            except jwt.InvalidTokenError:
+            except jwt.InvalidTokenError as e:
                 raise ServiceAuthError(
-                    "Invalid claims",
-                    log_message="Incorrect claims,"
-                                " please check the audience and issuer"
-                )
+                    f"{e}",
+                    log_message=f"{e}"
+                ) from e
             except Exception:
                 raise ServiceAuthError(
                     "Invalid header",

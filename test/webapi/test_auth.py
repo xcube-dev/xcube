@@ -203,8 +203,11 @@ class AuthMixinAuthConfigTest(unittest.TestCase):
                          auth_config.domain)
         self.assertEqual('https://xcube-dev/api/',
                          auth_config.audience)
-        self.assertEqual('https://xcube-dev.eu.auth0.com/',
+        self.assertEqual('https://xcube-dev.eu.auth0.com',
                          auth_config.issuer)
+        self.assertEqual('https://xcube-dev.eu.auth0.com/'
+                         '.well-known/openid-configuration',
+                         auth_config.well_known_oid_config)
         self.assertEqual('https://xcube-dev.eu.auth0.com/'
                          '.well-known/jwks.json',
                          auth_config.well_known_jwks)
