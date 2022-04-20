@@ -62,4 +62,4 @@ EXPOSE 8080
 ENTRYPOINT ["conda", "run", "-v", "-n", "xcube", "/bin/bash", "-c"]
 
 # By default run demo service.
-CMD ["xcube serve -v --address 0.0.0.0 --port 8080 -c /home/xcube/examples/serve/demo/config.yml"]
+CMD ["xcube --help"]
