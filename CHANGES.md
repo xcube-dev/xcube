@@ -105,6 +105,11 @@
 * Opening of multi-level datasets with filesystem data stores now 
   recognizes the `cache_size` open parameter.
 
+* It is possible again to build and run docker containers from the docker file 
+  in the Github Repository. (#651)
+  For more information, see 
+  https://xcube.readthedocs.io/en/latest/installation.html#docker 
+
 ### Other changes
 
 * The `xcube tile` CLI tool has been deprecated. A new tool is planned that can work
