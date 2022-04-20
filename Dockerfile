@@ -61,5 +61,5 @@ EXPOSE 8080
 # Run bash in xcube environment, so we can invoke xcube CLI.
 ENTRYPOINT ["conda", "run", "-v", "-n", "xcube", "/bin/bash", "-c"]
 
-# By default run demo service.
+# By default show xcube help 
 CMD ["xcube --help"]
