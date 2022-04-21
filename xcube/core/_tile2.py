@@ -46,8 +46,6 @@ DEFAULT_CMAP_NAME = 'bone'
 DEFAULT_FORMAT = 'png'
 DEFAULT_TILE_ENLARGEMENT = 1
 
-_ALMOST_256 = 256 - 1e-10
-
 ValueRange = Tuple[float, float]
 
 
@@ -310,7 +308,9 @@ def compute_rgba_tile(
                 value_min, value_max = value_max, value_min
             if math.isclose(value_min, value_max):
                 value_max = value_min + 1
-            norm = matplotlib.colors.Normalize(value_min, value_max)
+            norm = matplotlib.colors.Normalize(
+                value_min, value_max, clip=True
+            )
             var_tile_norm = norm(var_tile)
 
         var_tiles.append(var_tile_norm)
@@ -325,9 +325,9 @@ def compute_rgba_tile(
             r, g, b = var_tiles
             var_tile_rgba = np.zeros((tile_size, tile_size, 4),
                                      dtype=np.uint8)
-            var_tile_rgba[..., 0] = _ALMOST_256 * r
-            var_tile_rgba[..., 1] = _ALMOST_256 * g
-            var_tile_rgba[..., 2] = _ALMOST_256 * b
+            var_tile_rgba[..., 0] = 255 * r
+            var_tile_rgba[..., 1] = 255 * g
+            var_tile_rgba[..., 2] = 255 * b
             var_tile_rgba[..., 3] = np.where(np.isfinite(r + g + b), 255, 0)
 
     if format == 'png':

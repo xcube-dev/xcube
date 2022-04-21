@@ -1,3 +1,7 @@
+## Changes in 0.11.1 (in development)
+
+* Fixed broken generation of composite RGBA tiles. (#668)
+
 ## Changes in 0.11.0
 
 ### Enhancements
