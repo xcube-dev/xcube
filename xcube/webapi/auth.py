@@ -201,7 +201,7 @@ class AuthMixin:
         response = requests.get(jwks_uri)
         jwks = json.loads(response.content)
 
-        rsa_key = {}
+        rsa_key = None
         for key in jwks["keys"]:
             if key["kid"] == unverified_header["kid"]:
                 rsa_key = {
@@ -213,36 +213,28 @@ class AuthMixin:
                 }
                 break
 
-        if rsa_key:
-            try:
-                id_token = jwt.decode(
-                    access_token,
-                    # TODO: this is stupid: we convert rsa_key to
-                    #  JWT JSON only to produce the public key JSON string
-                    RSAAlgorithm.from_jwk(json.dumps(rsa_key)),
-                    algorithms=auth_config.algorithms,
-                    audience=auth_config.audience,
-                    issuer=auth_config.issuer
-                )
-            except jwt.ExpiredSignatureError:
-                raise ServiceAuthError(
-                    "Token expired",
-                    log_message="Token is expired"
-                )
-            except jwt.InvalidTokenError as e:
-                raise ServiceAuthError(
-                    f"{e}",
-                    log_message=f"{e}"
-                ) from e
-            except Exception:
-                raise ServiceAuthError(
-                    "Invalid header",
-                    log_message="Unable to parse authentication token."
-                )
-            return id_token
+        if rsa_key is None:
+            raise ServiceAuthError(
+                "Invalid header",
+                log_message="Unable to find appropriate key"
+            )
 
-        raise ServiceAuthError("Invalid header",
-                               log_message="Unable to find appropriate key")
+        try:
+            return jwt.decode(
+                access_token,
+                # TODO: this is stupid: we convert rsa_key to
+                #  JWT JSON only to produce the public key JSON string
+                RSAAlgorithm.from_jwk(json.dumps(rsa_key)),
+                algorithms=auth_config.algorithms,
+                audience=auth_config.audience,
+                issuer=auth_config.issuer
+            )
+        except jwt.InvalidTokenError as e:
+            msg = f"{e}"
+            raise ServiceAuthError(msg, log_message=msg) from e
+        except Exception as e:
+            msg = f"Invalid authentication header: {e}"
+            raise ServiceAuthError(msg, log_message=msg) from e
 
 
 def assert_scopes(required_scopes: Set[str],
