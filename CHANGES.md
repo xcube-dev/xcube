@@ -1,3 +1,10 @@
+## Changes in 0.11.2 (in development)
+
+* Mitigated memory-leak in `xcube.core.geom.rasterize_features()`. (#666)
+* Introduced new keyword argument `use_background` for function
+  `xcube.core.geom.rasterize_features()` that can be used to 
+  avoid using existing feature variables as background values.
+
 ## Changes in 0.11.1
 
 * Fixed broken generation of composite RGBA tiles. (#668)

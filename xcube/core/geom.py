@@ -68,6 +68,7 @@ def rasterize_features(
         feature_props: Sequence[Name],
         var_props: Dict[Name, VarProps] = None,
         in_place: bool = False,
+        use_background: bool = True
 ) -> Optional[xr.Dataset]:
     """
     Rasterize feature properties given by *feature_props* of
@@ -118,6 +119,9 @@ def rasterize_features(
         attributes, converter) for the new variable.
     :param in_place: Whether to add new variables to *dataset*.
         If False, a copy will be created and returned.
+    :param use_background: Whether to use existing feature variables
+        as background values. Default is True for backward
+        compatibility. This will likely change in future versions.
     :return: dataset with rasterized feature_property
     """
 
@@ -176,7 +180,6 @@ def rasterize_features(
                                       intersection_geometry,
                                       ds_x_min, ds_y_min,
                                       spatial_res)
-        mask = xr.DataArray(mask_data, coords=yx_coords, dims=yx_dims)
 
         for feature_property_name in feature_props:
 
@@ -194,32 +197,35 @@ def rasterize_features(
                 geo_data_frame[feature_property_name][row]
             )
 
-            background_var = dataset.get(var_name)
-            if background_var is None:
-                background_var_data = da.full((height, width),
-                                              var_fill_value,
-                                              dtype=var_dtype,
-                                              chunks=yx_chunks)
-                background_var = xr.DataArray(background_var_data,
-                                              coords=yx_coords,
-                                              dims=yx_dims,
-                                              attrs=var_attrs)
-                dataset[var_name] = background_var
+            feature_var_chunks = yx_chunks
 
-            feature_var_chunks = background_var.chunks[-2:] \
-                if background_var.chunks \
-                else yx_chunks
+            background_var = dataset.get(var_name)
+            background_data = var_fill_value
+
+            if background_var is not None:
+                feature_var_chunks = background_var.chunks[-2:] \
+                    if background_var.chunks \
+                    else feature_var_chunks
+
+                if use_background:
+                    background_data = background_var.data
+
             feature_var_data = da.full((height, width),
                                        feature_property_value,
                                        dtype=var_dtype,
                                        chunks=feature_var_chunks)
-            feature_var = xr.DataArray(feature_var_data,
+
+            masked_feature_var_data = da.where(mask_data,
+                                               feature_var_data,
+                                               da.asarray(background_data,
+                                                          dtype=var_dtype))
+
+            feature_var = xr.DataArray(masked_feature_var_data,
                                        coords=yx_coords,
                                        dims=yx_dims,
                                        attrs=var_attrs)
-
-            dataset[var_name] = feature_var.where(mask, background_var)
-            dataset[var_name].encoding.update(fill_value=var_fill_value)
+            feature_var.encoding.update(fill_value=var_fill_value)
+            dataset[var_name] = feature_var
 
     return dataset
 
