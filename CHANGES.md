@@ -1,4 +1,4 @@
-## Changes in 0.11.1 (in development)
+## Changes in 0.11.1
 
 * Fixed broken generation of composite RGBA tiles. (#668)
 * Fixing broken URLs in xcube viewer documentation, more revision still needed.
