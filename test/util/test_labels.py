@@ -3,6 +3,7 @@ import unittest
 import numpy as np
 import pandas as pd
 import xarray as xr
+from pandas import DatetimeTZDtype
 
 from xcube.util.labels import ensure_time_compatible
 
@@ -24,10 +25,14 @@ class EnsureTimeCompatibleTest(unittest.TestCase):
         coords=dict(time=pd.date_range('2000-01-01', '2000-01-03', tz=None)),
         dims=['time'])
 
-    # pd.date_range with a timezone specifier produces a dtype of int64
+    # To get a timezone-aware array, we use a DatetimeArray with an explicit
+    # DatetimeTZDtype dtype
     da_tzaware = xr.DataArray(
         np.arange(1, 4),
-        coords=dict(time=pd.date_range('2000-01-01', '2000-01-03', tz='UTC')),
+        coords=dict(time=pd.arrays.DatetimeArray(
+            pd.date_range('2000-01-01T00:00:00', '2000-01-03T00:00:00',
+                          tz='CET'),
+            dtype=DatetimeTZDtype(tz='CET'))),
         dims=['time'])
     labels_tznaive = dict(time='2000-01-02')
     labels_tzaware = dict(time='2000-01-02T00:00:00Z')

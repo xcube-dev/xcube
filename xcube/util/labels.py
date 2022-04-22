@@ -24,6 +24,9 @@ from typing import Dict, Any
 import numpy as np
 import pandas as pd
 import xarray as xr
+import logging
+
+logger = logging.getLogger('xcube')
 
 
 def ensure_time_compatible(var: xr.DataArray,
@@ -54,7 +57,7 @@ def ensure_time_compatible(var: xr.DataArray,
 
     timeval = labels['time']
     if isinstance(timeval, slice):
-        # process start and stop separately and pass step through unchanged
+        # process start and stop separately, and pass step through unchanged
         return dict(labels, time=slice(
             _ensure_timestamp_compatible(var, timeval.start),
             _ensure_timestamp_compatible(var, timeval.stop),
@@ -65,27 +68,33 @@ def ensure_time_compatible(var: xr.DataArray,
 
 def _ensure_timestamp_compatible(var: xr.DataArray, timeval: Any):
     timestamp = pd.Timestamp(timeval)
-    timeval_is_naive = timestamp.tzinfo is None
-    array_is_naive = _is_array_tz_naive(var)
+    timeval_timezone = timestamp.tzinfo
+    array_timezone = _get_array_timezone(var)
 
-    if array_is_naive and not timeval_is_naive:
+    if array_timezone is None and timeval_timezone is not None:
         return timestamp.tz_convert(None)
+    elif array_timezone is not None and timeval_timezone is None:
+        return timestamp.tz_localize(array_timezone)
+    else:
+        return timeval
 
-    if not array_is_naive and timeval_is_naive:
-        return timestamp.tz_localize('UTC')
 
-    return timeval
-
-
-def _is_array_tz_naive(var: xr.DataArray):
+def _get_array_timezone(var: xr.DataArray):
     # TODO: also check for non-datetime64 tz-naive arrays!
 
-    # pandas treats datetime64s as timezone-naive
-    return _has_datetime64_time(var)
+    # pandas treats all datetime64 arrays as timezone-naive
+    if _has_datetime64_time(var):
+        return None
+
+    if isinstance(var.time.values[0], pd.Timestamp):
+        return var.time.values[0].tzinfo
+
+    logger.warning("Can't determine array timezone, assuming TZ-naive")
+    return None
 
 
 def _has_datetime64_time(var: xr.DataArray) -> bool:
-    """Report whether var has a time dimension with type datetime64
+    """Report whether var's time dimension has type datetime64
 
     Assumes that a 'time' key is present in var.dims."""
     return hasattr(var['time'], 'dtype') \
