@@ -24,8 +24,9 @@ button to add a new server. Here are two demo servers that you may add for testi
 
 * DCS4COP Demo Server (``https://eodatabee-api.brockmann-consult.de/api``) providing
   ocean color variables in the North Sea area for the `Data Cube Service for Copernicus`_ (DCS4COP) EU project;
-* Euro Data Cube Server (``https://edc-api.brockmann-consult.de/api``) providing global essential climate variables (ECVs)
-  variables for the ESA `Euro Data Cube`_.
+* Euro Data Cube Server (``https://edc-api.brockmann-consult.de/api``) has integrated amongst others a data cube with
+  global essential climate variables (ECVs) variables from the ESA Earth System Data Lab Project.
+  To access the Euro Data Cube viewer directly please visit https://edc-viewer.brockmann-consult.de .
 
 Functionality
 =============
