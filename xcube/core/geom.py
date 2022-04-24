@@ -18,9 +18,9 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-
 import math
-from typing import Optional, Union, Dict, Tuple, Sequence, Any, Mapping
+import warnings
+from typing import Optional, Union, Dict, Tuple, Sequence, Any, Mapping, List
 
 import affine
 import dask.array as da
@@ -37,6 +37,7 @@ from xcube.core.schema import get_dataset_chunks
 from xcube.core.schema import get_dataset_xy_var_names
 from xcube.core.update import update_dataset_spatial_attrs
 from xcube.util.geojson import GeoJSON
+from xcube.util.types import normalize_scalar_or_pair
 
 GeometryLike = Union[shapely.geometry.base.BaseGeometry,
                      Dict[str, Any],
@@ -67,6 +68,8 @@ def rasterize_features(
         features: Union[GeoDataFrame, GeoJSONFeatures],
         feature_props: Sequence[Name],
         var_props: Dict[Name, VarProps] = None,
+        tile_size: Union[int, Tuple[int, int]] = None,
+        default_tile_size: Union[int, Tuple[int, int]] = None,
         in_place: bool = False,
 ) -> Optional[xr.Dataset]:
     """
@@ -123,11 +126,21 @@ def rasterize_features(
 
     var_props = var_props or {}
     xy_var_names = get_dataset_xy_var_names(dataset, must_exist=True)
-    dataset_bounds = get_dataset_bounds(dataset, xy_var_names=xy_var_names)
     dataset_chunks = get_dataset_chunks(dataset)
+    dataset_bounds = get_dataset_bounds(dataset)
 
-    ds_x_min, ds_y_min, ds_x_max, ds_y_max = dataset_bounds
+    for k, v in var_props.items():
+        if k == 'converter':
+            warnings.warn(f'the "converter" property of var_props'
+                          f' has been deprecated and will be ignored',
+                          DeprecationWarning)
 
+    if default_tile_size is not None:
+        default_tile_size = normalize_scalar_or_pair(default_tile_size,
+                                                     item_type=int,
+                                                     name='default_tile_size')
+
+    x_min, y_min, x_max, y_max = dataset_bounds
     x_var_name, y_var_name = xy_var_names
     x_var, y_var = dataset[x_var_name], dataset[y_var_name]
     x_dim, y_dim = x_var.dims[0], y_var.dims[0]
@@ -136,92 +149,150 @@ def rasterize_features(
 
     width = x_var.size
     height = y_var.size
-    spatial_res = (ds_x_max - ds_x_min) / width
+    x_scale = (x_max - x_min) / width
+    y_scale = (y_max - y_min) / height
 
-    yx_chunks = (dataset_chunks.get(y_var_name),
-                 dataset_chunks.get(x_var_name))
-    yx_chunks = yx_chunks \
-        if all(yx_chunks) \
-        else (min(height, 512), min(width, 512))
+    if tile_size:
+        tile_size = normalize_scalar_or_pair(
+            tile_size,
+            item_type=int,
+            name='tile_size'
+        )
+        yx_chunks = (min(height, tile_size[1]),
+                     min(width, tile_size[0]))
+    else:
+        if default_tile_size:
+            default_tile_size = normalize_scalar_or_pair(
+                default_tile_size,
+                item_type=int,
+                name='default_tile_size'
+            )
+        else:
+            default_tile_size = 512, 512
+        yx_chunks = (dataset_chunks.get(y_var_name),
+                     dataset_chunks.get(x_var_name))
+        yx_chunks = yx_chunks \
+            if all(yx_chunks) \
+            else (min(height, default_tile_size[1]),
+                  min(width, default_tile_size[0]))
 
     if isinstance(features, gpd.GeoDataFrame):
         geo_data_frame = features
     else:
         geo_data_frame = gpd.GeoDataFrame.from_features(features)
 
-    for feature_property_name in feature_props:
-        if feature_property_name not in geo_data_frame:
+    for feature_prop_name in feature_props:
+        if feature_prop_name not in geo_data_frame:
             raise ValueError(f'feature property '
-                             f'{feature_property_name!r} not found')
+                             f'{feature_prop_name!r} not found')
+
+    # Filter out empty or invalid geometries, remember valid rows
+    geometries = []
+    valid_row_indices = []
+    for row_index in range(len(geo_data_frame)):
+        geometry = geo_data_frame.geometry[row_index]
+        if not geometry.is_empty and geometry.is_valid:
+            valid_row_indices.append(row_index)
+            geometries.append(geometry.__geo_interface__)
+
+    # Collect columns of feature data for valid row indices
+    valid_row_indices = np.array(valid_row_indices)
+    feature_data = []
+    for feature_prop_name in feature_props:
+        feature_values = geo_data_frame[feature_prop_name].to_numpy()
+        feature_values = feature_values[valid_row_indices]
+        var_prop_mapping = var_props.get(feature_prop_name, {})
+        dtype = var_prop_mapping.get('dtype', feature_values.dtype)
+        if dtype != feature_values.dtype:
+            feature_values = feature_values.astype(dtype=dtype)
+        feature_data.append(feature_values)
+
+    num_features = len(feature_props)
+    chunks = da.core.normalize_chunks((num_features, *yx_chunks),
+                                      (num_features, height, width))
+    rasterized_features = da.map_blocks(
+        _rasterize_features_into_block,
+        chunks=chunks,
+        dtype=np.float64,
+        meta=np.array((), dtype=np.float64),
+        geometries=geometries,
+        feature_data=feature_data,
+        x_offset=x_min,
+        y_offset=y_max,
+        x_scale=x_scale,
+        y_scale=y_scale,
+    )
 
     if not in_place:
         dataset = xr.Dataset(coords=dataset.coords, attrs=dataset.attrs)
 
-    for row in range(len(geo_data_frame)):
-        geometry = geo_data_frame.geometry[row]
-        if geometry.is_empty or not geometry.is_valid:
-            continue
+    for feature_index, feature_prop_name in enumerate(feature_props):
+        var_prop_mapping = var_props.get(feature_prop_name, {})
+        var_name = var_prop_mapping.get(
+            'name',
+            feature_prop_name.replace(' ', '_')
+        )
+        var_dtype = var_prop_mapping.get('dtype', np.float64)
+        var_fill_value = var_prop_mapping.get('fill_value', np.nan)
+        var_attrs = var_prop_mapping.get('attrs', {})
 
-        # TODO (forman): allow transforming geometry
-        #   into CRS of dataset here
-        intersection_geometry = intersect_geometries(dataset_bounds,
-                                                     geometry)
-        if intersection_geometry is None:
-            continue
+        feature_image = rasterized_features[feature_index]
+        if feature_image.dtype != var_dtype:
+            feature_image = da.Array.astype(feature_image,
+                                            dtype=var_dtype)
 
-        # TODO (forman): check, we should be able to improve
-        #   performance by generating the mask for a dataset
-        #   subset generated by clipping against geometry.
-        mask_data = get_geometry_mask(width, height,
-                                      intersection_geometry,
-                                      ds_x_min, ds_y_min,
-                                      spatial_res)
-        mask = xr.DataArray(mask_data, coords=yx_coords, dims=yx_dims)
-
-        for feature_property_name in feature_props:
-
-            var_prop_mapping = var_props.get(feature_property_name, {})
-            var_name = var_prop_mapping.get(
-                'name',
-                feature_property_name.replace(' ', '_')
-            )
-            var_dtype = var_prop_mapping.get('dtype', np.float64)
-            var_fill_value = var_prop_mapping.get('fill_value', np.nan)
-            var_attrs = var_prop_mapping.get('attrs', {})
-            converter = var_prop_mapping.get('converter', float)
-
-            feature_property_value = converter(
-                geo_data_frame[feature_property_name][row]
-            )
-
-            background_var = dataset.get(var_name)
-            if background_var is None:
-                background_var_data = da.full((height, width),
-                                              var_fill_value,
-                                              dtype=var_dtype,
-                                              chunks=yx_chunks)
-                background_var = xr.DataArray(background_var_data,
-                                              coords=yx_coords,
-                                              dims=yx_dims,
-                                              attrs=var_attrs)
-                dataset[var_name] = background_var
-
-            feature_var_chunks = background_var.chunks[-2:] \
-                if background_var.chunks \
-                else yx_chunks
-            feature_var_data = da.full((height, width),
-                                       feature_property_value,
-                                       dtype=var_dtype,
-                                       chunks=feature_var_chunks)
-            feature_var = xr.DataArray(feature_var_data,
-                                       coords=yx_coords,
-                                       dims=yx_dims,
-                                       attrs=var_attrs)
-
-            dataset[var_name] = feature_var.where(mask, background_var)
-            dataset[var_name].encoding.update(fill_value=var_fill_value)
+        feature_var = xr.DataArray(feature_image,
+                                   coords=yx_coords,
+                                   dims=yx_dims,
+                                   attrs=var_attrs)
+        feature_var.encoding.update(fill_value=var_fill_value)
+        dataset[var_name] = feature_var
 
     return dataset
+
+
+def _rasterize_features_into_block(
+        block_info: Dict[Union[str, None], Any] = None,
+        geometries: List[Dict[str, Any]] = None,
+        feature_data: List[np.ndarray] = None,
+        x_offset: float = None,
+        y_offset: float = None,
+        x_scale: float = None,
+        y_scale: float = None,
+):
+    ret_info = block_info[None]
+    dtype = ret_info['dtype']
+    chunk_shape = ret_info['chunk-shape']
+    num_features, height, width = chunk_shape
+    _, (y_start, y_end), (x_start, x_end) = ret_info['array-location']
+    x1 = x_offset + x_scale * x_start
+    x2 = x_offset + x_scale * x_end
+    y1 = y_offset - y_scale * y_start
+    y2 = y_offset - y_scale * y_end
+    transform = affine.Affine(x_scale, 0.0, x1,
+                              0.0, -y_scale, y1)
+    block_bounds = shapely.geometry.box(x1, min(y1, y2),
+                                        x2, max(y1, y2))
+    block = np.full(chunk_shape, np.nan, dtype=dtype)
+    for row_index, geometry in enumerate(geometries):
+        shape = shapely.geometry.shape(geometry)
+        intersection_geometry = intersect_geometries(block_bounds,
+                                                     shape)
+        if intersection_geometry is None:
+            continue
+        mask = rasterio.features.geometry_mask([geometry],
+                                               out_shape=(height, width),
+                                               transform=transform,
+                                               all_touched=True,
+                                               invert=True)
+        for i in range(num_features):
+            background = block[i]
+            foreground = np.full((height, width),
+                                 feature_data[i][row_index],
+                                 dtype=dtype)
+            block[i, :, :] = np.where(mask, foreground, background)
+
+    return block
 
 
 def mask_dataset_by_geometry(
@@ -280,7 +351,7 @@ def mask_dataset_by_geometry(
                                             intersection_geometry,
                                             xy_var_names)
 
-    ds_x_min, ds_y_min, ds_x_max, ds_y_max = get_dataset_bounds(
+    x_min, y_min, x_max, y_max = get_dataset_bounds(
         dataset, xy_var_names=xy_var_names
     )
 
@@ -289,12 +360,14 @@ def mask_dataset_by_geometry(
 
     width = x_var.size
     height = y_var.size
-    spatial_res = (ds_x_max - ds_x_min) / width
+    x_res = (x_max - x_min) / width
+    y_res = (y_max - y_min) / height
 
     mask_data = get_geometry_mask(width, height,
                                   intersection_geometry,
-                                  ds_x_min, ds_y_min,
-                                  spatial_res, all_touched)
+                                  x_min, y_min,
+                                  x_res, y_res,
+                                  all_touched)
     mask = xr.DataArray(mask_data,
                         coords={y_var_name: y_var, x_var_name: x_var},
                         dims=(y_var.dims[0], x_var.dims[0]))
@@ -419,12 +492,17 @@ def _save_geometry_wkt(dataset, intersection_geometry, save_geometry):
 
 def get_geometry_mask(width: int, height: int,
                       geometry: GeometryLike,
-                      x_min: float, y_min: float, res: float,
+                      x_min: float,
+                      y_min: float,
+                      x_res: float,
+                      y_res: Optional[float] = None,
                       all_touched: bool = True) -> np.ndarray:
+    if y_res is None:
+        y_res = x_res
     geometry = convert_geometry(geometry)
     # noinspection PyTypeChecker
-    transform = affine.Affine(res, 0.0, x_min,
-                              0.0, -res, y_min + res * height)
+    transform = affine.Affine(x_res, 0.0, x_min,
+                              0.0, -y_res, y_min + y_res * height)
     return rasterio.features.geometry_mask([geometry],
                                            out_shape=(height, width),
                                            transform=transform,
