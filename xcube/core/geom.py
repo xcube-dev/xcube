@@ -264,30 +264,30 @@ def _rasterize_features_into_block(
     dtype = ret_info['dtype']
     chunk_shape = ret_info['chunk-shape']
     num_features, height, width = chunk_shape
+    image_shape = height, width
     _, (y_start, y_end), (x_start, x_end) = ret_info['array-location']
     x1 = x_offset + x_scale * x_start
-    x2 = x_offset + x_scale * x_end
+    # x2 = x_offset + x_scale * x_end
     y1 = y_offset - y_scale * y_start
-    y2 = y_offset - y_scale * y_end
+    # y2 = y_offset - y_scale * y_end
     transform = affine.Affine(x_scale, 0.0, x1,
                               0.0, -y_scale, y1)
-    block_bounds = shapely.geometry.box(x1, min(y1, y2),
-                                        x2, max(y1, y2))
+    # block_bounds = shapely.geometry.box(x1, min(y1, y2),
+    #                                     x2, max(y1, y2))
     block = np.full(chunk_shape, np.nan, dtype=dtype)
     for row_index, geometry in enumerate(geometries):
         shape = shapely.geometry.shape(geometry)
-        intersection_geometry = intersect_geometries(block_bounds,
-                                                     shape)
-        if intersection_geometry is None:
-            continue
-        mask = rasterio.features.geometry_mask([geometry],
-                                               out_shape=(height, width),
+        # shape = shape.intersection(block_bounds)
+        # if not shape.is_valid or shape.is_empty:
+        #     continue
+        mask = rasterio.features.geometry_mask([shape],
+                                               out_shape=image_shape,
                                                transform=transform,
                                                all_touched=True,
                                                invert=True)
         for i in range(num_features):
             background = block[i]
-            foreground = np.full((height, width),
+            foreground = np.full(image_shape,
                                  feature_data[i][row_index],
                                  dtype=dtype)
             block[i, :, :] = np.where(mask, foreground, background)

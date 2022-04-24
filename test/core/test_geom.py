@@ -16,39 +16,40 @@ from xcube.core.geom import mask_dataset_by_geometry
 from xcube.core.geom import rasterize_features
 from xcube.core.new import new_cube
 
+nan = np.nan
+
 
 class RasterizeFeaturesIntoDataset(unittest.TestCase):
-    def test_rasterize_geodataframe_features_into_dataset_lonlat(self):
-        self._test_rasterize_features(self.get_geodataframe_features(),
+    def test_rasterize_geo_data_frame_lonlat(self):
+        self._test_rasterize_features(self.get_geo_data_frame_features(),
                                       'lon', 'lat')
 
-    def test_rasterize_geodataframe_features_into_dataset_lonlat_chunked(
-            self):
-        self._test_rasterize_features(self.get_geodataframe_features(),
+    def test_rasterize_geo_data_frame_lonlat_chunked(self):
+        self._test_rasterize_features(self.get_geo_data_frame_features(),
                                       'lon', 'lat', with_var=True)
 
-    def test_rasterize_geodataframe_features_into_dataset_xy(self):
-        self._test_rasterize_features(self.get_geodataframe_features(),
+    def test_rasterize_geo_data_frame_xy(self):
+        self._test_rasterize_features(self.get_geo_data_frame_features(),
                                       'x', 'y')
 
-    def test_rasterize_geodataframe_features_into_dataset_xy_chunked(self):
-        self._test_rasterize_features(self.get_geodataframe_features(),
+    def test_rasterize_geo_data_frame_xy_chunked(self):
+        self._test_rasterize_features(self.get_geo_data_frame_features(),
                                       'x', 'y', with_var=True)
 
-    def test_rasterize_geojson_features_into_dataset_lonlat(self):
-        self._test_rasterize_features(self.get_geojson_features(),
+    def test_rasterize_geo_json_lonlat(self):
+        self._test_rasterize_features(self.get_geo_json_features(),
                                       'lon', 'lat')
 
-    def test_rasterize_geojson_features_into_dataset_lonlat_chunked(self):
-        self._test_rasterize_features(self.get_geojson_features(),
+    def test_rasterize_geo_json_lonlat_chunked(self):
+        self._test_rasterize_features(self.get_geo_json_features(),
                                       'lon', 'lat', with_var=True)
 
-    def test_rasterize_geojson_features_into_dataset_xy(self):
-        self._test_rasterize_features(self.get_geojson_features(),
+    def test_rasterize_geo_json_xy(self):
+        self._test_rasterize_features(self.get_geo_json_features(),
                                       'x', 'y')
 
-    def test_rasterize_geojson_features_into_dataset_xy_chunked(self):
-        self._test_rasterize_features(self.get_geojson_features(),
+    def test_rasterize_geo_json_xy_chunked(self):
+        self._test_rasterize_features(self.get_geo_json_features(),
                                       'x', 'y', with_var=True)
 
     def _test_rasterize_features(self,
@@ -106,16 +107,6 @@ class RasterizeFeaturesIntoDataset(unittest.TestCase):
         self.assertEquals((y_name, x_name), dataset.b.dims)
         self.assertEquals((y_name, x_name), dataset.c2.dims)
         a_values = dataset.a.values
-        print(repr(a_values))
-        b_values = dataset.b.values
-        c2_values = dataset.c2.values
-        # self.assertEquals(np.array(0.5, dtype=np.float64), a_values.min())
-        # self.assertEquals(np.array(0.8, dtype=np.float64), a_values.max())
-        # self.assertEquals(np.array(2.1, dtype=np.float32), b_values.min())
-        # self.assertEquals(np.array(2.4, dtype=np.float32), b_values.max())
-        # self.assertEquals(np.array(0, dtype=np.uint8), c2_values.min())
-        # self.assertEquals(np.array(9, dtype=np.uint8), c2_values.max())
-        nan = np.nan
         np.testing.assert_almost_equal(
             np.array([[0.5, 0.5, 0.5, 0.5, 0.5, nan, nan, 0.7, 0.7, 0.7],
                       [0.5, 0.5, 0.5, 0.5, 0.5, nan, nan, 0.7, 0.7, 0.7],
@@ -128,13 +119,39 @@ class RasterizeFeaturesIntoDataset(unittest.TestCase):
                       [0.6, 0.6, 0.6, 0.6, 0.6, nan, nan, 0.8, 0.8, 0.8],
                       [0.6, 0.6, 0.6, 0.6, 0.6, nan, nan, 0.8, 0.8, 0.8]]),
             a_values)
+        b_values = dataset.b.values
+        np.testing.assert_almost_equal(
+            np.array([[2.1, 2.1, 2.1, 2.1, 2.1, nan, nan, 2.3, 2.3, 2.3],
+                      [2.1, 2.1, 2.1, 2.1, 2.1, nan, nan, 2.3, 2.3, 2.3],
+                      [2.1, 2.1, 2.1, 2.1, 2.1, nan, nan, 2.3, 2.3, 2.3],
+                      [2.1, 2.1, 2.1, 2.1, 2.1, nan, nan, 2.3, 2.3, 2.3],
+                      [2.1, 2.1, 2.1, 2.1, 2.1, nan, nan, 2.3, 2.3, 2.3],
+                      [2.2, 2.2, 2.2, 2.2, 2.2, nan, nan, 2.4, 2.4, 2.4],
+                      [2.2, 2.2, 2.2, 2.2, 2.2, nan, nan, 2.4, 2.4, 2.4],
+                      [2.2, 2.2, 2.2, 2.2, 2.2, nan, nan, 2.4, 2.4, 2.4],
+                      [2.2, 2.2, 2.2, 2.2, 2.2, nan, nan, 2.4, 2.4, 2.4],
+                      [2.2, 2.2, 2.2, 2.2, 2.2, nan, nan, 2.4, 2.4, 2.4]]),
+            b_values)
+        c2_values = dataset.c2.values
+        np.testing.assert_almost_equal(
+            np.array([[9, 9, 9, 9, 9, 0, 0, 7, 7, 7],
+                      [9, 9, 9, 9, 9, 0, 0, 7, 7, 7],
+                      [9, 9, 9, 9, 9, 0, 0, 7, 7, 7],
+                      [9, 9, 9, 9, 9, 0, 0, 7, 7, 7],
+                      [9, 9, 9, 9, 9, 0, 0, 7, 7, 7],
+                      [8, 8, 8, 8, 8, 0, 0, 6, 6, 6],
+                      [8, 8, 8, 8, 8, 0, 0, 6, 6, 6],
+                      [8, 8, 8, 8, 8, 0, 0, 6, 6, 6],
+                      [8, 8, 8, 8, 8, 0, 0, 6, 6, 6],
+                      [8, 8, 8, 8, 8, 0, 0, 6, 6, 6]]),
+            c2_values)
 
-    def get_geodataframe_features(self):
-        features = self.get_geojson_features()
+    def get_geo_data_frame_features(self):
+        features = self.get_geo_json_features()
         return gpd.GeoDataFrame.from_features(features)
 
     @staticmethod
-    def get_geojson_features():
+    def get_geo_json_features():
         feature1 = dict(
             type='Feature',
             geometry=dict(type='Polygon',
@@ -499,7 +516,7 @@ class ConvertGeometryTest(unittest.TestCase):
         self.assertEqual(expected_point,
                          convert_geometry(expected_point.wkt))
         self.assertEqual(expected_point,
-                         convert_geometry(expected_point.__geo_interface__))
+                         convert_geometry(expected_point._geo_interface__))
 
     def test_convert_box_as_point(self):
         expected_point = shapely.geometry.Point(12.8, -34.4)
@@ -519,7 +536,7 @@ class ConvertGeometryTest(unittest.TestCase):
         self.assertEqual(expected_box,
                          convert_geometry(expected_box.wkt))
         self.assertEqual(expected_box,
-                         convert_geometry(expected_box.__geo_interface__))
+                         convert_geometry(expected_box._geo_interface__))
 
     def test_convert_to_split_box(self):
         expected_split_box = shapely.geometry.MultiPolygon(polygons=[
@@ -535,13 +552,13 @@ class ConvertGeometryTest(unittest.TestCase):
         self.assertEqual(expected_split_box,
                          convert_geometry([172.1, -34.4, -165.7, 20.6]))
 
-    def test_convert_from_geojson_feature_dict(self):
+    def test_convert_from_geo_json_feature_dict(self):
         expected_box1 = shapely.geometry.box(-10, -20, 20, 10)
         expected_box2 = shapely.geometry.box(30, 20, 50, 40)
         feature1 = dict(type='Feature',
-                        geometry=expected_box1.__geo_interface__)
+                        geometry=expected_box1._geo_interface__)
         feature2 = dict(type='Feature',
-                        geometry=expected_box2.__geo_interface__)
+                        geometry=expected_box2._geo_interface__)
         feature_collection = dict(type='FeatureCollection',
                                   features=(feature1, feature2))
 
