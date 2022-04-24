@@ -516,7 +516,7 @@ class ConvertGeometryTest(unittest.TestCase):
         self.assertEqual(expected_point,
                          convert_geometry(expected_point.wkt))
         self.assertEqual(expected_point,
-                         convert_geometry(expected_point._geo_interface__))
+                         convert_geometry(expected_point.__geo_interface__))
 
     def test_convert_box_as_point(self):
         expected_point = shapely.geometry.Point(12.8, -34.4)
@@ -536,7 +536,7 @@ class ConvertGeometryTest(unittest.TestCase):
         self.assertEqual(expected_box,
                          convert_geometry(expected_box.wkt))
         self.assertEqual(expected_box,
-                         convert_geometry(expected_box._geo_interface__))
+                         convert_geometry(expected_box.__geo_interface__))
 
     def test_convert_to_split_box(self):
         expected_split_box = shapely.geometry.MultiPolygon(polygons=[
@@ -556,9 +556,9 @@ class ConvertGeometryTest(unittest.TestCase):
         expected_box1 = shapely.geometry.box(-10, -20, 20, 10)
         expected_box2 = shapely.geometry.box(30, 20, 50, 40)
         feature1 = dict(type='Feature',
-                        geometry=expected_box1._geo_interface__)
+                        geometry=expected_box1.__geo_interface__)
         feature2 = dict(type='Feature',
-                        geometry=expected_box2._geo_interface__)
+                        geometry=expected_box2.__geo_interface__)
         feature_collection = dict(type='FeatureCollection',
                                   features=(feature1, feature2))
 
