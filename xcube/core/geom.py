@@ -108,6 +108,7 @@ def rasterize_features(
                                # a converter function used to convert
                                # from property feature value to variable
                                # value, default is float.
+                               # Deprecated, no longer used.
     }
 
     Currently, the coordinates of the geometries in the given
