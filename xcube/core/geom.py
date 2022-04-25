@@ -136,8 +136,8 @@ def rasterize_features(
     """
 
     var_props = var_props or {}
-    for k, v in var_props.items():
-        if k == 'converter':
+    for v in var_props.values():
+        if v and 'converter' in v:
             warnings.warn(f'the "converter" property of var_props'
                           f' has been deprecated and will be ignored',
                           DeprecationWarning)
@@ -520,7 +520,7 @@ def _clip_dataset_by_geometry(
     x2 = _clamp(int(math.ceil((g_x_max - ds_x_min) / res)), 0, width - 1)
     y1 = _clamp(int(math.floor((g_y_min - ds_y_min) / res)), 0, height - 1)
     y2 = _clamp(int(math.ceil((g_y_max - ds_y_min) / res)), 0, height - 1)
-    if not is_dataset_y_axis_inverted(dataset, xy_var_names=xy_var_names):
+    if y_var[0] > y_var[-1]:  # inverse ?
         _y1, _y2 = y1, y2
         y1 = height - _y2 - 1
         y2 = height - _y1 - 1
@@ -684,6 +684,8 @@ def convert_geometry(geometry: Optional[GeometryLike]) \
 convert_geometry.__doc__ = normalize_geometry.__doc__
 
 
+@deprecated(version="0.11.2",
+            reason='Uses wrong definition of "inverted". No longer used.')
 def is_dataset_y_axis_inverted(
         dataset: Union[xr.Dataset, xr.DataArray],
         xy_var_names: Tuple[str, str] = None

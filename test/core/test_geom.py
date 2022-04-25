@@ -1,5 +1,6 @@
 import unittest
 
+import dask.array as da
 import geopandas as gpd
 import numpy as np
 import shapely.geometry
@@ -8,13 +9,17 @@ import xarray as xr
 
 from xcube.core.chunk import chunk_dataset
 from xcube.core.geom import clip_dataset_by_geometry
-from xcube.core.geom import normalize_geometry
+from xcube.core.geom import convert_geometry
 from xcube.core.geom import get_dataset_bounds
 from xcube.core.geom import get_dataset_geometry
 from xcube.core.geom import get_geometry_mask
+from xcube.core.geom import is_dataset_y_axis_inverted
+from xcube.core.geom import is_lon_lat_dataset
 from xcube.core.geom import mask_dataset_by_geometry
+from xcube.core.geom import normalize_geometry
 from xcube.core.geom import rasterize_features
 from xcube.core.new import new_cube
+from xcube.util.types import normalize_scalar_or_pair
 
 nan = np.nan
 
@@ -28,6 +33,10 @@ class RasterizeFeaturesIntoDataset(unittest.TestCase):
         self._test_rasterize_features(self.get_geo_data_frame_features(),
                                       'lon', 'lat', with_var=True)
 
+    def test_rasterize_geo_data_frame_lonlat_fix_chunks(self):
+        self._test_rasterize_features(self.get_geo_data_frame_features(),
+                                      'lon', 'lat', tile_size=4)
+
     def test_rasterize_geo_data_frame_xy(self):
         self._test_rasterize_features(self.get_geo_data_frame_features(),
                                       'x', 'y')
@@ -35,6 +44,10 @@ class RasterizeFeaturesIntoDataset(unittest.TestCase):
     def test_rasterize_geo_data_frame_xy_chunked(self):
         self._test_rasterize_features(self.get_geo_data_frame_features(),
                                       'x', 'y', with_var=True)
+
+    def test_rasterize_geo_data_frame_xy_fix_chunks(self):
+        self._test_rasterize_features(self.get_geo_data_frame_features(),
+                                      'x', 'y', tile_size=(3, 4))
 
     def test_rasterize_geo_json_lonlat(self):
         self._test_rasterize_features(self.get_geo_json_features(),
@@ -52,12 +65,24 @@ class RasterizeFeaturesIntoDataset(unittest.TestCase):
         self._test_rasterize_features(self.get_geo_json_features(),
                                       'x', 'y', with_var=True)
 
+    def test_rasterize_invalid_feature(self):
+        features = self.get_geo_json_features()
+        with self.assertRaises(ValueError) as cm:
+            rasterize_features(new_cube(),
+                               features,
+                               ['missing'])
+        self.assertEqual("feature property 'missing' not found",
+                         f'{cm.exception}')
+
     def _test_rasterize_features(self,
                                  features,
                                  x_name, y_name,
-                                 with_var=False):
+                                 with_var=False,
+                                 tile_size=None):
+        width = 10
+        height = 10
         dataset = new_cube(
-            width=10, height=10,
+            width=width, height=height,
             x_name=x_name, y_name=y_name,
             x_res=10,
             x_start=-50, y_start=-50,
@@ -78,11 +103,18 @@ class RasterizeFeaturesIntoDataset(unittest.TestCase):
                                          c=dict(name='c2', dtype=np.uint8,
                                                 fill_value=0, converter=int)
                                      ),
+                                     tile_size=tile_size,
                                      in_place=False)
         self.assertIsNotNone(dataset)
         if with_var:
             self.assertEqual({x_name: (4, 4, 2),
                               y_name: (3, 3, 3, 1)},
+                             dataset.chunks)
+        elif tile_size:
+            tw, th = normalize_scalar_or_pair(tile_size)
+            cy, cx = da.core.normalize_chunks((th, tw), shape=(height, width))
+            self.assertEqual({x_name: cx,
+                              y_name: cy},
                              dataset.chunks)
         else:
             self.assertEqual({x_name: (10,),
@@ -250,6 +282,12 @@ class DatasetGeometryTest(unittest.TestCase):
         self._assert_clipped_dataset_has_basic_props(cube)
         self.assertEqual(((1, 1, 1, 1, 1), (4,), (7,)), cube.temp.chunks)
         self.assertEqual(((1, 1, 1, 1, 1), (4,), (7,)), cube.precip.chunks)
+
+    def test_clip_dataset_inverse_y(self):
+        lat_inv = self.cube.lat[::-1]
+        cube = self.cube.assign_coords(lat=lat_inv)
+        cube = clip_dataset_by_geometry(cube, self.triangle)
+        self._assert_clipped_dataset_has_basic_props(cube)
 
     def test_mask_dataset_for_chunked_input(self):
         cube = chunk_dataset(self.cube,
@@ -605,3 +643,28 @@ class NormalizeGeometryTest(unittest.TestCase):
         with self.assertRaises(ValueError) as cm:
             normalize_geometry([12.8, -34.4, '?'])
         self.assertEqual(_INVALID_GEOMETRY_MSG, f'{cm.exception}')
+
+    def test_deprecated(self):
+        self.assertEqual(None, convert_geometry(None))
+
+
+class HelpersTest(unittest.TestCase):
+    def test_is_lon_lat_dataset(self):
+        dataset = new_cube(x_name='lon', y_name='lat')
+        self.assertTrue(is_lon_lat_dataset(dataset))
+
+        dataset = new_cube(x_name='x', y_name='y')
+        self.assertTrue(is_lon_lat_dataset(dataset))
+
+        dataset = new_cube(x_name='x', y_name='y', x_units='meters')
+        self.assertFalse(is_lon_lat_dataset(dataset))
+        dataset.x.attrs.update(long_name='longitude')
+        dataset.y.attrs.update(long_name='latitude')
+        self.assertTrue(is_lon_lat_dataset(dataset))
+
+    def test_is_dataset_y_axis_inverted(self):
+        dataset = new_cube()
+        self.assertTrue(is_dataset_y_axis_inverted(dataset))
+
+        dataset = new_cube(inverse_y=True)
+        self.assertFalse(is_dataset_y_axis_inverted(dataset))

@@ -12,6 +12,13 @@
   The spatial chunk sizes to be used can be specified using 
   keyword argument `tile_size`. (#666)
 
+### Other changes
+
+* Deprecated following functions of module `xcube.core.geom`:
+  - `is_dataset_y_axis_inverted()` is no longer used;
+  - `get_geometry_mask()` is no longer used;
+  - `convert_geometry()` has been renamed to `normalize_geometry()`.
+
 ## Changes in 0.11.1
 
 * Fixed broken generation of composite RGBA tiles. (#668)
