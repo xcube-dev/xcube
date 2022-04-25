@@ -222,6 +222,9 @@ def rasterize_features(
         all_touched=all_touched
     )
 
+    if y_var[0] < y_var[-1]:
+        rasterized_features = rasterized_features[:, ::-1, ::]
+
     if not in_place:
         dataset = xr.Dataset(coords=dataset.coords, attrs=dataset.attrs)
 
@@ -388,6 +391,9 @@ def mask_dataset_by_geometry(
         y_res=y_res,
         all_touched=all_touched
     )
+
+    if y_var[0] < y_var[-1]:
+        mask_data = mask_data[::-1, ::]
 
     mask = xr.DataArray(mask_data,
                         coords={y_var_name: y_var, x_var_name: x_var},

@@ -65,6 +65,18 @@ class RasterizeFeaturesIntoDataset(unittest.TestCase):
         self._test_rasterize_features(self.get_geo_json_features(),
                                       'x', 'y', with_var=True)
 
+    def test_rasterize_geo_json_xy_chunked_inverse_y(self):
+        self._test_rasterize_features(self.get_geo_json_features(),
+                                      'x', 'y',
+                                      with_var=True,
+                                      inverse_y=True)
+
+    def test_rasterize_geo_json_xy_fixed_chunks_inverse_y(self):
+        self._test_rasterize_features(self.get_geo_json_features(),
+                                      'x', 'y',
+                                      tile_size=4,
+                                      inverse_y=True)
+
     def test_rasterize_invalid_feature(self):
         features = self.get_geo_json_features()
         with self.assertRaises(ValueError) as cm:
@@ -78,7 +90,8 @@ class RasterizeFeaturesIntoDataset(unittest.TestCase):
                                  features,
                                  x_name, y_name,
                                  with_var=False,
-                                 tile_size=None):
+                                 tile_size=None,
+                                 inverse_y=False):
         width = 10
         height = 10
         dataset = new_cube(
@@ -86,7 +99,8 @@ class RasterizeFeaturesIntoDataset(unittest.TestCase):
             x_name=x_name, y_name=y_name,
             x_res=10,
             x_start=-50, y_start=-50,
-            variables=dict(d=12.5) if with_var else None
+            variables=dict(d=12.5) if with_var else None,
+            inverse_y=inverse_y
         )
         if with_var:
             dataset['d'] = dataset['d'].chunk({x_name: 4,
@@ -105,21 +119,19 @@ class RasterizeFeaturesIntoDataset(unittest.TestCase):
                                      ),
                                      tile_size=tile_size,
                                      in_place=False)
+
         self.assertIsNotNone(dataset)
         if with_var:
-            self.assertEqual({x_name: (4, 4, 2),
-                              y_name: (3, 3, 3, 1)},
-                             dataset.chunks)
+            cy, cx = (3, 3, 3, 1), (4, 4, 2)
         elif tile_size:
             tw, th = normalize_scalar_or_pair(tile_size)
             cy, cx = da.core.normalize_chunks((th, tw), shape=(height, width))
-            self.assertEqual({x_name: cx,
-                              y_name: cy},
-                             dataset.chunks)
         else:
-            self.assertEqual({x_name: (10,),
-                              y_name: (10,)},
-                             dataset.chunks)
+            cy, cx = (10,), (10,)
+        if not inverse_y:
+            cy = tuple(reversed(cy))
+        self.assertEqual({x_name: cx, y_name: cy}, dataset.chunks)
+
         self.assertIn(x_name, dataset.coords)
         self.assertIn(y_name, dataset.coords)
         self.assertIn('time', dataset.coords)
@@ -138,45 +150,58 @@ class RasterizeFeaturesIntoDataset(unittest.TestCase):
         self.assertEquals((y_name, x_name), dataset.a.dims)
         self.assertEquals((y_name, x_name), dataset.b.dims)
         self.assertEquals((y_name, x_name), dataset.c2.dims)
-        a_values = dataset.a.values
-        np.testing.assert_almost_equal(
-            np.array([[0.5, 0.5, 0.5, 0.5, 0.5, nan, nan, 0.7, 0.7, 0.7],
-                      [0.5, 0.5, 0.5, 0.5, 0.5, nan, nan, 0.7, 0.7, 0.7],
-                      [0.5, 0.5, 0.5, 0.5, 0.5, nan, nan, 0.7, 0.7, 0.7],
-                      [0.5, 0.5, 0.5, 0.5, 0.5, nan, nan, 0.7, 0.7, 0.7],
-                      [0.5, 0.5, 0.5, 0.5, 0.5, nan, nan, 0.7, 0.7, 0.7],
-                      [0.6, 0.6, 0.6, 0.6, 0.6, nan, nan, 0.8, 0.8, 0.8],
-                      [0.6, 0.6, 0.6, 0.6, 0.6, nan, nan, 0.8, 0.8, 0.8],
-                      [0.6, 0.6, 0.6, 0.6, 0.6, nan, nan, 0.8, 0.8, 0.8],
-                      [0.6, 0.6, 0.6, 0.6, 0.6, nan, nan, 0.8, 0.8, 0.8],
-                      [0.6, 0.6, 0.6, 0.6, 0.6, nan, nan, 0.8, 0.8, 0.8]]),
-            a_values)
-        b_values = dataset.b.values
-        np.testing.assert_almost_equal(
-            np.array([[2.1, 2.1, 2.1, 2.1, 2.1, nan, nan, 2.3, 2.3, 2.3],
-                      [2.1, 2.1, 2.1, 2.1, 2.1, nan, nan, 2.3, 2.3, 2.3],
-                      [2.1, 2.1, 2.1, 2.1, 2.1, nan, nan, 2.3, 2.3, 2.3],
-                      [2.1, 2.1, 2.1, 2.1, 2.1, nan, nan, 2.3, 2.3, 2.3],
-                      [2.1, 2.1, 2.1, 2.1, 2.1, nan, nan, 2.3, 2.3, 2.3],
-                      [2.2, 2.2, 2.2, 2.2, 2.2, nan, nan, 2.4, 2.4, 2.4],
-                      [2.2, 2.2, 2.2, 2.2, 2.2, nan, nan, 2.4, 2.4, 2.4],
-                      [2.2, 2.2, 2.2, 2.2, 2.2, nan, nan, 2.4, 2.4, 2.4],
-                      [2.2, 2.2, 2.2, 2.2, 2.2, nan, nan, 2.4, 2.4, 2.4],
-                      [2.2, 2.2, 2.2, 2.2, 2.2, nan, nan, 2.4, 2.4, 2.4]]),
-            b_values)
-        c2_values = dataset.c2.values
-        np.testing.assert_almost_equal(
-            np.array([[9, 9, 9, 9, 9, 0, 0, 7, 7, 7],
-                      [9, 9, 9, 9, 9, 0, 0, 7, 7, 7],
-                      [9, 9, 9, 9, 9, 0, 0, 7, 7, 7],
-                      [9, 9, 9, 9, 9, 0, 0, 7, 7, 7],
-                      [9, 9, 9, 9, 9, 0, 0, 7, 7, 7],
-                      [8, 8, 8, 8, 8, 0, 0, 6, 6, 6],
-                      [8, 8, 8, 8, 8, 0, 0, 6, 6, 6],
-                      [8, 8, 8, 8, 8, 0, 0, 6, 6, 6],
-                      [8, 8, 8, 8, 8, 0, 0, 6, 6, 6],
-                      [8, 8, 8, 8, 8, 0, 0, 6, 6, 6]]),
-            c2_values)
+        actual_a_values = dataset.a.values
+        expected_a_values = np.array(
+            [[0.6, 0.6, 0.6, 0.6, 0.6, nan, nan, 0.8, 0.8, 0.8],
+             [0.6, 0.6, 0.6, 0.6, 0.6, nan, nan, 0.8, 0.8, 0.8],
+             [0.6, 0.6, 0.6, 0.6, 0.6, nan, nan, 0.8, 0.8, 0.8],
+             [0.6, 0.6, 0.6, 0.6, 0.6, nan, nan, 0.8, 0.8, 0.8],
+             [0.6, 0.6, 0.6, 0.6, 0.6, nan, nan, 0.8, 0.8, 0.8],
+             [0.5, 0.5, 0.5, 0.5, 0.5, nan, nan, 0.7, 0.7, 0.7],
+             [0.5, 0.5, 0.5, 0.5, 0.5, nan, nan, 0.7, 0.7, 0.7],
+             [0.5, 0.5, 0.5, 0.5, 0.5, nan, nan, 0.7, 0.7, 0.7],
+             [0.5, 0.5, 0.5, 0.5, 0.5, nan, nan, 0.7, 0.7, 0.7],
+             [0.5, 0.5, 0.5, 0.5, 0.5, nan, nan, 0.7, 0.7, 0.7]]
+        )
+        if inverse_y:
+            expected_a_values = expected_a_values[::-1, :]
+        np.testing.assert_almost_equal(expected_a_values,
+                                       actual_a_values)
+        actual_b_values = dataset.b.values
+        expected_b_values = np.array(
+            [[2.2, 2.2, 2.2, 2.2, 2.2, nan, nan, 2.4, 2.4, 2.4],
+             [2.2, 2.2, 2.2, 2.2, 2.2, nan, nan, 2.4, 2.4, 2.4],
+             [2.2, 2.2, 2.2, 2.2, 2.2, nan, nan, 2.4, 2.4, 2.4],
+             [2.2, 2.2, 2.2, 2.2, 2.2, nan, nan, 2.4, 2.4, 2.4],
+             [2.2, 2.2, 2.2, 2.2, 2.2, nan, nan, 2.4, 2.4, 2.4],
+             [2.1, 2.1, 2.1, 2.1, 2.1, nan, nan, 2.3, 2.3, 2.3],
+             [2.1, 2.1, 2.1, 2.1, 2.1, nan, nan, 2.3, 2.3, 2.3],
+             [2.1, 2.1, 2.1, 2.1, 2.1, nan, nan, 2.3, 2.3, 2.3],
+             [2.1, 2.1, 2.1, 2.1, 2.1, nan, nan, 2.3, 2.3, 2.3],
+             [2.1, 2.1, 2.1, 2.1, 2.1, nan, nan, 2.3, 2.3, 2.3]]
+        )
+        if inverse_y:
+            expected_b_values = expected_b_values[::-1, :]
+        np.testing.assert_almost_equal(expected_b_values,
+                                       actual_b_values)
+        actual_c_values = dataset.c2.values
+        expected_c_values = np.array(
+            [[8, 8, 8, 8, 8, 0, 0, 6, 6, 6],
+             [8, 8, 8, 8, 8, 0, 0, 6, 6, 6],
+             [8, 8, 8, 8, 8, 0, 0, 6, 6, 6],
+             [8, 8, 8, 8, 8, 0, 0, 6, 6, 6],
+             [8, 8, 8, 8, 8, 0, 0, 6, 6, 6],
+             [9, 9, 9, 9, 9, 0, 0, 7, 7, 7],
+             [9, 9, 9, 9, 9, 0, 0, 7, 7, 7],
+             [9, 9, 9, 9, 9, 0, 0, 7, 7, 7],
+             [9, 9, 9, 9, 9, 0, 0, 7, 7, 7],
+             [9, 9, 9, 9, 9, 0, 0, 7, 7, 7]],
+            dtype=np.uint8
+        )
+        if inverse_y:
+            expected_c_values = expected_c_values[::-1, :]
+        np.testing.assert_almost_equal(expected_c_values,
+                                       actual_c_values)
 
     def get_geo_data_frame_features(self):
         features = self.get_geo_json_features()
