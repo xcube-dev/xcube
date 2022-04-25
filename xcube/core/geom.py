@@ -69,7 +69,7 @@ def rasterize_features(
         feature_props: Sequence[Name],
         var_props: Dict[Name, VarProps] = None,
         tile_size: Union[int, Tuple[int, int]] = None,
-        default_tile_size: Union[int, Tuple[int, int]] = None,
+        all_touched: bool = False,
         in_place: bool = False,
 ) -> Optional[xr.Dataset]:
     """
@@ -119,28 +119,29 @@ def rasterize_features(
     :param var_props: Optional mapping of feature property name
         to a name or a 5-tuple (name, dtype, fill_value,
         attributes, converter) for the new variable.
+    :param tile_size: If given, the unconditional spatial chunk sizes
+        in x- and y-direction in pixels.
+        May be given as integer scalar or x,y-pair of integers.
+    :param all_touched: If True, all pixels intersected by a
+        feature's geometry outlines will be included.
+        If False, only pixels whose center is
+        within the feature polygon or that are selected by Bresenham’s line
+        algorithm will be included in the mask.
+        The default is False.
     :param in_place: Whether to add new variables to *dataset*.
         If False, a copy will be created and returned.
     :return: dataset with rasterized feature_property
     """
 
     var_props = var_props or {}
-    xy_var_names = get_dataset_xy_var_names(dataset, must_exist=True)
-    dataset_chunks = get_dataset_chunks(dataset)
-    dataset_bounds = get_dataset_bounds(dataset)
-
     for k, v in var_props.items():
         if k == 'converter':
             warnings.warn(f'the "converter" property of var_props'
                           f' has been deprecated and will be ignored',
                           DeprecationWarning)
 
-    if default_tile_size is not None:
-        default_tile_size = normalize_scalar_or_pair(default_tile_size,
-                                                     item_type=int,
-                                                     name='default_tile_size')
-
-    x_min, y_min, x_max, y_max = dataset_bounds
+    xy_var_names = get_dataset_xy_var_names(dataset, must_exist=True)
+    x_min, y_min, x_max, y_max = get_dataset_bounds(dataset)
     x_var_name, y_var_name = xy_var_names
     x_var, y_var = dataset[x_var_name], dataset[y_var_name]
     x_dim, y_dim = x_var.dims[0], y_var.dims[0]
@@ -149,38 +150,17 @@ def rasterize_features(
 
     width = x_var.size
     height = y_var.size
-    x_scale = (x_max - x_min) / width
-    y_scale = (y_max - y_min) / height
+    x_res = (x_max - x_min) / width
+    y_res = (y_max - y_min) / height
 
-    if tile_size:
-        tile_size = normalize_scalar_or_pair(
-            tile_size,
-            item_type=int,
-            name='tile_size'
-        )
-        yx_chunks = (min(height, tile_size[1]),
-                     min(width, tile_size[0]))
-    else:
-        if default_tile_size:
-            default_tile_size = normalize_scalar_or_pair(
-                default_tile_size,
-                item_type=int,
-                name='default_tile_size'
-            )
-        else:
-            default_tile_size = 512, 512
-        yx_chunks = (dataset_chunks.get(y_var_name),
-                     dataset_chunks.get(x_var_name))
-        yx_chunks = yx_chunks \
-            if all(yx_chunks) \
-            else (min(height, default_tile_size[1]),
-                  min(width, default_tile_size[0]))
+    yx_chunks = _get_spatial_chunks(dataset,
+                                    x_var_name, y_var_name,
+                                    tile_size)
 
     if isinstance(features, gpd.GeoDataFrame):
         geo_data_frame = features
     else:
         geo_data_frame = gpd.GeoDataFrame.from_features(features)
-
     for feature_prop_name in feature_props:
         if feature_prop_name not in geo_data_frame:
             raise ValueError(f'feature property '
@@ -219,8 +199,9 @@ def rasterize_features(
         feature_data=feature_data,
         x_offset=x_min,
         y_offset=y_max,
-        x_scale=x_scale,
-        y_scale=y_scale,
+        x_res=x_res,
+        y_res=y_res,
+        all_touched=all_touched
     )
 
     if not in_place:
@@ -257,8 +238,9 @@ def _rasterize_features_into_block(
         feature_data: List[np.ndarray] = None,
         x_offset: float = None,
         y_offset: float = None,
-        x_scale: float = None,
-        y_scale: float = None,
+        x_res: float = None,
+        y_res: float = None,
+        all_touched: bool = None
 ):
     ret_info = block_info[None]
     dtype = ret_info['dtype']
@@ -266,12 +248,12 @@ def _rasterize_features_into_block(
     num_features, height, width = chunk_shape
     image_shape = height, width
     _, (y_start, y_end), (x_start, x_end) = ret_info['array-location']
-    x1 = x_offset + x_scale * x_start
-    # x2 = x_offset + x_scale * x_end
-    y1 = y_offset - y_scale * y_start
-    # y2 = y_offset - y_scale * y_end
-    transform = affine.Affine(x_scale, 0.0, x1,
-                              0.0, -y_scale, y1)
+    x1 = x_offset + x_res * x_start
+    # x2 = x_offset + x_res * x_end
+    y1 = y_offset - y_res * y_start
+    # y2 = y_offset - y_res * y_end
+    transform = affine.Affine(x_res, 0.0, x1,
+                              0.0, -y_res, y1)
     # block_bounds = shapely.geometry.box(x1, min(y1, y2),
     #                                     x2, max(y1, y2))
     block = np.full(chunk_shape, np.nan, dtype=dtype)
@@ -283,7 +265,7 @@ def _rasterize_features_into_block(
         mask = rasterio.features.geometry_mask([shape],
                                                out_shape=image_shape,
                                                transform=transform,
-                                               all_touched=True,
+                                               all_touched=all_touched,
                                                invert=True)
         for i in range(num_features):
             background = block[i]
@@ -298,6 +280,7 @@ def _rasterize_features_into_block(
 def mask_dataset_by_geometry(
         dataset: xr.Dataset,
         geometry: GeometryLike,
+        tile_size: Union[int, Tuple[int, int]] = None,
         excluded_vars: Sequence[str] = None,
         no_clip: bool = False,
         all_touched: bool = False,
@@ -313,6 +296,9 @@ def mask_dataset_by_geometry(
     :param dataset: The dataset
     :param geometry: A geometry-like object,
         see py:function:`convert_geometry`.
+    :param tile_size: If given, the unconditional spatial chunk sizes
+        in x- and y-direction in pixels.
+        May be given as integer scalar or x,y-pair of integers.
     :param excluded_vars: Optional sequence of names of data variables
         that should not be masked (but still may be clipped).
     :param no_clip: If True, the function will not clip the dataset
@@ -363,11 +349,25 @@ def mask_dataset_by_geometry(
     x_res = (x_max - x_min) / width
     y_res = (y_max - y_min) / height
 
-    mask_data = get_geometry_mask(width, height,
-                                  intersection_geometry,
-                                  x_min, y_min,
-                                  x_res, y_res,
-                                  all_touched)
+    yx_chunks = _get_spatial_chunks(dataset,
+                                    x_var_name, y_var_name,
+                                    tile_size)
+
+    chunks = da.core.normalize_chunks(yx_chunks, shape=(height, width))
+
+    mask_data = da.map_blocks(
+        _mask_block,
+        chunks=chunks,
+        dtype=np.bool,
+        meta=np.array((), dtype=np.bool),
+        geometry=intersection_geometry,
+        x_offset=x_min,
+        y_offset=y_max,
+        x_res=x_res,
+        y_res=y_res,
+        all_touched=all_touched
+    )
+
     mask = xr.DataArray(mask_data,
                         coords={y_var_name: y_var, x_var_name: x_var},
                         dims=(y_var.dims[0], x_var.dims[0]))
@@ -391,6 +391,53 @@ def mask_dataset_by_geometry(
                        save_geometry_wkt)
 
     return masked_dataset
+
+
+def _mask_block(
+        block_info: Dict[Union[str, None], Any] = None,
+        geometry: Dict[str, Any] = None,
+        x_offset: float = None,
+        y_offset: float = None,
+        x_res: float = None,
+        y_res: float = None,
+        all_touched: bool = None
+):
+    ret_info = block_info[None]
+    height, width = ret_info['chunk-shape']
+    (y_start, _), (x_start, _) = ret_info['array-location']
+    x1 = x_offset + x_res * x_start
+    y1 = y_offset - y_res * y_start
+    transform = affine.Affine(x_res, 0.0, x1,
+                              0.0, -y_res, y1)
+    return rasterio.features.geometry_mask(
+        [shapely.geometry.shape(geometry)],
+        out_shape=(height, width),
+        transform=transform,
+        all_touched=all_touched,
+        invert=True
+    )
+
+
+def _get_spatial_chunks(dataset: xr.Dataset,
+                        x_var_name: str,
+                        y_var_name: str,
+                        tile_size: Union[None, int, Tuple[int, int]]):
+    width = dataset[x_var_name].size
+    height = dataset[y_var_name].size
+    if tile_size:
+        tile_size = normalize_scalar_or_pair(
+            tile_size,
+            item_type=int,
+            name='tile_size'
+        )
+        yx_chunks = (min(height, tile_size[1]), min(width, tile_size[0]))
+    else:
+        dataset_chunks = get_dataset_chunks(dataset)
+        yx_chunks = (dataset_chunks.get(y_var_name),
+                     dataset_chunks.get(x_var_name))
+        if not all(yx_chunks):
+            yx_chunks = (min(height, 1024), min(width, 1024))
+    return yx_chunks
 
 
 def clip_dataset_by_geometry(

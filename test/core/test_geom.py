@@ -287,8 +287,9 @@ class DatasetGeometryTest(unittest.TestCase):
         geom_mask = dataset[mask_var_name]
         self.assertEqual(('lat', 'lon'), geom_mask.dims)
         self.assertEqual((4, 7), geom_mask.shape)
+        mask_values = geom_mask.values
         np.testing.assert_array_almost_equal(
-            geom_mask.values.astype(np.byte),
+            mask_values.astype(np.byte),
             np.array([[0, 0, 0, 0, 0, 0, 0],
                       [0, 0, 0, 1, 1, 0, 0],
                       [0, 0, 1, 1, 1, 1, 0],
@@ -461,10 +462,17 @@ def _get_nominal_datasets():
                   lon=(("lon",), np.array([-20, -10, 0., 10])))
     ds1 = xr.Dataset(coords=coords, data_vars=data_vars)
 
-    coords.update(dict(lat_bnds=(("lat", "bnds"), np.array([[-15, -5], [-5., 5], [5, 15]])),
-                       lon_bnds=(
-                           ("lon", "bnds"), np.array([[-25., -15.], [-15., -5.], [-5., 5.], [5., 15.]]))
-                       ))
+    # noinspection PyTypeChecker
+    coords.update(
+        lat_bnds=(
+            ("lat", "bnds"),
+            np.array([[-15, -5], [-5., 5], [5, 15]])
+        ),
+        lon_bnds=(
+            ("lon", "bnds"),
+            np.array([[-25., -15.], [-15., -5.], [-5., 5.], [5., 15.]])
+        )
+    )
     ds2 = xr.Dataset(coords=coords, data_vars=data_vars)
 
     return ds1, ds2
