@@ -8,7 +8,7 @@ import xarray as xr
 
 from xcube.core.chunk import chunk_dataset
 from xcube.core.geom import clip_dataset_by_geometry
-from xcube.core.geom import convert_geometry
+from xcube.core.geom import normalize_geometry
 from xcube.core.geom import get_dataset_bounds
 from xcube.core.geom import get_dataset_geometry
 from xcube.core.geom import get_geometry_mask
@@ -509,44 +509,44 @@ def _get_antimeridian_datasets():
     return ds1, ds2
 
 
-class ConvertGeometryTest(unittest.TestCase):
-    def test_convert_null(self):
-        self.assertIs(None, convert_geometry(None))
+class NormalizeGeometryTest(unittest.TestCase):
+    def test_normalize_null(self):
+        self.assertIs(None, normalize_geometry(None))
 
-    def test_convert_to_point(self):
+    def test_normalize_to_point(self):
         expected_point = shapely.geometry.Point(12.8, -34.4)
         self.assertIs(expected_point,
-                      convert_geometry(expected_point))
+                      normalize_geometry(expected_point))
         self.assertEqual(expected_point,
-                         convert_geometry([12.8, -34.4]))
+                         normalize_geometry([12.8, -34.4]))
         self.assertEqual(expected_point,
-                         convert_geometry(np.array([12.8, -34.4])))
+                         normalize_geometry(np.array([12.8, -34.4])))
         self.assertEqual(expected_point,
-                         convert_geometry(expected_point.wkt))
+                         normalize_geometry(expected_point.wkt))
         self.assertEqual(expected_point,
-                         convert_geometry(expected_point.__geo_interface__))
+                         normalize_geometry(expected_point.__geo_interface__))
 
-    def test_convert_box_as_point(self):
+    def test_normalize_box_as_point(self):
         expected_point = shapely.geometry.Point(12.8, -34.4)
         self.assertEqual(expected_point,
-                         convert_geometry([12.8, -34.4, 12.8, -34.4]))
+                         normalize_geometry([12.8, -34.4, 12.8, -34.4]))
 
-    def test_convert_to_box(self):
+    def test_normalize_to_box(self):
         expected_box = shapely.geometry.box(12.8, -34.4, 14.2, 20.6)
         self.assertIs(expected_box,
-                      convert_geometry(expected_box))
+                      normalize_geometry(expected_box))
         self.assertEqual(expected_box,
-                         convert_geometry([12.8, -34.4, 14.2, 20.6]))
+                         normalize_geometry([12.8, -34.4, 14.2, 20.6]))
         self.assertEqual(expected_box,
-                         convert_geometry(
+                         normalize_geometry(
                              np.array([12.8, -34.4, 14.2, 20.6])
                          ))
         self.assertEqual(expected_box,
-                         convert_geometry(expected_box.wkt))
+                         normalize_geometry(expected_box.wkt))
         self.assertEqual(expected_box,
-                         convert_geometry(expected_box.__geo_interface__))
+                         normalize_geometry(expected_box.__geo_interface__))
 
-    def test_convert_to_split_box(self):
+    def test_normalize_to_split_box(self):
         expected_split_box = shapely.geometry.MultiPolygon(polygons=[
             shapely.geometry.Polygon(
                 ((180.0, -34.4), (180.0, 20.6), (172.1, 20.6), (172.1, -34.4),
@@ -558,9 +558,9 @@ class ConvertGeometryTest(unittest.TestCase):
                  (-165.7, -34.4)))]
         )
         self.assertEqual(expected_split_box,
-                         convert_geometry([172.1, -34.4, -165.7, 20.6]))
+                         normalize_geometry([172.1, -34.4, -165.7, 20.6]))
 
-    def test_convert_from_geo_json_feature_dict(self):
+    def test_normalize_from_geo_json_feature_dict(self):
         expected_box1 = shapely.geometry.box(-10, -20, 20, 10)
         expected_box2 = shapely.geometry.box(30, 20, 50, 40)
         feature1 = dict(type='Feature',
@@ -570,38 +570,38 @@ class ConvertGeometryTest(unittest.TestCase):
         feature_collection = dict(type='FeatureCollection',
                                   features=(feature1, feature2))
 
-        actual_geom = convert_geometry(feature1)
+        actual_geom = normalize_geometry(feature1)
         self.assertEqual(expected_box1, actual_geom)
 
-        actual_geom = convert_geometry(feature2)
+        actual_geom = normalize_geometry(feature2)
         self.assertEqual(expected_box2, actual_geom)
 
         expected_geom = shapely.geometry.GeometryCollection(
             geoms=[expected_box1, expected_box2]
         )
-        actual_geom = convert_geometry(feature_collection)
+        actual_geom = normalize_geometry(feature_collection)
         self.assertEqual(expected_geom, actual_geom)
 
-    def test_convert_invalid_box(self):
+    def test_normalize_invalid_box(self):
         from xcube.core.geom import _INVALID_BOX_COORDS_MSG
 
         with self.assertRaises(ValueError) as cm:
-            convert_geometry([12.8, 20.6, 14.2, -34.4])
+            normalize_geometry([12.8, 20.6, 14.2, -34.4])
         self.assertEqual(_INVALID_BOX_COORDS_MSG, f'{cm.exception}')
         with self.assertRaises(ValueError) as cm:
-            convert_geometry([12.8, -34.4, 12.8, 20.6])
+            normalize_geometry([12.8, -34.4, 12.8, 20.6])
         self.assertEqual(_INVALID_BOX_COORDS_MSG, f'{cm.exception}')
         with self.assertRaises(ValueError) as cm:
-            convert_geometry([12.8, -34.4, 12.8, 20.6])
+            normalize_geometry([12.8, -34.4, 12.8, 20.6])
         self.assertEqual(_INVALID_BOX_COORDS_MSG, f'{cm.exception}')
 
     def test_invalid(self):
         from xcube.core.geom import _INVALID_GEOMETRY_MSG
 
         with self.assertRaises(ValueError) as cm:
-            convert_geometry(dict(coordinates=[12.8, -34.4]))
+            normalize_geometry(dict(coordinates=[12.8, -34.4]))
         self.assertEqual(_INVALID_GEOMETRY_MSG, f'{cm.exception}')
 
         with self.assertRaises(ValueError) as cm:
-            convert_geometry([12.8, -34.4, '?'])
+            normalize_geometry([12.8, -34.4, '?'])
         self.assertEqual(_INVALID_GEOMETRY_MSG, f'{cm.exception}')

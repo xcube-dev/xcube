@@ -18,6 +18,7 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+
 import math
 import warnings
 from typing import Optional, Union, Dict, Tuple, Sequence, Any, Mapping, List
@@ -31,6 +32,7 @@ import shapely.geometry
 import shapely.geometry
 import shapely.wkt
 import xarray as xr
+from deprecated import deprecated
 
 from xcube.core.schema import get_dataset_bounds_var_name
 from xcube.core.schema import get_dataset_chunks
@@ -187,6 +189,21 @@ def rasterize_features(
             feature_values = feature_values.astype(dtype=dtype)
         feature_data.append(feature_values)
 
+    # Rasterize all features into single blocks of type np.float64
+    #
+    # Note, we process all rows and all features in every block,
+    # so we need to mask only once per block and because masking
+    # is an expensive operation.
+    #
+    # When there are many feature variables, and they are accessed
+    # independently of each other, this may quickly become
+    # expensive in terms of CPU.
+    # However, if we'd create dask arrays for every row, this will become
+    # also expensive in terms of memory and CPU, because of the potentially
+    # very large graphs.
+    # Alternatively, we could create independent dask graphs for
+    # every feature with all rows processed in each block.
+    #
     num_features = len(feature_props)
     chunks = da.core.normalize_chunks((num_features, *yx_chunks),
                                       (num_features, height, width))
@@ -207,6 +224,7 @@ def rasterize_features(
     if not in_place:
         dataset = xr.Dataset(coords=dataset.coords, attrs=dataset.attrs)
 
+    # Create feature variables from rasterized features
     for feature_index, feature_prop_name in enumerate(feature_props):
         var_prop_mapping = var_props.get(feature_prop_name, {})
         var_name = var_prop_mapping.get(
@@ -322,7 +340,7 @@ def mask_dataset_by_geometry(
         of the dataset has a no or a zero area intersection with the
         bounding box of the geometry.
     """
-    geometry = convert_geometry(geometry)
+    geometry = normalize_geometry(geometry)
     xy_var_names = get_dataset_xy_var_names(dataset, must_exist=True)
     dataset_bounds = get_dataset_bounds(dataset, xy_var_names=xy_var_names)
     intersection_geometry = intersect_geometries(
@@ -546,7 +564,7 @@ def get_geometry_mask(width: int, height: int,
                       all_touched: bool = True) -> np.ndarray:
     if y_res is None:
         y_res = x_res
-    geometry = convert_geometry(geometry)
+    geometry = normalize_geometry(geometry)
     # noinspection PyTypeChecker
     transform = affine.Affine(x_res, 0.0, x_min,
                               0.0, -y_res, y_min + y_res * height)
@@ -559,10 +577,10 @@ def get_geometry_mask(width: int, height: int,
 
 def intersect_geometries(geometry1: GeometryLike, geometry2: GeometryLike) \
         -> Optional[shapely.geometry.base.BaseGeometry]:
-    geometry1 = convert_geometry(geometry1)
+    geometry1 = normalize_geometry(geometry1)
     if geometry1 is None:
         return None
-    geometry2 = convert_geometry(geometry2)
+    geometry2 = normalize_geometry(geometry2)
     if geometry2 is None:
         return geometry1
     intersection_geometry = geometry1.intersection(geometry2)
@@ -571,13 +589,13 @@ def intersect_geometries(geometry1: GeometryLike, geometry2: GeometryLike) \
     return intersection_geometry
 
 
-def convert_geometry(geometry: Optional[GeometryLike]) \
+def normalize_geometry(geometry: Optional[GeometryLike]) \
         -> Optional[shapely.geometry.base.BaseGeometry]:
     """
     Convert a geometry-like object into a shapely geometry
     object (``shapely.geometry.BaseGeometry``).
 
-    A geometry-like object is may be any shapely geometry object,
+    A geometry-like object may be any shapely geometry object,
     * a dictionary that can be serialized to valid GeoJSON,
     * a WKT string,
     * a box given by a string of the form "<x1>,<y1>,<x2>,<y2>"
@@ -585,17 +603,17 @@ def convert_geometry(geometry: Optional[GeometryLike]) \
     * a point by a string of the form "<x>,<y>"
       or by a sequence of two numbers x, y.
 
-    Handling of geometries crossing the antimeridian:
+    Handling of geometries crossing the anti-meridian:
 
     * If box coordinates are given, it is allowed to pass
       x1, x2 where x1 > x2, which is interpreted as a box crossing
-      the antimeridian. In this case the function splits the box
-      along the antimeridian and returns a multi-polygon.
+      the anti-meridian. In this case the function splits the box
+      along the anti-meridian and returns a multi-polygon.
     * In all other cases, 2D geometries are assumed to _not cross
-      the antimeridian at all_.
+      the anti-meridian at all_.
 
     :param geometry: A geometry-like object
-    :return:  Shapely geometry object or None.
+    :return: Shapely geometry object or None.
     """
 
     if isinstance(geometry, shapely.geometry.base.BaseGeometry):
@@ -652,6 +670,17 @@ def convert_geometry(geometry: Optional[GeometryLike]) \
     if invalid_box_coords:
         raise ValueError(_INVALID_BOX_COORDS_MSG)
     raise ValueError(_INVALID_GEOMETRY_MSG)
+
+
+@deprecated(version="0.11.2",
+            reason="convert_geometry() has been"
+                   " renamed to normalize_geometry()")
+def convert_geometry(geometry: Optional[GeometryLike]) \
+        -> Optional[shapely.geometry.base.BaseGeometry]:
+    return normalize_geometry(geometry)
+
+
+convert_geometry.__doc__ = normalize_geometry.__doc__
 
 
 def is_dataset_y_axis_inverted(
