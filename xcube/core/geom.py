@@ -555,6 +555,7 @@ def _save_geometry_wkt(dataset, intersection_geometry, save_geometry):
         dataset.attrs.update({attr_name: intersection_geometry.wkt})
 
 
+@deprecated(version="0.10.2", reason="No longer in use.")
 def get_geometry_mask(width: int, height: int,
                       geometry: GeometryLike,
                       x_min: float,
