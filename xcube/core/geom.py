@@ -268,19 +268,21 @@ def _rasterize_features_into_block(
     image_shape = height, width
     _, (y_start, y_end), (x_start, x_end) = ret_info['array-location']
     x1 = x_offset + x_res * x_start
-    # x2 = x_offset + x_res * x_end
+    x2 = x_offset + x_res * x_end
     y1 = y_offset - y_res * y_start
-    # y2 = y_offset - y_res * y_end
+    y2 = y_offset - y_res * y_end
     transform = affine.Affine(x_res, 0.0, x1,
                               0.0, -y_res, y1)
-    # block_bounds = shapely.geometry.box(x1, min(y1, y2),
-    #                                     x2, max(y1, y2))
+    block_bounds = shapely.geometry.box(x1, min(y1, y2),
+                                        x2, max(y1, y2))
     block = np.full(chunk_shape, np.nan, dtype=dtype)
     for row_index, geometry in enumerate(geometries):
         shape = shapely.geometry.shape(geometry)
-        # shape = shape.intersection(block_bounds)
-        # if not shape.is_valid or shape.is_empty:
-        #     continue
+        shape = block_bounds.intersection(shape)
+        if shape.is_empty:
+            continue
+        if not shape.is_valid:
+            continue
         mask = rasterio.features.geometry_mask([shape],
                                                out_shape=image_shape,
                                                transform=transform,
