@@ -1,5 +1,17 @@
 ## Changes in 0.11.2 (in development)
 
+### Enhancements
+
+* The functions
+  - `mask_dataset_by_geometry()` 
+  - `rasterize_features()`
+  
+  of module `xcube.core.geom` have been reimplemented to generate 
+  lazy dask arrays. Both should now be applicable to datasets
+  that have arbitrarily large spatial dimensions. 
+  The spatial chunk sizes to be used can be specified using 
+  keyword argument `tile_size`. (#666)
+
 ## Changes in 0.11.1
 
 * Fixed broken generation of composite RGBA tiles. (#668)
