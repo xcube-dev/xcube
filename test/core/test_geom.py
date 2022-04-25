@@ -350,13 +350,19 @@ class DatasetGeometryTest(unittest.TestCase):
         geom_mask = dataset[mask_var_name]
         self.assertEqual(('lat', 'lon'), geom_mask.dims)
         self.assertEqual((4, 7), geom_mask.shape)
-        mask_values = geom_mask.values
+        actual_mask_values = geom_mask.values
+        expected_mask_values = np.array(
+            [
+                [0, 1, 1, 1, 1, 1, 1],
+                [0, 0, 1, 1, 1, 1, 0],
+                [0, 0, 0, 1, 1, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0],
+            ],
+            dtype=np.bool
+        )
         np.testing.assert_array_almost_equal(
-            mask_values.astype(np.byte),
-            np.array([[0, 0, 0, 0, 0, 0, 0],
-                      [0, 0, 0, 1, 1, 0, 0],
-                      [0, 0, 1, 1, 1, 1, 0],
-                      [0, 1, 1, 1, 1, 1, 1]], dtype=np.byte)
+            actual_mask_values,
+            expected_mask_values
         )
 
     def _assert_saved_geometry_wkt_is_fine(self, dataset, geometry_wkt_name):
