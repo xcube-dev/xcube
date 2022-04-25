@@ -5,7 +5,7 @@ import pandas as pd
 import xarray as xr
 from pandas import DatetimeTZDtype
 
-from xcube.util.labels import ensure_time_compatible
+from xcube.util.labels import ensure_time_label_compatible
 
 
 class EnsureTimeCompatibleTest(unittest.TestCase):
@@ -39,27 +39,30 @@ class EnsureTimeCompatibleTest(unittest.TestCase):
 
     def test_dt64_array_tznaive_indexer(self):
         self.assertEqual(self.labels_tznaive,
-                         ensure_time_compatible(self.da_datetime64,
-                                                self.labels_tznaive))
+                         ensure_time_label_compatible(self.da_datetime64,
+                                                      self.labels_tznaive))
 
     def test_tzaware_array_tzaware_indexer(self):
         self.assertEqual(self.labels_tzaware,
-                         ensure_time_compatible(self.da_tzaware,
-                                                self.labels_tzaware))
+                         ensure_time_label_compatible(self.da_tzaware,
+                                                      self.labels_tzaware))
 
     def test_dt64_array_tzaware_indexer(self):
         self.assertTrue(
             _are_times_equal(
                 self.labels_tznaive,
-                ensure_time_compatible(self.da_datetime64,
-                                       self.labels_tzaware)))
+                ensure_time_label_compatible(self.da_datetime64,
+                                             self.labels_tzaware)))
 
     def test_tznaive_array_tzaware_indexer(self):
         self.assertTrue(
             _are_times_equal(
                 self.labels_tznaive,
-                ensure_time_compatible(self.da_tznaive,
-                                       self.labels_tzaware)))
+                ensure_time_label_compatible(self.da_tznaive,
+                                             self.labels_tzaware)))
+
+    # TODO: also test with slice indexers
+    # TODO: test with Datasets as well as DataArrays
 
 
 def _are_times_equal(labels1, labels2):

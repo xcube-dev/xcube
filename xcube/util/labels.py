@@ -19,7 +19,7 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 
-from typing import Dict, Any
+from typing import Dict, Any, Union
 
 import numpy as np
 import pandas as pd
@@ -29,8 +29,8 @@ import logging
 logger = logging.getLogger('xcube')
 
 
-def ensure_time_compatible(var: xr.DataArray,
-                           labels: Dict[str, Any]) -> Dict[str, Any]:
+def ensure_time_label_compatible(var: Union[xr.DataArray, xr.Dataset],
+                                 labels: Dict[str, Any]) -> Dict[str, Any]:
     """Ensure that labels['time'] is timezone-naive, if necessary.
 
     This function returns either the passed-in labels object, or a copy of
@@ -52,21 +52,29 @@ def ensure_time_compatible(var: xr.DataArray,
 
     """
 
-    if 'time' not in labels or 'time' not in var.dims:
+    if 'time' in labels and 'time' in var.dims:
+        return dict(labels,
+                    time=ensure_time_index_compatible(var, labels['time']))
+    else:
         return labels
 
-    timeval = labels['time']
+
+def ensure_time_index_compatible(var: Union[xr.DataArray, xr.Dataset],
+                                 timeval: Any) -> Any:
     if isinstance(timeval, slice):
         # process start and stop separately, and pass step through unchanged
-        return dict(labels, time=slice(
+        return slice(
             _ensure_timestamp_compatible(var, timeval.start),
             _ensure_timestamp_compatible(var, timeval.stop),
-            timeval.step))
+            timeval.step)
     else:
-        return dict(labels, time=_ensure_timestamp_compatible(var, timeval))
+        return _ensure_timestamp_compatible(var, timeval)
 
 
 def _ensure_timestamp_compatible(var: xr.DataArray, timeval: Any):
+    if timeval is None:
+        return None
+
     timestamp = pd.Timestamp(timeval)
     timeval_timezone = timestamp.tzinfo
     array_timezone = _get_array_timezone(var)
