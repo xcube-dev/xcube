@@ -1,16 +1,5 @@
-import warnings
-from typing import Collection, Optional, Tuple
-from typing import Union
-
-import cftime
-import pandas as pd
-import xarray as xr
-
-from xcube.core.gridmapping import GridMapping
-from xcube.util.assertions import assert_given
-
 # The MIT License (MIT)
-# Copyright (c) 2021 by the xcube development team and contributors
+# Copyright (c) 2021-2022 by the xcube development team and contributors
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of
 # this software and associated documentation files (the "Software"), to deal in
@@ -29,6 +18,19 @@ from xcube.util.assertions import assert_given
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+
+import warnings
+from typing import Collection, Optional, Tuple
+from typing import Union
+
+import cftime
+import pandas as pd
+import xarray as xr
+
+from xcube.core.gridmapping import GridMapping
+from xcube.util.assertions import assert_given
+
+from xcube.util.labels import ensure_time_index_compatible
 
 Bbox = Tuple[float, float, float, float]
 TimeRange = Union[Tuple[Optional[str], Optional[str]],
@@ -204,11 +206,15 @@ def select_temporal_subset(dataset: xr.Dataset,
         if delta == pd.Timedelta('0 days 00:00:00'):
             time_2 += pd.Timedelta('1D')
     try:
-        return dataset.sel({time_name or 'time': slice(time_1, time_2)})
+        time_slice = ensure_time_index_compatible(dataset,
+                                                  slice(time_1, time_2))
+        return dataset.sel({time_name or 'time': time_slice})
     except TypeError:
         calendar = dataset.time.encoding.get('calendar')
         time_1 = cftime.datetime(time_1.year, time_1.month, time_1.day,
                                  calendar=calendar)
         time_2 = cftime.datetime(time_2.year, time_2.month, time_2.day,
                                  calendar=calendar)
-        return dataset.sel({time_name or 'time': slice(time_1, time_2)})
+        time_slice = ensure_time_index_compatible(dataset,
+                                                  slice(time_1, time_2))
+        return dataset.sel({time_name or 'time': time_slice})

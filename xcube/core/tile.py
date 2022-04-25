@@ -29,7 +29,7 @@ from xcube.constants import LOG
 from xcube.core.mldataset import MultiLevelDataset
 from xcube.core.schema import get_dataset_xy_var_names
 from xcube.util.cache import Cache
-from xcube.util.labels import ensure_time_compatible
+from xcube.util.labels import ensure_time_label_compatible
 from xcube.util.perf import measure_time_cm
 from xcube.util.tiledimage import SourceArrayImage
 from xcube.util.tiledimage import ColorMappedRgbaImage
@@ -243,7 +243,8 @@ def _get_var_2d_array(var: xr.DataArray,
         if labels_are_indices:
             array = var.isel(**labels)
         else:
-            array = var.sel(method='nearest', **labels)
+            safe_labels = ensure_time_label_compatible(var, labels)
+            array = var.sel(method='nearest', **safe_labels)
     else:
         raise exception_type(f'Variable "{var.name}" of dataset "{ds_id}" '
                              'must be an N-D Dataset with N >= 2, '
@@ -363,6 +364,6 @@ def parse_non_spatial_labels(
                                  f' value for dimension {dim!r}') from e
 
     if var is not None:
-        return ensure_time_compatible(var, parsed_labels)
+        return ensure_time_label_compatible(var, parsed_labels)
     else:
         return parsed_labels
