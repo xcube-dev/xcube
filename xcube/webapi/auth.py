@@ -220,7 +220,7 @@ class AuthMixin:
             )
 
         try:
-            return jwt.decode(
+            id_token = jwt.decode(
                 access_token,
                 # TODO: this is stupid: we convert rsa_key to
                 #  JWT JSON only to produce the public key JSON string
@@ -229,12 +229,11 @@ class AuthMixin:
                 audience=auth_config.audience,
                 issuer=auth_config.issuer
             )
-        except jwt.InvalidTokenError as e:
-            msg = f"{e}"
+        except jwt.PyJWTError as e:
+            msg = f"Failed to decode access token: {e}"
             raise ServiceAuthError(msg, log_message=msg) from e
-        except Exception as e:
-            msg = f"Invalid authentication header: {e}"
-            raise ServiceAuthError(msg, log_message=msg) from e
+
+        return id_token
 
 
 def assert_scopes(required_scopes: Set[str],
