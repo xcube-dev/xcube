@@ -21,9 +21,10 @@
 
 import fnmatch
 import json
-import string
 from functools import cached_property
-from typing import Optional, Mapping, List, Dict, Any, Set
+from itertools import filterfalse
+from string import Template
+from typing import Optional, Mapping, List, Dict, Any, Set, Union
 
 import jwt
 import requests
@@ -143,16 +144,41 @@ class AuthMixin:
                 if isinstance(scope, str):
                     permissions = scope.split(' ')
             if permissions is not None:
-                d = {k: v
-                     for k, v in id_token.items()
-                     if isinstance(v, str)}
-                permissions = set(string.Template(p).safe_substitute(d)
-                                  if '$' in p else p
-                                  for p in permissions)
+                permissions = self._interpolate_permissions(id_token,
+                                                            permissions)
         return permissions
 
+    def _interpolate_permissions(self,
+                                 id_token: Mapping[str, Any],
+                                 permissions: Union[list, tuple]):
+        predicate = self._is_template_permission
+
+        plain_permissions = set(filterfalse(predicate, permissions))
+        if len(plain_permissions) == len(permissions):
+            return plain_permissions
+
+        templ_permissions = filter(predicate, permissions)
+        id_mapping = self._get_template_dict(id_token)
+        return plain_permissions.union(
+            set(Template(permission).safe_substitute(id_mapping)
+                for permission in templ_permissions)
+        )
+
+    @staticmethod
+    def _is_template_permission(permission: str) -> bool:
+        return '$' in permission
+
+    @staticmethod
+    def _get_template_dict(id_token: Mapping[str, Any]) -> Dict[str, str]:
+        d = {k: v
+             for k, v in id_token.items()
+             if isinstance(v, str)}
+        if 'username' not in d and 'preferred_username' in d:
+            d['username'] = d['preferred_username']
+        return d
+
     def get_id_token(self, require_auth: bool = False) \
-            -> Optional[Mapping[str, str]]:
+            -> Optional[Mapping[str, Any]]:
         """
         Converts the request's access token into an id token.
         """

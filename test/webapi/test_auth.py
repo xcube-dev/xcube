@@ -66,6 +66,21 @@ class AuthMixinPropsTest2(unittest.TestCase):
                 "read:variable:*"
             }
         )
+        # Special case where "preferred_username" claim
+        # is named just "username"
+        self.assert_granted_scopes(
+            {
+                "preferred_username": "bibbi",
+                "permissions": [
+                    "read:dataset:*~${username}/*",
+                    "read:variable:*"
+                ]
+            },
+            {
+                "read:dataset:*~bibbi/*",
+                "read:variable:*"
+            }
+        )
 
     def assert_granted_scopes(self, id_token, expected_permissions):
         auth_mixin = AuthMixin()
