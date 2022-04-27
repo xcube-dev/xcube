@@ -21,6 +21,8 @@
 
 import fnmatch
 import json
+import string
+from functools import cached_property
 from typing import Optional, Mapping, List, Dict, Any, Set
 
 import jwt
@@ -107,21 +109,129 @@ class AuthMixin:
     'request' of type tornado.Request.
     """
 
-    @property
+    @cached_property
     def auth_config(self) -> Optional[AuthConfig]:
+        assert hasattr(self, 'service_context')
         # noinspection PyUnresolvedReferences
         return AuthConfig.from_config(self.service_context.config)
 
+    @cached_property
+    def jwks(self):
+        jwks_uri = self.auth_config.well_known_jwks
+        openid_config_uri = self.auth_config.well_known_oid_config
+        response = requests.get(openid_config_uri)
+        if response.ok:
+            openid_config = json.loads(response.content)
+            if openid_config and 'jwks_uri' in openid_config:
+                jwks_uri = openid_config['jwks_uri']
+        response = requests.get(jwks_uri)
+        if response.ok:
+            return json.loads(response.content)
+        response.raise_for_status()
+
     @property
     def granted_scopes(self) -> Optional[Set[str]]:
+        assert hasattr(self, 'service_context')
         # noinspection PyUnresolvedReferences
-        id_token = self.get_id_token(
-            require_auth=self.service_context.must_authenticate
-        )
-        return id_token.get('permissions') if id_token else None
+        must_authenticate = self.service_context.must_authenticate
+        id_token = self.get_id_token(require_auth=must_authenticate)
+        permissions = None
+        if id_token:
+            permissions = id_token.get('permissions')
+            if not isinstance(permissions, (list, tuple)):
+                scope = id_token.get('scope')
+                if isinstance(scope, str):
+                    permissions = scope.split(' ')
+            if permissions is not None:
+                d = {k: v
+                     for k, v in id_token.items()
+                     if isinstance(v, str)}
+                permissions = set(string.Template(p).safe_substitute(d)
+                                  if '$' in p else p
+                                  for p in permissions)
+        return permissions
+
+    def get_id_token(self, require_auth: bool = False) \
+            -> Optional[Mapping[str, str]]:
+        """
+        Converts the request's access token into an id token.
+        """
+        auth_config = self.auth_config
+        if auth_config is None:
+            if require_auth:
+                raise ServiceAuthError(
+                    "Invalid header",
+                    log_message="Received access token,"
+                                " but this server doesn't support"
+                                " authentication."
+                )
+            return None
+
+        access_token = self.get_access_token(require_auth=require_auth)
+        if access_token is None:
+            return None
+
+        # With auth_config and access_token, we expect authorization
+        # to work. From here on we raise, if anything fails.
+
+        # Get the unverified header of the access token
+        try:
+            unverified_header = jwt.get_unverified_header(access_token)
+        except jwt.InvalidTokenError:
+            raise ServiceAuthError(
+                "Invalid header",
+                log_message="Invalid header."
+                            " An RS256 signed JWT Access Token is expected."
+            )
+        if unverified_header["alg"] != "RS256":  # e.g. "HS256"
+            raise ServiceAuthError(
+                "Invalid header",
+                log_message="Invalid header."
+                            " An RS256 signed JWT Access Token is expected."
+            )
+
+        # The key identifier of access token which we must validate.
+        access_token_kid = unverified_header["kid"]
+
+        # Get JSON Web Token (JWK) Keys
+        jwks = self.jwks
+
+        # Find access_token_kid in JWKS to obtain rsa_key
+        rsa_key = None
+        for key in jwks["keys"]:
+            if key["kid"] == access_token_kid:
+                rsa_key = {
+                    "kty": key["kty"],
+                    "kid": key["kid"],
+                    "use": key["use"],
+                    "n": key["n"],
+                    "e": key["e"]
+                }
+                break
+        if rsa_key is None:
+            raise ServiceAuthError(
+                "Invalid header",
+                log_message="Unable to find appropriate key."
+            )
+
+        # Now we are ready to decode the access token
+        try:
+            id_token = jwt.decode(
+                access_token,
+                RSAAlgorithm.from_jwk(rsa_key),
+                algorithms=auth_config.algorithms,
+                audience=auth_config.audience,
+                issuer=auth_config.issuer
+            )
+        except jwt.PyJWTError as e:
+            msg = f"Failed to decode access token: {e}"
+            raise ServiceAuthError(msg, log_message=msg) from e
+
+        return id_token
 
     def get_access_token(self, require_auth: bool = False) -> Optional[str]:
-        """Obtains the access token from the Authorization Header
+        """
+        Obtain the request's access token from the Authorization Header.
         """
         # noinspection PyUnresolvedReferences
         auth = self.request.headers.get("Authorization", None)
@@ -152,88 +262,6 @@ class AuthMixin:
             )
 
         return parts[1]
-
-    def get_id_token(self, require_auth: bool = False) \
-            -> Optional[Mapping[str, str]]:
-        """
-        Decodes the access token is valid.
-        """
-        access_token = self.get_access_token(require_auth=require_auth)
-        if access_token is None:
-            return None
-
-        auth_config = self.auth_config
-        if auth_config is None:
-            if require_auth:
-                raise ServiceAuthError(
-                    "Invalid header",
-                    log_message="Received access token,"
-                                " but this server doesn't support"
-                                " authentication."
-                )
-            return None
-
-        try:
-            unverified_header = jwt.get_unverified_header(access_token)
-        except jwt.InvalidTokenError:
-            raise ServiceAuthError(
-                "Invalid header",
-                log_message="Invalid header."
-                            " Use an RS256 signed JWT Access Token"
-            )
-        if unverified_header["alg"] != "RS256":  # e.g. "HS256"
-            raise ServiceAuthError(
-                "Invalid header",
-                log_message="Invalid header."
-                            " Use an RS256 signed JWT Access Token"
-            )
-
-        jwks_uri = auth_config.well_known_jwks
-
-        openid_config_uri = auth_config.well_known_oid_config
-        response = requests.get(openid_config_uri)
-        if response.ok:
-            openid_config = json.loads(response.content)
-            if openid_config and 'jwks_uri' in openid_config:
-                jwks_uri = openid_config['jwks_uri']
-
-        # TODO: read jwks from cache
-        response = requests.get(jwks_uri)
-        jwks = json.loads(response.content)
-
-        rsa_key = None
-        for key in jwks["keys"]:
-            if key["kid"] == unverified_header["kid"]:
-                rsa_key = {
-                    "kty": key["kty"],
-                    "kid": key["kid"],
-                    "use": key["use"],
-                    "n": key["n"],
-                    "e": key["e"]
-                }
-                break
-
-        if rsa_key is None:
-            raise ServiceAuthError(
-                "Invalid header",
-                log_message="Unable to find appropriate key"
-            )
-
-        try:
-            id_token = jwt.decode(
-                access_token,
-                # TODO: this is stupid: we convert rsa_key to
-                #  JWT JSON only to produce the public key JSON string
-                RSAAlgorithm.from_jwk(json.dumps(rsa_key)),
-                algorithms=auth_config.algorithms,
-                audience=auth_config.audience,
-                issuer=auth_config.issuer
-            )
-        except jwt.PyJWTError as e:
-            msg = f"Failed to decode access token: {e}"
-            raise ServiceAuthError(msg, log_message=msg) from e
-
-        return id_token
 
 
 def assert_scopes(required_scopes: Set[str],

@@ -1,10 +1,11 @@
 import json
 import os
 import unittest
+import types
 
 import requests
 
-from xcube.webapi.auth import AuthMixin
+from xcube.webapi.auth import AuthMixin, AuthConfig
 from xcube.webapi.auth import assert_scopes
 from xcube.webapi.auth import check_scopes
 from xcube.webapi.errors import ServiceAuthError
@@ -23,6 +24,66 @@ class RequestMock:
 
 XCUBE_TEST_CLIENT_ID = os.environ.get('XCUBE_TEST_CLIENT_ID')
 XCUBE_TEST_CLIENT_SECRET = os.environ.get('XCUBE_TEST_CLIENT_SECRET')
+
+
+class AuthMixinPropsTest2(unittest.TestCase):
+    def test_auth_config(self):
+        auth_mixin = AuthMixin()
+        auth_mixin.service_context = ServiceContextMock(config=dict(
+            Authentication=dict(
+                Domain='xcube-dev.eu.auth0.com',
+                Audience='https://xcube-dev/api/'
+            )))
+        auth_config = auth_mixin.auth_config
+        self.assertIsInstance(auth_config, AuthConfig)
+        # Assert, it is a cached property
+        self.assertIs(auth_config, auth_mixin.auth_config)
+
+    def test_granted_scopes(self):
+        # Use "permissions" claim
+        self.assert_granted_scopes(
+            {
+                "preferred_username": "bibbi",
+                "permissions": [
+                    "read:dataset:*~$preferred_username/*",
+                    "read:variable:*"
+                ]
+            },
+            {
+                "read:dataset:*~bibbi/*",
+                "read:variable:*"
+            }
+        )
+        # Use "scope" claim
+        self.assert_granted_scopes(
+            {
+                "preferred_username": "bibbi",
+                "scope":
+                    "read:dataset:*~$preferred_username/* read:variable:*"
+            },
+            {
+                "read:dataset:*~bibbi/*",
+                "read:variable:*"
+            }
+        )
+
+    def assert_granted_scopes(self, id_token, expected_permissions):
+        auth_mixin = AuthMixin()
+        auth_mixin.service_context = ServiceContextMock(config=dict(
+            Authentication=dict(
+                Domain='xcube-dev.eu.auth0.com',
+                Audience='https://xcube-dev/api/'
+            )))
+        auth_mixin.service_context.must_authenticate = True
+
+        # noinspection PyUnusedLocal,PyShadowingNames
+        def _get_id_token(self, require_auth=False):
+            return id_token
+
+        auth_mixin.get_id_token = types.MethodType(_get_id_token, auth_mixin)
+
+        self.assertEqual(expected_permissions,
+                         auth_mixin.granted_scopes)
 
 
 class AuthMixinIdTokenTest(unittest.TestCase):
@@ -96,6 +157,11 @@ class AuthMixinIdTokenTest(unittest.TestCase):
 
     def test_missing_access_token(self):
         auth_mixin = AuthMixin()
+        auth_mixin.service_context = ServiceContextMock(config=dict(
+            Authentication=dict(
+                Domain='xcube-dev.eu.auth0.com',
+                Audience='https://xcube-dev/api/'
+            )))
         auth_mixin.request = RequestMock(headers={})
         self.assertEqual(None, auth_mixin.get_id_token())
 
