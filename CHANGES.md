@@ -1,5 +1,21 @@
 ## Changes in 0.11.2 (in development)
 
+### Enhancements
+
+* Allow xcube Server to work with any OIDC-compliant auth service such as
+  Auth0, KeyCloak, or Google. Permissions of the form 
+  `"read:dataset:\<dataset\>"` and `"read:variable:\<dataset\>"` can now be
+  passed by two id token claims: 
+  - `permissions` must be JSON list of permissions;
+  - `skope` must be space-separated character string of permissions.
+
+  It is now also possible to include id token claim values into the 
+  permissions as  template variables. For example, if the currently
+  authenticated user is `demo_user`, the permission 
+  `"read:dataset:$username/*"` will effectively be
+  `"read:dataset:demo_user/*"` and only allow access to datasets
+  with resource identifiers having the prefix `demo_user/`.
+
 ## Changes in 0.11.1
 
 * Fixed broken generation of composite RGBA tiles. (#668)
