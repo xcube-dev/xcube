@@ -10,7 +10,7 @@
   - `scope` must be a space-separated character string of permissions.
 
   It is now also possible to include id token claim values into the 
-  permissions as  template variables. For example, if the currently
+  permissions as template variables. For example, if the currently
   authenticated user is `demo_user`, the permission 
   `"read:dataset:$username/*"` will effectively be
   `"read:dataset:demo_user/*"` and only allow access to datasets
