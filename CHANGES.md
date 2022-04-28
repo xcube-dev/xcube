@@ -1,5 +1,11 @@
 ## Changes in 0.11.2 (in development)
 
+* `xcube serve` now publishes the chunk size of a variable's 
+  time dimension for either for an associated time-chunked dataset or the
+  dataset itself (new variable integer property `timeChunkSize`).
+  This helps clients (e.g. xcube Viewer) to improve the 
+  server performance for time-series requests.
+
 ## Changes in 0.11.1
 
 * Fixed broken generation of composite RGBA tiles. (#668)
