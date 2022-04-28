@@ -6,7 +6,7 @@
   Auth0, KeyCloak, or Google. Permissions of the form 
   `"read:dataset:\<dataset\>"` and `"read:variable:\<dataset\>"` can now be
   passed by two id token claims: 
-  - `permissions` must be JSON list of permissions;
+  - `permissions` must be a JSON list of permissions;
   - `scope` must be a space-separated character string of permissions.
 
   It is now also possible to include id token claim values into the 
