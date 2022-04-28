@@ -3,7 +3,7 @@
 ### Enhancements
 
 * Allow xcube Server to work with any OIDC-compliant auth service such as
-  Auth0, KeyCloak, or Google. Permissions of the form 
+  Auth0, Keycloak, or Google. Permissions of the form 
   `"read:dataset:\<dataset\>"` and `"read:variable:\<dataset\>"` can now be
   passed by two id token claims: 
   - `permissions` must be a JSON list of permissions;
