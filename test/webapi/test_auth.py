@@ -36,7 +36,7 @@ class AuthMixinPropsTest2(unittest.TestCase):
             )))
         auth_config = auth_mixin.auth_config
         self.assertIsInstance(auth_config, AuthConfig)
-        # Assert, it is a cached property
+        # Assert that it is a cached property
         self.assertIs(auth_config, auth_mixin.auth_config)
 
     def test_granted_scopes(self):
