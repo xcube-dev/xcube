@@ -216,7 +216,7 @@ class AuthMixin:
                             " An RS256 signed JWT Access Token is expected."
             )
 
-        # The key identifier of access token which we must validate.
+        # The key identifier of the access token which we must validate.
         access_token_kid = unverified_header["kid"]
 
         # Get JSON Web Token (JWK) Keys
