@@ -7,7 +7,7 @@
   `"read:dataset:\<dataset\>"` and `"read:variable:\<dataset\>"` can now be
   passed by two id token claims: 
   - `permissions` must be JSON list of permissions;
-  - `skope` must be space-separated character string of permissions.
+  - `scope` must be a space-separated character string of permissions.
 
   It is now also possible to include id token claim values into the 
   permissions as  template variables. For example, if the currently
