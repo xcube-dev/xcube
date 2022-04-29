@@ -25,6 +25,7 @@ from xcube.constants import EXTENSION_POINT_DATA_OPENERS
 from xcube.constants import EXTENSION_POINT_DATA_STORES
 from xcube.constants import EXTENSION_POINT_DATA_WRITERS
 from xcube.constants import EXTENSION_POINT_INPUT_PROCESSORS
+from xcube.constants import EXTENSION_POINT_SERVER_APIS
 from xcube.constants import FORMAT_NAME_CSV
 from xcube.constants import FORMAT_NAME_MEM
 from xcube.constants import FORMAT_NAME_NETCDF4
@@ -41,6 +42,7 @@ def init_plugin(ext_registry: extension.ExtensionRegistry):
     _register_cli_commands(ext_registry)
     _register_data_stores(ext_registry)
     _register_data_accessors(ext_registry)
+    _register_server_apis(ext_registry)
 
 
 def _register_input_processors(ext_registry: extension.ExtensionRegistry):
@@ -202,4 +204,24 @@ def _register_cli_commands(ext_registry: extension.ExtensionRegistry):
             loader=extension.import_component(f'xcube.cli.{cli_command_name}:{cli_command_name}'),
             point=EXTENSION_POINT_CLI_COMMANDS,
             name=cli_command_name
+        )
+
+
+def _register_server_apis(ext_registry: extension.ExtensionRegistry):
+    """
+    Register xcube's standard server APIs.
+    """
+    server_api_names = [
+        'tiles',
+        # 'wmts',
+        # 'stac',
+    ]
+    import string
+    for api_name in server_api_names:
+        ext_registry.add_extension(
+            loader=extension.import_component(
+                f'xcube.server.api.{api_name}:{string.capwords(api_name)}Api'
+            ),
+            point=EXTENSION_POINT_SERVER_APIS,
+            name=api_name
         )

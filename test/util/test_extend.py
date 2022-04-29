@@ -160,14 +160,3 @@ class ExtendTest(unittest.TestCase):
         self.assertEqual('the extend() decorator'
                          ' can be used with classes only',
                          f'{cm.exception}')
-
-
-class Context:
-    def handle_ext_added(self, ext):
-        pass
-
-
-@extend(Context, 'stac', inst_handler='handle_ext_added')
-class StacContext:
-    def __init__(self, parent: Context):
-        self._parent = parent

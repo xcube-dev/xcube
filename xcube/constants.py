@@ -41,6 +41,8 @@ EXTENSION_POINT_DATA_STORES = 'xcube.core.store'
 EXTENSION_POINT_DATA_OPENERS = 'xcube.core.store.opener'
 #: The extension point identifier for data writers
 EXTENSION_POINT_DATA_WRITERS = 'xcube.core.store.writer'
+#: The extension point identifier for server APIs
+EXTENSION_POINT_SERVER_APIS = 'xcube.server.api'
 
 GLOBAL_GEO_EXTENT = -180., -90., 180., 90.
 
