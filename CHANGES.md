@@ -2,6 +2,7 @@
 
 ### Enhancements
 
+
 * Allow xcube Server to work with any OIDC-compliant auth service such as
   Auth0, Keycloak, or Google. Permissions of the form 
   `"read:dataset:\<dataset\>"` and `"read:variable:\<dataset\>"` can now be
@@ -15,6 +16,24 @@
   `"read:dataset:$username/*"` will effectively be
   `"read:dataset:demo_user/*"` and only allow access to datasets
   with resource identifiers having the prefix `demo_user/`.
+
+* The functions
+  - `mask_dataset_by_geometry()` 
+  - `rasterize_features()`
+  
+  of module `xcube.core.geom` have been reimplemented to generate 
+  lazy dask arrays. Both should now be applicable to datasets
+  that have arbitrarily large spatial dimensions. 
+  The spatial chunk sizes to be used can be specified using 
+  keyword argument `tile_size`. (#666)
+
+### Other changes
+
+* Deprecated following functions of module `xcube.core.geom`:
+  - `is_dataset_y_axis_inverted()` is no longer used;
+  - `get_geometry_mask()` is no longer used;
+  - `convert_geometry()` has been renamed to `normalize_geometry()`.
+
 
 ## Changes in 0.11.1
 
