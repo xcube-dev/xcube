@@ -30,7 +30,7 @@ import shapely.wkt
 import xarray as xr
 
 from xcube.core.geom import GeometryLike
-from xcube.core.geom import convert_geometry
+from xcube.core.geom import normalize_geometry
 from xcube.core.geom import get_dataset_geometry
 from xcube.core.geom import mask_dataset_by_geometry
 from xcube.core.gridmapping import GridMapping
@@ -120,7 +120,7 @@ def get_time_series(
     else:
         grid_mapping = GridMapping.from_dataset(cube)
 
-    geometry = convert_geometry(geometry)
+    geometry = normalize_geometry(geometry)
     if geometry is not None and not grid_mapping.crs.is_geographic:
         project = pyproj.Transformer.from_crs(_CRS84,
                                               grid_mapping.crs,
