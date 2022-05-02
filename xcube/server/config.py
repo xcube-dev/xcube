@@ -19,8 +19,7 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 
-from typing import Dict, Any, Iterator, _T_co, _KT, _VT_co
-from collections import Mapping
+from typing import Dict
 
 from xcube.util.jsonschema import JsonIntegerSchema
 from xcube.util.jsonschema import JsonObjectSchema
@@ -31,14 +30,15 @@ DEFAULT_PORT = 8080
 DEFAULT_ADDRESS = "0.0.0.0"
 
 
-class ServerConfig(Mapping[str, Any]):
+class ServerConfig:
     """A server configuration."""
 
     def __init__(self, **properties):
-        self._properties = properties
+        for k, v in properties.items():
+            setattr(self, k, v)
 
     @classmethod
-    def get_schema(cls, **api_schemas: Dict[str, JsonSchema]) -> JsonSchema:
+    def get_schema(cls, **api_schemas: Dict[str, JsonSchema]) -> JsonObjectSchema:
         return JsonObjectSchema(
             properties=dict(
                 port=JsonIntegerSchema(default=DEFAULT_PORT),
@@ -46,21 +46,5 @@ class ServerConfig(Mapping[str, Any]):
                 **api_schemas
             ),
             additional_properties=False,
-            factory=ServerConfig
+            factory=cls
         )
-
-    def __getattr__(self, k: str) -> Any:
-        if k == '_properties':
-            return self._properties
-        return self._properties[k]
-
-    def __getitem__(self, k: str) -> Any:
-        return self._properties[k]
-
-    def __len__(self) -> int:
-        return len(self._properties)
-
-    def __iter__(self) -> Iterator[str]:
-        return iter(self._properties)
-
-

@@ -34,6 +34,7 @@ class ServerContext(abc.ABC):
     def server_config(self) -> ServerConfig:
         """Get the server's configuration."""
 
+
 class ServerContextImpl(ServerContext):
     """The server context."""
 
@@ -61,4 +62,3 @@ class RequestContext(ServerContext):
     @property
     def server_config(self) -> ServerConfig:
         return self._server_context.server_config
-
