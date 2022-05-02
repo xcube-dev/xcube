@@ -20,52 +20,144 @@
 # DEALINGS IN THE SOFTWARE.
 
 import abc
-from typing import Any, List, Type, Optional
+from typing import Any, List, Optional, Tuple, Dict, Union, Type, Sequence
 
 import tornado.httputil
+import tornado.ioloop
 import tornado.web
 
-from .config import ServerConfig, Config
-from .context import ServerContext, RequestContext
+from .config import ServerConfig
+from .context import RequestContext, ServerContext
+from ..util.jsonschema import JsonSchema
+
+SERVER_CONTEXT_ATTR_NAME = '__xcube_server_context'
+
+ServerApiRoute = Union[
+    Tuple[str, Type["RequestHandler"]],
+    Tuple[str, Type["RequestHandler"], Dict[str, Any]]
+]
 
 
-class ServerConfigExt:
-    """A server configuration extension."""
+class ServerApi:
+    """
+    A server API.
 
-    def __init__(self, server_config: ServerConfig):
-        self._server_config = server_config
+    The most common purpose of this class is to
+    add a new API to the server by the means of routes.
+
+    However, an API may be just programmatic and provide
+    the context for other APIs.
+
+    May be derived by clients to override the methods
+
+    * `on_start`,
+    * `on_stop`,
+    * `on_config_change`.
+
+    :param routes: Optional list of routes.
+    :param config_schema: Optional JSON schema for the API configuration.
+    """
+
+    def __init__(self,
+                 name: str, /,
+                 dependencies: Optional[Sequence[str]] = None,
+                 routes: Optional[Sequence[ServerApiRoute]] = None,
+                 config_schema: Optional[JsonSchema] = None):
+        self._name = name
+        self._dependencies = tuple(dependencies or ())
+        self._routes: List[ServerApiRoute] = list(routes or [])
+        self._config_schema = config_schema
 
     @property
-    def server_config(self) -> ServerConfig:
-        """The server configuration."""
-        return self._server_config
-
-
-class ServerContextExt:
-    """An extension for a server context."""
-
-    def __init__(self, server_context: ServerContext, config_ext: ServerConfigExt):
-        self._server_context = server_context
-        self._config_ext = config_ext
+    def name(self) -> str:
+        """The name of this API."""
+        return self._name
 
     @property
-    def server_context(self) -> ServerContext:
-        return self._server_context
+    def dependencies(self) -> Tuple[str]:
+        """The names of other APIs on which this API depends on."""
+        return self._dependencies
 
-
-class ServerApi(abc.ABC):
-    """An abstract server API."""
-
-    def get_handlers(self) -> List[Any]:
-        """Get the server API's handlers."""
-        return []
-
-    def get_config_class(self) -> Optional[Type[Config]]:
+    def route(self, pattern: str, **target_kwargs):
         """
-        Get the server API's configuration class
-        or None if the API doesn't require configuration.
+        Decorator that adds a route to this API.
+
+        The decorator target must be a classes
+        derived from RequestHandler.
+
+        :param pattern: The route pattern.
+        :param target_kwargs: Optional keyword arguments passed to
+            RequestHandler constructor.
+        :return: A decorator function that receives a
+            class derived from RequestHandler
         """
-        return None
+
+        def decorator_func(target_class: Type["RequestHandler"]):
+            if not issubclass(target_class, RequestHandler):
+                raise TypeError(f'target_class must be an'
+                                f' instance of {RequestHandler},'
+                                f' but was {target_class}')
+            if target_kwargs:
+                handler = pattern, target_class, target_kwargs
+            else:
+                handler = pattern, target_class
+            self._routes.append(handler)
+
+        return decorator_func
+
+    @property
+    def routes(self) -> List[ServerApiRoute]:
+        """The handlers provided by this API."""
+        return self._routes
+
+    @property
+    def config_schema(self) -> Optional[JsonSchema]:
+        """
+        Get the JSON schema for the configuration of this API.
+        """
+        return self._config_schema
+
+    def on_start(self,
+                 server_context: ServerContext,
+                 io_loop: tornado.ioloop.IOLoop):
+        """
+        Called when the server is started.
+
+        :param server_context: The current server context
+        :param io_loop: The current i/o loop.
+        """
+
+    def on_stop(self,
+                server_context: ServerContext,
+                io_loop: tornado.ioloop.IOLoop):
+        """
+        Called when the server is stopped.
+
+        :param server_context: The current server context
+        :param io_loop: The current i/o loop.
+        """
+
+    # noinspection PyMethodMayBeStatic,PyUnusedLocal
+    def on_config_change(
+            self,
+            next_server_config: ServerConfig,
+            prev_server_context: Optional[ServerContext] = None
+    ) -> Any:
+        """
+        Called when the configuration has changed.
+
+        May return an updated API context for new server configuration
+        *next_server_config* and optional previous server
+        context *prev_server_context*.
+
+        The default implementation returns the API configuration
+        from *next_server_config*.
+
+        :param next_server_config: The new server configuration
+        :param prev_server_context: Optional previous server context
+        :return: an API context object or None
+        """
+        return getattr(next_server_config, self.name, None)
 
 
 class RequestHandler(tornado.web.RequestHandler, abc.ABC):
@@ -74,10 +166,16 @@ class RequestHandler(tornado.web.RequestHandler, abc.ABC):
                  request: tornado.httputil.HTTPServerRequest,
                  **kwargs: Any):
         super().__init__(application, request, **kwargs)
-        server_context = getattr(application, '__server_context', None)
+        server_context = getattr(application, SERVER_CONTEXT_ATTR_NAME, None)
         if server_context is None:
-            raise RuntimeError('request handler must be used with xcube server')
+            raise RuntimeError(
+                'request handler must be used with xcube server'
+            )
         self._context = RequestContext(server_context, request)
+
+    @property
+    def server_config(self) -> ServerConfig:
+        return self._context.server_config
 
     @property
     def context(self) -> RequestContext:

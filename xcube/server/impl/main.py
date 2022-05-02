@@ -18,23 +18,28 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
-from typing import Dict, Any, List
 
-from ..api import ServerApi
 from ..api import RequestHandler
+from ..api import ServerApi
+from ...util.jsonschema import JsonObjectSchema
+from ...util.jsonschema import JsonStringSchema
+
+CONFIG_SCHEMA = JsonObjectSchema(
+    properties=dict(
+        audience=JsonStringSchema()
+    ),
+    additional_properties=False
+)
+
+api = ServerApi('main', config_schema=CONFIG_SCHEMA)
 
 
+# noinspection PyAbstractClass
+@api.route("/")
 class MainHandler(RequestHandler):
     def get(self):
-        self.write("Hello, world")
+        audience = self.context.main.get('audience')
+        self.write(f"Hello, {audience}!")
 
 
-class MainApi(ServerApi):
 
-    def get_handlers(self) -> List[Any]:
-        return [
-            (r"/", MainHandler)
-        ]
-
-    def get_config_class(self):
-        return None

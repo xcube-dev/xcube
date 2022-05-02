@@ -197,6 +197,7 @@ def _register_cli_commands(ext_registry: extension.ExtensionRegistry):
 
         # Experimental + Hidden
         'io',
+        'serve2',
     ]
 
     for cli_command_name in cli_command_names:
@@ -212,7 +213,8 @@ def _register_server_apis(ext_registry: extension.ExtensionRegistry):
     Register xcube's standard server APIs.
     """
     server_api_names = [
-        'tiles',
+        'main',
+        # 'tiles',
         # 'wmts',
         # 'stac',
     ]
@@ -220,8 +222,9 @@ def _register_server_apis(ext_registry: extension.ExtensionRegistry):
     for api_name in server_api_names:
         ext_registry.add_extension(
             loader=extension.import_component(
-                f'xcube.server.api.{api_name}:{string.capwords(api_name)}Api'
+                f'xcube.server.impl.{api_name}:api'
             ),
             point=EXTENSION_POINT_SERVER_APIS,
             name=api_name
         )
+

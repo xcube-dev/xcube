@@ -18,58 +18,49 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
-import abc
-from typing import Any, Dict
 
-from xcube.util.jsonschema import JsonSchema, JsonObjectSchema, JsonIntegerSchema, JsonStringSchema
+from typing import Dict, Any, Iterator, _T_co, _KT, _VT_co
+from collections import Mapping
+
+from xcube.util.jsonschema import JsonIntegerSchema
+from xcube.util.jsonschema import JsonObjectSchema
+from xcube.util.jsonschema import JsonSchema
+from xcube.util.jsonschema import JsonStringSchema
 
 DEFAULT_PORT = 8080
-
 DEFAULT_ADDRESS = "0.0.0.0"
 
 
-class Config(abc.ABC):
-    """Configuration interface."""
-
-    @classmethod
-    @abc.abstractmethod
-    def get_schema(cls) -> JsonSchema:
-        """Get the JSON Schema for the configuration."""
-
-    @classmethod
-    @abc.abstractmethod
-    def from_dict(cls, d: Dict[str, Any]) -> "Config":
-        """Create a new configuration from given JSON-serializable dictionary."""
-
-    @abc.abstractmethod
-    def to_dict(self) -> Dict[str, Any]:
-        """Convert this configuration into a JSON-serializable dictionary."""
-
-
-class ServerConfig(Config):
+class ServerConfig(Mapping[str, Any]):
     """A server configuration."""
 
-    def __init__(self, address: str, port: int):
-        self.address = address
-        self.port = port
+    def __init__(self, **properties):
+        self._properties = properties
 
     @classmethod
-    def get_schema(cls) -> JsonSchema:
+    def get_schema(cls, **api_schemas: Dict[str, JsonSchema]) -> JsonSchema:
         return JsonObjectSchema(
             properties=dict(
-                address=JsonStringSchema(default=DEFAULT_ADDRESS),
                 port=JsonIntegerSchema(default=DEFAULT_PORT),
+                address=JsonStringSchema(default=DEFAULT_ADDRESS),
+                **api_schemas
             ),
-            required=["address", "port"]
+            additional_properties=False,
+            factory=ServerConfig
         )
 
-    @classmethod
-    def from_dict(cls, d: Dict[str, Any]) -> "ServerConfig":
-        return ServerConfig(d.get("address", DEFAULT_ADDRESS),
-                            d.get("port", DEFAULT_PORT))
+    def __getattr__(self, k: str) -> Any:
+        if k == '_properties':
+            return self._properties
+        return self._properties[k]
 
-    def to_dict(self):
-        return dict(
-            address=self.address,
-            port=self.port
-        )
+    def __getitem__(self, k: str) -> Any:
+        return self._properties[k]
+
+    def __len__(self) -> int:
+        return len(self._properties)
+
+    def __iter__(self) -> Iterator[str]:
+        return iter(self._properties)
+
+

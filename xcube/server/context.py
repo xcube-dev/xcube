@@ -29,27 +29,28 @@ from .config import ServerConfig
 class ServerContext(abc.ABC):
     """An abstract context."""
 
-    @abc.abstractmethod
     @property
-    def config(self) -> ServerConfig:
+    @abc.abstractmethod
+    def server_config(self) -> ServerConfig:
         """Get the server's configuration."""
-
 
 class ServerContextImpl(ServerContext):
     """The server context."""
 
-    def __init__(self, config: ServerConfig):
-        self._config = config
+    def __init__(self, server_config: ServerConfig):
+        self._server_config = server_config
 
     @property
-    def config(self) -> ServerConfig:
-        return self._config
+    def server_config(self) -> ServerConfig:
+        return self._server_config
 
 
 class RequestContext(ServerContext):
     """A request context."""
 
-    def __init__(self, server_context: ServerContext, request: tornado.httpserver.HTTPRequest):
+    def __init__(self,
+                 server_context: ServerContext,
+                 request: tornado.httpserver.HTTPRequest):
         self._server_context = server_context
         self._request = request
 
@@ -58,16 +59,6 @@ class RequestContext(ServerContext):
         return self._request
 
     @property
-    def config(self) -> ServerConfig:
-        return self._server_context.config
+    def server_config(self) -> ServerConfig:
+        return self._server_context.server_config
 
-
-class ContextExtension:
-    """An extension for a server context."""
-
-    def __init__(self, server_context: ServerContext):
-        self._server_context = server_context
-
-    @property
-    def server_context(self) -> ServerContext:
-        return self._server_context

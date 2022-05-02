@@ -18,72 +18,95 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
-import warnings
-from typing import Optional, Any, Dict
+from typing import Optional, Any, Dict, List
 
 import tornado.ioloop
 import tornado.web
 
-from xcube.constants import EXTENSION_POINT_SERVER_APIS, LOG
-from xcube.server.api import ServerApi
+from xcube.constants import EXTENSION_POINT_SERVER_APIS
+from xcube.server.api import SERVER_CONTEXT_ATTR_NAME, ServerApi
 from xcube.server.config import ServerConfig
 from xcube.server.context import ServerContextImpl
 from xcube.util.extension import ExtensionRegistry
 from xcube.util.extension import get_extension_registry
 
 
-class MainHandler(tornado.web.RequestHandler):
-    def get(self):
-        self.write("Hello, world")
-
-
-def make_app():
-    return tornado.web.Application([
-        (r"/", MainHandler),
-    ])
-
-
 class Server:
 
-    def start(
+    def __init__(
             self,
             server_config: Dict[str, Any],
             extension_registry: Optional[ExtensionRegistry] = None
     ):
+        self._extension_registry = extension_registry \
+                                   or get_extension_registry()
 
-        extension_registry = extension_registry or get_extension_registry()
+        server_apis = {
+            ext.name: ext.component
+            for ext in self._extension_registry.find_extensions(
+                EXTENSION_POINT_SERVER_APIS
+            )
+        }
+
+        def get_key(api: ServerApi):
+            if api.dependencies:
+
+            return 0
+        server_api_list = sorted(server_apis.values(),
+                             key=get_key)
+
+        self._server_apis =
+        api_config_schemas = {
+            api_name: api.config_schema
+            for api_name, api in self._server_apis.items()
+            if api.config_schema is not None
+        }
+
+        self._server_config_schema = ServerConfig.get_schema(
+            **api_config_schemas
+        )
+
         handlers = []
-        api_configs = {}
-        for ext in extension_registry.find_extensions(EXTENSION_POINT_SERVER_APIS):
-            api_name = ext.name
+        for server_api in self._server_apis.values():
+            handlers.extend(server_api.routes)
 
-            server_api: ServerApi = ext.component()
-            handlers.extend(server_api.get_handlers())
+        self._application = tornado.web.Application(handlers)
+        self._server_config = None
+        self._server_context = None
+        self.change_config(server_config)
 
-            api_config = None
-            if api_name in server_config:
-                api_config = server_config[api_name]
-                if not isinstance(api_config, dict):
-                    raise ValueError(f'invalid configuration for API {api_name!r}')
+    def change_config(
+            self,
+            server_config: Dict[str, Any]
+    ):
+        next_server_config = self._server_config_schema.from_instance(
+            server_config
+        )
+        next_server_context = ServerContextImpl(next_server_config)
+        prev_server_context = self._server_context
 
-            api_config_class = server_api.get_config_class()
-            if api_config_class is not None:
-                api_config = api_config_class.from_dict(api_config)
-            elif api_name in server_config:
-                LOG.warn(f'fFound configuration for API {api_name!r},'
-                         f' but no configuration class was given.'
-                         f' Using it as is.')
+        for api_name, api in self._server_apis.items():
+            setattr(next_server_context, api_name,
+                    api.on_config_change(server_config,
+                                         prev_server_context))
 
-            api_configs[api_name] = api_config
+        self._server_config = next_server_config
+        self._server_context = next_server_context
+        setattr(self._application, SERVER_CONTEXT_ATTR_NAME,
+                next_server_context)
 
-        server_config = ServerConfig.from_dict(server_config)
-        for k, v in api_configs.items():
-            setattr(server_config, k, v)
+    def start(self):
+        self._application.listen(self._server_config.port,
+                                 address=self._server_config.address)
+        io_loop = tornado.ioloop.IOLoop.current()
+        for api in self._server_apis.values():
+            api.on_start(self._server_context, io_loop)
+        io_loop.start()
 
-        application = tornado.web.Application(handlers)
-
-        server_context = ServerContextImpl(server_config)
-        application.__server_context = server_context
-
-        application.listen(server_config.port, address=server_config.address)
-        tornado.ioloop.IOLoop.current().start()
+    def stop(self):
+        self._application.listen(self._server_config.port,
+                                 address=self._server_config.address)
+        io_loop = tornado.ioloop.IOLoop.current()
+        for api in self._server_apis.values():
+            api.on_stop(self._server_context, io_loop)
+        io_loop.stop()
