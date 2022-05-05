@@ -1,6 +1,6 @@
-### Enhancements
-
 ## Changes in 0.11.2 (in development)
+
+### Enhancements
 
 * `xcube serve` now publishes the chunk size of a variable's 
   time dimension for either for an associated time-chunked dataset or the
@@ -18,12 +18,17 @@
   The spatial chunk sizes to be used can be specified using 
   keyword argument `tile_size`. (#666)
 
+### Fixes
+
+* Fixed ESA CCI example notebook. (#680)
+
 ### Other changes
 
 * Deprecated following functions of module `xcube.core.geom`:
   - `is_dataset_y_axis_inverted()` is no longer used;
   - `get_geometry_mask()` is no longer used;
   - `convert_geometry()` has been renamed to `normalize_geometry()`.
+
 
 ## Changes in 0.11.1
 
