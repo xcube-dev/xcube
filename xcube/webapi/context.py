@@ -96,7 +96,6 @@ class ServiceContext:
                  prefix: str = None,
                  base_dir: str = None,
                  config: Config = None,
-                 data_store_pool: DataStorePool = None,
                  trace_perf: bool = DEFAULT_TRACE_PERF,
                  tile_comp_mode: int = None,
                  tile_cache_capacity: int = None,
@@ -116,7 +115,7 @@ class ServiceContext:
         # cache for all dataset configs
         self._dataset_configs: Optional[List[DatasetConfigDict]] = None
         self._image_cache = dict()
-        self._data_store_pool = data_store_pool or None
+        self._data_store_pool = DataStorePool()
         if tile_cache_capacity:
             self._tile_cache = Cache(MemoryCacheStore(),
                                      capacity=tile_cache_capacity,
@@ -303,16 +302,12 @@ class ServiceContext:
         return dataset[var_name]
 
     def get_dataset_configs(self) -> List[DatasetConfigDict]:
-        if self._dataset_configs is None:
-            with self._lock:
-                dataset_configs = self._config.get('Datasets', [])
-                dataset_configs += \
-                    self.get_dataset_configs_from_stores()
-                self._dataset_configs = dataset_configs
-                self._maybe_assign_store_instance_ids()
+        with self._lock:
+            if self._dataset_configs is None:
+                self._set_up_data_store_pool_and_dataset_configs()
         return self._dataset_configs
 
-    def _maybe_assign_store_instance_ids(self):
+    def _maybe_assign_store_instance_ids(self, data_store_pool: DataStorePool):
         assignable_dataset_configs = [dc for dc in self._dataset_configs
                                       if 'StoreInstanceId' not in dc
                                       and dc.get('FileSystem', 'file')
@@ -331,10 +326,6 @@ class ServiceContext:
                     break
             if not appended:
                 config_lists.append((file_system, store_params, [config]))
-
-        data_store_pool = self.get_data_store_pool()
-        if not data_store_pool:
-            data_store_pool = self._data_store_pool = DataStorePool()
 
         for file_system, store_params, config_list in config_lists:
             # Retrieve paths per configuration
@@ -417,12 +408,8 @@ class ServiceContext:
         store_params = dict(storage_options=storage_options)
         return store_params
 
-    def get_dataset_configs_from_stores(self) \
+    def get_dataset_configs_from_stores(self, data_store_pool: DataStorePool) \
             -> List[DatasetConfigDict]:
-
-        data_store_pool = self.get_data_store_pool()
-        if data_store_pool is None:
-            return []
 
         all_dataset_configs: List[DatasetConfigDict] = []
         for store_instance_id in data_store_pool.store_instance_ids:
@@ -499,24 +486,34 @@ class ServiceContext:
         # noinspection PyTypeChecker
         return dataset_metadata
 
-    def get_data_store_pool(self) -> Optional[DataStorePool]:
+    def get_data_store_pool(self) -> DataStorePool:
+        with self._lock:
+            if self._data_store_pool.is_empty:
+                self._set_up_data_store_pool_and_dataset_configs()
+        return self._data_store_pool
+
+    def _set_up_data_store_pool_and_dataset_configs(self):
         data_store_configs = self._config.get('DataStores', [])
-        if not data_store_configs or self._data_store_pool:
-            return self._data_store_pool
         if not isinstance(data_store_configs, list):
             raise ServiceConfigError('DataStores must be a list')
-        store_configs: Dict[str, DataStoreConfig] = {}
+        dataset_configs = self._config.get('Datasets', [])
+        if not isinstance(dataset_configs, list):
+            raise ServiceConfigError('Datasets must be a list')
         for data_store_config_dict in data_store_configs:
             store_instance_id = data_store_config_dict.get('Identifier')
             store_id = data_store_config_dict.get('StoreId')
             store_params = data_store_config_dict.get('StoreParams', {})
-            dataset_configs = data_store_config_dict.get('Datasets')
+            store_dataset_configs = data_store_config_dict.get('Datasets')
             store_config = DataStoreConfig(store_id,
                                            store_params=store_params,
-                                           user_data=dataset_configs)
-            store_configs[store_instance_id] = store_config
-        self._data_store_pool = DataStorePool(store_configs)
-        return self._data_store_pool
+                                           user_data=store_dataset_configs)
+            self._data_store_pool.add_store_config(store_instance_id,
+                                                   store_config)
+        self._dataset_configs = dataset_configs + \
+                                self.get_dataset_configs_from_stores(
+                                    self._data_store_pool
+                                )
+        self._maybe_assign_store_instance_ids(self._data_store_pool)
 
     def get_dataset_config(self, ds_id: str) -> Dict[str, Any]:
         dataset_configs = self.get_dataset_configs()
