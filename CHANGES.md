@@ -20,15 +20,25 @@
 
 ### Fixes
 
-* xcube serve now provides datasets after changes of the service configuration.
+* Fixed ESA CCI example notebook. (#680)
+
+* `xcube serve` now provides datasets after changes of the service 
+  configuration.
   Previously, it was necessary to restart a service to load the changes. (#678)
 
 ### Other changes
+
+* `xcube.core.resampling.affine_transform_dataset()` has a new 
+  keyword argument `reuse_coords: bool = False`. If set to `True` 
+  the returned dataset will reuse the _same_ spatial coordinates 
+  as the target. This is a workaround for xarray issue 
+  https://github.com/pydata/xarray/issues/6573.
 
 * Deprecated following functions of module `xcube.core.geom`:
   - `is_dataset_y_axis_inverted()` is no longer used;
   - `get_geometry_mask()` is no longer used;
   - `convert_geometry()` has been renamed to `normalize_geometry()`.
+
 
 ## Changes in 0.11.1
 
