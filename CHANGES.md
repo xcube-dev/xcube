@@ -1,6 +1,6 @@
-### Enhancements
-
 ## Changes in 0.11.2 (in development)
+
+### Enhancements
 
 * `xcube serve` now publishes the chunk size of a variable's 
   time dimension for either for an associated time-chunked dataset or the
@@ -17,6 +17,11 @@
   that have arbitrarily large spatial dimensions. 
   The spatial chunk sizes to be used can be specified using 
   keyword argument `tile_size`. (#666)
+
+### Fixes
+
+* xcube serve now provides datasets after changes of the service configuration.
+  Previously, it was necessary to restart a service to load the changes. (#678)
 
 ### Other changes
 
