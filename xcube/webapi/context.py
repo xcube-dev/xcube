@@ -302,9 +302,10 @@ class ServiceContext:
         return dataset[var_name]
 
     def get_dataset_configs(self) -> List[DatasetConfigDict]:
-        with self._lock:
-            if self._dataset_configs is None:
-                self._set_up_data_store_pool_and_dataset_configs()
+        if self._dataset_configs is None:
+            with self._lock:
+                if self._dataset_configs is None:
+                    self._set_up_data_store_pool_and_dataset_configs()
         return self._dataset_configs
 
     def _maybe_assign_store_instance_ids(self, data_store_pool: DataStorePool):
@@ -487,9 +488,10 @@ class ServiceContext:
         return dataset_metadata
 
     def get_data_store_pool(self) -> DataStorePool:
-        with self._lock:
-            if self._data_store_pool.is_empty:
-                self._set_up_data_store_pool_and_dataset_configs()
+        if self._data_store_pool.is_empty:
+            with self._lock:
+                if self._data_store_pool.is_empty:
+                    self._set_up_data_store_pool_and_dataset_configs()
         return self._data_store_pool
 
     def _set_up_data_store_pool_and_dataset_configs(self):
