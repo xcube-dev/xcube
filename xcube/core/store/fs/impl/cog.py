@@ -100,7 +100,7 @@ class GeoTIFFMultiLevelDataset(LazyMultiLevelDataset):
 
     def _get_full_path(self):
         # TODO:change to complete path
-        return self._path
+        return self._fs.protocol[0] + "://" + self._root + "/" + self.ds_id
 
     def _get_path(self, *args) -> pathlib.PurePath:
         return self._path_class(*args)
