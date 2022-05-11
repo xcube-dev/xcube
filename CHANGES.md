@@ -22,6 +22,10 @@
 
 * Fixed ESA CCI example notebook. (#680)
 
+* `xcube serve` now provides datasets after changes of the service 
+  configuration while the server is running.
+  Previously, it was necessary to restart the server to load the changes. (#678)
+
 ### Other changes
 
 * `xcube.core.resampling.affine_transform_dataset()` has a new 
