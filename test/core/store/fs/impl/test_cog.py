@@ -19,13 +19,16 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 
+import os.path
 import unittest
 
 import fsspec
 import rasterio as rio
 import rioxarray
+import s3fs
 import xarray as xr
 
+from test.s3test import S3Test, MOTO_SERVER_ENDPOINT_URL
 from xcube.core.store.fs.impl.cog import GeoTIFFMultiLevelDataset
 
 
@@ -106,3 +109,48 @@ class GeoTIFFMultiLevelDatasetTest(unittest.TestCase):
                          dataset.band_1.shape)
         datasets = ml_dataset.datasets
         self.assertEqual(7, len(datasets))
+
+    # def test_s3_fs(self):
+    #     s3 = s3fs.S3FileSystem(key='test_fake_id',
+    #                            secret='test_fake_secret',
+    #                            client_kwargs=dict(
+    #                                endpoint_url=MOTO_SERVER_ENDPOINT_URL))
+    #
+    #     cog_path = "examples/serve/demo/cog-example.tif"
+    #     ml_dataset = GeoTIFFMultiLevelDataset(s3, None, cog_path)
+    #     self.assertEqual(7, ml_dataset.num_levels)
+
+
+class ObjectStorageMultiLevelDatasetTest(S3Test):
+    def test_s3_fs(self):
+        s3 = s3fs.S3FileSystem(key='test_fake_id',
+                               secret='test_fake_secret',
+                               client_kwargs=dict(
+                                   endpoint_url=MOTO_SERVER_ENDPOINT_URL))
+
+        cog_path = "https://sentinel-cogs.s3.us-west-2.amazonaws.com/" \
+                   "sentinel-s2-l2a-cogs/13/S/DV/2020/4/" \
+                   "S2B_13SDV_20200428_0_L2A/L2A_PVI.tif"
+        ml_dataset = GeoTIFFMultiLevelDataset(s3, None, cog_path)
+        self.assertEqual(3, ml_dataset.num_levels)
+
+    def test_s3_fs_1(self):
+        s3 = s3fs.S3FileSystem(key='test_fake_id',
+                               secret='test_fake_secret',
+                               client_kwargs=dict(
+                                   endpoint_url=MOTO_SERVER_ENDPOINT_URL))
+        # create bucket
+        s3.mkdir('xcube-cog-test')
+        local_cog_path = os.path.join(os.path.dirname(__file__), "..", "..",
+                                      "..", "..", "..",
+                                      "examples", "serve", "demo",
+                                      "cog-example.tif")
+
+        self.assertEqual(True, os.path.exists(local_cog_path))
+        remote_cog_path = 'xcube-cog-test/cog-example.tif'
+        s3.put_file(local_cog_path, remote_cog_path)
+
+        self.assertEqual(True, s3.exists(remote_cog_path))
+        ml_dataset = GeoTIFFMultiLevelDataset(s3, "xcube-cog-test",
+                                              "cog-example.tif")
+        self.assertEqual(7, ml_dataset.num_levels)
