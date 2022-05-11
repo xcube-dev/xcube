@@ -23,8 +23,8 @@
 * Fixed ESA CCI example notebook. (#680)
 
 * `xcube serve` now provides datasets after changes of the service 
-  configuration.
-  Previously, it was necessary to restart a service to load the changes. (#678)
+  configuration while the server is running.
+  Previously, it was necessary to restart the server to load the changes. (#678)
 
 ### Other changes
 
