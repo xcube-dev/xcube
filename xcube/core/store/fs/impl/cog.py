@@ -18,27 +18,57 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
+import pathlib
+from typing import Optional, Tuple, Dict, Any
 
-from typing import Optional, List, Union, Tuple
-
+import fsspec
 import rasterio
 import rioxarray
 import xarray as xr
 
-from .gridmapping import GridMapping
-from .mrdataset import MultiResDataset
+from xcube.core.mldataset import LazyMultiLevelDataset
+from xcube.core.store.fs.helpers import get_fs_path_class
 
 
-class GeoTIFFMultiResDataset(MultiResDataset):
+class GeoTIFFMultiLevelDataset(LazyMultiLevelDataset):
+    def __init__(self,
+                 fs: fsspec.AbstractFileSystem,
+                 root: Optional[str],
+                 data_id: str,
+                 **open_params: Dict[str, Any]):
+        super().__init__(ds_id=data_id)
+        self._fs = fs
+        self._root = root
+        self._path = data_id
+        self._open_params = open_params
+        self._path_class = get_fs_path_class(fs)
+
+    def _get_num_levels_lazily(self) -> int:
+        with rasterio.open(self._get_full_path()) as rio_dataset:
+            overviews = rio_dataset.overviews(1)
+            # TODO validate overviews/ resolution must increase by factor of 2
+        return len(overviews) + 1
+
+    def _get_dataset_lazily(self, index: int, parameters) \
+            -> xr.Dataset:
+        # TODO get tile size from parameters
+        return self.open_dataset(self._get_full_path(), (512, 512),
+                                 overview_level=index)
 
     @classmethod
     def open_dataset(cls,
                      file_spec: str,
                      tile_size: Tuple[int, int],
                      overview_level: Optional[int] = 0) -> xr.Dataset:
+        """
+
+        @param overview_level: int
+        @param tile_size: tuple
+        @type file_spec: object
+        """
         array: xr.DataArray = rioxarray.open_rasterio(
             file_spec,
-            overview_level=overview_level,
+            overview_level=overview_level - 1 if overview_level > 0 else None,
             chunks=dict(zip(('x', 'y'), tile_size))
         )
         arrays = {}
@@ -68,50 +98,9 @@ class GeoTIFFMultiResDataset(MultiResDataset):
 
         return dataset
 
-    def __init__(self,
-                 path_or_url: str,
-                 tile_size: Optional[Union[int, Tuple[int, int]]] = None):
+    def _get_full_path(self):
+        # TODO:change to complete path
+        return self._path
 
-        with rasterio.open(path_or_url) as rio_dataset:
-            overviews = rio_dataset.overviews(1)
-
-        num_levels = len(overviews) + 1
-
-        dataset = self.open_dataset(path_or_url, tile_size or (512, 512))
-
-        grid_mapping = GridMapping.from_dataset(dataset)
-
-        # determine sizes and num_levels from
-        # tile_size and coordinate array sizes
-        x_res, y_res = grid_mapping.res
-        resolutions = [(x_res, y_res)]
-        for overview in overviews:
-            resolutions.append((x_res * overview, y_res * overview))
-
-        super().__init__(resolutions=list(reversed(resolutions)),
-                         grid_mapping=grid_mapping,
-                         name=path_or_url)
-
-        self._level_datasets: List = num_levels * [None]
-        # Full resolution dataset
-        self._level_datasets[-1] = dataset
-
-    @property
-    def base_dataset(self) -> xr.Dataset:
-        return self._level_datasets[-1]
-
-    def get_level_dataset(self, level: Optional[int] = None) -> xr.Dataset:
-        if level is None:
-            level = self.num_levels - 1
-        elif level < 0 or level >= self.num_levels:
-            raise IndexError(f'level out of range')
-        level_dataset = self._level_datasets[level]
-        if level_dataset is None:
-            overview_level = self.num_levels - 2 - level
-            level_dataset = self.open_dataset(
-                self.name,
-                self.grid_mapping.tile_size,
-                overview_level=overview_level
-            )
-            self._level_datasets[level] = level_dataset
-        return level_dataset
+    def _get_path(self, *args) -> pathlib.PurePath:
+        return self._path_class(*args)
