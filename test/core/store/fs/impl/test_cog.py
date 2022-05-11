@@ -123,10 +123,8 @@ class GeoTIFFMultiLevelDatasetTest(unittest.TestCase):
 
 class ObjectStorageMultiLevelDatasetTest(S3Test):
     def test_s3_fs(self):
-        s3 = s3fs.S3FileSystem(key='test_fake_id',
-                               secret='test_fake_secret',
-                               client_kwargs=dict(
-                                   endpoint_url=MOTO_SERVER_ENDPOINT_URL))
+        s3 = s3fs.S3FileSystem(client_kwargs=dict(
+            endpoint_url=MOTO_SERVER_ENDPOINT_URL))
 
         cog_path = "https://sentinel-cogs.s3.us-west-2.amazonaws.com/" \
                    "sentinel-s2-l2a-cogs/13/S/DV/2020/4/" \
@@ -135,22 +133,35 @@ class ObjectStorageMultiLevelDatasetTest(S3Test):
         self.assertEqual(3, ml_dataset.num_levels)
 
     def test_s3_fs_1(self):
-        s3 = s3fs.S3FileSystem(key='test_fake_id',
-                               secret='test_fake_secret',
-                               client_kwargs=dict(
-                                   endpoint_url=MOTO_SERVER_ENDPOINT_URL))
-        # create bucket
-        s3.mkdir('xcube-cog-test')
-        local_cog_path = os.path.join(os.path.dirname(__file__), "..", "..",
-                                      "..", "..", "..",
+        cog_filename = "cog-example.tif"
+        local_cog_path = os.path.join(os.path.dirname(__file__),
+                                      "..", "..", "..", "..", "..",
                                       "examples", "serve", "demo",
-                                      "cog-example.tif")
-
+                                      cog_filename)
+        # Assert that local_cog_path is valid
         self.assertEqual(True, os.path.exists(local_cog_path))
-        remote_cog_path = 'xcube-cog-test/cog-example.tif'
-        s3.put_file(local_cog_path, remote_cog_path)
 
-        self.assertEqual(True, s3.exists(remote_cog_path))
-        ml_dataset = GeoTIFFMultiLevelDataset(s3, "xcube-cog-test",
-                                              "cog-example.tif")
+        remote_bucket = 'xcube-cog-test'
+        remote_cog_path = f'{remote_bucket}/{cog_filename}'
+
+        s3 = s3fs.S3FileSystem(client_kwargs=dict(
+            endpoint_url=MOTO_SERVER_ENDPOINT_URL)
+        )
+        # create test bucket
+        s3.mkdir(remote_bucket)
+        s3.put_file(local_cog_path, remote_cog_path)
+        # Assert that it is now in S3
+        self.assertEqual(True, s3.isfile(remote_cog_path))
+
+        with open(local_cog_path, mode="rb") as fp:
+            local_bytes = fp.read()
+        with s3.open(remote_cog_path, mode="rb") as fp:
+            remote_bytes = fp.read()
+        # Assert local and remote bytes are equal
+        self.assertEqual(local_bytes, remote_bytes)
+
+        # Assert we can use GeoTIFFMultiLevelDataset to open it
+        ml_dataset = GeoTIFFMultiLevelDataset(s3,
+                                              remote_bucket,
+                                              cog_filename)
         self.assertEqual(7, ml_dataset.num_levels)
