@@ -25,6 +25,7 @@ import fsspec
 
 from .accessor import FsAccessor
 from .accessor import FsDataAccessor
+from .impl.cog import GeoTIFFMultiLevelDatasetLevelsFsDataAccessor
 from .impl.dataset import DatasetNetcdfFsDataAccessor
 from .impl.dataset import DatasetZarrFsDataAccessor
 from .impl.fs import FileFsAccessor
@@ -120,7 +121,8 @@ for cls in (DatasetZarrFsDataAccessor,
             DatasetNetcdfFsDataAccessor,
             MultiLevelDatasetLevelsFsDataAccessor,
             GeoDataFrameShapefileFsDataAccessor,
-            GeoDataFrameGeoJsonFsDataAccessor):
+            GeoDataFrameGeoJsonFsDataAccessor,
+            GeoTIFFMultiLevelDatasetLevelsFsDataAccessor):
     register_fs_data_accessor_class(cls)
 
 

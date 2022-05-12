@@ -24,6 +24,7 @@ from typing import Tuple, Optional
 
 import xarray as xr
 import zarr
+from rioxarray import rioxarray
 
 from xcube.core.chunkstore import LoggingStore
 from xcube.util.assertions import assert_instance
@@ -304,3 +305,54 @@ class DatasetNetcdfFsDataAccessor(DatasetFsDataAccessor, ABC):
         if not is_local:
             fs.put_file(file_path, data_id)
         return data_id
+
+
+GEOTIFF_OPEN_DATA_PARAMS_SCHEMA = JsonObjectSchema(
+    properties=dict(
+        # TODO: add more from ds.to_tiff()
+    ),
+    additional_properties=True,
+)
+
+
+# new class for Cog
+class DatasetGeoTiffFsDataAccessor(DatasetFsDataAccessor, ABC):
+    """
+    Opener/writer extension name: "dataset:tiff:<protocol>"
+    """
+
+    @classmethod
+    def get_format_id(cls) -> str:
+        return 'geotiff'
+
+    def get_open_data_params_schema(self,
+                                    data_id: str = None) -> JsonObjectSchema:
+        return GEOTIFF_OPEN_DATA_PARAMS_SCHEMA
+
+    def open_data(self,
+                  data_id: str,
+                  **open_params) -> xr.Dataset:
+        assert_instance(data_id, str, name='data_id')
+        fs, root, open_params = self.load_fs(open_params)
+        is_local = is_local_fs(fs)
+        if is_local:
+            file_path = data_id
+        else:
+            # TODO: path for other fs
+            file_path = ""
+        return rioxarray.open_rasterio(file_path)
+
+    def get_write_data_params_schema(self) -> JsonObjectSchema:
+        raise NotImplementedError("Writing of GeoTIFF not yet supported")
+
+    def write_data(self,
+                   data: xr.Dataset,
+                   data_id: str,
+                   replace=False,
+                   **write_params) -> str:
+        # assert_instance(data, xr.Dataset, name='data')
+        # assert_instance(data_id, str, name='data_id')
+        # fs, root, write_params = self.load_fs(write_params)
+        raise NotImplementedError("Writing of GeoTIFF not yet supported")
+
+

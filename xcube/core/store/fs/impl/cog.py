@@ -18,7 +18,6 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
-import pathlib
 from typing import Optional, Tuple, Dict, Any
 
 import fsspec
@@ -26,8 +25,10 @@ import rasterio
 import rioxarray
 import xarray as xr
 
-from xcube.core.mldataset import LazyMultiLevelDataset
-from xcube.core.store.fs.helpers import get_fs_path_class
+from xcube.core.mldataset import LazyMultiLevelDataset, MultiLevelDataset
+from xcube.core.store import MULTI_LEVEL_DATASET_TYPE, DATASET_TYPE, DataType
+from xcube.core.store.fs.impl.dataset import DatasetGeoTiffFsDataAccessor
+from xcube.util.assertions import assert_instance
 
 
 class GeoTIFFMultiLevelDataset(LazyMultiLevelDataset):
@@ -41,7 +42,6 @@ class GeoTIFFMultiLevelDataset(LazyMultiLevelDataset):
         self._root = root
         self._path = data_id
         self._open_params = open_params
-        self._path_class = get_fs_path_class(fs)
 
     def _get_num_levels_lazily(self) -> int:
         with rasterio.open(self._get_full_path()) as rio_dataset:
@@ -66,6 +66,7 @@ class GeoTIFFMultiLevelDataset(LazyMultiLevelDataset):
         @param tile_size: tuple
         @type file_spec: object
         """
+
         array: xr.DataArray = rioxarray.open_rasterio(
             file_spec,
             overview_level=overview_level - 1 if overview_level > 0 else None,
@@ -100,7 +101,25 @@ class GeoTIFFMultiLevelDataset(LazyMultiLevelDataset):
 
     def _get_full_path(self):
         # TODO:change to complete path
-        return self._fs.protocol[0] + "://" + self._root + "/" + self.ds_id
+        protocol = self._fs.protocol[0]
+        if self._root is not None:
+            return protocol + "://" + self._root + "/" + self._path
+        else:
+            return protocol + "://" + self._path
 
-    def _get_path(self, *args) -> pathlib.PurePath:
-        return self._path_class(*args)
+
+# noinspection PyAbstractClass
+class MultiLevelDatasetGeoTiffFsDataAccessor(DatasetGeoTiffFsDataAccessor):
+    """
+    Opener/writer extension name: "mldataset:levels:<protocol>"
+    and "dataset:levels:<protocol>"
+    """
+
+    @classmethod
+    def get_data_types(cls) -> Tuple[DataType, ...]:
+        return MULTI_LEVEL_DATASET_TYPE, DATASET_TYPE
+
+    def open_data(self, data_id: str, **open_params) -> MultiLevelDataset:
+        assert_instance(data_id, str, name='data_id')
+        fs, root, open_params = self.load_fs(open_params)
+        return GeoTIFFMultiLevelDataset(fs, root, data_id, **open_params)
