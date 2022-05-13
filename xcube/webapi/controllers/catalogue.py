@@ -182,7 +182,7 @@ def get_dataset(ctx: ServiceContext,
             (x1, x2), (y1, y2) = t.transform((x1, x2), (y1, y2))
         dataset_dict["bbox"] = [x1, y1, x2, y2]
 
-    dataset_dict['spatial_ref'] = crs.to_string()
+    dataset_dict['spatialRef'] = crs.to_string()
 
     variable_dicts = []
     dim_names = set()
