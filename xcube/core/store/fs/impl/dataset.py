@@ -22,6 +22,7 @@
 from abc import ABC
 from typing import Tuple, Optional
 
+import rasterio
 import xarray as xr
 import zarr
 from rioxarray import rioxarray
@@ -334,12 +335,16 @@ class DatasetGeoTiffFsDataAccessor(DatasetFsDataAccessor, ABC):
                   **open_params) -> xr.Dataset:
         assert_instance(data_id, str, name='data_id')
         fs, root, open_params = self.load_fs(open_params)
-        is_local = is_local_fs(fs)
-        if is_local:
-            file_path = data_id
+
+        if isinstance(fs.protocol, str):
+            protocol = fs.protocol
         else:
-            # TODO: path for other fs
-            file_path = ""
+            protocol = fs.protocol[0]
+        if root is not None:
+            file_path = protocol + "://" + root + "/" + data_id
+        else:
+            file_path = protocol + "://" + data_id
+
         return rioxarray.open_rasterio(file_path)
 
     def get_write_data_params_schema(self) -> JsonObjectSchema:
