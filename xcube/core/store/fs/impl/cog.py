@@ -18,6 +18,7 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
+from abc import ABC
 from typing import Optional, Tuple, Dict, Any
 
 import fsspec
@@ -101,7 +102,10 @@ class GeoTIFFMultiLevelDataset(LazyMultiLevelDataset):
 
     def _get_full_path(self):
         # TODO:change to complete path
-        protocol = self._fs.protocol[0]
+        if isinstance(self._fs.protocol, str):
+            protocol = self._fs.protocol
+        else:
+            protocol = self._fs.protocol[0]
         if self._root is not None:
             return protocol + "://" + self._root + "/" + self._path
         else:
@@ -123,3 +127,9 @@ class MultiLevelDatasetGeoTiffFsDataAccessor(DatasetGeoTiffFsDataAccessor):
         assert_instance(data_id, str, name='data_id')
         fs, root, open_params = self.load_fs(open_params)
         return GeoTIFFMultiLevelDataset(fs, root, data_id, **open_params)
+
+
+
+
+
+
