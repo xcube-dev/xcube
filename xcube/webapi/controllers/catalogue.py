@@ -26,7 +26,6 @@ from typing import Dict, Tuple, List, Set, Optional, Any, Callable
 import numpy as np
 import pyproj
 import xarray as xr
-
 from xcube.constants import LOG
 from xcube.core.geom import get_dataset_bounds
 from xcube.core.normalize import DatasetIsNotACubeError
@@ -45,6 +44,7 @@ from xcube.webapi.controllers.tiles import get_dataset_tile_url2
 from xcube.webapi.controllers.tiles import get_tile_source_options
 from xcube.webapi.errors import ServiceBadRequestError
 
+_CRS84 = pyproj.CRS.from_string('CRS84')
 
 def get_datasets(ctx: ServiceContext,
                  details: bool = False,
@@ -173,15 +173,19 @@ def get_dataset(ctx: ServiceContext,
     dataset_dict = dict(id=ds_id, title=ds_title)
 
     crs = ml_ds.grid_mapping.crs
+    transformer = pyproj.Transformer.from_crs(crs, _CRS84, always_xy=True)
+    dataset_bounds = get_dataset_bounds(ds)
 
     if "bbox" not in dataset_dict:
-        x1, y1, x2, y2 = get_dataset_bounds(ds)
         if not crs.is_geographic:
-            geo_crs = pyproj.CRS.from_string('CRS84')
-            t = pyproj.Transformer.from_crs(crs, geo_crs, always_xy=True)
-            (x1, x2), (y1, y2) = t.transform((x1, x2), (y1, y2))
-        dataset_dict["bbox"] = [x1, y1, x2, y2]
+            x1, y1, x2, y2 = dataset_bounds
+            (x1, x2), (y1, y2) = transformer.transform((x1, x2), (y1, y2))
+            dataset_dict["bbox"] = [x1, y1, x2, y2]
+        else:
+            dataset_dict["bbox"] = list(dataset_bounds)
 
+    dataset_dict['geometry'] = get_bbox_geometry(dataset_bounds,
+                                                 transformer)
     dataset_dict['spatialRef'] = crs.to_string()
 
     variable_dicts = []
@@ -317,6 +321,28 @@ def get_dataset(ctx: ServiceContext,
                                                            del_features=True)
 
     return dataset_dict
+
+
+def get_bbox_geometry(dataset_bounds: Tuple[float, float, float, float],
+                      transformer: pyproj.Transformer,
+                      n: int = 6):
+    x1, y1, x2, y2 = dataset_bounds
+    x_coords = []
+    y_coords = []
+    x_coords.extend(np.full(n - 1, x1))
+    y_coords.extend(np.linspace(y1, y2, n)[: n - 1])
+    x_coords.extend(np.linspace(x1, x2, n)[: n - 1])
+    y_coords.extend(np.full(n - 1, y2))
+    x_coords.extend(np.full(n - 1, x2))
+    y_coords.extend(np.linspace(y2, y1, n)[: n - 1])
+    x_coords.extend(np.linspace(x2, x1, n)[: n - 1])
+    y_coords.extend(np.full(n - 1, y1))
+    x_coords, y_coords = transformer.transform(x_coords, y_coords)
+    coordinates = list(map(list, zip(map(float, x_coords),
+                                     map(float, y_coords))))
+    coordinates.append(coordinates[0])
+    geometry = dict(type="Polygon", coordinates=[coordinates])
+    return geometry
 
 
 def get_time_chunk_size(ts_ds: Optional[xr.Dataset],

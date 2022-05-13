@@ -1,8 +1,10 @@
 ## Changes in 0.11.3 (in development)
 
-* xcube Server now provides a shorthand for the spatial reference 
-  in its dataset detail responses. The property `spatial_ref` now holds a
-  textual representation of the spatial CRS.
+* xcube Server now provides new metadata details of a dataset:
+  - The spatial reference is now given by property `spatialRef` 
+    and provides a textual representation of the spatial CRS.
+  - The dataset boundary is now given as property `geometry`
+    and provides a GeoJSON Polygon in geographic coordinates. 
 
 ## Changes in 0.11.2
 

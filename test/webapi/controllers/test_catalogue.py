@@ -228,6 +228,7 @@ class CatalogueControllerTest(unittest.TestCase):
             self.assertIsInstance(dataset.get("variables"), (tuple, list))
             self.assertIsInstance(dataset.get("dimensions"), (tuple, list))
             self.assertIsInstance(dataset.get("bbox"), (tuple, list))
+            self.assertIsInstance(dataset.get("geometry"), dict)
             self.assertIsInstance(dataset.get("spatialRef"), str)
             self.assertNotIn("rgbSchema", dataset)
             if dataset["id"] == "demo":
