@@ -222,11 +222,13 @@ class CatalogueControllerTest(unittest.TestCase):
         demo_1w_dataset = None
         for dataset in datasets:
             self.assertIsInstance(dataset, dict)
-            self.assertIn("id", dataset)
-            self.assertIn("title", dataset)
-            self.assertIn("attributions", dataset)
-            self.assertIn("variables", dataset)
-            self.assertIn("dimensions", dataset)
+            self.assertIsInstance(dataset.get("id"), str)
+            self.assertIsInstance(dataset.get("title"), str)
+            self.assertIsInstance(dataset.get("attributions"), (tuple, list))
+            self.assertIsInstance(dataset.get("variables"), (tuple, list))
+            self.assertIsInstance(dataset.get("dimensions"), (tuple, list))
+            self.assertIsInstance(dataset.get("bbox"), (tuple, list))
+            self.assertIsInstance(dataset.get("spatial_ref"), str)
             self.assertNotIn("rgbSchema", dataset)
             if dataset["id"] == "demo":
                 demo_dataset = dataset

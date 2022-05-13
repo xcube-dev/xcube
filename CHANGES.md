@@ -1,3 +1,9 @@
+## Changes in 0.11.3 (in development)
+
+* xcube Server now provides a shorthand for the spatial reference 
+  in its dataset detail responses. The property `spatial_ref` now holds a
+  textual representation of the spatial CRS.
+
 ## Changes in 0.11.2
 
 ### Enhancements
@@ -38,8 +44,7 @@
   - `is_dataset_y_axis_inverted()` is no longer used;
   - `get_geometry_mask()` is no longer used;
   - `convert_geometry()` has been renamed to `normalize_geometry()`.
-
-
+  
 ## Changes in 0.11.1
 
 * Fixed broken generation of composite RGBA tiles. (#668)

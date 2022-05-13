@@ -172,14 +172,17 @@ def get_dataset(ctx: ServiceContext,
                                                             ds_id)))
     dataset_dict = dict(id=ds_id, title=ds_title)
 
+    crs = ml_ds.grid_mapping.crs
+
     if "bbox" not in dataset_dict:
         x1, y1, x2, y2 = get_dataset_bounds(ds)
-        crs = ml_ds.grid_mapping.crs
         if not crs.is_geographic:
             geo_crs = pyproj.CRS.from_string('CRS84')
             t = pyproj.Transformer.from_crs(crs, geo_crs, always_xy=True)
             (x1, x2), (y1, y2) = t.transform((x1, x2), (y1, y2))
         dataset_dict["bbox"] = [x1, y1, x2, y2]
+
+    dataset_dict['spatial_ref'] = crs.to_string()
 
     variable_dicts = []
     dim_names = set()
