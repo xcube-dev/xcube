@@ -19,32 +19,17 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 
-from typing import Dict
-
 from xcube.util.jsonschema import JsonIntegerSchema
 from xcube.util.jsonschema import JsonObjectSchema
-from xcube.util.jsonschema import JsonSchema
 from xcube.util.jsonschema import JsonStringSchema
 
 DEFAULT_PORT = 8080
 DEFAULT_ADDRESS = "0.0.0.0"
 
-
-class ServerConfig:
-    """A server configuration."""
-
-    def __init__(self, **properties):
-        for k, v in properties.items():
-            setattr(self, k, v)
-
-    @classmethod
-    def get_schema(cls, **api_schemas: Dict[str, JsonSchema]) -> JsonObjectSchema:
-        return JsonObjectSchema(
-            properties=dict(
-                port=JsonIntegerSchema(default=DEFAULT_PORT),
-                address=JsonStringSchema(default=DEFAULT_ADDRESS),
-                **api_schemas
-            ),
-            additional_properties=False,
-            factory=cls
-        )
+BASE_SERVER_CONFIG_SCHEMA = JsonObjectSchema(
+    properties=dict(
+        port=JsonIntegerSchema(default=DEFAULT_PORT),
+        address=JsonStringSchema(default=DEFAULT_ADDRESS),
+    ),
+    additional_properties=False,
+)

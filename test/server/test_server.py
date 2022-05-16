@@ -54,13 +54,13 @@ class ServerTest(unittest.TestCase):
                         extension_registry=extension_registry)
 
         # noinspection PyUnresolvedReferences
-        self.assertEqual(8080, server.config.port)
+        self.assertEqual(8080, server.config["port"])
         # noinspection PyUnresolvedReferences
-        self.assertEqual("0.0.0.0", server.config.address)
+        self.assertEqual("0.0.0.0", server.config["address"])
         # noinspection PyUnresolvedReferences
-        self.assertEqual({}, server.config.datasets)
+        self.assertEqual({}, server.config["datasets"])
         # noinspection PyUnresolvedReferences
-        self.assertEqual({}, server.config.places)
+        self.assertEqual({}, server.config["places"])
 
     def test_get_server_apis(self):
         extension_registry = self.get_extension_registry()

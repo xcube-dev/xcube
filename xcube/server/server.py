@@ -18,15 +18,16 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
-
-from typing import Optional, Any, Dict
+import copy
+import logging
+from typing import Optional, Any, Dict, Mapping
 
 import tornado.ioloop
 import tornado.web
 
 from xcube.constants import EXTENSION_POINT_SERVER_APIS
 from xcube.server.api import SERVER_CONTEXT_ATTR_NAME, ServerApi
-from xcube.server.config import ServerConfig
+from xcube.server.config import BASE_SERVER_CONFIG_SCHEMA
 from xcube.server.context import ServerContextImpl, ServerContext
 from xcube.util.extension import ExtensionRegistry
 from xcube.util.extension import get_extension_registry
@@ -48,9 +49,9 @@ class Server:
             if api.config_schema is not None
         }
 
-        self._server_config_schema = ServerConfig.get_schema(
-            **api_config_schemas
-        )
+        server_config_schema = copy.deepcopy(BASE_SERVER_CONFIG_SCHEMA)
+        server_config_schema.properties.update(**api_config_schemas)
+        self._server_config_schema = server_config_schema
 
         handlers = []
         for server_api in self._server_apis.values():
@@ -61,12 +62,12 @@ class Server:
         self._io_loop = io_loop or tornado.ioloop.IOLoop.current()
         self._application = tornado.web.Application(handlers)
         self._server_config = None
-        self._server_context = None
+        self._server_context: Optional[ServerContextImpl] = None
         self.change_config(server_config)
 
     def start(self):
-        self._application.listen(self._server_config.port,
-                                 address=self._server_config.address)
+        self._application.listen(self._server_config["port"],
+                                 address=self._server_config["address"])
         for api in self._server_apis.values():
             api.on_start(self._server_context, self._io_loop)
         self._io_loop.start()
@@ -87,17 +88,26 @@ class Server:
         prev_server_context = self._server_context
 
         for api_name, api in self._server_apis.items():
-            setattr(next_server_context, api_name,
-                    api.on_config_change(server_config,
-                                         prev_server_context))
+            next_api_config = next_server_config.get(api_name)
+            if prev_server_context is not None:
+                prev_api_context = prev_server_context.get_api_context(api_name)
+            else:
+                prev_api_context = None
+            next_api_context = api.get_context(next_api_config,
+                                               prev_api_context,
+                                               next_server_config,
+                                               prev_server_context)
+            next_server_context.set_api_context(api_name, next_api_context)
+            setattr(next_server_context, api_name, next_api_context)
 
         self._server_config = next_server_config
         self._server_context = next_server_context
-        setattr(self._application, SERVER_CONTEXT_ATTR_NAME,
+        setattr(self._application,
+                SERVER_CONTEXT_ATTR_NAME,
                 next_server_context)
 
     @property
-    def config(self) -> ServerConfig:
+    def config(self) -> Mapping[str, Any]:
         return self._server_config
 
     @property

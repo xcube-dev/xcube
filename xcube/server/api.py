@@ -20,14 +20,14 @@
 # DEALINGS IN THE SOFTWARE.
 
 import abc
-from typing import Any, List, Optional, Tuple, Dict, Union, Type, Sequence
+from typing import Any, List, Optional, Tuple, Dict, Union, Type, Sequence, Generic, TypeVar, Mapping
 
 import tornado.httputil
 import tornado.ioloop
 import tornado.web
 
-from .config import ServerConfig
-from .context import RequestContext, ServerContext
+from .context import RequestContext
+from .context import ServerContext
 from ..util.jsonschema import JsonSchema
 
 SERVER_CONTEXT_ATTR_NAME = '__xcube_server_context'
@@ -37,8 +37,11 @@ ServerApiRoute = Union[
     Tuple[str, Type["RequestHandler"], Dict[str, Any]]
 ]
 
+# ConteXt type variable
+X = TypeVar("X", bound="ServerApi")
 
-class ServerApi:
+
+class ServerApi(Generic[X]):
     """
     A server API.
 
@@ -138,11 +141,13 @@ class ServerApi:
         """
 
     # noinspection PyMethodMayBeStatic,PyUnusedLocal
-    def on_config_change(
+    def get_context(
             self,
-            next_server_config: ServerConfig,
-            prev_server_context: Optional[ServerContext] = None
-    ) -> Any:
+            next_api_config: Any,
+            prev_api_context: Optional[X],
+            next_server_config: Mapping[str, Any],
+            prev_server_context: Optional[ServerContext]
+    ) -> X:
         """
         Called when the configuration has changed.
 
@@ -153,6 +158,8 @@ class ServerApi:
         The default implementation returns the API configuration
         from *next_server_config*.
 
+        :param next_api_config: The new API configuration
+        :param prev_api_context: The previous API context
         :param next_server_config: The new server configuration
         :param prev_server_context: Optional previous server context
         :return: an API context object or None
@@ -174,7 +181,7 @@ class RequestHandler(tornado.web.RequestHandler, abc.ABC):
         self._context = RequestContext(server_context, request)
 
     @property
-    def server_config(self) -> ServerConfig:
+    def server_config(self) -> Mapping[str, Any]:
         return self._context.server_config
 
     @property

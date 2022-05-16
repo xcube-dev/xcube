@@ -20,10 +20,9 @@
 # DEALINGS IN THE SOFTWARE.
 
 import abc
+from typing import Any, Mapping
 
 import tornado.httpserver
-
-from .config import ServerConfig
 
 
 class ServerContext(abc.ABC):
@@ -31,19 +30,36 @@ class ServerContext(abc.ABC):
 
     @property
     @abc.abstractmethod
-    def server_config(self) -> ServerConfig:
+    def server_config(self) -> Mapping[str, Any]:
         """Get the server's configuration."""
+
+    def get_api_config(self, api_name: str) -> Any:
+        """Get the API configuration for *api_name*."""
+        return self.server_config.get(api_name)
+
+    @abc.abstractmethod
+    def get_api_context(self, api_name: str) -> Any:
+        """Get the API context for *api_name*."""
 
 
 class ServerContextImpl(ServerContext):
     """The server context."""
 
-    def __init__(self, server_config: ServerConfig):
-        self._server_config = server_config
+    def __init__(self, server_config: Mapping[str, Any]):
+        self._server_config = dict(server_config)
+        self._api_contexts = dict()
 
     @property
-    def server_config(self) -> ServerConfig:
+    def server_config(self) -> Mapping[str, Any]:
         return self._server_config
+
+    def set_api_context(self, api_name: str, api_context: Any):
+        """Set the API context for *api_name* to *api_context*."""
+        self._api_contexts[api_name] = api_context
+
+    def get_api_context(self, api_name: str) -> Any:
+        """Get the API context for *api_name*."""
+        return self._api_contexts.get(api_name)
 
 
 class RequestContext(ServerContext):
@@ -60,5 +76,5 @@ class RequestContext(ServerContext):
         return self._request
 
     @property
-    def server_config(self) -> ServerConfig:
+    def server_config(self) -> Mapping[str, Any]:
         return self._server_context.server_config
