@@ -1,15 +1,13 @@
-## Changes in 0.11.3 (in development)
+## Changes in 0.11.2 (in development)
 
-* xcube Server now provides new metadata details of a dataset:
+### Enhancements
+
+* `xcube serve` now provides new metadata details of a dataset:
   - The spatial reference is now given by property `spatialRef` 
     and provides a textual representation of the spatial CRS.
   - The dataset boundary is now given as property `geometry`
     and provides a GeoJSON Polygon in geographic coordinates. 
-
-## Changes in 0.11.2
-
-### Enhancements
-
+    
 * `xcube serve` now publishes the chunk size of a variable's 
   time dimension for either for an associated time-chunked dataset or the
   dataset itself (new variable integer property `timeChunkSize`).
