@@ -1,4 +1,4 @@
-## Changes in 0.11.2 (in development)
+## Changes in 0.11.2
 
 ### Enhancements
 
@@ -17,7 +17,6 @@
 * The functions
   - `mask_dataset_by_geometry()` 
   - `rasterize_features()`
-  
   of module `xcube.core.geom` have been reimplemented to generate 
   lazy dask arrays. Both should now be applicable to datasets
   that have arbitrarily large spatial dimensions. 
