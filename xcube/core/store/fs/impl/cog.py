@@ -45,7 +45,7 @@ class GeoTIFFMultiLevelDataset(LazyMultiLevelDataset):
         self._open_params = open_params
 
     def _get_num_levels_lazily(self) -> int:
-        with rasterio.open(self._get_full_path()) as rio_dataset:
+        with rasterio.open(self._get_file_url()) as rio_dataset:
             overviews = rio_dataset.overviews(1)
             # TODO validate overviews/ resolution must increase by factor of 2
         return len(overviews) + 1
@@ -53,7 +53,7 @@ class GeoTIFFMultiLevelDataset(LazyMultiLevelDataset):
     def _get_dataset_lazily(self, index: int, parameters) \
             -> xr.Dataset:
         # TODO get tile size from parameters
-        return self.open_dataset(self._get_full_path(), (512, 512),
+        return self.open_dataset(self._get_file_url(), (512, 512),
                                  overview_level=index)
 
     @classmethod
@@ -100,16 +100,12 @@ class GeoTIFFMultiLevelDataset(LazyMultiLevelDataset):
 
         return dataset
 
-    def _get_full_path(self):
-        # TODO:change to complete path
+    def _get_file_url(self):
         if isinstance(self._fs.protocol, str):
             protocol = self._fs.protocol
         else:
             protocol = self._fs.protocol[0]
-        if self._root is not None:
-            return protocol + "://" + self._root + "/" + self._path
-        else:
-            return protocol + "://" + self._path
+        return protocol + "://" + self._path
 
 
 # noinspection PyAbstractClass

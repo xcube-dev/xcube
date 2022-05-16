@@ -29,7 +29,7 @@ import s3fs
 import xarray
 import xarray as xr
 
-from test.s3test import S3Test, MOTO_SERVER_ENDPOINT_URL
+# from test.s3test import S3Test, MOTO_SERVER_ENDPOINT_URL
 from xcube.core.store.fs.impl.cog import GeoTIFFMultiLevelDataset, \
     MultiLevelDatasetGeoTiffFsDataAccessor
 from xcube.core.store.fs.impl.dataset import DatasetGeoTiffFsDataAccessor
@@ -40,7 +40,6 @@ class RioXarrayTest(unittest.TestCase):
 
     def test_it_is_possible_get_overviews(self):
         cog_path = 'examples/serve/demo/cog-example.tif'
-        # array = rioxarray.open_rasterio('examples/serve/demo/cog-example.tif')
         array = rioxarray.open_rasterio(cog_path)
         self.assertIsInstance(array, xr.DataArray)
         self.assertEqual((3, 9984, 22016), array.shape)
@@ -90,6 +89,8 @@ class GeoTIFFMultiLevelDatasetTest(unittest.TestCase):
 
     def test_local_fs(self):
         fs = fsspec.filesystem('file')
+        # cog_path = os.path.join(os.path.dirname(__file__),
+        #                         '..', '..', '..', '..', '..', 'examples/serve/demo/cog-example.tif')
         cog_path = "examples/serve/demo/cog-example.tif"
         ml_dataset = GeoTIFFMultiLevelDataset(fs, None, cog_path)
         self.assertEqual(7, ml_dataset.num_levels)
@@ -166,9 +167,8 @@ class MultiLevelDatasetGeoTiffFsDataAccessorTest(unittest.TestCase):
     def test_read_cog(self):
         fs = fsspec.filesystem('file')
         mldataopener = MultiLevelDatasetGeoTiffFsDataAccessor()
-        root = "examples/serve/demo/"
-        cog_path = "cog-example.tif"
-        ml_dataset = mldataopener.open_data(cog_path, fs=fs, root=root)
+        cog_path = 'examples/serve/demo/cog-example.tif'
+        ml_dataset = mldataopener.open_data(cog_path, fs=fs, root=None)
         self.assertEqual(7, ml_dataset.num_levels)
         dataset = ml_dataset.get_dataset(0)
         self.assertEqual(['band_1', 'band_2', 'band_3'],
@@ -183,11 +183,10 @@ class DatasetGeoTiffFsDataAccessorTest(unittest.TestCase):
 
     def test_it(self):
         fs = fsspec.filesystem('file')
-        root = "examples/serve/demo"
-        cog_path = "example-geotiff.tif"
+        cog_path = 'examples/serve/demo/cog-example.tif'
         data_accessor = DatasetGeoTiffFsDataAccessor()
         self.assertEqual(data_accessor.get_format_id(), "geotiff")
-        dataset = data_accessor.open_data(data_id=cog_path, fs=fs, root=root)
+        dataset = data_accessor.open_data(data_id=cog_path, fs=fs, root=None)
         self.assertEqual(type(dataset), xarray.DataArray)
         self.assertEqual(
             type(data_accessor.get_open_data_params_schema(cog_path)),

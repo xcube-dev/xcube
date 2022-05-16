@@ -73,7 +73,7 @@ _FILENAME_EXT_TO_DATA_TYPE_ALIAS = {
     '.nc': DATASET_TYPE.alias,
     '.shp': GEO_DATA_FRAME_TYPE.alias,
     '.geojson': GEO_DATA_FRAME_TYPE.alias,
-    '.tiff': MULTI_LEVEL_DATASET_TYPE.alias,
+    '.tif': MULTI_LEVEL_DATASET_TYPE.alias,
 }
 
 _FILENAME_EXT_SET = set(_FILENAME_EXT_TO_DATA_TYPE_ALIAS.keys())
@@ -84,7 +84,7 @@ _FILENAME_EXT_TO_FORMAT = {
     '.nc': 'netcdf',
     '.shp': 'shapefile',
     '.geojson': 'geojson',
-    '.tiff': 'tiff',
+    '.tif': 'geotiff',
 }
 
 _FORMAT_TO_FILENAME_EXT = {
