@@ -46,6 +46,7 @@ from xcube.webapi.errors import ServiceBadRequestError
 
 _CRS84 = pyproj.CRS.from_string('CRS84')
 
+
 def get_datasets(ctx: ServiceContext,
                  details: bool = False,
                  client: Optional[str] = None,
