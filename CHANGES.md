@@ -1,7 +1,13 @@
-## Changes in 0.11.2
+## Changes in 0.11.2 (in development)
 
 ### Enhancements
 
+* `xcube serve` now provides new metadata details of a dataset:
+  - The spatial reference is now given by property `spatialRef` 
+    and provides a textual representation of the spatial CRS.
+  - The dataset boundary is now given as property `geometry`
+    and provides a GeoJSON Polygon in geographic coordinates. 
+    
 * `xcube serve` now publishes the chunk size of a variable's 
   time dimension for either for an associated time-chunked dataset or the
   dataset itself (new variable integer property `timeChunkSize`).
@@ -38,8 +44,7 @@
   - `is_dataset_y_axis_inverted()` is no longer used;
   - `get_geometry_mask()` is no longer used;
   - `convert_geometry()` has been renamed to `normalize_geometry()`.
-
-
+  
 ## Changes in 0.11.1
 
 * Fixed broken generation of composite RGBA tiles. (#668)
