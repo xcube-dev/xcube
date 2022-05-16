@@ -13,14 +13,13 @@ dependencies:
   - dask-image >=0.6
   - deprecated >=1.2
   - distributed >=2021.6
-  - fiona <1.8.4  # fiona-1.8.4 requires click <8, but we want 8
+  - fiona >=1.8
   - fontconfig <2.13.96  # temporary workaround for Mac CI bug; see Issue #640
   - fsspec >=2021.6
   - gdal >=3.0
   - geopandas >=0.8
   - jdcal >=1.4.1
   - jsonschema >=3.2.0
-  - libgdal <3.3  # ImportError: dlopen(/Users/appveyor/mamba-env/lib/python3.9
   - matplotlib-base >=3.0
   - netcdf4 >=1.5.0
   - numba >=0.52
