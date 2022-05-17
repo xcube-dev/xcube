@@ -59,6 +59,14 @@ class CoordsGridMapping(GridMapping, abc.ABC):
         self._y_coords = y_coords
         super().__init__(**kwargs)
 
+    @property
+    def x_coords(self):
+        return self._x_coords
+
+    @property
+    def y_coords(self):
+        return self._y_coords
+
 
 class Coords1DGridMapping(CoordsGridMapping):
     """
@@ -288,7 +296,8 @@ def grid_mapping_to_coords(
         grid_mapping: GridMapping,
         xy_var_names: Tuple[str, str] = None,
         xy_dim_names: Tuple[str, str] = None,
-        exclude_bounds: bool = False
+        reuse_coords: bool = False,
+        exclude_bounds: bool = False,
 ) -> Dict[str, xr.DataArray]:
     """
     Get CF-compliant axis coordinate variables and cell
@@ -301,8 +310,12 @@ def grid_mapping_to_coords(
         names (x_var_name, y_var_name).
     :param xy_dim_names: Optional coordinate dimensions
         names (x_dim_name, y_dim_name).
+    :param reuse_coords: Whether to either reuse target
+        coordinate arrays from target_gm or to compute
+        new ones.
     :param exclude_bounds: If True, do not create
-        bounds coordinates. Defaults to False.
+        bounds coordinates. Defaults to False. Ignored if
+        *reuse_coords* is True.
     :return: dictionary with coordinate variables
     """
 
@@ -310,6 +323,27 @@ def grid_mapping_to_coords(
         _assert_valid_xy_names(xy_var_names, name='xy_var_names')
     if xy_dim_names:
         _assert_valid_xy_names(xy_dim_names, name='xy_dim_names')
+
+    if reuse_coords:
+        try:
+            # noinspection PyUnresolvedReferences
+            x, y = grid_mapping.x_coords, grid_mapping.y_coords
+        except AttributeError:
+            x, y = None, None
+        if isinstance(x, xr.DataArray) \
+                and isinstance(y, xr.DataArray) \
+                and x.ndim == 1 \
+                and y.ndim == 1 \
+                and x.size == grid_mapping.width \
+                and y.size == grid_mapping.height:
+            return {
+                name: xr.DataArray(coord.values,
+                                   dims=dim,
+                                   attrs=coord.attrs)
+                for name, dim, coord in zip(xy_var_names,
+                                            xy_dim_names,
+                                            (x, y))
+            }
 
     x_name, y_name = xy_var_names or grid_mapping.xy_var_names
     x_dim_name, y_dim_name = xy_dim_names or grid_mapping.xy_dim_names

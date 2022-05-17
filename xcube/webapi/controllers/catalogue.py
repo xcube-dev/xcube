@@ -25,7 +25,7 @@ from typing import Dict, Tuple, List, Set, Optional, Any, Callable
 
 import numpy as np
 import pyproj
-
+import xarray as xr
 from xcube.constants import LOG
 from xcube.core.geom import get_dataset_bounds
 from xcube.core.normalize import DatasetIsNotACubeError
@@ -43,6 +43,8 @@ from xcube.webapi.controllers.tiles import get_dataset_tile_url
 from xcube.webapi.controllers.tiles import get_dataset_tile_url2
 from xcube.webapi.controllers.tiles import get_tile_source_options
 from xcube.webapi.errors import ServiceBadRequestError
+
+_CRS84 = pyproj.CRS.from_string('CRS84')
 
 
 def get_datasets(ctx: ServiceContext,
@@ -158,6 +160,11 @@ def get_dataset(ctx: ServiceContext,
 
     ds = ml_ds.get_dataset(0)
 
+    try:
+        ts_ds = ctx.get_time_series_dataset(ds_id)
+    except (ValueError, DataStoreError) as e:
+        ts_ds = None
+
     x_name, y_name = ml_ds.grid_mapping.xy_dim_names
 
     ds_title = dataset_config.get('Title',
@@ -166,14 +173,21 @@ def get_dataset(ctx: ServiceContext,
                                                             ds_id)))
     dataset_dict = dict(id=ds_id, title=ds_title)
 
+    crs = ml_ds.grid_mapping.crs
+    transformer = pyproj.Transformer.from_crs(crs, _CRS84, always_xy=True)
+    dataset_bounds = get_dataset_bounds(ds)
+
     if "bbox" not in dataset_dict:
-        x1, y1, x2, y2 = get_dataset_bounds(ds)
-        crs = ml_ds.grid_mapping.crs
         if not crs.is_geographic:
-            geo_crs = pyproj.CRS.from_string('CRS84')
-            t = pyproj.Transformer.from_crs(crs, geo_crs, always_xy=True)
-            (x1, x2), (y1, y2) = t.transform((x1, x2), (y1, y2))
-        dataset_dict["bbox"] = [x1, y1, x2, y2]
+            x1, y1, x2, y2 = dataset_bounds
+            (x1, x2), (y1, y2) = transformer.transform((x1, x2), (y1, y2))
+            dataset_dict["bbox"] = [x1, y1, x2, y2]
+        else:
+            dataset_dict["bbox"] = list(dataset_bounds)
+
+    dataset_dict['geometry'] = get_bbox_geometry(dataset_bounds,
+                                                 transformer)
+    dataset_dict['spatialRef'] = crs.to_string()
 
     variable_dicts = []
     dim_names = set()
@@ -201,15 +215,18 @@ def get_dataset(ctx: ServiceContext,
                                         granted_scopes):
             continue
 
-        variable_dict = dict(id=f'{ds_id}.{var_name}',
-                             name=var_name,
-                             dims=list(dims),
-                             shape=list(var.shape),
-                             dtype=str(var.dtype),
-                             units=var.attrs.get('units', ''),
-                             title=var.attrs.get('title',
-                                                 var.attrs.get('long_name',
-                                                               var_name)))
+        variable_dict = dict(
+            id=f'{ds_id}.{var_name}',
+            name=var_name,
+            dims=list(dims),
+            shape=list(var.shape),
+            dtype=str(var.dtype),
+            units=var.attrs.get('units', ''),
+            title=var.attrs.get('title',
+                                var.attrs.get('long_name',
+                                              var_name)),
+            timeChunkSize=get_time_chunk_size(ts_ds, var_name, ds_id)
+        )
 
         if client is not None:
             # TODO (forman): deprecation!
@@ -305,6 +322,71 @@ def get_dataset(ctx: ServiceContext,
                                                            del_features=True)
 
     return dataset_dict
+
+
+def get_bbox_geometry(dataset_bounds: Tuple[float, float, float, float],
+                      transformer: pyproj.Transformer,
+                      n: int = 6):
+    x1, y1, x2, y2 = dataset_bounds
+    x_coords = []
+    y_coords = []
+    x_coords.extend(np.full(n - 1, x1))
+    y_coords.extend(np.linspace(y1, y2, n)[: n - 1])
+    x_coords.extend(np.linspace(x1, x2, n)[: n - 1])
+    y_coords.extend(np.full(n - 1, y2))
+    x_coords.extend(np.full(n - 1, x2))
+    y_coords.extend(np.linspace(y2, y1, n)[: n - 1])
+    x_coords.extend(np.linspace(x2, x1, n)[: n - 1])
+    y_coords.extend(np.full(n - 1, y1))
+    x_coords, y_coords = transformer.transform(x_coords, y_coords)
+    coordinates = list(map(list, zip(map(float, x_coords),
+                                     map(float, y_coords))))
+    coordinates.append(coordinates[0])
+    geometry = dict(type="Polygon", coordinates=[coordinates])
+    return geometry
+
+
+def get_time_chunk_size(ts_ds: Optional[xr.Dataset],
+                        var_name: str,
+                        ds_id: str) -> Optional[int]:
+    """
+    Get the time chunk size for variable *var_name*
+    in time-chunked dataset *ts_ds*.
+
+    Internal function.
+
+    :param ts_ds: time-chunked dataset
+    :param var_name: variable name
+    :param ds_id: original dataset identifier
+    :return: the time chunk size (integer) or None
+    """
+    if ts_ds is not None:
+        ts_var: Optional[xr.DataArray] = ts_ds.get(var_name)
+        if ts_var is not None:
+            chunks = ts_var.chunks
+            if chunks is None:
+                LOG.warning(f'variable {var_name!r}'
+                            f' in time-chunked dataset {ds_id!r}'
+                            f' is not chunked')
+                return None
+            try:
+                time_index = ts_var.dims.index('time')
+                time_chunks = chunks[time_index]
+            except ValueError:
+                time_chunks = None
+            if not time_chunks:
+                LOG.warning(f'no chunks found'
+                            f' for dimension \'time\''
+                            f' of variable {var_name!r}'
+                            f' in time-chunked dataset {ds_id!r}')
+                return None
+            if len(time_chunks) == 1:
+                return time_chunks[0]
+            return max(*time_chunks)
+        else:
+            LOG.warning(f'variable {var_name!r} not'
+                        f' found in time-chunked dataset {ds_id!r}')
+    return None
 
 
 def _allow_dataset(

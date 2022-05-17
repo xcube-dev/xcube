@@ -3,10 +3,12 @@ import unittest
 from typing import Any, Optional
 
 from test.webapi.helpers import new_test_service_context
+from xcube.core.new import new_cube
 from xcube.webapi.context import ServiceContext
 from xcube.webapi.controllers.catalogue import get_color_bars
 from xcube.webapi.controllers.catalogue import get_dataset
 from xcube.webapi.controllers.catalogue import get_datasets
+from xcube.webapi.controllers.catalogue import get_time_chunk_size
 from xcube.webapi.errors import ServiceBadRequestError, ServiceAuthError
 
 
@@ -220,11 +222,14 @@ class CatalogueControllerTest(unittest.TestCase):
         demo_1w_dataset = None
         for dataset in datasets:
             self.assertIsInstance(dataset, dict)
-            self.assertIn("id", dataset)
-            self.assertIn("title", dataset)
-            self.assertIn("attributions", dataset)
-            self.assertIn("variables", dataset)
-            self.assertIn("dimensions", dataset)
+            self.assertIsInstance(dataset.get("id"), str)
+            self.assertIsInstance(dataset.get("title"), str)
+            self.assertIsInstance(dataset.get("attributions"), (tuple, list))
+            self.assertIsInstance(dataset.get("variables"), (tuple, list))
+            self.assertIsInstance(dataset.get("dimensions"), (tuple, list))
+            self.assertIsInstance(dataset.get("bbox"), (tuple, list))
+            self.assertIsInstance(dataset.get("geometry"), dict)
+            self.assertIsInstance(dataset.get("spatialRef"), str)
             self.assertNotIn("rgbSchema", dataset)
             if dataset["id"] == "demo":
                 demo_dataset = dataset
@@ -345,3 +350,42 @@ class CatalogueControllerTest(unittest.TestCase):
         if expected_count is not None:
             self.assertEqual(expected_count, len(datasets))
         return datasets
+
+
+class TimeChunkSizeTest(unittest.TestCase):
+
+    @staticmethod
+    def _get_cube(time_chunk_size: int = None):
+        ts_ds = new_cube(time_periods=10, variables=dict(CHL=10.2))
+        if time_chunk_size:
+            ts_ds = ts_ds.assign(
+                CHL=ts_ds.CHL.chunk(dict(time=time_chunk_size))
+            )
+        return ts_ds
+
+    def test_get_time_chunk_size_is_ok(self):
+        ts_ds = self._get_cube(time_chunk_size=1)
+        self.assertEqual(1, get_time_chunk_size(ts_ds, 'CHL', 'ds.zarr'))
+
+        ts_ds = self._get_cube(time_chunk_size=3)
+        self.assertEqual(3, get_time_chunk_size(ts_ds, 'CHL', 'ds.zarr'))
+
+        ts_ds = self._get_cube(time_chunk_size=5)
+        self.assertEqual(5, get_time_chunk_size(ts_ds, 'CHL', 'ds.zarr'))
+
+        ts_ds = self._get_cube(time_chunk_size=10)
+        self.assertEqual(10, get_time_chunk_size(ts_ds, 'CHL', 'ds.zarr'))
+
+    def test_get_time_chunk_size_fails(self):
+        # TS dataset not given
+        self.assertEqual(None, get_time_chunk_size(None, 'CHL', 'ds.zarr'))
+        # Variable not found
+        ts_ds = self._get_cube(time_chunk_size=5)
+        self.assertEqual(None, get_time_chunk_size(ts_ds, 'MCI', 'ds.zarr'))
+        # Time is not chunked
+        ts_ds = self._get_cube(time_chunk_size=None)
+        self.assertEqual(None, get_time_chunk_size(ts_ds, 'CHL', 'ds.zarr'))
+        # Variable has no dimension "time"
+        ts_ds = self._get_cube(time_chunk_size=5)
+        ts_ds['CHL0'] = ts_ds.CHL.isel(time=0)
+        self.assertEqual(None, get_time_chunk_size(ts_ds, 'CHL0', 'ds.zarr'))
