@@ -33,6 +33,14 @@ from xcube.util.assertions import assert_instance
 
 
 class GeoTIFFMultiLevelDataset(LazyMultiLevelDataset):
+    """
+        A multi-level dataset for GeoTIFF format
+
+        :param fs: fsspec.AbstractFileSystem object.
+        :param root: Optional root path identifier.
+        :param data_id: dataset identifier.
+        :param open_params: keyword arguments.
+        """
     def __init__(self,
                  fs: fsspec.AbstractFileSystem,
                  root: Optional[str],
@@ -108,11 +116,10 @@ class GeoTIFFMultiLevelDataset(LazyMultiLevelDataset):
         return protocol + "://" + self._path
 
 
-# noinspection PyAbstractClass
 class MultiLevelDatasetGeoTiffFsDataAccessor(DatasetGeoTiffFsDataAccessor):
     """
-    Opener/writer extension name: "mldataset:levels:<protocol>"
-    and "dataset:levels:<protocol>"
+    Opener/writer extension name: "mldataset:geotiff:<protocol>"
+    and "dataset:geotiff:<protocol>"
     """
 
     @classmethod
