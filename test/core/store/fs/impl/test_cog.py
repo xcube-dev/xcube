@@ -29,6 +29,7 @@ import s3fs
 import xarray
 import xarray as xr
 
+# from xcube.core.store.fs.impl import cog
 # from test.s3test import S3Test, MOTO_SERVER_ENDPOINT_URL
 from xcube.core.store.fs.impl.cog import GeoTIFFMultiLevelDataset, \
     MultiLevelDatasetGeoTiffFsDataAccessor
@@ -89,8 +90,6 @@ class GeoTIFFMultiLevelDatasetTest(unittest.TestCase):
 
     def test_local_fs(self):
         fs = fsspec.filesystem('file')
-        # cog_path = os.path.join(os.path.dirname(__file__),
-        #                         '..', '..', '..', '..', '..', 'examples/serve/demo/cog-example.tif')
         cog_path = "examples/serve/demo/cog-example.tif"
         ml_dataset = GeoTIFFMultiLevelDataset(fs, None, cog_path)
         self.assertEqual(7, ml_dataset.num_levels)
@@ -173,6 +172,7 @@ class MultiLevelDatasetGeoTiffFsDataAccessorTest(unittest.TestCase):
         dataset = ml_dataset.get_dataset(0)
         self.assertEqual(['band_1', 'band_2', 'band_3'],
                          list(dataset.data_vars))
+        self.assertEqual(len(dataset.dims), 2)
         self.assertEqual(mldataopener.get_format_id(), "geotiff")
         self.assertEqual(
             type(mldataopener.get_open_data_params_schema(cog_path)),
