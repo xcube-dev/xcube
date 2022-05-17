@@ -201,7 +201,7 @@ class XarrayDecodeCfTest(unittest.TestCase):
         return noise, crs, lon, lat
 
 
-class AddSpatialRefTest(S3Test):
+class AddSpatialRefTest(S3Test, unittest.TestCase):
 
     def test_add_spatial_ref(self):
         self.assert_add_spatial_ref_ok(None, None)

@@ -1,24 +1,51 @@
-## Changes in 0.11.2 (in development)
+## Changes in 0.11.3 (in development)
+
+## Changes in 0.11.2
 
 ### Enhancements
+
+* `xcube serve` now provides new metadata details of a dataset:
+  - The spatial reference is now given by property `spatialRef` 
+    and provides a textual representation of the spatial CRS.
+  - The dataset boundary is now given as property `geometry`
+    and provides a GeoJSON Polygon in geographic coordinates. 
+    
+* `xcube serve` now publishes the chunk size of a variable's 
+  time dimension for either for an associated time-chunked dataset or the
+  dataset itself (new variable integer property `timeChunkSize`).
+  This helps clients (e.g. xcube Viewer) to improve the 
+  server performance for time-series requests.
 
 * The functions
   - `mask_dataset_by_geometry()` 
   - `rasterize_features()`
-  
   of module `xcube.core.geom` have been reimplemented to generate 
   lazy dask arrays. Both should now be applicable to datasets
   that have arbitrarily large spatial dimensions. 
   The spatial chunk sizes to be used can be specified using 
   keyword argument `tile_size`. (#666)
 
+### Fixes
+
+* Fixed ESA CCI example notebook. (#680)
+
+* `xcube serve` now provides datasets after changes of the service 
+  configuration while the server is running.
+  Previously, it was necessary to restart the server to load the changes. (#678)
+
 ### Other changes
+
+* `xcube.core.resampling.affine_transform_dataset()` has a new 
+  keyword argument `reuse_coords: bool = False`. If set to `True` 
+  the returned dataset will reuse the _same_ spatial coordinates 
+  as the target. This is a workaround for xarray issue 
+  https://github.com/pydata/xarray/issues/6573.
 
 * Deprecated following functions of module `xcube.core.geom`:
   - `is_dataset_y_axis_inverted()` is no longer used;
   - `get_geometry_mask()` is no longer used;
   - `convert_geometry()` has been renamed to `normalize_geometry()`.
-
+  
 ## Changes in 0.11.1
 
 * Fixed broken generation of composite RGBA tiles. (#668)

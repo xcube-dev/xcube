@@ -64,7 +64,9 @@ class ServiceContextTest(unittest.TestCase):
     def test_get_dataset_configs_from_stores(self):
         ctx = new_test_service_context(config_file_name='config-datastores.yml')
 
-        dataset_configs_from_stores = ctx.get_dataset_configs_from_stores()
+        dataset_configs_from_stores = ctx.get_dataset_configs_from_stores(
+            ctx.get_data_store_pool()
+        )
         self.assertIsNotNone(dataset_configs_from_stores)
         self.assertEqual(3, len(dataset_configs_from_stores))
         ids = [config['Identifier'] for config in dataset_configs_from_stores]

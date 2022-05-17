@@ -540,7 +540,9 @@ class GridMapping(abc.ABC):
     def to_coords(self,
                   xy_var_names: Tuple[str, str] = None,
                   xy_dim_names: Tuple[str, str] = None,
-                  exclude_bounds: bool = False) \
+                  exclude_bounds: bool = False,
+                  reuse_coords: bool = False,
+                  ) \
             -> Mapping[str, xr.DataArray]:
         """
         Get CF-compliant axis coordinate variables and cell boundary
@@ -554,6 +556,9 @@ class GridMapping(abc.ABC):
             names (x_dim_name, y_dim_name).
         :param exclude_bounds: If True, do not create bounds
             coordinates. Defaults to False.
+        :param reuse_coords: Whether to either reuse target
+            coordinate arrays from target_gm or to compute
+            new ones.
         :return: dictionary with coordinate variables
         """
         self._assert_regular()
@@ -561,7 +566,8 @@ class GridMapping(abc.ABC):
         return grid_mapping_to_coords(self,
                                       xy_var_names=xy_var_names,
                                       xy_dim_names=xy_dim_names,
-                                      exclude_bounds=exclude_bounds)
+                                      exclude_bounds=exclude_bounds,
+                                      reuse_coords=reuse_coords)
 
     def transform(self,
                   crs: Union[str, pyproj.crs.CRS],
