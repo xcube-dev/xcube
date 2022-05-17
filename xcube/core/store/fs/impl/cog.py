@@ -36,10 +36,10 @@ class GeoTIFFMultiLevelDataset(LazyMultiLevelDataset):
     """
         A multi-level dataset for GeoTIFF format
 
-        :param fs: fsspec.AbstractFileSystem object.
-        :param root: Optional root path identifier.
-        :param data_id: dataset identifier.
-        :param open_params: keyword arguments.
+        @param fs: fsspec.AbstractFileSystem object.
+        @param root: Optional root path identifier.
+        @param data_id: dataset identifier.
+        @param open_params: keyword arguments.
         """
     def __init__(self,
                  fs: fsspec.AbstractFileSystem,
@@ -71,9 +71,9 @@ class GeoTIFFMultiLevelDataset(LazyMultiLevelDataset):
                      overview_level: Optional[int] = 0) -> xr.Dataset:
         """
 
-        @param overview_level: int
-        @param tile_size: tuple
-        @type file_spec: object
+        @param overview_level: the overview level required
+        @param tile_size: tile size as tuple
+        @type file_spec: fsspec.AbstractFileSystem object
         """
 
         array: xr.DataArray = rioxarray.open_rasterio(
