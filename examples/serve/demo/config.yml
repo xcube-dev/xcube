@@ -108,7 +108,7 @@ Datasets:
   - Identifier: geotiff_local
     Title: "Geotiff example"
     FileSystem: file
-    Path: cog-example.tif
+    Path: sample.tif
     Style: default
 
 PlaceGroups:

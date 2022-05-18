@@ -12,9 +12,9 @@
 * `cube-1-250-250.levels`: Multi-level/multi-resolution (image pyramid) 
   version of `cube.nc`.
 
-* `cog-example.tif`: A Cloud-optimized GeoTIFF with 6 overview levels 
-  downloaded from from
-  https://oin-hotosm.s3.amazonaws.com/5d7dad0becaf880008a9bc88/0/5d7dad0becaf880008a9bc89.tif
+* `sample.tif`: A Cloud-optimized GeoTIFF with 3 overview levels 
+  downloaded from
+  https://rb.gy/h8qz14
   This image is one of many free GeoTIFFs available from 
-  [OpenAerialMap](https://openaerialmap.org/).
+  [Sentinel-2](https://registry.opendata.aws/sentinel-2-l2a-cogs/).
 
