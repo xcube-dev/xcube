@@ -31,6 +31,8 @@ from xcube.core.mldataset import LazyMultiLevelDataset, MultiLevelDataset
 from xcube.core.store import MULTI_LEVEL_DATASET_TYPE, DATASET_TYPE, DataType
 from xcube.core.store.fs.impl.dataset import DatasetGeoTiffFsDataAccessor
 from xcube.util.assertions import assert_instance
+from xcube.util.jsonschema import JsonObjectSchema, JsonArraySchema, \
+    JsonNumberSchema
 
 
 class GeoTIFFMultiLevelDataset(LazyMultiLevelDataset):
@@ -42,6 +44,7 @@ class GeoTIFFMultiLevelDataset(LazyMultiLevelDataset):
         @param data_id: dataset identifier.
         @param open_params: keyword arguments.
         """
+
     def __init__(self,
                  fs: fsspec.AbstractFileSystem,
                  root: Optional[str],
@@ -119,6 +122,24 @@ class GeoTIFFMultiLevelDataset(LazyMultiLevelDataset):
         return protocol + "://" + self._path
 
 
+MULTI_LVEVEL_GEOTIFF_OPEN_DATA_PARAMS_SCHEMA = JsonObjectSchema(
+    properties=dict(
+        tile_size=JsonArraySchema(
+            items=(
+                JsonNumberSchema(minimum=1,
+                                 maximum=2500,
+                                 default=512),
+                JsonNumberSchema(minimum=1,
+                                 maximum=2500,
+                                 default=512)
+            ),
+            default=(512, 512)
+        ),
+    ),
+    additional_properties=False,
+)
+
+
 class MultiLevelDatasetGeoTiffFsDataAccessor(DatasetGeoTiffFsDataAccessor, ABC):
     """
     Opener/writer extension name: "mldataset:geotiff:<protocol>"
@@ -129,13 +150,11 @@ class MultiLevelDatasetGeoTiffFsDataAccessor(DatasetGeoTiffFsDataAccessor, ABC):
     def get_data_types(cls) -> Tuple[DataType, ...]:
         return MULTI_LEVEL_DATASET_TYPE, DATASET_TYPE
 
+    def get_open_data_params_schema(self,
+                                    data_id: str = None) -> JsonObjectSchema:
+        return MULTI_LVEVEL_GEOTIFF_OPEN_DATA_PARAMS_SCHEMA
+
     def open_data(self, data_id: str, **open_params) -> MultiLevelDataset:
         assert_instance(data_id, str, name='data_id')
         fs, root, open_params = self.load_fs(open_params)
         return GeoTIFFMultiLevelDataset(fs, root, data_id, **open_params)
-
-
-
-
-
-

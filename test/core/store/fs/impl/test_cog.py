@@ -28,8 +28,8 @@ import rioxarray
 import xarray
 import xarray as xr
 
-from xcube.core.store.fs.impl.cog import GeoTIFFMultiLevelDataset, \
-    MultiLevelDatasetGeoTiffFsDataAccessor
+from xcube.core.store.fs.impl.cog import GeoTIFFMultiLevelDataset
+from xcube.core.store.fs.impl.cog import MultiLevelDatasetGeoTiffFsDataAccessor
 from xcube.core.store.fs.impl.dataset import DatasetGeoTiffFsDataAccessor
 from xcube.util.jsonschema import JsonSchema
 
@@ -39,7 +39,6 @@ class RioXarrayTest(unittest.TestCase):
     This class doesn't test xcube but rather asserts that RioXarray works as
     expected
     """
-
     def test_it_is_possible_get_overviews(self):
         cog_path = os.path.join(os.path.dirname(__file__),
                                 "..", "..", "..", "..", "..",
@@ -90,7 +89,9 @@ class RioXarrayTest(unittest.TestCase):
 
 
 class GeoTIFFMultiLevelDatasetTest(unittest.TestCase):
-
+    """
+    A class to test wrapping of geotiff file into a multilevel dataset
+    """
     def test_local_fs(self):
         fs = fsspec.filesystem('file')
         cog_path = os.path.join(os.path.dirname(__file__),
@@ -117,7 +118,9 @@ class GeoTIFFMultiLevelDatasetTest(unittest.TestCase):
 
 
 class MultiLevelDatasetGeoTiffFsDataAccessorTest(unittest.TestCase):
-
+    """
+    A class to test cog and GeoTIFF for multilevel dataset opener
+    """
     def test_read_cog(self):
         fs = fsspec.filesystem('file')
         mldataopener = MultiLevelDatasetGeoTiffFsDataAccessor()
@@ -135,19 +138,49 @@ class MultiLevelDatasetGeoTiffFsDataAccessorTest(unittest.TestCase):
         self.assertIsInstance(mldataopener.get_open_data_params_schema(cog_path)
                               , JsonSchema, "Given object is a instance ")
 
+    def test_read_geotiff(self):
+        fs = fsspec.filesystem('file')
+        dataopener = MultiLevelDatasetGeoTiffFsDataAccessor()
+        tiff_path = os.path.join(os.path.dirname(__file__),
+                                 "..", "..", "..", "..", "..",
+                                 "examples", "serve", "demo",
+                                 "example-geotiff.tif")
+        dataset = dataopener.open_data(tiff_path, fs=fs, root=None)
+        self.assertEqual(1, dataset.num_levels)
+
 
 class DatasetGeoTiffFsDataAccessorTest(unittest.TestCase):
-
-    def test_it(self):
+    """
+    A Test class to test opening a GeoTIFF as multilevel dataset or 
+    as normal dataset
+    """
+    def test_ml_to_dataset(self):
         fs = fsspec.filesystem('file')
         cog_path = os.path.join(os.path.dirname(__file__),
+                                "..", "..", "..", "..", "..",
+                                "examples", "serve", "demo",
+                                "sample.tif")
+        data_accessor = DatasetGeoTiffFsDataAccessor()
+        self.assertEqual("geotiff", data_accessor.get_format_id())
+        dataset = data_accessor.open_data(data_id=cog_path, overview_level=1,
+                                          fs=fs, root=None)
+        self.assertIsInstance(dataset, xarray.Dataset)
+        self.assertIsInstance(
+            data_accessor.get_open_data_params_schema(cog_path),
+            JsonSchema, "Given object is a instance ")
+
+    def test_dataset(self):
+        fs = fsspec.filesystem('file')
+        tiff_path = os.path.join(os.path.dirname(__file__),
                                 "..", "..", "..", "..", "..",
                                 "examples", "serve", "demo",
                                 "example-geotiff.tif")
         data_accessor = DatasetGeoTiffFsDataAccessor()
         self.assertEqual("geotiff", data_accessor.get_format_id())
-        dataset = data_accessor.open_data(data_id=cog_path, fs=fs, root=None)
-        self.assertIsInstance(dataset, xarray.DataArray)
+        dataset = data_accessor.open_data(data_id=tiff_path, overview_level=0,
+                                          fs=fs, root=None)
+        self.assertIsInstance(dataset, xarray.Dataset)
         self.assertIsInstance(
-            data_accessor.get_open_data_params_schema(cog_path),
+            data_accessor.get_open_data_params_schema(tiff_path),
             JsonSchema, "Given object is a instance ")
+
