@@ -18,6 +18,7 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
+
 from abc import ABC
 from typing import Optional, Tuple, Dict, Any
 
@@ -118,7 +119,7 @@ class GeoTIFFMultiLevelDataset(LazyMultiLevelDataset):
         return protocol + "://" + self._path
 
 
-class MultiLevelDatasetGeoTiffFsDataAccessor(DatasetGeoTiffFsDataAccessor):
+class MultiLevelDatasetGeoTiffFsDataAccessor(DatasetGeoTiffFsDataAccessor, ABC):
     """
     Opener/writer extension name: "mldataset:geotiff:<protocol>"
     and "dataset:geotiff:<protocol>"

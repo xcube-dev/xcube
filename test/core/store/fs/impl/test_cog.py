@@ -25,16 +25,13 @@ import unittest
 import fsspec
 import rasterio as rio
 import rioxarray
-import s3fs
 import xarray
 import xarray as xr
 
-# from xcube.core.store.fs.impl import cog
-# from test.s3test import S3Test, MOTO_SERVER_ENDPOINT_URL
 from xcube.core.store.fs.impl.cog import GeoTIFFMultiLevelDataset, \
     MultiLevelDatasetGeoTiffFsDataAccessor
 from xcube.core.store.fs.impl.dataset import DatasetGeoTiffFsDataAccessor
-from xcube.util.jsonschema import JsonObjectSchema
+from xcube.util.jsonschema import JsonSchema
 
 
 class RioXarrayTest(unittest.TestCase):
@@ -134,10 +131,9 @@ class MultiLevelDatasetGeoTiffFsDataAccessorTest(unittest.TestCase):
         self.assertEqual(['band_1', 'band_2', 'band_3'],
                          list(dataset.data_vars))
         self.assertEqual(len(dataset.dims), 2)
-        self.assertEqual(mldataopener.get_format_id(), "geotiff")
-        self.assertEqual(
-            type(mldataopener.get_open_data_params_schema(cog_path)),
-            JsonObjectSchema)
+        self.assertEqual("geotiff", mldataopener.get_format_id())
+        self.assertIsInstance(mldataopener.get_open_data_params_schema(cog_path)
+                              , JsonSchema, "Given object is a instance ")
 
 
 class DatasetGeoTiffFsDataAccessorTest(unittest.TestCase):
@@ -149,9 +145,9 @@ class DatasetGeoTiffFsDataAccessorTest(unittest.TestCase):
                                 "examples", "serve", "demo",
                                 "example-geotiff.tif")
         data_accessor = DatasetGeoTiffFsDataAccessor()
-        self.assertEqual(data_accessor.get_format_id(), "geotiff")
+        self.assertEqual("geotiff", data_accessor.get_format_id())
         dataset = data_accessor.open_data(data_id=cog_path, fs=fs, root=None)
-        self.assertEqual(type(dataset), xarray.DataArray)
-        self.assertEqual(
-            type(data_accessor.get_open_data_params_schema(cog_path)),
-            JsonObjectSchema)
+        self.assertIsInstance(dataset, xarray.DataArray)
+        self.assertIsInstance(
+            data_accessor.get_open_data_params_schema(cog_path),
+            JsonSchema, "Given object is a instance ")
