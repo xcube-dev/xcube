@@ -70,6 +70,8 @@ class GeoTIFFMultiLevelDataset(LazyMultiLevelDataset):
                      tile_size: Tuple[int, int],
                      overview_level: Optional[int] = 0) -> xr.Dataset:
         """
+        A method to open the cog/geotiff dataset using rioxarray,
+        returns xarray.Dataset
 
         @param overview_level: the overview level required
         @param tile_size: tile size as tuple

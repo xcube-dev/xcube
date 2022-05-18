@@ -61,12 +61,12 @@ class IOStoreTest(CliTest):
                           '  Data store that uses a local filesystem\n'
                           '\n'
                           'Data resources:\n'
-                          '                   cog-example.tif  <no title>\n'
                           '             cube-1-250-250.levels  <no title>\n'
                           '               cube-1-250-250.zarr  <no title>\n'
                           '               cube-5-100-200.zarr  <no title>\n'
                           '                           cube.nc  <no title>\n'
                           '               example-geotiff.tif  <no title>\n'
+                          '                        sample.tif  <no title>\n'
                           '6 data resources found.\n'),
                          result.stdout)
         demo_dir = os.path.join(os.path.dirname(__file__),
