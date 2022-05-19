@@ -25,7 +25,7 @@ import fsspec
 
 from .accessor import FsAccessor
 from .accessor import FsDataAccessor
-from .impl.cog import MultiLevelDatasetGeoTiffFsDataAccessor
+from .impl.geotiff import MultiLevelDatasetGeoTiffFsDataAccessor
 from .impl.dataset import DatasetNetcdfFsDataAccessor
 from .impl.dataset import DatasetGeoTiffFsDataAccessor
 from .impl.dataset import DatasetZarrFsDataAccessor

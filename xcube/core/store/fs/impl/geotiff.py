@@ -27,23 +27,26 @@ import rasterio
 import rioxarray
 import xarray as xr
 
-from xcube.core.mldataset import LazyMultiLevelDataset, MultiLevelDataset
-from xcube.core.store import MULTI_LEVEL_DATASET_TYPE, DATASET_TYPE, DataType
+from xcube.core.mldataset import LazyMultiLevelDataset
+from xcube.core.mldataset import MultiLevelDataset
+from xcube.core.store import MULTI_LEVEL_DATASET_TYPE
+from xcube.core.store import DATASET_TYPE, DataType
 from xcube.core.store.fs.impl.dataset import DatasetGeoTiffFsDataAccessor
 from xcube.util.assertions import assert_instance
-from xcube.util.jsonschema import JsonObjectSchema, JsonArraySchema, \
-    JsonNumberSchema
+from xcube.util.jsonschema import JsonObjectSchema
+from xcube.util.jsonschema import JsonArraySchema
+from xcube.util.jsonschema import JsonNumberSchema
 
 
 class GeoTIFFMultiLevelDataset(LazyMultiLevelDataset):
     """
-        A multi-level dataset for GeoTIFF format
+    A multi-level dataset for GeoTIFF format
 
-        @param fs: fsspec.AbstractFileSystem object.
-        @param root: Optional root path identifier.
-        @param data_id: dataset identifier.
-        @param open_params: keyword arguments.
-        """
+    @param fs: fsspec.AbstractFileSystem object.
+    @param root: Optional root path identifier.
+    @param data_id: dataset identifier.
+    @param open_params: keyword arguments.
+    """
 
     def __init__(self,
                  fs: fsspec.AbstractFileSystem,
@@ -126,11 +129,9 @@ MULTI_LVEVEL_GEOTIFF_OPEN_DATA_PARAMS_SCHEMA = JsonObjectSchema(
     properties=dict(
         tile_size=JsonArraySchema(
             items=(
-                JsonNumberSchema(minimum=1,
-                                 maximum=2500,
+                JsonNumberSchema(minimum=256,
                                  default=512),
-                JsonNumberSchema(minimum=1,
-                                 maximum=2500,
+                JsonNumberSchema(minimum=256,
                                  default=512)
             ),
             default=(512, 512)
