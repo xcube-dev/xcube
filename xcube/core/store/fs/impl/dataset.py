@@ -25,11 +25,12 @@ from typing import Tuple, Optional
 import rasterio
 import xarray as xr
 import zarr
-from rioxarray import rioxarray
+import rioxarray
 
 from xcube.core.chunkstore import LoggingStore
 from xcube.util.assertions import assert_instance
 from xcube.util.jsonschema import JsonArraySchema
+from xcube.util.jsonschema import JsonNumberSchema
 from xcube.util.jsonschema import JsonBooleanSchema
 from xcube.util.jsonschema import JsonIntegerSchema
 from xcube.util.jsonschema import JsonObjectSchema
@@ -310,9 +311,22 @@ class DatasetNetcdfFsDataAccessor(DatasetFsDataAccessor, ABC):
 
 GEOTIFF_OPEN_DATA_PARAMS_SCHEMA = JsonObjectSchema(
     properties=dict(
-        # TODO: add more from ds.to_tiff()
+        tile_size=JsonArraySchema(
+            items=(
+                JsonNumberSchema(minimum=1,
+                                 maximum=2500,
+                                 default=512),
+                JsonNumberSchema(minimum=1,
+                                 maximum=2500,
+                                 default=512)
+            ),
+            default=(512, 512)
+        ),
+        overview_level=JsonIntegerSchema(
+            default=1
+        )
     ),
-    additional_properties=True,
+    additional_properties=False,
 )
 
 
@@ -332,7 +346,7 @@ class DatasetGeoTiffFsDataAccessor(DatasetFsDataAccessor, ABC):
 
     def open_data(self,
                   data_id: str,
-                  **open_params) -> xr.Dataset:
+                  overview_level: Optional[int], **open_params) -> xr.Dataset:
         assert_instance(data_id, str, name='data_id')
         fs, root, open_params = self.load_fs(open_params)
 
@@ -345,7 +359,54 @@ class DatasetGeoTiffFsDataAccessor(DatasetFsDataAccessor, ABC):
         else:
             file_path = protocol + "://" + data_id
 
-        return rioxarray.open_rasterio(file_path)
+        return self.open_dataset(file_path, (512, 512),
+                                 overview_level)
+
+    @classmethod
+    def open_dataset(cls,
+                     file_spec: str,
+                     tile_size: Tuple[int, int],
+                     overview_level: Optional[int] = 0) -> xr.Dataset:
+        """
+        A method to open the cog/geotiff dataset using rioxarray,
+        returns xarray.Dataset
+
+        @param overview_level: the overview level required
+        @param tile_size: tile size as tuple
+        @type file_spec: fsspec.AbstractFileSystem object
+        """
+
+        array: xr.DataArray = rioxarray.open_rasterio(
+            file_spec,
+            overview_level=overview_level - 1 if overview_level > 0 else None,
+            chunks=dict(zip(('x', 'y'), tile_size))
+        )
+        arrays = {}
+        if array.ndim == 3:
+            for i in range(array.shape[0]):
+                name = f'{array.name or "band"}_{i + 1}'
+                dims = array.dims[-2:]
+                coords = {n: v
+                          for n, v in array.coords.items()
+                          if n in dims or n == 'spatial_ref'}
+                band_data = array.data[i, :, :]
+                arrays[name] = xr.DataArray(band_data,
+                                            coords=coords,
+                                            dims=dims,
+                                            attrs=dict(**array.attrs))
+        elif array.ndim == 2:
+            name = f'{array.name or "band"}'
+            arrays[name] = array
+        else:
+            raise RuntimeError('number of dimensions must be 2 or 3')
+
+        dataset = xr.Dataset(arrays, attrs=dict(source=file_spec))
+        # For CRS, rioxarray uses variable "spatial_ref" by default
+        if 'spatial_ref' in array.coords:
+            for data_var in dataset.data_vars.values():
+                data_var.attrs['grid_mapping'] = 'spatial_ref'
+
+        return dataset
 
     def get_write_data_params_schema(self) -> JsonObjectSchema:
         raise NotImplementedError("Writing of GeoTIFF not yet supported")
@@ -355,9 +416,4 @@ class DatasetGeoTiffFsDataAccessor(DatasetFsDataAccessor, ABC):
                    data_id: str,
                    replace=False,
                    **write_params) -> str:
-        # assert_instance(data, xr.Dataset, name='data')
-        # assert_instance(data_id, str, name='data_id')
-        # fs, root, write_params = self.load_fs(write_params)
         raise NotImplementedError("Writing of GeoTIFF not yet supported")
-
-
