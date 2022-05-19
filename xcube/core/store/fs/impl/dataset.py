@@ -313,14 +313,12 @@ GEOTIFF_OPEN_DATA_PARAMS_SCHEMA = JsonObjectSchema(
     properties=dict(
         tile_size=JsonArraySchema(
             items=(
-                JsonNumberSchema(minimum=1,
-                                 maximum=2500,
+                JsonNumberSchema(minimum=256,
                                  default=512),
-                JsonNumberSchema(minimum=1,
-                                 maximum=2500,
+                JsonNumberSchema(minimum=256,
                                  default=512)
             ),
-            default=(512, 512)
+            default=[512, 512]
         ),
         overview_level=JsonIntegerSchema(
             default=1
