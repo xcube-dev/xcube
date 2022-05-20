@@ -26,9 +26,9 @@ import tornado.ioloop
 import tornado.web
 
 from xcube.constants import EXTENSION_POINT_SERVER_APIS
-from xcube.server.api import SERVER_CONTEXT_ATTR_NAME, ServerApi
+from xcube.server.api import SERVER_CONTEXT_ATTR_NAME, Api
 from xcube.server.config import BASE_SERVER_CONFIG_SCHEMA
-from xcube.server.context import ServerContextImpl, ServerContext
+from xcube.server.context import ServerContext, Context
 from xcube.util.extension import ExtensionRegistry
 from xcube.util.extension import get_extension_registry
 
@@ -62,7 +62,7 @@ class Server:
         self._io_loop = io_loop or tornado.ioloop.IOLoop.current()
         self._application = tornado.web.Application(handlers)
         self._server_config = None
-        self._server_context: Optional[ServerContextImpl] = None
+        self._server_context: Optional[ServerContext] = None
         self.change_config(server_config)
 
     def start(self):
@@ -84,7 +84,7 @@ class Server:
         next_server_config = self._server_config_schema.from_instance(
             server_config
         )
-        next_server_context = ServerContextImpl(next_server_config)
+        next_server_context = ServerContext(next_server_config)
         prev_server_context = self._server_context
 
         for api_name, api in self._server_apis.items():
@@ -111,7 +111,7 @@ class Server:
         return self._server_config
 
     @property
-    def context(self) -> ServerContext:
+    def context(self) -> Context:
         return self._server_context
 
     @classmethod
@@ -129,7 +129,7 @@ class Server:
             )
         }
 
-        def count_api_deps(api: ServerApi) -> int:
+        def count_api_deps(api: Api) -> int:
             sum = 0
             for api_name in api.dependencies:
                 sum += count_api_deps(server_apis[api_name]) + 1

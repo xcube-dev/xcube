@@ -20,12 +20,14 @@
 # DEALINGS IN THE SOFTWARE.
 
 import abc
-from typing import Any, Mapping
+from typing import Any, Mapping, Dict
 
 import tornado.httpserver
 
+from xcube.server.config import ServerConfig
 
-class ServerContext(abc.ABC):
+
+class Context(abc.ABC):
     """An abstract context."""
 
     @property
@@ -41,16 +43,22 @@ class ServerContext(abc.ABC):
     def get_api_context(self, api_name: str) -> Any:
         """Get the API context for *api_name*."""
 
+    @abc.abstractmethod
+    def on_config_change(self,
+                         next_server_config: ServerConfig,
+                         prev_server_config: ServerConfig):
+        """Called when the server configuration changed."""
 
-class ServerContextImpl(ServerContext):
+
+class ServerContext(Context):
     """The server context."""
 
-    def __init__(self, server_config: Mapping[str, Any]):
+    def __init__(self, server_config: ServerConfig):
         self._server_config = dict(server_config)
-        self._api_contexts = dict()
+        self._api_contexts: Dict[str, ApiContext] = dict()
 
     @property
-    def server_config(self) -> Mapping[str, Any]:
+    def server_config(self) -> ServerConfig:
         return self._server_config
 
     def set_api_context(self, api_name: str, api_context: Any):
@@ -61,12 +69,22 @@ class ServerContextImpl(ServerContext):
         """Get the API context for *api_name*."""
         return self._api_contexts.get(api_name)
 
+    def on_config_change(self,
+                         next_server_config: ServerConfig,
+                         prev_server_config: ServerConfig):
+        """Called when the server configuration changed."""
+        # TODO: call in order to take care of dependencies
+        for api_context in self._api_contexts.values():
+            api_context.on_config_change(next_server_config,
+                                         prev_server_config)
+        self._server_config = next_server_config
 
-class RequestContext(ServerContext):
-    """A request context."""
+
+class ApiContext(Context, abc.ABC):
+    """An abstract API context."""
 
     def __init__(self,
-                 server_context: ServerContext,
+                 server_context: Context,
                  request: tornado.httpserver.HTTPRequest):
         self._server_context = server_context
         self._request = request
@@ -76,5 +94,5 @@ class RequestContext(ServerContext):
         return self._request
 
     @property
-    def server_config(self) -> Mapping[str, Any]:
+    def server_config(self) -> ServerConfig:
         return self._server_context.server_config

@@ -19,22 +19,4 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 
-from typing import Mapping, Any
-
-from xcube.util.jsonschema import JsonIntegerSchema
-from xcube.util.jsonschema import JsonObjectSchema
-from xcube.util.jsonschema import JsonStringSchema
-
-
-DEFAULT_PORT = 8080
-DEFAULT_ADDRESS = "0.0.0.0"
-
-BASE_SERVER_CONFIG_SCHEMA = JsonObjectSchema(
-    properties=dict(
-        port=JsonIntegerSchema(default=DEFAULT_PORT),
-        address=JsonStringSchema(default=DEFAULT_ADDRESS),
-    ),
-    additional_properties=False,
-)
-
-ServerConfig = Mapping[str, Any]
+from .api import api

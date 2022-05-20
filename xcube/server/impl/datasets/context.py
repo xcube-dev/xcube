@@ -19,22 +19,19 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 
-from typing import Mapping, Any
-
-from xcube.util.jsonschema import JsonIntegerSchema
-from xcube.util.jsonschema import JsonObjectSchema
-from xcube.util.jsonschema import JsonStringSchema
+from typing import Any, Mapping, List, Dict
 
 
-DEFAULT_PORT = 8080
-DEFAULT_ADDRESS = "0.0.0.0"
+class DatasetsContext:
+    def __init__(self, datasets_config: Mapping[str, Any]):
+        self._config = datasets_config
+        self.update_config(datasets_config)
 
-BASE_SERVER_CONFIG_SCHEMA = JsonObjectSchema(
-    properties=dict(
-        port=JsonIntegerSchema(default=DEFAULT_PORT),
-        address=JsonStringSchema(default=DEFAULT_ADDRESS),
-    ),
-    additional_properties=False,
-)
-
-ServerConfig = Mapping[str, Any]
+    def update_config(self, datasets_config: Mapping[str, Any]):
+        self._config = datasets_config
+        data_store_configs: List[Dict[str, Any]] = self._config.get('data_stores')
+        for data_store_config in data_store_configs:
+            store_id = data_store_config['store_id']
+            store_params = data_store_config['store_params']
+            dataset_configs = data_store_config['datasets']
+            # TODO etc

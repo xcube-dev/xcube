@@ -22,7 +22,7 @@
 import unittest
 
 from xcube.constants import EXTENSION_POINT_SERVER_APIS
-from xcube.server.api import ServerApi
+from xcube.server.api import Api
 from xcube.server.server import Server
 from xcube.util.extension import ExtensionRegistry
 from xcube.util.jsonschema import JsonObjectSchema
@@ -107,9 +107,9 @@ class ServerTest(unittest.TestCase):
                 ("wcs", ("datasets",)),
                 ("wmts", ("datasets",)),
         ):
-            api = ServerApi(api_name,
-                            dependencies=api_deps,
-                            config_schema=config_schema)
+            api = Api(api_name,
+                      dependencies=api_deps,
+                      config_schema=config_schema)
             extension_registry.add_extension(EXTENSION_POINT_SERVER_APIS,
                                              api.name,
                                              component=api)

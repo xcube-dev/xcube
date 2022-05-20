@@ -19,8 +19,8 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 
-from ..api import RequestHandler
-from ..api import ServerApi
+from ..api import ApiHandler
+from ..api import Api
 from ...util.jsonschema import JsonObjectSchema
 from ...util.jsonschema import JsonStringSchema
 
@@ -31,14 +31,14 @@ CONFIG_SCHEMA = JsonObjectSchema(
     additional_properties=False
 )
 
-api = ServerApi('main', config_schema=CONFIG_SCHEMA)
+api = Api('main', config_schema=CONFIG_SCHEMA)
 
 
 # noinspection PyAbstractClass
 @api.route("/")
-class MainHandler(RequestHandler):
+class MainHandler(ApiHandler):
     def get(self):
-        audience = self.context.main.get('audience')
+        audience = self.server_context.main.get('audience')
         self.write(f"Hello, {audience}!")
 
 

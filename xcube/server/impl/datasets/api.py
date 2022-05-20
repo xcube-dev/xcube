@@ -19,22 +19,26 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 
-from typing import Mapping, Any
+from typing import Any, Optional, Mapping
 
-from xcube.util.jsonschema import JsonIntegerSchema
-from xcube.util.jsonschema import JsonObjectSchema
-from xcube.util.jsonschema import JsonStringSchema
+from xcube.server.api import Api
+from xcube.server.context import Context
+from .config import DATASETS_CONFIG_SCHEMA
+from .context import DatasetsContext
 
 
-DEFAULT_PORT = 8080
-DEFAULT_ADDRESS = "0.0.0.0"
+class DatasetApi(Api[DatasetsContext]):
 
-BASE_SERVER_CONFIG_SCHEMA = JsonObjectSchema(
-    properties=dict(
-        port=JsonIntegerSchema(default=DEFAULT_PORT),
-        address=JsonStringSchema(default=DEFAULT_ADDRESS),
-    ),
-    additional_properties=False,
-)
+    def __init__(self):
+        super().__init__('datasets', config_schema=DATASETS_CONFIG_SCHEMA)
 
-ServerConfig = Mapping[str, Any]
+    def get_context(self,
+                    next_api_config: Any,
+                    prev_api_context: Optional[DatasetsContext],
+                    next_server_config: Mapping[str, Any],
+                    prev_server_context: Optional[Context]) -> DatasetsContext:
+        if prev_api_context
+        return DatasetsContext(next_api_config)
+
+
+api = DatasetApi()

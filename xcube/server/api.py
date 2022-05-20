@@ -26,22 +26,22 @@ import tornado.httputil
 import tornado.ioloop
 import tornado.web
 
-from .context import RequestContext
-from .context import ServerContext
+from .context import ApiContext
+from .context import Context
 from ..util.jsonschema import JsonSchema
 
 SERVER_CONTEXT_ATTR_NAME = '__xcube_server_context'
 
-ServerApiRoute = Union[
-    Tuple[str, Type["RequestHandler"]],
-    Tuple[str, Type["RequestHandler"], Dict[str, Any]]
+ApiRoute = Union[
+    Tuple[str, Type["ApiHandler"]],
+    Tuple[str, Type["ApiHandler"], Dict[str, Any]]
 ]
 
 # ConteXt type variable
-X = TypeVar("X", bound="ServerApi")
+X = TypeVar("X", bound="Api")
 
 
-class ServerApi(Generic[X]):
+class Api(Generic[X]):
     """
     A server API.
 
@@ -64,11 +64,11 @@ class ServerApi(Generic[X]):
     def __init__(self,
                  name: str, /,
                  dependencies: Optional[Sequence[str]] = None,
-                 routes: Optional[Sequence[ServerApiRoute]] = None,
+                 routes: Optional[Sequence[ApiRoute]] = None,
                  config_schema: Optional[JsonSchema] = None):
         self._name = name
         self._dependencies = tuple(dependencies or ())
-        self._routes: List[ServerApiRoute] = list(routes or [])
+        self._routes: List[ApiRoute] = list(routes or [])
         self._config_schema = config_schema
 
     @property
@@ -95,10 +95,10 @@ class ServerApi(Generic[X]):
             class derived from RequestHandler
         """
 
-        def decorator_func(target_class: Type["RequestHandler"]):
-            if not issubclass(target_class, RequestHandler):
+        def decorator_func(target_class: Type["ApiHandler"]):
+            if not issubclass(target_class, ApiHandler):
                 raise TypeError(f'target_class must be an'
-                                f' instance of {RequestHandler},'
+                                f' instance of {ApiHandler},'
                                 f' but was {target_class}')
             if target_kwargs:
                 handler = pattern, target_class, target_kwargs
@@ -109,7 +109,7 @@ class ServerApi(Generic[X]):
         return decorator_func
 
     @property
-    def routes(self) -> List[ServerApiRoute]:
+    def routes(self) -> List[ApiRoute]:
         """The handlers provided by this API."""
         return self._routes
 
@@ -121,7 +121,7 @@ class ServerApi(Generic[X]):
         return self._config_schema
 
     def on_start(self,
-                 server_context: ServerContext,
+                 server_context: Context,
                  io_loop: tornado.ioloop.IOLoop):
         """
         Called when the server is started.
@@ -131,7 +131,7 @@ class ServerApi(Generic[X]):
         """
 
     def on_stop(self,
-                server_context: ServerContext,
+                server_context: Context,
                 io_loop: tornado.ioloop.IOLoop):
         """
         Called when the server is stopped.
@@ -141,13 +141,7 @@ class ServerApi(Generic[X]):
         """
 
     # noinspection PyMethodMayBeStatic,PyUnusedLocal
-    def get_context(
-            self,
-            next_api_config: Any,
-            prev_api_context: Optional[X],
-            next_server_config: Mapping[str, Any],
-            prev_server_context: Optional[ServerContext]
-    ) -> X:
+    def new_context(server_config: ServerConfig) -> X:
         """
         Called when the configuration has changed.
 
@@ -167,7 +161,7 @@ class ServerApi(Generic[X]):
         return getattr(next_server_config, self.name, None)
 
 
-class RequestHandler(tornado.web.RequestHandler, abc.ABC):
+class ApiHandler(tornado.web.RequestHandler, abc.ABC):
     def __init__(self,
                  application: tornado.web.Application,
                  request: tornado.httputil.HTTPServerRequest,
@@ -178,12 +172,12 @@ class RequestHandler(tornado.web.RequestHandler, abc.ABC):
             raise RuntimeError(
                 'request handler must be used with xcube server'
             )
-        self._context = RequestContext(server_context, request)
+        self._context = ApiContext(server_context, request)
 
     @property
     def server_config(self) -> Mapping[str, Any]:
         return self._context.server_config
 
     @property
-    def context(self) -> RequestContext:
+    def server_context(self) -> ApiContext:
         return self._context
