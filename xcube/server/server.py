@@ -18,6 +18,7 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
+
 import copy
 import logging
 from typing import Optional, Any, Dict, Mapping
@@ -26,9 +27,14 @@ import tornado.ioloop
 import tornado.web
 
 from xcube.constants import EXTENSION_POINT_SERVER_APIS
-from xcube.server.api import SERVER_CONTEXT_ATTR_NAME, Api
+from xcube.server.api import Api
+from xcube.server.api import ApiHandler
+from xcube.server.api import SERVER_CONTEXT_ATTR_NAME
 from xcube.server.config import BASE_SERVER_CONFIG_SCHEMA
-from xcube.server.context import ServerContext, Context
+from xcube.server.config import ServerConfig
+from xcube.server.context import ApiContext
+from xcube.server.context import Context
+from xcube.server.context import ServerContext
 from xcube.util.extension import ExtensionRegistry
 from xcube.util.extension import get_extension_registry
 
@@ -37,7 +43,7 @@ class Server:
 
     def __init__(
             self,
-            server_config: Dict[str, Any],
+            server_config: ServerConfig,
             io_loop: Optional[tornado.ioloop.IOLoop] = None,
             extension_registry: Optional[ExtensionRegistry] = None
     ):
@@ -55,15 +61,38 @@ class Server:
 
         handlers = []
         for server_api in self._server_apis.values():
+            for route in server_api.routes:
+                api_route_path = route[0]
+                api_handler_cls = route[1]
+                if not issubclass(api_handler_cls, ApiHandler):
+                    raise ValueError(f'API {server_api.name!r}:'
+                                     f' route {api_route_path}:'
+                                     f' handler must be instance of'
+                                     f' {ApiHandler.__name__}')
+                api_handler_cls.api_name = server_api.name
             handlers.extend(server_api.routes)
 
         self._configure_tornado_logger()
 
         self._io_loop = io_loop or tornado.ioloop.IOLoop.current()
         self._application = tornado.web.Application(handlers)
-        self._server_config = None
-        self._server_context: Optional[ServerContext] = None
-        self.change_config(server_config)
+
+        api_contexts = dict()
+        server_context = ServerContext(server_config, api_contexts)
+        for api_name, api in self._server_apis.items():
+            api_context = api.create_context(server_context)
+            if api_context is not None:
+                if not isinstance(api_context, ApiContext):
+                    raise ValueError(f'API {api_name}:'
+                                     f' context must be instance of'
+                                     f' {ApiContext.__name__}')
+                api_contexts[api_name] = api_context
+                setattr(server_context, api_name, api_context)
+
+        self._server_context = server_context
+        setattr(self._application,
+                SERVER_CONTEXT_ATTR_NAME,
+                server_context)
 
     def start(self):
         self._application.listen(self._server_config["port"],
@@ -79,32 +108,12 @@ class Server:
 
     def change_config(
             self,
-            server_config: Dict[str, Any]
+            server_config: ServerConfig
     ):
         next_server_config = self._server_config_schema.from_instance(
             server_config
         )
-        next_server_context = ServerContext(next_server_config)
-        prev_server_context = self._server_context
-
-        for api_name, api in self._server_apis.items():
-            next_api_config = next_server_config.get(api_name)
-            if prev_server_context is not None:
-                prev_api_context = prev_server_context.get_api_context(api_name)
-            else:
-                prev_api_context = None
-            next_api_context = api.get_context(next_api_config,
-                                               prev_api_context,
-                                               next_server_config,
-                                               prev_server_context)
-            next_server_context.set_api_context(api_name, next_api_context)
-            setattr(next_server_context, api_name, next_api_context)
-
-        self._server_config = next_server_config
-        self._server_context = next_server_context
-        setattr(self._application,
-                SERVER_CONTEXT_ATTR_NAME,
-                next_server_context)
+        self._server_context.on_config_change(next_server_config)
 
     @property
     def config(self) -> Mapping[str, Any]:
@@ -118,7 +127,7 @@ class Server:
     def get_server_apis(
             cls,
             extension_registry: Optional[ExtensionRegistry] = None
-    ):
+    ) -> Dict[str, Api]:
         extension_registry = extension_registry \
                              or get_extension_registry()
 
@@ -130,10 +139,10 @@ class Server:
         }
 
         def count_api_deps(api: Api) -> int:
-            sum = 0
+            dep_sum = 0
             for api_name in api.dependencies:
-                sum += count_api_deps(server_apis[api_name]) + 1
-            return sum
+                dep_sum += count_api_deps(server_apis[api_name]) + 1
+            return dep_sum
 
         api_dep_counts = {
             api.name: count_api_deps(api)

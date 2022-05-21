@@ -20,14 +20,15 @@
 # DEALINGS IN THE SOFTWARE.
 
 import abc
-from typing import Any, List, Optional, Tuple, Dict, Union, Type, Sequence, Generic, TypeVar, Mapping
+from typing import Any, List, Optional, Tuple, Dict, Union, Type, Sequence, Generic, TypeVar
 
 import tornado.httputil
 import tornado.ioloop
 import tornado.web
 
-from .context import ApiContext
+from .config import ServerConfig
 from .context import Context
+from .context import ServerContext
 from ..util.jsonschema import JsonSchema
 
 SERVER_CONTEXT_ATTR_NAME = '__xcube_server_context'
@@ -110,7 +111,7 @@ class Api(Generic[X]):
 
     @property
     def routes(self) -> List[ApiRoute]:
-        """The handlers provided by this API."""
+        """The routes provided by this API."""
         return self._routes
 
     @property
@@ -141,43 +142,49 @@ class Api(Generic[X]):
         """
 
     # noinspection PyMethodMayBeStatic,PyUnusedLocal
-    def new_context(server_config: ServerConfig) -> X:
+    def create_context(self, server_context: ServerContext) -> Optional[X]:
         """
-        Called when the configuration has changed.
+        Create a new context object for this API.
+        If the API doesn't require a context object, None is returned.
+        The default implementation returns None.
 
-        May return an updated API context for new server configuration
-        *next_server_config* and optional previous server
-        context *prev_server_context*.
-
-        The default implementation returns the API configuration
-        from *next_server_config*.
-
-        :param next_api_config: The new API configuration
-        :param prev_api_context: The previous API context
-        :param next_server_config: The new server configuration
-        :param prev_server_context: Optional previous server context
-        :return: an API context object or None
+        :param server_context: The server context.
+        :return: An instance of ApiContext or None
         """
-        return getattr(next_server_config, self.name, None)
+        return None
 
 
-class ApiHandler(tornado.web.RequestHandler, abc.ABC):
+class ApiHandler(tornado.web.RequestHandler, Generic[X], abc.ABC):
+    api_name: str
+
     def __init__(self,
                  application: tornado.web.Application,
                  request: tornado.httputil.HTTPServerRequest,
                  **kwargs: Any):
         super().__init__(application, request, **kwargs)
-        server_context = getattr(application, SERVER_CONTEXT_ATTR_NAME, None)
+        if not isinstance(self.api_name, str):
+            raise RuntimeError(
+                'request handler must be used with xcube server'
+            )
+
+        server_context = getattr(application,
+                                 SERVER_CONTEXT_ATTR_NAME, None)
         if server_context is None:
             raise RuntimeError(
                 'request handler must be used with xcube server'
             )
-        self._context = ApiContext(server_context, request)
+
+        self._server_context = server_context
+        self._api_context = server_context.get_api_context(self.api_name)
 
     @property
-    def server_config(self) -> Mapping[str, Any]:
-        return self._context.server_config
+    def server_config(self) -> ServerConfig:
+        return self._server_context.server_config
 
     @property
-    def server_context(self) -> ApiContext:
-        return self._context
+    def server_context(self) -> ServerContext:
+        return self._server_context
+
+    @property
+    def api_context(self) -> X:
+        return self._api_context
