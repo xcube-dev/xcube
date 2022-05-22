@@ -26,6 +26,7 @@ from xcube.util.jsonschema import JsonStringSchema
 DATASET_CONFIG_SCHEMA = JsonObjectSchema(
     properties=dict(
         data_id=JsonStringSchema(),
+        open_params=JsonObjectSchema(additional_properties=True),
         style_ref=JsonStringSchema(),
     ),
     required=['data_id'],

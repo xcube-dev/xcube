@@ -45,7 +45,7 @@ class ServerTest(unittest.TestCase):
         self.assertTrue(io_loop.start_called)
         self.assertTrue(io_loop.stop_called)
 
-    def test_default_config(self):
+    def test_config(self):
         io_loop = self.get_io_loop()
         extension_registry = self.get_extension_registry()
         # noinspection PyTypeChecker
@@ -57,24 +57,20 @@ class ServerTest(unittest.TestCase):
         self.assertEqual(8080, server.config["port"])
         # noinspection PyUnresolvedReferences
         self.assertEqual("0.0.0.0", server.config["address"])
-        # noinspection PyUnresolvedReferences
-        self.assertEqual({}, server.config["datasets"])
-        # noinspection PyUnresolvedReferences
-        self.assertEqual({}, server.config["places"])
 
-    def test_get_server_apis(self):
+    def test_load_apis(self):
         extension_registry = self.get_extension_registry()
-        server_apis = Server.get_server_apis(
+        apis = Server.load_apis(
             extension_registry=extension_registry
         )
-        self.assertIsInstance(server_apis, dict)
+        self.assertIsInstance(apis, dict)
         self.assertEqual(['datasets',
                           'places',
                           'timeseries',
                           'wcs', 'wmts',
                           'stac',
                           'openeo'],
-                         list(server_apis.keys()))
+                         list(apis.keys()))
 
     @staticmethod
     def get_io_loop():

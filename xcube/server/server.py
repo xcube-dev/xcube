@@ -21,117 +21,95 @@
 
 import copy
 import logging
-from typing import Optional, Any, Dict, Mapping
+from typing import Optional, Dict, Mapping, Any
 
 import tornado.ioloop
 import tornado.web
 
 from xcube.constants import EXTENSION_POINT_SERVER_APIS
 from xcube.server.api import Api
+from xcube.server.api import ApiContext
 from xcube.server.api import ApiHandler
-from xcube.server.api import SERVER_CONTEXT_ATTR_NAME
+from xcube.server.api import _SERVER_CONTEXT_ATTR_NAME
 from xcube.server.config import BASE_SERVER_CONFIG_SCHEMA
-from xcube.server.config import ServerConfig
-from xcube.server.context import ApiContext
+from xcube.server.config import Config
 from xcube.server.context import Context
-from xcube.server.context import ServerContext
 from xcube.util.extension import ExtensionRegistry
 from xcube.util.extension import get_extension_registry
+from xcube.util.jsonschema import JsonObjectSchema
 
 
 class Server:
 
     def __init__(
             self,
-            server_config: ServerConfig,
+            config: Config,
             io_loop: Optional[tornado.ioloop.IOLoop] = None,
             extension_registry: Optional[ExtensionRegistry] = None
     ):
-        self._server_apis = self.get_server_apis(extension_registry)
-
-        api_config_schemas = {
-            api_name: api.config_schema
-            for api_name, api in self._server_apis.items()
-            if api.config_schema is not None
-        }
-
-        server_config_schema = copy.deepcopy(BASE_SERVER_CONFIG_SCHEMA)
-        server_config_schema.properties.update(**api_config_schemas)
-        self._server_config_schema = server_config_schema
-
-        handlers = []
-        for server_api in self._server_apis.values():
-            for route in server_api.routes:
-                api_route_path = route[0]
-                api_handler_cls = route[1]
-                if not issubclass(api_handler_cls, ApiHandler):
-                    raise ValueError(f'API {server_api.name!r}:'
-                                     f' route {api_route_path}:'
-                                     f' handler must be instance of'
-                                     f' {ApiHandler.__name__}')
-                api_handler_cls.api_name = server_api.name
-            handlers.extend(server_api.routes)
-
+        apis = self.load_apis(extension_registry)
+        handlers = self.get_api_handlers(apis)
+        self._apis = apis
+        self._config_schema = self.get_effective_config_schema(apis)
         self._configure_tornado_logger()
-
         self._io_loop = io_loop or tornado.ioloop.IOLoop.current()
         self._application = tornado.web.Application(handlers)
+        root_ctx = self.create_ctx(config)
+        root_ctx.update(None)
+        self.root_ctx = root_ctx
 
-        api_contexts = dict()
-        server_context = ServerContext(server_config, api_contexts)
-        for api_name, api in self._server_apis.items():
-            api_context = api.create_context(server_context)
-            if api_context is not None:
-                if not isinstance(api_context, ApiContext):
-                    raise ValueError(f'API {api_name}:'
-                                     f' context must be instance of'
-                                     f' {ApiContext.__name__}')
-                api_contexts[api_name] = api_context
-                setattr(server_context, api_name, api_context)
+    @property
+    def config(self) -> Config:
+        return self._root_ctx.config
 
-        self._server_context = server_context
-        setattr(self._application,
-                SERVER_CONTEXT_ATTR_NAME,
-                server_context)
+    @config.setter
+    def config(self, config: Config):
+        root_ctx = self.create_ctx(config)
+        root_ctx.update(self.root_ctx)
+        self.root_ctx = root_ctx
+
+    @property
+    def root_ctx(self) -> "ServerContext":
+        return self._root_ctx
+
+    @root_ctx.setter
+    def root_ctx(self, root_ctx: "ServerContext"):
+        self._root_ctx = root_ctx
+        setattr(self._application, _SERVER_CONTEXT_ATTR_NAME, root_ctx)
 
     def start(self):
-        self._application.listen(self._server_config["port"],
-                                 address=self._server_config["address"])
-        for api in self._server_apis.values():
-            api.on_start(self._server_context, self._io_loop)
+        port = self.config["port"]
+        address = self.config["address"]
+        self._application.listen(port, address=address)
+        for api in self._apis.values():
+            api.on_start(self._root_ctx, self._io_loop)
         self._io_loop.start()
 
     def stop(self):
-        for api in self._server_apis.values():
-            api.on_stop(self._server_context, self._io_loop)
+        for api in self._apis.values():
+            api.on_stop(self._root_ctx, self._io_loop)
         self._io_loop.stop()
-
-    def change_config(
-            self,
-            server_config: ServerConfig
-    ):
-        next_server_config = self._server_config_schema.from_instance(
-            server_config
-        )
-        self._server_context.on_config_change(next_server_config)
-
-    @property
-    def config(self) -> Mapping[str, Any]:
-        return self._server_config
-
-    @property
-    def context(self) -> Context:
-        return self._server_context
+        self._root_ctx.dispose()
 
     @classmethod
-    def get_server_apis(
+    def parse_config(cls, config: Config, config_schema: JsonObjectSchema) \
+            -> Config:
+        return config_schema.from_instance(config)
+
+    def create_ctx(self, config):
+        return ServerContext(self._apis,
+                             self.parse_config(config,
+                                               self._config_schema))
+
+    @classmethod
+    def load_apis(
             cls,
             extension_registry: Optional[ExtensionRegistry] = None
     ) -> Dict[str, Api]:
         extension_registry = extension_registry \
                              or get_extension_registry()
 
-        server_apis = {
+        apis = {
             ext.name: ext.component
             for ext in extension_registry.find_extensions(
                 EXTENSION_POINT_SERVER_APIS
@@ -141,19 +119,58 @@ class Server:
         def count_api_deps(api: Api) -> int:
             dep_sum = 0
             for api_name in api.dependencies:
-                dep_sum += count_api_deps(server_apis[api_name]) + 1
+                dep_sum += count_api_deps(apis[api_name]) + 1
             return dep_sum
 
         api_dep_counts = {
             api.name: count_api_deps(api)
-            for api in server_apis.values()
+            for api in apis.values()
         }
 
         return {
             api.name: api
-            for api in sorted(server_apis.values(),
+            for api in sorted(apis.values(),
                               key=lambda api: api_dep_counts[api.name])
         }
+
+    @classmethod
+    def get_api_handlers(cls, apis: Dict[str, Api]):
+        handlers = []
+        for api in apis.values():
+            for route in api.routes:
+                api_route_path = route[0]
+                api_handler_cls = route[1]
+                if not issubclass(api_handler_cls, ApiHandler):
+                    raise TypeError(f'API {api.name!r}:'
+                                    f' route {api_route_path}:'
+                                    f' handler must be instance of'
+                                    f' {ApiHandler.__name__}')
+                api_handler_cls.api_name = api.name
+            handlers.extend(api.routes)
+        return handlers
+
+    @classmethod
+    def get_effective_config_schema(cls, apis: Dict[str, Api]):
+        effective_config_schema = copy.deepcopy(BASE_SERVER_CONFIG_SCHEMA)
+        for api_name, api in apis.items():
+            api_config_schema = api.config_schema
+            if api_config_schema is not None:
+                if not isinstance(api_config_schema, JsonObjectSchema):
+                    raise TypeError(f'API {api_name!r}:'
+                                    f' configuration JSON schema'
+                                    f' must be instance of'
+                                    f' {JsonObjectSchema.__name__}')
+                for k, v in api_config_schema.properties.items():
+                    if k in effective_config_schema.properties:
+                        raise ValueError(f'API {api_name!r}:'
+                                         f' configuration parameter {k!r}'
+                                         f' is already defined.')
+                    effective_config_schema.properties[k] = v
+                if api_config_schema.required:
+                    effective_config_schema.required.update(
+                        api_config_schema.required
+                    )
+        return effective_config_schema
 
     @staticmethod
     def _configure_tornado_logger():
@@ -167,3 +184,54 @@ class Server:
         for h in list(logging.root.handlers):
             tornado_logger.addHandler(h)
         tornado_logger.setLevel(logging.root.level)
+
+
+class ServerContext(Context):
+    """The server context."""
+
+    def __init__(self,
+                 apis: Mapping[str, Api],
+                 config: Config):
+        self._apis = apis
+        self._config = config
+        self._api_contexts: Dict[str, ApiContext] = dict()
+
+    @property
+    def config(self) -> Config:
+        assert self._config is not None
+        return self._config
+
+    def get_api_ctx(self, api_name: str) -> Optional[ApiContext]:
+        return self._api_contexts.get(api_name)
+
+    def set_api_ctx(self, api_name: str, api_ctx: ApiContext):
+        self._assert_api_ctx_type(api_ctx, api_name)
+        self._api_contexts[api_name] = api_ctx
+        setattr(self, api_name, api_ctx)
+
+    def update(self, prev_root_ctx: Optional["ServerContext"]):
+        for api_name, api in self._apis.items():
+            prev_api_ctx: Optional[ApiContext] = None
+            if prev_root_ctx is not None:
+                prev_api_ctx = prev_root_ctx.get_api_ctx(
+                    api_name
+                )
+            next_api_ctx: Optional[ApiContext] = api.create_ctx(self)
+            if next_api_ctx is not None:
+                self.set_api_ctx(api_name, next_api_ctx)
+                next_api_ctx.update(prev_api_ctx)
+            elif prev_api_ctx is not None:
+                # There is no next context so dispose() the previous one
+                prev_api_ctx.dispose()
+
+    def dispose(self):
+        reversed_api_contexts = reversed(list(self._api_contexts.items()))
+        for api_name, api_ctx in reversed_api_contexts:
+            api_ctx.dispose()
+
+    @classmethod
+    def _assert_api_ctx_type(cls, api_ctx: Any, api_name: str):
+        if not isinstance(api_ctx, ApiContext):
+            raise TypeError(f'API {api_name}:'
+                            f' context must be instance of'
+                            f' {ApiContext.__name__}')

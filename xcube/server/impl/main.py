@@ -19,8 +19,8 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 
-from ..api import ApiHandler
 from ..api import Api
+from ..api import ApiHandler
 from ...util.jsonschema import JsonObjectSchema
 from ...util.jsonschema import JsonStringSchema
 
@@ -38,8 +38,4 @@ api = Api('main', config_schema=CONFIG_SCHEMA)
 @api.route("/")
 class MainHandler(ApiHandler):
     def get(self):
-        audience = self.server_context.main.get('audience')
-        self.write(f"Hello, {audience}!")
-
-
-
+        self.write(dict(config=self.config))

@@ -20,18 +20,18 @@
 # DEALINGS IN THE SOFTWARE.
 
 import abc
-from typing import Any, List, Optional, Tuple, Dict, Union, Type, Sequence, Generic, TypeVar
+from typing import Any, List, Optional, Tuple, Dict, Union, Type, Sequence, \
+    Generic, TypeVar
 
 import tornado.httputil
 import tornado.ioloop
 import tornado.web
 
-from .config import ServerConfig
+from .config import Config
 from .context import Context
-from .context import ServerContext
-from ..util.jsonschema import JsonSchema
+from ..util.jsonschema import JsonObjectSchema
 
-SERVER_CONTEXT_ATTR_NAME = '__xcube_server_context'
+_SERVER_CONTEXT_ATTR_NAME = '__xcube_server_context'
 
 ApiRoute = Union[
     Tuple[str, Type["ApiHandler"]],
@@ -49,14 +49,21 @@ class Api(Generic[X]):
     The most common purpose of this class is to
     add a new API to the server by the means of routes.
 
-    However, an API may be just programmatic and provide
-    the context for other APIs.
+    Every may produce API context objects for a given server
+    configuration.
+
+    If the server configuration changes, the API is asked to
+    create a new context object.
+
+    However, an API may be just programmatic and serve as a
+    web server middleware. It can then still provide
+    the context for other dependent APIs.
 
     May be derived by clients to override the methods
 
     * `on_start`,
     * `on_stop`,
-    * `on_config_change`.
+    * `create_ctx`.
 
     :param routes: Optional list of routes.
     :param config_schema: Optional JSON schema for the API configuration.
@@ -66,7 +73,7 @@ class Api(Generic[X]):
                  name: str, /,
                  dependencies: Optional[Sequence[str]] = None,
                  routes: Optional[Sequence[ApiRoute]] = None,
-                 config_schema: Optional[JsonSchema] = None):
+                 config_schema: Optional[JsonObjectSchema] = None):
         self._name = name
         self._dependencies = tuple(dependencies or ())
         self._routes: List[ApiRoute] = list(routes or [])
@@ -115,46 +122,75 @@ class Api(Generic[X]):
         return self._routes
 
     @property
-    def config_schema(self) -> Optional[JsonSchema]:
+    def config_schema(self) -> Optional[JsonObjectSchema]:
         """
         Get the JSON schema for the configuration of this API.
         """
         return self._config_schema
 
     def on_start(self,
-                 server_context: Context,
+                 root_ctx: Context,
                  io_loop: tornado.ioloop.IOLoop):
         """
         Called when the server is started.
 
-        :param server_context: The current server context
+        :param root_ctx: The current root context
         :param io_loop: The current i/o loop.
         """
 
     def on_stop(self,
-                server_context: Context,
+                root_ctx: Context,
                 io_loop: tornado.ioloop.IOLoop):
         """
         Called when the server is stopped.
 
-        :param server_context: The current server context
+        :param root_ctx: The current root context
         :param io_loop: The current i/o loop.
         """
 
     # noinspection PyMethodMayBeStatic,PyUnusedLocal
-    def create_context(self, server_context: ServerContext) -> Optional[X]:
+    def create_ctx(self, root_ctx: Context) -> Optional[X]:
         """
         Create a new context object for this API.
-        If the API doesn't require a context object, None is returned.
-        The default implementation returns None.
+        If the API doesn't require a context object, the method should
+        return None, which is the default behaviour.
 
-        :param server_context: The server context.
+        :param root_ctx: The root context.
         :return: An instance of ApiContext or None
         """
         return None
 
 
+class ApiContext(Context, abc.ABC):
+    """An abstract API context."""
+
+    def __init__(self, root: Context):
+        self._root = root
+
+    @property
+    def root(self) -> Context:
+        return self._root
+
+    @property
+    def config(self) -> Config:
+        return self._root.config
+
+    def get_api_ctx(self, api_name: str) -> Any:
+        return self._root.get_api_ctx(api_name)
+
+    def dispose(self):
+        """Does nothing."""
+
+
 class ApiHandler(tornado.web.RequestHandler, Generic[X], abc.ABC):
+    """
+    Base class for all API handlers.
+
+    :param application: The Tornado Application
+    :param request: The current request
+    :param kwargs: Parameters passed to the handler.
+    """
+
     api_name: str
 
     def __init__(self,
@@ -167,24 +203,27 @@ class ApiHandler(tornado.web.RequestHandler, Generic[X], abc.ABC):
                 'request handler must be used with xcube server'
             )
 
-        server_context = getattr(application,
-                                 SERVER_CONTEXT_ATTR_NAME, None)
-        if server_context is None:
+        root_ctx = getattr(application,
+                           _SERVER_CONTEXT_ATTR_NAME, None)
+        from .server import ServerContext
+        if not isinstance(root_ctx, ServerContext):
             raise RuntimeError(
                 'request handler must be used with xcube server'
             )
 
-        self._server_context = server_context
-        self._api_context = server_context.get_api_context(self.api_name)
+        self._root_ctx = root_ctx
+        self._ctx = root_ctx.get_api_ctx(self.api_name)
 
     @property
-    def server_config(self) -> ServerConfig:
-        return self._server_context.server_config
+    def config(self) -> Config:
+        return self._root_ctx.config
 
     @property
-    def server_context(self) -> ServerContext:
-        return self._server_context
+    def root_ctx(self) -> Context:
+        return self._root_ctx
 
     @property
-    def api_context(self) -> X:
-        return self._api_context
+    def ctx(self) -> X:
+        # noinspection PyTypeChecker
+        return self._ctx
+

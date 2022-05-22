@@ -22,11 +22,13 @@
 from xcube.server.api import ApiHandler
 
 from .api import api
+from .context import DatasetsContext
 
 
 # noinspection PyAbstractClass
 @api.route("/datasets")
-class DatasetsHandler(ApiHandler):
+class DatasetsHandler(ApiHandler[DatasetsContext]):
     def get(self):
-        audience = self.server_context.main.get('audience')
-        self.write(f"Hello, {audience}!")
+        ctx = self.ctx
+        assert isinstance(ctx, DatasetsContext)
+        self.write(dict(datasets=ctx.config.get("datasets", [])))

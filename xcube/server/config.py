@@ -37,4 +37,4 @@ BASE_SERVER_CONFIG_SCHEMA = JsonObjectSchema(
     additional_properties=False,
 )
 
-ServerConfig = Mapping[str, Any]
+Config = Mapping[str, Any]

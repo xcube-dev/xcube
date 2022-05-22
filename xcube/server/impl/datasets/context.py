@@ -19,19 +19,29 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 
-from typing import Any, Mapping, List, Dict
+from typing import Any, List, Dict, Optional
+
+from xcube.server.api import ApiContext
+from xcube.server.context import Context
+from xcube.constants import LOG
 
 
-class DatasetsContext:
-    def __init__(self, datasets_config: Mapping[str, Any]):
-        self._config = datasets_config
-        self.update_config(datasets_config)
+class DatasetsContext(ApiContext):
 
-    def update_config(self, datasets_config: Mapping[str, Any]):
-        self._config = datasets_config
-        data_store_configs: List[Dict[str, Any]] = self._config.get('data_stores')
+    def __init__(self, root: Context):
+        super().__init__(root)
+        self._datasets = dict()
+
+    def update(self, prev_ctx: Optional["DatasetsContext"]):
+        LOG.info('Updating datasets...')
+        data_store_configs: List[Dict[str, Any]] = \
+            self.config.get('data_stores', [])
         for data_store_config in data_store_configs:
             store_id = data_store_config['store_id']
             store_params = data_store_config['store_params']
-            dataset_configs = data_store_config['datasets']
-            # TODO etc
+            dataset_configs: List[Dict[str, Any]] \
+                = data_store_config.get('datasets', [])
+            for dataset_config in dataset_configs:
+                data_id = data_store_config['data_id']
+                open_params = data_store_config['open_params']
+                print(f'opening {data_id!r} of store {store_id!r}')

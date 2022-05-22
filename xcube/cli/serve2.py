@@ -34,4 +34,4 @@ def serve2(quiet: bool,
     """
 
     from xcube.server.server import Server
-    Server({"main": {"audience": "User"}}).start()
+    Server({"audience": "User"}).start()

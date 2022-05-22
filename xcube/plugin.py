@@ -214,11 +214,11 @@ def _register_server_apis(ext_registry: extension.ExtensionRegistry):
     """
     server_api_names = [
         'main',
+        'datasets',
         # 'tiles',
         # 'wmts',
         # 'stac',
     ]
-    import string
     for api_name in server_api_names:
         ext_registry.add_extension(
             loader=extension.import_component(

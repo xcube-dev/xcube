@@ -19,8 +19,6 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 
-from typing import Any, Optional, Mapping
-
 from xcube.server.api import Api
 from xcube.server.context import Context
 from .config import DATASETS_CONFIG_SCHEMA
@@ -32,13 +30,8 @@ class DatasetApi(Api[DatasetsContext]):
     def __init__(self):
         super().__init__('datasets', config_schema=DATASETS_CONFIG_SCHEMA)
 
-    def create_context(self,
-                       next_api_config: Any,
-                       prev_api_context: Optional[DatasetsContext],
-                       next_server_config: Mapping[str, Any],
-                       prev_server_context: Optional[Context]) -> DatasetsContext:
-        if prev_api_context
-        return DatasetsContext(next_api_config)
+    def create_ctx(self, root_ctx: Context) -> DatasetsContext:
+        return DatasetsContext(root_ctx)
 
 
 api = DatasetApi()
