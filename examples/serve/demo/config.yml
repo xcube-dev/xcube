@@ -99,6 +99,12 @@ Datasets:
       RequiredScopes:
         - read:datasets
 
+  - Identifier: geotiff_local
+    Title: "Geotiff example"
+    FileSystem: file
+    Path: sample-cog.tif
+    Style: default
+
 PlaceGroups:
   - Identifier: inside-cube
     Title: Places inside the cube
