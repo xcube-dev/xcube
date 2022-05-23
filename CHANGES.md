@@ -1,10 +1,5 @@
 ## Changes in 0.11.3 (in development)
 
-## Changes in 0.11.2
-
-### Enhancements
-
-
 * Allow xcube Server to work with any OIDC-compliant auth service such as
   Auth0, Keycloak, or Google. Permissions of the form 
   `"read:dataset:\<dataset\>"` and `"read:variable:\<dataset\>"` can now be
@@ -18,6 +13,13 @@
   `"read:dataset:$username/*"` will effectively be
   `"read:dataset:demo_user/*"` and only allow access to datasets
   with resource identifiers having the prefix `demo_user/`.
+
+* Filesystem-based data stores like "file" and "s3" support reading 
+  GeoTIFF and Cloud Optimized GeoTIFF (COG). (#489) 
+
+## Changes in 0.11.2
+
+### Enhancements
 
 * `xcube serve` now provides new metadata details of a dataset:
   - The spatial reference is now given by property `spatialRef` 
