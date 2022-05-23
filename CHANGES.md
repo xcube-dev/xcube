@@ -1,5 +1,10 @@
 ## Changes in 0.11.3 (in development)
 
+### Enhancements
+
+* Filesystem-based data stores like "file" and "s3" support reading 
+  GeoTIFF and Cloud Optimized GeoTIFF (COG). (#489) 
+
 ## Changes in 0.11.2
 
 ### Enhancements
