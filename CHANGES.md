@@ -1,10 +1,20 @@
-## Changes in 0.11.2 (in development)
+## Changes in 0.11.3 (in development)
 
 ### Enhancements
 
 * Filesystem-based data stores like "file" and "s3" support reading 
   GeoTIFF and Cloud Optimized GeoTIFF (COG). (#489) 
 
+## Changes in 0.11.2
+
+### Enhancements
+
+* `xcube serve` now provides new metadata details of a dataset:
+  - The spatial reference is now given by property `spatialRef` 
+    and provides a textual representation of the spatial CRS.
+  - The dataset boundary is now given as property `geometry`
+    and provides a GeoJSON Polygon in geographic coordinates. 
+    
 * `xcube serve` now publishes the chunk size of a variable's 
   time dimension for either for an associated time-chunked dataset or the
   dataset itself (new variable integer property `timeChunkSize`).
@@ -14,7 +24,6 @@
 * The functions
   - `mask_dataset_by_geometry()` 
   - `rasterize_features()`
-  
   of module `xcube.core.geom` have been reimplemented to generate 
   lazy dask arrays. Both should now be applicable to datasets
   that have arbitrarily large spatial dimensions. 
@@ -24,6 +33,10 @@
 ### Fixes
 
 * Fixed ESA CCI example notebook. (#680)
+
+* `xcube serve` now provides datasets after changes of the service 
+  configuration while the server is running.
+  Previously, it was necessary to restart the server to load the changes. (#678)
 
 ### Other changes
 
@@ -37,8 +50,7 @@
   - `is_dataset_y_axis_inverted()` is no longer used;
   - `get_geometry_mask()` is no longer used;
   - `convert_geometry()` has been renamed to `normalize_geometry()`.
-
-
+  
 ## Changes in 0.11.1
 
 * Fixed broken generation of composite RGBA tiles. (#668)
