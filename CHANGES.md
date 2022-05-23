@@ -2,6 +2,9 @@
 
 ### Enhancements
 
+* Filesystem-based data stores like "file" and "s3" support reading 
+  GeoTIFF and Cloud Optimized GeoTIFF (COG). (#489) 
+
 * `xcube serve` now publishes the chunk size of a variable's 
   time dimension for either for an associated time-chunked dataset or the
   dataset itself (new variable integer property `timeChunkSize`).

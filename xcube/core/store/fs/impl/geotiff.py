@@ -24,18 +24,18 @@ from typing import Optional, Tuple, Dict, Any
 
 import fsspec
 import rasterio
-import rioxarray
 import xarray as xr
 
 from xcube.core.mldataset import LazyMultiLevelDataset
 from xcube.core.mldataset import MultiLevelDataset
+from xcube.core.store import DATASET_TYPE
+from xcube.core.store import DataType
 from xcube.core.store import MULTI_LEVEL_DATASET_TYPE
-from xcube.core.store import DATASET_TYPE, DataType
 from xcube.core.store.fs.impl.dataset import DatasetGeoTiffFsDataAccessor
 from xcube.util.assertions import assert_instance
-from xcube.util.jsonschema import JsonObjectSchema
 from xcube.util.jsonschema import JsonArraySchema
 from xcube.util.jsonschema import JsonNumberSchema
+from xcube.util.jsonschema import JsonObjectSchema
 
 
 class GeoTIFFMultiLevelDataset(LazyMultiLevelDataset):
@@ -62,60 +62,16 @@ class GeoTIFFMultiLevelDataset(LazyMultiLevelDataset):
     def _get_num_levels_lazily(self) -> int:
         with rasterio.open(self._get_file_url()) as rio_dataset:
             overviews = rio_dataset.overviews(1)
-            # TODO validate overviews/ resolution must increase by factor of 2
         return len(overviews) + 1
 
     def _get_dataset_lazily(self, index: int, parameters) \
             -> xr.Dataset:
-        # TODO get tile size from parameters
-        return self.open_dataset(self._get_file_url(), (512, 512),
-                                 overview_level=index)
-
-    @classmethod
-    def open_dataset(cls,
-                     file_spec: str,
-                     tile_size: Tuple[int, int],
-                     overview_level: Optional[int] = 0) -> xr.Dataset:
-        """
-        A method to open the cog/geotiff dataset using rioxarray,
-        returns xarray.Dataset
-
-        @param overview_level: the overview level required
-        @param tile_size: tile size as tuple
-        @type file_spec: fsspec.AbstractFileSystem object
-        """
-
-        array: xr.DataArray = rioxarray.open_rasterio(
-            file_spec,
-            overview_level=overview_level - 1 if overview_level > 0 else None,
-            chunks=dict(zip(('x', 'y'), tile_size))
+        tile_size = self._open_params.get("tile_size", (512, 512))
+        return DatasetGeoTiffFsDataAccessor.open_dataset(
+            self._get_file_url(),
+            tile_size,
+            overview_level=index - 1 if index > 0 else None
         )
-        arrays = {}
-        if array.ndim == 3:
-            for i in range(array.shape[0]):
-                name = f'{array.name or "band"}_{i + 1}'
-                dims = array.dims[-2:]
-                coords = {n: v
-                          for n, v in array.coords.items()
-                          if n in dims or n == 'spatial_ref'}
-                band_data = array.data[i, :, :]
-                arrays[name] = xr.DataArray(band_data,
-                                            coords=coords,
-                                            dims=dims,
-                                            attrs=dict(**array.attrs))
-        elif array.ndim == 2:
-            name = f'{array.name or "band"}'
-            arrays[name] = array
-        else:
-            raise RuntimeError('number of dimensions must be 2 or 3')
-
-        dataset = xr.Dataset(arrays, attrs=dict(source=file_spec))
-        # For CRS, rioxarray uses variable "spatial_ref" by default
-        if 'spatial_ref' in array.coords:
-            for data_var in dataset.data_vars.values():
-                data_var.attrs['grid_mapping'] = 'spatial_ref'
-
-        return dataset
 
     def _get_file_url(self):
         if isinstance(self._fs.protocol, str):
@@ -125,16 +81,14 @@ class GeoTIFFMultiLevelDataset(LazyMultiLevelDataset):
         return protocol + "://" + self._path
 
 
-MULTI_LVEVEL_GEOTIFF_OPEN_DATA_PARAMS_SCHEMA = JsonObjectSchema(
+MULTI_LEVEL_GEOTIFF_OPEN_DATA_PARAMS_SCHEMA = JsonObjectSchema(
     properties=dict(
         tile_size=JsonArraySchema(
             items=(
-                JsonNumberSchema(minimum=256,
-                                 default=512),
-                JsonNumberSchema(minimum=256,
-                                 default=512)
+                JsonNumberSchema(minimum=256, default=512),
+                JsonNumberSchema(minimum=256, default=512)
             ),
-            default=(512, 512)
+            default=[512, 512]
         ),
     ),
     additional_properties=False,
@@ -153,7 +107,7 @@ class MultiLevelDatasetGeoTiffFsDataAccessor(DatasetGeoTiffFsDataAccessor, ABC):
 
     def get_open_data_params_schema(self,
                                     data_id: str = None) -> JsonObjectSchema:
-        return MULTI_LVEVEL_GEOTIFF_OPEN_DATA_PARAMS_SCHEMA
+        return MULTI_LEVEL_GEOTIFF_OPEN_DATA_PARAMS_SCHEMA
 
     def open_data(self, data_id: str, **open_params) -> MultiLevelDataset:
         assert_instance(data_id, str, name='data_id')

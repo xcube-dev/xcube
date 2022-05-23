@@ -65,8 +65,8 @@ class IOStoreTest(CliTest):
                           '               cube-1-250-250.zarr  <no title>\n'
                           '               cube-5-100-200.zarr  <no title>\n'
                           '                           cube.nc  <no title>\n'
-                          '               example-geotiff.tif  <no title>\n'
-                          '                        sample.tif  <no title>\n'
+                          '                    sample-cog.tif  <no title>\n'
+                          '                sample-geotiff.tif  <no title>\n'
                           '6 data resources found.\n'),
                          result.stdout)
         demo_dir = os.path.join(os.path.dirname(__file__),

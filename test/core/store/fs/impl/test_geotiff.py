@@ -28,9 +28,10 @@ import rioxarray
 import xarray
 import xarray as xr
 
-from xcube.core.store.fs.impl.geotiff import GeoTIFFMultiLevelDataset
-from xcube.core.store.fs.impl.geotiff import MultiLevelDatasetGeoTiffFsDataAccessor
 from xcube.core.store.fs.impl.dataset import DatasetGeoTiffFsDataAccessor
+from xcube.core.store.fs.impl.geotiff import GeoTIFFMultiLevelDataset
+from xcube.core.store.fs.impl.geotiff import \
+     MultiLevelDatasetGeoTiffFsDataAccessor
 from xcube.util.jsonschema import JsonSchema
 
 
@@ -44,7 +45,7 @@ class RioXarrayTest(unittest.TestCase):
         cog_path = os.path.join(os.path.dirname(__file__),
                                 "..", "..", "..", "..", "..",
                                 "examples", "serve", "demo",
-                                "sample.tif")
+                                "sample-cog.tif")
         array = rioxarray.open_rasterio(cog_path)
         self.assertIsInstance(array, xr.DataArray)
         self.assertEqual((3, 343, 343), array.shape)
@@ -83,7 +84,7 @@ class RioXarrayTest(unittest.TestCase):
                 os.path.join(os.path.dirname(__file__),
                              "..", "..", "..", "..", "..",
                              "examples", "serve", "demo",
-                             "sample.tif")
+                             "sample-cog.tif")
                 ,),
             e.exception.args
         )
@@ -94,27 +95,33 @@ class GeoTIFFMultiLevelDatasetTest(unittest.TestCase):
     A class to test wrapping of geotiff file into a multilevel dataset
     """
 
-    def test_local_fs(self):
+    @classmethod
+    def get_params(cls, file_name):
         fs = fsspec.filesystem('file')
         cog_path = os.path.join(os.path.dirname(__file__),
                                 "..", "..", "..", "..", "..",
                                 "examples", "serve", "demo",
-                                "sample.tif")
+                                file_name)
+        return fs, cog_path
+
+    def test_local_fs(self):
+        fs, cog_path = self.get_params("sample-cog.tif")
         ml_dataset = GeoTIFFMultiLevelDataset(fs, None, cog_path)
+        self.assertIsInstance(ml_dataset, GeoTIFFMultiLevelDataset)
         self.assertEqual(3, ml_dataset.num_levels)
         self.assertEqual(cog_path, ml_dataset.ds_id)
         self.assertEqual([(320, 320), (640, 640), (1280, 1280)],
                          ml_dataset.resolutions)
-        dataset = ml_dataset.get_dataset(0)
+        dataset_1 = ml_dataset.get_dataset(0)
         self.assertEqual(['band_1', 'band_2', 'band_3'],
-                         list(dataset.data_vars))
+                         list(dataset_1.data_vars))
         self.assertEqual((343, 343),
-                         dataset.band_1.shape)
-        dataset = ml_dataset.get_dataset(2)
+                         dataset_1.band_1.shape)
+        dataset_2 = ml_dataset.get_dataset(2)
         self.assertEqual(['band_1', 'band_2', 'band_3'],
-                         list(dataset.data_vars))
+                         list(dataset_2.data_vars))
         self.assertEqual((86, 86),
-                         dataset.band_1.shape)
+                         dataset_2.band_1.shape)
         datasets = ml_dataset.datasets
         self.assertEqual(3, len(datasets))
 
@@ -125,33 +132,37 @@ class MultiLevelDatasetGeoTiffFsDataAccessorTest(unittest.TestCase):
     """
 
     def test_read_cog(self):
-        fs = fsspec.filesystem('file')
-        mldataopener = MultiLevelDatasetGeoTiffFsDataAccessor()
-        cog_path = os.path.join(os.path.dirname(__file__),
-                                "..", "..", "..", "..", "..",
-                                "examples", "serve", "demo",
-                                "sample.tif")
-        ml_dataset = mldataopener.open_data(cog_path, fs=fs, root=None)
+        fs, cog_path = GeoTIFFMultiLevelDatasetTest.get_params("sample-cog.tif")
+        ml_data_opener = MultiLevelDatasetGeoTiffFsDataAccessor()
+        ml_dataset = ml_data_opener.open_data(cog_path, fs=fs, root=None,
+                                              tile_size=[256, 256])
+        self.assertIsInstance(ml_dataset, GeoTIFFMultiLevelDataset)
         self.assertEqual(3, ml_dataset.num_levels)
         dataset = ml_dataset.get_dataset(0)
         self.assertEqual(['band_1', 'band_2', 'band_3'],
                          list(dataset.data_vars))
-        self.assertEqual(len(dataset.dims), 2)
-        self.assertEqual("geotiff", mldataopener.get_format_id())
-        self.assertIsInstance(mldataopener.get_open_data_params_schema(cog_path)
-                              , JsonSchema, "Given object is a instance ")
-        self.assertIsInstance(mldataopener.get_open_data_params_schema(),
+        self.assertEqual((343, 343), dataset.band_1.shape)
+        self.assertEqual(2, len(dataset.dims))
+        self.assertEqual("geotiff", ml_data_opener.get_format_id())
+        self.assertIsInstance(
+            ml_data_opener.get_open_data_params_schema(cog_path),
+            JsonSchema
+        )
+        self.assertIsInstance(ml_data_opener.get_open_data_params_schema(),
                               JsonSchema)
 
     def test_read_geotiff(self):
-        fs = fsspec.filesystem('file')
-        dataopener = MultiLevelDatasetGeoTiffFsDataAccessor()
-        tiff_path = os.path.join(os.path.dirname(__file__),
-                                 "..", "..", "..", "..", "..",
-                                 "examples", "serve", "demo",
-                                 "example-geotiff.tif")
-        dataset = dataopener.open_data(tiff_path, fs=fs, root=None)
-        self.assertEqual(1, dataset.num_levels)
+        fs, tiff_path = GeoTIFFMultiLevelDatasetTest. \
+            get_params("sample-geotiff.tif")
+        data_opener = MultiLevelDatasetGeoTiffFsDataAccessor()
+
+        ml_dataset = data_opener.open_data(tiff_path, fs=fs, root=None,
+                                           tile_size=[512, 512])
+        self.assertIsInstance(ml_dataset, GeoTIFFMultiLevelDataset)
+
+        self.assertEqual(1, ml_dataset.num_levels)
+        dataset = ml_dataset.get_dataset(0)
+        self.assertEqual((1387, 1491), dataset.band_1.shape)
 
 
 class DatasetGeoTiffFsDataAccessorTest(unittest.TestCase):
@@ -161,31 +172,27 @@ class DatasetGeoTiffFsDataAccessorTest(unittest.TestCase):
     """
 
     def test_ml_to_dataset(self):
-        fs = fsspec.filesystem('file')
-        cog_path = os.path.join(os.path.dirname(__file__),
-                                "..", "..", "..", "..", "..",
-                                "examples", "serve", "demo",
-                                "sample.tif")
+        fs, cog_path = GeoTIFFMultiLevelDatasetTest.get_params("sample-cog.tif")
         data_accessor = DatasetGeoTiffFsDataAccessor()
+        self.assertIsInstance(data_accessor, DatasetGeoTiffFsDataAccessor)
         self.assertEqual("geotiff", data_accessor.get_format_id())
         dataset = data_accessor.open_data(data_id=cog_path, overview_level=1,
-                                          fs=fs, root=None)
+                                          fs=fs, root=None,
+                                          tile_size=[512, 512])
         self.assertIsInstance(dataset, xarray.Dataset)
         self.assertIsInstance(
             data_accessor.get_open_data_params_schema(cog_path),
-            JsonSchema, "Given object is a instance ")
+            JsonSchema
+        )
 
     def test_dataset(self):
-        fs = fsspec.filesystem('file')
-        tiff_path = os.path.join(os.path.dirname(__file__),
-                                 "..", "..", "..", "..", "..",
-                                 "examples", "serve", "demo",
-                                 "example-geotiff.tif")
+        fs, tiff_path = GeoTIFFMultiLevelDatasetTest. \
+            get_params("sample-geotiff.tif")
         data_accessor = DatasetGeoTiffFsDataAccessor()
+        self.assertIsInstance(data_accessor, DatasetGeoTiffFsDataAccessor)
         self.assertEqual("geotiff", data_accessor.get_format_id())
-        dataset = data_accessor.open_data(data_id=tiff_path, overview_level=0,
-                                          fs=fs, root=None)
+        dataset = data_accessor.open_data(data_id=tiff_path,
+                                          fs=fs, root=None,
+                                          tile_size=[256, 256],
+                                          overview_level=None)
         self.assertIsInstance(dataset, xarray.Dataset)
-        self.assertIsInstance(
-            data_accessor.get_open_data_params_schema(tiff_path),
-            JsonSchema, "Given object is a instance ")

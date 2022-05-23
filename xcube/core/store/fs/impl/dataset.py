@@ -22,7 +22,6 @@
 from abc import ABC
 from typing import Tuple, Optional
 
-import rasterio
 import xarray as xr
 import zarr
 import rioxarray
@@ -321,14 +320,16 @@ GEOTIFF_OPEN_DATA_PARAMS_SCHEMA = JsonObjectSchema(
             default=[512, 512]
         ),
         overview_level=JsonIntegerSchema(
-            default=1
+            default=None,
+            nullable=True,
+            description="GeoTIFF overview level. 0 is the first overview."
         )
     ),
     additional_properties=False,
 )
 
 
-# new class for Cog
+# new class for Geotiff
 class DatasetGeoTiffFsDataAccessor(DatasetFsDataAccessor, ABC):
     """
     Opener/writer extension name: "dataset:tiff:<protocol>"
@@ -344,7 +345,7 @@ class DatasetGeoTiffFsDataAccessor(DatasetFsDataAccessor, ABC):
 
     def open_data(self,
                   data_id: str,
-                  overview_level: Optional[int], **open_params) -> xr.Dataset:
+                  **open_params) -> xr.Dataset:
         assert_instance(data_id, str, name='data_id')
         fs, root, open_params = self.load_fs(open_params)
 
@@ -356,27 +357,29 @@ class DatasetGeoTiffFsDataAccessor(DatasetFsDataAccessor, ABC):
             file_path = protocol + "://" + root + "/" + data_id
         else:
             file_path = protocol + "://" + data_id
-
-        return self.open_dataset(file_path, (512, 512),
-                                 overview_level)
+        tile_size = open_params.get("tile_size", (512, 512))
+        overview_level = open_params.get("overview_level", None)
+        return self.open_dataset(file_path, tile_size,
+                                 overview_level=overview_level)
 
     @classmethod
     def open_dataset(cls,
                      file_spec: str,
                      tile_size: Tuple[int, int],
-                     overview_level: Optional[int] = 0) -> xr.Dataset:
+                     overview_level: Optional[int] = None) -> xr.Dataset:
         """
         A method to open the cog/geotiff dataset using rioxarray,
         returns xarray.Dataset
 
-        @param overview_level: the overview level required
-        @param tile_size: tile size as tuple
-        @type file_spec: fsspec.AbstractFileSystem object
+        @param overview_level: the overview level of GeoTIFF, 0 is the first
+               overview and None means full resolution.
+        @param tile_size: tile size as tuple.
+        @type file_spec: fsspec.AbstractFileSystem object.
         """
 
         array: xr.DataArray = rioxarray.open_rasterio(
             file_spec,
-            overview_level=overview_level - 1 if overview_level > 0 else None,
+            overview_level=overview_level,
             chunks=dict(zip(('x', 'y'), tile_size))
         )
         arrays = {}
