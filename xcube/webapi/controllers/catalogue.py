@@ -201,8 +201,7 @@ def get_dataset(ctx: ServiceContext,
     for var_name, var in ds.data_vars.items():
         var_name = str(var_name)
         dims = var.dims
-        if len(dims) < 3 \
-                or dims[-3] != 'time' \
+        if len(dims) < 2 \
                 or dims[-2] != y_name \
                 or dims[-1] != x_name:
             continue

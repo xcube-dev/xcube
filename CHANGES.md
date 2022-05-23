@@ -5,6 +5,9 @@
 * Filesystem-based data stores like "file" and "s3" support reading 
   GeoTIFF and Cloud Optimized GeoTIFF (COG). (#489) 
 
+* `xcube server` now also allows publishing also 2D datasets 
+  such as opened from GeoTIFF / COG files.
+
 ## Changes in 0.11.2
 
 ### Enhancements
