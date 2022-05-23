@@ -195,6 +195,7 @@ def _register_cli_commands(ext_registry: extension.ExtensionRegistry):
 
         # Experimental + Hidden
         'io',
+        'patch',
     ]
 
     for cli_command_name in cli_command_names:

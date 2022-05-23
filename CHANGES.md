@@ -1,5 +1,13 @@
 ## Changes in 0.11.3 (in development)
 
+### Enhancements
+
+* A new CLI tool `xcube patch` has been added. It allows for in-place
+  metadata patches of Zarr data cubes stored in almost any filesystem 
+  supported by [fsspec](https://filesystem-spec.readthedocs.io/en/latest/) 
+  including the protocols "s3" and "file". It also allows patching
+  xcube multi-level datasets (`*.levels` format).
+
 ## Changes in 0.11.2
 
 ### Enhancements
