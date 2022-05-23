@@ -99,11 +99,17 @@ Datasets:
 #      RequiredScopes:
 #        - read:datasets
 
-  - Identifier: geotiff_local
-    Title: "Geotiff example"
+  - Identifier: cog_local
+    Title: "COG example"
     FileSystem: file
     Path: sample-cog.tif
-    Style: default
+    Style: tif_style
+
+  - Identifier: geotiff_local
+    Title: "GeoTIFF example"
+    FileSystem: file
+    Path: sample-geotiff.tif
+    Style: tif_style
 
 PlaceGroups:
   - Identifier: inside-cube
@@ -142,6 +148,27 @@ Styles:
         Blue:
           Variable: kd489
           ValueRange: [0., 6.]
+  - Identifier: tif_style
+    ColorMappings:
+      band_1:
+        ColorBar: "bone"
+        ValueRange: [ 0., 255. ]
+      band_2:
+        ColorBar: "bone"
+        ValueRange: [ 0., 255. ]
+      band_3:
+        ColorBar: "bone"
+        ValueRange: [ 0., 255. ]
+      rgb:
+        Red:
+          Variable: band_1
+          ValueRange: [ 0., 255. ]
+        Green:
+          Variable: band_2
+          ValueRange: [ 0., 255. ]
+        Blue:
+          Variable: band_3
+          ValueRange: [ 0., 255. ]
 
 ServiceProvider:
   ProviderName: "Brockmann Consult GmbH"
