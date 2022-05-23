@@ -38,11 +38,11 @@ ApiRoute = Union[
     Tuple[str, Type["ApiHandler"], Dict[str, Any]]
 ]
 
-# ConteXt type variable
-X = TypeVar("X", bound="Api")
+# API Context type variable
+ApiContextT = TypeVar("ApiContextT", bound="ApiContext")
 
 
-class Api(Generic[X]):
+class Api(Generic[ApiContextT]):
     """
     A server API.
 
@@ -65,8 +65,40 @@ class Api(Generic[X]):
     * `on_stop`,
     * `create_ctx`.
 
-    :param routes: Optional list of routes.
-    :param config_schema: Optional JSON schema for the API configuration.
+    Each extension API module must export an instance of this
+    class. A typical use case of this class:
+
+    ```
+    class DatasetsApiContext(ApiContext)
+        def update(self, prev_ctx: Optional[Context]):
+            config = self.config
+            ...
+        def get_datasets(self):
+            ...
+
+    class DatasetsApi(Api[DatasetsApiContext]):
+        def __init__(self):
+            super().__init__("datasets",
+                             config_schema=DATASET_CONFIG_SCHEMA)
+
+        def create_ctx(self, root_ctx: Context):
+            return DatasetsApiContext(root_ctx)
+
+    api = DatasetsApi()
+
+    @api.route("/datasets")
+    class DatasetsHandler(ApiHandler[DatasetsApiContext]):
+        def get(self):
+            return self.ctx.get_datasets()
+    ```
+
+    :param routes: Optional list of initial routes.
+        A route is a tuple of the form (route-pattern, handler-class) or
+        (route-pattern, handler-class, handler-kwargs). The handler-class
+        must be derived from ApiHandler.
+    :param config_schema: Optional JSON schema for the API's configuration.
+        If not given, or None is passed, the API is assumed to
+        have no configuration.
     """
 
     def __init__(self,
@@ -93,8 +125,7 @@ class Api(Generic[X]):
         """
         Decorator that adds a route to this API.
 
-        The decorator target must be a classes
-        derived from RequestHandler.
+        The decorator target must be a class derived from ApiHandler.
 
         :param pattern: The route pattern.
         :param target_kwargs: Optional keyword arguments passed to
@@ -106,7 +137,7 @@ class Api(Generic[X]):
         def decorator_func(target_class: Type["ApiHandler"]):
             if not issubclass(target_class, ApiHandler):
                 raise TypeError(f'target_class must be an'
-                                f' instance of {ApiHandler},'
+                                f' instance of {ApiHandler.__name__},'
                                 f' but was {target_class}')
             if target_kwargs:
                 handler = pattern, target_class, target_kwargs
@@ -149,7 +180,7 @@ class Api(Generic[X]):
         """
 
     # noinspection PyMethodMayBeStatic,PyUnusedLocal
-    def create_ctx(self, root_ctx: Context) -> Optional[X]:
+    def create_ctx(self, root_ctx: Context) -> Optional[ApiContextT]:
         """
         Create a new context object for this API.
         If the API doesn't require a context object, the method should
@@ -162,27 +193,48 @@ class Api(Generic[X]):
 
 
 class ApiContext(Context, abc.ABC):
-    """An abstract API context."""
+    """
+    An abstract base class for API context objects.
+
+    A typical use case is to cache computationally expensive
+    resources served by a particular API.
+
+    Derived classes
+
+    * must implement the `update()` method in order
+      to initialize or update this context object state with
+      respect to the current server configuration, or with
+      respect to other API context object states.
+    * may overwrite the `dispose()` method to empty any caches
+      and close access to resources.
+    * must call the super class constructor with the *root* context,
+      from their own constructor, if any.
+
+    :param root: The root (server) context object.
+    """
 
     def __init__(self, root: Context):
         self._root = root
 
     @property
     def root(self) -> Context:
+        """The root (server) context object."""
         return self._root
 
     @property
     def config(self) -> Config:
-        return self._root.config
+        return self.root.config
 
-    def get_api_ctx(self, api_name: str) -> Any:
-        return self._root.get_api_ctx(api_name)
+    def get_api_ctx(self, api_name: str) -> Optional["ApiContext"]:
+        return self.root.get_api_ctx(api_name)
 
     def dispose(self):
         """Does nothing."""
 
 
-class ApiHandler(tornado.web.RequestHandler, Generic[X], abc.ABC):
+class ApiHandler(tornado.web.RequestHandler,
+                 Generic[ApiContextT],
+                 abc.ABC):
     """
     Base class for all API handlers.
 
@@ -216,14 +268,17 @@ class ApiHandler(tornado.web.RequestHandler, Generic[X], abc.ABC):
 
     @property
     def config(self) -> Config:
+        """The server configuration."""
         return self._root_ctx.config
 
     @property
     def root_ctx(self) -> Context:
+        """The root (server) context."""
         return self._root_ctx
 
     @property
-    def ctx(self) -> X:
+    def ctx(self) -> Optional[ApiContextT]:
+        """The API's context object, or None, if not defined."""
         # noinspection PyTypeChecker
         return self._ctx
 

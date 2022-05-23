@@ -31,20 +31,31 @@ class Context(abc.ABC):
     @property
     @abc.abstractmethod
     def config(self) -> Config:
-        """Get the server's configuration."""
+        """The current server configuration."""
 
     @abc.abstractmethod
-    def get_api_ctx(self, api_name: str) -> Any:
-        """Get the API context for *api_name* or None if no such exists."""
+    def get_api_ctx(self, api_name: str) -> Optional["Context"]:
+        """
+        Get the API context for *api_name*.
+        Can be used to access context objects of other APIs.
+
+        :param api_name: The name of a registered API.
+        :return: The API context for *api_name*, or None if no such exists.
+        """
 
     @abc.abstractmethod
     def update(self, prev_ctx: Optional["Context"]):
         """
+        Update this context with respect to the current configuration.
         Called when the server configuration changed.
-        :param prev_ctx: The previous context instance or None,
+
+        :param prev_ctx: The previous context instance, or None
             if update() is called for the first time (= initialisation).
         """
 
     @abc.abstractmethod
     def dispose(self):
-        """Disposes all allocated resources."""
+        """
+        Dispose all allocated resources.
+        Called if this context will never be used again.
+        """

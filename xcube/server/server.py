@@ -40,6 +40,17 @@ from xcube.util.jsonschema import JsonObjectSchema
 
 
 class Server:
+    """
+    A REST server extendable by API extensions.
+
+    APIs are registered using the extension point "xcube.server.api".
+
+    :param config: The server configuration.
+    :param io_loop: Optional Tornado I/O loop.
+        Defaults to Tornado's default I/O loop.
+    :param extension_registry: Optional extension registry.
+        Defaults to xcube's default extension registry.
+    """
 
     def __init__(
             self,
@@ -54,32 +65,14 @@ class Server:
         self._configure_tornado_logger()
         self._io_loop = io_loop or tornado.ioloop.IOLoop.current()
         self._application = tornado.web.Application(handlers)
-        root_ctx = self.create_ctx(config)
+        root_ctx = self._create_ctx(config)
         root_ctx.update(None)
-        self.root_ctx = root_ctx
-
-    @property
-    def config(self) -> Config:
-        return self._root_ctx.config
-
-    @config.setter
-    def config(self, config: Config):
-        root_ctx = self.create_ctx(config)
-        root_ctx.update(self.root_ctx)
-        self.root_ctx = root_ctx
-
-    @property
-    def root_ctx(self) -> "ServerContext":
-        return self._root_ctx
-
-    @root_ctx.setter
-    def root_ctx(self, root_ctx: "ServerContext"):
         self._root_ctx = root_ctx
-        setattr(self._application, _SERVER_CONTEXT_ATTR_NAME, root_ctx)
 
     def start(self):
-        port = self.config["port"]
-        address = self.config["address"]
+        config = self._root_ctx.config
+        port = config["port"]
+        address = config["address"]
         self._application.listen(port, address=address)
         for api in self._apis.values():
             api.on_start(self._root_ctx, self._io_loop)
@@ -91,15 +84,20 @@ class Server:
         self._io_loop.stop()
         self._root_ctx.dispose()
 
-    @classmethod
-    def parse_config(cls, config: Config, config_schema: JsonObjectSchema) \
-            -> Config:
-        return config_schema.from_instance(config)
+    def update(self, config: Config):
+        root_ctx = self._create_ctx(config)
+        root_ctx.update(self._root_ctx)
+        self._set_root_ctx(root_ctx)
 
-    def create_ctx(self, config):
+    def _set_root_ctx(self, root_ctx: "ServerContext"):
+        self._root_ctx = root_ctx
+        # Register root context in Tornado application, so we
+        # can access all contexts from the request handlers later.
+        setattr(self._application, _SERVER_CONTEXT_ATTR_NAME, root_ctx)
+
+    def _create_ctx(self, config: Config):
         return ServerContext(self._apis,
-                             self.parse_config(config,
-                                               self._config_schema))
+                             self._config_schema.from_instance(config))
 
     @classmethod
     def load_apis(
@@ -187,7 +185,15 @@ class Server:
 
 
 class ServerContext(Context):
-    """The server context."""
+    """
+    A server context holds the current server configuration and
+    current API context objects.
+
+    A new server context is created for any new server configuration.
+
+    :param apis: The loaded server APIs.
+    :param config: The current server configuration.
+    """
 
     def __init__(self,
                  apis: Mapping[str, Api],
