@@ -107,7 +107,8 @@ class GetDatasetGridMappingsTest(unittest.TestCase):
         self.assertIn('rotated_pole', grid_mappings)
         grid_mapping = grid_mappings.get('rotated_pole')
         self.assertIsInstance(grid_mapping, GridMappingProxy)
-        self.assertEqual('Geographic 2D CRS', grid_mapping.crs.type_name)
+        self.assertEqual('Derived Geographic 2D CRS',
+                         grid_mapping.crs.type_name)
         self.assertIsInstance(grid_mapping.coords, GridCoords)
         self.assertIsInstance(grid_mapping.coords.x, xr.DataArray)
         self.assertIsInstance(grid_mapping.coords.y, xr.DataArray)
@@ -125,7 +126,8 @@ class GetDatasetGridMappingsTest(unittest.TestCase):
         self.assertIn('rotated_pole', grid_mappings)
         grid_mapping = grid_mappings.get('rotated_pole')
         self.assertIsInstance(grid_mapping, GridMappingProxy)
-        self.assertEqual('Geographic 2D CRS', grid_mapping.crs.type_name)
+        self.assertEqual('Derived Geographic 2D CRS',
+                         grid_mapping.crs.type_name)
         self.assertIsInstance(grid_mapping.coords, GridCoords)
         self.assertIsInstance(grid_mapping.coords.x, xr.DataArray)
         self.assertIsInstance(grid_mapping.coords.y, xr.DataArray)
