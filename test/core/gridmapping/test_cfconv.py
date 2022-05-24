@@ -99,9 +99,15 @@ class GetDatasetGridMappingsTest(unittest.TestCase):
         self.assertEqual('myy', grid_mapping.coords.y.name)
 
     def test_rotated_pole_with_common_names(self):
-        dataset = xr.Dataset(dict(rotated_pole=xr.DataArray(0, attrs=CRS_ROTATED_POLE.to_cf())),
-                             coords=dict(rlon=xr.DataArray(np.linspace(-180, 180, 11), dims='rlon'),
-                                         rlat=xr.DataArray(np.linspace(0, 90, 11), dims='rlat')))
+        dataset = xr.Dataset(
+            dict(
+                rotated_pole=xr.DataArray(0, attrs=CRS_ROTATED_POLE.to_cf())
+            ),
+            coords=dict(
+                rlon=xr.DataArray(np.linspace(-180, 180, 11), dims='rlon'),
+                rlat=xr.DataArray(np.linspace(0, 90, 11), dims='rlat')
+            )
+        )
         grid_mappings = get_dataset_grid_mapping_proxies(dataset)
         self.assertEqual(1, len(grid_mappings))
         self.assertIn('rotated_pole', grid_mappings)
@@ -116,11 +122,18 @@ class GetDatasetGridMappingsTest(unittest.TestCase):
         self.assertEqual('rlat', grid_mapping.coords.y.name)
 
     def test_rotated_pole_with_standard_names(self):
-        dataset = xr.Dataset(dict(rotated_pole=xr.DataArray(0, attrs=CRS_ROTATED_POLE.to_cf())),
-                             coords=dict(u=xr.DataArray(np.linspace(-180, 180, 11), dims='u',
-                                                        attrs=dict(standard_name='grid_longitude')),
-                                         v=xr.DataArray(np.linspace(0, 90, 11), dims='v',
-                                                        attrs=dict(standard_name='grid_latitude'))))
+        dataset = xr.Dataset(
+            dict(
+                rotated_pole=xr.DataArray(0,
+                                          attrs=CRS_ROTATED_POLE.to_cf())
+            ),
+            coords=dict(
+                u=xr.DataArray(np.linspace(-180, 180, 11), dims='u',
+                               attrs=dict(standard_name='grid_longitude')),
+                v=xr.DataArray(np.linspace(0, 90, 11), dims='v',
+                               attrs=dict(standard_name='grid_latitude'))
+            )
+        )
         grid_mappings = get_dataset_grid_mapping_proxies(dataset)
         self.assertEqual(1, len(grid_mappings))
         self.assertIn('rotated_pole', grid_mappings)
