@@ -370,16 +370,6 @@
             "long_name": "time",
             "standard_name": "time",
             "units": "days since 1970-01-01"
-        },
-        "title/.zarray": {
-            "chunks": [],
-            "compressor": null,
-            "dtype": "<U13",
-            "fill_value": "",
-            "filters": null,
-            "order": "C",
-            "shape": [],
-            "zarr_format": 2
         }
     },
     "zarr_consolidated_format": 1
