@@ -39,6 +39,11 @@ from xcube.util.extension import get_extension_registry
 from xcube.util.jsonschema import JsonObjectSchema
 
 
+# TODO:
+#   - introduce framework parameter, remove direct Tornado dependency
+#   - introduce change management (per API?)
+#   - aim at 100% test coverage
+
 class Server:
     """
     A REST server extendable by API extensions.
@@ -65,37 +70,42 @@ class Server:
         self._configure_tornado_logger()
         self._io_loop = io_loop or tornado.ioloop.IOLoop.current()
         self._application = tornado.web.Application(handlers)
-        root_ctx = self._create_ctx(config)
-        root_ctx.update(None)
-        self._root_ctx = root_ctx
+        self._ctx = self._new_ctx(config)
+        self._ctx.update(None)
 
     def start(self):
-        config = self._root_ctx.config
+        config = self.ctx.config
         port = config["port"]
         address = config["address"]
         self._application.listen(port, address=address)
         for api in self._apis.values():
-            api.on_start(self._root_ctx, self._io_loop)
+            api.on_start(self.ctx, self._io_loop)
         self._io_loop.start()
 
     def stop(self):
         for api in self._apis.values():
-            api.on_stop(self._root_ctx, self._io_loop)
+            api.on_stop(self.ctx, self._io_loop)
         self._io_loop.stop()
-        self._root_ctx.dispose()
+        self._ctx.dispose()
 
     def update(self, config: Config):
-        root_ctx = self._create_ctx(config)
-        root_ctx.update(self._root_ctx)
-        self._set_root_ctx(root_ctx)
+        ctx = self._new_ctx(config)
+        ctx.update(prev_ctx=self._ctx)
+        self._set_ctx(ctx)
 
-    def _set_root_ctx(self, root_ctx: "ServerContext"):
-        self._root_ctx = root_ctx
+    # Used mainly for testing
+    @property
+    def ctx(self) -> "ServerContext":
+        """The root (server) context."""
+        return self._ctx
+
+    def _set_ctx(self, ctx: "ServerContext"):
+        self._ctx = ctx
         # Register root context in Tornado application, so we
         # can access all contexts from the request handlers later.
-        setattr(self._application, _SERVER_CONTEXT_ATTR_NAME, root_ctx)
+        setattr(self._application, _SERVER_CONTEXT_ATTR_NAME, ctx)
 
-    def _create_ctx(self, config: Config):
+    def _new_ctx(self, config: Config):
         return ServerContext(self._apis,
                              self._config_schema.from_instance(config))
 
@@ -107,6 +117,7 @@ class Server:
         extension_registry = extension_registry \
                              or get_extension_registry()
 
+        # Collect all registered APIs
         apis = {
             ext.name: ext.component
             for ext in extension_registry.find_extensions(
@@ -114,21 +125,37 @@ class Server:
             )
         }
 
-        def count_api_deps(api: Api) -> int:
+        def assert_required_apis_available():
+            # Assert that required APIs are available.
+            for api_name, api in apis.items():
+                for dep_api_name in api.required_apis:
+                    if dep_api_name not in apis:
+                        raise ValueError(f'Missing API {dep_api_name!r}'
+                                         f' that is required by {api_name!r}')
+
+        assert_required_apis_available()
+
+        def count_api_refs(api: Api) -> int:
+            # Count the number of times the given API is referenced.
             dep_sum = 0
-            for api_name in api.dependencies:
-                dep_sum += count_api_deps(apis[api_name]) + 1
+            for req_api_name in api.required_apis:
+                dep_sum += count_api_refs(apis[req_api_name]) + 1
+            for opt_api_name in api.optional_apis:
+                if opt_api_name in apis:
+                    dep_sum += count_api_refs(apis[opt_api_name]) + 1
             return dep_sum
 
-        api_dep_counts = {
-            api.name: count_api_deps(api)
+        # Count the number of times each API is referenced.
+        api_ref_counts = {
+            api.name: count_api_refs(api)
             for api in apis.values()
         }
 
+        # Return an ordered dict sorted by an API's reference count
         return {
             api.name: api
             for api in sorted(apis.values(),
-                              key=lambda api: api_dep_counts[api.name])
+                              key=lambda api: api_ref_counts[api.name])
         }
 
     @classmethod
@@ -215,13 +242,16 @@ class ServerContext(Context):
         self._api_contexts[api_name] = api_ctx
         setattr(self, api_name, api_ctx)
 
-    def update(self, prev_root_ctx: Optional["ServerContext"]):
+    def update(self, prev_ctx: Optional["ServerContext"]):
         for api_name, api in self._apis.items():
             prev_api_ctx: Optional[ApiContext] = None
-            if prev_root_ctx is not None:
-                prev_api_ctx = prev_root_ctx.get_api_ctx(
+            if prev_ctx is not None:
+                prev_api_ctx = prev_ctx.get_api_ctx(
                     api_name
                 )
+            for dep_api_name in api.required_apis:
+                dep_api_ctx = self.get_api_ctx(dep_api_name)
+                assert dep_api_ctx is not None
             next_api_ctx: Optional[ApiContext] = api.create_ctx(self)
             if next_api_ctx is not None:
                 self.set_api_ctx(api_name, next_api_ctx)

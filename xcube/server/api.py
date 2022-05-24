@@ -96,20 +96,28 @@ class Api(Generic[ApiContextT]):
         A route is a tuple of the form (route-pattern, handler-class) or
         (route-pattern, handler-class, handler-kwargs). The handler-class
         must be derived from ApiHandler.
+    :param required_apis: Sequence of names of other required APIs.
+    :param optional_apis: Sequence of names of other optional APIs.
     :param config_schema: Optional JSON schema for the API's configuration.
         If not given, or None is passed, the API is assumed to
         have no configuration.
+    :param api_ctx_cls: Optional API context class.
+        If given, it must be derived from ApiContext.
     """
 
     def __init__(self,
                  name: str, /,
-                 dependencies: Optional[Sequence[str]] = None,
                  routes: Optional[Sequence[ApiRoute]] = None,
-                 config_schema: Optional[JsonObjectSchema] = None):
+                 required_apis: Optional[Sequence[str]] = None,
+                 optional_apis: Optional[Sequence[str]] = None,
+                 config_schema: Optional[JsonObjectSchema] = None,
+                 api_ctx_cls: Optional[Type[ApiContextT]] = None):
         self._name = name
-        self._dependencies = tuple(dependencies or ())
+        self._required_apis = tuple(required_apis or ())
+        self._optional_apis = tuple(optional_apis or ())
         self._routes: List[ApiRoute] = list(routes or [])
         self._config_schema = config_schema
+        self._api_ctx_cls = api_ctx_cls
 
     @property
     def name(self) -> str:
@@ -117,9 +125,14 @@ class Api(Generic[ApiContextT]):
         return self._name
 
     @property
-    def dependencies(self) -> Tuple[str]:
-        """The names of other APIs on which this API depends on."""
-        return self._dependencies
+    def required_apis(self) -> Tuple[str]:
+        """The names of other required APIs."""
+        return self._required_apis
+
+    @property
+    def optional_apis(self) -> Tuple[str]:
+        """The names of other optional APIs."""
+        return self._required_apis
 
     def route(self, pattern: str, **target_kwargs):
         """
@@ -184,11 +197,17 @@ class Api(Generic[ApiContextT]):
         """
         Create a new context object for this API.
         If the API doesn't require a context object, the method should
-        return None, which is the default behaviour.
+        return None.
+        The default implementation uses the *api_ctx_cls* class, if any,
+        to instantiate an API context using root_ctx as only argument.
+        Otherwise, None is returned.
 
         :param root_ctx: The root context.
         :return: An instance of ApiContext or None
         """
+        if self._api_ctx_cls is not None:
+            assert issubclass(self._api_ctx_cls, ApiContext)
+            return self._api_ctx_cls(root_ctx)
         return None
 
 

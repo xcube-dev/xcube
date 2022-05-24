@@ -20,48 +20,54 @@
 # DEALINGS IN THE SOFTWARE.
 
 import unittest
+from typing import Optional
 
 from xcube.constants import EXTENSION_POINT_SERVER_APIS
-from xcube.server.api import Api
+from xcube.server.api import Api, ApiContext
 from xcube.server.server import Server
 from xcube.util.extension import ExtensionRegistry
 from xcube.util.jsonschema import JsonObjectSchema
 
 
 class ServerTest(unittest.TestCase):
-    def test_start_and_stop(self):
-        io_loop = self.get_io_loop()
-        extension_registry = self.get_extension_registry()
+
+    def setUp(self) -> None:
+        self.io_loop = self.new_io_loop()
+        self.extension_registry = self.new_extension_registry()
         # noinspection PyTypeChecker
-        server = Server({},
-                        io_loop=io_loop,
-                        extension_registry=extension_registry)
+        self.server = Server({},
+                             io_loop=self.io_loop,
+                             extension_registry=self.extension_registry)
+
+    def test_start_and_stop(self):
+        io_loop = self.io_loop
         self.assertFalse(io_loop.start_called)
         self.assertFalse(io_loop.stop_called)
-        server.start()
+        self.server.start()
         self.assertTrue(io_loop.start_called)
         self.assertFalse(io_loop.stop_called)
-        server.stop()
+        self.server.stop()
         self.assertTrue(io_loop.start_called)
         self.assertTrue(io_loop.stop_called)
 
-    def test_config(self):
-        io_loop = self.get_io_loop()
-        extension_registry = self.get_extension_registry()
-        # noinspection PyTypeChecker
-        server = Server({},
-                        io_loop=io_loop,
-                        extension_registry=extension_registry)
+    def test_ctx(self):
+        server = self.server
+        self.assertEqual({'address': '0.0.0.0',
+                          'port': 8080},
+                         server.ctx.config)
 
-        # noinspection PyUnresolvedReferences
-        self.assertEqual(8080, server.config["port"])
-        # noinspection PyUnresolvedReferences
-        self.assertEqual("0.0.0.0", server.config["address"])
+    def test_update(self):
+        server = self.server
+        prev_ctx = server.ctx
+        server.update({"port": 9090})
+        self.assertEqual({'address': '0.0.0.0',
+                          'port': 9090},
+                         server.ctx.config)
+        self.assertIsNot(prev_ctx, server.ctx)
 
     def test_load_apis(self):
-        extension_registry = self.get_extension_registry()
         apis = Server.load_apis(
-            extension_registry=extension_registry
+            extension_registry=self.extension_registry
         )
         self.assertIsInstance(apis, dict)
         self.assertEqual(['datasets',
@@ -73,7 +79,7 @@ class ServerTest(unittest.TestCase):
                          list(apis.keys()))
 
     @staticmethod
-    def get_io_loop():
+    def new_io_loop():
         class IOLoopMock:
             def __init__(self):
                 self.start_called = False
@@ -88,7 +94,7 @@ class ServerTest(unittest.TestCase):
         return IOLoopMock()
 
     @staticmethod
-    def get_extension_registry():
+    def new_extension_registry():
         extension_registry = ExtensionRegistry()
 
         config_schema = JsonObjectSchema(additional_properties=True,
@@ -103,9 +109,15 @@ class ServerTest(unittest.TestCase):
                 ("wcs", ("datasets",)),
                 ("wmts", ("datasets",)),
         ):
+            class SomeApiContext(ApiContext):
+
+                def update(self, prev_ctx: Optional[ApiContext]):
+                    pass
+
             api = Api(api_name,
-                      dependencies=api_deps,
-                      config_schema=config_schema)
+                      required_apis=api_deps,
+                      config_schema=config_schema,
+                      api_ctx_cls=SomeApiContext)
             extension_registry.add_extension(EXTENSION_POINT_SERVER_APIS,
                                              api.name,
                                              component=api)
