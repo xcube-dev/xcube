@@ -50,7 +50,7 @@ class TransformTest(unittest.TestCase):
 
         gm = GridMapping.from_dataset(dataset, prefer_is_regular=True)
         # Assert we've picked the projected one which is regular
-        self.assertEqual("Projected CRS", gm.crs.type_name)
+        self.assertEqual("Derived Projected CRS", gm.crs.type_name)
         self.assertEqual(True, gm.is_regular)
 
         gm_t = gm.transform(CRS_CRS84)
@@ -64,7 +64,7 @@ class TransformTest(unittest.TestCase):
 
         gm = GridMapping.from_dataset(dataset, prefer_is_regular=True)
         # Assert we've picked the projected one which is regular
-        self.assertEqual("Projected CRS", gm.crs.type_name)
+        self.assertEqual("Derived Projected CRS", gm.crs.type_name)
         self.assertEqual(True, gm.is_regular)
 
         gm_t = gm.transform(gm.crs)
