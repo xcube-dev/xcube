@@ -13,16 +13,15 @@ dependencies:
   - dask-image >=0.6
   - deprecated >=1.2
   - distributed >=2021.6
-  - fiona
+  - fiona >=1.8
   - fontconfig
   - fsspec >=2021.6
   - gdal >=3.0
   - geopandas >=0.8
-  - jdcal >=1.4.1
-  - jsonschema >=3.2.0
-  - libgdal
+  - jdcal >=1.4
+  - jsonschema >=3.2
   - matplotlib-base >=3.0
-  - netcdf4 >=1.5.0
+  - netcdf4 >=1.5
   - numba >=0.52
   - numpy >=1.16
   - openssl
@@ -34,7 +33,8 @@ dependencies:
   - rasterio >=1.2
   - requests >=2.25
   - requests-oauthlib >=1.3
-  - rfc3339-validator >=0.1.4  # for python-jsonschema date-time format validation
+  - rfc3339-validator >=0.1  # for python-jsonschema date-time format validation
+  - rioxarray >=0.11
   - s3fs >=2021.6
   - scipy >=1.6.0
   - setuptools >=41.0
@@ -46,11 +46,10 @@ dependencies:
   # Required by Coiled
   # These are very likely transitive deps anyway
   - lz4
-  - blosc
   - python-blosc
   # Testing
   - flake8 >=3.7
   - moto >=1.3
   - pytest >=4.4
   - pytest-cov >=2.6
-  - requests-mock >=1.8.0
+  - requests-mock >=1.8
