@@ -108,12 +108,12 @@ class DatasetGridMappingTest(unittest.TestCase):
 
         gm = GridMapping.from_dataset(dataset)
         # Should pick the projected one which is regular
-        self.assertEqual("Projected CRS", gm.crs.type_name)
+        self.assertEqual("Derived Projected CRS", gm.crs.type_name)
         self.assertEqual(True, gm.is_regular)
 
         gm = GridMapping.from_dataset(dataset, prefer_is_regular=True)
         # Should pick the projected one which is regular
-        self.assertEqual("Projected CRS", gm.crs.type_name)
+        self.assertEqual("Derived Projected CRS", gm.crs.type_name)
         self.assertEqual(True, gm.is_regular)
 
         gm = GridMapping.from_dataset(dataset, prefer_is_regular=False)
