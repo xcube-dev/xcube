@@ -109,7 +109,7 @@
     </Layer>
     <Layer>
       <ows:Identifier>demo.conc_chl</ows:Identifier>
-      <ows:Title>demo/Chlorophylll concentration</ows:Title>
+      <ows:Title>demo/Chlorophyll concentration</ows:Title>
       <ows:Abstract/>
       <ows:WGS84BoundingBox>
         <ows:LowerCorner>0 50</ows:LowerCorner>
@@ -544,7 +544,7 @@
       </Theme>
       <Theme>
         <ows:Identifier>demo.conc_chl</ows:Identifier>
-        <ows:Title>demo/Chlorophylll concentration</ows:Title>
+        <ows:Title>demo/Chlorophyll concentration</ows:Title>
         <ows:Abstract/>
         <LayerRef>demo.conc_chl</LayerRef>
       </Theme>
