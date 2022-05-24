@@ -31,7 +31,7 @@ import xarray as xr
 from xcube.core.store.fs.impl.dataset import DatasetGeoTiffFsDataAccessor
 from xcube.core.store.fs.impl.geotiff import GeoTIFFMultiLevelDataset
 from xcube.core.store.fs.impl.geotiff import \
-     MultiLevelDatasetGeoTiffFsDataAccessor
+    MultiLevelDatasetGeoTiffFsDataAccessor
 from xcube.util.jsonschema import JsonSchema
 
 
@@ -78,16 +78,9 @@ class RioXarrayTest(unittest.TestCase):
             rioxarray.open_rasterio(cog_path,
                                     overview_level=num_levels)
 
-        self.assertEqual(
-            (
-                'Cannot open overview level 2 of ' +
-                os.path.join(os.path.dirname(__file__),
-                             "..", "..", "..", "..", "..",
-                             "examples", "serve", "demo",
-                             "sample-cog.tif")
-                ,),
-            e.exception.args
-        )
+        self.assertTrue(f'{e.exception}'.startswith(
+            'Cannot open overview level 2 of '
+        ))
 
 
 class GeoTIFFMultiLevelDatasetTest(unittest.TestCase):
