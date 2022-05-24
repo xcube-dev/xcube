@@ -11,6 +11,11 @@
 * Removed all upper version bounds of package dependencies.
   This increases compatibility with existing Python environments.
 
+### Fixes
+
+* Fixed typo in metadata of demo cubes in `examples/serve/demo`. 
+  Demo cubes now all have consolidated metadata.
+
 ## Changes in 0.11.2
 
 ### Enhancements
