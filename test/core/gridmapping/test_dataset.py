@@ -118,18 +118,18 @@ class DatasetGridMappingTest(unittest.TestCase):
 
         gm = GridMapping.from_dataset(dataset, prefer_is_regular=False)
         # Should pick the geographic one which is irregular
-        self.assertEqual('Derived Geographic 2D CRS', gm.crs.type_name)
+        self.assertEqual('Geographic 2D CRS', gm.crs.type_name)
         self.assertEqual(False, gm.is_regular)
 
         gm = GridMapping.from_dataset(dataset, prefer_crs=GEO_CRS)
         # Should pick the geographic one which is irregular
-        self.assertEqual('Derived Geographic 2D CRS', gm.crs.type_name)
+        self.assertEqual('Geographic 2D CRS', gm.crs.type_name)
         self.assertEqual(False, gm.is_regular)
 
         gm = GridMapping.from_dataset(dataset, prefer_crs=GEO_CRS,
                                       prefer_is_regular=True)
         # Should pick the geographic one which is irregular
-        self.assertEqual('Derived Geographic 2D CRS', gm.crs.type_name)
+        self.assertEqual('Geographic 2D CRS', gm.crs.type_name)
         self.assertEqual(False, gm.is_regular)
 
     def test_no_grid_mapping_found(self):
