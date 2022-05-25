@@ -20,11 +20,14 @@
 # DEALINGS IN THE SOFTWARE.
 
 import unittest
-from typing import Optional
+from typing import Optional, Sequence
 
 from xcube.constants import EXTENSION_POINT_SERVER_APIS
-from xcube.server.api import Api, ApiContext
+from xcube.server.api import Api, ApiRoute
+from xcube.server.api import ApiContext
+from xcube.server.context import Context
 from xcube.server.server import Server
+from xcube.server.framework import ServerFramework
 from xcube.util.extension import ExtensionRegistry
 from xcube.util.jsonschema import JsonObjectSchema
 
@@ -32,23 +35,25 @@ from xcube.util.jsonschema import JsonObjectSchema
 class ServerTest(unittest.TestCase):
 
     def setUp(self) -> None:
-        self.io_loop = self.new_io_loop()
+        self.web_server = MockServerFramework()
         self.extension_registry = self.new_extension_registry()
         # noinspection PyTypeChecker
-        self.server = Server({},
-                             io_loop=self.io_loop,
+        self.server = Server(self.web_server,
+                             {},
                              extension_registry=self.extension_registry)
+        self.assertTrue(self.web_server.add_routes_called)
+        self.assertTrue(self.web_server.update_called)
 
     def test_start_and_stop(self):
-        io_loop = self.io_loop
-        self.assertFalse(io_loop.start_called)
-        self.assertFalse(io_loop.stop_called)
+        web_server = self.web_server
+        self.assertFalse(web_server.start_called)
+        self.assertFalse(web_server.stop_called)
         self.server.start()
-        self.assertTrue(io_loop.start_called)
-        self.assertFalse(io_loop.stop_called)
+        self.assertTrue(web_server.start_called)
+        self.assertFalse(web_server.stop_called)
         self.server.stop()
-        self.assertTrue(io_loop.start_called)
-        self.assertTrue(io_loop.stop_called)
+        self.assertTrue(web_server.start_called)
+        self.assertTrue(web_server.stop_called)
 
     def test_ctx(self):
         server = self.server
@@ -79,22 +84,7 @@ class ServerTest(unittest.TestCase):
                          list(apis.keys()))
 
     @staticmethod
-    def new_io_loop():
-        class IOLoopMock:
-            def __init__(self):
-                self.start_called = False
-                self.stop_called = False
-
-            def start(self):
-                self.start_called = True
-
-            def stop(self):
-                self.stop_called = True
-
-        return IOLoopMock()
-
-    @staticmethod
-    def new_extension_registry():
+    def new_extension_registry() -> ExtensionRegistry:
         extension_registry = ExtensionRegistry()
 
         config_schema = JsonObjectSchema(additional_properties=True,
@@ -123,3 +113,24 @@ class ServerTest(unittest.TestCase):
                                              component=api)
 
         return extension_registry
+
+
+class MockServerFramework(ServerFramework):
+
+    def __init__(self):
+        self.add_routes_called = False
+        self.update_called = False
+        self.start_called = False
+        self.stop_called = False
+
+    def add_routes(self, routes: Sequence[ApiRoute]):
+        self.add_routes_called = True
+
+    def update(self, ctx: Context):
+        self.update_called = True
+
+    def start(self, ctx: Context):
+        self.start_called = True
+
+    def stop(self, ctx: Context):
+        self.stop_called = True

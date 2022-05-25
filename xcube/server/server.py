@@ -20,28 +20,27 @@
 # DEALINGS IN THE SOFTWARE.
 
 import copy
-import logging
-from typing import Optional, Dict, Mapping, Any
-
-import tornado.ioloop
-import tornado.web
+from typing import Optional, Dict, Mapping, Any, List
 
 from xcube.constants import EXTENSION_POINT_SERVER_APIS
 from xcube.server.api import Api
 from xcube.server.api import ApiContext
-from xcube.server.api import ApiHandler
-from xcube.server.api import _SERVER_CONTEXT_ATTR_NAME
+from xcube.server.api import ApiRoute
 from xcube.server.config import BASE_SERVER_CONFIG_SCHEMA
 from xcube.server.config import Config
 from xcube.server.context import Context
+from xcube.server.framework import ServerFramework
 from xcube.util.extension import ExtensionRegistry
 from xcube.util.extension import get_extension_registry
 from xcube.util.jsonschema import JsonObjectSchema
 
 
 # TODO:
-#   - introduce framework parameter, remove direct Tornado dependency
+#   - allow for JSON schema for requests and responses
 #   - introduce change management (per API?)
+#     - detect server config changes
+#     - detect API context patches
+#   - fix logging, log server activities
 #   - aim at 100% test coverage
 
 class Server:
@@ -50,42 +49,37 @@ class Server:
 
     APIs are registered using the extension point "xcube.server.api".
 
+    :param web_server: The web server to be used
     :param config: The server configuration.
-    :param io_loop: Optional Tornado I/O loop.
-        Defaults to Tornado's default I/O loop.
     :param extension_registry: Optional extension registry.
         Defaults to xcube's default extension registry.
     """
 
     def __init__(
             self,
+            web_server: ServerFramework,
             config: Config,
-            io_loop: Optional[tornado.ioloop.IOLoop] = None,
-            extension_registry: Optional[ExtensionRegistry] = None
+            extension_registry: Optional[ExtensionRegistry] = None,
     ):
         apis = self.load_apis(extension_registry)
-        handlers = self.get_api_handlers(apis)
+        handlers = self.collect_api_routes(apis)
+        web_server.add_routes(handlers)
+        self._web_server = web_server
         self._apis = apis
         self._config_schema = self.get_effective_config_schema(apis)
-        self._configure_tornado_logger()
-        self._io_loop = io_loop or tornado.ioloop.IOLoop.current()
-        self._application = tornado.web.Application(handlers)
-        self._ctx = self._new_ctx(config)
-        self._ctx.update(None)
+        ctx = self._new_ctx(config)
+        ctx.update(None)
+        self._set_ctx(ctx)
 
     def start(self):
-        config = self.ctx.config
-        port = config["port"]
-        address = config["address"]
-        self._application.listen(port, address=address)
         for api in self._apis.values():
-            api.on_start(self.ctx, self._io_loop)
-        self._io_loop.start()
+            api.start(self.ctx)
+        self._web_server.start(self.ctx)
 
     def stop(self):
+        self._web_server.stop(self.ctx)
         for api in self._apis.values():
-            api.on_stop(self.ctx, self._io_loop)
-        self._io_loop.stop()
+            api.stop(self.ctx)
         self._ctx.dispose()
 
     def update(self, config: Config):
@@ -101,9 +95,7 @@ class Server:
 
     def _set_ctx(self, ctx: "ServerContext"):
         self._ctx = ctx
-        # Register root context in Tornado application, so we
-        # can access all contexts from the request handlers later.
-        setattr(self._application, _SERVER_CONTEXT_ATTR_NAME, ctx)
+        self._web_server.update(ctx)
 
     def _new_ctx(self, config: Config):
         return ServerContext(self._apis,
@@ -159,18 +151,9 @@ class Server:
         }
 
     @classmethod
-    def get_api_handlers(cls, apis: Dict[str, Api]):
+    def collect_api_routes(cls, apis: Dict[str, Api]) -> List[ApiRoute]:
         handlers = []
         for api in apis.values():
-            for route in api.routes:
-                api_route_path = route[0]
-                api_handler_cls = route[1]
-                if not issubclass(api_handler_cls, ApiHandler):
-                    raise TypeError(f'API {api.name!r}:'
-                                    f' route {api_route_path}:'
-                                    f' handler must be instance of'
-                                    f' {ApiHandler.__name__}')
-                api_handler_cls.api_name = api.name
             handlers.extend(api.routes)
         return handlers
 
@@ -196,19 +179,6 @@ class Server:
                         api_config_schema.required
                     )
         return effective_config_schema
-
-    @staticmethod
-    def _configure_tornado_logger():
-        # Configure Tornado logger to use configured root handlers.
-        # For some reason, Tornado's log records will not arrive at
-        # the root logger.
-        tornado_logger = logging.getLogger('tornado')
-        for h in list(tornado_logger.handlers):
-            tornado_logger.removeHandler(h)
-            h.close()
-        for h in list(logging.root.handlers):
-            tornado_logger.addHandler(h)
-        tornado_logger.setLevel(logging.root.level)
 
 
 class ServerContext(Context):

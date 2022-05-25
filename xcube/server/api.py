@@ -19,27 +19,29 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 
-import abc
-from typing import Any, List, Optional, Tuple, Dict, Union, Type, Sequence, \
-    Generic, TypeVar
-
-import tornado.httputil
-import tornado.ioloop
-import tornado.web
+from abc import ABC, abstractmethod
+from typing import Any, List, Optional, Tuple, Dict, Type, Sequence, \
+    Generic, TypeVar, Union
 
 from .config import Config
 from .context import Context
+from ..util.assertions import assert_instance, assert_true
 from ..util.jsonschema import JsonObjectSchema
 
 _SERVER_CONTEXT_ATTR_NAME = '__xcube_server_context'
 
-ApiRoute = Union[
-    Tuple[str, Type["ApiHandler"]],
-    Tuple[str, Type["ApiHandler"], Dict[str, Any]]
-]
-
 # API Context type variable
 ApiContextT = TypeVar("ApiContextT", bound="ApiContext")
+
+JSON = Union[
+    None,
+    bool,
+    int,
+    float,
+    str,
+    List["JSON"],
+    Dict[str, "JSON"],
+]
 
 
 class Api(Generic[ApiContextT]):
@@ -61,22 +63,23 @@ class Api(Generic[ApiContextT]):
 
     May be derived by clients to override the methods
 
-    * `on_start`,
-    * `on_stop`,
-    * `create_ctx`.
+    * `start` - to do things on server start;
+    * `stop` - to do things on server stop;
+    * `create_ctx` - to create an API-specific context object.
 
     Each extension API module must export an instance of this
     class. A typical use case of this class:
 
     ```
-    class DatasetsApiContext(ApiContext)
+    class DatasetsContext(ApiContext)
         def update(self, prev_ctx: Optional[Context]):
             config = self.config
             ...
+
         def get_datasets(self):
             ...
 
-    class DatasetsApi(Api[DatasetsApiContext]):
+    class DatasetsApi(Api[DatasetsContext]):
         def __init__(self):
             super().__init__("datasets",
                              config_schema=DATASET_CONFIG_SCHEMA)
@@ -87,11 +90,13 @@ class Api(Generic[ApiContextT]):
     api = DatasetsApi()
 
     @api.route("/datasets")
-    class DatasetsHandler(ApiHandler[DatasetsApiContext]):
+    class DatasetsHandler(ApiHandler[DatasetsContext]):
         def get(self):
             return self.ctx.get_datasets()
     ```
 
+    :param name: The API name. Must be unique within a server.
+    :param version: The API version. Defaults to "0.0.0".
     :param routes: Optional list of initial routes.
         A route is a tuple of the form (route-pattern, handler-class) or
         (route-pattern, handler-class, handler-kwargs). The handler-class
@@ -107,12 +112,14 @@ class Api(Generic[ApiContextT]):
 
     def __init__(self,
                  name: str, /,
-                 routes: Optional[Sequence[ApiRoute]] = None,
+                 version: str = '0.0.0',
+                 routes: Optional[Sequence["ApiRoute"]] = None,
                  required_apis: Optional[Sequence[str]] = None,
                  optional_apis: Optional[Sequence[str]] = None,
                  config_schema: Optional[JsonObjectSchema] = None,
                  api_ctx_cls: Optional[Type[ApiContextT]] = None):
         self._name = name
+        self._version = version
         self._required_apis = tuple(required_apis or ())
         self._optional_apis = tuple(optional_apis or ())
         self._routes: List[ApiRoute] = list(routes or [])
@@ -125,6 +132,11 @@ class Api(Generic[ApiContextT]):
         return self._name
 
     @property
+    def version(self) -> str:
+        """The version of this API."""
+        return self._version
+
+    @property
     def required_apis(self) -> Tuple[str]:
         """The names of other required APIs."""
         return self._required_apis
@@ -134,34 +146,29 @@ class Api(Generic[ApiContextT]):
         """The names of other optional APIs."""
         return self._required_apis
 
-    def route(self, pattern: str, **target_kwargs):
+    def route(self, pattern: str, **handler_kwargs):
         """
         Decorator that adds a route to this API.
 
         The decorator target must be a class derived from ApiHandler.
 
         :param pattern: The route pattern.
-        :param target_kwargs: Optional keyword arguments passed to
-            RequestHandler constructor.
+        :param handler_kwargs: Optional keyword arguments passed to
+            ApiHandler constructor.
         :return: A decorator function that receives a
-            class derived from RequestHandler
+            class derived from ApiHandler
         """
 
-        def decorator_func(target_class: Type["ApiHandler"]):
-            if not issubclass(target_class, ApiHandler):
-                raise TypeError(f'target_class must be an'
-                                f' instance of {ApiHandler.__name__},'
-                                f' but was {target_class}')
-            if target_kwargs:
-                handler = pattern, target_class, target_kwargs
-            else:
-                handler = pattern, target_class
-            self._routes.append(handler)
+        def decorator_func(handler_cls: Type[ApiHandler]):
+            self._routes.append(ApiRoute(self.name,
+                                         pattern,
+                                         handler_cls,
+                                         handler_kwargs))
 
         return decorator_func
 
     @property
-    def routes(self) -> List[ApiRoute]:
+    def routes(self) -> List["ApiRoute"]:
         """The routes provided by this API."""
         return self._routes
 
@@ -172,24 +179,18 @@ class Api(Generic[ApiContextT]):
         """
         return self._config_schema
 
-    def on_start(self,
-                 root_ctx: Context,
-                 io_loop: tornado.ioloop.IOLoop):
+    def start(self, root_ctx: Context):
         """
         Called when the server is started.
 
-        :param root_ctx: The current root context
-        :param io_loop: The current i/o loop.
+        :param root_ctx: The server's current root context
         """
 
-    def on_stop(self,
-                root_ctx: Context,
-                io_loop: tornado.ioloop.IOLoop):
+    def stop(self, root_ctx: Context):
         """
         Called when the server is stopped.
 
-        :param root_ctx: The current root context
-        :param io_loop: The current i/o loop.
+        :param root_ctx: The server's current root context
         """
 
     # noinspection PyMethodMayBeStatic,PyUnusedLocal
@@ -202,7 +203,7 @@ class Api(Generic[ApiContextT]):
         to instantiate an API context using root_ctx as only argument.
         Otherwise, None is returned.
 
-        :param root_ctx: The root context.
+        :param root_ctx: The server's current root context.
         :return: An instance of ApiContext or None
         """
         if self._api_ctx_cls is not None:
@@ -211,7 +212,7 @@ class Api(Generic[ApiContextT]):
         return None
 
 
-class ApiContext(Context, abc.ABC):
+class ApiContext(Context, ABC):
     """
     An abstract base class for API context objects.
 
@@ -251,39 +252,86 @@ class ApiContext(Context, abc.ABC):
         """Does nothing."""
 
 
-class ApiHandler(tornado.web.RequestHandler,
-                 Generic[ApiContextT],
-                 abc.ABC):
+class ApiRequest:
+    @property
+    @abstractmethod
+    def body(self) -> bytes:
+        """The request body."""
+
+    @property
+    @abstractmethod
+    def json(self) -> JSON:
+        """The request body as JSON value."""
+
+    def get_query_arg(self, name: str) -> Optional[str]:
+        """Get the value of query argument given by *name*."""
+        args = self.get_query_args(name)
+        return args[0] if len(args) > 0 else None
+
+    @abstractmethod
+    def get_query_args(self, name: str) -> Sequence[str]:
+        """Get the values of query argument given by *name*."""
+
+    def get_body_arg(self, name: str) -> Optional[bytes]:
+        args = self.get_body_args(name)
+        return args[0] if len(args) > 0 else None
+
+    @abstractmethod
+    def get_body_args(self, name: str) -> Sequence[bytes]:
+        """Get the values of body argument given by *name*."""
+
+
+class ApiResponse(ABC):
+    @abstractmethod
+    def write(self, data: Union[str, bytes, JSON]):
+        """Write data."""
+
+    @abstractmethod
+    def finish(self, data: Union[str, bytes, JSON] = None):
+        """Finish the response (and submit it)."""
+
+    @abstractmethod
+    def error(self,
+              status_code: int,
+              message: Optional[str] = None,
+              *args: Any,
+              **kwargs: Any) -> Exception:
+        """
+        Get an exception that can be raised.
+        If raised, a standard error response will be generated.
+        """
+
+
+class ApiHandler(Generic[ApiContextT], ABC):
     """
     Base class for all API handlers.
 
-    :param application: The Tornado Application
-    :param request: The current request
-    :param kwargs: Parameters passed to the handler.
+    :param api_name: The name of the API that defines this handler.
+    :param root_ctx: The server's root context.
+    :param request: The API handler's request.
+    :param response: The API handler's response.
+    :param kwargs: Client keyword arguments (not used in base class).
     """
 
-    api_name: str
-
     def __init__(self,
-                 application: tornado.web.Application,
-                 request: tornado.httputil.HTTPServerRequest,
+                 api_name: str,
+                 root_ctx: Context,
+                 request: ApiRequest,
+                 response: ApiResponse,
                  **kwargs: Any):
-        super().__init__(application, request, **kwargs)
-        if not isinstance(self.api_name, str):
-            raise RuntimeError(
-                'request handler must be used with xcube server'
-            )
-
-        root_ctx = getattr(application,
-                           _SERVER_CONTEXT_ATTR_NAME, None)
-        from .server import ServerContext
-        if not isinstance(root_ctx, ServerContext):
-            raise RuntimeError(
-                'request handler must be used with xcube server'
-            )
-
         self._root_ctx = root_ctx
-        self._ctx = root_ctx.get_api_ctx(self.api_name)
+        self._ctx = root_ctx.get_api_ctx(api_name)
+        self._request = request
+        self._response = response
+        self._kwargs = kwargs
+
+    @property
+    def request(self) -> ApiRequest:
+        return self._request
+
+    @property
+    def response(self) -> ApiResponse:
+        return self._response
 
     @property
     def config(self) -> Config:
@@ -292,7 +340,7 @@ class ApiHandler(tornado.web.RequestHandler,
 
     @property
     def root_ctx(self) -> Context:
-        """The root (server) context."""
+        """The server's root context."""
         return self._root_ctx
 
     @property
@@ -301,3 +349,31 @@ class ApiHandler(tornado.web.RequestHandler,
         # noinspection PyTypeChecker
         return self._ctx
 
+    def _unimplemented_method(self, *args: str, **kwargs: str) -> None:
+        raise self.response.error(405)
+
+    get = _unimplemented_method
+    post = _unimplemented_method
+    put = _unimplemented_method
+    delete = _unimplemented_method
+    options = _unimplemented_method
+
+
+class ApiRoute:
+    def __init__(self,
+                 api_name: str,
+                 pattern: str,
+                 handler_cls: Type[ApiHandler],
+                 handler_kwargs: Optional[Dict[str, Any]] = None):
+        assert_instance(api_name, str, name="api_name")
+        assert_instance(pattern, str, name="pattern")
+        assert_true(issubclass(handler_cls, ApiHandler),
+                    message=f'handler_cls must be a subclass'
+                            f' of {ApiHandler.__name__},'
+                            f' was {handler_cls}')
+        assert_instance(handler_kwargs, (type(None), dict),
+                        name="handler_kwargs")
+        self.api_name = api_name
+        self.pattern = pattern
+        self.handler_cls = handler_cls
+        self.handler_kwargs = handler_kwargs

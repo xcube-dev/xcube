@@ -43,6 +43,8 @@ EXTENSION_POINT_DATA_OPENERS = 'xcube.core.store.opener'
 EXTENSION_POINT_DATA_WRITERS = 'xcube.core.store.writer'
 #: The extension point identifier for server APIs
 EXTENSION_POINT_SERVER_APIS = 'xcube.server.api'
+#: The extension point identifier for server frameworks such as Tornado
+EXTENSION_POINT_SERVER_FRAMEWORKS = 'xcube.server.framework'
 
 GLOBAL_GEO_EXTENT = -180., -90., 180., 90.
 
