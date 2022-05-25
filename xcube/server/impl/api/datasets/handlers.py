@@ -31,4 +31,4 @@ class DatasetsHandler(ApiHandler[DatasetsContext]):
     def get(self):
         ctx = self.ctx
         assert isinstance(ctx, DatasetsContext)
-        self.write(dict(datasets=ctx.config.get("datasets", [])))
+        self.response.finish(dict(datasets=ctx.config.get("datasets", [])))
