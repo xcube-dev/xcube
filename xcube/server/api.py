@@ -19,6 +19,7 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 
+import inspect
 from abc import ABC, abstractmethod
 from typing import Any, List, Optional, Tuple, Dict, Type, Sequence, \
     Generic, TypeVar, Union, Callable
@@ -29,6 +30,7 @@ from ..util.assertions import assert_instance, assert_true
 from ..util.jsonschema import JsonObjectSchema
 
 _SERVER_CONTEXT_ATTR_NAME = '__xcube_server_context'
+_HTTP_METHODS = {'get', 'post', 'put', 'delete', 'options'}
 
 # API Context type variable
 ApiContextT = TypeVar("ApiContextT", bound="ApiContext")
@@ -177,6 +179,32 @@ class Api(Generic[ApiContextT]):
                                          handler_cls,
                                          handler_kwargs))
             return handler_cls
+
+        return decorator_func
+
+    def operation(self, **kwargs):
+        """
+        Decorator that adds OpenAPI 3.0 information to an
+        API handler's get, post, put, delete or options method.
+
+        :param kwargs: OpenAPI 3.0 keyword mappings
+            using pythonic snake-case, e.g. "operation_id" instead
+            of "operationId".
+        :return: A decorator function that receives a
+            and returns an ApiHandler method.
+        """
+
+        def decorator_func(target: Union[Type[ApiHandler], Callable]):
+            if inspect.isfunction(target) \
+                    and hasattr(target, '__name__') \
+                    and target.__name__ in _HTTP_METHODS:
+                setattr(target, "__openapi__", kwargs)
+            else:
+                raise TypeError(f'API {self.name}:'
+                                f' @operation() decorator'
+                                f' must be used with one of the'
+                                f' HTTP methods of an {ApiHandler.__name__}')
+            return target
 
         return decorator_func
 

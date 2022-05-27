@@ -18,6 +18,7 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
+from typing import List, Optional
 
 import click
 
@@ -33,20 +34,32 @@ DEFAULT_FRAMEWORK = "tornado"
               type=click.Choice(["tornado", "flask"]),
               help=f'Web server framework.'
                    f' Defaults to "{DEFAULT_FRAMEWORK}"')
-@click.option('--config', '-c', 'config_path',
-              metavar='CONFIG', default=None,
+@click.option('--config', '-c', 'config_paths',
+              metavar='CONFIG', default=None, multiple=True,
               help='Configuration file.')
+@click.option('--stop-after', 'stop_after',
+              metavar='TIME', type=float, default=None,
+              help='Stop server after TIME seconds.')
 @cli_option_quiet
 @cli_option_verbosity
 def serve2(framework_name: str,
-           config_path: str,
+           config_paths: List[str],
+           stop_after: Optional[float],
            quiet: bool,
            verbosity: int):
     """
     Run xcube restful server.
     """
+    from xcube.util.config import load_configs
+    from xcube.cli.common import configure_cli_output
     from xcube.server.server import Server
     from xcube.server.framework import get_framework_class
 
-    framework_class = get_framework_class(framework_name)
-    Server(framework_class(), {"audience": "User"}).start()
+    configure_cli_output(quiet=quiet, verbosity=verbosity)
+
+    config = load_configs(*config_paths) if config_paths else {}
+    framework = get_framework_class(framework_name)()
+    server = Server(framework, config)
+    if stop_after is not None:
+        server.call_later(stop_after, server.stop)
+    server.start()

@@ -20,7 +20,7 @@
 #  DEALINGS IN THE SOFTWARE.
 
 import abc
-from typing import Sequence, List, Type
+from typing import Sequence, List, Type, Union, Callable
 
 from xcube.constants import EXTENSION_POINT_SERVER_FRAMEWORKS
 from xcube.server.api import ApiRoute
@@ -61,6 +61,21 @@ class ServerFramework(abc.ABC):
         """
         Stops the web service.
         :param ctx: The current server's root context.
+        """
+
+    @abc.abstractmethod
+    def call_later(self,
+                   delay: Union[int, float],
+                   callback: Callable,
+                   *args,
+                   **kwargs):
+        """
+        Executes the given callable *callback* after *delay* seconds.
+
+        :param delay: Delay in seconds.
+        :param callback: Callback to be called.
+        :param args: Positional arguments passed to *callback*.
+        :param kwargs: Keyword arguments passed to *callback*.
         """
 
 

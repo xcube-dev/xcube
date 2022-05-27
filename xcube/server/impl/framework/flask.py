@@ -20,7 +20,7 @@
 #  DEALINGS IN THE SOFTWARE.
 
 
-from typing import Sequence
+from typing import Sequence, Union, Callable
 
 from xcube.server.api import ApiRoute
 from xcube.server.context import Context
@@ -44,4 +44,11 @@ class FlaskFramework(ServerFramework):
         raise NotImplementedError()
 
     def stop(self, ctx: Context):
+        raise NotImplementedError()
+
+    def call_later(self,
+                   delay: Union[int, float],
+                   callback: Callable,
+                   *args,
+                   **kwargs):
         raise NotImplementedError()

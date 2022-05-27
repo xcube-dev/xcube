@@ -21,7 +21,7 @@
 
 import logging
 from abc import ABC
-from typing import Any, Optional, Sequence, Union
+from typing import Any, Optional, Sequence, Union, Callable
 
 import tornado.escape
 import tornado.httputil
@@ -80,6 +80,13 @@ class TornadoFramework(ServerFramework):
 
     def stop(self, ctx: Context):
         self._io_loop.stop()
+
+    def call_later(self,
+                   delay: Union[int, float],
+                   callback: Callable,
+                   *args,
+                   **kwargs):
+        self._io_loop.call_later(delay, callback, *args, **kwargs)
 
     @staticmethod
     def _configure_logger():

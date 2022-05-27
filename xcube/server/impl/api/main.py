@@ -37,5 +37,6 @@ api = Api('main', config_schema=CONFIG_SCHEMA)
 # noinspection PyAbstractClass
 @api.route("/")
 class MainHandler(ApiHandler):
+    @api.operation(operationId='get')
     def get(self):
         self.response.finish(dict(config=self.config))

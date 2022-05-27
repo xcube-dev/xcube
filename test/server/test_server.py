@@ -20,7 +20,7 @@
 # DEALINGS IN THE SOFTWARE.
 
 import unittest
-from typing import Optional, Sequence, Tuple, Dict, Any
+from typing import Optional, Sequence, Tuple, Dict, Any, Union, Callable
 
 from xcube.constants import EXTENSION_POINT_SERVER_APIS
 from xcube.server.api import Api
@@ -31,7 +31,8 @@ from xcube.server.framework import ServerFramework
 from xcube.server.server import Server
 from xcube.server.server import ServerContext
 from xcube.util.extension import ExtensionRegistry
-from xcube.util.jsonschema import JsonObjectSchema, JsonArraySchema
+from xcube.util.jsonschema import JsonObjectSchema, JsonArraySchema, \
+    JsonStringSchema
 
 
 class ServerTest(unittest.TestCase):
@@ -73,7 +74,7 @@ class ServerTest(unittest.TestCase):
                           'port': 8080},
                          server.ctx.config)
 
-    def test_config_schema(self):
+    def test_config_schema_effectively_merged(self):
         extension_registry = mock_extension_registry([
             (
                 "datasets",
@@ -125,7 +126,28 @@ class ServerTest(unittest.TestCase):
             server.config_schema.to_dict()
         )
 
-    def test_update(self):
+    def test_config_schema_must_be_object(self):
+        extension_registry = mock_extension_registry([
+            (
+                "datasets",
+                dict(
+                    config_schema=JsonObjectSchema(
+                        properties=dict(address=JsonStringSchema())
+                    )
+                )
+            ),
+        ])
+        with self.assertRaises(ValueError) as cm:
+            Server(
+                MockServerFramework(), {},
+                extension_registry=extension_registry
+            )
+        self.assertEqual(f"API 'datasets':"
+                         f" configuration parameter 'address'"
+                         f" is already defined.",
+                         f'{cm.exception}')
+
+    def test_update_is_effective(self):
         extension_registry = mock_extension_registry([
             ("datasets", dict(create_ctx=MockApiContext)),
             ("timeseries", dict(create_ctx=MockApiContext,
@@ -141,6 +163,43 @@ class ServerTest(unittest.TestCase):
                           'port': 9090},
                          server.ctx.config)
         self.assertIsNot(prev_ctx, server.ctx)
+
+    def test_update_disposes(self):
+        api_ctx: Optional[MockApiContext] = None
+
+        def create_ctx(root):
+            nonlocal api_ctx
+            if api_ctx is None:
+                api_ctx = MockApiContext(root)
+                return api_ctx
+            else:
+                return None
+
+        extension_registry = mock_extension_registry([
+            ("datasets", dict(create_ctx=create_ctx)),
+        ])
+        server = Server(
+            MockServerFramework(), {},
+            extension_registry=extension_registry
+        )
+        self.assertIsInstance(api_ctx, MockApiContext)
+        self.assertEqual(1, api_ctx.update_count)
+        self.assertEqual(0, api_ctx.dispose_count)
+        server.update({})
+        self.assertEqual(1, api_ctx.update_count)
+        self.assertEqual(1, api_ctx.dispose_count)
+
+    def test_call_later(self):
+        extension_registry = mock_extension_registry([
+            ("datasets", dict()),
+        ])
+        framework = MockServerFramework()
+        server = Server(
+            framework, {},
+            extension_registry=extension_registry
+        )
+        server.call_later(0.01, lambda x: x)
+        self.assertEqual(1, framework.call_later_count)
 
     def test_apis_loaded_in_order(self):
         extension_registry = mock_extension_registry([
@@ -202,6 +261,7 @@ class MockServerFramework(ServerFramework):
         self.update_count = 0
         self.start_count = 0
         self.stop_count = 0
+        self.call_later_count = 0
 
     def add_routes(self, routes: Sequence[ApiRoute]):
         self.add_routes_count += 1
@@ -214,6 +274,13 @@ class MockServerFramework(ServerFramework):
 
     def stop(self, ctx: Context):
         self.stop_count += 1
+
+    def call_later(self,
+                   delay: Union[int, float],
+                   callback: Callable,
+                   *args,
+                   **kwargs):
+        self.call_later_count += 1
 
 
 class MockApiContext(ApiContext):

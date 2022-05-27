@@ -59,14 +59,27 @@ class ApiTest(unittest.TestCase):
             def get(self):
                 return {}
 
-        print(api.routes)
-
         self.assertEqual(
             [
                 ApiRoute("datasets", "/datasets", DatasetsHandler),
                 ApiRoute("datasets", "/datasets/{dataset_id}", DatasetHandler)
             ],
             api.routes
+        )
+
+    def test_openapi(self):
+        api = Api("datasets")
+
+        @api.route("/datasets")
+        class DatasetsHandler(ApiHandler):
+            # noinspection PyMethodMayBeStatic
+            @api.operation()
+            def get(self):
+                return {}
+
+        self.assertEqual(
+            {},
+            getattr(DatasetsHandler.get, '__openapi__', None)
         )
 
 

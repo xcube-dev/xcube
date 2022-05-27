@@ -20,7 +20,7 @@
 # DEALINGS IN THE SOFTWARE.
 
 import copy
-from typing import Optional, Dict, Mapping, Any, List
+from typing import Optional, Dict, Mapping, Any, List, Union, Callable
 
 from xcube.constants import EXTENSION_POINT_SERVER_APIS
 from xcube.server.api import Api
@@ -36,7 +36,8 @@ from xcube.util.jsonschema import JsonObjectSchema
 
 
 # TODO:
-#   - allow for JSON schema for requests and responses
+#   - generate OpenAPI document and add default endpoint "/openapi"
+#   - allow for JSON schema for requests and responses (openAPI)
 #   - introduce change management (per API?)
 #     - detect server config changes
 #     - detect API context patches
@@ -49,7 +50,7 @@ class Server:
 
     APIs are registered using the extension point "xcube.server.api".
 
-    :param web_server: The web server to be used
+    :param framework: The web server framework to be used
     :param config: The server configuration.
     :param extension_registry: Optional extension registry.
         Defaults to xcube's default extension registry.
@@ -57,14 +58,14 @@ class Server:
 
     def __init__(
             self,
-            web_server: ServerFramework,
+            framework: ServerFramework,
             config: Config,
             extension_registry: Optional[ExtensionRegistry] = None,
     ):
         apis = self.load_apis(extension_registry)
         handlers = self.collect_api_routes(apis)
-        web_server.add_routes(handlers)
-        self._web_server = web_server
+        framework.add_routes(handlers)
+        self._framework = framework
         self._apis = apis
         self._config_schema = self.get_effective_config_schema(apis)
         ctx = self._new_ctx(config)
@@ -72,20 +73,38 @@ class Server:
         self._set_ctx(ctx)
 
     def start(self):
+        """Start this server."""
         for api in self._apis.values():
             api.start(self.ctx)
-        self._web_server.start(self.ctx)
+        self._framework.start(self.ctx)
 
     def stop(self):
-        self._web_server.stop(self.ctx)
+        """Stop this server."""
+        self._framework.stop(self.ctx)
         for api in self._apis.values():
             api.stop(self.ctx)
         self._ctx.dispose()
 
     def update(self, config: Config):
+        """Update this server with new configuration."""
         ctx = self._new_ctx(config)
         ctx.update(prev_ctx=self._ctx)
         self._set_ctx(ctx)
+
+    def call_later(self,
+                   delay: Union[int, float],
+                   callback: Callable,
+                   *args,
+                   **kwargs):
+        """
+        Executes the given callable *callback* after *delay* seconds.
+
+        :param delay: Delay in seconds.
+        :param callback: Callback to be called.
+        :param args: Positional arguments passed to *callback*.
+        :param kwargs: Keyword arguments passed to *callback*.
+        """
+        self._framework.call_later(delay, callback, *args, **kwargs)
 
     # Used mainly for testing
     @property
@@ -101,7 +120,7 @@ class Server:
 
     def _set_ctx(self, ctx: "ServerContext"):
         self._ctx = ctx
-        self._web_server.update(ctx)
+        self._framework.update(ctx)
 
     def _new_ctx(self, config: Config):
         return ServerContext(self._apis,
@@ -169,11 +188,7 @@ class Server:
         for api_name, api in apis.items():
             api_config_schema = api.config_schema
             if api_config_schema is not None:
-                if not isinstance(api_config_schema, JsonObjectSchema):
-                    raise TypeError(f'API {api_name!r}:'
-                                    f' configuration JSON schema'
-                                    f' must be instance of'
-                                    f' {JsonObjectSchema.__name__}')
+                assert isinstance(api_config_schema, JsonObjectSchema)
                 for k, v in api_config_schema.properties.items():
                     if k in effective_config_schema.properties:
                         raise ValueError(f'API {api_name!r}:'
