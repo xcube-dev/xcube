@@ -339,10 +339,12 @@ class ApiHandler(Generic[ApiContextT], ABC):
 
     @property
     def request(self) -> ApiRequest:
+        """The request that provides the handler's input."""
         return self._request
 
     @property
     def response(self) -> ApiResponse:
+        """The response that provides the handler's output."""
         return self._response
 
     @property
