@@ -176,6 +176,7 @@ class Api(Generic[ApiContextT]):
                                          pattern,
                                          handler_cls,
                                          handler_kwargs))
+            return handler_cls
 
         return decorator_func
 
@@ -378,6 +379,7 @@ class ApiRoute:
                  handler_kwargs: Optional[Dict[str, Any]] = None):
         assert_instance(api_name, str, name="api_name")
         assert_instance(pattern, str, name="pattern")
+        assert_instance(handler_cls, type, name="handler_cls")
         assert_true(issubclass(handler_cls, ApiHandler),
                     message=f'handler_cls must be a subclass'
                             f' of {ApiHandler.__name__},'
@@ -387,4 +389,30 @@ class ApiRoute:
         self.api_name = api_name
         self.pattern = pattern
         self.handler_cls = handler_cls
-        self.handler_kwargs = handler_kwargs
+        self.handler_kwargs = dict(handler_kwargs or {})
+
+    def __eq__(self, other) -> bool:
+        if isinstance(other, ApiRoute):
+            return self.api_name == other.api_name \
+                   and self.pattern == other.pattern \
+                   and self.handler_cls == other.handler_cls \
+                   and self.handler_kwargs == other.handler_kwargs
+        return False
+
+    def __hash__(self) -> int:
+        return hash(self.api_name) \
+               + 2 * hash(self.pattern) \
+               + 4 * hash(self.handler_cls) \
+               + 16 * hash(tuple(sorted(tuple(self.handler_kwargs.items()),
+                                        key=lambda p: p[0])))
+
+    def __str__(self) -> str:
+        return repr(self)
+
+    def __repr__(self) -> str:
+        args = (f"{self.api_name!r},"
+                f" {self.pattern!r},"
+                f" {self.handler_cls.__name__}")
+        if self.handler_kwargs:
+            args += f", handler_kwargs={self.handler_kwargs!r}"
+        return f"ApiRoute({args})"

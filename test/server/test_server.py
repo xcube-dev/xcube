@@ -20,7 +20,7 @@
 # DEALINGS IN THE SOFTWARE.
 
 import unittest
-from typing import Optional, Sequence, Tuple, Callable, Dict, Any
+from typing import Optional, Sequence, Tuple, Dict, Any
 
 from xcube.constants import EXTENSION_POINT_SERVER_APIS
 from xcube.server.api import Api
@@ -37,32 +37,28 @@ from xcube.util.jsonschema import JsonObjectSchema, JsonArraySchema
 class ServerTest(unittest.TestCase):
 
     def test_web_server_delegation(self):
-        extension_registry = new_extension_registry([
-            ("datasets", dict()),
+        extension_registry = mock_extension_registry([
+            ("datasets", dict(create_ctx=MockApiContext)),
         ])
         web_server = MockServerFramework()
         server = Server(
             web_server, {},
             extension_registry=extension_registry
         )
-        self.assertTrue(web_server.add_routes_called)
-        self.assertTrue(web_server.update_called)
-        self.assertFalse(web_server.start_called)
-        self.assertFalse(web_server.stop_called)
+        self.assertEqual(1, web_server.add_routes_count)
+        self.assertEqual(1, web_server.update_count)
+        self.assertEqual(0, web_server.start_count)
+        self.assertEqual(0, web_server.stop_count)
         server.start()
-        self.assertTrue(web_server.start_called)
-        self.assertFalse(web_server.stop_called)
+        self.assertEqual(1, web_server.start_count)
+        self.assertEqual(0, web_server.stop_count)
         server.stop()
-        self.assertTrue(web_server.start_called)
-        self.assertTrue(web_server.stop_called)
+        self.assertEqual(1, web_server.start_count)
+        self.assertEqual(1, web_server.stop_count)
 
     def test_root_ctx(self):
-        class SomeApiContext(ApiContext):
-            def update(self, prev_ctx: Optional[ApiContext]):
-                pass
-
-        extension_registry = new_extension_registry([
-            ("datasets", dict(create_ctx=SomeApiContext)),
+        extension_registry = mock_extension_registry([
+            ("datasets", dict(create_ctx=MockApiContext)),
         ])
         server = Server(
             MockServerFramework(), {},
@@ -70,14 +66,15 @@ class ServerTest(unittest.TestCase):
         )
         self.assertIsInstance(server.ctx, ServerContext)
         self.assertIsInstance(server.ctx.get_api_ctx('datasets'),
-                              SomeApiContext)
+                              MockApiContext)
+        self.assertTrue(server.ctx.get_api_ctx('datasets').update_count)
         self.assertIsNone(server.ctx.get_api_ctx('timeseries'))
         self.assertEqual({'address': '0.0.0.0',
                           'port': 8080},
                          server.ctx.config)
 
     def test_config_schema(self):
-        extension_registry = new_extension_registry([
+        extension_registry = mock_extension_registry([
             (
                 "datasets",
                 dict(
@@ -129,8 +126,10 @@ class ServerTest(unittest.TestCase):
         )
 
     def test_update(self):
-        extension_registry = new_extension_registry([
-            ("datasets", dict()),
+        extension_registry = mock_extension_registry([
+            ("datasets", dict(create_ctx=MockApiContext)),
+            ("timeseries", dict(create_ctx=MockApiContext,
+                                required_apis=["datasets"])),
         ])
         server = Server(
             MockServerFramework(), {},
@@ -144,7 +143,7 @@ class ServerTest(unittest.TestCase):
         self.assertIsNot(prev_ctx, server.ctx)
 
     def test_apis_loaded_in_order(self):
-        extension_registry = new_extension_registry([
+        extension_registry = mock_extension_registry([
             ("datasets", dict()),
             ("places", dict()),
             ("timeseries", dict()),
@@ -170,9 +169,8 @@ class ServerTest(unittest.TestCase):
         def create_ctx(root_ctx):
             return 42
 
-        extension_registry = new_extension_registry(
-            [('datasets', dict())],
-            create_ctx=create_ctx
+        extension_registry = mock_extension_registry(
+            [('datasets', dict(create_ctx=create_ctx))],
         )
 
         with self.assertRaises(TypeError) as cm:
@@ -184,7 +182,7 @@ class ServerTest(unittest.TestCase):
                          f'{cm.exception}')
 
     def test_missing_dependency_detected(self):
-        extension_registry = new_extension_registry(
+        extension_registry = mock_extension_registry(
             [('timeseries', dict(required_apis=('datasets',)))]
         )
 
@@ -200,52 +198,45 @@ class ServerTest(unittest.TestCase):
 class MockServerFramework(ServerFramework):
 
     def __init__(self):
-        self.add_routes_called = False
-        self.update_called = False
-        self.start_called = False
-        self.stop_called = False
+        self.add_routes_count = 0
+        self.update_count = 0
+        self.start_count = 0
+        self.stop_count = 0
 
     def add_routes(self, routes: Sequence[ApiRoute]):
-        self.add_routes_called = True
+        self.add_routes_count += 1
 
     def update(self, ctx: Context):
-        self.update_called = True
+        self.update_count += 1
 
     def start(self, ctx: Context):
-        self.start_called = True
+        self.start_count += 1
 
     def stop(self, ctx: Context):
-        self.stop_called = True
+        self.stop_count += 1
 
 
-def new_extension_registry(
-        api_spec: Sequence[Tuple[str, Dict[str, Any]]],
-        config_schema: Optional[JsonObjectSchema] = None,
-        create_ctx: Optional[Callable] = None,
+class MockApiContext(ApiContext):
+    def __init__(self, root: Context):
+        super().__init__(root)
+        self.update_count = 0
+        self.dispose_count = 0
+
+    def update(self, prev_ctx: Optional[ApiContext]):
+        self.update_count += 1
+
+    def dispose(self):
+        self.dispose_count += 1
+
+
+def mock_extension_registry(
+        api_spec: Sequence[Tuple[str, Dict[str, Any]]]
 ) -> ExtensionRegistry:
     extension_registry = ExtensionRegistry()
-
-    # if config_schema is None:
-    #     config_schema = JsonObjectSchema(additional_properties=True,
-    #                                      default={})
-    #
-    # if create_ctx is None:
-    #     class SomeApiContext(ApiContext):
-    #
-    #         def update(self, prev_ctx: Optional[ApiContext]):
-    #             pass
-    #
-    #     create_ctx = SomeApiContext
-
     for api_name, api_kwargs in api_spec:
         api_kwargs = dict(api_kwargs)
-        if config_schema is not None:
-            api_kwargs.update(config_schema=config_schema)
-        if create_ctx is not None:
-            api_kwargs.update(create_ctx=create_ctx)
         api = Api(api_name, **api_kwargs)
         extension_registry.add_extension(EXTENSION_POINT_SERVER_APIS,
                                          api.name,
                                          component=api)
-
     return extension_registry
