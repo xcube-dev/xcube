@@ -1,5 +1,6 @@
 import unittest
 
+import dask.array as da
 import geopandas as gpd
 import numpy as np
 import shapely.geometry
@@ -12,42 +13,94 @@ from xcube.core.geom import convert_geometry
 from xcube.core.geom import get_dataset_bounds
 from xcube.core.geom import get_dataset_geometry
 from xcube.core.geom import get_geometry_mask
+from xcube.core.geom import is_dataset_y_axis_inverted
+from xcube.core.geom import is_lon_lat_dataset
 from xcube.core.geom import mask_dataset_by_geometry
+from xcube.core.geom import normalize_geometry
 from xcube.core.geom import rasterize_features
 from xcube.core.new import new_cube
+from xcube.util.types import normalize_scalar_or_pair
+
+nan = np.nan
 
 
 class RasterizeFeaturesIntoDataset(unittest.TestCase):
-    def test_rasterize_geodataframe_features_into_dataset_lonlat(self):
-        features = self.get_geodataframe_features()
-        self._test_rasterize_features(features, 'lon', 'lat')
-        self._test_rasterize_features(features, 'lon', 'lat', with_var=True)
+    def test_rasterize_geo_data_frame_lonlat(self):
+        self._test_rasterize_features(self.get_geo_data_frame_features(),
+                                      'lon', 'lat')
 
-    def test_rasterize_geodataframe_features_into_dataset_xy(self):
-        features = self.get_geodataframe_features()
-        self._test_rasterize_features(features, 'x', 'y')
-        self._test_rasterize_features(features, 'x', 'y', with_var=True)
+    def test_rasterize_geo_data_frame_lonlat_chunked(self):
+        self._test_rasterize_features(self.get_geo_data_frame_features(),
+                                      'lon', 'lat', with_var=True)
 
-    def test_rasterize_geojson_features_into_dataset_lonlat(self):
-        features = self.get_geojson_features()
-        self._test_rasterize_features(features, 'lon', 'lat')
-        self._test_rasterize_features(features, 'lon', 'lat', with_var=True)
+    def test_rasterize_geo_data_frame_lonlat_fix_chunks(self):
+        self._test_rasterize_features(self.get_geo_data_frame_features(),
+                                      'lon', 'lat', tile_size=4)
 
-    def test_rasterize_geojson_features_into_dataset_xy(self):
-        features = self.get_geojson_features()
-        self._test_rasterize_features(features, 'x', 'y')
-        self._test_rasterize_features(features, 'x', 'y', with_var=True)
+    def test_rasterize_geo_data_frame_xy(self):
+        self._test_rasterize_features(self.get_geo_data_frame_features(),
+                                      'x', 'y')
+
+    def test_rasterize_geo_data_frame_xy_chunked(self):
+        self._test_rasterize_features(self.get_geo_data_frame_features(),
+                                      'x', 'y', with_var=True)
+
+    def test_rasterize_geo_data_frame_xy_fix_chunks(self):
+        self._test_rasterize_features(self.get_geo_data_frame_features(),
+                                      'x', 'y', tile_size=(3, 4))
+
+    def test_rasterize_geo_json_lonlat(self):
+        self._test_rasterize_features(self.get_geo_json_features(),
+                                      'lon', 'lat')
+
+    def test_rasterize_geo_json_lonlat_chunked(self):
+        self._test_rasterize_features(self.get_geo_json_features(),
+                                      'lon', 'lat', with_var=True)
+
+    def test_rasterize_geo_json_xy(self):
+        self._test_rasterize_features(self.get_geo_json_features(),
+                                      'x', 'y')
+
+    def test_rasterize_geo_json_xy_chunked(self):
+        self._test_rasterize_features(self.get_geo_json_features(),
+                                      'x', 'y', with_var=True)
+
+    def test_rasterize_geo_json_xy_chunked_inverse_y(self):
+        self._test_rasterize_features(self.get_geo_json_features(),
+                                      'x', 'y',
+                                      with_var=True,
+                                      inverse_y=True)
+
+    def test_rasterize_geo_json_xy_fixed_chunks_inverse_y(self):
+        self._test_rasterize_features(self.get_geo_json_features(),
+                                      'x', 'y',
+                                      tile_size=4,
+                                      inverse_y=True)
+
+    def test_rasterize_invalid_feature(self):
+        features = self.get_geo_json_features()
+        with self.assertRaises(ValueError) as cm:
+            rasterize_features(new_cube(),
+                               features,
+                               ['missing'])
+        self.assertEqual("feature property 'missing' not found",
+                         f'{cm.exception}')
 
     def _test_rasterize_features(self,
                                  features,
                                  x_name, y_name,
-                                 with_var=False):
+                                 with_var=False,
+                                 tile_size=None,
+                                 inverse_y=False):
+        width = 10
+        height = 10
         dataset = new_cube(
-            width=10, height=10,
+            width=width, height=height,
             x_name=x_name, y_name=y_name,
             x_res=10,
             x_start=-50, y_start=-50,
-            variables=dict(d=12.5) if with_var else None
+            variables=dict(d=12.5) if with_var else None,
+            inverse_y=inverse_y
         )
         if with_var:
             dataset['d'] = dataset['d'].chunk({x_name: 4,
@@ -64,16 +117,21 @@ class RasterizeFeaturesIntoDataset(unittest.TestCase):
                                          c=dict(name='c2', dtype=np.uint8,
                                                 fill_value=0, converter=int)
                                      ),
+                                     tile_size=tile_size,
                                      in_place=False)
+
         self.assertIsNotNone(dataset)
         if with_var:
-            self.assertEqual({x_name: (4, 4, 2),
-                              y_name: (3, 3, 3, 1)},
-                             dataset.chunks)
+            cy, cx = (3, 3, 3, 1), (4, 4, 2)
+        elif tile_size:
+            tw, th = normalize_scalar_or_pair(tile_size)
+            cy, cx = da.core.normalize_chunks((th, tw), shape=(height, width))
         else:
-            self.assertEqual({x_name: (10,),
-                              y_name: (10,)},
-                             dataset.chunks)
+            cy, cx = (10,), (10,)
+        if not inverse_y:
+            cy = tuple(reversed(cy))
+        self.assertEqual({x_name: cx, y_name: cy}, dataset.chunks)
+
         self.assertIn(x_name, dataset.coords)
         self.assertIn(y_name, dataset.coords)
         self.assertIn('time', dataset.coords)
@@ -92,32 +150,65 @@ class RasterizeFeaturesIntoDataset(unittest.TestCase):
         self.assertEquals((y_name, x_name), dataset.a.dims)
         self.assertEquals((y_name, x_name), dataset.b.dims)
         self.assertEquals((y_name, x_name), dataset.c2.dims)
-        self.assertEquals(np.array(0.5, dtype=np.float64), dataset.a.min())
-        self.assertEquals(np.array(0.8, dtype=np.float64), dataset.a.max())
-        self.assertEquals(np.array(2.1, dtype=np.float32), dataset.b.min())
-        self.assertEquals(np.array(2.4, dtype=np.float32), dataset.b.max())
-        self.assertEquals(np.array(0, dtype=np.uint8), dataset.c2.min())
-        self.assertEquals(np.array(9, dtype=np.uint8), dataset.c2.max())
-        nan = np.nan
-        np.testing.assert_almost_equal(
-            np.array([[0.5, 0.5, 0.5, 0.5, 0.5, nan, nan, 0.7, 0.7, 0.7],
-                      [0.5, 0.5, 0.5, 0.5, 0.5, nan, nan, 0.7, 0.7, 0.7],
-                      [0.5, 0.5, 0.5, 0.5, 0.5, nan, nan, 0.7, 0.7, 0.7],
-                      [0.5, 0.5, 0.5, 0.5, 0.5, nan, nan, 0.7, 0.7, 0.7],
-                      [0.5, 0.5, 0.5, 0.5, 0.5, nan, nan, 0.7, 0.7, 0.7],
-                      [0.6, 0.6, 0.6, 0.6, 0.6, nan, nan, 0.8, 0.8, 0.8],
-                      [0.6, 0.6, 0.6, 0.6, 0.6, nan, nan, 0.8, 0.8, 0.8],
-                      [0.6, 0.6, 0.6, 0.6, 0.6, nan, nan, 0.8, 0.8, 0.8],
-                      [0.6, 0.6, 0.6, 0.6, 0.6, nan, nan, 0.8, 0.8, 0.8],
-                      [0.6, 0.6, 0.6, 0.6, 0.6, nan, nan, 0.8, 0.8, 0.8]]),
-            dataset.a.values)
+        actual_a_values = dataset.a.values
+        expected_a_values = np.array(
+            [[0.6, 0.6, 0.6, 0.6, 0.6, nan, nan, 0.8, 0.8, 0.8],
+             [0.6, 0.6, 0.6, 0.6, 0.6, nan, nan, 0.8, 0.8, 0.8],
+             [0.6, 0.6, 0.6, 0.6, 0.6, nan, nan, 0.8, 0.8, 0.8],
+             [0.6, 0.6, 0.6, 0.6, 0.6, nan, nan, 0.8, 0.8, 0.8],
+             [0.6, 0.6, 0.6, 0.6, 0.6, nan, nan, 0.8, 0.8, 0.8],
+             [0.5, 0.5, 0.5, 0.5, 0.5, nan, nan, 0.7, 0.7, 0.7],
+             [0.5, 0.5, 0.5, 0.5, 0.5, nan, nan, 0.7, 0.7, 0.7],
+             [0.5, 0.5, 0.5, 0.5, 0.5, nan, nan, 0.7, 0.7, 0.7],
+             [0.5, 0.5, 0.5, 0.5, 0.5, nan, nan, 0.7, 0.7, 0.7],
+             [0.5, 0.5, 0.5, 0.5, 0.5, nan, nan, 0.7, 0.7, 0.7]]
+        )
+        if inverse_y:
+            expected_a_values = expected_a_values[::-1, :]
+        np.testing.assert_almost_equal(expected_a_values,
+                                       actual_a_values)
+        actual_b_values = dataset.b.values
+        expected_b_values = np.array(
+            [[2.2, 2.2, 2.2, 2.2, 2.2, nan, nan, 2.4, 2.4, 2.4],
+             [2.2, 2.2, 2.2, 2.2, 2.2, nan, nan, 2.4, 2.4, 2.4],
+             [2.2, 2.2, 2.2, 2.2, 2.2, nan, nan, 2.4, 2.4, 2.4],
+             [2.2, 2.2, 2.2, 2.2, 2.2, nan, nan, 2.4, 2.4, 2.4],
+             [2.2, 2.2, 2.2, 2.2, 2.2, nan, nan, 2.4, 2.4, 2.4],
+             [2.1, 2.1, 2.1, 2.1, 2.1, nan, nan, 2.3, 2.3, 2.3],
+             [2.1, 2.1, 2.1, 2.1, 2.1, nan, nan, 2.3, 2.3, 2.3],
+             [2.1, 2.1, 2.1, 2.1, 2.1, nan, nan, 2.3, 2.3, 2.3],
+             [2.1, 2.1, 2.1, 2.1, 2.1, nan, nan, 2.3, 2.3, 2.3],
+             [2.1, 2.1, 2.1, 2.1, 2.1, nan, nan, 2.3, 2.3, 2.3]]
+        )
+        if inverse_y:
+            expected_b_values = expected_b_values[::-1, :]
+        np.testing.assert_almost_equal(expected_b_values,
+                                       actual_b_values)
+        actual_c_values = dataset.c2.values
+        expected_c_values = np.array(
+            [[8, 8, 8, 8, 8, 0, 0, 6, 6, 6],
+             [8, 8, 8, 8, 8, 0, 0, 6, 6, 6],
+             [8, 8, 8, 8, 8, 0, 0, 6, 6, 6],
+             [8, 8, 8, 8, 8, 0, 0, 6, 6, 6],
+             [8, 8, 8, 8, 8, 0, 0, 6, 6, 6],
+             [9, 9, 9, 9, 9, 0, 0, 7, 7, 7],
+             [9, 9, 9, 9, 9, 0, 0, 7, 7, 7],
+             [9, 9, 9, 9, 9, 0, 0, 7, 7, 7],
+             [9, 9, 9, 9, 9, 0, 0, 7, 7, 7],
+             [9, 9, 9, 9, 9, 0, 0, 7, 7, 7]],
+            dtype=np.uint8
+        )
+        if inverse_y:
+            expected_c_values = expected_c_values[::-1, :]
+        np.testing.assert_almost_equal(expected_c_values,
+                                       actual_c_values)
 
-    def get_geodataframe_features(self):
-        features = self.get_geojson_features()
+    def get_geo_data_frame_features(self):
+        features = self.get_geo_json_features()
         return gpd.GeoDataFrame.from_features(features)
 
     @staticmethod
-    def get_geojson_features():
+    def get_geo_json_features():
         feature1 = dict(
             type='Feature',
             geometry=dict(type='Polygon',
@@ -217,6 +308,12 @@ class DatasetGeometryTest(unittest.TestCase):
         self.assertEqual(((1, 1, 1, 1, 1), (4,), (7,)), cube.temp.chunks)
         self.assertEqual(((1, 1, 1, 1, 1), (4,), (7,)), cube.precip.chunks)
 
+    def test_clip_dataset_inverse_y(self):
+        lat_inv = self.cube.lat[::-1]
+        cube = self.cube.assign_coords(lat=lat_inv)
+        cube = clip_dataset_by_geometry(cube, self.triangle)
+        self._assert_clipped_dataset_has_basic_props(cube)
+
     def test_mask_dataset_for_chunked_input(self):
         cube = chunk_dataset(self.cube,
                              chunk_sizes=dict(time=1, lat=90, lon=90))
@@ -253,12 +350,19 @@ class DatasetGeometryTest(unittest.TestCase):
         geom_mask = dataset[mask_var_name]
         self.assertEqual(('lat', 'lon'), geom_mask.dims)
         self.assertEqual((4, 7), geom_mask.shape)
+        actual_mask_values = geom_mask.values
+        expected_mask_values = np.array(
+            [
+                [0, 1, 1, 1, 1, 1, 1],
+                [0, 0, 1, 1, 1, 1, 0],
+                [0, 0, 0, 1, 1, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0],
+            ],
+            dtype=np.bool
+        )
         np.testing.assert_array_almost_equal(
-            geom_mask.values.astype(np.byte),
-            np.array([[0, 0, 0, 0, 0, 0, 0],
-                      [0, 0, 0, 1, 1, 0, 0],
-                      [0, 0, 1, 1, 1, 1, 0],
-                      [0, 1, 1, 1, 1, 1, 1]], dtype=np.byte)
+            actual_mask_values,
+            expected_mask_values
         )
 
     def _assert_saved_geometry_wkt_is_fine(self, dataset, geometry_wkt_name):
@@ -427,10 +531,17 @@ def _get_nominal_datasets():
                   lon=(("lon",), np.array([-20, -10, 0., 10])))
     ds1 = xr.Dataset(coords=coords, data_vars=data_vars)
 
-    coords.update(dict(lat_bnds=(("lat", "bnds"), np.array([[-15, -5], [-5., 5], [5, 15]])),
-                       lon_bnds=(
-                           ("lon", "bnds"), np.array([[-25., -15.], [-15., -5.], [-5., 5.], [5., 15.]]))
-                       ))
+    # noinspection PyTypeChecker
+    coords.update(
+        lat_bnds=(
+            ("lat", "bnds"),
+            np.array([[-15, -5], [-5., 5], [5, 15]])
+        ),
+        lon_bnds=(
+            ("lon", "bnds"),
+            np.array([[-25., -15.], [-15., -5.], [-5., 5.], [5., 15.]])
+        )
+    )
     ds2 = xr.Dataset(coords=coords, data_vars=data_vars)
 
     return ds1, ds2
@@ -467,44 +578,44 @@ def _get_antimeridian_datasets():
     return ds1, ds2
 
 
-class ConvertGeometryTest(unittest.TestCase):
-    def test_convert_null(self):
-        self.assertIs(None, convert_geometry(None))
+class NormalizeGeometryTest(unittest.TestCase):
+    def test_normalize_null(self):
+        self.assertIs(None, normalize_geometry(None))
 
-    def test_convert_to_point(self):
+    def test_normalize_to_point(self):
         expected_point = shapely.geometry.Point(12.8, -34.4)
         self.assertIs(expected_point,
-                      convert_geometry(expected_point))
+                      normalize_geometry(expected_point))
         self.assertEqual(expected_point,
-                         convert_geometry([12.8, -34.4]))
+                         normalize_geometry([12.8, -34.4]))
         self.assertEqual(expected_point,
-                         convert_geometry(np.array([12.8, -34.4])))
+                         normalize_geometry(np.array([12.8, -34.4])))
         self.assertEqual(expected_point,
-                         convert_geometry(expected_point.wkt))
+                         normalize_geometry(expected_point.wkt))
         self.assertEqual(expected_point,
-                         convert_geometry(expected_point.__geo_interface__))
+                         normalize_geometry(expected_point.__geo_interface__))
 
-    def test_convert_box_as_point(self):
+    def test_normalize_box_as_point(self):
         expected_point = shapely.geometry.Point(12.8, -34.4)
         self.assertEqual(expected_point,
-                         convert_geometry([12.8, -34.4, 12.8, -34.4]))
+                         normalize_geometry([12.8, -34.4, 12.8, -34.4]))
 
-    def test_convert_to_box(self):
+    def test_normalize_to_box(self):
         expected_box = shapely.geometry.box(12.8, -34.4, 14.2, 20.6)
         self.assertIs(expected_box,
-                      convert_geometry(expected_box))
+                      normalize_geometry(expected_box))
         self.assertEqual(expected_box,
-                         convert_geometry([12.8, -34.4, 14.2, 20.6]))
+                         normalize_geometry([12.8, -34.4, 14.2, 20.6]))
         self.assertEqual(expected_box,
-                         convert_geometry(
+                         normalize_geometry(
                              np.array([12.8, -34.4, 14.2, 20.6])
                          ))
         self.assertEqual(expected_box,
-                         convert_geometry(expected_box.wkt))
+                         normalize_geometry(expected_box.wkt))
         self.assertEqual(expected_box,
-                         convert_geometry(expected_box.__geo_interface__))
+                         normalize_geometry(expected_box.__geo_interface__))
 
-    def test_convert_to_split_box(self):
+    def test_normalize_to_split_box(self):
         expected_split_box = shapely.geometry.MultiPolygon(polygons=[
             shapely.geometry.Polygon(
                 ((180.0, -34.4), (180.0, 20.6), (172.1, 20.6), (172.1, -34.4),
@@ -516,9 +627,9 @@ class ConvertGeometryTest(unittest.TestCase):
                  (-165.7, -34.4)))]
         )
         self.assertEqual(expected_split_box,
-                         convert_geometry([172.1, -34.4, -165.7, 20.6]))
+                         normalize_geometry([172.1, -34.4, -165.7, 20.6]))
 
-    def test_convert_from_geojson_feature_dict(self):
+    def test_normalize_from_geo_json_feature_dict(self):
         expected_box1 = shapely.geometry.box(-10, -20, 20, 10)
         expected_box2 = shapely.geometry.box(30, 20, 50, 40)
         feature1 = dict(type='Feature',
@@ -528,38 +639,63 @@ class ConvertGeometryTest(unittest.TestCase):
         feature_collection = dict(type='FeatureCollection',
                                   features=(feature1, feature2))
 
-        actual_geom = convert_geometry(feature1)
+        actual_geom = normalize_geometry(feature1)
         self.assertEqual(expected_box1, actual_geom)
 
-        actual_geom = convert_geometry(feature2)
+        actual_geom = normalize_geometry(feature2)
         self.assertEqual(expected_box2, actual_geom)
 
         expected_geom = shapely.geometry.GeometryCollection(
             geoms=[expected_box1, expected_box2]
         )
-        actual_geom = convert_geometry(feature_collection)
+        actual_geom = normalize_geometry(feature_collection)
         self.assertEqual(expected_geom, actual_geom)
 
-    def test_convert_invalid_box(self):
+    def test_normalize_invalid_box(self):
         from xcube.core.geom import _INVALID_BOX_COORDS_MSG
 
         with self.assertRaises(ValueError) as cm:
-            convert_geometry([12.8, 20.6, 14.2, -34.4])
+            normalize_geometry([12.8, 20.6, 14.2, -34.4])
         self.assertEqual(_INVALID_BOX_COORDS_MSG, f'{cm.exception}')
         with self.assertRaises(ValueError) as cm:
-            convert_geometry([12.8, -34.4, 12.8, 20.6])
+            normalize_geometry([12.8, -34.4, 12.8, 20.6])
         self.assertEqual(_INVALID_BOX_COORDS_MSG, f'{cm.exception}')
         with self.assertRaises(ValueError) as cm:
-            convert_geometry([12.8, -34.4, 12.8, 20.6])
+            normalize_geometry([12.8, -34.4, 12.8, 20.6])
         self.assertEqual(_INVALID_BOX_COORDS_MSG, f'{cm.exception}')
 
     def test_invalid(self):
         from xcube.core.geom import _INVALID_GEOMETRY_MSG
 
         with self.assertRaises(ValueError) as cm:
-            convert_geometry(dict(coordinates=[12.8, -34.4]))
+            normalize_geometry(dict(coordinates=[12.8, -34.4]))
         self.assertEqual(_INVALID_GEOMETRY_MSG, f'{cm.exception}')
 
         with self.assertRaises(ValueError) as cm:
-            convert_geometry([12.8, -34.4, '?'])
+            normalize_geometry([12.8, -34.4, '?'])
         self.assertEqual(_INVALID_GEOMETRY_MSG, f'{cm.exception}')
+
+    def test_deprecated(self):
+        self.assertEqual(None, convert_geometry(None))
+
+
+class HelpersTest(unittest.TestCase):
+    def test_is_lon_lat_dataset(self):
+        dataset = new_cube(x_name='lon', y_name='lat')
+        self.assertTrue(is_lon_lat_dataset(dataset))
+
+        dataset = new_cube(x_name='x', y_name='y')
+        self.assertTrue(is_lon_lat_dataset(dataset))
+
+        dataset = new_cube(x_name='x', y_name='y', x_units='meters')
+        self.assertFalse(is_lon_lat_dataset(dataset))
+        dataset.x.attrs.update(long_name='longitude')
+        dataset.y.attrs.update(long_name='latitude')
+        self.assertTrue(is_lon_lat_dataset(dataset))
+
+    def test_is_dataset_y_axis_inverted(self):
+        dataset = new_cube()
+        self.assertTrue(is_dataset_y_axis_inverted(dataset))
+
+        dataset = new_cube(inverse_y=True)
+        self.assertFalse(is_dataset_y_axis_inverted(dataset))

@@ -25,7 +25,7 @@ class LevelDataTest(CliDataTest):
         return dict(time=1, lat=90, lon=180)
 
     def test_all_defaults(self):
-        result = self.invoke_cli(['level', TEST_ZARR_DIR])
+        result = self.invoke_cli(['level', '-v', TEST_ZARR_DIR])
         self._assert_result_ok(
             result, [((1, 1, 1, 1, 1), (90, 90), (180, 180)),
                      ((1, 1, 1, 1, 1), (90,), (180,))],
@@ -34,7 +34,7 @@ class LevelDataTest(CliDataTest):
         )
 
     def test_with_output(self):
-        result = self.invoke_cli(['level', TEST_ZARR_DIR,
+        result = self.invoke_cli(['level', '-v', TEST_ZARR_DIR,
                                   '--output', 'my.levels'])
         self._assert_result_ok(
             result, [((1, 1, 1, 1, 1), (90, 90), (180, 180)),
@@ -43,7 +43,7 @@ class LevelDataTest(CliDataTest):
         )
 
     def test_with_tile_size_and_num_levels(self):
-        result = self.invoke_cli(['level', TEST_ZARR_DIR,
+        result = self.invoke_cli(['level', '-v', TEST_ZARR_DIR,
                                   '-t', '90,45', '-n', '4'])
         self._assert_result_ok(
             result, [((1, 1, 1, 1, 1), (45, 45, 45, 45), (90, 90, 90, 90)),
@@ -59,7 +59,7 @@ class LevelDataTest(CliDataTest):
                           output_path: str,
                           message_regex: str):
         self.assertEqual(0, result.exit_code)
-        self.assertRegex(result.stdout, message_regex)
+        self.assertRegex(result.stderr, message_regex)
         self.assertTrue(os.path.isdir(output_path))
         data_store = new_fs_data_store("file")
         ml_dataset = data_store.open_data(output_path)
@@ -79,7 +79,7 @@ class LevelDataTest(CliDataTest):
 
     def _assert_result_not_ok(self, result, message_regex: str):
         self.assertEqual(1, result.exit_code)
-        self.assertRegex(result.stdout, message_regex)
+        self.assertRegex(result.stderr, message_regex)
 
     def test_level_with_nc(self):
         result = self.invoke_cli(["level",

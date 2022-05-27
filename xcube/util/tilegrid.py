@@ -24,11 +24,14 @@ from abc import abstractmethod, ABC
 from typing import Tuple, Optional, Union, Dict, Any
 
 import pyproj
+from deprecated import deprecated
 
 from xcube.util.assertions import assert_instance
 from xcube.util.assertions import assert_true
 
 
+@deprecated(version='0.11.0',
+            reason='use xcube.core.tilingscheme.TilingScheme instead')
 class TileGrid(ABC):
     """
     This interface defines a tile grid as used by the
@@ -96,6 +99,8 @@ class TileGrid(ABC):
         """Get the spatial resolution at given *level* of detail."""
 
 
+@deprecated(version='0.11.0',
+            reason='use xcube.core.tilingscheme.TilingScheme instead')
 class BaseTileGrid(TileGrid):
     """
     The default implementation of the :class:`TileGrid2`
@@ -205,6 +210,8 @@ GEOGRAPHIC_CRS = pyproj.CRS.from_string('CRS84')
 WEB_MERCATOR_CRS = pyproj.CRS.from_string('EPSG:3857')
 
 
+@deprecated(version='0.11.0',
+            reason='use xcube.core.tilingscheme.TilingScheme instead')
 class GeographicTileGrid(BaseTileGrid):
     """
     A global CRS-84 tile grid with 2 horizontal tiles and 1 vertical tile
@@ -237,6 +244,8 @@ class GeographicTileGrid(BaseTileGrid):
         )
 
 
+@deprecated(version='0.11.0',
+            reason='use xcube.core.tilingscheme.TilingScheme instead')
 class ImageTileGrid(BaseTileGrid):
     """
     A tile grid that is created from a base image of size *image_size*.
@@ -322,6 +331,8 @@ class ImageTileGrid(BaseTileGrid):
         return self._image_width // factor, self._image_height // factor
 
 
+@deprecated(version='0.11.0',
+            reason='should no longer be used')
 def tile_grid_to_ol_xyz_source_options(tile_grid: TileGrid, url: str) \
         -> Optional[Dict[str, Any]]:
     """

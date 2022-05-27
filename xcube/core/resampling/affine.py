@@ -40,7 +40,8 @@ def affine_transform_dataset(
         dataset: xr.Dataset,
         source_gm: GridMapping,
         target_gm: GridMapping,
-        var_configs: Mapping[Hashable, Mapping[str, Any]] = None
+        var_configs: Mapping[Hashable, Mapping[str, Any]] = None,
+        reuse_coords: bool = False,
 ) -> xr.Dataset:
     """
     Resample dataset according to an affine transformation.
@@ -52,6 +53,9 @@ def affine_transform_dataset(
         Must be regular. Must have same CRS as *source_gm*.
     :param var_configs: Optional resampling configurations
         for individual variables.
+    :param reuse_coords: Whether to either reuse target
+        coordinate arrays from target_gm or to compute
+        new ones.
     :return: The resampled target dataset.
     """
     if source_gm.crs != target_gm.crs:
@@ -73,7 +77,8 @@ def affine_transform_dataset(
     new_coords = target_gm.to_coords(
         xy_var_names=source_gm.xy_var_names,
         xy_dim_names=source_gm.xy_dim_names,
-        exclude_bounds=not has_bounds
+        exclude_bounds=not has_bounds,
+        reuse_coords=reuse_coords
     )
     return resampled_dataset.assign_coords(new_coords)
 

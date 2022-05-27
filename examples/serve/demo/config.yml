@@ -9,7 +9,12 @@ DatasetAttribution:
 DatasetChunkCacheSize: 100M
 
 Datasets:
-  # Will only appear for unauthorized clients
+  # The first dataset "./cube-1-250-250.levels" is a tile-optimized
+  # pyramid version of "./cube-1-250-250.zarr". To create such pyramids
+  # run following command in this directory:
+  #
+  # $ xcube level ./cube-1-250-250.zarr
+  #
   - Identifier: local
     Title: "Local OLCI L2C cube for region SNS"
     BoundingBox: [0.0, 50, 5.0, 52.5]
@@ -27,19 +32,8 @@ Datasets:
       - PlaceGroupRef: inside-cube
       - PlaceGroupRef: outside-cube
     AccessControl:
+      # Due to this it will only appear for unauthorized clients
       IsSubstitute: true
-
-# To create a tile-optimized pyramid version of "./cube-1-250-250.zarr"
-# run following command in this directory:
-#
-# $ xcube level ./cube-1-250-250.zarr
-#
-#  - Identifier: local_levels
-#    Title: "Local OLCI L2C cube for region SNS (levels)"
-#    BoundingBox: [0.0, 50, 5.0, 52.5]
-#    FileSystem: file
-#    Path: cube-1-250-250.levels
-#    Style: default
 
   # Will not appear at all, because it is a "hidden" resource
   - Identifier: local_ts
@@ -105,9 +99,21 @@ Datasets:
       RequiredScopes:
         - read:datasets
 
+  - Identifier: cog_local
+    Title: "COG example"
+    FileSystem: file
+    Path: sample-cog.tif
+    Style: tif_style
+
+  - Identifier: geotiff_local
+    Title: "GeoTIFF example"
+    FileSystem: file
+    Path: sample-geotiff.tif
+    Style: tif_style
+
 PlaceGroups:
   - Identifier: inside-cube
-    Title: Points inside the cube
+    Title: Places inside the cube
     Path: "places/inside-cube.geojson"
     Join:
       Property: "ID"
@@ -115,7 +121,7 @@ PlaceGroups:
     PropertyMapping:
       image: "${base_url}/images/inside-cube/${image}"
   - Identifier: outside-cube
-    Title: Points outside the cube
+    Title: Places outside the cube
     Path: "places/outside-cube.geojson"
     PropertyMapping:
       image: "${base_url}/images/outside-cube/${ID}.jpg"
@@ -142,6 +148,27 @@ Styles:
         Blue:
           Variable: kd489
           ValueRange: [0., 6.]
+  - Identifier: tif_style
+    ColorMappings:
+      band_1:
+        ColorBar: "bone"
+        ValueRange: [ 0., 255. ]
+      band_2:
+        ColorBar: "bone"
+        ValueRange: [ 0., 255. ]
+      band_3:
+        ColorBar: "bone"
+        ValueRange: [ 0., 255. ]
+      rgb:
+        Red:
+          Variable: band_1
+          ValueRange: [ 0., 255. ]
+        Green:
+          Variable: band_2
+          ValueRange: [ 0., 255. ]
+        Blue:
+          Variable: band_3
+          ValueRange: [ 0., 255. ]
 
 ServiceProvider:
   ProviderName: "Brockmann Consult GmbH"

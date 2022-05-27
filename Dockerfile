@@ -58,5 +58,8 @@ RUN if [[ ${INSTALL_PLUGINS} == '1' ]]; then bash install_xcube.sh xcube-cds ${X
 # Export web server port
 EXPOSE 8080
 
-# Start bash, so we can invoke xcube CLI.
-CMD ["/bin/bash"]
+# Run bash in xcube environment, so we can invoke xcube CLI.
+ENTRYPOINT ["conda", "run", "-v", "-n", "xcube", "/bin/bash", "-c"]
+
+# By default show xcube help 
+CMD ["xcube --help"]

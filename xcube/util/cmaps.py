@@ -122,7 +122,7 @@ def get_cmap(cmap_name: str, default_cmap_name='viridis', num_colors: int = None
         cmap = cm.get_cmap(cmap_name, num_colors)
     except ValueError as e:
         LOG.warning(str(e))
-        LOG.warning(f'color map name {cmap_name!r} undefined, falling back to {default_cmap_name!r}')
+        LOG.warning(f'Color map name {cmap_name!r} undefined, falling back to {default_cmap_name!r}')
         cmap_name = default_cmap_name
         cmap = cm.get_cmap(cmap_name, num_colors)
     return cmap_name, cmap
@@ -157,6 +157,7 @@ def ensure_cmaps_loaded():
                 if cmap_category == 'Ocean' and ocm is None:
                     continue
                 cbar_list = []
+                # TODO: fix hack for SNAP color palettes, see #661
                 if cmap_category == 'Custom SNAP Colormaps':
                     cmap_names = _check_if_exists(SNAP_CPD_LIST)
                 for cmap_name in cmap_names:
@@ -170,7 +171,7 @@ def ensure_cmaps_loaded():
                         else:
                             cmap = cm.get_cmap(cmap_name)
                     except ValueError:
-                        LOG.warning('detected invalid colormap "%s"' % cmap_name)
+                        LOG.warning('Detected invalid colormap "%s"' % cmap_name)
                         continue
                     # Add extra colormaps with alpha gradient
                     # see http://matplotlib.org/api/colors_api.html
@@ -204,7 +205,7 @@ def ensure_cmaps_loaded():
                         cm.register_cmap(cmap=new_cmap)
                     else:
                         new_name = cmap.name + '_alpha' if hasattr(cmap, 'name') else 'unknown'
-                        LOG.warning('could not create colormap "{}" because "{}" is of unknown type {}'
+                        LOG.warning('Could not create colormap "{}" because "{}" is of unknown type {}'
                                     .format(new_name, cmap.name, type(cmap)))
 
                     cbar_list.append((cmap_name, _get_cbar_png_bytes(cmap)))

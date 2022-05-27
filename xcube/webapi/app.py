@@ -45,8 +45,12 @@ def new_application(route_prefix: str = None, base_dir: str = '.'):
 
         (route_prefix + url_pattern('/wmts/1.0.0/WMTSCapabilities.xml'),
          xcube.webapi.handlers.GetWMTSCapabilitiesXmlHandler),
+        (route_prefix + url_pattern('/wmts/1.0.0/{{tms_id}}/WMTSCapabilities.xml'),
+         xcube.webapi.handlers.GetWMTSCapabilitiesXmlTmsHandler),
         (route_prefix + url_pattern('/wmts/1.0.0/tile/{{ds_id}}/{{var_name}}/{{z}}/{{y}}/{{x}}.png'),
          xcube.webapi.handlers.GetWMTSTileHandler),
+        (route_prefix + url_pattern('/wmts/1.0.0/tile/{{ds_id}}/{{var_name}}/{{tms_id}}/{{z}}/{{y}}/{{x}}.png'),
+         xcube.webapi.handlers.GetWMTSTileTmsHandler),
         (route_prefix + url_pattern('/wmts/kvp'),
          xcube.webapi.handlers.WMTSKvpHandler),
 
@@ -66,6 +70,8 @@ def new_application(route_prefix: str = None, base_dir: str = '.'):
          xcube.webapi.handlers.GetDatasetVarTileHandler),
         (route_prefix + url_pattern('/datasets/{{ds_id}}/vars/{{var_name}}/tilegrid'),
          xcube.webapi.handlers.GetDatasetVarTileGridHandler),
+        (route_prefix + url_pattern('/datasets/{{ds_id}}/vars/{{var_name}}/tiles2/{{z}}/{{y}}/{{x}}'),
+         xcube.webapi.handlers.GetDatasetVarTile2Handler),
 
         # AWS S3 compatible data access as ZARR
 

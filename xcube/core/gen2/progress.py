@@ -31,6 +31,7 @@ from xcube.util.assertions import assert_true
 from xcube.util.progress import ProgressObserver
 from xcube.util.progress import ProgressState
 from .config import CallbackConfig
+from ...constants import LOG
 
 
 def _format_time(t):
@@ -208,7 +209,7 @@ class TerminalProgressCallbackObserver(_ThreadedProgressObserver):
         )
 
         if prt:
-            print(msg)
+            LOG.info(msg)
 
         return msg
 
@@ -216,16 +217,19 @@ class TerminalProgressCallbackObserver(_ThreadedProgressObserver):
 class ConsoleProgressObserver(ProgressObserver):
 
     def on_begin(self, state_stack: Sequence[ProgressState]):
-        print(self._format_progress(state_stack, status_label='...'))
+        LOG.info(self._format_progress(state_stack,
+                                       status_label='...'))
 
     def on_update(self, state_stack: Sequence[ProgressState]):
-        print(self._format_progress(state_stack))
+        LOG.info(self._format_progress(state_stack))
 
     def on_end(self, state_stack: Sequence[ProgressState]):
         if state_stack[0].exc_info:
-            print(self._format_progress(state_stack, status_label='error!'))
+            LOG.info(self._format_progress(state_stack,
+                                           status_label='error!'))
         else:
-            print(self._format_progress(state_stack, status_label='done.'))
+            LOG.info(self._format_progress(state_stack,
+                                           status_label='done.'))
 
     @classmethod
     def _format_progress(cls,

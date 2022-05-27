@@ -28,6 +28,7 @@ from typing import Any, Tuple, Optional, Union, Mapping
 import numpy as np
 import pyproj
 import xarray as xr
+from deprecated import deprecated
 
 from xcube.util.assertions import assert_given
 from xcube.util.assertions import assert_instance
@@ -328,6 +329,10 @@ class GridMapping(abc.ABC):
         return self._crs
 
     @property
+    def spatial_unit_name(self) -> str:
+        return self._crs.axis_info[0].unit_name
+
+    @property
     def is_lon_360(self) -> Optional[bool]:
         """
         Check whether *x_max* is greater than 180 degrees.
@@ -535,7 +540,9 @@ class GridMapping(abc.ABC):
     def to_coords(self,
                   xy_var_names: Tuple[str, str] = None,
                   xy_dim_names: Tuple[str, str] = None,
-                  exclude_bounds: bool = False) \
+                  exclude_bounds: bool = False,
+                  reuse_coords: bool = False,
+                  ) \
             -> Mapping[str, xr.DataArray]:
         """
         Get CF-compliant axis coordinate variables and cell boundary
@@ -549,6 +556,9 @@ class GridMapping(abc.ABC):
             names (x_dim_name, y_dim_name).
         :param exclude_bounds: If True, do not create bounds
             coordinates. Defaults to False.
+        :param reuse_coords: Whether to either reuse target
+            coordinate arrays from target_gm or to compute
+            new ones.
         :return: dictionary with coordinate variables
         """
         self._assert_regular()
@@ -556,7 +566,8 @@ class GridMapping(abc.ABC):
         return grid_mapping_to_coords(self,
                                       xy_var_names=xy_var_names,
                                       xy_dim_names=xy_dim_names,
-                                      exclude_bounds=exclude_bounds)
+                                      exclude_bounds=exclude_bounds,
+                                      reuse_coords=reuse_coords)
 
     def transform(self,
                   crs: Union[str, pyproj.crs.CRS],
@@ -773,6 +784,7 @@ class GridMapping(abc.ABC):
         ])
 
     @property
+    @deprecated(version='0.11.0', reason='do not use, wrong relationship')
     def tile_grid(self) -> TileGrid:
         # we allow up to 1% dev
         assert_true(math.isclose(self.x_res,

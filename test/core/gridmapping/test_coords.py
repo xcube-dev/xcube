@@ -10,14 +10,17 @@ from xcube.core.gridmapping import GridMapping
 # noinspection PyProtectedMember
 
 GEO_CRS = pyproj.crs.CRS(4326)
+NOT_A_GEO_CRS = pyproj.crs.CRS(5243)
 
 
 # noinspection PyMethodMayBeStatic
 class Coords1DGridMappingTest(unittest.TestCase):
 
     def test_1d_j_axis_down(self):
-        gm = GridMapping.from_coords(x_coords=xr.DataArray(np.linspace(1.5, 8.5, 8), dims='lon'),
-                                     y_coords=xr.DataArray(np.linspace(4.5, -4.5, 10), dims='lat'),
+        x_coords = xr.DataArray(np.linspace(1.5, 8.5, 8), dims='lon')
+        y_coords = xr.DataArray(np.linspace(4.5, -4.5, 10), dims='lat')
+        gm = GridMapping.from_coords(x_coords=x_coords,
+                                     y_coords=y_coords,
                                      crs=GEO_CRS)
         self.assertEqual((8, 10), gm.size)
         self.assertEqual((8, 10), gm.tile_size)
@@ -27,6 +30,12 @@ class Coords1DGridMappingTest(unittest.TestCase):
         self.assertEqual(True, gm.is_regular)
         self.assertEqual(False, gm.is_j_axis_up)
         self.assertEqual(False, gm.is_lon_360)
+        self.assertTrue(hasattr(gm, 'x_coords'))
+        self.assertTrue(hasattr(gm, 'y_coords'))
+        # noinspection PyUnresolvedReferences
+        self.assertIs(x_coords, gm.x_coords)
+        # noinspection PyUnresolvedReferences
+        self.assertIs(y_coords, gm.y_coords)
 
     def test_1d_j_axis_up(self):
         gm = GridMapping.from_coords(x_coords=xr.DataArray(np.linspace(1.5, 8.5, 8), dims='lon'),
@@ -121,21 +130,39 @@ class Coords1DGridMappingTest(unittest.TestCase):
         self.assertEqual(('lon', 'lat'), gm.xy_var_names)
         self.assertEqual(('lon', 'lat'), gm.xy_dim_names)
 
+    def test_to_coords(self):
+        gm = GridMapping.regular(size=(10, 6),
+                                 xy_min=(-2600.0, 1200.0),
+                                 xy_res=10.0,
+                                 crs=NOT_A_GEO_CRS)
+        cv = gm.to_coords(reuse_coords=False)
+        self.assertIn("x", cv)
+        self.assertIn("y", cv)
+        self.assertEqual(np.float64, cv["x"].dtype)
+        self.assertEqual(np.float64, cv["y"].dtype)
+
+        gm2 = GridMapping.from_coords(cv['x'].astype(np.float32),
+                                      cv['y'].astype(np.float32),
+                                      gm.crs)
+        cv2 = gm2.to_coords(xy_var_names=("a", "b"),
+                            xy_dim_names=("u", "v"),
+                            reuse_coords=True)
+        self.assertIn("a", cv2)
+        self.assertIn("b", cv2)
+        self.assertEqual(np.float32, cv2["a"].dtype)
+        self.assertEqual(np.float32, cv2["b"].dtype)
+
 
 class Coords2DGridMappingTest(unittest.TestCase):
 
     def test_2d(self):
+        x_coords = xr.DataArray([[10.0, 10.1, 10.2, 10.3], [10.1, 10.2, 10.3, 10.4], [10.2, 10.3, 10.4, 10.5], ],
+                                dims=('lat', 'lon'))
+        y_coords = xr.DataArray([[52.0, 52.2, 52.4, 52.6], [52.2, 52.4, 52.6, 52.8], [52.4, 52.6, 52.8, 53.0], ],
+                                dims=('lat', 'lon'))
         gm = GridMapping.from_coords(
-            x_coords=xr.DataArray([
-                [10.0, 10.1, 10.2, 10.3],
-                [10.1, 10.2, 10.3, 10.4],
-                [10.2, 10.3, 10.4, 10.5],
-            ], dims=('lat', 'lon')),
-            y_coords=xr.DataArray([
-                [52.0, 52.2, 52.4, 52.6],
-                [52.2, 52.4, 52.6, 52.8],
-                [52.4, 52.6, 52.8, 53.0],
-            ], dims=('lat', 'lon')),
+            x_coords=x_coords,
+            y_coords=y_coords,
             crs=GEO_CRS)
         self.assertEqual((4, 3), gm.size)
         self.assertEqual((4, 3), gm.tile_size)
@@ -145,6 +172,12 @@ class Coords2DGridMappingTest(unittest.TestCase):
         self.assertEqual(False, gm.is_regular)
         self.assertEqual(True, gm.is_j_axis_up)
         self.assertEqual(False, gm.is_lon_360)
+        self.assertTrue(hasattr(gm, 'x_coords'))
+        self.assertTrue(hasattr(gm, 'y_coords'))
+        # noinspection PyUnresolvedReferences
+        self.assertIs(x_coords, gm.x_coords)
+        # noinspection PyUnresolvedReferences
+        self.assertIs(y_coords, gm.y_coords)
 
     def test_2d_tile_size_from_chunks(self):
         gm = GridMapping.from_coords(

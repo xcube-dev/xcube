@@ -15,6 +15,7 @@ from xcube.core.mldataset import ComputedMultiLevelDataset
 from xcube.core.mldataset import ObjectStorageMultiLevelDataset
 from xcube.core.mldataset import open_ml_dataset_from_object_storage
 from xcube.core.mldataset import write_levels
+from xcube.core.tilingscheme import TilingScheme
 from xcube.util.tilegrid import ImageTileGrid
 
 
@@ -68,17 +69,26 @@ class CombinedMultiLevelDatasetTest(unittest.TestCase):
 
 
 class BaseMultiLevelDatasetTest(unittest.TestCase):
-    def test_ok(self):
+    def test_basic_props(self):
         ds = _get_test_dataset()
-
         ml_ds = BaseMultiLevelDataset(ds)
 
         self.assertIsInstance(ml_ds.ds_id, str)
 
         self.assertEqual(3, ml_ds.num_levels)
-        self.assertIsInstance(ml_ds.tile_grid, ImageTileGrid)
-        self.assertEqual((180, 180), ml_ds.tile_grid.tile_size)
-        self.assertEqual(3, ml_ds.tile_grid.num_levels)
+        self.assertEqual([(0.25, 0.25), (0.5, 0.5), (1.0, 1.0)],
+                         ml_ds.resolutions)
+        self.assertEqual([0.25, 0.5, 1.0],
+                         ml_ds.avg_resolutions)
+
+        tile_grid = ml_ds.tile_grid
+        self.assertIsInstance(tile_grid, ImageTileGrid)
+        self.assertEqual((180, 180), tile_grid.tile_size)
+        self.assertEqual(3, tile_grid.num_levels)
+
+    def test_level_datasets(self):
+        ds = _get_test_dataset()
+        ml_ds = BaseMultiLevelDataset(ds)
 
         ds0 = ml_ds.get_dataset(0)
         self.assertIsNot(ds, ds0)
@@ -99,14 +109,25 @@ class BaseMultiLevelDatasetTest(unittest.TestCase):
 
         ml_ds.close()
 
-    def test_fail(self):
+    def test_arg_validation(self):
         ds = _get_test_dataset()
         with self.assertRaises(TypeError):
+            # noinspection PyTypeChecker
             BaseMultiLevelDataset('test.levels')
         with self.assertRaises(TypeError):
+            # noinspection PyTypeChecker
             BaseMultiLevelDataset(ds, tile_grid=512)
         with self.assertRaises(TypeError):
+            # noinspection PyTypeChecker
             BaseMultiLevelDataset(ds, grid_mapping='crs84')
+
+    def test_derive_tiling_scheme(self):
+        ds = _get_test_dataset()
+        ml_ds = BaseMultiLevelDataset(ds)
+        tiling_scheme = ml_ds.derive_tiling_scheme(TilingScheme.GEOGRAPHIC)
+        self.assertEqual('CRS84', tiling_scheme.crs_name)
+        self.assertEqual(0, tiling_scheme.min_level)
+        self.assertEqual(2, tiling_scheme.max_level)
 
 
 class ComputedMultiLevelDatasetTest(unittest.TestCase):

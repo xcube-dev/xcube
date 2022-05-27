@@ -35,13 +35,13 @@ import numpy as np
 import pandas as pd
 import pyproj
 import xarray as xr
+from deprecated import deprecated
 
 from xcube.constants import LOG
 from xcube.core.mldataset import BaseMultiLevelDataset
 from xcube.core.mldataset import MultiLevelDataset
 from xcube.core.mldataset import augment_ml_dataset
 from xcube.core.mldataset import open_ml_dataset_from_python_code
-from xcube.core.normalize import decode_cube
 from xcube.core.store import DATASET_TYPE
 from xcube.core.store import DataStoreConfig
 from xcube.core.store import DataStorePool
@@ -49,6 +49,7 @@ from xcube.core.store import DatasetDescriptor
 from xcube.core.store import MULTI_LEVEL_DATASET_TYPE
 from xcube.core.tile import get_var_cmap_params
 from xcube.core.tile import get_var_valid_range
+from xcube.util.assertions import assert_instance
 from xcube.util.cache import Cache
 from xcube.util.cache import MemoryCacheStore
 from xcube.util.cache import parse_mem_size
@@ -95,7 +96,6 @@ class ServiceContext:
                  prefix: str = None,
                  base_dir: str = None,
                  config: Config = None,
-                 data_store_pool: DataStorePool = None,
                  trace_perf: bool = DEFAULT_TRACE_PERF,
                  tile_comp_mode: int = None,
                  tile_cache_capacity: int = None,
@@ -115,7 +115,7 @@ class ServiceContext:
         # cache for all dataset configs
         self._dataset_configs: Optional[List[DatasetConfigDict]] = None
         self._image_cache = dict()
-        self._data_store_pool = data_store_pool or None
+        self._data_store_pool = DataStorePool()
         if tile_cache_capacity:
             self._tile_cache = Cache(MemoryCacheStore(),
                                      capacity=tile_cache_capacity,
@@ -255,7 +255,8 @@ class ServiceContext:
             required_dataset_scopes.add(base_scope_prefix + value)
         return required_dataset_scopes
 
-    def get_service_url(self, base_url, *path: str):
+    def get_service_url(self, base_url: Optional[str], *path: str):
+        base_url = base_url or ''
         # noinspection PyTypeChecker
         path_comp = '/'.join(path)
         if self._prefix:
@@ -303,14 +304,11 @@ class ServiceContext:
     def get_dataset_configs(self) -> List[DatasetConfigDict]:
         if self._dataset_configs is None:
             with self._lock:
-                dataset_configs = self._config.get('Datasets', [])
-                dataset_configs += \
-                    self.get_dataset_configs_from_stores()
-                self._dataset_configs = dataset_configs
-                self._maybe_assign_store_instance_ids()
+                if self._dataset_configs is None:
+                    self._set_up_data_store_pool_and_dataset_configs()
         return self._dataset_configs
 
-    def _maybe_assign_store_instance_ids(self):
+    def _maybe_assign_store_instance_ids(self, data_store_pool: DataStorePool):
         assignable_dataset_configs = [dc for dc in self._dataset_configs
                                       if 'StoreInstanceId' not in dc
                                       and dc.get('FileSystem', 'file')
@@ -329,10 +327,6 @@ class ServiceContext:
                     break
             if not appended:
                 config_lists.append((file_system, store_params, [config]))
-
-        data_store_pool = self.get_data_store_pool()
-        if not data_store_pool:
-            data_store_pool = self._data_store_pool = DataStorePool()
 
         for file_system, store_params, config_list in config_lists:
             # Retrieve paths per configuration
@@ -415,16 +409,12 @@ class ServiceContext:
         store_params = dict(storage_options=storage_options)
         return store_params
 
-    def get_dataset_configs_from_stores(self) \
+    def get_dataset_configs_from_stores(self, data_store_pool: DataStorePool) \
             -> List[DatasetConfigDict]:
-
-        data_store_pool = self.get_data_store_pool()
-        if data_store_pool is None:
-            return []
 
         all_dataset_configs: List[DatasetConfigDict] = []
         for store_instance_id in data_store_pool.store_instance_ids:
-            LOG.info(f'scanning store {store_instance_id!r}')
+            LOG.info(f'Scanning store {store_instance_id!r}')
             data_store_config = data_store_pool.get_store_config(
                 store_instance_id
             )
@@ -460,7 +450,7 @@ class ServiceContext:
                         else:
                             dataset_config_base = None
                 if dataset_config_base is not None:
-                    LOG.debug(f'selected dataset {store_dataset_id!r}')
+                    LOG.debug(f'Selected dataset {store_dataset_id!r}')
                     dataset_config = dict(
                         StoreInstanceId=store_instance_id,
                         **dataset_config_base
@@ -475,7 +465,7 @@ class ServiceContext:
         debug_file = 'all_dataset_configs.json'
         with open(debug_file, 'w') as stream:
             json.dump(all_dataset_configs, stream)
-            LOG.debug(f'wrote file {debug_file!r}')
+            LOG.debug(f'Wrote file {debug_file!r}')
 
         return all_dataset_configs
 
@@ -490,31 +480,42 @@ class ServiceContext:
         if dataset_metadata.crs is not None:
             crs = pyproj.CRS.from_string(dataset_metadata.crs)
             if not crs.is_geographic:
-                LOG.warn(f'ignoring dataset {dataset_id!r} from'
-                         f' store instance {store_instance_id!r}'
-                         f' because it uses a non-geographic CRS')
+                LOG.warning(f'Ignoring dataset {dataset_id!r} from'
+                            f' store instance {store_instance_id!r}'
+                            f' because it uses a non-geographic CRS')
                 return None
         # noinspection PyTypeChecker
         return dataset_metadata
 
-    def get_data_store_pool(self) -> Optional[DataStorePool]:
+    def get_data_store_pool(self) -> DataStorePool:
+        if self._data_store_pool.is_empty:
+            with self._lock:
+                if self._data_store_pool.is_empty:
+                    self._set_up_data_store_pool_and_dataset_configs()
+        return self._data_store_pool
+
+    def _set_up_data_store_pool_and_dataset_configs(self):
         data_store_configs = self._config.get('DataStores', [])
-        if not data_store_configs or self._data_store_pool:
-            return self._data_store_pool
         if not isinstance(data_store_configs, list):
             raise ServiceConfigError('DataStores must be a list')
-        store_configs: Dict[str, DataStoreConfig] = {}
+        dataset_configs = self._config.get('Datasets', [])
+        if not isinstance(dataset_configs, list):
+            raise ServiceConfigError('Datasets must be a list')
         for data_store_config_dict in data_store_configs:
             store_instance_id = data_store_config_dict.get('Identifier')
             store_id = data_store_config_dict.get('StoreId')
             store_params = data_store_config_dict.get('StoreParams', {})
-            dataset_configs = data_store_config_dict.get('Datasets')
+            store_dataset_configs = data_store_config_dict.get('Datasets')
             store_config = DataStoreConfig(store_id,
                                            store_params=store_params,
-                                           user_data=dataset_configs)
-            store_configs[store_instance_id] = store_config
-        self._data_store_pool = DataStorePool(store_configs)
-        return self._data_store_pool
+                                           user_data=store_dataset_configs)
+            self._data_store_pool.add_store_config(store_instance_id,
+                                                   store_config)
+        self._dataset_configs = dataset_configs + \
+                                self.get_dataset_configs_from_stores(
+                                    self._data_store_pool
+                                )
+        self._maybe_assign_store_instance_ids(self._data_store_pool)
 
     def get_dataset_config(self, ds_id: str) -> Dict[str, Any]:
         dataset_configs = self.get_dataset_configs()
@@ -549,6 +550,8 @@ class ServiceContext:
                     s3_bucket_mapping[ds_id] = local_path
         return s3_bucket_mapping
 
+    @deprecated(version='0.11.0',
+                reason='do not use, wrong relationship')
     def get_tile_grid(self, ds_id: str) -> TileGrid:
         ml_dataset, _ = self._get_dataset_entry(ds_id)
         return ml_dataset.tile_grid
@@ -647,26 +650,22 @@ class ServiceContext:
                          or data_id.endswith('.levels')) \
                     and 'cache_size' not in open_params:
                 open_params['cache_size'] = chunk_cache_capacity
-            with self.measure_time(tag=f"opened dataset {ds_id!r}"
+            with self.measure_time(tag=f"Opened dataset {ds_id!r}"
                                        f" from data store"
                                        f" {store_instance_id!r}"):
                 dataset = data_store.open_data(data_id, **open_params)
             if isinstance(dataset, MultiLevelDataset):
                 ml_dataset: MultiLevelDataset = dataset
-                ml_dataset.ds_id = ds_id
             else:
-                cube, _, _ = decode_cube(dataset,
-                                         normalize=True,
-                                         force_non_empty=True,
-                                         force_geographic=True)
-                ml_dataset = BaseMultiLevelDataset(cube, ds_id=ds_id)
+                ml_dataset = BaseMultiLevelDataset(dataset)
+            ml_dataset.ds_id = ds_id
         else:
             fs_type = dataset_config.get('FileSystem')
             if fs_type != 'memory':
                 raise ServiceConfigError(f"Invalid FileSystem {fs_type!r}"
                                          f" in dataset configuration"
                                          f" {ds_id!r}")
-            with self.measure_time(tag=f"opened dataset {ds_id!r}"
+            with self.measure_time(tag=f"Opened dataset {ds_id!r}"
                                        f" from {fs_type!r}"):
                 ml_dataset = _open_ml_dataset_from_python_code(self,
                                                                dataset_config)

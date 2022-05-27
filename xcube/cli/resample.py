@@ -22,10 +22,17 @@ from typing import Sequence, Dict, Any
 
 import click
 
-from xcube.constants import FORMAT_NAME_ZARR, FORMAT_NAME_NETCDF4, FORMAT_NAME_MEM
+from xcube.cli.common import (configure_cli_output,
+                              cli_option_quiet,
+                              cli_option_verbosity)
+from xcube.constants import FORMAT_NAME_ZARR, FORMAT_NAME_NETCDF4, \
+    FORMAT_NAME_MEM
+from xcube.constants import LOG
 
-UPSAMPLING_METHODS = ['asfreq', 'ffill', 'bfill', 'pad', 'nearest', 'interpolate']
-DOWNSAMPLING_METHODS = ['count', 'first', 'last', 'min', 'max', 'sum', 'prod', 'mean', 'median', 'std', 'var']
+UPSAMPLING_METHODS = ['asfreq', 'ffill', 'bfill', 'pad', 'nearest',
+                      'interpolate']
+DOWNSAMPLING_METHODS = ['count', 'first', 'last', 'min', 'max', 'sum', 'prod',
+                        'mean', 'median', 'std', 'var']
 RESAMPLING_METHODS = UPSAMPLING_METHODS + DOWNSAMPLING_METHODS
 
 SPLINE_INTERPOLATION_KINDS = ['zero', 'slinear', 'quadratic', 'cubic']
@@ -92,6 +99,8 @@ DEFAULT_INTERPOLATION_KIND = 'linear'
                    'If the time delta exceeds the tolerance, '
                    'fill values (NaN) will be used. '
                    'Defaults to the given frequency.')
+@cli_option_quiet
+@cli_option_verbosity
 @click.option('--dry-run', default=False, is_flag=True,
               help='Just read and process inputs, but don\'t produce any outputs.')
 def resample(cube,
@@ -105,10 +114,13 @@ def resample(cube,
              base,
              kind,
              tolerance,
+             quiet,
+             verbosity,
              dry_run):
     """
     Resample data along the time dimension.
     """
+    configure_cli_output(quiet=quiet, verbosity=verbosity)
 
     input_path = cube
     config_files = config
@@ -155,7 +167,7 @@ def resample(cube,
                 raise click.ClickException(f'invalid resampling method {method!r}')
 
     # noinspection PyBroadException
-    _resample_in_time(**config, dry_run=dry_run, monitor=print)
+    _resample_in_time(**config, dry_run=dry_run, monitor=LOG.info)
 
     return 0
 

@@ -21,7 +21,10 @@
 
 import click
 
-from xcube.cli.common import parse_cli_kwargs
+from xcube.cli.common import (parse_cli_kwargs,
+                              cli_option_quiet,
+                              cli_option_verbosity,
+                              configure_cli_output)
 
 DEFAULT_OUTPUT_PATH = 'out.zarr'
 
@@ -31,7 +34,8 @@ DEFAULT_OUTPUT_PATH = 'out.zarr'
 @click.argument('cube')
 @click.option('--output', '-o', metavar='OUTPUT', default=DEFAULT_OUTPUT_PATH,
               help=f'Output path. Defaults to {DEFAULT_OUTPUT_PATH!r}')
-@click.option('--format', '-f', metavar='FORMAT', type=click.Choice(['zarr', 'netcdf']),
+@click.option('--format', '-f', metavar='FORMAT',
+              type=click.Choice(['zarr', 'netcdf']),
               help="Format of the output. If not given, guessed from OUTPUT.")
 @click.option('--params', '-p', metavar='PARAMS',
               help="Parameters specific for the output format."
@@ -40,7 +44,15 @@ DEFAULT_OUTPUT_PATH = 'out.zarr'
               help='Chunk sizes for each dimension.'
                    ' Comma-separated list of <dim>=<size> pairs,'
                    ' e.g. "time=1,lat=270,lon=270"')
-def chunk(cube, output, format=None, params=None, chunks=None):
+@cli_option_quiet
+@cli_option_verbosity
+def chunk(cube,
+          output,
+          format=None,
+          params=None,
+          chunks=None,
+          quiet=None,
+          verbosity=None):
     """
     (Re-)chunk xcube dataset.
     Changes the external chunking of all variables of CUBE according to CHUNKS and writes
@@ -49,6 +61,8 @@ def chunk(cube, output, format=None, params=None, chunks=None):
     Note: There is a possibly more efficient way to (re-)chunk datasets through the
     dedicated tool "rechunker", see https://rechunker.readthedocs.io.
     """
+    configure_cli_output(quiet=quiet, verbosity=verbosity)
+
     chunk_sizes = None
     if chunks:
         chunk_sizes = parse_cli_kwargs(chunks, metavar="CHUNKS")
